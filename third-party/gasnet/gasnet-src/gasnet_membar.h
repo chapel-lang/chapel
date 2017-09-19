@@ -111,6 +111,12 @@
    #define gasneti_local_rmb()      __builtin_ia32_lfence()
    #define gasneti_local_mb()       do { _Pragma("_CRI suppress") \
                                          __builtin_ia32_mfence(); } while (0)
+   #if PLATFORM_COMPILER_VERSION_GE(8,6,0) && (GASNET_DEBUG || GASNETT_USING_CRAYC_HIPA0)
+     /* Strengthen wmb to full mb to avoid warning 3140 (bug #3590) */
+     #undef  gasneti_local_wmb()
+     #define gasneti_local_wmb() gasneti_local_mb()
+     #define GASNETI_WMB_IS_MB
+   #endif
  #else
    GASNETI_INLINE(gasneti_local_wmb)
    void gasneti_local_wmb(void) {
@@ -177,10 +183,12 @@
    /* "lwsync" = "sync 1", executed as "sync" on older CPUs */
    #define GASNETI_PPC_WMB_ASM "7c2004ac"
 
+   static void _gasneti_do_wmb(void);
    #pragma mc_func _gasneti_do_wmb { GASNETI_PPC_WMB_ASM }
    #pragma reg_killed_by _gasneti_do_wmb
    #define gasneti_local_wmb() _gasneti_do_wmb()
 
+   static void _gasneti_do_compilerfence(void);
    #pragma mc_func _gasneti_do_compilerfence { "" }
    #pragma reg_killed_by _gasneti_do_compilerfence
    #define gasneti_compiler_fence() _gasneti_do_compilerfence()

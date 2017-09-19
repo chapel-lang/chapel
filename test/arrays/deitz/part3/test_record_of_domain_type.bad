@@ -1,0 +1,3 @@
+(x = {1..0})
+Thread
+Conditional jump or move depends on uninitialised value(s)

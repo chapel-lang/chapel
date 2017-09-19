@@ -209,7 +209,9 @@ extern int AMUDP_SetHandlerCallbacks(ep_t ep, AMUDP_preHandlerCallback_t preHand
 #define AMX_initial_stats         AMUDP_initial_stats
 #define amx_stats_t               amudp_stats_t
 #define amx_handler_fn_t          amudp_handler_fn_t
-#define AMX_FatalErr            AMUDP_FatalErr
+#define AMX_FatalErr              AMUDP_FatalErr
+#define AMX_GetSourceId           AMUDP_GetSourceId
+#define AMX_enEqual               AMUDP_enEqual
 
 #undef AM_Init
 #define AM_Init AMUDP_CONCAT(AM_Init_AMUDP,AMUDP_DEBUG_CONFIG)
@@ -262,6 +264,8 @@ extern int AM_GetSourceEndpoint(void *token, en_t *gan);
 extern int AM_GetDestEndpoint(void *token, ep_t *endp);
 extern int AM_GetMsgTag(void *token, tag_t *tagp);
 extern int AMUDP_GetSourceId(void *token, int *srcid); /* srcid retrieves a compressed id */
+extern int AMUDP_enEqual(en_t en1, en_t en2);
+
 
 /* Poll */
 extern int AM_Poll(eb_t bundle);

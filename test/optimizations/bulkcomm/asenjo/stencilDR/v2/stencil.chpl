@@ -62,7 +62,7 @@ class GlobalInfo {
 }
 
 // constructor for GlobalInfo
-proc GlobalInfo.GlobalInfo() {
+proc GlobalInfo.init() {
   forall ((ix,iy), inf) in zip(gridDist, infos) {
     inf = new LocalInfo(mygx=ix, mygy=iy);
   }
@@ -95,8 +95,9 @@ class GlobalData {
 }
 
 // constructor for GlobalData
-proc GlobalData.GlobalData(nameArg: string) {
+proc GlobalData.init(nameArg: string) {
   name=nameArg;
+  super.init();
   forall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) {
     dat = new LocalData(inf);
     // sanity checks

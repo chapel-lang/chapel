@@ -7,6 +7,8 @@
 
 #define MAX_PROCS 255
 static uint32_t vals[MAX_PROCS];
+uint32_t *myvals = vals;
+uint32_t *pvals[MAX_PROCS];
 
 int main(int argc, char **argv) {
   eb_t eb;
@@ -15,6 +17,7 @@ int main(int argc, char **argv) {
   int myproc;
   int numprocs;
   int k;
+  int errs = 0;
   int iters = 0;
 
   TEST_STARTUP(argc, argv, networkpid, eb, ep, 1, 1, "iters");
@@ -33,6 +36,9 @@ int main(int argc, char **argv) {
     fflush(stdout);
   }
 
+  /* gather pointers to static data, to handle non-uniform address spaces */
+  AM_Safe(AMX_SPMDAllGather(&myvals, pvals, sizeof(myvals))); 
+
   for (k=0;k < iters; k++) {
     /* set just my val */
     int i;
@@ -46,19 +52,13 @@ int main(int argc, char **argv) {
       int sum = 0;
       int verify = 0;
       for (i = 0; i < numprocs; i++) {
-        sum += getWord(i, &vals[i]); /*  get each peer's value and add them up */
+        sum += getWord(i, pvals[i]+i); /*  get each peer's value and add them up */
         verify += i;
       }
       if (verify != sum) {
-        printf("Proc %i GET TEST FAILED : sum = %i   verify = %i\n", myproc, sum, verify);
+        printf("ERROR: Proc %i GET TEST FAILED : sum = %i   verify = %i\n", myproc, sum, verify);
         fflush(stdout);
       }
-      #if VERBOSE
-        else {
-          printf("Proc %i verified.\n", myproc);
-          fflush(stdout);
-        }
-      #endif
     }
 
     AM_Safe(AMX_SPMDBarrier()); /* barrier */
@@ -66,22 +66,21 @@ int main(int argc, char **argv) {
     { /* try some puts */
       int i;
       for (i = 0; i < numprocs; i++) {
-        putWord(i, &vals[myproc], myproc); /*  push our value to correct position on each peer */
+        putWord(i, pvals[i]+myproc, myproc); /*  push our value to correct position on each peer */
       }
       AM_Safe(AMX_SPMDBarrier()); /* barrier */
       for (i = 0; i < numprocs; i++) {
         if (((int)vals[i]) != i) {
-          printf("Proc %i PUT TEST FAILED : i = %i   vals[i] = %i\n", myproc, i, (int)vals[i]);
+          printf("ERROR: Proc %i PUT TEST FAILED : i = %i   vals[i] = %i\n", myproc, i, (int)vals[i]);
           break;
         }
       }
-      #if VERBOSE
-        if (i == numprocs) {
-          printf("Proc %i verified.\n", myproc);
-          fflush(stdout);
-        }
-      #endif
     }
+  }
+  
+  if (!errs) {
+    printf("Proc %i verified.\n", myproc);
+    fflush(stdout);
   }
 
   /* dump stats */

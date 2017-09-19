@@ -76,6 +76,12 @@ void        fnsWithName(const char* name, Vec<FnSymbol*>& fnVec);
 void        whocalls(int id);
 void        whocalls(BaseAST* ast);
 
+FnSymbol*   debugGetTheIteratorFn(int id);
+FnSymbol*   debugGetTheIteratorFn(BaseAST* ast);
+FnSymbol*   debugGetTheIteratorFn(Symbol* sym);
+FnSymbol*   debugGetTheIteratorFn(Type* type);
+FnSymbol*   debugGetTheIteratorFn(ForLoop* forLoop);
+
 // NB these return the same static buffer
 const char* stringLoc(int id);
 const char* stringLoc(BaseAST* ast);
@@ -88,6 +94,9 @@ const char* debugLoc(BaseAST* ast);
 
 int debugID(int id);
 int debugID(BaseAST* ast);
-
+void debugSummary(int id);
+void debugSummary(BaseAST* ast);
+BaseAST* debugParentSym(int id);
+BaseAST* debugParentSym(BaseAST* ast);
 
 #endif

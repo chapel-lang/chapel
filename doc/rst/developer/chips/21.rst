@@ -16,7 +16,7 @@ library and the design structure for the same.
 Current Issues / Motivation
 ---------------------------
 
-OpenSSL is the crpto primitive of choice because of the drawbacks posed by other libraries.
+OpenSSL is the crypto primitive of choice because of the drawbacks posed by other libraries.
 
 	- libtomcrypt isn't maintained anymore.
 
@@ -65,9 +65,9 @@ Using extern blocks was the next logical step as writing C functions for OpenSSL
 
 In the design for this module, I would be manually writing extern calls (also using c2chapel wherever helpful) for the OpenSSL functions we intend on using. This may slow down the process a little but increases the overall code maintainability. OpenSSL's EVP API is used for this process.
 
-As far as the latter is concerned, I have been able to accomplish some prelimary work on it with the help of Andrea (panzone).
+As far as the latter is concerned, I have been able to accomplish some preliminary work on it with the help of Andrea (panzone).
 
-The design approach can be breifly summarized using the figure below.
+The design approach can be briefly summarized using the figure below.
 
 .. image:: http://oi65.tinypic.com/2uhvb47.jpg
 

@@ -22,7 +22,7 @@ ref AA2 = AA({10001..10005, 10001..10005, 10001..10005}.expand(-1));   // slice 
 [aa2 in AA2] aa2 = 2;
 writeToString();
 
-ref AA3 = AA2.reindex({91..93, 94..96, 97..99}); // reindex [2..4, 2..4, 2..4]
+ref AA3 = AA2.reindex(91..93, 94..96, 97..99); // reindex [2..4, 2..4, 2..4]
 [aa3 in AA3] aa3 = 3;
 writeToString();
 
@@ -38,7 +38,7 @@ ref AA6 = AA5(95..96, 98..99);         // slice [3, 3..4, 3..4]
 [aa6 in AA6] aa6 = 6;
 writeToString();
 
-ref AA7 = AA6.reindex({1..2, 1..2});     // reindex [3, 3..4, 3..4]
+ref AA7 = AA6.reindex(1..2, 1..2);     // reindex [3, 3..4, 3..4]
 [aa7 in AA7] aa7 = 7;
 writeToString();
 

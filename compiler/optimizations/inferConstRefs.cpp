@@ -205,7 +205,7 @@ ConstInfo::ConstInfo(Symbol* s) {
     fnUses = fn->firstSymExpr();
   }
 
-  finalizedRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
+  finalizedRefToConst = sym->hasFlag(FLAG_REF_TO_IMMUTABLE);
 
   curTodo = 0;
   alreadyCalled = false;
@@ -589,7 +589,7 @@ static bool inferRefToConst(Symbol* sym) {
   INT_ASSERT(sym->isRef());
 
   bool isConstRef = sym->qualType().getQual() == QUAL_CONST_REF;
-  const bool wasRefToConst = sym->hasFlag(FLAG_REF_TO_CONST);
+  const bool wasRefToConst = sym->hasFlag(FLAG_REF_TO_IMMUTABLE);
 
   ConstInfo* info = infoMap[sym];
 
@@ -640,7 +640,9 @@ static bool inferRefToConst(Symbol* sym) {
         } else {
           // Passing a non-ref actual to a reference formal is currently
           // considered to be the same as an addr-of
-          if (actual->qualType().getQual() != QUAL_CONST_VAL) {
+          // BHARSH TODO: we shouldn't be seeing QUAL_CONST here.
+          Qualifier q = actual->qualType().getQual();
+          if (q != QUAL_CONST_VAL && q != QUAL_CONST) {
             isRefToConst = false;
           }
         }
@@ -693,7 +695,7 @@ static bool inferRefToConst(Symbol* sym) {
   if (isFirstCall) {
     if (isRefToConst) {
       INT_ASSERT(info->finalizedRefToConst == false);
-      sym->addFlag(FLAG_REF_TO_CONST);
+      sym->addFlag(FLAG_REF_TO_IMMUTABLE);
     }
 
     info->reset();
@@ -710,7 +712,7 @@ static bool inferRefToConst(Symbol* sym) {
 // properties can be applied:
 // 1) QUAL_CONST_VAL
 // 2) QUAL_CONST_REF / INTENT_CONST_REF
-// 3) FLAG_REF_TO_CONST
+// 3) FLAG_REF_TO_IMMUTABLE
 //
 void inferConstRefs() {
   // Build a map from Symbols to ConstInfo. This is somewhat like

@@ -1,6 +1,6 @@
 class MyDist : BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
-    const dom = new MyDom(rank=rank, idxType=idxType);
+    const dom = new MyDom(rank=rank, idxType=idxType, stridable=stridable);
     dom.dsiSetIndices(inds);
     return dom;
   }
@@ -9,8 +9,6 @@ class MyDist : BaseDist {
 }
 
 class MyDom : BaseRectangularDom {
-  param rank: int;
-  type idxType = int(32);
   const dist: MyDist;
 
   proc dsiGetIndices() {

@@ -1,0 +1,7 @@
+feature request: 'use' enums at class scope
+
+This future covers trying to 'use' an enum, so that a field can access its
+constant without resorting to explicit naming.  The spec does not currently
+permit this, but it seems reasonable to desire it.  Otherwise, you'd end up
+writing a 'use' statement in every method if you wanted to do something with the
+enum type.

@@ -13,8 +13,7 @@ Parallelism Control Options:
 
 Optimization Control Options:
       --baseline                      Disable all Chapel optimizations
-      --cache-remote                  Enable cache for remote data (must be
-                                      enabled specifically)
+      --[no-]cache-remote             [Don't] enable cache for remote data
       --[no-]copy-propagation         Enable [disable] copy propagation
       --[no-]dead-code-elimination    Enable [disable] dead code elimination
       --fast                          Use fast default settings
@@ -24,6 +23,9 @@ Optimization Control Options:
       --[no-]ignore-local-classes     Disable [enable] local classes
       --[no-]inline                   Enable [disable] function inlining
       --[no-]inline-iterators         Enable [disable] iterator inlining
+      --inline-iterators-yield-limit <limit>
+                                      Limit number of yields permitted in
+                                      inlined iterators
       --[no-]live-analysis            Enable [disable] live variable analysis
       --[no-]loop-invariant-code-motion
                                       Enable [disable] loop invariant code
@@ -38,6 +40,8 @@ Optimization Control Options:
       --[no-]privatization            Enable [disable] privatization of
                                       distributed arrays and domains
       --[no-]remote-value-forwarding  Enable [disable] remote value forwarding
+      --[no-]remote-serialization     Enable [disable] serialization for
+                                      remote consts
       --[no-]remove-copy-calls        Enable [disable] remove copy calls
       --[no-]scalar-replacement       Enable [disable] scalar replacement
       --scalar-replace-limit <limit>  Limit on the size of tuples being
@@ -117,13 +121,16 @@ Miscellaneous Options:
       --[no-]explain-verbose          Enable [disable] tracing of
                                       disambiguation with 'explain' options
       --instantiate-max <max>         Limit number of instantiations
-      --[no-]print-callgraph          Print a representation of the callgraph
-                                      for the program
-      --[no-]print-callstack-on-error print the Chapel call stack leading to
-                                      each error or warning
+      --[no-]print-callgraph          [Don't] print a representation of the
+                                      callgraph for the program
+      --[no-]print-callstack-on-error [Don't] print the Chapel call stack
+                                      leading to each error or warning
+      --[no-]print-unused-functions   [Don't] print the name and location of
+                                      unused functions
   -s, --set <name>[=<value>]          Set config param value
-      --[no-]strict-errors            Enable [disable] strict mode for error
-                                      handling
+      --[no-]permit-unhandled-module-errors
+                                      Permit unhandled errors in explicit
+                                      modules; such errors halt at runtime
       --[no-]task-tracking            Enable [disable] runtime task tracking
       --[no-]warn-const-loops         Enable [disable] warnings for some
                                       'while' loops with constant conditions

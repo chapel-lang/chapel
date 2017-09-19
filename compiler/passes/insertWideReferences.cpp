@@ -191,6 +191,7 @@
 #include "stringutil.h"
 #include "timer.h"
 #include "view.h"
+#include "wellknown.h"
 
 #include <map>
 #include <queue>
@@ -410,7 +411,7 @@ static QualifiedType getNarrowType(BaseAST* bs) {
 }
 
 static Type* getElementType(BaseAST* bs) {
-  Type* arrType = getNarrowType(bs).type();
+  Type* arrType = getNarrowType(bs->getValType()).type();
   INT_ASSERT(arrType->symbol->hasFlag(FLAG_DATA_CLASS));
 
   return getDataClassType(arrType->symbol)->type;
@@ -958,6 +959,9 @@ static void addKnownWides() {
               setWide(cause, lhs);
             }
           }
+        } else if (rhs->isPrimitive(PRIM_WIDE_MAKE)) {
+          INT_ASSERT(isObj(lhs));
+          setWide(rhs, lhs);
         }
       }
     }

@@ -36,7 +36,9 @@ static void checkPrivateDecls(DefExpr* def);
 static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
+static void nestedName(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
+static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
 
 void
@@ -105,7 +107,13 @@ checkParsed() {
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+    nestedName(mod);
+
     checkModule(mod);
+  }
+
+  forv_Vec(AggregateType, at, gAggregateTypes) {
+    checkRecordInheritance(at);
   }
 
   checkExportedNames();
@@ -314,6 +322,22 @@ checkFunction(FnSymbol* fn) {
   }
 }
 
+static void nestedName(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  ModuleSymbol* parent = mod->defPoint->getModule();
+  if (mod->name == parent->name &&
+      parent->hasFlag(FLAG_IMPLICIT_MODULE)) {
+    USR_WARN(mod->defPoint,
+             "module '%s' has the same name as the implicit file module",
+             mod->name);
+    USR_PRINT(mod->defPoint,
+              "did you mean to include all statements in the module declaration?");
+  }
+}
+
 //
 // This is a special test to ensure that there are no instances of a return
 // or yield statement at the top level of a module.  This "special" semantic
@@ -337,6 +361,17 @@ checkModule(ModuleSymbol* mod) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       }
     }
+  }
+}
+
+// outputs an error message if we encountered a record that tried to inherit
+static void checkRecordInheritance(AggregateType* at) {
+  if (!at->isRecord())
+    return;
+
+  if (at->inherits.length != 0) {
+    USR_FATAL_CONT(at, "inheritance is not currently supported for records");
+    USR_PRINT(at, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
   }
 }
 

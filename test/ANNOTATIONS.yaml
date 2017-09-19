@@ -256,6 +256,20 @@ all:
       config: Single node XC, 16 node XC
   06/21/17:
     - change tmp directory
+  07/26/17:
+    - Add dsiAssignDomain (#6722)
+    - Move EndCount to task local storage (#6765)
+  07/31/17:
+    - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
+      config: 16 node XC
+  08/08/17:
+    - text: With comm=ugni, register large arrays dynamically (#6947)
+      config: 16 node XC
+  08/15/17:
+    - add error handling to the IO module (#6890)
+  09/06/17:
+    - text: Improve the accuracy of our running task counter (#7193)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -351,9 +365,17 @@ blackscholes_promote:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
 
+build-associative:
+  07/14/17:
+    - Extend parallel array initialization to POD arrays (#6675)
+
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
+
+CoMD:
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 compSampler-timecomp:
   09/09/16:
@@ -399,6 +421,14 @@ ep-b:
   11/22/14:
     - revert -E use for nightly on 21st (which failed, unrelatedly)
 
+ep.ml-perf:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
+ep.ml-time:
+  07/26/17:
+    - Update PR 5296 (#6722)
+
 fannkuch-redux:
   07/22/14:
     - Error due to cleaning up file incompletely
@@ -433,6 +463,8 @@ fasta:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 fastaredux:
   01/14/14:
@@ -481,10 +513,14 @@ hpl_performance:
 hpl.hpcc2012.ml-perf:
   03/03/17:
     - Modified test as part of array views (#5338)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 hpl.hpcc2012.ml-time:
   03/03/17:
     - Modified test as part of array views (#5338)
+  06/19/17:
+    - Remove locking from associative array accesses (#6244)
 
 init:
   05/03/16:
@@ -550,6 +586,8 @@ jacobi:
     - add param versions of min/max for ints (#5073)
   01/13/17:
     - refactoring of rectangular IO (#5157)
+  08/02/17:
+    - Remove handling of references from copyPropagation (#6779)
 
 knucleotide:
   10/17/15:
@@ -660,6 +698,16 @@ memleaks:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/06/17:
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 memleaksfull:
   07/08/14:
@@ -684,6 +732,19 @@ memleaksfull:
     - Fix some memory leaks in ArrayViewRankChange (#5789)
   06/19/17:
     - Close some user-level memory leaks in SSCA2 (#6494)
+  06/22/17:
+    - Close strings leaked by regular expressions (#6509)
+  06/27/17:
+    - Close leaks in DimensionalDist2D (#6541)
+  07/04/17:
+    - LLNL version of CoMD added, leaks memory (#6553)
+  07/06/17:
+    - skip LLNL CoMD for memory leaks (#6611)
+    - Close more leaks in DimensionalDist2D (#6590)
+  07/14/17:
+    - Have reindex domains/distributions preserve locality (#5757)
+  07/25/17:
+    - fix leaks introduced by reindex views in PR 5757 (#6776)
 
 meteor:
   12/18/13:
@@ -790,6 +851,8 @@ prk-stencil.ml-perf:
     - Increase the PRK stencil problem size (#6380)
   06/13/17:
     - Optimize updateFluff (#6418)
+  07/26/17:
+    - Update PR 5296 (#6722)
 
 prk-stencil-time:
   05/11/17:
@@ -826,7 +889,7 @@ RBC:
   02/22/17:
     - update logic for pruning unused module level variables (#5395)
 
-regexdna:
+regexdna: &regexdna-base
   10/07/14:
     - Add c_string_copy type
   11/29/15:
@@ -841,10 +904,13 @@ regexdna:
     - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
 
 regexdna-redux:
-  04/20/17:
-    - Update RE2 (#6024)
-  06/22/17:
-    - Free strings leaked by Regex.subn() / qio_regexp_replace() (#6509)
+  <<: *regexdna-base
+
+regexdna-submitted:
+  <<: *regexdna-base
+
+regexdnaredux-submitted:
+  <<: *regexdna-base
 
 return-array-8: &return-array-base
   03/04/17:
@@ -1005,6 +1071,12 @@ timeVectorArray:
     - upgrade jemalloc to 4.2.0 (#3919)
   01/31/17:
     - upgrade jemalloc to 4.4.0 (#5278)
+  07/26/17:
+    - Allow domains to implement specialized assignment (#6722)
+  09/13/17:
+    - Support arrays as args to array.{push_front,push_back,insert} (#7180)
+  09/16/17:
+    - Resolve timeVectorArray regressions (#7333)
 
 dynamic:
   02/28/17:

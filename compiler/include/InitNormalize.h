@@ -51,6 +51,7 @@ public:
 
   bool            isRecord()                                             const;
   bool            isClass()                                              const;
+  bool            isExtern()                                             const;
 
   InitPhase       currPhase()                                            const;
 
@@ -68,6 +69,8 @@ public:
   bool            inLoopBody()                                           const;
   bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
+  bool            inCoforall()                                           const;
+  bool            inOn()                                                 const;
 
   DefExpr*        currField()                                            const;
 
@@ -88,7 +91,9 @@ private:
     cBlockCond,
     cBlockLoop,
     cBlockBegin,
-    cBlockCobegin
+    cBlockCobegin,
+    cBlockCoforall,
+    cBlockOn
   };
 
                   InitNormalize();
@@ -96,6 +101,9 @@ private:
   InitPhase       startPhase(FnSymbol*  fn)                              const;
 
   DefExpr*        firstField(FnSymbol* fn)                               const;
+
+  bool            isOuterField(DefExpr* field)                           const;
+  void            makeOuterArg();
 
   void            genericFieldInitTypeWoutInit(Expr*    insertBefore,
                                                DefExpr* field)           const;
@@ -143,6 +151,8 @@ private:
   DefExpr*        toSuperField(AggregateType* at, const char* name)      const;
   DefExpr*        toSuperField(AggregateType* at, SymExpr*    expr)      const;
   DefExpr*        toSuperField(AggregateType* at, CallExpr*   expr)      const;
+
+  void            transformSuperInit(Expr* initStmt);
 
   const char*     phaseToString(InitPhase phase)                         const;
 

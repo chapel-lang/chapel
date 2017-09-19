@@ -58,7 +58,7 @@
 /* Multi domain support makes sense only for PAR mode. */
 #define GASNETC_USE_MULTI_DOMAIN 0
 
-#define GASNETC_DIDX_POST(_val)  GASNETI_UNUSED const int _domain_idx = 0
+#define GASNETC_DIDX_POST(_val)  const int _domain_idx = 0
 
 #define GASNETC_DIDX_FARG_ALONE  void
 #define GASNETC_DIDX_FARG        /*empty*/
@@ -277,16 +277,9 @@ enum {
 #define GC_POST_KEEP_GPD        GC_POST(keep_gpd)
 
 /* WARNING: if sizeof(gasnetc_post_descriptor_t) changes, then
- * you must update the value in gasneti_pd_auxseg_IdentString */
+ * you must update the value of GASNETC_SIZEOF_GDP below */
 struct gasnetc_post_descriptor {
-  gni_post_descriptor_t pd; /* must be first */
-  #define gpd_completion pd.post_id
-  #define gpd_get_src    pd.first_operand
-  #define gpd_get_dst    pd.second_operand
-  #define gpd_am_header  pd.sync_flag_value
-  #define gpd_am_packet  pd.local_addr
-  #define gpd_am_peer    pd.first_operand
-  union {
+  union { /* must be first for alignment */
     uint8_t immediate[GASNETC_GNI_IMMEDIATE_BOUNCE_SIZE];
     gasneti_weakatomic_t counter;
     gasnetc_notify_t notify;
@@ -297,11 +290,21 @@ struct gasnetc_post_descriptor {
     udreg_entry_t *udreg_entry;
   #endif
   } u;
+  gni_post_descriptor_t pd;
+  #define gpd_completion pd.post_id
+  #define gpd_get_src    pd.first_operand
+  #define gpd_get_dst    pd.second_operand
+  #define gpd_am_header  pd.sync_flag_value
+  #define gpd_am_packet  pd.local_addr
+  #define gpd_am_peer    pd.first_operand
   uint32_t flags;
 #if GASNETC_USE_MULTI_DOMAIN
   int domain_idx;
 #endif
 };
+
+/* This should be ALIGNUP(sizeof(gasnetc_post_descriptor_t), 64) */
+#define GASNETC_SIZEOF_GDP 320
 
 gasnetc_post_descriptor_t *gasnetc_alloc_post_descriptor(GASNETC_DIDX_FARG_ALONE) GASNETI_MALLOC;
 
@@ -309,15 +312,11 @@ void gasnetc_free_post_descriptor(gasnetc_post_descriptor_t *pd);
 
 int gasnetc_try_pin(void *addr, uintptr_t size);
 
-/* default fraction of phys mem to assume is pinnable under CNL */
-#ifndef GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO
-#define GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO 0.80
-#endif
-
 /* exit related */
 volatile int gasnetc_shutdownInProgress;
 double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
 int gasnetc_sys_exit(int *exitcode);
+void gasnetc_sys_fini(void);
 
 #if GASNETC_USE_MULTI_DOMAIN
 void gasnetc_create_parallel_domain(gasnete_threadidx_t tidx);
@@ -412,8 +411,6 @@ int gasnetc_next_power_of_2(int x) {
   x += 1;
   return x;
 }
-
-extern int gasnetc_send_control(gasnet_node_t dest, uint8_t op, uint16_t arg);
 
 extern int gasnetc_send_am(gasnetc_post_descriptor_t *gpd);
 gasnetc_post_descriptor_t *gasnetc_alloc_reply_post_descriptor(gasnet_token_t t,

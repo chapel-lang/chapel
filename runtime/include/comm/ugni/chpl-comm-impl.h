@@ -21,6 +21,28 @@
 #define _chpl_comm_impl_h_
 
 //
+// This is the comm layer sub-interface for dynamic allocation and
+// registration of memory.
+//
+#define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() \
+        chpl_comm_impl_regMemAllocThreshold()
+size_t chpl_comm_impl_regMemAllocThreshold(void);
+
+#define CHPL_COMM_IMPL_REG_MEM_ALLOC(size) \
+        chpl_comm_impl_regMemAlloc(size)
+void* chpl_comm_impl_regMemAlloc(size_t size);
+
+#define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size)   \
+  chpl_comm_impl_regMemPostAlloc(p, size)
+void chpl_comm_impl_regMemPostAlloc(void* p, size_t size);
+
+#define CHPL_COMM_IMPL_REG_MEM_FREE(p, size) \
+        chpl_comm_impl_regMemFree(p, size)
+chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
+
+//
+// Network atomic operations.
+//
 // We support 32- and 64-bit signed integers and reals, although we
 // don't necessarily support all of these types for all operations.
 // In the future we might like to add other types, such as unsigned
@@ -165,6 +187,6 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
 // Internal statistics gathering and reporting.
 //
 void chpl_comm_statsStartHere(void);
-void chpl_comm_statsReport(chpl_bool32);
+void chpl_comm_statsReport(chpl_bool);
 
 #endif // _chpl_comm_impl_h_

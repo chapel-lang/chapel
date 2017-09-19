@@ -15,10 +15,12 @@ GASNET_LDFLAGS_OVERRIDE = @CXXFLAGS@ @LDFLAGS@ @cxxLDFLAGS@
 # (eg possible dependence on implicit MPI or C++ libraries added by a linker wrapper in GASNET_LD):
 GASNET_LD_REQUIRES_CXX = 1
 
-CONDUIT_LIBDIRS = @BLCR_LIBDIR@
-CONDUIT_LIBS = -lamudp @GASNET_UDP_LIBS@ @BLCR_LIBS@
-
 # hooks for using AMUDP library from within build tree ###NOINSTALL###
 # (nothing additional required for installed copy)     ###NOINSTALL###
-CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/amudp          ###NOINSTALL###
-CONDUIT_LIBDIRS = -L@TOP_BUILDDIR@/other/amudp @BLCR_LIBDIR@ ###NOINSTALL###
+CONDUIT_INCLUDES = -I@TOP_SRCDIR@/other/amudp -I@TOP_BUILDDIR@/other/amudp ###NOINSTALL###
+
+CONDUIT_LDFLAGS = @BLCR_LDFLAGS@
+CONDUIT_LIBDIRS = -L@TOP_BUILDDIR@/other/amudp ###NOINSTALL###
+
+CONDUIT_LIBS = $(CONDUIT_LIBDIRS) -lamudp @GASNET_UDP_LIBS@ @BLCR_LIBS@
+

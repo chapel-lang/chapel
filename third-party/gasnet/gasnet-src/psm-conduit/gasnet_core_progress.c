@@ -53,6 +53,10 @@ extern int gasnetc_AMPoll(void)
 
         /* The branches protecting these calls are an optimization:
            if there is no progress to be done, avoid a function call. */
+        if(gasnetc_psm_state.pending_ack.head.next != NULL) {
+            gasnete_post_pending_ack();
+        }
+
         if(gasnetc_psm_state.posted_reqs_length > 0) {
             gasnete_finish_mq_reqs();
         }
@@ -75,17 +79,15 @@ GASNETI_HOT
 void *gasnetc_progress_thread(void * arg)
 {
     char* env_val;
-    struct timespec ts;
-
-    ts.tv_sec = 0;
+    uint64_t ns_delay;
 
     if(gasnetc_rcv_thread_rate == 0)
-        ts.tv_nsec = 0; /* No rate limit */
+        ns_delay = 0; /* No rate limit */
     else
-        ts.tv_nsec = 1000000000L / gasnetc_rcv_thread_rate;
+        ns_delay = 1000000000L / gasnetc_rcv_thread_rate;
 
     while(1) {
-        if(nanosleep(&ts, NULL) != 0) {
+        if(gasneti_nsleep(ns_delay) != 0) {
             pthread_exit(0);
         }
 
@@ -106,6 +108,13 @@ void *gasnetc_progress_thread(void * arg)
             gasnete_post_pending_mq_ops();
             GASNETC_PSM_UNLOCK();
         }
+
+        if(gasnetc_psm_state.pending_ack.head.next != NULL &&
+            GASNETC_PSM_TRYLOCK() == 0) {
+            gasnete_post_pending_ack();
+            GASNETC_PSM_UNLOCK();
+        }
+
     }
 
     return NULL;

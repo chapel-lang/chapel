@@ -8,7 +8,6 @@
 #include <gasnet_internal.h>
 #include <gasnet_handler.h>
 #include <gasnet_core_internal.h>
-#include <pmi-spawner/gasnet_bootstrap_internal.h>
 #include <gasnet_gemini.h>
 /* #include <alps/libalpslli.h> */
 
@@ -34,6 +33,8 @@ static void gasnetc_atexit(void);
 #endif
 
 gasneti_handler_fn_t gasnetc_handler[GASNETC_MAX_NUMHANDLERS]; /* handler table (recommended impl) */
+
+gasneti_spawnerfn_t const *gasneti_spawner = NULL;
 
 #if GASNETC_GNI_FIREHOSE
 static int gasnetc_did_firehose_init = 0;
@@ -81,9 +82,8 @@ static void gasnetc_check_config(void) {
 static int gasnetc_bootstrapInit(int *argc, char ***argv) {
   const char *envval;
 
-  { int retval = gasneti_bootstrapInit_pmi(argc, argv, &gasneti_nodes, &gasneti_mynode);
-    if (retval != GASNET_OK) GASNETI_RETURN(retval);
-  }
+  gasneti_spawner = gasneti_spawnerInit(argc, argv, "PMI", &gasneti_nodes, &gasneti_mynode);
+  if (!gasneti_spawner) GASNETI_RETURN_ERRR(NOT_INIT, "GASNet job spawn failed");
 
   /* Check for device and address (both or neither) in environment  */
   envval = getenv("PMI_GNI_DEV_ID");
@@ -143,8 +143,9 @@ static int gasnetc_bootstrapInit(int *argc, char ***argv) {
   #endif
 
   /* As good a place as any for this: */
-  if (0 == gasneti_mynode) {
+  if (!gasneti_mynode && !gasneti_getenv_yesno_withdefault("GASNET_QUIET",0)) {
     static const char *old_vars[][3] = {
+        {"GASNET_PHYSMEM_PINNABLE_RATIO", "removed", "GASNET_PHYSMEM_MAX"},
         {"GASNETC_GNI_MIN_NUM_PD", "removed", "GASNET_GNI_NUM_PD"},
         {"GASNETC_GNI_MIN_BOUNCE_SIZE", "removed", "GASNET_GNI_BOUNCE_SIZE"},
         {"GASNETC_GNI_AM_MEM_CONSISTENCY", "removed", NULL},
@@ -411,7 +412,7 @@ done:
   gasnetc_handler[_hidx_gasnetc_sys_barrier_reqh]  = (gasneti_handler_fn_t)&gasnetc_sys_barrier_reqh;
   gasnetc_handler[_hidx_gasnetc_sys_exchange_reqh] = (gasneti_handler_fn_t)&gasnetc_sys_exchange_reqh;
 
-  gasneti_bootstrapCleanup_pmi(); /* No further use of PMI-based colelctives */
+  gasneti_spawner->Cleanup(); /* No further use of PMI-based colelctives */
 }
 
 static void gasnetc_sys_coll_fini(void)
@@ -489,6 +490,13 @@ static int try_pin(uintptr_t size) {
 }
 #endif
 
+#ifndef GASNETC_DEFAULT_PHYSMEM_MAX
+#define GASNETC_DEFAULT_PHYSMEM_MAX "0.8"
+#endif
+#ifndef GASNETC_PHYSMEM_MIN
+#define GASNETC_PHYSMEM_MIN (128*1024*1024)
+#endif
+
 /* ---------------------------------------------------------------------------------
  * Determine the largest amount of memory that can be pinned on the node.
  * --------------------------------------------------------------------------------- */
@@ -501,8 +509,6 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t msgspace)
 #endif
 
   uintptr_t limit;
-  uintptr_t low;
-  uintptr_t high;
 
   /* On CNL, if we try to pin beyond what the OS will allow, the job is killed.
    * So, there is really no way (that we know of) to determine the EXACT maximum
@@ -511,16 +517,14 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t msgspace)
    * memory.  If that is too big, then the job will be killed at startup.
    * The gasneti_mmapLimit() ensures limit is per compute node, not per process.
    */
-  uintptr_t pm_limit = gasneti_getPhysMemSz(1) *
-                      gasneti_getenv_dbl_withdefault(
-                        "GASNET_PHYSMEM_PINNABLE_RATIO", 
-                        GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO);
+  uintptr_t pm_limit = gasneti_getenv_memsize_withdefault(
+                           "GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
+                           GASNETC_PHYSMEM_MIN, gasneti_getPhysMemSz(1));
 
 #if GASNET_CONDUIT_GEMINI
   /* Even on large memory nodes on Hopper, this appears to be the NIC's limit: */
   pm_limit = MIN(pm_limit, 24UL << 30 /* 24 GB */);
 #endif
-  pm_limit = gasneti_getenv_int_withdefault("GASNET_PHYSMEM_MAX", pm_limit, 1);
 
   /* msgspace is allocated from hugepages (granularity) in every proc */
   msgspace = GASNETI_ALIGNUP(msgspace, granularity) * gasneti_nodemap_local_count;
@@ -534,41 +538,11 @@ extern uintptr_t gasnetc_MaxPinMem(uintptr_t msgspace)
                             &gasnetc_bootstrapExchange_gni,
                             &gasnetc_bootstrapBarrier_gni);
 
-
-  if_pf (gasneti_getenv_yesno_withdefault("GASNET_PHYSMEM_NOPROBE", 0)) {
-    /* User says to trust them... */
-    return (uintptr_t)limit;
-  }
-
-#if 0 /* TODO: do we ever need to actually try_pin() the mmapLimit result? */
-  /* Allocate a block of memory on which to try pinning */
-  low = high = try_pin_alloc(limit, granularity);
-
-  /* See how much of the block can be pinned */
-  if (!try_pin(high)) {
-    /* Binary search */
-    low = 0;
-    while ((high - low) > granularity) {
-      uint64_t mid = (low + high)/2;
-      if (try_pin(mid)) {
-        low = mid;
-      } else {
-        high = mid;
-      }
-    }
-  }
-
-  /* Free the block we've been pinning */
-  try_pin_free();
-#else
-  low = limit;
-#endif
-
-  if (low < granularity) {
+  if (limit < granularity) {
     gasnetc_GNIT_Abort("Unable to alloc and pin minimal memory of size %d bytes",(int)granularity);
   }
-  GASNETI_TRACE_PRINTF(C,("MaxPinMem = %lu",(unsigned long)low));
-  return (uintptr_t)low;
+  GASNETI_TRACE_PRINTF(C,("MaxPinMem = %"PRIuPTR,limit));
+  return (uintptr_t)limit;
 }
 
 
@@ -598,6 +572,9 @@ static int gasnetc_init(int *argc, char ***argv) {
 
   gasneti_freezeForDebugger();
 
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
+
   /* Now enable tracing of all the following steps */
   gasneti_trace_init(argc, argv);
 
@@ -620,7 +597,7 @@ static int gasnetc_init(int *argc, char ***argv) {
      * conduit-specific uses.  The return value is a pointer to the space
      * requested by the 2nd argument.
      */
-    gasnetc_exitcodes = gasneti_pshm_init(&gasneti_bootstrapSNodeBroadcast_pmi,
+    gasnetc_exitcodes = gasneti_pshm_init(gasneti_spawner->SNodeBroadcast,
                                           gasneti_nodemap_local_count * sizeof(gasnetc_exitcode_t));
     gasnetc_exitcodes[gasneti_nodemap_local_rank].present = 0;
   #endif
@@ -695,62 +672,14 @@ extern int gasnet_init(int *argc, char ***argv) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
-
-    if ((table[i].index == 0 && !dontcare) || 
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        sprintf(s,"Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      sprintf(s, "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0) 
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
-  return GASNET_OK;
-}
-/* ------------------------------------------------------------------------------------ */
 extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   GASNETC_DIDX_POST(GASNETC_DEFAULT_DOMAIN);
   void *segbase = NULL;
   int numreg = 0;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -783,7 +712,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(ctable);
     while (ctable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ctable, len, 1, GASNETE_HANDLER_BASE-1, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
     gasneti_assert(numreg == len);
   }
@@ -793,7 +722,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int len = 0;
     gasneti_assert(etable);
     while (etable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(etable, len, GASNETE_HANDLER_BASE, 127, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
     gasneti_assert(numreg == len);
   }
@@ -806,7 +735,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     gasneti_assert(ftable);
     while (ftable[len].fnptr) len++; /* calc len */
     gasneti_assert(base + len <= 128);  /* enough space remaining after etable? */
-    if (gasnetc_reghandlers(ftable, len, base, 127, 1, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ftable, len, base, 127, 1, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE, "Error registering firehose handlers");
     gasneti_assert(numreg == len);
   }
@@ -817,12 +746,12 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg2 = 0;
 
     /*  first pass - assign all fixed-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+    if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
 
     /*  second pass - fill in dontcare-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
-      GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
+    if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+      GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
 
     gasneti_assert(numreg1 + numreg2 == numentries);
   }
@@ -892,9 +821,9 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasnetc_use_firehose = gasneti_getenv_yesno_withdefault("GASNET_USE_FIREHOSE", 1);
   if (gasnetc_use_firehose && gasneti_nodes > 1) {
     /* Configure firehose with capacity to pin the out-of-segment memory twice over */
-    uintptr_t pm_limit = gasneti_getPhysMemSz(1) *
-                         gasneti_getenv_dbl_withdefault("GASNET_PHYSMEM_PINNABLE_RATIO",
-                                                        GASNETC_DEFAULT_PHYSMEM_PINNABLE_RATIO);
+    uintptr_t pm_limit = gasneti_getenv_memsize_withdefault(
+                           "GASNET_PHYSMEM_MAX", GASNETC_DEFAULT_PHYSMEM_MAX,
+                           0, gasneti_getPhysMemSz(1));
     uintptr_t firehose_mem = 2 * (pm_limit - segsize);
     size_t firehose_reg = INT_MAX; /* Will be reduced by firehose_init */
     size_t max_pinsize = 0x200000; /* 2M default - env var can override */
@@ -925,7 +854,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange_gni); /* provide auxseg */
 
   /* After these, puts, and gets should work */
   gasnetc_init_segment(segbase, segsize);
@@ -987,6 +919,15 @@ static void gasnetc_disable_AMs(void) {
   }
 }
 
+#if GASNET_DEBUG_VERBOSE
+static void gasnetc_exit_alarm(int sig) {
+  gasneti_reghandler(SIGALRM, SIG_DFL);
+  alarm(5);
+  gasnett_print_backtrace(STDERR_FILENO);
+  gasneti_killmyprocess(SIGALRM);
+}
+#endif
+
 extern void gasnetc_exit(int exitcode) {
   /* once we start a shutdown, ignore all future SIGQUIT signals or we risk reentrancy */
   gasneti_reghandler(SIGQUIT, SIG_IGN);
@@ -1039,7 +980,11 @@ extern void gasnetc_exit(int exitcode) {
   #undef GASNETC_CLOBBER_LOCK
   #undef _GASNETC_CLOBBER_LOCK
 
+  #if GASNET_DEBUG_VERBOSE
+    gasneti_reghandler(SIGALRM, &gasnetc_exit_alarm);
+  #else
     gasneti_reghandler(SIGALRM, SIG_DFL);
+  #endif
     alarm(2 + gasnetc_shutdown_seconds);
 
   if (gasnetc_remoteShutdown || gasnetc_sys_exit(&exitcode)) {
@@ -1073,11 +1018,14 @@ extern void gasnetc_exit(int exitcode) {
 
       /* Death of any process by a fatal signal will cause launcher to kill entire job.
        * We don't use INT or TERM since one could be blocked if we are in its handler. */
+      gasnetc_sys_fini();
       raise(SIGALRM); /* Consistent */
       gasneti_killmyprocess(exitcode); /* last chance */
     }
   }
-  alarm(0);
+
+  alarm(2 + gasnetc_shutdown_seconds);
+  gasnetc_sys_fini();
 
 #if GASNETC_GNI_FIREHOSE
   if (gasnetc_did_firehose_init && !gasnetc_exit_in_signal) {
@@ -1093,7 +1041,7 @@ extern void gasnetc_exit(int exitcode) {
   gasneti_sched_yield();
   gasnetc_shutdown();
 
-  gasneti_bootstrapFini_pmi();  /* normal exit */
+  gasneti_spawner->Fini();  /* normal exit */
   gasneti_killmyprocess(exitcode); /* last chance */
   gasnetc_GNIT_Abort("gasnetc_exit failed!");
 }
@@ -1650,7 +1598,7 @@ extern int gasnetc_AMReplyLongM(
   } else
 #else
   if (reply_node(token) == gasneti_mynode) {
-    retval = gasnetc_local_long_common(1, handler, source_addr, nbytes, dest_addr, numargs, argptr);
+    retval = gasnetc_local_long_common(0, handler, source_addr, nbytes, dest_addr, numargs, argptr);
   } else
 #endif
   {

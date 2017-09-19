@@ -34,6 +34,7 @@
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
+#include "wellknown.h"
 #include "WhileStmt.h"
 
 #include "oldCollectors.h" // Deprecated. To be removed.
@@ -74,6 +75,12 @@ void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.push_back(defExpr);
+}
+
+void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
+  AST_CHILDREN_CALL(ast, collectForallStmts, forallStmts);
+  if (ForallStmt* defExpr = toForallStmt(ast))
+    forallStmts.push_back(defExpr);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
@@ -372,6 +379,7 @@ bool isRelationalOperator(CallExpr* call) {
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
+// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
 //
 // which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
@@ -782,6 +790,12 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
   forv_Vec(FnSymbol, fn, gFnSymbols)
     if (fn->hasFlag(FLAG_EXPORT))
       pruneVisit(fn, fns, types);
+
+  // Mark well-known functions as visible
+  std::vector<FnSymbol*> wellKnownFns = getWellKnownFunctions();
+  for_vector(FnSymbol, fn, wellKnownFns) {
+    pruneVisit(fn, fns, types);
+  }
 
   pruneVisitFn(gAddModuleFn, fns, types);
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {

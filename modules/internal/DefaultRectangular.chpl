@@ -112,9 +112,6 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    param rank : int;
-    type idxType;
-    param stridable: bool;
     var dist: DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
@@ -146,6 +143,10 @@ module DefaultRectangular {
 
     proc dsiSetIndices(x) {
       ranges = x;
+    }
+
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
     iter these_help(param d: int) {
@@ -1116,11 +1117,11 @@ module DefaultRectangular {
     }
   }
 
-  class DefaultRectangularArr: BaseArr {
-    type eltType;
+  class DefaultRectangularArr: BaseRectangularArr {
+    /*type eltType;
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param stridable: bool;*/
 
     type idxSignedType = chpl__signedType(idxType);
 
@@ -1198,19 +1199,7 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiDestroyArr(isalias:bool) {
-
-      // data in an array alias will be destroyed when the original array
-      // is destroyed.
-      if isalias {
-        // A multi-ddata alias nevertheless has its own mData.
-        if !defRectSimpleDData {
-          _ddata_free(mData, mdNumChunks);
-        }
-
-        return;
-      }
-
+    proc dsiDestroyArr() {
       if dom.dsiNumIndices > 0 {
         pragma "no copy" pragma "no auto destroy" var dr = dataChunk(0);
         pragma "no copy" pragma "no auto destroy" var dv = __primitive("deref", dr);
@@ -1544,8 +1533,13 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
-      if defRectSimpleDData {
+      if !localeModelHasSublocales {
         data = _ddata_allocate(eltType, size);
+      } else if defRectSimpleDData {
+        data = _ddata_allocate(eltType, size,
+                               subloc = (if here.getChildCount() > 1
+                                         then c_sublocid_all
+                                         else c_sublocid_none));
       } else {
         //
         // Checking the size first (and having a large-ish size hurdle)
@@ -1591,9 +1585,9 @@ module DefaultRectangular {
             mData(0).pdr = dom.dsiDim(mdParDim).low..dom.dsiDim(mdParDim).high;
           mData(0).data =
             _ddata_allocate(eltType, size,
-                            locStyle = if here.maxTaskPar < 2
-                                       then localizationStyle_t.locNone
-                                       else localizationStyle_t.locSubchunks);
+                            subloc = (if here.getChildCount() > 1
+                                      then c_sublocid_all
+                                      else c_sublocid_none));
         } else {
           var dataOff: idxType = 0;
           for i in 0..#mdNumChunks do local do on here.getChild(i) {
@@ -1605,7 +1599,6 @@ module DefaultRectangular {
               mData(i).pdr = lo..hi;
             const chunkSize = size / mdRLen * mData(i).pdr.length;
             const dd = _ddata_allocate(eltType, chunkSize,
-                                       locStyle = localizationStyle_t.locWhole,
                                        subloc = i:chpl_sublocID_t);
             mData(i).data = _ddata_shift(eltType, dd, -dataOff:idxSignedType);
             dataOff += chunkSize;
@@ -1792,13 +1785,18 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiReallocate(d: domain) {
-      if (d._value.type == dom.type) {
-        on this {
+    // TODO
+    proc dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+      //if (d._value.type == dom.type) {
+
+      on this {
+        var d = {(...bounds)};
         var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);
+
+        // MPF: could this be parallel?
         for i in d((...dom.ranges)) do
           copy.dsiAccess(i) = dsiAccess(i);
         off = copy.off;
@@ -1806,7 +1804,7 @@ module DefaultRectangular {
         str = copy.str;
         origin = copy.origin;
         factoredOffs = copy.factoredOffs;
-        dsiDestroyArr(false);
+        dsiDestroyArr();
         if defRectSimpleDData {
           data = copy.data;
         } else {
@@ -1837,10 +1835,13 @@ module DefaultRectangular {
         dataAllocRange = copy.dataAllocRange;
         //numelm = copy.numelm;
         delete copy;
-        }
-      } else {
-        halt("illegal reallocation");
       }
+      //} else {
+      //  halt("illegal reallocation");
+      //}
+    }
+    proc dsiPostReallocate() {
+      // No action necessary here
     }
 
     proc dsiLocalSlice(ranges) {
@@ -1975,8 +1976,9 @@ module DefaultRectangular {
         if step < 0 then
           last <=> first;
 
+        var data = info.theDataChunk(0);
         for i in first..last by step do
-          yield info.data(i);
+          yield data(i);
       }
     } else if useCache {
       for i in viewDom {
@@ -2215,11 +2217,14 @@ module DefaultRectangular {
         const src = arr.theDataChunk(0);
         const idx = arr.getDataIndex(dom.dsiLow);
         const size = len:ssize_t*elemSize:ssize_t;
+        var error:syserr = ENOERR;
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
         }
+        if error then
+          f.setError(error);
       } else {
         var indLo = dom.dsiLow;
         for chunk in 0..#arr.mdNumChunks {
@@ -2239,11 +2244,15 @@ module DefaultRectangular {
             const inner = arr.mData(chunk).pdr;
             const len = outer[inner].length * blkLen;
             const size = len:ssize_t*elemSize:ssize_t;
+            var error:syserr = ENOERR;
             if f.writing {
-              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.writeBytes(_ddata_shift(arr.eltType, src, idx), size,
+                  error=error);
             } else {
-              f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+              f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
             }
+            if error then
+              f.setError(error);
           }
         }
       }

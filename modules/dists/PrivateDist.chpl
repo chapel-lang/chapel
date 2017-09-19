@@ -75,7 +75,7 @@ class Private: BaseDist {
   }
 
   proc writeThis(x) {
-    x.writeln("Private Distribution");
+    x <~> "Private Distribution\n";
   }
   // acts like a singleton
   proc dsiClone() return this;
@@ -87,9 +87,6 @@ class Private: BaseDist {
 }
 
 class PrivateDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   var dist: Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
@@ -107,7 +104,7 @@ class PrivateDom: BaseRectangularDom {
       yield i;
   }
 
-  proc dsiSerialWrite(x) { x.write("Private Domain"); }
+  proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType)
     return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
@@ -118,6 +115,10 @@ class PrivateDom: BaseRectangularDom {
   proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    halt("cannot reassign private domain");
+  }
 
   proc dsiRequiresPrivatization() param return true;
   proc linksDistribution() param return false;
@@ -136,11 +137,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMyDist() return dist;
 }
 
-class PrivateArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class PrivateArr: BaseRectangularArr {
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;
 }
@@ -197,15 +194,11 @@ iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind
 proc PrivateArr.dsiSerialWrite(x) {
   var first: bool = true;
   for i in dom {
-    if first then first = !first; else write(" ");
-    write(dsiAccess(i));
+    if first then first = !first; else x <~> " ";
+    x <~> dsiAccess(i);
   }
 }
 
-const privateDist = new Private();
-const PrivateSpace: domain(1) dmapped new dmap(privateDist);
+// TODO: Fix 'new Private()' leak -- Discussed in #6726
+const PrivateSpace: domain(1) dmapped new dmap(new Private());
 
-pragma "no doc"
-proc deinit() {
-  delete privateDist;
-}

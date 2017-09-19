@@ -28,6 +28,10 @@ private_headers = gasnet_coll_autotune.h \
 @BUILD_PARSYNC_LIBS_TRUE@ makefile_fragments_parsync = $(CONDUIT_NAME)-parsync.mak
 makefile_fragments = $(makefile_fragments_seq) $(makefile_fragments_par) $(makefile_fragments_parsync)
 
+@BUILD_SEQ_LIBS_TRUE@     pkgconfig_files_seq =     gasnet-$(CONDUIT_NAME)-seq.pc
+@BUILD_PAR_LIBS_TRUE@     pkgconfig_files_par =     gasnet-$(CONDUIT_NAME)-par.pc 
+@BUILD_PARSYNC_LIBS_TRUE@ pkgconfig_files_parsync = gasnet-$(CONDUIT_NAME)-parsync.pc
+pkgconfig_files = $(pkgconfig_files_seq) $(pkgconfig_files_par) $(pkgconfig_files_parsync)
 
 @GASNET_SEGMENT_FAST_TRUE@GASNET_SEGMENT_STR="FAST"
 @GASNET_SEGMENT_LARGE_TRUE@GASNET_SEGMENT_STR="LARGE"
@@ -41,7 +45,7 @@ EXTRA_DIST = $(CONDUIT_FILELIST) README
 
 # convenience aliases
 seq par parsync: force
-	@$(MAKE) $(CONDUIT_NAME)-$@.mak libgasnet-$(CONDUIT_NAME)-$@.a
+	@$(MAKE) $(CONDUIT_NAME)-$@.mak gasnet-$(CONDUIT_NAME)-$@.pc libgasnet-$(CONDUIT_NAME)-$@.a
 	@for dir in $(SUBDIRS) ; do 		\
 	  if test "$$dir" != "." ; then 	\
 	    ( cd $$dir && $(MAKE) all ) || exit 1 ; 	\
@@ -93,11 +97,9 @@ tests-mpi2: force
 	@$(MAKE) -f $(top_builddir)/tests/Makefile tests-mpi2 \
 	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
 
-testtools: force 
-	@$(MAKE) $(CONDUIT_NAME)-$(THREAD_MODEL_LC).mak
+testtools testtoolscxx: force 
 	@echo "*** Building $@ ***"
 	@$(MAKE) -f $(top_builddir)/tests/Makefile $@   \
-	  configfile="$(CONDUIT_NAME)-$(THREAD_MODEL_LC).mak" \
 	  CONDUIT_TESTS="$(CONDUIT_TESTS)" $(CONDUIT_TEST_MAKEARGS)
 
 test%: $(top_srcdir)/tests/test%.c force 
@@ -188,13 +190,14 @@ run-testexit: force
 @BUILD_PAR_LIBS_TRUE@     check_test_target = tests-par
 check: force
 	@CHECK_TEST_TARGET_OVERRIDE=$(CHECK_TEST_TARGET_OVERRIDE) ; \
+	$(MAKE) check-pkgconfig CHECK_FILES="$(pkgconfig_files)" ; \
 	$(MAKE) check-exports $${CHECK_TEST_TARGET_OVERRIDE:-$(check_test_target)} tests-check
 
 force:
 
 do-clean-local: tests-clean
-	@echo rm -f $(makefile_fragments) $(libgasnet_objects) $(libraries) *.o core .test-results
-	@rm -f $(makefile_fragments) $(libgasnet_objects) $(libraries) *.o core .test-results
+	@echo rm -f $(makefile_fragments) $(pkgconfig_files) $(libgasnet_objects) $(libraries) *.o core .test-results
+	@rm -f $(makefile_fragments) $(pkgconfig_files) $(libgasnet_objects) $(libraries) *.o core .test-results
 	@rm -Rf .SEQ .PAR .PARSYNC
 
 
@@ -213,11 +216,17 @@ do-install-data-local: force $(headers) $(makefile_fragments)
 	    else :; fi; \
 	  else :; fi; \
 	done
+	$(mkinstalldirs) $(DESTDIR)$(libdir)/pkgconfig
 	@list='$(makefile_fragments)'; for p in $$list; do \
 	  if test -f $$p; then \
 	    filename=`basename $$p`; \
-	    echo @GASNET_INSTALL_CMD@ " < $$p > $(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$$filename"; \
-	    @GASNET_INSTALL_CMD@ < $$p > $(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$$filename || exit $$? ; \
+	    destmak="$(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/$$filename"; \
+	    echo @GASNET_INSTALL_CMD@ " < $$p > $$destmak"; \
+	    @GASNET_INSTALL_CMD@ < $$p > $$destmak || exit $$? ; \
+	    thread_model=`echo "$$filename" | sed 's/^.*-\(.*\)\.mak$$/\1/'` ; \
+	    destpc="$(DESTDIR)$(libdir)/pkgconfig/gasnet-$(CONDUIT_NAME)-$$thread_model.pc"; \
+	    $(MAKE) do-pkgconfig-conduit thread_model=$$thread_model pkgconfig_file="$$destpc" FRAGMENT="$$destmak" || exit $$? ; \
+	    chmod 644 "$$destpc" || exit $$? ; \
 	  else :; fi; \
 	done
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
@@ -231,6 +240,7 @@ do-install-data-local: force $(headers) $(makefile_fragments)
 
 do-uninstall-local:
 	rm -f $(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/*.h $(DESTDIR)$(includedir)/$(CONDUIT_NAME)-conduit/*.mak
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/gasnet-$(CONDUIT_NAME)-*.pc
 	rm -Rf $(DESTDIR)$(docdir)
 	if test "$(conduit_has_uninstall_hook)" = yes; then \
 	  $(MAKE) do-uninstall-conduit || exit $$? ; \
@@ -265,11 +275,11 @@ $(CONDUIT_NAME)-seq.mak: $(make_fragment_deps)
 	$(MAKE) do-make-fragment thread_model=seq THREAD_MODEL=SEQ
 
 $(CONDUIT_NAME)-par.mak: $(make_fragment_deps)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	$(MAKE) do-make-fragment thread_model=par THREAD_MODEL=PAR
 
 $(CONDUIT_NAME)-parsync.mak: $(make_fragment_deps)
-	@@HAVE_PTHREAD_FALSE@$(MAKE) do-pthreads-error
+	@$(PTHREADS_ERROR_CHECK)
 	$(MAKE) do-make-fragment thread_model=parsync THREAD_MODEL=PARSYNC
 
 do-make-fragment: force
@@ -285,3 +295,37 @@ do-make-fragment: force
 	    -e '/#INSTRUCTIONS#/d'                                                          \
 	    -e "s@#AUTOGEN#@$${AUTOGENMSG}@g"                                               \
 	> $(CONDUIT_NAME)-$(thread_model).mak || exit 1
+
+pkgconfig_conduit = $(top_srcdir)/other/pkgconfig-conduit.pc
+
+gasnet-$(CONDUIT_NAME)-seq.pc: $(CONDUIT_NAME)-seq.mak $(pkgconfig_conduit)
+	@$(MAKE) do-pkgconfig-conduit thread_model=seq pkgconfig_file="$@" FRAGMENT="$<"
+
+gasnet-$(CONDUIT_NAME)-par.pc: $(CONDUIT_NAME)-par.mak $(pkgconfig_conduit)
+	@$(PTHREADS_ERROR_CHECK)
+	@$(MAKE) do-pkgconfig-conduit thread_model=par pkgconfig_file="$@" FRAGMENT="$<"
+
+gasnet-$(CONDUIT_NAME)-parsync.pc: $(CONDUIT_NAME)-parsync.mak $(pkgconfig_conduit)
+	@$(PTHREADS_ERROR_CHECK)
+	@$(MAKE) do-pkgconfig-conduit thread_model=parsync pkgconfig_file="$@" FRAGMENT="$<"
+
+do-pkgconfig-conduit: force
+	rm -f $(pkgconfig_file)
+	@echo Building $(pkgconfig_file) from $$FRAGMENT...
+	@echo '# WARNING: This file is automatically generated - do NOT edit directly' > $(pkgconfig_file)
+	@echo '# Copyright 2017, The Regents of the University of California' >> $(pkgconfig_file)
+	@echo '# Terms of use are as specified in license.txt' >> $(pkgconfig_file)
+	@echo '# See the GASNet README for instructions on using these variables' >> $(pkgconfig_file)
+	@VARS="GASNET_CC GASNET_OPT_CFLAGS GASNET_MISC_CFLAGS \
+               GASNET_MISC_CPPFLAGS GASNET_DEFINES GASNET_INCLUDES \
+               GASNET_CXX GASNET_OPT_CXXFLAGS GASNET_MISC_CXXFLAGS GASNET_MISC_CXXCPPFLAGS \
+               GASNET_LD GASNET_LDFLAGS GASNET_LIBS" ; \
+         $(MAKE) --no-print-directory -f $(top_srcdir)/other/Makefile-echovar.mak VARS="$$VARS" echovars \
+	           >> $(pkgconfig_file)
+	@cat $(pkgconfig_conduit) | \
+	sed -e 's@#conduit_name#@$(CONDUIT_NAME)@g'  \
+	    -e 's@#thread_model#@$(thread_model)@g'  \
+	    -e 's@#version#@$(VERSION)@g'            \
+	>> $(pkgconfig_file)
+
+

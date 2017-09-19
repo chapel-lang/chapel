@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      1.17
+#define GASNET_CORE_VERSION      1.19
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -34,7 +34,8 @@ typedef uint16_t gasnet_node_t;
 typedef uint8_t gasnet_handler_t;
 
   /* GASNET_PSHM defined 1 if this conduit supports PSHM. leave undefined otherwise. */
-#if GASNETI_PSHM_ENABLED
+/* As described in bug 3373, ibv_reg_mem() on Solaris only works with SYSV */
+#if GASNETI_PSHM_ENABLED && !(PLATFORM_OS_SOLARIS && !GASNETI_PSHM_SYSV)
   #define GASNET_PSHM 1
 #endif
 
@@ -68,6 +69,11 @@ typedef uint8_t gasnet_handler_t;
    */
 /* #define GASNETC_USE_INTERRUPTS 1 */
   
+  /* define these to 1 if your conduit cannot use the default implementation
+     of gasnetc_amregister() (in gasnet_internal.c)
+   */
+/* #define GASNETC_AMREGISTER 1 */
+
   /* define these to 1 if your conduit supports PSHM, but cannot use the
      default interfaces. (see template-conduit/gasnet_core.c and gasnet_pshm.h)
    */

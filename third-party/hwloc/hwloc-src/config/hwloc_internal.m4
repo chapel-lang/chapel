@@ -221,7 +221,7 @@ EOF
     if test "$hwloc_want_picky" = 1; then
         add="-Wall -Wunused-parameter -Wundef -Wno-long-long -Wsign-compare"
         add="$add -Wmissing-prototypes -Wstrict-prototypes"
-        add="$add -Wcomment -pedantic"
+        add="$add -Wcomment -pedantic -Wshadow"
 
         HWLOC_CFLAGS="$HWLOC_CFLAGS $add"
     fi
@@ -346,6 +346,10 @@ EOF
     AC_CHECK_LIB([numa], [numa_available], [
       AC_CHECK_DECL([numa_bitmask_alloc], [hwloc_have_linux_libnuma=yes], [],
     	      [#include <numa.h>])
+    ])
+
+    AC_CHECK_HEADERS([stdlib.h], [
+      AC_CHECK_FUNCS([mkstemp])
     ])
 
     AC_CHECK_HEADERS([infiniband/verbs.h], [

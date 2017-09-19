@@ -1,0 +1,1 @@
+nestedInnerGeneric.chpl:4: error: initializers not supported on nested types when either type is generic

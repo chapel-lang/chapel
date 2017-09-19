@@ -53,6 +53,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fNoRemoteValueForwarding;
+extern bool fNoRemoteSerialization;
 extern bool fNoRemoveCopyCalls;
 extern bool fNoScalarReplacement;
 extern bool fNoTupleCopyOpt;
@@ -66,6 +67,7 @@ extern bool fRemoveUnreachableBlocks;
 extern bool fReplaceArrayAccessesWithRefTemps;
 extern int  optimize_on_clause_limit;
 extern int  scalar_replace_limit;
+extern int  inline_iter_yield_limit;
 extern int  tuple_copy_limit;
 
 
@@ -130,6 +132,8 @@ extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
+extern bool fPrintUnusedFns;
+extern bool fPrintUnusedInternalFns;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
@@ -174,6 +178,7 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 
 extern bool fReportOptimizedLoopIterators;
+extern bool fReportInlinedIterators;
 extern bool fReportOrderIndependentLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
@@ -181,7 +186,7 @@ extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 
-extern bool fStrictErrorHandling;
+extern bool fPermitUnhandledModuleErrors;
 
 extern bool debugCCode;
 extern bool optimizeCCode;

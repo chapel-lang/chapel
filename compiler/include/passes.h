@@ -26,6 +26,7 @@ extern bool parsed;
 extern bool normalized;
 extern bool resolved;
 extern bool intentsResolved;
+extern bool iteratorsLowered;
 
 
 //
@@ -112,6 +113,7 @@ void insertReferenceTemps(CallExpr* call);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);
+void normalize(Expr* expr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

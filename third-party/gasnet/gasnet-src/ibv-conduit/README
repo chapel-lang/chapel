@@ -5,11 +5,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ TOC: @
 @ Section: Overview @
 @ Section: Where this conduit runs @
+@ Section: Build-time Configuration @
 @ Section: Job Spawning @
-@ Section: Multi-rail Support @
 @ Section: Runtime Configuration @
+@ Section: Multi-rail Support @
 @ Section: HCA Configuration @
-@ Section: Platform-specific Notes @
+@ Section: Known Problems @
 @ Section: Core API @
 @ Section: Extended API @
 @ Section: Graceful exits @
@@ -55,153 +56,22 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   benchmark your own workload if you are concerned with the very best
   possible performance.
 
-@ Section: Job Spawning @
-  
-  If MPI support was NOT enabled when GASNet was configured, then
-  only SSH based spawning will be supported and the following paragraph
-  may be ignored.
-
-  If MPI support was enabled when GASNet was configured, then there
-  are two options for spawning a GASNet ibv-conduit application:
-  MPI or SSH.  The default can be set at configure time with
-      --with-ibv-spawner=ssh
-  or  --with-ibv-spawner=mpi
-  or  --with-ibv-spawner=pmi
-  where mpi is the default.
-
-  Additionally
-
-  If using UPC or Titanium, the language-specific commands should be used
-  to launch applications.  Otherwise, applications can be launched using
-  the gasnetrun_ibv utility:
-  + usage summary:
-    gasnetrun_ibv -n <n> [options] [--] prog [program args]
-    options:
-      -n <n>                number of processes to run (required)
-      -N <N>                number of nodes to run on (not supported by all MPIs)
-      -E <VAR1[,VAR2...]>   list of environment vars to propagate
-      -v                    be verbose about what is happening
-      -t                    test only, don't execute anything (implies -v)
-      -k                    keep any temporary files created (implies -v)
-      -spawner=(ssh|mpi)    force use of MPI or SSH for spawning (if available)
-
-  At runtime the environment variable GASNET_IBV_SPAWNER (set to "mpi" or "ssh")
-  can override the value set at configuration time, but the command line option
-  will override the environment variable.
-
-  If configured for PMI as the default, then you should use your PMI-based
-  launcher, such as srun or yod, to launch ibv-conduit applications directly.
-
-  If spawning using MPI, then the following apply:
-  + In order to bootstrap ibv-conduit, a working MPI must be installed
-    and configured on your system.  See mpi-conduit/README for
-    information on configuring GASNet for a particular MPI.  Note that
-    you must compile mpi-conduit as well (even if you never plan to use
-    it).
-  + MPI is only used in gasnet_init(), gasnet_attach() and gasnet_exit()
-    and not for any GASNet calls between attach and exit.  Therefore it is
-    acceptable to use a TCP/IP based MPI such as MPICH or LAM/MPI.
-  + The environment variable MPIRUN_CMD can be used to configure how to
-    invoke mpirun.  See mpi-conduit/README (or README-mpi) for more
-    information.
-  + Since an InfiniBand-based MPI typically allocates a non-trivial amount
-    of memory for InfiniBand communication buffers, it may be desirable in
-    memory-constrained situations to use a non-IB MPI, or to disable the
-    use of IB by a multi-transport MPI.  The documentation for your chosen
-    MPI is the authoritative source for information, but here are the
-    settings required to force use of TCP/IP in several widely-used MPIs:
-    - LAM/MPI
-      Pass "-ssi rpi tcp" to mpirun, OR
-      Set environment variable LAM_MPI_SSI_rpi to "tcp".
-    - Open MPI
-      Pass "--mca btl tcp,self" to mpirun, OR
-      Set environment variable OMPI_MCA_BTL to "tcp,self".
-    - Intel MPI
-      Set environment variable I_MPI_DEVICE to "sock".
-    - HP-MPI
-      Set environment variable MPI_IC_ORDER to "tcp".
-    - MPICH or MPICH2
-      These don't use IB, so no special action is required.
-    - MVAPICH or MVAPICH2
-      These don't use TCP/IP unless explicitly configured for IP-over-IB.
-      So, these are not recommended if one is concerned with memory use.
-    In all of the settings above, omit the quotes from the value.
-
-  If spawning using SSH, the following apply:
-  + The -E option is not necessary, as the full environment is always
-    propagated to the application processes.
-  + A list of hosts is specified using one of the GASNET_SSH_NODEFILE,
-    GASNET_SSH_SERVERS, or GASNET_NODEFILE environment variables (in
-    order from higest precedence to lowest).
-    If set, the *_NODEFILE variables specify a file with one hostname
-    per line.  Blank lines and comment lines (using '#') are ignored.
-    If set, the variable GASNET_SSH_SERVERS itself contains a list of
-    hostnames, delimited by commas or whitespace.
-    The following environment variables set by supported batch systems
-    are also recognized if the GASNET_* variables are not set:
-      PBS:    PBS_NODEFILE
-      LSF:    LSB_HOSTS
-      SGE:    PE_HOSTFILE
-      SLURM:  Use `scontrol show hostname` if SLURM_JOB_ID is set
-  + The environment variable GASNET_SSH_CMD can be set to specify a
-    specific remote shell (perhaps rsh).  The default is "ssh", and
-    a search of $PATH resolves the full path.
-  + The environment variable GASNET_SSH_OPTIONS can be set to
-    specify options that will precede the hostname in the commands
-    used to spawn jobs.  One example, for OpenSsh, would be
-      GASNET_SSH_OPTIONS="-o 'StrictHostKeyChecking no'"
-  + For the following, the term "compute node"  means one of the hosts
-    given in GASNET_SSH_NODEFILE (or other environment variable described
-    above) which will run an application process.  The term "master node"
-    means the node from which the job was spawned.  The master node may
-    be one of the compute nodes but is not required to be.
-  + The ssh (or rsh) at your site must be configured to allow logins
-    from the master node to compute nodes, and among the compute nodes.
-    These must be achieved without interaction (such as entering a
-    password or accepting new host keys).
-  + Any firewall or port filtering must allow the ssh/rsh connections
-    described above, plus TCP connections on untrusted port (those
-    with numbers over 1024) from a compute node to the master node
-    and among compute nodes.
-  + Resolution for all given hostnames must be possible from both the
-    master node and the compute nodes.
-
-  It has been noted that some InfiniBand driver implementations may not
-  allow for multiple open()s of the adapter.  In this case, spawning via
-  MPI is not possible because the MPI and GASNet implementations cannot
-  share the adapter.  If your GASNet jobs fail to spawn via MPI, but
-  spawn correctly with ssh, this may be the reason.
-  Our recommended response to this situation is to completely disable
-  MPI support in GASNet by configuring with --without-mpi-cc.
-  
-@ Section: Multi-rail Support @
-
-  Multi-rail support is ON in GASNet ibv-conduit by default.
-
-  By default, GASNet ibv-conduit will open up to two InfiniBand Host
-  Channel Adapters (HCAs) per node, and will stripe communications over
-  one active port on each adapter.  See the sections "Build-time
-  Configuration" and "Runtime Configuration" for information on
-  how to open more or fewer HCAs/ports, or to control which HCAs/ports
-  are used.
-
-  To first order, the use of multiple ports or multiple adapters will
-  yield increases in both bandwidth (good) and software overhead (bad).
-  How the resulting trade off works for a given application may be
-  hard to predict.  If one is concerned with obtaining the maximum
-  possible performance for a given application, then experiment with
-  the GASNET_NUM_QPS and/or GASNET_IBV_PORTS environment variables
-  (documented in "Runtime Configuration") to determine how a given
-  application runs best.
+  While ibv-conduit runs on Solaris, the libibverbs on Solaris is not
+  compatible with GASNet's implementation of PSHM over POSIX shared memory.
+  This is not normally of concern, because on Solaris GASNet defaults to
+  an implementation of PSHM over SystemV shared memory.  However, if one
+  configures GASNet to use PSHM-over-POSIX on Solaris, then be advised
+  that ibv-conduit will lack PSHM support and thus perform all communication
+  within a compute node via the InfiniBand HCA instead of shared memory.
 
 @ Section: Build-time Configuration @
 
-  Ibv-conduit can ensures good network attentiveness (timely
+  Ibv-conduit can ensure good network attentiveness (timely
   processing of incoming AMs) by spawning an extra thread that
   remains blocked until the arrival of an Active Message.  One
   can disable this thread by configuring GASNet with the flag
   '--disable-ibv-rcv-thread'.  It is recommended that one NOT
-  use this option, but instead disabled the thread at runtime
+  use this option, but instead disable the thread at runtime
   (see Runtime Configuration section).  If the extra thread will
   never be needed, disabling it at build time will yield a small
   reduction in latencies by allowing some locking operations to
@@ -219,12 +89,72 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   connection requests.  If needed, this can be disabled at configure
   time using '--disable-ibv-conn-thread'.
 
+  The default spawner to be used by the gasnetrun_ibv utility can be
+  selected by configuring '--with-ibv-spawner=VALUE', where VALUE is one
+  of 'mpi', 'pmi' or 'ssh'.  If this option is not used, mpi is the
+  default when available, and ssh otherwise.
+  Here are some things to consider when selecting a default spawner:
+  + mpi-spawner is the default when MPI is available precisely because it
+    is so frequently present on systems where GASNet is to be installed.
+    Additionally, very little (if any) configuration is required and the
+    behavior is highly reliable.
+  + pmi-spawner uses the same "Process Management Interface" which forms
+    the basis for many mpirun implementations.  When support is available,
+    this spawner can be as easy to use and as reliable as mpi-spawner, but
+    without the overheads of initializing an MPI runtime.
+  + ssh-spawner depends only on the availability of a remote shell command
+    such as ssh.  For this reason ssh-spawner support is always compiled.
+    However, it can be difficult (or impossible) to use on a cluster which
+    was not setup to allow ssh to (and among) its compute nodes.
+  For more information on configuration and use of these spawners, see
+     README-{ssh,mpi,pmi}-spawner (installed)
+  or
+     other/{ssh,mpi,pmi}-spawner/README (source).
+
+@ Section: Job Spawning @
+
+  If using UPC, Titanium, etc. the language-specific commands should be used
+  to launch applications.  Otherwise, applications can be launched using
+  the gasnetrun_ibv utility:
+  + usage summary:
+    gasnetrun_ibv -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+  There are as many as three possible methods (ssh, mpi and pmi) by which one
+  can launch an ibv-conduit application.  Ssh-based spawning is always
+  available, and mpi- and pmi-based spawning are available if the respective
+  support was located at configure time.  The default is established at
+  configure time (see section "Build-time Configuration").
+
+  To select a non-default spawner one may either use the "-spawner=" command-
+  line argument or set the environment variable GASNET_IBV_SPAWNER to "ssh",
+  "mpi" or "pmi".  If both are used, then the command line argument takes
+  precedence.
+
+  It has been noted that some InfiniBand driver implementations may not
+  allow for multiple open()s of the adapter.  In this case, spawning via
+  MPI is not possible because the MPI and GASNet implementations cannot
+  share the adapter.  If your GASNet jobs fail to spawn via MPI, but
+  spawn correctly with ssh or pmi, then this may be the reason.  If you
+  need mpi-based spawning, our recommendation is to attempt to set the
+  MPIRUN_CMD such that your MPI will not use InfiniBand (see mpi-spawner's
+  README).  If that is not possible, you may need to select a different
+  MPI implementation.
+
 @ Section: Runtime Configuration @
 
   There are a number of parameters in ibv-conduit which can be tuned
   at runtime via environment variables.
 
   General settings:
+  ----------------
   Ibv-conduit supports all of the standard GASNet environment variables
   and the optional GASNET_EXITTIMEOUT and GASNET_THREAD_STACK families
   of environment variables.
@@ -237,7 +167,18 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
                operations for lower latency.
     Currently IBDISSEM is the default on IBV.
 
+  Spawner settings:
+  ----------------
+  + GASNET_IBV_SPAWNER
+    To override the default spawner for ibv-conduit jobs, one may set this
+    environment variable as described in the section "Job Spawning", above.
+
+  There are additional settings which control behaviors of the various
+  spawners, as described in the respective READMEs (listed in section
+  "Build-time Configuration", above).
+
   Connection settings:
+  -------------------
   Under normal conditions, Host Channel Adapters and Ports will be
   located and configured automatically.  However, in the event you have
   multiple adapters or multiple active ports on a single adapter, you may
@@ -461,6 +402,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     are therefore not documented here.
 
   Software configuration settings:
+  -------------------------------
   There are some optional behaviors in ibv-conduit that can be turned
   ON or OFF.  These parameters may legally take different values on each
   node, but doing so may not be useful.
@@ -496,6 +438,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     impose a limit on the *fraction* of time the thread spends awake.
 
   Pinnable memory probe configuration:
+  -----------------------------------
   In normal operation of ibv-conduit it is necessary to know how much memory
   may be registered (aka pinned) with the InfiniBand HCA(s).  This is limited
   by multiple factors and thus cannot be determined by a simple query.
@@ -514,29 +457,45 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   otherwise is undefined.
 
   + GASNET_PHYSMEM_MAX
-    If non-zero this parameter tells ibv-conduit the maximum amount of
-    physical memory to pin.  The suffixes "M" and "G" are interpreted as
-    Megabytes and Gigabytes respectively.  The current default is zero,
-    which means to probe the limits imposed by the O/S and HCA.
-    Setting to a non-zero value will limit how large the GASNet segment
-    can be, and how much memory is available for firehose (see below),
-    but may speed startup by bounding the probe.  Note, however that
-    setting only this variable bounds the probe, but does not eliminate it.
-    Also be aware that with multiple processes per shared memory node the
-    value given by this variable will be divided by the number of processes
-    per shared memory node to determine the memory available.
+    If set, this parameter is used to determine the maximum amount of memory
+    ibv-conduit may pin.  This limits how large the GASNet segment can be, and
+    how much memory is available for firehose (see below).
+    The value may specify either a relative or absolute size.  If the value
+    parses as a floating-point value less than 1.0 (including fractions such
+    as "5/8"), then this is taken as a fraction of the (estimated) physical
+    memory.  Otherwise the value is taken as an absolute memory size, with "M",
+    "G" and "T" suffixes accepted to indicate units of Megabytes, Gigabytes,
+    and Terabytes, respectively.
+    The default may be set at configure time using --with-ibv-physmem-max=VALUE,
+    and otherwise is "2/3" (pin up to 2/3 of the estimated physical memory).
 
-  + GASNET_PHYSMEM_NOPROBE
-    This gives a boolean: "0" to disable or "1" to enable the use of
-    GASNET_PHYSMEM_MAX without probing.  If GASNET_PHYSMEM_MAX is zero
-    or unset, this variable is ignored.
-    Enabling this setting may greatly speed startup, but can lead to
-    unexpected runtime failures if GASNET_PHYSMEM_MAX exceeds the limits
-    imposed by the O/S and HCA.
-    If GASNET_PHYSMEM_MAX is zero (or unset) this variable is ignored.
-    The default is OFF.
+  + GASNET_PHYSMEM_PROBE
+    This gives a boolean: "1" to enable or "0" to disable the validation
+    (potentially slow) of the GASNET_PHYSMEM_MAX value.
+    By default the environment variable GASNET_PHYSMEM_MAX is trusted if set
+    at runtime or when using a default given at configure time.  If neither
+    source has provided a value, the "2/3" default is taken as a maximum
+    amount of memory that might be possible pinned, but the final limit is
+    determined by probing the limits imposed by the O/S and HCA.  This probe
+    can take a significant period of time on large memory nodes.  Therefore,
+    enabling this probe may greatly slow startup, but can prevent unexpected
+    runtime failures if the user-provided values exceed those imposed by the
+    O/S and HCA.  Therefore, it is recommended to enable this probe if one
+    experiences any runtime failure consistent with an out-of-memory condition.
+    The O/S limits may be hard limits from the kernel (Linux often allows at
+    most 80% of physical memory to be pinned) or from resource limits (see
+    'ulimit' in a Bourne shell or 'limit' in a C-shell).
+    The default is OFF (probe disabled) if configure or environment sets a
+    value of GASNET_PHYSMEM_MAX.  However, this can be changed to a default of
+    ON or OFF by configuring using, respectively, --enable-ibv-physmem-probe
+    or --disable-ibv-physmem-probe.
+
+  + GASNET_PHYSMEM_WARN
+    This gives a boolean: "1" to enable or "0" to disable the warning printed
+    if/when the GASNET_PHYSMEM_MAX value is probed.
 
   Protocol configuration:
+  ----------------------
   The following environment variables control the selection of protocols
   for performing certain transfers.
 
@@ -618,12 +577,23 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     This setting defaults to 1 if SRQ support was enabled at configure
     time.  As a result XRC will be used anytime SRQ is used.
 
+   + GASNET_PIN_MAXSZ
+    This controls the maximum size of a pinned memory region.  The value must
+    be a power-of-two, and no less than the page size.  If the value is larger
+    than the HCA(s) can support, it will be reduced (with a warning).
+    When a GASNet-level transfer spans multiple pinned regions, multiple
+    operations are required at the Verbs layer.  However, some older Mellanox
+    HCAs performed poorly with large pinned regions.  In general there is no
+    need to adjust this parameter.
+    The default is to use largest size supportd by the HCA(s).
+
   Resource usage parameters:
+  -------------------------
   The following environment variables control how much memory is
   preallocated at startup time to serve various functions.  Because these
   resource pools do not grow dynamically, it is important that these
-  parameters be sufficiently large, or performance degradations may
-  results.  The default settings should be sufficient for most conditions.
+  parameters be sufficiently large, or performance degradation may
+  result.  The default settings should be sufficient for most conditions.
   You may need to lower some values if you have insufficient memory.
 
   These parameters must be equal across all nodes, and the behavior
@@ -647,7 +617,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_NETWORKDEPTH_TOTAL
     This gives the maximum number of ops (RDMA + AMs) which can be
     in-flight simultaneously from each node (with "in-flight" defined as
-    in GASNET_NETWORKDEPTH_PP.)  The depth of the send completion queue
+    in GASNET_NETWORKDEPTH_PP).  The depth of the send completion queue
     is min(GASNET_NETWORKDEPTH_TOTAL, GASNET_NETWORKDEPTH_PP*(N-1)).
     If set to zero, the value is set to the maximum usable value computed
     from GASNET_NETWORKDEPTH_PP and the HCA's reported capabilities.
@@ -731,7 +701,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     additional pinned memory.
    
   AMRDMA configuration:
-  The following environment variables control the AM-over-RDMA code in
+  --------------------
+  The following environment variables control the AM-over-RDMA path in
   ibv-conduit.  These parameters must be equal across all nodes, and
   the behavior otherwise is undefined.
 
@@ -739,7 +710,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   using RDMA PUT operations to buffers reserved for this purpose.  This
   leads to a reduction in the end-to-end latency of such AM traffic, but
   at the cost of increased memory usage and in the cost of a polling for
-  AMs (as done explicit in gasnet_AMPoll(), and implicitly in many
+  AMs (as done explicitly in gasnet_AMPoll(), and implicitly in many
   GASNet calls).
 
   + GASNET_AMRDMA_LIMIT
@@ -782,6 +753,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     The current default is 1024.
 
   Firehose configuration:
+  ----------------------
   These parameters must be equal across all nodes, and the behavior
   otherwise is undefined.
 
@@ -816,7 +788,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     Setting this environment variable to "0" (or "no") will disable use
     of firehose, forcing the use of bounce buffers for out-of-segment
     transfers.  This will result in a significantly lower peak bandwidth
-    for large PUTs and GETs, with little or no affect on small message
+    for large PUTs and GETs, with little or no effect on small message
     latency.  It is available only for debugging purposes.
     In a GASNET_SEGMENT_LARGE or GASNET_SEGMENT_EVERYTHING configuration,
     the GASNet segment is not preregistered and use of firehose is
@@ -864,10 +836,30 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     to run with this environment variable set if you report a bug that
     appears related to the firehose algorithm. 
 
+@ Section: Multi-rail Support @
+
+  Multi-rail support is ON in GASNet ibv-conduit by default.
+
+  By default, GASNet ibv-conduit will open up to two InfiniBand Host
+  Channel Adapters (HCAs) per node, and will stripe communications over
+  one active port on each adapter.  See the sections "Build-time
+  Configuration" and "Runtime Configuration" for information on
+  how to open more or fewer HCAs/ports, or to control which HCAs/ports
+  are used.
+
+  To first order, the use of multiple ports or multiple adapters will
+  yield increases in both bandwidth (good) and software overhead (bad).
+  How the resulting trade off works for a given application may be
+  hard to predict.  If one is concerned with obtaining the maximum
+  possible performance for a given application, then experiment with
+  the GASNET_NUM_QPS and/or GASNET_IBV_PORTS environment variables
+  (documented in "Runtime Configuration") to determine how a given
+  application runs best.
+
 @ Section: HCA Configuration @
 
-  To achieve normal correct operation of GASNet over IBVerbs should
-  *not* require any specialized configuration of your HCAs.  However, this
+  GASNet ibv-conduit should *not* require any specialized configuration of
+  your HCAs to achieve normal, correct operation.  However, this
   section documents any configuration that *may* help improve performance.
 
   We recommend you backup your configuration data prior to attempting any
@@ -888,7 +880,51 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     the value to 16 yielded approximately a 30% bandwidth improvement in an
     RDMA-GET benchmark.
 
-@ Section: Platform-specific Notes @
+@ Section: Known Problems @
+
++ Slow PHYSMEM probe at start-up
+  As described in more detail above, the environment variables
+  GASNET_PHYSMEM_MAX and GASNET_PHYSMEM_PROBE can be used to control an
+  upper-bound on the amount of memory that ibv-conduit will attempt to
+  register/pin.  If configure was passed --with-ibv-physmem-max=VALUE, then
+  the given VALUE is used as the default value of GASNET_PHYSMEM_MAX.
+  However, if this environment variable is not set, and no value was given at
+  configure time for GASNET_PHYSMEM_MAX, then the values "2/3" and "yes" are
+  used for these two environment variables and a message will direct the user
+  to this text.  Running with GASNET_PHYSMEM_PROBE=1 will also direct one to
+  this text.
+
+  If all compute nodes probed are found to allow the same amount of memory to
+  be pinned (either in absolute or relative terms), the message issued will
+  indicate the value determined and how to use it at configure or run time.
+  If there is a single memory configuration in use on your system, then
+  configuring (or setting GASNET_PHYSMEM_MAX) as directed in that message will
+  eliminate the time spent on the probe at startup, as well as the message.
+
+  If the memory configuration varies among nodes on the system, it may not be
+  safe to use a single recommended setting.  There are at least three options
+  available:
+  1. To avoid the probe at the potential cost of registering less than the
+     maximum possible memory for communication, one can elect to use the
+     minimum probed value reported by the probe output across all of the node
+     configurations to be used.  Depending of the actual configurations using
+     an absolute (whole number) or relative (fraction or decimal) value may
+     result in using nearer to the maximum memory on all nodes.  The most
+     robust option would be to configure using --with-ibv-physmem-max=VALUE,
+     but running with GASNET_PHYSMEM_MAX=VALUE may be simpler.
+     Unless one has configured with --enable-ibv-physmem-probe, or is running
+     with GASNET_PHYSMEM_PROBE=1 in the environment, the given value will be
+     used without running the probe.
+  2. If the time spent by the probe is not a concern, one can obtain the
+     behavior (default in older releases) of probing for UP TO a (safe)
+     default of 2/3 of apparent physical memory size on every run (without
+     any message) by running with environment variable GASNET_PHYSMEM_WARN=0.
+  3. If 2/3 is too conservative, one can force a probe with an alternative
+     value by configuring using
+       --with-ibv-physmem-max=VALUE --enable-physmem-probe
+     of running with
+       GASNET_PHYSMEM_MAX=VALUE GASNET_PHYSMEM_PROBE=1
+     In either case, one may also want to set GASNET_PHYSMEM_WARN=0.
 
 + Crashes have been seen using QLogic's InfiniPath HCAs with ibv-conduit
   with default parameters.  If you see crashes with a message containing
@@ -898,6 +934,42 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
      GASNET_QP_RD_ATOM=1
   In our testing this resulted in about a 2% reduction in peak bandwidth,
   but eliminated all instances of "aborting on reap of failed send".
+
++ Lack of XRC support
+  XRC is a optional feature in the Open Fabrics Verbs API, for which
+  GASNet's configure script will probe support.  However, that probe is
+  limited to determining if the XRC-related function calls will compile
+  and link, and cannot distinguish platforms on which the calls are
+  present but always fail.  On such systems, the failure will be reported
+  at runtime above a certain number of processes (86 with the defaults
+  for all environment variables) with the following message:
+
+  *** FATAL ERROR: Unable to create an XRC domain.  Please see "Lack of XRC support" under Known Problems in GASNet's README-ibv.
+
+  If you experience this error it is recommended that you reconfigure
+  your build of GASNet with --disable-ibv-xrc.  If that is not possible
+  one can also set GASNET_USE_XRC=0 in your environment.
+
++ Bug 3428
+  In this release the code used to checksum AMRDMA traffic is known to be
+  incorrect under agressive compiler optimization.  However, an alternative
+  implementation is currently enabled for the only compiler (PathScale)
+  known to manifest the problem.
+  The most up-to-date information on this bug is maintained at:
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3428
+  That bug report describes the problem in more detail, and lists the best
+  known recommended work-around(s).
+
++ Bug 3447
+  In this release the implementation of ibv-conduit on multi-HCA InfiniBand
+  networks may yield incorrect results for certain communication patterns.
+  The most up-to-date information on this bug is maintained at:
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3447
+  That bug report describes the conditions under which the problem may
+  manifest, and the recommended work-arounds.
+
++ See the GASNet Bugzilla server for details on other known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 @ Section: Core API @
 
@@ -942,7 +1014,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   a handler.
 
   To avoid using up 1/2 our bandwidth in the event of a REQUEST-REQUEST
-  pong-pong, we perform some coalescing to avoid sending too many
+  ping-pong, we perform some coalescing to avoid sending too many
   SYS_ack REPLIES.  We keep up to GASNET_AM_CREDITS_SLACK "banked" on
   the responding node, sending the SYS_ack REPLY only if the number
   banked exceeds this limit.  Credits which are banked get piggybacked
@@ -976,7 +1048,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   do even better, never touching the unposted pool at all, by always
   keeping a single thread-local "spare", initially acquired at startup.
 
-  Note that with SRQ is used, no fow control is used.
+  Note that when SRQ is used, no flow control is used.
 
 @ Section: Extended API @
 
@@ -1123,7 +1195,7 @@ tracing and stats gathering and flushes stdout and stderr.  Then _body
 calls gasnetc_exit_reduce() to try to perform a collective reduce-to-all
 over the exit codes.  If this completes within a given timeout then we
 know the exit is collective and skip over the master/slave logic
-decribed in the next 2 paragraphs.
+described in the next 2 paragraphs.
 
 If the reduction does not complete within the timeout, then _body next
 calls gasnetc_get_exit_role() to "elect" a master node for the exit.
@@ -1253,4 +1325,4 @@ The average case for non-collective exits is somewhere between those two.
 [1]	Bell, Bonachea. "A New DMA Registration Strategy for Pinning-Based
 	High Performance Networks", Workshop on Communication Architecture
 	for Clusters (CAC'03), 2003.
-	Also at  http://upc.lbl.gov/publications/
+	Also at  http://gasnet.lbl.gov/

@@ -22,7 +22,10 @@
 
 #include "stmt.h"
 
-// forall loop statement
+
+///////////////////////////////////
+    // forall loop statement //
+///////////////////////////////////
 
 class ForallStmt : public Stmt
 {
@@ -30,12 +33,8 @@ public:
   bool       zippered()       const; // was 'zip' keyword used?
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, CallExprs
-  AList&     intentVariables();      // (future) DefExprs of LoopIntentVars
+  AList&     intentVariables();      // DefExprs of LoopIntentVars
   BlockStmt* loopBody()       const; // the body of the forall loop
-  // todo: remove this in favor of intentVariables
-  ForallIntents* withClause() const; // forall intents
-
-  ~ForallStmt();
 
   DECLARE_COPY(ForallStmt);
 
@@ -49,11 +48,15 @@ public:
   virtual Expr*       getNextExpr(Expr* expr);
 
   // for the parser
-  static BlockStmt* build(Expr* indices, Expr* iterator, ForallIntents* fi,
-                          BlockStmt* body, bool zippered);
+  static BlockStmt* build(Expr* indices, Expr* iterator, CallExpr* intents,
+                          BlockStmt* body, bool zippered = false);
   // helpers
-  bool isIteratedExpression(Expr* expr);
-  int  reduceIntentIdx(Symbol* var); // todo: replace with LoopIntentVars
+  Expr* firstIteratedExpr()        const;
+  int   numIteratedExprs()         const;
+  bool  isIteratedExpression(Expr* expr);
+  int   reduceIntentIdx(Symbol* var);
+  int   numIntentVars()            const;
+  ShadowVarSymbol* getForallIntent(int index); //todo rename
 
 private:
   bool           fZippered;
@@ -61,18 +64,39 @@ private:
   AList          fIterExprs;
   AList          fIntentVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
-  ForallIntents* fWith;   // always present; todo: replace with intentVariables
 
-  ForallStmt(bool zippered, BlockStmt* body, ForallIntents* with);
+  ForallStmt(bool zippered, BlockStmt* body);
 };
 
+// accessor implementations
+inline bool   ForallStmt::zippered()       const { return fZippered;   }
+inline AList& ForallStmt::inductionVariables()   { return fIterVars;   }
+inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
+inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
+inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
+
+// conveniences
+inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
+inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
+inline int   ForallStmt::numIntentVars()     const { return fIntentVars.length;}
+inline ShadowVarSymbol* ForallStmt::getForallIntent(int index)
+  { return toShadowVarSymbol(toDefExpr(fIntentVars.get(index))->sym); }
+
+#define for_shadow_var_defs(SVD,TEMP,FS)    \
+  for_alist(TEMP,(FS)->intentVariables())   \
+    if (DefExpr* SVD = toDefExpr(TEMP))
+
+#define for_shadow_vars(SV,TEMP,FS)                    \
+  for_alist(TEMP,(FS)->intentVariables())              \
+    if (DefExpr* SVD = toDefExpr(TEMP))                \
+      if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
+
+// helpers
 ForallStmt* enclosingForallStmt(Expr* expr);
 
-inline bool   ForallStmt::zippered() const       { return fZippered; }
-inline AList& ForallStmt::inductionVariables()   { return fIterVars; }
-inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs; }
-inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
-inline BlockStmt*     ForallStmt::loopBody()   const { return fLoopBody; }
-inline ForallIntents* ForallStmt::withClause() const { return fWith; }
+// used for lowering ForallStmt and forall intents
+VarSymbol* parIdxVar(const ForallStmt* fs);
+VarSymbol* parIdxCopyVar(const ForallStmt* fs);
+BlockStmt* userLoop(const ForallStmt* fs);
 
 #endif

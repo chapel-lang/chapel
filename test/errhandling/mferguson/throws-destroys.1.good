@@ -1,3 +1,0 @@
-in simpleThrow, r=(x = 1)
-destroying R(x=1)
-throws-destroys.chpl:9: error: uncaught error

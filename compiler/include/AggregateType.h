@@ -79,8 +79,13 @@ public:
   bool                        setNextGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
+  AggregateType*              getInstantiationParent(AggregateType* parentType);
+
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
                                                     FnSymbol* fn);
+
+  bool                        isInstantiatedFrom(const AggregateType* base)
+                                                                         const;
 
   const char*                 classStructName(bool standalone);
 
@@ -104,6 +109,7 @@ public:
   bool                        isGeneric()                                const;
   void                        markAsGeneric();
 
+  void                        createOuterWhenRelevant();
   void                        buildConstructors();
 
   void                        addRootType();
@@ -119,6 +125,7 @@ public:
                               // It provides initial values for the
                               // fields in an aggregate type.
   bool                        wantsDefaultInitializer();
+  void                        buildDefaultInitializer();
 
   AggregateType*              instantiatedFrom;
 
@@ -168,6 +175,12 @@ private:
   bool                        needsConstructor();
   void                        moveConstructorToOuter(FnSymbol* fn);
 
+  void                        fieldToArg(FnSymbol*              fn,
+                                         std::set<const char*>& names,
+                                         SymbolMap&             fieldArgMap);
+  bool                        addSuperArgs(FnSymbol*                    fn,
+                                           const std::set<const char*>& names);
+
   std::vector<AggregateType*> instantiations;
 
   // genericField stores the index of the first generic field in the
@@ -185,17 +198,6 @@ private:
 extern AggregateType* dtObject;
 
 extern AggregateType* dtString;
-extern AggregateType* dtArray;
-extern AggregateType* dtBaseArr;
-extern AggregateType* dtBaseDom;
-extern AggregateType* dtDist;
-extern AggregateType* dtTuple;
-extern AggregateType* dtLocale;
-extern AggregateType* dtLocaleID;
-extern AggregateType* dtMainArgument;
-extern AggregateType* dtOnBundleRecord;
-extern AggregateType* dtTaskBundleRecord;
-extern AggregateType* dtError;
 
 DefExpr* defineObjectClass();
 

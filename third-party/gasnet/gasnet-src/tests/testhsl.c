@@ -10,7 +10,7 @@
 
 int peer = -1;
 int flag = 0;
-int iters = 100;
+uint64_t iters = 100;
 gasnet_hsl_t globallock = GASNET_HSL_INITIALIZER;
 
 void okhandler1(gasnet_token_t token) {
@@ -89,9 +89,7 @@ int main(int argc, char **argv) {
   if (argc < 2) test_usage();
   {
     int errtest = atoi(argv[1]);
-    GASNETT_UNUSED
     gasnet_hsl_t lock1 = GASNET_HSL_INITIALIZER;
-    GASNETT_UNUSED
     gasnet_hsl_t lock2;
     gasnet_hsl_init(&lock2);
 
@@ -246,8 +244,8 @@ done:
 
 void * thread_fn(void *arg) {
   int id = (int)(uintptr_t)arg;
-  int iters2 = iters*100;
-  int i;
+  uint64_t iters2 = iters*100;
+  uint64_t i;
 
   counter = 0; repcounter = 0;
   PTHREAD_BARRIER(NUM_THREADS);
@@ -269,8 +267,8 @@ void * thread_fn(void *arg) {
     PTHREAD_LOCALBARRIER(NUM_THREADS);
 
     if (counter != (NUM_THREADS * iters2)) 
-      ERR("failed hsl test: counter=%llu expecting=%llu", 
-          (unsigned long long)counter, (unsigned long long)(NUM_THREADS * iters2));
+      ERR("failed hsl test: counter=%"PRIu64" expecting=%"PRIu64, 
+          counter, (NUM_THREADS * iters2));
 
   PTHREAD_BARRIER(NUM_THREADS);
   counter = 0; repcounter = 0;
@@ -284,8 +282,8 @@ void * thread_fn(void *arg) {
     PTHREAD_BARRIER(NUM_THREADS);
 
     if (counter != (NUM_THREADS * iters)) 
-      ERR("failed hsl test: counter=%llu expecting=%llu", 
-          (unsigned long long)counter, (unsigned long long)(NUM_THREADS * iters));
+      ERR("failed hsl test: counter=%"PRIu64" expecting=%"PRIu64, 
+          counter, (NUM_THREADS * iters));
 
   PTHREAD_BARRIER(NUM_THREADS);
   counter = 0; repcounter = 0;
@@ -309,8 +307,8 @@ void * thread_fn(void *arg) {
     PTHREAD_BARRIER(NUM_THREADS);
 
     if (counter != (2 * NUM_THREADS * iters)) 
-      ERR("failed hsl test: counter=%llu expecting=%llu", 
-          (unsigned long long)counter, (unsigned long long)(2 * NUM_THREADS * iters));
+      ERR("failed hsl test: counter=%"PRIu64" expecting=%"PRIu64, 
+          counter, (2 * NUM_THREADS * iters));
 
   PTHREAD_BARRIER(NUM_THREADS);
   counter = 0; repcounter = 0;

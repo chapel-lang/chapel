@@ -101,7 +101,7 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 void put_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
-    int64_t begin, end, delay_time, loops;
+    int64_t begin=0, end, delay_time, loops=0;
     stat_struct_t st;
 
 	memset(mymem, 0, nbytes);
@@ -224,7 +224,7 @@ void put_tests(int iters, int nbytes)
 void get_tests(int iters, int nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
-    int64_t begin, end, delay_time, loops;
+    int64_t begin=0, end, delay_time, loops=0;
     stat_struct_t st;
 
 	memset(mymem, 0, nbytes);
@@ -354,7 +354,7 @@ int main(int argc, char **argv)
     GASNET_Safe(gasnet_init(&argc, &argv));
     GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
     snprintf(usagestr, sizeof(usagestr), "iters pollcnt sizes...\n"
-                      "    sizes are limited to %ld", (long)TEST_SEGSZ);
+                      "    sizes are limited to %"PRIuPTR, (uintptr_t)TEST_SEGSZ);
     test_init("testlogGP",1, usagestr);
     
 
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
         int size = atoi(argv[i]);
 
         if (size < 0 || size > TEST_SEGSZ) {
-            MSG0("size is limited to <= %ld\n", (long)TEST_SEGSZ);
+            MSG0("size is limited to <= %"PRIuPTR"\n", (uintptr_t)TEST_SEGSZ);
             continue;
         }
 

@@ -18,8 +18,8 @@
 # Usage Instructions: 
 #  1. fill in the following values to point to the target and host compilers:
 
-CC='icc -xMIC-AVX512 -O0 -wd10120' ; export CC  # vanilla target C compiler
-CXX='icpc -xMIC-AVX512 -O0 -wd10120' ; export CXX  # vanilla target C++ compiler
+CC='icc -xMIC-AVX512' ; export CC  # vanilla target C compiler
+CXX='icpc -xMIC-AVX512' ; export CXX  # vanilla target C++ compiler
 
 # Host C compiler
 # NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
@@ -33,7 +33,7 @@ HOST_CXXFLAGS='-g -O2' ; export HOST_CXXFLAGS
 
 # Optional additional settings: (see configure --help for complete list)
 
-MPI_CC='mpiicc -xMIC-AVX512 -O0 -wd10120' ; export MPI_CC     # MPI-enabled C compiler
+MPI_CC='mpiicc -xMIC-AVX512' ; export MPI_CC     # MPI-enabled C compiler
 MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 MPIRUN_CMD='mpiexec -n %N %C' # User must set GASNET_NODEFILE
@@ -42,7 +42,7 @@ EXTRA_CONFIGURE_ARGS='--disable-aligned-segments --enable-pshm --enable-large-ps
 
 # 2. Fill in the canonical target machine type. You can usually obtain this
 #   by running config-aux/config.guess on the target machine
-TARGET_ID='knl-unknown-linux-gnu'
+TARGET_ID='x86_64-unknown-linux-gnu'
 
 # 3. Optionally cross-compile and run the detect-cachesz.c utility and
 #    fill in the value below and uncomment.  If not set the default is 128.
@@ -105,28 +105,20 @@ if test ! -f "$SRCDIR/configure" ; then
   echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
   exit 1
 fi
-# Detect the build host machine type
-HOST_ARG=`echo "$@" | grep -e --host`
+# Detect the build+host machine type
 HOST_APPEND=
-if test "$HOST_ARG" = ""; then
-  oldCC_FOR_BUILD="$CC_FOR_BUILD"
-  oldHOST_CC="$HOST_CC"
-  oldCC="$CC"
-  CC_FOR_BUILD=
-  HOST_CC=
-  CC=
-  if test "$HOST_ID" = ""; then
-    HOST_ID=`$SRCDIR/config-aux/config.guess`
+for sys in host build; do
+  SYS_ARG=`echo "$@" | grep -i -e --$sys`
+  if test -z "$SYS_ARG"; then
+    if test -z "$HOST_ID"; then
+      HOST_ID=`env CC= HOST_CC= CC_FOR_BUILD= $SRCDIR/config-aux/config.guess`
+      if test -z "$HOST_ID"; then
+        echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid --build=machineid to identify the host machine running this script'
+        exit 1
+      fi
+    fi
+    HOST_APPEND="$HOST_APPEND --$sys=$HOST_ID"
   fi
-  if test "$HOST_ID" = ""; then
-    echo 'ERROR: failed to auto-detect build host. Please run with --host=machineid to identify the host machine running this script'
-    exit 1
-  else
-    HOST_APPEND="--host=$HOST_ID"
-  fi
-  CC_FOR_BUILD="$oldCC_FOR_BUILD"
-  HOST_CC="$oldHOST_CC"
-  CC="$oldCC"
-fi
+done
 # Now that everything is setup, run the actual configure script
-$SRCDIR/configure --enable-cross-compile $HOST_APPEND --build=$TARGET_ID --target=$TARGET_ID --program-prefix='' $EXTRA_CONFIGURE_ARGS "$@"
+$SRCDIR/configure --enable-cross-compile$HOST_APPEND --target=$TARGET_ID $EXTRA_CONFIGURE_ARGS "$@"

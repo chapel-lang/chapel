@@ -101,6 +101,9 @@ static int gasnetc_init(int *argc, char ***argv) {
     gasnetc_num_contexts = conf[2].value.intval;
   }
 
+  /* Must init timers after global env, and preferably before tracing */
+  GASNETI_TICKS_INIT();
+
   /* Now enable tracing of all the following steps */
   gasneti_init_done = 1; /* required to allow tracing */
   gasneti_trace_init(argc, argv);
@@ -220,60 +223,12 @@ extern int gasnet_init(int *argc, char ***argv) {
   return GASNET_OK;
 }
 /* ------------------------------------------------------------------------------------ */
-static char checkuniqhandler[256] = { 0 };
-static int gasnetc_reghandlers(gasnet_handlerentry_t *table, int numentries,
-                               int lowlimit, int highlimit,
-                               int dontcare, int *numregistered) {
-  int i;
-  *numregistered = 0;
-  for (i = 0; i < numentries; i++) {
-    int newindex;
-
-    if ((table[i].index == 0 && !dontcare) || 
-        (table[i].index && dontcare)) continue;
-    else if (table[i].index) newindex = table[i].index;
-    else { /* deterministic assignment of dontcare indexes */
-      for (newindex = lowlimit; newindex <= highlimit; newindex++) {
-        if (!checkuniqhandler[newindex]) break;
-      }
-      if (newindex > highlimit) {
-        char s[255];
-        snprintf(s, sizeof(s), "Too many handlers. (limit=%i)", highlimit - lowlimit + 1);
-        GASNETI_RETURN_ERRR(BAD_ARG, s);
-      }
-    }
-
-    /*  ensure handlers fall into the proper range of pre-assigned values */
-    if (newindex < lowlimit || newindex > highlimit) {
-      char s[255];
-      snprintf(s, sizeof(s), "handler index (%i) out of range [%i..%i]", newindex, lowlimit, highlimit);
-      GASNETI_RETURN_ERRR(BAD_ARG, s);
-    }
-
-    /* discover duplicates */
-    if (checkuniqhandler[newindex] != 0) 
-      GASNETI_RETURN_ERRR(BAD_ARG, "handler index not unique");
-    checkuniqhandler[newindex] = 1;
-
-    /* register the handler */
-    gasnetc_handler[(gasnet_handler_t)newindex] = (gasneti_handler_fn_t)table[i].fnptr;
-
-    /* The check below for !table[i].index is redundant and present
-     * only to defeat the over-aggressive optimizer in pathcc 2.1
-     */
-    if (dontcare && !table[i].index) table[i].index = newindex;
-
-    (*numregistered)++;
-  }
-  return GASNET_OK;
-}
-/* ------------------------------------------------------------------------------------ */
 extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
                           uintptr_t segsize, uintptr_t minheapoffset) {
   void *segbase = NULL;
   
-  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%lu, minheapoffset=%lu)",
-                          numentries, (unsigned long)segsize, (unsigned long)minheapoffset));
+  GASNETI_TRACE_PRINTF(C,("gasnetc_attach(table (%i entries), segsize=%"PRIuPTR", minheapoffset=%"PRIuPTR")",
+                          numentries, segsize, minheapoffset));
 
   if (!gasneti_init_done) 
     GASNETI_RETURN_ERRR(NOT_INIT, "GASNet attach called before init");
@@ -307,7 +262,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg = 0;
     gasneti_assert(ctable);
     while (ctable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(ctable, len, 1, 63, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering core API handlers");
     gasneti_assert(numreg == len);
   }
@@ -318,7 +273,7 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg = 0;
     gasneti_assert(etable);
     while (etable[len].fnptr) len++; /* calc len */
-    if (gasnetc_reghandlers(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
+    if (gasneti_amregister(etable, len, 64, 127, 0, &numreg) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering extended API handlers");
     gasneti_assert(numreg == len);
   }
@@ -328,12 +283,12 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
     int numreg2 = 0;
 
     /*  first pass - assign all fixed-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
+    if (gasneti_amregister(table, numentries, 128, 255, 0, &numreg1) != GASNET_OK)
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
 
     /*  second pass - fill in dontcare-index handlers */
-    if (gasnetc_reghandlers(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
-      GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
+    if (gasneti_amregister(table, numentries, 128, 255, 1, &numreg2) != GASNET_OK)
+      GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
 
     gasneti_assert(numreg1 + numreg2 == numentries);
   }
@@ -436,7 +391,10 @@ extern int gasnetc_attach(gasnet_handlerentry_t *table, int numentries,
   gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
          gasneti_seginfo[gasneti_mynode].size == segsize);
 
-  gasneti_auxseg_attach(); /* provide auxseg */
+  /* (###) exchange_fn is optional (may be NULL) and is only used with GASNET_SEGMENT_EVERYTHING
+           if your conduit has an optimized bootstrapExchange pass it in place of NULL
+   */
+  gasneti_auxseg_attach(gasnetc_bootstrapExchange); /* provide auxseg */
 
   gasnete_init(); /* init the extended API */
 
@@ -934,12 +892,12 @@ static void am_Long_dispatch(
     recv->cookie = token;
     recv->local_fn = &am_Long_event;
     recv->addr = data;
-#if 0 /* the hints recv_contiguous and recv_copy ensure we can ignore these */
+    // the hints recv_contiguous and recv_copy should ensure we can ignore these,
+    // but evidence shows that is not the case with PAMI_Send_immediate
     recv->type = PAMI_TYPE_BYTE;
     recv->offset = 0;
     recv->data_fn = PAMI_DATA_COPY;
     recv->data_cookie = NULL;
-#endif
   }
 }
 
@@ -962,7 +920,7 @@ static int gasnetc_am_init(void) {
   conf[0].name = PAMI_CONTEXT_DISPATCH_ID_MAX;
   rc = PAMI_Context_query(gasnetc_context, conf, 1);
   GASNETC_PAMI_CHECK(rc, "calling PAMI_Context_query() for DISPATCH_ID_MAX");
-  GASNETI_TRACE_PRINTF(C,("DISPATCH_ID_MAX = %ld", (long)conf[0].value.intval));
+  GASNETI_TRACE_PRINTF(C,("DISPATCH_ID_MAX = %"PRIuPTR, (uintptr_t)conf[0].value.intval));
   gasneti_assert_always(conf[0].value.intval >= (GASNETC_NUM_DISP-1));
 
   memset(&hints, 0, sizeof(hints));
@@ -987,11 +945,11 @@ static int gasnetc_am_init(void) {
   rc = PAMI_Dispatch_query(gasnetc_context, GASNETC_DISP_NOOP, conf, 2);
   GASNETC_PAMI_CHECK(rc, "querying DISPATCH immediate limits");
   gasnetc_send_imm_max = conf[0].value.intval;
-  GASNETI_TRACE_PRINTF(C,("PAMI_DISPATCH_SEND_IMMEDIATE_MAX = %ld",
-                          (long)gasnetc_send_imm_max));
+  GASNETI_TRACE_PRINTF(C,("PAMI_DISPATCH_SEND_IMMEDIATE_MAX = %"PRIuPTR,
+                          (uintptr_t)gasnetc_send_imm_max));
   gasnetc_recv_imm_max = conf[1].value.intval;
-  GASNETI_TRACE_PRINTF(C,("PAMI_DISPATCH_RECV_IMMEDIATE_MAX = %ld",
-                          (long)gasnetc_recv_imm_max));
+  GASNETI_TRACE_PRINTF(C,("PAMI_DISPATCH_RECV_IMMEDIATE_MAX = %"PRIuPTR,
+                          (uintptr_t)gasnetc_recv_imm_max));
 
   /* Register dispatch fn for AMShort */
   hints.long_header = (gasnetc_recv_imm_max >= sizeof(gasnetc_shortmsg_t))
@@ -1208,37 +1166,54 @@ extern int gasnetc_AMRequestMediumM(
     /* (###) add code here to read the arguments using va_arg(argptr, gasnet_handlerarg_t) 
              and send the active message 
      */
-    /* TODO: send in-place if fits w/i immediate limit */
-
     pami_send_t cmd;
     pami_result_t rc;
-    gasnetc_medmsg_t *msg_p = &(gasnetc_get_big_token()->medmsg);
-    char * payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+    gasnetc_medmsg_t msg;
+    gasnetc_medmsg_t *msg_p;
+    char * payload;
+
+    const size_t header_len = GASNETC_ARGSEND(med, numargs);
+    const int send_imm = (nbytes + header_len) <= gasnetc_send_imm_max;
+
+    if (send_imm) {
+        msg_p = &msg;
+        payload = source_addr;
+    } else {
+        msg_p = &(gasnetc_get_big_token()->medmsg);
+        payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+        memcpy(payload, source_addr, nbytes);
+        cmd.events.cookie = (void*)msg_p;
+        cmd.events.local_fn = &gasnetc_cb_big_token;
+        cmd.events.remote_fn = NULL;
+    }
 
     GASNETC_AM_MSG_COMMON((*msg_p), handler, numargs, argptr, 1);
     msg_p->nbytes = nbytes;
-    memcpy(payload, source_addr, nbytes);
 
     /* TODO: If register bounce buffers, then apply appropriate hint (here or at Dispatch_set?) */
     cmd.send.header.iov_base = (char *)msg_p;
-    cmd.send.header.iov_len = GASNETC_ARGSEND(med, numargs);
+    cmd.send.header.iov_len = header_len;
     cmd.send.data.iov_base = payload;
     cmd.send.data.iov_len = nbytes;
     cmd.send.dest = gasnetc_endpoint(dest);
     cmd.send.dispatch = GASNETC_DISP_MED;
     cmd.send.hints = gasnetc_null_send_hint;
-    cmd.events.cookie = (void*)msg_p;
-    cmd.events.local_fn = &gasnetc_cb_big_token;
-    cmd.events.remote_fn = NULL;
 
     gasnetc_get_request_credit();
 
     GASNETC_PAMI_LOCK(gasnetc_context);
-    rc = PAMI_Send(gasnetc_context, &cmd);
-    GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMRequestMedium)");
+    if (send_imm) {
+        rc = PAMI_Send_immediate(gasnetc_context, &cmd.send);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send_immediate(AMRequestMedium)");
+    } else {
+        rc = PAMI_Send(gasnetc_context, &cmd);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMRequestMedium)");
+    }
     rc = PAMI_Context_advance(gasnetc_context, 1);
     GASNETC_PAMI_CHECK_ADVANCE(rc, "advancing an AMRequestMedium");
     GASNETC_PAMI_UNLOCK(gasnetc_context);
+
+    if (send_imm) gasnetc_put_request_credit();
   }
   va_end(argptr);
   GASNETI_RETURN(retval);
@@ -1279,32 +1254,43 @@ extern int gasnetc_AMRequestLongM( gasnet_node_t dest,        /* destination nod
     gasnetc_longmsg_t msg;
     volatile unsigned int counter = 0;
 
+    const size_t header_len = GASNETC_ARGSEND(long, numargs);
+    const int send_imm = (nbytes + header_len) <= gasnetc_send_imm_max;
+
+    if (!send_imm) {
+        cmd.events.cookie = (void*)&counter;
+        cmd.events.local_fn = &gasnetc_cb_inc_uint;
+        cmd.events.remote_fn = NULL;
+    }
+
     GASNETC_AM_MSG_COMMON(msg, handler, numargs, argptr, 1);
     msg.addr = (uintptr_t)dest_addr;
     msg.nbytes = nbytes;
 
     /* TODO: Register segment and apply appropriate hint(s) here or at Dispatch_set */
     cmd.send.header.iov_base = (char *)&msg;
-    cmd.send.header.iov_len = GASNETC_ARGSEND(long, numargs);
+    cmd.send.header.iov_len = header_len;
     cmd.send.data.iov_base = (char *)source_addr;
     cmd.send.data.iov_len = nbytes;
     cmd.send.dest = gasnetc_endpoint(dest);
     cmd.send.dispatch = GASNETC_DISP_LONG;
     cmd.send.hints = gasnetc_null_send_hint;
-    cmd.events.cookie = (void*)&counter;
-    cmd.events.local_fn = &gasnetc_cb_inc_uint;
-    cmd.events.remote_fn = NULL;
 
     gasnetc_get_request_credit();
 
     GASNETC_PAMI_LOCK(gasnetc_context);
-    rc = PAMI_Send(gasnetc_context, &cmd);
-    GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMRequestLong)");
+    if (send_imm) {
+        rc = PAMI_Send_immediate(gasnetc_context, &cmd.send);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send_immediate(AMRequestLong)");
+    } else {
+        rc = PAMI_Send(gasnetc_context, &cmd);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMRequestLong)");
+    }
     rc = PAMI_Context_advance(gasnetc_context, 1);
     GASNETC_PAMI_CHECK_ADVANCE(rc, "advancing an AMRequestLong");
     GASNETC_PAMI_UNLOCK(gasnetc_context);
 
-    gasneti_polluntil(counter == 1); /* stall for local completion */
+    if (!send_imm) gasneti_polluntil(counter == 1); /* stall for local completion */
     gasnetc_put_request_credit();
   }
   va_end(argptr);
@@ -1458,12 +1444,26 @@ extern int gasnetc_AMReplyMediumM(
     /* (###) add code here to read the arguments using va_arg(argptr, gasnet_handlerarg_t) 
              and send the active message 
      */
-    /* TODO: send in-place if fits w/i immediate limit */
-
     pami_send_t cmd;
     pami_result_t rc;
-    gasnetc_medmsg_t *msg_p = &(gasnetc_get_big_token()->medmsg);
-    char * payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+    gasnetc_medmsg_t msg;
+    gasnetc_medmsg_t *msg_p;
+    char * payload;
+
+    const size_t header_len = GASNETC_ARGSEND(med, numargs);
+    const int send_imm = (nbytes + header_len) <= gasnetc_send_imm_max;
+
+    if (send_imm) {
+        msg_p = &msg;
+        payload = source_addr;
+    } else {
+        msg_p = &(gasnetc_get_big_token()->medmsg);
+        payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+        memcpy(payload, source_addr, nbytes);
+        cmd.events.cookie = (void*)msg_p;
+        cmd.events.local_fn = &gasnetc_cb_big_token;
+        cmd.events.remote_fn = NULL;
+    }
 
     gasnet_node_t dest;
     GASNETI_SAFE(gasnetc_AMGetMsgSource(token, &dest));
@@ -1471,23 +1471,24 @@ extern int gasnetc_AMReplyMediumM(
     GASNETC_AM_VALIDATE_TOKEN(med, token);
     GASNETC_AM_MSG_COMMON((*msg_p), handler, numargs, argptr, 0);
     msg_p->nbytes = nbytes;
-    memcpy(payload, source_addr, nbytes);
 
     /* TODO: If register bounce buffers, then apply appropriate hint (here or at Dispatch_set?) */
     cmd.send.header.iov_base = (char *)msg_p;
-    cmd.send.header.iov_len = GASNETC_ARGSEND(med, numargs);
+    cmd.send.header.iov_len = header_len;
     cmd.send.data.iov_base = payload;
     cmd.send.data.iov_len = nbytes;
     cmd.send.dest = gasnetc_endpoint(dest);
     cmd.send.dispatch = GASNETC_DISP_MED;
     cmd.send.hints = gasnetc_null_send_hint;
-    cmd.events.cookie = (void*)msg_p;
-    cmd.events.local_fn = &gasnetc_cb_big_token;
-    cmd.events.remote_fn = NULL;
 
     /* Lock is held in handler context */
-    rc = PAMI_Send(gasnetc_context, &cmd);
-    GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMReplyMedium)");
+    if (send_imm) {
+        rc = PAMI_Send_immediate(gasnetc_context, &cmd.send);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send_immediate(AMReplyMedium)");
+    } else {
+        rc = PAMI_Send(gasnetc_context, &cmd);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMReplyMedium)");
+    }
   }
   va_end(argptr);
   GASNETI_RETURN(retval);
@@ -1523,12 +1524,26 @@ extern int gasnetc_AMReplyLongM(
     /* (###) add code here to read the arguments using va_arg(argptr, gasnet_handlerarg_t) 
              and send the active message 
      */
-    /* TODO: send in-place if fits w/i immediate limit */
-
     pami_send_t cmd;
     pami_result_t rc;
-    gasnetc_longmsg_t *msg_p = &(gasnetc_get_big_token()->longmsg);
-    char * payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+    gasnetc_longmsg_t msg;
+    gasnetc_longmsg_t *msg_p;
+    char * payload;
+
+    const size_t header_len = GASNETC_ARGSEND(long, numargs);
+    const int send_imm = (nbytes + header_len) <= gasnetc_send_imm_max;
+
+    if (send_imm) {
+        msg_p = &msg;
+        payload = source_addr;
+    } else {
+        msg_p = &(gasnetc_get_big_token()->longmsg);
+        payload = GASNETC_TOKEN_PAYLOAD(msg_p);
+        memcpy(payload, source_addr, nbytes);
+        cmd.events.cookie = (void*)msg_p;
+        cmd.events.local_fn = &gasnetc_cb_big_token;
+        cmd.events.remote_fn = NULL;
+    }
 
     gasnet_node_t dest;
     GASNETI_SAFE(gasnetc_AMGetMsgSource(token, &dest));
@@ -1537,23 +1552,24 @@ extern int gasnetc_AMReplyLongM(
     GASNETC_AM_MSG_COMMON((*msg_p), handler, numargs, argptr, 0);
     msg_p->nbytes = nbytes;
     msg_p->addr = (uintptr_t)dest_addr;
-    memcpy(payload, source_addr, nbytes);
 
     /* TODO: If register bounce buffers, then apply appropriate hint (here or at Dispatch_set?) */
     cmd.send.header.iov_base = (char *)msg_p;
-    cmd.send.header.iov_len = GASNETC_ARGSEND(long, numargs);
+    cmd.send.header.iov_len = header_len;
     cmd.send.data.iov_base = payload;
     cmd.send.data.iov_len = nbytes;
     cmd.send.dest = gasnetc_endpoint(dest);
     cmd.send.dispatch = GASNETC_DISP_LONG;
     cmd.send.hints = gasnetc_null_send_hint;
-    cmd.events.cookie = (void*)msg_p;
-    cmd.events.local_fn = &gasnetc_cb_big_token;
-    cmd.events.remote_fn = NULL;
 
     /* Lock is held in handler context */
-    rc = PAMI_Send(gasnetc_context, &cmd);
-    GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMReplyLong)");
+    if (send_imm) {
+        rc = PAMI_Send_immediate(gasnetc_context, &cmd.send);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send_immediate(AMReplyLong)");
+    } else {
+        rc = PAMI_Send(gasnetc_context, &cmd);
+        GASNETC_PAMI_CHECK(rc, "from PAMI_Send(AMReplyLong)");
+    }
   }
   va_end(argptr);
   GASNETI_RETURN(retval);

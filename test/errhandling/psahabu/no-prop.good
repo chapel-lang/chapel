@@ -1,3 +1,5 @@
 calling noPropError
 should not propagate
-no-prop.chpl:5: error: uncaught error
+uncaught Error: 
+  ./ThrowError.chpl:2: thrown here
+  no-prop.chpl:5: uncaught here

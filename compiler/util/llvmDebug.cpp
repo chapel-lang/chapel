@@ -26,18 +26,14 @@
 #include "codegen.h"
 #include "symbol.h"
 #include "vec.h"
-#include "type.h"
 #include "alist.h"
 #include "version.h"
 
 #ifdef HAVE_LLVM
-#include "llvmUtil.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "genret.h" 
-#include "llvm/Support/Dwarf.h"
-#include "llvm/Support/raw_os_ostream.h"
-#include <iostream>
 #include "llvm/ADT/DenseMap.h"
+
 /*
 LLVM provides a class called DIBuilder, you pass the LLVM module to this
 class and it will attach the debug information to the LLVM code after the
@@ -192,6 +188,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         get_type(type->getValType()),//it should return the pointee's DIType
         layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
+#if HAVE_LLVM_VER >= 50
+        llvm::None,
+#endif
         name);
 
       myTypeDescriptors[type] = N;
@@ -215,6 +214,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             pteIntDIType, 
             layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
+#if HAVE_LLVM_VER >= 50
+            llvm::None,
+#endif
             name);
 
           myTypeDescriptors[type] = N;
@@ -247,6 +249,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             pteStrDIType,
             layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
+#if HAVE_LLVM_VER >= 50
+            llvm::None,
+#endif
             name);
         
           myTypeDescriptors[type] = N;
@@ -269,6 +274,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               get_type(vt),
               layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
+#if HAVE_LLVM_VER >= 50
+              llvm::None,
+#endif
               name);
             
             myTypeDescriptors[type] = N;
@@ -535,8 +543,10 @@ LLVM_DINAMESPACE debug_data::construct_module_scope(ModuleSymbol* modSym)
 #if HAVE_LLVM_VER >= 40
   return this->dibuilder.createNameSpace(file, /* Scope */
                                          modSym->name, /* Name */
+#if HAVE_LLVM_VER < 50
                                          file, /* File */
                                          line, /* LineNo */
+#endif
                                          false /* ExportSymbols */
                                         );
 #else
@@ -628,7 +638,6 @@ LLVM_DISUBPROGRAM debug_data::get_function(FnSymbol *function)
 
 LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol *gVarSym)
 {
-  GenInfo *info = gGenInfo; 
   const char *name = gVarSym->name;
   const char *cname = gVarSym->cname;
   const char *file_name = gVarSym->astloc.filename;
@@ -636,6 +645,8 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
   
   LLVM_DIFILE file = get_file(file_name);
   LLVM_DITYPE gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
+#if HAVE_LLVM_VER <= 39
+  GenInfo *info = gGenInfo;
   GenRet got = info->lvt->getValue(cname); //?use cname since get_function uses it?
 
 #if HAVE_LLVM_VER >= 36
@@ -646,6 +657,7 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
 #else
   llvm::Value *llVal = NULL;
   llVal = got.val;  
+#endif
 #endif
 
   if(gVarSym_type)

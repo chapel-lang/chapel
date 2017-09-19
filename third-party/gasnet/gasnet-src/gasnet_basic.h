@@ -14,7 +14,8 @@
 /* ------------------------------------------------------------------------------------ */
 /* must precede everything else to ensure correct operation */
 #include "portable_inttypes.h"
-#include "portable_platform.h"
+#undef _PORTABLE_PLATFORM_H
+#include "gasnet_portable_platform.h"
 
 /* try to recognize the compiler in use as one present at configure time.
    note this can set both GASNETI_COMPILER_IS_CC and
@@ -207,6 +208,32 @@
   #define GASNETI_PRAGMA(x) /* not supported in older versions (550 fails, 570 works) */
 #else
   #define GASNETI_PRAGMA(x) _Pragma ( #x )
+#endif
+
+#if (GASNETI_COMPILER_IS_CC && GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC) || \
+    (GASNETI_COMPILER_IS_MPI_CC && GASNETI_HAVE_MPI_CC_PRAGMA_GCC_DIAGNOSTIC) || \
+    (GASNETI_COMPILER_IS_CXX && GASNETI_HAVE_CXX_PRAGMA_GCC_DIAGNOSTIC)
+  #define GASNETI_USE_PRAGMA_GCC_DIAGNOSTIC 1
+  #if defined(__cplusplus)
+    #define _GASNETI_NOWARN_IGNORES_C_ONLY
+  #else
+    #define _GASNETI_NOWARN_IGNORES_C_ONLY \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wstrict-prototypes") \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wmissing-prototypes")
+  #endif
+  #define GASNETI_BEGIN_NOWARN                                          \
+          GASNETI_PRAGMA(GCC diagnostic push)                           \
+          _GASNETI_NOWARN_IGNORES_C_ONLY                                \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-function")    \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-variable")    \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-value")       \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused-parameter")   \
+          GASNETI_PRAGMA(GCC diagnostic ignored "-Wunused") 
+  #define GASNETI_END_NOWARN  \
+          GASNETI_PRAGMA(GCC diagnostic pop)
+#else
+  #define GASNETI_BEGIN_NOWARN
+  #define GASNETI_END_NOWARN 
 #endif
 
 /* If we have recognized the compiler, pick up its attribute support */

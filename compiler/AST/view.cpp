@@ -131,12 +131,18 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   bool is_C_loop = false;
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
-    if (ForallStmt* pfs = toForallStmt(parentAst))
-      if (ast == pfs->loopBody()) {
+    if (ForallStmt* pfs = toForallStmt(parentAst)) {
+      if (expr == pfs->loopBody()) {
         printf("\n%6c", ' ');
         for (int i = 0; i < indent; i++) printf(" ");
+        if (pfs->numIntentVars() == 0)
+          printf("with() ");
         printf("do\n");
+        indent -= 2;
+      } else if (expr->list) {
+        printf("\n");
       }
+    }
     do_list_line = !parentAst || list_line(expr, parentAst);
     if (do_list_line) {
       printf("%-7d ", expr->id);
@@ -156,11 +162,13 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       }
     } else if (toBlockStmt(ast)) {
       block_explain = block_explanation(ast, parentAst);
-      printf("%s{\n", block_explain);
+      const char* block_kind = ast->astTagAsString();
+      if (!strcmp(block_kind, "BlockStmt")) block_kind = "";
+      printf("%s{%s\n", block_explain, block_kind);
     } else if (toCondStmt(ast)) {
       printf("if ");
-    } else if (ForallStmt* fs = toForallStmt(ast)) {
-      printf("forall in%s\n", fs->zippered() ? " zip" : "");
+    } else if (toForallStmt(ast)) {
+      printf("forall");
     } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
           is_C_loop = true;
@@ -256,14 +264,19 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (CondStmt* cond = toCondStmt(parentAst)) {
       if (cond->condExpr == expr)
         printf("\n");
-    } else if (ForallStmt* fs = toForallStmt(parentAst)) {
-      if (expr == fs->iteratedExpressions().tail) {
+    } else if (ForallStmt* pfs = toForallStmt(parentAst)) {
+      if (expr == pfs->loopBody()) {
+        indent += 2;
+      } else if (expr == pfs->inductionVariables().tail) {
         printf("\n%6c", ' ');
         for (int i = 0; i < indent; i++) printf(" ");
-        if (fs->withClause()->numVars())
-          printf("with (...)\n");
-        else
-          printf("with()");
+        printf("in%s", pfs->zippered() ? " zip" : "");
+      } else if (expr == pfs->iteratedExpressions().tail &&
+                 pfs->numIntentVars() > 0)
+      {
+        printf("\n      ");
+        for (int i = 0; i < indent; i++) printf(" ");
+        printf("with (...)\n");
       }
     } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
@@ -686,6 +699,42 @@ int debugID(BaseAST* ast) {
   return ast ? ast->id : -1;
 }
 
+// "debug summary": print key pieces of info
+void debugSummary(int id) {
+  if (BaseAST* ast = aid09(id))
+    debugSummary(ast);
+  else
+    printf("%s\n", aidNotFoundError("debugSummary", id));
+}
+void debugSummary(BaseAST* ast) {
+  if (ast)
+    printf("%d   %s   %s\n", ast->id, ast->astTagAsString(), debugLoc(ast));
+  else
+    printf("<debugSummary: NULL>\n");
+}
+
+// find the Parent Symbol
+BaseAST* debugParentSym(int id) {
+  if (BaseAST* ast = aid09(id))
+    return debugParentSym(ast);
+  else {
+    printf("%s\n", aidNotFoundError("debugParentSym", id));
+    return NULL;
+  }
+}
+BaseAST* debugParentSym(BaseAST* ast) {
+  if (!ast)
+    return NULL;
+  else if (Expr* expr = toExpr(ast))
+    return expr->parentSymbol;
+  else if (Symbol* sym = toSymbol(ast))
+    return sym->defPoint->parentSymbol;
+  else {
+    printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
+    return NULL;
+  }
+}
+
 
 //
 // map_view: print the contents of a SymbolMap
@@ -848,6 +897,20 @@ void whocalls(int id) {
     }
   }
 
+  int fItAll = 0, fItMatch = 0, fItNonTreeMatch = 0;
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* loop = toForLoop(block)) {
+      fItAll++;
+      if (SymExpr* it = loop->iteratorGet())
+        if (Symbol* ic = it->symbol())
+          if (FnSymbol* iterator = debugGetTheIteratorFn(ic))
+            if (iterator->id == id)
+              printf("  ForLoop %d  iterator sym %d  %s  %s\n",
+                     loop->id, ic->id, parentMsg(loop, &fItMatch,
+                       &fItNonTreeMatch), debugLoc(loop));
+    }
+  }
+
   int vmtMatch = 0, vmtAll = 0;
   for (int i = 0; i < virtualMethodTable.n; i++) {
     if (virtualMethodTable.v[i].key) {
@@ -871,8 +934,38 @@ void whocalls(int id) {
 
   printf("  %d of %d calls", callMatch, callAll);
   if (callNonTreeMatch) printf(", also %d not in tree", callNonTreeMatch);
-  printf(".  %d of %d for-loops", forMatch, forAll);
-  if (forNonTreeMatch) printf(", also %d not in tree", forNonTreeMatch);
-  printf(".  %d of %d in VMT.  %d of %d in FT.\n",
-         vmtMatch, vmtAll, ftMatch, ftAll);
+  printf(".  %d of %d for-loops", forMatch+fItMatch, forAll+fItAll);
+  int forNontree = forNonTreeMatch + fItNonTreeMatch;
+  if (forNontree) printf(", also %d not in tree", forNontree);
+  printf(".  %d of %d in VMT+FT.\n", vmtMatch+ftMatch, vmtAll+ftAll);
+}
+
+FnSymbol* debugGetTheIteratorFn(int id) {
+  if (BaseAST* ast = aidWithError(id, "debugGetTheIteratorFn"))
+    return debugGetTheIteratorFn(ast);
+  else
+    return NULL;
+}
+
+FnSymbol* debugGetTheIteratorFn(BaseAST* ast) {
+  if (!ast) {
+    printf("<debugGetTheIteratorFn: NULL>\n");
+    return NULL;
+  }
+  else if (Symbol* sym = toSymbol(ast))
+    return debugGetTheIteratorFn(sym);
+  else if (Type* type = toType(ast))
+    return debugGetTheIteratorFn(type);
+  else if (ForLoop* fl = toForLoop(ast))
+    return debugGetTheIteratorFn(fl->iteratorGet()->symbol());
+  else if (SymExpr* se = toSymExpr(ast))
+    return debugGetTheIteratorFn(se->symbol());
+  else {
+    printf("<don't know how to get the iterator for node %d>\n", ast->id);
+    return NULL;
+  }
+}
+
+FnSymbol* debugGetTheIteratorFn(Symbol* sym) {
+  return sym ? debugGetTheIteratorFn(sym->type) : NULL;
 }

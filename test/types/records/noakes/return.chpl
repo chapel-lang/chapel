@@ -12,7 +12,7 @@ record Rec
   var copy   : bool;
   var freed  : bool;
 
-  proc Rec()
+  proc init()
   {
     sID          = sID + 1;
     sAllocated   = sAllocated + 1;
@@ -22,8 +22,31 @@ record Rec
     copy         = false;
     freed        = false;
 
+    super.init();
+
     if (sDebug == true) then
       writeln("Constructing Rec       id:  ", id);
+  }
+
+  proc init(other: Rec) {
+    sID          = sID + 1;
+    sAllocated   = sAllocated + 1;
+
+    canary = other.canary;
+    id     = sID;
+    copy   = true;
+    freed  = false;
+
+    super.init();
+
+    if (sDebug == true) then
+      writeln("copying Rec other: ", other.id);
+
+    if other.canary != 0xBABEBABE then
+      writeln("copying with uninitialized record!");
+
+    if other.freed  == true then
+      writeln("copying a record that has been freed!");
   }
 
   proc deinit()
@@ -57,49 +80,6 @@ proc = (ref lhs: Rec, rhs : Rec)
   if rhs.freed  == true then
     writeln("= operator: RHS has been freed");
 }
-
-//
-// Need to override the default initCopy as it does not
-// invoked the constructor.
-
-pragma "init copy fn"
-proc chpl__initCopy(arg : Rec) {
-  if (sDebug == true) then
-    writeln("initCopying  Rec       arg: ", arg.id);
-
-  if arg.canary != 0xBABEBABE then
-    writeln("autoCopy with uninitialized record!");
-
-  if arg.freed  == true then
-    writeln("autoCopy with a record that has been freed!");
-
-  var ret : Rec;
-
-  return ret;
-}
-
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg : Rec) {
-  if (sDebug == true) then
-    writeln("autoCopying  Rec       arg: ", arg.id);
-
-  pragma "no auto destroy"
-  var ret : Rec;
-
-  if arg.canary != 0xBABEBABE then
-    writeln("autoCopy with uninitialized record!");
-
-  if arg.freed  == true then
-    writeln("autoCopy with a record that has been freed!");
-
-  ret.copy   = true;
-
-  return ret;
-}
-
-
-
 
 
 proc main()

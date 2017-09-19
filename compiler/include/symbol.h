@@ -91,11 +91,26 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 ArgSymbol* tiMarkForIntent(IntentTag intent);
 ArgSymbol* tiMarkForTFIntent(int tfIntent);
 
+//
+// ForallIntentTag: a task- or forall-intent tag
+//
+enum ForallIntentTag {
+  TFI_DEFAULT, // aka TFI_BLANK
+  TFI_CONST,
+  TFI_IN,
+  TFI_CONST_IN,
+  TFI_REF,
+  TFI_CONST_REF,
+  TFI_REDUCE,
+};
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+const char* forallIntentTagDescription(ForallIntentTag tfiTag);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class Symbol : public BaseAST {
 public:
@@ -112,7 +127,7 @@ public:
                                   BaseAST* newAst)               = 0;
 
   virtual bool       isConstant()                              const;
-  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange();
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
           bool       isRenameable()                            const;
@@ -168,6 +183,15 @@ public:
   SymExpr*           getSingleUse()                            const;
   // Return the single def of this Symbol, or NULL if there are 0 or >= 2
   SymExpr*           getSingleDef()                            const;
+
+  // The compiler really ought to view a call to `init` that
+  // constructs a const record as the single "def". However it
+  // might consider it a "use" for various reasons. This method
+  // is useful for finding such cases.
+  // This function finds the statement expression that is responsible
+  // for initializing this symbol.
+  Expr*              getInitialization()                       const;
+
 protected:
                      Symbol(AstTag      astTag,
                             const char* init_name,
@@ -205,16 +229,15 @@ private:
 bool isString(Symbol* symbol);
 bool isUserDefinedRecord(Symbol* symbol);
 
-/******************************** | *********************************
-*                                                                   *
-* This class has two roles:                                         *
-*    1) A common abstract base class for VarSymbol and ArgSymbol.   *
-*    2) Maintain location state as an IPE "optimization".           *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+* This class has two roles:                                                   *
+*    1) A common abstract base class for VarSymbol and ArgSymbol.             *
+*    2) Maintain location state as an IPE "optimization".                     *
+*                                                                             *
+************************************** | *************************************/
 
-class LcnSymbol : public Symbol
-{
+class LcnSymbol : public Symbol {
 public:
   int       depth()                                            const;
   int       offset()                                           const;
@@ -235,10 +258,11 @@ private:
   int       mOffset;               // Byte offset within frame
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class VarSymbol : public LcnSymbol {
 public:
@@ -256,7 +280,7 @@ public:
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
   virtual bool       isConstant()                              const;
-  virtual bool       isConstValWillNotChange()                 const;
+  virtual bool       isConstValWillNotChange();
   virtual bool       isImmediate()                             const;
   virtual bool       isParameter()                             const;
   virtual bool       isType()                                  const;
@@ -279,6 +303,10 @@ private:
   virtual std::string docsDirective();
   bool isField;
 
+protected:
+  // for subclasses
+  VarSymbol(AstTag astTag, const char* initName, Type* initType);
+
 public:
 #ifdef HAVE_LLVM
   llvm::MDNode *llvmDIGlobalVariable;
@@ -287,13 +315,13 @@ public:
   void* llvmDIGlobalVariable;
   void* llvmDIVariable;
 #endif
-
 };
 
-/******************************** | *********************************
-*                                                                   *
-*                                                                   *
-********************************* | ********************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ArgSymbol : public LcnSymbol {
 public:
@@ -318,7 +346,7 @@ public:
 
   // New interface
   virtual bool    isConstant()                              const;
-  virtual bool    isConstValWillNotChange()                 const;
+  virtual bool    isConstValWillNotChange();
   virtual bool    isParameter()                             const;
 
   virtual bool    isVisible(BaseAST* scope)                 const;
@@ -347,6 +375,55 @@ public:
 #endif
 };
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+class ShadowVarSymbol : public VarSymbol {
+public:
+  ShadowVarSymbol(ForallIntentTag iIntent, const char* iName, Expr* iSpec = NULL);
+
+  virtual void    verify();
+  virtual void    accept(AstVisitor* visitor);
+  DECLARE_SYMBOL_COPY(ShadowVarSymbol);
+
+  virtual void    replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  virtual bool    isConstant()                              const;
+  virtual bool    isConstValWillNotChange();
+
+  const char* intentDescrString() const;
+  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+
+  // The corresponding outer var or NULL if not applicable.
+  SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
+  Symbol*  outerVarSym()  const;
+  // Returns the EXPR in "with (EXPR reduce x)".
+  Expr*    reduceOpExpr() const;
+  // Remove no-longer-needed references to outside symbols when lowering.
+  void     removeSupportingReferences();
+
+  // The intent for this variable.
+  ForallIntentTag intent;
+
+  // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
+  // This would be just a SymExpr*, if not for checkIdInsideWithClause().
+  // See also: sv->outerVarSE() and sv->outerVarSym().
+  Expr* outerVarRep;
+
+  // For a reduce intent, the reduce expression.
+  // For a task-private variable, the initialization expression.
+  // Either way, wrapped in a block.  Otherwise it is NULL.
+  BlockStmt* specBlock;
+
+  // A reduction class instance aka "Operator".
+  Symbol* reduceGlobalOp;
+
+  // Once pruning is no longer needed, this should be removed.
+  bool pruneit;
+};
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
@@ -359,19 +436,21 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaNode;
-  llvm::MDNode* llvmConstTbaaNode;
-  llvm::MDNode* llvmTbaaStructNode;
-  llvm::MDNode* llvmConstTbaaStructNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;
+  llvm::MDNode* llvmTbaaAccessTag;
+  llvm::MDNode* llvmConstTbaaAccessTag;
+  llvm::MDNode* llvmTbaaStructCopyNode;
+  llvm::MDNode* llvmConstTbaaStructCopyNode;
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
   void* llvmType;
-  void* llvmTbaaNode;
-  void* llvmConstTbaaNode;
-  void* llvmTbaaStructNode;
-  void* llvmConstTbaaStructNode;
+  void* llvmTbaaTypeDescriptor;
+  void* llvmTbaaAccessTag;
+  void* llvmConstTbaaAccessTag;
+  void* llvmTbaaStructCopyNode;
+  void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
 #endif
 
@@ -383,6 +462,7 @@ class TypeSymbol : public Symbol {
 
   void renameInstantiatedMulti(SymbolMap& subs, FnSymbol* fn);
   void renameInstantiatedSingle(Symbol* sym);
+  void renameInstantiatedFromSuper(TypeSymbol* superSym);
 
   GenRet codegen();
   void codegenDef();
@@ -532,6 +612,8 @@ private:
   bool                       _throwsError;
 };
 
+const char* toString(FnSymbol* fn);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -644,8 +726,6 @@ VarSymbol* newTempConst(Type* type);
 VarSymbol* newTempConst(const char* name, QualifiedType qt);
 VarSymbol* newTempConst(QualifiedType qt);
 
-void       verifyInTree(BaseAST* ast, const char* msg);
-
 // for use in an English sentence
 const char* retTagDescrString(RetTag    retTag);
 const char* intentDescrString(IntentTag intent);
@@ -654,6 +734,7 @@ const char* intentDescrString(IntentTag intent);
 extern const char* astrSdot;
 extern const char* astrSequals;
 extern const char* astr_cast;
+extern const char* astrInit;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
@@ -663,9 +744,13 @@ void initAstrConsts();
 // pass-by-reference intents are used.
 bool argMustUseCPtr(Type* t);
 
+// Is 'expr' a SymExpr for the outerVar of some ShadowVarSymbol?
+bool isOuterVarOfShadowVar(Expr* expr);
+
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
+void addForallIntent(CallExpr* fi,      Expr* var, IntentTag intent, Expr* ri);
 void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
 
 extern bool localTempNames;
@@ -701,22 +786,11 @@ extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
-extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gAddModuleFn;
-extern FnSymbol *gChplHereAlloc;
-extern FnSymbol *gChplHereFree;
-extern FnSymbol *gChplDoDirectExecuteOn;
+
 extern FnSymbol *gGenericTupleTypeCtor;
 extern FnSymbol *gGenericTupleInit;
 extern FnSymbol *gGenericTupleDestroy;
-extern FnSymbol *gChplDeleteError;
-
-// These global symbols point to generic functions that
-// will be instantiated.
-extern FnSymbol *gBuildTupleType;
-extern FnSymbol *gBuildStarTupleType;
-extern FnSymbol *gBuildTupleTypeNoRef;
-extern FnSymbol *gBuildStarTupleTypeNoRef;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

@@ -14,20 +14,26 @@ Where this conduit runs:
 ### Include any software/driver/firmware/hw requirements or limitations.
 ### Mention any situation where a different GASNet conduit should be preferred.
 
-Recognized environment variables:
----------------------------------
-
-* All the standard GASNet environment variables (see top-level README)
-
 Optional compile-time settings:
 ------------------------------
 
 * All the compile-time settings from extended-ref (see the extended-ref README)
 
+Job spawning:
+-------------
+
+### Explain how to spawn jobs for your conduit, and any special concerns.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* See the GASNet Bugzilla server for details on known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

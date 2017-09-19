@@ -46,6 +46,8 @@ enum PrimitiveTag {
   PRIM_REF_TO_STRING,
   PRIM_RETURN,
   PRIM_THROW,
+  PRIM_TRY_EXPR,
+  PRIM_TRYBANG_EXPR,
   PRIM_YIELD,
   PRIM_UNARY_MINUS,
   PRIM_UNARY_PLUS,
@@ -109,6 +111,9 @@ enum PrimitiveTag {
 
   PRIM_GET_END_COUNT,
   PRIM_SET_END_COUNT,
+
+  PRIM_GET_DYNAMIC_END_COUNT,  // get/set end count for 'begin' -
+  PRIM_SET_DYNAMIC_END_COUNT,  // manipulates task-local storage
 
   PRIM_GET_SERIAL,              // get serial state
   PRIM_SET_SERIAL,              // set serial state to true or false
@@ -176,6 +181,9 @@ enum PrimitiveTag {
 
   PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||
 
+  PRIM_WIDE_MAKE,               // create a wide pointer from
+                                // (type, localeID, addr)
+
   PRIM_WIDE_GET_LOCALE,         // Returns the "locale" portion of a wide pointer.
 
   PRIM_WIDE_GET_NODE,           // Get just the node portion of a wide pointer.
@@ -223,6 +231,7 @@ enum PrimitiveTag {
   PRIM_FIELD_NUM_TO_NAME,
   PRIM_FIELD_NAME_TO_NUM,
   PRIM_FIELD_BY_NUM,
+  PRIM_CLASS_NAME_BY_ID,
   PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL,
   PRIM_IS_EXTERN_CLASS_TYPE,
   PRIM_IS_UNION_TYPE,
@@ -249,6 +258,8 @@ enum PrimitiveTag {
   PRIM_STACK_ALLOCATE_CLASS,
   PRIM_ZIP,
   PRIM_REQUIRE,
+
+  PRIM_CHECK_ERROR, // used in error-handling conditional. args: error variable
 
   NUM_KNOWN_PRIMS
 };

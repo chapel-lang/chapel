@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 Inria.  All rights reserved.
+ * Copyright © 2012-2017 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -92,12 +92,11 @@ static void apply_recursive(hwloc_topology_t topology, hwloc_obj_t obj)
 }
 
 static void
-hwloc_calc_process_arg_info_cb(void *_data,
-			       hwloc_obj_t obj,
-			       int verbose __hwloc_attribute_unused)
+hwloc_calc_process_location_annotate_cb(struct hwloc_calc_location_context_s *lcontext,
+					void *_data __hwloc_attribute_unused,
+					hwloc_obj_t obj)
 {
-	hwloc_topology_t topology = _data;
-	apply(topology, obj);
+	apply(lcontext->topology, obj);
 }
 
 int main(int argc, char *argv[])
@@ -195,9 +194,14 @@ int main(int argc, char *argv[])
 		size_t typelen;
 		typelen = strspn(location, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789");
 		if (typelen && (location[typelen] == ':' || location[typelen] == '=' || location[typelen] == '[')) {
-			err = hwloc_calc_process_type_arg(topology, topodepth, location, typelen, 1,
-							  hwloc_calc_process_arg_info_cb, topology,
-							  0);
+			struct hwloc_calc_location_context_s lcontext;
+			lcontext.topology = topology;
+			lcontext.topodepth = topodepth;
+			lcontext.only_hbm = -1;
+			lcontext.logical = 1;
+			lcontext.verbose = 0;
+			err = hwloc_calc_process_location(&lcontext, location, typelen,
+							  hwloc_calc_process_location_annotate_cb, topology);
 		}
 	}
 

@@ -5,7 +5,7 @@
 
 record R {
   var _i : int;
-  proc R(i : int) { _i = i; }
+  proc init(i : int) { _i = i; }
 }
 
 type T = R;

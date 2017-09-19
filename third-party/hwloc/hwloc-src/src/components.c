@@ -1,5 +1,5 @@
 /*
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2012 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -115,7 +115,7 @@ hwloc__dlforeach_cb(const char *filename, void *_data __hwloc_attribute_unused)
   }
   if (component->abi != HWLOC_COMPONENT_ABI) {
     if (hwloc_plugins_verbose)
-      fprintf(stderr, "Plugin symbol ABI %u instead of %u\n",
+      fprintf(stderr, "Plugin symbol ABI %u instead of %d\n",
 	      component->abi, HWLOC_COMPONENT_ABI);
     goto out_with_handle;
   }

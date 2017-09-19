@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2017 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # See COPYING in top-level directory.
 #
@@ -64,6 +64,15 @@ fi
 name="$1"
 basename=`basename "$name"`
 dirname=`dirname "$name"`
+
+
+if [ x$gatherio = x0 ]; then
+  echo "I/O files won't be saved (--io not given)."
+fi
+if [ x$gatherdmi = x0 ]; then
+  echo "DMI files won't be saved (--dmi not given)."
+fi
+echo
 
 if ! mkdir -p "$dirname" ; then
     error "Failed to create directory $dirname."
@@ -139,10 +148,29 @@ cat << EOF | while read -r path ; do savedir "$destdir/$basename" "$path" ; done
 /proc/device-tree/cpus/
 EOF
 
-if test "x$HWLOC_DUMPED_HWDATA_DIR" = x; then
-  savedir "$destdir/$basename" "$runstatedir"/hwloc/
-else
+# Gather the default /var/run/hwloc (in case it was created by a system-wide hwloc-dump-hwdata)
+if test -d /var/run/hwloc; then
+  savedir "$destdir/$basename" /var/run/hwloc
+fi
+# Then, gather what the current hwloc installation could have created in a different $runstatedir
+if test "$runstatedir" != "/var/run" -a -d "$runstatedir/hwloc"; then
+  savedir "$destdir/$basename" "$runstatedir/hwloc/"
+  mkdir -p "$destdir/$basename/var/run"
+  ln -sr "$destdir/$basename/$runstatedir/hwloc" "$destdir/$basename/var/run/hwloc.runstatedir"
+fi
+# And gather what custom $HWLOC_DUMPED_HWDATA_DIR
+if test "x$HWLOC_DUMPED_HWDATA_DIR" != x -a -d "$HWLOC_DUMPED_HWDATA_DIR"; then
   savedir "$destdir/$basename" "$HWLOC_DUMPED_HWDATA_DIR"
+  mkdir -p "$destdir/$basename/var/run"
+  ln -sr "$destdir/$basename/$HWLOC_DUMPED_HWDATA_DIR" "$destdir/$basename/var/run/hwloc.HWLOC_DUMPED_HWDATA_DIR"
+fi
+# Now link to /var/run/hwloc (used by default in lstopo -i) to something sane if needed
+if ! test -d "$destdir/$basename/var/run/hwloc"; then
+  if test -e "$destdir/$basename/var/run/hwloc.HWLOC_DUMPED_HWDATA_DIR"; then
+    ln -sr "$destdir/$basename/var/run/hwloc.HWLOC_DUMPED_HWDATA_DIR" "$destdir/$basename/var/run/hwloc"
+  else if test -e "$destdir/$basename/$runstatedir/hwloc"; then
+    ln -sr "$destdir/$basename/var/run/hwloc.runstatedir" "$destdir/$basename/var/run/hwloc"
+  fi fi
 fi
 
 # Optionally gather I/O directories too
@@ -200,6 +228,8 @@ echo "Topology files gathered in $dirname/$basename.tar.bz2 and kept in $destdir
 export HWLOC_THISSYSTEM=0
 "$lstopo" - -v > "$dirname/$basename.output"
 echo "Expected topology output stored in $dirname/$basename.output"
+"$lstopo" -.xml --whole-system > "$dirname/$basename.xml"
+echo "XML topology stored in in $dirname/$basename.xml"
 
 echo
 echo "WARNING: Do not post these files on a public list or website unless you"

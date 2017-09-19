@@ -17,6 +17,11 @@ environment and hardware-shared memory.
 smp-conduit jobs can be launched directly in the same manner as normal
 POSIX executables - ie on the command line, no spawner script required.
 
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
 Recognized environment variables:
 ---------------------------------
 
@@ -25,7 +30,7 @@ Recognized environment variables:
   variable controls the number of GASNet smp-conduit processes to fork at job
   launch within gasnet_init (ie the degree of process parallelism). These
   processes will communicate through shared memory using PSHM. For more details
-  on enabling and using PSHM support, see the top-level README and pshm-design.txt.
+  on enabling and using PSHM support, see the top-level README.
   If PSHM is disabled, this variable is ignored and smp-conduit jobs consist of
   only a single process (but the client may still utilize thread-level
   parallelism within that process, in GASNET_PAR mode).
@@ -35,15 +40,17 @@ Recognized environment variables:
 
 * All the standard GASNet environment variables (see top-level README)
 
-Optional compile-time settings:
-------------------------------
-
-* All the compile-time settings from extended-ref (see the extended-ref README)
-
 Known problems:
 ---------------
 
-* See the Berkeley UPC Bugzilla server for details on known bugs.
+* Bug 3480
+  It has been observed on Cray systems running CLE6 that following a call to
+  munmap(), there may be a delay before the physical page frames are available
+  for reallocation.  For more details see gemini-conduit/README (source), or
+  share/doc/gasnet/README-{aries,gemini} (installed).
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  http://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

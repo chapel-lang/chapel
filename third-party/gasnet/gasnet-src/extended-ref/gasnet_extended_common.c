@@ -60,8 +60,8 @@ extern void gasneti_fatal_threadoverflow(const char *subsystem) {
     reason = "To raise this limit, set environment variable GASNET_MAX_THREADS.";
   else
     reason = GASNETI_MAX_THREADS_REASON;
-  gasneti_fatalerror("GASNet %s: Too many simultaneous local client threads (limit=%llu). %s",
-                      subsystem, (unsigned long long)maxthreads, reason);
+  gasneti_fatalerror("GASNet %s: Too many simultaneous local client threads (limit=%"PRIu64"). %s",
+                      subsystem, maxthreads, reason);
 }
 
 /* ------------------------------------------------------------------------------------ */

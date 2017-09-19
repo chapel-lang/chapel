@@ -122,6 +122,13 @@ private:
 
 #define forv_Type(_p, _v) forv_Vec(Type, _p, _v)
 
+const char* toString(Type* type);
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // a Qualifier allows the compiler to distinguish between
 // different properties of a variable (const or ref-ness in particular)
@@ -153,6 +160,8 @@ enum Qualifier {
   QUAL_CONST_NARROW_REF,
   QUAL_CONST_WIDE_REF
 };
+
+const char* qualifierToStr(Qualifier q);
 
 // A QualifiedType is basically a tuple of (qualifier, type).
 // Shorter names, such as QualType and QualT have been proposed.
@@ -226,27 +235,33 @@ public:
     return (_qual == QUAL_UNKNOWN || _qual == QUAL_CONST ||
             _qual == QUAL_REF || _qual == QUAL_CONST_REF);
   }
+
   bool isVal() const {
     return (_qual == QUAL_VAL || _qual == QUAL_CONST_VAL);
   }
+
   bool isRef() const {
     return (_qual == QUAL_REF || _qual == QUAL_CONST_REF ||
             _qual == QUAL_NARROW_REF || _qual == QUAL_CONST_NARROW_REF ||
             isRefType());
   }
+
   bool isWideRef() const {
     return (_qual == QUAL_WIDE_REF || _qual == QUAL_CONST_WIDE_REF ||
             isWideRefType());
   }
+
   bool isRefOrWideRef() const {
     return isRef() || isWideRef();
   }
+
   bool isConst() const {
     return qualifierIsConst(_qual);
   }
   // TODO: isImmutable
 
   bool isRefType() const;
+
   bool isWideRefType() const;
 
   QualifiedType toRef() {
@@ -257,8 +272,6 @@ public:
     return QualifiedType(QUAL_VAL, _type->getValType());
   }
 
-
-
   QualifiedType toConst() {
     return QualifiedType(qualifierToConst(_qual), _type);
   }
@@ -266,53 +279,23 @@ public:
   Type* type() const {
     return _type;
   }
+
   Qualifier getQual() const {
     return _qual;
   }
 
-  const char* qualStr() const {
-    Qualifier q = _qual;
-
-    if (isRefType()) {
-      q = QUAL_REF;
-    } else if (isWideRefType()) {
-      q = QUAL_WIDE_REF;
-    }
-
-    switch (q) {
-      case QUAL_UNKNOWN:
-        return "unknown";
-      case QUAL_CONST:
-        return "const";
-      case QUAL_REF:
-        return "ref";
-      case QUAL_CONST_REF:
-        return "const-ref";
-      case QUAL_PARAM:
-        return "param";
-      case QUAL_VAL:
-        return "val";
-      case QUAL_NARROW_REF:
-        return "narrow-ref";
-      case QUAL_WIDE_REF:
-        return "wide-ref";
-
-      case QUAL_CONST_VAL:
-        return "const-val";
-      case QUAL_CONST_NARROW_REF:
-        return "const-narrow-ref";
-      case QUAL_CONST_WIDE_REF:
-        return "const-wide-ref";
-    }
-    INT_FATAL("Unhandled Qualifier");
-    return "UNKNOWN-QUAL";
-  }
-
+  const char* qualStr() const;
 
 private:
   Type*      _type;
   Qualifier  _qual;
 };
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class EnumType : public Type {
  public:
@@ -509,8 +492,6 @@ GenRet codegenImmediate(Immediate* i);
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
-#define LOCALE_TYPE dtLocale->typeInfo()
-#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
 
 #define is_arithmetic_type(t)                        \

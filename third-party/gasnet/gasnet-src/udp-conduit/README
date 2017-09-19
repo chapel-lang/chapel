@@ -22,81 +22,6 @@ In rare cases, systems may require tweaks to an IP firewall to allow UDP
 communication between compute nodes on the udp-conduit worker subnet. See more
 below.
 
-Recognized environment variables:
----------------------------------
-
-* All the standard GASNet environment variables (see top-level README)
-
-* GASNET_NETWORKDEPTH - depth of network buffers to allocate. 
-  Specifically, the number of AMRequests that can be outstanding to a
-  given peer before further requests to that peer will stall to await reply/ack.
-  Use larger values to increase bandwidth on longer-latency networks. 
-  Note that internal buffer space grows linearly with depth, and specifying
-  a value which is too large can lead to increased packet loss and 
-  retransmission costs on OS's with small UDP buffer limits or 
-  hardware that drops packets in response to congestion (includes most Ethernet
-  hardware).
-
-* GASNET_SPAWNFN - job spawn mechanism to use (see below)
-
-* GASNET_RECVDEPTH - max depth in messages of the shared AM receive queue (shared
-  by all incoming Requests and Replies from any peer). This limits the number
-  of messages that can be received during a single Poll.  Defaults to a
-  reasonable value based on job size and GASNET_NETWORKDEPTH.
-
-* GASNET_SENDDEPTH - max number of AMRequests that each node can have outstanding,
-  combined across ALL peers (as opposed to NETWORKDEPTH which is a per-peer limit). 
-  This can be used to limit AMRequest send buffer utilization in jobs where nodes
-  communicate with a large number of distinct peers.  
-  Set to -1 to specify unlimited, which amounts to NETWORKDEPTH*jobsize.
-  Defaults to a reasonable value based on job size and GASNET_NETWORKDEPTH.
-
-* GASNET_REQUESTTIMEOUT_MAX - max timeout in microseconds before a request
-  is considered undeliverable (a fatal error). Defaults to 30000000 (30 seconds).
-  Can be set to 0 for infinite timeout, which can be useful when freezing 
-  processes for long periods of time during debugging sessions.
-
-* GASNET_REQUESTTIMEOUT_INITIAL, GASNET_REQUESTTIMEOUT_BACKOFF
-  Advanced options for tweaking the retransmission algorithm (initial timeout in us, 
-  and timeout backoff multiplier). Larger timeouts allow more tolerance for 
-  network congestion and inattentiveness of remote nodes.  Shorter timeouts
-  provide faster recovery from packet loss (which is uncommon in most LANs),
-  at a potential overhead cost of more useless retransmissions.
-  Most users should probably leave these alone.
-
-* GASNET_ROUTE_OUTPUT
-  If non-zero, this option request AMUDP perform explicit forwarding of
-  stdout/stderr streams from the workers to the console using TCP socket
-  connections. If zero, no explicit forwarding is performed and this duty 
-  is left up to the underlying system and job spawner.  The default is
-  system-dependent.
-
-* GASNET_LINEBUFFERSZ
-  The size (in bytes) of the buffer used for line buffering of stdin/stdout.
-  Should be large enough for decent bandwidth on multi-line chunks, but 
-  scales master-side memory utilization linearly with workers that generate output.
-  Default 1024.  Set to 0 to disable line buffering, which allows partial
-  lines to be displayed sooner, but may result in concurrent output from
-  multiple workers being interleaved on a single line.
-  Has no effect if GASNET_ROUTE_OUTPUT is disabled.
-
-* GASNET_MASTERIP
-  Specify the exact IP address which the worker nodes should use to connect
-  to the master (spawning) node.  By default the master node will pass the
-  result of gethostname() to the worker nodes, which will then resolve that
-  to an IP address using gethostbynname().
-
-* GASNET_WORKERIP
-  Specify the IP subnet to be used for communication among the worker nodes.
-  By default, worker nodes will communicate among themselves using the same
-  interface used to connect to the master node (see GASNET_MASTERIP, above).
-  Example: GASNET_WORKERIP=192.168.0.0
-
-* GASNET_ENV_CMD
-  Specify the full path to the "env" command on the worker nodes.  By default
-  the value "env" is used, which is sufficient as long as the command can be
-  found in the default search path.
-
 Optional compile-time settings:
 ------------------------------
 
@@ -114,19 +39,6 @@ Optional compile-time settings:
   support large-scale runs with 1..3 TCP connections per worker.
   This is usually controlled from the shell's limit or ulimit command, subject
   to system-imposed hard limits.
-
-Known problems:
----------------
-
-* See the Berkeley UPC Bugzilla server for details on known bugs.
-
-Future work:
-------------
-
-* Integrate ssh-spawner to remove spawning scalability issues.
-
-* Push thread-safety down into the AMUDP library, to expose more concurrency
-  in GASNET_PAR mode.
 
 Choosing the udp-conduit spawn mechanism (GASNET_SPAWNFN):
 ---------------------------------------------------------
@@ -220,7 +132,7 @@ $
 
 The custom spawner allows the user and/or site installer to provide a custom
 command to be used for starting the worker processes across the worker nodes.
-This provides spawning extensiblity - the custom command can invoke any
+This provides spawning extensibility - the custom command can invoke any
 arbitrary site-specific spawning command (for example to call to an OS-provided
 spawner, a batch system, or a custom-written wrapper script that performs
 whatever actions are necessary to start the job). The only required environment 
@@ -280,6 +192,102 @@ Similarly, one can use the srun command in SLURM:
 
 $ setenv GASNET_SPAWNFN 'C'
 $ setenv GASNET_CSPAWN_CMD 'srun -n %N %C'  
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+* GASNET_NETWORKDEPTH - depth of network buffers to allocate. 
+  Specifically, the number of AMRequests that can be outstanding to a
+  given peer before further requests to that peer will stall to await reply/ack.
+  Use larger values to increase bandwidth on longer-latency networks. 
+  Note that internal buffer space grows linearly with depth, and specifying
+  a value which is too large can lead to increased packet loss and 
+  retransmission costs on OS's with small UDP buffer limits or 
+  hardware that drops packets in response to congestion (includes most Ethernet
+  hardware).
+
+* GASNET_SPAWNFN - job spawn mechanism to use (see above)
+
+* GASNET_RECVDEPTH - max depth in messages of the shared AM receive queue (shared
+  by all incoming Requests and Replies from any peer). This limits the number
+  of messages that can be received during a single Poll.  Defaults to a
+  reasonable value based on job size and GASNET_NETWORKDEPTH.
+
+* GASNET_SENDDEPTH - max number of AMRequests that each node can have outstanding,
+  combined across ALL peers (as opposed to NETWORKDEPTH which is a per-peer limit). 
+  This can be used to limit AMRequest send buffer utilization in jobs where nodes
+  communicate with a large number of distinct peers.  
+  Set to -1 to specify unlimited, which amounts to NETWORKDEPTH*jobsize.
+  Defaults to a reasonable value based on job size and GASNET_NETWORKDEPTH.
+
+* GASNET_REQUESTTIMEOUT_MAX - max timeout in microseconds before a request
+  is considered undeliverable (a fatal error). Defaults to 30000000 (30 seconds).
+  Can be set to 0 for infinite timeout, which can be useful when freezing 
+  processes for long periods of time during debugging sessions.
+
+* GASNET_REQUESTTIMEOUT_INITIAL, GASNET_REQUESTTIMEOUT_BACKOFF
+  Advanced options for tweaking the retransmission algorithm (initial timeout in us, 
+  and timeout backoff multiplier). Larger timeouts allow more tolerance for 
+  network congestion and inattentiveness of remote nodes.  Shorter timeouts
+  provide faster recovery from packet loss (which is uncommon in most LANs),
+  at a potential overhead cost of more useless retransmissions.
+  Most users should probably leave these alone.
+
+* GASNET_ROUTE_OUTPUT
+  If non-zero, this option request AMUDP perform explicit forwarding of
+  stdout/stderr streams from the workers to the console using TCP socket
+  connections. If zero, no explicit forwarding is performed and this duty 
+  is left up to the underlying system and job spawner.  The default is
+  system-dependent.
+
+* GASNET_LINEBUFFERSZ
+  The size (in bytes) of the buffer used for line buffering of stdin/stdout.
+  Should be large enough for decent bandwidth on multi-line chunks, but 
+  scales master-side memory utilization linearly with workers that generate output.
+  Default 1024.  Set to 0 to disable line buffering, which allows partial
+  lines to be displayed sooner, but may result in concurrent output from
+  multiple workers being interleaved on a single line.
+  Has no effect if GASNET_ROUTE_OUTPUT is disabled.
+
+* GASNET_MASTERIP
+  Specify the exact IP address which the worker nodes should use to connect
+  to the master (spawning) node.  By default the master node will pass the
+  result of gethostname() to the worker nodes, which will then resolve that
+  to an IP address using gethostbynname().
+
+* GASNET_WORKERIP
+  Specify the IP subnet to be used for communication among the worker nodes.
+  By default, worker nodes will communicate among themselves using the same
+  interface used to connect to the master node (see GASNET_MASTERIP, above).
+  Example: GASNET_WORKERIP=192.168.0.0
+
+* GASNET_ENV_CMD
+  Specify the full path to the "env" command on the worker nodes.  By default
+  the value "env" is used, which is sufficient as long as the command can be
+  found in the default search path.
+
+Known problems:
+---------------
+
+* Udp-conduit does not support user-provided values for GASNET_TSC_RATE* (which
+  fine-tune timer calibration on x86/Linux).  This is partially due to a
+  dependency cycle at startup with propagation of environment variables, but
+  more importantly because the retransmission algorithm (and hence all conduit
+  comms) rely on gasnet timers to be accurate (at least approximately), so we
+  don't allow the user to weaken or disable their calibration.
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  http://gasnet-bugs.lbl.gov/
+
+Future work:
+------------
+
+* Integrate ssh-spawner to remove spawning scalability issues.
+
+* Push thread-safety down into the AMUDP library, to expose more concurrency
+  in GASNET_PAR mode.
 
 ==============================================================================
 

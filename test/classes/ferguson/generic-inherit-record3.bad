@@ -1,7 +1,2 @@
-generic-inherit-record3.chpl:30: internal error: CHE0736 chpl Version 1.16.0 pre-release (d6fb1e6)
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see http://chapel.cray.com/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+generic-inherit-record3.chpl:12: error: inheritance is not currently supported for records
+generic-inherit-record3.chpl:12: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

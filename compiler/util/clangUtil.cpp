@@ -287,7 +287,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   if( debugPrint) printf("Adding macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
+#if HAVE_LLVM_VER >= 50
+  if(macro->getNumParams() > 0) {
+#else
   if(macro->getNumArgs() > 0) {
+#endif
     if( debugPrint) {
       printf("the macro takes arguments\n");
     }
@@ -1153,7 +1157,9 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder) {
     PMBuilder.OptLevel = 3;
     PMBuilder.LoopVectorize = true;
     PMBuilder.SLPVectorize = true;
+#if HAVE_LLVM_VER < 50
     PMBuilder.BBVectorize = true;
+#endif
     PMBuilder.DisableUnrollLoops = true;
     // TODO: what other flags on PMBuilder should we set?
   } else {
@@ -1191,6 +1197,17 @@ void prepareCodegenLLVM()
   info->FPM_postgen = fpm;
 
   info->FPM_postgen->doInitialization();
+
+  if(ffloatOpt == 1)
+  {
+    llvm::FastMathFlags FM;
+    FM.setNoNaNs();
+    FM.setNoInfs();
+    FM.setNoSignedZeros();
+    FM.setAllowReciprocal();
+    FM.setUnsafeAlgebra();
+    info->builder->setFastMathFlags(FM);
+  }
 }
 
 #if HAVE_LLVM_VER >= 33
@@ -1323,6 +1340,11 @@ void runClang(const char* just_parse_filename) {
         }
       }
     }
+
+    // Include header containing libc wrappers
+    clangOtherArgs.push_back("-include");
+    clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
+
     // Include extern C blocks
     if( externC && gAllExternCode.filename ) {
       clangOtherArgs.push_back("-include");
@@ -1410,11 +1432,6 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
   if( ! gAllExternCode.filename ) {
     openCFile(&gAllExternCode, "extern-code", "c");
     INT_ASSERT(gAllExternCode.fptr);
-
-    // Allow code in extern block to use malloc/calloc/realloc/free
-    // Note though that e.g. strdup or other library routines that
-    // allocate memory might still be an issue...
-    fprintf(gAllExternCode.fptr, "#include \"chpl-mem-no-warning-macros.h\"\n");
   }
 
   if( ! module->extern_info ) {
@@ -1973,7 +1990,11 @@ void setupForGlobalToWide(void) {
   llvm::Type* retType = llvm::Type::getInt8PtrTy(ginfo->module->getContext());
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
-                          dummy, retType, argType, NULL);
+                          dummy, retType, argType
+#if HAVE_LLVM_VER < 50
+                          , NULL
+#endif
+                          );
   llvm::Function* fn = llvm::dyn_cast<llvm::Function>(fval);
 
   // Mark the function as external so that it will not be removed
@@ -2218,7 +2239,10 @@ void makeBinaryLLVM(void) {
   options += " ";
   options += ldflags;
 
-  options += " -pthread";
+  // We may need to add the -pthread flag here for the link step
+  // if we start doing link-time optimization.  For now, leave it
+  // out because its unnecessary inclusion causes a warning message
+  // on Macs.
 
   // Now, if we're doing a multilocale build, we have to make a launcher.
   // For this reason, we create a makefile. codegen_makefile

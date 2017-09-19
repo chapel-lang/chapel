@@ -40,7 +40,8 @@ iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
   }
 
 iter DefaultRectangularDom.dsiPartialThese(param onlyDim, otherIdx,
-    param tag: iterKind) where tag == iterKind.standalone {
+    param tag: iterKind) where tag == iterKind.standalone &&
+    __primitive("method call resolves", ranges(onlyDim), "these", tag) {
 
     if !dsiPartialDomain(onlyDim).member(otherIdx) then return;
     for i in ranges(onlyDim).these(tag) do yield i;
@@ -105,11 +106,11 @@ proc DefaultSparseDom.__private_findRowRange(r) {
   var done: atomic bool;
   begin with (ref end) {
     var found: bool;
-    (found, end) = binarySearch(indices, ((...r),endDummy));
+    (found, end) = binarySearch(indices, ((...r),endDummy), hi=nnz);
     done.write(true);
   }
   var found: bool;
-  (found, start) = binarySearch(indices, ((...r),startDummy));
+  (found, start) = binarySearch(indices, ((...r),startDummy), hi=nnz);
   done.waitFor(true);
   return start..min(nnz,end-1);
 }
@@ -259,14 +260,14 @@ iter DefaultSparseArr.dsiPartialThese(param onlyDim, otherIdx,
 //
 
 //
-// LayoutCSR support
+// LayoutCS support
 //
 
-proc CSRDom.dsiPartialDomain(param exceptDim) where rank > 1 {
+proc CSDom.dsiPartialDomain(param exceptDim) where rank > 1 {
   return parentDom._value.dsiPartialDomain(exceptDim);
 }
 
-iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
+iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity){
@@ -276,19 +277,19 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
   if onlyDim==1 {
     // Should we have a compiler warning about this expensive operation?
     for i in nnzDom.low..#nnz {
-      if colIdx[i] == otherIdx {
-        const (found, loc) = binarySearch(rowStart, i);
+      if idx[i] == otherIdx {
+        const (found, loc) = binarySearch(startIdx, i);
         yield if found then loc else loc-1;
       }
     }
   }
   else {
-    for i in rowStart[otherIdx]..rowStop[otherIdx] do
-      yield colIdx[i];
+    for i in startIdx[otherIdx]..stopIdx[otherIdx] do
+      yield idx[i];
   }
 }
 
-iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
+iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -298,8 +299,8 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
 
-  const l = if onlyDim==1 then nnzDom.low else rowStart[otherIdx];
-  const h = if onlyDim==1 then nnzDom.low+nnz-1 else rowStop[otherIdx];
+  const l = if onlyDim==1 then nnzDom.low else startIdx[otherIdx];
+  const h = if onlyDim==1 then nnzDom.low+nnz-1 else stopIdx[otherIdx];
   const numElems = h-l+1;
 
   coforall t in 0..#numTasks {
@@ -308,31 +309,31 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
   }
 }
 
-iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
+iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
     param tag: iterKind, followThis) where tag==iterKind.follower {
 
-  const l = if onlyDim==1 then nnzDom.low else rowStart[otherIdx];
+  const l = if onlyDim==1 then nnzDom.low else startIdx[otherIdx];
   const followRange = followThis[1].translate(l);
 
   if onlyDim==1 {
     for i in followRange {
-      if colIdx[i] == otherIdx {
-        const (found, loc) = binarySearch(rowStart, i);
+      if idx[i] == otherIdx {
+        const (found, loc) = binarySearch(startIdx, i);
         yield if found then loc else loc-1;
       }
     }
   }
   else {
     for i in followRange {
-      yield colIdx[i];
+      yield idx[i];
     }
   }
 }
 
-iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
+iter CSDom.dsiPartialThese(param onlyDim, otherIdx,
     tasksPerLocale = dataParTasksPerLocale,
     ignoreRunning = dataParIgnoreRunningTasks,
     minIndicesPerTask = dataParMinGranularity,
@@ -349,15 +350,15 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
     coforall t in 0..#numTasks {
       const myChunk = _computeBlock(numElems, numTasks, t, h-l, 0, 0);
       for i in myChunk[1]+l..myChunk[2]+l {
-        if colIdx[i] == otherIdx {
-          const (found, loc) = binarySearch(rowStart, i);
+        if idx[i] == otherIdx {
+          const (found, loc) = binarySearch(startIdx, i);
           yield if found then loc else loc-1;
         }
       }
     }
   }
   else {
-    const l = rowStart[otherIdx], h = rowStop[otherIdx];
+    const l = startIdx[otherIdx], h = stopIdx[otherIdx];
     const numElems = h-l+1;
 
     const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
@@ -369,12 +370,12 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
           minIndicesPerTask, numElems);
 
     if numChunks == 1 {
-      for i in l..h do yield colIdx[i];
+      for i in l..h do yield idx[i];
     }
     else {
       coforall t in 0..#numTasks {
         const myChunk = _computeBlock(numElems, numTasks, t, h, l, l);
-        for i in myChunk[1]..myChunk[2] do yield colIdx[i];
+        for i in myChunk[1]..myChunk[2] do yield idx[i];
       }
     }
   }
@@ -383,20 +384,20 @@ iter CSRDom.dsiPartialThese(param onlyDim, otherIdx,
 // FIXME I tried to move these iterators up in class hierarchy by
 // implementing a dummy dsiAccess in those classes. But wasn't able
 // to compile.
-iter CSRArr.dsiPartialThese(param onlyDim, otherIdx) {
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx) {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1]) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 
-iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.leader {
   for followThis in dom.dsiPartialThese(onlyDim,otherIdx[1],tag=tag) {
     yield followThis;
   }
 }
 
-iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag, followThis) where tag==iterKind.follower {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag, 
       followThis) {
@@ -404,14 +405,14 @@ iter CSRArr.dsiPartialThese(param onlyDim, otherIdx,
   }
 }
 
-iter CSRArr.dsiPartialThese(param onlyDim, otherIdx, 
+iter CSArr.dsiPartialThese(param onlyDim, otherIdx, 
     param tag) where tag==iterKind.standalone {
   for i in dom.dsiPartialThese(onlyDim, otherIdx[1], tag=tag) {
     yield dsiAccess(otherIdx.withIdx(onlyDim, i));
   }
 }
 //
-// end LayoutCSR support
+// end LayoutCS support
 //
 
 //

@@ -35,7 +35,7 @@ var initialTemp = 1.44;
 var density = .8442;
 var dt = .005;
 var dtforce = .0025;
-var force_cut = 2.5; 
+var force_cut = 2.5;
 var cutneigh = 2.8;
 var neigh_every = 20;
 var thermoEvery = 100;
@@ -62,9 +62,9 @@ inline proc dot(a,b : v3int) {
 
 record atom {
   // velocity, force
-  var v, f : v3; 
+  var v, f : v3;
 
-  // define storage for neighbor list, which stores the bin and index 
+  // define storage for neighbor list, which stores the bin and index
   // of a neighboring atom
   var nspace : domain(1) = {1..100};
   var neighs : [nspace] (v3int,int);
@@ -80,7 +80,7 @@ var boxlo, boxhi : v3;
 var numAtoms : int;
 
 // default mass
-var mass : real = 1.0; 
+var mass : real = 1.0;
 
 // number of bins that define our piece of the contiguous space
 var numBins : v3int;
@@ -97,10 +97,10 @@ var forceTime : real;
 
 // Time for communication
 //
-// Since chapel abstracts much of this away, sometimes we do communication 
-// without knowing (or caring). This value may not be completely accurate, 
+// Since chapel abstracts much of this away, sometimes we do communication
+// without knowing (or caring). This value may not be completely accurate,
 // but should reflect the bulk of communication that occurs.
-var commTime : real; 
+var commTime : real;
 
 // will halt if true
 if pHelp then printHelp();
@@ -130,9 +130,9 @@ if generating {
 
   boxhi = box;
   numAtoms = (4 * problemSize(1) * problemSize(2) * problemSize(3)) : int;
-  
+
   // compute the number of bins we need in each direction
-  for i in 1..3 do 
+  for i in 1..3 do
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
   dataFile = open(data_file, iomode.r);
@@ -154,9 +154,9 @@ if generating {
 
   const masses = dataReader.readln(string);
   assert(masses == "Masses");
-  var mass_type: int; 
+  var mass_type: int;
   dataReader.readln(mass_type, mass);
-  
+
   // density overridden if data file provided
   density = numAtoms / (volume);
   const nbs : real = (density * 16) ** (1.0/3.0 : real);
@@ -179,7 +179,7 @@ const bininv = (1.0,1.0,1.0) / binsize;
 
 // number of bins we need for neighboring
 var numNeed : v3int;
-for i in 1..3 { 
+for i in 1..3 {
   numNeed(i) = (cutneigh * bininv(i)) : int;
   if numNeed(i) * binsize(i) < factor * cutneigh then numNeed(i) += 1;
 }
@@ -196,10 +196,10 @@ const binSpace = {1..numBins(1), 1..numBins(2), 1..numBins(3)};
 // The 'special sauce'. Will distribute stuff across locales
 const DistSpace = binSpace dmapped Block(binSpace);
 
-// bin storage. we can likely assume that each bin will store 
+// bin storage. we can likely assume that each bin will store
 // about the same number of atoms
 //
-// TODO: can we deal with this on a per-locale basis? How do we deal with 
+// TODO: can we deal with this on a per-locale basis? How do we deal with
 // the case of not enough space when copying inside communication?
 var perBinSpace : domain(1) = {1..8};
 
@@ -216,13 +216,13 @@ class Chunk {
   var PosOffset : [NeighDom] v3;
 }
 
-// This breaks the abstraction layer a bit. hopefully we can push this into a 
-// Chapel distribution at some point. 
+// This breaks the abstraction layer a bit. hopefully we can push this into a
+// Chapel distribution at some point.
 //
-// LocaleGridDom is a set of indices that map into LocaleGrid, which 
-// contains 'locale' objects with which we can use the 'on' statement 
-// for actual distribution. These values are automatically calculated 
-// by the Block distribution, and it was simplest to re-use them in our 
+// LocaleGridDom is a set of indices that map into LocaleGrid, which
+// contains 'locale' objects with which we can use the 'on' statement
+// for actual distribution. These values are automatically calculated
+// by the Block distribution, and it was simplest to re-use them in our
 // code.
 const LocaleGridDom = DistSpace._value.dist.targetLocDom;
 const LocaleGrid = DistSpace._value.dist.targetLocales;
@@ -262,7 +262,7 @@ if generating {
 
   dataReader.readln(string); // skip 'Velocities' line
 
-  // read velocities and add 
+  // read velocities and add
   for x in tempPos {
     var v : v3;
     var a : int;
@@ -275,7 +275,7 @@ if generating {
   dataFile.close();
 }
 
-// setup/store slices and neighbors so we don't have to recompute them every 
+// setup/store slices and neighbors so we don't have to recompute them every
 // time. Our neighbor bins won't change, and we'll always need the same slices.
 proc setupComms() {
   for ijk in LocaleGridDom {
@@ -298,13 +298,13 @@ proc setupComms() {
       ref DestSlice = MyChunk.DestSlice;
       ref SrcSlice = MyChunk.SrcSlice;
       ref Neighs = MyChunk.Neighs;
-     
+
       // Create 3D slices representing an overlap
       for (Src, Dest, neigh) in zip(SrcSlice, DestSlice, NeighDom) {
         // the number of bins (numNeed) we need in a direction (neigh)
         Dest = MyLocDom.exterior(neigh * numNeed);
 
-        // in the case of many locales, most of the time source and destination 
+        // in the case of many locales, most of the time source and destination
         // will share the same indices. The wrapping case is handled soon.
         Src = Dest;
       }
@@ -314,7 +314,7 @@ proc setupComms() {
 
       // adjust our remote-translated slices and neighbor pointer
       // store for future use
-      for (Src, Dest, PosOffset, neigh) in 
+      for (Src, Dest, PosOffset, neigh) in
         zip(SrcSlice, DestSlice, MyChunk.PosOffset, NeighDom) {
         // no comms with ourself, can't 'continue' inside a forall
         if neigh != (0,0,0) {
@@ -322,12 +322,12 @@ proc setupComms() {
           var neighbor = ijk + neigh;
 
           // some of our slices will overlap with 'real' cells, but slices
-          // on the exterior will need their cells to be offset so we can index 
+          // on the exterior will need their cells to be offset so we can index
           // into the neighboring locale's bins.
           var SrcOffset = (0,0,0);
 
-          // Adjust the neighbor index so we're actually referencing an 
-          // existing locale. Also compute the offset for source slices, 
+          // Adjust the neighbor index so we're actually referencing an
+          // existing locale. Also compute the offset for source slices,
           // if necessary.
           for i in 1..3 {
             if neighbor(i) < 0 {
@@ -341,15 +341,15 @@ proc setupComms() {
           }
           Src = Src.translate(SrcOffset);
           Neighs[neigh] = neighbor;
-          
+
           var mask = (1.0,1.0,1.0);
-          for i in 1..3 do 
+          for i in 1..3 do
             if Dest.low(i) == Src.low(i) then mask(i) = 0.0;
-          
+
           // ghost's position offset
           PosOffset = (neigh) * box * mask;
 
-          if debug 
+          if debug
             then writeln(Src, " is the remote neighbor of ", Dest);
           }
       }
@@ -364,10 +364,10 @@ proc cleanup() {
 
 // Reads an input file
 proc inputFile() {
-  var err : syserr;
-  var fchan = open(err, input_file, iomode.r);
-
-  if err then {
+  var fchan: file;
+  try {
+    fchan = open(input_file, iomode.r);
+  } catch {
     input_file = "none";
     return;
   }
@@ -388,7 +388,7 @@ proc inputFile() {
 
   // 'size of problem'
   problemSize = r.readln(int,int,int);
-  
+
   // # iterations
   numSteps = r.readln(int);
 
@@ -428,10 +428,10 @@ proc printHelp() {
   writeln("\t--num_bins <int>:        set linear dimension of bin grid");
   writeln("\t--units <string>:        set units (lj or metal), see LAMMPS documentation");
   writeln("\t--force <string>:        set interaction model (lj or eam)");
-  writeln("\t--data_file <string>:    read configuration from LAMMPS data file"); 
+  writeln("\t--data_file <string>:    read configuration from LAMMPS data file");
   writeln("\n  Miscellaneous:");
   writeln("\t--pHelp:                  display this help message");
-  writeln("\t--------------------------------------------------"); 
+  writeln("\t--------------------------------------------------");
   exit(0);
 }
 
@@ -442,7 +442,7 @@ proc printSim() {
   writeln("# miniMD-Reference 0.1 (Chapel) output ...");
   writeln("# Systemparameters: ");
   writeln("\t# input_file: ", input_file);
-  if data_file != "" then 
+  if data_file != "" then
     writeln("\t# datafile: ", data_file);
   else
     writeln("\t# datafile: none");
@@ -452,7 +452,7 @@ proc printSim() {
   else writeln("LJ");
   writeln("\t# atoms: ", numAtoms);
   write("\t# System size: ");
-  writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n", 
+  writef("%.2dr %.2dr %.2dr (unit cells: %i %i %i)\n",
       box(1), box(2), box(3), problemSize(1), problemSize(2), problemSize(3));
   writef("\t# density: %.6dr\n", density);
   writef("\t# Force cutoff: %.6dr\n", force_cut);
@@ -503,7 +503,7 @@ proc create_atoms() {
       for i in 1..3 {
         withinBounds = withinBounds && temp(i) >= boxlo(i) && temp(i) < boxhi(i);
       }
-                          
+
       if withinBounds {
         n = (curCoord(3) * (2 * problemSize(2)) * (2*problemSize(1)) + curCoord(2) * (2 * problemSize(1)) + curCoord(1) + 1) : int;
         for i in 1..3 {
@@ -551,7 +551,7 @@ proc create_velocity() {
   coforall (ijk) in LocaleGridDom {
     on LocaleGrid[ijk] {
       const Me = Grid[ijk];
-      vtotDist[ijk] = + reduce forall bin in Me.Real do 
+      vtotDist[ijk] = + reduce forall bin in Me.Real do
       + reduce forall ind in 1..Me.Count[bin] do Me.Bins[bin][ind].v;
     }
   }

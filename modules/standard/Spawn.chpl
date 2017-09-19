@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -158,7 +158,7 @@ module Spawn {
   private extern proc qio_spawn_free_ptrvec(args: c_ptr(c_string));
   private extern proc qio_spawn_free_str(str: c_string);
 
-  /* 
+  /*
      This record represents a subprocess.
 
      Note that the subprocess will not be waited for if this record
@@ -205,7 +205,7 @@ module Spawn {
     pragma "no doc"
     var errorfd:c_int;
 
-   
+
     /* `false` if this library knows that the subprocess is not running */
     var running:bool;
     /* The exit status from the subprocess, or possibly a value >= 256
@@ -239,32 +239,23 @@ module Spawn {
     // are there now because of issues with when the reference counts
     // for the file are updated.
 
-    pragma "no doc" 
+    pragma "no doc"
     var spawn_error:syserr;
 
     pragma "no doc"
-    proc _start_stdin_buffering() {
-      var err = stdin_channel._mark();
-      if ! err {
-        stdin_buffering = true;
-      }
-      return err;
-    }
-
-    pragma "no doc"
     proc _stop_stdin_buffering() {
-      if this.stdin_buffering {
-        this.stdin._commit();
+      if this.stdin_buffering && this.stdin_pipe {
+        this.stdin_channel._commit();
         this.stdin_buffering = false; // Don't commit again on close again
       }
     }
 
 
     pragma "no doc"
-    proc _halt_on_launch_error() {
+    proc _throw_on_launch_error() throws {
       if !running {
-        ioerror(spawn_error,
-                "encountered when launching subprocess");
+        try ioerror(spawn_error,
+                    "encountered when launching subprocess");
       }
     }
 
@@ -276,10 +267,11 @@ module Spawn {
        Causes a fatal error if the subprocess does not have a
        stdin pipe open.
      */
-    proc stdin {
-      _halt_on_launch_error();
+    proc stdin throws {
+      try _throw_on_launch_error();
       if stdin_pipe == false {
-        halt("subprocess was not configured with a stdin pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stdin pipe");
       }
       return stdin_channel;
     }
@@ -292,10 +284,11 @@ module Spawn {
        Causes a fatal error if the subprocess does not have a
        stdout pipe open.
      */
-    proc stdout {
-      _halt_on_launch_error();
+    proc stdout throws {
+      try _throw_on_launch_error();
       if stdout_pipe == false {
-        halt("subprocess was not configured with a stdout pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stdout pipe");
       }
       return stdout_channel;
     }
@@ -308,10 +301,11 @@ module Spawn {
        Causes a fatal error if the subprocess does not have a
        stderr pipe open.
      */
-    proc stderr {
-      _halt_on_launch_error();
+    proc stderr throws {
+      try _throw_on_launch_error();
       if stderr_pipe == false {
-        halt("subprocess was not configured with a stderr pipe");
+        throw SystemError.fromSyserr(
+            EINVAL, "subprocess was not configured with a stderr pipe");
       }
       return stderr_channel;
     }
@@ -367,12 +361,12 @@ module Spawn {
      indicates stderr -> stdout.
 
      What about a string for a file path? To support that, use
-     arguments like this: stdin:?t = FORWARD 
+     arguments like this: stdin:?t = FORWARD
 
      * forward it -> posix_spawn_file_actions_adddup2
      * close it -> posix_spawn_file_actions_addclose
      * string for file path -> posix_spawn_file_actions_addopen
-     * open file descriptor ->  posix_spawn_file_actions_adddup2 
+     * open file descriptor ->  posix_spawn_file_actions_adddup2
                  (dup it to remove close-on-exec flag)
      * in-memory file, HDFS file, etc that don't have
        a file descriptor.
@@ -386,7 +380,7 @@ module Spawn {
 
   /*
      Create a subprocess.
-     
+
      :arg args: An array of strings storing the command to run and
                 its arguments. The command to run is always the first argument.
                 The command could be found in the current PATH or
@@ -398,7 +392,7 @@ module Spawn {
      :arg env: An array of strings storing the environment to use when
                spawning the child process instead of forwarding the
                current environment. By default, this argument
-               is an empty array. In that case, 
+               is an empty array. In that case,
                the current environment will be forwarded to the child
                process.
 
@@ -430,7 +424,7 @@ module Spawn {
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
                 Defaults to :type:`IO.iokind` ``iokind.dynamic``.
-                 
+
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
@@ -441,7 +435,7 @@ module Spawn {
      */
   proc spawn(args:[] string, env:[] string=Spawn.empty_env, executable="",
              stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
-             param kind=iokind.dynamic, param locking=true)
+             param kind=iokind.dynamic, param locking=true) throws
   {
     var stdin_fd:c_int = QIO_FD_FORWARD;
     var stdout_fd:c_int = QIO_FD_FORWARD;
@@ -453,11 +447,11 @@ module Spawn {
     var err:syserr;
 
     if isIntegralType(stdin.type) then stdin_fd = stdin;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported"); 
+    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
     if isIntegralType(stdout.type) then stdout_fd = stdout;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported"); 
+    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
     if isIntegralType(stderr.type) then stderr_fd = stderr;
-    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported"); 
+    else compilerError("only FORWARD/CLOSE/PIPE/STDOUT supported");
 
     // When memory is registered with the NIC under ugni, a fork will currently
     // segfault. Here we halt before such a call is made to provide an
@@ -473,9 +467,9 @@ module Spawn {
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = env_c_str;
             if env_str.count("HUGETLB") > 0 then
-              halt("spawn with more than 1 locale for CHPL_COMM=ugni ",
-                   "with hugepages currently ",
-                   "requires stdin, stdout, stderr=FORWARD");
+              throw SystemError.fromSyserr(
+                  EINVAL,
+                  "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=FORWARD");
           }
         }
 
@@ -525,7 +519,7 @@ module Spawn {
                              outputfd=stdout_fd,
                              errorfd=stderr_fd,
                              running=true, exit_status=256);
- 
+
     if err {
       ret.running = false;
       ret.exit_status = 257;
@@ -602,15 +596,15 @@ module Spawn {
        Since the command string is passed to a shell, it is
        very unsecure to pass user input to this command
        without proper quoting.
-    
+
 
      :arg command: A string representing the command to run.
                    This string will be interpreted by the shell.
-    
+
      :arg env: An array of strings storing the environment to use when
                spawning the child process instead of forwarding the
                current environment. By default, this argument
-               is an empty array. In that case, 
+               is an empty array. In that case,
                the current environment will be forwarded to the child
                process.
 
@@ -633,7 +627,7 @@ module Spawn {
      :arg executable: By default, the executable argument is "/bin/sh".
                       That directs the subprocess to run the /bin/sh shell
                       in order to interpret the command string.
-                     
+
      :arg shellarg: An argument to pass to the shell before
                     the command string. By default this is "-c".
 
@@ -641,7 +635,7 @@ module Spawn {
                 :const:`PIPE` is used. This argument is used to set
                 :attr:`subprocess.kind` in the resulting subprocess.
                 Defaults to :type:`IO.iokind` ``iokind.dynamic``.
-                 
+
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
                    in the resulting subprocess. Defaults to `true`.
@@ -653,7 +647,7 @@ module Spawn {
   proc spawnshell(command:string, env:[] string=Spawn.empty_env,
                   stdin:?t = FORWARD, stdout:?u = FORWARD, stderr:?v = FORWARD,
                   executable="/bin/sh", shellarg="-c",
-                  param kind=iokind.dynamic, param locking=true)
+                  param kind=iokind.dynamic, param locking=true) throws
   {
     var args = [command];
     if shellarg != "" then args.push_front(shellarg);
@@ -683,15 +677,15 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.poll() {
+  proc subprocess.poll() throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.poll(error=err);
-    if err then ioerror(err, "in subprocess.poll");
+    if err then try ioerror(err, "in subprocess.poll");
   }
-  
+
   /*
     Wait for a child process to complete. After this function
     returns, :attr:`~subprocess.running` is `false` and
@@ -706,7 +700,7 @@ module Spawn {
 
 
     .. note::
-     
+
         Do not use `buffer` `false` when using :const:`PIPE` for stdin,
         stdout, or stderr.  If `buffer` is `false`, this function does not
         try to send any buffered input to the child process and so could result
@@ -763,22 +757,22 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.wait(buffer=true) {
+  proc subprocess.wait(buffer=true) throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.wait(error=err, buffer=buffer);
-    if err then ioerror(err, "in subprocess.wait");
+    if err then try ioerror(err, "in subprocess.wait");
   }
 
   /*
-     
+
     Wait for a child process to complete. After this function
     returns, :attr:`~subprocess.running` is `false` and
     :attr:`~subprocess.exit_status` stores the exit code returned
     by the subprocess.
- 
+
     This function handles cases in which stdin, stdout, or stderr
     for the child process is :const:`PIPE` by writing any
     input to the child process and buffering up the output
@@ -789,7 +783,7 @@ module Spawn {
                 when waiting for the child process.
    */
   proc subprocess.communicate(out error:syserr) {
-    
+
     on home {
       if this.stdin_pipe {
         // send data to stdin
@@ -817,13 +811,13 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.communicate() {
+  proc subprocess.communicate() throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.communicate(error=err);
-    if err then ioerror(err, "in subprocess.communicate");
+    if err then try ioerror(err, "in subprocess.communicate");
   }
 
   /*
@@ -855,11 +849,11 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.close() {
+  proc subprocess.close() throws {
     var err:syserr = ENOERR;
 
     this.close(error=err);
-    if err then ioerror(err, "in subprocess.close");
+    if err then try ioerror(err, "in subprocess.close");
   }
 
   // Signals as required by POSIX.1-2008, 2013 edition
@@ -959,13 +953,13 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.send_signal(signal:int) {
+  proc subprocess.send_signal(signal:int) throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.send_signal(error=err, signal=signal);
-    if err then ioerror(err, "in subprocess.send_signal");
+    if err then try ioerror(err, "in subprocess.send_signal");
   }
 
   /*
@@ -983,13 +977,13 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.kill() {
+  proc subprocess.kill() throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.kill(error=err);
-    if err then ioerror(err, "in subprocess.kill");
+    if err then try ioerror(err, "in subprocess.kill");
   }
 
   /*
@@ -1006,13 +1000,13 @@ module Spawn {
 
   // documented in the out error version
   pragma "no doc"
-  proc subprocess.terminate() {
+  proc subprocess.terminate() throws {
     var err:syserr = ENOERR;
 
-    _halt_on_launch_error();
+    try _throw_on_launch_error();
 
     this.terminate(error=err);
-    if err then ioerror(err, "in subprocess.terminate");
+    if err then try ioerror(err, "in subprocess.terminate");
   }
 
 }

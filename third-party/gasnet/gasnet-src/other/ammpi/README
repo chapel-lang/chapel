@@ -1,7 +1,7 @@
 AMMPI Documentation
 ===================
 Author: Dan Bonachea
-Contact email: upc-devel@lbl.gov
+Contact email: gasnet-devel@lbl.gov
 Home page: http://gasnet.lbl.gov/ammpi
 
 AMMPI is an implementation of the AM-2 specification over MPI-1.
@@ -60,4 +60,46 @@ AMMPI has a few notable departures from the AM-2 specification:
 
 * Clients should not take the address of AM_ entry point "functions", because
   many are implemented as macros.
+
+Change Log
+----------
+AMMPI 2.8 (03/2017)
+- Add AMMPI_FS_SYNC envvar to control exit-time filesystem sync()
+- Add AMMPI_MPI_THREAD to control MPI threading mode used to init MPI 2+ in AMMPI_SPMDSetThreadMode
+- Fix AM_{Get,Set}NumHandlers and AM_MoveEndpoint
+- Export AMMPI_enEqual
+- Expose AMX_SetTranslationTag
+- Add C++ compatibility to the public header (ie extern "C")
+- Renamed portable_platform.h
+- Rename some platform Makefile fragments
+- Remove support for: Cray T3E, Catamount, native Win32 (use cygwin instead)
+- Remove some obsolete files
+- make run-tests now outputs summary results at the end
+- Fix some harmless check-exports failures, and allow the test to be skipped via CHECK_EXPORTS=0
+- Fix some harmless warnings on amxdist
+- Respect MANUAL_MPICFLAGS in stand-alone mode
+- Remove the debug/opt workaround
+- Fix possible syntax errors with AM expression arguments
+- Silence the annoying MPICH/Linux _FORTIFY_SOURCE warning
+- Use MPI_Comm_set_errhandler for MPI 2+
+- Use realloc when appropriate to manage internal state
+- Use C99 __func__ when available in error messages
+- Fix compile errors for AMMPI_NONBLOCKING_SENDS==0 or AMMPI_PREPOST_RECVS=0
+- Remove dead code
+- Update URL and contact email
+
+AMMPI 2.7 (10/2010)
+- Test for MPI_VERSION >= 2 in threaded utilities
+- Fix a harmless warning
+
+AMMPI 2.6 (05/2010)
+- Fix an assertion failure on PREDICT_PACKET_LENGTH_
+
+AMMPI 2.5 (10/2009)
+- Implement strict prototypes, ie: fn(void)
+- Handle compilers that don't support __attribute__((__format__ (__printf__))
+
+AMMPI 2.4 (10/2007)
+- Implement AMMPI_SPMDSetThreadMode
+- Implement AMMPI_VERIFY_MPI_ORDERING
 

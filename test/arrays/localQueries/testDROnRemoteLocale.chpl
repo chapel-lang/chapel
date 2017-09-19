@@ -1,4 +1,6 @@
-const D = {1..10};
+// Note that this domain will be broadcated and serialized if the
+// --remote-serialization optimization is enabled.
+var D = {1..10};
 var A: [D] real;
 
 testit("testing D from locale 0", D);

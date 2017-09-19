@@ -7,20 +7,36 @@ use LinearAlgebra;
    Many of these tests are trivial and can be expanded upon in the future.
 */
 
-config const verbose=false;
+config const correctness = true;
 
 //
 // Initializers
 //
 
 {
-  const Dom = {0..#10};
-  const MDom = {0..#3, 0..#3};
+  const Dom = {0..#10},
+        MDom = {0..#3, 0..#3},
+        MDom2 = {0..#4, 0..#6};
+
+  //
+  // Vectors
+  //
 
   /* Dimensions */
   {
     var v = Vector(10);
     assertEqual(v.domain, Dom, "Vector(10)");
+  }
+
+  /* Range */
+  {
+    var v = Vector(0..#10);
+    assertEqual(v.domain, Dom, "Vector(0..#10)");
+  }
+  {
+    var v = Vector(1..#10);
+    const d = {1..#10};
+    assertEqual(v.domain, d, "Vector(1..#10)");
   }
 
   /* Domain */
@@ -37,6 +53,10 @@ config const verbose=false;
     assertEqual(v.domain, Dom, "Vector(A)");
   }
 
+  //
+  // Matrices
+  //
+
 
   /* Rows */
   {
@@ -44,11 +64,22 @@ config const verbose=false;
     assertEqual(M.domain, MDom, "Matrix(3)");
   }
 
-
   /* Dimensions */
   {
     var M = Matrix(3, 3);
     assertEqual(M.domain, MDom, "Matrix(3, 3)");
+  }
+
+  /* Range */
+  {
+    var M = Matrix(0..#3);
+    assertEqual(M.domain, MDom, "Matrix(0..#3)");
+  }
+
+  /* Ranges */
+  {
+    var M = Matrix(0..#4, 0..#6);
+    assertEqual(M.domain, MDom2, "Matrix(0..#4, 0..#6)");
   }
 
   /* Domain */
@@ -166,8 +197,8 @@ config const verbose=false;
   }
 }
 
-/* dot - calls matMult && inner*/
 
+/* dot - calls matMult && inner*/
 
 {
 
@@ -328,10 +359,10 @@ config const verbose=false;
                  [7,8,9],
                  eltType=real);
   var v = Vector(1,5,9);
-  var matrix = Matrix([1,0,0],
-                      [0,5,0],
-                      [0,0,9],
-                      eltType=real);
+  var vMat = Matrix([1,0,0],
+                    [0,5,0],
+                    [0,0,9],
+                    eltType=real);
   var M1 = Matrix([1,2,3,4],
                   [5,6,7,8],
                   [9,0,1,2],
@@ -340,11 +371,27 @@ config const verbose=false;
   var v12 = Vector(3,8);
   var v13 = Vector([9]);
 
-  assertEqual(v, diag(M), "diag(M)");
-  assertEqual(matrix, diag(v),"diag(v)");
-  assertEqual(v11,diag(M1),"diag(M1)");
-  assertEqual(v12,diag(M1,2),"diag(M1,2)");
-  assertEqual(v13,diag(M1,-2),"diag(M1,-2)");
+  assertEqual(v,    diag(M),        "diag(M)");
+  assertEqual(vMat, diag(v),        "diag(v)");
+  assertEqual(v11,  diag(M1),       "diag(M1)");
+  assertEqual(v12,  diag(M1,2),     "diag(M1,2)");
+  assertEqual(v13,  diag(M1,-2),    "diag(M1,-2)");
+
+  // Now let's try with offsets
+
+  ref rM = M.reindex(1..3, 1..3);
+  ref rv = v.reindex(1..3);
+  ref rvMat = vMat.reindex(1..3, 1..3);
+  ref rM1 = M1.reindex(1..3, 1..4);
+  ref rv11 = v11.reindex(1..3);
+  ref rv12 = v12.reindex(1..2);
+  ref rv13 = v13.reindex(1..1);
+
+  assertEqual(rv,   diag(rM),       "diag(M)");
+  assertEqual(rvMat,diag(rv),       "diag(v)");
+  assertEqual(rv11, diag(rM1),      "diag(M1)");
+  assertEqual(rv12, diag(rM1,2),    "diag(M1,2)");
+  assertEqual(rv13, diag(rM1,-2),   "diag(M1,-2)");
 }
 
 /* tril & triu */
@@ -426,13 +473,153 @@ config const verbose=false;
   assertFalse(isSquare(Rect), "isSquare(Rect)");
 }
 
+//
+// LinearAlgebra.Sparse
+//
+
+{
+  use LinearAlgebra.Sparse;
+
+  const parentDom = {0..#3, 0..#3},
+        parentDom2 = {0..#4, 0..#6};
+
+  var   Dom: sparse subdomain(parentDom) dmapped CS(),
+        Dom2: sparse subdomain(parentDom2) dmapped CS(),
+        IDom: sparse subdomain (parentDom) dmapped CS(),
+        tDom: sparse subdomain (parentDom2) dmapped CS(),
+        tDomT: sparse subdomain (parentDom2) dmapped CS();
+
+
+  // Identity sparse domain
+  IDom += [(0,0), (1,1), (2,2)];
+  tDom += [(0,0), (1,0), (2,0), (3,0)];
+  tDomT += [(0,0), (0,1), (0,2), (0,3)];
+
+
+  /* Rows */
+  {
+    var D = CSRDomain(3);
+    assertEqual(D, Dom, "CSRDomain(3)");
+  }
+
+  /* Dimensions */
+  {
+    var D = CSRDomain(3, 3);
+    assertEqual(D, Dom, "CSRDomain(3, 3)");
+  }
+
+  /* Range */
+  {
+    var D = CSRDomain(0..#3);
+    assertEqual(D, Dom, "CSRDomain(0..#3)");
+  }
+
+  /* Ranges */
+  {
+    var D = CSRDomain(0..#4, 0..#6);
+    assertEqual(D, Dom2, "CSRDomain(0..#4, 0..#6)");
+  }
+
+  /* Domain - CSR */
+  {
+    var D = CSRDomain(Dom);
+    assertEqual(D, Dom, "CSRDomain(Dom)");
+  }
+
+  /* Domain - Dense */
+  {
+    var D = CSRDomain(parentDom);
+    assertEqual(D, Dom, "CSRDomain(parentDom)");
+  }
+
+  // TODO:
+  // CSRDomain(dom)
+  // CSRMatrix(dom) (dense/sparse)
+
+
+  /* Array - Dense -> CSR */
+  {
+    var I = eye(3,3);
+    var A = CSRMatrix(I);
+    assertEqual(A.domain, IDom, "CSRMatrix(I)");
+  }
+
+  /* Array - CSR -> CSR */
+  {
+    var A: [Dom] real;
+    var M = CSRMatrix(A);
+    assertEqual(M.domain, Dom, "CSRDomain(A)");
+  }
+
+  /* Array - CSR real -> CSR int */
+  {
+    var A: [Dom] real;
+    var M = CSRMatrix(A, eltType=int);
+    assertEqual(M.domain, Dom, "CSRMatrix(A)");
+    assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
+  }
+
+  // TODO: more interesting cases for dot..
+
+  /* dot - matrix-matrix */
+  {
+    var A: [Dom] real;
+    var I: [IDom] real;
+    var AI = dot(A, I);
+    assertEqual(AI, A, "dot(A, I)");
+  }
+
+  /* dot - matrix-vector */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = dot(A, v);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* dot - vector-matrix */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = dot(v, A);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* dot - matrix-scalar */
+  {
+    var A: [IDom] real = 1;
+    var B = dot(A, 2);
+    var C = dot(2, A);
+    assertEqual(A.domain, B.domain, "dot(A, 2)");
+    assertEqual(A.domain, C.domain, "dot(2, A)");
+    assertEqual(B, C, "matrix-scalar");
+    var A2: A.type = 2*A;
+    assertEqual(A2, B, "dot(A, 2)");
+    assertEqual(A2, C, "dot(2, A)");
+  }
+
+  /* transpose */
+  {
+    var A: [tDom] int = 1;
+    var B = transpose(A);
+
+    assertEqual(B.domain, tDomT, "transpose(A)");
+    for i in A.domain.dim(1) {
+      assertEqual(A[i,0], B[0, i], "transpose(A) values");
+    }
+  }
+
+}
+
 
 //
 // Helpers
 //
 
 proc assertEqual(X, Y, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X != Y {
     writeln("Test Failed: ", msg);
     writeln(X, ' != ', Y);
@@ -442,7 +629,7 @@ proc assertEqual(X, Y, msg="") {
 
 proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X.shape != Y.shape {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -456,7 +643,7 @@ proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
 
 
 proc assertEqual(X: _tuple, Y: _tuple, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if X.size != Y.size {
     writeln("Test Failed: ", msg);
     writeln(X, '\n!=\n', Y);
@@ -473,7 +660,7 @@ proc assertEqual(X: _tuple, Y: _tuple, msg="") {
 }
 
 proc assertTrue(x: bool, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if !x {
     writeln("Test Failed: ", msg);
     writeln("boolean is false");
@@ -481,7 +668,7 @@ proc assertTrue(x: bool, msg="") {
 }
 
 proc assertFalse(x: bool, msg="") {
-  if verbose then writeln(msg);
+  if !correctness then writeln(msg);
   if x {
     writeln("Test Failed: ", msg);
     writeln("boolean is true");

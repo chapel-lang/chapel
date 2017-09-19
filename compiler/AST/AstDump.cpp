@@ -339,7 +339,7 @@ void AstDump::visitForallIntents(ForallIntents* clause) {
   for (int i = 0; i < clause->numVars(); i++) {
     if (i > 0) write(false, ",", true);
     if (clause->isReduce(i)) clause->riSpecs[i]->accept(this);
-    write(tfiTagDescrString(clause->fIntents[i]));
+    write(forallIntentTagDescription(clause->fIntents[i]));
     clause->fiVars[i]->accept(this);
   }
   write(false, ")", true);
@@ -513,6 +513,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
     case GOTO_ITER_RESUME:    write("gotoIterResume");    break;
     case GOTO_ITER_END:       write("gotoIterEnd");       break;
     case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
+    case GOTO_BREAK_ERROR_HANDLING: write("gotoBreakErrorHandling"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {

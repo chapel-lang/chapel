@@ -17,7 +17,13 @@
  * limitations under the License.
  */
 
-/* A Chapel version of a C pointer. */
+/*
+   This module contains Chapel types that can serve as C pointer
+   types for the purposes of interoperability and methods to work
+   with them.
+
+   See also :ref:`readme-extern`.
+ */
 module CPtr {
   use ChapelStandard;
 
@@ -26,20 +32,26 @@ module CPtr {
 
   // To generate legal C prototypes, we have to manually instantiate this
   // prototype for each pointer type that might be associated with 'x'.
+
   /* :returns: true if the passed value is a NULL pointer (ie 0) */
   pragma "no prototype"
+  pragma "no doc"
   extern proc is_c_nil(x):bool;
 
   /*
-    A local C pointer class used in C integration. This class represents the
-    equivalent to a C language pointer. Instances of this class support
-    assignment to other instances or nil, == or != comparison with a c_void_ptr
-    or with nil, and casting to another c_ptr type or to the c_void_ptr type.
-    In addition, c_ptr works within an if statement directly like so:
+
+    Represents a local C pointer for the purpose of C integration. This class
+    represents the equivalent to a C language pointer. Instances of this class
+    support assignment to other instances or nil, == or != comparison with a
+    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
+    the ``c_void_ptr`` type.
+
+    As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
+    by including it in an if statement conditional, like so:
 
     .. code-block:: chapel
 
-      var x: c_ptr;
+      var x: c_ptr = c_ptrTo(...);
       if x then do writeln("x is not nil");
       if !x then do writeln("x is nil");
 
@@ -66,6 +78,22 @@ module CPtr {
     */
     inline proc deref() ref {
       return __primitive("array_get", this, 0);
+    }
+    /* Print this pointer */
+    inline proc writeThis(ch) {
+      (this:c_void_ptr).writeThis(ch);
+    }
+  }
+
+  pragma "no doc"
+  inline proc c_void_ptr.writeThis(ch) {
+    if this == c_nil {
+      ch <~> "(nil)";
+    } else {
+      var err:syserr = ENOERR;
+      ch.writef(error=err, "0x%xu", this:c_uintptr);
+      if err then
+        ch.setError(err);
     }
   }
 
@@ -113,21 +141,29 @@ module CPtr {
   inline proc _cast(type t, x) where t:c_void_ptr && x.type:object {
     return __primitive("cast", t, x);
   }
-
+  pragma "no doc"
+  inline proc _cast(type t, x)
+  where (t:c_intptr || t:c_uintptr || t:int(64) || t:uint(64)) &&
+        (x.type:c_void_ptr || x.type:c_ptr) {
+    return __primitive("cast", t, x);
+  }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == c_void_ptr {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t:c_ptr {
       return __primitive("cast", t, nil);
   }
 
   pragma "compiler generated"
+  pragma "last resort"
   pragma "no doc"
   inline proc _defaultOf(type t) where t == c_fn_ptr {
       return __primitive("cast", t, nil);
@@ -216,12 +252,14 @@ module CPtr {
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
 
 
-  /* Returns a :type:`c_ptr` to a Chapel rectangular array.
-    Note that the existence of this c_ptr has no impact on the lifetime of the
-    array. The returned pointer will be invalid if the original array is
-    freed or even reallocated. Any domain assignment will probably make
-    this c_ptr invalid. If the array's data is stored in more than one chunk
-    the procedure will halt the program with an error message.
+  /*
+
+    Returns a :type:`c_ptr` to a Chapel rectangular array.  Note that the
+    existence of this :type:`c_ptr` has no impact on the lifetime of the array.
+    The returned pointer will be invalid if the original array is freed or even
+    reallocated. Domain assignment could make this :type:`c_ptr` invalid. If
+    the array's data is stored in more than one chunk the procedure will halt
+    the program with an error message.
 
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
@@ -250,9 +288,9 @@ module CPtr {
   }
 
   /* Returns a :type:`c_ptr` to any Chapel object.
-    Note that the existence of the c_ptr has no impact of the lifetime
+    Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
-    could go out of scope even if this c_ptr remains.
+    could go out of scope even if this :type:`c_ptr` remains.
 
     :arg x: the by-reference argument to get a pointer to. The argument should
             not be an array or domain (there is a different overload for arrays).
@@ -270,12 +308,15 @@ module CPtr {
     return c_pointer_return(x);
   }
 
+  pragma "no doc"
   inline proc c_ptrTo(x: c_fn_ptr) {
     return x;
   }
+  pragma "no doc"
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "no doc"
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }
@@ -283,7 +324,20 @@ module CPtr {
 
   private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
 
-  private inline proc c_sizeof(type x): size_t {
+  /*
+    Return the size in bytes of a type, as with the C ``sizeof`` built-in.
+
+    .. warning::
+
+      This method is intended for C interoperability. To enhance
+      flexibility, it is possible to request the sizes of Chapel types.
+      However, be aware:
+
+         * Chapel types are not necessarily stored in contiguous memory
+         * Behavior of ``c_sizeof`` with Chapel types may change
+         * Behavior given a Chapel class type is not well-defined
+   */
+  inline proc c_sizeof(type x): size_t {
     extern proc sizeof(type x): size_t;
     return sizeof(x);
   }
@@ -318,30 +372,39 @@ module CPtr {
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
-    :arg data: the c_ptr to memory that was allocated
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
-  inline proc c_free(data: c_ptr) {
+  inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 
+  /* Returns true if t is a c_ptr type or c_void_ptr.
+   */
+  proc isAnyCPtr(type t) param where t:c_ptr return true;
+  pragma "no doc"
+  proc isAnyCPtr(type t) param where t:c_void_ptr return true;
+  pragma "no doc"
+  proc isAnyCPtr(type t) param return false;
 
   /*
-    Copies n (potentially overlapping) bytes from memory area src to memory
+    Copies n potentially overlapping bytes from memory area src to memory
     area dest.
 
-    This is a simple wrapper over the C memmove() function.
+    This is a simple wrapper over the C ``memmove()`` function.
 
     :arg dest: the destination memory area to copy to
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memmove(dest: c_ptr, const src: c_ptr, n: integral) {
+  inline proc c_memmove(dest, const src, n: integral)
+  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memmove(dest, src, n.safeCast(size_t));
   }
 
   /*
-    Copies n (non-overlapping) bytes from memory area src to memory
+    Copies n non-overlapping bytes from memory area src to memory
     area dest. Use :proc:`c_memmove` if memory areas do overlap.
 
     This is a simple wrapper over the C memcpy() function.
@@ -350,7 +413,8 @@ module CPtr {
     :arg src: the source memory area to copy from
     :arg n: the number of bytes from src to copy to dest
    */
-  inline proc c_memcpy(dest: c_ptr, const src: c_ptr, n: integral) {
+  inline proc c_memcpy(dest, const src, n: integral)
+  where isAnyCPtr(dest.type) && isAnyCPtr(src.type) {
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: size_t);
     memcpy(dest, src, n.safeCast(size_t));
   }
@@ -358,14 +422,34 @@ module CPtr {
   /*
     Compares the first n bytes of memory areas s1 and s2
 
-    This is a simple wrapper over the C memcmp() function.
+    This is a simple wrapper over the C ``memcmp()`` function.
 
     :returns: returns an integer less than, equal to, or greater than zero if
               the first n bytes of s1 are found, respectively, to be less than,
               to match, or be greater than the first n bytes of s2.
    */
-  inline proc c_memcmp(const s1: c_ptr, const s2: c_ptr, n: integral) {
-    extern proc memcmp(const s1: c_void_ptr, const s2: c_ptr, n: size_t) : c_int;
+  inline proc c_memcmp(const s1, const s2, n: integral)
+  where isAnyCPtr(s1.type) && isAnyCPtr(s2.type) {
+    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(size_t)).safeCast(int);
   }
+
+  /*
+    Fill bytes of memory with a particular byte value.
+
+    This is a simple wrapper over the C ``memset()`` function.
+
+    :arg s: the destination memory area to fill
+    :arg c: the byte value to use
+    :arg n: the number of bytes of b to fill
+
+    :returns: s
+   */
+  inline proc c_memset(s, c:integral, n: integral)
+  where isAnyCPtr(s.type) {
+    extern proc memset(s: c_void_ptr, c: c_int, n: size_t) : c_void_ptr;
+    memset(s, c.safeCast(c_int), n.safeCast(size_t));
+    return s;
+  }
+
 }

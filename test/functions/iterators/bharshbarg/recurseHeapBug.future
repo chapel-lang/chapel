@@ -1,0 +1,10 @@
+bug: use-after-free error for heap var in recursive iterator with coforall-on
+
+The compiler incorrectly detects recursion for this test due to dynamic
+dispatch, but that's not the main issue.
+
+The parallel() pass allocates a heap var immediately before calling the
+body of the recursive iterator, which contains an executeOnNB. The compiler
+then inserts a free() for the heap var immediately after the call to the
+recursive iterator body. This leads to a use-after-free bug because the
+spawned coforall task is still using the heap var.

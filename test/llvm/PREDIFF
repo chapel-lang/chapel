@@ -4,7 +4,9 @@ OUTFILE=$2
 
 TMPFILE="$outfile.prediff.tmp"
 
-FILECHECK=${CHPL_HOME}/third-party/llvm/install/linux64-gnu/bin/FileCheck
+PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --host`
+COMPILER=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
+FILECHECK=${CHPL_HOME}/third-party/llvm/install/${PLATFORM}-${COMPILER}/bin/FileCheck
 
 mv $OUTFILE $TMPFILE
 $FILECHECK --input-file $TMPFILE $TESTNAME.chpl 2> $OUTFILE

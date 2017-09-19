@@ -38,6 +38,7 @@ PASSES_SRCS =                                              \
         insertLineNumbers.cpp                              \
         insertWideReferences.cpp                           \
         normalize.cpp                                      \
+        lowerTryExprs.cpp                                  \
         parallel.cpp                                       \
         resolveIntents.cpp                                 \
         ResolveScope.cpp                                   \

@@ -12,6 +12,7 @@ module A {
     // Should only use the default constructor (or default initializer when we
     // create those).
     writeln(f); // expect 10, false
+    delete f;
   }
 }
 

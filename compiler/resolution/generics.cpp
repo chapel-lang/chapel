@@ -428,7 +428,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
+            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
         }
 
@@ -521,6 +522,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
+        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 

@@ -87,7 +87,7 @@ static int id = 0;
     }
   }
 #else
-  #define auxseg_test()   TEST_HEADER("auxseg test - SKIPPED")
+  #define auxseg_test()   TEST_HEADER("auxseg test - SKIPPED") do { } while(0)
 #endif
 
 static void mutex_test(int id);
@@ -283,14 +283,14 @@ static void malloc_test(int id) {
     int alignsz;
     for (alignsz = 1; alignsz < 64*1024; alignsz *= 2) {
       size_t sz = TEST_RAND(1,alignsz*2);
-      char * p = gasnett_malloc_aligned(alignsz,sz);
+      char * p = gasneti_malloc_aligned(alignsz,sz);
       assert_always(p);
       assert_always((((uintptr_t)p) & (alignsz-1)) == 0);
       p[0] = 'x'; p[sz - 1] = 'y';
       if (TEST_RAND_ONEIN(4)) {
         gasneti_leak_aligned(p);
       }
-      gasnett_free_aligned(p);
+      gasneti_free_aligned(p);
     }
   }
   gasneti_memcheck_all();
@@ -302,19 +302,21 @@ static void malloc_test(int id) {
     #if GASNET_DEBUG
     {
     #if GASNETI_CONDUIT_THREADS
-      float tol = 0.1; /* allow for some heap change if a conduit thread is around */
+      double tol = 0.1; /* allow for some heap change if a conduit thread is around */
     #else
-      float tol = 0; /* we have all the threads, and nothing else should be allocating */
+      double tol = 0; /* we have all the threads, and nothing else should be allocating */
     #endif
-      long delta_bytes = (long long)stats_before.live_bytes - (long long)stats_after.live_bytes;
-      long delta_objects = (long long)stats_before.live_objects - (long long)stats_after.live_objects;
-      if (labs(delta_bytes)/(double)stats_after.live_bytes > tol ||
-          labs(delta_objects)/(double)stats_after.live_objects > tol) 
+      int64_t delta_bytes = (int64_t)stats_before.live_bytes - (int64_t)stats_after.live_bytes;
+      int64_t delta_objects = (int64_t)stats_before.live_objects - (int64_t)stats_after.live_objects;
+      if (delta_bytes < 0) delta_bytes = -delta_bytes;
+      if (delta_objects < 0) delta_objects = -delta_objects;
+      if (delta_bytes/(double)stats_after.live_bytes > tol ||
+          delta_objects/(double)stats_after.live_objects > tol) 
         MSG("ERROR: unexpected heap size change:\n"
-        "  stats_before.live_bytes=%llu stats_after.live_bytes=%llu\n"
-        "  stats_before.live_objects=%llu stats_after.live_objects=%llu",
-        (unsigned long long)stats_before.live_bytes,   (unsigned long long)stats_after.live_bytes,
-        (unsigned long long)stats_before.live_objects, (unsigned long long)stats_after.live_objects);
+            "  stats_before.live_bytes=%"PRIu64" stats_after.live_bytes=%"PRIu64"\n"
+            "  stats_before.live_objects=%"PRIu64" stats_after.live_objects=%"PRIu64,
+            stats_before.live_bytes,   stats_after.live_bytes,
+            stats_before.live_objects, stats_after.live_objects);
     }
     #endif
   }
@@ -597,7 +599,7 @@ static void spinlock_test(int id) {
 }
 #else
 static void spinlock_test(int id) {
-  TEST_HEADER("spinlock test - SKIPPED");
+  TEST_HEADER("spinlock test - SKIPPED"); else return;
 }
 #endif
 /* ------------------------------------------------------------------------------------ */
@@ -733,7 +735,7 @@ static void atomic128_test(int id) {
 }
 #else
 static void atomic128_test(int id) {
-  TEST_HEADER("128-bit atomic test - SKIPPED");
+  TEST_HEADER("128-bit atomic test - SKIPPED"); else return;
 }
 #endif
 /* ------------------------------------------------------------------------------------ */

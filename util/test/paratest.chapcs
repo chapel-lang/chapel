@@ -6,6 +6,15 @@ script aims to run parallel testing as quickly as possible without interfering
 with nightly testing or other exclusive reservations (e.g.  developers running
 performance experiments.) It also tries to interfere as little as possible with
 other paratests in order to avoid timeouts.
+
+To use this script:
+
+  cd test
+  ../util/test/paratest.chapcs
+
+start_test options can be passed as additional command-line arguments
+(e.g. -compopts --llvm).
+
 """
 
 import os.path

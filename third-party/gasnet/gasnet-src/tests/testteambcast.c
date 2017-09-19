@@ -9,12 +9,11 @@
 
 #include <gasnet.h>
 #include <gasnet_coll.h>
-#include <gasnet_coll_team.h>
 
 #define MAX_SIZE 8192
 #define SCRATCH_SIZE (4*1024*1024)
 #define COLL_BUFF_SIZE (SIZEOF_INT * MAX_SIZE)
-#define TEST_SEGSZ_EXPR (SCRATCH_SIZE + 2*COLL_BUFF_SIZE)
+#define TEST_SEGSZ (SCRATCH_SIZE + 2*COLL_BUFF_SIZE)
 
 #include <test.h>
 
@@ -166,7 +165,7 @@ int main(int argc, char **argv)
     total = TIME() - start;
     
     if(mynode == 0){
-      printf("%d> %ld byte broadcast team all time: %8.3f usec\n",mynode,(long)sz*sizeof(int),
+      printf("%d> %"PRIuPTR" byte broadcast team all time: %8.3f usec\n",mynode,(uintptr_t)sz*sizeof(int),
            ((float)total)/(iters));
       fflush(stdout);
     }
@@ -200,7 +199,7 @@ int main(int argc, char **argv)
     total = TIME() - start;
     
     if(my_col == 0){
-      printf("%d> %ld byte broadcast row team %u time: %8.3f usec\n",mynode,(long)sz*sizeof(int),
+      printf("%d> %"PRIuPTR" byte broadcast row team %u time: %8.3f usec\n",mynode,(uintptr_t)sz*sizeof(int),
            my_row,  ((float)total)/(iters));
       fflush(stdout);
     }
@@ -233,7 +232,7 @@ int main(int argc, char **argv)
     total = TIME() - start;
     
     if(my_row == 0){
-      printf("%d> %ld byte broadcast col team %u time: %8.3f usec\n",mynode,(long)sz*sizeof(int),
+      printf("%d> %"PRIuPTR" byte broadcast col team %u time: %8.3f usec\n",mynode,(uintptr_t)sz*sizeof(int),
            my_col,  ((float)total)/(iters));
       fflush(stdout);
     }

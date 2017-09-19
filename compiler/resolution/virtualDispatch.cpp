@@ -93,7 +93,6 @@ static void filterVirtualChildren();
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 void resolveDynamicDispatches() {
@@ -391,7 +390,25 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
+            } else if (fn->throwsError() != pfn->throwsError()) {
+              USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
+              const char* pfnThrowing = NULL;
+              const char* fnThrowing = NULL;
+
+              if (pfn->throwsError()) {
+                pfnThrowing = "throwing";
+                fnThrowing = "non-throwing";
+              } else {
+                pfnThrowing = "non-throwing";
+                fnThrowing = "throwing";
+              }
+
+              USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
+              USR_FATAL_CONT(fn, "overridden by %s function '%s'",
+                             fnThrowing, toString(fn));
+              USR_STOP();
             }
+
             {
               Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
               if (!fns) fns = new Vec<FnSymbol*>();
@@ -580,7 +597,7 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
 
 // Checks that types match.
 // Note - does not currently check that instantiated params match.
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
+bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name) {
     return false;
   }

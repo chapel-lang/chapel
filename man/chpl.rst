@@ -121,7 +121,7 @@ OPTIONS
     Turns off all optimizations in the Chapel compiler and generates naive C
     code with many temporaries.
 
-**--cache-remote**
+**--[no-]cache-remote**
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
@@ -174,6 +174,11 @@ OPTIONS
     optimizes the invocation of an iterator in a loop header by inlining the
     iterator's definition around the loop body.
 
+**--inline-iterators-yield-limit**
+
+    Limit on the number of yield statements permitted in an inlined iterator.
+    The default value is 10.
+
 **--[no-]live-analysis**
 
     Enable [disable] live variable analysis, which is currently only used to
@@ -216,6 +221,10 @@ OPTIONS
 
     Enable [disable] remote value forwarding of read-only values to remote
     threads if reading them early does not violate program semantics.
+
+**--[no-]remote-serialization**
+
+    Enable [disable] serialization for globals and remote constants.
 
 **--[no-]scalar-replacement**
 
@@ -390,8 +399,8 @@ OPTIONS
 
 **-o, --output <filename>**
 
-    Specify the name of the compiler-generated executable (defaults to a.out
-    if unspecified).
+    Specify the name of the compiler-generated executable. Defaults to
+    the main module name if unspecified.
 
 **--static**
 
@@ -510,7 +519,6 @@ OPTIONS
     Only a single call to each function is displayed from within any given
     parent function.
 
-
 **--[no-]print-callstack-on-error**
 
     Accompany certain error and warning messages with the Chapel call stack
@@ -518,15 +526,24 @@ OPTIONS
     location. This is useful when the underlying cause of the issue is in
     one of the callers.
 
+**--[no-]print-unused-functions**
+
+    Print the names and source locations of unused functions within the
+    user program.
+
 **-s, --set <config param>[=<value>]**
 
     Overrides the default value of a configuration parameter in the code.
     For boolean configuration variables, the value can be omitted, causing
     the default value to be toggled.
 
-**--[no-]strict-errors**
+**--[no-]permit-unhandled-module-errors**
 
-    Enable [disable] strict mode for error handling.
+    Normally, the compiler ensures that all errors are handled for code
+    inside of a module declaration (unless the module overrides that
+    behavior). This flag overrides this default, so that the compiler
+    will compile code in a module that does not handle its errors. If any
+    error comes up during execution, it will cause the program to halt.
 
 **--[no-]task-tracking**
 

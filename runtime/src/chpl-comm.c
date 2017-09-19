@@ -113,3 +113,7 @@ size_t chpl_comm_getenvMaxHeapSize(void)
 
   return size;
 }
+
+void* chpl_get_global_serialize_table(int64_t idx) {
+  return chpl_global_serialize_table[idx];
+}

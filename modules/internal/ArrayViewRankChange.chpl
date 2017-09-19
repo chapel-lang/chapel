@@ -116,10 +116,6 @@ module ArrayViewRankChange {
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
-    param rank;
-    type idxType;
-    param stridable;
-
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
 
@@ -251,6 +247,10 @@ module ArrayViewRankChange {
       downDomInst = downDomLoc._instance;
     }
 
+    proc dsiAssignDomain(rhs: domain, lhsPrivate: bool) {
+      chpl_assignDomainWithGetSetIndices(this, rhs);
+    }
+
     proc dsiMember(i) {
       return upDom.dsiMember(i);
     }
@@ -265,14 +265,22 @@ module ArrayViewRankChange {
       }
     }
 
-    iter these(param tag: iterKind) where tag == iterKind.standalone && !localeModelHasSublocales {
-      if chpl__isDROrDRView(downDom) {
-        for i in upDom.these(tag) do
-          yield i;
-      } else {
-        for i in downDom.these(tag) do
-          yield downIdxToUpIdx(i);
-      }
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", upDom, "these", tag)
+    {
+      for i in upDom.these(tag) do
+        yield i;
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone
+      && !localeModelHasSublocales
+      && !chpl__isDROrDRView(downDom)
+      && __primitive("method call resolves", downDom, "these", tag)
+    {
+      for i in downDom.these(tag) do
+        yield downIdxToUpIdx(i);
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
@@ -346,13 +354,13 @@ module ArrayViewRankChange {
       for d in 1..downrank do
         if !collapsedDim(d) {
           if first {
-            write("{");
+            f <~> "{";
             first = false;
           } else
-            write(", ");
-          write(downDom.dsiDim(d));
+            f <~> ", ";
+          f <~> downDom.dsiDim(d);
         }
-      write("}");
+      f <~> "}";
     }
 
     proc dsiMyDist() {
@@ -539,7 +547,8 @@ module ArrayViewRankChange {
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
     iter these(param tag: iterKind) ref
-      where tag == iterKind.standalone && !localeModelHasSublocales {
+      where tag == iterKind.standalone && !localeModelHasSublocales &&
+           __primitive("method call resolves", privDom, "these", tag) {
       for i in privDom.these(tag) {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))
@@ -859,7 +868,7 @@ module ArrayViewRankChange {
       return this;
     }
 
-    proc dsiDestroyArr(isalias:bool) {
+    proc dsiDestroyArr() {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

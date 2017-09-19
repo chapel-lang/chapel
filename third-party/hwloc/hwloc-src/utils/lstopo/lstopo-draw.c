@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2013, 2015 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -423,16 +423,22 @@ lstopo_obj_snprintf(char *text, size_t textlen, hwloc_obj_t obj, int logical)
     hwloc_obj_type_snprintf(typestr, sizeof(typestr), obj, 0);
   }
 
-  if (idx != (unsigned)-1 && obj->depth != 0
+  if (show_indexes[obj->type]
+      && idx != (unsigned)-1 && obj->depth != 0
       && obj->type != HWLOC_OBJ_PCI_DEVICE
       && (obj->type != HWLOC_OBJ_BRIDGE || obj->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_HOST))
     snprintf(indexstr, sizeof(indexstr), "%s%u", indexprefix, idx);
-  attrlen = hwloc_obj_attr_snprintf(attrstr, sizeof(attrstr), obj, " ", 0);
-  /* display the root total_memory if different from the local_memory (already shown) */
-  if (!obj->parent && obj->memory.total_memory > obj->memory.local_memory)
-    snprintf(totmemstr, sizeof(totmemstr), " (%lu%s total)",
-             (unsigned long) hwloc_memory_size_printf_value(obj->memory.total_memory, 0),
-             hwloc_memory_size_printf_unit(obj->memory.total_memory, 0));
+
+  if (show_attrs[obj->type]) {
+    attrlen = hwloc_obj_attr_snprintf(attrstr, sizeof(attrstr), obj, " ", 0);
+    /* display the root total_memory if different from the local_memory (already shown) */
+    if (!obj->parent && obj->memory.total_memory > obj->memory.local_memory)
+      snprintf(totmemstr, sizeof(totmemstr), " (%lu%s total)",
+	       (unsigned long) hwloc_memory_size_printf_value(obj->memory.total_memory, 0),
+	       hwloc_memory_size_printf_unit(obj->memory.total_memory, 0));
+  } else
+    attrlen = 0;
+
   if (attrlen > 0)
     return snprintf(text, textlen, "%s%s (%s)%s", typestr, indexstr, attrstr, totmemstr);
   else
@@ -517,7 +523,7 @@ lstopo_set_object_color(struct draw_methods *methods,
       break;
     }
     assert(arg == 1); /* Machine printed as a System (when root) */
-    /* fallthrough */
+    /* FALLTHRU */
   case HWLOC_OBJ_SYSTEM:
     s->bg.r = SYSTEM_R_COLOR;
     s->bg.g = SYSTEM_G_COLOR;
@@ -701,7 +707,8 @@ os_device_draw(hwloc_topology_t topology __hwloc_attribute_unused, struct draw_m
   if (fontsize) {
     const char *coproctype;
 
-    if (HWLOC_OBJ_OSDEV_COPROC == level->attr->osdev.type
+    if (show_attrs[HWLOC_OBJ_OS_DEVICE]
+	&& HWLOC_OBJ_OSDEV_COPROC == level->attr->osdev.type
         && (coproctype = hwloc_obj_get_info_by_name(level, "CoProcType")) != NULL) {
 
       if (!strcmp(coproctype, "CUDA")) {
@@ -837,7 +844,7 @@ bridge_draw(hwloc_topology_t topology, struct draw_methods *methods, int logical
           speed = subobjs[i]->attr->pcidev.linkspeed;
         if (subobjs[i]->type == HWLOC_OBJ_BRIDGE && subobjs[i]->attr->bridge.upstream_type == HWLOC_OBJ_BRIDGE_PCI)
           speed = subobjs[i]->attr->bridge.upstream.pci.linkspeed;
-        if (speed != 0.) {
+        if (show_attrs[HWLOC_OBJ_BRIDGE] && speed != 0.) {
           char text[4];
           if (speed >= 10.)
 	    snprintf(text, sizeof(text), "%.0f", subobjs[i]->attr->pcidev.linkspeed);

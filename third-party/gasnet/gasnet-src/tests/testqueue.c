@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
     if (!maxsz) maxsz = 2*1024*1024; /* 2 MB default */
 
     #ifdef GASNET_SEGMENT_EVERYTHING
-      if (maxsz > TEST_SEGSZ) { MSG("maxsz must be <= %lu on GASNET_SEGMENT_EVERYTHING",(unsigned long)TEST_SEGSZ); gasnet_exit(1); }
+      if (maxsz > TEST_SEGSZ) { MSG("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING",(uintptr_t)TEST_SEGSZ); gasnet_exit(1); }
     #endif
     GASNET_Safe(gasnet_attach(htable, sizeof(htable)/sizeof(gasnet_handlerentry_t), 
                               TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
@@ -302,7 +302,6 @@ int main(int argc, char **argv) {
         }                                                                   \
         depth = 1;                                                          \
         if (iamsender) { /* Prime i-cache, free-lists, firehose, etc. */    \
-          GASNETT_UNUSED /* 'i' not used in all expansions of QUEUE_TEST */ \
           int i = 0;                                                        \
           OP;                                                               \
           { SYNC; }                                                         \
@@ -335,10 +334,7 @@ int main(int argc, char **argv) {
             }                                                               \
             { double avgus = gasnett_ticks_to_ns(total) / 1000.0 /          \
                              (double)iters / (double)depth;                 \
-              /* '{min,max}us' not used in all expansions of QUEUE_TEST */  \
-              GASNETT_UNUSED                                                \
               double minus = gasnett_ticks_to_ns(min) / 1000.0 / (double)depth; \
-              GASNETT_UNUSED                                                \
               double maxus = gasnett_ticks_to_ns(max) / 1000.0 / (double)depth; \
               int prec;                                                     \
               if (avgus < 1000.0) prec = 3;                                 \
@@ -501,7 +497,7 @@ void do_amtests(void) {
     if (do_amlong) {
       gasnett_atomic_set(&amcount, 0, 0);
       QUEUE_TEST("gasnet_AMRequestLong0", 
-                 gasnet_AMRequestLong0(peerproc, hidx_ping_medhandler, msgbuf, payload, tgtmem), (void)0,
+                 gasnet_AMRequestLong0(peerproc, hidx_ping_longhandler, msgbuf, payload, tgtmem), (void)0,
                 { assert(iamrecver);
                   GASNET_BLOCKUNTIL(gasnett_atomic_read(&amcount,0) == depth); 
                   gasnett_atomic_set(&amcount, 0, 0); }, 

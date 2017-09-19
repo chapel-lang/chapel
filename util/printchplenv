@@ -33,12 +33,11 @@ def print_mode(mode='list', anonymize=False):
         m = 'make'
 
 
-    chpl_home = overrides.get('CHPL_HOME', '')
-    chpl_module_home = os.environ.get('CHPL_MODULE_HOME', '')
+    chpl_home = chpl_home_utils.get_chpl_home()
 
     if (m == 'list' or mode == 'debug') and not anonymize:
         stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
-        stdout.write("CHPL_HOME: {0} *\n".format(chpl_home))
+        print_var('CHPL_HOME', chpl_home, mode)
         this_dir = os.path.realpath(os.path.dirname(__file__))
         stdout.write("script location: {0}\n".format(this_dir))
     elif chpl_home and m == 'shell':
@@ -203,9 +202,13 @@ def print_mode(mode='list', anonymize=False):
 
 def print_var(env_var, value, mode, short_name='', filters=None):
     if mode == 'list' or mode == 'debug':
-        user_set = overrides.get(env_var.strip(), '')
+        user_set = overrides.get_environ(env_var.strip(), '')
         if user_set:
           user_set = ' *'
+        else:
+          user_set = overrides.get_chplconfig(env_var.strip(), '')
+          if user_set:
+            user_set = ' +'
         stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
     elif mode == 'make':
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
@@ -237,8 +240,9 @@ def _main():
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
                       const='list',
-                      help="print out a listing of the environment indicating "
-                           "which options are user supplied with a * (default)")
+                      help="(default) print out a listing of the active environment indicating "
+                           "which options are set by environment variables (*)"
+                           " and which are set by configuration files (+)")
     parser.add_option('--make', action='store_const', dest='mode', const='make',
                       help="print out a listing of the environment that is "
                            "used in the build process")
@@ -264,8 +268,9 @@ def _main():
     parser.add_option('--csh', action='store_const', dest='mode', const='cshell',
                       help="print out a csh/tcsh script to reproduce the environment")
     parser.add_option('--debug', action='store_const', dest='mode', const='debug',
-                      help="print out a listing of the environment indicating "
-                           "which options are user supplied with a *")
+                      help="print out a listing of the complete environment indicating "
+                           "which options are set by environment variables (*)"
+                           " and which are set by configuration files (+)")
 
     (options, args) = parser.parse_args()
 

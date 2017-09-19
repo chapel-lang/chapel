@@ -1,6 +1,6 @@
 dnl -*- Autoconf -*-
 dnl
-dnl Copyright © 2009-2016 Inria.  All rights reserved.
+dnl Copyright © 2009-2017 Inria.  All rights reserved.
 dnl Copyright © 2009-2012, 2015-2017 Université Bordeaux
 dnl Copyright © 2004-2005 The Trustees of Indiana University and Indiana
 dnl                         University Research and Technology
@@ -538,6 +538,13 @@ EOF])
     if test "x$hwloc_thread_t" != "x" ; then
       AC_DEFINE_UNQUOTED(hwloc_thread_t, $hwloc_thread_t, [Define this to the thread ID type])
     fi
+
+    AC_CHECK_DECLS([sched_getcpu],,[:],[[
+      #ifndef _GNU_SOURCE
+      # define _GNU_SOURCE
+      #endif
+      #include <sched.h>
+    ]])
 
     _HWLOC_CHECK_DECL([sched_setaffinity], [
       AC_DEFINE([HWLOC_HAVE_SCHED_SETAFFINITY], [1], [Define to 1 if glibc provides a prototype of sched_setaffinity()])

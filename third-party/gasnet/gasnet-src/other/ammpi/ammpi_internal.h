@@ -7,7 +7,8 @@
 #define _AMMPI_INTERNAL_H
 
 #include <portable_inttypes.h>
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <ammpi_portable_platform.h>
 
 /* ------------------------------------------------------------------------------------ */
 /* AMMPI system configuration parameters */
@@ -439,17 +440,17 @@ struct ammpi_ep {
 /* memory allocation */
 static void *_AMMPI_malloc(size_t sz, const char *curloc) {
   void *ret = malloc(sz);
-  if_pf(!ret) AMMPI_FatalErr("Failed to malloc(%lu) at %s", (unsigned long)sz, curloc);
+  if_pf(!ret) AMMPI_FatalErr("Failed to malloc(%"PRIuPTR") at %s", (uintptr_t)sz, curloc);
   return ret;
 }
 static void *_AMMPI_calloc(size_t N, size_t S, const char *curloc) {
   void *ret = calloc(N,S);
-  if_pf(!ret) AMMPI_FatalErr("Failed to calloc(%lu,%lu) at %s", (unsigned long)N, (unsigned long)S, curloc);
+  if_pf(!ret) AMMPI_FatalErr("Failed to calloc(%"PRIuPTR",%"PRIuPTR") at %s", (uintptr_t)N, (uintptr_t)S, curloc);
   return ret;
 }
 static void *_AMMPI_realloc(void *ptr, size_t S, const char *curloc) {
   void *ret = realloc(ptr,S);
-  if_pf(!ret) AMMPI_FatalErr("Failed to realloc(%lu) at %s", (unsigned long)S, curloc);
+  if_pf(!ret) AMMPI_FatalErr("Failed to realloc(%"PRIuPTR") at %s", (uintptr_t)S, curloc);
   return ret;
 }
 static void _AMMPI_free(void *ptr, const char *curloc) {
@@ -709,15 +710,14 @@ static int AMMPI_checkMPIreturn(int retcode, const char *fncallstr,
       if (AMMPI_DEBUG_VERBOSE || (repeatcnt & reportmask) == 0) { \
         reportmask = (reportmask << 1) | 0x1;                     \
         fprintf(stderr, "*** AMMPI WARNING: %s. polling..."       \
-          "(has happened %llu times)\n", msg,                     \
-          (unsigned long long)repeatcnt); fflush(stderr);         \
+          "(has happened %"PRIu64" times)\n", msg, repeatcnt);    \
+        fflush(stderr);                                           \
       }                                                           \
     } while (0)
 #else
   #define AMMPI_BACKPRESSURE_WARNING(msg) ((void)0)
 #endif
 
-extern int AMMPI_enEqual(en_t en1, en_t en2);
 extern int64_t AMMPI_getMicrosecondTimeStamp(void);
 /* ------------------------------------------------------------------------------------ */
 /*  global data */

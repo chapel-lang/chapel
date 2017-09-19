@@ -38,6 +38,14 @@ DeferStmt::DeferStmt(BlockStmt* body)
   gDeferStmts.add(this);
 }
 
+DeferStmt::DeferStmt(CallExpr* call)
+  : Stmt(E_DeferStmt),
+   _body(new BlockStmt(call)) {
+
+  gDeferStmts.add(this);
+}
+
+
 DeferStmt::~DeferStmt() {
 
 }
@@ -203,7 +211,8 @@ void checkDefersAfterParsing()
   
     // Check that there are no top-level defers;
     // each defer must be in a function (other than module init).
-    if (isModuleSymbol(defer->parentSymbol))
+    ModuleSymbol* mod = toModuleSymbol(defer->parentSymbol);
+    if (mod != NULL && defer->parentExpr == mod->block)
       USR_FATAL_CONT(defer, "defer can only be used within a function");
 
     // Make sure the DeferStmt does not include a break that is outside

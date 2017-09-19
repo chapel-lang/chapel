@@ -420,7 +420,7 @@ int main(int argc, char **argv)
 {
     int min_payload, max_payload;
     void *myseg;
-    void *alloc;
+    void *alloc = NULL;
     int arg;
     int iters = 0;
     int j;
@@ -475,7 +475,7 @@ int main(int argc, char **argv)
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
 
     #ifdef GASNET_SEGMENT_EVERYTHING
-      if (maxsz > TEST_SEGSZ/2) { MSG("maxsz must be <= %lu on GASNET_SEGMENT_EVERYTHING", (unsigned long)(TEST_SEGSZ/2)); gasnet_exit(1); }
+      if (maxsz > TEST_SEGSZ/2) { MSG("maxsz must be <= %"PRIuPTR" on GASNET_SEGMENT_EVERYTHING", (uintptr_t)(TEST_SEGSZ/2)); gasnet_exit(1); }
     #endif
     GASNET_Safe(gasnet_attach(NULL, 0, TEST_SEGSZ_REQUEST, TEST_MINHEAPOFFSET));
     test_init("testsmall",1, "[options] (iters) (maxsz) (test_sections)\n"
@@ -593,9 +593,7 @@ int main(int argc, char **argv)
   	for (j = min_payload; j <= max_payload && j > 0; j *= 2)  oneway_nb_test(iters, j);
 
         BARRIER();
-        if (!insegment) {
-	  test_free(alloc);
-	}
+        if (alloc) test_free(alloc);
 
     gasnet_exit(0);
 

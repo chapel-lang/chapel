@@ -175,7 +175,7 @@ module cholesky_test_unsymmetric_ranges {
           
     print_lower_triangle ( C );
 
-    ref C_reindex = C.reindex({0..#n, 0..#n});
+    ref C_reindex = C.reindex(0..#n, 0..#n);
           
     positive_definite = 
       elemental_cholesky_symmetric_index_ranges ( C_reindex );

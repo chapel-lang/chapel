@@ -1,3 +1,0 @@
-in inThrow, r=(x = 4)
-destroying R(x=4)
-throws-destroys.chpl:19: error: uncaught error

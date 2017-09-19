@@ -39,7 +39,7 @@ CONDUIT_SOURCELIST =          \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_INCLUDES@ -DGASNET_CONDUIT_GEMINI -D_GNU_SOURCE
+CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -DGASNET_CONDUIT_GEMINI -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = 
@@ -49,7 +49,7 @@ CONDUIT_PRIVATEHEADERS = gasnet_gemini.h
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.h
+CONDUIT_EXTRADEPS = $(pmi_srcdir)/*.[ch]
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as

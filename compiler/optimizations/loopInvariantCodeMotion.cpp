@@ -544,7 +544,7 @@ static void buildLocalDefUseMaps(Loop* loop, symToVecSymExprMap& localDefMap, sy
             }
             //if we have a function call, assume any "classes" fields are changed
             if(CallExpr* callExpr = toCallExpr(symExpr->parentExpr)) {
-              if(callExpr->isResolved()) {
+              if(callExpr->isResolved() || callExpr->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
                 addDefOrUse(localDefMap, symExpr->symbol(), symExpr);
                 Type* type = symExpr->symbol()->type->symbol->type;
                 if(AggregateType* curClass = toAggregateType(type)) {
@@ -890,6 +890,14 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       // TODO this could be improved to check which functions modify the global
       // and see if any of those functions are being called in this loop.
       if (callsInLoop.size() != 0) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
+    }
+    if (symExpr->symbol()->isRef()) {
+        mightHaveBeenDeffedElseWhere = true;
+    }
+    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+      if (aliasSym->isRef()) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }

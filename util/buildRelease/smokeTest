@@ -106,14 +106,16 @@ num_procs=$(python -c "import multiprocessing; print(multiprocessing.cpu_count()
 # in $CHPL_HOME where the hello*.chpl tests are copied and run.
 export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
 
-# Compile chapel and make sure `make check` works. Compile first with parallel
-# execution, but call `make check` without it.
-make -j${num_procs} $chpl_make_args && \
-    CHPL_CHECK_DEBUG=1 make $chpl_make_args check || exit 2
+if [ "${CHPL_SMOKE_SKIP_MAKE_CHECK}" != "true" ] ; then
+    # Compile chapel and make sure `make check` works. Compile first with parallel
+    # execution, but call `make check` without it.
+    make -j${num_procs} $chpl_make_args && \
+        CHPL_CHECK_DEBUG=1 make $chpl_make_args check || exit 2
+fi
 
-if [ "${TRAVIS}" != "true" ] ; then
-    # Build chpldoc and make sure the chpldoc primer runs. Build chpldoc with
-    # parallel execution, but call `make check-chpldoc` without it.
+if [ "${CHPL_SMOKE_SKIP_DOC}" != "true" ] ; then
+    # Build chpldoc, make sure the chpldoc primer runs, and the docs build.
     make -j${num_procs} $chpl_make_args chpldoc && \
-        make $chpl_make_args check-chpldoc || exit 2
+        make $chpl_make_args check-chpldoc && \
+        make docs || exit 2
 fi

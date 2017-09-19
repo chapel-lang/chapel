@@ -544,15 +544,13 @@ firehose_get_params(uintptr_t max_pinnable_memory,
 
         if_pf (nM < M_min)
     	gasneti_fatalerror("GASNET_FIREHOSE_M is less"
-    		    "than the minimum %lu (%lu buckets)", 
-		    (unsigned long) M_min, 
-    		    (unsigned long) (M_min >> FH_BUCKET_SHIFT));
+    		    "than the minimum %"PRIuPTR" (%"PRIuPTR" buckets)", 
+		    M_min, (M_min >> FH_BUCKET_SHIFT));
 
         if_pf (nMaxvictim < maxvictim_min)
     	gasneti_fatalerror("GASNET_MAXVICTIM_M is less than the "
-    		    "minimum %lu (%lu buckets)", 
-		    (unsigned long) maxvictim_min,
-    		    (unsigned long) (maxvictim_min >> FH_BUCKET_SHIFT));
+    		    "minimum %"PRIuPTR" (%"PRIuPTR" buckets)", 
+		    maxvictim_min, (maxvictim_min >> FH_BUCKET_SHIFT));
     }
 
     fh_M = *M = nM;
@@ -621,17 +619,17 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 		     (uintptr_t *)&maxvictim);
 
     if_pf (M < m_prepinned)
-    	gasneti_fatalerror("Too much memory prepinned (%lu) for current "
-    		    "GASNET_FIREHOSE_M parameter (%lu)", 
-		    (unsigned long) m_prepinned, (unsigned long) M);
+    	gasneti_fatalerror("Too much memory prepinned (%"PRIuPTR") for current "
+    		    "GASNET_FIREHOSE_M parameter (%"PRIuPTR")", 
+		    m_prepinned, M);
 
     fh_MaxPinnableMemory = max_pinnable_memory;
     if (fh_verbose)
 	fh_dump_fhparams(stderr);
 
-    GASNETI_TRACE_PRINTF(C, ("Firehose M=(%d MB,%ld), MAXVICTIM_M=(%d MB,%ld)", 
-		    FH_PRINTMB(M), (unsigned long) M, 
-		    FH_PRINTMB(maxvictim), (unsigned long) maxvictim));
+    GASNETI_TRACE_PRINTF(C, ("Firehose M=(%d MB,%"PRIuPTR"), MAXVICTIM_M=(%d MB,%"PRIuPTR")", 
+		    FH_PRINTMB(M), M, 
+		    FH_PRINTMB(maxvictim), maxvictim));
 
     /* 
      * Set local parameters
@@ -730,11 +728,10 @@ fh_init_plugin(uintptr_t max_pinnable_memory,
 		);
 
         GASNETI_TRACE_PRINTF(C, 
-    	    ("Firehose M=%ld (fh=%ld),maxregions=%d,prepinned=%ld (buckets=%d)",
-    	    (unsigned long) M, (unsigned long) firehoses, fh_max_regions, 
-	    (unsigned long) m_prepinned, (int) b_prepinned));
-        GASNETI_TRACE_PRINTF(C, ("Firehose Maxvictim=%ld (fh=%d)",
-    	    (unsigned long) maxvictim, fhc_MaxVictimBuckets));
+    	    ("Firehose M=%"PRIuPTR" (fh=%"PRIuPTR"),maxregions=%d,prepinned=%"PRIuPTR" (buckets=%d)",
+    	     M, firehoses, fh_max_regions, m_prepinned, (int) b_prepinned));
+        GASNETI_TRACE_PRINTF(C, ("Firehose Maxvictim=%"PRIuPTR" (fh=%d)",
+    	    maxvictim, fhc_MaxVictimBuckets));
 
         GASNETI_TRACE_PRINTF(C, 
     	    ("MaxLocalPinSize=%d\tMaxRemotePinSize=%d", 
@@ -2827,10 +2824,10 @@ fh_acquire_remote_region(firehose_request_t *req,
 
 		/* Make sure the size of the region respects the remote limits */
 		if_pf(notpinned > fhc_RemoteBucketsM)
-		    gasneti_fatalerror("Region of %ld bytes too large for only "
-		       "%d available remote firehoses (%ld bytes)",
-		       (unsigned long) req->len, fhc_RemoteBucketsM,
-		       (unsigned long) fhc_RemoteBucketsM*FH_BUCKET_SIZE);
+		    gasneti_fatalerror("Region of %"PRIuPTR" bytes too large for only "
+		       "%d available remote firehoses (%"PRIuPTR" bytes)",
+		       (uintptr_t) req->len, fhc_RemoteBucketsM,
+		       (uintptr_t) fhc_RemoteBucketsM*FH_BUCKET_SIZE);
 
 		/* If the remote victim fifo is not full, no replacements are
 		 * necessary */
@@ -3007,13 +3004,12 @@ fh_dump_fhparams(FILE *fp)
     if (fp == NULL)
 	fp = stderr;
 
-    fprintf(fp, "MaxPinnable Memory = %8u MB, %lu bytes\n", 
-		FH_PRINTMB(fh_MaxPinnableMemory), 
-		(unsigned long) fh_MaxPinnableMemory);
-    fprintf(fp, "Firehose M         = %8u MB, %lu bytes\n", 
-		FH_PRINTMB(fh_M), (unsigned long) fh_M);
-    fprintf(fp, "Firehose MaxVictim = %8u MB, %lu bytes\n", 
-		FH_PRINTMB(fh_Maxvictim), (unsigned long) fh_Maxvictim);
+    fprintf(fp, "MaxPinnable Memory = %8u MB, %"PRIuPTR" bytes\n", 
+		FH_PRINTMB(fh_MaxPinnableMemory), fh_MaxPinnableMemory);
+    fprintf(fp, "Firehose M         = %8u MB, %"PRIuPTR" bytes\n", 
+		FH_PRINTMB(fh_M), fh_M);
+    fprintf(fp, "Firehose MaxVictim = %8u MB, %"PRIuPTR" bytes\n", 
+		FH_PRINTMB(fh_Maxvictim), fh_Maxvictim);
     fflush(fp);
     return;
 }

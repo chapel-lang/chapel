@@ -64,10 +64,10 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
-
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barrier.chpl \
+	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Buffers.chpl \
@@ -96,6 +96,7 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
+	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
 	packages/FFTW_MT.chpl \
@@ -113,7 +114,11 @@ PACKAGES_TO_DOCUMENT = \
 	packages/SharedObject.chpl \
 	packages/Sort.chpl \
 	packages/VisualDebug.chpl \
-	packages/ZMQ.chpl
+	packages/ZMQ.chpl \
+	packages/Collection.chpl \
+	packages/DistributedBag.chpl \
+	packages/DistributedDeque.chpl \
+	packages/DistributedIters.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -126,21 +131,22 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/BlockCycDim.chpl \
 	dists/dims/BlockDim.chpl \
 	dists/dims/ReplicatedDim.chpl \
-	layouts/LayoutCSR.chpl \
+	layouts/LayoutCS.chpl \
 
-INTERNAL_MODULES_TO_DOCUMENT =          \
+INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
-	internal/ChapelLocale.chpl    \
+	internal/ChapelLocale.chpl            \
 	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl \
-	internal/ChapelEnv.chpl
+	internal/ChapelTuple.chpl             \
+	internal/ChapelEnv.chpl               \
+	internal/CPtr.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
@@ -168,4 +174,3 @@ clean-documentation:
 	rm -rf $(MODULE_SPHINX)
 
 FORCE:
-

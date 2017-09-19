@@ -1,7 +1,1 @@
-#
-# Increasing the heap size to this amount will cause a failure at startup for
-# nodes lacking enough memory.
-#
-
 CHPL_RT_CALL_STACK_SIZE=128K
-CHPL_RT_MAX_HEAP_SIZE=30G

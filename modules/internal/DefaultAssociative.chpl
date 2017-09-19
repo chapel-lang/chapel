@@ -119,10 +119,14 @@ module DefaultAssociative {
     // Standard user domain interface
     //
   
+    proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    }
+
     inline proc dsiNumIndices {
       return numEntries.read();
     }
-  
+
     iter dsiIndsIterSafeForRemoving() {
       postponeResize = true;
       for i in this.these() do
@@ -138,7 +142,7 @@ module DefaultAssociative {
         }
       }
     }
-  
+
     iter these() {
       if !isEnumType(idxType) {
         for slot in _fullSlots() {
@@ -366,27 +370,33 @@ module DefaultAssociative {
       return retval;
     }
   
+    proc findPrimeSizeIndex(numKeys:int) {
+      //Find the first suitable prime
+      var threshold = (numKeys + 1) * 2;
+      var prime = 0;
+      var primeLoc = 0;
+      for i in 1..chpl__primes.size {
+          if chpl__primes(i) > threshold {
+            prime = chpl__primes(i);
+            primeLoc = i;
+            break;
+          }
+      }
+
+      //No suitable prime found
+      if prime == 0 {
+        halt("Requested capacity (", numKeys, ") exceeds maximum size");
+      }
+      return primeLoc;
+    }
+
     proc dsiRequestCapacity(numKeys:int) {
       var entries = numEntries.read();
 
       if entries < numKeys {
 
-        //Find the first suitable prime
-        var threshold = (numKeys + 1) * 2;
-        var prime = 0;
-        var primeLoc = 0;
-        for i in 1..chpl__primes.size {
-            if chpl__primes(i) > threshold {
-              prime = chpl__primes(i);
-              primeLoc = i;
-              break;
-            }
-        }
-
-        //No suitable prime found
-        if prime == 0 {
-          halt("Requested capacity (", numKeys, ") exceeds maximum size");
-        }
+        var primeLoc = findPrimeSizeIndex(numKeys);
+        var prime = chpl__primes(primeLoc);
 
         //Changing underlying structure, time for locking
         if parSafe then lockTable();
@@ -703,7 +713,6 @@ module DefaultAssociative {
     proc dsiSerialWrite(f) { this.dsiSerialReadWrite(f); }
     proc dsiSerialRead(f) { this.dsiSerialReadWrite(f); }
   
-  
     //
     // Associative array interface
     //
@@ -746,6 +755,21 @@ module DefaultAssociative {
 
     proc dsiLocalSubdomain() {
       return _newDomain(dom);
+    }
+
+    proc dsiDestroyArr() {
+      //
+      // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
+      //
+      // If this method didn't exist, the compiler would incorrectly think
+      // that there was recursion between Replicated, DefaultAssociative, and
+      // DefaultRectangular due to virtual method dispatch on dsiDestroyArr.
+      //
+      // The generated recursive iterator would result in a use-after-free bug
+      // for the following test under --no-local:
+      //
+      // users/npadmana/bugs/replicated_invalid_ref_return/replicated_bug.chpl
+      //
     }
   }
   

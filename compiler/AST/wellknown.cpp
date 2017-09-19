@@ -23,6 +23,40 @@
 #include "expr.h"
 #include "symbol.h"
 
+// The well-known types
+AggregateType* dtArray;
+AggregateType* dtBaseArr;
+AggregateType* dtBaseDom;
+AggregateType* dtDist;
+AggregateType* dtError;
+AggregateType* dtLocale;
+AggregateType* dtLocaleID;
+AggregateType* dtMainArgument;
+AggregateType* dtOnBundleRecord;
+AggregateType* dtTaskBundleRecord;
+AggregateType* dtTuple;
+
+
+// The well-known functions
+FnSymbol *gChplHereAlloc;
+FnSymbol *gChplHereFree;
+FnSymbol *gChplDecRunningTask;
+FnSymbol *gChplIncRunningTask;
+FnSymbol *gChplDoDirectExecuteOn;
+FnSymbol *gBuildTupleType;
+FnSymbol *gBuildTupleTypeNoRef;
+FnSymbol *gBuildStarTupleType;
+FnSymbol *gBuildStarTupleTypeNoRef;
+FnSymbol *gPrintModuleInitFn;
+FnSymbol *gGetDynamicEndCount;
+FnSymbol *gSetDynamicEndCount;
+FnSymbol *gChplDeleteError;
+FnSymbol *gChplUncaughtError;
+FnSymbol *gChplPropagateError;
+FnSymbol *gChplSaveTaskError;
+FnSymbol *gChplFixThrownError;
+FnSymbol *gChplForallError;
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -66,15 +100,15 @@ struct WellKnownType
 // These types are a required part of the compiler/module interface.
 static WellKnownType sWellKnownTypes[] = {
   { "_array",                &dtArray,            false },
-  { "_tuple",                &dtTuple,            false },
-  { "locale",                &dtLocale,           true  },
-  { "chpl_localeID_t",       &dtLocaleID,         false },
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
+  { "locale",                &dtLocale,           true  },
+  { "chpl_localeID_t",       &dtLocaleID,         false },
   { "chpl_main_argument",    &dtMainArgument,     false },
   { "chpl_comm_on_bundle_t", &dtOnBundleRecord,   false },
   { "chpl_task_bundle_t",    &dtTaskBundleRecord, false },
+  { "_tuple",                &dtTuple,            false },
   { "Error",                 &dtError,            true  }
 };
 
@@ -162,6 +196,18 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
+    "chpl_taskRunningCntInc",
+    &gChplIncRunningTask,
+    FLAG_INC_RUNNING_TASK
+  },
+
+  {
+    "chpl_taskRunningCntDec",
+    &gChplDecRunningTask,
+    FLAG_DEC_RUNNING_TASK
+  },
+
+  {
     "chpl_doDirectExecuteOn",
     &gChplDoDirectExecuteOn,
     FLAG_UNKNOWN
@@ -192,16 +238,59 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
+    "printModuleInit",
+    &gPrintModuleInitFn,
+    FLAG_PRINT_MODULE_INIT_FN
+  },
+
+  {
+    "chpl_task_getDynamicEndCount",
+    &gGetDynamicEndCount,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_task_setDynamicEndCount",
+    &gSetDynamicEndCount,
+    FLAG_UNKNOWN
+  },
+
+  {
     "chpl_delete_error",
     &gChplDeleteError,
     FLAG_UNKNOWN
   },
 
   {
-    "printModuleInit",
-    &gPrintModuleInitFn,
-    FLAG_PRINT_MODULE_INIT_FN
-  }
+    "chpl_uncaught_error",
+    &gChplUncaughtError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_propagate_error",
+    &gChplPropagateError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_save_task_error",
+    &gChplSaveTaskError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_fix_thrown_error",
+    &gChplFixThrownError,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_forall_error",
+    &gChplForallError,
+    FLAG_UNKNOWN
+  },
+
 };
 
 void gatherWellKnownFns() {
@@ -260,9 +349,21 @@ std::vector<FnSymbol*> getWellKnownFunctions()
 
   for (int i = 0; i < nEntries; ++i) {
     WellKnownFn& wkfn = sWellKnownFns[i];
-    fns.push_back(*wkfn.fn);
+    if (*wkfn.fn != NULL)
+      fns.push_back(*wkfn.fn);
   }
 
   return fns;
+}
+
+void clearGenericWellKnownFunctions()
+{
+  int nEntries = sizeof(sWellKnownFns) / sizeof(sWellKnownFns[0]);
+
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownFn& wkfn = sWellKnownFns[i];
+    if (*wkfn.fn != NULL && (*wkfn.fn)->hasFlag(FLAG_GENERIC))
+      *wkfn.fn = NULL;
+  }
 }
 

@@ -42,7 +42,7 @@ use DSIUtil;
 use ChapelUtil;
 use CommDiagnostics;
 use SparseBlockDist;
-use LayoutCSR;
+use LayoutCS;
 //
 // These flags are used to output debug information and run extra
 // checks when using Block.  Should these be promoted so that they can
@@ -241,7 +241,7 @@ a stridable domain, the stride information will be ignored and the
 
 When a ``sparse subdomain`` is created for a ``Block`` distributed domain, the
 ``sparseLayoutType`` will be the layout of these sparse domains. The default is
-currently coordinate, but :class:`LayoutCSR.CSR` is an interesting alternative.
+currently coordinate, but :class:`LayoutCS.CS` is an interesting alternative.
 
 **Data-Parallel Iteration**
 
@@ -338,9 +338,6 @@ class LocBlock {
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class BlockDom: BaseRectangularDom {
-  param rank: int;
-  type idxType;
-  param stridable: bool;
   type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
@@ -373,11 +370,7 @@ class LocBlockDom {
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
-class BlockArr: BaseArr {
-  type eltType;
-  param rank: int;
-  type idxType;
-  param stridable: bool;
+class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
@@ -436,8 +429,8 @@ proc Block.Block(boundingBox: domain,
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Block index type != index type of specified bounding box");
-  if rank != 2 && sparseLayoutType == CSR then 
-    compilerError("CSR layout is only supported for 2 dimensional domains");
+  if rank != 2 && isCSType(sparseLayoutType) then 
+    compilerError("CS layout is only supported for 2 dimensional domains");
 
   if boundingBox.size == 0 then
     halt("Block() requires a non-empty boundingBox");
@@ -557,14 +550,15 @@ proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
 // output distribution
 //
 proc Block.writeThis(x) {
-  x.writeln("Block");
-  x.writeln("-------");
-  x.writeln("distributes: ", boundingBox);
-  x.writeln("across locales: ", targetLocales);
-  x.writeln("indexed via: ", targetLocDom);
-  x.writeln("resulting in: ");
+  x <~> "Block" <~> "\n";
+  x <~> "-------" <~> "\n";
+  x <~> "distributes: " <~> boundingBox <~> "\n";
+  x <~> "across locales: " <~> targetLocales <~> "\n";
+  x <~> "indexed via: " <~> targetLocDom <~> "\n";
+  x <~> "resulting in: " <~> "\n";
   for locid in targetLocDom do
-    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id, " owns chunk: ", locDist(locid).myChunk);
+    x <~> "  [" <~> locid <~> "] locale " <~> locDist(locid).locale.id <~>
+      " owns chunk: " <~> locDist(locid).myChunk <~> "\n";
 }
 
 proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
@@ -774,7 +768,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 // output domain
 //
 proc BlockDom.dsiSerialWrite(x) {
-  x.write(whole);
+  x <~> whole;
 }
 
 //
@@ -830,6 +824,10 @@ proc BlockDom.dsiSetIndices(x) {
 
 proc BlockDom.dsiGetIndices() {
   return whole.getIndices();
+}
+
+proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+  chpl_assignDomainWithGetSetIndices(this, rhs);
 }
 
 // dsiLocalSlice
@@ -920,7 +918,7 @@ proc BlockArr.setup() {
   if doRADOpt && disableBlockLazyRAD then setupRADOpt();
 }
 
-proc BlockArr.dsiDestroyArr(isslice:bool) {
+proc BlockArr.dsiDestroyArr() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       delete locArr(localeIdx);
@@ -1095,16 +1093,16 @@ proc BlockArr.dsiSerialWrite(f) {
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f.write(dsiAccess(i));
+    f <~> dsiAccess(i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f.write(" ");
+      if ! binary then f <~> " ";
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 1..rank-1 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank {
-            f.writeln();
+            f <~> "\n";
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
@@ -1155,7 +1153,8 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-proc BlockArr.dsiReallocate(d: domain) {
+proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+{
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1289,10 +1288,6 @@ proc BlockArr.doiCanBulkTransfer(viewDom) {
   if viewDom.stridable then
     for param i in 1..rank do
       if viewDom.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }
@@ -1537,11 +1532,11 @@ proc BlockArr.doiBulkTransferFrom(Barg, viewDom)
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFrom()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest    = this;
+  const Src     = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el       = Dest.idxType;
+  if Dest.rank == Src.rank {
     coforall i in Dest.dom.dist.targetLocDom {
       on Dest.dom.dist.targetLocales(i) {
         var regionDest = Dest.dom.locDoms(i).myBlock[viewDom];

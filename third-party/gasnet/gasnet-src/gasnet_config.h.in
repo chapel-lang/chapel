@@ -49,6 +49,7 @@
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_CC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
 
 /* CXX attributes support */
 #undef GASNETI_HAVE_CXX_ATTRIBUTE
@@ -69,6 +70,7 @@
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_CXX_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_CXX_PRAGMA_GCC_DIAGNOSTIC
 
 /* MPI_CC attributes support */
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE
@@ -89,6 +91,7 @@
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT_FUNCPTR
 #undef GASNETI_HAVE_MPI_CC_ATTRIBUTE_FORMAT_FUNCPTR_ARG
+#undef GASNETI_HAVE_MPI_CC_PRAGMA_GCC_DIAGNOSTIC
 
 /* identification of the C compiler used at configure time */
 #undef GASNETI_PLATFORM_COMPILER_IDSTR
@@ -108,6 +111,8 @@
 #undef GASNETI_PLATFORM_MPI_CC_ID
 #undef GASNETI_PLATFORM_MPI_CC_VERSION
 #undef GASNETI_MPI_VERSION
+#undef HAVE_MPI_INIT_THREAD
+#undef HAVE_MPI_QUERY_THREAD
 
 /* Defined to be the inline function modifier supported by the C
    compilers (if supported), prefixed by 'static' (if permitted) */
@@ -155,17 +160,26 @@
 #undef HAVE_MAP_ANON
 #undef HAVE_MAP_ANONYMOUS
 
+/* avoid mmap()-after-munmap() failures */
+#undef GASNETI_BUG3480_WORKAROUND
+
 /* --with-segment-mmap-max value (if given) */
 #undef GASNETI_MMAP_MAX_SIZE
 
 /* --with-max-threads value (if given) */
 #undef GASNETI_MAX_THREADS_CONFIGURE
 
+/* has clock_gettime() */
+#undef HAVE_CLOCK_GETTIME
+
 /* has usleep() */
 #undef HAVE_USLEEP
 
 /* has nanosleep() */
 #undef HAVE_NANOSLEEP
+
+/* has clock_nanosleep() */
+#undef HAVE_CLOCK_NANOSLEEP
 
 /* has nsleep() */
 #undef HAVE_NSLEEP
@@ -220,7 +234,6 @@
 
 /* BLCR support, path and features */
 #undef GASNETI_BLCR_ENABLED
-#undef GASNETI_BLCR_BINDIR
 
 /* support for backtracing */
 #undef HAVE_EXECINFO_H
@@ -235,6 +248,7 @@
 #undef IDB_PATH
 #undef LADEBUG_PATH
 #undef DBX_PATH
+#undef LLDB_PATH
 
 /* have pthread_setconcurrency */
 #undef HAVE_PTHREAD_SETCONCURRENCY
@@ -266,6 +280,9 @@
 
 /* has ARM kernel-level support for membar */
 #undef GASNETI_HAVE_ARM_MEMBAR
+
+/* has usable AARCH64 (ARMV8) system counter support */
+#undef GASNETI_HAVE_AARCH64_CNTVCT_EL0
 
 /* has x86 EBX register (not reserved for GOT) */
 #undef GASNETI_HAVE_X86_EBX
@@ -352,6 +369,9 @@
 /* platform is an IBM BlueGene/Q multiprocessor */
 #undef GASNETI_ARCH_BGQ
 
+/* platform is Microsoft Windows Subsystem for Linux */
+#undef GASNETI_ARCH_WSL
+
 /* have (potentially buggy) MIPS R10000 multiprocessor */
 #undef GASNETI_ARCH_SGI_IP27
 
@@ -392,12 +412,23 @@
 #undef GASNETC_GNI_UDREG
 #undef GASNETC_GNI_FIREHOSE
 
+/* GASNet ofi-conduit settings */
+#undef GASNETC_OFI_MAX_MEDIUM
+#undef GASNETC_OFI_NUM_COMPLETIONS
+#undef GASNETC_OFI_HAS_MR_SCALABLE
+#undef GASNETC_OFI_USE_THREAD_DOMAIN
+
 /* GASNet ibv-conduit features and bug work-arounds */
 #undef HAVE_IBV_SRQ
 #undef HAVE_IBV_TRANSPORT_TYPE
 #undef GASNETC_IBV_RCV_THREAD
 #undef GASNETC_IBV_CONN_THREAD
 #undef GASNETC_IBV_MAX_HCAS
+#undef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
+#undef GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE
+
+/* GASNet pami-conduit settings */
+#undef GASNETI_SIZEOF_PAMI_TASK_T
 
 /* GASNet bug1389 detection/work-around */
 #undef GASNETI_BUG1389_WORKAROUND
@@ -448,9 +479,6 @@
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #undef HAVE_EXECINFO_H
-
-/* Define to 1 if you have the <fca/fca_api.h> header file. */
-#undef HAVE_FCA_FCA_API_H
 
 /* Define to 1 if you have the <features.h> header file. */
 #undef HAVE_FEATURES_H
@@ -509,9 +537,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Define to 1 if you have the <mxm/api/mxm_api.h> header file. */
-#undef HAVE_MXM_API_MXM_API_H
-
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #undef HAVE_NETINET_TCP_H
 
@@ -529,12 +554,6 @@
 
 /* Define to 1 if you have the `popen' function. */
 #undef HAVE_POPEN
-
-/* Define to 1 if you have the <psm2_am.h> header file. */
-#undef HAVE_PSM2_AM_H
-
-/* Define to 1 if you have the <psm2.h> header file. */
-#undef HAVE_PSM2_H
 
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H

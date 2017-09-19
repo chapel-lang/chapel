@@ -17,6 +17,47 @@ bug fixes (and other actions) for each version of hwloc since version
 in v0.9.1).
 
 
+Version 1.11.8
+--------------
+* Multiple Solaris improvements, thanks to Maureen Chew for the help:
+  + Detect caches on Sparc.
+  + Properly detect allowed/disallowed PUs and NUMA nodes with processor sets.
+  + Add hwloc_get_last_cpu_location() support for the current thread.
+* Add support for CUDA compute capability 7.0 and fix support for 6.[12].
+* Tools improvements
+  + Fix search for objects by physical index in command-line tools.
+  + Add missing "cpubind:get_thisthread_last_cpu_location" in the output
+    of hwloc-info --support.
+  + Add --pid and --name to specify target processes in hwloc-ps.
+  + Display thread names in lstopo and hwloc-ps on Linux.
+* Doc improvements
+  + Add a FAQ entry about building on Windows.
+  + Install missing sub-manpage for hwloc_obj_add_info() and
+    hwloc_obj_get_info_by_name().
+
+
+Version 1.11.7
+--------------
+* Fix hwloc-bind --membind for CPU-less NUMA nodes (again).
+  Thanks to Gilles Gouaillardet for reporting the issue.
+* Fix a memory leak on IBM S/390 platforms running Linux.
+* Fix a memory leak when forcing the x86 backend first on amd64/topoext
+  platforms running Linux.
+* Command-line tools now support "hbm" instead "numanode" for filtering
+  only high-bandwidth memory nodes when selecting locations.
+  + hwloc-bind also support --hbm and --no-hbm for filtering only or
+    no HBM nodes.
+  Thanks to Nicolas Denoyelle for the suggestion.
+* Add --children and --descendants to hwloc-info for listing object
+  children or object descendants of a specific type.
+* Add --no-index, --index, --no-attrs, --attrs to disable/enable display
+  of index numbers or attributes in the graphical lstopo output.
+* Try to gather hwloc-dump-hwdata output from all possible locations
+  in hwloc-gather-topology.
+* Updates to the documentation of locations in hwloc(7) and
+  command-line tools manpages.
+
+
 Version 1.11.6
 --------------
 * Make the Linux discovery about twice faster, especially on the CPU side,

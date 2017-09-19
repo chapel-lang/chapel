@@ -64,12 +64,14 @@ var f = opentmp();
   var reader = f.reader();
 
   var r:MyRecord;
+  var got: bool;
 
-  var err:syserr;
-
-  var got = reader.readf("%~jt", r, error=err);
-
-  writeln("got is ", got, " error is ", errorToString(err));
+  try! {
+    got = reader.readf("%~jt", r);
+  } catch e: SystemError {
+    writeln("error is ", errorToString(e.err));
+  }
+  writeln("got is ", got);
   writeln("Read: ", r);
 
   reader.close();

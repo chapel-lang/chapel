@@ -3,10 +3,10 @@
 # This is an automatically-generated cross-configuration setup script
 
 ################################################
-# Usage Instructions: 
+# Usage Instructions:
 #  1. fill in the following values to point to the target and host compilers:
 
-# NOTE: this relies on module-established PATH setting to automatically 
+# NOTE: this relies on module-established PATH setting to automatically
 # select the GCC or PGI-based MPI compilers, based on which PrgEnv is currently loaded
 # The same PrgEnv *must* be loaded when building and using the GASNet install
 CC="${CC:-cc}"   # vanilla target C compiler

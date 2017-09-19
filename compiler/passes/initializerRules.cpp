@@ -22,7 +22,9 @@
 #include "astutil.h"
 #include "expr.h"
 #include "InitNormalize.h"
+#include "passes.h"
 #include "stmt.h"
+#include "TryStmt.h"
 #include "type.h"
 #include "typeSpecifier.h"
 
@@ -36,6 +38,8 @@ enum InitStyle {
 static bool      isInitStmt (Expr* stmt);
 static bool      isSuperInit(Expr* stmt);
 static bool      isThisInit (Expr* stmt);
+
+static bool      isUnacceptableTry(Expr* stmt);
 
 static void      preNormalize(FnSymbol* fn);
 
@@ -168,6 +172,30 @@ void preNormalizeInitMethod(FnSymbol* fn) {
 
   } else {
     preNormalize(fn);
+
+    errorOnFieldsInArgList(fn);
+  }
+}
+
+// Generates an error if a field is used in the argument list to an initializer
+// or constructor
+// Lydia NOTE 09/14/17: Make this static and unexported once constructors are
+// deprecated
+void errorOnFieldsInArgList(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    std::vector<SymExpr*> symExprs;
+
+    collectSymExprs(formal, symExprs);
+
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == fn->_this) {
+        USR_FATAL_CONT(se,
+                       "invalid access of class member in "
+                       "initializer argument list");
+
+        break;
+      }
+    }
   }
 }
 
@@ -229,6 +257,15 @@ static void preNormalize(FnSymbol* fn) {
   AggregateType* at         = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
 
+  if (at->isGeneric() == true) {
+    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+  }
+
+  if (fn->throwsError() == true) {
+    // For now.  Remove when we allow it.
+    USR_FATAL(fn, "initializers are not yet allowed to throw errors");
+  }
+
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
@@ -238,6 +275,15 @@ static void preNormalize(FnSymbol* fn) {
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
+
+  // 1) Insert field initializers before the first statement
+  // 2) Pre-normalize the phase2 statements
+  } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+    Expr* head = fn->body->body.head;
+
+    state.initializeFieldsBefore(head);
+
+    preNormalize(fn->body, state, head);
 
   // 1) Insert super.init()
   // 2) Insert field initializers before super.init()
@@ -280,7 +326,8 @@ static void preNormalize(FnSymbol* fn) {
   // If this is a non-generic class then create a type method
   // to wrap this initializer
   if (isClass(at) == true && at->isGeneric() == false) {
-    buildClassAllocator(fn);
+    FnSymbol* _newFn = buildClassAllocator(fn);
+    normalize(_newFn);
 
     fn->addFlag(FLAG_INLINE);
   }
@@ -298,6 +345,12 @@ static InitNormalize preNormalize(BlockStmt*    block,
   state.checkPhase(block);
 
   while (stmt != NULL) {
+    if (isUnacceptableTry(stmt) == true) {
+      USR_FATAL(stmt,
+                "Only catch-less try! statements are allowed in initializers"
+                " for now");
+    }
+
     if (isDefExpr(stmt) == true) {
       if (state.fieldUsedBeforeInitialized(stmt) == true) {
         USR_FATAL(stmt, "Field used before it is initialized");
@@ -306,6 +359,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
+      if (callExpr->isPrimitive(PRIM_THROW)) {
+        USR_FATAL(callExpr, "initializers are not yet allowed to throw errors");
+      }
+
       // Stmt is super.init() or this.init()
       if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
@@ -338,6 +395,32 @@ static InitNormalize preNormalize(BlockStmt*    block,
           } else if (isThisInit(callExpr) == true) {
             USR_FATAL(stmt,
                       "use of this.init() call in a parallel statement");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        } else if (state.inCoforall() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a coforall loop body");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a coforall loop body");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        } else if (state.inOn() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in an on block");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in an on block");
 
           } else {
             INT_ASSERT(false);
@@ -395,6 +478,20 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     "can't initialize field \"%s\" inside a "
                     "parallel statement during phase 1 of initialization",
                     field->sym->name);
+
+        } else if (state.inCoforall() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "coforall during phase 1 of initialization",
+                    field->sym->name);
+
+
+        } else if (state.inOn() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside an "
+                    "on block during phase 1 of initialization",
+                    field->sym->name);
+
 
         } else {
           stmt = state.fieldInitFromInitStmt(field, callExpr);
@@ -521,7 +618,10 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
 static bool hasReferenceToThis(Expr* expr) {
   bool retval = false;
 
-  if (SymExpr* symExpr = toSymExpr(expr)) {
+  if (isUnresolvedSymExpr(expr) == true) {
+    retval = false;
+
+  } else if (SymExpr* symExpr = toSymExpr(expr)) {
     if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
       retval = arg->hasFlag(FLAG_ARG_THIS);
     }
@@ -533,6 +633,9 @@ static bool hasReferenceToThis(Expr* expr) {
         break;
       }
     }
+
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    retval = hasReferenceToThis(named->actual);
 
   } else {
     INT_ASSERT(false);
@@ -643,6 +746,23 @@ static const char* initName(CallExpr* expr) {
     }
   }
 
+  return retval;
+}
+
+/* Determine if the expr given is a banned error handling construct */
+static bool isUnacceptableTry(Expr* stmt) {
+  bool retval = false;
+  if (TryStmt* ts = toTryStmt(stmt)) {
+    if (ts->tryBang() == false) {
+      // Only allow try! statements in initializers at the moment
+      retval = true;
+    } else if (ts->_catches.length != 0) {
+      // But don't allow any catches for a try! statement, as that might
+      // permit the initializer to return without having completely initialized
+      // the instance.
+      retval = true;
+    }
+  }
   return retval;
 }
 
@@ -841,7 +961,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   FnSymbol*      fn          = new FnSymbol("_new");
   BlockStmt*     body        = fn->body;
-  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "t", at);
+  ArgSymbol*     type        = new ArgSymbol(INTENT_BLANK, "chpl_t", at);
   VarSymbol*     newInstance = newTemp("instance", at);
   CallExpr*      allocCall   = callChplHereAlloc(at);
   CallExpr*      initCall    = NULL;
@@ -860,6 +980,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
 
   fn->retType = at;
 
@@ -873,11 +994,13 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   //   2) add that formal to the call to "init"
   //
   int count = 1;
+  SymbolMap initArgToNewArgMap;
 
   for_formals(formal, initMethod) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = formal->copy();
+      initArgToNewArgMap.put(formal, arg);
 
       fn->insertFormalAtTail(arg);
 
@@ -890,16 +1013,14 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
       } else {
         initCall->insertAtTail(new SymExpr(arg));
       }
-
-      // Don't want to be referencing the argument in the initializer, want to
-      // reference our new argument.
-      if (fn->where != NULL) {
-        subSymbol(fn->where, formal, arg);
-      }
     }
 
     count = count + 1;
   }
+
+  // Don't reference arguments to the initializer in the _new argument list
+  // or where clause.
+  update_symbols(fn, &initArgToNewArgMap);
 
   // Construct the body
   body->insertAtTail(new DefExpr(newInstance));

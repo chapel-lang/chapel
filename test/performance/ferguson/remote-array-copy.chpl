@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 
 config const n = 100000;
@@ -9,8 +9,7 @@ for i in 1..n {
   A[i] = i;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 on Locales[1] {
   for i in 1..n {
@@ -18,9 +17,9 @@ on Locales[1] {
   }
 }
 
-stopCommDiagnostics();
+stop();
 
-writeln(B[1]);
-writeln(B[n]);
+assert(B[1] == 1);
+assert(B[n] == n);
 
-writeln(getCommDiagnostics());
+report(maxOns=1);

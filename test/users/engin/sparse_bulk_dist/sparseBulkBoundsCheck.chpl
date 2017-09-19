@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCSR;
+use LayoutCS;
 
 config const N=8;
 config type sparseLayoutType = DefaultDist;

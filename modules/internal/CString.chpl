@@ -351,10 +351,10 @@ module CString {
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 
-  pragma "compiler generated" // avoids param string to c_string coercion
+  pragma "last resort" // avoids param string to c_string coercion
   inline proc param c_string.length param
     return __primitive("string_length", this);
-  pragma "compiler generated" // avoids param string to c_string coercion
+  pragma "last resort" // avoids param string to c_string coercion
   inline proc _string_contains(param a: c_string, param b: c_string) param
     return __primitive("string_contains", a, b);
 

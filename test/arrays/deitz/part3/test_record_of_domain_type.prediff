@@ -1,0 +1,19 @@
+#!/bin/bash
+
+outfile=$2
+temp=$outfile.tmp
+
+# Process the output only if valgrind saw an issue.
+if grep -q '^==[0-9]*== ' $outfile; then
+
+  # Preserve the original output.
+  mv $outfile $temp
+
+  # Grab the second line of the program output
+  # because it should be deterministic.
+  grep -v ^= $temp | head -2 | tail -n1 > $outfile
+
+  # Add the first two lines of valgrind output, cleaned up.
+  grep ^= $temp | sed 's@^=[^ ]*= @@;s@Thread.*@Thread@' | head -2 >> $outfile
+
+fi

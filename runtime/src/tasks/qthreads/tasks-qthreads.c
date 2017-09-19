@@ -148,8 +148,6 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_task_bundle_t chpl_qthread_process_bundle = {
-                                   .serial_state = false,
-                                   .countRunning = false,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
@@ -159,8 +157,6 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .id = chpl_nullTaskID };
 
 chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
-                                   .serial_state = false,
-                                   .countRunning = false,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
@@ -184,8 +180,6 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 //
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
-
-static volatile chpl_bool canCountRunningTasks = false;
 
 void chpl_task_yield(void)
 {
@@ -786,8 +780,6 @@ static aligned_t main_wrapper(void *arg)
 
     *tls = pv;
 
-    // main call doesn't need countRunning / chpl_taskRunningCntInc
-
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (m_bundle->chpl_main)();
@@ -806,17 +798,11 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
-    if (bundle->countRunning)
-      chpl_taskRunningCntInc(0, 0);
-
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
-
-    if (bundle->countRunning)
-      chpl_taskRunningCntDec(0, 0);
 
     return 0;
 }
@@ -840,10 +826,9 @@ static void *comm_task_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    main_wrapper_bundle_t arg;
+    // Be sure to initialize Chapel managed task-local state with zeros
+    main_wrapper_bundle_t arg = { .chpl_main = NULL };
 
-    arg.arg.serial_state      = false;
-    arg.arg.countRunning      = false;
     arg.arg.is_executeOn      = false;
     arg.arg.requestedSubloc   = c_sublocid_any_val;
     arg.arg.requested_fid     = FID_NONE;
@@ -861,13 +846,6 @@ void chpl_task_callMain(void (*chpl_main)(void))
 
 void chpl_task_stdModulesInitialized(void)
 {
-    //
-    // It's not safe to call the module code to count the main task as
-    // running until after the modules have been initialized.  That's
-    // when this function is called, so now count the main task.
-    //
-    canCountRunningTasks = true;
-    chpl_taskRunningCntInc(0, 0);
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
@@ -897,38 +875,30 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
                              int                 lineno,
                              int32_t             filename)
 {
-    chpl_bool serial_state = chpl_task_getSerial();
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
     assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
 
     PROFILE_INCR(profile_task_addToTaskList,1);
 
-    if (serial_state) {
-        // call the function directly.
-        requested_fn(arg);
+    c_sublocid_t execution_subloc =
+      chpl_localeModel_sublocToExecutionSubloc(full_subloc);
+
+    arg->is_executeOn      = false;
+    arg->requestedSubloc   = full_subloc;
+    arg->requested_fid     = fid;
+    arg->requested_fn      = requested_fn;
+    arg->lineno            = lineno;
+    arg->filename          = filename;
+    arg->id                = chpl_nullTaskID;
+
+    wrap_callbacks(chpl_task_cb_event_kind_create, arg);
+
+    if (execution_subloc == c_sublocid_any) {
+        qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
     } else {
-        c_sublocid_t execution_subloc =
-          chpl_localeModel_sublocToExecutionSubloc(full_subloc);
-
-        arg->serial_state      = false;
-        arg->countRunning      = false;
-        arg->is_executeOn      = false;
-        arg->requestedSubloc   = full_subloc;
-        arg->requested_fid     = fid;
-        arg->requested_fn      = requested_fn;
-        arg->lineno            = lineno;
-        arg->filename          = filename;
-        arg->id                = chpl_nullTaskID;
-
-        wrap_callbacks(chpl_task_cb_event_kind_create, arg);
-
-        if (execution_subloc == c_sublocid_any) {
-            qthread_fork_copyargs(chapel_wrapper, arg, arg_size, NULL);
-        } else {
-            qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
-                                     (qthread_shepherd_id_t) execution_subloc);
-        }
+        qthread_fork_copyargs_to(chapel_wrapper, arg, arg_size, NULL,
+                                 (qthread_shepherd_id_t) execution_subloc);
     }
 }
 
@@ -940,15 +910,12 @@ void chpl_task_executeTasksInList(void **task_list)
 static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                                 void *arg, size_t arg_size,
                                 c_sublocid_t full_subloc,
-                                chpl_bool serial_state,
                                 int lineno, int32_t filename)
 {
     chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    bundle->serial_state       = serial_state;
-    bundle->countRunning       = canCountRunningTasks;
     bundle->is_executeOn       = true;
     bundle->requestedSubloc    = full_subloc;
     bundle->requested_fid      = fid;
@@ -974,7 +941,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,
 {
     PROFILE_INCR(profile_task_taskCall,1);
 
-    taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, false, lineno, filename);
+    taskCallBody(fid, chpl_ftable[fid], arg, arg_size, subloc, lineno, filename);
 }
 
 void chpl_task_startMovedTask(chpl_fn_int_t       fid,
@@ -982,8 +949,7 @@ void chpl_task_startMovedTask(chpl_fn_int_t       fid,
                               chpl_task_bundle_t *arg,
                               size_t              arg_size,
                               c_sublocid_t        subloc,
-                              chpl_taskID_t       id,
-                              chpl_bool           serial_state)
+                              chpl_taskID_t       id)
 {
     //
     // For now the incoming task ID is simply dropped, though we check
@@ -995,7 +961,7 @@ void chpl_task_startMovedTask(chpl_fn_int_t       fid,
 
     PROFILE_INCR(profile_task_startMovedTask,1);
 
-    taskCallBody(fid, fp, arg, arg_size, subloc, serial_state, 0, CHPL_FILE_IDX_UNKNOWN);
+    taskCallBody(fid, fp, arg, arg_size, subloc, 0, CHPL_FILE_IDX_UNKNOWN);
 }
 
 //
@@ -1077,25 +1043,6 @@ void chpl_task_sleep(double secs)
     }
 }
 
-/* The get- and setSerial() methods assume the beginning of the task-local
- * data segment holds a chpl_bool denoting the serial state. */
-chpl_bool chpl_task_getSerial(void)
-{
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-
-    PROFILE_INCR(profile_task_getSerial,1);
-
-    return data->bundle->serial_state;
-}
-
-void chpl_task_setSerial(chpl_bool state)
-{
-    chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    data->bundle->serial_state = state;
-
-    PROFILE_INCR(profile_task_setSerial,1);
-}
-
 uint32_t chpl_task_getMaxPar(void) {
     //
     // We assume here that the caller (in the LocaleModel module code)
@@ -1125,12 +1072,6 @@ size_t chpl_task_getCallStackSize(void)
 uint32_t chpl_task_getNumQueuedTasks(void)
 {
     return qthread_readstate(NODE_BUSYNESS);
-}
-
-uint32_t chpl_task_getNumRunningTasks(void)
-{
-    chpl_internal_error("chpl_task_getNumRunningTasks() called");
-    return 1;
 }
 
 int32_t chpl_task_getNumBlockedTasks(void)

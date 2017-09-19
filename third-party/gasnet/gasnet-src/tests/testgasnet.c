@@ -23,8 +23,10 @@ TEST_BACKTRACE_DECLS();
 void doit(int partner, int *partnerseg);
 void doit2(int partner, int *partnerseg);
 void doit3(int partner, int *partnerseg);
-void doit4(int partner, int *partnerseg);
+void doit4(int partner, int32_t *partnerseg);
 void doit5(int partner, int *partnerseg);
+void doit6(int partner, int *partnerseg);
+void doit7(int partner, int *partnerseg);
 
 /* ------------------------------------------------------------------------------------ */
 #if GASNET_SEGMENT_EVERYTHING
@@ -433,9 +435,9 @@ void doit3(int partner, int *partnerseg) {
   }
 
 #ifndef TESTGASNET_NO_SPLIT
-  doit4(partner, partnerseg);
+  doit4(partner, (int32_t *)partnerseg);
 }
-void doit4(int partner, int *partnerseg) {
+void doit4(int partner, int32_t *partnerseg) {
   /* int mynode = gasnet_mynode(); UNUSED */
 #endif
 
@@ -444,28 +446,28 @@ void doit4(int partner, int *partnerseg) {
   { /*  memset test */
     GASNET_BEGIN_FUNCTION();
     int i, success=1;
-    int vals[300];
+    int32_t vals[300];
 
-    gasnet_memset(partner, partnerseg, 0x55, 100*sizeof(int));
-    gasnet_wait_syncnb(gasnet_memset_nb(partner, partnerseg+100, 0x66, 100*sizeof(int)));
-    gasnet_memset_nbi(partner, partnerseg+200, 0x77, 100*sizeof(int));
+    gasnet_memset(partner, partnerseg, 0x55, 100*sizeof(int32_t));
+    gasnet_wait_syncnb(gasnet_memset_nb(partner, partnerseg+100, 0x66, 100*sizeof(int32_t)));
+    gasnet_memset_nbi(partner, partnerseg+200, 0x77, 100*sizeof(int32_t));
     gasnet_wait_syncnbi_puts();
 
-    gasnet_get(&vals, partner, partnerseg, 300*sizeof(int));
+    gasnet_get(&vals, partner, partnerseg, 300*sizeof(int32_t));
 
     for (i=0; i < 100; i++) {
-      unsigned long long five  = 0x5555555555555555ull;
-      unsigned long long six   = 0x6666666666666666ull;
-      unsigned long long seven = 0x7777777777777777ull;
-      if (vals[i] != ((int)five)) {
+      const int32_t five  = 0x55555555;
+      const int32_t six   = 0x66666666;
+      const int32_t seven = 0x77777777;
+      if (vals[i] != five) {
         MSG("*** ERROR - FAILED MEMSET TEST!!!");
         success = 0;
       }
-      if (vals[i+100] != ((int)six)) {
+      if (vals[i+100] != six) {
         MSG("*** ERROR - FAILED MEMSET TEST!!!");
         success = 0;
       }
-      if (vals[i+200] != ((int)seven)) {
+      if (vals[i+200] != seven) {
         MSG("*** ERROR - FAILED MEMSET TEST!!!");
         success = 0;
       }
@@ -474,7 +476,7 @@ void doit4(int partner, int *partnerseg) {
   }
 
 #ifndef TESTGASNET_NO_SPLIT
-  doit5(partner, partnerseg);
+  doit5(partner, (int *)partnerseg);
 }
 void doit5(int partner, int *partnerseg) {
   int mynode = gasnet_mynode();
@@ -537,15 +539,15 @@ void doit5(int partner, int *partnerseg) {
           ok = localpos[j] == val;
           if (sz < 8) ok = !memcmp(&(localpos[j]), &val, sz);
           if (!ok) {
-              MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016llx expected=%016llx)", (sz), j,
-                  (unsigned long long)localpos[j], (unsigned long long)val);
+              MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
+                  sz, j, localpos[j], val);
               success = 0;
           }
           ok = segpos[j] == val;
           if (sz < 8) ok = !memcmp(&(segpos[j]), &val, sz);
           if (!ok) {
-              MSG("*** ERROR - FAILED IN-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016llx expected=%016llx)", (sz), j,
-                  (unsigned long long)segpos[j], (unsigned long long)val);
+              MSG("*** ERROR - FAILED IN-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
+                  sz, j, segpos[j], val);
               success = 0;
           }
         }
@@ -605,15 +607,15 @@ void doit5(int partner, int *partnerseg) {
           ok = localpos[j] == val;
           if (sz < 8) ok = !memcmp(&(localpos[j]), &val, sz);
           if (!ok) {
-              MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016llx expected=%016llx)", (sz), j,
-                  (unsigned long long)localpos[j], (unsigned long long)val);
+              MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
+                  sz, j, localpos[j], val);
               success = 0;
           }
           ok = segpos[j] == val;
           if (sz < 8) ok = !memcmp(&(segpos[j]), &val, sz);
           if (!ok) {
-              MSG("*** ERROR - FAILED IN-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016llx expected=%016llx)", (sz), j,
-                  (unsigned long long)segpos[j], (unsigned long long)val);
+              MSG("*** ERROR - FAILED IN-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")",
+                  sz, j, segpos[j], val);
               success = 0;
           }
         }
@@ -622,6 +624,12 @@ void doit5(int partner, int *partnerseg) {
     test_free(localvals);
     if (success) MSG("*** passed nbi put/overwrite test!!");
   }
+
+#ifndef TESTGASNET_NO_SPLIT
+  doit6(partner, (int *)partnerseg);
+}
+void doit6(int partner, int *partnerseg) {
+#endif
 
   BARRIER();
 
@@ -637,6 +645,12 @@ void doit5(int partner, int *partnerseg) {
 
     MSG("*** passed AM test!!");
   }
+
+#ifndef TESTGASNET_NO_SPLIT
+  doit7(partner, (int *)partnerseg);
+}
+void doit7(int partner, int *partnerseg) {
+#endif
 
   BARRIER();
 
@@ -701,13 +715,15 @@ void doit5(int partner, int *partnerseg) {
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
     }
     { double dbl = 1.0;
-      ptr64 = (gasnett_atomic64_t *)(void *)&dbl; /* (void*) suppresses g++ warning (bug 2158) */
+      uintptr_t tmp = (uintptr_t)&dbl;
+      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
       tmp64 = gasnett_atomic64_read(ptr64, 0);
       gasnett_atomic64_set(ptr64, tmp64, 0);
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);
     }
     { struct { char c; double dbl; } s = {0, 1.0};
-      ptr64 = (gasnett_atomic64_t *)(void *)&s.dbl; /* (void*) suppresses g++ warning (bug 2158) */
+      uintptr_t tmp = (uintptr_t)&s.dbl;
+      ptr64 = (gasnett_atomic64_t *)tmp; /* conversion suppresses gcc-4 warning (bug 2158) */
       tmp64 = gasnett_atomic64_read(ptr64, 0);
       gasnett_atomic64_set(ptr64, tmp64, 0);
       (void)gasnett_atomic64_compare_and_swap(ptr64, 0, 1, 0);

@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2009-2016 Inria.  All rights reserved.
+.\" Copyright © 2009-2017 Inria.  All rights reserved.
 .\" Copyright © 2010 Université of Bordeaux
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
@@ -128,6 +128,18 @@ Restrict the topology to the given cpuset.
 \fB\-\-whole\-system\fR
 Do not consider administration limitations.
 .TP
+\fB--hbm\fR
+Only take high bandwidth memory nodes (such as KNL's MCDRAM)
+in account when looking for NUMA nodes in the input locations.
+
+This option must be combined with NUMA node locations,
+such as \fI--hbm numa:1\fR for binding on the second HBM node.
+It may also be written as \fIhbm:1\fR.
+.TP
+\fB--no-hbm\fR
+Ignore high bandwidth memory nodes (such as KNL's MCDRAM)
+when looking for NUMA nodes in the input locations.
+.TP
 \fB\-f\fR \fB\-\-force\fR
 Launch the executable even if binding failed.
 .TP
@@ -152,6 +164,14 @@ hwloc-bind execs an executable (with optional command line arguments)
 that is bound to the specified location (or list of locations).  Upon
 successful execution, hwloc-bind simply sets bindings and then execs
 the executable over itself.
+.
+.PP
+If multiple locations are given, they are combined in the sense that
+the binding will be wider. The process will be allowed to run on every
+location inside the combination.
+.
+.PP
+The list of input locations may be explicitly ended with "--".
 .
 .PP
 If binding fails, or if the binding set is empty, and \fB\-\-force\fR
@@ -188,7 +208,12 @@ no ambiguity between hwloc-bind option names and the executed command name:
 To bind the "echo" command to the first core of the second package and
 the second core of the first package:
 
-    hwloc-bind package:1.core:0 package:0.core:1 -- echo hello
+    $ hwloc-bind package:1.core:0 package:0.core:1 -- echo hello
+
+To bind memory on the first high-bandwidth memory node:
+
+    $ hwloc-bind --membind hbm:0 -- echo hello
+    $ hwloc-bind --membind --hbm numa:0 -- echo hello
 
 Note that binding the "echo" command to multiple processors is
 probably meaningless (because "echo" is likely implemented as a

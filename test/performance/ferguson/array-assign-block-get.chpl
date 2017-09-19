@@ -1,5 +1,5 @@
 use BlockDist;
-use CommDiagnostics;
+use CommUtil;
 
 config const n = 100000;
 
@@ -14,8 +14,7 @@ for i in 1..n {
   A[i] = i;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+start();
 
 on Locales[1] {
   var B: [D] int;
@@ -24,9 +23,9 @@ on Locales[1] {
   saveBn = B[n];
 }
 
-stopCommDiagnostics();
+stop();
 
 writeln(saveB1);
 writeln(saveBn);
 
-writeln(getCommDiagnostics());
+report(maxGets=39, maxPuts=4, maxOns=12);

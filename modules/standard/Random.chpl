@@ -210,18 +210,6 @@ module Random {
       compilerError("Unknown random number generator");
   }
 
-  // remove this deprecation version when appropriate
-  pragma "no doc"
-  pragma "compiler generated"
-  proc makeRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64),
-                        param algorithm = defaultRNG) {
-    compilerWarning("Deprecated call to makeRandomStream function. Please fix by passing eltType as the first argument.");
-    return makeRandomStream(eltType, seed, parSafe, algorithm);
-  }
-
-
   /*
 
     Models a stream of pseudorandom numbers.  This class is defined for
@@ -593,22 +581,6 @@ module Random {
         }
         PCGRandomStreamPrivate_count = 1;
       }
-
-      // remove this deprecation version when appropriate
-      pragma "no doc"
-      pragma "compiler generated"
-      proc RandomStream(seed: int(64) = SeedGenerator.currentTime,
-                        param parSafe: bool = true,
-                        type eltType = real(64)) {
-        compilerWarning("Deprecated call to RandomStream constructor. Please fix by passing eltType as the first argument.");
-        this.seed = seed;
-        for param i in 1..numGenerators(eltType) {
-          param inc = pcg_getvalid_inc(i);
-          PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
-        }
-        PCGRandomStreamPrivate_count = 1;
-      }
-
 
       pragma "no doc"
       proc PCGRandomStreamPrivate_getNext_noLock(type resultType=eltType) {
@@ -2099,40 +2071,6 @@ module Random {
       }
 
       pragma "no doc"
-      pragma "compiler generated"
-      proc NPBRandomStream(seed: int(64) = SeedGenerator.oddCurrentTime,
-                           param parSafe: bool = true,
-                           type eltType = real(64)) {
-
-        compilerWarning("Deprecated call to NPBRandomStream constructor. Please fix by passing eltType as the first argument.");
-
-        // The mod operation is written in these steps in order
-        // to work around an apparent PGI compiler bug.
-        // See test/portability/bigmod.test.c
-        var one:uint(64) = 1;
-        var two_46:uint(64) = one << 46;
-        var two_46_mask:uint(64) = two_46 - 1;
-        var useed = seed:uint(64);
-        var mod:uint(64);
-        if useed % 2 == 0 then
-          halt("NPBRandomStream seed must be an odd integer");
-        // Adjust seed to be between 0 and 2**46.
-        mod = useed & two_46_mask;
-        this.seed = mod:int(64);
-
-        if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
-          halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
-
-        NPBRandomStreamPrivate_cursor = seed;
-        NPBRandomStreamPrivate_count = 1;
-        if eltType == real || eltType == imag || eltType == complex {
-          // OK, supported element type
-        } else {
-          compilerError("NPBRandomStream only supports eltType=real(64), imag(64), or complex(128)");
-        }
-      }
-
-      pragma "no doc"
       proc NPBRandomStreamPrivate_getNext_noLock() {
         if (eltType == complex) {
           NPBRandomStreamPrivate_count += 2;
@@ -2251,6 +2189,18 @@ module Random {
         if parSafe then
           NPBRandomStreamPrivate_lock$;
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
+      }
+
+      // Forward the leader iterator as well.
+      pragma "no doc"
+      proc iterate(D: domain, param tag, type resultType=real)
+        where tag == iterKind.leader
+      {
+        // Note that proc iterate() for the serial case (i.e. the one above)
+        // is going to be invoked as well, so we should not be taking
+        // any actions here other than the forwarding.
+        const start = NPBRandomStreamPrivate_count;
+        return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
       }
 
       pragma "no doc"

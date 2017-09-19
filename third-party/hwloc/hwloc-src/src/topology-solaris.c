@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * Copyright © 2011      Oracle and/or its affiliates.  All rights reserved.
@@ -24,18 +24,13 @@
 #include <sys/types.h>
 #include <sys/processor.h>
 #include <sys/procset.h>
+#include <sys/systeminfo.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 
 #ifdef HAVE_LIBLGRP
 #  include <sys/lgrp_user.h>
 #endif
-
-/* TODO: use psets? (only for root)
- * TODO: get cache info from prtdiag? (it is setgid sys to be able to read from
- * crw-r-----   1 root     sys       88,  0 nov   3 14:35 /devices/pseudo/devinfo@0:devinfo
- * and run (apparently undocumented) ioctls on it.
- */
 
 static int
 hwloc_solaris_set_sth_cpubind(hwloc_topology_t topology, idtype_t idtype, id_t id, hwloc_const_bitmap_t hwloc_set, int flags)
@@ -342,41 +337,134 @@ hwloc_solaris_set_area_membind(hwloc_topology_t topology, const void *addr, size
 #endif
 
 #ifdef HAVE_LIBLGRP
+
+/* list the allowed PUs and NUMA Nodes using LGRP_VIEW_CALLER */
 static void
-browse(struct hwloc_topology *topology, lgrp_cookie_t cookie, lgrp_id_t lgrp, hwloc_obj_t *glob_lgrps, unsigned *curlgrp)
+lgrp_list_allowed(struct hwloc_topology *topology)
 {
-  int n;
-  hwloc_obj_t obj;
-  lgrp_mem_size_t mem_size;
+  lgrp_cookie_t cookie;
+  lgrp_id_t root;
+  int npids, nnids;
+  int i, n;
+  processorid_t *pids;
+  lgrp_id_t *nids;
 
-  n = lgrp_cpus(cookie, lgrp, NULL, 0, LGRP_CONTENT_HIERARCHY);
-  if (n == -1)
-    return;
+  cookie = lgrp_init(LGRP_VIEW_CALLER);
+  if (cookie == LGRP_COOKIE_NONE) {
+    hwloc_debug("lgrp_init LGRP_VIEW_CALLER failed: %s\n", strerror(errno));
+    goto out;
+  }
+  root = lgrp_root(cookie);
 
-  /* Is this lgrp a NUMA node? */
-  if ((mem_size = lgrp_mem_size(cookie, lgrp, LGRP_MEM_SZ_INSTALLED, LGRP_CONTENT_DIRECT)) > 0)
-  {
-    int i;
-    processorid_t *cpuids;
-    cpuids = malloc(sizeof(processorid_t) * n);
-    assert(cpuids != NULL);
+  /* list allowed PUs */
+  npids = lgrp_cpus(cookie, root, NULL, 0, LGRP_CONTENT_HIERARCHY);
+  if (npids < 0) {
+    hwloc_debug("lgrp_cpus failed: %s\n", strerror(errno));
+    goto out_with_cookie;
+  }
+  hwloc_debug("root lgrp contains %d allowed PUs\n", npids);
+  assert(npids > 0);
 
-    obj = hwloc_alloc_setup_object(HWLOC_OBJ_NUMANODE, lgrp);
-    obj->nodeset = hwloc_bitmap_alloc();
-    hwloc_bitmap_set(obj->nodeset, lgrp);
-    obj->cpuset = hwloc_bitmap_alloc();
-    glob_lgrps[(*curlgrp)++] = obj;
+  pids = malloc(npids * sizeof(*pids));
+  if (!pids)
+    goto out_with_cookie;
 
-    lgrp_cpus(cookie, lgrp, cpuids, n, LGRP_CONTENT_HIERARCHY);
-    for (i = 0; i < n ; i++) {
-      hwloc_debug("node %ld's cpu %d is %d\n", lgrp, i, cpuids[i]);
-      hwloc_bitmap_set(obj->cpuset, cpuids[i]);
-    }
-    hwloc_debug_1arg_bitmap("node %ld has cpuset %s\n",
-	lgrp, obj->cpuset);
+  n = lgrp_cpus(cookie, root, pids, npids, LGRP_CONTENT_HIERARCHY);
+  assert(n == npids);
 
+  hwloc_bitmap_zero(topology->levels[0][0]->allowed_cpuset);
+
+  for(i=0; i<npids; i++) {
+    hwloc_debug("root lgrp contains allowed PU #%d = P#%d\n", i, pids[i]);
+    hwloc_bitmap_set(topology->levels[0][0]->allowed_cpuset, pids[i]);
+  }
+  free(pids);
+
+  /* list allowed NUMA nodes */
+  nnids = lgrp_resources(cookie, root, NULL, 0, LGRP_RSRC_MEM);
+  if (nnids < 0) {
+    hwloc_debug("lgrp_resources failed: %s\n", strerror(errno));
+    goto out_with_cookie;
+  }
+  hwloc_debug("root lgrp contains %d allowed NUMA nodes\n", nnids);
+  assert(nnids > 0);
+
+  nids = malloc(nnids * sizeof(*nids));
+  if (!nids)
+    goto out_with_cookie;
+
+  n = lgrp_resources(cookie, root, nids, nnids, LGRP_RSRC_MEM);
+  assert(n == nnids);
+
+  hwloc_bitmap_zero(topology->levels[0][0]->allowed_nodeset);
+
+  for(i=0; i<nnids; i++) {
+    hwloc_debug("root lgrp contains allowed NUMA node #%d = P#%ld\n", i, nids[i]);
+    hwloc_bitmap_set(topology->levels[0][0]->allowed_nodeset, nids[i]);
+  }
+  free(nids);
+
+ out_with_cookie:
+  lgrp_fini(cookie);
+ out:
+  return;
+}
+
+/* build all NUMAs (even if disallowed) and get global cpuset+nodeset using LGRP_VIEW_OS */
+static void
+lgrp_build_numanodes(struct hwloc_topology *topology,
+		     lgrp_cookie_t cookie, lgrp_id_t root,
+		     hwloc_obj_t *nodes, unsigned *nr_nodes)
+{
+  int npids, nnids;
+  int i, j, n;
+  processorid_t *pids;
+  lgrp_id_t *nids;
+
+  /* get the max number of PUs */
+  npids = lgrp_cpus(cookie, root, NULL, 0, LGRP_CONTENT_HIERARCHY);
+  if (npids < 0) {
+    hwloc_debug("lgrp_cpus failed: %s\n", strerror(errno));
+    goto out;
+  }
+  hwloc_debug("root lgrp contains %d PUs\n", npids);
+  assert(npids > 0);
+
+  /* allocate a single array that will be large enough for lgroup cpus below */
+  pids = malloc(npids * sizeof(*pids));
+  if (!pids)
+    goto out;
+
+  /* list NUMA nodes */
+  nnids = lgrp_resources(cookie, root, NULL, 0, LGRP_RSRC_MEM);
+  if (nnids < 0) {
+    hwloc_debug("lgrp_resources failed: %s\n", strerror(errno));
+    goto out_with_pids;
+  }
+  hwloc_debug("root lgrp contains %d NUMA nodes\n", nnids);
+  assert(nnids > 0);
+
+  nids = malloc(nnids * sizeof(*nids));
+  if (!nids)
+    goto out_with_pids;
+
+  n = lgrp_resources(cookie, root, nids, nnids, LGRP_RSRC_MEM);
+  assert(n == nnids);
+
+  for(i=0; i<nnids; i++) {
+    hwloc_obj_t obj;
+    lgrp_mem_size_t mem_size;
+    hwloc_debug("root lgrp contains NUMA node #%d = P#%ld\n", i, nids[i]);
+    mem_size = lgrp_mem_size(cookie, nids[i], LGRP_MEM_SZ_INSTALLED, LGRP_CONTENT_DIRECT);
     /* or LGRP_MEM_SZ_FREE */
-    hwloc_debug("node %ld has %lldkB\n", lgrp, mem_size/1024);
+
+    obj = hwloc_alloc_setup_object(HWLOC_OBJ_NUMANODE, nids[i]);
+    obj->nodeset = hwloc_bitmap_alloc();
+    hwloc_bitmap_set(obj->nodeset, nids[i]);
+    obj->cpuset = hwloc_bitmap_alloc();
+    nodes[(*nr_nodes)++] = obj;
+
+    hwloc_debug("NUMA node %ld has %lldkB\n", nids[i], mem_size/1024);
     obj->memory.local_memory = mem_size;
     obj->memory.page_types_len = 2;
     obj->memory.page_types = malloc(2*sizeof(*obj->memory.page_types));
@@ -385,26 +473,27 @@ browse(struct hwloc_topology *topology, lgrp_cookie_t cookie, lgrp_id_t lgrp, hw
 #if HAVE_DECL__SC_LARGE_PAGESIZE
     obj->memory.page_types[1].size = sysconf(_SC_LARGE_PAGESIZE);
 #endif
-    hwloc_insert_object_by_cpuset(topology, obj);
-    free(cpuids);
-  }
 
-  n = lgrp_children(cookie, lgrp, NULL, 0);
-  {
-    lgrp_id_t *lgrps;
-    int i;
-
-    lgrps = malloc(sizeof(lgrp_id_t) * n);
-    assert(lgrps != NULL);
-    lgrp_children(cookie, lgrp, lgrps, n);
-    hwloc_debug("lgrp %ld has %d children\n", lgrp, n);
-    for (i = 0; i < n ; i++)
-      {
-	browse(topology, cookie, lgrps[i], glob_lgrps, curlgrp);
+    n = lgrp_cpus(cookie, nids[i], pids, npids, LGRP_CONTENT_HIERARCHY);
+    if (n < 0) {
+      hwloc_debug("lgrp_cpus on NUMA node failed: %s\n", strerror(errno));
+    } else {
+      hwloc_debug("NUMA node %ld contains %d PUs\n", nids[i], n);
+      for (j = 0; j < n ; j++) {
+	hwloc_debug("node %ld's cpu %d is %d\n", nids[i], j, pids[j]);
+	hwloc_bitmap_set(obj->cpuset, pids[j]);
       }
-    hwloc_debug("lgrp %ld's children done\n", lgrp);
-    free(lgrps);
+      hwloc_debug_1arg_bitmap("node %ld has cpuset %s\n",
+			      nids[i], obj->cpuset);
+    }
+
+    hwloc_insert_object_by_cpuset(topology, obj);
   }
+
+ out_with_pids:
+  free(pids);
+ out:
+  return;
 }
 
 static void
@@ -415,10 +504,9 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
   int nlgrps;
   lgrp_id_t root;
 
-  if ((topology->flags & HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM))
-    cookie = lgrp_init(LGRP_VIEW_OS);
-  else
-    cookie = lgrp_init(LGRP_VIEW_CALLER);
+  lgrp_list_allowed(topology);
+
+  cookie = lgrp_init(LGRP_VIEW_OS);
   if (cookie == LGRP_COOKIE_NONE)
     {
       hwloc_debug("lgrp_init failed: %s\n", strerror(errno));
@@ -428,21 +516,35 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
   root = lgrp_root(cookie);
   if (nlgrps > 0) {
     hwloc_obj_t *glob_lgrps = calloc(nlgrps, sizeof(hwloc_obj_t));
-    browse(topology, cookie, root, glob_lgrps, &curlgrp);
+
+    lgrp_build_numanodes(topology, cookie, root, glob_lgrps, &curlgrp);
+
 #if HAVE_DECL_LGRP_LATENCY_COOKIE
     if (nlgrps > 1) {
       float *distances = calloc(curlgrp*curlgrp, sizeof(float));
       unsigned *indexes = calloc(curlgrp,sizeof(unsigned));
       unsigned i, j;
-      for (i = 0; i < curlgrp; i++) {
-	indexes[i] = glob_lgrps[i]->os_index;
-	for (j = 0; j < curlgrp; j++)
-          distances[i*curlgrp+j] = (float) lgrp_latency_cookie(cookie, glob_lgrps[i]->os_index, glob_lgrps[j]->os_index, LGRP_LAT_CPU_TO_MEM);
+      if (distances && indexes) {
+	for (i = 0; i < curlgrp; i++) {
+	  indexes[i] = glob_lgrps[i]->os_index;
+	  for (j = 0; j < curlgrp; j++) {
+	    int latency = lgrp_latency_cookie(cookie, glob_lgrps[i]->os_index, glob_lgrps[j]->os_index, LGRP_LAT_CPU_TO_MEM);
+	    if (latency < 0) {
+	      /* FIXME: if errno = ESRCH because some NUMA nodes are unavailable, we could reduce the matrix instead of ignoring */
+	      free(distances);
+	      free(indexes);
+	      goto done;
+	    }
+	    distances[i*curlgrp+j] = (float) latency;
+	  }
+	}
+	hwloc_distances_set(topology, HWLOC_OBJ_NUMANODE, curlgrp, indexes, glob_lgrps, distances, 0 /* OS cannot force */);
+	glob_lgrps = NULL; /* dont free it below */
       }
-      hwloc_distances_set(topology, HWLOC_OBJ_NUMANODE, curlgrp, indexes, glob_lgrps, distances, 0 /* OS cannot force */);
-    } else
+    }
 #endif /* HAVE_DECL_LGRP_LATENCY_COOKIE */
-      free(glob_lgrps);
+done:
+    free(glob_lgrps);
   }
   lgrp_fini(cookie);
 }
@@ -453,9 +555,12 @@ hwloc_look_lgrp(struct hwloc_topology *topology)
 static int
 hwloc_look_kstat(struct hwloc_topology *topology)
 {
-  /* FIXME this assumes that all packages are identical */
-  char *CPUType = hwloc_solaris_get_chip_type();
-  char *CPUModel = hwloc_solaris_get_chip_model();
+  struct hwloc_solaris_chip_info_s chip_info;
+  static char architecture[6] = "";
+  int is_sparc = 0;
+  int l1i_from_core = 0;
+  int l1d_from_core = 0;
+  int ret;
 
   kstat_ctl_t *kc = kstat_open();
   kstat_t *ksp;
@@ -505,11 +610,34 @@ hwloc_look_kstat(struct hwloc_topology *topology)
     return 0;
   }
 
-  for (ksp = kc->kc_chain; ksp; ksp = ksp->ks_next)
-    {
-      if (strncmp("cpu_info", ksp->ks_module, 8))
-	continue;
+  ret = sysinfo(SI_ARCHITECTURE, architecture, sizeof architecture);
+  if (ret == 6 && !strcmp(architecture, "sparc"))
+    is_sparc = 1;
 
+  hwloc_solaris_get_chip_info(&chip_info);
+
+  /* mark empty caches as unneeded on !sparc since we have the x86 backend to better get them. */
+  if (!is_sparc) {
+    for(i=0; i<sizeof(chip_info.cache_size)/sizeof(*chip_info.cache_size); i++)
+      if (!chip_info.cache_size[i])
+	chip_info.cache_size[i] = -1;
+  }
+
+  /* on sparc, assume l1d and l1i have same sharing as the core.
+   * on !sparc, we don't know the sharing of these caches, hence we ignore them.
+   * on x86, the x86-backend will take care of these caches again.
+   */
+  if (is_sparc && chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L1D] >= 0) {
+    hwloc_debug("Will generate L1d caches from cores and PICL cache index #%u\n", HWLOC_SOLARIS_CHIP_INFO_L1D);
+    l1d_from_core = 1;
+  }
+  if (is_sparc && chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L1I] >= 0) {
+    hwloc_debug("Will generate L1i caches from cores and PICL cache index #%u\n", HWLOC_SOLARIS_CHIP_INFO_L1I);
+    l1i_from_core = 1;
+  }
+
+  for (ksp = kc->kc_chain; ksp; ksp = ksp->ks_next) {
+    if (!strncmp("cpu_info", ksp->ks_module, 8)) {
       cpuid = ksp->ks_instance;
 
       if (kstat_read(kc, ksp, NULL) == -1)
@@ -664,39 +792,131 @@ hwloc_look_kstat(struct hwloc_topology *topology)
       /* Note: there is also clog_id for the Thread ID (not unique) and
        * pkg_core_id for the core ID (not unique).  They are not useful to us
        * however. */
+
+    } else if (!strcmp("pg_hw_perf", ksp->ks_module)) {
+      if (kstat_read(kc, ksp, NULL) == -1) {
+	fprintf(stderr, "kstat_read failed for module %s name %s instance %d: %s\n", ksp->ks_module, ksp->ks_name, ksp->ks_instance, strerror(errno));
+	continue;
+      }
+      stat = (kstat_named_t *) kstat_data_lookup(ksp, "cpus");
+      if (stat) {
+	hwloc_debug("found kstat module %s name %s instance %d cpus type %d\n", ksp->ks_module, ksp->ks_name, ksp->ks_instance, stat->data_type);
+	if (stat->data_type == KSTAT_DATA_STRING) {
+	  hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+	  hwloc_bitmap_list_sscanf(cpuset, stat->value.str.addr.ptr);
+
+	  if (!strcmp(ksp->ks_name, "L3_Cache")) {
+	    if (chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L3] >= 0) {
+	      hwloc_obj_t l3 = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, -1);
+	      l3->cpuset = cpuset;
+	      l3->attr->cache.depth = 3;
+	      l3->attr->cache.size = chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L3];
+	      l3->attr->cache.linesize = chip_info.cache_linesize[HWLOC_SOLARIS_CHIP_INFO_L3];
+	      l3->attr->cache.associativity = chip_info.cache_associativity[HWLOC_SOLARIS_CHIP_INFO_L3];
+	      l3->attr->cache.type = HWLOC_OBJ_CACHE_UNIFIED;
+	      hwloc_insert_object_by_cpuset(topology, l3);
+	      cpuset = NULL; /* don't free below */
+	    }
+	  }
+	  else if (!strcmp(ksp->ks_name, "L2_Cache")) {
+	    if (!chip_info.l2_unified && chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L2I] >= 0) {
+	      hwloc_obj_t l2i = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, -1);
+	      l2i->cpuset = hwloc_bitmap_dup(cpuset);
+	      l2i->attr->cache.depth = 2;
+	      l2i->attr->cache.size = chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L2I];
+	      l2i->attr->cache.linesize = chip_info.cache_linesize[HWLOC_SOLARIS_CHIP_INFO_L2I];
+	      l2i->attr->cache.associativity = chip_info.cache_associativity[HWLOC_SOLARIS_CHIP_INFO_L2I];
+	      l2i->attr->cache.type = HWLOC_OBJ_CACHE_INSTRUCTION;
+	      hwloc_insert_object_by_cpuset(topology, l2i);
+	    }
+	    if (chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L2D] >= 0) {
+	      hwloc_obj_t l2 = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, -1);
+	      l2->cpuset = cpuset;
+	      l2->attr->cache.depth = 2;
+	      l2->attr->cache.size = chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L2D];
+	      l2->attr->cache.linesize = chip_info.cache_linesize[HWLOC_SOLARIS_CHIP_INFO_L2D];
+	      l2->attr->cache.associativity = chip_info.cache_associativity[HWLOC_SOLARIS_CHIP_INFO_L2D];
+	      l2->attr->cache.type = chip_info.l2_unified ? HWLOC_OBJ_CACHE_UNIFIED : HWLOC_OBJ_CACHE_DATA;
+	      hwloc_insert_object_by_cpuset(topology, l2);
+	      cpuset = NULL; /* don't free below */
+	    }
+	  }
+	  else {
+	    hwloc_obj_t group = hwloc_alloc_setup_object(HWLOC_OBJ_GROUP, -1);
+	    group->cpuset = cpuset;
+	    group->attr->group.depth = hwloc_bitmap_weight(cpuset);
+	    if (group->attr->group.depth >= topology->next_group_depth)
+	      topology->next_group_depth = group->attr->group.depth + 1;
+	    hwloc_obj_add_info(group, "SolarisProcessorGroup", ksp->ks_name);
+	    hwloc_insert_object_by_cpuset(topology, group);
+	    cpuset = NULL; /* don't free below */
+	  }
+	  hwloc_bitmap_free(cpuset);
+	}
+      }
     }
+  }
 
   if (look_chips) {
     struct hwloc_obj *obj;
     unsigned j,k;
-    hwloc_debug("%d Packages\n", Lpkg_num);
+    hwloc_debug("%u Packages\n", Lpkg_num);
     for (j = 0; j < Lpkg_num; j++) {
       obj = hwloc_alloc_setup_object(HWLOC_OBJ_PACKAGE, Lpkg[j].Ppkg);
-      if (CPUType)
-	hwloc_obj_add_info(obj, "CPUType", CPUType);
-      if (CPUModel)
-	hwloc_obj_add_info(obj, "CPUModel", CPUModel);
+      if (chip_info.type)
+	hwloc_obj_add_info(obj, "CPUType", chip_info.type);
+      if (chip_info.model)
+	hwloc_obj_add_info(obj, "CPUModel", chip_info.model);
       obj->cpuset = hwloc_bitmap_alloc();
       for(k=0; k<Pproc_max; k++)
 	if (Pproc[k].Lpkg == j)
 	  hwloc_bitmap_set(obj->cpuset, k);
-      hwloc_debug_1arg_bitmap("Package %d has cpuset %s\n", j, obj->cpuset);
+      hwloc_debug_1arg_bitmap("Package %u has cpuset %s\n", j, obj->cpuset);
       hwloc_insert_object_by_cpuset(topology, obj);
     }
     hwloc_debug("%s", "\n");
   }
 
-  if (look_cores) {
-    struct hwloc_obj *obj;
-    unsigned j,k;
-    hwloc_debug("%d Cores\n", Lcore_num);
+  if (look_cores || l1i_from_core || l1d_from_core) {
+    unsigned j;
+    hwloc_debug("%u Cores\n", Lcore_num);
     for (j = 0; j < Lcore_num; j++) {
-      obj = hwloc_alloc_setup_object(HWLOC_OBJ_CORE, Lcore[j].Pcore);
-      obj->cpuset = hwloc_bitmap_alloc();
+      /* Build the core cpuset */
+      struct hwloc_obj *obj;
+      unsigned k;
+      hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
       for(k=0; k<Pproc_max; k++)
 	if (Pproc[k].Lcore == j)
-	  hwloc_bitmap_set(obj->cpuset, k);
-      hwloc_debug_1arg_bitmap("Core %d has cpuset %s\n", j, obj->cpuset);
+	  hwloc_bitmap_set(cpuset, k);
+      hwloc_debug_1arg_bitmap("Core %u has cpuset %s\n", j, cpuset);
+
+      /* Sparcs have per-core L1's. If we got their sizes from PICL, create those objects.
+       *
+       * On x86, let the x86 backend handle things.
+       * At least AMD Fam15h L1i isn't per core (shared by dual-core compute unit).
+       */
+      if (l1d_from_core) {
+	struct hwloc_obj *l1 = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, -1);
+	l1->cpuset = hwloc_bitmap_dup(cpuset);
+	l1->attr->cache.depth = 1;
+	l1->attr->cache.type = HWLOC_OBJ_CACHE_DATA;
+	l1->attr->cache.size = chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L1D];
+	l1->attr->cache.linesize = chip_info.cache_linesize[HWLOC_SOLARIS_CHIP_INFO_L1D];
+	l1->attr->cache.associativity = chip_info.cache_associativity[HWLOC_SOLARIS_CHIP_INFO_L1D];
+	hwloc_insert_object_by_cpuset(topology, l1);
+      }
+      if (l1i_from_core) {
+	struct hwloc_obj *l1i = hwloc_alloc_setup_object(HWLOC_OBJ_CACHE, -1);
+	l1i->cpuset = hwloc_bitmap_dup(cpuset);
+	l1i->attr->cache.depth = 1;
+	l1i->attr->cache.type = HWLOC_OBJ_CACHE_INSTRUCTION;
+	l1i->attr->cache.size = chip_info.cache_size[HWLOC_SOLARIS_CHIP_INFO_L1I];
+	l1i->attr->cache.linesize = chip_info.cache_linesize[HWLOC_SOLARIS_CHIP_INFO_L1I];
+	l1i->attr->cache.associativity = chip_info.cache_associativity[HWLOC_SOLARIS_CHIP_INFO_L1I];
+	hwloc_insert_object_by_cpuset(topology, l1i);
+      }
+      obj = hwloc_alloc_setup_object(HWLOC_OBJ_CORE, Lcore[j].Pcore);
+      obj->cpuset = cpuset;
       hwloc_insert_object_by_cpuset(topology, obj);
     }
     hwloc_debug("%s", "\n");
@@ -704,14 +924,14 @@ hwloc_look_kstat(struct hwloc_topology *topology)
   if (Lproc_num) {
     struct hwloc_obj *obj;
     unsigned j,k;
-    hwloc_debug("%d PUs\n", Lproc_num);
+    hwloc_debug("%u PUs\n", Lproc_num);
     for (j = 0; j < Lproc_num; j++) {
       obj = hwloc_alloc_setup_object(HWLOC_OBJ_PU, Lproc[j].Pproc);
       obj->cpuset = hwloc_bitmap_alloc();
       for(k=0; k<Pproc_max; k++)
 	if (Pproc[k].Lproc == j)
 	  hwloc_bitmap_set(obj->cpuset, k);
-      hwloc_debug_1arg_bitmap("PU %d has cpuset %s\n", j, obj->cpuset);
+      hwloc_debug_1arg_bitmap("PU %u has cpuset %s\n", j, obj->cpuset);
       hwloc_insert_object_by_cpuset(topology, obj);
     }
     hwloc_debug("%s", "\n");
@@ -756,6 +976,7 @@ hwloc_look_solaris(struct hwloc_backend *backend)
   if (hwloc_look_kstat(topology) > 0)
     alreadypus = 1;
 #endif /* HAVE_LIBKSTAT */
+
   if (!alreadypus)
     hwloc_setup_pu_level(topology, nbprocs);
 
@@ -765,6 +986,22 @@ hwloc_look_solaris(struct hwloc_backend *backend)
   return 1;
 }
 
+#ifdef HAVE_LIBLGRP
+static int hwloc_solaris_get_allowed_hook(hwloc_topology_t topology)
+{
+  lgrp_list_allowed(topology);
+  return 0;
+}
+#endif
+
+static int
+hwloc_solaris_get_thisthread_last_cpu_location(hwloc_topology_t topology __hwloc_attribute_unused, hwloc_bitmap_t hwloc_set, int flags __hwloc_attribute_unused)
+{
+  int pu = getcpuid();
+  hwloc_bitmap_only(hwloc_set, pu);
+  return 0;
+}
+
 void
 hwloc_set_solaris_hooks(struct hwloc_binding_hooks *hooks,
 			struct hwloc_topology_support *support __hwloc_attribute_unused)
@@ -772,6 +1009,7 @@ hwloc_set_solaris_hooks(struct hwloc_binding_hooks *hooks,
   hooks->set_proc_cpubind = hwloc_solaris_set_proc_cpubind;
   hooks->set_thisproc_cpubind = hwloc_solaris_set_thisproc_cpubind;
   hooks->set_thisthread_cpubind = hwloc_solaris_set_thisthread_cpubind;
+  hooks->get_thisthread_last_cpu_location = hwloc_solaris_get_thisthread_last_cpu_location;
 #ifdef HAVE_LIBLGRP
   hooks->get_proc_cpubind = hwloc_solaris_get_proc_cpubind;
   hooks->get_thisproc_cpubind = hwloc_solaris_get_thisproc_cpubind;
@@ -789,6 +1027,9 @@ hwloc_set_solaris_hooks(struct hwloc_binding_hooks *hooks,
   support->membind->bind_membind = 1;
   support->membind->interleave_membind = 1;
   support->membind->nexttouch_membind = 1;
+#endif
+#ifdef HAVE_LIBLGRP
+  hooks->get_allowed_resources = hwloc_solaris_get_allowed_hook;
 #endif
 }
 

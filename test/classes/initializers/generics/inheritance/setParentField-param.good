@@ -1,0 +1,2 @@
+setParentField-param.chpl:13: In initializer:
+setParentField-param.chpl:15: error: can't set value of field "p" from parent type during phase 1 of initialization

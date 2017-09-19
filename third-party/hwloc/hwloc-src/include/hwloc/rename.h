@@ -646,8 +646,8 @@ extern "C" {
 
 /* private/solaris-chiptype.h */
 
-#define hwloc_solaris_get_chip_type HWLOC_NAME(solaris_get_chip_type)
-#define hwloc_solaris_get_chip_model HWLOC_NAME(solaris_get_chip_model)
+#define hwloc_solaris_chip_info_s HWLOC_NAME(solaris_chip_info_s)
+#define hwloc_solaris_get_chip_info HWLOC_NAME(solaris_get_chip_info)
 
 #endif /* HWLOC_SYM_TRANSFORM */
 

@@ -314,6 +314,7 @@ module Scalable_Graph_Generator
    }
 
 //   writeln("Upon exit, Edges is:\n", Edges, "\n");
+    delete Rand_Gen;
   }
 
 }

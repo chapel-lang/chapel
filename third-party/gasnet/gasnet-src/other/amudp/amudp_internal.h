@@ -7,7 +7,8 @@
 #define _AMUDP_INTERNAL_H
 
 #include <portable_inttypes.h>
-#include <portable_platform.h>
+#undef _PORTABLE_PLATFORM_H
+#include <amudp_portable_platform.h>
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -100,7 +101,7 @@ extern void AMUDP_InitRetryCache();
 #endif
 
 #if !defined(USE_ASYNC_TCP_CONTROL) && \
-   ( PLATFORM_OS_LINUX )
+   ( PLATFORM_OS_LINUX )   // NOT functional on WSL
   #define USE_ASYNC_TCP_CONTROL     1   /* use O_ASYNC and signals to stat TCP coord sockets, saves overhead on AMPoll */
 #endif
 #ifndef AMUDP_SIGIO
@@ -304,6 +305,8 @@ typedef union amudp_bufferheader {
 typedef struct amudp_bufferpool {
   #if AMUDP_DEBUG
     uint64_t magic;
+  #endif
+  #if AMUDP_BUFFER_STATS
     struct {
       uint64_t alloc_curr;
       uint64_t alloc_peak;
@@ -418,7 +421,7 @@ extern int AMUDP_Info(const char *msg, ...));
     static uint64_t _cnt = 0;                                           \
     _cnt++;                                                             \
     if_pf (!(_cnt & (_cnt-1))) {                                        \
-      AMUDP_Warn("%s (%llu occurences)",msg,(unsigned long long)_cnt);  \
+      AMUDP_Warn("%s (%" PRIu64 " occurences)",msg,_cnt);               \
     }                                                                   \
   } while (0)
 #else
@@ -440,17 +443,17 @@ GASNETT_NORETURNP(AMUDP_FatalErr)
 /* memory allocation */
 static void *_AMUDP_malloc(size_t sz, const char *curloc) {
   void *ret = malloc(sz);
-  if_pf(!ret) AMUDP_FatalErr("Failed to malloc(%lu) at %s", (unsigned long)sz, curloc);
+  if_pf(!ret) AMUDP_FatalErr("Failed to malloc(%" PRIuPTR ") at %s", (uintptr_t)sz, curloc);
   return ret;
 }
 static void *_AMUDP_calloc(size_t N, size_t S, const char *curloc) {
   void *ret = calloc(N,S);
-  if_pf(!ret) AMUDP_FatalErr("Failed to calloc(%lu,%lu) at %s", (unsigned long)N, (unsigned long)S, curloc);
+  if_pf(!ret) AMUDP_FatalErr("Failed to calloc(%" PRIuPTR ",%" PRIuPTR ") at %s", (uintptr_t)N, (uintptr_t)S, curloc);
   return ret;
 }
 static void *_AMUDP_realloc(void *ptr, size_t S, const char *curloc) {
   void *ret = realloc(ptr,S);
-  if_pf(!ret) AMUDP_FatalErr("Failed to realloc(%lu) at %s", (unsigned long)S, curloc);
+  if_pf(!ret) AMUDP_FatalErr("Failed to realloc(%" PRIuPTR ") at %s", (uintptr_t)S, curloc);
   return ret;
 }
 static void _AMUDP_free(void *ptr, const char *curloc) {

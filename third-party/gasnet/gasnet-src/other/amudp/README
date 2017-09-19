@@ -1,7 +1,7 @@
 AMUDP Documentation
 ===================
 Author: Dan Bonachea and Dan Hettena
-Contact email: upc-devel@lbl.gov
+Contact email: gasnet-devel@lbl.gov
 Home page: http://gasnet.lbl.gov/amudp
 
 AMUDP is an implementation of the AM-2 specification over UDP/IP. 
@@ -63,4 +63,50 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 * Clients should not take the address of AM_ entry point "functions", because
   many are implemented as macros.
+
+Change Log
+----------
+AMUDP 3.14 (03/2017)
+- Fix AM_{Get,Set}NumHandlers and AM_MoveEndpoint
+- Fix bug 3379: workaround a PGI optimizer bug on Darwin
+- Export AMUDP_enEqual
+- make run-tests now outputs summary results at the end
+- Fix some harmless warnings about unused variables
+- Renamed portable_platform.h
+- Remove Makefile.darwin (no longer necessary)
+- Fix compilation errors in verbose debug mode
+- Update contact email
+
+AMUDP 3.13 (10/2016)
+- Restructure network buffer management to provide scalable
+  buffer memory utilization to thousands of nodes and beyond.
+- Adjust the set of available environment tuning knobs for better control of
+  transfer performance at scale.
+- Adjust default transfer parameters for better performance on 1GbE
+- Numerous misc changes to improve performance
+- Restructure AMUDP headers to reduce namespace clutter
+- Expose AMUDP_SetTranslationTag
+- Fix possible syntax errors with AM expression arguments
+- Fix a compatibility issue with Cray CNL
+- Fix a use-after-free bug in argument processing
+- Fix a data corruption issue on 64-bit OSX on PowerPC
+- Use realloc when appropriate to manage internal state
+
+AMUDP 3.12 (06/2016)
+- Add BLCR support
+- Improve stdout/stderr routing to be more robust and use fewer descriptors
+- Add AMUDP_ENV_CMD and AMUDP_LINEBUFFERSZ
+- Remove UETH/UFXP support
+- Remove GLUNIX and REXEC spawn support
+- Remove support for HPUX, SuperUX, MTX, Catamount, and native Win32 (use cygwin instead)
+- Remove some obsolete files
+Fix three significant bugs:
+- Out-of-order delivery of UDP messages (which can occur on networks
+  with multiple paths) was going undetected and could lead to silent
+  loss and/or erroneous redelivery of AMs in the presence of
+  retransmissions (caused by packet loss or high network load).
+- On Cygwin 2.5 (2016-04-11 and later), ioctl(FIONREAD) always returns
+  failure, was rendering AMUDP entirely unusable on that platform.
+- On FreeBSD, ioctl(FIONREAD) may truncate long datagrams to around
+  600 bytes, was rendering AMUDP unusable on that platform.
 

@@ -19,7 +19,7 @@ cpubind:set_thread_cpubind = 0
 cpubind:get_thread_cpubind = 0
 cpubind:get_thisproc_last_cpu_location = 0
 cpubind:get_proc_last_cpu_location = 0
-cpubind:get_thisthread_cpubind = 0
+cpubind:get_thisthread_last_cpu_location = 0
 membind:set_thisproc_membind = 0
 membind:get_thisproc_membind = 0
 membind:set_proc_membind = 0
@@ -52,6 +52,7 @@ Core L#2
  nodeset = 0x00000001
  complete nodeset = 0x00000001
  allowed nodeset = 0x00000001
+ symmetric subtree = 1
 Core L#3
  type = Core
  full type = Core
@@ -67,6 +68,7 @@ Core L#3
  nodeset = 0x00000002
  complete nodeset = 0x00000002
  allowed nodeset = 0x00000002
+ symmetric subtree = 1
 Core L#4
  type = Core
  full type = Core
@@ -82,6 +84,7 @@ Core L#4
  nodeset = 0x00000002
  complete nodeset = 0x00000002
  allowed nodeset = 0x00000002
+ symmetric subtree = 1
 
 0.0: PU L#10
 0.0:  type = PU
@@ -98,6 +101,7 @@ Core L#4
 0.0:  nodeset = 0x00000001
 0.0:  complete nodeset = 0x00000001
 0.0:  allowed nodeset = 0x00000001
+0.0:  symmetric subtree = 1
 0.1: Core L#2 = parent #1 of PU L#10
 0.1:  type = Core
 0.1:  full type = Core
@@ -113,6 +117,7 @@ Core L#4
 0.1:  nodeset = 0x00000001
 0.1:  complete nodeset = 0x00000001
 0.1:  allowed nodeset = 0x00000001
+0.1:  symmetric subtree = 1
 0.2: NUMANode L#0 = parent #2 of PU L#10
 0.2:  type = NUMANode
 0.2:  full type = NUMANode
@@ -130,6 +135,7 @@ Core L#4
 0.2:  nodeset = 0x00000001
 0.2:  complete nodeset = 0x00000001
 0.2:  allowed nodeset = 0x00000001
+0.2:  symmetric subtree = 1
 0.3: Machine L#0 = parent #3 of PU L#10
 0.3:  type = Machine
 0.3:  full type = Machine
@@ -146,6 +152,7 @@ Core L#4
 0.3:  nodeset = 0x00000003
 0.3:  complete nodeset = 0x00000003
 0.3:  allowed nodeset = 0x00000003
+0.3:  symmetric subtree = 1
 0.3:  info Backend = Synthetic
 0.3:  info SyntheticDescription = node:2 core:3 pu:4
 1.0: PU L#11
@@ -163,6 +170,7 @@ Core L#4
 1.0:  nodeset = 0x00000001
 1.0:  complete nodeset = 0x00000001
 1.0:  allowed nodeset = 0x00000001
+1.0:  symmetric subtree = 1
 1.1: Core L#2 = parent #1 of PU L#11
 1.1:  type = Core
 1.1:  full type = Core
@@ -178,6 +186,7 @@ Core L#4
 1.1:  nodeset = 0x00000001
 1.1:  complete nodeset = 0x00000001
 1.1:  allowed nodeset = 0x00000001
+1.1:  symmetric subtree = 1
 1.2: NUMANode L#0 = parent #2 of PU L#11
 1.2:  type = NUMANode
 1.2:  full type = NUMANode
@@ -195,6 +204,7 @@ Core L#4
 1.2:  nodeset = 0x00000001
 1.2:  complete nodeset = 0x00000001
 1.2:  allowed nodeset = 0x00000001
+1.2:  symmetric subtree = 1
 1.3: Machine L#0 = parent #3 of PU L#11
 1.3:  type = Machine
 1.3:  full type = Machine
@@ -211,6 +221,7 @@ Core L#4
 1.3:  nodeset = 0x00000003
 1.3:  complete nodeset = 0x00000003
 1.3:  allowed nodeset = 0x00000003
+1.3:  symmetric subtree = 1
 1.3:  info Backend = Synthetic
 1.3:  info SyntheticDescription = node:2 core:3 pu:4
 
@@ -231,6 +242,7 @@ NUMANode L#0 = parent of PU L#7
  nodeset = 0x00000001
  complete nodeset = 0x00000001
  allowed nodeset = 0x00000001
+ symmetric subtree = 1
 NUMANode L#0 = parent of PU L#8
  type = NUMANode
  full type = NUMANode
@@ -248,6 +260,7 @@ NUMANode L#0 = parent of PU L#8
  nodeset = 0x00000001
  complete nodeset = 0x00000001
  allowed nodeset = 0x00000001
+ symmetric subtree = 1
 NUMANode L#0 = parent of PU L#9
  type = NUMANode
  full type = NUMANode
@@ -265,6 +278,7 @@ NUMANode L#0 = parent of PU L#9
  nodeset = 0x00000001
  complete nodeset = 0x00000001
  allowed nodeset = 0x00000001
+ symmetric subtree = 1
 
 L2Cache L#3 = parent of PU L#12
  type = Cache
@@ -285,8 +299,23 @@ L2Cache L#3 = parent of PU L#12
  attr cache type = Unified
  attr cache size = 4194304
  attr cache line size = 64
+ symmetric subtree = 1
 
 L1dCache:3
 L1dCache:4
 L1dCache:4
 L1dCache:5
+
+L1dCache:2
+L1dCache:3
+L2Cache:6
+L2Cache:7
+
+L1dCache:4
+L1dCache:5
+L1dCache:6
+L1dCache:7
+L1dCache:8
+L1dCache:9
+L1dCache:10
+L1dCache:11

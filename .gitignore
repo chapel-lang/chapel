@@ -172,14 +172,6 @@ tags
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_record.comm-gasnet.good
 /test/distributions/robust/arithmetic/optimizations/optimizeOnClauses_basic_tuple.comm-gasnet.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc.good
-/test/distributions/robust/arithmetic/performance/multilocale/alloc_all.good
-/test/distributions/robust/arithmetic/performance/multilocale/assign.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/assignSlice.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduce.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceAlias.good
-/test/distributions/robust/arithmetic/performance/multilocale/reduceSlice.good
 
 /test/domains/shannon/OUTPUT
 
@@ -207,6 +199,8 @@ tags
 /test/io/ferguson/test_file.txt
 
 /test/localeModels/gbt/maxTaskPar.good
+
+/test/mason/.mason
 
 /test/memory/gbt/test-memLog.memLog.*
 /test/memory/shannon/jacobi.log
@@ -374,7 +368,6 @@ tags
 /test/studies/ssca2/graphio/graphio.2.ev2_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.start_snapshot.data
 /test/studies/ssca2/graphio/graphio.2.weight_snapshot.data
-/test/studies/ssca2/performance/SSCA2_kernels.chpl
 /test/studies/ssca2/rachels/SSCA2_main.RMAT.good
 /test/studies/ssca2/rachels/SSCA2_main.1Dtorus.good
 /test/studies/ssca2/rachels/SSCA2_main.2Dtorus.good
@@ -420,16 +413,9 @@ tags
 # Third party ignores.
 /third-party/**/build
 /third-party/**/install
-/third-party/gmp/gmp-6.0.0
-/third-party/hwloc/hwloc-1.7.2
 /third-party/llvm/llvm
-/third-party/re2/re2/**/*.orig
-/third-party/re2/re2/core
-/third-party/re2/re2/obj
-/third-party/re2/re2/.git
 
-/third-party/qthread/qthread-1.10/autom4te.cache/
-/third-party/qthread/qthread-1.10/config.h.in
+/third-party/gmp/gmp-src/doc/gmp.info.*
 
 /third-party/fltk/build.*
 /third-party/fltk/install.*

@@ -109,6 +109,78 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
+const char* toString(Type* type) {
+  const char* retval = NULL;
+
+  if (type != NULL) {
+    retval = type->getValType()->symbol->name;
+
+  } else {
+    retval = "null type";
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Qualifier and QualifiedType                                                 *
+*                                                                             *
+************************************** | *************************************/
+
+const char* qualifierToStr(Qualifier q) {
+    switch (q) {
+      case QUAL_UNKNOWN:
+        return "unknown";
+
+      case QUAL_CONST:
+        return "const";
+      case QUAL_REF:
+        return "ref";
+      case QUAL_CONST_REF:
+        return "const-ref";
+
+      case QUAL_PARAM:
+        return "param";
+
+      case QUAL_VAL:
+        return "val";
+      case QUAL_NARROW_REF:
+        return "narrow-ref";
+      case QUAL_WIDE_REF:
+        return "wide-ref";
+
+      case QUAL_CONST_VAL:
+        return "const-val";
+      case QUAL_CONST_NARROW_REF:
+        return "const-narrow-ref";
+      case QUAL_CONST_WIDE_REF:
+        return "const-wide-ref";
+    }
+
+    INT_FATAL("Unhandled Qualifier");
+    return "UNKNOWN-QUAL";
+}
+
+bool QualifiedType::isRefType() const {
+  return _type->symbol->hasFlag(FLAG_REF);
+}
+
+bool QualifiedType::isWideRefType() const {
+  return _type->symbol->hasFlag(FLAG_WIDE_REF);
+}
+
+const char* QualifiedType::qualStr() const {
+  if (isRefType())
+    return qualifierToStr(QUAL_REF);
+
+  if (isWideRefType())
+    return qualifierToStr(QUAL_WIDE_REF);
+
+  // otherwise
+  return qualifierToStr(_qual);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -194,14 +266,6 @@ std::string PrimitiveType::docsDirective() {
 
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
-}
-
-bool QualifiedType::isRefType() const {
-  return _type->symbol->hasFlag(FLAG_REF);
-}
-
-bool QualifiedType::isWideRefType() const {
-  return _type->symbol->hasFlag(FLAG_WIDE_REF);
 }
 
 EnumType::EnumType() :

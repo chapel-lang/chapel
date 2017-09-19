@@ -202,8 +202,6 @@ void RE2::Init(const StringPiece& pattern, const Options& options) {
     return;
   }
 
-  prefix_.clear();
-  prefix_foldcase_ = false;
   re2::Regexp* suffix;
   if (entire_regexp_->RequiredPrefix(&prefix_, &prefix_foldcase_, &suffix))
     suffix_regexp_ = suffix;
@@ -542,7 +540,7 @@ bool RE2::PossibleMatchRange(string* min, string* max, int maxlen) const {
   if (maxlen > 0 && prog_->PossibleMatchRange(&dmin, &dmax, maxlen)) {
     pmin += dmin;
     pmax += dmax;
-  } else if (pmax.size() > 0) {
+  } else if (!pmax.empty()) {
     // prog_->PossibleMatchRange has failed us,
     // but we still have useful information from prefix_.
     // Round up pmax to allow any possible suffix.

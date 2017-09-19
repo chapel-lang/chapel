@@ -1,0 +1,2 @@
+generic-inherit-record-no-parent-methods.chpl:13: error: inheritance is not currently supported for records
+generic-inherit-record-no-parent-methods.chpl:13: note: thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851

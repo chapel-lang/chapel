@@ -2,8 +2,8 @@
 TESTLOG=`pwd`/.test-results
 TEST_LINE=++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 AMUDP_RUNCMD_EXP=\
-      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  \
-      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` \
+      TEST_RUN_P=`echo "$$TEST_RUN" | sed 's/ .*$$//'`  ; \
+      TEST_RUN_A=`echo "$$TEST_RUN" | sed 's/^[^ ]* //'` ; \
       TEST_DOIT="$$TEST_RUN"
 TEST_RUNCMD= ; $(AMUDP_RUNCMD_EXP) ; 				\
 	 testname=`basename $$TEST_RUN_P` ;                     \
@@ -33,7 +33,7 @@ TEST_DUPLEX=H
 AMUDP_NETWORKDEPTH=$(TEST_DEPTH)
 
 run-tests: tests
-	@rm -f .test-results ; touch $(TESTLOG)
+	@rm -f $(TESTLOG) ; touch $(TESTLOG)
 	@echo $(TEST_LINE)
 	@echo  Running AMUDP tests...
 	@echo  If this fails to spawn a job, you may need to re-run with a
@@ -49,21 +49,26 @@ run-tests: tests
 	@TEST_RUN="./testgetput $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
 	@TEST_RUN="./testreadwrite $(TEST_NODES) $(TEST_SPAWNFN)  $(TEST_ITERS)" $(TEST_RUNCMD)
 	@echo TESTS COMPLETE
+	@cat $(TESTLOG) ; rm -f $(TESTLOG)
 
 # make a distribution
 amxdist:
 	@bash -x -c ' \
          VERSION=`grep "#define AMUDP_LIBRARY_VERSION" $(srcdir)/amudp_const.h | head -1 | awk '"'"'{ print $$3 }'"'"'` \
          export VERSION ; \
+	 distdir=amudp$${VERSION} ; \
          echo "+++ Building distribution for AMUDP version $${VERSION} +++" && \
-	 rm -Rf amudp$${VERSION}.tar.gz amudp$${VERSION} && \
-         mkdir amudp$${VERSION} && \
-         cp $(srcdir)/Makefile* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch]* \
-	    $(altincdir)/portable_inttypes.h $(altincdir)/portable_platform.h \
-	    amudp$${VERSION} && \
-         rm -f amudp$${VERSION}/Makefile.in amudp$${VERSION}/Makefile.titanium && \
-         mv amudp$${VERSION}/Makefile.standalone amudp$${VERSION}/Makefile && \
-         tar -cvhf amudp$${VERSION}.tar amudp$${VERSION} && gzip -9 amudp$${VERSION}.tar && \
-         rm -Rf amudp$${VERSION} && \
-         echo "+++ amudp$${VERSION}.tar.gz is ready for distribution +++" \
+	 rm -Rf $$distdir.tar.gz $$distdir && \
+         mkdir $$distdir && \
+         cp $(srcdir)/Makefile.* $(srcdir)/README* $(srcdir)/*.txt $(srcdir)/*.cpp $(srcdir)/*.c $(srcdir)/*.h $(testdir)/*.[ch] \
+	    $(altincdir)/portable_inttypes.h $(altincdir)/gasnet_portable_platform.h \
+	    $$distdir && \
+	 cd $$distdir && \
+	 mv gasnet_portable_platform.h amudp_portable_platform.h && \
+	 rm -f Makefile.in Makefile.am Makefile.titanium* && \
+         mv Makefile.standalone Makefile && \
+	 cd .. && \
+         tar -cvhf $$distdir.tar $$distdir && gzip -9 $$distdir.tar && \
+         rm -Rf $$distdir && \
+         echo "+++ $$distdir.tar.gz is ready for distribution +++" \
         '

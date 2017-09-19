@@ -169,6 +169,7 @@ in memory.
     - related: general RequireMKL module
   - More consistent documentation
   - Support banded/packed matrix routines
+  - Consider replacing the `halt` calls with `throws`
 
 */
 module BLAS {
@@ -640,7 +641,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -698,7 +699,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -980,7 +981,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to hemv".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1013,7 +1014,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to her".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to her".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1048,7 +1049,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to her2".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to her2".format(m, n));
 
 
     // Set strides if necessary
@@ -1318,7 +1319,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to symv".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1353,7 +1354,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to syr".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1388,7 +1389,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to syr2".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1605,7 +1606,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to trmv".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1649,7 +1650,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      halt("Non-square array of dimensions %ix%i passed to trsv".format(m, n));
+      try! halt("Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -2070,10 +2071,10 @@ module BLAS {
 
       :returns: Scalar value of dot product
   */
-  proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
-  where D.rank == 1 {
+  proc dot(X: [?xD]?eltType,  Y: [?yD] eltType, incY: c_int = 1, incX: c_int = 1) : eltType
+  where xD.rank == 1 && yD.rank == 1 {
 
-    const N = D.size: c_int;
+    const N = xD.size: c_int;
 
     select eltType {
       when real(32) do{

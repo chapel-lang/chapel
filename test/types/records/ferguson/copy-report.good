@@ -110,7 +110,9 @@ VALUE RETURN -- GLOBAL/REF
  return / blank intent arg
     initCopy
  return / ref intent arg
+    initCopy
  return / const ref intent arg
+    initCopy
  return / call returning ref
     initCopy
  return / call returning const ref

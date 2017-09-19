@@ -77,10 +77,13 @@ class Cyclic1DDist {
   // WORKAROUND: Initialize in the constructor instead
   //
 
-  proc Cyclic1DDist(type glbIdxType = int(64),
-                  targetLocales: [?targetLocalesDomain] locale) {
+  proc init(type glbIdxType = int(64),
+            targetLocales: [?targetLocalesDomain] locale) {
     targetLocDom = targetLocalesDomain;
     targetLocs = targetLocales;
+
+    super.init();
+
     //
     // WANT TO DO:
     /*
@@ -183,17 +186,20 @@ class LocCyclic1DDist {
   // Compute what chunk of index(1) is owned by the current locale
   // Arguments:
   //
-  proc LocCyclic1DDist(type glbIdxType, 
-                     _locid: int, // the locale index from the target domain
-                     dist: Cyclic1DDist(glbIdxType) // reference to glob dist
+  proc init(type glbIdxType, 
+            _locid: int, // the locale index from the target domain
+            dist: Cyclic1DDist(glbIdxType) // reference to glob dist
                      ) {
-    locid = _locid;
-    loc = dist.targetLocs(locid);
-    const locid0 = dist.targetLocDom.indexOrder(locid); // 0-based locale ID
+    this.glbIdxType = glbIdxType;
+
+    const locid0 = dist.targetLocDom.indexOrder(_locid); // 0-based locale ID
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
     const numlocs = dist.targetLocDom.numIndices;
     myChunk = {lo..hi by numlocs};
+    locid = _locid;
+    loc = dist.targetLocs(locid);
+    super.init();
     if debugCyclic1D then
       writeln("locale ", locid, " owns ", myChunk);
   }

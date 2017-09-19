@@ -5,13 +5,19 @@
 
 AUTOMAKE_OPTIONS = foreign 1.4
 
-# Use of the MPI spawning support is optional
-if PSM_BOOTSTRAP_MPI
+# Use of the MPI/PMI spawning support is optional
+if HAVE_BOOTSTRAP_MPI
+mpi_target_pl = gasnetrun_psm-mpi.pl
+$(mpi_target_pl): $(top_srcdir)/mpi-conduit/contrib/gasnetrun_mpi.pl
+	cp -f "$?" $@
+else
+if HAVE_BOOTSTRAP_PMI
 mpi_target_pl = gasnetrun_psm-mpi.pl
 $(mpi_target_pl): $(top_srcdir)/mpi-conduit/contrib/gasnetrun_mpi.pl
 	cp -f "$?" $@
 else
 mpi_target_pl =
+endif
 endif
 
 target = gasnetrun_psm

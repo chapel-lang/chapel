@@ -24,6 +24,9 @@
 static bool isSuperInit(Expr* stmt);
 static bool isThisInit (Expr* stmt);
 
+static bool isStringLiteral(Expr* expr, const char* name);
+static bool isSymbolThis(Expr* expr);
+
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
 static bool isCompoundAssignment(CallExpr* callExpr);
@@ -47,11 +50,21 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   mPhase      = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)   == true) {
+    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    == true) {
       mBlockType = cBlockBegin;
 
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN) == true) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
+      // Lydia NOTE 2017/07/26: If PRIM_BLOCK_COBEGIN_ONs are ever made, we
+      // should match against them here
       mBlockType = cBlockCobegin;
+
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) == true) {
+      mBlockType = cBlockCoforall;
+
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true) {
+      mBlockType = cBlockOn;
 
     } else {
       INT_ASSERT(false);
@@ -96,6 +109,10 @@ bool InitNormalize::isRecord() const {
 
 bool InitNormalize::isClass() const {
   return ::isClass(type());
+}
+
+bool InitNormalize::isExtern() const {
+  return type()->symbol->hasFlag(FLAG_EXTERN);
 }
 
 InitNormalize::InitPhase  InitNormalize::currPhase() const {
@@ -149,6 +166,14 @@ bool InitNormalize::inParallelStmt() const {
          mBlockType == cBlockCobegin  ;
 }
 
+bool InitNormalize::inCoforall() const {
+  return mBlockType == cBlockCoforall;
+}
+
+bool InitNormalize::inOn() const {
+  return mBlockType == cBlockOn;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -163,6 +188,12 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
     if (isRecord() == true) {
       initStmt->remove();
+
+    } else if (isExtern() == true) {
+      initStmt->remove();
+
+    } else {
+      transformSuperInit(initStmt);
     }
 
   } else if (isThisInit(initStmt) == true) {
@@ -182,39 +213,49 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
     DefExpr* field         = mCurrField;
     bool     isTypeUnknown = mCurrField->sym->type == dtUnknown;
 
-    if (field->exprType == NULL && field->init == NULL) {
-      USR_FATAL_CONT(insertBefore,
-                     "can't omit initialization of field \"%s\", "
-                     "no type or default value provided",
-                     field->sym->name);
-    } else if (field->sym->hasFlag(FLAG_PARAM) ||
-               field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (field->exprType != NULL && field->init == NULL) {
-        genericFieldInitTypeWoutInit (insertBefore, field);
+    if (isOuterField(field)) {
+      // The outer field is a compiler generated field.  Handle it specially.
+      makeOuterArg();
+
+    } else {
+      if (field->exprType == NULL && field->init == NULL) {
+        USR_FATAL_CONT(insertBefore,
+                       "can't omit initialization of field \"%s\", "
+                       "no type or default value provided",
+                       field->sym->name);
+      } else if (field->sym->hasFlag(FLAG_PARAM) ||
+                 field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        if (field->exprType != NULL && field->init == NULL) {
+          genericFieldInitTypeWoutInit (insertBefore, field);
+
+        } else if ((field->exprType != NULL  && field->init != NULL)  ||
+                   (isTypeUnknown   == false && field->init != NULL)) {
+          genericFieldInitTypeWithInit (insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else if (field->exprType == NULL && field->init != NULL) {
+          genericFieldInitTypeInference(insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else if (field->exprType != NULL && field->init == NULL) {
+        fieldInitTypeWoutInit (insertBefore, field);
 
       } else if ((field->exprType != NULL  && field->init != NULL)  ||
                  (isTypeUnknown   == false && field->init != NULL)) {
-        genericFieldInitTypeWithInit (insertBefore, field, field->init->copy());
+        fieldInitTypeWithInit (insertBefore, field, field->init->copy());
 
       } else if (field->exprType == NULL && field->init != NULL) {
-        genericFieldInitTypeInference(insertBefore, field, field->init->copy());
+        fieldInitTypeInference(insertBefore, field, field->init->copy());
 
       } else {
         INT_ASSERT(false);
       }
-
-    } else if (field->exprType != NULL && field->init == NULL) {
-      fieldInitTypeWoutInit (insertBefore, field);
-
-    } else if ((field->exprType != NULL  && field->init != NULL)  ||
-               (isTypeUnknown   == false && field->init != NULL)) {
-      fieldInitTypeWithInit (insertBefore, field, field->init->copy());
-
-    } else if (field->exprType == NULL && field->init != NULL) {
-      fieldInitTypeInference(insertBefore, field, field->init->copy());
-
-    } else {
-      INT_ASSERT(false);
     }
 
     mCurrField = toDefExpr(mCurrField->next);
@@ -342,15 +383,40 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
-    if (isPrimitiveScalar(type) == true) {
+    if (isTypeVar == true) {
+      VarSymbol*  tmp;
+
+      if (type == dtAny) {
+        tmp = newTemp("tmp");
+      } else {
+        tmp = newTemp("tmp", type);
+      }
+      DefExpr*    tmpDefn   = new DefExpr(tmp);
+      CallExpr*   tmpInit   = new CallExpr(PRIM_MOVE, tmp, initExpr);
+
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+      Symbol*    _this    = mFn->_this;
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      updateFieldsMember(initExpr);
+
+      insertBefore->insertBefore(tmpDefn);
+      insertBefore->insertBefore(tmpInit);
+      insertBefore->insertBefore(fieldSet);
+
+    } else if (isPrimitiveScalar(type) == true) {
       VarSymbol*  tmp       = newTemp("tmp", type);
       DefExpr*    tmpDefn   = new DefExpr(tmp);
       CallExpr*   tmpInit   = new CallExpr(PRIM_MOVE, tmp, initExpr);
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*     name      = new_CStringSymbol(field->sym->name);
@@ -374,8 +440,6 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;
@@ -400,6 +464,27 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       INT_ASSERT(false);
 
+    } else if (isTypeVar == true) {
+      VarSymbol* tmp      = newTemp("tmp");
+      DefExpr*   tmpDefn  = new DefExpr(tmp);
+      CallExpr*  tmpInit  = new CallExpr(PRIM_MOVE, tmp, initExpr);
+
+      tmp->addFlag(FLAG_TYPE_VARIABLE);
+
+      Symbol*    _this    = mFn->_this;
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      updateFieldsMember(initExpr);
+
+      insertBefore->insertBefore(tmpDefn);
+      insertBefore->insertBefore(tmpInit);
+      insertBefore->insertBefore(fieldSet);
+
     } else {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
@@ -407,8 +492,6 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 
       if (isParam == true) {
         tmp->addFlag(FLAG_PARAM);
-      } else if (isTypeVar == true) {
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
       }
 
       Symbol*    _this    = mFn->_this;
@@ -985,6 +1068,41 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at, CallExpr* expr) const {
 }
 
 /************************************* | **************************************
+* Transform `call(".", call(".", this, "super"), "init")` into                *
+* `call(".", call(PRIM_GET_MEMBER_VALUE, this, "super"), "init")`             *
+*                                                                             *
+************************************** | *************************************/
+
+void InitNormalize::transformSuperInit(Expr* initStmt) {
+  CallExpr* initCall = toCallExpr(initStmt);
+  INT_ASSERT(initCall);
+  CallExpr* initBase = toCallExpr(initCall->baseExpr);
+  INT_ASSERT(initBase);
+  CallExpr* sub = toCallExpr(initBase->get(1));
+  if (sub &&
+      sub->numActuals() == 2 &&
+      sub->isNamedAstr(astrSdot) == true) {
+
+    Expr* thisExpr = sub->get(1);
+    Expr* superExpr = sub->get(2);
+
+    INT_ASSERT(isSymbolThis(thisExpr) == true);
+    INT_ASSERT(isStringLiteral(superExpr, "super") == true);
+
+    CallExpr* explicitAccess = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                            thisExpr->remove(),
+                                            superExpr->remove());
+    VarSymbol* superTemp = newTemp("super_tmp");
+    superTemp->addFlag(FLAG_SUPER_TEMP);
+    initCall->insertBefore(new DefExpr(superTemp));
+    initCall->insertBefore(new CallExpr(PRIM_MOVE, superTemp, explicitAccess));
+
+    sub->replace(new SymExpr(superTemp));
+  }
+}
+
+
+/************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
@@ -1092,18 +1210,43 @@ DefExpr* InitNormalize::firstField(FnSymbol* fn) const {
 
   // Skip the pseudo-field "super"
   if (::isClass(at) == true) {
-    retval = toDefExpr(retval->next);
-  }
 
-  // Skip the pseudo-field "outer" (if present)
-  if (retval                             != NULL &&
-      retval->exprType                   == NULL &&
-      retval->init                       == NULL &&
-      strcmp(retval->sym->name, "outer") ==    0) {
+    if (at->isGeneric() == true) {
+      AggregateType* pt = toAggregateType(retval->sym->type);
+      INT_ASSERT(pt);
+      if (pt->isGeneric() == true) {
+        // If the super type is generic, label it so that we can handle that
+        // appropriately during initializer resolution
+        retval->sym->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+      }
+    }
+
     retval = toDefExpr(retval->next);
   }
 
   return retval;
+}
+
+bool InitNormalize::isOuterField(DefExpr* field) const {
+  return type()->outer == field->sym;
+}
+
+void InitNormalize::makeOuterArg() {
+  AggregateType* at = type();
+  Type* outerType = at->outer->type;
+
+  outerType->methods.add(mFn);
+  mFn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
+
+  mFn->_outer->addFlag(FLAG_GENERIC);
+  // TODO: look into only doing this when necessary
+
+  mFn->_this->defPoint->insertAfter(new DefExpr(mFn->_outer));
+
+  mFn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
+                                 mFn->_this,
+                                 new_CStringSymbol("outer"),
+                                 mFn->_outer));
 }
 
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
@@ -1284,6 +1427,13 @@ void InitNormalize::describe(int offset) const {
       printf("cobegin\n");
       break;
 
+    case cBlockCoforall:
+      printf("coforall\n");
+      break;
+
+    case cBlockOn:
+      printf("on\n");
+      break;
   }
 
   printf("%s>\n", pad);
@@ -1320,11 +1470,7 @@ static const char* initName(Expr*     stmt);
 
 static const char* initName(CallExpr* expr);
 
-static bool        isStringLiteral(Expr* expr, const char* name);
-
 static bool        isUnresolvedSymbol(Expr* expr, const char* name);
-
-static bool        isSymbolThis(Expr* expr);
 
 static bool isSuperInit(Expr* stmt) {
   const char* name = initName(stmt);

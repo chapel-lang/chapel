@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommUtil;
 
 
 config const n = 100000;
@@ -12,8 +12,9 @@ for b in B {
   b = -1;
 }
 
-resetCommDiagnostics();
-startCommDiagnostics();
+var sumToPrint = 0;
+
+start();
 
 on Locales[1] {
   var sum = 0;
@@ -21,12 +22,13 @@ on Locales[1] {
     sum += a;
     sum += b;
   }
-  writeln(sum);
+  sumToPrint = sum;
 }
 
-stopCommDiagnostics();
+stop();
 
+writeln(sumToPrint);
 writeln(A[1], " ", B[1]);
 writeln(A[n], " ", B[n]);
 
-writeln(getCommDiagnostics());
+report(maxPuts=1, maxOns=1);

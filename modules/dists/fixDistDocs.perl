@@ -17,7 +17,7 @@ chdir $TEMPDIR or die "Could not cd to $TEMPDIR";
 
 my $errors = 0;
 
-process("../layouts/LayoutCSR.rst");
+process("../layouts/LayoutCS.rst");
 process("BlockDist.rst");
 process("CyclicDist.rst");
 process("BlockCycDist.rst");

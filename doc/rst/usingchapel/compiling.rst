@@ -51,7 +51,8 @@ We note some of the most useful flags here:
 Flags                   Description
 ---------------------   ------------------------------------------------------
 ``-o <filename>``       specify the filename of the generated
-                        executable, otherwise ./a.out is used by default
+                        executable, otherwise the main module name is
+                        used by default
 ``--no-checks``         turns off runtime semantic checks like bounds
                         checking and nil class instance dereferencing
 ``-O``                  turns on optimization of the generated C code

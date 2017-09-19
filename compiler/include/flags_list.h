@@ -53,6 +53,7 @@ symbolFlag( FLAG_BASE_DOMAIN , ypr, "base domain" , ncm )
 symbolFlag( FLAG_BASE_DIST , ypr, "base dist" , ncm )
 symbolFlag( FLAG_BEGIN , npr, "begin" , ncm )
 symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
+symbolFlag( FLAG_BROADCAST_FN, npr, "serialized broadcast function", ncm)
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
 
@@ -61,20 +62,22 @@ symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark 
 // as indicated by this flag, it launches into enacting forall intents
 // for the forall loop that this variable was created for.
 symbolFlag( FLAG_CHPL__ITER , npr, "chpl__iter", "used as a marker to implement forall intents" )
+// Marks chpl__iter things created for ForallStmt.
+symbolFlag( FLAG_CHPL__ITER_NEWSTYLE , npr, "chpl__iter_newstyle", ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL , npr, "cobegin or coforall" , ncm )
 symbolFlag( FLAG_COBEGIN_OR_COFORALL_BLOCK , npr, "cobegin or coforall block" , ncm )
 symbolFlag( FLAG_COERCE_TEMP , npr, "coerce temp" , "a temporary that was stores the result of a coercion" )
 symbolFlag( FLAG_CODEGENNED , npr, "codegenned" , "code has been generated for this type" )
 symbolFlag( FLAG_COFORALL_INDEX_VAR , npr, "coforall index var" , ncm )
 symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
-// The compiler-generated flag is already overloaded in three ways.  We may
-// want to split it if this becomes cumbersome:
-// 1. In resolution, functions marked as compiler-generated are considered only if
-// no functions without that flag (i.e. user-supplied) functions are found.
-// 2. In printing filename/lineno information in error messages (when developer
-// == false), the callstack is searched ignoring compiler-generated functions.
-// 3. Assignment operations flagged as 'compiler generated' shall contain only
-// field assignments and assignment primitives.
+// The compiler-generated flag has these meanings:
+// 1. In various parts of the compiler, when printing filename/lineno
+//    information in error messages, callstack locations marked
+//    compiler-generated may be ignored when developer == false.
+// 2. In relation to determination of POD types when "compiler generated"
+//    applies to assignment, copy, initialization routines
+// 3. When additional checking for user-written code can be relaxed
+//    for functions added by the compiler (e.g. with error handling)
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
 
@@ -101,10 +104,16 @@ symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONOR_FN, ypr, "donor fn" , "function donates ownership of the returned object to the calling function" )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
+symbolFlag( FLAG_DOWN_END_COUNT_FN , ypr, "down end count fn" , ncm )
 symbolFlag( FLAG_END_COUNT , ypr, "end count" , ncm )
 symbolFlag( FLAG_ERRONEOUS_AUTOCOPY, ypr, "erroneous autocopy", ncm)
 symbolFlag( FLAG_ERRONEOUS_INITCOPY, ypr, "erroneous initcopy", ncm)
+symbolFlag( FLAG_ERROR_MODE_FATAL, ypr, "error mode fatal", ncm)
+symbolFlag( FLAG_ERROR_MODE_RELAXED, ypr, "error mode relaxed", ncm)
+symbolFlag( FLAG_ERROR_MODE_STRICT, ypr, "error mode strict", ncm)
+symbolFlag( FLAG_ERROR_VARIABLE, npr, "error variable", ncm)
 symbolFlag( FLAG_EPILOGUE_LABEL , npr, "epilogue label" , "distinguishes the epilogue label from other labels" )
+symbolFlag( FLAG_ERROR_LABEL, ypr, "error label", ncm)
 symbolFlag( FLAG_EXPANDED_VARARGS, npr, "expanded varargs", ncm)
 symbolFlag( FLAG_EXPAND_TUPLES_WITH_VALUES , ypr, "expand tuples with values" , ncm )
 symbolFlag( FLAG_EXPORT , npr, "export" , ncm )
@@ -124,12 +133,14 @@ symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program"
 // When applied to an argument, this flag means that the arg accepts a value
 // but has unspecified type.
 symbolFlag( FLAG_GENERIC , npr, "generic" , "generic types, functions and arguments" )
+symbolFlag( FLAG_DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics instances whose instantiation  will be determined shortly")
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IF_EXPR_FN , npr, "if-expr function" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
+symbolFlag( FLAG_IMPLICIT_MODULE, npr, "implicit top-level module", ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 
 // This can also mark a temp that serves as an intermediate step of
@@ -151,8 +162,14 @@ symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
+// In resolution, functions marked as last-resort are considered only if
+// no functions without that flag are found. This usually is used to create
+// a pattern enabling user-supplied replacement of default behavior.
+symbolFlag( FLAG_LAST_RESORT , ypr, "last resort" , "overload of last resort in resolution" )
 symbolFlag( FLAG_LOCALE_MODEL_ALLOC , ypr, "locale model alloc" , "locale model specific alloc" )
 symbolFlag( FLAG_LOCALE_MODEL_FREE , ypr, "locale model free" , "locale model specific free" )
+symbolFlag( FLAG_INC_RUNNING_TASK , ypr, "inc running task" , "running task incrementer" )
+symbolFlag( FLAG_DEC_RUNNING_TASK , ypr, "dec running task" , "running task decrementer" )
 symbolFlag( FLAG_LOCALE_PRIVATE , ypr, "locale private" , ncm )
 
 // The arguments to this function are all values or narrow pointers.
@@ -194,6 +211,7 @@ symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_PROTOTYPE , ypr, "no prototype" , "do not generate a prototype this symbol" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
+symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 
 // See FLAG_POD below
@@ -246,17 +264,19 @@ symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent
 symbolFlag( FLAG_PRIVATIZED_CLASS , ypr, "privatized class" , "privatized array or domain class" )
 symbolFlag( FLAG_PRIVATE, npr, "private", ncm )
 symbolFlag( FLAG_PROMOTION_WRAPPER , npr, "promotion wrapper" , ncm )
+symbolFlag( FLAG_PROTOTYPE_MODULE , npr, "prototype module" , ncm )
 symbolFlag( FLAG_RANGE , ypr, "range" , "indicates the range type" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
 symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
-// Does FLAG_REF_TO_CONST means reference to immutable?
-// maybe it is intended to, but that is not true in
-// setFlagsAndCheckForConstAccess
+// "ref to const" is like Chapel's 'const ref' variable:
+// * it is illegal to modify the referenced thing through this variable
+// * the referenced thing may change, observably through this variable
 symbolFlag( FLAG_REF_TO_CONST , npr, "reference to a const" , "a temp or a function that returns a reference to a Chapel const, e.g. an accessor to a const field or its result" )
 symbolFlag( FLAG_REF_TO_CONST_WHEN_CONST_THIS , ypr, "reference to const when const this" , "a function that returns a reference to a Chapel const when 'this' is const" )
+symbolFlag( FLAG_REF_TO_IMMUTABLE , npr, "ref to immutable" , "a reference to something that never changes during its lifetime")
 symbolFlag( FLAG_REF_VAR , ypr, "ref var" , "reference variable" )
 symbolFlag( FLAG_REMOVABLE_ARRAY_ACCESS, ypr, "removable array access", "array access calls that can be replaced with a reference")
 symbolFlag( FLAG_REMOVABLE_AUTO_COPY , ypr, "removable auto copy" , ncm )
@@ -286,6 +306,7 @@ symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
 symbolFlag( FLAG_TYPE_CONSTRUCTOR , npr, "type constructor" , ncm )
 symbolFlag( FLAG_TYPE_VARIABLE , npr, "type variable" , "contains a type instead of a value" )
 symbolFlag( FLAG_UNALIAS_FN,  ypr, "unalias fn" , "function to copy array slices when assigning to a user variable")
+symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws but handling the errors is not required even in strict mode")
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )

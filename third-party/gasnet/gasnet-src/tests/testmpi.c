@@ -65,6 +65,13 @@ void dump_args(int argc, char **argv)  {
   }
 
 
+#ifndef HAVE_MPI_INIT_THREAD
+#define HAVE_MPI_INIT_THREAD (MPI_VERSION >= 2)
+#endif
+#ifndef HAVE_MPI_QUERY_THREAD
+#define HAVE_MPI_QUERY_THREAD (MPI_VERSION >= 2)
+#endif
+
 /* called by a single thread before gasnet_init */
 void init_test_mpi(int *argc, char ***argv) {
     int initialized = 0;
@@ -75,10 +82,47 @@ void init_test_mpi(int *argc, char ***argv) {
 
     /* initialize MPI, if necessary */
     MPI_SAFE(MPI_Initialized(&initialized));
-    if (!initialized) {
-      printf("Initializing MPI...\n");
-      MPI_SAFE(MPI_Init(argc, argv));
-    }
+    #if !HAVE_MPI_INIT_THREAD
+      if (!initialized) {
+        printf("Initializing MPI... (legacy MPI-1 mode)\n");
+        MPI_SAFE(MPI_Init(argc, argv)); // legacy init
+      }
+    #else
+      #ifndef MPI_THREAD_REQUIRE
+        #if GASNET_SEQ // technically should also assert !CONDUIT_THREADS
+          #define MPI_THREAD_REQUIRE MPI_THREAD_SINGLE
+        #elif GASNET_CONDUIT_MPI || CONDUIT_USES_MPI
+          // bug 3521: private mutex means we need full thread safety if conduit uses MPI in steady-state
+          #define MPI_THREAD_REQUIRE MPI_THREAD_MULTIPLE 
+        #else
+          #define MPI_THREAD_REQUIRE MPI_THREAD_SERIALIZED // this test is only MPI consumer
+        #endif
+      #endif
+      int required = MPI_THREAD_REQUIRE;
+      int provided = -1;
+      if (!initialized) {
+        printf("Initializing MPI...\n");
+        MPI_SAFE(MPI_Init_thread(argc, argv, required, &provided));
+      } else {
+        #if HAVE_MPI_QUERY_THREAD
+          MPI_SAFE(MPI_Query_thread(&provided));
+        #else
+          provided = required; // hope for the best
+        #endif
+      }
+      #if !VERBOSE
+      if (provided < required) 
+      #endif
+      { 
+        printf("MPI Thread safety: required=%i provided=%i    (%i=SINGLE %i=FUNNELED %i=SERIALIZED %i=MULTIPLE)\n",
+               required, provided, 
+               MPI_THREAD_SINGLE, MPI_THREAD_FUNNELED, MPI_THREAD_SERIALIZED, MPI_THREAD_MULTIPLE);
+      }
+      if (provided < required) { 
+        fprintf(stderr,"ERROR: MPI implementation does not report sufficient thread safety to correctly run this test.\n");
+        abort(); // cannot use FATALERR this early
+      }
+    #endif
 
     #if 0
       dump_args(*argc, *argv);
@@ -168,7 +212,6 @@ void mpi_barrier(threaddata_t *tdata) {
   #define MPI_LOCK()
   #define MPI_UNLOCK()
 #else
-  GASNETT_UNUSED
   static gasnet_hsl_t  mpi_hsl = GASNET_HSL_INITIALIZER;
   #define MPI_LOCK()   gasnet_hsl_lock(&mpi_hsl)
   #define MPI_UNLOCK() gasnet_hsl_unlock(&mpi_hsl)

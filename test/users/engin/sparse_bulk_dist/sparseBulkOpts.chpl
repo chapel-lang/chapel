@@ -1,5 +1,5 @@
 use BlockDist;
-use LayoutCSR;
+use LayoutCS;
 use Random;
 
 config const N = 8;

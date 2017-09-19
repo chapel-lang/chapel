@@ -1,0 +1,4 @@
+missingDeserializer.chpl:9: warning: Found chpl__serialize for type 'Foo', but did not find matching chpl__deserialize
+Note: This source location is a guess.
+LOCALE0: (execute_on = 1)
+LOCALE1: (get = 1)

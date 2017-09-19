@@ -313,6 +313,7 @@ module Scalable_Graph_Generator
 // Endif for RMAT Shuffle
    }
 
+   delete Rand_Gen;
 //   writeln("Upon exit, Edges is:\n", Edges, "\n");
   }
 

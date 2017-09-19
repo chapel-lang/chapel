@@ -610,9 +610,11 @@ static ModuleSymbol* parseFile(const char* path,
     } else {
       const char* modName = filenameToModulename(path);
 
-      retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
+      retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
 
       ModuleSymbol::addTopLevelModule(retval);
+
+      retval->addFlag(FLAG_IMPLICIT_MODULE);
 
       addModuleToDoneList(retval);
     }
@@ -641,6 +643,7 @@ static ModuleSymbol* parseFile(const char* path,
 static bool containsOnlyModules(BlockStmt* block, const char* path) {
   int           moduleDefs     =     0;
   bool          hasUses        = false;
+  bool          hasRequires    = false;
   bool          hasOther       = false;
   ModuleSymbol* lastModSym     =  NULL;
   BaseAST*      lastModSymStmt =  NULL;
@@ -661,8 +664,12 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
         hasOther = true;
       }
 
-    } else if (isCallExpr(stmt) == true) {
-      hasOther = true;
+    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
+      if (callexpr->isPrimitive(PRIM_REQUIRE)) {
+        hasRequires = true;
+      } else {
+        hasOther = true;
+      }
 
     } else if (isUseStmt(stmt)  == true) {
       hasUses = true;
@@ -672,19 +679,38 @@ static bool containsOnlyModules(BlockStmt* block, const char* path) {
     }
   }
 
-  if (hasUses == true && hasOther == false && moduleDefs == 1) {
+  if ((hasUses == true || hasRequires == true) &&
+      hasOther == false &&
+      moduleDefs == 1) {
+    const char* stmtKind;
+
+    if (hasUses == true && hasRequires == true) {
+      stmtKind = "require' and 'use";
+
+    } else if (hasUses == true) {
+      stmtKind = "use";
+
+    } else {
+      stmtKind = "require";
+    }
+
     USR_WARN(lastModSymStmt,
              "as written, '%s' is a sub-module of the module created for "
-             "file '%s' due to the file-level 'use' statements.  If you "
-             "meant for '%s' to be a top-level module, move the 'use' "
+             "file '%s' due to the file-level '%s' statements.  If you "
+             "meant for '%s' to be a top-level module, move the '%s' "
              "statements into its scope.",
              lastModSym->name,
              path,
-             lastModSym->name);
+             stmtKind,
+             lastModSym->name,
+             stmtKind);
 
   }
 
-  return hasUses == false && hasOther == false && moduleDefs > 0;
+  return hasUses == false &&
+    hasRequires == false &&
+    hasOther == false &&
+    moduleDefs > 0;
 }
 
 static void addModuleToDoneList(ModuleSymbol* module) {

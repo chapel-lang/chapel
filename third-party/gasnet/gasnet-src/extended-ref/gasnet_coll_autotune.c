@@ -1249,8 +1249,8 @@ gasnete_coll_autotune_info_t* gasnete_coll_autotune_init(gasnet_team_handle_t te
   dissem_limit = gasneti_getenv_int_withdefault("GASNET_COLL_GATHER_ALL_DISSEM_LIMIT", temp_size, 1);
   if(temp_size != dissem_limit) {
     if(mynode == 0) {
-      fprintf(stderr, "WARNING: Conflicting environment values for GASNET_COLL_GATHER_ALL_DISSEM_LIMIT (%ld) and GASNET_COLL_GATHER_ALL_DISSEM_LIMIT_PER_THREAD (%ld)\n", (long int) dissem_limit, (long int) dissem_limit_per_thread);
-      fprintf(stderr, "WARNING: Using: %ld\n", (long int) MIN(dissem_limit, temp_size));
+      fprintf(stderr, "WARNING: Conflicting environment values for GASNET_COLL_GATHER_ALL_DISSEM_LIMIT (%"PRIuPTR") and GASNET_COLL_GATHER_ALL_DISSEM_LIMIT_PER_THREAD (%"PRIuPTR")\n", (uintptr_t) dissem_limit, (uintptr_t) dissem_limit_per_thread);
+      fprintf(stderr, "WARNING: Using: %"PRIuPTR"\n", (uintptr_t) MIN(dissem_limit, temp_size));
     }
   }
   ret->gather_all_dissem_limit = MIN(dissem_limit, temp_size);
@@ -1260,15 +1260,15 @@ gasnete_coll_autotune_info_t* gasnete_coll_autotune_init(gasnet_team_handle_t te
   dissem_limit = gasneti_getenv_int_withdefault("GASNET_COLL_EXCHANGE_DISSEM_LIMIT", temp_size, 1);
   if(temp_size != dissem_limit) {
     if(mynode == 0) {
-      fprintf(stderr, "WARNING: Conflicting environment values for GASNET_COLL_EXCHANGE_DISSEM_LIMIT (%ld) and GASNET_COLL_EXCHANGE_DISSEM_LIMIT_PER_THREAD (%ld)\n", (long int) dissem_limit, (long int) temp_size);
-      fprintf(stderr, "WARNING: Using: %ld\n", (long int) MIN(dissem_limit, temp_size));
+      fprintf(stderr, "WARNING: Conflicting environment values for GASNET_COLL_EXCHANGE_DISSEM_LIMIT (%"PRIuPTR") and GASNET_COLL_EXCHANGE_DISSEM_LIMIT_PER_THREAD (%"PRIuPTR")\n", (uintptr_t) dissem_limit, (uintptr_t) temp_size);
+      fprintf(stderr, "WARNING: Using: %"PRIuPTR"\n", (uintptr_t) MIN(dissem_limit, temp_size));
     }
   }
   ret->exchange_dissem_limit = MIN(dissem_limit, temp_size);
   ret->exchange_dissem_radix = MIN(gasneti_getenv_int_withdefault("GASNET_COLL_EXCHANGE_DISSEM_RADIX", 2, 0),total_images);
 
   if(min_scratch_size < total_images) {
-    gasneti_fatalerror("SCRATCH SPACE TOO SMALL Please set it to at least (%ld bytes) through the GASNET_COLL_SCRATCH_SIZE environment variable", (long int) total_images);
+    gasneti_fatalerror("SCRATCH SPACE TOO SMALL Please set it to at least (%"PRIuPTR" bytes) through the GASNET_COLL_SCRATCH_SIZE environment variable", (uintptr_t) total_images);
   }
   ret->pipe_seg_size = gasneti_getenv_int_withdefault("GASNET_COLL_PIPE_SEG_SIZE", MIN(min_scratch_size, gasnet_AMMaxLongRequest())/total_images, 1);
   /*  if(ret->pipe_seg_size == 0) {
@@ -1285,9 +1285,9 @@ gasnete_coll_autotune_info_t* gasnete_coll_autotune_init(gasnet_team_handle_t te
   
   if(ret->pipe_seg_size*total_images > gasnet_AMMaxLongRequest()) {
     if(mynode == 0) {
-      fprintf(stderr, "WARNING: GASNET_COLL_PIPE_SEG_SIZE (%d bytes) * total images (%d) has to be less than max size for an AMLong for this conduit (%ld)\n", 
-              (int)ret->pipe_seg_size, (int)total_images, (long int) gasnet_AMMaxLongRequest());
-      fprintf(stderr, "WARNING: Using %ld bytes for GASNET_COLL_PIPE_SEG_SIZE instead\n", (long int) gasnet_AMMaxLongRequest()/total_images);
+      fprintf(stderr, "WARNING: GASNET_COLL_PIPE_SEG_SIZE (%d bytes) * total images (%d) has to be less than max size for an AMLong for this conduit (%"PRIuPTR")\n", 
+              (int)ret->pipe_seg_size, (int)total_images, (uintptr_t) gasnet_AMMaxLongRequest());
+      fprintf(stderr, "WARNING: Using %"PRIuPTR" bytes for GASNET_COLL_PIPE_SEG_SIZE instead\n", (uintptr_t) gasnet_AMMaxLongRequest()/total_images);
       ret->pipe_seg_size = gasnet_AMMaxLongRequest()/total_images;
     }
     
@@ -2212,7 +2212,6 @@ void gasnete_coll_tune_generic_op(gasnet_team_handle_t team, gasnet_coll_optype_
   uint32_t loc_best_param_list[GASNET_COLL_NUM_PARAM_TYPES];
   uint32_t sync_flags = (flags &  GASNET_COLL_SYNC_FLAG_MASK); /*strip the sync flags off the flags*/
   uint32_t req_flags = (flags & (~GASNET_COLL_SYNC_FLAG_MASK));
-  GASNETI_UNUSED_UNLESS_DEBUG
   gasnete_coll_threaddata_t *td = GASNETE_COLL_MYTHREAD;
   char *loc_best_tree;
 
@@ -2529,7 +2528,7 @@ static gasnete_coll_implementation_t autotune_op(gasnet_team_handle_t team, gasn
     char buf1[256], buf2[256];
     print_op_str(buf1, op, flags);
     print_flag_str(buf2, flags);
-    fprintf(stderr, "Autotuning %s: flags %s, nbytes %lu, root %u\n", buf1, buf2, (unsigned long)args.nbytes, (unsigned int)args.rootimg);
+    fprintf(stderr, "Autotuning %s: flags %s, nbytes %"PRIuPTR", root %u\n", buf1, buf2, (uintptr_t)args.nbytes, (unsigned int)args.rootimg);
   }
 
   /*if a tuning file has been specified for TEAM ALL and hasn't been yet loaded load it now*/

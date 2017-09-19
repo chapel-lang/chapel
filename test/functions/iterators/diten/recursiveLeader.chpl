@@ -11,7 +11,7 @@ iter myiter(r:range, param tag: iterKind): int
   forall i in myiter(r.low..r.high-1) do yield i;
 }
 
-iter myiter(followThis, param tag: iterKind): int
+iter myiter(r:range, followThis, param tag: iterKind): int
   where tag == iterKind.follower {
   yield followThis;
 }

@@ -8,6 +8,40 @@ AUTOMAKE_OPTIONS = foreign 1.4
 
 CONDUIT_NAME=<conduitname>
 
+#
+## SSH bootstrap support (built unless fork() is unavailable)
+##
+if HAVE_BOOTSTRAP_SSH
+ssh_defines = -DHAVE_SSH_SPAWNER
+ssh_srcdir = $(top_srcdir)/other/ssh-spawner
+ssh_sources = $(ssh_srcdir)/gasnet_bootstrap_ssh.c
+ssh_deps = $(ssh_srcdir)/*.[ch]
+endif
+
+##
+## MPI bootstrap support (optional)
+##
+if HAVE_BOOTSTRAP_MPI
+mpi_defines = -DHAVE_MPI_SPAWNER
+mpi_srcdir = $(top_srcdir)/other/mpi-spawner
+mpi_deps = $(mpi_srcdir)/*.[ch]
+# We must compile this one object with MPI_CC.
+mpi_special_objs = $(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o
+$(builddir)/gasnet_bootstrap_mpi-$(THREAD_MODEL).o: force
+        @MPI_CC@ @MPI_CFLAGS@ $(LIBDEFINES) $(CONDUIT_EXTRALIBCFLAGS) $(LIBINCLUDES) \
+                $(MANUAL_MPICFLAGS) -o $@ -c $(mpi_srcdir)/gasnet_bootstrap_mpi.c
+endif
+
+##
+## PMI bootstrap support (optional)
+##
+if HAVE_BOOTSTRAP_PMI
+pmi_cppflags = -DHAVE_PMI_SPAWNER @PMI_SPAWNER_CFLAGS@
+pmi_srcdir = $(top_srcdir)/other/pmi-spawner
+pmi_sources = $(pmi_srcdir)/gasnet_bootstrap_pmi.c
+pmi_deps = $(pmi_srcdir)/*.[ch]
+endif
+
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = .
 
@@ -25,11 +59,12 @@ CONDUIT_FILELIST =           \
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
       $(srcdir)/gasnet_core.c \
-      $(top_srcdir)/extended-ref/gasnet_extended.c 
+      $(top_srcdir)/extended-ref/gasnet_extended.c \
+      $(ssh_sources) $(pmi_sources)
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = 
+CONDUIT_EXTRALIBCFLAGS = $(ssh_defines) $(mpi_defines) $(pmi_cppflags)
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = 
@@ -39,12 +74,12 @@ CONDUIT_PRIVATEHEADERS =
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
-CONDUIT_EXTRADEPS = 
+CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps)
 
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = 
+CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:

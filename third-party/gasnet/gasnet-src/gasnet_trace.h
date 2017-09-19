@@ -170,9 +170,9 @@
 /* ------------------------------------------------------------------------------------ */
 /* misc helpers for specific tracing scenarios */
 #if PLATFORM_ARCH_32 
-  #define GASNETI_LADDRFMT "0x%08x"
-  #define GASNETI_LADDRSTR(ptr) ((unsigned int)(uintptr_t)(ptr))
-  #define GASNETI_RADDRFMT "(%i,0x%08x)"
+  #define GASNETI_LADDRFMT "0x%08" PRIxPTR
+  #define GASNETI_LADDRSTR(ptr) ((uintptr_t)(ptr))
+  #define GASNETI_RADDRFMT "(%i,0x%08" PRIxPTR ")"
   #define GASNETI_RADDRSTR(node,ptr) ((int)(node)),GASNETI_LADDRSTR(ptr)
 #else
   #define GASNETI_LADDRFMT "0x%08x %08x"
@@ -184,9 +184,9 @@
 
 #if GASNET_TRACE
   #define GASNETI_TRACE_GETPUT(type, name, nbytes, node)                      \
-    GASNETI_TRACE_PRINTF(type, ("%s: %s = %6llu,  node = %i", #name,          \
+    GASNETI_TRACE_PRINTF(type, ("%s: %s = %6" PRIuPTR ",  node = %i", #name,  \
                                 gasneti_stats[(int)GASNETI_STAT_##name].desc, \
-                                (unsigned long long)(nbytes), (node)));
+                                (uintptr_t)(nbytes), (node)));
   #define GASNETI_TRACE_GETPUT_NONLOCAL GASNETI_TRACE_GETPUT
   #define GASNETI_TRACE_GETPUT_LOCAL(type, name, nbytes, node) do {  \
     if (GASNETI_TRACE_ENABLED(type) && !gasneti_trace_suppresslocal) \
@@ -200,19 +200,19 @@
 #define GASNETI_TRACE_GET_NAMED(name,locality,dest,node,src,nbytes) do {                   \
   _GASNETI_STAT_EVENT_VAL (G, name, (nbytes));                                             \
   GASNETI_TRACE_GETPUT_##locality(G, name, (nbytes), node);                                \
-  GASNETI_TRACE_PRINTF(D,(#name ": " GASNETI_LADDRFMT" <- " GASNETI_RADDRFMT" (%llu bytes)", \
+  GASNETI_TRACE_PRINTF(D,(#name ": " GASNETI_LADDRFMT" <- " GASNETI_RADDRFMT" (%" PRIuPTR " bytes)", \
                           GASNETI_LADDRSTR(dest), GASNETI_RADDRSTR((node),(src)),          \
-                          (unsigned long long)(nbytes)));                                  \
+                          (uintptr_t)(nbytes)));                                           \
 } while (0)
 
 #if GASNETI_STATS_OR_TRACE
 #define GASNETI_TRACE_PUT_NAMED(name,locality,node,dest,src,nbytes) do {                       \
-  GASNETI_UNUSED void *_src = (src);  /* workaround for CrayC warning, unused if !TRACE */     \
+  void *_src = (src);  /* workaround for CrayC warning */                                      \
   _GASNETI_STAT_EVENT_VAL (P, name, (nbytes));                                                 \
   GASNETI_TRACE_GETPUT_##locality(P, name, (nbytes), node);                                    \
-  GASNETI_TRACE_PRINTF(D,(#name ": " GASNETI_RADDRFMT" <- " GASNETI_LADDRFMT" (%llu bytes): %s", \
+  GASNETI_TRACE_PRINTF(D,(#name ": " GASNETI_RADDRFMT" <- " GASNETI_LADDRFMT" (%" PRIuPTR " bytes): %s", \
                           GASNETI_RADDRSTR((node),(dest)), GASNETI_LADDRSTR(_src),             \
-                          (unsigned long long)(nbytes), gasneti_formatdata(_src,(nbytes))));   \
+                          (uintptr_t)(nbytes), gasneti_formatdata(_src,(nbytes))));            \
 } while (0)
 #else
 #define GASNETI_TRACE_PUT_NAMED(name,locality,node,dest,src,nbytes) ((void)0)
@@ -221,9 +221,9 @@
 #define GASNETI_TRACE_MEMSET_NAMED(name,locality,node,dest,val,nbytes) do { \
   _GASNETI_STAT_EVENT_VAL (P, name, (nbytes));                              \
   GASNETI_TRACE_GETPUT_##locality(P, name, (nbytes), node);                 \
-  GASNETI_TRACE_PRINTF(D,(#name": " GASNETI_RADDRFMT" val=%02x nbytes=%llu",\
+  GASNETI_TRACE_PRINTF(D,(#name": " GASNETI_RADDRFMT" val=%02x nbytes=%" PRIuPTR,\
                           GASNETI_RADDRSTR((node),(dest)), (val),           \
-                          (unsigned long long)(nbytes)));                   \
+                          (uintptr_t)(nbytes)));                            \
 } while (0)
 
 
@@ -295,8 +295,8 @@
 #define GASNETI_TRACE_AMMEDIUM(name,dest,handler,source_addr,nbytes,numargs) do {                         \
   _GASNETI_TRACE_GATHERARGS(numargs);                                                                     \
   _GASNETI_STAT_EVENT(A,name);                                                                            \
-  GASNETI_TRACE_PRINTF(A,(#name": dest=%i handler=%i source_addr=" GASNETI_LADDRFMT" nbytes=%llu args:%s", \
-    (int)dest,handler,GASNETI_LADDRSTR(source_addr),(unsigned long long)nbytes,argstr));                  \
+  GASNETI_TRACE_PRINTF(A,(#name": dest=%i handler=%i source_addr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR " args:%s", \
+    (int)dest,handler,GASNETI_LADDRSTR(source_addr),(uintptr_t)nbytes,argstr));                           \
   GASNETI_TRACE_PRINTF(D,(#name": payload data: %s", gasneti_formatdata(source_addr,nbytes)));            \
 } while(0)
 
@@ -304,8 +304,8 @@
   _GASNETI_TRACE_GATHERARGS(numargs);                                                          \
   _GASNETI_STAT_EVENT(A,name);                                                                 \
   GASNETI_TRACE_PRINTF(A,(#name": dest=%i handler=%i source_addr=" GASNETI_LADDRFMT            \
-                                " nbytes=%llu dest_addr=" GASNETI_LADDRFMT" args:%s",          \
-    (int)dest,handler,GASNETI_LADDRSTR(source_addr),(unsigned long long)nbytes,                \
+                                " nbytes=%" PRIuPTR " dest_addr=" GASNETI_LADDRFMT" args:%s",  \
+    (int)dest,handler,GASNETI_LADDRSTR(source_addr),(uintptr_t)nbytes,                         \
     GASNETI_LADDRSTR(dest_addr),argstr));                                                      \
   GASNETI_TRACE_PRINTF(D,(#name": payload data: %s", gasneti_formatdata(source_addr,nbytes))); \
 } while(0)
@@ -889,8 +889,8 @@ extern size_t gasneti_format_putsgets(char *buf, void *pstats,
   #define _GASNETI_TRACE_EVENT(type, name) \
     GASNETI_TRACE_PRINTF(type, ("%s", #name))
   #define _GASNETI_TRACE_EVENT_VAL(type, name, val) \
-    GASNETI_TRACE_PRINTF(type, ("%s: %s = %6llu",     \
-        #name, gasneti_stats[(int)GASNETI_STAT_##name].desc, (unsigned long long)val))
+    GASNETI_TRACE_PRINTF(type, ("%s: %s = %6" PRIu64,        \
+        #name, gasneti_stats[(int)GASNETI_STAT_##name].desc, (uint64_t)val))
   #define _GASNETI_TRACE_EVENT_TIME(type, name, time)        \
     GASNETI_TRACE_PRINTF(type, ("%s: %s = %6.3fus",            \
         #name, gasneti_stats[(int)GASNETI_STAT_##name].desc, \

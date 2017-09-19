@@ -22,6 +22,7 @@
 
 #include <vector>
 
+class AggregateType;
 class FnSymbol;
 
 void gatherIteratorTags();
@@ -29,5 +30,39 @@ void gatherWellKnownTypes();
 void gatherWellKnownFns();
 
 std::vector<FnSymbol*> getWellKnownFunctions();
+void clearGenericWellKnownFunctions();
+
+// The well-known types
+extern AggregateType* dtArray;
+extern AggregateType* dtBaseArr;
+extern AggregateType* dtBaseDom;
+extern AggregateType* dtDist;
+extern AggregateType* dtError;
+extern AggregateType* dtLocale;
+extern AggregateType* dtLocaleID;
+extern AggregateType* dtMainArgument;
+extern AggregateType* dtOnBundleRecord;
+extern AggregateType* dtTaskBundleRecord;
+extern AggregateType* dtTuple;
+
+// The well-known functions
+extern FnSymbol *gChplHereAlloc;
+extern FnSymbol *gChplHereFree;
+extern FnSymbol *gChplDecRunningTask;
+extern FnSymbol *gChplIncRunningTask;
+extern FnSymbol *gChplDoDirectExecuteOn;
+extern FnSymbol *gBuildTupleType;
+extern FnSymbol *gBuildTupleTypeNoRef;
+extern FnSymbol *gBuildStarTupleType;
+extern FnSymbol *gBuildStarTupleTypeNoRef;
+extern FnSymbol *gPrintModuleInitFn;
+extern FnSymbol *gGetDynamicEndCount;
+extern FnSymbol *gSetDynamicEndCount;
+extern FnSymbol *gChplDeleteError;
+extern FnSymbol *gChplUncaughtError;
+extern FnSymbol *gChplPropagateError;
+extern FnSymbol *gChplSaveTaskError;
+extern FnSymbol *gChplFixThrownError;
+extern FnSymbol *gChplForallError;
 
 #endif

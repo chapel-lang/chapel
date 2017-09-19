@@ -31,6 +31,7 @@
 #include "expr.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "wellknown.h"
 
 #include <vector>
 
@@ -133,6 +134,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_LOOKUP_FILENAME:
 
   case PRIM_STACK_ALLOCATE_CLASS:
+
+  case PRIM_CLASS_NAME_BY_ID:
     return FAST_AND_LOCAL;
 
   case PRIM_MOVE:
@@ -175,6 +178,9 @@ classifyPrimitive(CallExpr *call) {
       // Otherwise, communication is required if we're not in a local block
       return FAST_NOT_LOCAL;
     }
+
+  case PRIM_WIDE_MAKE:
+    return FAST_NOT_LOCAL;
 
 // I think these can always return true. <hilde>
 // But that works only if the remote get is removed from code generation.
@@ -307,6 +313,9 @@ classifyPrimitive(CallExpr *call) {
   case NUM_KNOWN_PRIMS:
   case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
   case PRIM_THROW:
+  case PRIM_TRY_EXPR:
+  case PRIM_TRYBANG_EXPR:
+  case PRIM_CHECK_ERROR:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 
@@ -326,12 +335,15 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_STRING_COPY:
     return LOCAL_NOT_FAST;
 
+  case PRIM_GET_END_COUNT:
+  case PRIM_SET_END_COUNT:
+  case PRIM_GET_DYNAMIC_END_COUNT:
+  case PRIM_SET_DYNAMIC_END_COUNT:
+    return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
     // These formerly defaulted to false (slow), so we leave them
     // here until they are proven fast.
-  case PRIM_GET_END_COUNT:
-  case PRIM_SET_END_COUNT:
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
   case PRIM_DELETE:
@@ -557,10 +569,41 @@ removeUnnecessaryFences(FnSymbol* fn)
 }
 
 
+// Insert runningTaskCounter increment and decrement calls for on-stmts.
+//
+// TODO move this into its own pass
+static void addRunningTaskModifiers(void) {
+  compute_call_sites();
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* fn = call->resolvedFunction();
+    if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
+      // For non-fast on's increment the local runningTaskCounter before
+      // executing the body. Fast on's run directly in the comm-handler and
+      // will not spawn a task.
+      if (fn->hasFlag(FLAG_FAST_ON) == false) {
+        SET_LINENO(fn);
+        fn->insertAtHead(new CallExpr(gChplIncRunningTask));
+        fn->insertBeforeEpilogue(new CallExpr(gChplDecRunningTask));
+      }
+
+      // For on stmts that aren't fast or non-blocking, decrement the local
+      // runningTaskCounter before migrating to a new locale
+      if (fn->hasEitherFlag(FLAG_NON_BLOCKING, FLAG_FAST_ON) == false) {
+        SET_LINENO(call);
+        call->insertBefore(new CallExpr(gChplDecRunningTask));
+        call->insertAfter(new CallExpr(gChplIncRunningTask));
+      }
+    }
+  }
+}
+
 void
 optimizeOnClauses(void) {
-  if (fNoOptimizeOnClauses)
+  if (fNoOptimizeOnClauses) {
+    addRunningTaskModifiers();
     return;
+  }
 
   // If we're not using locks, the extern functions in
   // atomics are local and safe for fast on.
@@ -626,4 +669,5 @@ optimizeOnClauses(void) {
       }
     }
   }
+  addRunningTaskModifiers();
 }

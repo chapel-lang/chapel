@@ -132,6 +132,7 @@ int main(int argc, char **argv) {
     td_arr[i].mythread = mynode*threads_per_node+i;
   }
 #if GASNET_PAR
+  TEST_SET_WAITMODE(threads_per_node);
   test_createandjoin_pthreads(threads_per_node, &thread_main, td_arr, sizeof(thread_data_t));
 #else
   thread_main(&td_arr[0]);

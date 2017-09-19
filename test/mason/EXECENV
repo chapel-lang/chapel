@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+sys.stdout.write("PATH=$CHPL_HOME/bin/%s:$PATH\n" % os.getenv("CHPL_HOST_PLATFORM"))
+sys.stdout.write("MASON_HOME=$PWD")

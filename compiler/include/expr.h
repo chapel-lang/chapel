@@ -185,6 +185,11 @@ class UnresolvedSymExpr : public Expr {
 };
 
 
+enum TryTag {
+  TRY_TAG_NONE,
+  TRY_TAG_IN_TRY,
+  TRY_TAG_IN_TRYBANG
+};
 
 // Note -- isCallExpr() returns true for CallExpr and also
 // ContextCallExpr. Therefore, it is important to use toCallExpr()
@@ -199,6 +204,7 @@ public:
   bool         partialTag;
   bool         methodTag;        // Set to true if the call is a method call.
   bool         square;           // true if call made with square brackets
+  TryTag       tryTag;
 
   CallExpr(BaseAST*     base,
            BaseAST*     arg1 = NULL,
@@ -267,6 +273,7 @@ public:
   bool            isResolved()                                           const;
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
+  FnSymbol*       resolvedOrVirtualFunction()                            const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -291,50 +298,74 @@ private:
   bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
-// For storing several call expressions, where
-// choosing between them depends on context
-// (and that choice might need to be done later in resolution).
-// These should only exist between resolution and cullOverReferences.
-// A ContextCall has a designated call.
-// The designated call will be returned if toCallExpr() is called
-// on the context call.
-// typeInfo/qualType on the context call will return the type info for
-// the designated call.
-// isCallExpr() will return true for a ContextCallExpr.
+
+//
+// A ContextCallExpr
+//
+// There are situations in which function resolution is unable to make a
+// final selection for the function to be used for a particular call
+// because of incomplete information about "ref-ness".
+//
+// When this occurs the CallExpr is replaced with a ContextCallExpr that
+// contains either 2 or 3 CallExprs. These are stored in a consistent
+// order in an AList :-
+//
+//     the best "value"     function
+//     the best "const-ref" function
+//     the best "ref"       function
+//
+// and flags are used to indicate which functions are present.  The final
+// CallExpr is selected in cullReferences
+//
+// A ContextCall has a designated call.  The designated call will be returned
+// if toCallExpr() is called on the context call.
+//
+// typeInfo/qualType on the context call will return the type info
+// for the designated call.
+//
+// isCallExpr() will return true for a ContextCallExpr
+//
 class ContextCallExpr : public Expr {
- public:
-  // The options list always contains two or three CallExprs.
-  // These are always in this order:
-  //   value return
-  //   const-ref return
-  //   ref return
-  // Storing the ref call after the value call allows a
-  // postorder traversal to skip the value call.
-
-  bool hasValue;
-  bool hasConstRef;
-  bool hasRef;
-  AList options;
-
-  ContextCallExpr();
+public:
+                         ContextCallExpr();
 
   DECLARE_COPY(ContextCallExpr);
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual QualifiedType qualType();
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream *o);
+  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
 
-  virtual Expr*   getFirstChild();
+  virtual void           verify();
+  virtual void           accept(AstVisitor* visitor);
+  virtual QualifiedType  qualType();
+  virtual GenRet         codegen();
+  virtual void           prettyPrint(std::ostream* o);
 
-  virtual Expr*   getFirstExpr();
+  virtual Expr*          getFirstChild();
+  virtual Expr*          getFirstExpr();
 
-  void            setRefValueConstRefOptions(CallExpr* refCall, CallExpr* valueCall, CallExpr* constRefCall);
-  void            getCalls(CallExpr*& refCall, CallExpr*& valueCall, CallExpr*& constRefCall);
+  void                   setRefValueConstRefOptions(CallExpr* refCall,
+                                                    CallExpr* valueCall,
+                                                    CallExpr* constRefCall);
+
+  void                   getCalls(CallExpr*& refCall,
+                                  CallExpr*& valueCall,
+                                  CallExpr*& constRefCall)               const;
+
+  CallExpr*              getValueCall()                                  const;
+  CallExpr*              getConstRefCall()                               const;
+  CallExpr*              getRefCall()                                    const;
+
+  AList                  options;
+
+private:
+  bool                   hasValue;
+  bool                   hasConstRef;
+  bool                   hasRef;
 };
 
+//
+//
+//
+//
 
 class ForallExpr : public Expr {
 public:
@@ -440,6 +471,10 @@ static inline bool needsCapture(FnSymbol* taskFn) {
   return taskFn->hasFlag(FLAG_BEGIN) ||
          taskFn->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
          taskFn->hasFlag(FLAG_NON_BLOCKING);
+}
+
+inline Symbol* ShadowVarSymbol::outerVarSym() const {
+  return this->outerVarSE()->symbol();
 }
 
 // E.g. NamedExpr::actual, DefExpr::init.

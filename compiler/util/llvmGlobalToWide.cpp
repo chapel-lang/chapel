@@ -80,6 +80,9 @@ namespace {
     // stack overflow.
     Function *func = insertBefore->getParent()->getParent();
     BasicBlock* entryBlock = & func->getEntryBlock();
+#if HAVE_LLVM_VER >= 50
+    const llvm::DataLayout &DL = func->getParent()->getDataLayout();
+#endif
 
     if( insertBefore->getParent() == entryBlock ) {
       // Add before specific instruction in entry block.
@@ -94,9 +97,17 @@ namespace {
     AllocaInst *tempVar;
 
     if( insertBefore ) {
-      tempVar = new AllocaInst(type, name, insertBefore);
+      tempVar = new AllocaInst(type,
+#if HAVE_LLVM_VER >= 50
+                               DL.getAllocaAddrSpace(),
+#endif
+                               name, insertBefore);
     } else {
-      tempVar = new AllocaInst(type, name, entryBlock);
+      tempVar = new AllocaInst(type,
+#if HAVE_LLVM_VER >= 50
+                               DL.getAllocaAddrSpace(),
+#endif
+                               name, entryBlock);
     }
 
     return tempVar;
@@ -148,7 +159,16 @@ namespace {
     return ConstantExpr::getSizeOf(type);
   }
 
-  Constant* createLoadStoreControl(Module &M, GlobalToWideInfo* info, AtomicOrdering ordering, SynchronizationScope scope) {
+  Constant* createLoadStoreControl(Module &M,
+                                   GlobalToWideInfo* info,
+                                   AtomicOrdering ordering,
+#if HAVE_LLVM_VER >= 50
+                                   SyncScope::ID scope
+#else
+                                   SynchronizationScope scope
+#endif
+                                   )
+  {
     int atomic_part = 0;
     int sync_part = 0;
     int val = 0;
@@ -277,28 +297,44 @@ namespace {
       addrFn = info->addrFn;
       if( ! addrFn ) {
         addrFn = M.getOrInsertFunction("chpl_wide_ptr_get_address_sym",
-                                       voidPtrTy, wideVoidPtrTy, NULL);
+                                       voidPtrTy, wideVoidPtrTy
+#if HAVE_LLVM_VER < 50
+                                       , NULL
+#endif
+                                       );
       }
       checkFunctionExistAndHasArgs(addrFn, 1);
 
       locFn = info->locFn;
       if( ! locFn ) {
         locFn = M.getOrInsertFunction("chpl_wide_ptr_read_localeID_sym",
-                                      voidTy, wideVoidPtrTy, ptrLocTy, NULL);
+                                      voidTy, wideVoidPtrTy, ptrLocTy
+#if HAVE_LLVM_VER < 50
+                                      , NULL
+#endif
+                                      );
       }
       checkFunctionExistAndHasArgs(locFn, 2);
 
       nodeFn = info->nodeFn;
       if( ! nodeFn ) {
         nodeFn = M.getOrInsertFunction("chpl_wide_ptr_get_node_sym",
-                                       info->nodeIdType, wideVoidPtrTy, NULL);
+                                       info->nodeIdType, wideVoidPtrTy
+#if HAVE_LLVM_VER < 50
+                                       , NULL
+#endif
+                                       );
       }
       checkFunctionExistAndHasArgs(nodeFn, 1);
 
       makeFn = info->makeFn;
       if( ! makeFn ) {
         makeFn = M.getOrInsertFunction("chpl_return_wide_ptr_loc_sym",
-                                     wideVoidPtrTy, ptrLocTy, voidPtrTy, NULL);
+                                       wideVoidPtrTy, ptrLocTy, voidPtrTy
+#if HAVE_LLVM_VER < 50
+                                       , NULL
+#endif
+                                       );
       }
       checkFunctionExistAndHasArgs(makeFn, 2);
 
@@ -306,7 +342,11 @@ namespace {
       if( ! getFn ) {
         getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                       voidPtrTy, wideVoidPtrTy,
-                                      i64Ty, i64Ty, NULL);
+                                      i64Ty, i64Ty
+#if HAVE_LLVM_VER < 50
+                                      , NULL
+#endif
+                                      );
       }
       checkFunctionExistAndHasArgs(getFn, 4);
 
@@ -314,7 +354,11 @@ namespace {
       if( ! putFn ) {
         putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                       wideVoidPtrTy, voidPtrTy,
-                                      i64Ty, i64Ty, NULL);
+                                      i64Ty, i64Ty
+#if HAVE_LLVM_VER < 50
+                                      , NULL
+#endif
+                                      );
       }
       checkFunctionExistAndHasArgs(putFn, 4);
 
@@ -322,14 +366,22 @@ namespace {
       if( ! getPutFn ) {
         getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
                                          wideVoidPtrTy, wideVoidPtrTy,
-                                         i64Ty, NULL);
+                                         i64Ty
+#if HAVE_LLVM_VER < 50
+                                         , NULL
+#endif
+                                         );
       }
       checkFunctionExistAndHasArgs(getPutFn, 3);
 
       memsetFn = info->memsetFn;
       if( ! memsetFn ) {
         memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
-                                         wideVoidPtrTy, i8Ty, i64Ty, NULL);
+                                         wideVoidPtrTy, i8Ty, i64Ty
+#if HAVE_LLVM_VER < 50
+                                         , NULL
+#endif
+                                         );
       }
       checkFunctionExistAndHasArgs(memsetFn, 3);
     }
@@ -544,7 +596,13 @@ namespace {
                                         wideVoidPtrTy,
                                         oldLoad);
             args[2] = createSizeof(info, wLoadedTy);
-            args[3] = createLoadStoreControl(M, info, oldLoad->getOrdering(), oldLoad->getSynchScope());
+            args[3] = createLoadStoreControl(M, info, oldLoad->getOrdering(),
+#if HAVE_LLVM_VER >= 50
+                                             oldLoad->getSyncScopeID()
+#else
+                                             oldLoad->getSynchScope()
+#endif
+                                             );
 
             Value* call = CallInst::Create(getFn, args, "", oldLoad);
             assert(call);
@@ -554,7 +612,11 @@ namespace {
                                        oldLoad->isVolatile(),
                                        oldLoad->getAlignment(),
                                        oldLoad->getOrdering(),
+#if HAVE_LLVM_VER >= 50
+                                       oldLoad->getSyncScopeID(),
+#else
                                        oldLoad->getSynchScope(),
+#endif
                                        oldLoad);
 
             // now convert loadedWide back into a global type,
@@ -590,7 +652,11 @@ namespace {
                                             oldStore->isVolatile(),
                                             oldStore->getAlignment(),
                                             oldStore->getOrdering(),
+#if HAVE_LLVM_VER >= 50
+                                            oldStore->getSyncScopeID(),
+#else
                                             oldStore->getSynchScope(),
+#endif
                                             oldStore);
             assert(st);
 
@@ -601,7 +667,13 @@ namespace {
                                         oldStore);
             args[1] = castAlloc;
             args[2] = createSizeof(info, wStoredTy);
-            args[3] = createLoadStoreControl(M, info, oldStore->getOrdering(), oldStore->getSynchScope());
+            args[3] = createLoadStoreControl(M, info, oldStore->getOrdering(),
+#if HAVE_LLVM_VER >= 50
+                                             oldStore->getSyncScopeID()
+#else
+                                             oldStore->getSynchScope()
+#endif
+                                             );
 
             Instruction* put = CallInst::Create(putFn, args, "", oldStore);
             myReplaceInstWithInst(oldStore, put);
@@ -737,7 +809,14 @@ namespace {
               Value* wDst = callGlobalToWideFn(gDst, call);
               Value* wSrc = callGlobalToWideFn(gSrc, call);
 #if HAVE_LLVM_VER >= 39
-              Value* ctl = createLoadStoreControl(M, info, AtomicOrdering::NotAtomic, SingleThread);
+              Value* ctl = createLoadStoreControl(M, info,
+                                                  AtomicOrdering::NotAtomic,
+#if HAVE_LLVM_VER >= 50
+                                                  SyncScope::SingleThread
+#else
+                                                  SingleThread
+#endif
+                                                  );
 #else
               Value* ctl = createLoadStoreControl(M, info, NotAtomic, SingleThread);
 #endif
@@ -1059,7 +1138,12 @@ namespace {
         info->localeIdType = M.getTypeByName("struct.c_localeid_t");
         if( ! info->localeIdType ) {
           StructType* t = StructType::create(M.getContext(), "struct.c_localeid_t");
-          t->setBody(Type::getInt32Ty(M.getContext()), Type::getInt32Ty(M.getContext()), NULL);
+          t->setBody(Type::getInt32Ty(M.getContext()),
+                     Type::getInt32Ty(M.getContext())
+#if HAVE_LLVM_VER < 50
+                     , NULL
+#endif
+                     );
           info->localeIdType = t;
         }
         info->nodeIdType = Type::getInt32Ty(M.getContext());
@@ -1266,7 +1350,11 @@ namespace {
           if (CS.getInstruction()) {
             assert(CS.getCalledFunction() == F); 
             Instruction *Call = CS.getInstruction(); 
+#if HAVE_LLVM_VER >= 50
+            const AttributeList &CallPAL = CS.getAttributes();
+#else
             const AttributeSet &CallPAL = CS.getAttributes();
+#endif
 
             // Loop over the operands, inserting globalToWide function calls in
             // the caller as appropriate.

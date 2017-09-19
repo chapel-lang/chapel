@@ -106,7 +106,7 @@ module test_elemental_explicitly_strided_cholesky {
           mat_rows = A.domain.dim(1),
           n        = A.domain.dim(1).length;
     
-    //    ref L = L_formal.reindex({mat_rows, mat_row});
+    //    ref L = L_formal.reindex(mat_rows, mat_row);
     ref L = L_formal.reindex(mat_dom);
     
     writeln (" unaliased array" );

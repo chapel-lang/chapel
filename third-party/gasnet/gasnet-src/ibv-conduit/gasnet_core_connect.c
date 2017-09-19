@@ -121,7 +121,7 @@ sq_sema_alloc(int count)
     gasnetc_sema_t sema;
     void *link; /* Ensure anough space for the lifo links */
   } *p = (union dummy *)
-          gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES, count * sizeof(union dummy));
+          gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES, count * sizeof(union dummy));
   int i;
 
   gasneti_leak_aligned(p);
@@ -345,6 +345,10 @@ gasnetc_xrc_init(void **shared_mem_p) {
   #elif GASNETC_IBV_XRC_MLNX
     hca->xrc_domain = ibv_open_xrc_domain(hca->handle, fd, O_CREAT);
   #endif
+    if (!hca->xrc_domain && errno == ENOSYS) {
+      gasneti_fatalerror("Unable to create an XRC domain.  "
+                         "Please see \"Lack of XRC support\" under Known Problems in GASNet's README-ibv.");
+    }
     GASNETC_IBV_CHECK_PTR(hca->xrc_domain, "from ibv_open_xrc_domain()");
     (void) close(fd);
   }
@@ -1413,7 +1417,7 @@ gasnetc_get_conn(gasnet_node_t node)
     conn->state = GASNETC_CONN_STATE_NONE;
     conn->info.node = node;
     conn->info.cep = (gasnetc_cep_t *)
-                       gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
+                       gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
                                               gasnetc_alloc_qps * sizeof(gasnetc_cep_t));
     gasneti_leak_aligned(conn->info.cep);
     memset(conn->info.cep, 0, gasnetc_alloc_qps * sizeof(gasnetc_cep_t));
@@ -1589,10 +1593,8 @@ gasnetc_timed_conn_wait(gasnetc_conn_t *conn, gasnetc_conn_state_t state,
     m -= (sv >> 2);
     sv += m;
     rto = (sa >> 3) + (sv >> 1); /* or "+sv" for a+4v version */
-    GASNETI_TRACE_PRINTF(D, ("UD connection SRTT: m=%llu, ns avg=%llu ns, var=%llu ns",
-                             (long long)om,
-                             (unsigned long long)(sa >> 3),
-                             (unsigned long long)(sv >> 2)));
+    GASNETI_TRACE_PRINTF(D, ("UD connection SRTT: m=%"PRId64", ns avg=%"PRId64" ns, var=%"PRId64" ns",
+                             om, (sa >> 3), (sv >> 2)));
   } else {
     /* Don't use an ambiguous rtt value to update estimates.
      * Instead we carry over the current (possibly backed-off) RTO.
@@ -2169,7 +2171,7 @@ gasnetc_connect_static(void)
     static gasnetc_cep_t *cep_table;
     if (NULL == cep_table) {
       cep_table = (gasnetc_cep_t *)
-        gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
+        gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES,
                                static_nodes * gasnetc_alloc_qps * sizeof(gasnetc_cep_t));
       gasneti_leak_aligned(cep_table);
     }
@@ -2291,7 +2293,7 @@ gasnetc_connect_init(void)
   { size_t size = gasneti_nodes*sizeof(gasnetc_cep_t *);
     if (NULL == gasnetc_node2cep) {
       gasnetc_node2cep = (gasnetc_cep_t **)
-        gasnett_malloc_aligned(GASNETI_CACHE_LINE_BYTES, size);
+        gasneti_malloc_aligned(GASNETI_CACHE_LINE_BYTES, size);
       gasneti_leak_aligned(gasnetc_node2cep);
     }
     memset(gasnetc_node2cep, 0, size);
@@ -2414,8 +2416,8 @@ dump_conn_write(int fd, const char *buf, size_t len)
   /* TODO: loop w/ retry on short writes? */
   ssize_t rc = write(fd, buf, len);
   if_pf (rc != len) {
-    gasneti_fatalerror("Write to connection file failed or truncated: rc=%ld errno=%s(%i)",
-                       (long int)rc, strerror(errno), errno);
+    gasneti_fatalerror("Write to connection file failed or truncated: rc=%"PRIdPTR" errno=%s(%i)",
+                       (intptr_t)rc, strerror(errno), errno);
   }
 }
 
@@ -2586,7 +2588,7 @@ gasnetc_connect_shutdown(void) {
   #else
     /* conn_ud_hca->snd_cq, if any, has already been drained */
     gasneti_assert((NULL == conn_ud_sema_p) ||
-                   (0 == gasneti_semaphore_read(conn_ud_sema_p)));
+                   (0 == gasnetc_sema_read(conn_ud_sema_p)));
   #endif
 
   /* TODO: is this retry loop still necessary? */

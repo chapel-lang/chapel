@@ -16,8 +16,9 @@ class myNumaDomain : myAbstractLocaleModel {
   const name: string;
   proc chpl_name() return name;
 
-  proc myNumaDomain() {
+  proc init() {
     name = "test";
+    super.init();
   }
 }
 

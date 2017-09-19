@@ -23,21 +23,7 @@
 //// foralls.h, foralls.cpp - support for forall loops ////
 
 #include "expr.h"
-
-//
-// TFITag: a task or forall intent
-//
-enum TFITag {
-  TFI_DEFAULT, // aka TFI_BLANK
-  TFI_CONST,
-  TFI_IN,
-  TFI_CONST_IN,
-  TFI_REF,
-  TFI_CONST_REF,
-  TFI_REDUCE,
-};
-
-const char* tfiTagDescrString(TFITag tfiTag);
+#include "stlUtil.h"
 
 //
 // ForallIntents: with clause/forall intents
@@ -46,7 +32,7 @@ const char* tfiTagDescrString(TFITag tfiTag);
 class ForallIntents {
 public:
   std::vector<Expr*>   fiVars;   // affected variables
-  std::vector<TFITag>  fIntents; // associated intents
+  std::vector<ForallIntentTag>  fIntents; // associated intents
   std::vector<Expr*>   riSpecs;  // reduce intent info
 
   // used in implementForallIntents1()
@@ -57,18 +43,19 @@ public:
   ForallIntents();    // constructor
   ~ForallIntents() {} // destructor: just deallocate the vectors
 
-  int   numVars() { return fiVars.size(); }
-  bool  isReduce(int idx) { return fIntents[idx] == TFI_REDUCE; }
+  int   numVars()         const { return fiVars.size(); }
+  bool  isReduce(int idx) const { return fIntents[idx] == TFI_REDUCE; }
 
   // Support standard AST operations on the enclosing BlockStmt.
   ForallIntents* copy(SymbolMap* map, bool internal);
   bool replaceChildFI(Expr* oldAst, Expr* newAst);
   void removeFI(Expr* parentB);
-  void verifyFI(BlockStmt* parentB);
+  void verifyFI(Expr* parentE) const;
   void acceptFI(AstVisitor* visitor);
 };
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
+void lowerForallStmts();
 
 #define for_riSpecs_vector(VAL, FI) \
   for_vector_allowing_0s(Expr, VAL, (FI)->riSpecs)

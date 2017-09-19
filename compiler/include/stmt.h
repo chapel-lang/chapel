@@ -154,10 +154,10 @@ private:
   CallExpr*           blockInfo;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class CondStmt : public Stmt {
 public:
@@ -176,17 +176,17 @@ public:
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
-  Expr*               foldConstantCondition();
+  CallExpr*           foldConstantCondition();
 
   Expr*               condExpr;
   BlockStmt*          thenStmt;
   BlockStmt*          elseStmt;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 enum GotoTag {
   GOTO_NORMAL,
@@ -196,7 +196,8 @@ enum GotoTag {
   GOTO_GETITER_END,
   GOTO_ITER_RESUME,
   GOTO_ITER_END,
-  GOTO_ERROR_HANDLING
+  GOTO_ERROR_HANDLING,
+  GOTO_BREAK_ERROR_HANDLING
 };
 
 
@@ -226,10 +227,11 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ExternBlockStmt : public Stmt {
 public:
@@ -253,10 +255,10 @@ public:
 };
 
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 class ForwardingStmt : public Stmt {
 public:
@@ -287,6 +289,10 @@ public:
   // (i.e. the type of the expression to forward to).
   // Used during resolution to avoid repeated work.
   Type*               type;
+  // Contains a function that resolution can use to store some expressions
+  // it computes. This function should remain in the tree for proper
+  // scoping comparisons during resolution, but isn't needed after that.
+  FnSymbol*           scratchFn;
 
   // The names of symbols from an 'except' or 'only' list
   std::set<const char *> named;
@@ -297,19 +303,19 @@ public:
 };
 
 
-/************************************ | *************************************
-*                                                                           *
-*                                                                           *
-************************************* | ************************************/
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 extern Vec<LabelSymbol*>         removedIterResumeLabels;
 extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
-
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.
 void         codegenStmt(Expr* stmt);
 
+// Serving ForallStmt and forall intents.
 bool isDirectlyUnderBlockStmt(const Expr* expr);
 
 // Extract (e.toGotoStmt)->(label.toSymExpr)->var and var->->iterResumeGoto,

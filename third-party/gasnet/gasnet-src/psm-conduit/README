@@ -1,5 +1,25 @@
 GASNet psm-conduit documentation
-Copyright (c) 2014-2015 Intel Corporation. All rights reserved.
+Copyright (c) 2014-2017 Intel Corporation. All rights reserved.
+
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
+The psm-conduit is now DEPRECATED.
+No further development of this conduit is anticipated.
+It may be removed in a future release.
+
+Users of Intel(R) Omni-Path Fabric are recommended to use ofi-conduit
+by passing the following to GASNet's configure script.
+  --enable-ofi --disable-psm --disable-ibv
+
+=====================================================================
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE NOTICE
+=====================================================================
+
 
 User Information:
 -----------------
@@ -8,12 +28,65 @@ This conduit is designed to communicate for the Intel(R) Omni-Path Fabric
 through the Intel(r) Performance Scaled Messaging 2 (PSM2) Linux user space
 library Application Programming Interface (API). Mainly intended to use the
 Active Messaging PSM2 API, but will use PSM2 matched queues for long messages
-(review GASNET_LONG_MSG_THRESHOLD below).
+(see section "Tuning use of PSM2 Matched Queues" below).
 
 Where this conduit runs:
 -----------------------
 
 Intel(R) Omni-Path Fabric
+
+Optional compile-time settings:
+------------------------------
+
+The default spawner to be used by the gasnetrun_psm utility can be
+selected by configuring '--with-psm-spawner=VALUE', where VALUE is one
+of 'mpi', 'pmi' or 'ssh'.  If this option is not used, mpi is the
+default when available, and ssh otherwise.
+Here are some things to consider when selecting a default spawner:
+  + mpi-spawner is the default when MPI is available precisely because it
+    is so frequently present on systems where GASNet is to be installed.
+    Additionally, very little (if any) configuration is required and the
+    behavior is highly reliable.
+  + pmi-spawner uses the same "Process Management Interface" which forms
+    the basis for many mpirun implementations.  When support is available,
+    this spawner can be as easy to use and as reliable as mpi-spawner, but
+    without the overheads of initializing an MPI runtime.
+  + ssh-spawner depends only on the availability of a remote shell command
+    such as ssh.  For this reason ssh-spawner support is always compiled.
+    However, it can be difficult (or impossible) to use on a cluster which
+    was not setup to allow ssh to (and among) its compute nodes.
+For more information on configuration and use of these spawners, see
+   README-{ssh,mpi,pmi}-spawner (installed)
+or
+   other/{ssh,mpi,pmi}-spawner/README (source).
+
+Job Spawning:
+-------------
+
+If using UPC, Titanium, etc. the language-specific commands should be used
+to launch applications.  Otherwise, applications can be launched using
+the gasnetrun_psm utility:
+  + usage summary:
+    gasnetrun_psm -n <n> [options] [--] prog [program args]
+    options:
+      -n <n>                 number of processes to run (required)
+      -N <N>                 number of nodes to run on (not supported by all MPIs)
+      -E <VAR1[,VAR2...]>    list of environment vars to propagate
+      -v                     be verbose about what is happening
+      -t                     test only, don't execute anything (implies -v)
+      -k                     keep any temporary files created (implies -v)
+      -spawner=(ssh|mpi|pmi) force use of a specific spawner (if available)
+
+There are as many as three possible methods (ssh, mpi and pmi) by which one
+can launch an psm-conduit application.  Ssh-based spawning is always
+available, and mpi- and pmi-based spawning are available if the respective
+support was located at configure time.  The default is established at
+configure time (see section "Optional compile-time settings").
+
+To select a non-default spawner one may either use the "-spawner=" command-
+line argument or set the environment variable GASNET_PSM_SPAWNER to "ssh",
+"mpi" or "pmi".  If both are used, then the command line argument takes
+precedence.
 
 Using psm-conduit with MPI:
 ---------------------------
@@ -22,9 +95,9 @@ PSM has a restriction in which only one endpoint may be opened per process.
 For users of this conduit, this means that if an MPI is used for process
 spawning, that MPI must NOT also attempt to use PSM for communication.
 
-If compiled with PSM support (such as the openmpi_gcc_hfi RPM package 
-distributed with Intel Fabric Suite package), Open MPI will try to use 
-PSM by default.  To override, set the MPIRUN_CMD variable.  
+If compiled with PSM support (such as the openmpi_gcc_hfi RPM package
+distributed with Intel Fabric Suite package), Open MPI will try to use
+PSM by default.  To override, set the MPIRUN_CMD variable.
 With Open MPI, for example:
 
 export MPIRUN_CMD="mpirun -np %N -mca mtl ^psm,psm2 %P %A"
@@ -33,6 +106,8 @@ The above disables both the psm (v1) and psm2 MTLs. Then gasnetrun_psm can be
 used as normal; Open MPI will select another network such as verbs and/or TCP.
 
 An alternative is to use an MPI without PSM support enabled, for example MPICH.
+
+Additional information on this topic is available in the mpi-spawner README.
 
 Recognized environment variables:
 ---------------------------------
@@ -49,36 +124,74 @@ Recognized environment variables:
   GASNET_EXITTIMEOUT_MIN=5
   GASNET_EXITTIMEOUT_FACTOR=0.01 (1 second per 100 nodes)
 
-* GASNET_RCV_THREAD: The PSM conduit has a progress thread that is used only to
-  poll communication through the PSHM path.  This progress thread and associated
-  environment variables are disabled at compile time if PSHM is disabled.  PSM
-  itself runs a progress thread to service network communication.  Both progress
-  threads are enabled by default.  GASNET_RCV_THREAD controls the GASNet-PSM
-  thread, while PSM_RCVTHREAD controls the PSM-level thread.  Both are boolean
-  values, where "0" disables and "1" enables.
+* GASNET_RCV_THREAD: psm-conduit has a progress thread that is used to poll 
+  active message communication through the PSHM (shared-memory) path, and to 
+  advance network operations using the PSM/MQ path. GASNET_RCV_THREAD controls 
+  this GASNet psm-conduit thread. The PSM2 layer itself runs a progress thread 
+  to service network communication, and PSM_RCVTHREAD controls this PSM2-level thread.  
+  Both are boolean values, where "0" disables and "1" enables.
+  Both progress threads are enabled by default.
 
-* GASNET_RCV_THREAD_RATE controls the frequency at which the GASNet-PSM thread
+* GASNET_RCV_THREAD_RATE controls the frequency at which the psm-conduit thread
   wakes and polls for progress.  The unit is polls per second, and the default
   is 1000.
 
 * GASNET_THREAD_STACK_MIN, GASNET_THREAD_STACK_PAD are supported as described
-  in the top-level README, and affect the PSM conduit's progress thread.
+  in the top-level README, and affect the psm-conduit's progress thread.
 
 * GASNET_LONG_MSG_THRESHOLD  Message size in bytes at which a PSM/MQ-based
   long message protocol is used instead of repeated single-MTU active messages.
   Applies to all forms of the Extended Put and GET operations; this option has
-  no effect on Core API active messages.
+  no effect on Core API active messages. 
+  See section "Tuning use of PSM2 Matched Queues" below for more info.
 
++ GASNET_PSM_SPAWNER
+  To override the default spawner for psm-conduit jobs, one may set this
+  environment variable as described in the section "Job Spawning", above.
+  There are additional settings which control behaviors of the various
+  spawners, as described in the respective READMEs (listed in section
+  "Optional compile-time settings", above).
 
-Optional compile-time settings:
-------------------------------
+Tuning use of PSM2 Matched Queues
+---------------------------------
 
-* All the compile-time settings from extended-ref (see the extended-ref README)
+In PSM2, Matched Queues (MQ) present a queue-based communication model with
+the distinction that queue consumers use a 3-tuple of metadata to match
+incoming messages against a list of preposted receive buffers.  On the other
+hand, the Active Message (AM) component presents a request/reply model where
+the arrival of a message triggers the execution of consumer-provided handler
+code. This can be used to implement many one-sided and two-sided
+communications paradigms. More information regarding AM and different
+protocols employed under MQ can be found in PSM2 documentation.
+
+The PSM2 environment variable PSM2_MQ_RNDV_HFI_THRESH provides the switch over
+point from MQ Eager to MQ Rendezvous protocol. This is an internal PSM2
+protocol switch. Currently by the default switch over point is 64000B for
+Intel(R) Xeon(R) processor and 200000B on Intel(R) Xeon Phi(TM) processor.
+GASNet environment variable GASNET_LONG_MSG_THRESHOLD provides the message size
+at which the psm-conduit will switch over from AM to MQ. The default value for
+GASNET_LONG_MSG_THRESHOLD is 16384B. The below table shows the different
+protocols used by default in psm-conduit and PSM2 for different message sizes:
+  Intel(R) Xeon(R) processor:
+  Lower limit  <  message size < upper limit    : PSM2 API used by the psm-conduit (PSM2 internal protocol)
+           0B  <  message size <= 16000B        : AM API (Eager PIO protocol)
+       16000B  <  message size <  16384B        : AM API (Eager SDMA protocol)
+       16384B  <= message size <= 64000B        : MQ API (Eager SDMA protocol)
+       64000B  <  message size <= PSM2_MQ_RNDV_HFI_WINDOW : MQ API (RNDV SDMA protocol)
+
+  Intel(R) Xeon Phi(TM) processor:
+  Lower limit  <  message size < upper limit    : PSM2 API used by the psm-conduit (PSM2 internal protocol)
+           0B  <  message size <  16384B        : AM API (Eager PIO protocol)
+       16384B  <= message size <= 65536B        : MQ API (Eager PIO protocol)
+       65536B  <  message size <= 200000B       : MQ API (Eager SDMA protocol)
+      200000B  <  message size <= PSM2_MQ_RNDV_HFI_WINDOW : MQ API (RNDV SDMA protocol)
+
+For optimal performance it is recommended to keep the defaults. However, it is
+possible to force the MQ path to use only RNDV protocol by setting
+PSM2_MQ_RNDV_HFI_THRESH to the same value as GASNET_LONG_MSG_THRESHOLD.
 
 Known problems:
 ---------------
-
-* See the Berkeley UPC Bugzilla server for details on known bugs.
 
 * Bug 3333
   At the time of this release, there is a known bug in the AM interface of
@@ -89,7 +202,7 @@ Known problems:
   by setting GASNET_SUPERNODE_MAXSIZE.  Under those conditions, you will
   receive an error message which directs you here.
   The most up-to-date information on this bug is maintained at:
-    http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3333
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3333
   If, after reviewing that bug report, you wish to run psm-conduit over the
   PSM2 shared-memory device, please set GASNET_PSM_ENABLE_SHM=1 in your
   environment to disable the error message.  We strongly recommend you set
@@ -97,19 +210,34 @@ Known problems:
   PSM2, or if you apply a patch (in the bug report) that works-around the
   problem (at the cost of reduced performance).
 
-* Bug 3342
-  This release disables the "put_long" protocol previously used for Puts
-  over some threshold, which defaults to 16KB.  This results in a significant
-  reduction in performance, but is preferred to the alternative of sometimes
-  producing incorrect results.  Intel is actively working on correcting the
-  "put_long" protocol for a future patch release to restore the previous
-  level of performance without sacrificing correctness.
+* Bug 3419
+  At the time of this release, there is a known issue in which nodes may
+  report different values for the maximum size of a PSM2 active message.
+  The psm-conduit is not currently able to deal with this situation, and
+  under those conditions you will receive an error message which directs
+  you here.
   The most up-to-date information on this bug is maintained at:
-    http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3342
-  Until this issue can be resolved, users of Omni-Path networks may wish to
-  consider use of ofi-conduit (with libfabric's psm2 provider) as an
-  alternative to psm-conduit if performance of Puts over 16KB is critical
-  to your application.
+    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3419
+  Note this problem seems especially likely to arise when running on a KNL
+  architecture with a heterogenous configuration of KNL memory/cluster modes
+  across the nodes comprising a job. We recommend that all nodes comprising
+  a GASNet job be configured to use the same KNL memory/cluster mode.
+
+* The default limit for number of inflight isend and irecv MQ requests in
+  PSM2 is 1048576. If the user encounters exhaustion of the isend or irecv
+  descriptors (see error message below), it is possible to extend the MQ size by
+  setting the environment variable as "PSM2_MEMORY=large". This will increase the
+  inflight isend and irecv limit to 16777216.
+  A different way to independently configure the number of sends or
+  receives inflight is by setting the PSM2_MQ_{SEND,RECV}REQS_MAX environment
+  variables (PSM2_MEMORY internally sets both).
+  Example error message:
+  `Exhausted 1048576 MQ isend request descriptors, which usually indicates a user
+  program error or insufficient request descriptors (PSM2_MQ_SENDREQS_MAX=1048576)`
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  http://gasnet-bugs.lbl.gov/
+
 
 Future work:
 ------------

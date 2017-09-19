@@ -71,6 +71,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
+                          bool        prototype,
                           const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
@@ -165,5 +166,8 @@ BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
+
+Expr* tryExpr(Expr*);
+Expr* tryBangExpr(Expr*);
 
 #endif

@@ -71,12 +71,32 @@ GASNETT_BEGIN_EXTERNC
   #define assert(x) assert_always(x)
 #endif
 
+#ifndef _CONCAT
+#define _CONCAT_HELPER(a,b) a ## b
+#define _CONCAT(a,b) _CONCAT_HELPER(a,b)
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+// Static assertions : assert a property at compile time, generate an error otherwise
+// `cond` must be an integer constant expression - ie no non-integer types or variable references
+
+// static assertion in a block scope
+// safe to use multiple times per line (eg in a macro expansion)
+#define test_static_assert(cond) do { \
+  static const char *_test_static_assert[ (cond) ?1:-1] = { "Static assertion: " #cond }; \
+} while (0)
+
+// static assertion at file scope
+// safe to use multiple times per line only in C99 mode, not C++ mode
+#define test_static_assert_file(cond) \
+  static const char *_CONCAT(_test_static_assert_file_,__LINE__)[ (cond) ?1:-1]
+
 /* ------------------------------------------------------------------------------------ */
 /* generic message output utility
    test_makeMsg(baseformatargs, msgpred, isfatal, msgeval): 
      baseformatargs - parenthesized printf-style argument defining the generic stem
      msgpred - predicate which must evaluate to true to perform message output (eg 1 for always)
-     isfatal - non-zero to request an abort after the message output
+     isfatal - literal 1 to request an abort after the message output, literal 0 otherwise
      msgeval - expression which is evaluated in a critical section, 
                immediately before each message output (or 0 for none)
  */
@@ -90,8 +110,7 @@ GASNETT_BEGIN_EXTERNC
   BUG3343_WORKAROUND(                                               \
   ( _test_makeErrMsg baseformatargs ,                               \
     ( (msgpred) ? (void)(msgeval) : (void)(_test_squashmsg = 1) ) , \
-    (void)(_test_fatalmsg = (isfatal)),                             \
-    _test_doErrMsg ) )
+    _test_doErrMsg##isfatal ) )
 
 /* define several useful messaging macros */
 static int test_errs = 0;
@@ -100,7 +119,7 @@ static int test_errs = 0;
                              GASNETT_TRACE_SETSOURCELINE(__FILE__,__LINE__))
   #define MSG0  test_makeMsg(("%s\n","%s"), (gasnet_mynode() == 0), 0, \
                              GASNETT_TRACE_SETSOURCELINE(__FILE__,__LINE__))
-  #define TERR(isfatal)                                                                                        \
+  #define _TERR(isfatal)                                                                                        \
                 test_makeMsg(("ERROR: node %i/%i %s (at %s:%i)\n",                                             \
                               (int)gasnet_mynode(), (int)gasnet_nodes(), "%s",__FILE__, __LINE__), 1, isfatal, \
                              (test_errs++, GASNETT_TRACE_SETSOURCELINE(__FILE__,__LINE__)))
@@ -110,13 +129,13 @@ static int test_errs = 0;
 #else
   #define MSG   test_makeMsg(("%s\n","%s"), 1, 0, 0)
   #define MSG0  MSG
-  #define TERR(isfatal) test_makeMsg(("ERROR: %s (at %s:%i)\n","%s",__FILE__, __LINE__), 1, isfatal, test_errs++)
+  #define _TERR(isfatal) test_makeMsg(("ERROR: %s (at %s:%i)\n","%s",__FILE__, __LINE__), 1, isfatal, test_errs++)
   #define THREAD_MSG0(id)  test_makeMsg(("%s\n","%s"), (id == 0), 0, 0)
   #define THREAD_ERR(id)   test_makeMsg(("ERROR: thread %i: %s (at %s:%i)\n", \
                               id, "%s", __FILE__, __LINE__), 1, 0, test_errs++)
 #endif
-#define ERR      TERR(0)
-#define FATALERR TERR(1)
+#define ERR      _TERR(0)
+#define FATALERR _TERR(1)
 /* The following two help us avoid warnings from a gcc that doesn't like
    seeing a lone non-literal argument to printf() and family. */
 #define PUTS(_s)  MSG("%s",(_s))
@@ -125,7 +144,6 @@ static int test_errs = 0;
 #define _TEST_MSG_BUFSZ 1024
 static char _test_baseformat[_TEST_MSG_BUFSZ];
 static volatile int _test_squashmsg = 0;
-static volatile int _test_fatalmsg = 0;
 #if defined(HAVE_PTHREAD_H) && !defined(GASNET_SEQ)
   static gasnett_mutex_t _test_msg_lock = GASNETT_MUTEX_INITIALIZER;
   #define _test_LOCKMSG()   gasnett_mutex_lock(&_test_msg_lock)
@@ -134,28 +152,36 @@ static volatile int _test_fatalmsg = 0;
   #define _test_LOCKMSG()   ((void)0)
   #define _test_UNLOCKMSG() ((void)0)
 #endif
-GASNETT_FORMAT_PRINTF(_test_doErrMsg,1,2,
-static void _test_doErrMsg(const char *format, ...)) {
-  if (_test_squashmsg) _test_squashmsg = 0; 
-  else {
-    char output[_TEST_MSG_BUFSZ];
-    va_list argptr;
-    va_start(argptr, format); /*  pass in last argument */
-      { int sz = vsnprintf(output, _TEST_MSG_BUFSZ, format, argptr);
-        if (sz >= (_TEST_MSG_BUFSZ-5) || sz < 0) strcpy(output+(_TEST_MSG_BUFSZ-5),"...");
-      }
-    va_end(argptr);
-    printf(_test_baseformat, output); 
-    GASNETT_TRACE_PRINTF(_test_baseformat, output);
-    fflush(stdout);
-  }
-  if (_test_fatalmsg) {
-    fflush(NULL);
-    sleep(1);
-    abort();
-  }
-  _test_UNLOCKMSG();
+
+/* define two versions of _test_doErrMsg, 
+ * so the fatal one can have a GASNETT_NORETURN attribute */
+#define _test_doErrMsg_functor(suff, code)                             \
+GASNETT_FORMAT_PRINTF(_test_doErrMsg##suff,1,2,                        \
+static void _test_doErrMsg##suff(const char *format, ...)) {           \
+  if (_test_squashmsg) _test_squashmsg = 0;                            \
+  else {                                                               \
+    char output[_TEST_MSG_BUFSZ];                                      \
+    va_list argptr;                                                    \
+    va_start(argptr, format); /*  pass in last argument */             \
+      { int sz = vsnprintf(output, _TEST_MSG_BUFSZ, format, argptr);   \
+        if (sz >= (_TEST_MSG_BUFSZ-5) || sz < 0)                       \
+           strcpy(output+(_TEST_MSG_BUFSZ-5),"...");                   \
+      }                                                                \
+    va_end(argptr);                                                    \
+    printf(_test_baseformat, output);                                  \
+    GASNETT_TRACE_PRINTF(_test_baseformat, output);                    \
+    fflush(stdout);                                                    \
+  }                                                                    \
+  code /* conditionally fatal */                                       \
 }
+
+_test_doErrMsg_functor(0, { _test_UNLOCKMSG(); })
+
+GASNETT_NORETURN
+_test_doErrMsg_functor(1, { fflush(NULL); sleep(1); abort(); })
+GASNETT_NORETURNP(_test_doErrMsg1)
+#undef _test_doErrMsg_functor
+
 GASNETT_FORMAT_PRINTF(_test_makeErrMsg,1,2,
 static void _test_makeErrMsg(const char *format, ...)) {
   va_list argptr;
@@ -184,7 +210,6 @@ static void _test_makeErrMsg(const char *format, ...)) {
 #define alignup_ptr(a,b) ((void *)(((((uintptr_t)(a))+(b)-1)/(b))*(b)))
 #define aligndown(a,b) (((a)/(b))*(b))
 
-GASNETT_UNUSED /* not used by every test */
 static int _test_rand(int low, int high) {
   int result;
   assert(low <= high);
@@ -219,9 +244,7 @@ static int _test_rand(int low, int high) {
   if_pf(!_retval) FATALERR(#op": %s(%i)",strerror(_retval), _retval); \
 } while (0)
 
-GASNETT_UNUSED /* not used by every test */
 static char test_section;
-GASNETT_UNUSED /* not used by every test */
 static char test_sections[255];
 
 #define TEST_SECTION_BEGIN()        ((void)(!test_section ? test_section = 'A' : test_section++))
@@ -254,16 +277,14 @@ static char test_sections[255];
   #define test_resume_interrupts()  ((void)0)
 #endif
 
-GASNETT_UNUSED /* not used by every test */
 static void *_test_malloc(size_t sz, const char *curloc) {
   void *ptr;
   test_hold_interrupts();
   ptr = malloc(sz);
   test_resume_interrupts();
-  if (ptr == NULL) FATALERR("Failed to malloc(%lu) bytes at %s\n",(unsigned long)sz,curloc);
+  if (ptr == NULL) FATALERR("Failed to malloc(%" PRIuPTR ") bytes at %s\n",(uintptr_t)sz,curloc);
   return ptr;
 }
-GASNETT_UNUSED /* not used by every test */
 static void *_test_calloc(size_t sz, const char *curloc) {
   void *retval = _test_malloc(sz, curloc);
   if (retval) memset(retval, 0, sz);
@@ -356,8 +377,8 @@ static int64_t test_calibrate_delay(int iters, int pollcnt, int64_t *time_p)
                   FATALERR("test_calibrate_delay(%i,%i,%i) failed to converge after %i iterations.\n",
                           iters, pollcnt, (int)*time_p, iters);
               #if 0
-                printf("loops=%llu\n",(unsigned long long)loops); fflush(stdout);
-                printf("ratio=%f target=%f time=%llu\n",ratio,target,(unsigned long long)time); fflush(stdout);
+                printf("loops=%" PRIi64 "\n",loops); fflush(stdout);
+                printf("ratio=%f target=%f time=%" PRIi64 "\n",ratio,target,time); fflush(stdout);
               #endif
 	} while (ratio > 1.0);
 
@@ -456,7 +477,6 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
   #define TEST_MAXTHREADS (TEST_MAXTHREADS_SYSTEM + TEST_USE_PRIMORDIAL_THREAD - 1)
 #endif
 /* Runtime enforcement of TEST_MAXTHREADS, GASNET_TEST_THREAD_LIMIT, or platform-specific limits */
-GASNETT_UNUSED /* not used by every test */
 static int test_thread_limit(int numthreads) {
     int limit = gasnett_getenv_int_withdefault("GASNET_TEST_THREAD_LIMIT", TEST_MAXTHREADS, 0);
     limit = MIN(limit, TEST_MAXTHREADS); /* Ignore attempt to raise above TEST_MAXTHREADS */
@@ -586,7 +606,7 @@ static void test_createandjoin_pthreads(int numthreads, void *(*start_routine)(v
       barrier_count++;
       if (barrier_count < local_pthread_count) {
 	/* CAUTION: changing the "do-while" to a "while" triggers a bug in the SunStudio 2006-08
-         * compiler for x86_64.  See http://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1858
+         * compiler for x86_64.  See http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1858
          * which includes a link to Sun's own database entry for this issue.
          */
         do {
@@ -617,7 +637,6 @@ static void test_createandjoin_pthreads(int numthreads, void *(*start_routine)(v
   } while (0)
 #endif
 
-GASNETT_UNUSED /* test_collinit not used in all tests */
 static int test_collinit = 0;
 #define TEST_COLL_INIT() do {          \
     if (!test_collinit) {              \
@@ -692,19 +711,15 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
   #ifndef TEST_MAXTHREADS
     #define TEST_MAXTHREADS      GASNETT_MAX_THREADS
   #endif
-  #ifndef TEST_SEGZ_PER_THREAD
-    #define TEST_SEGZ_PER_THREAD (64ULL*1024)
+  #ifndef TEST_SEGZ_PER_THREAD  // provides a default per-thread segsize when TEST_SEGSZ not defined
+    #define TEST_SEGZ_PER_THREAD ((uintptr_t)64*1024)
   #endif
-  #ifndef TEST_SEGSZ
-    #ifdef TEST_SEGSZ_EXPR
+  #ifndef TEST_SEGSZ // TEST_SEGSZ provides a statically-known override value
+    #ifdef TEST_SEGSZ_EXPR // TEST_SEGSZ_EXPR provides a value not statically known
       #define TEST_SEGSZ  alignup(TEST_SEGSZ_EXPR,PAGESZ)
     #else
       #define TEST_SEGSZ  alignup(TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD,PAGESZ)
-    #endif
-  #endif
-  #ifndef TEST_SEGSZ_EXPR
-    #if TEST_SEGSZ < (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD)
-      #error "TEST_SEGSZ < (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD)"
+      test_static_assert_file(TEST_SEGSZ >= (TEST_MAXTHREADS*TEST_SEGZ_PER_THREAD));
     #endif
   #endif
 #else
@@ -712,14 +727,15 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
     #ifdef TEST_SEGSZ_EXPR
       #define TEST_SEGSZ  alignup(TEST_SEGSZ_EXPR,PAGESZ)
     #else
-      #define TEST_SEGSZ  alignup(64ULL*1024,PAGESZ)
+      #define TEST_SEGSZ  alignup(64*1024,PAGESZ)
     #endif
   #endif
 #endif
 #ifndef TEST_SEGSZ_EXPR
-  #if (TEST_SEGSZ % PAGESZ) != 0 || TEST_SEGSZ <= 0
-    #error Bad TEST_SEGSZ
-  #endif
+  // validate TEST_SEGSZ properties, when the value is statically-known
+  test_static_assert_file(TEST_SEGSZ > 0);
+  test_static_assert_file(TEST_SEGSZ % PAGESZ == 0);
+  test_static_assert_file(TEST_SEGSZ_REQUEST % PAGESZ == 0);
 #endif
 
 #define TEST_MINHEAPOFFSET  alignup(128*4096,PAGESZ)
@@ -852,7 +868,6 @@ static void TEST_DEBUGPERFORMANCE_WARNING(void) {
 /* ------------------------------------------------------------------------------------ */
 /* segment alignment */
 #if defined(GASNET_SEGMENT_EVERYTHING) || !GASNET_ALIGNED_SEGMENTS
-  GASNETT_UNUSED /* not used by every test */
   static int TEST_ALIGNED_SEGMENTS(void) {
     static volatile int is_aligned = -1;
     if_pf (is_aligned < 0) {
@@ -897,7 +912,6 @@ static int _test_localprocs(void) { /* First call is not thread safe */
 }
 #define TEST_LOCALPROCS() (_test_localprocs())
 
-GASNETT_UNUSED /* not used by every test */
 static void _test_set_waitmode(int threads) {
   const int local_procs = TEST_LOCALPROCS();
   if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return;
@@ -1093,9 +1107,8 @@ static void _test_init(const char *testname, int reports_performance, int early,
   
 
 #define TEST_TRACING_MACROS() do {                                                 \
-  /* 'file' and 'line' unused in tools-only or when srclines disabled */           \
-  GASNETT_UNUSED const char *file;                                                 \
-  GASNETT_UNUSED unsigned int line;                                                \
+  const char *file;                                                                \
+  unsigned int line;                                                               \
   GASNETT_TRACE_GETSOURCELINE(&file, &line);                                       \
   GASNETT_TRACE_SETSOURCELINE(file, line);                                         \
   GASNETT_TRACE_FREEZESOURCELINE();                                                \

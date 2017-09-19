@@ -175,16 +175,16 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiSerialWrite(f) {
     if (rank == 1) {
-      f.write("{");
+      f <~> "{";
       for locdom in locDoms do {
         // on locdom do {
         if (locdom.dsiNumIndices) {
-            f.write(" ");
+            f <~> " ";
             locdom.dsiSerialWrite(f);
           }
           //}
       }
-      f.write("}");
+      f <~> "}";
     } else {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
@@ -229,7 +229,13 @@ class SparseBlockDom: BaseSparseDomImpl {
       yield i;
   }
 
-  iter these(param tag: iterKind) where tag == iterKind.standalone {
+  iter these(param tag: iterKind) where tag == iterKind.standalone &&
+    // Ensure it is legal to invoke the standalone iterator
+    // on locDom.mySparseBlock below.
+    __primitive("method call resolves",
+                locDoms[createTuple(rank,int,0)].mySparseBlock._value,
+                "these", tag)
+  {
     coforall locDom in locDoms {
       on locDom {
         for i in locDom.mySparseBlock._value.these(tag) {
@@ -253,6 +259,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   proc dsiMyDist() return dist;
+
+  proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
+    if !lhsPrivate then
+      halt("SparseBlock domain assignment not yet supported");
+    for i in rhs do
+      dsiAdd(i);
+  }
+
 }
 
 //
@@ -367,7 +381,13 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+  iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
+    // Ensure it is legal to invoke the standalone iterator
+    // on locA.myElems below.
+    __primitive("method call resolves",
+                locArr[locArrDom.low].myElems._value,
+                "these", tag)
+   {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       for i in locA.myElems._value.these(tag) {
@@ -642,16 +662,16 @@ proc LocSparseBlockArr.this(i) ref {
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
-    f.write("[");
+    f <~> "[";
     for locarr in locArr do {
       // on locdom do {
       if (locarr.locDom.dsiNumIndices) {
-        f.write(" ");
+        f <~> " ";
         locarr.dsiSerialWrite(f);
       }
       // }
     }
-    f.write("]");
+    f <~> "]";
   } else {
     compilerError("Can't write out multidimensional sparse distributed arrays yet");
   }
@@ -708,10 +728,6 @@ proc SparseBlockArr.doiCanBulkTransfer() {
   if dom.stridable then
     for param i in 1..rank do
       if dom.whole.dim(i).stride != 1 then return false;
-
-  // See above note regarding aliased arrays
-  if disableAliasedBulkTransfer then
-    if _arrAlias != nil then return false;
 
   return true;
 }
