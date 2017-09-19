@@ -2643,7 +2643,7 @@ module ChapelArray {
 
     pragma "no doc"
     /* Internal helper method to reallocate an array */
-    proc reallocateArray(newRange: range, param direction=1,
+    inline proc reallocateArray(newRange: range, param direction=1,
                          debugMsg="reallocateArray")
     {
       on this._value {
