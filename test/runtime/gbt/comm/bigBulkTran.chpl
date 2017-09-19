@@ -1,9 +1,24 @@
-use Time;
+use Memory, Time;
 
-type elemType = uint;
+type elemType = int;
+
+config const maxMemFraction = 1.0/3.0;
+const maxMem = (here.physicalMemory(unit = MemUnits.Bytes) * maxMemFraction)
+               :int(64);
+const maxElems = maxMem / numBytes(elemType);
+
+config const verboseLimiting = false;
 
 config const numMB = 2 * 1024; // much larger than Gemini/Aries max xfer (1gb)
-const n = (numMB * 1024 * 1024) / numBytes(elemType);
+config const xferMem = numMB * 1024 * 1024;
+var n = xferMem / numBytes(elemType);
+
+if n > maxElems {
+  n = maxElems;
+  if verboseLimiting then
+    writeln('memory footprint limiting reduces arrays to about ',
+            n * numBytes(elemType) / (2**20), ' MB each');
+}
 
 config const doGET = true;
 
@@ -30,11 +45,10 @@ on Locales[numLocales - 1] {
     A = B;
   const elapsedTime = getCurrentTime() - startTime;
 
-  if verify then
-    writeln(if && reduce [i in 1..n by verifyStride] B(i) == A(i) then
-              'PASS'
-            else 
-              'FAIL');
+  if verify {
+    const arraysMatch = && reduce [i in 1..n by verifyStride] B(i) == A(i);
+    writeln(if arraysMatch then 'PASS' else 'FAIL');
+  }
 
   if showPerf then
     writeln("Time: ", elapsedTime);

@@ -1,2 +1,6 @@
---doGET=true
---doGET=false
+--doGET=true  --numMB=512
+--doGET=true  --numMB=1024
+--doGET=true  --numMB=2048
+--doGET=false --numMB=512
+--doGET=false --numMB=1024
+--doGET=false --numMB=2048
