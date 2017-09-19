@@ -39,6 +39,7 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/DataLayout.h"
 #define LLVM_TARGET_DATA llvm::DataLayout
 #define LLVM_ATTRIBUTE llvm::Attribute

@@ -89,6 +89,7 @@ struct GenInfo {
   // If we're generating LLVM, the following are available
   llvm::Module *module;
   llvm::IRBuilder<> *builder;
+  llvm::MDBuilder *MDHelper;
   LayeredValueTable *lvt;
 
   std::stack<LoopData> loopStack;
