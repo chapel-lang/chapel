@@ -13,4 +13,7 @@ proc main() {
   const fi = open("newTest/Mason.toml", iomode.r);
   for line in fi.lines() do write(line);
   fi.close();
+
+  rmTree("newTest");
+  assert(isDir("newTest") == false);
 }
