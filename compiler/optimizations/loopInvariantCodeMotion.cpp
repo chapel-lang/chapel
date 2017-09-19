@@ -93,6 +93,7 @@ Timer overallTimer;
 class Loop {
 private:
     std::vector<BasicBlock*>* loopBlocks;
+    LoopStmt*                 loopAST;
     BasicBlock*               header;
     BitVec*                   bitBlocks;
     BitVec*                   bitExits;
@@ -110,29 +111,29 @@ public:
       delete bitExits;
     }
 
-    // This function exists to place an expr in the
-    // "preheader" of the loop,
+    // This function exists to place an expr in the "preheader" of the loop
     void insertBefore(Expr* expr) {
-      if (header->exprs.size() != 0) {
-        // find the first expr in the header, and get it's parent expr (for
-        // most cases it will be the surrounding block statement of the loop)
-        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if (blockStmt->isLoopStmt()) {
-            blockStmt->insertBefore(expr->remove());
-
-          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
-            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
-
-            cforLoop->insertBefore(expr->remove());
-          }
-        }
+      if (loopAST) {
+        loopAST->insertBefore(expr->remove());
       }
     }
 
-    //Set the header, and insert the header into the loop blocks
+    //Set the header, insert the header into the loop blocks, and build up the
+    //relationship between the basic-block loop and the actual loop AST
     void setHeader(BasicBlock* setHeader) {
       header = setHeader;
       insertBlock(setHeader);
+
+      loopAST = NULL;
+      if (header->exprs.size() != 0) {
+        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+          if (LoopStmt* loop = toLoopStmt(blockStmt)) {
+            loopAST = loop;
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            loopAST = CForLoop::loopForClause(blockStmt);
+          }
+        }
+      }
     }
 
     //add all the blocks from other loop to this loop
