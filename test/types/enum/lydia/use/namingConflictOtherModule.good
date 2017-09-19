@@ -1,2 +1,2 @@
-namingConflictOtherModule.chpl:4: error: Symbol a multiply defined
-namingConflictOtherModule.chpl:8: error: Symbol a multiply defined
+namingConflictOtherModule.chpl:4: error: symbol a is multiply defined
+namingConflictOtherModule.chpl:8: note: also defined here

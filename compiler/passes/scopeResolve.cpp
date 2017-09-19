@@ -1164,6 +1164,23 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols);
 
+// Show what symbols from 'symbols' conflict with the given 'sym'.
+static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym)
+{
+  Symbol* sampleFunction = NULL;
+  for_vector(Symbol, another, symbols) if (another != sym)
+  {
+    if (isFnSymbol(another))
+      sampleFunction = another;
+    else
+      USR_PRINT(another, "also defined here", another->name);
+  }
+
+  if (sampleFunction)
+    USR_PRINT(sampleFunction,
+              "also defined as a function here (and possibly elsewhere)");
+}
+
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
 Symbol* lookup(const char* name, BaseAST* context) {
@@ -1186,7 +1203,9 @@ Symbol* lookup(const char* name, BaseAST* context) {
 
     for_vector(Symbol, sym, symbols) {
       if (isFnSymbol(sym) == false) {
-        USR_FATAL_CONT(sym, "Symbol %s multiply defined", name);
+        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+        printConflictingSymbols(symbols, sym);
+        break;
       }
     }
 
