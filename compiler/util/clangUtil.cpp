@@ -2086,9 +2086,14 @@ void makeBinaryLLVM(void) {
     if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
       printf("Adding IR dump extensions for all phases\n");
       for (int i = 0; i < llvmStageNum::LAST; i++) {
-        llvmPrintIrStageNum = (llvmStageNum::llvmStageNum_t) i;
-        if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point))
-          PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+        llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
+        if (getIrDumpExtensionPoint(stage, point))
+          PassManagerBuilder::addGlobalExtension(
+              point,
+              [stage] (const PassManagerBuilder &Builder,
+                       LEGACY_PASS_MANAGER &PM) -> void {
+                PM.add(createDumpIrPass(stage));
+              });
       }
 
       // Put the print-stage-num back
