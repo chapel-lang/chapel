@@ -350,37 +350,74 @@ pragma "no doc"
 
  pragma "no doc"
  proc =(ref t: Toml, s: string) {
-   t = new Toml(s);
+   if t == nil {
+     t = new Toml(s);
+   } else {
+     t.tag = fieldString;
+     t.s = s;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, i: int) {
-   t = new Toml(i);
+   if t == nil {
+     t = new Toml(i);
+   } else {
+     t.tag = fieldInt;
+     t.i = i;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, b: bool) {
-   t = new Toml(b);
+   if t == nil {
+     t = new Toml(b);
+   } else {
+     t.tag = fieldBool;
+     t.boo = b;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, r: real) {
-   t = new Toml(r);
+   if t == nil {
+     t = new Toml(r);
+   } else {
+     t.tag = fieldReal;
+     t.re = r;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, dt: datetime) {
-   t = new Toml(dt);
+   if t == nil {
+     t = new Toml(dt);
+   } else {
+     t.tag = fieldDate;
+     t.dt = dt;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, A: [?D] Toml) where isAssociativeDom(D) {
-   t = new Toml(A);
+   if t == nil {
+     t = new Toml(A);
+   } else {
+     t.tag = fieldToml;
+     t.D = D;
+     t.A = A;
+   }
  }
 
  pragma "no doc"
  proc =(ref t: Toml, arr: [?dom] Toml) where !isAssociativeDom(dom){
-   t = new Toml(arr);
+   if t == nil {
+     t = new Toml(arr);
+   } else {
+     t.tag = fieldArr;
+     t.dom = dom;
+     t.arr = arr;
+   }
  }
 
 
