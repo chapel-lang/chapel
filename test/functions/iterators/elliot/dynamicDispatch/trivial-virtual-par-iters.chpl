@@ -7,7 +7,7 @@ class Parent {
 
 class Child: Parent {
   iter these(): int { yield 1; }
-  iter these(param tag: iterKind): int where tag == iterKind.standalone { yield 2;}
+  iter these(param tag: iterKind): int where tag == iterKind.standalone { yield 2; }
   iter these(param tag: iterKind): int where tag == iterKind.leader { yield 3; }
   iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield 4; }
 }
