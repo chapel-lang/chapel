@@ -2288,7 +2288,7 @@ GenInfo::GenInfo(
        :   cfile(NULL), cLocalDecls(), cStatements(),
            lineno(-1), filename(NULL), parseOnly(parseOnlyIn),
            // the rest of these are only in GenInfo with HAVE_LLVM
-           module(NULL), builder(NULL), lvt(NULL),
+           module(NULL), builder(NULL), MDHelper(NULL), lvt(NULL),
            clangCC(clangCcIn),
            clangCXX(clangCxxIn),
            compileline(compilelineIn),
@@ -2314,6 +2314,7 @@ GenInfo::GenInfo(
   if( ! parseOnly ) {
     module = new llvm::Module(moduleName, llvmContext);
     builder = new llvm::IRBuilder<>(module->getContext());
+    MDHelper = new llvm::MDBuilder(module->getContext());
   }
 
   lvt = new LayeredValueTable();
