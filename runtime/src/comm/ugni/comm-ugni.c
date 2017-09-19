@@ -526,6 +526,8 @@ static __thread int cd_idx = -1;
 // Declarations having to do with individual remote references.
 //
 
+#define MAX_UGNI_TRANS_SZ ((size_t) 1 << 30)
+
 #define ALIGN_32_DN(x)    ALIGN_DN((x), sizeof(int32_t))
 #define ALIGN_32_UP(x)    ALIGN_UP((x), sizeof(int32_t))
 #define IS_ALIGNED_32(x)  ((x) == ALIGN_32_DN(x))
@@ -1254,6 +1256,8 @@ static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
                                  drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
+static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
+                            void*, size_t, mem_region_t*);
 static int       amo_cmd_2_nic_op(fork_amo_cmd_t, int);
 static void      do_nic_amo(void*, void*, c_nodeid_t, void*, size_t,
                             gni_fma_cmd_type_t, void*);
@@ -4297,18 +4301,32 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   post_desc.rdma_mode       = 0;
   post_desc.src_cq_hndl     = 0;
 
-  post_desc.local_addr      = (uint64_t) (intptr_t) src_addr;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) tgt_addr;
-  post_desc.remote_mem_hndl = remote_mr->mdh;
-  post_desc.length          = size;
-
   //
-  // Initiate the transaction and wait for it to complete.
+  // If the transfer is larger than the maximum transaction length,
+  // then we have to break it into smaller pieces.
   //
-  PERFSTATS_INC(put_cnt);
-  PERFSTATS_ADD(put_byte_cnt, size);
+  while (size > 0) {
+    size_t tsz;
 
-  post_fma_and_wait(locale, &post_desc);
+    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
+
+    post_desc.local_addr      = (uint64_t) (intptr_t) src_addr;
+    post_desc.remote_addr     = (uint64_t) (intptr_t) tgt_addr;
+    post_desc.remote_mem_hndl = remote_mr->mdh;
+    post_desc.length          = tsz;
+
+    src_addr = (char*) src_addr + tsz;
+    tgt_addr = (char*) tgt_addr + tsz;
+    size -= tsz;
+
+    //
+    // Initiate the transaction and wait for it to complete.
+    //
+    PERFSTATS_INC(put_cnt);
+    PERFSTATS_ADD(put_byte_cnt, tsz);
+
+    post_fma_and_wait(locale, &post_desc);
+  }
 }
 
 
@@ -4436,7 +4454,6 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   uint64_t              xmit_size;
   void*                 src_addr_xmit;
   uint64_t              src_addr_xmit_off;
-  gni_post_descriptor_t post_desc;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemGet %p <- %d:%p (%#zx), proxy %c",
            tgt_addr, (int) locale, src_addr, size, may_proxy ? 'y' : 'n');
@@ -4535,13 +4552,78 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   xmit_size         = ALIGN_32_UP(size + src_addr_xmit_off);
 
   local_mr = mreg_for_local_addr(tgt_addr_xmit);
-  if (local_mr == NULL
-      || !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr)
-      || src_addr_xmit != src_addr
-      || xmit_size != size) {
-    tgt_addr_xmit = get_buf_alloc(xmit_size);
-    local_mr = gnr_mreg;
+  if (local_mr != NULL
+      && IS_ALIGNED_32((size_t) (intptr_t) tgt_addr)
+      && src_addr_xmit == src_addr
+      && xmit_size == size) {
+    //
+    // The remote and local addresses are both registered and aligned,
+    // and the length is aligned, so we can do a direct transfer.
+    //
+    do_nic_get(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
+    return;
   }
+
+  local_mr = gnr_mreg;
+
+  if (xmit_size <= gbp_max_size) {
+    //
+    // The transfer will fit in a single trampoline buffer.
+    //
+    tgt_addr_xmit = get_buf_alloc(size);
+
+    do_nic_get(tgt_addr_xmit, locale, remote_mr,
+               src_addr_xmit, xmit_size, gnr_mreg);
+    memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off, size);
+
+    get_buf_free(tgt_addr_xmit);
+  }
+  else {
+    //
+    // The transfer is larger than the largest trampoline buffer.
+    // Do it in pieces.
+    //
+    tgt_addr_xmit = get_buf_alloc(gbp_max_size);
+
+    // In the first chunk we handle src start address misalignment.
+    do_nic_get(tgt_addr_xmit, locale, remote_mr,
+               src_addr_xmit, gbp_max_size, gnr_mreg);
+    memcpy(tgt_addr, (char*) tgt_addr_xmit + src_addr_xmit_off,
+           gbp_max_size - src_addr_xmit_off);
+    tgt_addr = (char*) tgt_addr + gbp_max_size - src_addr_xmit_off;
+    src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
+    xmit_size -= gbp_max_size;
+
+    // The middle chunks are all full ones.
+    while (xmit_size > gbp_max_size) {
+      do_nic_get(tgt_addr_xmit, locale, remote_mr,
+                 src_addr_xmit, gbp_max_size, gnr_mreg);
+      memcpy(tgt_addr, tgt_addr_xmit, xmit_size);
+      tgt_addr = (char*) tgt_addr + gbp_max_size;
+      src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
+      xmit_size -= gbp_max_size;
+    }
+
+    // In the last chunk chunk we handle length misalignment.
+    do_nic_get(tgt_addr_xmit, locale, remote_mr,
+               src_addr_xmit, xmit_size, gnr_mreg);
+    memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
+
+    get_buf_free(tgt_addr_xmit);
+  }
+}
+
+
+static inline
+void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
+                void* src_addr, size_t size, mem_region_t* local_mr)
+{
+  gni_post_descriptor_t post_desc;
+
+  //
+  // Assumes remote and local addresses are both registered and aligned,
+  // and length is aligned, so we can do a direct transfer.
+  //
 
   //
   // Fill in the POST descriptor.
@@ -4552,27 +4634,32 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   post_desc.rdma_mode       = 0;
   post_desc.src_cq_hndl     = 0;
 
-  post_desc.local_addr      = (uint64_t) (intptr_t) tgt_addr_xmit;
-  post_desc.local_mem_hndl  = local_mr->mdh;
-  post_desc.remote_addr     = (uint64_t) (intptr_t) src_addr_xmit;
-  post_desc.remote_mem_hndl = remote_mr->mdh;
-  post_desc.length          = xmit_size;
+  //
+  // If the transfer is larger than the maximum transaction length,
+  // then we have to break it into smaller pieces.
+  //
+  while (size > 0) {
+    size_t tsz;
 
-  //
-  // Initiate the transaction and wait for it to complete.
-  //
-  PERFSTATS_INC(get_cnt);
-  PERFSTATS_ADD(get_byte_cnt, size);
+    tsz = (size <= MAX_UGNI_TRANS_SZ) ? size : MAX_UGNI_TRANS_SZ;
 
-  post_fma_and_wait(locale, &post_desc);
+    post_desc.local_addr      = (uint64_t) (intptr_t) tgt_addr;
+    post_desc.local_mem_hndl  = local_mr->mdh;
+    post_desc.remote_addr     = (uint64_t) (intptr_t) src_addr;
+    post_desc.remote_mem_hndl = remote_mr->mdh;
+    post_desc.length          = tsz;
 
-  //
-  // If we had to do the GET into our temporary buffer, copy the result
-  // out to the caller's buffer now, and free the temporary.
-  //
-  if (tgt_addr_xmit != tgt_addr) {
-    memcpy(tgt_addr, (char *) tgt_addr_xmit + src_addr_xmit_off, size);
-    get_buf_free(tgt_addr_xmit);
+    src_addr = (char*) src_addr + tsz;
+    tgt_addr = (char*) tgt_addr + tsz;
+    size -= tsz;
+
+    //
+    // Initiate the transaction and wait for it to complete.
+    //
+    PERFSTATS_INC(get_cnt);
+    PERFSTATS_ADD(get_byte_cnt, tsz);
+
+    post_fma_and_wait(locale, &post_desc);
   }
 }
 
