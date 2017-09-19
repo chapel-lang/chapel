@@ -35,7 +35,10 @@ proc buildjk() {
             }
           }
           task = bI;
-          numLocsDone = numLocsDone + 1;
+          const numDone = numLocsDone + 1;
+          numLocsDone = numDone;
+          if numDone == numLocs then
+            delete bI;
       }
     
     for bI in gen() do // sjd: changed forall to for
@@ -123,13 +126,15 @@ proc buildjk_atom4(bI) {
   }
 
   var tmp = oneAtATime;
-  atomic jmat2(ijD) += jij;
-  atomic jmat2(klD) += jkl;
-  atomic kmat2(ikD) += kik;
-  atomic kmat2(ilD) += kil;
-  atomic kmat2(jkD) += kjk;
-  atomic kmat2(jlD) += kjl;
+  jmat2(ijD) += jij;
+  jmat2(klD) += jkl;
+  kmat2(ikD) += kik;
+  kmat2(ilD) += kil;
+  kmat2(jkD) += kjk;
+  kmat2(jlD) += kjl;
   oneAtATime = tmp;
+
+  delete bI;
 }
 
 proc g(i,j,k,l) {
