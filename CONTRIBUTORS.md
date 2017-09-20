@@ -24,7 +24,7 @@ Contributors to the current release
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
 * Barry Moore, [University of Pittsburgh]
-* Sarthak Mushni, individual contributor / [GSoC]
+* Sarthak Munshi, individual contributor / [GSoC]
 * Michael Noakes, [Cray Inc.]
 * Nikhil Padmanabhan, [Yale University]
 * Nicholas Park, [DOD]
