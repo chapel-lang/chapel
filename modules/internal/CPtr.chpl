@@ -87,14 +87,10 @@ module CPtr {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
-    if this == c_nil {
-      ch <~> "(nil)";
-    } else {
-      var err:syserr = ENOERR;
-      ch.writef(error=err, "0x%xu", this:c_uintptr);
-      if err then
-        ch.setError(err);
-    }
+    var err:syserr = ENOERR;
+    ch.writef(error=err, "0x%xu", this:c_uintptr);
+    if err then
+      ch.setError(err);
   }
 
   pragma "no doc"
