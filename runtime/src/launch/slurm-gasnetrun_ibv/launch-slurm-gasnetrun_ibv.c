@@ -70,12 +70,13 @@ static sbatchVersion determineQsubVersion(void) {
   FILE* sysFile;
   int i;
 
-  char* command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
+  sysFile = popen("sbatch --version", "r");
+  if (sysFile == NULL) {
+    return unknown;
+  }
   for (i=0; i<versionBuffLen; i++) {
     char tmp;
-    fscanf(sysFile, "%c", &tmp);
+    tmp = fgetc(sysFile);
     if (tmp == '\n') {
       *versionPtr++ = '\0';
       break;
@@ -84,7 +85,7 @@ static sbatchVersion determineQsubVersion(void) {
     }
   }
 
-  fclose(sysFile);
+  pclose(sysFile);
   if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "SBATCHPro")) {
