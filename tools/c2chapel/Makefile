@@ -27,6 +27,7 @@ export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
 include $(CHPL_MAKE_HOME)/make/Makefile.base
+include $(CHPL_MAKE_HOME)/third-party/chpl-venv/Makefile.include
 
 bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/c2chapel
@@ -37,15 +38,32 @@ TAR=release_v$(VERSION).tar.gz
 RELEASE=https://github.com/eliben/pycparser/archive/$(TAR)
 
 INSTALL=$(realpath .)/install
-VENV=$(INSTALL)/venv
+
+# Update wrapper script if this changes
+VENV_DIR=$(INSTALL)/venv
+
 FAKES=$(INSTALL)/fakeHeaders
 
-.PHONY: clean clobber c2chapel install
+VIRTUAL_ENV=$(shell which virtualenv)
+THIRD_PARTY_VENV=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV)
+
+.PHONY: clean clobber c2chapel install venv
 
 all: c2chapel
 
-c2chapel:
-	mkdir -p $(VENV)
+venv:
+ifneq ($(wildcard $(VIRTUAL_ENV)),)
+	$(info Using system virtualenv)
+else ifneq ($(wildcard $(THIRD_PARTY_VENV)),)
+	$(eval VIRTUAL_ENV=$(THIRD_PARTY_VENV))
+	$(info Using chpl-venv virtualenv ($(VIRTUAL_ENV)))
+else
+	$(error Unable to find virtualenv. Either install virtualenv yourself \
+  or 'make test-venv' from $$CHPL_HOME)
+endif
+
+c2chapel: venv
+	mkdir -p $(VENV_DIR)
 	mkdir -p $(FAKES)
 	cd $(INSTALL) && \
 	echo "Fetching release $(VERSION) tarball..." && \
@@ -54,8 +72,8 @@ c2chapel:
 
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
-	virtualenv $(VENV)
-	. $(VENV)/bin/activate && \
+	$(VIRTUAL_ENV) $(VENV_DIR)
+	. $(VENV_DIR)/bin/activate && \
 	  pip install $(INSTALL)/$(TAR) && \
 	  pip install argparse
 
