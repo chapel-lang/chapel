@@ -12,7 +12,7 @@ Contents:
    :maxdepth: 1
    :glob:
 
+   c2chapel/c2chapel
    chpldoc/chpldoc
    chplvis/chplvis
-   c2chapel/c2chapel/
    mason/mason
