@@ -438,3 +438,5 @@ tags
 /util/tokencount/tokencount.tab.h
 
 /util/devel/test/vagrant/log
+/util/devel/test/vagrant/log2
+/util/devel/test/vagrant/*/*-cloudimg-console.log
