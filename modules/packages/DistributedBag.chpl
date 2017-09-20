@@ -76,7 +76,8 @@
 
   .. note::
 
-    The documentation for the Collection modules are being incrementally revised and improved.
+    This package module is new in 1.16 and may contain bugs. The interface may
+    change.  The documentation is being incrementally revised and improved.
 
   Usage
   _____

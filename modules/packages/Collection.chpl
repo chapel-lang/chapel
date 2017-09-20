@@ -39,7 +39,8 @@
 
   .. note::
 
-    The documentation for the Collection modules are being incrementally revised and improved.
+    The interface for the Collection modules may change. The documentation for
+    the Collection modules are being incrementally revised and improved.
   
   Bugs and Known Issues
   _____________________
