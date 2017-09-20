@@ -465,10 +465,11 @@ module String {
           thisBuff = this.buff;
         }
 
+        var buff = ret.buff; // Has perf impact and our LICM can't hoist :(
         for (r2_i, i) in zip(r2, 0..) {
-          ret.buff[i] = thisBuff[r2_i-1];
+          buff[i] = thisBuff[r2_i-1];
         }
-        ret.buff[ret.len] = 0;
+        buff[ret.len] = 0;
 
         if remoteThis then chpl_here_free(thisBuff);
       }
