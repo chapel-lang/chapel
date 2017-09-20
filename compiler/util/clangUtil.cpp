@@ -206,14 +206,14 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
   }
 
 #if HAVE_LLVM_VER >= 39
-  info->targetLayout =
+  info->asmTargetLayoutStr =
     info->Ctx->getTargetInfo().getDataLayout().getStringRepresentation();
 #elif HAVE_LLVM_VER >= 38
-  info->targetLayout = info->Ctx->getTargetInfo().getDataLayoutString();
+  info->asmTargetLayoutStr = info->Ctx->getTargetInfo().getDataLayoutString();
 #else
-  info->targetLayout = info->Ctx->getTargetInfo().getTargetDescription();
+  info->asmTargetLayoutStr = info->Ctx->getTargetInfo().getTargetDescription();
 #endif
-  layout = info->targetLayout;
+  layout = info->asmTargetLayoutStr;
 
   if( fLLVMWideOpt && ! info->parseOnly ) {
     char buf[200]; //needs to store up to 8 32-bit numbers in decimal
@@ -1887,7 +1887,7 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
     LEGACY_PASS_MANAGER &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createGlobalToWide(&info->globalToWideInfo, info->targetLayout));
+    PM.add(createGlobalToWide(&info->globalToWideInfo, info->asmTargetLayoutStr));
   }
 }
 

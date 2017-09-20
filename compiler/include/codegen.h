@@ -128,7 +128,7 @@ struct GenInfo {
   // pass to the code generator even though we modify the
   // version in the module (to add global pointer types)
   // before running optimization.
-  std::string targetLayout;
+  std::string asmTargetLayoutStr;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate

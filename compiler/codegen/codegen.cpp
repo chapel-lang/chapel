@@ -2279,7 +2279,7 @@ GenInfo::GenInfo(
            moduleName("root"), llvmContext(), Ctx(NULL),
            cgBuilder(NULL), cgAction(NULL),
            tbaaRootNode(NULL),
-           targetLayout(), globalToWideInfo(),
+           asmTargetLayoutStr(), globalToWideInfo(),
            FPM_postgen(NULL)
 {
   std::string home(CHPL_HOME);
