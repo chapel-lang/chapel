@@ -18,16 +18,16 @@
  */
 
 /*
-  A highly parallel segmented multiset. Each node gets its own bag, and in each 
+  A highly parallel segmented multiset. Each node gets its own bag, and in each
   bag it is segmented into 'here.maxTaskPar' segments. Segments allow for actual
-  parallelism while operating in that it enables us to manage 'best-case', 
+  parallelism while operating in that it enables us to manage 'best-case',
   'average-case', and 'worst-case' scenarios by making multiple passes over each
-  segment. In the case where there is no oversubscription, the best-case will 
-  always be achieved (considering any other conditions are also met), while in 
-  the case of oversubscription or, for example a near empty bag, we fall into 
-  the 'average-case', etc. Examples of 'best-case' scenarios for a removal would 
-  be when a segment is unlocked and contains some elements we can drain, and the 
-  'average-case' would be to find any segment, unlocked or not, that contains 
+  segment. In the case where there is no oversubscription, the best-case will
+  always be achieved (considering any other conditions are also met), while in
+  the case of oversubscription or, for example a near empty bag, we fall into
+  the 'average-case', etc. Examples of 'best-case' scenarios for a removal would
+  be when a segment is unlocked and contains some elements we can drain, and the
+  'average-case' would be to find any segment, unlocked or not, that contains
   elements we can drain, and so on.
 
   This data structure also employs its own load balancing algorithm, beginning
@@ -46,7 +46,7 @@
   achieve parallelism across segments for removal operations. Lastly, we attempt
   to steal a maximum of `N / sizeof(eltType)`, where N is some size in megabytes
   (representing how much data can be sent in one network request), which keeps
-  down excessive communication. 
+  down excessive communication.
 
   This data structure does not come without flaws; as work stealing is dynamic
   and triggered on demand, work stealing can still be performed in excess, which
@@ -76,12 +76,13 @@
 
   .. note::
 
-    The documentation for the Collection modules are being incrementally revised and improved.
+    This package module is new in 1.16 and may contain bugs. The interface may
+    change.  The documentation is being incrementally revised and improved.
 
   Usage
   _____
 
-  To use :record:`DistBag`, the constructor must be invoked explicitly to 
+  To use :record:`DistBag`, the constructor must be invoked explicitly to
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
 
@@ -89,7 +90,7 @@
 
     var bag = new DistBag(int, targetLocales=ourTargetLocales);
 
-  
+
   While the bag is safe to use in a distributed manner, each node always operates on it's privatized
   instance. This means that it is easy to add data in bulk, expecting it to be distributed, when in
   reality it is not; if another node needs data, it will steal work on-demand. This may not always be
@@ -125,7 +126,7 @@ module DistributedBag {
   use Collection;
   use BlockDist;
   use SharedObject;
-  
+
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
     current ongoing operation. In segments, we use test-and-test-and-set spinlocks
@@ -258,7 +259,7 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone) 
+    inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone)
       && __primitive("method call resolves", _value, "these", tag=tag){
       return _value.these(tag=tag);
     }
@@ -407,7 +408,7 @@ module DistributedBag {
       Triggers a more static approach to load balancing, fairly redistributing all
       elements fairly for bags across nodes. The result will result in all segments
       having roughly the same amount of elements.
-      
+
       .. note::
 
         This method is very heavy-weight in that it should not be called too
@@ -518,7 +519,7 @@ module DistributedBag {
       but opens the possibility to iterating over duplicates or missing elements
       from concurrent operations.
 
-      .. note:: 
+      .. note::
 
         `zip` iteration is not yet supported with rectangular data structures.
 
