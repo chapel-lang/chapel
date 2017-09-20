@@ -32,19 +32,19 @@ proc masonSearch(origArgs : [] string) {
   const searchDir = MasonUpdate.getRegistryDir() + "/Bricks/";
   const pattern   = compile(query, ignorecase=true);
 
-  var numFound = 0;
+  var results : [1..0] string;
   for dir in listdir(searchDir, files=false, dirs=true) {
     if pattern.search(dir) {
-      numFound += 1;
 
       const pkg = dir.replace("/", "");
       const ver = findLatest(searchDir + dir);
 
-      writeln(pkg, " (", ver.str(), ")");
+      results.push_back(pkg + " (" + ver.str() + ")");
     }
   }
+  for r in results.sorted() do writeln(r);
 
-  if numFound == 0 {
+  if results.size == 0 {
     exit(1);
   }
 }
