@@ -157,7 +157,7 @@
   Planned Improvements
   ____________________
 
-  1.  Double the size of each successor up to some maximum, similar to :mod:`DistributedBag` for unroll blocks.
+  1.  Double the size of each successor up to some maximmum, similar to :mod:`DistributedBag` for unroll blocks.
       Currently they are fixed-sized, but it can benefit from improved locality if a lot of elements are added at
       once.
 
