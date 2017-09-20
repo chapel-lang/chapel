@@ -50,18 +50,8 @@ proc getRegistryDir() {
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
-  var noUpdateRegistry = false;
-  for a in args {
-    if a == "--no-update-registry" {
-      noUpdateRegistry = true;
-      break;
-    }
-  }
-
   if isFile(tf) {
-    if noUpdateRegistry == false {
-      updateRegistry(tf);
-    }
+    updateRegistry(tf, args);
     var openFile = openreader(tf);
     var TomlFile = parseToml(openFile);
     var lockFile = createDepTree(TomlFile);
@@ -95,7 +85,13 @@ proc genLock(lock: Toml, lf) {
 
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string) {
+proc updateRegistry(tf: string, args : [] string) {
+  for a in args {
+    if a == "--no-update-registry" {
+      return;
+    }
+  }
+
   const masonHome = MASON_HOME;
   const registryHome = getRegistryDir();
   if isDir(registryHome) {

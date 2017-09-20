@@ -24,6 +24,7 @@
 use MasonNew;
 use MasonBuild;
 use MasonUpdate;
+use MasonSearch;
 use MasonUtils;
 use MasonHelp;
 use FileSystem;
@@ -72,6 +73,7 @@ proc main(args: [] string) {
     when 'build' do masonBuild(args);
     when 'update' do UpdateLock(args);
     when 'run' do masonRun(args);
+    when 'search' do masonSearch(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
     when '--list' do masonList();
