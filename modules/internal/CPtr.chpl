@@ -55,6 +55,13 @@ module CPtr {
       if x then do writeln("x is not nil");
       if !x then do writeln("x is nil");
 
+    Additionally, a ``c_ptr`` can be output like so:
+
+    .. code-block:: chapel
+
+      var x: c_ptr = c_ptrTo(...);
+      writeln(x); // outputs nil or e.g. 0xabc123000000
+
   */
 
   //   Similar to _ddata from ChapelBase, but differs
