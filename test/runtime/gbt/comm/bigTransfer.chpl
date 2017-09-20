@@ -4,21 +4,31 @@ type elemType = int;
 
 config const memFraction = 3;
 config const maxMem = here.physicalMemory(unit = MemUnits.Bytes) / memFraction;
-config const maxElems = maxMem / numBytes(elemType);
 
 // default xferMem (2gb) is much larger than Gemini/Aries xfer max (1gb)
 config const xferMB = 2**11;
-config const xferMem = xferMB * 2**20;
-var n = xferMem / numBytes(elemType);
+config var xferMem = xferMB * 2**20;
 
 config const verboseLimiting = false;
 
-if n > maxElems {
-  n = maxElems;
+// apply limiting due to available memory
+if xferMem > maxMem {
+  xferMem = maxMem;
   if verboseLimiting then
     writeln('memory footprint limiting reduces arrays to about ',
-            n * numBytes(elemType) / (2**20), ' MB each');
+            xferMem / 2**20, ' MB each');
 }
+
+// apply limiting due to addressability
+const maxAlloc = (if numBits(size_t) == 64 then 2**48 else 2**30);
+if xferMem > maxAlloc {
+  xferMem = maxAlloc;
+  if verboseLimiting then
+    writeln('addressability limiting reduces arrays to about ',
+            xferMem / 2**20, ' MB each');
+}
+
+const n = xferMem / numBytes(elemType);
 
 config const doGET = true;
 
