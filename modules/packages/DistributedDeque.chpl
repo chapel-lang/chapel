@@ -82,7 +82,7 @@
   First, the :record:`DistDeque` must be initialized before use by calling its constructor.
 
   .. code-block:: chapel
-    
+
     var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
 
   The deque can be used as a queue by using the :proc:`enqueue` and :proc:`dequeue` convenience
@@ -92,7 +92,7 @@
 
     deque.enqueue(1);
     var (hasElem, elem) = deque.dequeue();
-  
+
   The deque can be used as a stack by using the :proc:`push` and :proc:`pop` convenience methods,
   or insertion and removing from the same ends...
 
@@ -107,13 +107,13 @@
   insert and remove at whichever ends they so choose.
 
   .. code-block:: chapel
-    
+
     var deque = new DistDeque(int);
     forall i in 1 .. N {
       if i % 2 == 0 then deque.pushFront(i);
       else deque.pushBack(i);
     }
-  
+
   The deque supports both serial and parallel iteration, and a means to iterate in a particular order
   (currently only FIFO and LIFO) using the ``Ordering`` enumerator.
 
@@ -135,21 +135,21 @@
 
     deque.addBulk(1..100);
     var result = + reduce deque;
-  
+
   Bugs and Known Issues
   _____________________
 
   1.  It is not safe to call other methods while iterating, as it will lead to deadlock. It is an open question
       whether using a snapshot approach is better to allow concurrent operations at the expense of elevated memory
       consumption, and iterating directly over elements while holding locks, which strangles potential concurrency.
-  
+
   2.  Reduction cannot be performed in any ordered way. This may be fixed in the near future, either by adding
       pseudo-parallel iterators that merely yield sequentially in order, or by creating a method to perform reduction
       for the user in a specified ordering.
-  
+
   3.  This data structure **requires** network atomic support for scalability, and without it will result in degrading
       performance. It is another open question whether a specific implementation that is more friendly for remote-execution
-      atomic operations should be provided. 
+      atomic operations should be provided.
 
   4.  The ordered serial iterators currently do not work when the ``globalHead`` or ``globalTail`` are negative, which is a
       result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`pushBack`
@@ -195,7 +195,7 @@ module DistributedDeque {
       coforall loc in Locales do on loc {
         delete chpl_getPrivatizedCopy(DistributedDequeImpl(eltType), _pid);
       }
-      
+
     }
   }
 
@@ -240,7 +240,7 @@ module DistributedDeque {
 
     pragma "no doc"
     inline proc these(param order : Ordering = Ordering.NONE, param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) 
+        (tag == iterKind.leader || tag == iterKind.standalone)
         && __primitive("method call resolves", _value, "these", tag=tag) {
       return _value.these(order, tag=tag);
     }
@@ -324,7 +324,7 @@ module DistributedDeque {
           countersLeftToAlloc -= 1;
         }
       }
-      
+
 
       pid = _newPrivatizedClass(this);
     }
