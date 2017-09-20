@@ -2736,6 +2736,8 @@ urse
 
 FILEID: 4f065520-1d85-11e6-a3a6-10ddb1d4c3d5
 orse
+shadowvar
+ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
 newresult
@@ -3572,6 +3574,7 @@ binarytrees
 chapcs
 kace
 paircount
+regexdnaredux
 timecomp
 twopt
 
@@ -4125,6 +4128,7 @@ oldact
 
 FILEID: 847163aa-bc39-11e6-9740-843835579daa
 bptr
+exittimeout
 
 FILEID: a717e780-d45d-11e6-b38c-acbc32c4f96b
 bigvec
@@ -4258,10 +4262,19 @@ rview
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
 adom
 atype
+azero
 bdom
+bulu
+bzero
+cdom
+csrmatmat
+csrmatvec
+czero
 gemm
 gemv
 matmat
+nzcur
+nznew
 pinv
 xdom
 ydom
@@ -4332,7 +4345,9 @@ tblpath
 tokenlist
 
 FILEID: 6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5
+curnext
 getcid
+subnext
 todelete
 
 FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
@@ -4359,6 +4374,30 @@ creal
 crealf
 creall
 sqrtl
+
+FILEID: 527abebe-9db6-11e7-a204-10ddb1d4c3d5
+ciphertext
+csprng
+digestbyname
+hmac
+keylen
+lcrypto
+lssl
+manmaster
+mbits
+npubk
+outx
+passlen
+pbkdf
+pkcs
+pkey
+ppkey
+pubk
+ripemd
+saltlen
+
+FILEID: e9a3e440-9db7-11e7-a204-10ddb1d4c3d5
+stddev
 
 NATURAL:
 abcd
@@ -4676,6 +4715,7 @@ copyout
 copypostfields
 cory
 coverity
+cppflags
 cppreference
 cproj
 cpuaffinity
@@ -4690,6 +4730,7 @@ crlf
 crlfile
 crout
 crufty
+cryptosystems
 cspawn
 cstdlib
 ctags
@@ -4738,6 +4779,7 @@ debugprint
 december
 decls
 declspecs
+decrementer
 deepak
 defexpr
 defn
@@ -4965,6 +5007,7 @@ enqueues
 enums
 enumsymbol
 enumtype
+envp
 enxio
 eopnotsupp
 eoverflow
@@ -5119,6 +5162,8 @@ genericity
 gentemp
 george
 georgian
+geronimo
+geronimoanderson
 getaddrinfo
 getchunk
 getcontext
@@ -5140,6 +5185,7 @@ gettimeofday
 gettimer
 getvalid
 gflop
+gilbert
 github
 gitignore
 glagolitic
@@ -5264,7 +5310,9 @@ immediates
 immmediately
 implementors
 inbox
+incrementer
 incrs
+indexable
 indexx
 indiana
 indirecting
@@ -5826,6 +5874,7 @@ nostdincs
 notest
 notre
 november
+npadmana
 nprint
 nrank
 nrows
@@ -5851,6 +5900,7 @@ nupdate
 nuses
 nvidia
 nview
+objs
 october
 ogham
 ohio
@@ -6127,6 +6177,7 @@ rfind
 rfork
 richard
 riemann
+rijndael
 rint
 rlimit
 roald
@@ -6307,6 +6358,7 @@ spectralnorm
 sphinxcontrib
 spincount
 spinlock
+spinlocks
 spmd
 springfield
 sprintf
@@ -6511,6 +6563,7 @@ transfertext
 travis
 tridiagonal
 trigraphs
+trybang
 tsiombikas
 tskyield
 tstbit
@@ -6549,6 +6602,7 @@ underrun
 unescape
 unescaped
 unexecuted
+unexported
 unfactored
 unfragmented
 ungreedy
