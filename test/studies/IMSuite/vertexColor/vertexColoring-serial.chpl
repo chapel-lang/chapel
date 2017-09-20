@@ -111,6 +111,8 @@ module vertexColoring {
             for i in D do sumval = sumval + nval[i];
             if(sumval > 0) then writeln();
         }
+
+        cleanup();
     }
 
     /* Initializes all the fields of the abstract node. */
@@ -138,6 +140,12 @@ module vertexColoring {
 
         colorLabel = log2(nodes);
         if(1<<colorLabel < nodes) then colorLabel+=1;
+    }
+
+    /* Clean up memory allocated by this benchmark */
+    proc cleanup() {
+      forall node in nodeSet do
+        delete node;
     }
 
     /*
