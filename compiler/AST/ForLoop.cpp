@@ -22,7 +22,6 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
-#include "codegen.h"
 #include "DeferStmt.h"
 
 #include <algorithm>

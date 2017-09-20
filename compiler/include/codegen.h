@@ -26,6 +26,7 @@
 #include <vector>
 
 #ifdef HAVE_LLVM
+// TODO -- forward declare more LLVM things
 #include "clangUtil.h"
 #include "llvmGlobalToWide.h"
 #endif
@@ -36,12 +37,7 @@
 #ifdef HAVE_LLVM
 
 // forward declare.
-namespace clang {
-  namespace CodeGen {
-    class CodeGenModule;
-  }
-}
-class CCodeGenAction;
+class ClangInfo;
 
 #endif
 
@@ -84,51 +80,18 @@ struct GenInfo {
   int lineno;
   const char* filename;
 
-  bool parseOnly;
 #ifdef HAVE_LLVM
-  // If we're generating LLVM, the following are available
+  // stores parsed C stuff for extern blocks
+  LayeredValueTable *lvt;
+
+  // Once we get to code generation....
   llvm::Module *module;
   llvm::IRBuilder<> *builder;
-  LayeredValueTable *lvt;
 
   std::stack<LoopData> loopStack;
 
-  // Clang Stuff
-  std::string clangCC;
-  std::string clangCXX;
-  std::string compileline;
-  std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangLDArgs;
-  std::vector<std::string> clangOtherArgs;
-
-  clang::CodeGenOptions codegenOptions;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
-  clang::TextDiagnosticPrinter* DiagClient;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags;
-
-  clang::CompilerInstance *Clang;
-  // We get these out of the compiler instance
-  // before delete'ing it.
-  clang::TargetOptions clangTargetOptions;
-  clang::LangOptions clangLangOptions;
-
-  // Once we get to code generation....
-  std::string moduleName;
   llvm::LLVMContext llvmContext;
-  clang::ASTContext *Ctx;
-
-  clang::CodeGen::CodeGenModule *cgBuilder;
-  CCodeGenAction *cgAction;
-
   llvm::MDNode* tbaaRootNode;
-
-  // We stash the layout that Clang would like to use here.
-  // With fLLVMWideOpt, this will be the layout that we
-  // pass to the code generator even though we modify the
-  // version in the module (to add global pointer types)
-  // before running optimization.
-  std::string asmTargetLayoutStr;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate
@@ -139,23 +102,12 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  LEGACY_FUNCTION_PASS_MANAGER* FPM_postgen;
+  llvm::legacy::FunctionPassManager* FPM_postgen;
 
-  // When using a function, just use cgModule->GetAddrOfFunction,
-  // which will cause cgModule to emit it on Builder->Release.
-  //
-  //
-  // defined in passes/codegen.cpp
-  GenInfo(std::string clangCC,
-          std::string clangCXX,
-          std::string compilelineIn,
-          std::vector<std::string> clangCCArgs,
-          std::vector<std::string> clangLDArgs,
-          std::vector<std::string> clangOtherArgs,
-          bool parseOnly);
+  ClangInfo* clangInfo;
 #endif
-  GenInfo();
 
+  GenInfo();
 };
 
 

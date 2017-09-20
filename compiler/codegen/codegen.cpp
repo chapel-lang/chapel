@@ -2253,64 +2253,17 @@ void makeBinary(void) {
   }
 }
 
-#ifdef HAVE_LLVM
-GenInfo::GenInfo(
-    std::string clangCcIn,
-    std::string clangCxxIn,
-    std::string compilelineIn,
-    std::vector<std::string> clangCCArgsIn,
-    std::vector<std::string> clangLDArgsIn,
-    std::vector<std::string> clangOtherArgsIn,
-    bool parseOnlyIn )
-       :   cfile(NULL), cLocalDecls(), cStatements(),
-           lineno(-1), filename(NULL), parseOnly(parseOnlyIn),
-           // the rest of these are only in GenInfo with HAVE_LLVM
-           module(NULL), builder(NULL), lvt(NULL),
-           clangCC(clangCcIn),
-           clangCXX(clangCxxIn),
-           compileline(compilelineIn),
-           clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
-           clangOtherArgs(clangOtherArgsIn),
-           codegenOptions(), diagOptions(NULL),
-           DiagClient(NULL),
-           DiagID(NULL),
-           Diags(NULL),
-           Clang(NULL), clangTargetOptions(), clangLangOptions(),
-           moduleName("root"), llvmContext(), Ctx(NULL),
-           cgBuilder(NULL), cgAction(NULL),
-           tbaaRootNode(NULL),
-           asmTargetLayoutStr(), globalToWideInfo(),
-           FPM_postgen(NULL)
-{
-  std::string home(CHPL_HOME);
-  std::string rtmain = home + "/runtime/etc/rtmain.c";
-
-  setupClang(this, rtmain);
-
-  // Create a new LLVM module, IRBuilder, and LayeredValueTable.
-  if( ! parseOnly ) {
-    module = new llvm::Module(moduleName, llvmContext);
-    builder = new llvm::IRBuilder<>(module->getContext());
-  }
-
-  lvt = new LayeredValueTable();
-
-  // These are initialized only after we have types
-  // for everything and are deciding what calls to make.
-  // these are set by setupClangContext from CCodeGenAction.
-  Ctx = NULL;
-  cgBuilder = NULL;
-}
-#endif
-// No LLVM
 GenInfo::GenInfo()
          :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL), parseOnly(false)
+             lineno(-1), filename(NULL),
 #ifdef HAVE_LLVM
-             // Could set more of these to NULL, but the real
-             // point is to just core-dump if we end up trying
-             // to use them....
-             , module(NULL), builder(NULL), lvt(NULL)
+             lvt(NULL), module(NULL), builder(NULL),
+             loopStack(),
+             llvmContext(),
+             tbaaRootNode(NULL),
+             globalToWideInfo(),
+             FPM_postgen(NULL),
+             clangInfo(NULL)
 #endif
 {
 }
