@@ -47,8 +47,8 @@ program.  An initializer declaration has the same syntax as a method
 declaration, except that the name of the function is "init", and there is no
 return type specifier.
 
-When an initializer is called, the usual function resolution mechanism is
-applied to determine which user-defined initializer to invoke.
+When an initializer is invoked, the usual function resolution mechanism is
+applied to determine which user-defined initializer is required.
 
 The following example shows a class with two initializers:
 
@@ -80,10 +80,6 @@ The following example shows a class with two initializers:
 The first initializer lets the user specify the initial coordinates and the
 second initializer lets the user specify the initial message when creating a
 MessagePoint.
-
-In contrast to user-defined constructors for generic classes and records,
-user-defined initializers do not require an argument per generic field.
-
 
 
 The Initializer Body
@@ -264,6 +260,23 @@ another function.  Parent fields may be accessed.
 
 As in other methods, code in Phase 2 may not redefine ``const``, ``param``, and
 ``type`` fields.
+
+
+Generics
+--------
+
+A class or record with a ``param`` field, ``type`` field, or a ``var`` /
+``const`` field with no type or initial value is considered generic over that
+field.  Generic fields are treated similarly to other fields, with some
+exceptions.  Only generic fields are capable of being declared without a type or
+initial value, so only those generic fields without either must have an explicit
+initialization in Phase 1 - other generic fields may rely on omitted
+initialization like other fields do.  Like ``const`` fields, ``type`` and
+``param`` fields may not be updated during Phase 2.
+
+Note: user-defined constructors for generic classes and records required an
+argument per generic field and did not allow generic fields to be set during the
+constructor body.  Initializers do not have this constraint.
 
 
 Copy Initializers
