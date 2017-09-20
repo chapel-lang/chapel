@@ -126,6 +126,7 @@ struct GlobalToWideInfo {
   unsigned globalSpace;
   unsigned wideSpace;
 
+  unsigned globalPtrBits;
   // this optimization currently assumes wide pointers are
   // stored in a 128-bit struct representation that contains
   //  locale-id
@@ -158,11 +159,12 @@ struct GlobalToWideInfo {
   runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
-    : globalSpace(0), wideSpace(0),
+    : globalSpace(0), wideSpace(0), globalPtrBits(0),
       localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
 };
 
-llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout);
+llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,
+                                     std::string setLayout);
 
 llvm::Type* convertTypeGlobalToWide(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* t);
 

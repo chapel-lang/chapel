@@ -1156,6 +1156,7 @@ namespace {
         madeInfo = true;
         info->globalSpace = 100;
         info->wideSpace = 101;
+        info->globalPtrBits = 128;
         info->localeIdType = M.getTypeByName("struct.c_localeid_t");
         if( ! info->localeIdType ) {
           StructType* t = StructType::create(M.getContext(), "struct.c_localeid_t");
@@ -1247,8 +1248,27 @@ namespace {
       // Wide pointer address space must differ from the local one...
       assert(info->globalSpace != 0);
       assert(info->wideSpace != 0);
+      assert(info->globalPtrBits != 0);
       assert(info->localeIdType != 0);
       assert(info->nodeIdType != 0);
+
+      // Check that a pointer in the global address space has the correct size.
+      {
+	const llvm::DataLayout& dl = M.getDataLayout();
+	llvm::Type* testGlobalTy = llvm::Type::getInt8PtrTy(M.getContext(),
+                                                            info->globalSpace);
+	llvm::Type* testWideTy = llvm::Type::getInt8PtrTy(M.getContext(),
+                                                          info->wideSpace);
+
+        bool ok = (dl.getTypeSizeInBits(testGlobalTy) == info->globalPtrBits) &&
+                  (dl.getTypeSizeInBits(testWideTy) == info->globalPtrBits);
+        if (!ok) {
+          printf("Error: llvmGlobalToWide pass doesn't match DataLayout\n");
+          printf("module DataLayout is %s\n",
+                 dl.getStringRepresentation().c_str());
+          assert(ok);
+        }
+      }
 
       GlobalTypeFixer fixer(M, info, debugPassTwo);
       GlobalTypeFixer* TypeMapper = &fixer;
