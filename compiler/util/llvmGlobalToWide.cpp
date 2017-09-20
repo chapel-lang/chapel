@@ -737,6 +737,7 @@ namespace {
             myReplaceInstWithInst(oldStore, put);
           }
           break; }
+        // TODO: PtrToInt and IntToPtr
         case Instruction::Call: {
           // handle e.g. wide2global, global2wide, memcpy
           CallInst *call = cast<CallInst>(insn);
@@ -1851,9 +1852,13 @@ namespace {
       for(specialFunctions_t::iterator I = info->specialFunctions.begin(),
                                        E = info->specialFunctions.end();
           I != E; ++I ) {
-        Function* F = *I;
-        assert( F->use_empty() && "Special functions should've been replaced");
-        F->eraseFromParent();
+
+        Value* v = *I;
+        if (v) {
+          Function* F = llvm::cast<Function>(v);
+          assert( F->use_empty() && "Special functions should've been replaced");
+          F->eraseFromParent();
+        }
       }
 
       // Delete the dummy dependencies preserving function

@@ -119,7 +119,7 @@ struct GlobalPointerInfo {
 #define GLOBAL_FN_WIDE_TO_GLOBAL ".gf.w2g."
 
 typedef llvm::DenseMap<llvm::Type*, GlobalPointerInfo> globalTypes_t;
-typedef std::vector<llvm::TrackingVH<llvm::Function> > specialFunctions_t;
+typedef std::vector<llvm::WeakVH> specialFunctions_t;
 typedef llvm::TrackingVH<llvm::Constant> runtime_fn_t;
 
 struct GlobalToWideInfo {

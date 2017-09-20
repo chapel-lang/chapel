@@ -1365,6 +1365,13 @@ void FnSymbol::codegenDef() {
       if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }
+
+      int printed = 0;
+      if (!printed) {
+        printf("Data layout at fn verify %s\n",
+           info->module->getDataLayout().getStringRepresentation().c_str());
+        printed = 1;
+      }
     }
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||

@@ -133,7 +133,15 @@ Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &na
                      IRBuilder<>* builder, const DataLayout &TD,
                      Value* oldBaseI, Value* newBaseI)
 {
-  Type* iPtrTy = TD.getIntPtrType(ptr->getType());
+  unsigned ptrBits     = TD.getTypeSizeInBits(ptr->getType());
+  unsigned oldBaseBits = TD.getTypeSizeInBits(oldBase->getType());
+  unsigned newBaseBits = TD.getTypeSizeInBits(newBase->getType());
+  unsigned bits = 0;
+  if (bits < ptrBits)     bits = ptrBits;
+  if (bits < oldBaseBits) bits = oldBaseBits;
+  if (bits < newBaseBits) bits = newBaseBits;
+
+  Type* iPtrTy = Type::getIntNTy(ptr->getContext(), bits);
   Type* localPtrTy = ptr->getType()->getPointerElementType()->getPointerTo(0);
 
   Value* ret;
@@ -144,7 +152,8 @@ Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &na
     assert( oldBaseI );
     assert( newBaseI );
     // then subtract
-    Value* diff = builder->CreateSub(pI, oldBaseI, name + ".diff");
+    Value* oldBaseIExt = builder->CreateZExtOrTrunc(oldBaseI, iPtrTy);
+    Value* diff = builder->CreateSub(pI, oldBaseIExt, name + ".diff");
     // then make sure same type
     Value* ext = builder->CreateSExtOrTrunc(diff, newBaseI->getType(), ".ext.i");
     // Now add

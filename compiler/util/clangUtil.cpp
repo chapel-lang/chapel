@@ -37,6 +37,10 @@
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
+
 #endif
 
 #include "astutil.h"
@@ -94,6 +98,8 @@ using namespace llvm;
 //#include "CGDebugInfo.h"
 
 static void setupForGlobalToWide();
+static void adjustLayoutForGlobalToWide();
+static void setupModule();
 
 fileinfo    gAllExternCode;
 fileinfo    gChplCompilationConfig;
@@ -168,7 +174,8 @@ ClangInfo::ClangInfo(
 	 DiagClient(NULL),
 	 DiagID(NULL),
 	 Diags(NULL),
-	 Clang(NULL), clangTargetOptions(), clangLangOptions(),
+	 Clang(NULL),
+         clangTargetOptions(), clangLangOptions(),
 	 Ctx(NULL),
          cCodeGen(NULL), cCodeGenAction(NULL),
          asmTargetLayoutStr()
@@ -255,61 +262,12 @@ void addMinMax(ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
 static
 void setupClangContext(GenInfo* info, ASTContext* Ctx)
 {
-  std::string layout;
-
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
   clangInfo->Ctx = Ctx;
-  if( ! clangInfo->parseOnly ) {
-    info->module->setTargetTriple(
-        clangInfo->Ctx->getTargetInfo().getTriple().getTriple());
 
-    // Also setup some basic TBAA metadata nodes.
-    llvm::LLVMContext& cx = info->module->getContext();
-    // Create the TBAA root node
-    {
-      LLVM_METADATA_OPERAND_TYPE* Ops[1];
-      Ops[0] = llvm::MDString::get(cx, "Chapel types");
-      info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
-    }
-  }
-
-#if HAVE_LLVM_VER >= 39
-  clangInfo->asmTargetLayoutStr =
-    clangInfo->Ctx->getTargetInfo().getDataLayout().getStringRepresentation();
-#elif HAVE_LLVM_VER >= 38
-  clangInfo->asmTargetLayoutStr = clangInfo->Ctx->getTargetInfo().getDataLayoutString();
-#else
-  clangInfo->asmTargetLayoutStr = clangInfo->Ctx->getTargetInfo().getTargetDescription();
-#endif
-  layout = clangInfo->asmTargetLayoutStr;
-
-  if( fLLVMWideOpt && ! clangInfo->parseOnly ) {
-    char buf[200]; //needs to store up to 8 32-bit numbers in decimal
-
-    // Add global pointer info to layout.
-    snprintf(buf, sizeof(buf), "-p%u:%u:%u:%u-p%u:%u:%u:%u", GLOBAL_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN, WIDE_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN);
-    layout += buf;
-    // Save the global address space we are using in info.
-    info->globalToWideInfo.globalSpace = GLOBAL_PTR_SPACE;
-    info->globalToWideInfo.wideSpace = WIDE_PTR_SPACE;
-    info->globalToWideInfo.globalPtrBits = GLOBAL_PTR_SIZE;
-  }
-  // Always set the module layout. This works around an apparent bug in
-  // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
-  // wrong answer  because some i64s were stored at the wrong alignment).
-  if( info->module ) info->module->setDataLayout(layout);
-
-  if( fLLVMWideOpt && ! clangInfo->parseOnly ) {
-    // Check that the data layout setting worked
-    const llvm::DataLayout& dl = info->module->getDataLayout();
-    llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
-                                                  GLOBAL_PTR_SPACE);
-    INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
-  }
-
-  // Set up some  constants that depend on the Clang context.
+  // Set up some constants that depend on the Clang context.
   {
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
@@ -624,6 +582,11 @@ class CCodeGenConsumer : public ASTConsumer {
         INT_ASSERT(!info->module);
         info->module = Builder->GetModule();
         info->clangInfo->cCodeGen = Builder;
+
+        printf("Module is %p\n", info->module);
+
+        // compute target triple, data layout
+        setupModule();
       }
     }
 
@@ -632,14 +595,27 @@ class CCodeGenConsumer : public ASTConsumer {
     // Start ASTVisitor Overrides
     void Initialize(ASTContext &Context) LLVM_CXX_OVERRIDE {
 
-      // This does setTargetTriple, setDataLayout, initialize targetData
-      // and clangCodeGen.
+      printf("Data layout in Initialize 1 %s\n",
+             info->module->getDataLayout().getStringRepresentation().c_str());
+
       setupClangContext(info, &Context);
 
       if (parseOnly) return;
 
       // Call Initialize on the code generator
+      // Note: this can call setDataLayout on the module!
       Builder->Initialize(Context);
+
+      // Adjust the data layout again since it might have been overwritten.
+      printf("Data layout in Initialize 2 %s\n",
+             info->module->getDataLayout().getStringRepresentation().c_str());
+
+      adjustLayoutForGlobalToWide();
+
+      printf("Data layout in Initialize 3 %s\n",
+             info->module->getDataLayout().getStringRepresentation().c_str());
+
+      printf("Initialize Module is %p\n", info->module);
     }
 
     // HandleTopLevelDecl - Handle the specified top-level declaration.
@@ -816,7 +792,7 @@ class CCodeGenAction : public ASTFrontendAction {
 };
 
 std::unique_ptr<ASTConsumer>
-CCodeGenAction::CreateASTConsumer( CompilerInstance &CI, StringRef InFile) {
+CCodeGenAction::CreateASTConsumer(CompilerInstance &CI, StringRef InFile) {
   CCodeGenConsumer* c = new CCodeGenConsumer();
   return std::unique_ptr<ASTConsumer>(c);
 };
@@ -1016,6 +992,48 @@ void setupClang(GenInfo* info, std::string mainFile)
     INT_FATAL("Bad diagnostics from clang");
 }
 
+static void setupModule()
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  if (clangInfo->parseOnly) return;
+
+  INT_ASSERT(info->module);
+
+#if HAVE_LLVM_VER >= 39
+  clangInfo->asmTargetLayoutStr =
+    clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
+#elif HAVE_LLVM_VER >= 38
+  clangInfo->asmTargetLayoutStr = clangInfo->Clang->getTarget().getDataLayoutString();
+#else
+  clangInfo->asmTargetLayoutStr = clangInfo->Clang->getTarget().getTargetDescription();
+#endif
+
+  info->module->setTargetTriple(
+        clangInfo->Clang->getTarget().getTriple().getTriple());
+
+  // Always set the module layout. This works around an apparent bug in
+  // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
+  // wrong answer  because some i64s were stored at the wrong alignment).
+  info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+
+  adjustLayoutForGlobalToWide();
+
+  printf("Data layout in setupModule %s\n",
+         info->module->getDataLayout().getStringRepresentation().c_str());
+
+  // Also setup some basic TBAA metadata nodes.
+  llvm::LLVMContext& cx = info->module->getContext();
+  // Create the TBAA root node
+  {
+    LLVM_METADATA_OPERAND_TYPE* Ops[1];
+    Ops[0] = llvm::MDString::get(cx, "Chapel types");
+    info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
+  }
+}
 
 void finishCodegenLLVM() {
   GenInfo* info = gGenInfo;
@@ -1052,19 +1070,34 @@ void finishCodegenLLVM() {
 
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder) {
+  ClangInfo* clangInfo = gGenInfo->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenOptions &opts = clangInfo->codegenOptions;
+
   if( fFastFlag ) {
-    PMBuilder.OptLevel = 3;
-    PMBuilder.LoopVectorize = true;
-    PMBuilder.SLPVectorize = true;
-#if HAVE_LLVM_VER < 50
-    PMBuilder.BBVectorize = true;
-#endif
-    PMBuilder.DisableUnrollLoops = true;
-    // TODO: what other flags on PMBuilder should we set?
-  } else {
-    PMBuilder.OptLevel = 0;
+    // TODO -- remove this assert
+    INT_ASSERT(opts.OptimizationLevel >= 2);
   }
 
+  if (opts.OptimizationLevel > 1)
+    PMBuilder.Inliner = createFunctionInliningPass(opts.OptimizationLevel,
+                                                   opts.OptimizeSize);
+
+  PMBuilder.OptLevel = opts.OptimizationLevel;
+  PMBuilder.SizeLevel = opts.OptimizeSize;
+#if HAVE_LLVM_VER < 50
+  PMBuilder.BBVectorize = opts.VectorizeBB;
+#endif
+  PMBuilder.SLPVectorize = opts.VectorizeSLP;
+  PMBuilder.LoopVectorize = opts.VectorizeLoop;
+
+  PMBuilder.DisableUnrollLoops = !opts.UnrollLoops;
+  PMBuilder.MergeFunctions = opts.MergeFunctions;
+  PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
+  PMBuilder.PrepareForLTO = opts.PrepareForLTO;
+  PMBuilder.RerollLoops = opts.RerollLoops;
+
+  // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
 
 void prepareCodegenLLVM()
@@ -1076,19 +1109,11 @@ void prepareCodegenLLVM()
   PassManagerBuilder PMBuilder;
 
   // Set up the optimizer pipeline.
-  // Start with registering info about how the
-  // target lays out data structures.
-#if HAVE_LLVM_VER >= 37
-  // We already set the data layout in setupClangContext
-  // don't need to do anything else.
-#elif HAVE_LLVM_VER >= 36
-  // We already set the data layout in setupClangContext
-  fpm->add(new DataLayoutPass());
-#elif HAVE_LLVM_VER >= 35
-  fpm->add(new DataLayoutPass(info->module));
-#else
-  fpm->add(new DataLayout(info->module));
-#endif
+
+  // Add the TargetLibraryInfo pass
+  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+  fpm->add(new TargetLibraryInfoWrapperPass(TLII));
 
   configurePMBuilder(PMBuilder);
   PMBuilder.populateFunctionPassManager(*fpm);
@@ -2008,6 +2033,48 @@ void setupForGlobalToWide(void) {
 
   info->preservingFn = fn;
 }
+static
+void adjustLayoutForGlobalToWide()
+{
+  if( ! fLLVMWideOpt ) return;
+
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  if (clangInfo->parseOnly) return;
+
+  std::string layout = clangInfo->asmTargetLayoutStr;
+
+  INT_ASSERT(layout != "");
+
+  char buf[200]; //needs to store up to 8 32-bit numbers in decimal
+
+  // Add global pointer info to layout.
+  snprintf(buf, sizeof(buf), "-p%u:%u:%u:%u-p%u:%u:%u:%u"
+      /*"-ni:%u:%u"*/ /* non-integral pointers */,
+      GLOBAL_PTR_SPACE,
+      GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN, GLOBAL_PTR_PREF_ALIGN,
+      WIDE_PTR_SPACE, GLOBAL_PTR_SIZE, GLOBAL_PTR_ABI_ALIGN,
+      GLOBAL_PTR_PREF_ALIGN /*, GLOBAL_PTR_SPACE, WIDE_PTR_SPACE*/);
+  layout += buf;
+  // Save the global address space we are using in info.
+  info->globalToWideInfo.globalSpace = GLOBAL_PTR_SPACE;
+  info->globalToWideInfo.wideSpace = WIDE_PTR_SPACE;
+  info->globalToWideInfo.globalPtrBits = GLOBAL_PTR_SIZE;
+
+  // Always set the module layout. This works around an apparent bug in
+  // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
+  // wrong answer  because some i64s were stored at the wrong alignment).
+  info->module->setDataLayout(layout);
+
+  // Check that the data layout setting worked
+  const llvm::DataLayout& dl = info->module->getDataLayout();
+  llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
+						GLOBAL_PTR_SPACE);
+  INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
+}
 
 
 void makeBinaryLLVM(void) {
@@ -2055,15 +2122,6 @@ void makeBinaryLLVM(void) {
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
-    // Note, these global extensions currently only apply
-    // to the module-level optimization (not the "basic" function
-    // optimization we do immediately after generating LLVM IR).
-
-    // Add the Global to Wide optimization if necessary.
-    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
-    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
-    PassManagerBuilder::addGlobalExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
-
     // Add IR dumping pass if necessary
     // point is initialized to a dummy value; it is set
     // in getIrDumpExtensionPoint.
@@ -2094,6 +2152,48 @@ void makeBinaryLLVM(void) {
 
     addedGlobalExts = true;
   }
+
+  // Create PassManager and run optimizations
+  PassManagerBuilder PMBuilder;
+
+  configurePMBuilder(PMBuilder);
+
+  // Note, these global extensions currently only apply
+  // to the module-level optimization (not the "basic" function
+  // optimization we do immediately after generating LLVM IR).
+
+  // Add the Global to Wide optimization if necessary.
+  PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
+  PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
+  PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+
+  // Run optimization
+
+  adjustLayoutForGlobalToWide();
+
+  printf("Data layout before opts %s\n",
+         info->module->getDataLayout().getStringRepresentation().c_str());
+
+  llvm::legacy::PassManager *mpm = new llvm::legacy::PassManager();
+
+  // Add the TargetLibraryInfo pass
+  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+  mpm->add(new TargetLibraryInfoWrapperPass(TLII));
+
+  PMBuilder.populateModulePassManager(*mpm);
+
+  mpm->run(*info->module);
+
+  delete mpm;
+
+  printf("Data layout after opts %s\n",
+         info->module->getDataLayout().getStringRepresentation().c_str());
+  // Reset the data layout.
+  // Note that EmitBackendOutput does this no matter what we do.
+  info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+  printf("Data layout before EmitBackendOutput %s\n",
+         info->module->getDataLayout().getStringRepresentation().c_str());
 
   // Set llvm options
   if (llvmFlags != "") {
