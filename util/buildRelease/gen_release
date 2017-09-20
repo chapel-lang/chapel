@@ -149,6 +149,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/quickstart",
     "util/test",
     "tools/chplvis",
+    "tools/c2chapel",
     "tools/mason"
 );
 
