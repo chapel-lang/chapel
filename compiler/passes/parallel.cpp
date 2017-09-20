@@ -1694,6 +1694,10 @@ static void replaceRecordWrappedRefs() {
           fixLHS(call, todo);
         }
       }
+      else if (call->isPrimitive(PRIM_DEREF)) {
+        SET_LINENO(call);
+        call->replace(se->copy());
+      }
       else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         if (se == call->get(2)) {
           CallExpr* move = toCallExpr(call->parentExpr);
