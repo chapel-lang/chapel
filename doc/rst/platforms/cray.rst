@@ -367,9 +367,11 @@ Special Notes for Cray XC, XE, and XK Series Systems
 Controlling the Heap Size
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The "heap" is an area of memory used for dynamic allocation of
+everything from user data to internal management data structures.
 When running on Cray XC/XE/XK systems using either of the following
 configurations, the comm layer needs to know the maximum size the
-program heap will grow to during execution::
+heap will grow to during execution::
 
   CHPL_COMM=gasnet
     CHPL_COMM_SUBSTRATE=gemini or aries
@@ -379,13 +381,14 @@ or::
 
   CHPL_COMM=ugni, with a craype-hugepages module loaded
 
-With ``CHPL_COMM=gasnet``, by default the heap will occupy as much of the
-free memory on each locale (compute node) as the runtime can acquire,
-less some amount to allow for demands from other (system) programs
-running there.  With ``CHPL_COMM=ugni`` when a craype-hugepages module is
-loaded, by default the heap will occupy 2/3 of the free memory on each
-locale.  With the ugni comm layer and slurm job placement, however, this
-default is reduced to 16 GiB if that is less.
+With ``CHPL_COMM=gasnet``, the heap is used for all dynamic allocations.
+By default in this case it will occupy as much of the free memory on
+each compute node as the runtime can acquire, less some amount to allow
+for demands from other (system) programs running there.  With
+``CHPL_COMM=ugni``, the heap is used for all dynamic allocations other
+than data space for arrays larger than 2 hugepages.  Such array space is
+allocated separately.  In this case by default the heap will occupy 16
+GiB.
 
 Advanced users may want to make the heap smaller than this.  Programs
 start more quickly with a smaller heap, and in the unfortunate event
@@ -397,8 +400,8 @@ will terminate prematurely due to not having enough memory.
 To change the heap size, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
 variable.  Set it to just a number to specify the size of the heap in
 bytes, or to a number with a ``k`` or ``K``, ``m`` or ``M``, or ``g`` or ``G``
-suffix with no intervening spaces to specify the heap size in KiB (2^10
-bytes), MiB (2^20 bytes), or GiB (2^30 bytes), respectively.  Any of the
+suffix with no intervening spaces to specify the heap size in KiB (2**10
+bytes), MiB (2**20 bytes), or GiB (2**30 bytes), respectively.  Any of the
 following would set the heap size to 1 GiB, for example:
 
   .. code-block:: sh
@@ -457,7 +460,7 @@ To use ugni communications:
 
      export CHPL_TASKS=fifo
 
-   All of these tasking layers work with ugni communications.  Other
+   Either of these tasking layers work with ugni communications.  Other
    Chapel environment variables having to do with runtime layers can
    be left unset.  Setting ``CHPL_COMM`` and ``CHPL_TASKS`` like this
    will cause the correct combination of other runtime layers that work
@@ -469,7 +472,7 @@ To use ugni communications:
      module load craype-hugepages16M
 
    The ugni communication layer can be used with or without so-called
-   *hugepages*.  Performance for remote variable references is better
+   *hugepages*.  Performance for remote variable references is much better
    when hugepages are used.  However, using hugepages effectively may
    require setting ``CHPL_RT_MAX_HEAP_SIZE`` to a value large enough to
    encompass the program's memory needs (see `Controlling the Heap
@@ -489,28 +492,72 @@ To use ugni communications:
    modules if you would like, but the recommended ``craype-hugepages16M``
    module will probably give you satisfactory results.
 
-   The architecture of the Cray network interface chips (NICs) limits
-   them to addressing at most 16k (2**14) pages of memory.  This is
-   sufficient to cover a 32 GiB Cray XC locale with 2 MiB pages.  But
-   if you will be running on 64 GiB locales, you will need to use at
-   least 4 MiB pages to cover all of the memory.  Generally, using
-   larger hugepage sizes results in modest performance benefits,
-   mostly in program startup time.  The ``craype-hugepages16M`` module
-   will result in slightly faster program startup, and its 16 MiB
-   hugepages will cover the locale memory on any Cray X-series system.
-
-   The only downside to larger page sizes is that they can waste more
-   memory than smaller page sizes do, when the data segments that reside
-   on them are smaller than the hugepage size (which is often the case).
-   In practice, however, the effect of this is minor.  Even using the
-   fairly large 16 MiB hugepages will typically only result in around 1%
-   of the total locale memory being wasted.
+   The Cray network interface chips (NICs) can only address memory that
+   has been registered with them, and there are limits on how many pages
+   of memory can be registered.  The Gemini NIC used on Cray XE and XK
+   systems can register no more than 16k (2**14) pages of memory.  The
+   Aries NIC used on Cray XC systems can register more, but it has an
+   on-board cache of registered page information with 16k entries and
+   performance will be reduced if the number of registered pages exceeds
+   the 16k entries in that cache.  Thus for any kind of Cray X* system,
+   you should choose a hugepage module whose page size is large enough
+   that 16k of its hugepages will cover the program's per-node memory
+   requirement or if that is not known, the compute node memory size.
+   For example, the 2 MiB hugepages in the ``craype-hugepages2M`` module
+   will cover a 32 GiB Cray XE compute node, but on a Cray XC system
+   with 128 GiB compute nodes at least 8 MiB hugepages will be needed to
+   achieve full coverage.  Generally, using larger hugepage sizes
+   results in modest performance benefits, mostly in program startup
+   time.  The ``craype-hugepages16M`` module will result in slightly
+   faster program startup, and its 16 MiB hugepages will cover the node
+   memory on any Cray X-series system.
 
 When hugepages are used with the ugni comm layer, tasking layers
 cannot use guard pages for stack overflow detection.  Qthreads tasking
-can only use guard pages for stack overflow detection, so if ugni
+cannot detect stack overflow except by means of guard pages, so if ugni
 communications is combined with qthreads tasking, overflow detection is
 turned off completely.
+
+
+Array Allocation with ugni and Out-of-memory Conditions
+_______________________________________________________
+
+As mentioned above in `Controlling the Heap Size`_, with
+``CHPL_COMM=ugni`` and a hugepage module loaded, the data space for
+arrays larger than 2 hugepages is allocated outside the heap.
+This lets the default heap be quite a bit smaller, because in any
+program that needs a significant amount of memory, large arrays are the
+biggest contributor to the space requirements.
+It also allows programs to reap the benefit of NUMA localization due to
+first-touch behavior during array initialization,
+even with the memory registration needed for performance with the Cray
+NICs.
+
+In the Chapel 1.16 release, however, there is a side effect related to
+this separate allocation if the program runs out of memory while
+creating an array.
+Normally when this happens the array space allocation itself fails and
+the runtime issues something like this message::
+
+  Out of memory allocating "array elements"
+
+The program then halts.  What can happen instead in Chapel 1.16 is that
+the allocation will seem to succeed and then the program with get a
+``SIGBUS`` signal later, when it tries to initialize the memory.  This
+can result in a fair amount of error output, but it will always contain
+this line with a ``slurm`` workload manager::
+
+  srun: error: <nodename>: task <ID>: Bus error
+
+or this line with a PBS or Moab/Torque workload manager::
+
+  Process died with signal 7: 'Bus error'
+
+We expect to be able to restore the previous behavior in the Chapel 1.17
+release (or earlier for a build from sources), but until then these
+messages can be taken as diagnostic for the program having run out of
+memory when trying to create space for an array.
+
 
 There is one special parameter recognized by the ugni communication
 layer:
@@ -542,7 +589,7 @@ environment variable is set to ``ugni``, the following operations on
 remote atomics are done using the network::
 
     32- and 64-bit signed and unsigned integer types:
-    32- and 64-bit floating point types:
+    32- and 64-bit real types:
       read()
       write()
       exchange()
@@ -557,12 +604,13 @@ remote atomics are done using the network::
 
 Note that on XE and XK systems, which have Gemini networks, out of the
 above list only the 64-bit integer operations are done natively by the
-network hardware.  32-bit integer and all floating point operations are
+network hardware.  32-bit integer and all real operations are
 done using implicit ``on`` statements inside the ugni communication
 layer, accelerated by Gemini hardware capabilities.
 
 On XC systems, which have Aries networks, all of the operations shown
-above are done natively by the network hardware.
+above are done natively by the network hardware except 64-bit real add,
+which is disabled in hardware and thus done using ``on`` statements.
 
 .. _readme-cray-constraints:
 
