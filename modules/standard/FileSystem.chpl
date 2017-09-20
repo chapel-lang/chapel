@@ -1294,7 +1294,7 @@ proc rmTree(out error: syserr, root: string) {
   }
 
   var rootPath = realPath(error=error, root);
-  if error != ENOERR then // error occured in realPath
+  if error != ENOERR then // error occurred in realPath
     return;
 
   rmTreeHelper(error, rootPath);

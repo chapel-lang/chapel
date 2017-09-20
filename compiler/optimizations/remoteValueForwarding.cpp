@@ -394,7 +394,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 // on-statement. This will change the number of formals for this on-statement
 // unlike traditional RVF.
 //
-// BHARSH TODO: Split this function into more easily-digestable pieces
+// BHARSH TODO: Split this function into more easily-digestible pieces
 // BHARSH TODO: capture the assumptions made here in documentation
 //
 static void insertSerialization(FnSymbol*  fn,
