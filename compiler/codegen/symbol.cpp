@@ -1284,6 +1284,8 @@ void FnSymbol::codegenDef() {
         func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
     }
+    if (fNoInline)
+      func->addFnAttr(llvm::Attribute::NoInline);
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
