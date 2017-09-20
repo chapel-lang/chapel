@@ -540,7 +540,7 @@ static __thread int cd_idx = -1;
 #define UI64_TO_VP(x)     ((void*) (intptr_t) (x))
 
 //
-// Maximum nunber of PUTs in a chained transaction list.  This number
+// Maximum number of PUTs in a chained transaction list.  This number
 // was determined empirically (on XC/Aries).  Doing more than this at
 // once didn't seem to improve performance.
 //

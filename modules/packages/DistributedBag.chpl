@@ -37,7 +37,7 @@
   employs a work-stealing algorithm that horizontally steals a ratio of elements
   across segments. A segment is considered 'horizontal' if it shares the same
   segment index within [0, here.maxTaskPar); those other segments likely are also
-  benefitted from local distribution from the round-robin algorithm discussed above.
+  benefited from local distribution from the round-robin algorithm discussed above.
   We also steal a ratio of elements, say 25%, because it leaves all other segments
   with 75% of their work; the more elements they have, the more we take, but the
   less they have, the less we steal; this also has the added benefit of reducing
@@ -72,7 +72,7 @@
   nodes, processors per node (PPN), and workload; The more PPN, the more segments
   we allocate to increase raw parallelism, and the larger the workload the better
   locality (see :const:`distributedBagInitialBlockSize`). This data structure is unordered
-  and employs its own workstealing algorithm to balance work across nodes.
+  and employs its own work stealing algorithm to balance work across nodes.
 
   .. note::
 
@@ -106,7 +106,7 @@
 
   1.  Dynamic work-stealing will require an overhaul to use a helper algorithm to keep down
       the number of tasks spawned. Currently user tasks will wait on the current work-stealer
-      task, which will spawn is own helper tasks which act as shepards, which then spawns more
+      task, which will spawn is own helper tasks which act as shepherds, which then spawns more
       in a fork-join fashion. This leads to an excessive amount of tasks being spawned at once.
       To make matters worse, the waiting tasks don't even get any elements, nor does the work
       stealing task, which opens up the possibility of live-lock where nodes steal work back
@@ -141,7 +141,7 @@ module DistributedBag {
 
   /*
     Below are statuses specific to the work stealing algorithm. These allow the
-    shepard tasks to know when its sub-helpers finish and the end status of their
+    shepherd tasks to know when its sub-helpers finish and the end status of their
     work stealing attempt.
   */
   private param WS_INITIALIZED = -1;
@@ -169,7 +169,7 @@ module DistributedBag {
   config const distributedBagInitialBlockSize = 1024;
   /*
     To prevent stealing too many elements (horizontally) from another node's segment
-    (hence creating an artifical load imbalance), if the other node's segment has
+    (hence creating an artificial load imbalance), if the other node's segment has
     less than a certain threshold (see :const:`distributedBagWorkStealingMemCap`) but above
     another threshold (see :const:`distributedBagWorkStealingMinElems`), we steal a percentage of their
     elements, leaving them with majority of their elements. This way, the amount the

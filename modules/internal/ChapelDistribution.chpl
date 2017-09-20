@@ -420,7 +420,7 @@ module ChapelDistribution {
 
     // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
     //       - would have to put the conditional outside of the call
-    /* Grow domain if necesary */
+    /* Grow domain if necessary */
     inline proc _grow(size: int, factor=arrayAsVecGrowthFactor) {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {

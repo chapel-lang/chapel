@@ -836,7 +836,7 @@ bool ArgSymbol::isConstValWillNotChange() {
 
   if (absIntent) {
     // Try again with the corresponding concrete intent.
-    // Caller is responsibile that concreteIntent() succeeds.
+    // Caller is responsible that concreteIntent() succeeds.
     isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
                                 result, absIntent);
     INT_ASSERT(!absIntent);
