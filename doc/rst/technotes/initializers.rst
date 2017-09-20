@@ -9,8 +9,10 @@ initialization of variables with record type or instances of class
 type.  This approach relies on methods known as initializers rather
 than the original methods known as constructors.
 
-A discussion of the current design and rationale is provided in
-`CHIP 10 <https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst>`_.
+A discussion of the current design and rationale is provided in `CHIP 10`_.
+
+.. _CHIP 10:
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/10.rst
 
 Release Chapel 1.16.0 provides a strong preview implementation of this
 new feature.  Though some known bugs remain, the feature is rapidly
@@ -30,10 +32,12 @@ An initializer is a method on a class or record named "init".  It is invoked
 by the ``new`` operator, where the type name and initializer arguments are
 preceded with the ``new`` keyword.
 
-If the program declares a type initializer method, it is a user-defined
+If the program declares an initializer method on a type, it is a user-defined
 initializer.  If the program declares no initializers or constructors for a
 class or record, a compiler generated constructor for that type is created
-automatically (see below for the status on `Compiler Generated Initializers`_).
+automatically.  Work has begun on having the compiler generate an initializer
+instead a constructor, but it is not yet complete (see below for the status on
+`Compiler Generated Initializers`_).
 
 User-Defined Initializers
 -------------------------
@@ -46,6 +50,37 @@ return type specifier.
 When an initializer is called, the usual function resolution mechanism is
 applied to determine which user-defined initializer to invoke.
 
+The following example shows a class with two initializers:
+
+.. code-block:: chapel
+
+   class MessagePoint {
+     var x, y: real;
+     var message: string;
+
+     proc init(x: real, y: real) {
+       this.x = x;
+       this.y = y;
+       this.message = "a point";
+       super.init();
+     }
+
+     proc init(message: string) {
+       this.x = 0;
+       this.y = 0;
+       this.message = message;
+       super.init();
+     }
+   } // class MessagePoint
+
+   // create two objects
+   var mp1 = new MessagePoint(1.0,2.0);
+   var mp2 = new MessagePoint("point mp2");
+
+The first initializer lets the user specify the initial coordinates and the
+second initializer lets the user specify the initial message when creating a
+MessagePoint.
+
 In contrast to user-defined constructors for generic classes and records,
 user-defined initializers do not require an argument per generic field.
 
@@ -54,12 +89,15 @@ user-defined initializers do not require an argument per generic field.
 The Initializer Body
 --------------------
 
-The code written in an initializer can be divided into two categories,
-referred to as "Phase 1" and "Phase 2" for the remainder of this document.
-When the phase division indicator is not present, the body of an initializer
-is assumed to be entirely composed of Phase 2 statements.  Otherwise, any
-code prior to the phase division indicator is considered to be in Phase 1, and
-any code following it is considered to be in Phase 2.
+The code written in an initializer can be divided into two sequentially-ordered
+categories, referred to as "Phase 1" and "Phase 2" for the remainder of this
+document.  The two phases are separated by a phase division indicator.  When the
+phase division indicator is not present, the body of an initializer is assumed
+to be entirely composed of Phase 2 statements.  Otherwise, any code prior to the
+phase division indicator is considered to be in Phase 1, and any code following
+it is considered to be in Phase 2.  Phase 1 and Phase 2 will be described in
+the next few subsections, and additional details and rationale can be found
+`CHIP 10`_.
 
 Note that aside from ``try!`` statements without a ``catch`` block, error
 handling constructs are not allowed in initializers.  An initializer cannot be
@@ -151,9 +189,54 @@ Form 2: call to another initializer defined on the same type
 If the type has no parent, an argument-less call of the first form will still be
 valid, but otherwise treated as a no-op.
 
+Example of initializers using the first form:
+
+.. code-block:: chapel
+
+   class Foo { // no parent type
+     var x: int;
+
+     proc init(xVal: int) {
+       x = xVal;
+       super.init(); // argument-less call ends Phase 1
+     }
+   }
+
+   class Bar: Foo { // inherits from Foo
+     var y: bool;
+
+     proc init(yVal: bool) {
+       y = yVal;
+       super.init(10); // Calls the parent initializer
+     }
+   }
+
+   var bar = new Bar(true);
+
 When using the second form, field initialization statements are not permitted in
 Phase 1, though other statements are allowed.  Omitted field initialization will
 not be inserted prior to calls of the second form.
+
+Example of an initializer using the second form:
+
+.. code-block:: chapel
+
+   class Rectangle {
+     var len, width: int;
+
+     proc init(val: int) {
+       this.init(val, val); // calls the other initializer
+       writeln("Making a square");
+     }
+
+     proc init(lenVal: int, widthVal: int) {
+       len = lenVal;
+       width = widthVal;
+       super.init();
+     }
+   }
+
+   var square = new Rectangle(4);
 
 For a single control flow path through the body, only one phase division
 indicator is allowed.  It is forbidden to have both calls, or multiple of
