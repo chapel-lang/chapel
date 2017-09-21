@@ -5237,22 +5237,6 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
 
     moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, false);
 
-  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
-             lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true) {
-    if (lhsSym->isConstant() == false) {
-      // We are creating a var alias - ensure aliasee is not const either.
-      SymExpr* aliaseeSE = toSymExpr(rhs->get(2));
-
-      INT_ASSERT(aliaseeSE);
-
-      if (aliaseeSE->symbol()->isConstant() == true) {
-        USR_FATAL_CONT(rhs,
-                       "creating a non-const alias '%s' of a const array "
-                       "or domain",
-                       lhsSym->name);
-      }
-    }
-
   } else if (refConstWCT == true) {
     Symbol* baseSym = getBaseSymForConstCheck(rhs);
 
@@ -5261,10 +5245,6 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
         baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
       moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, true);
     }
-
-  } else if (lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true &&
-             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
-    INT_ASSERT(false);
   }
 }
 
