@@ -270,6 +270,8 @@ all:
   09/06/17:
     - text: Improve the accuracy of our running task counter (#7193)
       config: 16 node XC
+  09/19/17:
+    - Fix LICM bug (#7371)
 
 
 AllCompTime:
@@ -285,6 +287,10 @@ AllCompTime:
     - Fix parse slowdown (#5257)
   02/07/17:
     - Loop over Defs and Uses with SymbolSymExprs (#5285)
+
+arguments:
+  09/20/17:
+    - Adjust string pass/return test (#7360)
 
 arrayPerformance-1d:
   03/19/15:
@@ -372,6 +378,8 @@ build-associative:
 chameneos-redux:
   07/08/13:
     - altered output order for chameneos data, old data incompatible
+  09/15/17:
+    - Chameneos initializer updates (#7328)
 
 CoMD:
   07/26/17:
@@ -654,6 +662,8 @@ mandelbrot-extras:
     - maxTaskPar change delayed fifo->qthreads performance hit
   11/11/15:
     - Initial commit of C complexes
+  09/21/17:
+    - Restore string perf (#7416)
 
 memleaks:
   11/13/13:
@@ -745,6 +755,14 @@ memleaksfull:
     - Have reindex domains/distributions preserve locality (#5757)
   07/25/17:
     - fix leaks introduced by reindex views in PR 5757 (#6776)
+  09/17/17:
+    - close test code leaks (#7348 and #7349)
+  09/18/17:
+    - allow Mason testing to compile again after change (#7350)
+  09/19/17:
+    - close additional graph 500 leaks (#7357)
+  09/20/17:
+    - close more test code leaks (#7406, #7399, #7395, #7364, and #7400)
 
 meteor:
   12/18/13:
@@ -783,6 +801,10 @@ miniMD:
     - RVF reference fields with record-wrapped type (#4925)
   03/10/17:
     - Three way refpair (#5561)
+
+miniMD.ml-time:
+  09/14/17:
+    - Introduce ShadowVarSymbol for forall intents (#7307)
 
 nbody:
   03/17/14:
@@ -884,6 +906,10 @@ ra:
       config: Single node XC
   03/21/17:
     - Rank change dom dist view (#5694)
+
+ra.ml-perf:
+  09/19/17:
+    - machine changes, cannot reproduce old numbers
 
 RBC:
   02/22/17:
