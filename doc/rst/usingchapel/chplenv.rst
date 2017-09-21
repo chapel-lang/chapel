@@ -490,8 +490,8 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support, using the hwloc package distributed with Chapel in
-   third-party, or using a system jemalloc.
+   no hwloc support or using the hwloc package distributed with Chapel in
+   third-party.
 
        ======== ==============================================================
        Value    Description
