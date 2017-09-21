@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
-"""Simple script that effectively "greps" for calls to the system allocator.
-For projects that provide their own allocation interface, this helps ensure
-that direct calls to the system allocator aren't accidentally introduced.
+"""Simple script that effectively "greps" for function calls. By default it
+looks for calls to the system allocator. For projects that provide their own
+allocation interface, this helps ensure that direct calls to the system
+allocator aren't accidentally introduced. It can also check for calls to exit
+or calls to a user provided list of functions.
 
 Finds all C/C++ files in the search directory, and uses cscope to check for and
-report calls to system allocation/deallocation routines.
+report calls to the specified routines.
 
-Prints out the location of any calls to the system allocator. Exit status is 0
-on success, 1 if calls to the allocator were found, and 2 if there were fatal
-errors trying to run this script.
+Prints out the location of any calls to the functions. Exit status is 0 on
+success, 1 if calls were found, and 2 if there were fatal errors trying to run
+this script.
 """
 
 import fnmatch
@@ -121,14 +123,14 @@ def get_alloc_funcs():
     return std + align + page_align + string + obscure
 
 
-def check_for_alloc_calls(search_dir, exclude_paths=None, rel_paths=True):
-    """Check for calls to the system allocator. See check_for_calls() and
-       get_alloc_funcs() for more info."""
-    check_for_calls(get_alloc_funcs(), search_dir, exclude_paths, rel_paths)
+def get_exit_funcs():
+    """Return a list of the possible C exit routines"""
+    std = ['exit', '_exit', 'abort']
+    return std
 
 
 def main():
-    """Parse options and check for alloc calls"""
+    """Parse options and check for calls"""
 
     class MyParser(optparse.OptionParser):
         """Optparse wrapper that doesn't strip newlines from the epilog"""
@@ -142,13 +144,26 @@ def main():
                       help='comma separated list of (sub)paths/files to skip')
     parser.add_option('--abs-paths', dest='abs_paths', action="store_true",
                       help='report abs paths vs. rel to --search-dir/../')
+    parser.add_option('--check-alloc', dest='check_alloc', action="store_true",
+                      help='check for calls to the system allocator')
+    parser.add_option('--check-exit', dest='check_exit', action="store_true",
+                      help='check for calls to exit routines')
+    parser.add_option('--check-calls', dest='check_calls', default='',
+                      help='comma separated list of calls to check for')
+
     options = parser.parse_args()[0]
+
+    check_calls = [x.strip() for x in options.check_calls.split(',') if x]
+    if options.check_exit:
+        check_calls += get_exit_funcs()
+    if options.check_alloc or not check_calls:
+        check_calls += get_alloc_funcs()
 
     search_dir = os.path.abspath(options.search_dir)
     exclude_paths = [x.strip() for x in options.exclude_paths.split(',') if x]
     rel_paths = not options.abs_paths
 
-    return check_for_alloc_calls(search_dir, exclude_paths, rel_paths)
+    return check_for_calls(check_calls, search_dir, exclude_paths, rel_paths)
 
 
 if __name__ == "__main__":
