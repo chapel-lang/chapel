@@ -14,7 +14,7 @@ alloc wrapper (chpl-mem-sys.h)
 
 import os
 import sys
-import look_for_alloc
+import look_for_calls
 
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
@@ -28,8 +28,8 @@ def main():
     runtime_dir = os.path.join(chpl_home, 'runtime')
 
     exclude_paths = ['chpl-mem-sys.h']
-    alloc_funcs = look_for_alloc.get_alloc_funcs()
-    return look_for_alloc.check_for_calls(alloc_funcs, runtime_dir, exclude_paths)
+    alloc_funcs = look_for_calls.get_alloc_funcs()
+    return look_for_calls.check_for_calls(alloc_funcs, runtime_dir, exclude_paths)
 
 
 if __name__ == "__main__":
