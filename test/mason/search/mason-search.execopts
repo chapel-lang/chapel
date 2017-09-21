@@ -4,3 +4,4 @@
 --pattern="caps"         # substring.good
 --pattern="CAPS"         # substring.good
 --pattern="multiversion" # latestVersion.good
+--pattern="--debug"      # hidden.good
