@@ -1,10 +1,12 @@
 Release Changes List
 ====================
 
-*** stopped at 4c68fa0 2017-05-01 ***
+*** stopped at e2ee8df 2017-06-01 ***
 
 TODO: remove 'master' from any docs links
 TODO: move docs to top-level?
+TODO: where to put LLVM codegen flags in 6135 / 8d704f0
+TODO: error-handling keyword highlighting in emacs
 
 version 1.16.0
 ==============
@@ -14,14 +16,29 @@ Nineteenth public release of Chapel, September 20, 2017
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
+New Dependences
+---------------
+* users of the `RegExp` module / RE2 now need to have a C++11 compiler to build
+* users of the LLVM-based front- or back-ends now need to have CMake to build
+
 Deployment
 ----------
+* added new 'configure'/'make install' options for building Chapel
+  (see http://chapel.cray.com/docs/latest/usingchapel/building.html#installing-chapel)
 
 New Features
 ------------
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* relaxed the requirement that iterators to contain `yield` statements
+  (see TODO??)
+* added support for iterators that can yield void values
+  (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
+* distinguished between functions returning 'void' values and non-returning fns
+  (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
+* made it an error to apply bitwise-not (~) to boolean values
+
 
 Syntactic/Naming Changes
 ------------------------
@@ -29,7 +46,10 @@ Syntactic/Naming Changes
 Feature Improvements
 --------------------
 * significantly improved the implementation of initializers
+  - added support for generic record type specifications with initializers
+  - added support for creating generic records via 'new'
   (see TODO)
+* ensured that `use` statements are considered in program order
 
 Known Feature Slips
 -------------------
@@ -40,11 +60,24 @@ Removed Features
 Standard Modules/Library
 ------------------------
 * added an asciiToString function that converts a uint(8) into a string
-  (http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
-* improved support for the MPI module when using CHPL_COMM=ugni or gasnet/aries
+  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
+* added 'param' and 'type' overloads of getField() to the Reflection module
+  (see TODO)
+* added support for file.getParentName() to the `Path` module
+  (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+* made the ReplicatedDist distribution less odd and renamed it to 'Replicated'
+  (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
+   and http://chapel.cray.com/docs/master/primers/replicated.html)
 
 Package Modules
 ---------------
+* improved support for the MPI module when using CHPL_COMM=ugni or gasnet/aries
+* improved support for using the MPI module with CHPL_TASKS=qthreads
+* added diag() to 'LinearAlgebra' to support diagonal (and off-diagonal) access
+  (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
 
 Interoperability Improvements
 -----------------------------
@@ -53,9 +86,14 @@ Performance Optimizations/Improvements
 --------------------------------------
 * improved wide-pointer analysis for 'const ref' arguments
 * improved the performance of dynamic casting / subclass checks
+* optimized bulkAdd calls for empty sparse domains
+* improved the ability of the LLVM back-end to vectorize Chapel code
+* optimized strided puts and gets for CHPL_COMM=ugni
+* fixed locality for parallel iteration over distributed sparse domains/arrays
 
 Memory Improvements
 -------------------
+* 
 
 Example Codes
 -------------
@@ -63,8 +101,10 @@ Example Codes
   (see examples/benchmarks/shootout/mandelbrot-fast.chpl and
    examples/benchmarks/shootout/chameneosredux-fast.chpl)
 
-Tool Changes
-------------
+New Tools / Tool Changes
+------------------------
+* added a new c2chapel tool that converts C headers to Chapel extern decls
+  (see TODO)
 * made chpldoc issue a warning if it detects open/close comment mismatches
 
 Documentation
@@ -72,13 +112,23 @@ Documentation
 * added a new 'Methods' chapter to the language spec and refreshed the content
 * improved the language specification's definition of records
 * fixed an oversight in the specification to indicate that '=' is overloadable
+* added missing documentation for range.low, high, stride, alignment, aligned
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
+* added missing documentation for reindex() and localSlice()
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex
+   and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
 
 Compiler Flags (see 'man chpl' for details)
 -------------------------------------------
 
+New Semantic Checks (for old semantics)
+---------------------------------------
+
 Locale Models
 -------------
 * improved the performance of arrays under the 'numa' locale model
+* ensured that the root locale is deleted upon program termination
+* ensured that existing locale models have appropriate deinit() routines
 
 Portability
 -----------
@@ -95,10 +145,12 @@ Cray-specific Changes
 Syntax Highlighting
 -------------------
 * added some missing keywords to 'vim'-based syntax highlighting
+* added new error-handling keywords to the 'vim' and 'highlight' highlighters
 
 Error Messages
 --------------
-* added a user-facing error for --library compiles containing a main() routine
+* added a warning for --library compiles on code containing a main() routine
+* extended --div-by-zero-checks to also check for modulus (%) 0 operations
 
 Runtime Error Checks
 --------------------
@@ -112,6 +164,12 @@ Bug Fixes
 * fixed a bug in complicated type aliases
 * fixed a bug in which control flow would confuse an initializer's phases
 * fixed a bug with respect to generic initializers and copy initializers
+* fixed a bug in denormalization for '~' for small integers
+* fixed a bug in which remote-value forwarding didn't handle dereferences well
+* fixed a bug in which a qualified module reference was incorrectly shadowed
+* fixed a bug relating to scoped accesses to internal modules
+* fixed a bug related to 'throw'ing from generic functions
+* fixed bugs in counting tasks and creating the right number of new tasks
 
 Launchers
 ---------
@@ -133,12 +191,16 @@ Third-Party Software Changes
 
 Testing System
 --------------
+* improve redirection of stderr into log files
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
+* added support for CHPL_JEMALLOC=system to enable use of a system jemalloc
+* added support for CHPL_HWLOC=system
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* simplified how automatic 'use's are handled in internal modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -156,13 +218,23 @@ Developer-oriented changes: Compiler improvements/changes
 * cleaned up / refactored aspects of file handling, parsing, and building AST
 * added support for traversing the top-level modules
 * refactored the cleanup pass to process a module at a time and cleaned it up
+* cleaned up aspects of buildDefaultFunctions
+* many other code cleanups, reorganizations, and refactorings
+* cleaned up how the compiler manages the 'program' and 'root' modules
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
 * fixed a bug in which CHIPs couldn't be built into HTML
 
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+* added a field to the 'channel' record indicating the originating locale
+
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* improved the mechanism we use to look for bad memory allocation calls
+* updated get/put runtime calls to include a file-unique ID
+* added wrapper functions for direct calls to the system memory allocator
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
@@ -282,7 +354,7 @@ Feature Improvements
 
 Known Feature Slips
 -------------------
-* domains of reindexed distributed arrays are not distributed as they should be
+* domains of reindexed distriubted arrays are not distributed as they should be
 * removed support for having first-class functions capture outer variables
 
 Removed Features
