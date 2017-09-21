@@ -1466,7 +1466,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
+    compilerError("Bounds of 'low..high' must be integers of compatible types.");
     yield nil;
   }
 
