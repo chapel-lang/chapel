@@ -12,14 +12,29 @@ use Regexp;
 // - allow for exclusion of a pattern
 //
 
+proc hasOptions(args : [] string, const opts : string ...) {
+  var ret = false;
+
+  for a in args {
+    for o in opts {
+      if a == o {
+        ret = true;
+      }
+    }
+  }
+
+  return ret;
+}
+
 proc masonSearch(origArgs : [] string) {
   var args : [1..origArgs.size] string = origArgs;
 
-  const printHelp = || reduce [a in args] (a == "-h" || a == "--help");
-  if printHelp {
+  if hasOptions(args, "-h", "--help") {
     masonSearchHelp();
     exit(0);
   }
+
+  const debug = hasOptions(args, "--debug");
 
   updateRegistry("", args);
 
@@ -34,12 +49,16 @@ proc masonSearch(origArgs : [] string) {
 
   var results : [1..0] string;
   for dir in listdir(searchDir, files=false, dirs=true) {
-    if pattern.search(dir) {
+    const name = dir.replace("/", "");
 
-      const pkg = dir.replace("/", "");
+    if isHidden(name) {
+      if debug {
+        writeln("[DEBUG] found hidden package: ", name);
+      }
+    }
+    else if pattern.search(name) {
       const ver = findLatest(searchDir + dir);
-
-      results.push_back(pkg + " (" + ver.str() + ")");
+      results.push_back(name + " (" + ver.str() + ")");
     }
   }
   for r in results.sorted() do writeln(r);
@@ -47,6 +66,10 @@ proc masonSearch(origArgs : [] string) {
   if results.size == 0 {
     exit(1);
   }
+}
+
+proc isHidden(name : string) : bool {
+  return name.startsWith("_");
 }
 
 proc findLatest(packageDir) {
