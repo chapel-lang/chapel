@@ -369,33 +369,40 @@ Controlling the Heap Size
 
 The "heap" is an area of memory used for dynamic allocation of
 everything from user data to internal management data structures.
-When running on Cray XC/XE/XK systems using either of the following
-configurations, the comm layer needs to know the maximum size the
-heap will grow to during execution::
+When running on Cray XC/XE/XK systems using either of 2 particular
+comm layer configurations, the runtime needs to know the maximum
+size the heap will grow to during execution.  One of these is the
+default configuration, with the ugni comm layer::
+
+  CHPL_COMM=ugni
+    with a ``craype-hugepages`` module loaded
+
+In this configuration, the heap is used for all dynamic allocations
+except for data space for arrays larger than 2 hugepages.  (See `Using
+the ugni Communications Layer`_, below, for more about hugepages.)  The
+heap can be fairly small, because in nearly all programs that need a lot
+of memory, large arrays will drive the space requirements.  The default
+size of the heap in this case is 16 GiB.
+
+The other configuration is when the gasnet comm layer is used with a
+native substrate::
 
   CHPL_COMM=gasnet
     CHPL_COMM_SUBSTRATE=gemini or aries
     CHPL_GASNET_SEGMENT=fast or large
 
-or::
+In this case, the heap is used for all dynamic allocations, arrays and
+otherwise.  By default the heap will occupy as much of the free memory
+on each compute node as the runtime can acquire, less some amount to
+allow for demands from other (system) programs running there.
 
-  CHPL_COMM=ugni, with a craype-hugepages module loaded
-
-With ``CHPL_COMM=gasnet``, the heap is used for all dynamic allocations.
-By default in this case it will occupy as much of the free memory on
-each compute node as the runtime can acquire, less some amount to allow
-for demands from other (system) programs running there.  With
-``CHPL_COMM=ugni``, the heap is used for all dynamic allocations other
-than data space for arrays larger than 2 hugepages.  Such array space is
-allocated separately.  In this case by default the heap will occupy 16
-GiB.
-
-Advanced users may want to make the heap smaller than this.  Programs
-start more quickly with a smaller heap, and in the unfortunate event
-that you need to produce core files, those will be written more quickly
-if the heap is smaller.  However, note that if you reduce the heap size
-to less than the amount your program actually needs and then run it, it
-will terminate prematurely due to not having enough memory.
+In either of these configurations, advanced users may want to make the
+heap smaller than the default.  Programs start more quickly with a
+smaller heap, and in the unfortunate event that you need to produce core
+files, those will be written more quickly if the heap is smaller.
+However, note that if you reduce the heap size to less than the amount
+your program actually needs and then run it, it will terminate
+prematurely due to not having enough memory.
 
 To change the heap size, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
 variable.  Set it to just a number to specify the size of the heap in
@@ -413,8 +420,8 @@ following would set the heap size to 1 GiB, for example:
 
 Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
 internally to match the page alignment.  How much, if any, this will add
-depends on the hugepage size in any craype-hugepage module you have loaded at
-the time you execute the program.
+depends on the hugepage size in any ``craype-hugepage`` module you have
+loaded at the time you execute the program.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 ``GASNET_MAX_SEGSIZE``, and the former overrides the latter if both are set.
@@ -467,7 +474,7 @@ To use ugni communications:
    with those to be selected automatically.
 
 
-3) *(Optional)* Load an appropriate craype-hugepages module.  For example::
+3) *(Optional)* Load an appropriate ``craype-hugepages`` module.  For example::
 
      module load craype-hugepages16M
 
@@ -512,55 +519,11 @@ To use ugni communications:
    faster program startup, and its 16 MiB hugepages will cover the node
    memory on any Cray X-series system.
 
-When hugepages are used with the ugni comm layer, tasking layers
-cannot use guard pages for stack overflow detection.  Qthreads tasking
-cannot detect stack overflow except by means of guard pages, so if ugni
-communications is combined with qthreads tasking, overflow detection is
-turned off completely.
-
-
-Array Allocation with ugni and Out-of-memory Conditions
-_______________________________________________________
-
-As mentioned above in `Controlling the Heap Size`_, with
-``CHPL_COMM=ugni`` and a hugepage module loaded, the data space for
-arrays larger than 2 hugepages is allocated outside the heap.
-This lets the default heap be quite a bit smaller, because in any
-program that needs a significant amount of memory, large arrays are the
-biggest contributor to the space requirements.
-It also allows programs to reap the benefit of NUMA localization due to
-first-touch behavior during array initialization,
-even with the memory registration needed for performance with the Cray
-NICs.
-
-In the Chapel 1.16 release, however, there is a side effect related to
-this separate allocation if the program runs out of memory while
-creating an array.
-Normally when this happens the array space allocation itself fails and
-the runtime issues something like this message::
-
-  Out of memory allocating "array elements"
-
-The program then halts.  What can happen instead in Chapel 1.16 is that
-the allocation will seem to succeed and then the program with get a
-``SIGBUS`` signal later, when it tries to initialize the memory.  This
-can result in a fair amount of error output, but it will always contain
-this line with a ``slurm`` workload manager::
-
-  srun: error: <nodename>: task <ID>: Bus error
-
-or this line with a PBS or Moab/Torque workload manager::
-
-  Process died with signal 7: 'Bus error'
-
-We expect to be able to restore the previous behavior in the Chapel 1.17
-release (or earlier for a build from sources), but until then these
-messages can be taken as diagnostic for the program having run out of
-memory when trying to create space for an array.
-
-
-There is one special parameter recognized by the ugni communication
-layer:
+   Note that when hugepages are used with the ugni comm layer, tasking
+   layers cannot use guard pages for stack overflow detection.  Qthreads
+   tasking cannot detect stack overflow except by means of guard pages,
+   so if ugni communications is combined with qthreads tasking, stack
+   overflow detection is unavailable.
 
 
 Communication Layer Concurrency
@@ -663,6 +626,34 @@ Known Constraints and Bugs
   above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
 
      $CHPL_HOME/third-party/gasnet/gasnet-src/README
+
+* As mentioned in `Controlling the Heap Size`_, with ``CHPL_COMM=ugni``
+  and a hugepage module loaded, large arrays are allocated separately
+  from the heap.  This can change how programs report out-of-memory
+  conditions when creating an array.  With heap allocation, when a
+  program runs out of memory it prints this message and then halts::
+
+    Out of memory allocating "array elements"
+
+  For an array allocated outside the heap, however, the allocation may
+  seem to succeed and then the program will get an interrupt later, when
+  it tries to initialize the memory.  If this happens a ``Bus error``
+  signal will be reported, either like this with a SLURM workload
+  manager::
+
+    srun: error: <nodename>: task <ID>: Bus error
+
+  or like this with a PBS Pro or Moab/Torque workload manager::
+
+    Process died with signal 7: 'Bus error'
+
+  These messages are not perfectly diagnostic because there are other
+  program errors that can cause the same signal, notably misaligned
+  memory references.  However, such errors are not at all common in
+  Chapel by the nature of the language.  So in general, these messages
+  can be taken as indicating that the program ran out of memory when
+  trying to create space for a large array.  We expect to be able to
+  restore the previous behavior in the future.
 
 
 ---------------
