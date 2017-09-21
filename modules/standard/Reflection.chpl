@@ -49,7 +49,14 @@ proc getFieldName(type t, param i:int) param : string
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
-pragma "no doc"
+/* Get the ith field in a class or record. When the ith field is
+   a `param` this overload will be chosen to return a `param`.
+   Causes a compilation error if `i` is not in 1..numFields(t).
+
+   :arg x: a class or record
+   :arg i: which field to get
+   :returns: the `param` that field represents
+*/
 proc getField(const ref x:?t, param i: int) param
   where i > 0 && i <= numFields(t) &&
         isParam(__primitive("field by num", x, i)) {
@@ -59,7 +66,14 @@ proc getField(const ref x:?t, param i: int) param
 
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
-pragma "no doc"
+/* Get the ith field in a class or record. When the ith field is
+   a `type` variable this overload will be chosen to return a type.
+   Causes a compilation error if `i` is not in 1..numFields(t).
+
+   :arg x: a class or record
+   :arg i: which field to get
+   :returns: the type that field represents
+*/
 proc getField(const ref x:?t, param i: int) type
   where i > 0 && i <= numFields(t) &&
         isType(__primitive("field by num", x, i)) {
@@ -78,14 +92,30 @@ inline
 proc getField(const ref x:?t, param i:int) const ref
   return __primitive("field by num", x, i);
 
-pragma "no doc"
+/* Get a field in a class or record by name. When the named
+   field is a `param` this overload will be chosen to return a
+   `param`. Will generate a compilation error if a field with
+   that name is not found.
+
+   :arg x: a class or record
+   :arg s: the name of a field
+   :returns: the `param` that field represents
+ */
 proc getField(const ref x:?t, param s: string) param
   where getFieldIndex(t, s) != 0 && isParam(getField(x, getFieldIndex(t, s))) {
 
   return getField(x, getFieldIndex(t, s));
 }
 
-pragma "no doc"
+/* Get a field in a class or record by name. When the named
+   field is a `type` variable this overload will be chosen to
+   return a type. Will generate a compilation error if a field
+   with that name is not found.
+
+   :arg x: a class or record
+   :arg s: the name of a field
+   :returns: the type that field represents
+ */
 proc getField(const ref x:?t, param s: string) type
   where getFieldIndex(t, s) != 0 && isType(getField(x, getFieldIndex(t, s))) {
 
