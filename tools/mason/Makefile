@@ -37,7 +37,7 @@ REGISTRY=https://github.com/chapel-lang/mason-registry
 
 registry = $(MASON_HOME)/.mason/registry/
 
-MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonUtils.chpl mason.chpl
+MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonSearch.chpl MasonUtils.chpl mason.chpl
 
 all: mason
 

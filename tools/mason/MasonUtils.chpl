@@ -92,6 +92,34 @@ proc MASON_HOME: string {
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
 
+  proc init() {
+    major = -1;
+    minor = -1;
+    bug = 0;
+  }
+
+  proc init(other:VersionInfo) {
+    this.major = other.major;
+    this.minor = other.minor;
+    this.bug   = other.bug;
+  }
+
+  proc init(maj : int, min : int, bug: int) {
+    this.major = maj;
+    this.minor = min;
+    this.bug   = bug;
+  }
+
+  proc init(str:string) {
+    super.init();
+    const s : [1..3] string = str.split(".");
+    assert(s.size == 3);
+
+    major = s[1]:int;
+    minor = s[2]:int;
+    bug   = s[3]:int;
+  }
+
   proc str() {
     return major + "." + minor + "." + bug;
   }
@@ -115,6 +143,9 @@ proc <=(a:VersionInfo, b:VersionInfo) : bool {
 }
 proc ==(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) == 0;
+}
+proc >(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) > 0;
 }
 
 

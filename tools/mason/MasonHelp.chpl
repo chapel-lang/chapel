@@ -100,3 +100,22 @@ proc masonNewHelp() {
   writeln('        --no-vcs                 Do not initialize a git repository');
   
 }
+
+proc masonSearchHelp() {
+  const desc =
+"When no query is provided, all packages in the registry will be listed. The\n" +
+"query will be used in a case-insensitive search of all packages in the\n" +
+"registry.\n" +
+"\n" +
+"Packages will be listed regardless of their chplVersion compatibility.";
+
+  writeln("Search the registry for a package");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason search [options] <query>");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln(desc);
+}
