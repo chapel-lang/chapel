@@ -130,7 +130,6 @@ Building Chapel for a Cray System from Source
       ===========================  ==============================
       ...the GNU compiler (gcc)    gnu    (default)
       ...the Intel compiler (icc)  intel
-      ...the PGI compiler (pgcc)   pgi
       ===========================  ==============================
 
    On a Cray X-series system, ensure that you have one of the following
@@ -139,23 +138,13 @@ Building Chapel for a Cray System from Source
        PrgEnv-cray
        PrgEnv-gnu
        PrgEnv-intel
-       PrgEnv-pgi
 
    For PrgEnv-cray we recommend using CCE 8.4 or newer for best performance.
    This allows us to build our recommended third-party packages (i.e. allows
    us to default to CHPL_TASKS=qthreads instead of CHPL_TASKS=fifo)
 
-4) By default, ``g++`` will be used to compile code that runs on the login
-   node, such as the Chapel compiler and launcher code.  Optionally, you can
-   override this default by setting ``CHPL_HOST_COMPILER`` to one of the
-   following values:
 
-     :``gnu``: the GNU compiler suite -- ``gcc`` and ``g++``
-     :``intel``: the Intel compiler suite -- ``icc`` and ``icpc``
-     :``pgi``: the PGI compiler suite -- ``pgcc`` and ``pgc++``
-
-
-5) Optionally, set one or more of the following environment variables to
+4) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
    :ref:`readme-chplenv`.
 
@@ -167,7 +156,7 @@ Building Chapel for a Cray System from Source
    information about using Chapel with InfiniBand.
 
 
-6) Make sure you're in the top-level chapel/ directory and make/re-make the
+5) Make sure you're in the top-level chapel/ directory and make/re-make the
    compiler and runtime::
 
      gmake
