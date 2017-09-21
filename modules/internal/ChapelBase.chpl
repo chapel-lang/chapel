@@ -1285,6 +1285,11 @@ module ChapelBase {
                     arg.type:string);
   }
 
+  inline proc chpl__delete(args...) {
+    for param i in 1..args.size do
+      chpl__delete(args(i));
+  }
+
   // c_void_ptr operations
   inline proc =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
   inline proc ==(a: c_void_ptr, b: c_void_ptr) {

@@ -2987,6 +2987,12 @@ BlockStmt* buildPrimitiveStmt(PrimitiveTag tag, Expr* e1, Expr* e2) {
   return buildChapelStmt(new CallExpr(tag, e1, e2));
 }
 
+
+BlockStmt* buildDeleteStmt(CallExpr* exprlist) {
+  INT_ASSERT(exprlist->isPrimitive(PRIM_ACTUALS_LIST));
+  return new BlockStmt(new CallExpr("chpl__delete", exprlist), BLOCK_SCOPELESS);
+}
+
 BlockStmt*
 buildAtomicStmt(Expr* stmt) {
   static bool atomic_warning = false;
