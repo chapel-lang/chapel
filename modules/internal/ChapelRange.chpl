@@ -1454,20 +1454,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     compilerError("can't apply 'by' to a range with idxType ",
                   int(w):string, " using a step of type ",
                   stride.type:string);
-    yield nil;
   }
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   uint(w):string, " using a step of type ",
                   stride.type:string);
-    yield nil;
   }
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
     compilerError("Bounds of 'low..high' must be integers of compatible types.");
-    yield nil;
   }
 
 
@@ -1495,12 +1492,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     compilerError("can't apply '#' to a range with idxType ",
                   low.type:string, " using a count of type ",
                   count.type:string);
-    yield nil;
   }
 
   iter chpl_direct_counted_range_iter(low, count) {
     compilerError("Bound of 'low..' must be an integer");
-    yield nil;
   }
 
   // The "actual" counted range iter. Turn the bounds of a low bounded counted
