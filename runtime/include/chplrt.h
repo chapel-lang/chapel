@@ -38,8 +38,6 @@
 
 #define _noop(x)
 
-#define exit    dont_use_exit_use_chpl_exit_instead
-
 #endif // LAUNCHER
 
 #endif
