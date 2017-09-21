@@ -1,6 +1,173 @@
 Release Changes List
 ====================
 
+*** stopped at 4c68fa0 2017-05-01 ***
+
+TODO: remove 'master' from any docs links
+TODO: move docs to top-level?
+
+version 1.16.0
+==============
+
+Nineteenth public release of Chapel, September 20, 2017
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Deployment
+----------
+
+New Features
+------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+Syntactic/Naming Changes
+------------------------
+
+Feature Improvements
+--------------------
+* significantly improved the implementation of initializers
+  (see TODO)
+
+Known Feature Slips
+-------------------
+
+Removed Features
+----------------
+
+Standard Modules/Library
+------------------------
+* added an asciiToString function that converts a uint(8) into a string
+  (http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
+* improved support for the MPI module when using CHPL_COMM=ugni or gasnet/aries
+
+Package Modules
+---------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations/Improvements
+--------------------------------------
+* improved wide-pointer analysis for 'const ref' arguments
+* improved the performance of dynamic casting / subclass checks
+
+Memory Improvements
+-------------------
+
+Example Codes
+-------------
+* added new faster versions of the mandelbrot and chameneos CLBG benchmarks
+  (see examples/benchmarks/shootout/mandelbrot-fast.chpl and
+   examples/benchmarks/shootout/chameneosredux-fast.chpl)
+
+Tool Changes
+------------
+* made chpldoc issue a warning if it detects open/close comment mismatches
+
+Documentation
+-------------
+* added a new 'Methods' chapter to the language spec and refreshed the content
+* improved the language specification's definition of records
+* fixed an oversight in the specification to indicate that '=' is overloadable
+
+Compiler Flags (see 'man chpl' for details)
+-------------------------------------------
+
+Locale Models
+-------------
+* improved the performance of arrays under the 'numa' locale model
+
+Portability
+-----------
+* improved code conformance with C++14
+* improved portability of code with respect to Cygwin
+
+Platform-specific Changes
+-------------------------
+
+Cray-specific Changes
+---------------------
+* removed caveat about ugni registration limits in Cray documentation
+
+Syntax Highlighting
+-------------------
+* added some missing keywords to 'vim'-based syntax highlighting
+
+Error Messages
+--------------
+* added a user-facing error for --library compiles containing a main() routine
+
+Runtime Error Checks
+--------------------
+
+Bug Fixes
+---------
+* fixed a portability bug in padding years in the DateTime module
+* fixed a bug in dead code elimination relating to local record types
+* fixed a bug comparing floating point expressions on linux32
+* fixed a bug in which functions nested within initializers couldn't return
+* fixed a bug in complicated type aliases
+* fixed a bug in which control flow would confuse an initializer's phases
+* fixed a bug with respect to generic initializers and copy initializers
+
+Launchers
+---------
+
+Runtime Library Changes
+-----------------------
+* retired support for CHPL_TASKS=muxed
+
+File/Directory Structure
+------------------------
+
+Generated Code
+--------------
+* cleaned up generated code for no-op statements referencing symbols
+
+Third-Party Software Changes
+----------------------------
+* updated RE2 to commit 2b16c27
+
+Testing System
+--------------
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+* made our Makefiles respect CFLAGS, CPPFLAGS, and CXXFLAGS
+* build the compiler with C++11 when possible for gcc, clang, icc
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+* flipped --log-ids to be on by default
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+* significant clean-up/refactoring of the compiler's resolution passes
+* converted more compiler data structures to use the STL
+* cleaned up / refactored aspects of file handling, parsing, and building AST
+* added support for traversing the top-level modules
+* refactored the cleanup pass to process a module at a time and cleaned it up
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+* fixed a bug in which CHIPs couldn't be built into HTML
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+
 
 version 1.15.0
 ==============
