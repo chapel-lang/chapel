@@ -49,7 +49,6 @@ char slurmFilename[FILENAME_MAX];
 /* copies of binary to run per node */
 #define procsPerNode 1
 
-#define versionBuffLen 80
 typedef enum {
   slurmpro,
   nccs,
@@ -76,27 +75,17 @@ static const char* getTmpDir(void) {
 
 // Check what version of slurm is on the system 
 static sbatchVersion determineSlurmVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
-  
-  sysFile = popen("sbatch --version", "r");
-  if (sysFile == NULL) {
-    return unknown;
-  }
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    tmp = fgetc(sysFile);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
-  }
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "sbatch";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  pclose(sysFile);
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine sbatch version", 0, 0);
+  }
 
   if (strstr(version, "SBATCHPro")) {
     return slurmpro;
