@@ -67,7 +67,7 @@ proc getField(const ref x:?t, param i: int) param
 // Note, since this version has a where clause, it is preferred
 // over the const ref one.
 /* Get the ith field in a class or record. When the ith field is
-   a type this overload will be chosen to return a type.
+   a `type` variable this overload will be chosen to return a type.
    Causes a compilation error if `i` is not in 1..numFields(t).
 
    :arg x: a class or record
@@ -93,9 +93,9 @@ proc getField(const ref x:?t, param i:int) const ref
   return __primitive("field by num", x, i);
 
 /* Get a field in a class or record by name. When the named
-   field is a `param` this overload will be chosen to return a `param`.
-   Will generate a compilation error if a field with that name
-   is not found.
+   field is a `param` this overload will be chosen to return a
+   `param`. Will generate a compilation error if a field with
+   that name is not found.
 
    :arg x: a class or record
    :arg s: the name of a field
@@ -108,9 +108,9 @@ proc getField(const ref x:?t, param s: string) param
 }
 
 /* Get a field in a class or record by name. When the named
-   field is a type this overload will be chosen to return a type.
-   Will generate a compilation error if a field with that name
-   is not found.
+   field is a `type` variable this overload will be chosen to
+   return a type. Will generate a compilation error if a field
+   with that name is not found.
 
    :arg x: a class or record
    :arg s: the name of a field
