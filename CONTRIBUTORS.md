@@ -16,15 +16,16 @@ Contributors to the current release
 * Ben Harshbarger, [Cray Inc.]
 * Serghei Iakovlev, individual contributor
 * David Iten, [Cray Inc.]
-* Louis Jenkins, individual contributor / [GSoC]
-* Engin Kayraklioglu, [George Washington University] / [Cray Inc.]
+* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC 2016] / [GSoC 2017] mentor
+* Louis Jenkins, individual contributor / [GSoC 2017]
+* Engin Kayraklioglu, [George Washington University] / [Cray Inc.] / [GSoC 2017] mentor
 * David Keaton, [Cray Inc.]
 * Krishna Keshav, individual contributor
-* Przemysław Leśniak, individual contributor / [GSoC]
+* Przemysław Leśniak, individual contributor / [GSoC 2017]
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
 * Barry Moore, [University of Pittsburgh]
-* Sarthak Munshi, individual contributor / [GSoC]
+* Sarthak Munshi, individual contributor / [GSoC 2017]
 * Michael Noakes, [Cray Inc.]
 * Nikhil Padmanabhan, [Yale University]
 * Nicholas Park, [DOD]
@@ -65,7 +66,6 @@ Contributors to previous releases
 * Tom Hildebrandt, [Cray Inc.]
 * Shannon Hoffswell[*](#footnote), [Cray Inc.]
 * Mary Beth Hribar[*](#footnote), [Cray Inc.]
-* Andrea Francesco Iuorio, [Università degli Studi di Milano] / [GSoC]
 * Mackale Joyner, [Cray Inc.] / [Rice University]
 * Jessica Jueckstock, [MITRE]
 * Sagar Khatri, individual contributor
@@ -93,7 +93,7 @@ Contributors to previous releases
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
 * Albert Sidelnik, [Cray Inc.] / [University of Illinois, Urbana-Champaign]
 * Marcos Cleison Silva Santana, individual contributor
-* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC]
+* Kushal Singh, [Int'l Institute of Information Technology, Hyderabad] /[GSoC 2016]
 * Darren Smith, [University of Maryland]
 * Rachel Sobel, [Cray Inc.] / [University of Washington]
 * Francisco Souza, individual contributor
@@ -161,7 +161,8 @@ implementation.
 [ETI]: http://www.etinternational.com/
 [George Washington University]: https://www.gwu.edu/
 [Georgia Tech]: http://www.cc.gatech.edu/
-[GSoC]: https://summerofcode.withgoogle.com/organizations/6472441615351808/
+[GSoC 2016]: https://summerofcode.withgoogle.com/organizations/6608321708556288/
+[GSoC 2017]: https://summerofcode.withgoogle.com/organizations/6472441615351808/
 [Haverford College]: https://www.haverford.edu/
 [Indiana University]: http://www.cs.indiana.edu/
 [Int'l Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
