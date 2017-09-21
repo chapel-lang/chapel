@@ -793,11 +793,13 @@ static void set_num_comm_domains() {
     chpl_error("Cannot setenv(\"GASNET_AM_DOMAIN_POLL_MASK\")", 0, 0);
   }
 
-  // for some reason a higher GASNET_DOMAIN_COUNT increases the exit time
+  // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
+  // See https://github.com/chapel-lang/chapel/issues/7251 and
+  // https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3621
   if (setenv("GASNET_EXITTIMEOUT_FACTOR", "0.5", 0) != 0) {
     chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_FACTOR\")", 0, 0);
   }
-  if (setenv("GASNET_EXITTIMEOUT_MIN", "5.0", 0) != 0) {
+  if (setenv("GASNET_EXITTIMEOUT_MIN", "10.0", 0) != 0) {
     chpl_error("Cannot setenv(\"GASNET_EXITTIMEOUT_MIN\")", 0, 0);
   }
 #endif
