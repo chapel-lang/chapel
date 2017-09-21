@@ -44,17 +44,6 @@ def run_command(cmd):
         return output[0]
 
 
-def get_alloc_funcs():
-    """Return a list of the possible C alloc/dealloc routines"""
-    std = ['malloc', 'calloc', 'realloc', 'free']
-    align = ['aligned_alloc', 'posix_memalign', 'memalign']
-    page_align = ['valloc', 'pvalloc']
-    string = ['strdup', 'strndup', 'asprintf', 'vasprintf']
-    obscure = ['getline', 'getdelim']
-
-    return std + align + page_align + string + obscure
-
-
 def find_files(search_dir, extensions):
     """Return a list of absolute paths to files with any of the provided
        extensions in the search_dir."""
@@ -95,11 +84,11 @@ def cscope_find_calls(func_call):
     return run_command(cscope_cmd)
 
 
-def check_for_alloc_calls(search_dir, exclude_paths=None, rel_paths=True):
-    """Check source files in search_dir for calls to the system allocator.
-       Don't check files that contain any of the exclude_paths.  Report files
-       relative to search_dir/../ if rel_paths is True, otherwise use absolute
-       paths. Returns True if alloc calls were found, False otherwise"""
+def check_for_calls(functions, search_dir, exclude_paths=None, rel_paths=True):
+    """Check source files in search_dir for calls to functions. Don't check
+       files that contain any of the exclude_paths.  Report files relative to
+       search_dir/../ if rel_paths is True, otherwise use absolute paths.
+       Returns True calls were found, False otherwise"""
     rel_dir = ''
     if rel_paths:
         rel_dir = os.path.abspath(os.path.join(search_dir, '..')) + os.path.sep
@@ -111,14 +100,31 @@ def check_for_alloc_calls(search_dir, exclude_paths=None, rel_paths=True):
 
     build_cscope_ref(src_files)
 
-    found_alloc_calls = False
-    for alloc_func in get_alloc_funcs():
-        out = cscope_find_calls(alloc_func)
+    found_calls = False
+    for func in functions:
+        out = cscope_find_calls(func)
         if out:
-            found_alloc_calls = True
-            log_error('found call to "{0}"'.format(alloc_func))
+            found_calls = True
+            log_error('found call to "{0}"'.format(func))
             sys.stdout.write(out.replace(rel_dir, '') + '\n')
-    return found_alloc_calls
+    return found_calls
+
+
+def get_alloc_funcs():
+    """Return a list of the possible C alloc/dealloc routines"""
+    std = ['malloc', 'calloc', 'realloc', 'free']
+    align = ['aligned_alloc', 'posix_memalign', 'memalign']
+    page_align = ['valloc', 'pvalloc']
+    string = ['strdup', 'strndup', 'asprintf', 'vasprintf']
+    obscure = ['getline', 'getdelim']
+
+    return std + align + page_align + string + obscure
+
+
+def check_for_alloc_calls(search_dir, exclude_paths=None, rel_paths=True):
+    """Check for calls to the system allocator. See check_for_calls() and
+       get_alloc_funcs() for more info."""
+    check_for_calls(get_alloc_funcs(), search_dir, exclude_paths, rel_paths)
 
 
 def main():
