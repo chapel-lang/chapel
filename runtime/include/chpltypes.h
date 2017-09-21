@@ -142,6 +142,16 @@ typedef struct wide_ptr_s {
 } wide_ptr_t;
 typedef wide_ptr_t* ptr_wide_ptr_t;
 
+#else
+// Just don't define wide_ptr_t. That way, other programs
+// (like the launcher) can still use chpltypes.h but anything
+// using it that doesn't get a wide pointer definition will
+// fail.
+//
+// We define ptr_wide_ptr_t however so some things, like qthreads
+// builds using chpl-comm.h (which uses that type to declare the
+// global variables registry), can continue to work.
+typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
 
 #define nil 0 
