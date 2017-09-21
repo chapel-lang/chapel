@@ -93,7 +93,7 @@ def cscope_find_calls(func_call, cscope_database):
 
 @contextlib.contextmanager
 def get_tmp_dir():
-    """Context lib for a temp fir. Would use tempfile.TemporaryDirectory(), but
+    """Contextlib for a temp dir. Would use tempfile.TemporaryDirectory(), but
        that's python >= 3.2"""
     try:
         tmp_dir = tempfile.mkdtemp()
