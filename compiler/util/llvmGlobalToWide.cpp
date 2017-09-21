@@ -81,7 +81,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "newRectangularDom";
+  static const char* debugThisFn = "";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
@@ -262,6 +262,42 @@ namespace {
                                                   wideAddrGEP,
                                                   "", insertBefore);
     return ptrSet;
+  }
+
+  // Creates a store/load pattern with bitcasts to implement complex
+  // type conversions (converting a wide pointer type to an integer type, say).
+  Instruction* createStoreLoadCast(Value* fromValue,
+                                   Type* toType,
+                                   Instruction* insertBefore) {
+
+    Function *inFunc = insertBefore->getParent()->getParent();
+    const DataLayout &DL = inFunc->getParent()->getDataLayout();
+
+    Type* allocType = toType;
+    if (DL.getTypeStoreSize(fromValue->getType()) >
+        DL.getTypeStoreSize(toType))
+      allocType = fromValue->getType();
+
+    Value* alloc = makeAlloca(allocType, "widecast", insertBefore);
+
+    Type* fromPtrType = fromValue->getType()->getPointerTo();
+    Type* newPtrType = toType->getPointerTo();
+
+    Value* allocAsFrom = alloc;
+    if (allocAsFrom->getType() != fromPtrType)
+      allocAsFrom = CastInst::CreatePointerCast(alloc, fromPtrType,
+                                                "", insertBefore);
+    Value* allocAsNew = alloc;
+    if (allocAsNew->getType() != newPtrType)
+      allocAsNew = CastInst::CreatePointerCast(alloc, newPtrType,
+                                               "", insertBefore);
+
+    new StoreInst(fromValue, allocAsFrom, "", insertBefore);
+    Instruction* load = new LoadInst(allocAsNew, "", insertBefore);
+
+    printf("Adding sequence\n");
+
+    return load;
   }
 
   void checkFunctionExistAndHasArgs(Constant* f, unsigned nArgs)
@@ -737,7 +773,26 @@ namespace {
             myReplaceInstWithInst(oldStore, put);
           }
           break; }
-        // TODO: PtrToInt and IntToPtr
+        case Instruction::PtrToInt: {
+          PtrToIntInst *ptrToInt = cast<PtrToIntInst>(insn);
+          if( ptrToInt->getPointerAddressSpace() == info->globalSpace ) {
+            Value* ptr = ptrToInt->getPointerOperand();
+            Instruction* conv = createStoreLoadCast(ptr,
+                                                    ptrToInt->getType(),
+                                                    ptrToInt);
+            myReplaceInstWithInst(ptrToInt, conv);
+          }
+          break; }
+        case Instruction::IntToPtr: {
+          IntToPtrInst *intToPtr = cast<IntToPtrInst>(insn);
+          if( intToPtr->getAddressSpace() == info->globalSpace ) {
+            Value* i = intToPtr->getOperand(0);
+            Instruction* conv = createStoreLoadCast(i,
+                                                    intToPtr->getType(),
+                                                    intToPtr);
+            myReplaceInstWithInst(intToPtr, conv);
+          }
+          break; }
         case Instruction::Call: {
           // handle e.g. wide2global, global2wide, memcpy
           CallInst *call = cast<CallInst>(insn);

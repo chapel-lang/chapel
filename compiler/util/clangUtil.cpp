@@ -1132,6 +1132,8 @@ void prepareCodegenLLVM()
     FM.setUnsafeAlgebra();
     info->builder->setFastMathFlags(FM);
   }
+
+  checkAdjustedDataLayout();
 }
 
 #if HAVE_LLVM_VER >= 33
@@ -2068,6 +2070,20 @@ void adjustLayoutForGlobalToWide()
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
   // wrong answer  because some i64s were stored at the wrong alignment).
   info->module->setDataLayout(layout);
+
+  checkAdjustedDataLayout();
+}
+
+void checkAdjustedDataLayout() {
+
+  if( ! fLLVMWideOpt ) return;
+
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  if (clangInfo->parseOnly) return;
 
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();

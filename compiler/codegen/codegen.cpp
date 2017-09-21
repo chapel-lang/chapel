@@ -2174,6 +2174,7 @@ void codegen(void) {
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
   if( llvmCodegen ) {
+    checkAdjustedDataLayout();
 #ifdef HAVE_LLVM
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),

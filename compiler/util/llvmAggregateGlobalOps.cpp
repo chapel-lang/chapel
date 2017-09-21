@@ -84,7 +84,7 @@ namespace {
 
 
 static const bool DEBUG = false;
-static const bool extraChecks = false;
+static const bool extraChecks = true;
 // Set a function name here to get lots of debugging output.
 static const char* debugThisFn = "";
 
@@ -661,6 +661,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       Type* iNewBaseTy = TD->getIntPtrType(alloc->getType());
       oldBaseI = builder.CreatePtrToInt(StartPtr, iPtrTy, "agg.tmp.oldb.i");
       newBaseI = builder.CreatePtrToInt(alloc, iNewBaseTy, "agg.tmp.newb.i");
+
+      printf("Creating ptrtoint\n");
     }
 
     // If storing, do the stores we had into our alloca'd region.
@@ -846,6 +848,9 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
     verifyFunction(F);
 #endif
   }
+
+  if (MadeChange)
+    printf("AggregateGlobalOpsOpt changed %s\n", F.getName().str().c_str());
 
   //MD = 0;
   return MadeChange;
