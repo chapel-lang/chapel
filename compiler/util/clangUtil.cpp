@@ -583,8 +583,6 @@ class CCodeGenConsumer : public ASTConsumer {
         info->module = Builder->GetModule();
         info->clangInfo->cCodeGen = Builder;
 
-        printf("Module is %p\n", info->module);
-
         // compute target triple, data layout
         setupModule();
       }
@@ -595,9 +593,6 @@ class CCodeGenConsumer : public ASTConsumer {
     // Start ASTVisitor Overrides
     void Initialize(ASTContext &Context) LLVM_CXX_OVERRIDE {
 
-      printf("Data layout in Initialize 1 %s\n",
-             info->module->getDataLayout().getStringRepresentation().c_str());
-
       setupClangContext(info, &Context);
 
       if (parseOnly) return;
@@ -607,15 +602,7 @@ class CCodeGenConsumer : public ASTConsumer {
       Builder->Initialize(Context);
 
       // Adjust the data layout again since it might have been overwritten.
-      printf("Data layout in Initialize 2 %s\n",
-             info->module->getDataLayout().getStringRepresentation().c_str());
-
       adjustLayoutForGlobalToWide();
-
-      printf("Data layout in Initialize 3 %s\n",
-             info->module->getDataLayout().getStringRepresentation().c_str());
-
-      printf("Initialize Module is %p\n", info->module);
     }
 
     // HandleTopLevelDecl - Handle the specified top-level declaration.
@@ -1021,9 +1008,6 @@ static void setupModule()
   info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
 
   adjustLayoutForGlobalToWide();
-
-  printf("Data layout in setupModule %s\n",
-         info->module->getDataLayout().getStringRepresentation().c_str());
 
   // Also setup some basic TBAA metadata nodes.
   llvm::LLVMContext& cx = info->module->getContext();
@@ -2187,9 +2171,6 @@ void makeBinaryLLVM(void) {
 
   adjustLayoutForGlobalToWide();
 
-  printf("Data layout before opts %s\n",
-         info->module->getDataLayout().getStringRepresentation().c_str());
-
   llvm::legacy::PassManager *mpm = new llvm::legacy::PassManager();
 
   // Add the TargetLibraryInfo pass
@@ -2203,13 +2184,9 @@ void makeBinaryLLVM(void) {
 
   delete mpm;
 
-  printf("Data layout after opts %s\n",
-         info->module->getDataLayout().getStringRepresentation().c_str());
   // Reset the data layout.
   // Note that EmitBackendOutput does this no matter what we do.
   info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
-  printf("Data layout before EmitBackendOutput %s\n",
-         info->module->getDataLayout().getStringRepresentation().c_str());
 
   // Set llvm options
   if (llvmFlags != "") {
