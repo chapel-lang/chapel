@@ -1476,19 +1476,19 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //
 
   iter chpl_direct_counted_range_iter(low: int(?w), count: int(w)) {
-    for i in chpl_direct_real_counted_range_iter(low, count) do yield i;
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: int(?w), count: uint(w)) {
-    for i in chpl_direct_real_counted_range_iter(low, count) do yield i;
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: uint(?w), count: int(w)) {
-    for i in chpl_direct_real_counted_range_iter(low, count) do yield i;
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
-    for i in chpl_direct_real_counted_range_iter(low, count) do yield i;
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: integral, count) {
@@ -1507,7 +1507,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // range into the bounds of a fully bounded non-strided range. `low..#count`
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
   // and for zero counts iterates over a degenerate `1..0`.
-  iter chpl_direct_real_counted_range_iter(low, count) {
+  iter chpl_direct_counted_range_iter_helper(low, count) {
     if isIntType(count.type) && count < 0 then
       halt("With a negative count, the range must have a last index.");
 
