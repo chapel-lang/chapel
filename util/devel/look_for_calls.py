@@ -14,11 +14,14 @@ success, 1 if calls were found, and 2 if there were fatal errors trying to run
 this script.
 """
 
+import contextlib
 import fnmatch
 import optparse
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 def log_error(msg, fatal=False):
     """Log an error, exiting if fatal"""
@@ -68,22 +71,35 @@ def find_source_files(search_dir):
     return find_files(search_dir, code_file_exts)
 
 
-def build_cscope_ref(src_files):
+def build_cscope_ref(src_files, cscope_database):
     """Build a cscope cross-reference for crazy fast searching of src_files"""
     # -bu -- build cross ref only, wipe any old cross refs
     # -q  -- enable faster symbol lookup
     # -k  -- turns off default include dir (don't include/parse system files
     #        since we only care if our files call the system allocator)
-    cscope_cmd = ['cscope', '-bu', '-q', '-k'] + src_files
+    db_name = '-f{0}'.format(cscope_database)
+    cscope_cmd = ['cscope', '-bu', '-q', '-k', db_name] + src_files
     run_command(cscope_cmd)
 
 
-def cscope_find_calls(func_call):
+def cscope_find_calls(func_call, cscope_database):
     """Run cscope searching for calls to func_call"""
     # -d  -- don't rebuild the cross-reference, use the one we already built
     # -L3 -- line based "Find functions calling this function"
-    cscope_cmd = ['cscope', '-d', '-L3{0}'.format(func_call)]
+    db_name = '-f{0}'.format(cscope_database)
+    cscope_cmd = ['cscope', '-d', '-L3{0}'.format(func_call), db_name]
     return run_command(cscope_cmd)
+
+
+@contextlib.contextmanager
+def get_tmp_dir():
+    """Context lib for a temp fir. Would use tempfile.TemporaryDirectory(), but
+       that's python >= 3.2"""
+    try:
+        tmp_dir = tempfile.mkdtemp()
+        yield tmp_dir
+    finally:
+        shutil.rmtree(tmp_dir)
 
 
 def check_for_calls(functions, search_dir, exclude_paths=None, rel_paths=True):
@@ -100,16 +116,19 @@ def check_for_calls(functions, search_dir, exclude_paths=None, rel_paths=True):
         for exclude_path in exclude_paths:
             src_files = [s for s in src_files if exclude_path not in s]
 
-    build_cscope_ref(src_files)
+    with get_tmp_dir() as tmp_dir:
+        cscope_database_name = os.path.join(tmp_dir, 'cscope')
+        build_cscope_ref(src_files, cscope_database_name)
 
-    found_calls = False
-    for func in functions:
-        out = cscope_find_calls(func)
-        if out:
-            found_calls = True
-            log_error('found call to "{0}"'.format(func))
-            sys.stdout.write(out.replace(rel_dir, '') + '\n')
-    return found_calls
+        found_calls = False
+        for func in functions:
+            out = cscope_find_calls(func, cscope_database_name)
+            if out:
+                found_calls = True
+                log_error('found call to "{0}"'.format(func))
+                sys.stdout.write(out.replace(rel_dir, '') + '\n')
+
+        return found_calls
 
 
 def get_alloc_funcs():
