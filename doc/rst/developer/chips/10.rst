@@ -429,6 +429,92 @@ argument list for all constructors, but forbade the manipulation of these fields
 within the constructor body.  That design was deemed unnecessarily confusing and
 restrictive for users.
 
+Type Declarations of Generic Instantiations
++++++++++++++++++++++++++++++++++++++++++++
+
+In keeping with prior practice, an instance of a generic class or record that
+defines an initializer may be declared with a specific generic instantiation of
+its type (with or without an initial value).  This generic instantiation must
+include an argument per generic field, even if no initializers are provided that
+match it.  For instance:
+
+.. code-block:: chapel
+
+   class Foo {
+     param p: int;
+
+     proc init() {
+       p = 4;
+       super.init();
+     }
+   }
+
+   var foo: Foo(4); // Declares an instantiation where p = 4.
+
+The above program declares a legal generic instantiation of Foo.  An instance of
+that instantiation can be created via a call to ``new`` with no arguments.
+
+.. code-block:: chapel
+
+   var foo: Foo(2);
+
+The above line is also a legal generic instantiation of Foo.  However, no
+instance of that instantiation can be created (other than ``nil``), as the sole
+provided initializer will only generate instances of Foo(4).  This allows the
+type creator to limit the instances of Foo available to the user.
+
+This becomes more obvious in the case of generic records.  Records are
+initialized upon declaration, so a call to one of the record's initializers
+would be generated after the type instantiation was determined.  If the record
+is concrete, the generated call will contain no actuals.  If the record is
+generic, it will contain an argument per generic field, determined by the type
+constructor call that was used.  For instance,
+
+.. code-block:: chapel
+
+   record Foo {
+     type t;
+     var x: int;
+
+     proc init(type tVal) {
+       t = tVal;
+       x = 10;
+       super.init();
+     }
+   }
+
+   var foo: Foo(int);
+
+The above code will create an instance of Foo with t set to int and x set to 10,
+as specified by the defined initializer, because the initializer contains just
+one type argument and so matches against the generated call.  The defined type
+and the type created by the initializer match, so no issues will be encountered.
+
+If the initializer were defined thusly:
+
+.. code-block:: chapel
+
+   proc init(type tVal) {
+     if (tVal != x.type) {
+       t = x.type;
+     } else {
+       t = tVal;
+     }
+     x = 10;
+     super.init();
+   }
+
+then a call of the form
+
+.. code-block:: chapel
+
+   var foo: Foo(real);
+
+would run into issues - the initializer accepts a type argument; however, it
+may not use that argument when setting the generic type field.  This means that
+the initializer may generate a different type than the type constructor with the
+same argument, so the program will fail to compile.
+
 
 Implementation Strategy, Misc.
 ++++++++++++++++++++++++++++++
