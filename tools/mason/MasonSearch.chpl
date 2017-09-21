@@ -93,7 +93,7 @@ proc consumeArgs(ref args : [] string) {
   assert(sub == "search");
   args.pop_front();
 
-  const options = {"--no-update-registry"};
+  const options = {"--no-update-registry", "--debug"};
 
   while args.size > 0 && options.member(args.head()) {
     args.pop_front();
