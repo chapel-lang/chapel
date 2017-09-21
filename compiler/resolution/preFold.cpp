@@ -274,12 +274,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_DELETE)) {
-    retval = new CallExpr("chpl__delete", call->get(1)->remove());
-
-    call->replace(retval);
-
-
   } else if (call->isPrimitive(PRIM_DEREF)) {
     // remove deref if arg is already a value
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
