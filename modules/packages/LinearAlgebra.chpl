@@ -370,7 +370,10 @@ proc transpose(A: [?Dom] ?eltType) where Dom: domain(2) {
 }
 
 /* Transpose vector or matrix */
-proc _array.T where this.domain.rank == 2 { return transpose(this); }
+proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
+{
+  return transpose(this);
+}
 
 /* Add matrices, maintaining dimensions, deprecated for ``_array.plus`` */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
@@ -435,11 +438,16 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(
     return matMult(A, B);
 }
 
+/* Compute the dot-product */
+proc _array.dot(A: []) where isDefaultRectangularArr(this) && isDefaultRectangularArr(A) {
+  return LinearAlgebra.dot(this, A);
+}
+
 
 pragma "no doc"
 /* Element-wise scalar multiplication */
 proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
-  var C: [Adom] eltType = A*b;
+  var C: A.type = A * b;
   return C;
 }
 
@@ -447,7 +455,8 @@ proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
 pragma "no doc"
 /* Element-wise scalar multiplication */
 proc dot(a, B: []) where isNumeric(a) {
-  return dot(B, a);
+  var C: B.type = B * a ;
+  return C;
 }
 
 
@@ -1111,8 +1120,13 @@ module Sparse {
   }
 
   /* Compute the dot-product */
-  proc _array.dot(A: []) where isCSArr(A) {
-    return dot(this, A);
+  proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
+    return LinearAlgebra.Sparse.dot(this, A);
+  }
+
+  /* Compute the dot-product */
+  proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
+    return LinearAlgebra.dot(this, a);
   }
 
 
