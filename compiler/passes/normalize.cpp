@@ -51,7 +51,6 @@ static void handleReduceAssign();
 static void fixup_array_formals(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
 
-
 static bool isConstructor(FnSymbol* fn);
 static bool isInitMethod (FnSymbol* fn);
 
@@ -437,13 +436,17 @@ static void handleReduceAssign() {
 //
 static void insertCallTempsForRiSpecs(BaseAST* base) {
   std::vector<ForallStmt*> forallStmts;
-  collectForallStmts(base, forallStmts);
-  for_vector(ForallStmt, fs, forallStmts)
-    for_shadow_vars(svar, temp, fs)
-      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr()))
-        insertCallTempsWithStmt(specCall, fs);
-}
 
+  collectForallStmts(base, forallStmts);
+
+  for_vector(ForallStmt, fs, forallStmts) {
+    for_shadow_vars(svar, temp, fs) {
+      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr())) {
+        insertCallTempsWithStmt(specCall, fs);
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -1299,81 +1302,81 @@ static bool  moveMakesTypeAlias(CallExpr* call);
 static Type* typeForNewNonGenericRecord(CallExpr* call);
 
 static void insertCallTemps(CallExpr* call) {
-  if (shouldInsertCallTemps(call))
+  if (shouldInsertCallTemps(call) == true) {
     insertCallTempsWithStmt(call, call->getStmtExpr());
+  }
 }
 
 static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
-    SET_LINENO(call);
+  SET_LINENO(call);
 
-    CallExpr*  parentCall = toCallExpr(call->parentExpr);
-    VarSymbol* tmp        = newTemp("call_tmp");
+  CallExpr*  parentCall = toCallExpr(call->parentExpr);
+  VarSymbol* tmp        = newTemp("call_tmp");
 
+  stmt->insertBefore(new DefExpr(tmp));
+
+  if (call->isPrimitive(PRIM_NEW)    == true) {
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+  }
+
+  if (call->isPrimitive(PRIM_TYPEOF) == true) {
+    tmp->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  evaluateAutoDestroy(call, tmp);
+
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
+
+  if (call->isNamed("super")            == true &&
+      parentCall                        != NULL &&
+      parentCall->isNamedAstr(astrSdot) == true &&
+      parentCall->get(1)                == call) {
+    // We've got an access to a method or field on the super type.
+    // This means we should preserve that knowledge for when we
+    // attempt to access the method on the super type.
+    tmp->addFlag(FLAG_SUPER_TEMP);
+  }
+
+  // Is this a new-expression for a record with an initializer?
+  if (Type* type = typeForNewNonGenericRecord(call)) {
+    // Define the type for the tmp
+    tmp->type = type;
+
+    // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
+    // Extract the argument to the new expression
+    CallExpr* newArg = toCallExpr(call->get(1));
+
+    // Convert the argument for the new-expression into an init call
+    newArg->setUnresolvedFunction("init");
+
+    // Add _mt and _this (insert at head in reverse order)
+    newArg->insertAtHead(tmp);
+    newArg->insertAtHead(gMethodToken);
+
+    // Move the tmp.init(args) expression to before the call
+    stmt->insertBefore(newArg->remove());
+
+    // Replace the degenerate new-expression with a use of the tmp variable
+    call->replace(new SymExpr(tmp));
+
+  // No.  The simple case
+  } else {
     // Add FLAG_EXPR_TEMP unless this tmp is being used
     // as a sub-expression for a variable initialization.
     // This flag triggers autoCopy/autoDestroy behavior.
-    if (parentCall == NULL ||
-        (parentCall->isNamed("chpl__initCopy")  == false &&
-         parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
+    if (parentCall == NULL) {
+      tmp->addFlag(FLAG_EXPR_TEMP);
+
+    } else if (parentCall->isNamed("chpl__initCopy")  == false &&
+               parentCall->isPrimitive(PRIM_INIT_VAR) == false) {
       tmp->addFlag(FLAG_EXPR_TEMP);
     }
 
-    if (call->isPrimitive(PRIM_NEW)    == true) {
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-    }
+    call->replace(new SymExpr(tmp));
 
-    if (call->isPrimitive(PRIM_TYPEOF) == true) {
-      tmp->addFlag(FLAG_TYPE_VARIABLE);
-    }
-
-    evaluateAutoDestroy(call, tmp);
-
-    tmp->addFlag(FLAG_MAYBE_PARAM);
-    tmp->addFlag(FLAG_MAYBE_TYPE);
-
-    if (call->isNamed("super")   == true &&
-
-        parentCall               != NULL &&
-        parentCall->isNamedAstr(astrSdot) &&
-        parentCall->get(1)       == call) {
-      // We've got an access to a method or field on the super type.
-      // This means we should preserve that knowledge for when we
-      // attempt to access the method on the super type.
-      tmp->addFlag(FLAG_SUPER_TEMP);
-    }
-
-    // Define the tmp
-    stmt->insertBefore(new DefExpr(tmp));
-
-    // Is this a new-expression for a record with an initializer?
-    if (Type* type = typeForNewNonGenericRecord(call)) {
-      // Define the type for the tmp
-      tmp->type = type;
-
-      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
-      // Extract the argument to the new expression
-      CallExpr* newArg = toCallExpr(call->get(1));
-
-      // Convert the argument for the new-expression into an init call
-      newArg->setUnresolvedFunction("init");
-
-      // Add _mt and _this (insert at head in reverse order)
-      newArg->insertAtHead(tmp);
-      newArg->insertAtHead(gMethodToken);
-
-      // Move the tmp.init(args) expression to before the call
-      stmt->insertBefore(newArg->remove());
-
-      // Replace the degenerate new-expression with a use of the tmp variable
-      call->replace(new SymExpr(tmp));
-
-
-    // No.  The simple case
-    } else {
-      call->replace(new SymExpr(tmp));
-
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-    }
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+  }
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {
