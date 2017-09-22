@@ -177,7 +177,7 @@ Using Chapel on a Cray System
         source util/setchplenv.bash
 
 
-4) Compile your Chapel program.  For example:
+2) Compile your Chapel program.  For example:
 
    .. code-block:: sh
 
@@ -186,7 +186,7 @@ Using Chapel on a Cray System
    See :ref:`readme-compiling` or  ``man chpl`` for further details.
 
 
-5) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
+3) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
    compile a Chapel program for your Cray system, you will see two
    binaries (e.g., ``hello6-taskpar-dist`` and ``hello6-taskpar-dist_real``).
    The first binary contains code to launch the Chapel program onto
@@ -234,7 +234,7 @@ Using Chapel on a Cray System
    :ref:`readme-launcher`.
 
 
-6) Execute your Chapel program.  Multi-locale executions require the
+4) Execute your Chapel program.  Multi-locale executions require the
    number of locales (compute nodes) to be specified on the command
    line.  For example::
 
@@ -243,7 +243,7 @@ Using Chapel on a Cray System
    Requests the program to be executed using two locales.
 
 
-7) If your Cray system has compute nodes with varying numbers of
+5) If your Cray system has compute nodes with varying numbers of
    cores, you can request nodes with at least a certain number of
    cores using the variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``.  For
    example, on a Cray system in which some compute nodes have 24 or
@@ -272,7 +272,7 @@ Using Chapel on a Cray System
    between Chapel launchers and workload managers.
 
 
-8) If your Cray system has compute nodes with varying numbers of CPUs
+6) If your Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
    CPUs per compute unit using the variable ``CHPL_LAUNCHER_CPUS_PER_CU``.
    For example, on a Cray XC series system with some nodes having at
