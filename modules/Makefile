@@ -138,6 +138,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
+	internal/ChapelError.chpl             \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
 	internal/ChapelLocale.chpl            \
