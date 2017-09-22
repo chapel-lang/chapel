@@ -81,7 +81,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "";
+  static const char* debugThisFn = "deinit6";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
@@ -294,8 +294,6 @@ namespace {
 
     new StoreInst(fromValue, allocAsFrom, "", insertBefore);
     Instruction* load = new LoadInst(allocAsNew, "", insertBefore);
-
-    printf("Adding sequence\n");
 
     return load;
   }
@@ -777,6 +775,11 @@ namespace {
           PtrToIntInst *ptrToInt = cast<PtrToIntInst>(insn);
           if( ptrToInt->getPointerAddressSpace() == info->globalSpace ) {
             Value* ptr = ptrToInt->getPointerOperand();
+            const DataLayout& DL = M.getDataLayout();
+
+            assert(DL.getTypeSizeInBits(ptrToInt->getType()) ==
+                   DL.getTypeSizeInBits(ptr->getType()));
+
             Instruction* conv = createStoreLoadCast(ptr,
                                                     ptrToInt->getType(),
                                                     ptrToInt);
@@ -787,6 +790,11 @@ namespace {
           IntToPtrInst *intToPtr = cast<IntToPtrInst>(insn);
           if( intToPtr->getAddressSpace() == info->globalSpace ) {
             Value* i = intToPtr->getOperand(0);
+            const DataLayout& DL = M.getDataLayout();
+
+            assert(DL.getTypeSizeInBits(intToPtr->getType()) ==
+                   DL.getTypeSizeInBits(i->getType()));
+
             Instruction* conv = createStoreLoadCast(i,
                                                     intToPtr->getType(),
                                                     intToPtr);
