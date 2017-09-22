@@ -924,3 +924,12 @@ Reviewer responsibilities
 .. _Fork the repo: https://guides.github.com/activities/forking/
 .. _Submit a pull request: https://help.github.com/articles/using-pull-requests
 .. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
+
+What Copyright Should I Use?
+++++++++++++++++++++++++++++
+
+By signing a Contributor Agreement, you have agreed that code you contribute
+will fall under the license and copyright of the project as a whole.  This
+license is required at the top of every compiler, runtime, and module code file.
+
+Additional licenses may also be applied, as appropriate.
