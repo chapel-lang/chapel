@@ -328,7 +328,7 @@ Please report any bugs encountered using the guidance described at the `bugs`_
 page.
 
 .. _bugs:
-   http://chapel.cray.com/docs/master/usingchapel/bugs.html
+   http://chapel.cray.com/docs/latest/usingchapel/bugs.html
 
 Compiler Generated Initializers
 +++++++++++++++++++++++++++++++
@@ -379,7 +379,7 @@ direction for this support can be found in the `noinit section`_ of CHIP 10.
 Bugs
 ++++
 
-- secondary initializers in outside modules when type doesn't define an
+- secondary initializers in outside modules when the type doesn't define an
   initializer in its original module
 - nested types when the outer type and/or the inner type defines an initializer
   and the outer type and/or the inner type is generic.
