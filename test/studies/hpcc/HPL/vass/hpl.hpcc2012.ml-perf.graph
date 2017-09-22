@@ -1,5 +1,0 @@
-perfkeys: Performance (Gflop/s) =
-files: hpl.hpcc2012-22k.200.dat
-graphkeys: hpl hpcc Gflop/s
-graphtitle: HPCC: HPL HPCC Version Perf (Gflop/s) - n=22k, nb=200
-ylabel: Performance (Gflop/sec)
