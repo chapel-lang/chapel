@@ -30,7 +30,6 @@
 #include "error.h"
 
 #define baseSBATCHFilename ".chpl-slurm-sbatch-"
-#define baseSysFilename ".chpl-sys-"
 
 #define CHPL_WALLTIME_FLAG "--walltime"
 #define CHPL_GENERATE_SBATCH_SCRIPT "--generate-sbatch-script"
@@ -46,12 +45,10 @@ static char* partition = NULL;
 static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1
 
-#define versionBuffLen 80
 typedef enum {
   slurmpro,
   nccs,
@@ -60,6 +57,14 @@ typedef enum {
   slurm,
   unknown
 } sbatchVersion;
+static char* sbatchVersionStr[] = {
+  "slurmpro",
+  "nccs",
+  "torque",
+  "uma",
+  "slurm",
+  "unknown"
+};
 
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
@@ -69,33 +74,18 @@ static const char* getTmpDir(void) {
 }
 
 // Check what version of slurm is on the system 
-// Since this is c we actually write the version to a file 
-// and then get the version out 
 static sbatchVersion determineSlurmVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
-  char * command; 
-  sprintf(sysFilename, "%s", baseSysFilename);
-  
-  command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
-  }
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "sbatch";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  fclose(sysFile);
-  sprintf(command, "rm %s", sysFilename);
-  system(command);
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine sbatch version", 0, 0);
+  }
 
   if (strstr(version, "SBATCHPro")) {
     return slurmpro;
@@ -456,7 +446,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   sbatchVersion sVersion = determineSlurmVersion();
   if (sVersion != slurm) {
     printf("Error: This launcher is only compatible with native slurm\n");
-    printf("Slurm version was %d\n", sVersion);
+    printf("Slurm version was %s\n", sbatchVersionStr[sVersion]);
     return 1;
   }
  

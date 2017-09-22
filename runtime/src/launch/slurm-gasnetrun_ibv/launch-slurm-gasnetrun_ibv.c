@@ -51,7 +51,6 @@ char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
-#define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -64,27 +63,19 @@ typedef enum {
   unknown
 } sbatchVersion;
 
-static sbatchVersion determineQsubVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
+static sbatchVersion determineSlurmVersion(void) {
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "sbatch";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  char* command = chpl_glom_strings(3, "sbatch --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("sbatch", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine sbatch version", 0, 0);
   }
 
-  fclose(sysFile);
   if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "SBATCHPro")) {
@@ -221,7 +212,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     slurmFile = fopen(slurmFilename, "w");
     fprintf(slurmFile, "#!/bin/sh\n\n");
     fprintf(slurmFile, "#SBATCH -J Chpl-%.10s\n", basenamePtr);
-    genNumLocalesOptions(slurmFile, determineQsubVersion(), numLocales, getNumCoresPerLocale());
+    genNumLocalesOptions(slurmFile, determineSlurmVersion(), numLocales, getNumCoresPerLocale());
     if (projectString && strlen(projectString) > 0)
       fprintf(slurmFile, "#SBATCH -A %s\n", projectString);
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
