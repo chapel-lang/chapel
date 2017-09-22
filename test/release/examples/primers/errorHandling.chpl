@@ -290,6 +290,13 @@ module F {
 }
 
 //
+// Fatal mode may also be used on modules with the ``prototype`` keyword
+// as follows:
+//
+
+prototype module F1 { }
+
+//
 // The default mode for explicit modules can also be overridden to fatal using
 // the ``--permit-unhandled-module-errors`` flag on the ``chpl`` command line.
 //
