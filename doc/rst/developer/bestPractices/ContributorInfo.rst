@@ -724,6 +724,55 @@ developing yourself (or code that you've developed as a standalone package),
 alert the chapel-developers_ mailing list of this as, presently, such code
 packages must be approved by Cray leadership before being committed.
 
+Here are some guiding questions to determine whether a third-party package you
+rely on should be committed to the chapel repository:
+
+- How large is the third-party code you wish to include?
+
+  - If the code is very large, perhaps it would be better to add directions on
+    how to install this dependency.
+
+- Under what license does this code operate?
+
+  - We try not to add dependencies on code that is under GPL or LGPL, as those
+    licenses are copyleft and force derivative works to be distributed under the
+    same license.
+
+    - Is there an alternate package with a more permissive license that can
+      accomplish the same purpose?
+
+      - If so, we recommend relying on that package instead
+
+      - If not, it would be better to add directions on how to install this
+        dependency.
+
+- How easy is this code to obtain?
+
+  - Will it be installed by default on an ordinary machine?
+
+    - If so, we do not need to redistribute it ourselves.
+
+- How much of the Chapel implementation will rely on this code?
+
+  - The compiler for ordinary Chapel?  A commonly used runtime configuration?
+
+    - In these cases, we will probably want to include the code in our
+      distribution
+
+  - A standard or package module that is not include by default?
+
+    - Depending on the circumstances, it might be better to just include
+      directions on how to install this code.
+
+- Do we require Chapel-specific modifications to the code in order to use it?
+
+  - If so, we will probably want to distribute this package, or at least include
+    the modifications and an easy way to install them.
+
+Please include the answers to these questions when you contact the
+chapel-developers_ mailing list, if you believe the code should be included or
+you remain uncertain.
+
 .. _Testing your patch:
 
 Testing your patch
