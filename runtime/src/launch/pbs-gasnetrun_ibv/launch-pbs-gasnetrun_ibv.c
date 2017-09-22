@@ -69,7 +69,7 @@ static qsubVersion determineQsubVersion(void) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
-  } else if (strstr(version, "version: ")) {
+  } else if (strstr(version, "version:") || strstr(version, "Version:")) {
     return torque;
   } else {
     return unknown;
