@@ -42,7 +42,7 @@ manage memory, communication, and tasking, among other things.  Before
 hierarchical locale support was added, these calls were all satisfied
 directly by the runtime.  With hierarchical locales, now they are
 satisfied by the Chapel module code that defines the architecture of a
-locale.  The required interface for this is defined by ChapelLocale and
+locale.  The required interface for this is defined by ``ChapelLocale`` and
 implemented by ``LocaleModel.chpl``.  The required interface is still a work
 in progress and will continue to evolve.
 
@@ -99,55 +99,20 @@ To use the NUMA locale model:
 Performance Considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Performance when using the NUMA locale model is currently somewhat
-hit-or-miss.
-
-Development in the 1.15 release improved array data locality in the NUMA
-locale model by adding the ability to split array data storage into
-blocks and distribute those blocks across NUMA domains.  Based on the
-internal term for array data storage, such arrays are called
-*multi-ddata* arrays.  Although only large arrays (2 MiB or more) can
-have multiple data blocks, the array addressing code to support them is
-always present when the NUMA locale model is used.  This code has turned
-out to cause large performance degradations in some cases, but it has
-also improved performance quite a bit in others.
-
-On the downside, array indexing in the NUMA locale model in 1.15 is much
-slower when the program iterates over an array's domain or the domain's
-range, as the first two cases below.  However, if the program iterates
-over array elements themselves as in the last case below, then
-performance is roughly the same as in previous releases:
-
-.. code-block:: chapel
-
-    var R = 0..n;
-    var D = {R};
-    var A: [D] int;
-
-    forall i in D do ... A[i] ...; // slower than 1.14
-    forall i in R do ... A[i] ...; // slower than 1.14
-    forall a in A do ... a ...;    // same or better performance as 1.14
-
-Whether the iteration is zippered or not is largely immaterial with
-respect to these performance changes.  In particular, zippered iteration
-over multiple arrays performs well, but if even one component of the
-zippered iterator is a domain or range instead of an array then the
-performance will be poor.  Finally, serial iteration has slowed down in
-even more cases than has parallel iteration, with the exception that
-serial iteration over a 1-dimensional array (as opposed to its domain or
-range) remains as fast in 1.15 as it was in 1.14.
-
-Counteracting this to some extent, on Cray XE and XC systems with
-``CHPL_COMM=ugni`` and a hugepage-resident heap, the heap itself and any
-multi-ddata array will have proper NUMA locality, potentially improving
-performance.  As an example, as of 1.15, on a Cray XC system, the
-stream-ep benchmark with the NUMA locale model and ``CHPL_COMM=ugni``
-sped up by over 2x and is now at performance parity with the reference
-version.
-
-Over the course of the next release we expect to refine the NUMA locale
-model implementation and resolve the array access problems that are
-causing the poor performance in the NUMA locale model.
+Performance when using the NUMA locale model is currently no better than
+when using the flat locale model, and often worse.  The *multi-ddata*
+feature introduced in the 1.15 Chapel release improved some cases for
+the NUMA locale model but slowed many others, sometimes by a lot.  In
+the end we disabled it because much of the performance loss was inherent
+in the implementation and could not be removed.  On Cray XE and XC
+systems with ``CHPL_COMM=ugni`` and NIC-registered memory, recent work
+to allocate arrays separately and register them dynamically has improved
+NUMA affinity and thus performance, but the benefits of that effort
+apply to the flat locale model as well as they do to the numa one.  For
+other configurations, with the multi-ddata feature disabled performance
+with the NUMA locale model has returned, for better or worse, to what it
+was before that was introduced.  At present most of our effort has to do
+with making better use of first-touch to achieve NUMA affinity.
 
 
 .. _readme-KNLlm:
