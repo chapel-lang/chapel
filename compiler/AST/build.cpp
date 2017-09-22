@@ -1259,7 +1259,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
     iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
                         globalOp, reduceOp, new NamedExpr("eltType", eltType));
   // reduceVar = globalOp.generate(); delete globalOp;
-  parLoop->insertAfter("'delete'(%S)",
+  parLoop->insertAfter("chpl__delete(%S)",
                        globalOp);
   parLoop->insertAfter(new CallExpr("=", reduceVar->copy(),
                          new_Expr(".(%S, 'generate')()", globalOp)));
@@ -1885,7 +1885,7 @@ static void addElseClauseForSerialIter(BlockStmt* forall,
                                                   zippered));
 
   serialBlock->insertAtTail(new CallExpr(PRIM_MOVE, result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
-  serialBlock->insertAtTail("'delete'(%S)", globalOp);
+  serialBlock->insertAtTail("chpl__delete(%S)", globalOp);
 
   CondStmt* if2 = new CondStmt(new SymExpr(gTryToken), lfBlock, serialBlock);
 
@@ -2127,7 +2127,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
-  followBlock->insertAtTail("'delete'(%S)", localOp);
+  followBlock->insertAtTail("chpl__delete(%S)", localOp);
 
   ForLoop* leadBody = new ForLoop(leadIdx, leadIter, NULL, zippered, /*forall*/ true);
 
@@ -2153,7 +2153,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
   VarSymbol* result = new VarSymbol("result");
   fn->insertAtTail(new DefExpr(result, new CallExpr(new CallExpr(".", globalOp, new_CStringSymbol("generate")))));
-  fn->insertAtTail("'delete'(%S)", globalOp);
+  fn->insertAtTail("chpl__delete(%S)", globalOp);
   fn->insertAtTail("'return'(%S)", result);
   return new CallExpr(new DefExpr(fn), dataExpr);
 }
