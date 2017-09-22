@@ -139,10 +139,6 @@ Building Chapel for a Cray System from Source
        PrgEnv-gnu
        PrgEnv-intel
 
-   For PrgEnv-cray we recommend using CCE 8.4 or newer for best performance.
-   This allows us to build our recommended third-party packages (i.e. allows
-   us to default to CHPL_TASKS=qthreads instead of CHPL_TASKS=fifo)
-
 
 4) Optionally, set one or more of the following environment variables to
    configure the Chapel build.  These are described in greater detail in
