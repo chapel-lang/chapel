@@ -480,9 +480,9 @@ Network Atomics
 ---------------
 
 The Gemini(TM) and Aries(TM) networks support remote atomic memory
-operations (AMOs) on XC, XE, and XK series systems.  When the ``CHPL_COMM``
-environment variable is set to ``ugni``, the following operations on
-remote atomics are done using the network::
+operations (AMOs) on XC, XE, and XK series systems.  When the
+``CHPL_NETWORK_ATOMICS`` environment variable is set to ``ugni``, the
+following operations on remote atomics are done using the network::
 
     32- and 64-bit signed and unsigned integer types:
     32- and 64-bit real types:
