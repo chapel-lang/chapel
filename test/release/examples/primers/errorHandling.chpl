@@ -10,45 +10,29 @@
   ``throws`` which are described below. Chapel supports several error handling
   modes, and in particular the default for code not in an explicit module
   declaration is suitable only for prototype code.
-
  */
 
 /*
-  Working with Errors
-  -------------------
-
   .. _primers-errorHandling-throwing:
 
   Throwing Errors
-  +++++++++++++++
+  ---------------
+
+  Errors may be thrown from a function to its callee with a ``throw``
+  statement. For a function to throw an error, its signature must include
+  a ``throws`` declaration. The declaration is put after the return
+  type and before any ``where`` clauses.
  */
-
-//
-// Errors may be thrown from a function to its callee with a ``throw``
-// statement. For a function to throw an error, its signature must include
-// a ``throws`` declaration. The declaration is put after the return
-// type and before any ``where`` clauses.
-//
-
-/*
-   .. note::
-
-     ``Error`` currently has a constructor accepting a string argument,
-     which is the error message displayed if the error is not caught.
-     Subclasses of ``Error`` can override ``proc message`` to specify what
-     error message should be displayed with the error. The ``Error`` class
-     may not store a string argument in the future.
-*/
 
 proc canThrow(i: int): int throws {
   if i < 0 then
-    throw new Error("i was less than zero");
+    throw new Error();
 
   return i + 1;
 }
 
 proc alwaysThrows():int throws {
-  throw new Error("test error");
+  throw new Error();
   // never reached
   return 1;
 }
@@ -57,17 +41,19 @@ proc alwaysThrows():int throws {
   .. _primers-errorHandling-handling:
 
   Handling Errors
-  +++++++++++++++
+  ---------------
 
-  Writing code that handles an error amounts to choosing one
-  of these three possibilities:
+  There are three ways to handle an error:
 
-   1. Halting if an error occurs with ``try!``.
-   2. Propagating the error out of the current function with ``throws``.
-   3. Handling the error with ``catch`` blocks.
+   1. Halt if the error occurs with ``try!``.
+   2. Handle the error with ``catch`` blocks.
+   3. Propagate the error out of the current function with ``throws``.
 
-  Halting on Error with ``try!``
-  ******************************
+
+  .. _primers-errorHandling-trybang:
+
+  Halting on error with ``try!``
+  ++++++++++++++++++++++++++++++
 
   Marking a throwing call with ``try!`` causes the compiler to
   generate code to halt the program if that call results in an error.
@@ -79,19 +65,131 @@ proc haltsOnError():int {
   return try! canThrow(0);
 }
 
-/*
-  Propagating an Error with ``throws``
-  ************************************
+proc haltsOnErrorBlock() {
+  try! {
+    canThrow(1);
+    canThrow(0);
+  }
+}
 
-  A function marked with ``throws`` can pass along an error
-  raised by a throwing function it calls. The ``try`` keyword
-  is available to mark such throwing calls to make control flow
-  clear.
+/*
+  .. _primers-errorHandling-catch:
+
+  Handling an error with ``catch``
+  ++++++++++++++++++++++++++++++++
+
+  When an error is raised by a call in a ``try`` block, the rest of the
+  block is abandoned and control flow is passed to the ``catch`` clauses.
+
+
+  'catch' clauses
+  ***************
+
+  ``catch`` clause type filters are evaluated in order. If a ``catch``
+  clause's type filter matches, then its block is executed to the exclusion
+  of the others. Hence there is no notion of best match, only a first match.
+
+  If no type filter is present on a catch clause, or if no variable is
+  present at all, then it is a catchall clause which matches all errors.
  */
 
-proc propagatesError():int throws {
-  // returns early if an error was thrown;
-  // we could indicate that fact with `try`
+proc catchingErrors() throws {
+  try {
+    alwaysThrows(0);
+  } catch {
+    writeln("caught an error, unnamed catchall");
+  }
+
+  try {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught a file not found error");
+  } catch e {
+    writeln("caught an error, named catchall");
+  }
+}
+
+/*
+  'try!' and 'catch'
+  ******************
+
+  ``try!`` is also available in block form and can have catch blocks.
+  If the ``catch`` clauses after a ``try!`` don't handle the error,
+  the program halts.
+ */
+
+proc catchingErrorsHalt() {
+  try! {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught a file not found error");
+  }
+  // errors other than FileNotFoundError cause a halt
+}
+
+/*
+  Nested 'try'
+  ************
+
+  It is also possible for ``try`` blocks to direct their errors to the
+  ``catch`` clauses of an enclosing ``try``, if a matching ``catch`` clause
+  is not available.
+ */
+
+proc nestedTry() {
+  try {
+    try {
+      alwaysThrows(0);
+    } catch e: PrimerError {
+      writeln("caught a PrimerError");
+    }
+    writeln("never reached");
+  } catch {
+    writeln("caught an Error from inner try");
+  }
+}
+
+/*
+  .. _primers-errorHandling-propagation:
+
+  Propagating an error with ``throws``
+  ++++++++++++++++++++++++++++++++++++
+
+  A function marked ``throws`` can pass along an error
+  raised by a throwing function it calls.
+
+
+  After 'catch' clauses
+  *********************
+
+  Propagation can occur when no matching ``catch`` clause is found for an
+  error raised in a ``try`` block.
+ */
+
+proc catchingErrorsPropagate() throws {
+  try {
+    var x = alwaysThrows(-1);
+    writeln("never reached");
+  } catch e:FileNotFoundError {
+    writeln("caught an error");
+  }
+  // errors other than FileNotFoundError propagate
+}
+
+/*
+  catch-less 'try'
+  ****************
+
+  A logical extension of the above is the case where no ``catch`` blocks are
+  attached to the ``try``. In this case the ``try`` keyword marks throwing
+  calls to clarify control flow.
+ */
+
+proc propagatesError() throws {
+  // control flow changes if an error was thrown;
+  // could be indicated more clearly with try
   canThrow(0);
 
   try canThrow(0);
@@ -106,134 +204,38 @@ proc propagatesError():int throws {
   return try canThrow(0);
 }
 
-// To make control flow clear, it is sometimes desireable to mark all of the
-// calls that could throw. For this purpose, ``try`` and ``try!`` are available
-// as expressions. See :ref:`primers-errorHandling-strict` below.
+/*
+  'try' expressions
+  *****************
 
-proc assignmentTry():int throws {
+  ``try`` and ``try!`` are also available as expressions to clarify
+  control flow for assignments and returns. These may not be used
+  with ``catch`` clauses.
+*/
+
+proc expressionTry():int throws {
   var x = try canThrow(1);
   writeln(x);
-}
 
-proc returnTry() {
-  return try! canThrow(1);
-}
-
-/*
-  Handling an error with ``catch``
-  ********************************
-
-
-  Errors may be handled using ``try`` and ``catch``. When an error is raised by
-  a call, the rest of the block is abandoned and control flow is passed to the
-  list of ``catch`` clauses.
- */
-
-proc catchingSomeErrors() throws {
-  try {
-    var x = alwaysThrows(-1);
-    writeln("never reached");
-  } catch e:FileNotFoundError {
-    writeln("caught an error");
-  }
-  // if the catch clauses after a try didn't handle the error, it is
-  // propagated to the enclosing scope - in this case out of the
-  // function.
-
-  // try! is also available in block form and can
-  // have catch blocks
-  try! {
-    var x = alwaysThrows(-1);
-    writeln("never reached");
-  } catch e:FileNotFoundError {
-    writeln("caught a file not found error");
-  }
-  // if the catch clauses after a try! didn't handle the error
-  // the program halts.
+  return try canThrow(0);
 }
 
 /*
-  .. _primers-errorHandling-propagation:
-
-  propagation
-  +++++++++++
- */
-
-//
-// Error propagation occurs when no matching ``catch`` clause is found for an
-// error raised in a ``try`` block. This can be accomplished in two ways:
-//
-// 1. Out of the enclosing function, if the function is declared `throws`.
-//
-
-proc propagateOut() throws {
-  try {
-    alwaysThrows(0);
-  } catch e: PrimerError {
-    writeln("caught a PrimerError");
-  }
-  // other errors get thrown
-}
-
-//
-// 2. To the ``catch`` clauses of an enclosing ``try``.
-//
-proc propagateNested() {
-  try {
-    try {
-      alwaysThrows(0);
-    } catch e: PrimerError {
-      writeln("caught a PrimerError");
-    }
-    writeln("never reached");
-  } catch {
-    writeln("caught an Error");
-  }
-}
+  For more information on enforcing clear control flow with the compiler,
+  see :ref:`primers-errorHandling-strict` below.
 
 
-/*
-  .. _primers-errorHandling-catch:
-
-  'catch' clauses
-  +++++++++++++++
- */
-
-//
-// ``catch`` clause type filters are evaluated in order. If a ``catch``
-// clause's type filter matches, then its block is executed to the exclusion
-// of the others. Hence there is no notion of 'best match', only a first
-// match. If no type filter is present on a catch clause, or if no variable is
-// present at all, then it is a catchall clause which matches all errors.
-//
-
-proc multipleCatchClauses() {
-  try {
-    alwaysThrows(0);
-  } catch e: PrimerError {
-    writeln("caught a PrimerError");
-  } catch e {
-    writeln("caught an Error");
-  }
-}
-
-/*
   .. _primers-errorHandling-complete:
 
   complete handling
   +++++++++++++++++
 
+  For a function to handle errors from its calls without itself throwing,
+  its ``try``/``catch`` must be *complete*. This may be accomplished
+  in two ways:
 
-  For a function to successfully handle errors from its calls without itself
-  throwing, its ``try``/``catch`` must be *complete*. This may be
-  accomplished in two ways:
-
-  1. A catchall clause on the ``try``. This prevents ``try`` from trying to
-  propagate the error out of the function as described above.
-
-  2. ``try!`` instead of ``try``. This will halt the program if no matching
-  ``catch`` clause is found, instead of propagating to the enclosing scope.
-
+  1. A catchall clause on ``try``. This prevents ``try`` from
+  propagating the error out of the function as described above.
  */
 
 proc warnsOnError(i: int): int {
@@ -243,6 +245,11 @@ proc warnsOnError(i: int): int {
     writeln("Warning: caught a error ", e);
   }
 }
+
+/*
+  2. ``try!`` instead of ``try``. This will halt the program if no matching
+  ``catch`` clause is found, instead of propagating.
+ */
 
 proc haltsOnError(i: int): int {
   try! {
