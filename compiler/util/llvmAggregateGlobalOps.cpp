@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,8 @@
 // memcpy(%tmp, %p, ...)
 // %i1 = getelementptr ... %tmp, ..., 1
 // %i2 = getelementptr ... %tmp ..., 2
-// %v1 = load %i1 
-// %v2 = load %i2 
+// %v1 = load %i1
+// %v2 = load %i2
 //
 // This optimization doesn't worry about combining such loads
 // or stores into memcpys or memsets since MemCpyOptimizer
@@ -538,7 +538,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   bool isStore = isa<StoreInst>(StartInst);
   Instruction *lastAddedInsn = NULL;
   Instruction *LastLoadOrStore = NULL;
- 
+
   SmallVector<Instruction*, 8> toRemove;
 
   // Okay, so we now have a single global load/store. Scan to find
@@ -546,7 +546,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   // Join these together into ranges, so we can decide whether contiguous blocks
   // are stored.
   MemOpRanges Ranges(*DL);
- 
+
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
@@ -644,7 +644,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                        Range.End-Range.Start, Alignment);
 
     // Cast the old base pointer to i8, but with the same address space.
-    Value* StartPtrI8 = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    //Value* StartPtrI8 = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
 
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
@@ -661,17 +661,18 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         int64_t offset = 0;
         bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
                                   offset, *DL);
-        assert(ok && offset > 0); // we used this before, didn't we?
+        assert(ok && offset >= 0); // we used this before, didn't we?
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
         Value* i8Dst = builder.CreateInBoundsGEP(int8Ty,
-                                                 StartPtrI8, 
+                                                 alloc,
                                                  offsets);
 
         Type* origDstTy = oldStore->getPointerOperand()->getType();
-        Value* Dst = builder.CreatePointerCast(i8Dst, origDstTy);
+        Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
+        Value* Dst = builder.CreatePointerCast(i8Dst, DstTy);
 
         StoreInst* newStore =
           builder.CreateStore(oldStore->getValueOperand(), Dst);
@@ -743,16 +744,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         int64_t offset = 0;
         bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
                                   offset, *DL);
-        assert(ok && offset > 0); // we used this before, didn't we?
+        assert(ok && offset >= 0); // we used this before, didn't we?
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
         Value* i8Src = builder.CreateInBoundsGEP(int8Ty,
-                                                 StartPtrI8,
+                                                 alloc,
                                                  offsets);
         Type* origSrcTy = oldLoad->getPointerOperand()->getType();
-        Value* Src = builder.CreatePointerCast(i8Src, origSrcTy);
+        Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
+        Value* Src = builder.CreatePointerCast(i8Src, SrcTy);
 
         LoadInst* newLoad = builder.CreateLoad(Src);
         newLoad->setAlignment(oldLoad->getAlignment());
@@ -787,7 +789,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
-  
+
   std::string fname = F.getName();
   std::hash<std::string> hasher;
   int h = (int) hasher(fname);
@@ -798,7 +800,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   if( fname.size() != 7 ) return false;
 
   if( F.getName().startswith("on_fn") ) return false;
-  
+
   if (fname == "string2" || fname == "message") return false;
 
   if (fname == "deinit9") return false; // OK
