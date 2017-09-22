@@ -38,6 +38,7 @@ Semantic Changes / Changes to Chapel Language
 * distinguished between functions returning 'void' values and non-returning fns
   (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
 * made it an error to apply bitwise-not (~) to boolean values
+* extended return intent overloads to support value and 'const ref' overloads
 
 
 Syntactic/Naming Changes
@@ -46,8 +47,9 @@ Syntactic/Naming Changes
 Feature Improvements
 --------------------
 * significantly improved the implementation of initializers
-  - added support for generic record type specifications with initializers
+  - added support for generic record type specifications for initialized records
   - added support for creating generic records via 'new'
+  - added support for initializer arguments with default values
   (see TODO)
 * ensured that `use` statements are considered in program order
 
@@ -56,6 +58,7 @@ Known Feature Slips
 
 Removed Features
 ----------------
+* removed support for the '=>' alias operator in constructor argument lists
 
 Standard Modules/Library
 ------------------------
@@ -65,6 +68,9 @@ Standard Modules/Library
   (see TODO)
 * added support for file.getParentName() to the `Path` module
   (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
+* added guided and adaptive iterators that accept domains
+  (see http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
+* gave the dynamic() iterators a default chunk size of 1
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -90,10 +96,13 @@ Performance Optimizations/Improvements
 * improved the ability of the LLVM back-end to vectorize Chapel code
 * optimized strided puts and gets for CHPL_COMM=ugni
 * fixed locality for parallel iteration over distributed sparse domains/arrays
+* optimized away some wide pointer overheads in 'Block' and 'Stencil'
+* optimized remote task creation for cases like 'coforall ... do on ... {}'
+* optimized the implementation of updateFluff() on the Stencil distribution
 
 Memory Improvements
 -------------------
-* 
+* stopped heap promoting local variables used within on-clauses for Qthreads
 
 Example Codes
 -------------
@@ -126,14 +135,17 @@ New Semantic Checks (for old semantics)
 
 Locale Models
 -------------
-* improved the performance of arrays under the 'numa' locale model
 * ensured that the root locale is deleted upon program termination
 * ensured that existing locale models have appropriate deinit() routines
+* stopped storing arrays as multiple distinct chunks in the 'numa' locale model
+* but improved the performance of such arrays when opting into them
 
 Portability
 -----------
 * improved code conformance with C++14
 * improved portability of code with respect to Cygwin
+* added support for using Chapel on an OmniPath cluster
+  (see http://chapel.cray.com/docs/master/platforms/omnipath.html?highlight=omnipath)
 
 Platform-specific Changes
 -------------------------
@@ -144,13 +156,14 @@ Cray-specific Changes
 
 Syntax Highlighting
 -------------------
-* added some missing keywords to 'vim'-based syntax highlighting
-* added new error-handling keywords to the 'vim' and 'highlight' highlighters
+* added some missing keywords to 'vim', 'emacs', and 'highlight' highlighters
 
 Error Messages
 --------------
 * added a warning for --library compiles on code containing a main() routine
 * extended --div-by-zero-checks to also check for modulus (%) 0 operations
+* added an error for passing 'this' to functions during phase 1 of an init()
+* added an error for field accesses prior to phase 1 initialization
 
 Runtime Error Checks
 --------------------
@@ -170,9 +183,13 @@ Bug Fixes
 * fixed a bug relating to scoped accesses to internal modules
 * fixed a bug related to 'throw'ing from generic functions
 * fixed bugs in counting tasks and creating the right number of new tasks
+* fixed bugs with parallel iteration over domains with non-natural alignment
+* fixed a bug in the implementation of the &= operator for associative domains
 
 Launchers
 ---------
+* added a 'gasnetrun_psm' launcher for running on OmniPath interconnects
+  (see http://chapel.cray.com/docs/master/usingchapel/launcher.html?highlight=launchers#currently-supported-launchers)
 
 Runtime Library Changes
 -----------------------
@@ -201,6 +218,7 @@ Developer-oriented changes: Configuration changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * simplified how automatic 'use's are handled in internal modules
+* added a "function terminates program" pragma to identify halt() and exit()
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -210,6 +228,7 @@ Developer-oriented changes: Makefile improvements
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * flipped --log-ids to be on by default
+* made --print-module-resolution print AST counts
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
@@ -221,6 +240,7 @@ Developer-oriented changes: Compiler improvements/changes
 * cleaned up aspects of buildDefaultFunctions
 * many other code cleanups, reorganizations, and refactorings
 * cleaned up how the compiler manages the 'program' and 'root' modules
+* made greater use of qualified types in later compiler passes
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
