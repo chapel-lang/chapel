@@ -163,8 +163,8 @@ package. There are a number of accepted formats:
 
 .. code-block:: text
 
-    "1.16.0"  # 1.16.0 or later
-    "1.16"    # 1.16.0 or later
+    "1.16.0"         # 1.16.0 or later
+    "1.16"           # 1.16.0 or later
     "1.16.0..1.19.0" # 1.16 through 1.19, inclusive
 
 By default, ``chplVersion`` is set to represent the current Chapel release or
