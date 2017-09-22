@@ -154,7 +154,7 @@ branch will update the pull request.
 Ask for feedback on your branch early (optional)
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-Not ready to merge yours changes, but still want to see if your work is going in
+Not ready to merge your changes, but still want to see if your work is going in
 the right direction?  Feel free to ask for early feedback!  Exposing the code is
 generally done by:
 
