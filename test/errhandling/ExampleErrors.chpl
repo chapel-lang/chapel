@@ -12,6 +12,10 @@ proc throwOtherError() throws {
 class StringError : Error {
   var msg: string;
 
+  proc StringError(msg:string) {
+    this.msg = msg;
+  }
+
   proc message() {
     return msg;
   }

@@ -33,6 +33,15 @@ proc getEnv(name: string): string {
 }
 
 
+class MasonError : Error {
+  var msg:string;
+  proc MasonError(msg:string) {
+    this.msg = msg;
+  }
+  proc message() {
+    return msg;
+  }
+}
 
 /* Uses the Spawn module to create a subprocess */
 proc runCommand(cmd, quiet=false) : string {
@@ -169,7 +178,7 @@ proc getChapelVersionInfo() {
       } else if release.search(output, semver) {
         ret(4) = false;
       } else {
-        throw new Error("Failed to match output of 'chpl --version':\n" + output);
+        throw new MasonError("Failed to match output of 'chpl --version':\n" + output);
       }
 
       const split = semver.split(".");

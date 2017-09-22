@@ -1,19 +1,21 @@
+use ExampleErrors;
+
 config const i = 2;
 
 
 iter myiter() throws {
   if i == 0 then
-    throw new Error("Test error 0");
+    throw new StringError("Test error 0");
 
   yield 1;
 
   if i == 1 then
-    throw new Error("Test error 1");
+    throw new StringError("Test error 1");
   
   yield 2;
   
   if i == 2 then
-    throw new Error("Test error 2");
+    throw new StringError("Test error 2");
 }
 
 proc test() {
@@ -24,7 +26,7 @@ proc test() {
     }
     writeln("after iter");
   } catch e {
-    writeln("Caught error ", e.msg);
+    writeln("Caught error ", e.message());
   }
 }
 

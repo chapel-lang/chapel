@@ -1,6 +1,6 @@
 
 
-use ThrowError;
+use ExampleErrors;
 
 proc propError() throws {
   throwAnError();

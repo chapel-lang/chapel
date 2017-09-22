@@ -1,6 +1,6 @@
 pragma "error mode fatal"
 module mymodule {
-  use ThrowError;
+  use ExampleErrors;
 
   proc propError() throws {
     throwAnError();

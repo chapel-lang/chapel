@@ -1,4 +1,8 @@
 class MyError : Error {
+  var msg:string;
+  proc MyError(msg:string) {
+    this.msg = msg;
+  }
   proc message() {
     return "custom message";
   }

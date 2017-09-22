@@ -1,3 +1,5 @@
+use ExampleErrors;
+
 config const n = 1000;
 
 proc test() {
@@ -5,15 +7,15 @@ proc test() {
     writeln("before forall block");
     forall i in 1..n {
       if i == 1 then
-        throw new Error("test error");
+        throw new StringError("test error");
     }
     writeln("after forall block");
   } catch errors: TaskErrors {
     for e in errors { 
-      writeln("Caught group error e ", e.msg);
+      writeln("Caught group error e ", e.message());
     }
   } catch e {
-    writeln("Caught other error ", e.msg);
+    writeln("Caught other error ", e.message());
   }
 }
 

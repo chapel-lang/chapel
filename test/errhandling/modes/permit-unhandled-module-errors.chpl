@@ -1,5 +1,5 @@
 module mymodule {
-  use ThrowError;
+  use ExampleErrors;
 
   proc propError() {
     throwAnError();

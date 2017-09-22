@@ -1,8 +1,9 @@
 pragma "error mode strict"
 module mymodule {
+  use ExampleErrors;
   proc test() {
     coforall i in 1..10 {
-      throw new Error(i:string);
+      throw new StringError(i:string);
     }
   }
 

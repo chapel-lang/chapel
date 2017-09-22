@@ -1,4 +1,4 @@
 calling propError
 uncaught Error: 
-  ./ThrowError.chpl:2: thrown here
+  ../ExampleErrors.chpl:2: thrown here
   propagate.chpl:9: uncaught here

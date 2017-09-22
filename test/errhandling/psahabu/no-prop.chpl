@@ -1,4 +1,4 @@
-use ThrowError;
+use ExampleErrors;
 
 proc noPropError() {
   writeln("should not propagate");

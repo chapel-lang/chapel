@@ -1,18 +1,20 @@
+use ExampleErrors;
+
 config const n = 1000;
 
 proc test() {
   try {
     writeln("before for block");
     for i in 1..n {
-      throw new Error("test error");
+      throw new StringError("test error");
     }
     writeln("after for block");
   } catch errors: TaskErrors {
     for e in errors { 
-      writeln("Caught group error e ", e.msg);
+      writeln("Caught group error e ", e.message());
     }
   } catch e {
-    writeln("Caught error ", e.msg);
+    writeln("Caught error ", e.message());
   }
 }
 

@@ -1,5 +1,6 @@
+use ExampleErrors;
 proc throwIfIntegral(x) throws where isIntegral(x) {
-  throw new Error("got an integer");
+  throw new StringError("got an integer");
 }
 
 proc throwIfIntegral(x) {
@@ -10,5 +11,5 @@ try {
   throwIfIntegral(42.0);
   throwIfIntegral(42);
 } catch err {
-  writeln(err.msg);
+  writeln(err.message());
 }
