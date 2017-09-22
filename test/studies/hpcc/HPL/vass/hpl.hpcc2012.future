@@ -1,4 +1,4 @@
-???: hpcc2012 version of HPL seems to have face
+???: hpcc2012 version of HPL is race-y when rewritten to avoid '=>'
 
 In rewriting this version of HPL to avoid the use of the (deprecated)
 '=>' operator and use reindexing instead, a race seems to have been
