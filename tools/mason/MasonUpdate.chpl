@@ -60,9 +60,9 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
       const prefix = if failedChapelVersion.size == 1
                      then "The following package is"
                      else "The following packages are";
-      writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
-        writeln("  ", msg);
+        stderr.writeln("  ", msg);
       exit(1);
     }
 
@@ -119,7 +119,7 @@ proc parseChplVersion(brick:Toml) {
 
   if brick.pathExists("chplVersion") == false {
     const name = brick["name"].s + "-" + brick["version"].s;
-    writeln("Brick '", name, "' missing required 'chplVersion' field");
+    stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
@@ -173,8 +173,8 @@ proc parseChplVersion(brick:Toml) {
       throw new Error("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
   } catch e : Error {
     const name = brick["name"].s + "-" + brick["version"].s;
-    writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    writeln("Details: ", e.message());
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
     exit(1);
   }
 
@@ -226,7 +226,7 @@ proc createDepTree(root: Toml) {
     depTree["root"] = new Toml(root["brick"]);
   }
   else {
-    writeln("Could not find brick; Mason cannot update");
+    stderr.writeln("Could not find brick; Mason cannot update");
     exit(1);
   }
 
@@ -320,9 +320,9 @@ proc IVRS(A: Toml, B: Toml) {
   const version1 = A["version"].s;
   const version2 = B["version"].s;
   if okA == false && okB == false {
-    writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
-    writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
-    writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
+    stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
+    stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
+    stderr.writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
     exit(1);
   } else if okA == true && okB == false {
     return A;
@@ -337,9 +337,9 @@ proc IVRS(A: Toml, B: Toml) {
   var v1 = vers1(1): int;
   var v2 = vers2(1): int;
   if vers1(1) != vers2(1) {
-    writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
-    writeln("  v", version1);
-    writeln("  v", version2);
+    stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
+    stderr.writeln("  v", version1);
+    stderr.writeln("  v", version2);
     exit(1);
   }
   else if vers1(2) != vers2(2) {
@@ -386,7 +386,7 @@ proc retrieveDep(name: string, version: string) {
     return depToml;
   }
   else {
-    writeln("No toml file found in mason-registry for " + name +'-'+ version);
+    stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
     exit(1);
   }
 }

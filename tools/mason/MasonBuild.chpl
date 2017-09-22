@@ -56,7 +56,7 @@ private proc checkChplVersion(lockFile : Toml) {
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
-    writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
+    stderr.writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
     exit(1);
   }
 }
