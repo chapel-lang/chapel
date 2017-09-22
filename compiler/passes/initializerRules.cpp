@@ -35,13 +35,13 @@ enum InitStyle {
   STYLE_BOTH
 };
 
-static bool      isInitStmt (Expr* stmt);
-static bool      isSuperInit(Expr* stmt);
-static bool      isThisInit (Expr* stmt);
+static bool     isInitStmt (Expr* stmt);
+static bool     isSuperInit(Expr* stmt);
+static bool     isThisInit (Expr* stmt);
 
-static bool      isUnacceptableTry(Expr* stmt);
+static bool     isUnacceptableTry(Expr* stmt);
 
-static void      preNormalize(FnSymbol* fn);
+static void     preNormalizeInit(FnSymbol* fn);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
@@ -164,14 +164,14 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
 static bool isReturnVoid(FnSymbol* fn);
 
 void preNormalizeInitMethod(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_NO_PARENS)   ==  true) {
+  if (fn->hasFlag(FLAG_NO_PARENS) ==  true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
-  } else if (isReturnVoid(fn)       == false) {
+  } else if (isReturnVoid(fn)     == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
   } else {
-    preNormalize(fn);
+    preNormalizeInit(fn);
 
     errorOnFieldsInArgList(fn);
   }
@@ -253,9 +253,16 @@ static bool      isThisInit(Expr* stmt);
 static bool      hasReferenceToThis(Expr* expr);
 static bool      isMethodCall(CallExpr* callExpr);
 
-static void preNormalize(FnSymbol* fn) {
-  AggregateType* at         = toAggregateType(fn->_this->type);
+static void preNormalizeInit(FnSymbol* fn) {
+  ArgSymbol*     _this = fn->getFormal(2);
+  AggregateType* at    = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
+
+  if (_this->intent == INTENT_BLANK) {
+    if (isRecord(at) == true) {
+      _this->intent = INTENT_REF;
+    }
+  }
 
   if (at->isGeneric() == true) {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
@@ -659,7 +666,6 @@ static bool isMethodCall(CallExpr* callExpr) {
 
   return retval;
 }
-
 
 /************************************* | **************************************
 *                                                                             *
