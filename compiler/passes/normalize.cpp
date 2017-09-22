@@ -1315,17 +1315,18 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 
   stmt->insertBefore(new DefExpr(tmp));
 
-  // Add FLAG_EXPR_TEMP unless this tmp is being used
-  // as a sub-expression for a variable initialization.
-  // This flag triggers autoCopy/autoDestroy behavior.
-  if (parentCall == NULL ||
-      (parentCall->isNamed("chpl__initCopy")  == false &&
-       parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
-    tmp->addFlag(FLAG_EXPR_TEMP);
-  }
-
   if (call->isPrimitive(PRIM_NEW)    == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+  } else {
+    // Add FLAG_EXPR_TEMP unless this tmp is being used
+    // as a sub-expression for a variable initialization.
+    // This flag triggers autoCopy/autoDestroy behavior.
+    if (parentCall == NULL ||
+        (parentCall->isNamed("chpl__initCopy")  == false &&
+         parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
+      tmp->addFlag(FLAG_EXPR_TEMP);
+    }
   }
 
   if (call->isPrimitive(PRIM_TYPEOF) == true) {
