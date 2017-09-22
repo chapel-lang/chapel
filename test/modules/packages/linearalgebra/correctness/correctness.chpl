@@ -101,6 +101,35 @@ config const correctness = true;
     assertTrue(isIntType(M.eltType), "Matrix(A, eltType=int)");
   }
 
+  /* CSR Sparse array -> Dense array */
+  {
+    use LayoutCS;
+    var spsD: sparse subdomain(MDom) dmapped CS();
+    var spsA: [spsD] real;
+    spsD += (1,1);
+    spsD += (2,2);
+    spsA[1,1] = 1;
+    spsA[2,2] = 2;
+    var M = Matrix(spsA);
+    assertEqual(M.domain, MDom, "Matrix(spsA)");
+    assertEqual(spsA[1,1], M[1,1], "Matrix(spsA)");
+    assertEqual(spsA[2,2], M[2,2], "Matrix(spsA)");
+  }
+
+  /* Sparse array -> Dense array */
+  {
+    var spsD: sparse subdomain(MDom);
+    var spsA: [spsD] real;
+    spsD += (1,1);
+    spsD += (2,2);
+    spsA[1,1] = 1;
+    spsA[2,2] = 2;
+    var M = Matrix(spsA);
+    assertEqual(M.domain, MDom, "Matrix(spsA)");
+    assertEqual(spsA[1,1], M[1,1], "Matrix(spsA)");
+    assertEqual(spsA[2,2], M[2,2], "Matrix(spsA)");
+  }
+
   /* Variadic arguments of vectors */
   {
     var M = Matrix([1,2,3],
@@ -259,6 +288,18 @@ config const correctness = true;
   test_dot(complex(128));
   test_dot(int(32));
   test_dot(int(64));
+
+}
+
+{
+  var M = Matrix([1,2,3],
+                 [4,5,6],
+                 [7,8,9], eltType=int);
+  var I = eye(M.domain, eltType=int);
+
+  // matrix-matrix
+  var MI = M.dot(I);
+  assertEqual(MI, M, "M.dot(I)");
 }
 
 /* dot scalars */
@@ -402,7 +443,7 @@ config const correctness = true;
   {
     var L = tril(M, -1);
     var U = triu(M);
-    var LU = matPlus(L, U);
+    var LU = L.plus(U);
     assertEqual(M, LU, "tril(M, -1) + triu(M)");
     assertTrue(isTril(L, -1), "isTril(L, -1)");
     assertTrue(isTriu(U), "isTriu(U)");
@@ -412,7 +453,7 @@ config const correctness = true;
   {
     var L = tril(M);
     var U = triu(M, 1);
-    var LU = matPlus(L, U);
+    var LU = L.plus(U);
     assertEqual(M, LU, "tril(M) + triu(M, 1)");
     assertTrue(isTril(L), "isTril(L)");
     assertTrue(isTriu(U, 1), "isTriu(U, 1)");
@@ -422,7 +463,7 @@ config const correctness = true;
   {
     var L = tril(M, 1);
     var U = triu(M, 2);
-    var LU = matPlus(L, U);
+    var LU = L.plus(U);
     assertEqual(M, LU, "tril(M, 1) + triu(M, 2)");
     assertTrue(isTril(L, 1), "isTril(L, 1)");
     assertTrue(isTriu(U, 2), "isTriu(U, 2)");
@@ -481,20 +522,21 @@ config const correctness = true;
   use LinearAlgebra.Sparse;
 
   const parentDom = {0..#3, 0..#3},
-        parentDom2 = {0..#4, 0..#6};
+        parentDom2 = {0..#4, 0..#6},
+        tParentDom = {0..#3, 0..#5},
+        tParentDomT = {0..#5, 0..#3};
 
   var   Dom: sparse subdomain(parentDom) dmapped CS(),
         Dom2: sparse subdomain(parentDom2) dmapped CS(),
         IDom: sparse subdomain (parentDom) dmapped CS(),
-        tDom: sparse subdomain (parentDom2) dmapped CS(),
-        tDomT: sparse subdomain (parentDom2) dmapped CS();
+        tDom: sparse subdomain (tParentDom) dmapped CS(),
+        tDomT: sparse subdomain (tParentDomT) dmapped CS();
 
 
   // Identity sparse domain
   IDom += [(0,0), (1,1), (2,2)];
-  tDom += [(0,0), (1,0), (2,0), (3,0)];
-  tDomT += [(0,0), (0,1), (0,2), (0,3)];
-
+  tDom += [(0,0), (1,0), (2,0), (2,3), (2,4)];
+  tDomT += [(0,0), (0,1), (0,2), (3,2), (4,2)];
 
   /* Rows */
   {
@@ -532,11 +574,6 @@ config const correctness = true;
     assertEqual(D, Dom, "CSRDomain(parentDom)");
   }
 
-  // TODO:
-  // CSRDomain(dom)
-  // CSRMatrix(dom) (dense/sparse)
-
-
   /* Array - Dense -> CSR */
   {
     var I = eye(3,3);
@@ -559,8 +596,6 @@ config const correctness = true;
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
 
-  // TODO: more interesting cases for dot..
-
   /* dot - matrix-matrix */
   {
     var A: [Dom] real;
@@ -569,20 +604,19 @@ config const correctness = true;
     assertEqual(AI, A, "dot(A, I)");
   }
 
+  {
+    var A = Matrix([0,1,0,3],[0,0,0,2],[1,0,0,0]);
+    var spsA = CSRMatrix(A);
+
+    const AAT = dot(A, A.T);
+    //const spsAAT =
+  }
+
   /* dot - matrix-vector */
   {
     var A: [IDom] real = 1;
     var v: [0..#3] real = 2;
     var Av = dot(A, v);
-    var A2 = 2*A;
-    assertEqual(Av, A2);
-  }
-
-  /* dot - vector-matrix */
-  {
-    var A: [IDom] real = 1;
-    var v: [0..#3] real = 2;
-    var Av = dot(v, A);
     var A2 = 2*A;
     assertEqual(Av, A2);
   }
@@ -600,10 +634,52 @@ config const correctness = true;
     assertEqual(A2, C, "dot(2, A)");
   }
 
+  /* .dot - matrix-vector */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = A.dot(v);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* .dot - vector-matrix */
+  {
+    var A: [IDom] real = 1;
+    var v: [0..#3] real = 2;
+    var Av = v.dot(A);
+    var A2 = 2*A;
+    assertEqual(Av, A2);
+  }
+
+  /* dot - matrix-scalar */
+  {
+    var A: [IDom] real = 1;
+    var B = A.dot(2);
+    var C = dot(2, A);
+    assertEqual(A.domain, B.domain, "A.dot(2)");
+    assertEqual(A.domain, C.domain, "dot(2, A)");
+    assertEqual(B, C, "matrix-scalar");
+    var A2: A.type = 2*A;
+    assertEqual(A2, B, "dot(A, 2)");
+    assertEqual(A2, C, "dot(2, A)");
+  }
+
   /* transpose */
   {
     var A: [tDom] int = 1;
     var B = transpose(A);
+
+    assertEqual(B.domain, tDomT, "transpose(A)");
+    for i in A.domain.dim(1) {
+      assertEqual(A[i,0], B[0, i], "transpose(A) values");
+    }
+  }
+
+  /* _array.T */
+  {
+    var A: [tDom] int = 1;
+    var B = A.T;
 
     assertEqual(B.domain, tDomT, "transpose(A)");
     for i in A.domain.dim(1) {
