@@ -140,19 +140,7 @@ Building Chapel for a Cray System from Source
        PrgEnv-intel
 
 
-4) Optionally, set one or more of the following environment variables to
-   configure the Chapel build.  These are described in greater detail in
-   :ref:`readme-chplenv`.
-
-     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
-     :``CHPL_COMM``: communication implementation, default ``ugni`` on
-                     XC/XE systems, ``gasnet`` on CS systems
-
-   For CS\ |trade| series systems, see :ref:`readme-infiniband` for
-   information about using Chapel with InfiniBand.
-
-
-5) Make sure you're in the top-level chapel/ directory and make/re-make the
+4) Make sure you're in the top-level chapel/ directory and make/re-make the
    compiler and runtime::
 
      gmake
@@ -189,27 +177,7 @@ Using Chapel on a Cray System
         source util/setchplenv.bash
 
 
-2) Optionally, set one or more of the following environment variables to
-   select a Chapel configuration.  These are described in greater detail
-   in :ref:`readme-chplenv`.
-
-     :``CHPL_TASKS``: tasking implementation, default ``qthreads``
-     :``CHPL_COMM``: communication implementation, default ``ugni`` on Cray
-                     XC/XE, ``gasnet`` on Cray CS
-
-   For CS\ |trade| series systems, see :ref:`readme-infiniband` for
-   information about using Chapel with InfiniBand.
-
-   The configuration selected must be one that is present in the Chapel
-   installation being used, whether that is a source distribution or the
-   pre-built module.  If it is not, the Chapel compiler will produce an
-   error message saying so when you try to compile anything.  If you get
-   this error, you will need to build the desired configuration (if you
-   are working from source) or modify your configuration so that it is
-   one of those supplied (if you are working with the pre-built module).
-
-
-3) Compile your Chapel program.  For example:
+4) Compile your Chapel program.  For example:
 
    .. code-block:: sh
 
@@ -218,7 +186,7 @@ Using Chapel on a Cray System
    See :ref:`readme-compiling` or  ``man chpl`` for further details.
 
 
-4) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
+5) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
    compile a Chapel program for your Cray system, you will see two
    binaries (e.g., ``hello6-taskpar-dist`` and ``hello6-taskpar-dist_real``).
    The first binary contains code to launch the Chapel program onto
@@ -266,7 +234,7 @@ Using Chapel on a Cray System
    :ref:`readme-launcher`.
 
 
-5) Execute your Chapel program.  Multi-locale executions require the
+6) Execute your Chapel program.  Multi-locale executions require the
    number of locales (compute nodes) to be specified on the command
    line.  For example::
 
@@ -275,7 +243,7 @@ Using Chapel on a Cray System
    Requests the program to be executed using two locales.
 
 
-6) If your Cray system has compute nodes with varying numbers of
+7) If your Cray system has compute nodes with varying numbers of
    cores, you can request nodes with at least a certain number of
    cores using the variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``.  For
    example, on a Cray system in which some compute nodes have 24 or
@@ -304,7 +272,7 @@ Using Chapel on a Cray System
    between Chapel launchers and workload managers.
 
 
-7) If your Cray system has compute nodes with varying numbers of CPUs
+8) If your Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
    CPUs per compute unit using the variable ``CHPL_LAUNCHER_CPUS_PER_CU``.
    For example, on a Cray XC series system with some nodes having at
@@ -439,27 +407,7 @@ To use ugni communications:
    layer.
 
 
-2) Set your CHPL_TASKS environment variable to ``qthreads`` (the
-   default) or ``fifo``:
-
-   .. code-block:: sh
-
-     export CHPL_TASKS=qthreads
-
-   or:
-
-   .. code-block:: sh
-
-     export CHPL_TASKS=fifo
-
-   Either of these tasking layers work with ugni communications.  Other
-   Chapel environment variables having to do with runtime layers can
-   be left unset.  Setting ``CHPL_COMM`` and ``CHPL_TASKS`` like this
-   will cause the correct combination of other runtime layers that work
-   with those to be selected automatically.
-
-
-3) *(Optional)* Load an appropriate ``craype-hugepages`` module.  For example::
+2) *(Optional)* Load an appropriate ``craype-hugepages`` module.  For example::
 
      module load craype-hugepages16M
 
