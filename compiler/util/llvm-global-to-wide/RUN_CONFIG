@@ -1,12 +1,14 @@
 #!/bin/sh
 #./configure --with-llvmsrc=../../../third-party/llvm/llvm/ --with-llvmobj=../../../third-party/llvm/build/linux64-gnu/ --enable-shared
-autoconf
-./configure
+#autoconf
+#./configure
 ln -s ../llvmGlobalToWide.cpp llvmGlobalToWide.cpp
 ln -s ../llvmUtil.cpp llvmUtil.cpp
 ln -s ../llvmAggregateGlobalOps.cpp llvmAggregateGlobalOps.cpp
-cd include
-ln -s ../../../include/llvmGlobalToWide.h llvmGlobalToWide.h
-ln -s ../../../include/llvmUtil.h llvmUtil.h
-ln -s ../../../include/llvmAggregateGlobalOps.h llvmAggregateGlobalOps.h
-cd ..
+ln -s ../../include/llvmGlobalToWide.h llvmGlobalToWide.h
+ln -s ../../include/llvmUtil.h llvmUtil.h
+ln -s ../../include/llvmAggregateGlobalOps.h llvmAggregateGlobalOps.h
+mkdir -p build
+cd build
+export CMAKE_PREFIX_PATH=$CHPL_HOME/third-party/llvm/install/linux64-gnu/
+cmake .. -DLLVM_ROOT=$CHPL_HOME/third-party/llvm/install/linux64-gnu/ -DLLVM_SRC=$CHPL_HOME/third-party/llvm/llvm
