@@ -5550,7 +5550,13 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
     call->insertBefore(def);
 
   } else {
-    call->parentExpr->insertBefore(def);
+    Expr* parent = call->parentExpr;
+    parent->insertBefore(def);
+
+    if (isClass(at) == false) {
+      call->replace(new SymExpr(new_temp));
+      parent->insertBefore(call);
+    }
   }
 
   // Invoking an instance method
