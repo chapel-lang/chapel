@@ -243,21 +243,22 @@ returnsRefArgumentByRef(CallExpr* returnedCall, FnSymbol* fn)
 // This function finds the original Symbol that a local array
 // refers to (through aliasing or slicing).
 // It returns the number of Exprs added to sources.
-static int
-findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
-{
+static int findOriginalArrays(FnSymbol*        fn,
+                              Symbol*          sym,
+                              std::set<Expr*>& sources) {
   int ret = 0;
 
   for_SymbolSymExprs(se, sym) {
     Expr* stmt = se->getStmtExpr();
 
     if (CallExpr* call = toCallExpr(stmt)) {
-      if (call->isPrimitive(PRIM_MOVE) ||
-          call->isPrimitive(PRIM_ASSIGN)) {
+      if (call->isPrimitive(PRIM_MOVE)   == true  ||
+          call->isPrimitive(PRIM_ASSIGN) == true) {
         Expr* lhs = call->get(1);
-        Expr* rhs = call->get(2);
 
         if (se == lhs) {
+          Expr* rhs = call->get(2);
+
           // Handle the following cases:
           //   rhs is a call_tmp -> recurse on the call_tmp
           //   rhs is a call to a function returning an aliasing array ->
@@ -267,9 +268,9 @@ findOriginalArrays(FnSymbol* fn, Symbol* sym, std::set<Expr*> & sources)
             // is RHS a local variable (user or temp)?
             // if so, find the definitions for that, and further
             // traverse if they are aliases.
-            if (rhsSym && rhsSym->defPoint->getFunction() == fn &&
-                (rhsSym->hasFlag(FLAG_TEMP) ||
-                 rhsSym->hasFlag(FLAG_ARRAY_ALIAS))) {
+            if (rhsSym                          != NULL &&
+                rhsSym->defPoint->getFunction() ==   fn &&
+                rhsSym->hasFlag(FLAG_TEMP)      == true) {
               ret += findOriginalArrays(fn, rhsSym, sources);
             }
 

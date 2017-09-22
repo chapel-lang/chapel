@@ -1,3 +1,0 @@
-test_array_alias.chpl:4: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
-A = 42 1 1 1 1 1 1 1 1 1
-B = 42 1 1 1 1 1 1 1 1 1

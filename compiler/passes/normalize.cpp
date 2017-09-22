@@ -75,7 +75,6 @@ static void insertCallTemps(CallExpr* call);
 static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void normalizeTypeAlias(DefExpr* defExpr);
-static void normalizeArrayAlias(DefExpr* defExpr);
 static void normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void normalizeVariableDefinition(DefExpr* defExpr);
 
@@ -508,9 +507,6 @@ static void normalize(BaseAST* base) {
           if (type != NULL || init != NULL) {
             if (var->isType() == true) {
               normalizeTypeAlias(defExpr);
-
-            } else if (var->hasFlag(FLAG_ARRAY_ALIAS) == true) {
-              normalizeArrayAlias(defExpr);
 
             } else if (var->hasFlag(FLAG_CONFIG) == true) {
               normalizeConfigVariableDefinition(defExpr);
@@ -1540,35 +1536,6 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(init != NULL);
 
   defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void normalizeArrayAlias(DefExpr* defExpr) {
-  SET_LINENO(defExpr);
-
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init->remove();
-
-  if (defExpr->exprType == NULL) {
-    CallExpr* newAlias = new CallExpr("newAlias", gMethodToken, init);
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, newAlias));
-
-  } else {
-    Expr*     type    = defExpr->exprType->remove();
-    CallExpr* reindex = new CallExpr("reindex",  gMethodToken, init);
-    CallExpr* partial = new CallExpr(reindex,    type);
-
-    reindex->partialTag = true;
-    reindex->methodTag  = true;
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
-  }
 }
 
 /************************************* | **************************************
