@@ -26,8 +26,12 @@ hierarchy with ``Error`` at its root.
     var i: int;
   }
 
-While defining a standard set of ``Error`` subclasses is planned for the
-future, Chapel only provides ``Error`` at present.
+Chapel provides a hierarchy for system errors in the module ``SysError``,
+which may be accessed by using the module.
+
+.. code-block:: chapel
+
+  use SysError;
 
 
 Throwing Errors
@@ -56,11 +60,13 @@ If a function may throw an error, it must be declared with ``throws``.
 Handling Errors
 ---------------
 
-Chapel supports two modes for error handling: strict mode for production code,
-and default mode for drafting and iterating. Strict mode forces users to
-explicitly mark throwing calls and handle errors, clarifying the program's
-control flow to the user and the reader. Default mode loosens those
-requirements with implicit error handling.
+Chapel supports three modes for error handling: strict mode for critical
+code, relaxed mode for general production, and fatal mode for drafting and
+iterating. Strict mode forces users to explicitly mark throwing calls and
+handle errors, clarifying the program's control flow to the user and the
+reader. Relaxed mode is a step back from that, allowing unmarked throwing
+calls in throwing functions. Fatal mode allows all throwing calls to be
+unmarked, at the cost of implicit halts in certain contexts.
 
 Strict mode is enabled by passing ``--strict-errors`` to the Chapel compiler,
 otherwise the compiler will use default mode.
