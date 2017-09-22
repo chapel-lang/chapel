@@ -159,13 +159,6 @@ proc masonDoc(args) {
   }
 }
 
-
-
-// TODO
-proc masonInit(args) {}
-
-
-
 proc printVersion() {
   writeln('mason 0.1.0');
 }

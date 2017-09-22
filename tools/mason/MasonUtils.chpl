@@ -187,8 +187,8 @@ proc getChapelVersionInfo() {
 
       chplVersionInfo = ret;
     } catch e : Error {
-      writeln("Error while getting Chapel version:");
-      writeln(e.message());
+      stderr.writeln("Error while getting Chapel version:");
+      stderr.writeln(e.message());
       exit(1);
     }
   }
