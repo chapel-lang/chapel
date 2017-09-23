@@ -596,6 +596,73 @@ config const correctness = true;
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
 
+  //
+  // Simple Ops
+  //
+
+  // plus, minus, times, elementDiv
+  {
+    // Dense
+    var A = eye(5,3),
+        B = eye(5,3),
+        C = eye(5,3);
+
+    B *= 3;
+
+    // Ensure there are no zeros to avoid div-by-zero below
+    C += 1;
+
+    var ApB = A.plus(B),
+        AmB = A.minus(B),
+        AtB = A.times(B),
+        AdC = A.elementDiv(C);
+
+    // CSR
+
+    var csrA = CSRMatrix(A),
+        csrB = CSRMatrix(B),
+        csrC = CSRMatrix(C);
+
+    var csrApB = csrA.plus(csrB),
+        csrAmB = csrA.minus(csrB),
+        csrAtB = csrA.times(csrB),
+        csrAdC = csrA.elementDiv(csrC);
+
+    assertEqual(csrApB, CSRMatrix(ApB), "csrA.plus(csrB)");
+    assertEqual(csrAmB, CSRMatrix(AmB), "csrA.minus(csrB)");
+    assertEqual(csrAtB, CSRMatrix(AtB), "csrA.times(csrB)");
+    assertEqual(Matrix(csrAdC), AdC, "csrA.elementDiv(csrC)");
+  }
+
+  //
+  // dot
+  //
+
+  /* Helper: test A.dot(A.T) for CSR - expects A to be dense */
+  proc test_CSRdot(A) {
+    // Dense dot
+    var AAT = A.dot(A.T);
+
+    // Sparse dot
+    var csrA = CSRMatrix(A);
+    var csrAAT = csrA.dot(csrA.T);
+
+    assertEqual(csrAAT, CSRMatrix(AAT), "csrA.dot(csrA.T)");
+  }
+
+  /* Helper: test A.dot(B) for CSR - expects A to be dense */
+  proc test_CSRdot(A, B) {
+    // Dense dot
+    var AB = A.dot(B);
+
+    // Sparse dot
+    var csrA = CSRMatrix(A);
+    var csrB = CSRMatrix(B);
+    var csrAB = csrA.dot(csrB);
+
+    assertEqual(csrAB, CSRMatrix(AB), "csrA.dot(csrB)");
+  }
+
   /* dot - matrix-matrix */
   {
     var A: [Dom] real;
@@ -619,6 +686,32 @@ config const correctness = true;
     var Av = dot(A, v);
     var A2 = 2*A;
     assertEqual(Av, A2);
+  }
+
+  {
+    var A = eye(3,5);
+    // Identity matrix (3x5)
+    test_CSRdot(A);
+
+    A[2,4] = 1.0;
+    test_CSRdot(A);
+
+    // Get some leading zeros in CSR data structure
+    A[0,0] = 0.0;
+    test_CSRdot(A);
+
+    // Get some leading zeros in CSR data structure
+    A[1,1] = 0.0;
+    test_CSRdot(A);
+
+    var B = Matrix(5, 4);
+    B[.., 0] =  1.0;
+    B[0, ..] =  1.0;
+    test_CSRdot(A, B);
+
+    // A big matrix
+    var C = eye(1000, 2000);
+    test_CSRdot(C);
   }
 
   /* dot - matrix-scalar */
@@ -715,6 +808,21 @@ proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
     writeln(X, '\n!=\n', Y);
     return;
   }
+}
+
+/* array.equals(array) overload for CS sparse arrays with different domains */
+proc _array.equals(that: _array) where Sparse.isCSArr(that) && Sparse.isCSArr(this) {
+  // First assert that domains share the same indices
+  if this.domain != that.domain {
+    return false;
+  }
+  // Then check that the values at each index are equal
+  for (i,j) in this.domain {
+    if this[i,j] != that[i,j] {
+      return false;
+    }
+  }
+  return true;
 }
 
 
