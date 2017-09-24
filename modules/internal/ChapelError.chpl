@@ -17,13 +17,20 @@
  * limitations under the License.
  */
 
+/*
+   :class:`Error` is the parent type for errors in Chapel.  :class:`TaskErrors`
+   is the type of errors thrown from parallel constructs where more than one
+   error can be simultaneously encountered.
+
+ */
 module ChapelError {
   use ChapelStandard;
 
-  // Base class for errors
   // TODO: should base class Error have a string message at all?
   // TODO: should Error include list pointers for TaskErrors?
+  /* :class:`Error` is the base class for errors */
   class Error {
+    pragma "no doc"
     var msg: string;
     pragma "no doc"
     var _next: Error = nil; // managed by lock in record TaskErrorsRecord
@@ -34,26 +41,40 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
+    /* Construct an Error */
     proc Error() {
       _next = nil;
     }
 
+    pragma "no doc"
     proc Error(_msg: string) {
       msg = _msg;
       _next = nil;
     }
 
+    /* Override this method to provide an error message
+       in case the error is printed out or never caught.
+     */
     proc message() {
       return msg;
     }
 
+    /* Errors can be printed out. In that event, they will
+       show information about the error including the result
+       of calling :proc:`Error.message`.
+     */
     proc writeThis(f) {
       var description = chpl_describe_error(this);
       f <~> description;
     }
   }
 
+  /*
+     If a `nil` :class:`Error` is thrown, :class:`NilThrownError`
+     will be thrown instead.
+   */
   class NilThrownError : Error {
+    pragma "no doc"
     proc message() {
       return "thrown error was nil";
     }
@@ -97,8 +118,23 @@ module ChapelError {
     }
   }
 
-  // stores multiple errors when they can come up.
+  /*
+     :class:`TaskErrors` stores multiple errors when they can come up.
+     For example, a ``coforall`` loop might throw errors from multiple
+     tasks at the same time. These errors will be reported to the parent
+     task at the end of the ``coforall`` in the form of
+     :class:`TaskErrors`.
+
+     Note that errors thrown within a ``coforall``, ``cobegin``, or
+     ``forall`` are represented as elements of ``TaskErrors``. In the
+     case of nesting, all errors will be stored in a single ``TaskErrors``.
+
+     Errors thrown in ``begin`` tasks will be reported within a ``TaskErrors``
+     to the task that uses ``sync`` to wait for those ``begin`` tasks.
+
+   */
   class TaskErrors : Error {
+    pragma "no doc"
     var _head: Error = nil;
 
     pragma "no doc"
@@ -138,23 +174,36 @@ module ChapelError {
       }
     }
 
-    // append a single error to the group
+    /*
+       append a single error to the group
+     */
     proc append(err:Error) {
       var tmp = _head;
       err._next = tmp;
       _head = err;
     }
 
-    /* Create a TaskErrors containing only the passed error */
+    /* Create a :class:`TaskErrors` containing only the passed error */
     proc TaskErrors(err: Error) {
       _head = err;
     }
 
-    /* Create a TaskErrors not containing any errors */
+    /* Create a :class:`TaskErrors` not containing any errors */
     proc TaskErrors() {
       _head = nil;
     }
 
+    /* Iterate over the errors contained in this :class:`TaskErrors`.
+       For example
+
+         .. code-block:: chapel
+
+           var taskErrors:TaskErrors = ...;
+           for containedError in taskErrors {
+             // Do something with the contained error
+           }
+
+     */
     iter these() {
       var e = _head;
       while e != nil {
@@ -163,6 +212,7 @@ module ChapelError {
       }
     }
 
+    pragma "no doc"
     proc deinit() {
       var e = _head;
       var todelete: Error;
@@ -173,6 +223,13 @@ module ChapelError {
       }
     }
 
+    /*
+
+       Returns a string summarizing the errors contained in this
+       :class:`TaskErrors`. The summary is intended to be consise: it will not
+       grow arbitrarily long if the :class:`TaskErrors` contains many errors.
+
+     */
     proc message() : string {
       var n = 0;
 
@@ -218,7 +275,10 @@ module ChapelError {
       return ret;
     }
 
-    // convenience methods
+    /*
+       Iterate over those errors contained that are the passed type
+       or a subclass of that type.
+     */
     iter filter(type t) where t:Error {
       for e in these() {
         var tmp = e:t;
@@ -226,9 +286,12 @@ module ChapelError {
           yield tmp;
       }
     }
+    pragma "no doc"
     iter filter(type t) {
       compilerError("Filtered iterator only supports subclasses of Error");
     }
+    /* Returns `true` if this :class:`TaskErrors` contains an error
+       of the given type or a subclass of that type. */
     proc contains(type t) {
       for e in filter(t) {
         return true;
