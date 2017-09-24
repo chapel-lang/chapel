@@ -75,8 +75,6 @@
 #include "llvm/IR/GetElementPtrTypeIterator.h"
 #endif
 
-#include "llvm/Support/CommandLine.h"
-
 #include <cstdio>
 #include <list>
 #include <string>
@@ -84,18 +82,13 @@
 
 using namespace llvm;
 
-static cl::opt<int> AGOMASK("aggo-mask", cl::init(0), cl::Hidden);
-static cl::opt<int> AGOID("aggo-id", cl::init(0), cl::Hidden);
-static cl::opt<std::string> AGGOTEST("aggo-test", cl::desc("Specify output filename"), cl::value_desc("filename"));
-static cl::opt<bool> AGOBOOL("aggo-bool", cl::desc("Specify output filename"), cl::init(false));
-
 namespace {
 
 
 static const bool DEBUG = false;
 static const bool extraChecks = true;
 // Set a function name here to get lots of debugging output.
-static const char* debugThisFn = "deinit6";//"helpSetupRootLocaleFlat";
+static const char* debugThisFn = "";//"deinit6";
 
 
 // If there is a gap between memory that we are loading,
@@ -509,13 +502,6 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 // createAggregateGlobalOpsOptPass - The public interface to this file...
 FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace)
 {
-  int mask = AGOMASK;
-  int id = AGOID;
-  std::string t = AGGOTEST;
-  bool b = AGOBOOL;
-  printf("aggo-mask %i aggo-id %i aggo-test %s aggo-bool %i\n", mask ,id,
-      t.c_str(), b);
-
   return new AggregateGlobalOpsOpt(globalSpace);
 }
 
@@ -790,7 +776,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 
-  std::string fname = F.getName();
+/*  std::string fname = F.getName();
   std::hash<std::string> hasher;
   int h = (int) hasher(fname);
   int mask = AGOMASK;
@@ -807,7 +793,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   if (fname == "deinit5") return false; // OK
   //if (fname == "deinit6") return false;
   //if( F.getName().startswith("deinit") ) return false;
-
+*/
   if( debugThisFn[0] && F.getName() == debugThisFn ) {
     DebugThis = true;
   }
@@ -868,7 +854,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
 #endif
   }
 
-  if (ChangedFn)
+  if (DebugThis && ChangedFn)
     printf("AggregateGlobalOpsOpt changed %s\n", F.getName().str().c_str());
 
   //MD = 0;

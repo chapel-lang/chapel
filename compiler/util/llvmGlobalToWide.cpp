@@ -81,7 +81,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "deinit6";
+  static const char* debugThisFn = "";//"deinit6";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
