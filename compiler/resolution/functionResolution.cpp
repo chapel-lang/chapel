@@ -8359,9 +8359,20 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->resolvedFunction()) {
-        if (fn->getModule()->modTag == MOD_USER &&
+        if ((fn->getModule()->modTag == MOD_USER ||
+             call->getModule()->modTag == MOD_USER) &&
+            fn->getModule()->modTag != MOD_INTERNAL &&
             !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+
+          if (strncmp("chpl_", fn->name, 5) == 0 &&
+              !fn->hasFlag(FLAG_MODULE_INIT)) {
+            // skip any functions that are internal (start with "chpl_")
+            // except for the init function for the module, which needs
+            // to be traversed to find top-level calls in the module
+            continue;
+          }
+
           FnSymbol* instFn = fn;
           if (fn->instantiatedFrom) {
             instFn = fn->instantiatedFrom;
