@@ -81,36 +81,65 @@ The first initializer lets the user specify the initial coordinates and the
 second initializer lets the user specify the initial message when creating a
 MessagePoint.
 
+Order of Initialization
+-----------------------
+
+The specification of a class may be derived from, or inherit from, the
+specification of one or more other classes.  The initialization of an
+instance of a derived class requires that the initializer for each parent
+class be executed in some well defined order.
+
+Chapel initializes an instance in two phases that we refer to as "Phase 1"
+and "Phase 2".
+
+Phase 1 proceeds from the most derived class to the base class, and the fields
+for each class are initialized in field declaration order. This implies that
+the fields of any parent classes will be in an undefined state during phase 1.
+This in turn requires that certain constraints be observed during phase 1.
+These are described in more detail below.
+
+Phase 2 proceeds from the base class to the most derived class once phase 1
+has been completed for the base class.  At this point every field of the
+instance is in a well defined state and so there are no restrictions on
+the operations that may be performed.
+
+Note that this protocol is well-defined for instances of classes that do
+not include inheritance.  The fields of the instance are initialized in
+field declaration order during Phase 1 and then Phase 2 may be used to
+perform additional initialization.
+
+Records in Chapel do not currently provide support for inheritance but we
+choose to view the initialization of record values in the same manner.
 
 The Initializer Body
 --------------------
 
-The code written in an initializer can be divided into two sequentially-ordered
-categories, referred to as "Phase 1" and "Phase 2" for the remainder of this
-document.  The two phases are separated by a phase division indicator.  When the
-phase division indicator is not present, the body of an initializer is assumed
-to be entirely composed of Phase 2 statements.  Otherwise, any code prior to the
-phase division indicator is considered to be in Phase 1, and any code following
-it is considered to be in Phase 2.  Phase 1 and Phase 2 will be described in
-the next few subsections, and additional details and rationale can be found in
-`CHIP 10`_.
+The code written in an initializer is divided into two sequentially-ordered
+categories that define the operations to be performed in phase 1 and then
+phase 2.  The two phases are separated by a phase division indicator.  When
+the phase division indicator is not present, the body of an initializer is
+assumed to be entirely composed of Phase 2 statements.  Otherwise, any code
+prior to the phase division indicator is considered to be in Phase 1, and any
+code following it is considered to be in Phase 2.  Phase 1 and Phase 2 will
+be described in the next few subsections, and additional details and rationale
+can be found in `CHIP 10`_.
 
 Note that aside from ``try!`` statements without a ``catch`` block, error
-handling constructs are not allowed in initializers.  An initializer cannot be
-declared as ``throws``.  See `Interaction With Error Handling`_.
+handling constructs are not allowed in initializers.  An initializer cannot
+be declared as ``throws``.  See `Interaction With Error Handling`_.
 
 Phase 1
 +++++++
 
 The code residing in Phase 1 must follow a set of strong requirements.
 
-Other methods on the ``this`` instance cannot be called.  The ``this`` instance
-may not be passed to another function.
+Other methods on the ``this`` instance cannot be called.  The ``this``
+instance may not be passed to another function.
 
-Fields must be initialized in declaration order; however, fields can be omitted.
-Omitted fields are given the declared initial value if present, or the default
-of its declared type.  Fields with neither a declared initial value nor a
-declared type cannot be omitted.
+Fields must be initialized in declaration order; however, fields can be
+omitted. Omitted fields are given the declared initial value if present,
+or the default of its declared type.  Fields with neither a declared initial
+value nor a declared type cannot be omitted.
 
 .. code-block:: chapel
 
@@ -152,23 +181,24 @@ of prior fields.  However, later fields may not be referenced.
 
 Parent fields may not be accessed or initialized during Phase 1.
 
-``const`` fields may be initialized during Phase 1.  Local variables may
-be created and used.  Functions that are not methods on the ``this`` instance
+``const`` fields may be initialized during Phase 1.  Local variables may be
+created and used.  Functions that are not methods on the ``this`` instance
 may be called, so long as ``this`` is not provided as an argument.
 
 Loops and parallel statements are allowed during Phase 1, but field
-initialization within them is forbidden.  ``on`` statements whose bodies extend
-into Phase 2 are not allowed, but more limited ``on`` statements are acceptable.
+initialization within them is forbidden.  ``on`` statements whose bodies
+extend into Phase 2 are not allowed, but more limited ``on`` statements are
+acceptable.
 
 When Phase 1 of the initializer body has completed and the phase division
-indicator has been processed, it can safely be assumed that all fields are in
-a usable state.
+indicator has been processed, it can safely be assumed that all fields are
+in a usable state.
 
 Phase Division Indicator
 ++++++++++++++++++++++++
 
-An explicit call to another initializer ends Phase 1 and begins Phase 2.  This
-call takes one of two forms:
+An explicit call to another initializer ends Phase 1 and begins Phase 2.
+This call takes one of two forms:
 
 Form 1: call to an initializer defined on the parent type
 
@@ -182,8 +212,8 @@ Form 2: call to another initializer defined on the same type
 
    this.init();
 
-If the type has no parent, an argument-less call of the first form will still be
-valid, but otherwise treated as a no-op.
+If the type has no parent, an argument-less call of the first form will still
+be valid, but otherwise treated as a no-op.
 
 Example of initializers using the first form:
 
@@ -209,9 +239,9 @@ Example of initializers using the first form:
 
    var bar = new Bar(true);
 
-When using the second form, field initialization statements are not permitted in
-Phase 1, though other statements are allowed.  Omitted field initialization will
-not be inserted prior to calls of the second form.
+When using the second form, field initialization statements are not permitted
+in Phase 1, though other statements are allowed.  Omitted field initialization
+will not be inserted prior to calls of the second form.
 
 Example of an initializer using the second form:
 
@@ -243,10 +273,11 @@ If the phase division indicator is enclosed by a conditional, it must be a
 
 If no phase division indicator is provided, an argument-less first form call
 will be inserted at the beginning of the body.  The
-`Compiler Generated Initializers`_ will also include an argument-less first form
-call after completing the initialization of its fields.  If the parent type has
-defined an initializer that this call cannot resolve to, attempts to initialize
-the child with the compiler generated initializer will result in an error.
+`Compiler Generated Initializers`_ will also include an argument-less first
+form call after completing the initialization of its fields.  If the parent
+type has defined an initializer that this call cannot resolve to, attempts
+to initialize the child with the compiler generated initializer will result
+in an error.
 
 
 Phase 2
@@ -258,8 +289,8 @@ assignment rather than initialization.  Other methods may be called on the
 ``this`` instance, and the ``this`` instance may be passed as an argument to
 another function.  Parent fields may be accessed.
 
-As in other methods, code in Phase 2 may not redefine ``const``, ``param``, and
-``type`` fields.
+As in other methods, code in Phase 2 may not redefine ``const``, ``param``,
+and ``type`` fields.
 
 
 Generics
@@ -268,23 +299,23 @@ Generics
 A class or record with a ``param`` field, ``type`` field, or a ``var`` /
 ``const`` field with no type or initial value is considered generic over that
 field.  Generic fields are treated similarly to other fields, with some
-exceptions.  Only generic fields are capable of being declared without a type or
-initial value, so only those generic fields without either must have an explicit
-initialization in Phase 1 - other generic fields may rely on omitted
+exceptions.  Only generic fields are capable of being declared without a type
+or initial value, so only those generic fields without either must have an
+explicit initialization in Phase 1 - other generic fields may rely on omitted
 initialization like other fields do.  Like ``const`` fields, ``type`` and
 ``param`` fields may not be updated during Phase 2.
 
 Note: user-defined constructors for generic classes and records required an
-argument per generic field and did not allow generic fields to be set during the
-constructor body.  Initializers do not have this constraint.
+argument per generic field and did not allow generic fields to be set during
+the constructor body.  Initializers do not have this constraint.
 
 
 Copy Initializers
 -----------------
 
-An initializer may be defined to control the behavior when a copy of an instance
-is made.  This initializer is define with a single argument on the same type
-as the type being created:
+An initializer may be defined to control the behavior when a copy of an
+instance is made.  This initializer is define with a single argument on
+the same type as the type being created:
 
 .. code-block:: chapel
 
@@ -390,7 +421,7 @@ Other TODOs
 
 - Convert library types to utilize initializers instead of constructors
 - Improve some slightly cryptic error messages
-- Ensure we *always* error when a method is called in Phase 1 (we only sometimes
-  do today)
+- Ensure we *always* error when a method is called in Phase 1 (we only
+  sometimes do today)
 - Extend on statement support to allow field initialization within its bounds
   after getting larger team buy in.
