@@ -260,23 +260,119 @@ proc haltsOnError(i: int): int {
 }
 
 /*
-  .. _primers-errorHandling-parallel:
+  .. _primers-errorHandling-multilocale:
 
-  Multilocale and Parallelism
-  +++++++++++++++++++++++++++
+  Multilocale
+  -----------
 
   Errors can be thrown within `on` statements. In that event, the error
   will be propagated out of the `on` statement.
+ */
+
+proc handleFromOn() {
+  try {
+    on Locales[0] {
+      canThrow(1);
+    }
+  } catch {
+    writeln("caught from Locale 0");
+  }
+}
+
+/*
+  .. _primers-errorHandling-parallel:
+
+  Parallelism
+  -----------
+
+  TaskErrors
+  ++++++++++
+
+  If multiple tasks can throw errors, the errors from those tasks will be
+  collected into a built-in error type, `TaskErrors`. It can be iterated on
+  and filtered for different kinds of errors.
+
+
+  'begin'
+  +++++++
 
   Errors can be thrown within a `begin` statement. In that event, the error
   will be propagated to the `sync` statement that waits for that task.
-
-  Errors can be throw from ``coforall`` and ``cobegin`` statements.
-
-  Errors can be throws from ``forall`` too.
-
  */
 
+proc handleFromBegin() {
+  try! {
+    sync {
+      begin canThrow(0);
+      begin canThrow(1);
+    }
+  } catch e: TaskErrors {
+    writeln("caught from Locale 0");
+  }
+}
+
+/*
+  'coforall', 'cobegin'
+  +++++++++++++++++++++
+
+  Errors can be thrown from ``coforall`` and ``cobegin`` statements, handled
+  as ``TaskErrors``.
+ */
+
+proc handleFromCobegin() {
+  try! {
+    writeln("before cobegin block");
+    cobegin {
+      throw new PrimerError();
+      throw new PrimerError();
+    }
+    writeln("after cobegin block");
+  } catch errors: TaskErrors {
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
+
+proc handleFromCoforall() {
+  try! {
+    writeln("before coforall block");
+    coforall i in 1..2 {
+      throw new PrimerError();
+    }
+    writeln("after coforall block");
+  } catch errors: TaskErrors {
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
+
+/*
+  'forall'
+  ++++++++
+
+  Errors can be thrown from ``forall`` too. The implementation of
+  ``TaskErrors`` prevents nested ``forall`` statements from producing
+  nested ``TaskErrors``. Instead, the nested errors will flatten into the
+  outer loop's ``TaskErrors``.
+ */
+
+proc handleFromCoforall() {
+  try! {
+    writeln("before forall block");
+    forall i in 1..2 {
+      forall j in 1..2 {
+        throw new PrimerError();
+      }
+    }
+    writeln("after forall block");
+  } catch errors: TaskErrors { // not nested
+    for e in errors {
+      writeln("Caught task error e ", e.message());
+    }
+  }
+}
 
 /*
   .. _primers-errorHandling-errors:
