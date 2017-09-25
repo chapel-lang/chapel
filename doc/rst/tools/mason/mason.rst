@@ -39,8 +39,28 @@ To remove mason change directory to ``$CHPL_HOME/tools/mason`` and run:
    make clobber
 
 
+Environment Variables
+=====================
 
-Setting up your Project
+Mason can be configured by setting the following environment variables:
+
+- ``MASON_HOME`` : Path to a directory where mason will store registry and package data.
+  Defaults to ``$HOME/.mason``.
+- ``MASON_REGISTRY`` : A valid git URL pointing to a repository of package information.
+  Defaults to ``https://github.com/chapel-lang/mason-registry``
+
+The ``mason env`` command will print the inferred or set values of these
+environment variables. If a variable was set by the user, an asterisk will be
+printed at the end of the line. For example, if ``$MASON_HOME`` was set:
+
+.. code-block:: text
+
+   > mason env
+   MASON_HOME: /path/to/something *
+   MASON_REGISTRY: https://github.com/chapel-lang/mason-registry
+
+
+Setting up Your Project
 =======================
 	
 ``mason new [ project name ] [ options ]`` is the command that initializes
@@ -61,7 +81,7 @@ it is an acceptable tradeoff for reliability. ``MyPackage`` will be the first fi
 
 
 
-Building and Running your project
+Building and Running Your Project
 =================================
 
 When invoked, ``mason build [ options ]`` will do the following:
@@ -191,7 +211,7 @@ The initial mason registry is a GitHub repository containing a list of versioned
 
 `Mason-Registry <https://github.com/chapel-lang/mason-registry>`_.
 
-The registry will be downloaded to ``$MASON_HOME/.mason/registry`` by ``mason update``
+The registry will be downloaded to ``$MASON_HOME/registry`` by ``mason update``
 if a registry at that location does not already exist.
 
 The registry consists of the following hierarchy:
@@ -240,7 +260,7 @@ If no query is provided, all packages in the registry will be listed.
 
 
 
-Submit a package 
+Submit a Package
 ================
 
 The mason registry will hold the manifest files for packages submitted by developers.
@@ -351,7 +371,4 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 Dependency Code
 ===============
 
-The src code for every package downloaded will be in ``$MASON_HOME`` which by default is placed
-under the ``$HOME`` directory of the user. The path to the versioned packages downloaded by the
-user would then be under ``$MASON_HOME/.mason/src/``. In the directory adjacent to the source code
-directory is the user's checkout of the mason-registry. 
+The source code for every package will be downloaded to ``$MASON_HOME/src``.
