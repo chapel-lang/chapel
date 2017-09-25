@@ -1,7 +1,7 @@
 Release Changes List
 ====================
 
-*** stopped at ce2eb17 2017-08-01 ***
+*** stopped at 4d33c6e 2017-09-03 ***
 
 TODO: remove 'master' from any docs links
 TODO: move docs to top-level?
@@ -25,11 +25,13 @@ Deployment
 ----------
 * added new 'configure'/'make install' options for building Chapel
   (see http://chapel.cray.com/docs/latest/usingchapel/building.html#installing-chapel)
+* made 'printchplenv' infer the location of CHPL_HOME
+* made 'printchplenv' distinguish between .config- vs. env-set variables
 
 New Features
 ------------
 * generated executables now take the main module name rather than 'a.out'
-  (see TODO)
+  (see TODO 2908af6)
 * added a 'defer' statement to aid with cleanup
   (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
 * added support for conditional 'local' statements
@@ -71,6 +73,8 @@ Feature Improvements
   - added support for throwing errors from catch blocks
   - added support for throwing errors from non-void functions
   - added support for printing out errors on 'try!'
+  - added support for throwing errors across tasks and within 'forall's
+  - improved handling of uncaught errors
 * ensured that `use` statements are considered in program order
 * improved the CHPL_UNWIND output to include more functions
 * improved overload disambiguation for functions w/ partially generic arguments
@@ -97,6 +101,11 @@ Standard Modules/Library
 * added support for `waitAll()` to the `Futures` module
   (see http://chapel.cray.com/docs/master/modules/packages/Futures.html?highlight=waitall#Futures.waitAll)
 * closed memory leaks in regular expressions / RegEx
+* added ctime() to 'DateTime' module
+  (see TODO)
+* changed the IO routines over to use error-handling as an option
+  (see TODO)
+* renamed the 'Barrier' module to 'Barriers'
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -110,6 +119,8 @@ Standard Domain Maps (Layouts and Distributions)
 * added a 'replicand' method to 'ReplicatedDist' supporting local access
   (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html?highlight=replicand
    and http://chapel.cray.com/docs/master/primers/replicated.html?highlight=replicand)
+* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+  (see TODO)
 
 Package Modules
 ---------------
@@ -118,6 +129,12 @@ Package Modules
 * added diag() to 'LinearAlgebra' to support diagonal (and off-diagonal) access
   (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
 * optimized the implementation of dense transpose in the LinearAlgebra module
+* added support for a distributed guided and dynamic iterators
+  (see TODO)
+* improved 'LinearAlgebra' routines to support arbitrary lower bounds
+* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+* added a new 'Collections' module  (TODO: also DistributedBag/Dequeue?)
+  (see TODO)
 
 Interoperability Improvements
 -----------------------------
@@ -147,6 +164,8 @@ Performance Optimizations/Improvements
 * made the domains and distributions of reindexed arrays preserve locality
 * added support for parallel array initialization for arrays of POD eltTypes
 * optimized the implementation of dense transpose in the LinearAlgebra module
+* registered arrays with the network dynamically for a performance improvement
+* added support for serializing records across locales, supporting local copies
 
 Memory Improvements
 -------------------
@@ -171,6 +190,9 @@ New Tools / Tool Changes
 * added a new c2chapel tool that converts C headers to Chapel extern decls
   (see TODO)
 * made chpldoc issue a warning if it detects open/close comment mismatches
+* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
+  (see TODO)
+* added support for LaTeX in chpldoc comments via mathjax
 
 Documentation
 -------------
@@ -213,6 +235,7 @@ Cray-specific Changes
 ---------------------
 * removed caveat about ugni registration limits in Cray documentation
 * retired official support for the 'cray-xt' platform
+* reduced the default heap size for CHPL_COMM=ugni
 
 Syntax Highlighting
 -------------------
@@ -229,6 +252,8 @@ Error Messages
 * improved error messages for illegal 'delete' statements
 * added a warning for potential confusions related to implicit module naming
 * added an error for records that try to subtype another type
+* added an error for returning a tuple of the wrong size
+* added an error message for exported functions with generic arguments
 
 Runtime Error Checks
 --------------------
@@ -262,6 +287,8 @@ Bug Fixes
 * fixed a bug in which isRecord*() returned 'true' for sync/single types
 * fixed a bug in isAlpha() for characters between upper- and lowercase letters
 * fixed a bug related to task counters not being stored in task-local storage
+* fixed a bug with this.init() calls in initializers of generic types
+* fixed a bug for ambiguous 'param' methods
 
 Launchers
 ---------
@@ -282,9 +309,13 @@ Generated Code
 Third-Party Software Changes
 ----------------------------
 * updated RE2 to commit a810d71
-* updated the compiler to be compatible with LLVM 3.8, 3.9, 4.0
-* updated gasnet to version 1.30.0
+* updated the compiler to be compatible with LLVM 3.8, 3.9, 4.0, 4.01
+* switched the LLVM back-end to use version 4.0.1 by default
+* updated GASNet to version 1.30.0
+* updated GMP to version 6.1.2
 * enabled suport for multiple communication domains in GASNet for gemini/aries
+* changed our Makefiles so that third-party code gets rebuilt when needed
+* updated hwloc to version 1.11.7
 
 Testing System
 --------------
@@ -330,6 +361,8 @@ Developer-oriented changes: Compiler improvements/changes
 * removed the reaching definition analysis portion of dead code elimination
 * reduced the amount of nondeterminism in the compiler
 * removed support for trying to handle references in copyPropagation
+* added 'parentlocid' command within the compiler's gdb support
+* added a "last resort" pragma/flag for error-case overloads
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
