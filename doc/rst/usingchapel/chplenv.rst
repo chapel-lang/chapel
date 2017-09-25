@@ -624,7 +624,7 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 3.7.
+   Chapel currently supports LLVM 3.7 through 4.0.
 
    .. note::
 
