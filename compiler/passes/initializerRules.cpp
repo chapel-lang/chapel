@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "InitNormalize.h"
 #include "passes.h"
 #include "stmt.h"
@@ -420,6 +421,19 @@ static InitNormalize preNormalize(BlockStmt*    block,
             INT_ASSERT(false);
           }
 
+        } else if (state.inForall() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a forall loop body");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a forall loop body");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
         } else if (state.inOn() == true) {
           if (isSuperInit(callExpr) == true) {
             USR_FATAL(stmt,
@@ -490,6 +504,13 @@ static InitNormalize preNormalize(BlockStmt*    block,
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "coforall during phase 1 of initialization",
+                    field->sym->name);
+
+
+        } else if (state.inForall() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "forall during phase 1 of initialization",
                     field->sym->name);
 
 
@@ -598,6 +619,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
       preNormalize((BlockStmt*) stmt, InitNormalize(loop, state));
+      stmt = stmt->next;
+
+    } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      preNormalize(forall->loopBody(), InitNormalize(forall, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
