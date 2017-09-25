@@ -35,7 +35,7 @@ proc getEnv(name: string): string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd, quiet = false) {
+proc runCommand(cmd, quiet=false) {
   var splitCmd = cmd.split();
   var process = spawn(splitCmd, stdout=PIPE);
   process.wait();
@@ -63,12 +63,11 @@ proc runWithStatus(command): int {
 proc hasOptions(args : [] string, const opts : string ...) {
   var ret = false;
 
-  for a in args {
-    for o in opts {
-      if a == o {
-        ret = true;
-        break;
-      }
+  for o in opts {
+    const (found, idx) = args.find(o);
+    if found {
+      ret = true;
+      break;
     }
   }
 
