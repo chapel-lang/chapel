@@ -929,7 +929,7 @@ Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
 Only the ``CS(compressRows=true)`` (CSR) layout of the
 :mod:`LayoutCS` layout module is currently supported.
 
-See the `Sparse Primer <primers-sparse>`_ for more information about working
+See the :ref:`Sparse Primer <primers-sparse>` for more information about working
 with sparse domains and arrays in Chapel.
 
 Sparse Linear Algebra Interface
