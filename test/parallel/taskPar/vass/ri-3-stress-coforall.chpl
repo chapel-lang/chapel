@@ -30,7 +30,7 @@ proc onetest(ri: int) {
     red += idx;
   }
   const result = red;
-  check(result, sum(1..t), ri);
+  check(result, 5 + sum(1..t), ri);
 }
 
 proc sum(r) { const l = r.length; return l * (l+1) / 2; }
