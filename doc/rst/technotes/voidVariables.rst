@@ -48,8 +48,8 @@ fields will be removed by the compiler.
     }
   }
 
-Void Functions
---------------
+Void Functions and Iterators
+----------------------------
 
 A function may return the ``void`` value ``_void``.  Functions that
 return the value ``_void`` have a return type of ``void`` and can be
@@ -58,6 +58,13 @@ used as ``void`` values.
 A function that does not return also has a return type of ``void``,
 but can not be used as a ``void`` value. For example, it cannot be
 assigned to a void-variable.
+
+An iterator may yield the ``void`` value ``_void``.  A loop calling
+the iterator will iterate once per ``_void`` yielded with a ``void``
+index variable.
+
+An iterator with no ``yield`` has type ``void``. A loop calling the
+iterator will execute the body of the iterator, but no loop iterations.
 
 .. code-block:: chapel
 
@@ -76,8 +83,30 @@ assigned to a void-variable.
   var v3: void = explicitReturn();
   var v4 = explicitReturn();
 
+  iter noYield() {
+    writeln("noYield iter");
+  }
+
+  iter yieldVoids() {
+    for i in 1..2 do
+      yield _void;
+  }
+
+  for i in noYield() {
+    writeln("Unprinted");
+  }
+
+  for i in yieldVoids() {
+    writeln("Printed twice");
+  }
+
 Although the function ``noReturn()`` has a return type of ``void``,
 it cannot be assigned to a variable. Both the ``v1`` and ``v2``
 assignments above would be errors if uncommented. A function that returns
 a ``void`` value explicitly is assignable to a variable of type ``void``,
 as in the ``v3`` and ``v4`` examples.
+
+The ``for`` loop calling the ``noYield()`` iterator will execute the
+iterator body once, printing "noYield iter", but will not execute the
+loop body.  The loop calling the ``yieldVoids()`` iterator will execute
+the loop body twice because the iterator yields two ``_void`` values.
