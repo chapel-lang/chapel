@@ -340,7 +340,7 @@ class ForceLJ : Force {
     const cfsq = cutforcesq;
 
     var t_eng, t_vir : real;
-    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (in cfsq, + reduce t_eng, + reduce t_vir) {
+    forall (b,p,c,r) in zip(Bins, RealPos, RealCount, binSpace) with (const in cfsq, + reduce t_eng, + reduce t_vir) {
       for (a, x, j) in zip(b[1..c],p[1..c],1..c) {
         for(n,i) in a.neighs[1..a.ncount] {
           const del = x - Pos[n][i];

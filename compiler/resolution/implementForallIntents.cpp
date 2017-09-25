@@ -2399,12 +2399,14 @@ static void propagateThroughYieldNew(ForallStmt* fs,
   // Check for an "eflopi" (Enclosing For-Loop Over a Parallel Iterator).
   // This is specific to a given yield.
   // Todo: handle multiple yields in a single eflopi.
-  bool      eflopiChecked = false;
   ForLoop*  eflopiLoop    = NULL;
   CallExpr* eflopiCall    = NULL;
   int       eflopiIdx     = 1;
   CallExpr* eflopiHelper  = NULL;
   int       ix            = -1;
+
+  // sets eflopiLoop and eflopiCall if appropriate:
+  eflopiFind(rcall, eflopiLoop, eflopiCall);
 
   // add tuple components
   for_shadow_vars(shadowvar, temp, fs) {
@@ -2413,16 +2415,11 @@ static void propagateThroughYieldNew(ForallStmt* fs,
     Symbol* svar = shadowVarsRI[ix];
     Symbol* tupleComponent;
     if (isReduce) {
-      // Todo: handle eflopi case when !isReduce.
-      if (!eflopiChecked) {
-        eflopiChecked = true;
-        eflopiFind(rcall,
-                   // sets these if appropriate:
-                   eflopiLoop, eflopiCall);
-      }
+
       Symbol* parentOp = extraFormals[ix];
       // not resolved yet: INT_ASSERT(isReduceOp(extraActuals[ix]->type));
 
+      // Todo: handle eflopi case when !isReduce.
       if (eflopiCall) {
         //
         // Convert the eflopiLoop loop similarly to how a forall is handled:
@@ -2497,6 +2494,13 @@ static void propagateThroughYieldNew(ForallStmt* fs,
         tupleComponent = sref;
       }
     } else {
+      if (eflopiLoop != NULL && shadowvar->intent == TFI_IN) {
+        USR_WARN(shadowvar, "switching from 'in' to 'const in' intent for the shadow variable %s", shadowvar->name);
+        USR_PRINT(shadowvar, "'in' intent is currently not implemented");
+        USR_PRINT(eflopiLoop, "due to a loop over a parallel iterator here");
+        shadowvar->intent = TFI_CONST_IN;
+      }
+
       Symbol* toPass = extraFormals[ix];
       INT_ASSERT(toPass->type != dtUnknown && // see 'else' below
                  toPass->type != dtAny);
