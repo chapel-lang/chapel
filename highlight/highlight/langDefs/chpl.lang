@@ -17,7 +17,8 @@ Keywords={
          "extern", "false", "for", "forall", "if", "in", "index", "inline",
          "inout", "iter", "label", "lambda", "let", "local", "module", "new",
          "nil", "noinit", "on", "only", "otherwise", "out", "param", "private",
-         "proc", "public", "record", "reduce", "ref", "require", "return",
+         "proc", "prototype",
+         "public", "record", "reduce", "ref", "require", "return",
          "scan", "select", "serial", "single", "sparse", "subdomain", "sync",
          "then", "throw", "throws", "true", "try", "type", "union", "use",
          "var", "when", "where", "while", "with", "yield", "zip"
