@@ -59,6 +59,11 @@ printed at the end of the line. For example, if ``$MASON_HOME`` was set:
    MASON_HOME: /path/to/something *
    MASON_REGISTRY: https://github.com/chapel-lang/mason-registry
 
+.. warning::
+
+   If MASON_REGISTRY changes after invoking a mason commands that updates the
+   local copy of the registry (e.g. ``mason update``), the local copies of the
+   registry and dependency sources will be removed.
 
 Setting up Your Project
 =======================
