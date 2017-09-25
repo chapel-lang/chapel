@@ -14,7 +14,7 @@ proc setEnv(name : string, val : string) {
 
 proc main() {
   const args = ["foo", "update", "--no-update-registry"];
-  setEnv("MASON_LOCAL_REGISTRY_DIR", "./registry");
+  setEnv("MASON_CACHED_REGISTRY", "./registry");
 
   UpdateLock(args, toml);
 
