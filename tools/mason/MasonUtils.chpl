@@ -35,13 +35,15 @@ proc getEnv(name: string): string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd) {
+proc runCommand(cmd, quiet = false) {
   var splitCmd = cmd.split();
   var process = spawn(splitCmd, stdout=PIPE);
   process.wait();
 
-  for line in process.stdout.lines() {
-    write(line);
+  if quiet == false {
+    for line in process.stdout.lines() {
+      write(line);
+    }
   }
 }
 
@@ -58,35 +60,19 @@ proc runWithStatus(command): int {
   return sub.exit_status;
 }
 
+proc hasOptions(args : [] string, const opts : string ...) {
+  var ret = false;
 
-
-/* Checks to see if dependency has already been
-   downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/.mason/src/';
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency then
-      exists = true;
-  }
-  return exists;
-}
-
-
-proc MASON_HOME: string {
-  // possible locations
-  const envHome   = getEnv("MASON_HOME");
-  const home      = getEnv('HOME');
-  const masonHome = if envHome != "" then envHome else home;
-
-  const dotMason = masonHome + "/.mason";
-
-  if isDir(dotMason) == false {
-    writeln(dotMason + " not found, creating...");
-    mkdir(dotMason, parents=true);
+  for a in args {
+    for o in opts {
+      if a == o {
+        ret = true;
+        break;
+      }
+    }
   }
 
-  return masonHome;
+  return ret;
 }
 
 record VersionInfo {
