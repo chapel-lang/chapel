@@ -35,16 +35,21 @@ proc getEnv(name: string): string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd, quiet=false) {
+proc runCommand(cmd, quiet=false) : string {
+  var ret : string;
+
   var splitCmd = cmd.split();
   var process = spawn(splitCmd, stdout=PIPE);
   process.wait();
 
-  if quiet == false {
-    for line in process.stdout.lines() {
+  for line in process.stdout.lines() {
+    ret += line;
+    if quiet == false {
       write(line);
     }
   }
+
+  return ret;
 }
 
 
@@ -190,12 +195,16 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
-proc gitC(newDir, command) {
+proc gitC(newDir, command, quiet=false) {
+  var ret : string;
+
   const oldDir = here.cwd();
   here.chdir(newDir);
 
-  runCommand(command);
+  ret = runCommand(command, quiet);
 
   here.chdir(oldDir);
+
+  return ret;
 }
 
