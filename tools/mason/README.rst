@@ -25,7 +25,7 @@ installs mason in the same place as the chapel compiler (``chpl``) so that
 mason can be used anywhere in the user's file system.
 
 
-The ``mason update`` command will download the registry to ``$MASON_HOME/.mason/registry``
+The ``mason update`` command will download the registry to ``$MASON_HOME/registry``
 if it there is not already a registry at that location.
 
 

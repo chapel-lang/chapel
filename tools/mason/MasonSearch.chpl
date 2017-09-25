@@ -1,5 +1,6 @@
 
 use MasonHelp;
+use MasonEnv;
 use MasonUpdate;
 
 use FileSystem;
@@ -11,20 +12,6 @@ use Regexp;
 // - allow regex searches
 // - allow for exclusion of a pattern
 //
-
-proc hasOptions(args : [] string, const opts : string ...) {
-  var ret = false;
-
-  for a in args {
-    for o in opts {
-      if a == o {
-        ret = true;
-      }
-    }
-  }
-
-  return ret;
-}
 
 proc masonSearch(origArgs : [] string) {
   var args : [1..origArgs.size] string = origArgs;
@@ -44,7 +31,7 @@ proc masonSearch(origArgs : [] string) {
   const query = if args.size > 0 then args.tail().toLower()
                 else ".*";
 
-  const searchDir = MasonUpdate.getRegistryDir() + "/Bricks/";
+  const searchDir = MASON_CACHED_REGISTRY + "/Bricks/";
   const pattern   = compile(query, ignorecase=true);
 
   var results : [1..0] string;

@@ -20,6 +20,7 @@
 use TOML;
 use FileSystem;
 use MasonUtils;
+use MasonEnv;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -37,15 +38,6 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion : [1..0] string;
-
-proc getRegistryDir() {
-  const env = getEnv("MASON_LOCAL_REGISTRY_DIR");
-  if env == "" {
-    return MASON_HOME + '/.mason/registry';
-  } else {
-    return env;
-  }
-}
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
@@ -83,6 +75,31 @@ proc genLock(lock: Toml, lf) {
   tomlWriter.close();
 }
 
+proc checkRegistryChanged() {
+  if isDir(MASON_CACHED_REGISTRY) == false {
+    return;
+  }
+
+  const oldRegistry = gitC(MASON_CACHED_REGISTRY, "git config --get remote.origin.url", quiet=true).strip();
+
+  if oldRegistry != MASON_REGISTRY {
+    writeln("MASON_REGISTRY changed since last update:");
+    writeln("  old: ", oldRegistry);
+    writeln("  new: ", MASON_REGISTRY);
+    writeln();
+    writeln("Removing cached registry and sources to avoid conflicts");
+
+    proc tryRemove(name : string) {
+      if isDir(name) {
+        writeln("Removing ", name);
+        rmTree(name);
+      }
+    }
+
+    tryRemove(MASON_CACHED_REGISTRY);
+    tryRemove(MASON_HOME + "/src");
+  }
+}
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args : [] string) {
@@ -92,8 +109,9 @@ proc updateRegistry(tf: string, args : [] string) {
     }
   }
 
-  const masonHome = MASON_HOME;
-  const registryHome = getRegistryDir();
+  checkRegistryChanged();
+
+  const registryHome = MASON_CACHED_REGISTRY;
   if isDir(registryHome) {
     var pullRegistry = 'git pull -q origin master';
     if tf == "Mason.toml" then writeln("Updating mason-registry");
@@ -101,13 +119,11 @@ proc updateRegistry(tf: string, args : [] string) {
   }
   // Registry has moved or does not exist
   else {
-    mkdir(masonHome + '/.mason', parents=true);
-    mkdir(masonHome + '/.mason/src', parents=true);
-    const localRegistry = getRegistryDir();
+    mkdir(MASON_HOME + '/src', parents=true);
+    const localRegistry = MASON_CACHED_REGISTRY;
     mkdir(localRegistry, parents=true);
-    const registry = "https://github.com/chapel-lang/mason-registry";
-    const cloneRegistry = 'git clone -q ' + registry + ' .';
-    writeln('Could not find Registry...cloning registry...');
+    const cloneRegistry = 'git clone -q ' + MASON_REGISTRY + ' .';
+    writeln("Initializing mason-registry...");
     gitC(localRegistry, cloneRegistry);
   }
 }
@@ -379,7 +395,7 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
 proc retrieveDep(name: string, version: string) {
-  const tomlPath = getRegistryDir() + "/Bricks/"+name+"/"+version+".toml";
+  const tomlPath = MASON_CACHED_REGISTRY + "/Bricks/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);

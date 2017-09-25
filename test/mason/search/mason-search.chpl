@@ -15,7 +15,7 @@ proc main() {
   var args = ["foo", "search", "--no-update-registry"];
   if pattern != "" then args.push_back(pattern);
 
-  setEnv("MASON_LOCAL_REGISTRY_DIR", "./registry");
+  setEnv("MASON_CACHED_REGISTRY", "./registry");
 
   masonSearch(args);
 }
