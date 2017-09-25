@@ -75,6 +75,31 @@ proc genLock(lock: Toml, lf) {
   tomlWriter.close();
 }
 
+proc checkRegistryChanged() {
+  if isDir(MASON_CACHED_REGISTRY) == false {
+    return;
+  }
+
+  const oldRegistry = gitC(MASON_CACHED_REGISTRY, "git config --get remote.origin.url", quiet=true).strip();
+
+  if oldRegistry != MASON_REGISTRY {
+    writeln("MASON_REGISTRY changed since last update:");
+    writeln("  old: ", oldRegistry);
+    writeln("  new: ", MASON_REGISTRY);
+    writeln();
+    writeln("Removing cached registry and sources to avoid conflicts");
+
+    proc tryRemove(name : string) {
+      if isDir(name) {
+        writeln("Removing ", name);
+        rmTree(name);
+      }
+    }
+
+    tryRemove(MASON_CACHED_REGISTRY);
+    tryRemove(MASON_HOME + "/src");
+  }
+}
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args : [] string) {
@@ -83,6 +108,8 @@ proc updateRegistry(tf: string, args : [] string) {
       return;
     }
   }
+
+  checkRegistryChanged();
 
   const registryHome = MASON_CACHED_REGISTRY;
   if isDir(registryHome) {
