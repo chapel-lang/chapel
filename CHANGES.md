@@ -1,16 +1,15 @@
 Release Changes List
 ====================
 
-*** stopped at 4d33c6e 2017-09-03 ***
+*** stopped at dced642 2017-09-24 ***
 
-TODO: remove 'master' from any docs links
 TODO: move docs to top-level? ('latest' is symbolic link to '.'?)
+TODO: remove 'master'/'latest' from any docs links?
 TODO: where to put LLVM codegen flags in 6135 / 8d704f0
 TODO: error-handling keyword highlighting in emacs
-TODO: any strictness pragmas in test/release/examples
-TODO: scan changes to compiler flags/man page
-TODO: scan changes to test/release/examples
-TODO: boil down entries for initializers and error-handling
+TODO: 'tics' vs. `backtics`?
+TODO: refactor / filter highlights
+TODO: reorder sections
 
 version 1.16.0
 ==============
@@ -19,23 +18,47 @@ Nineteenth public release of Chapel, September 20, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-TODO
+* added a new 'configure'/'make install' option for building+installing Chapel
+* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
+* added a new c2chapel tool that converts C headers to Chapel extern decls
+* 'chpl'-generated executables now take the main module name rather than 'a.out'
+* added a 'defer' statement to aid with cleanup
+* added support for 'try'/'try!' expressions (no 'catch' permitted)
+* added a 'prototype' keyword to relax checks for explicit module declarations
+* significantly improved the implementation of initializers
+* significantly improved support for error-handling
+* significantly improved the generality and robustness of 'forwarding' fields
+* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+* made the ReplicatedDist distribution less odd and renamed it to 'Replicated'
+* added support for a new 'Crypto' module based on OpenSSL
+* added a new 'Collections' module  (TODO: also DistributedBag/Dequeue?)
+* added support for a new 'TOML' module (not 100% feature complete)
+* added support for a distributed guided and dynamic iterators
+* improved support for the MPI module when ugni, gasnet/aries, and/or qthreads
+* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+* improved the 'LinearAlgebra' module in a number of ways:
+* perf improvements
+* closed some memory leaks in module code
+* added a new locale model for AMD Accelerator Processing Units (APUs)
 
-New Dependences
----------------
-* users of the LLVM-based front- or back-ends must now have CMake to build
-* users of the `RegExp` module / RE2 must now have a C++11 compiler to build
-
-Deployment
-----------
+New Dependences / Configuration Changes
+---------------------------------------
 * added a new 'configure'/'make install' option for building+installing Chapel
   (see http://chapel.cray.com/docs/latest/usingchapel/building.html#installing-chapel)
+* users of the LLVM-based front- or back-ends must now have CMake to build
+* users of the `RegExp` module / RE2 must now have a C++11 compiler to build
 * made 'printchplenv' distinguish between config-file- vs. env-set variables
 * made 'printchplenv' infer the location of CHPL_HOME
 
-Compiler Use Changes
---------------------
-* generated executables now take the main module's name rather than 'a.out'
+New Tools / Tool Changes
+------------------------
+* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
+  (see http://chapel.cray.com/docs/master/tools/mason/mason.html)
+* added a new c2chapel tool that converts C headers to Chapel extern decls
+  (see http://chapel.cray.com/docs/master/tools/c2chapel/c2chapel.html)
+* 'chpl'-generated executables now take the main module name rather than 'a.out'
+* added support for LaTeX in chpldoc comments via mathjax
+* made chpldoc issue a warning if it detects open/close comment mismatches
 
 New Features
 ------------
@@ -50,6 +73,7 @@ New Features
 * added prototype support for choosing error strictness on a module granularity
   (see TODO)
 * added support for reindex() on arrays to accept a list of ranges
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -75,98 +99,82 @@ Syntactic/Naming Changes
 Feature Improvements
 --------------------
 * significantly improved the implementation of initializers
-  - added support for generic record type specifications for initialized records
-  - added support for creating generic records via 'new'
-  - added support for initializer arguments with default values
-  - improved support for fields whose declarations depend on previous fields
-  - improved support for compiler-generated initializers (not used by default)
-  - added support for varargs initializers
-  - added support for parallelism and on-clauses within initializers
-  - added support for invoking initializers with explicit module qualifiers
   (see http://chapel.cray.com/docs/master/technotes/initializers.html)
-* significantly improved error-handling
-  - added support for throwing errors across locales / on-clauses
-  - added support for throwing errors from catch blocks
-  - added support for throwing errors from non-void functions
-  - added support for printing out errors on 'try!'
-  - added support for throwing errors across tasks and within 'forall's
-  - improved handling of uncaught errors
+* significantly improved support for error-handling
   (see http://chapel.cray.com/docs/master/technotes/errorHandling.html)
-* ensured that `use` statements are considered in program order
+* significantly improved the generality and robustness of 'forwarding' fields
 * improved the CHPL_UNWIND output to include more functions
 * improved overload disambiguation for functions w/ partially generic arguments
-* significantly improved the generality and robustness of 'forwarding' fields
 
 Removed Features
 ----------------
-* removed support for the '=>' alias operator in constructor argument lists
-* removed support for the '=>' array alias initialization form (use 'ref')
+* removed support for the '=>' operator to create array aliases
 * removed support for outdated 'RandomStream' constructors
+* retired support for CHPL_TASKS=muxed
 
 Standard Modules/Library
 ------------------------
-* added overloads to push_front(), push_back(), etc. that take arrays
-  (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=push_back#ChapelArray.push_back)
-* added a new lines() iterator to channels
-  (see http://chapel.cray.com/docs/master/modules/standard/IO.html?highlight=lines#IO.channel.lines)
-* added an asciiToString function that converts a uint(8) into a string
-  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
-* added 'param' and 'type' overloads of getField() to the Reflection module
-  (see http://chapel.cray.com/docs/master/modules/standard/Reflection.html?highlight=getfield#Reflection.getField)
-* added support for file.getParentName() to the `Path` module
-  (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
-* added guided and adaptive iterators that accept domains
-  (see http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
-* gave the dynamic() iterators a default chunk size of 1
-* added support for `waitAll()` to the `Futures` module
-  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html?highlight=waitall#Futures.waitAll)
-* closed memory leaks in regular expressions / RegEx
-* added ctime() to the 'datetime' type in the 'DateTime' module
-  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html?highlight=ctime#DateTime.datetime.ctime)
 * added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Regex' and 'Path'
   (see TODO)
 * added 'throw'ing routines to 'Spawn'
   (see TODO)
+* added overloads to push_front(), push_back(), etc. that take array arguments
+  (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=push_back#ChapelArray.push_back)
+* added support for `waitAll()` to the `Futures` module
+  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html?highlight=waitall#Futures.waitAll)
+* added 'param' and 'type' overloads of getField() to the Reflection module
+  (see http://chapel.cray.com/docs/master/modules/standard/Reflection.html?highlight=getfield#Reflection.getField)
+* added a new lines() iterator to channels
+  (see http://chapel.cray.com/docs/master/modules/standard/IO.html?highlight=lines#IO.channel.lines)
+* added support for file.getParentName() to the `Path` module
+  (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
+* added ctime() to the 'datetime' type in the 'DateTime' module
+  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html?highlight=ctime#DateTime.datetime.ctime)
+* added guided and adaptive iterators that accept domains
+  (see http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
+* gave the dynamic() iterators a default chunk size of 1
+* added an asciiToString function that converts a uint(8) into a string
+  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
 * made the printing of comm diagnostics in 'CommDiagnostics' suppress zeroes
+* closed memory leaks in regular expressions / RegEx
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+  (see http://chapel.cray.com/docs/master/modules/layouts/LayoutCS.html)
 * made the ReplicatedDist distribution less odd and renamed it to 'Replicated'
   (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
    and http://chapel.cray.com/docs/master/primers/replicated.html)
-* privatized sparse Block-distributed domains/arrays
-* closed memory leaks in the DimensionalDist2D
 * added a 'replicand' method to 'ReplicatedDist' supporting local access
   (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html?highlight=replicand
    and http://chapel.cray.com/docs/master/primers/replicated.html?highlight=replicand)
-* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
-  (see http://chapel.cray.com/docs/master/modules/layouts/LayoutCS.html)
+* privatized sparse Block-distributed domains/arrays
+* closed memory leaks in the DimensionalDist2D distribution
 
 Package Modules
 ---------------
-* improved support for the MPI module when using CHPL_COMM=ugni or gasnet/aries
-* improved support for using the MPI module with CHPL_TASKS=qthreads
-* added diag() to 'LinearAlgebra' to support diagonal (and off-diagonal) access
-  (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
-* optimized the implementation of dense transpose in the LinearAlgebra module
-* added support for a distributed guided and dynamic iterators
-  (see http://chapel.cray.com/docs/master/modules/packages/DistributedIters.html)
-* improved 'LinearAlgebra' routines to support arbitrary lower bounds
-* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+* added support for a new 'Crypto' module based on OpenSSL
+  (see http://chapel.cray.com/docs/master/modules/packages/Crypto.html)
 * added a new 'Collections' module  (TODO: also DistributedBag/Dequeue?)
-  (see TODO)
-* added 'throw'ing functions in HDFS
   (see TODO)
 * added support for a new 'TOML' module (not 100% feature complete)
   (see TODO)
-* added support for a new 'Crypto' module based on OpenSSL
-  (see http://chapel.cray.com/docs/master/modules/packages/Crypto.html)
-* added a new 'Sparse' sub-module to 'LinearAlgebra'
-  (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra/Sparse.html)
+* added support for a distributed guided and dynamic iterators
+  (see http://chapel.cray.com/docs/master/modules/packages/DistributedIters.html)
+* improved support for the MPI module when ugni, gasnet/aries, and/or qthreads
+* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+* improved the 'LinearAlgebra' module in a number of ways:
+  - added a new 'Sparse' sub-module to 'LinearAlgebra'
+    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra/Sparse.html)
+  - added support for arbitrary lower bounds
+  - added diag() to support diagonal (and off-diagonal) access
+    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
+  - optimized the implementation of dense transpose
+* added 'throw'ing functions in HDFS
+  (see TODO)
 
 Interoperability Improvements
 -----------------------------
-* added support for an 'isExternClassType()` query
 * added support for 'c_sizeof()' to query sizes of C types
   (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html?highlight=c_sizeof#CPtr.c_sizeof)
 * added support for an 'isAnyCPtr()` query
@@ -175,78 +183,71 @@ Interoperability Improvements
 * added support for c_memset()
   (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html?highlight=c_memset#CPtr.c_memset)
 * added support for printing 'c_ptr' and 'c_void_ptr' variables
+* added support for an 'isExternClassType()` query
 
 Performance Optimizations/Improvements
 --------------------------------------
-* improved wide-pointer analysis for 'const ref' arguments
-* improved the performance of dynamic casting / subclass checks
-* optimized bulkAdd calls for empty sparse domains
 * improved the ability of the LLVM back-end to vectorize Chapel code
-* optimized strided puts and gets for CHPL_COMM=ugni
-* fixed locality for parallel iteration over distributed sparse domains/arrays
-* optimized away some wide pointer overheads in 'Block' and 'Stencil'
-* optimized remote task creation for cases like 'coforall ... do on ... {}'
-* optimized the implementation of updateFluff() on the Stencil distribution
+* improved locality for sparse Block-distributed domains/arrays
+* optimized bulkAdd calls for empty sparse domains
 * reduced the amount of locking used for associative array accesses
-* privatized sparse Block-distributed domains/arrays
-* privatized domains and distributions created by rank changes and reindexing
-* made the domains and distributions of reindexed arrays preserve locality
-* added support for parallel array initialization for arrays of POD eltTypes
-* optimized the implementation of dense transpose in the LinearAlgebra module
 * registered arrays with the network dynamically for a performance improvement
 * added support for serializing records across locales, supporting local copies
-* fixed bugs in counting tasks and creating the right number of new tasks
+* optimized remote task creation for cases like 'coforall ... do on ... {}'
 * automatically inline iterators that have up to 'k' yields (10 by default)
+* improved the performance of dynamic casting / subclass checks
+* improved wide-pointer analysis for 'const ref' arguments
+* optimized away some wide pointer overheads in 'Block' and 'Stencil'
+* fixed bugs in counting tasks and creating the right number of new tasks
+* added support for parallel array initialization for arrays of POD eltTypes
+* optimized the implementation of updateFluff() on the Stencil distribution
+* privatized domains and distributions created by rank changes and reindexing
+* made the domains and distributions of reindexed arrays preserve locality
 
 Memory Improvements
 -------------------
-* stopped heap promoting local variables used within on-clauses for Qthreads
-* closed memory leaks in regular expressions / RegEx
-* closed memory leaks in the DimensionalDist2D
+* stopped heap-promoting local variables used within on-clauses for 'qthreads'
+* closed memory leaks in regular expressions / RegEx and DimensionalDist2D
 
 Example Codes
 -------------
+* updated example programs to use initializers rather than constructors
+* updated example programs with respect to new error-handling features
 * added new faster versions of the mandelbrot and chameneos CLBG benchmarks
   (see examples/benchmarks/shootout/mandelbrot-fast.chpl and
    examples/benchmarks/shootout/chameneosredux-fast.chpl)
-* closed some program-introduced memory leaks in SSCA2
 * changed the knucleotide CLBG program to use the default 'parSafe' mode
-* updated example programs to use initializers rather than constructors
-* rewrote SSCA2 to use the standard `Barrier` module
+  (see examples/benchmarks/shootout/knucleotide.chpl)
+* rewrote ISx to use a more elegant global domain declaration
+  (see examples/benchmarks/isx/)
+* rewrote SSCA2 to use the standard `Barrier` module and closed memory leaks
+  (see examples/benchmarks/ssca2/)
 * renamed the 'opaque domains and arrays' primer to 'opaque-domains.chpl'
-
-New Tools / Tool Changes
-------------------------
-* added a new c2chapel tool that converts C headers to Chapel extern decls
-  (see http://chapel.cray.com/docs/master/tools/c2chapel/c2chapel.html)
-* made chpldoc issue a warning if it detects open/close comment mismatches
-* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
-  (see http://chapel.cray.com/docs/master/tools/mason/mason.html)
-* added support for LaTeX in chpldoc comments via mathjax
+* made other updates to example programs to reflect changes since 1.15
 
 Documentation
 -------------
 * added a new 'Methods' chapter to the language spec and refreshed the content
 * improved the language specification's definition of records
-* fixed an oversight in the specification to indicate that '=' is overloadable
+* documented the ability to specify configuration files via '-f'
+  (see http://chapel.cray.com/docs/master/usingchapel/executing.html#setting-configuration-variables)
 * added missing documentation for range.low, high, stride, alignment, aligned
   (see http://chapel.cray.com/docs/master/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
 * added missing documentation for reindex() and localSlice()
   (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex
    and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
-* added support for specifying configuration files via '-f'
-  (see http://chapel.cray.com/docs/master/usingchapel/executing.html#setting-configuration-variables)
+* fixed an oversight in the specification to indicate that '=' is overloadable
 
 Compiler Flags (see 'man chpl' or http://chapel.cray.com/docs/master/usingchapel/man.html for details)
 -------------------------------------------
-* added --inline-iterators-yield-limit to cap # of yields to inline for iters
 * added --permit-unhandled-module-errors to enable relaxed error checking
 * added --print-unused-functions to identify unused routines
-* removed the --strict-errors flag in favor of new more precise features
-* gave the --cache-remote flag a --no-cache-remote variation
-* removed the --conditional-dynamic-dispatch-limit flag and feature
 * added --[no-]remote-serialization to control cross-locale record copies
 * added an --mllvm flag to set LLVM-based optimizations when using --llvm
+* added --inline-iterators-yield-limit to cap # of yields to inline for iters
+* gave the --cache-remote flag a --no-cache-remote variation
+* removed the --strict-errors flag in favor of new more precise features
+* removed the --conditional-dynamic-dispatch-limit flag and feature
 
 New Semantic Checks (for old semantics)
 ---------------------------------------
@@ -255,30 +256,26 @@ New Semantic Checks (for old semantics)
 
 Locale Models
 -------------
-* ensured that the root locale is deleted upon program termination
-* ensured that existing locale models have appropriate deinit() routines
-* stopped storing arrays as multiple distinct chunks in the 'numa' locale model
-* but improved the performance of such arrays when opting into them
 * added a new locale model for AMD Accelerator Processing Units (APUs)
   (see TODO)
+* stopped storing arrays as multiple distinct chunks in the 'numa' locale model
+* ensured that existing locale models clean up after themselves at program exit
 
 Portability
 -----------
-* improved code conformance with C++14
-* improved portability of code with respect to Cygwin
 * added support for using Chapel on an OmniPath cluster
   (see http://chapel.cray.com/docs/master/platforms/omnipath.html?highlight=omnipath)
+* improved code conformance with C++14
 * improved code portability with respect to various versions of gcc
-
-Platform-specific Changes
--------------------------
+* improved portability of code with respect to Cygwin
 
 Cray-specific Changes
 ---------------------
+* optimized strided puts and gets for CHPL_COMM=ugni
+* split large transfers for CHPL_COMM=ugni
+* reduced the default heap size for CHPL_COMM=ugni
 * removed caveat about ugni registration limits in Cray documentation
 * retired official support for the 'cray-xt' platform
-* reduced the default heap size for CHPL_COMM=ugni
-* split large transfers for CHPL_COMM=ugni
 
 Syntax Highlighting
 -------------------
@@ -286,70 +283,53 @@ Syntax Highlighting
 
 Error Messages
 --------------
-* added a warning for --library compiles on code containing a main() routine
 * extended --div-by-zero-checks to also check for modulus (%) 0 operations
-* added an error for passing 'this' to functions during phase 1 of an init()
-* added an error for field accesses prior to phase 1 initialization
-* improved the error message generated when closing a file before its channels
-* improved an error message about type mismatches between fields
-* improved error messages for illegal 'delete' statements
-* added a warning for potential confusions related to implicit module naming
-* added an error for records that try to subtype another type
-* added an error for returning a tuple of the wrong size
 * added an error message for exported functions with generic arguments
+* improved error messages for illegal 'delete' statements
+* added an error for records that try to subtype another type
+* added a number of error messages for poorly formed (or unsupported) init()s
+* added a warning for --library compiles on code containing a main() routine
+* improved the error message generated when closing a file before its channels
+* added an error for returning a tuple of the wrong size
+* added a warning for potential confusions related to implicit module naming
 * improved an error message for bad forwarding calls to parallel iterators
-
-Runtime Error Checks
---------------------
+* improved an error message about type mismatches between fields
 
 Bug Fixes
 ---------
+* fixed a number of bugs related to initializers
+* fixed a number of bugs related to error-handling
+* fixed several bugs in the 'forwarding' feature introduced in 1.16
+* fixed bugs in counting tasks and creating the right number of new tasks
+* fixed a bug in which a qualified module reference was incorrectly shadowed
+* fixed a bug in isAlpha() for characters between upper- and lowercase letters
+* fixed a bug in bulk assignment for rank-change slices
+* fixed a bug in variable deinitialization order
+* fixed a bug in which `use` statements were not considered in program order
+* fixed a bug in which 'rmTree' would not remove directories with hidden files
+* fixed some bugs in loop invariant code motion (LICM)
 * fixed a portability bug in padding years in the DateTime module
 * fixed a bug in dead code elimination relating to local record types
 * fixed a bug comparing floating point expressions on linux32
-* fixed a bug in which functions nested within initializers couldn't return
 * fixed a bug in complicated type aliases
-* fixed a bug in which control flow would confuse an initializer's phases
-* fixed a bug with respect to generic initializers and copy initializers
 * fixed a bug in denormalization for '~' for small integers
 * fixed a bug in which remote-value forwarding didn't handle dereferences well
-* fixed a bug in which a qualified module reference was incorrectly shadowed
 * fixed a bug relating to scoped accesses to internal modules
-* fixed a bug related to 'throw'ing from generic functions
-* fixed bugs in counting tasks and creating the right number of new tasks
 * fixed bugs with parallel iteration over domains with non-natural alignment
 * fixed a bug in the implementation of the &= operator for associative domains
-* fixed a bug in variable deinitialization order
-* fixed a bug in initializers for distributed array fields
 * fixed a bug in applying `reindex()` to an empty domain/array
 * fixed a bug in modules with just one non-initialization function declaration
-* fixed a bug in initializers using pass-by-keyword argument passing
-* fixed a bug related to updating parent fields in phase 2 of an initializer
-* fixed a bug related to dynamic dispatch in the context of super/this.init()
 * fixed a bug in dead code elimination for do-while loops
-* fixed several bugs in the 'forwarding' feature introduced in 1.16
 * fixed a bug in which isRecord*() returned 'true' for sync/single types
-* fixed a bug in isAlpha() for characters between upper- and lowercase letters
 * fixed a bug related to task counters not being stored in task-local storage
-* fixed a bug with this.init() calls in initializers of generic types
 * fixed a bug for ambiguous 'param' methods
 * fixed a bug in 'fifo' tasking in which not enough threads were created
-* fixed a bug in bulk assignment for rank-change slices
-* fixed some bugs in loop invariant code motion (LICM)
-* fixed a bug in which 'rmTree' would not remove directories with hidden files
-* fixed some bugs in the pbs-gasnetrun_ibv and slurm-based launchers
 
 Launchers
 ---------
 * added a 'gasnetrun_psm' launcher for running on OmniPath interconnects
   (see http://chapel.cray.com/docs/master/usingchapel/launcher.html?highlight=launchers#currently-supported-launchers)
-
-Runtime Library Changes
------------------------
-* retired support for CHPL_TASKS=muxed
-
-File/Directory Structure
-------------------------
+* fixed some bugs in the pbs-gasnetrun_ibv and slurm-based launchers
 
 Generated Code
 --------------
@@ -357,19 +337,18 @@ Generated Code
 
 Third-Party Software Changes
 ----------------------------
-* updated RE2 to commit a810d71
 * updated the compiler to be compatible with newer versions of LLVM
 * switched the LLVM back-end to use version 4.0.1 by default
 * updated GASNet to version 1.30.0
-* updated GMP to version 6.1.2
-* enabled suport for multiple communication domains in GASNet for gemini/aries
-* changed our Makefiles so that third-party code gets rebuilt when needed
 * updated hwloc to version 1.11.8
+* updated GMP to version 6.1.2
+* updated RE2 to commit a810d71
+* enabled suport for multiple communication domains in GASNet for gemini/aries
 
 Testing System
 --------------
-* improve redirection of stderr into log files
 * dramatically improved the quality of the generated web performance graphs
+* improved the redirection of stderr into log files
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
@@ -378,41 +357,41 @@ Developer-oriented changes: Configuration changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
-* simplified how automatic 'use's are handled in internal modules
 * added a "function terminates program" pragma to identify halt() and exit()
+* simplified how automatic 'use's are handled in internal modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
 * made our Makefiles respect CFLAGS, CPPFLAGS, and CXXFLAGS
-* build the compiler with C++11 when possible for gcc, clang, icc
+* we now build the compiler with C++11 when possible for gcc, clang, icc
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
-* flipped --log-ids to be on by default
-* made --print-module-resolution print AST counts
 * added --user-constructor-error to flag uses of constructors in user code
 * added --force-initializers to compile using initializers over constructors
 * improved the behavior of the --log flag
+* flipped --log-ids to be on by default
+* made --print-module-resolution print AST counts
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * significant clean-up/refactoring of the compiler's resolution passes
-* converted more compiler data structures to use the STL
 * cleaned up / refactored aspects of file handling, parsing, and building AST
+* converted more compiler data structures to use the STL
+* made greater use of qualified types in compiler passes
+* improved the internal representation of forall loops
+* reduced the amount of nondeterminism in the compiler
+* removed support for trying to handle references in copyPropagation
+* added a "last resort" pragma/flag for error-case overloads
+* removed support for the conditional-based dynamic dispatch implementation
+* improved the management of well-known functions within the compiler
+* cleaned up how the compiler manages the 'program' and 'root' modules
 * added support for traversing the top-level modules
 * refactored the cleanup pass to process a module at a time and cleaned it up
 * cleaned up aspects of buildDefaultFunctions
-* many other code cleanups, reorganizations, and refactorings
-* cleaned up how the compiler manages the 'program' and 'root' modules
-* made greater use of qualified types in compiler passes
-* improved the internal representation of forall loops
-* improved the management of well-known functions within the compiler
 * removed the reaching definition analysis portion of dead code elimination
-* reduced the amount of nondeterminism in the compiler
-* removed support for trying to handle references in copyPropagation
 * added 'parentlocid' command within the compiler's gdb support
-* added a "last resort" pragma/flag for error-case overloads
-* removed support for the conditional-based dynamic dispatch implementation
+* many other code cleanups, reorganizations, and refactorings
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
@@ -430,6 +409,7 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Third-party improvements
 ----------------------------------------------------
+* changed our Makefiles so that third-party code gets rebuilt when needed
 
 
 
