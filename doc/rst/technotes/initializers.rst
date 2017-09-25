@@ -92,7 +92,7 @@ phase division indicator is not present, the body of an initializer is assumed
 to be entirely composed of Phase 2 statements.  Otherwise, any code prior to the
 phase division indicator is considered to be in Phase 1, and any code following
 it is considered to be in Phase 2.  Phase 1 and Phase 2 will be described in
-the next few subsections, and additional details and rationale can be found
+the next few subsections, and additional details and rationale can be found in
 `CHIP 10`_.
 
 Note that aside from ``try!`` statements without a ``catch`` block, error
@@ -109,8 +109,8 @@ may not be passed to another function.
 
 Fields must be initialized in declaration order; however, fields can be omitted.
 Omitted fields are given the declared initial value if present, or the default
-of its declared type.  Fields with neither a declared initial value or declared
-type cannot be omitted.
+of its declared type.  Fields with neither a declared initial value nor a
+declared type cannot be omitted.
 
 .. code-block:: chapel
 
