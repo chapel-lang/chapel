@@ -226,7 +226,7 @@ module ChapelError {
     /*
 
        Returns a string summarizing the errors contained in this
-       :class:`TaskErrors`. The summary is intended to be consise: it will not
+       :class:`TaskErrors`. The summary is intended to be concise: it will not
        grow arbitrarily long if the :class:`TaskErrors` contains many errors.
 
      */
