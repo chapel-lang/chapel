@@ -33,6 +33,7 @@ In order to compile a Chapel program with this module, be sure
 to have a BLAS implementation available on your system. See the :mod:`BLAS`
 documentation for further details.
 
+.. _LinearAlgebraInterface:
 
 Linear Algebra Interface
 ------------------------

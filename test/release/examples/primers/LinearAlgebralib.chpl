@@ -3,21 +3,29 @@
 
 /*
   Example usage of the :mod:`LinearAlgebra` module in Chapel.
-
-  Compiling
-  ---------
-
-  Because the linear algebra module uses the :mod:`BLAS` module, it requires
-  a BLAS implementation to be available on the system and additional compiler
-  flags to specify paths to that implementation. This is necessary for
-  compiling this primer.
-
-  See the :mod:`BLAS` documentation for further details.
-
 */
 
 use LinearAlgebra;
 
+/*
+  Compiling
+  ---------
+
+  The :mod:`LinearAlgebra` module uses the :mod:`BLAS` module, so it requires
+  a BLAS implementation to be available on the system and additional compiler
+  flags to specify paths to that implementation.
+
+  Compiling a Chapel program using the :mod:`LinearAlgebra` module should look
+  something like this:
+
+  .. code-block:: sh
+
+      chpl -I$PATH_TO_CBLAS_DIR \
+           -L$PATH_TO_BLAS_LIBS -lblas LinearAlgebralib.chpl
+
+  See the :mod:`BLAS` documentation for further details.
+
+*/
 
 /*
   Basics
@@ -51,13 +59,13 @@ assert(matrix1.type == matrix2.type);    // ... produces same result
   This section demonstrates some of the functionality built into Chapel
   arrays that can be useful in a linear algebra context. None of the operations
   in this section require usage of :mod:`LinearAlgebra`.
-  Learn more about Chapel arrays in :mod:`ChapelArray` and
-  :ref:`primers-arrays`.
+  Learn more about Chapel arrays in the :mod:`ChapelArray` documentation and
+  the :ref:`Array Primer <primers-arrays>`.
 
 */
 
 // Create a 3 x 5 matrix of reals, default-initialized to values of ``0.0``
-var a = Matrix(3, 5);
+var a: [0..#3, 0..#5] real; // Equivalent to: var a = Matrix(3, 5);
 
 // Set all elements to ``1.0``
 a = 1.0;
@@ -125,6 +133,7 @@ writeln(a);
   //   1.0 1.0 1.0
   //   1.0 1.0 1.0
   //   1.0 1.0 1.0
+
 a[.., 1] = 3.0; // Sets second column to 3.0
 writeln(a);
   // Prints:
@@ -136,30 +145,37 @@ writeln(a);
 
 
 /*
- Array Factory Functions
- -----------------------
+  Factory Functions
+  -----------------
 
- The Linear Algebra module contains several factory functions for creating
- 1D (vector) and 2D (matrix) arrays. These functions are purely a convenience
- that enables less verbose array declarations as well as an interface similar
- to other common linear algebra libraries. Below are some examples.
+  The Linear Algebra module contains several factory functions for creating
+  1D (vector) and 2D (matrix) arrays. These functions are purely a convenience
+  that provides a less verbose syntax for array declarations as well as an
+  interface similar to other common linear algebra libraries.
+  Below are some examples. See the documentation starting at
+  :proc:`LinearAlgebra.Vector` for a comprehensive list of the available
+  factory functions.
 
-Note: The LinearAlgebra functions create arrays with ``0``-based indices by default.
-  This default behavior differs from native Chapel array creation, which
-  defaults to ``1``-based arrays.
+  .. note::
+
+     The LinearAlgebra functions create arrays with ``0``-based indices by
+     default.  This default behavior differs from native Chapel array creation,
+     which defaults to ``1``-based arrays.
 
 */
 
 
 /*
-Vectors
-~~~~~~~
+  Vectors
+  ~~~~~~~
 
-Shown below are a variety of way to create the same 5-element array of ``real``
-type.
+  Shown below are a variety of way to create the same 5-element array of
+  ``real`` type.
 
-Note: The LinearAlgebra module represents *row-vectors* the same way as
-    *column-vectors*. They are both 1D arrays.
+  .. note::
+
+      The LinearAlgebra module represents *row-vectors* the same way as
+      *column-vectors*. They are both 1D arrays.
 
 */
 
@@ -179,15 +195,18 @@ var v5 = Vector(0, 0, 0, 0, 0, eltType=real);   // from a list of values as argu
 var v6 = Vector(0.0, 0, 0, 0, 0);
 
 /*
-Matrices
-~~~~~~~~
+  Matrices
+  ~~~~~~~~
 
-Shown below are a variety of way to create the same 3-by-3 array of ``real``
-type.
+  Shown below are a variety of way to create the same 3-by-3 array of ``real``
+  type.
 
-Note: The base LinearAlgebra module strictly supports ``DefaultRectangular`` arrays
-    for matrix operations. Other layouts (such as ``LayoutCS``) and distributions
-    (such as ``BlockDist``) will be supported through LinearAlgebra submodules.
+  .. note::
+
+      The base LinearAlgebra module strictly supports ``DefaultRectangular``
+      arrays for matrix operations. Other layouts (such as ``LayoutCS``) and
+      distributions (such as ``BlockDist``) will be supported through
+      LinearAlgebra submodules.
 
 */
 
@@ -216,11 +235,20 @@ writeln(I1);
 var I2 = eye(3,3); // From a length and width
 var I3 = eye({0..#3, 0..#3}); // from a 2D domain
 
+// Creating diagonal matrix from a vector:
+var vec = Vector(1, 2, 3, eltType=real);
+var diagMatrix = diag(vec);
+writeln(diagMatrix);
+  // Prints:
+  //   1.0 0.0 0.0
+  //   0.0 2.0 0.0
+  //   0.0 0.0 3.0
+
 
 /*
   Operations
   ----------
- */
+*/
 
 // Taking the transpose of a matrix:
 var T1 = transpose(M0);
@@ -268,7 +296,7 @@ var vv = dot(y, y);
 var yz = outer(y, z);
 writeln(yz);
 
-// Matrix powers can be computed on square matrices with ``matPow()``. 
+// Matrix powers can be computed on square matrices with ``matPow()``.
 // Only integer powers are currently supported:
 var MM4 = matPow(MM, 4);
 
@@ -276,96 +304,86 @@ var MM4 = matPow(MM, 4);
 var crossProduct = cross(y, y);
 
 /*
-Properties
-----------
+  Properties
+  ----------
 
-There are several functions for computing matrix properties like the ``trace``
- and ``norm``.
+  There are several functions for computing matrix properties like the ``trace``
+  and ``norm``.
+
+  Note that ``norm`` procedures are documented in the :mod:`Norm` module.
+
 */
 
+// Trace
+var tr = trace(diagMatrix); // 6.0
+
+// Norm of a vector
+var N1 = norm(vec); // 3.74166
+
+// Norm of a matrix
+var N2 = norm(diagMatrix); // 3.74166
 
 /*
-Structure
----------
+  Structure
+  ---------
 
-There are several functions for inspecting and extracting matrix structure.
+  There are several functions for inspecting and extracting matrix structure.
+
+  Below are a few examples. For the comprehensive list of available structural
+  functions, see the documentation starting at :proc:`LinearAlgebra.diag`.
+
 */
+
+// Extract diagonal of matrix
+var diagVec = diag(diagMatrix); // 1.0 2.0 3.0
+
+// Confirm that a matrix is diagonal
+writeln(isDiag(diagMatrix)); // true
+
+// Extract upper triangle of matrix
+var onesMatrix = Matrix(5,5);
+onesMatrix = 1.0;
+writeln(onesMatrix);
+  // Prints:
+  //   1.0 1.0 1.0 1.0 1.0
+  //   1.0 1.0 1.0 1.0 1.0
+  //   1.0 1.0 1.0 1.0 1.0
+  //   1.0 1.0 1.0 1.0 1.0
+  //   1.0 1.0 1.0 1.0 1.0
+var upper = triu(onesMatrix, k=0); // k=0 includes diagonal
+writeln(upper);
+  // Prints:
+  //   1.0 1.0 1.0 1.0 1.0
+  //   0.0 1.0 1.0 1.0 1.0
+  //   0.0 0.0 1.0 1.0 1.0
+  //   0.0 0.0 0.0 1.0 1.0
+  //   0.0 0.0 0.0 0.0 1.0
+
+// Confirm that a matrix is upper triangular
+writeln(isTriu(upper));         // true
+writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
 
 /*
 
-Open Issues
------------
+  Caveats
+  -------
 
+  There are a handful of *gotcha's* to be aware of when working with the
+  :mod:`LinearAlgebra` module. Most of these are temporary implementation
 
-Note: For deep dive purposes only.
+  Promotion Flattening
+  ~~~~~~~~~~~~~~~~~~~~
 
-Indices
-~~~~~~~
+  See **Promotion Flattening** section in :ref:`LinearAlgebraInterface`
+  documentation.
 
-Should we switch to 1-based indices like the rest of Chapel arrays?
+  0-based indexing
+  ~~~~~~~~~~~~~~~~
 
-- Many linear algebra enthusiasts advocate for 1-based indices.
-- Initially chosen due to using BLAS under the hood (which relies on 0-based arrays)
-- Would improve interoperability between arrays created with native Chapel syntax and linear algebra syntax.
-
-Matrix Operators
-~~~~~~~~~~~~~~~~
-
-Candidates for matrix-multiplication (``dot()``):
-
-  - ``A @ B``
-  - ``A . B``
-  - ``A.dot(B)``
-
-Candidates for matrix-division (``solve()``):
-
-  - ``B \ A``
-  - ``A.div(B)``
-
-Candidates for matrix-exponentials (``matPow()``):
-
-  - ``A.pow(n)``
-
-Promotion-flattening
-~~~~~~~~~~~~~~~~~~~~
-
-It's really a pain:
+  Chapel arrays default to 1-based indices, while :mod:`LinearAlgebra`
+  functions default to 0-based arrays, when no range or domain is specified.
+  This can be problematic when using both Chapel array creation syntax
+  :mod:`LinearAlgebra` factory functions, for example:
 
 */
 
-  var A = Matrix(3,5);
-  var B = A + A; // This creates a 1-D array....
-
-/*
-
-Probably not going to be addressed by 1.16..
-
-Once it is, we can deprecate ``matPlus`` and ``matMinus``.
-
-Next Steps
-----------
-
-LAPACK Support
-~~~~~~~~~~~~~~
-
-- Will enable linear equations, eigenvalues, singular value decomposition, matrix decomposition, etc.
-- For reference, see MatLab's library: https://www.mathworks.com/help/matlab/linear-algebra.html
-
-Layouts (sparse)
-~~~~~~~~~~~~~~~~
-
-- Sparse LinearAlgebra to be supported via native Chapel.
-- Sparsity described through layout (domain map).
-- Limited functionality will be documented by what's present in the ``LinearAlgebra.Sparse`` submodule.
-
-- Initially will support basic matrix operations  for ``LayoutCS``.
-
-
-Distributions (CyclicDist)
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- To be supported via ScaLAPACK with ``CyclicDist``.
-- Nikhil has done some exploratory work on this via Chapel + MPI project.
-
-
-*/
