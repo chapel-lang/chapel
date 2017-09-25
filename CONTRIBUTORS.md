@@ -24,6 +24,7 @@ Contributors to the current release
 * Przemysław Leśniak, individual contributor / [GSoC 2017]
 * Vassily Litvinov, [Cray Inc.]
 * Tom MacDonald, [Cray Inc.]
+* Prabhanjan Mannari, individual contributor
 * Barry Moore, [University of Pittsburgh]
 * Sarthak Munshi, individual contributor / [GSoC 2017]
 * Michael Noakes, [Cray Inc.]
