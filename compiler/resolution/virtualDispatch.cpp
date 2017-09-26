@@ -371,20 +371,29 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
                 Type* ic = fnInfo->iclass;
                 INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
 
-                // Iterator classes are created as normal top-level classes (inheriting
-                // from dtObject).  Here, we want to re-parent ic with pic, so
-                // we need to remove and replace the object base class.
-                INT_ASSERT(ic->dispatchParents.n == 1);
-                Type* parent = ic->dispatchParents.only();
-                if (parent == dtObject)
-                {
-                  int item = parent->dispatchChildren.index(ic);
-                  parent->dispatchChildren.remove(item);
-                  ic->dispatchParents.remove(0);
+                Type* thisType = fnInfo->iterator->_this->typeInfo();
+                Type* pthisType = pfnInfo->iterator->_this->typeInfo();
+                INT_ASSERT(thisType->dispatchParents.n == 1);
+                if (thisType->dispatchParents.only() == pthisType) {
+                  // Iterator classes are created as normal top-level classes
+                  // (inheriting from dtObject).  Here, we want to re-parent
+                  // ic with pic, so we need to remove and replace the
+                  // object base class.  We only want to make this change
+                  // if the class this iterator is defined in is a direct
+                  // subclass of the class the parent iterator is defined
+                  // in - e.g. a child, but not a grandchild.
+                  INT_ASSERT(ic->dispatchParents.n == 1);
+                  Type* parent = ic->dispatchParents.only();
+                  if (parent == dtObject)
+                  {
+                    int item = parent->dispatchChildren.index(ic);
+                    parent->dispatchChildren.remove(item);
+                    ic->dispatchParents.remove(0);
+                  }
+                  pic->dispatchChildren.add_exclusive(ic);
+                  ic->dispatchParents.add_exclusive(pic);
+                  continue; // do not add to virtualChildrenMap; handle in _getIterator
                 }
-                pic->dispatchChildren.add_exclusive(ic);
-                ic->dispatchParents.add_exclusive(pic);
-                continue; // do not add to virtualChildrenMap; handle in _getIterator
               }
             } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
