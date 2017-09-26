@@ -69,7 +69,6 @@ Semantic Changes / Changes to Chapel Language
 * made explicit 'module' declarations use strict error handling by default
   (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#relaxed-mode-for-explicit-modules)
 * made reduce intents preserve the reduction variable's initial value
-  (see TODO)
 * added support for iterators that can yield void values
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html#void-functions-and-iterators)
 * added a requirement that `deinit()` routines have parentheses
