@@ -37,9 +37,9 @@ f('--no-llvm --cache-remote', 'c-cache')
 
 if do_llvm:
   # LLVM backend, no cache remote
-  f('--llvm --no-cache-remote', 'llvm')
+  #f('--llvm --no-cache-remote', 'llvm')
   # LLVM backend, cache remote
-  f('--llvm --cache-remote', 'llvm-cache')
+  #f('--llvm --cache-remote', 'llvm-cache')
   # LLVM backend, llvm wide opts, no cache remote
   f('--llvm --llvm-wide-opt --no-cache-remote', 'llvm-wide-opt')
   # LLVM backend, llvm wide opts, cache remote
