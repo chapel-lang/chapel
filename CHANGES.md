@@ -67,6 +67,7 @@ Semantic Changes / Changes to Chapel Language
 * made explicit 'module' declarations use strict error handling by default
   (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#relaxed-mode-for-explicit-modules)
 * made reduce intents preserve the reduction variable's initial value
+  (see http://chapel.cray.com/docs/1.16/technotes/reduceIntents.html#overview)
 * added support for iterators that can yield void values
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html#void-functions-and-iterators)
 * distinguished between functions returning 'void' values and non-returning fns
@@ -117,7 +118,7 @@ Removed Features
 
 Standard Modules/Library
 ------------------------
-* added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
+* added 'throw'ing overloads to routines in 'IO', 'Regexp', 'FileSystem', ...
 * added overloads to push_front(), push_back(), etc. that take array arguments
   (e.g., see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.push_back)
 * added support for 'waitAll()' to the 'Futures' module
