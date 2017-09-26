@@ -1,9 +1,6 @@
 Release Changes List
 ====================
 
-*** stopped at dced642 2017-09-24 ***
-
-TODO: any other commits that snuck in
 TODO: remove/unify 'master'/'latest' from any docs links?
 TODO: move docs to top-level? ('latest' is symbolic link to '.'?)
 TODO: 'tics' vs. `backtics`?
@@ -25,7 +22,7 @@ Highlights (see subsequent sections for further details)
   - significantly improved the implementation of error-handling
   - added a 'defer' statement to aid with cleanup
   - added support for 'try'/'try!' expressions
-  - made reduce intents preserve the initial value of the reduction variable
+  - made reduce intents preserve the reduction variable's initial value
   - added a 'prototype' keyword to relax checks for explicit modules
 * standard library/package modules:
   - added support for a new 'Crypto' module based on OpenSSL
@@ -74,13 +71,11 @@ New Tools / Tool Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made explicit 'module' declarations use strict error handling by default
-  (see TODO)
-* made reduce intents preserve the initial value of the reduction variable
+  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#relaxed-mode-for-explicit-modules)
+* made reduce intents preserve the reduction variable's initial value
   (see TODO)
 * added support for iterators that can yield void values
-  (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
-* relaxed the requirement that iterators must contain `yield` statements
-  (see TODO??)
+  (see http://chapel.cray.com/docs/master/technotes/voidVariables.html#void-functions-and-iterators)
 * added a requirement that `deinit()` routines have parentheses
 * distinguished between functions returning 'void' values and non-returning fns
   (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
@@ -98,13 +93,13 @@ New Features
 * added a 'defer' statement to aid with cleanup
   (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
 * added support for 'try'/'try!' expressions ('catch' only in statement form))
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#try-expressions)
 * added a 'prototype' keyword to relax checks for explicit module declarations
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#fatal-mode-for-implicit-and-prototype-modules)
 * added support for conditional 'local' statements
   (see http://chapel.cray.com/docs/master/technotes/local.html#syntax)
 * added prototype support for choosing error strictness on a module granularity
-  (see TODO)
+  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#strict-mode)
 * added support for reindex() on arrays to accept a list of ranges
   (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex)
 
@@ -116,7 +111,7 @@ Feature Improvements
   (see http://chapel.cray.com/docs/master/technotes/errorHandling.html)
 * significantly improved the generality and robustness of 'forwarding' fields
 * improved the CHPL_UNWIND output to include more functions
-* made --print-callgraphs print calls into non-user code
+* made --print-callgraph print calls into non-user code
 * improved overload disambiguation for functions w/ partially generic arguments
 
 Removed Features
@@ -128,7 +123,6 @@ Removed Features
 Standard Modules/Library
 ------------------------
 * added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
-  (see TODO)
 * added overloads to push_front(), push_back(), etc. that take array arguments
   (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=push_back#ChapelArray.push_back)
 * added support for `waitAll()` to the `Futures` module
@@ -170,7 +164,6 @@ Package Modules
     (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
   - optimized the implementation of dense transpose
 * added 'throw'ing functions in HDFS
-  (see TODO)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -233,8 +226,32 @@ Compiler Flags
 * removed the --strict-errors flag in favor of new more precise features
 * removed the --conditional-dynamic-dispatch-limit flag and feature
 
+Documentation
+-------------
+* added new primers on error-handling and the 'LinearAlgebra' module
+  (see http://chapel.cray.com/docs/master/primers/errorHandling.html and
+   http://chapel.cray.com/docs/master/primers/LinearAlgebralib.html)
+* added a document describing built-in `Error` types in Chapel
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelError.html)
+* broke information about the `Replicated` distribution into its own primer
+  (see http://chapel.cray.com/docs/master/primers/replicated.html)
+* added a new 'Methods' chapter to the language spec and refreshed the content
+* improved the language specification's definition of records
+* documented the ability to specify configuration files via '-f'
+  (see http://chapel.cray.com/docs/master/usingchapel/executing.html#setting-configuration-variables)
+* added missing documentation for range.low, high, stride, alignment, aligned
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
+* added missing documentation for reindex() and localSlice()
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex
+   and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
+* fixed an oversight in the specification to indicate that '=' is overloadable
+
 Example Codes
 -------------
+* added new primer examples for error-handling, linear algebra, and replication
+  (see examples/primers/errorHandling.chpl,
+       examples/primers/LinearAlgebralib.chpl, and
+       examples/primers/replicated.chpl)
 * updated example programs to use initializers rather than constructors
 * updated example programs with respect to new error-handling features
 * added new faster versions of the mandelbrot and chameneos CLBG benchmarks
@@ -248,21 +265,6 @@ Example Codes
   (see examples/benchmarks/ssca2/)
 * renamed the 'opaque domains and arrays' primer to 'opaque-domains.chpl'
 * made other updates to example programs to reflect changes since 1.15
-
-Documentation
--------------
-* added a document describing built-in `Error` types in Chapel
-  (http://chapel.cray.com/docs/master/builtins/internal/ChapelError.html)
-* added a new 'Methods' chapter to the language spec and refreshed the content
-* improved the language specification's definition of records
-* documented the ability to specify configuration files via '-f'
-  (see http://chapel.cray.com/docs/master/usingchapel/executing.html#setting-configuration-variables)
-* added missing documentation for range.low, high, stride, alignment, aligned
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
-* added missing documentation for reindex() and localSlice()
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex
-   and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
-* fixed an oversight in the specification to indicate that '=' is overloadable
 
 Locale Models
 -------------
@@ -297,6 +299,7 @@ Error Messages / Semantic Checks
 * extended --div-by-zero-checks to also check for modulus (%) 0 operations
 * added an error message for exported functions with generic arguments
 * improved error messages for illegal 'delete' statements
+* removed checks that iterators must contain `yield` statements; they need not
 * added an error for records that try to subtype another type
 * added a number of error messages for poorly formed (or unsupported) init()s
 * added a warning for --library compiles on code containing a main() routine
