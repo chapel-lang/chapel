@@ -2174,8 +2174,8 @@ void codegen(void) {
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
   if( llvmCodegen ) {
-    checkAdjustedDataLayout();
 #ifdef HAVE_LLVM
+    checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
@@ -2256,8 +2256,9 @@ void makeBinary(void) {
 
 GenInfo::GenInfo()
          :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL),
+             lineno(-1), filename(NULL)
 #ifdef HAVE_LLVM
+             ,
              lvt(NULL), module(NULL), builder(NULL),
              loopStack(),
              llvmContext(),
