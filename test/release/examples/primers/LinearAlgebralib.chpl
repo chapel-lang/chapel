@@ -253,11 +253,36 @@ writeln(diagMatrix);
   ----------
 */
 
+// Setup some matrices
 
+{ // Operations scope
+
+var A = Matrix(3,5),
+    B = Matrix(3,5);
+
+A = 1.0;
+B = 2.0;
+
+
+// Element-wise addition (avoiding promotion flattening)
+var ApB = A.plus(B);
+assert(ApB.rank == 2); // not flattened!
+
+// Element-wise subtraction (avoiding promotion flattening)
+var AmB = A.minus(B);
+assert(AmB.rank == 2); // not flattened!
+
+// Element-wise multiplication (avoiding promotion flattening)
+var AtB = A.times(B);
+assert(AtB.rank == 2); // not flattened!
+
+// Element-wise division (avoiding promotion flattening)
+var AdB = A.elementDiv(B);
+assert(AdB.rank == 2); // not flattened!
 
 // Taking the transpose of a matrix:
-var T1 = transpose(M0);
-var T2 = M0.T; // syntactic sugar
+transpose(M0);
+M0.T; // short-hand syntax
 
 // Taking the transpose of a vector simply returns the vector because row and
 // column vectors are equivalent:
@@ -307,6 +332,8 @@ var MM4 = matPow(MM, 4);
 
 // Cross products of 3-element vectors can be computed with ``cross()``:
 var crossProduct = cross(y, y);
+
+} // Operations scope
 
 /*
   Properties
@@ -550,6 +577,6 @@ C.dot(2.0); // equivalent to C.times(2.0);
 
 // Matrix transpose
 transpose(C);
-C.T; // short-hand notation
+C.T; // short-hand syntax
 
 } // Operations scope
