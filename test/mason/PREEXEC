@@ -3,12 +3,12 @@
 set -e
 
 REGISTRY=https://github.com/chapel-lang/mason-registry
-MASON_HOME=$PWD
+MASON_HOME=$PWD/.mason
 
 # Make fake MASON_HOME
-mkdir $MASON_HOME/.mason
+mkdir $MASON_HOME
 
 # Clone registry
-if [ ! -d $MASON_HOME/.mason/registry ] ; then
-    git clone -q $REGISTRY $MASON_HOME/.mason/registry
+if [ ! -d $MASON_HOME/registry ] ; then
+    git clone -q $REGISTRY $MASON_HOME/registry
 fi

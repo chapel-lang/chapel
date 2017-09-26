@@ -1,4 +1,2 @@
-hpl.hpcc2012.chpl:403: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
-hpl.hpcc2012.chpl:405: warning: support for '=>' to alias arrays is deprecated as of chpl version 1.15.  Use a 'ref' declaration instead.
 HPL  n 62  blkSize 8  blk/node 8*8  locs 1*1  dPTPL 0
 Validation: success

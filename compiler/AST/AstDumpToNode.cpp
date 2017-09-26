@@ -1941,7 +1941,7 @@ void AstDumpToNode::ast_symbol(Symbol* sym, bool def)
 
 int AstDumpToNode::writeQual(QualifiedType qual) const
 {
-  const char* name = qual.qualStr();
+  const char* name = qualifierToStr(qual.getQual());
 
   if (compact)
     fprintf(mFP, " qual: %s", name);

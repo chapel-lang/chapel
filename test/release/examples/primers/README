@@ -13,20 +13,23 @@ demonstrate Chapel feature areas in detail.
      classes.chpl                : Defining and using classes
      distributions.chpl          : Chapel standard distributions
      domains.chpl                : Domains and methods on domains
+     errorHandling.chpl          : Error handling system
      FFTWlib.chpl                : the FFTW standard library
      fileIO.chpl                 : File I/O example using arrays
      genericClasses.chpl         : Defining and using generic classes
      iterators.chpl              : Iterator examples
      LAPACKlib.chpl              : the LAPACK standard library
+     LinearAlgebralib.chpl       : LinearAlgebra module
      learnChapelInYMinutes.chpl  : Chapel's entry for learnxinyminutes.com
      locales.chpl                : Chapel Locale types
      modules.chpl                : Chapel modules and use statements
-     opaque.chpl                 : Opaque arrays
+     opaque-domains.chpl         : Opaque domains and arrays
      parIters.chpl               : Introduction to parallel iterators
      procedures.chpl             : Procedure examples
      randomNumbers.chpl          : Usage of the standard module Random
      ranges.chpl                 : Range types and operations on ranges
      reductions.chpl             : Reduction examples
+     replicated.chpl             : Replicated distribution
      slices.chpl                 : Array slicing and reindexing examples
      sparse.chpl                 : Sparse domains and arrays
      syncsingle.chpl             : Sync and single variables

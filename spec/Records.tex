@@ -251,7 +251,7 @@ supplied, the default initializer cannot be called directly.
 
 A record author may specify additional actions to be performed before record storage is
 reclaimed by defining a record deinitializer.  A record deinitializer is a method named
-\chpl{deinit}.  A record deinitializer takes no arguments
+\chpl{deinit()}.  A record deinitializer takes no arguments
 (aside from the implicit \chpl{this} argument).  If defined, the deinitializer is called
 on a record object after it goes out of scope and before its memory is reclaimed.
 

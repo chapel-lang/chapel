@@ -286,6 +286,9 @@
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
   ],
+  "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/tools/c2chapel/c2chapel.rst"
+  ],
   "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/tools/chpldoc/chpldoc.rst"
   ],
@@ -303,6 +306,9 @@
   ],
   "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
     "doc/rst/usingchapel/multilocale.rst"
+  ],
+  "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/usingchapel/prereqs.rst"
   ],
   "d634896c-70c9-11e6-8028-843835579daa": [
     "doc/rst/usingchapel/usingchapel.rst"

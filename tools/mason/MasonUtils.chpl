@@ -35,14 +35,21 @@ proc getEnv(name: string): string {
 
 
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd) {
+proc runCommand(cmd, quiet=false) : string {
+  var ret : string;
+
   var splitCmd = cmd.split();
   var process = spawn(splitCmd, stdout=PIPE);
   process.wait();
 
   for line in process.stdout.lines() {
-    write(line);
+    ret += line;
+    if quiet == false {
+      write(line);
+    }
   }
+
+  return ret;
 }
 
 
@@ -58,39 +65,50 @@ proc runWithStatus(command): int {
   return sub.exit_status;
 }
 
+proc hasOptions(args : [] string, const opts : string ...) {
+  var ret = false;
 
-
-/* Checks to see if dependency has already been
-   downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/.mason/src/';
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency then
-      exists = true;
-  }
-  return exists;
-}
-
-
-proc MASON_HOME: string {
-  // possible locations
-  const envHome   = getEnv("MASON_HOME");
-  const home      = getEnv('HOME');
-  const masonHome = if envHome != "" then envHome else home;
-
-  const dotMason = masonHome + "/.mason";
-
-  if isDir(dotMason) == false {
-    writeln(dotMason + " not found, creating...");
-    mkdir(dotMason, parents=true);
+  for o in opts {
+    const (found, idx) = args.find(o);
+    if found {
+      ret = true;
+      break;
+    }
   }
 
-  return masonHome;
+  return ret;
 }
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
+
+  proc init() {
+    major = -1;
+    minor = -1;
+    bug = 0;
+  }
+
+  proc init(other:VersionInfo) {
+    this.major = other.major;
+    this.minor = other.minor;
+    this.bug   = other.bug;
+  }
+
+  proc init(maj : int, min : int, bug: int) {
+    this.major = maj;
+    this.minor = min;
+    this.bug   = bug;
+  }
+
+  proc init(str:string) {
+    super.init();
+    const s : [1..3] string = str.split(".");
+    assert(s.size == 3);
+
+    major = s[1]:int;
+    minor = s[2]:int;
+    bug   = s[3]:int;
+  }
 
   proc str() {
     return major + "." + minor + "." + bug;
@@ -115,6 +133,9 @@ proc <=(a:VersionInfo, b:VersionInfo) : bool {
 }
 proc ==(a:VersionInfo, b:VersionInfo) : bool {
   return a.cmp(b) == 0;
+}
+proc >(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) > 0;
 }
 
 
@@ -156,8 +177,8 @@ proc getChapelVersionInfo() {
 
       chplVersionInfo = ret;
     } catch e : Error {
-      writeln("Error while getting Chapel version:");
-      writeln(e.message());
+      stderr.writeln("Error while getting Chapel version:");
+      stderr.writeln(e.message());
       exit(1);
     }
   }
@@ -174,12 +195,16 @@ proc getChapelVersionStr() {
   return chplVersion;
 }
 
-proc gitC(newDir, command) {
+proc gitC(newDir, command, quiet=false) {
+  var ret : string;
+
   const oldDir = here.cwd();
   here.chdir(newDir);
 
-  runCommand(command);
+  ret = runCommand(command, quiet);
 
   here.chdir(oldDir);
+
+  return ret;
 }
 

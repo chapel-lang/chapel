@@ -28,6 +28,9 @@ as follows:
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.
 
+* Pulled in an upstream fix for a gemini/aries multi-domain initialization bug:
+   - https://bitbucket.org/berkeleylab/gasnet/commits/ed2fd98eb
+
 Upgrading GASNet versions
 =========================
 

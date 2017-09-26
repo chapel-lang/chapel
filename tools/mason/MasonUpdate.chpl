@@ -20,6 +20,7 @@
 use TOML;
 use FileSystem;
 use MasonUtils;
+use MasonEnv;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -38,30 +39,11 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 
 private var failedChapelVersion : [1..0] string;
 
-proc getRegistryDir() {
-  const env = getEnv("MASON_LOCAL_REGISTRY_DIR");
-  if env == "" {
-    return MASON_HOME + '/.mason/registry';
-  } else {
-    return env;
-  }
-}
-
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
 proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
-  var noUpdateRegistry = false;
-  for a in args {
-    if a == "--no-update-registry" {
-      noUpdateRegistry = true;
-      break;
-    }
-  }
-
   if isFile(tf) {
-    if noUpdateRegistry == false {
-      updateRegistry(tf);
-    }
+    updateRegistry(tf, args);
     var openFile = openreader(tf);
     var TomlFile = parseToml(openFile);
     var lockFile = createDepTree(TomlFile);
@@ -70,9 +52,9 @@ proc UpdateLock(args: [] string, tf="Mason.toml", lf="Mason.lock") {
       const prefix = if failedChapelVersion.size == 1
                      then "The following package is"
                      else "The following packages are";
-      writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
+      stderr.writeln(prefix, " incompatible with your version of Chapel (", getChapelVersionStr(), ")");
       for msg in failedChapelVersion do
-        writeln("  ", msg);
+        stderr.writeln("  ", msg);
       exit(1);
     }
 
@@ -93,11 +75,43 @@ proc genLock(lock: Toml, lf) {
   tomlWriter.close();
 }
 
+proc checkRegistryChanged() {
+  if isDir(MASON_CACHED_REGISTRY) == false {
+    return;
+  }
+
+  const oldRegistry = gitC(MASON_CACHED_REGISTRY, "git config --get remote.origin.url", quiet=true).strip();
+
+  if oldRegistry != MASON_REGISTRY {
+    writeln("MASON_REGISTRY changed since last update:");
+    writeln("  old: ", oldRegistry);
+    writeln("  new: ", MASON_REGISTRY);
+    writeln();
+    writeln("Removing cached registry and sources to avoid conflicts");
+
+    proc tryRemove(name : string) {
+      if isDir(name) {
+        writeln("Removing ", name);
+        rmTree(name);
+      }
+    }
+
+    tryRemove(MASON_CACHED_REGISTRY);
+    tryRemove(MASON_HOME + "/src");
+  }
+}
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string) {
-  const masonHome = MASON_HOME;
-  const registryHome = getRegistryDir();
+proc updateRegistry(tf: string, args : [] string) {
+  for a in args {
+    if a == "--no-update-registry" {
+      return;
+    }
+  }
+
+  checkRegistryChanged();
+
+  const registryHome = MASON_CACHED_REGISTRY;
   if isDir(registryHome) {
     var pullRegistry = 'git pull -q origin master';
     if tf == "Mason.toml" then writeln("Updating mason-registry");
@@ -105,13 +119,11 @@ proc updateRegistry(tf: string) {
   }
   // Registry has moved or does not exist
   else {
-    mkdir(masonHome + '/.mason', parents=true);
-    mkdir(masonHome + '/.mason/src', parents=true);
-    const localRegistry = getRegistryDir();
+    mkdir(MASON_HOME + '/src', parents=true);
+    const localRegistry = MASON_CACHED_REGISTRY;
     mkdir(localRegistry, parents=true);
-    const registry = "https://github.com/chapel-lang/mason-registry";
-    const cloneRegistry = 'git clone -q ' + registry + ' .';
-    writeln('Could not find Registry...cloning registry...');
+    const cloneRegistry = 'git clone -q ' + MASON_REGISTRY + ' .';
+    writeln("Initializing mason-registry...");
     gitC(localRegistry, cloneRegistry);
   }
 }
@@ -123,7 +135,7 @@ proc parseChplVersion(brick:Toml) {
 
   if brick.pathExists("chplVersion") == false {
     const name = brick["name"].s + "-" + brick["version"].s;
-    writeln("Brick '", name, "' missing required 'chplVersion' field");
+    stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
@@ -177,8 +189,8 @@ proc parseChplVersion(brick:Toml) {
       throw new Error("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
   } catch e : Error {
     const name = brick["name"].s + "-" + brick["version"].s;
-    writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    writeln("Details: ", e.message());
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
     exit(1);
   }
 
@@ -230,7 +242,7 @@ proc createDepTree(root: Toml) {
     depTree["root"] = new Toml(root["brick"]);
   }
   else {
-    writeln("Could not find brick; Mason cannot update");
+    stderr.writeln("Could not find brick; Mason cannot update");
     exit(1);
   }
 
@@ -324,9 +336,9 @@ proc IVRS(A: Toml, B: Toml) {
   const version1 = A["version"].s;
   const version2 = B["version"].s;
   if okA == false && okB == false {
-    writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
-    writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
-    writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
+    stderr.writeln("Dependency resolution error: unable to find version of '", name, "' compatible with your version of Chapel (", getChapelVersionStr(), "):");
+    stderr.writeln("  v", version1, " expecting ", prettyVersionRange(Alo, Ahi));
+    stderr.writeln("  v", version2, " expecting ", prettyVersionRange(Blo, Bhi));
     exit(1);
   } else if okA == true && okB == false {
     return A;
@@ -341,9 +353,9 @@ proc IVRS(A: Toml, B: Toml) {
   var v1 = vers1(1): int;
   var v2 = vers2(1): int;
   if vers1(1) != vers2(1) {
-    writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
-    writeln("  v", version1);
-    writeln("  v", version2);
+    stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
+    stderr.writeln("  v", version1);
+    stderr.writeln("  v", version2);
     exit(1);
   }
   else if vers1(2) != vers2(2) {
@@ -383,14 +395,14 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
 proc retrieveDep(name: string, version: string) {
-  const tomlPath = getRegistryDir() + "/Bricks/"+name+"/"+version+".toml";
+  const tomlPath = MASON_CACHED_REGISTRY + "/Bricks/"+name+"/"+version+".toml";
   if isFile(tomlPath) {
     var tomlFile = open(tomlPath, iomode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
   }
   else {
-    writeln("No toml file found in mason-registry for " + name +'-'+ version);
+    stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
     exit(1);
   }
 }

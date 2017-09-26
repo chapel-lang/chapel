@@ -12,6 +12,7 @@ TARGETS = \
 	classes \
 	distributions \
 	domains \
+	errorHandling \
 	fileIO \
 	genericClasses \
 	iterators \
@@ -23,6 +24,7 @@ TARGETS = \
 	randomNumbers \
 	ranges \
 	reductions \
+	replicated \
 	slices \
 	sparse \
 	syncsingle \

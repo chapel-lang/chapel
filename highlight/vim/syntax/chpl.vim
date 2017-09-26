@@ -241,7 +241,7 @@ endif
 "  - Ranges need better support eg: [.., ..)
 
 " Chapel extentions
-syn keyword chplStatement	goto break return continue compilerWarning delete
+syn keyword chplStatement	break return continue compilerWarning delete
 syn keyword chplStatement	noinit new delete this these use except only require
 syn keyword chplStatement	as module yield compilerError zip
 syn keyword chplIntent		param type in out inout ref
@@ -253,6 +253,7 @@ syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
 syn keyword chplStructure	proc iter cobegin begin local sync let select where
 syn keyword chplStructure	pragma inline with private public forwarding
+syn keyword chplStructure	prototype
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil

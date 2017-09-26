@@ -509,8 +509,6 @@ void* chpl_get_global_serialize_table(int64_t idx);
 #else // LAUNCHER
 
 #define chpl_comm_barrier(x)
-#define chpl_comm_exit_all(x) exit(x)
-#define chpl_comm_exit_any(x) exit(x)
 
 #endif // LAUNCHER
 

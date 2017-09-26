@@ -1062,6 +1062,152 @@ static const char* astrArg(int ix, const char* add1) {
 }
 
 //
+// createShadowVarIfNeeded()
+//
+/*
+General Context
+---------------
+
+Let's say we are extending the parallel iterator with a variable
+that corresponds to a reduce intent. For example, from this:
+
+  iter myIter(param tag == standlone) {
+    ... yield 555; ...
+  }
+
+to this:
+
+  iter myIter(param tag == standlone, x1_reduceParent:SumReduceScanOp) {
+    var x1_shadowVarReduc = x1_reduceParent.identity;
+    ... yield (555, addr-of(x1_shadowVarReduc)); ...
+    x1_reduceParent.accumulate(x1_shadowVarReduc);
+  }
+
+Particular Concern
+------------------
+
+If the above yield is actually within a forall:
+
+  forall ... {
+    ... yield (555, addr-of(x1_shadowVarReduc)); ...
+  }
+
+then we need to create a reduce-intented shadow variable for this
+forall, corresponding to x1_shadowVarReduc, and yield it instead:
+
+  forall ... with (x1_reduceParent reduce x1_shadowVarReduc) {
+    // here, "x1_shadowVarReduc" is the shadow variable:
+    ... yield (555, addr-of(x1_shadowVarReduc)); ...
+  }
+
+Look Out For...
+---------------
+
+Need to handle these cases:
+
+* The yield is in >1 nested foralls --> create a new shadow var for each:
+
+  iter myIter(param tag == standlone, x1_reduceParent:SumReduceScanOp) {
+    var x1_shadowVarReduc = x1_reduceParent.identity;
+
+    forall ... with (x1_reduceParent reduce x1_shadowVarReduc) {
+      // shadow var: x1_shadowVarReduc'
+
+      forall ... with (x1_reduceParent reduce x1_shadowVarReduc') {
+        // shadow var: x1_shadowVarReduc''
+
+        ... yield (555, addr-of(x1_shadowVarReduc'')); ...
+      }
+    }
+
+    x1_reduceParent.accumulate(x1_shadowVarReduc);
+  }
+
+* Multiple yields within the same forall(s) --> use the same shadow var:
+
+    forall ... with (x1_reduceParent reduce x1_shadowVarReduc) {
+      // shadow var: x1_shadowVarReduc'
+
+      ... yield (555, addr-of(x1_shadowVarReduc'')); ...
+      ... yield (666, addr-of(x1_shadowVarReduc'')); ...
+    }
+
+*/
+static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
+                                       Symbol* parentOp, Symbol* svar,
+                                       CallExpr* yieldCall)
+{
+  ForallStmt* efs = enclosingForallStmt(yieldCall);
+  if (!efs)
+    // the original variable is just fine
+    return svar;
+
+  // In the "old" world, we call this only for reductions.
+  ForallIntentTag intent = shadowvar ? shadowvar->intent : TFI_REDUCE;
+
+  if (ForallStmt* efs2 = enclosingForallStmt(efs)) {
+    // TODO arrange for a chain of shadow variables.
+    // This should be straightforward. Presently not implemented.
+
+    switch (intent) {
+      case TFI_CONST_IN:
+      case TFI_REF:
+      case TFI_CONST_REF:
+        // For these intents, OK to go without a new shadow variable.
+        return svar;
+
+      case TFI_IN:
+      case TFI_REDUCE:
+        // May result in data races or incorrect behavior
+        // if we don't handle multiple enclosing foralls.
+        USR_FATAL_CONT(yieldCall, "a parallel iterator with a yield nested in two or more enclosing forall statements is not currently implemented in the presence of an 'in' or 'reduce' intent.");
+        USR_PRINT(efs, "the immediately enclosing forall statement is here");
+        USR_PRINT(efs2, "the next enclosing forall statement is here");
+        // If we continue, we may get a const violation on x*_shadowVarReduc.
+        USR_STOP();
+        break;
+
+      case TFI_DEFAULT:
+      case TFI_CONST:
+        // These cannot be 'in' intents AFAIK. Rule them out just in case.
+        INT_ASSERT(false);   // don't give me an abstract intent
+        break;
+    }
+
+    return svar; // dummy
+  }
+
+  // Check whether we  have already processed another yield within this forall
+  // and created a shadow variable. If so, reuse it.
+  // TODO need to look up in outer enclosing forall statements, if applicable.
+  for_shadow_vars(efsShadVar, temp, efs) // linear search, for simplicity
+    if (efsShadVar->outerVarSym() == svar)
+      return efsShadVar;
+
+  // Need to create a new shadow variable.
+  SET_LINENO(svar); // or efs?
+
+  Expr* spec = NULL;
+  if (intent == TFI_REDUCE) {
+
+    // For a reduce intent, we need a new reduce op.
+    // If we reuse 'parentOp', it will accumulate all the values twice.
+    VarSymbol* cloneOp = new VarSymbol("fsCloneOp");
+    efs->insertBefore(new DefExpr(cloneOp));
+    efs->insertBefore("'move'(%S,clone(%S,%S))", cloneOp, gMethodToken, parentOp);
+    efs->insertAfter("'delete'(%S)", cloneOp);
+    spec = new SymExpr(cloneOp);
+  }
+
+  // The new shadow variable for 'svar' at 'efs'.
+  ShadowVarSymbol* result = new ShadowVarSymbol(intent, svar->name, spec);
+  result->outerVarRep = new SymExpr(svar);
+  efs->intentVariables().insertAtTail(new DefExpr(result));
+
+  return result;
+}
+
+//
 // Since a promotion-wrapper leader (PWL) merely invokes another leader
 // in a for loop, all we need for that is to pass x1_reduceParent into
 // PWL as a new formal, then pass that formal into the _toLeader call
@@ -1319,10 +1465,13 @@ static void propagateThroughYield(CallExpr* rcall,
           shadowVars[ix] = svar;
         }
         // pass 'svar' by reference
+        // If the yield is inside a forall, (create and) pass
+        // the corresponding shadow variable instead.
+        Symbol* ssvar = createShadowVarIfNeeded(NULL, parentOp, svar, rcall);
         // todo: have a single 'sref' per 'svar', not one for each yield
         VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
         rcall->insertBefore(new DefExpr(sref));
-        rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, svar);
+        rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, ssvar);
         tupleComponent = sref;
       }
     } else {
@@ -2399,12 +2548,14 @@ static void propagateThroughYieldNew(ForallStmt* fs,
   // Check for an "eflopi" (Enclosing For-Loop Over a Parallel Iterator).
   // This is specific to a given yield.
   // Todo: handle multiple yields in a single eflopi.
-  bool      eflopiChecked = false;
   ForLoop*  eflopiLoop    = NULL;
   CallExpr* eflopiCall    = NULL;
   int       eflopiIdx     = 1;
   CallExpr* eflopiHelper  = NULL;
   int       ix            = -1;
+
+  // sets eflopiLoop and eflopiCall if appropriate:
+  eflopiFind(rcall, eflopiLoop, eflopiCall);
 
   // add tuple components
   for_shadow_vars(shadowvar, temp, fs) {
@@ -2413,16 +2564,11 @@ static void propagateThroughYieldNew(ForallStmt* fs,
     Symbol* svar = shadowVarsRI[ix];
     Symbol* tupleComponent;
     if (isReduce) {
-      // Todo: handle eflopi case when !isReduce.
-      if (!eflopiChecked) {
-        eflopiChecked = true;
-        eflopiFind(rcall,
-                   // sets these if appropriate:
-                   eflopiLoop, eflopiCall);
-      }
+
       Symbol* parentOp = extraFormals[ix];
       // not resolved yet: INT_ASSERT(isReduceOp(extraActuals[ix]->type));
 
+      // Todo: handle eflopi case when !isReduce.
       if (eflopiCall) {
         //
         // Convert the eflopiLoop loop similarly to how a forall is handled:
@@ -2490,13 +2636,23 @@ static void propagateThroughYieldNew(ForallStmt* fs,
           shadowVarsRI[ix] = svar;
         }
         // pass 'svar' by reference
+        // If the yield is inside a forall, (create and) pass
+        // the corresponding shadow variable instead.
+        Symbol* ssvar = createShadowVarIfNeeded(shadowvar, parentOp, svar, rcall);
         // todo: have a single 'sref' per 'svar', not one for each yield
         VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
         rcall->insertBefore(new DefExpr(sref));
-        rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, svar);
+        rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, ssvar);
         tupleComponent = sref;
       }
     } else {
+      if (eflopiLoop != NULL && shadowvar->intent == TFI_IN) {
+        USR_WARN(shadowvar, "switching from 'in' to 'const in' intent for the shadow variable %s", shadowvar->name);
+        USR_PRINT(shadowvar, "'in' intent is currently not implemented");
+        USR_PRINT(eflopiLoop, "due to a loop over a parallel iterator here");
+        shadowvar->intent = TFI_CONST_IN;
+      }
+
       Symbol* toPass = extraFormals[ix];
       INT_ASSERT(toPass->type != dtUnknown && // see 'else' below
                  toPass->type != dtAny);
@@ -2504,12 +2660,15 @@ static void propagateThroughYieldNew(ForallStmt* fs,
       if (toPass->isRef()) {
         tupleComponent = extraFormals[ix];
       } else {
+        // If the yield is inside a forall, (create and) pass
+        // the corresponding shadow variable instead.
+        Symbol* ssvar = createShadowVarIfNeeded(shadowvar, NULL, toPass, rcall);
         // If toPass->type can be dtUnknown, we should do this always,
         // using PRIM_SET_REFERENCE.
         VarSymbol* ytemp = newTemp("svarAddrTmp", toPass->getRefType());
         ytemp->qual = QUAL_REF;
         rcall->insertBefore(new DefExpr(ytemp));
-        rcall->insertBefore("'move'(%S, 'addr of'(%S))", ytemp, toPass);
+        rcall->insertBefore("'move'(%S, 'addr of'(%S))", ytemp, ssvar);
         tupleComponent = ytemp;                           
       }
     }

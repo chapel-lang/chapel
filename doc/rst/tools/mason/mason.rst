@@ -39,8 +39,33 @@ To remove mason change directory to ``$CHPL_HOME/tools/mason`` and run:
    make clobber
 
 
+Environment Variables
+=====================
 
-Setting up your Project
+Mason can be configured by setting the following environment variables:
+
+- ``MASON_HOME`` : Path to a directory where mason will store registry and package data.
+  Defaults to ``$HOME/.mason``.
+- ``MASON_REGISTRY`` : A valid git URL pointing to a repository of package information.
+  Defaults to ``https://github.com/chapel-lang/mason-registry``
+
+The ``mason env`` command will print the inferred or set values of these
+environment variables. If a variable was set by the user, an asterisk will be
+printed at the end of the line. For example, if ``$MASON_HOME`` was set:
+
+.. code-block:: text
+
+   > mason env
+   MASON_HOME: /path/to/something *
+   MASON_REGISTRY: https://github.com/chapel-lang/mason-registry
+
+.. warning::
+
+   If MASON_REGISTRY changes after invoking a mason commands that updates the
+   local copy of the registry (e.g. ``mason update``), the local copies of the
+   registry and dependency sources will be removed.
+
+Setting up Your Project
 =======================
 	
 ``mason new [ project name ] [ options ]`` is the command that initializes
@@ -61,7 +86,7 @@ it is an acceptable tradeoff for reliability. ``MyPackage`` will be the first fi
 
 
 
-Building and Running your project
+Building and Running Your Project
 =================================
 
 When invoked, ``mason build [ options ]`` will do the following:
@@ -152,12 +177,24 @@ For example, ``Mason.toml``:
     [brick]
     name = "MyPackage"
     version = "0.1.0"
+    chplVersion = "1.16.0"
     authors = ["Sam Partee <Sam@Partee.com>"]
 
     [dependencies]
     curl = '1.0.0'
 
+The ``chplVersion`` field indicates Chapel releases compatible with this
+package. There are a number of accepted formats:
 
+.. code-block:: text
+
+    "1.16.0"         # 1.16.0 or later
+    "1.16"           # 1.16.0 or later
+    "1.16.0..1.19.0" # 1.16 through 1.19, inclusive
+
+By default, ``chplVersion`` is set to represent the current Chapel release or
+later. For example, if you are using the 1.16 release, chplVersion will be
+``1.16.0``.
 
 
 
@@ -210,17 +247,25 @@ Continuing the example from before, the 'registry' ``0.1.0.toml`` would include 
      [brick]
      name = "MyPackage"
      version = "0.1.0"
+     chplVersion = "1.16.0"
      authors = ["Sam Partee <Sam@Partee.com>"]
      source = "https://github.com/Spartee/MyPackage"
 
      [dependencies]
      curl = '1.0.0'
 
+Search the registry with ``mason search <query>``, which will list all packages
+(and their latest version) that contain ``<query>`` in their names (case-insensitive).
+If no query is provided, all packages in the registry will be listed.
+
+.. note::
+
+    Packages will be listed regardless of their chplVersion compatibility.
 
 
 
 
-Submit a package 
+Submit a Package
 ================
 
 The mason registry will hold the manifest files for packages submitted by developers.
@@ -312,12 +357,14 @@ a lock file is written below as if generated from the earlier example of a ``Mas
      [curl]
      name = 'curl'
      version = '0.1.0'
+     chplVersion = "1.16.0..1.16.0"
      source = 'https://github.com/username/curl'
 
 
      [root]
      name = "MyPackage"
      version = "0.1.0"
+     chplVersion = "1.16.0..1.16.0"
      authors = ["Sam Partee <Sam@Partee.com>"]
      source = "https://github.com/Spartee/MyPackage"
      dependencies = ['curl 1.0.0 https://github.com/username/curl']
@@ -329,7 +376,4 @@ a lock file is written below as if generated from the earlier example of a ``Mas
 Dependency Code
 ===============
 
-The src code for every package downloaded will be in ``$MASON_HOME`` which by default is placed
-under the ``$HOME`` directory of the user. The path to the versioned packages downloaded by the
-user would then be under ``$MASON_HOME/.mason/src/``. In the directory adjacent to the source code
-directory is the user's checkout of the mason-registry. 
+The source code for every package will be downloaded to ``$MASON_HOME/src``.

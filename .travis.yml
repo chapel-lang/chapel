@@ -11,7 +11,7 @@ matrix:
     - env: TEST_COMMAND="make test-venv && CHPL_HOME=$PWD ./util/run-in-venv.bash ./util/test/check_annotations.py"
       git:
         depth: 100000
-    - env: TEST_COMMAND="./util/devel/lookForBadAlloc"
+    - env: TEST_COMMAND="./util/devel/lookForBadRTCalls"
       addons:
         apt:
           packages:

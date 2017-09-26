@@ -33,6 +33,8 @@ about your environment for using Chapel:
       expression support (i.e.  CHPL_LLVM=llvm or CHPL_REGEXP=re2). If
       GCC is used, we recommend GCC version 5 or newer for this purpose.
 
+  * Building LLVM requires cmake version 3.4.3 or later.
+
   * If you wish to use Chapel's test system, python-setuptools and
     python-devel (or equivalent packages for your platform) are required.
 

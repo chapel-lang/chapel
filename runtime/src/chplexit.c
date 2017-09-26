@@ -30,8 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#undef exit
-
 static void chpl_exit_common(int status, int all) {
   fflush(stdout);
   fflush(stderr);
