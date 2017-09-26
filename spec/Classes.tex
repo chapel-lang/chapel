@@ -790,7 +790,7 @@ features become supported.
 
 A class author may specify additional actions to be performed before a class object is
 reclaimed, by defining a class deinitializer.  A class deinitializer is a method
-named \chpl{deinit}.  A class deinitializer takes no arguments (aside from
+named \chpl{deinit()}.  A class deinitializer takes no arguments (aside from
 the implicit \chpl{this} argument).  If defined, the deinitializer is called each time
 a \chpl{delete} statement is invoked with a valid instance of that class type.  The
 deinitializer is not called if the argument of \chpl{delete} evaluates to \chpl{nil}.
