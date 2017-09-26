@@ -53,7 +53,7 @@ Highlights (see subsequent sections for further details)
 New Dependences / Configuration Changes
 ---------------------------------------
 * added a new 'configure'/'make install' option for building+installing Chapel
-  (see http://chapel.cray.com/docs/latest/usingchapel/building.html#installing-chapel)
+  (see http://chapel.cray.com/docs/1.16/usingchapel/building.html#installing-chapel)
 * users of the LLVM-based front- or back-ends must now have CMake to build
 * users of the `Regexp` module / RE2 must now have a C++11 compiler to build
 * made 'printchplenv' distinguish between config-file- vs. env-set variables
@@ -62,9 +62,9 @@ New Dependences / Configuration Changes
 New Tools / Tool Changes
 ------------------------
 * added an initial version of 'Mason' v0.1.0, Chapel's package manager
-  (see http://chapel.cray.com/docs/master/tools/mason/mason.html)
+  (see http://chapel.cray.com/docs/1.16/tools/mason/mason.html)
 * added a new 'c2chapel' tool that converts C headers to Chapel extern decls
-  (see http://chapel.cray.com/docs/master/tools/c2chapel/c2chapel.html)
+  (see http://chapel.cray.com/docs/1.16/tools/c2chapel/c2chapel.html)
 * 'chpl'-generated executables now take the main module name rather than 'a.out'
 * added support for LaTeX in chpldoc comments via mathjax
 * made chpldoc issue a warning if it detects open/close comment mismatches
@@ -72,14 +72,14 @@ New Tools / Tool Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * made explicit 'module' declarations use strict error handling by default
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#relaxed-mode-for-explicit-modules)
+  (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#relaxed-mode-for-explicit-modules)
 * made reduce intents preserve the reduction variable's initial value
   (see TODO)
 * added support for iterators that can yield void values
-  (see http://chapel.cray.com/docs/master/technotes/voidVariables.html#void-functions-and-iterators)
+  (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html#void-functions-and-iterators)
 * added a requirement that `deinit()` routines have parentheses
 * distinguished between functions returning 'void' values and non-returning fns
-  (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
+  (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html)
 * extended return intent overloads to support value and 'const ref' overloads
   (see 'Return Intent Overloads' in the 'Procedures' chapter of the spec)
 * made it an error to apply bitwise-not (~) to boolean values
@@ -94,22 +94,22 @@ New Features
 * added a 'defer' statement to aid with cleanup
   (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
 * added support for 'try'/'try!' expressions ('catch' only in statement form))
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#try-expressions)
+  (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#try-expressions)
 * added a 'prototype' keyword to relax checks for explicit module declarations
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#fatal-mode-for-implicit-and-prototype-modules)
+  (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#fatal-mode-for-implicit-and-prototype-modules)
 * added support for conditional 'local' statements
-  (see http://chapel.cray.com/docs/master/technotes/local.html#syntax)
+  (see http://chapel.cray.com/docs/1.16/technotes/local.html#syntax)
 * added prototype support for choosing error strictness on a module granularity
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html#strict-mode)
+  (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#strict-mode)
 * added support for reindex() on arrays to accept a list of ranges
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.reindex)
 
 Feature Improvements
 --------------------
 * significantly improved the implementation of initializers
-  (see http://chapel.cray.com/docs/master/technotes/initializers.html)
+  (see http://chapel.cray.com/docs/1.16/technotes/initializers.html)
 * significantly improved support for error-handling
-  (see http://chapel.cray.com/docs/master/technotes/errorHandling.html)
+  (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html)
 * significantly improved the generality and robustness of 'forwarding' fields
 * improved the CHPL_UNWIND output to include more functions
 * made --print-callgraph print calls into non-user code
@@ -125,69 +125,69 @@ Standard Modules/Library
 ------------------------
 * added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
 * added overloads to push_front(), push_back(), etc. that take array arguments
-  (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.push_back)
+  (e.g., see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.push_back)
 * added support for `waitAll()` to the `Futures` module
-  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html#Futures.waitAll)
+  (see http://chapel.cray.com/docs/1.16/modules/packages/Futures.html#Futures.waitAll)
 * added 'param' and 'type' overloads of getField() to the Reflection module
-  (see http://chapel.cray.com/docs/master/modules/standard/Reflection.html#Reflection.getField)
+  (see http://chapel.cray.com/docs/1.16/modules/standard/Reflection.html#Reflection.getField)
 * added a new lines() iterator to channels
-  (see http://chapel.cray.com/docs/master/modules/standard/IO.html#IO.channel.lines)
+  (see http://chapel.cray.com/docs/1.16/modules/standard/IO.html#IO.channel.lines)
 * added support for file.getParentName() to the `Path` module
-  (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
+  (see http://chapel.cray.com/docs/1.16/modules/standard/Path.html#Path.file.getParentName)
 * added ctime() to the 'datetime' type in the 'DateTime' module
-  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html#DateTime.datetime.ctime)
+  (see http://chapel.cray.com/docs/1.16/modules/standard/DateTime.html#DateTime.datetime.ctime)
 * added guided and adaptive iterators that accept domains
-  (see http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
+  (see http://chapel.cray.com/docs/1.16/modules/standard/DynamicIters.html)
 * gave the dynamic() iterators a default chunk size of 1
 * added an asciiToString function that converts a uint(8) into a string
-  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html#String.asciiToString)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/String.html#String.asciiToString)
 * made the printing of comm diagnostics in 'CommDiagnostics' suppress zeroes
 * closed memory leaks in the 'Regexp' module
 
 Package Modules
 ---------------
 * added support for a new 'Crypto' module based on OpenSSL
-  (see http://chapel.cray.com/docs/master/modules/packages/Crypto.html)
+  (see http://chapel.cray.com/docs/1.16/modules/packages/Crypto.html)
 * added new 'Collection' modules, `DistributdBag` and `DistributedDeque`
-  (see http://chapel.cray.com/docs/master/modules/packages/Collection.html,
-   http://chapel.cray.com/docs/master/modules/packages/DistributedBag.html, and
-   http://chapel.cray.com/docs/master/modules/packages/DistributedDeque.html)
+  (see http://chapel.cray.com/docs/1.16/modules/packages/Collection.html,
+   http://chapel.cray.com/docs/1.16/modules/packages/DistributedBag.html, and
+   http://chapel.cray.com/docs/1.16/modules/packages/DistributedDeque.html)
 * added support for a new 'TOML' module (not 100% feature complete)
   (see $CHPL_HOME/modules/packages/TOML.chpl)
 * added support for a distributed guided and dynamic iterators
-  (see http://chapel.cray.com/docs/master/modules/packages/DistributedIters.html)
+  (see http://chapel.cray.com/docs/1.16/modules/packages/DistributedIters.html)
 * improved support for 'MPI' with ugni, gasnet/aries, and/or qthreads
 * improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
 * improved the 'LinearAlgebra' module in a number of ways:
   - added a new 'Sparse' sub-module to 'LinearAlgebra'
-    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra/Sparse.html)
+    (see http://chapel.cray.com/docs/1.16/modules/packages/LinearAlgebra/Sparse.html)
   - added diag() to support diagonal (and off-diagonal) access
-    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
+    (see http://chapel.cray.com/docs/1.16/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
   - optimized the implementation of dense transpose
 * added 'throw'ing functions in HDFS
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
-  (see http://chapel.cray.com/docs/master/modules/layouts/LayoutCS.html)
+  (see http://chapel.cray.com/docs/1.16/modules/layouts/LayoutCS.html)
 * normalized the ReplicatedDist distribution and renamed it to 'Replicated'
-  (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
-   and http://chapel.cray.com/docs/master/primers/replicated.html)
+  (see http://chapel.cray.com/docs/1.16/modules/dists/ReplicatedDist.html
+   and http://chapel.cray.com/docs/1.16/primers/replicated.html)
 * added a 'replicand' method to 'ReplicatedDist' supporting local access
-  (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
-   and http://chapel.cray.com/docs/master/primers/replicated.html)
+  (see http://chapel.cray.com/docs/1.16/modules/dists/ReplicatedDist.html
+   and http://chapel.cray.com/docs/1.16/primers/replicated.html)
 * privatized sparse Block-distributed domains/arrays
 * closed memory leaks in the DimensionalDist2D distribution
 
 Interoperability Improvements
 -----------------------------
 * added support for 'c_sizeof()' to query sizes of C types
-  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.c_sizeof)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.c_sizeof)
 * added support for an 'isAnyCPtr()` query
-  (http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
+  (http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
 * permitted c_mem*() routines to work with c_void_ptr arguments
 * added support for c_memset()
-  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.c_memset)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.c_memset)
 * added support for printing 'c_ptr' and 'c_void_ptr' variables
 * added support for an 'isExternClassType()` query
 
@@ -217,7 +217,7 @@ Memory Improvements
 
 Compiler Flags
 --------------
-(see 'man chpl' or http://chapel.cray.com/docs/master/usingchapel/man.html for details)
+(see 'man chpl' or http://chapel.cray.com/docs/1.16/usingchapel/man.html for details)
 * added --permit-unhandled-module-errors to enable relaxed error checking
 * added --print-unused-functions to identify unused routines
 * added --[no-]remote-serialization to control cross-locale record copies
@@ -230,21 +230,21 @@ Compiler Flags
 Documentation
 -------------
 * added new primers on error-handling and the 'LinearAlgebra' module
-  (see http://chapel.cray.com/docs/master/primers/errorHandling.html and
-   http://chapel.cray.com/docs/master/primers/LinearAlgebralib.html)
+  (see http://chapel.cray.com/docs/1.16/primers/errorHandling.html and
+   http://chapel.cray.com/docs/1.16/primers/LinearAlgebralib.html)
 * added a document describing built-in `Error` types in Chapel
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelError.html)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelError.html)
 * broke information about the `Replicated` distribution into its own primer
-  (see http://chapel.cray.com/docs/master/primers/replicated.html)
+  (see http://chapel.cray.com/docs/1.16/primers/replicated.html)
 * added a new 'Methods' chapter to the language spec and refreshed the content
 * improved the language specification's definition of records
 * documented the ability to specify configuration files via '-f'
-  (see http://chapel.cray.com/docs/master/usingchapel/executing.html#setting-configuration-variables)
+  (see http://chapel.cray.com/docs/1.16/usingchapel/executing.html#setting-configuration-variables)
 * added missing documentation for range.low, high, stride, alignment, aligned
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
 * added missing documentation for reindex() and localSlice()
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex
-   and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
+  (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.reindex
+   and http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
 * fixed an oversight in the specification to indicate that '=' is overloadable
 
 Example Codes
@@ -277,7 +277,7 @@ Locale Models
 Portability
 -----------
 * added support for using Chapel on an OmniPath cluster
-  (see http://chapel.cray.com/docs/master/platforms/omnipath.html)
+  (see http://chapel.cray.com/docs/1.16/platforms/omnipath.html)
 * improved code conformance with C++14
 * improved code portability with respect to various versions of gcc
 * improved portability of code with respect to Cygwin
@@ -343,7 +343,7 @@ Bug Fixes
 Launchers
 ---------
 * added a 'gasnetrun_psm' launcher for running on OmniPath interconnects
-  (see http://chapel.cray.com/docs/master/usingchapel/launcher.html#currently-supported-launchers)
+  (see http://chapel.cray.com/docs/1.16/usingchapel/launcher.html#currently-supported-launchers)
 * fixed some bugs in the pbs-gasnetrun_ibv and slurm-based launchers
 
 Generated Code
@@ -364,11 +364,6 @@ Testing System
 --------------
 * dramatically improved the quality of the generated web performance graphs
 * improved the redirection of stderr into log files
-
-Developer-oriented changes: Configuration changes
--------------------------------------------------
-* added support for CHPL_JEMALLOC=system to enable use of a system jemalloc
-* added support for CHPL_HWLOC=system
 
 Developer-oriented changes: Module changes
 ------------------------------------------
