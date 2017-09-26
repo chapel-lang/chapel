@@ -292,7 +292,7 @@ namespace {
       allocAsNew = CastInst::CreatePointerCast(alloc, newPtrType,
                                                "", insertBefore);
 
-    new StoreInst(fromValue, allocAsFrom, "", insertBefore);
+    new StoreInst(fromValue, allocAsFrom, insertBefore);
     Instruction* load = new LoadInst(allocAsNew, "", insertBefore);
 
     return load;
