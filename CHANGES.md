@@ -3,13 +3,10 @@ Release Changes List
 
 *** stopped at dced642 2017-09-24 ***
 
+TODO: any other commits that snuck in
+TODO: remove/unify 'master'/'latest' from any docs links?
 TODO: move docs to top-level? ('latest' is symbolic link to '.'?)
-TODO: remove 'master'/'latest' from any docs links?
-TODO: where to put LLVM codegen flags in 6135 / 8d704f0
-TODO: error-handling keyword highlighting in emacs
 TODO: 'tics' vs. `backtics`?
-TODO: refactor / filter highlights
-TODO: reorder sections
 
 version 1.16.0
 ==============
@@ -18,62 +15,61 @@ Nineteenth public release of Chapel, September 20, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* added a new 'configure'/'make install' option for building+installing Chapel
-* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
-* added a new c2chapel tool that converts C headers to Chapel extern decls
-* 'chpl'-generated executables now take the main module name rather than 'a.out'
-* added a 'defer' statement to aid with cleanup
-* added support for 'try'/'try!' expressions (no 'catch' permitted)
-* added a 'prototype' keyword to relax checks for explicit module declarations
-* significantly improved the implementation of initializers
-* significantly improved support for error-handling
-* significantly improved the generality and robustness of 'forwarding' fields
-* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
-* made the ReplicatedDist distribution less odd and renamed it to 'Replicated'
-* added support for a new 'Crypto' module based on OpenSSL
-* added a new 'Collections' module  (TODO: also DistributedBag/Dequeue?)
-* added support for a new 'TOML' module (not 100% feature complete)
-* added support for a distributed guided and dynamic iterators
-* improved support for the MPI module when ugni, gasnet/aries, and/or qthreads
-* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
-* improved the 'LinearAlgebra' module in a number of ways:
-* perf improvements
-* closed some memory leaks in module code
-* added a new locale model for AMD Accelerator Processing Units (APUs)
+* tool / configuration highlights:
+  - added an initial version of 'Mason', Chapel's package manager
+  - added a new 'c2chapel' tool that creates Chapel extern decls from C headers
+  - 'chpl' executable names now take the main module's name instead of 'a.out'
+  - added a 'configure'/'make install' option for building+installing Chapel
+* language improvements:
+  - significantly improved the implementation of initializers
+  - significantly improved the implementation of error-handling
+  - added a 'defer' statement to aid with cleanup
+  - added support for 'try'/'try!' expressions
+  - made reduce intents preserve the initial value of the reduction variable
+  - added a 'prototype' keyword to relax checks for explicit modules
+* standard library/package modules:
+  - added support for a new 'Crypto' module based on OpenSSL
+  - added new 'Collection' modules, `DistributdBag` and `DistributedDeque`
+  - added support for an experimental 'TOML' module
+  - added support for a distributed guided and dynamic iterators
+  - improved support for mixing MPI with ugni, gasnet/aries, and/or qthreads
+  - improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+  - continued to improve the 'LinearAlgebra' module
+  - converted many library routines to 'throw' in the event of errors
+* performance improvements:
+  - added support for dynamic array registration with the network stack
+  - significantly improved the ability of the LLVM back-end to optimize Chapel
+  - reduced the amount of locking used for associative array accesses
+  - added the ability to serialize records, permitting local copy optimizations
+  - closed a few library-based memory leaks
+* array / domain / domain map improvements:
+  - generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+  - improved the locality properties of sparse Block-distributed domains/arrays
+  - improved the locality of distributed rank-change and reindex expressions
+  - improved the behavior and power of the 'Replicated' distribution
+* other improvements:
+  - various improvements for working with C pointers and memory
+  - various improvements for the 'ugni' communication layer on Cray systems
+  - numerous bug fixes, error message improvements, and third-party updates
 
 New Dependences / Configuration Changes
 ---------------------------------------
 * added a new 'configure'/'make install' option for building+installing Chapel
   (see http://chapel.cray.com/docs/latest/usingchapel/building.html#installing-chapel)
 * users of the LLVM-based front- or back-ends must now have CMake to build
-* users of the `RegExp` module / RE2 must now have a C++11 compiler to build
+* users of the `Regexp` module / RE2 must now have a C++11 compiler to build
 * made 'printchplenv' distinguish between config-file- vs. env-set variables
 * made 'printchplenv' infer the location of CHPL_HOME
 
 New Tools / Tool Changes
 ------------------------
-* added prototypical support for 'Mason' v0.1.0, Chapel's package manager
+* added an initial version of 'Mason' v0.1.0, Chapel's package manager
   (see http://chapel.cray.com/docs/master/tools/mason/mason.html)
-* added a new c2chapel tool that converts C headers to Chapel extern decls
+* added a new 'c2chapel' tool that converts C headers to Chapel extern decls
   (see http://chapel.cray.com/docs/master/tools/c2chapel/c2chapel.html)
 * 'chpl'-generated executables now take the main module name rather than 'a.out'
 * added support for LaTeX in chpldoc comments via mathjax
 * made chpldoc issue a warning if it detects open/close comment mismatches
-
-New Features
-------------
-* added a 'defer' statement to aid with cleanup
-  (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
-* added support for 'try'/'try!' expressions (no 'catch' permitted)
-  (see TODO)
-* added a 'prototype' keyword to relax checks for explicit module declarations
-  (see TODO)
-* added support for conditional 'local' statements
-  (see http://chapel.cray.com/docs/master/technotes/local.html#syntax)
-* added prototype support for choosing error strictness on a module granularity
-  (see TODO)
-* added support for reindex() on arrays to accept a list of ranges
-  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -85,6 +81,7 @@ Semantic Changes / Changes to Chapel Language
   (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
 * relaxed the requirement that iterators must contain `yield` statements
   (see TODO??)
+* added a requirement that `deinit()` routines have parentheses
 * distinguished between functions returning 'void' values and non-returning fns
   (see http://chapel.cray.com/docs/latest/technotes/voidVariables.html)
 * extended return intent overloads to support value and 'const ref' overloads
@@ -96,6 +93,21 @@ Syntactic/Naming Changes
 * single-statement 'local' blocks now require a 'do' keyword
 * renamed the 'Barrier' module to 'Barriers'
 
+New Features
+------------
+* added a 'defer' statement to aid with cleanup
+  (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
+* added support for 'try'/'try!' expressions ('catch' only in statement form))
+  (see TODO)
+* added a 'prototype' keyword to relax checks for explicit module declarations
+  (see TODO)
+* added support for conditional 'local' statements
+  (see http://chapel.cray.com/docs/master/technotes/local.html#syntax)
+* added prototype support for choosing error strictness on a module granularity
+  (see TODO)
+* added support for reindex() on arrays to accept a list of ranges
+  (see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.reindex)
+
 Feature Improvements
 --------------------
 * significantly improved the implementation of initializers
@@ -104,6 +116,7 @@ Feature Improvements
   (see http://chapel.cray.com/docs/master/technotes/errorHandling.html)
 * significantly improved the generality and robustness of 'forwarding' fields
 * improved the CHPL_UNWIND output to include more functions
+* made --print-callgraphs print calls into non-user code
 * improved overload disambiguation for functions w/ partially generic arguments
 
 Removed Features
@@ -114,9 +127,7 @@ Removed Features
 
 Standard Modules/Library
 ------------------------
-* added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Regex' and 'Path'
-  (see TODO)
-* added 'throw'ing routines to 'Spawn'
+* added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
   (see TODO)
 * added overloads to push_front(), push_back(), etc. that take array arguments
   (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=push_back#ChapelArray.push_back)
@@ -138,6 +149,29 @@ Standard Modules/Library
 * made the printing of comm diagnostics in 'CommDiagnostics' suppress zeroes
 * closed memory leaks in regular expressions / RegEx
 
+Package Modules
+---------------
+* added support for a new 'Crypto' module based on OpenSSL
+  (see http://chapel.cray.com/docs/master/modules/packages/Crypto.html)
+* added new 'Collection' modules, `DistributdBag` and `DistributedDeque`
+  (see http://chapel.cray.com/docs/master/modules/packages/Collection.html,
+   http://chapel.cray.com/docs/master/modules/packages/DistributedBag.html, and
+   http://chapel.cray.com/docs/master/modules/packages/DistributedDeque.html)
+* added support for a new 'TOML' module (not 100% feature complete)
+  (see $CHPL_HOME/modules/packages/TOML.chpl)
+* added support for a distributed guided and dynamic iterators
+  (see http://chapel.cray.com/docs/master/modules/packages/DistributedIters.html)
+* improved support for 'MPI' with ugni, gasnet/aries, and/or qthreads
+* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
+* improved the 'LinearAlgebra' module in a number of ways:
+  - added a new 'Sparse' sub-module to 'LinearAlgebra'
+    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra/Sparse.html)
+  - added diag() to support diagonal (and off-diagonal) access
+    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
+  - optimized the implementation of dense transpose
+* added 'throw'ing functions in HDFS
+  (see TODO)
+
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
@@ -150,28 +184,6 @@ Standard Domain Maps (Layouts and Distributions)
    and http://chapel.cray.com/docs/master/primers/replicated.html?highlight=replicand)
 * privatized sparse Block-distributed domains/arrays
 * closed memory leaks in the DimensionalDist2D distribution
-
-Package Modules
----------------
-* added support for a new 'Crypto' module based on OpenSSL
-  (see http://chapel.cray.com/docs/master/modules/packages/Crypto.html)
-* added a new 'Collections' module  (TODO: also DistributedBag/Dequeue?)
-  (see TODO)
-* added support for a new 'TOML' module (not 100% feature complete)
-  (see TODO)
-* added support for a distributed guided and dynamic iterators
-  (see http://chapel.cray.com/docs/master/modules/packages/DistributedIters.html)
-* improved support for the MPI module when ugni, gasnet/aries, and/or qthreads
-* improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
-* improved the 'LinearAlgebra' module in a number of ways:
-  - added a new 'Sparse' sub-module to 'LinearAlgebra'
-    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra/Sparse.html)
-  - added support for arbitrary lower bounds
-  - added diag() to support diagonal (and off-diagonal) access
-    (see http://chapel.cray.com/docs/master/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
-  - optimized the implementation of dense transpose
-* added 'throw'ing functions in HDFS
-  (see TODO)
 
 Interoperability Improvements
 -----------------------------
@@ -187,11 +199,11 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
-* improved the ability of the LLVM back-end to vectorize Chapel code
+* registered arrays with the network dynamically for better NUMA locality
+* significantly improved the ability of the LLVM back-end to optimize Chapel
 * improved locality for sparse Block-distributed domains/arrays
 * optimized bulkAdd calls for empty sparse domains
 * reduced the amount of locking used for associative array accesses
-* registered arrays with the network dynamically for a performance improvement
 * added support for serializing records across locales, supporting local copies
 * optimized remote task creation for cases like 'coforall ... do on ... {}'
 * automatically inline iterators that have up to 'k' yields (10 by default)
@@ -208,6 +220,18 @@ Memory Improvements
 -------------------
 * stopped heap-promoting local variables used within on-clauses for 'qthreads'
 * closed memory leaks in regular expressions / RegEx and DimensionalDist2D
+
+Compiler Flags
+--------------
+(see 'man chpl' or http://chapel.cray.com/docs/master/usingchapel/man.html for details)
+* added --permit-unhandled-module-errors to enable relaxed error checking
+* added --print-unused-functions to identify unused routines
+* added --[no-]remote-serialization to control cross-locale record copies
+* added an --mllvm flag to set LLVM-based optimizations when using --llvm
+* added --inline-iterators-yield-limit to cap # of yields to inline for iters
+* gave the --cache-remote flag a --no-cache-remote variation
+* removed the --strict-errors flag in favor of new more precise features
+* removed the --conditional-dynamic-dispatch-limit flag and feature
 
 Example Codes
 -------------
@@ -227,6 +251,8 @@ Example Codes
 
 Documentation
 -------------
+* added a document describing built-in `Error` types in Chapel
+  (http://chapel.cray.com/docs/master/builtins/internal/ChapelError.html)
 * added a new 'Methods' chapter to the language spec and refreshed the content
 * improved the language specification's definition of records
 * documented the ability to specify configuration files via '-f'
@@ -238,26 +264,10 @@ Documentation
    and http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
 * fixed an oversight in the specification to indicate that '=' is overloadable
 
-Compiler Flags (see 'man chpl' or http://chapel.cray.com/docs/master/usingchapel/man.html for details)
--------------------------------------------
-* added --permit-unhandled-module-errors to enable relaxed error checking
-* added --print-unused-functions to identify unused routines
-* added --[no-]remote-serialization to control cross-locale record copies
-* added an --mllvm flag to set LLVM-based optimizations when using --llvm
-* added --inline-iterators-yield-limit to cap # of yields to inline for iters
-* gave the --cache-remote flag a --no-cache-remote variation
-* removed the --strict-errors flag in favor of new more precise features
-* removed the --conditional-dynamic-dispatch-limit flag and feature
-
-New Semantic Checks (for old semantics)
----------------------------------------
-* improved 'const' checking
-* added a requirement that `deinit()` routines have parentheses
-
 Locale Models
 -------------
 * added a new locale model for AMD Accelerator Processing Units (APUs)
-  (see TODO)
+  (see https://github.com/chapel-lang/chapel/blob/release/1.16/doc/rst/developer/chips/22.rst)
 * stopped storing arrays as multiple distinct chunks in the 'numa' locale model
 * ensured that existing locale models clean up after themselves at program exit
 
@@ -281,8 +291,9 @@ Syntax Highlighting
 -------------------
 * added some missing keywords to 'vim', 'emacs', and 'highlight' highlighters
 
-Error Messages
---------------
+Error Messages / Semantic Checks
+--------------------------------
+* improved 'const' checking
 * extended --div-by-zero-checks to also check for modulus (%) 0 operations
 * added an error message for exported functions with generic arguments
 * improved error messages for illegal 'delete' statements
@@ -368,7 +379,9 @@ Developer-oriented changes: Makefile improvements
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added --user-constructor-error to flag uses of constructors in user code
-* added --force-initializers to compile using initializers over constructors
+* added --force-initializers to generate default initializers for some types
+* added --llvm-print-ir to dump the LLVM internal representation to stdout
+* added --llvm-print-ir-stage to specify which LLVM stage should print the IR
 * improved the behavior of the --log flag
 * flipped --log-ids to be on by default
 * made --print-module-resolution print AST counts
