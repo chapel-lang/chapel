@@ -79,6 +79,7 @@ Numerical Libraries
 .. toctree::
    :maxdepth: 1
 
+   LinearAlgebra <LinearAlgebralib>
    LAPACK <LAPACKlib>
    FFTW <FFTWlib>
    Random <randomNumbers>

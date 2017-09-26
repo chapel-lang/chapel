@@ -33,6 +33,7 @@ In order to compile a Chapel program with this module, be sure
 to have a BLAS implementation available on your system. See the :mod:`BLAS`
 documentation for further details.
 
+.. _LinearAlgebraInterface:
 
 Linear Algebra Interface
 ------------------------
@@ -155,7 +156,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
 
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
-  type eltType = Scalars(1).type;
+  type eltType = x.type;
   return Vector(x, (...Scalars), eltType=eltType);
 }
 
