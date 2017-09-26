@@ -475,6 +475,8 @@ use LinearAlgebra.Sparse;
   :ref:`Sparse Primer <primers-sparse>`.
 */
 
+// Cr
+
 /*
   Factory Functions
   ~~~~~~~~~~~~~~~~~
@@ -512,6 +514,33 @@ use LinearAlgebra.Sparse;
 /*
   Below are a list of the available factory functions:
 */
+
+{ // Factory functions scope
+// Creating CSR domains & arrays in Chapel without ``LinearAlgebra.Sparse``:
+use LayoutCS;
+var parentDom = {0..#3, 0..#3}; // Parent domain
+var csrDom: sparse subdomain(parentDom) dmapped CS(); // CSR domain
+var csrArr: [csrDom] real; // CSR array
+
+// Adding indices to a sparse domain:
+csrDom += (0,0);
+csrDom += [(1,1), (2,2)];
+
+// Creating CSR domains with ``LinearAlgebra.Sparse``:
+var D1 = CSRDomain(3);                 // from a length
+var D2 = CSRDomain(3, 3);              // from a length and width
+var D3 = CSRDomain(0..#3);             // from 1 range
+var D4 = CSRDomain(0..#3, 0..#3);      // from 2 ranges
+var D5 = CSRDomain({0..#3, 0..#3});    // from a 2D domain
+
+// Creating CSR matrices:
+var M1 = CSRMatrix(D1);             // from a CSR domain
+var M2 = CSRMatrix({0..#3, 0..#3}); // from a dense domain
+var M3 = CSRMatrix(M1);             // From a CSR matrix
+const I = eye(3,3);
+var M4 = CSRMatrix(I);              // From a dense matrix
+
+} // Factory functions scope
 
 /*
   Operations
