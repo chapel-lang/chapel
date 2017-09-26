@@ -1346,10 +1346,10 @@ namespace {
 
       // Check that a pointer in the global address space has the correct size.
       {
-	const llvm::DataLayout& dl = M.getDataLayout();
-	llvm::Type* testGlobalTy = llvm::Type::getInt8PtrTy(M.getContext(),
+        const llvm::DataLayout& dl = M.getDataLayout();
+        llvm::Type* testGlobalTy = llvm::Type::getInt8PtrTy(M.getContext(),
                                                             info->globalSpace);
-	llvm::Type* testWideTy = llvm::Type::getInt8PtrTy(M.getContext(),
+        llvm::Type* testWideTy = llvm::Type::getInt8PtrTy(M.getContext(),
                                                           info->wideSpace);
 
         bool ok = (dl.getTypeSizeInBits(testGlobalTy) == info->globalPtrBits) &&

@@ -165,18 +165,18 @@ ClangInfo::ClangInfo(
     std::vector<std::string> clangOtherArgsIn,
     bool parseOnlyIn)
        : parseOnly(parseOnlyIn),
-	 clangCC(clangCcIn),
-	 clangCXX(clangCxxIn),
-	 compileline(compilelineIn),
-	 clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
-	 clangOtherArgs(clangOtherArgsIn),
-	 codegenOptions(), diagOptions(NULL),
-	 DiagClient(NULL),
-	 DiagID(NULL),
-	 Diags(NULL),
-	 Clang(NULL),
+         clangCC(clangCcIn),
+         clangCXX(clangCxxIn),
+         compileline(compilelineIn),
+         clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
+         clangOtherArgs(clangOtherArgsIn),
+         codegenOptions(), diagOptions(NULL),
+         DiagClient(NULL),
+         DiagID(NULL),
+         Diags(NULL),
+         Clang(NULL),
          clangTargetOptions(), clangLangOptions(),
-	 Ctx(NULL),
+         Ctx(NULL),
          cCodeGen(NULL), cCodeGenAction(NULL),
          asmTargetLayoutStr()
 {
@@ -1290,8 +1290,8 @@ void runClang(const char* just_parse_filename) {
   ClangInfo* clangInfo = NULL;
   clangInfo = new ClangInfo(clangCC, clangCXX,
                             compileline,
-			    clangCCArgs, clangLDArgs, clangOtherArgs,
-			    parseOnly);
+                            clangCCArgs, clangLDArgs, clangOtherArgs,
+                            parseOnly);
 
   gGenInfo->clangInfo = clangInfo;
 
@@ -2072,7 +2072,7 @@ void checkAdjustedDataLayout() {
   // Check that the data layout setting worked
   const llvm::DataLayout& dl = info->module->getDataLayout();
   llvm::Type* testTy = llvm::Type::getInt8PtrTy(info->module->getContext(),
-						GLOBAL_PTR_SPACE);
+                                                GLOBAL_PTR_SPACE);
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
