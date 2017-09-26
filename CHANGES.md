@@ -28,9 +28,9 @@ Highlights (see subsequent sections for further details)
   - improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
   - converted many library routines to 'throw' in the event of errors
 * performance improvements:
-  - added support for dynamic array registration with the network stack
   - significantly improved the ability of the LLVM back-end to optimize Chapel
   - added the ability to serialize records, permitting local copy optimizations
+  - added support for dynamic array registration with the network for 'ugni'
   - reduced the amount of locking used for associative array accesses
 * array / domain / domain map improvements:
   - generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
@@ -59,6 +59,7 @@ New Tools / Tool Changes
   (see http://chapel.cray.com/docs/1.16/tools/c2chapel/c2chapel.html)
 * 'chpl'-generated executables now take the main module name rather than 'a.out'
 * added support for LaTeX in chpldoc comments via MathJax
+* chpldoc now indicates 'throw'ing functions in its output
 * made chpldoc issue a warning if it detects open/close comment mismatches
 
 Semantic Changes / Changes to Chapel Language
@@ -68,10 +69,10 @@ Semantic Changes / Changes to Chapel Language
 * made reduce intents preserve the reduction variable's initial value
 * added support for iterators that can yield void values
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html#void-functions-and-iterators)
-* added a requirement that 'deinit()' routines have parentheses
 * distinguished between functions returning 'void' values and non-returning fns
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html)
-* extended return intent overloads to support value and 'const ref' overloads
+* added a requirement that 'deinit()' routines have parentheses
+* return intent overloads now permit value and 'const ref' overloads w/out 'ref'
   (see 'Return Intent Overloads' in the 'Procedures' chapter of the spec)
 * made it an error to apply bitwise-not (~) to boolean values
 
@@ -145,10 +146,10 @@ Package Modules
   (see http://chapel.cray.com/docs/1.16/modules/packages/Collection.html,
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedBag.html, and
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedDeque.html)
-* added support for a new 'TOML' module (not 100% feature complete)
-  (see $CHPL_HOME/modules/packages/TOML.chpl)
 * added support for a distributed guided and dynamic iterators
   (see http://chapel.cray.com/docs/1.16/modules/packages/DistributedIters.html)
+* added support for a new 'TOML' module (not 100% feature complete)
+  (see $CHPL_HOME/modules/packages/TOML.chpl)
 * improved support for 'MPI' with ugni, gasnet/aries, and/or qthreads
 * improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
 * improved the 'LinearAlgebra' module in a number of ways:
@@ -186,14 +187,13 @@ Interoperability Improvements
 
 Performance Optimizations/Improvements
 --------------------------------------
-* registered arrays with the network dynamically for better NUMA locality
 * significantly improved the ability of the LLVM back-end to optimize Chapel
 * improved locality for sparse Block-distributed domains/arrays
 * optimized bulkAdd calls for empty sparse domains
 * reduced the amount of locking used for associative array accesses
 * added support for serializing records across locales, supporting local copies
 * optimized remote task creation for cases like 'coforall ... do on ... {}'
-* automatically inline iterators that have up to 'k' yields (10 by default)
+* automatically inline iterators that have multiple yields (10 by default)
 * improved the performance of dynamic casting / subclass checks
 * improved wide-pointer analysis for 'const ref' arguments
 * optimized away some wide pointer overheads in 'Block' and 'Stencil'
@@ -277,6 +277,7 @@ Portability
 
 Cray-specific Changes
 ---------------------
+* registered arrays dynamically for 'ugni' to improve NUMA locality
 * optimized strided puts and gets for CHPL_COMM=ugni
 * split large transfers for CHPL_COMM=ugni
 * reduced the default heap size for CHPL_COMM=ugni
