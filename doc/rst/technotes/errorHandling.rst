@@ -144,8 +144,8 @@ is not available.
     try {
       try {
         alwaysThrows(0);
-      } catch e: PrimerError {
-        writeln("caught a PrimerError");
+      } catch e: DemoError {
+        writeln("caught a DemoError");
       }
       writeln("never reached");
     } catch {
@@ -209,9 +209,9 @@ calls to clarify control flow.
 ``try`` expressions
 *******************
 
-``try`` and ``try!`` are also available as expressions to clarify
-control flow for assignments and returns. These may not be used
-with ``catch`` clauses.
+``try`` and ``try!`` are available as expressions to clarify control flow
+for assignments and returns. The expression form may not be used with
+``catch`` clauses.
 
 .. code-block:: chapel
 
@@ -255,8 +255,8 @@ propagating the error out of the function as described above.
   proc haltsOnError(i: int): int {
     try! {
       canThrow(i);
-    } catch e: PrimerError {
-      writeln("caught a PrimerError");
+    } catch e: DemoError {
+      writeln("caught a DemoError");
     }
   }
 
@@ -316,6 +316,10 @@ Parallelism
 them for centralized handling. It can be iterated on and filtered for
 different kinds of errors.
 
+The implementation of ``TaskErrors`` prevents nested ``coforall`` statements
+from producing nested ``TaskErrors``. Instead, the nested errors will flatten
+into the outer loop's ``TaskErrors``.
+
 ``begin``
 +++++++++
 
@@ -339,11 +343,8 @@ will be propagated to the ``sync`` statement that waits for that task.
 +++++++++++++++++++++++++
 
 Errors can be thrown from ``coforall`` and ``cobegin`` statements, handled
-as ``TaskErrors``.
-
-The implementation of ``TaskErrors`` prevents nested ``coforall`` statements
-from producing nested ``TaskErrors``. Instead, the nested errors will flatten
-into the outer loop's ``TaskErrors``.
+as ``TaskErrors``. Note the nested ``coforall`` loops, which as mentioned
+earlier will emit a flattened ``TaskErrors``.
 
 .. code-block:: chapel
 
@@ -352,11 +353,12 @@ into the outer loop's ``TaskErrors``.
       writeln("before coforall block");
       coforall i in 1..2 {
         coforall j in 1..2 {
-          throw new PrimerError();
+          throw new DemoError();
         }
       }
       writeln("after coforall block");
     } catch errors: TaskErrors { // not nested
+      // all of e will be of runtime type DemoError in this example
       for e in errors {
         writeln("Caught task error e ", e.message());
       }
@@ -367,8 +369,8 @@ into the outer loop's ``TaskErrors``.
     try! {
       writeln("before cobegin block");
       cobegin {
-        throw new PrimerError();
-        throw new PrimerError();
+        throw new DemoError();
+        throw new DemoError();
       }
       writeln("after cobegin block");
     } catch errors: TaskErrors {
@@ -387,14 +389,11 @@ is thrown by the inner loop.
 
 .. code-block:: chapel
 
-  // unnested, will be repeat of coforall
   proc handleFromCoforall() {
     try! {
       writeln("before forall block");
       forall i in 1..2 {
-        forall j in 1..2 {
-          throw new PrimerError();
-        }
+        throw new DemoError();
       }
       writeln("after forall block");
     } catch errors: TaskErrors {
@@ -413,14 +412,14 @@ Errors in Chapel are implemented as classes, with a base class ``Error``
 defined in the standard modules. ``Error`` may be used directly, and new
 hierarchies may be created from it.
 
-A hierarchy for system errors is included in the :mod:`SysError` module,
+A hierarchy for system errors is included in :mod:`SysError`,
 accessed with a ``use`` statement.
 
 .. code-block:: chapel
 
   use SysError;
 
-  class PrimerError : Error { }
+  class DemoError : Error { }
 
 .. _technote-errorHandling-modes:
 
@@ -446,7 +445,7 @@ strict. Developers can select each mode in the following ways:
    * writing code inside of a module marked with a pragma
 
 It is fully permissible to write for a stricter error handling mode
-while using a looser one -- for example, code that compiles in strict
+while using a looser one -- in particular, code that compiles in strict
 mode will also compile in relaxed or fatal mode.
 
 .. _technote-errorHandling-fatal:
@@ -525,6 +524,11 @@ This is the *relaxed* error handling mode.
       // any error thrown in thrownErrors will propagates out of this function
       alwaysThrows();
     }
+
+    // This does not compile because the error is not handled.
+    // proc doesNotThrowErrorsOn() {
+    //   alwaysThrows();
+    // }
   }
 
   use ProductionModule;
@@ -534,9 +538,10 @@ This is the *relaxed* error handling mode.
 Strict Mode
 +++++++++++
 
-It is possible to specify a more restricted error handling mode within a
+It is possible to request a more restricted error handling mode within a
 module scope using a pragma. With it, it is necessary to explicitly mark all
-throwing calls, whether or not the calling function throws.
+throwing calls, whether or not the calling function throws. The intent of
+this restricted mode is to make the control flow clear.
 
 This is the *strict* error handling mode.
 
@@ -558,8 +563,12 @@ It is also possible to use ``try!`` in these forms.
       }
     }
 
-    proc alsoThrowsErrorsOn() {
+    proc alsoThrowsErrorsOn() throws {
       try alwaysThrows();
+    }
+
+    proc doesNotThrowErrorsOn() {
+      try! alwaysThrows();
     }
 
     proc assignmentTry() throws {

@@ -1,7 +1,7 @@
 // Error Handling
 //
 // This primer is a short tutorial on Chapel error handling. A detailed
-// outline can be found in the :ref:`readme-errorHandling` technote.
+// description can be found in the :ref:`readme-errorHandling` technote.
 //
 
 /*
@@ -9,16 +9,15 @@
 
   Handling Errors
   ---------------
-
-  Standard library functions that used to halt now throw errors for
-  developers to handle as they see fit. This is especially useful for
+  Several important standard library functions throw errors so that developers
+  can handle the errors as they see fit. This is especially useful for
   recovering from errors in :mod:`IO`.
  */
 
 use IO;
 
-const f1 = "fake.txt";
-const f2 = "still_fake.txt";
+const f1 = "input.txt";
+const f2 = "backup_input.txt";
 
 var f: file;
 
@@ -27,20 +26,26 @@ var f: file;
 
 try {
   f = open(f1, iomode.r);
+  // if open() raises an error, jump to the catch block
+  writeln("everything is fine");
 } catch {
+  // catch block are used to handle errors
   writeln("an error occurred");
 }
 
 try {
   f = open(f1, iomode.r);
 } catch e: FileNotFoundError {
-  writeln(f1 + " does not exist");
+  // catch block can be directed to only handle certain errors
+  writeln("Warning: ", f1, " does not exist");
   try! {
     f = open(f2, iomode.r);
   } catch e: FileNotFoundError {
-    writeln(f2 + " does not exist");
-  } // halts if a different error is returned
+    writeln("Warning: ", f2, " does not exist");
+  }
+  // halts if a different error is returned
 } catch {
+  // catchall is needed because main() does not throw
   writeln("unknown error");
 }
 
@@ -68,7 +73,7 @@ proc openFilename(f_name: string) throws {
   try {
     f = open(f, iomode.r);
   } catch e: FileNotFoundError {
-    writeln(f + " does not exist");
+    writeln("Warning: ", f, " does not exist");
   } // throws all other errors
 
   return f;
