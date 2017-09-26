@@ -3,6 +3,9 @@
 
 /*
   Example usage of the :mod:`LinearAlgebra` module in Chapel.
+
+  .. contents:: Table of Contents
+
 */
 
 use LinearAlgebra;
@@ -91,7 +94,8 @@ writeln(a.shape); // (3, 5)
 // Element type
 writeln(a.eltType: string); // real(64)
 
-// Type
+// Array type in format of:
+//  ``[domain(dimensions, index-type, stridable)] element-type
 writeln(a.type: string); // [domain(2,int(64),false)] real(64)
 
 // Element-wise addition (and subtraction)
@@ -307,14 +311,13 @@ var crossProduct = cross(y, y);
   Properties
   ----------
 
-  There are several functions for computing matrix properties like the ``trace``
-  and ``norm``.
+  There are several functions for computing matrix properties.
 
   Note that ``norm`` procedures are documented in the :mod:`Norm` module.
 
 */
 
-// Trace
+// Trace of a matrix
 var tr = trace(diagMatrix); // 6.0
 
 // Norm of a vector
@@ -368,22 +371,80 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   Caveats
   -------
 
-  There are a handful of *gotcha's* to be aware of when working with the
-  :mod:`LinearAlgebra` module. Most of these are temporary implementation
+  There are a few pitfalls to be aware of when working with the
+  :mod:`LinearAlgebra` module.
 
-  Promotion Flattening
-  ~~~~~~~~~~~~~~~~~~~~
+  One potential *gotcha* is **Promotion Flattening**, which is described in the
+  :ref:`LinearAlgebraInterface` documentation.
 
-  See **Promotion Flattening** section in :ref:`LinearAlgebraInterface`
-  documentation.
-
-  0-based indexing
-  ~~~~~~~~~~~~~~~~
-
-  Chapel arrays default to 1-based indices, while :mod:`LinearAlgebra`
-  functions default to 0-based arrays, when no range or domain is specified.
+  Another is that this module defaults to 0-based indices when no range or
+  domain is specified, while Chapel arrays default to 1-based indices.
   This can be problematic when using both Chapel array creation syntax
-  :mod:`LinearAlgebra` factory functions, for example:
+  :mod:`LinearAlgebra` factory functions.
 
 */
+
+/*
+
+  LinearAlgebra.Sparse
+  --------------------
+
+  The :mod:`LinearAlgebra.Sparse` submodule supports operations on sparse
+  matrices.
+
+  Supported Sparse Layouts
+  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Currently only CSR matrices are supported. A CSR matrix is
+  composed of a 2D array that is domain-mapped to a `CS()` layout, from
+  the :mod:`LayoutCS` layout module.
+
+  For example, the following CSR matrix (``CS(compressRows=true)``)
+  **is supported** by this submodule:
+*/
+
+{
+  use LayoutCSR;
+  const parentDom = {1..100, 1..100};
+  var csrDom: sparse subdomain(parentDom) dmapped CS();
+  var csrMatrix: [csrDom] real; // Supported by LinearAlgebra.Sparse
+}
+
+/*
+   And as a counter-example, the following COO matrix (``DefaultSparse``)
+   **is not supported** by this module:
+*/
+
+{
+  const parentDom = {1..100, 1..100};
+  var cooDom: sparse subdomain(parentDom);
+  var cooMatrix: [cooDom] real; // NOT supported by LinearAlgebra.Sparse
+}
+
+/*
+  For more information about working with sparse arrays in Chapel, see the
+  :ref:`Sparse Primer <primers-sparse>`.
+*/
+
+/*
+  Factory Functions
+  ~~~~~~~~~~~~~~~~~
+
+*/
+
+/*
+  Operations
+  ~~~~~~~~~~
+
+  Below is a list of the currently supported operations.
+
+*/
+
+// A.plus
+// A.minus
+// A.times
+// A.elementDiv
+// A.dot(scalar)
+// A.dot(vector)
+// A.dot(matrix)
 
