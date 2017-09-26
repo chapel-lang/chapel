@@ -7,7 +7,6 @@
   .. contents:: Table of Contents
 
 */
-
 use LinearAlgebra;
 
 /*
@@ -83,19 +82,19 @@ writeln(a);
   //   1.0 1.0 1.0
 
 // Number of dimensions
-writeln(a.rank); // 2
+a.rank; // 2
 
 // Size
-writeln(a.size); // 15
+a.size; // 15
 
 // Shape
-writeln(a.shape); // (3, 5)
+a.shape; // (3, 5)
 
 // Element type
 writeln(a.eltType: string); // real(64)
 
 // Array type in format of:
-//  ``[domain(dimensions, index-type, stridable)] element-type
+//   ``[domain(dimensions, index-type, stridable)] element-type``
 writeln(a.type: string); // [domain(2,int(64),false)] real(64)
 
 // Element-wise addition (and subtraction)
@@ -202,7 +201,7 @@ var v6 = Vector(0.0, 0, 0, 0, 0);
   Matrices
   ~~~~~~~~
 
-  Shown below are a variety of way to create the same 3-by-3 array of ``real``
+  Shown below are a variety of way to create the same 3 x 3 array of ``real``
   type.
 
   .. note::
@@ -254,6 +253,8 @@ writeln(diagMatrix);
   ----------
 */
 
+
+
 // Taking the transpose of a matrix:
 var T1 = transpose(M0);
 var T2 = M0.T; // syntactic sugar
@@ -298,7 +299,7 @@ var vv = dot(y, y);
 
 // To compute an outer product, one must explicitly call ``outer()``:
 var yz = outer(y, z);
-writeln(yz);
+writeln('outer:', yz);
 
 // Matrix powers can be computed on square matrices with ``matPow()``.
 // Only integer powers are currently supported:
@@ -392,11 +393,32 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   The :mod:`LinearAlgebra.Sparse` submodule supports operations on sparse
   matrices.
 
+  When using the :mod:`LinearAlgebra` module, this submodule can be accessed
+  like so:
+*/
+{
+  var A = Sparse.CSRDomain(100, 100);
+}
+
+/*
+  Alternatively, one can expose all the submodule symbols with an additional
+  use statement:
+*/
+
+use LinearAlgebra.Sparse;
+
+// Now we can do:
+{
+  var A = CSRDomain(100, 100);
+}
+
+/*
+
   Supported Sparse Layouts
   ~~~~~~~~~~~~~~~~~~~~~~~~
 
   Currently only CSR matrices are supported. A CSR matrix is
-  composed of a 2D array that is domain-mapped to a `CS()` layout, from
+  composed of a 2D array that is domain-mapped to a ``CS()`` layout, from
   the :mod:`LayoutCS` layout module.
 
   For example, the following CSR matrix (``CS(compressRows=true)``)
@@ -404,7 +426,7 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
 */
 
 {
-  use LayoutCSR;
+  use LayoutCS;
   const parentDom = {1..100, 1..100};
   var csrDom: sparse subdomain(parentDom) dmapped CS();
   var csrMatrix: [csrDom] real; // Supported by LinearAlgebra.Sparse
@@ -430,6 +452,38 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
   Factory Functions
   ~~~~~~~~~~~~~~~~~
 
+  The :mod:`LinearAlgebra.Sparse` submodule provides
+  factory functions for both sparse domains and sparse matrices.
+
+  In Chapel, sparse domains can only be modified directly, so it is important
+  to maintain access to both
+  the sparse array and sparse domain.
+
+  Consider the following example:
+
+*/
+{
+  // Bad example of LinearAlgebra.Sparse usage:
+  var A = CSRMatrix({1..100, 1..100}); // Create a CSR matrix from dense domain
+  writeln(A.domain); // empty sparse domain, with no way to add elements..
+}
+
+/*
+  The above sparse matrix is initialized with an empty domain, and the user
+  has no way of accessing that domain. Therefore, it is not possible to add
+  indices to the sparse domain
+
+  Instead, users should interact with both the sparse domain and sparse array:
+*/
+{
+  // Good example of LinearAlgebra.Sparse usage:
+  var D = CSRDomain(100, 100); // empty sparse domain
+  var A = CSRMatrix(D); // Create a CSR matrix from a sparse domain
+  D += [(10,20), (30, 24), (64, 42)]; // Add some indices to the sparse domain
+}
+
+/*
+  Below are a list of the available factory functions:
 */
 
 /*
@@ -438,13 +492,64 @@ writeln(isTriu(upper, k=1));    // false (k=1 does not include diagonal)
 
   Below is a list of the currently supported operations.
 
+  .. note::
+
+    For sparse matrices, the element-wise operations such as ``+``, ``-``, ``*``, and ``/``
+    are :ref:`promoted <ug-promotion>`, and will result in an error
+    if there is a sparse domain mismatch.
+    To avoid this, it is preferred to use the element-wise methods:
+    ``.plus()``, ``.minus()``, ``.times()``, and ``.elementDiv()``.
+
 */
 
-// A.plus
-// A.minus
-// A.times
-// A.elementDiv
-// A.dot(scalar)
-// A.dot(vector)
-// A.dot(matrix)
+// Setup some sparse domains and arrays
+{ // Operations scope
 
+var Adom = CSRDomain(100, 100),
+    Bdom = CSRDomain(100, 100),
+    Cdom = CSRDomain(100, 100);
+
+Adom += (1,1);
+Bdom += (2,2);
+Cdom += [(1,1), (2,2)];
+
+var A = CSRMatrix(Adom),
+    B = CSRMatrix(Bdom),
+    C = CSRMatrix(Cdom);
+
+A = 1.0;
+B = 2.0;
+C = 4.0;
+
+// Element-wise addition.
+A.plus(B); // 1.0, 2.0
+A.plus(C); // 5.0, 4.0
+
+// Element-wise subtraction
+A.minus(B); // 1.0, -2.0
+
+// Element-wise multiplication
+A.times(B); // 0.0, 0.0
+A.times(C); // 4.0, 4.0
+
+// Element-wise division
+
+A.elementDiv(C); // 0.25, 0.0
+B.elementDiv(C); // 0.0, 0.5
+
+// Matrix-matrix multiplication
+C.dot(C); // 16.0, 16.0
+
+// Matrix-vector multiplication
+var a = Vector(100);
+a = 2.0;
+C.dot(a);
+
+// Matrix-scalar multiplication
+C.dot(2.0); // equivalent to C.times(2.0);
+
+// Matrix transpose
+transpose(C);
+C.T; // short-hand notation
+
+} // Operations scope
