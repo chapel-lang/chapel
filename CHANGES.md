@@ -4,7 +4,7 @@ Release Changes List
 version 1.16.0
 ==============
 
-Nineteenth public release of Chapel, September 20, 2017
+Nineteenth public release of Chapel, October 4, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
@@ -22,7 +22,7 @@ Highlights (see subsequent sections for further details)
   - added a 'prototype' keyword to relax checks for explicit modules
 * standard library/package modules:
   - added support for a new 'Crypto' module based on OpenSSL
-  - added new 'Collection' modules, `DistributedBag` and `DistributedDeque`
+  - added new 'Collection' modules, 'DistributedBag' and 'DistributedDeque'
   - added support for an experimental 'TOML' module
   - added support for a distributed guided and dynamic iterators
   - improved support for mixing MPI with ugni, gasnet/aries, and/or qthreads
@@ -50,7 +50,7 @@ New Dependences / Configuration Changes
 * added a new 'configure'/'make install' option for building+installing Chapel
   (see http://chapel.cray.com/docs/1.16/usingchapel/building.html#installing-chapel)
 * users of the LLVM-based front- or back-ends must now have CMake to build
-* users of the `Regexp` module / RE2 must now have a C++11 compiler to build
+* users of the 'Regexp' module / RE2 must now have a C++11 compiler to build
 * made 'printchplenv' distinguish between config-file- vs. env-set variables
 * made 'printchplenv' infer the location of CHPL_HOME
 
@@ -71,7 +71,7 @@ Semantic Changes / Changes to Chapel Language
 * made reduce intents preserve the reduction variable's initial value
 * added support for iterators that can yield void values
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html#void-functions-and-iterators)
-* added a requirement that `deinit()` routines have parentheses
+* added a requirement that 'deinit()' routines have parentheses
 * distinguished between functions returning 'void' values and non-returning fns
   (see http://chapel.cray.com/docs/1.16/technotes/voidVariables.html)
 * extended return intent overloads to support value and 'const ref' overloads
@@ -105,6 +105,8 @@ Feature Improvements
 * significantly improved support for error-handling
   (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html)
 * significantly improved the generality and robustness of 'forwarding' fields
+* added support for #-based comments in the parsing of '-f' configuration files
+  (see http://chapel.cray.com/docs/1.16/usingchapel/executing.html#setting-configuration-variables)
 * improved the CHPL_UNWIND output to include more functions
 * made --print-callgraph print calls into non-user code
 * improved overload disambiguation for functions w/ partially generic arguments
@@ -120,13 +122,13 @@ Standard Modules/Library
 * added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
 * added overloads to push_front(), push_back(), etc. that take array arguments
   (e.g., see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.push_back)
-* added support for `waitAll()` to the `Futures` module
+* added support for 'waitAll()' to the 'Futures' module
   (see http://chapel.cray.com/docs/1.16/modules/packages/Futures.html#Futures.waitAll)
 * added 'param' and 'type' overloads of getField() to the Reflection module
   (see http://chapel.cray.com/docs/1.16/modules/standard/Reflection.html#Reflection.getField)
 * added a new lines() iterator to channels
   (see http://chapel.cray.com/docs/1.16/modules/standard/IO.html#IO.channel.lines)
-* added support for file.getParentName() to the `Path` module
+* added support for file.getParentName() to the 'Path' module
   (see http://chapel.cray.com/docs/1.16/modules/standard/Path.html#Path.file.getParentName)
 * added ctime() to the 'datetime' type in the 'DateTime' module
   (see http://chapel.cray.com/docs/1.16/modules/standard/DateTime.html#DateTime.datetime.ctime)
@@ -142,7 +144,7 @@ Package Modules
 ---------------
 * added support for a new 'Crypto' module based on OpenSSL
   (see http://chapel.cray.com/docs/1.16/modules/packages/Crypto.html)
-* added new 'Collection' modules, `DistributedBag` and `DistributedDeque`
+* added new 'Collection' modules, 'DistributedBag' and 'DistributedDeque'
   (see http://chapel.cray.com/docs/1.16/modules/packages/Collection.html,
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedBag.html, and
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedDeque.html)
@@ -155,7 +157,7 @@ Package Modules
 * improved the 'LinearAlgebra' module in a number of ways:
   - added a new 'Sparse' sub-module to 'LinearAlgebra'
     (see http://chapel.cray.com/docs/1.16/modules/packages/LinearAlgebra/Sparse.html)
-  - added diag() to support diagonal (and off-diagonal) access
+  - added diag() to support extracting diagonals and building diagonal matrices
     (see http://chapel.cray.com/docs/1.16/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
   - optimized the implementation of dense transpose
 * added 'throw'ing functions in HDFS
@@ -177,13 +179,13 @@ Interoperability Improvements
 -----------------------------
 * added support for 'c_sizeof()' to query sizes of C types
   (see http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.c_sizeof)
-* added support for an 'isAnyCPtr()` query
+* added support for an 'isAnyCPtr()' query
   (http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
 * permitted c_mem*() routines to work with c_void_ptr arguments
 * added support for c_memset()
   (see http://chapel.cray.com/docs/1.16/builtins/internal/CPtr.html#CPtr.c_memset)
 * added support for printing 'c_ptr' and 'c_void_ptr' variables
-* added support for an 'isExternClassType()` query
+* added support for an 'isExternClassType()' query
 
 Performance Optimizations/Improvements
 --------------------------------------
@@ -226,9 +228,9 @@ Documentation
 * added new primers on error-handling and the 'LinearAlgebra' module
   (see http://chapel.cray.com/docs/1.16/primers/errorHandling.html and
    http://chapel.cray.com/docs/1.16/primers/LinearAlgebralib.html)
-* added a document describing built-in `Error` types in Chapel
+* added a document describing built-in 'Error' types in Chapel
   (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelError.html)
-* broke information about the `Replicated` distribution into its own primer
+* broke information about the 'Replicated' distribution into its own primer
   (see http://chapel.cray.com/docs/1.16/primers/replicated.html)
 * added a new 'Methods' chapter to the language spec and refreshed the content
 * improved the language specification's definition of records
@@ -256,7 +258,7 @@ Example Codes
   (see examples/benchmarks/shootout/knucleotide.chpl)
 * rewrote ISx to use a more elegant global domain declaration
   (see examples/benchmarks/isx/)
-* rewrote SSCA2 to use the standard `Barriers` module and closed memory leaks
+* rewrote SSCA2 to use the standard 'Barriers' module and closed memory leaks
   (see examples/benchmarks/ssca2/)
 * renamed the 'opaque domains and arrays' primer to 'opaque-domains.chpl'
 * made other updates to example programs to reflect changes since 1.15
@@ -294,7 +296,7 @@ Error Messages / Semantic Checks
 * extended --div-by-zero-checks to also check for modulus (%) 0 operations
 * added an error message for exported functions with generic arguments
 * improved error messages for illegal 'delete' statements
-* removed checks that iterators must contain `yield` statements; they need not
+* removed checks that iterators must contain 'yield' statements; they need not
 * added an error for records that try to subtype another type
 * added a number of error messages for poorly formed (or unsupported) init()s
 * added a warning for --library compiles on code containing a main() routine
@@ -310,11 +312,12 @@ Bug Fixes
 * fixed a number of bugs related to error-handling
 * fixed several bugs in the 'forwarding' feature for object fields
 * fixed bugs in counting tasks and creating the right number of new tasks
+* fixed bugs for several forall intent cases
 * fixed a bug in which a qualified module reference was incorrectly shadowed
 * fixed a bug in isAlpha() for characters between upper- and lowercase letters
 * fixed a bug in bulk assignment for rank-change slices
 * fixed a bug in variable deinitialization order
-* fixed a bug in which `use` statements were not considered in program order
+* fixed a bug in which 'use' statements were not considered in program order
 * fixed a bug in which 'rmTree' would not remove directories with hidden files
 * fixed some bugs in loop invariant code motion (LICM)
 * fixed a portability bug in padding years in the DateTime module
@@ -326,7 +329,7 @@ Bug Fixes
 * fixed a bug relating to scoped accesses to internal modules
 * fixed bugs with parallel iteration over domains with non-natural alignment
 * fixed a bug in the implementation of the &= operator for associative domains
-* fixed a bug in applying `reindex()` to an empty domain/array
+* fixed a bug in applying 'reindex()' to an empty domain/array
 * fixed a bug in modules with just one non-initialization function declaration
 * fixed a bug in dead code elimination for do-while loops
 * fixed a bug in which isRecord*() returned 'true' for sync/single types
