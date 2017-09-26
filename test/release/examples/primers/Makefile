@@ -12,6 +12,7 @@ TARGETS = \
 	classes \
 	distributions \
 	domains \
+	errorHandling \
 	fileIO \
 	genericClasses \
 	iterators \

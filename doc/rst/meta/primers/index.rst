@@ -16,6 +16,7 @@ Language Basics
    Variadic Arguments (var args) <varargs>
    Modules <modules>
    Void Variables <voidVariables>
+   Error Handling <errorHandling>
 
 Iterators
 ---------

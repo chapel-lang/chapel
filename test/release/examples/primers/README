@@ -13,6 +13,7 @@ demonstrate Chapel feature areas in detail.
      classes.chpl                : Defining and using classes
      distributions.chpl          : Chapel standard distributions
      domains.chpl                : Domains and methods on domains
+     errorHandling.chpl          : Error handling system
      FFTWlib.chpl                : the FFTW standard library
      fileIO.chpl                 : File I/O example using arrays
      genericClasses.chpl         : Defining and using generic classes
