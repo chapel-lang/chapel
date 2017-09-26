@@ -517,15 +517,15 @@ This is the *relaxed* error handling mode.
 .. code-block:: chapel
 
   module ProductionModule {
-    // this line would cause compilation error since the error is not handled
+    // this line would cause a compilation error since the error is not handled
     // canThrow(1);
 
     proc throwsErrorsOn() throws {
-      // any error thrown in thrownErrors will propagates out of this function
+      // any error thrown by alwaysThrows will propagate out
       alwaysThrows();
     }
 
-    // This does not compile because the error is not handled.
+    // this function does not compile because the error is not handled
     // proc doesNotThrowErrorsOn() {
     //   alwaysThrows();
     // }
