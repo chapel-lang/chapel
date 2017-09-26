@@ -1,11 +1,6 @@
 Release Changes List
 ====================
 
-TODO: remove/unify 'master'/'latest' from any docs links?
-TODO: move docs to top-level? ('latest' is symbolic link to '.'?)
-TODO: 'tics' vs. `backtics`?
-TODO: spellcheck
-
 version 1.16.0
 ==============
 
@@ -27,7 +22,7 @@ Highlights (see subsequent sections for further details)
   - added a 'prototype' keyword to relax checks for explicit modules
 * standard library/package modules:
   - added support for a new 'Crypto' module based on OpenSSL
-  - added new 'Collection' modules, `DistributdBag` and `DistributedDeque`
+  - added new 'Collection' modules, `DistributedBag` and `DistributedDeque`
   - added support for an experimental 'TOML' module
   - added support for a distributed guided and dynamic iterators
   - improved support for mixing MPI with ugni, gasnet/aries, and/or qthreads
@@ -66,7 +61,7 @@ New Tools / Tool Changes
 * added a new 'c2chapel' tool that converts C headers to Chapel extern decls
   (see http://chapel.cray.com/docs/1.16/tools/c2chapel/c2chapel.html)
 * 'chpl'-generated executables now take the main module name rather than 'a.out'
-* added support for LaTeX in chpldoc comments via mathjax
+* added support for LaTeX in chpldoc comments via MathJax
 * made chpldoc issue a warning if it detects open/close comment mismatches
 
 Semantic Changes / Changes to Chapel Language
@@ -93,7 +88,7 @@ New Features
 ------------
 * added a 'defer' statement to aid with cleanup
   (see 'The Defer Statement' in the 'Statements' chapter of the language spec)
-* added support for 'try'/'try!' expressions ('catch' only in statement form))
+* added support for 'try'/'try!' expressions ('catch' only in statement form)
   (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#try-expressions)
 * added a 'prototype' keyword to relax checks for explicit module declarations
   (see http://chapel.cray.com/docs/1.16/technotes/errorHandling.html#fatal-mode-for-implicit-and-prototype-modules)
@@ -148,7 +143,7 @@ Package Modules
 ---------------
 * added support for a new 'Crypto' module based on OpenSSL
   (see http://chapel.cray.com/docs/1.16/modules/packages/Crypto.html)
-* added new 'Collection' modules, `DistributdBag` and `DistributedDeque`
+* added new 'Collection' modules, `DistributedBag` and `DistributedDeque`
   (see http://chapel.cray.com/docs/1.16/modules/packages/Collection.html,
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedBag.html, and
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedDeque.html)
@@ -244,7 +239,7 @@ Documentation
   (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelRange.html#ChapelRange.range.stride)
 * added missing documentation for reindex() and localSlice()
   (see http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.reindex
-   and http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.localSlice))
+   and http://chapel.cray.com/docs/1.16/builtins/internal/ChapelArray.html#ChapelArray.localSlice)
 * fixed an oversight in the specification to indicate that '=' is overloadable
 
 Example Codes
@@ -358,7 +353,7 @@ Third-Party Software Changes
 * updated hwloc to version 1.11.8
 * updated GMP to version 6.1.2
 * updated RE2 to commit a810d71
-* enabled suport for multiple communication domains in GASNet for gemini/aries
+* enabled support for multiple communication domains in GASNet for gemini/aries
 
 Testing System
 --------------
