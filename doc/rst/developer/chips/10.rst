@@ -679,7 +679,8 @@ Deinitialization
 ++++++++++++++++
 
 To specify actions that occur upon deinitialization, specify a ``proc
-deinit()`` method. This method must have zero arguments and cannot be called
+deinit()`` method. This method must have zero arguments and be declared
+with parentheses. It cannot be called
 directly. If a type does not specify a ``proc deinit()`` method, the compiler
 will generate one.
 It will be equivalent to a user-written ``deinit`` with an empty body.
