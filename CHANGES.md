@@ -4,6 +4,7 @@ Release Changes List
 TODO: remove/unify 'master'/'latest' from any docs links?
 TODO: move docs to top-level? ('latest' is symbolic link to '.'?)
 TODO: 'tics' vs. `backtics`?
+TODO: spellcheck
 
 version 1.16.0
 ==============
@@ -116,32 +117,32 @@ Feature Improvements
 
 Removed Features
 ----------------
-* removed support for the '=>' operator to create array aliases
-* removed support for outdated 'RandomStream' constructors
-* retired support for CHPL_TASKS=muxed
+* removed support for the deprecated '=>' operator for creating array aliases
+* removed support for deprecated 'RandomStream' constructors
+* retired support for the deprecated CHPL_TASKS=muxed runtime option
 
 Standard Modules/Library
 ------------------------
 * added 'throw'ing routines to 'IO', 'Regexp', 'FileSystem', 'Spawn', & 'Path'
 * added overloads to push_front(), push_back(), etc. that take array arguments
-  (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html?highlight=push_back#ChapelArray.push_back)
+  (e.g., see http://chapel.cray.com/docs/master/builtins/internal/ChapelArray.html#ChapelArray.push_back)
 * added support for `waitAll()` to the `Futures` module
-  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html?highlight=waitall#Futures.waitAll)
+  (see http://chapel.cray.com/docs/master/modules/packages/Futures.html#Futures.waitAll)
 * added 'param' and 'type' overloads of getField() to the Reflection module
-  (see http://chapel.cray.com/docs/master/modules/standard/Reflection.html?highlight=getfield#Reflection.getField)
+  (see http://chapel.cray.com/docs/master/modules/standard/Reflection.html#Reflection.getField)
 * added a new lines() iterator to channels
-  (see http://chapel.cray.com/docs/master/modules/standard/IO.html?highlight=lines#IO.channel.lines)
+  (see http://chapel.cray.com/docs/master/modules/standard/IO.html#IO.channel.lines)
 * added support for file.getParentName() to the `Path` module
   (see http://chapel.cray.com/docs/master/modules/standard/Path.html#Path.file.getParentName)
 * added ctime() to the 'datetime' type in the 'DateTime' module
-  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html?highlight=ctime#DateTime.datetime.ctime)
+  (see http://chapel.cray.com/docs/master/modules/standard/DateTime.html#DateTime.datetime.ctime)
 * added guided and adaptive iterators that accept domains
   (see http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html)
 * gave the dynamic() iterators a default chunk size of 1
 * added an asciiToString function that converts a uint(8) into a string
-  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html?highlight=asciitostring#String.asciiToString)
+  (see http://chapel.cray.com/docs/latest/builtins/internal/String.html#String.asciiToString)
 * made the printing of comm diagnostics in 'CommDiagnostics' suppress zeroes
-* closed memory leaks in regular expressions / RegEx
+* closed memory leaks in the 'Regexp' module
 
 Package Modules
 ---------------
@@ -169,24 +170,24 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
   (see http://chapel.cray.com/docs/master/modules/layouts/LayoutCS.html)
-* made the ReplicatedDist distribution less odd and renamed it to 'Replicated'
+* normalized the ReplicatedDist distribution and renamed it to 'Replicated'
   (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
    and http://chapel.cray.com/docs/master/primers/replicated.html)
 * added a 'replicand' method to 'ReplicatedDist' supporting local access
-  (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html?highlight=replicand
-   and http://chapel.cray.com/docs/master/primers/replicated.html?highlight=replicand)
+  (see http://chapel.cray.com/docs/master/modules/dists/ReplicatedDist.html
+   and http://chapel.cray.com/docs/master/primers/replicated.html)
 * privatized sparse Block-distributed domains/arrays
 * closed memory leaks in the DimensionalDist2D distribution
 
 Interoperability Improvements
 -----------------------------
 * added support for 'c_sizeof()' to query sizes of C types
-  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html?highlight=c_sizeof#CPtr.c_sizeof)
+  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.c_sizeof)
 * added support for an 'isAnyCPtr()` query
-  (http://chapel.cray.com/docs/master/builtins/internal/CPtr.html?highlight=isanycptr#CPtr.isAnyCPtr)
+  (http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.isAnyCPtr)
 * permitted c_mem*() routines to work with c_void_ptr arguments
 * added support for c_memset()
-  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html?highlight=c_memset#CPtr.c_memset)
+  (see http://chapel.cray.com/docs/master/builtins/internal/CPtr.html#CPtr.c_memset)
 * added support for printing 'c_ptr' and 'c_void_ptr' variables
 * added support for an 'isExternClassType()` query
 
@@ -212,7 +213,7 @@ Performance Optimizations/Improvements
 Memory Improvements
 -------------------
 * stopped heap-promoting local variables used within on-clauses for 'qthreads'
-* closed memory leaks in regular expressions / RegEx and DimensionalDist2D
+* closed memory leaks in the 'Regexp' module and DimensionalDist2D distribution
 
 Compiler Flags
 --------------
@@ -261,7 +262,7 @@ Example Codes
   (see examples/benchmarks/shootout/knucleotide.chpl)
 * rewrote ISx to use a more elegant global domain declaration
   (see examples/benchmarks/isx/)
-* rewrote SSCA2 to use the standard `Barrier` module and closed memory leaks
+* rewrote SSCA2 to use the standard `Barriers` module and closed memory leaks
   (see examples/benchmarks/ssca2/)
 * renamed the 'opaque domains and arrays' primer to 'opaque-domains.chpl'
 * made other updates to example programs to reflect changes since 1.15
@@ -276,7 +277,7 @@ Locale Models
 Portability
 -----------
 * added support for using Chapel on an OmniPath cluster
-  (see http://chapel.cray.com/docs/master/platforms/omnipath.html?highlight=omnipath)
+  (see http://chapel.cray.com/docs/master/platforms/omnipath.html)
 * improved code conformance with C++14
 * improved code portability with respect to various versions of gcc
 * improved portability of code with respect to Cygwin
@@ -313,7 +314,7 @@ Bug Fixes
 ---------
 * fixed a number of bugs related to initializers
 * fixed a number of bugs related to error-handling
-* fixed several bugs in the 'forwarding' feature introduced in 1.16
+* fixed several bugs in the 'forwarding' feature for object fields
 * fixed bugs in counting tasks and creating the right number of new tasks
 * fixed a bug in which a qualified module reference was incorrectly shadowed
 * fixed a bug in isAlpha() for characters between upper- and lowercase letters
@@ -342,7 +343,7 @@ Bug Fixes
 Launchers
 ---------
 * added a 'gasnetrun_psm' launcher for running on OmniPath interconnects
-  (see http://chapel.cray.com/docs/master/usingchapel/launcher.html?highlight=launchers#currently-supported-launchers)
+  (see http://chapel.cray.com/docs/master/usingchapel/launcher.html#currently-supported-launchers)
 * fixed some bugs in the pbs-gasnetrun_ibv and slurm-based launchers
 
 Generated Code
@@ -560,11 +561,11 @@ Standard Modules/Library
 * converted the 'barrier' type from a class into a record
   (see http://chapel.cray.com/docs/1.15/modules/standard/Barrier.html)
 * added support for a .shape query on domains and arrays
-  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=shape#ChapelArray.shape)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html#ChapelArray.shape)
 * added support for 'targetLocales' query to default rectangular arrays/domains
 * made count() on arrays parallel by default
 * added support for passing comparators to the domain.sorted() iterator
-  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=sorted#ChapelArray.sorted)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html#ChapelArray.sorted)
 * made conjg() generate the same type as its argument
   (see http://chapel.cray.com/docs/1.15/modules/standard/Math.html#Math.conjg)
 * improved memory management for the 'List' module
@@ -661,9 +662,9 @@ Documentation
 * reorganized the platform-specific documentation pages into categories
   (see http://chapel.cray.com/docs/1.15/platforms/index.html)
 * added documentation for dim() and dims() on arrays
-  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html?highlight=dims#ChapelArray.dims)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/ChapelArray.html#ChapelArray.dims)
 * fixed the documentation for string.strip()
-  (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html?highlight=strip#String.string.strip)
+  (see http://chapel.cray.com/docs/1.15/builtins/internal/String.html#String.string.strip)
 * updated documentation regarding reference counting of files and channels
 * added an indication that IO is a module that is used by default
 * updated documents to refer to download.html rather than install.html
