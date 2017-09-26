@@ -7,7 +7,7 @@ declare void @llvm.memcpy.p100i8.p0i8.i64(i8 addrspace(100)* nocapture, i8* noca
 declare void @llvm.memcpy.p100i8.p100i8.i64(i8 addrspace(100)* nocapture, i8 addrspace(100)* nocapture, i64, i32, i1)
 
 define void @teststore(i64 addrspace(100)* %storeme) {
-; CHECK: @teststore(i64* %
+; CHECK: @teststore({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @memcpy
 ; CHECK: put
@@ -24,7 +24,7 @@ entry:
 
 
 define i64 @testload(i64 addrspace(100)* %loadme) {
-; CHECK: @testload(i64* %
+; CHECK: @testload({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @memcpy
 ; CHECK: get
@@ -40,7 +40,7 @@ entry:
 }
 
 define void @testcopy(i64 addrspace(100)* %dst, i64 addrspace(100)* %src) {
-; CHECK: @testcopy(i64* %
+; CHECK: @testcopy({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @memcpy
 ; CHECK: getput
@@ -54,7 +54,7 @@ entry:
 }
 
 define i64 @read_int(i64 addrspace(100)* %src) {
-; CHECK: i64 @read_int(i64* %
+; CHECK: i64 @read_int({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @.gf
 ; CHECK: get
@@ -66,7 +66,7 @@ entry:
 }
 
 define void @write_int(i64 addrspace(100)* %dst, i64 %v) {
-; CHECK: void @write_int(i64* %
+; CHECK: void @write_int({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @.gf
 ; CHECK: put

@@ -12,7 +12,7 @@ declare %struct.c_localeid_t @.gf.loc.1(i64 addrspace(100)*) readnone
 declare i64 addrspace(100)* @.gf.make.1(%struct.c_localeid_t, i64*) readnone
 
 %mystruct = type { i64 addrspace(100)*, i64 addrspace(100)*, i32 *}
-; CHECK: %mystruct = type { i64*, i64*, i32* }
+; CHECK: %mystruct = type { { %struct.c_localeid_t, i64* }, { %struct.c_localeid_t, i64* }, i32* }
 
 declare %mystruct* @.gf.addr.2(%mystruct addrspace(100)*) readnone
 declare i32 @.gf.node.2(%mystruct addrspace(100)*) readnone
@@ -21,27 +21,27 @@ declare %mystruct addrspace(100)* @.gf.make.2(%struct.c_localeid_t, %mystruct*) 
 
 
 define i64 addrspace(100)* @get_one(%mystruct addrspace(100)* %s) {
-; CHECK: i64* @get_one(%mystruct* %
+; CHECK: { %struct.c_localeid_t, i64* } @get_one({ %struct.c_localeid_t, %mystruct* } %
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: ret i64*
+; CHECK: ret { %struct.c_localeid_t, i64* }
 entry:
   %gep = getelementptr inbounds %mystruct, %mystruct addrspace(100)* %s, i32 0, i32 0
   %ptr = load i64 addrspace(100)*, i64 addrspace(100)* addrspace(100)* %gep
   ret i64 addrspace(100)* %ptr
 }
 define i64 addrspace(100)* @get_two(%mystruct addrspace(100)* %s) {
-; CHECK: i64* @get_two(%mystruct* %
+; CHECK: { %struct.c_localeid_t, i64* } @get_two({ %struct.c_localeid_t, %mystruct* }
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: ret i64*
+; CHECK: ret { %struct.c_localeid_t, i64* }
 entry:
   %gep = getelementptr inbounds %mystruct, %mystruct addrspace(100)* %s, i32 0, i32 1
   %ptr = load i64 addrspace(100)*, i64 addrspace(100)* addrspace(100)* %gep
   ret i64 addrspace(100)* %ptr
 }
 define i32* @get_three(%mystruct addrspace(100)* %s) {
-; CHECK: i32* @get_three(%mystruct* %
+; CHECK: i32* @get_three({ %struct.c_localeid_t, %mystruct* } %
 ; )
 ; CHECK-NOT: @.gf
 ; CHECK: ret i32*
@@ -52,7 +52,7 @@ entry:
 }
 
 define i64 @read_int(%mystruct addrspace(100)* %s) {
-; CHECK: i64 @read_int(%mystruct* %
+; CHECK: i64 @read_int({ %struct.c_localeid_t, %mystruct* } %
 ; )
 ; CHECK-NOT: @.gf
 ; CHECK: get
@@ -66,7 +66,7 @@ entry:
 }
 
 define void @write_int(%mystruct addrspace(100)* %s, i64 %v) {
-; CHECK: void @write_int(%mystruct* %
+; CHECK: void @write_int({ %struct.c_localeid_t, %mystruct* } %
 ; )
 ; CHECK-NOT: @.gf
 ; CHECK: put

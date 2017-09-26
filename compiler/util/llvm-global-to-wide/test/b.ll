@@ -11,48 +11,51 @@ declare %struct.c_localeid_t @.gf.loc.1(i64 addrspace(100)*) readnone
 declare i64 addrspace(100)* @.gf.make.1(%struct.c_localeid_t, i64*) readnone
 
 define i64* @testaddr(i64 addrspace(100)* %w) {
-; CHECK: @testaddr(i64* %
+; CHECK: @testaddr({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: wide_ptr_get_address
+; CHECK: %ret = extractvalue { %struct.c_localeid_t, i64* } %w, 1
 ; CHECK-NOT: @.gf
-; CHECK: ret i64*
+; CHECK: ret i64* %ret
 entry:
   %ret = call i64* @.gf.addr.1(i64 addrspace(100)* %w)
   ret i64* %ret
 }
 
 define i32 @testnode(i64 addrspace(100)* %w) {
-; CHECK: @testnode(i64* %
+; CHECK: @testnode({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: wide_ptr_get_node
+; CHECK: extractvalue { %struct.c_localeid_t, i64* } %w, 0, 0
 ; CHECK-NOT: @.gf
-; CHECK: ret i32
+; CHECK: ret i32 %ret
 entry:
   %ret = call i32 @.gf.node.1(i64 addrspace(100)* %w)
   ret i32 %ret
 }
 
 define %struct.c_localeid_t @testloc(i64 addrspace(100)* %w) {
-; CHECK: @testloc(i64* %
+; CHECK: @testloc({ %struct.c_localeid_t, i64* } %
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: wide_ptr_read_localeID
+; CHECK: %ret = extractvalue { %struct.c_localeid_t, i64* } %w, 0
 ; CHECK-NOT: @.gf
-; CHECK: ret %struct.c_localeid_t
+; CHECK: ret %struct.c_localeid_t %ret
 entry:
   %ret = call %struct.c_localeid_t @.gf.loc.1(i64 addrspace(100)* %w)
   ret %struct.c_localeid_t %ret
 }
 
 define i64 addrspace(100)* @testmake(%struct.c_localeid_t %loc, i64* %addr) {
-; CHECK: i64* @testmake(
+; CHECK: { %struct.c_localeid_t, i64* } @testmake(
 ; )
 ; CHECK-NOT: @.gf
-; CHECK: return_wide_ptr_loc
+; CHECK: insertvalue { %struct.c_localeid_t, i64* }
+; CHECK: %struct.c_localeid_t %loc, 0
+; CHECK: insertvalue { %struct.c_localeid_t, i64* }
+; CHECK: i64* %addr
 ; CHECK-NOT: @.gf
-; CHECK: ret i64*
+; CHECK: ret { %struct.c_localeid_t, i64* }
 entry:
   %ret = call i64 addrspace(100)* @.gf.make.1(%struct.c_localeid_t %loc, i64* %addr)
   ret i64 addrspace(100)* %ret

@@ -12,7 +12,7 @@ declare %struct.c_localeid_t @.gf.loc.1(i64 addrspace(100)*) readnone
 declare i64 addrspace(100)* @.gf.make.1(%struct.c_localeid_t, i64*) readnone
 
 %mystruct = type { i64 addrspace(100)*, i64 addrspace(100)*, i32 *}
-; CHECK: %mystruct = type { i64*, i64*, i32* }
+; CHECK: %mystruct = type { { %struct.c_localeid_t, i64* }, { %struct.c_localeid_t, i64* }, i32* }
 
 declare %mystruct* @.gf.addr.2(%mystruct addrspace(100)*) readnone
 declare i32 @.gf.node.2(%mystruct addrspace(100)*) readnone
