@@ -156,7 +156,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
 
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
-  type eltType = Scalars(1).type;
+  type eltType = x.type;
   return Vector(x, (...Scalars), eltType=eltType);
 }
 

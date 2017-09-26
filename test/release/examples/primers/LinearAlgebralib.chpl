@@ -94,7 +94,7 @@ a.shape; // (3, 5)
 writeln(a.eltType: string); // real(64)
 
 // Array type in format of:
-//   ``[domain(dimensions, index-type, stridable)] element-type``
+//   ``[domain(rank, index-type, stridable)] element-type``
 writeln(a.type: string); // [domain(2,int(64),false)] real(64)
 
 // Element-wise addition (and subtraction)
@@ -194,8 +194,9 @@ var v4 = Vector([0, 0, 0, 0, 0], eltType=real); // from a 1D array
 var v5 = Vector(0, 0, 0, 0, 0, eltType=real);   // from a list of values as arguments
 
 // If the ``eltType`` is omitted for the argument case, it will be inferred from
-// the first argument, as shown here:
+// the first argument. For example, this creates a vector of reals:
 var v6 = Vector(0.0, 0, 0, 0, 0);
+assert(v6.eltType == real);
 
 /*
   Matrices
@@ -281,8 +282,8 @@ var AdB = A.elementDiv(B);
 assert(AdB.rank == 2); // not flattened!
 
 // Taking the transpose of a matrix:
-transpose(M0);
-M0.T; // short-hand syntax
+var M0T = transpose(M0);
+M0T = M0.T; // short-hand syntax
 
 // Taking the transpose of a vector simply returns the vector because row and
 // column vectors are equivalent:
@@ -500,7 +501,7 @@ use LinearAlgebra.Sparse;
 /*
   The above sparse matrix is initialized with an empty domain, and the user
   has no way of accessing that domain. Therefore, it is not possible to add
-  indices to the sparse domain
+  indices to the sparse domain.
 
   Instead, users should interact with both the sparse domain and sparse array:
 */
@@ -539,6 +540,9 @@ var M2 = CSRMatrix({0..#3, 0..#3}); // from a dense domain
 var M3 = CSRMatrix(M1);             // From a CSR matrix
 const I = eye(3,3);
 var M4 = CSRMatrix(I);              // From a dense matrix
+                                    // Indices holding non-zero elements are 
+                                    // added to M4's sparse domain
+
 
 } // Factory functions scope
 
