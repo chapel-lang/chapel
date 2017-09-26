@@ -344,6 +344,7 @@ namespace {
     llvm::Type* ptrLocTy;
     llvm::Type* i64Ty;
     llvm::Type* i8Ty;
+    llvm::Type* sizeTy;
 
     // See llvmGlobalToWide.h for descriptions of these functions
     llvm::Constant* getFn;
@@ -373,6 +374,9 @@ namespace {
       i64Ty = llvm::Type::getInt64Ty(M.getContext());
       i8Ty = llvm::Type::getInt8Ty(M.getContext());
 
+      const DataLayout& DL = M.getDataLayout();
+      sizeTy = DL.getIntPtrType(M.getContext(), 0);
+
       assert(voidPtrTy);
       assert(wideVoidPtrTy);
 
@@ -380,7 +384,7 @@ namespace {
       if( ! getFn ) {
         getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                       voidPtrTy, nodeTy, voidPtrTy,
-                                      i64Ty, i64Ty
+                                      sizeTy, i64Ty
 #if HAVE_LLVM_VER < 50
                                       , NULL
 #endif
@@ -392,7 +396,7 @@ namespace {
       if( ! putFn ) {
         putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                       nodeTy, voidPtrTy, voidPtrTy,
-                                      i64Ty, i64Ty
+                                      sizeTy, i64Ty
 #if HAVE_LLVM_VER < 50
                                       , NULL
 #endif
@@ -405,7 +409,7 @@ namespace {
         getPutFn = M.getOrInsertFunction("chpl_gen_comm_getput_sym", voidTy,
                                          nodeTy, voidPtrTy,
                                          nodeTy, voidPtrTy,
-                                         i64Ty
+                                         sizeTy
 #if HAVE_LLVM_VER < 50
                                          , NULL
 #endif
@@ -417,7 +421,7 @@ namespace {
       if( ! memsetFn ) {
         memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
                                          nodeTy, voidPtrTy,
-                                         i8Ty, i64Ty
+                                         i8Ty, sizeTy
 #if HAVE_LLVM_VER < 50
                                          , NULL
 #endif
@@ -681,11 +685,18 @@ namespace {
             Value* node = createRnode(info, wAddr, oldLoad);
             Value* raddr = createRaddr(info, wAddr, oldLoad);
             Value* castRaddr = new BitCastInst(raddr, voidPtrTy, "", oldLoad);
+            Value* size = createSizeof(info, wLoadedTy);
+            {
+              // Convert size if necessary
+              IRBuilder<> builder(oldLoad);
+              size = builder.CreateZExtOrTrunc(size, sizeTy);
+            }
+
             Value* args[5];
             args[0] = castAlloc;
             args[1] = node;
             args[2] = castRaddr;
-            args[3] = createSizeof(info, wLoadedTy);
+            args[3] = size;
             args[4] = createLoadStoreControl(M, info, oldLoad->getOrdering(),
 #if HAVE_LLVM_VER >= 50
                                              oldLoad->getSyncScopeID()
@@ -753,12 +764,19 @@ namespace {
             Value* node = createRnode(info, wAddr, oldStore);
             Value* raddr = createRaddr(info, wAddr, oldStore);
             Value* castRaddr = new BitCastInst(raddr, voidPtrTy, "", oldStore);
+            Value* size = createSizeof(info, wStoredTy);
+            {
+              // Convert size if necessary
+              IRBuilder<> builder(oldStore);
+              size = builder.CreateZExtOrTrunc(size, sizeTy);
+            }
+
             // Now put from the alloc'd area
             Value* args[5];
             args[0] = node;
             args[1] = castRaddr;
             args[2] = castAlloc;
-            args[3] = createSizeof(info, wStoredTy);
+            args[3] = size;
             args[4] = createLoadStoreControl(M, info, oldStore->getOrdering(),
 #if HAVE_LLVM_VER >= 50
                                              oldStore->getSyncScopeID()
@@ -893,6 +911,11 @@ namespace {
               Value* gDst = call->getArgOperand(0);
               Value* gSrc = call->getArgOperand(1);
               Value* n = call->getArgOperand(2);
+              {
+                // Convert n if necessary
+                IRBuilder<> builder(call);
+                n = builder.CreateZExtOrTrunc(n, sizeTy);
+              }
 
               dstSpace = gDst->getType()->getPointerAddressSpace();
               srcSpace = gSrc->getType()->getPointerAddressSpace();
@@ -954,6 +977,11 @@ namespace {
               Value* gDst = call->getArgOperand(0);
               Value* c = call->getArgOperand(1);
               Value* n = call->getArgOperand(2);
+              {
+                // Convert n if necessary
+                IRBuilder<> builder(call);
+                n = builder.CreateZExtOrTrunc(n, sizeTy);
+              }
 
               Value* wDst = callGlobalToWideFn(gDst, call);
 

@@ -36,13 +36,17 @@
 //       atomic_ordering = loadOrStoreInst->getOrdering()
 
 static inline
-void chpl_gen_comm_get_ctl(void *dst_addr, c_nodeid_t src_node, void *src_addr, int64_t n, int64_t ctl)
+void chpl_gen_comm_get_ctl(void *dst_addr,
+                           c_nodeid_t src_node, void *src_addr,
+                           uintptr_t n, int64_t ctl)
 {
   chpl_gen_comm_get(dst_addr, src_node, src_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
 
 static inline
-void chpl_gen_comm_put_ctl(c_nodeid_t dst_node, void* dst_addr, void *src_addr, int64_t n, int64_t ctl)
+void chpl_gen_comm_put_ctl(c_nodeid_t dst_node, void* dst_addr,
+                           void *src_addr,
+                           uintptr_t n, int64_t ctl)
 {
   chpl_gen_comm_put(src_addr, dst_node, dst_addr, sizeof(uint8_t)*n, CHPL_TYPE_uint8_t, CHPL_COMM_UNKNOWN_ID, -1, 0);
 }
@@ -53,7 +57,8 @@ void chpl_gen_comm_put_ctl(c_nodeid_t dst_node, void* dst_addr, void *src_addr, 
 // dst and src regions could overlap.
 static inline
 void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
-                          c_nodeid_t src_node, void* src_addr, int64_t n)
+                          c_nodeid_t src_node, void* src_addr,
+                          uintptr_t n)
 {
   if (chpl_nodeID == dst_node && chpl_nodeID == src_node) {
     memmove(dst_addr, src_addr, n);
@@ -63,8 +68,8 @@ void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
     chpl_gen_comm_put_ctl(dst_node, dst_addr, src_addr, n, 0);
   } else {
     char buf[1024];
-    int64_t chunk;
-    int64_t i;
+    uintptr_t chunk;
+    uintptr_t i;
     for( i = 0; i < n; i += chunk) {
       chunk = n - i;
       if( chunk > sizeof(buf) ) chunk = sizeof(buf);
@@ -77,17 +82,18 @@ void chpl_gen_comm_getput(c_nodeid_t dst_node, void* dst_addr,
 }
 
 static inline
-void chpl_gen_comm_memset(c_nodeid_t dst_node, void* dst_addr, int8_t src, int64_t n)
+void chpl_gen_comm_memset(c_nodeid_t dst_node, void* dst_addr,
+                          int8_t src_byte, uintptr_t n)
 {
   if (chpl_nodeID == dst_node) {
-    memset(dst_addr, src, n);
+    memset(dst_addr, src_byte, n);
   } else {
     char buf[1024];
-    int64_t chunk;
-    int64_t i;
+    uintptr_t chunk;
+    uintptr_t i;
     size_t max = sizeof(buf);
     if( n < max ) max = n;
-    memset(buf, src, max);
+    memset(buf, src_byte, max);
 
     for( i = 0; i < n; i += chunk) {
       chunk = n - i;

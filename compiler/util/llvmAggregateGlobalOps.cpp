@@ -517,8 +517,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   LLVMContext& Context = StartInst->getContext();
 
   Type* int8Ty = Type::getInt8Ty(Context);
-  // TODO -- sizeTy should be the size of a pointer in addr space 0
-  Type* sizeTy = Type::getInt64Ty(Context);
+  Type* sizeTy = DL->getIntPtrType(Context, 0);
   Type* globalInt8PtrTy = int8Ty->getPointerTo(globalSpace);
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
