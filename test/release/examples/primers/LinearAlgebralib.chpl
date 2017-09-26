@@ -39,7 +39,7 @@ use LinearAlgebra;
   In Chapel, there are no ``Vector`` or ``Matrix`` types.
   Instead, vectors and matrices are represented as 1D and 2D native Chapel
   arrays, respectively. As a result, the terms *vector* and *1D array* are used
-  interchangably, as well as *matrix* and *2D array*.
+  interchangeably, as well as *matrix* and *2D array*.
 
   The following example demonstrates this:
 
