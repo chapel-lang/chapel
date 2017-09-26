@@ -476,8 +476,6 @@ use LinearAlgebra.Sparse;
   :ref:`Sparse Primer <primers-sparse>`.
 */
 
-// Cr
-
 /*
   Factory Functions
   ~~~~~~~~~~~~~~~~~
