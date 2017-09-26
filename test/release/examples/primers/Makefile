@@ -24,6 +24,7 @@ TARGETS = \
 	randomNumbers \
 	ranges \
 	reductions \
+	replicated \
 	slices \
 	sparse \
 	syncsingle \
