@@ -25,18 +25,18 @@ longerComments.doc
 
 .. function:: proc body()
 
-   This is a comment for method with a body 
+   This is a comment for a function with a body 
    which lies outside of a defined module 
 
 .. function:: proc hasArg(val: int)
 
-   This is a comment for method with an 
+   This is a comment for a function with an 
    argument which lies outside of a defined
    module 
 
 .. function:: proc argAndBody(val: int)
 
-   This is a comment for method with an
+   This is a comment for a function with an
    argument and body which lies outside of a
    defined module 
 
@@ -54,21 +54,21 @@ Other
 
 .. function:: proc inside
 
-   This is a comment for a method inside of
+   This is a comment for a function inside of
    a module 
 
 .. function:: proc body()
 
-   This is a comment for a method with a body 
+   This is a comment for a function with a body 
    inside of a module 
 
 .. function:: proc hasArg(val: int)
 
-   This is a comment for a method with an 
+   This is a comment for a function with an 
    argument inside of a module 
 
 .. function:: proc argAndBody(val: int)
 
-   This is a comment for a method with an 
+   This is a comment for a function with an 
    argument and body inside of a module 
 

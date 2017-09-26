@@ -1,7 +1,7 @@
 .. default-domain:: chpl
 
 .. module:: main
-   :synopsis: This is the only valid doc string in this modules. 
+   :synopsis: This is the only valid doc string in this module. 
 
 main
 ====
@@ -11,7 +11,7 @@ main
 
    use main;
 
-This is the only valid doc string in this modules. 
+This is the only valid doc string in this module. 
 
 .. function:: proc foo()
 
