@@ -260,6 +260,32 @@ propagating the error out of the function as described above.
     }
   }
 
+.. _technote-errorHandling-defer:
+
+``defer``
+---------
+
+When an error is thrown, it is sometimes necessary to clean up state and
+allocated memory. ``defer`` statements facilitate that by running when a
+scope is exited, regardless of how it is exited.
+
+.. code-block:: chapel
+
+  proc deferredDelete(i: int) {
+    try {
+      var huge = allocateLargeObject();
+      defer {
+        delete huge;
+        writeln("huge has been deleted");
+      }
+
+      canThrow(i);
+      processObject(huge);
+    } catch {
+      writeln("no memory leaks");
+    }
+  }
+
 .. _technote-errorHandling-methods:
 
 Methods
