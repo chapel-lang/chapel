@@ -4,37 +4,34 @@ Release Changes List
 version 1.16.0
 ==============
 
-Nineteenth public release of Chapel, October 4, 2017
+Nineteenth public release of Chapel, October 5, 2017
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * tool / configuration highlights:
   - added an initial version of 'Mason', Chapel's package manager
-  - added a new 'c2chapel' tool that creates Chapel extern decls from C headers
+  - added a new 'c2chapel' tool that simplifies interoperability with C
   - 'chpl' executable names now take the main module's name instead of 'a.out'
   - added a 'configure'/'make install' option for building+installing Chapel
 * language improvements:
-  - significantly improved the implementation of initializers
-  - significantly improved the implementation of error-handling
+  - significantly improved support for user-defined initializers
+  - dramatically improved error-handling, particularly across locales and tasks
   - added a 'defer' statement to aid with cleanup
-  - added support for 'try'/'try!' expressions
   - made reduce intents preserve the reduction variable's initial value
-  - added a 'prototype' keyword to relax checks for explicit modules
 * standard library/package modules:
   - added support for a new 'Crypto' module based on OpenSSL
   - added new 'Collection' modules, 'DistributedBag' and 'DistributedDeque'
-  - added support for an experimental 'TOML' module
   - added support for a distributed guided and dynamic iterators
+  - added support for an experimental 'TOML' module
   - improved support for mixing MPI with ugni, gasnet/aries, and/or qthreads
-  - improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
   - continued to improve the 'LinearAlgebra' module
+  - improved Chapel-Python interoperability for the 'ZMQ' (ZeroMQ) module
   - converted many library routines to 'throw' in the event of errors
 * performance improvements:
   - added support for dynamic array registration with the network stack
   - significantly improved the ability of the LLVM back-end to optimize Chapel
-  - reduced the amount of locking used for associative array accesses
   - added the ability to serialize records, permitting local copy optimizations
-  - closed a few library-based memory leaks
+  - reduced the amount of locking used for associative array accesses
 * array / domain / domain map improvements:
   - generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
   - improved the locality properties of sparse Block-distributed domains/arrays
