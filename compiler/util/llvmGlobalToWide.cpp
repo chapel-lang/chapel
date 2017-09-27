@@ -1484,7 +1484,7 @@ namespace {
             dbgs() << "verifying new function after pass one: ";
             dbgs().write_escaped(NF->getName()) << '\n';
             NF->print(dbgs(), nullptr, false, true);
-	    dbgs() << '\n';
+            dbgs() << '\n';
           }
           if( extraChecks ) {
 #if HAVE_LLVM_VER >= 35

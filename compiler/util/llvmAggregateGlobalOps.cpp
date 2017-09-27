@@ -226,13 +226,13 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
       if( DebugThis ) {
         dbgs() << "found load/store: ";
         insn->print(dbgs(), true);
-	dbgs() << '\n';
+        dbgs() << '\n';
       }
     } else if( memopsUses.count(insn) ) {
       if( DebugThis ) {
         dbgs() << "found memop use: ";
         insn->print(dbgs(), true);
-	dbgs() << '\n';
+        dbgs() << '\n';
       }
       // Move uses of memops to after the final memop.
       insn->removeFromParent();
