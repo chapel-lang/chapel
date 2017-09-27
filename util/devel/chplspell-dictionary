@@ -3221,6 +3221,7 @@ umiacs
 univie
 
 FILEID: 515baeda-2ada-11e6-a3a6-10ddb1d4c3d5
+algebralib
 binarytrees
 chpldocumentation
 circularities
@@ -3231,6 +3232,7 @@ illumos
 librt
 memkind
 nomail
+parentlocid
 pshm
 stdinredirect
 structors
@@ -5959,6 +5961,7 @@ outfile
 outputfile
 overcommitted
 overlining
+overloadable
 overridable
 oversubscription
 padmanabhan
