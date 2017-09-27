@@ -21,7 +21,7 @@ Highlights (see subsequent sections for further details)
 * standard library/package modules:
   - added support for a new 'Crypto' module based on OpenSSL
   - added new 'Collection' modules, 'DistributedBag' and 'DistributedDeque'
-  - added support for a distributed guided and dynamic iterators
+  - added support for distributed guided and dynamic iterators
   - added support for an experimental 'TOML' module
   - improved support for mixing MPI with ugni, gasnet/aries, and/or qthreads
   - continued to improve the 'LinearAlgebra' module
@@ -29,16 +29,16 @@ Highlights (see subsequent sections for further details)
   - converted many library routines to 'throw' in the event of errors
 * performance improvements:
   - significantly improved the ability of the LLVM back-end to optimize Chapel
-  - added the ability to serialize records, permitting local copy optimizations
-  - added support for dynamic array registration with the network for 'ugni'
+  - added support for serializing records across locales to cache local copies
+  - started registering arrays dynamically for 'ugni' to improve NUMA locality
   - reduced the amount of locking used for associative array accesses
 * array / domain / domain map improvements:
-  - generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+  - generalized 'LayoutCSR' to 'LayoutCS' to support CSR and CSC sparse layouts
   - improved the locality properties of sparse Block-distributed domains/arrays
-  - improved the locality of distributed rank-change and reindex expressions
+  - improved the locality of distributed rank-change and reindex operations
   - improved the behavior and power of the 'Replicated' distribution
 * other improvements:
-  - various improvements for working with C pointers and memory
+  - various interoperability improvements for working with C pointers and memory
   - various improvements for the 'ugni' communication layer on Cray systems
   - numerous bug fixes, error message improvements, and third-party updates
 
@@ -53,7 +53,7 @@ New Dependences / Configuration Changes
 
 New Tools / Tool Changes
 ------------------------
-* added an initial version of 'Mason' v0.1.0, Chapel's package manager
+* added an initial version of 'Mason', Chapel's package manager
   (see http://chapel.cray.com/docs/1.16/tools/mason/mason.html)
 * added a new 'c2chapel' tool that converts C headers to Chapel extern decls
   (see http://chapel.cray.com/docs/1.16/tools/c2chapel/c2chapel.html)
@@ -114,7 +114,7 @@ Removed Features
 ----------------
 * removed support for the deprecated '=>' operator for creating array aliases
 * removed support for deprecated 'RandomStream' constructors
-* retired support for the deprecated CHPL_TASKS=muxed runtime option
+* retired support for the deprecated CHPL_TASKS=muxed runtime configuration
 
 Standard Modules/Library
 ------------------------
@@ -147,7 +147,7 @@ Package Modules
   (see http://chapel.cray.com/docs/1.16/modules/packages/Collection.html,
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedBag.html, and
    http://chapel.cray.com/docs/1.16/modules/packages/DistributedDeque.html)
-* added support for a distributed guided and dynamic iterators
+* added support for distributed guided and dynamic iterators
   (see http://chapel.cray.com/docs/1.16/modules/packages/DistributedIters.html)
 * added support for a new 'TOML' module (not 100% feature complete)
   (see $CHPL_HOME/modules/packages/TOML.chpl)
@@ -163,7 +163,7 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
-* generalized LayoutCSR to LayoutCS to support CSR and CSC sparse layouts
+* generalized 'LayoutCSR' to 'LayoutCS' to support CSR and CSC sparse layouts
   (see http://chapel.cray.com/docs/1.16/modules/layouts/LayoutCS.html)
 * normalized the ReplicatedDist distribution and renamed it to 'Replicated'
   (see http://chapel.cray.com/docs/1.16/modules/dists/ReplicatedDist.html
@@ -197,7 +197,7 @@ Performance Optimizations/Improvements
 * automatically inline iterators that have multiple yields (10 by default)
 * improved the performance of dynamic casting / subclass checks
 * improved wide-pointer analysis for 'const ref' arguments
-* optimized away some wide pointer overheads in 'Block' and 'Stencil'
+* reduced wide pointer overheads for 'Block' and 'Stencil' distributions
 * fixed bugs in counting tasks and creating the right number of new tasks
 * added support for parallel array initialization for arrays of POD eltTypes
 * optimized the implementation of updateFluff() on the Stencil distribution
@@ -278,7 +278,7 @@ Portability
 
 Cray-specific Changes
 ---------------------
-* registered arrays dynamically for 'ugni' to improve NUMA locality
+* started registering arrays dynamically for 'ugni' to improve NUMA locality
 * optimized strided puts and gets for CHPL_COMM=ugni
 * split large transfers for CHPL_COMM=ugni
 * reduced the default heap size for CHPL_COMM=ugni
