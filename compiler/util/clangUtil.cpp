@@ -33,6 +33,7 @@
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
 #include "clang/CodeGen/BackendUtil.h"
+#include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
@@ -95,7 +96,7 @@ using namespace llvm;
 #include "llvmDumpIR.h"
 
 // These are headers internal to clang. Need to be able to:
-// 1. Get the LLVM type for a C typedef (say)
+// 1. Get the LLVM type for a C typedef (say)  -- not needed after LLVM 5
 // 2. Get the GEP offset for a field in a C record by name
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
@@ -1159,7 +1160,12 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder) {
 
   if (opts.OptimizationLevel > 1)
     PMBuilder.Inliner = createFunctionInliningPass(opts.OptimizationLevel,
-                                                   opts.OptimizeSize);
+                                                   opts.OptimizeSize
+#if HAVE_LLVM_VER >= 50
+                                                   , /*DisableInlineHotCalsite*/
+                                                   false
+#endif
+                                                  );
 
   PMBuilder.OptLevel = opts.OptimizationLevel;
   PMBuilder.SizeLevel = opts.OptimizeSize;
@@ -1597,45 +1603,11 @@ llvm::Type* codegenCType(const TypeDecl* td)
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
-  // TODO: should be in clang::CodeGenerator API
+#if HAVE_LLVM_VER >= 50
+  return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
+#else
   return cCodeGen->CGM().getTypes().ConvertTypeForMem(qType);
-
-  /*
-    I wish that clang::CodeGenerator had a way to generate llvm types
-    based upon a Clang Type decl, but that doesn't seem to exist
-    today.
-
-    Here is a start at a workaround.
-
-      INT_ASSERT(savedCtx);
-
-      static int i = 0;
-      std::string name = "_dummy_gettype_";
-      name += i;
-      i++;
-
-      VarDecl* VD = clang::VarDecl::Create(*savedCtx,
-                                           savedCtx->getTranslationUnitDecl(),
-                                           SourceLocation(),
-                                           SourceLocation(),
-                                           &savedCtx->Idents.get(name),
-                                           qType,
-                                           nullptr,
-                                           SC_Static);
-
-      GlobalDecl GD(VD);
-
-      // Buidler->HandleTopLevelDecl ?
-
-      llvm::Constant* c = Builder->GetAddrOfGlobal(GD, true);
-
-      printf("Generated type\n");
-      qType.dump();
-      c->getType()->dump();
-
-      return c->getType();
-      */
-
+#endif
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
