@@ -1466,17 +1466,27 @@ namespace {
 
         if (update_return) {
           // if it's no longer a pointer, remove pointer-based attributes
+#if HAVE_LLVM_VER >= 50
+          NF->removeAttributes(AttributeList::ReturnIndex,
+                               AttributeFuncs::typeIncompatible(RetTy));
+#else
           NF->removeAttributes(AttributeSet::ReturnIndex,
                                AttributeSet::get(NF->getContext(),
                                  AttributeSet::ReturnIndex,
                                  AttributeFuncs::typeIncompatible(RetTy)));
+#endif
         }
         if (update_parameters) {
           for (size_t i = 0; i < Params.size(); i++ ) {
+#if HAVE_LLVM_VER >= 50
+            NF->removeAttributes(i+1,
+                                 AttributeFuncs::typeIncompatible(Params[i]));
+#else
             NF->removeAttributes(i+1,
                 AttributeSet::get(NF->getContext(),
                                   i+1,
                                   AttributeFuncs::typeIncompatible(Params[i])));
+#endif
           }
         }
 
