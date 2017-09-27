@@ -132,10 +132,6 @@ struct ClangInfo {
   llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags;
 
   clang::CompilerInstance *Clang;
-  // We get these out of the compiler instance
-  // before delete'ing it.
-  clang::TargetOptions clangTargetOptions;
-  clang::LangOptions clangLangOptions;
 
   // Once we get to code generation....
   clang::ASTContext *Ctx;
@@ -179,7 +175,6 @@ ClangInfo::ClangInfo(
          DiagID(NULL),
          Diags(NULL),
          Clang(NULL),
-         clangTargetOptions(), clangLangOptions(),
          Ctx(NULL),
          cCodeGen(NULL), cCodeGenAction(NULL),
          asmTargetLayoutStr()
@@ -957,21 +952,6 @@ void setupClang(GenInfo* info, std::string mainFile)
 #endif
   }
 
-  // Save the TargetOptions and LangOptions since these
-  // are used during machine code generation.
-  clangInfo->clangTargetOptions = clangInfo->Clang->getTargetOpts();
-
-  // For debugging, it might be useful to check that
-  // the target architecture has the right features
-  // (it has been detected correctly).
-  /*std::vector<std::string> x = clangInfo->clangTargetOptions.FeaturesAsWritten;
-  printf("target features\n");
-  for (auto  i : x) {
-    printf("%s\n", i.c_str());
-  }*/
-
-  clangInfo->clangLangOptions = clangInfo->Clang->getLangOpts();
-
   // Create the compilers actual diagnostics engine.
 #if HAVE_LLVM_VER >= 33
   clangInfo->Clang->createDiagnostics();
@@ -980,6 +960,44 @@ void setupClang(GenInfo* info, std::string mainFile)
 #endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
+
+  // Set llvm options
+  {
+    std::vector<std::string> vec;
+
+    // Start with any -mllvm options from the Clang invocation
+    auto clangMLLVM = CI->getFrontendOpts().LLVMArgs;
+    for (auto & arg : clangMLLVM) {
+      vec.push_back(arg);
+    }
+
+    // Then add any from --mllvm passed to Chapel
+    if (llvmFlags != "") {
+      //split llvmFlags by spaces
+      std::stringstream argsStream(llvmFlags);
+      std::string arg;
+      while(argsStream >> arg)
+        vec.push_back(arg);
+    }
+
+    std::vector<const char*> Args;
+    Args.push_back("chpl-llvm-opts");
+    for (auto & i : vec) {
+      Args.push_back(i.c_str());
+    }
+    Args.push_back(NULL);
+
+    if (printSystemCommands) {
+      printf("# parsing llvm command line options: ");
+      for (auto arg : Args) {
+        if (arg != NULL)
+          printf(" %s", arg);
+      }
+      printf("\n");
+    }
+
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
 }
 
 static void setupModule()
@@ -1022,9 +1040,7 @@ static void setupModule()
               Triple.str().c_str(), Err.c_str());
 
 
-  const clang::TargetOptions & ClangOpts = clangInfo->clangTargetOptions;
-  //clang::TargetOptions &ClangOpts =
-  //  clangInfo->Ctx->getTargetInfo().getTargetOpts();
+  const clang::TargetOptions & ClangOpts = clangInfo->Clang->getTargetOpts();
 
   std::string cpu = ClangOpts.CPU;
   std::vector<std::string> clangFeatures = ClangOpts.Features;
@@ -1036,6 +1052,9 @@ static void setupModule()
     featuresString = features.getString();
   }
 
+  if (printSystemCommands) {
+    printf("# target features %s\n", featuresString.c_str());
+  }
 
   // Set up the TargetOptions
   llvm::TargetOptions targetOptions;
@@ -2272,25 +2291,6 @@ void makeBinaryLLVM(void) {
       llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
       printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
 #endif
-
-  // Set llvm options
-  if (llvmFlags != "") {
-    //split llvmFlags by spaces
-    std::stringstream argsStream(llvmFlags);
-    std::vector<std::string> vec;
-    std::string arg;
-    while(argsStream >> arg)
-        vec.push_back(arg);
-
-    std::vector<const char*> Args;
-    Args.push_back("chpl-llvm-opts");
-    for (auto & i : vec) {
-      Args.push_back(i.c_str());
-    }
-    Args.push_back(NULL);
-
-    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
-  }
 
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
