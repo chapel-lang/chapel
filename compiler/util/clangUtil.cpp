@@ -38,8 +38,12 @@
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
 
-#include "llvm/Transforms/IPO.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/MC/SubtargetFeature.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/IPO.h"
 
 #endif
 
@@ -969,7 +973,6 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->clangLangOptions = clangInfo->Clang->getLangOpts();
 
   // Create the compilers actual diagnostics engine.
-  // Create the compilers actual diagnostics engine.
 #if HAVE_LLVM_VER >= 33
   clangInfo->Clang->createDiagnostics();
 #else
@@ -999,8 +1002,10 @@ static void setupModule()
   clangInfo->asmTargetLayoutStr = clangInfo->Clang->getTarget().getTargetDescription();
 #endif
 
-  info->module->setTargetTriple(
-        clangInfo->Clang->getTarget().getTriple().getTriple());
+  // Set the target triple.
+  const llvm::Triple &Triple =
+    clangInfo->Clang->getTarget().getTriple();
+  info->module->setTargetTriple(Triple.getTriple());
 
   // Always set the module layout. This works around an apparent bug in
   // clang or LLVM (trivial/deitz/test_array_low.chpl would print out the
@@ -1008,6 +1013,76 @@ static void setupModule()
   info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
 
   adjustLayoutForGlobalToWide();
+
+  // Set the TargetMachine
+  std::string Err;
+  const llvm::Target* Target = TargetRegistry::lookupTarget(Triple.str(), Err);
+  if (!Target)
+    USR_FATAL("Could not find LLVM target for %s: %s",
+              Triple.str().c_str(), Err.c_str());
+
+
+  const clang::TargetOptions & ClangOpts = clangInfo->clangTargetOptions;
+  //clang::TargetOptions &ClangOpts =
+  //  clangInfo->Ctx->getTargetInfo().getTargetOpts();
+
+  std::string cpu = ClangOpts.CPU;
+  std::vector<std::string> clangFeatures = ClangOpts.Features;
+  std::string featuresString;
+  if (!clangFeatures.empty()) {
+    llvm::SubtargetFeatures features;
+    for (const std::string &feature : clangFeatures)
+      features.AddFeature(feature);
+    featuresString = features.getString();
+  }
+
+
+  // Set up the TargetOptions
+  llvm::TargetOptions targetOptions;
+  targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
+
+  if (ffloatOpt) {
+    // see also FastMathFlags FM.setUnsafeAlgebra etc
+    targetOptions.UnsafeFPMath = 1;
+    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    targetOptions.NoNaNsFPMath = 1;
+    targetOptions.NoInfsFPMath = 1;
+    //targetOptions.NoSignedZerosFPMath = 1;
+    // we could also consider:
+    // NoTrappingFPMath, HonorSignDependentRoundingFPMathOption
+  }
+
+  if (!fFastFlag)
+    targetOptions.EnableFastISel = 1;
+  else {
+    // things to consider:
+    // EnableIPRA  -- InterProcedural Register Allocation (IPRA).
+    // GuaranteedTailCallOpt -- guarantee tail call opt (may change fn ABI)
+  }
+
+  llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
+  // TODO: we may need to use Reloc::PIC_ once we start
+  // interpreting, etc.
+
+  // Choose the code model
+  llvm::CodeModel::Model codeModel = llvm::CodeModel::Default;
+
+  llvm::CodeGenOpt::Level optLevel =
+    fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
+
+  // Create the target machine.
+  info->targetMachine = Target->createTargetMachine(Triple.str(),
+                                                    cpu,
+                                                    featuresString,
+                                                    targetOptions,
+                                                    relocModel,
+                                                    codeModel,
+                                                    optLevel);
+
+
+
+  // TODO: set a module flag with the Chapel ABI version
+  //   m->addModuleFlag(llvm::Module::Error, "Chapel Version", unsigned);
 
   // Also setup some basic TBAA metadata nodes.
   llvm::LLVMContext& cx = info->module->getContext();
@@ -1094,6 +1169,10 @@ void prepareCodegenLLVM()
 
   // Set up the optimizer pipeline.
 
+  // Add the TransformInfo pass
+  fpm->add(createTargetTransformInfoWrapperPass(
+           info->targetMachine->getTargetIRAnalysis()));
+
   // Add the TargetLibraryInfo pass
   Triple TargetTriple(info->module->getTargetTriple());
   llvm::TargetLibraryInfoImpl TLII(TargetTriple);
@@ -1108,6 +1187,7 @@ void prepareCodegenLLVM()
 
   if(ffloatOpt == 1)
   {
+    // see also targetOptions.UnsafeFPMath etc
     llvm::FastMathFlags FM;
     FM.setNoNaNs();
     FM.setNoInfs();
@@ -2107,18 +2187,13 @@ void makeBinaryLLVM(void) {
     output.os().flush();
   }
 
-#if HAVE_LLVM_VER >= 39
-  std::error_code Error;
-#else
-  tool_output_file output (moduleFilename.c_str(),
-                           errorInfo,
-#if HAVE_LLVM_VER >= 34
-                             sys::fs::F_None
-#else
-                             raw_fd_ostream::F_Binary
-#endif
-                           );
-#endif
+  // Open the output file
+  std::error_code error;
+  llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
+
+  llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
+  if (error || outputOfile.has_error())
+    USR_FATAL("Could not open output file %s", moduleFilename.c_str());
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -2167,26 +2242,36 @@ void makeBinaryLLVM(void) {
   PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
   PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
 
-  // Run optimization
+  // Setup for and run LLVM optimization passes
+  {
+    adjustLayoutForGlobalToWide();
 
-  adjustLayoutForGlobalToWide();
+    llvm::legacy::PassManager mpm;
 
-  llvm::legacy::PassManager *mpm = new llvm::legacy::PassManager();
+    // Add the TransformInfo pass
+    mpm.add(createTargetTransformInfoWrapperPass(
+            info->targetMachine->getTargetIRAnalysis()));
 
-  // Add the TargetLibraryInfo pass
-  Triple TargetTriple(info->module->getTargetTriple());
-  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
-  mpm->add(new TargetLibraryInfoWrapperPass(TLII));
+    // Add the TargetLibraryInfo pass
+    Triple TargetTriple(info->module->getTargetTriple());
+    llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+    mpm.add(new TargetLibraryInfoWrapperPass(TLII));
 
-  PMBuilder.populateModulePassManager(*mpm);
+    PMBuilder.populateModulePassManager(mpm);
 
-  mpm->run(*info->module);
+    // Run the optimizations now!
+    mpm.run(*info->module);
 
-  delete mpm;
+    // Reset the data layout.
+    info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+  }
 
-  // Reset the data layout.
-  // Note that EmitBackendOutput does this no matter what we do.
-  info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+  // Handle --llvm-print-ir-stage=full
+#ifdef HAVE_LLVM
+  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
+      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
+#endif
 
   // Set llvm options
   if (llvmFlags != "") {
@@ -2207,48 +2292,25 @@ void makeBinaryLLVM(void) {
     llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
   }
 
-  // Note that EmitBackendOutput, when creating a .bc file,
-  // does *not* run vectorization. We confirmed this with clang 3.7
-  // with --save-temps (the resulting .bc file does not contain vector IR
-  // but the resulting .o file has vectorized loops).
-  //
-  // Note, as of LLVM/clang 4.0, we can call EmitBitcode
-  // and have a simpler story here...
-  EmitBackendOutput(*clangInfo->Diags,
-#if HAVE_LLVM_VER >= 40
-                    clangInfo->Clang->getHeaderSearchOpts(),
-#endif
-                    clangInfo->codegenOptions,
-                    clangInfo->clangTargetOptions, clangInfo->clangLangOptions,
-#if HAVE_LLVM_VER >= 39
-                    info->module->getDataLayout(),
-#elif HAVE_LLVM_VER >= 38
-                    clangInfo->Ctx->getTargetInfo().getDataLayoutString(),
-#else
-#if HAVE_LLVM_VER >= 35
-                    clangInfo->Ctx->getTargetInfo().getTargetDescription(),
-#endif
-#endif
-                    info->module, Backend_EmitObj,
-#if HAVE_LLVM_VER >= 39
-                    llvm::make_unique<llvm::raw_fd_ostream>(
-                                                 moduleFilename,
-                                                 Error,
-                                                 llvm::sys::fs::F_None)
-#else
-                    &output.os()
-#endif
-                   );
+  // Emit the .o file for linking with clang
+  // Setup and run LLVM passes to emit a .o file to outputOfile
+  {
+    llvm::legacy::PassManager emitPM;
 
-#if HAVE_LLVM_VER >= 39
-  if (Error)
-    USR_FATAL("Could not create temporary .bc file");
-#endif
+    emitPM.add(createTargetTransformInfoWrapperPass(
+               info->targetMachine->getTargetIRAnalysis()));
 
-#if HAVE_LLVM_VER <= 38
-  output.keep();
-  output.os().flush();
-#endif
+    llvm::TargetMachine::CodeGenFileType FileType =
+      llvm::TargetMachine::CGFT_ObjectFile;
+    bool disableVerify = ! developer;
+    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                             FileType,
+                                             disableVerify);
+
+    // Run the passes to emit the .o file now!
+    emitPM.run(*info->module);
+    outputOfile.close();
+  }
 
   //finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
@@ -2391,11 +2453,6 @@ void makeBinaryLLVM(void) {
 
   mysystem(makecmd, "Make Binary - Building Launcher and Copying");
 
-#ifdef HAVE_LLVM
-  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum) && llvmPrintIrCName != NULL)
-      printLlvmIr(getFunctionLLVM(llvmPrintIrCName), llvmStageNum::FULL);
-#endif
 }
 
 #endif

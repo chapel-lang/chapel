@@ -87,6 +87,7 @@ struct GenInfo {
   // Once we get to code generation....
   llvm::Module *module;
   llvm::IRBuilder<> *builder;
+  llvm::TargetMachine* targetMachine;
 
   std::stack<LoopData> loopStack;
 
