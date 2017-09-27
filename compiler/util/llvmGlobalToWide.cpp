@@ -43,6 +43,7 @@
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
@@ -498,7 +499,7 @@ namespace {
     void fixInstruction(Instruction* insn)
     {
       if( debugPassTwo ) {
-        errs() << " atf|" << *insn << "|" << "\n";
+        dbgs() << " atf|" << *insn << "|" << "\n";
       }
 
       // First, check to see if the instruction operates on
@@ -517,7 +518,7 @@ namespace {
       if( isaGlobalPointer(info, insn->getType()) ) needsWork = true;
 
       if( ! needsWork ) {
-        if( debugPassTwo ) errs() << " okf|" << *insn << "|" << "\n";
+        if( debugPassTwo ) dbgs() << " okf|" << *insn << "|" << "\n";
         return;
       }
 
@@ -1233,9 +1234,9 @@ namespace {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
-        errs() << "GlobalToWide: ";
-        errs().write_escaped(M.getModuleIdentifier()) << '\n';
-        errs().write_escaped(M.getTargetTriple()) << '\n';
+        dbgs() << "GlobalToWide: ";
+        dbgs().write_escaped(M.getModuleIdentifier()) << '\n';
+        dbgs().write_escaped(M.getTargetTriple()) << '\n';
       }
 
       // Normally we expect a user of this optimization to have
@@ -1390,9 +1391,9 @@ namespace {
         }
 
         if( debugPassOne ) {
-          errs() << "==================================== start pass one\n";
-          errs() << "starting pass one with function ";
-          errs().write_escaped(F->getName()) << '\n';
+          dbgs() << "==================================== start pass one\n";
+          dbgs() << "starting pass one with function ";
+          dbgs().write_escaped(F->getName()) << '\n';
         }
 
         // skip the special functions like wideToGlobal
@@ -1433,8 +1434,8 @@ namespace {
         if( debugPassOne ) {
           // Wait until we have converted the argument types since
           // we might rename them... before dumping the fn.
-          F->dump();
-          errs() << "-----------------------------\n";
+          F->print(dbgs(), nullptr, false, true);
+          dbgs() << "\n-----------------------------\n";
         }
 
         // if we don't need to update the function's return value or at least
@@ -1646,9 +1647,10 @@ namespace {
 
           // DEBUG: verify function
           if( debugPassOne ) {
-            errs() << "verifying new function after pass one: ";
-            errs().write_escaped(NF->getName()) << '\n';
-            NF->dump();
+            dbgs() << "verifying new function after pass one: ";
+            dbgs().write_escaped(NF->getName()) << '\n';
+            NF->print(dbgs(), nullptr, false, true);
+            dbgs() << '\n';
           }
           if( extraChecks ) {
 #if HAVE_LLVM_VER >= 35
@@ -1662,7 +1664,7 @@ namespace {
         F->eraseFromParent();
 
         if( debugPassOne ) {
-          errs() << "==================================== end pass one fn\n";
+          dbgs() << "==================================== end pass one fn\n";
         }
       }
 
@@ -1775,10 +1777,13 @@ namespace {
         if( F->begin() == F->end() ) continue;
 
         if( debugPassTwo ) {
-          errs() << "Pass 2.1 to function ---------- ";
-          errs().write_escaped(F->getName()) << '\n';
-          if( debugPassTwo ) F->dump();
-          errs() << "-----------------------------\n";
+          dbgs() << "Pass 2.1 to function ---------- ";
+          dbgs().write_escaped(F->getName()) << '\n';
+          if( debugPassTwo ) {
+            F->print(dbgs(), nullptr, false, true);
+            dbgs() << '\n';
+          }
+          dbgs() << "-----------------------------\n";
         }
 
         /*
@@ -1844,11 +1849,11 @@ namespace {
         }
 
         if( debugPassTwo ) {
-          errs() << "After rewriting global ops, function is: ";
-          errs().write_escaped(F->getName()) << '\n';
-          F->dump();
-          errs() << "-----------------------------\n";
-          errs() << "Now pass 2.2 mapping w2g and g2w: \n";
+          dbgs() << "After rewriting global ops, function is: ";
+          dbgs().write_escaped(F->getName()) << '\n';
+          F->print(dbgs(), nullptr, false, true);
+          dbgs() << "\n-----------------------------\n";
+          dbgs() << "Now pass 2.2 mapping w2g and g2w: \n";
         }
 
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
@@ -1881,7 +1886,7 @@ namespace {
         }
 
         if( debugPassTwo ) {
-          errs() << "Now pass 2.3 remapping instructions\n";
+          dbgs() << "Now pass 2.3 remapping instructions\n";
         }
 
         for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
@@ -1913,7 +1918,7 @@ namespace {
         Junk.clear();
 
         if( debugPassTwo ) {
-          errs() << "AFTER PASS 2 the function is:\n";
+          dbgs() << "AFTER PASS 2 the function is:\n";
 
           for (Function::iterator BI = F->begin(), BE = F->end(); BI != BE; ) {
             BasicBlock& BBRef = *BI;
@@ -1921,13 +1926,13 @@ namespace {
             ++BI;
 
             if( debugPassTwo ) {
-              errs() << BB->getName() << ":\n";
+              dbgs() << BB->getName() << ":\n";
             }
 
             for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
               Instruction *insn = &*I;
               ++I;
-              errs() << "    |" << *insn << "|" << "\n";
+              dbgs() << "    |" << *insn << "|" << "\n";
             }
           }
         }

@@ -49,6 +49,7 @@
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
@@ -200,11 +201,15 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
     // Leave loads/stores where they are (they will be removed)
     if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
       if( DebugThis ) {
-        errs() << "found load/store: "; insn->dump();
+        dbgs() << "found load/store: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
     } else if( memopsUses.count(insn) ) {
       if( DebugThis ) {
-        errs() << "found memop use: "; insn->dump();
+        dbgs() << "found memop use: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
       // Move uses of memops to after the final memop.
       insn->removeFromParent();
@@ -212,7 +217,9 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
       LastMemopUse = insn;
     } else {
       if( DebugThis ) {
-        errs() << "found other: "; insn->dump();
+        dbgs() << "found other: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
       // Move addressing instructions to before the first memop.
       insn->removeFromParent();
@@ -610,8 +617,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     StartPtr = Range.StartPtr;
 
     if( DebugThis ) {
-      errs() << "base is:";
-      StartPtr->dump();
+      dbgs() << "base is:";
+      StartPtr->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
     // Determine alignment
@@ -639,8 +647,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         if( DebugThis ) {
-          errs() << "have store in range:";
-          oldStore->dump();
+          dbgs() << "have store in range:";
+          oldStore->print(dbgs(), true);
+          dbgs() << '\n';
         }
 
         int64_t offset = 0;
@@ -722,8 +731,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         if( DebugThis ) {
-          errs() << "have load in range:";
-          oldLoad->dump();
+          dbgs() << "have load in range:";
+          oldLoad->print(dbgs(), true);
+          dbgs() << '\n';
         }
 
         int64_t offset = 0;
@@ -813,8 +823,9 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
     bool ChangedBB = false;
 
     if( DebugThis ) {
-      errs() << "Working on BB ";
-      BB->dump();
+      dbgs() << "Working on BB ";
+      BB->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
@@ -838,9 +849,10 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
     }
 
     if( DebugThis && ChangedBB ) {
-      errs() << "in function " << F.getName() << "\n";
-      errs() << "After transform BB is ";
-      BB->dump();
+      dbgs() << "in function " << F.getName() << "\n";
+      dbgs() << "After transform BB is ";
+      BB->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
   }

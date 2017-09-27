@@ -502,7 +502,7 @@ uint64_t doGetTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint
   unsigned i, n;
   uint64_t local_offset, next_offset_here, offset_here;
 
-  //ty->dump();
+  //ty->print(dbgs(), true);
   //printf("offset %i parent %i,%i\n", (int) offset, (int) parent_this_offset, (int) parent_next_offset);
 
   assert(parent_this_offset <= offset && offset <= parent_next_offset);
