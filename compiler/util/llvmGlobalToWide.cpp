@@ -1834,7 +1834,7 @@ namespace {
               for( ; J != I; ++J ) {
                 Instruction *new_insn = &*J;
                 if( new_insn != prev && new_insn != insn )
-                  errs() << " new|" << *new_insn << "|" << "\n";
+                  dbgs() << " new|" << *new_insn << "|" << "\n";
               }
             }
           }
@@ -1862,7 +1862,7 @@ namespace {
           ++BI;
 
           //if( debugPassTwo ) {
-          //  errs() << BB->getName() << ":\n";
+          //  dbgs() << BB->getName() << ":\n";
           //}
 
           for (BasicBlock::iterator I = BB->begin(), E = BB->end(); I != E; ) {
@@ -1941,9 +1941,9 @@ namespace {
 #if HAVE_LLVM_VER >= 35
           bool ok = !verifyFunction(*F, &errs());
           if (!ok) {
-            errs() << "\n";
+            dbgs() << "\n";
             F->print(dbgs(), nullptr, false, true);
-            errs() << F->getName() << "\n";
+            dbgs() << F->getName() << "\n";
             assert( 0 && "Verify function failed");
           }
 #else
