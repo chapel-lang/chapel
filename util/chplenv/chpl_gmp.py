@@ -33,7 +33,7 @@ def get():
                 gmp_val = 'system'
             else:
                 gmp_val = 'none'
-        return gmp_val
+    return gmp_val
 
 
 def _main():
