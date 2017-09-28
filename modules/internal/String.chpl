@@ -262,12 +262,12 @@ module String {
             const allocSize = chpl_here_good_alloc_size(s_len+1);
             this.buff = chpl_here_alloc(allocSize,
                                        CHPL_RT_MD_STR_COPY_DATA):bufferType;
-            this.buff[s_len] = 0;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
             this.owned = true;
           }
           c_memmove(this.buff, buf, s_len);
+          this.buff[s_len] = 0;
         } else {
           if this.owned && !this.isEmptyString() then
             chpl_here_free(this.buff);
@@ -275,6 +275,7 @@ module String {
           this._size = size;
         }
       } else {
+        // s_len == 0 so the source string is empty
         // free the old buffer
         if this.owned && !this.isEmptyString() then chpl_here_free(this.buff);
         this.buff = nil;
