@@ -1942,7 +1942,7 @@ namespace {
           bool ok = !verifyFunction(*F, &errs());
           if (!ok) {
             errs() << "\n";
-            F->dump();
+            F->print(dbgs(), nullptr, false, true);
             errs() << F->getName() << "\n";
             assert( 0 && "Verify function failed");
           }
