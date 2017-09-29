@@ -1148,18 +1148,21 @@ void finishCodegenLLVM() {
 }
 
 static
-void configurePMBuilder(PassManagerBuilder &PMBuilder) {
+void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
   INT_ASSERT(clangInfo);
   clang::CodeGenOptions &opts = clangInfo->codegenOptions;
+
+  if (optLevel < 0)
+    optLevel = opts.OptimizationLevel;
 
   if( fFastFlag ) {
     // TODO -- remove this assert
     INT_ASSERT(opts.OptimizationLevel >= 2);
   }
 
-  if (opts.OptimizationLevel > 1)
-    PMBuilder.Inliner = createFunctionInliningPass(opts.OptimizationLevel,
+  if (optLevel >= 1)
+    PMBuilder.Inliner = createFunctionInliningPass(optLevel,
                                                    opts.OptimizeSize
 #if HAVE_LLVM_VER >= 50
                                                    , /*DisableInlineHotCalsite*/
@@ -1167,7 +1170,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder) {
 #endif
                                                   );
 
-  PMBuilder.OptLevel = opts.OptimizationLevel;
+  PMBuilder.OptLevel = optLevel;
   PMBuilder.SizeLevel = opts.OptimizeSize;
 #if HAVE_LLVM_VER < 50
   PMBuilder.BBVectorize = opts.VectorizeBB;
@@ -2229,9 +2232,11 @@ void makeBinaryLLVM(void) {
   // optimization we do immediately after generating LLVM IR).
 
   // Add the Global to Wide optimization if necessary.
-  PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
-  PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
-  PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+  if (fLLVMWideOpt) {
+    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
+    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
+    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+  }
 
   // Setup for and run LLVM optimization passes
   {
@@ -2249,6 +2254,18 @@ void makeBinaryLLVM(void) {
     mpm.add(new TargetLibraryInfoWrapperPass(TLII));
 
     PMBuilder.populateModulePassManager(mpm);
+
+    if (fLLVMWideOpt) {
+      // the GlobalToWide pass creates calls to inline functions, among
+      // other things, that will need to be optimized. So run an additional
+      // battery of optimizations now.
+
+      PassManagerBuilder PMBuilder2;
+
+      configurePMBuilder(PMBuilder2, /* opt level */ 1);
+
+      PMBuilder2.populateModulePassManager(mpm);
+    }
 
     // Run the optimizations now!
     mpm.run(*info->module);
