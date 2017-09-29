@@ -486,6 +486,9 @@ typedef struct _chpl_commDiagnostics {
   uint64_t execute_on;
   uint64_t execute_on_fast;
   uint64_t execute_on_nb;
+  uint64_t get_calls;
+  uint64_t put_calls;
+  uint64_t prefetch_calls;
 } chpl_commDiagnostics;
 
 void chpl_startVerboseComm(void);
@@ -502,7 +505,9 @@ void chpl_gen_startCommDiagnosticsHere(void);
 void chpl_stopCommDiagnosticsHere(void);
 void chpl_gen_stopCommDiagnosticsHere(void);
 void chpl_resetCommDiagnosticsHere(void);
+void chpl_gen_resetCommDiagnosticsHere(void);
 void chpl_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
+void chpl_gen_getCommDiagnosticsHere(chpl_commDiagnostics *cd);
 
 void* chpl_get_global_serialize_table(int64_t idx);
 
