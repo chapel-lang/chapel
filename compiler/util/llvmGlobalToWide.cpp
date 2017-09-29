@@ -1972,7 +1972,7 @@ namespace {
       if( cf ) {
         Function* f = dyn_cast<Function>(cf);
         if( f ) {
-          info->preservingFn = NULL;
+          info->preservingFn.setValPtr(NULL);
           f->eraseFromParent();
         }
       }
