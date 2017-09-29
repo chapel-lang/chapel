@@ -23,6 +23,7 @@
 #ifndef LAUNCHER
 
 #include "chpl-comm.h"
+#include "chpl-comm-count-calls.h"
 #include "chpl-mem.h"
 #include "error.h"
 #include "chpl-wide-ptr-fns.h"
@@ -47,6 +48,11 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
 {
+#ifdef CHPL_COMM_COUNT_CALLS
+  if (chpl_comm_diagnostics)
+    atomic_fetch_add_explicit_uint_least64_t(&chpl_comm_n_get_calls, 1, memory_order_relaxed);
+#endif
+
   if (chpl_nodeID == node) {
     chpl_memcpy(addr, raddr, size);
 #ifdef HAS_CHPL_CACHE_FNS
@@ -69,6 +75,11 @@ void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
 {
   const size_t MAX_BYTES_LOCAL_PREFETCH = 1024;
   size_t offset;
+
+#ifdef CHPL_COMM_COUNT_CALLS
+  if (chpl_comm_diagnostics)
+    atomic_fetch_add_explicit_uint_least64_t(&chpl_comm_n_prefetch_calls, 1, memory_order_relaxed);
+#endif
 
   if (chpl_nodeID == node) {
     // Prefetch only the first part since we don't want to blow
@@ -94,6 +105,11 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
 {
+#ifdef CHPL_COMM_COUNT_CALLS
+  if (chpl_comm_diagnostics)
+    atomic_fetch_add_explicit_uint_least64_t(&chpl_comm_n_put_calls, 1, memory_order_relaxed);
+#endif
+
   if (chpl_nodeID == node) {
     chpl_memcpy(raddr, addr, size);
 #ifdef HAS_CHPL_CACHE_FNS
@@ -115,6 +131,11 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
                        size_t elemSize, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
 {
+#ifdef CHPL_COMM_COUNT_CALLS
+  if (chpl_comm_diagnostics)
+    atomic_fetch_add_explicit_uint_least64_t(&chpl_comm_n_get_calls, 1, memory_order_relaxed);
+#endif
+
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
@@ -135,6 +156,11 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
                        size_t elemSize, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
 {
+#ifdef CHPL_COMM_COUNT_CALLS
+  if (chpl_comm_diagnostics)
+    atomic_fetch_add_explicit_uint_least64_t(&chpl_comm_n_put_calls, 1, memory_order_relaxed);
+#endif
+
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {

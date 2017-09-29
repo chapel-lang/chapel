@@ -23,6 +23,7 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-comm-count-calls.h"
 #include "chpl-mem.h"
 #include "chpl-mem-consistency.h"
 
@@ -36,6 +37,10 @@ int32_t chpl_numNodes = -1;
 int chpl_verbose_comm;
 int chpl_comm_diagnostics;
 int chpl_verbose_mem;
+
+atomic_uint_least64_t chpl_comm_n_get_calls;
+atomic_uint_least64_t chpl_comm_n_put_calls;
+atomic_uint_least64_t chpl_comm_n_prefetch_calls;
 
 void chpl_startCommDiagnostics(void); // this one implemented by comm layers
 void chpl_gen_startCommDiagnostics(void); // this one implemented in chpl-comm.c
@@ -76,6 +81,27 @@ void chpl_gen_stopCommDiagnosticsHere(void) {
   chpl_stopCommDiagnosticsHere();
 }
 
+void chpl_gen_resetCommDiagnosticsHere(void) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+  // And then reset the comm diagnostics as usual.
+  chpl_resetCommDiagnosticsHere();
+  // And then clear the local counters
+  atomic_store_explicit_uint_least64_t(&chpl_comm_n_get_calls, 0, memory_order_seq_cst);
+  atomic_store_explicit_uint_least64_t(&chpl_comm_n_put_calls, 0, memory_order_seq_cst);
+  atomic_store_explicit_uint_least64_t(&chpl_comm_n_prefetch_calls, 0, memory_order_seq_cst);
+}
+
+void chpl_gen_getCommDiagnosticsHere(chpl_commDiagnostics *cd) {
+  // Make sure that there are no pending communication operations.
+  chpl_rmem_consist_release(0, 0);
+  // And then get the comm diagnostics as usual.
+  chpl_getCommDiagnosticsHere(cd);
+  // And then get the local counters
+  cd->get_calls = atomic_load_explicit_uint_least64_t(&chpl_comm_n_get_calls, memory_order_relaxed);
+  cd->put_calls = atomic_load_explicit_uint_least64_t(&chpl_comm_n_put_calls, memory_order_relaxed);
+  cd->prefetch_calls = atomic_load_explicit_uint_least64_t(&chpl_comm_n_prefetch_calls, memory_order_relaxed);
+}
 
 size_t chpl_comm_getenvMaxHeapSize(void)
 {

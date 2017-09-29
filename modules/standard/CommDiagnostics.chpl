@@ -216,6 +216,11 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
+    // TODO: doc
+    var get_calls: uint(64);
+    var put_calls: uint(64);
+    var prefetch_calls: uint(64);
+
     proc writeThis(c) {
       use Reflection;
 
@@ -254,9 +259,9 @@ module CommDiagnostics
 
   private extern proc chpl_gen_stopCommDiagnosticsHere();
 
-  private extern proc chpl_resetCommDiagnosticsHere();
+  private extern proc chpl_gen_resetCommDiagnosticsHere();
 
-  private extern proc chpl_getCommDiagnosticsHere(out cd: commDiagnostics);
+  private extern proc chpl_gen_getCommDiagnosticsHere(out cd: commDiagnostics);
 
   /*
     Start on-the-fly reporting of communication initiated on any locale.
@@ -311,7 +316,7 @@ module CommDiagnostics
    */
   proc resetCommDiagnostics() {
     for loc in Locales do on loc do
-      resetCommDiagnosticsHere();
+      chpl_gen_resetCommDiagnosticsHere();
   }
 
   /*
@@ -343,7 +348,7 @@ module CommDiagnostics
    */
   proc getCommDiagnosticsHere() {
     var cd: commDiagnostics;
-    chpl_getCommDiagnosticsHere(cd);
+    chpl_gen_getCommDiagnosticsHere(cd);
     return cd;
   }
 
