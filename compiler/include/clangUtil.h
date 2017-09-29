@@ -71,6 +71,8 @@ class LayeredValueTable
         clang::ValueDecl *cValueDecl;
         // Macros get stored here.
         VarSymbol* chplVar;
+        // For macros
+        const char* castChplVarTo;
       } u;
       int8_t isLVPtr;
       bool isUnsigned;
@@ -86,6 +88,7 @@ class LayeredValueTable
         u.cTypeDecl = NULL;
         u.cValueDecl = NULL;
         u.chplVar = NULL;
+        u.castChplVarTo = NULL;
         isLVPtr = GEN_VAL;
         isUnsigned = false;
         addedToChapelAST = false;
@@ -108,13 +111,14 @@ class LayeredValueTable
     void addGlobalValue(llvm::StringRef name, GenRet gend);
     void addGlobalType(llvm::StringRef name, llvm::Type *type);
     void addGlobalCDecl(clang::NamedDecl* cdecl);
-    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl);
-    void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var);
+    void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType=NULL);
+    void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=NULL);
     void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
     llvm::Type *getType(llvm::StringRef name);
-    void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut, clang::ValueDecl** cValueOut);
+    void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
+        clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL);
     VarSymbol* getVarSymbol(llvm::StringRef name);
  
     bool isAlreadyInChapelAST(llvm::StringRef name);
@@ -137,6 +141,7 @@ void runClang(const char* just_parse_filename);
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                          clang::TypeDecl** cTypeOut,
                          clang::ValueDecl** cValueOut,
+                         const char** cCastedToTypeOut,
                          Type** chplTypeOut);
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
