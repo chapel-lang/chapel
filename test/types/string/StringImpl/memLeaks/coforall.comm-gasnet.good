@@ -4,13 +4,3 @@ s0
 === coforall on
 s0
 s0
-40 bytes leaked
-================================
-Memory Allocation Report by Type
-==============================================================
-Number of allocations
-           Total allocated bytes
-                      Description of allocation
-==============================================================
-3          584        io buffer or bytes
-==============================================================
