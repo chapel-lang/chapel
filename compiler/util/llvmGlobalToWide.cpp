@@ -1972,7 +1972,11 @@ namespace {
       if( cf ) {
         Function* f = dyn_cast<Function>(cf);
         if( f ) {
+#if HAVE_LLVM_VER >= 50
           info->preservingFn.setValPtr(NULL);
+#else
+          info->preservingFn = NULL;
+#endif
           f->eraseFromParent();
         }
       }
