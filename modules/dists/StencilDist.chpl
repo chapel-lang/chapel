@@ -970,11 +970,6 @@ proc StencilArr.dsiDisplayRepresentation() {
 
 proc StencilArr.dsiGetBaseDom() return dom;
 
-proc StencilArr.initialize() {
-  dists/StencilDist.chpl:  var sendRecvFlag : [locDom.NeighDom] atomic bool;
-  writeln("In StencilArr's initialize() routine");
-}
-
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
 // the RAD cache.
