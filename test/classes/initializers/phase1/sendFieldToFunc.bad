@@ -1,0 +1,2 @@
+sendFieldToFunc.chpl:4: In initializer:
+sendFieldToFunc.chpl:6: error: can't pass "this" as an actual to a function during phase 1 of initialization
