@@ -1189,7 +1189,7 @@ module Sparse {
     const nnzAB = Adom._value.nnz + Bdom._value.nnz;
     Cdom._value.nnzDom = {1..nnzAB};
 
-    var spa = new _SPA(cols=D.dim(1).size, eltType=A.eltType);
+    var spa = new _SPA(cols=D.dim(1), eltType=A.eltType);
 
     /*
      IR (row)     - nnz-rows  - A.domain._value.startIdx
@@ -1225,18 +1225,17 @@ module Sparse {
   pragma "no doc"
   /* Sparse-accumulator */
   record _SPA {
-    var cols: int;
+    var cols: range;
     type eltType = int;
-    var D = {0..#cols},
-        b: [D] bool,      // occupation
-        w: [D] eltType,   // values
-        ls: list(int);  // indices
+    var b: [cols] bool,      // occupation
+        w: [cols] eltType,   // values
+        ls: [1..0] int;  // indices
 
     /* Reset w, b, and ls to empty */
     proc reset() {
       b = false;
       w = 0;
-      ls.destroy();
+      ls.clear();
     }
 
     /* Accumulate nonzeros in SPA */
@@ -1244,15 +1243,19 @@ module Sparse {
       if this.b[pos] == 0 {
         this.w[pos] = value;
         this.b[pos] = true;
-        this.ls.append(pos);
+        this.ls.push_back(pos);
       } else {
         this.w[pos] += value;
       }
     }
 
     proc gather(ref C: [?Cdom], i) {
+      use Sort;
+
       const nzcur = C.IR[i];
       var nzi = 0;
+      sort(this.ls);
+
       for idx in this.ls {
         if nzcur + nzi  > C.JC.size then break;
         C.JC[nzcur+nzi] = idx;
