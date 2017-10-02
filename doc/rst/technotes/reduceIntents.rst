@@ -18,22 +18,25 @@ As with any forall intent, a reduce intent can be specified on any
 *outer variable* - that is, a variable used within the body of a
 forall loop and declared outside that loop.  References to such a
 variable within the loop implicitly refer to the corresponding formal
-argument of the task function or the leader iterator.
+argument of the task function created by the parallel iterator.
+If/when the parallel iterator executes a yield outside any parallel
+constructs, the reference is implicitly to the corresponding formal
+argument of the parallel iterator itself. In both cases, these formals
+are added implicitly by the compiler.
 
 Reduce intents are distinct:
 
-* Each task formal that corresponds to an outer variable with a reduce
-  intent is initialized, at the beginning of its task, to the identity
-  value for the corresponding reduction.
+* The references, within the loop body, to a reduce-intented outer variable
+  implicitly refer to the reduction state corresponding to the task
+  function's formal. At the beginning of the task, this reduction state
+  is initialized to the identity value for the corresponding reduction.
 
 * The value of the outer variable immediately after the forall loop is a
   reduction of the values of the corresponding formals at the end of
-  their tasks.
+  their tasks and the value of the outer variable immediately before
+  the forall/coforall loop.
 
-Note that the value of the outer variable immediately before the forall loop
-is discarded.
-
-Reduce intents are also available with coforall statements.
+Reduce intents are currently available for forall and coforall statements.
 
 
 ------
@@ -55,6 +58,7 @@ The syntax of ``task-intent-list`` is extended to allow ``reduce-intent``:
     reduce-intent:
       reduce-operator 'reduce' identifier
       reduce-class    'reduce' identifier
+      reduce-expr     'reduce' identifier
 
     reduce-operator: one of
        // these have the same meaning as in a reduction expression
@@ -63,6 +67,10 @@ The syntax of ``task-intent-list`` is extended to allow ``reduce-intent``:
     reduce-class:
        // the name of the class that implements a user-defined reduction
        identifier
+
+    reduce-expr:
+       // an expression producing an instance of a user-defined reduction class
+       expr
 
 
 --------
@@ -73,7 +81,7 @@ Increment ``x`` in the loop -- counts the number of iterations:
 
  .. code-block:: chapel
 
-  var x = 5;
+  var x = 0;
   forall myIterator() with (+ reduce x) {
     x += 1;
   }
@@ -83,7 +91,7 @@ Set ``x`` in the loop -- counts the number of tasks:
 
  .. code-block:: chapel
 
-  var x = 5;
+  var x = 0;
   forall myIterator() with (+ reduce x) {
     x = 1;
   }
@@ -101,7 +109,7 @@ or coforall loop. Here is an example of such a class:
     /* the type of the elements to be reduced */
     type eltType;
 
-    /* task-private accumulator state */
+    /* task-private accumulator/reduction state */
     var value: eltType;
 
     /* identity w.r.t. the reduction operation */
@@ -112,6 +120,11 @@ or coforall loop. Here is an example of such a class:
 
     /* accumulate a single element onto the state */
     proc accumulateOntoState(ref state, elm)  { state = state + elm; }
+
+    /* accumulate the value of the outer variable at the entry to the loop */
+    // Note: this method is optional. If it is not provided,
+    // accumulate(outerVar) is used instead.
+    proc initialAccumulate(outerVar) { value = value + outerVar: eltType; }
 
     // Note: 'this' can be accessed by multiple calls to combine()
     // concurrently. The Chapel implementation serializes such calls
@@ -148,53 +161,23 @@ or coforall loop. Here is an example of such a class:
 
 
 -----------
-Open Issues
------------
-
-* Should reduce-intent variables within the loop body
-  be task-private or iteration-private?
-  I.e. should the variable's value that is reduced into the final result
-  be taken at the end of each task or at the end of each loop iteration?
-
-  The current implementation and the above examples provide the former.
-  Both above examples would report the number of iterations if the latter.
-
-* How to support reductions where the type of the result is different
-  from the type of the values being reduced, e.g. for a ``min-k`` reduction?
-
-* Should the initial value of the reduction variable participate
-  in the reduction as well?
-
-* How would we support reductions over nested forall loops, e.g.:
-
-  .. code-block:: chapel
-
-   var global = 0;
-
-   forall i in iterX() with (+ reduce global) do
-     forall j in iterY() with (+ reduce global) do
-        global += kernel(i,j);
-
-   writeln("result = ", global);
-
-  The current implementation would exclude, from the final result,
-  the values of ``kernel(i,j)`` for most ``i``. Indeed, assume that each task
-  of the outer forall executes several inner forall loops.
-  The reduction result of the inner loop will be stored into
-  the outer task's ``global`` formal. Since the value of that formal
-  is discarded when entering the inner loop, only the result
-  from the last inner loop within the outer task will be retained
-  and reduced into the outer ``global``.
-
-
------------
 Future Work
 -----------
 
-* Provide reduce intents as task intents for cobegin statements.
+* Implement reduce intents for cobegin statements.
 
 * Provide the other predefined reduction operators as reduce intents:
 
   .. code-block:: chapel
 
     minloc maxloc
+
+* We are working on a new interface for user-defined reductions,
+  addressing the need for user-defined synchronization choices
+  and the ability to provide reduction state without the overhead
+  of synchronization support for partial reductions.
+
+* We are also considering replacing classes with records for user-defined
+  reductions. The goal is to eliminate the required malloc+free,
+  which is possible because the lifetime of a reduction class instance
+  matches the forall or coforall statement.

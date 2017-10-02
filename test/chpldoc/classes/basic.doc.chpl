@@ -24,7 +24,7 @@ module basic {
        Lydia built */
     module classesAreGrown {
       
-      /* This is the classes all aged and stiff, aware of the proc
+      /* This is the class all aged and stiff, aware of the proc
 	 that is thoroughly miffed, raised in the module whose 
 	 classes are grown, sister of the class with nary a tone,
 	 declared in the module all sad and alone, listed behind 

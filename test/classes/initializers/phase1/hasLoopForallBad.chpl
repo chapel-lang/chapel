@@ -1,0 +1,17 @@
+class Foo {
+  var field: int;
+
+  proc init(numPrints: int) {
+    // This is a race,
+    // you aren't allow to initialize fields in parallel statements,
+    // you aren't allow to initialize fields in loops.
+    forall i in 1..numPrints {
+      field = i;
+    }
+    super.init();
+  }
+}
+
+var foo = new Foo(5);
+writeln(foo);
+delete foo;

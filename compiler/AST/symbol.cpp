@@ -2034,6 +2034,12 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << ": ";
     *file << info.text();
   }
+
+  // Print throws
+  if (this->throwsError()) {
+    *file << " throws";
+  }
+
   *file << std::endl;
 
   if (!fDocsTextOnly) {

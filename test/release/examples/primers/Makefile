@@ -12,6 +12,7 @@ TARGETS = \
 	classes \
 	distributions \
 	domains \
+	errorHandling \
 	fileIO \
 	genericClasses \
 	iterators \
@@ -23,6 +24,7 @@ TARGETS = \
 	randomNumbers \
 	ranges \
 	reductions \
+	replicated \
 	slices \
 	sparse \
 	syncsingle \
@@ -41,7 +43,7 @@ ifdef FFTW_DIR
 endif
 
 ifdef CRAY_LIBSCI_PREFIX_DIR
-	TARGETS += LAPACKlib
+	TARGETS += LAPACKlib LinearAlgebralib
 	LAPACK_OPTS = -I$(CRAY_LIBSCI_PREFIX_DIR)/include -lgfortran -lsci_gnu -L$(CRAY_LIBSCI_PREFIX_DIR)/lib
 endif
 

@@ -1,4 +1,0 @@
-bug: + reduce not working when a normal forall loop is used inside the leader
-
-To work around this, one can manually/hackily call the leader and follower
-separately, as demonstrated by the 'good' iterator.

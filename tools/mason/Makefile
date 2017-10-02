@@ -21,10 +21,6 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
-ifndef MASON_HOME
-export MASON_HOME=$(HOME)
-endif
-
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
@@ -32,10 +28,6 @@ unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
 bdir=$(CHPL_BIN_DIR)
 link=../../tools/mason/mason
 linkFile=$(bdir)/mason
-
-REGISTRY=https://github.com/chapel-lang/mason-registry
-
-registry = $(MASON_HOME)/.mason/registry/
 
 MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonSearch.chpl MasonUtils.chpl mason.chpl
 

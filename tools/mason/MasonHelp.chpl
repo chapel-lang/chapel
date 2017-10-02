@@ -39,10 +39,11 @@ proc masonHelp() {
   writeln('    new         Create a new mason project');
   writeln('    update      Update/Generate Mason.lock');
   writeln('    build       Compile the current project');
+  writeln('    run         Build and execute src/<project name>.chpl');
+  writeln('    search      Search the registry for packages');
+  writeln('    env         Print environment variables recognized by mason');
   writeln('    clean       Remove the target directory');
   writeln('    doc         Build this project\'s documentation');
-  //writeln('    init        Create a new mason project in an existing directory');
-  writeln('    run         Build and execute src/<project name>.chpl');
 }
 
 proc masonList() {
@@ -51,6 +52,8 @@ proc masonList() {
   writeln('      update             ');
   writeln('      build              ');
   writeln('      run                ');
+  writeln('      search             ');
+  writeln('      env                ');
   writeln('      clean              ');
   writeln('      doc                ');
   writeln('      help               ');
@@ -118,4 +121,17 @@ proc masonSearchHelp() {
   writeln("    -h, --help                  Display this message");
   writeln();
   writeln(desc);
+}
+
+proc masonEnvHelp() {
+  writeln("Print environment variables recognized by mason");
+  writeln();
+  writeln("Usage:");
+  writeln("    mason env [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln();
+  writeln("Environment variables set by the user will be printed with an");
+  writeln("asterisk at the end of the line.");
 }

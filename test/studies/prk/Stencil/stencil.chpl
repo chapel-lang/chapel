@@ -186,7 +186,7 @@ proc main() {
 
     if debug then diagnostics('stencil');
     if (!tiling) {
-      forall (i,j) in innerDom with (in weight) {
+      forall (i,j) in innerDom with (const in weight) {
         var tmpout: dtype = 0.0;
         if (!compact) {
           for param jj in -R..-1 do tmpout += weight[R1][R1+jj] * input[i, j+jj];

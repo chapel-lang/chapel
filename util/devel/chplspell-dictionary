@@ -3221,6 +3221,7 @@ umiacs
 univie
 
 FILEID: 515baeda-2ada-11e6-a3a6-10ddb1d4c3d5
+algebralib
 binarytrees
 chpldocumentation
 circularities
@@ -3231,6 +3232,7 @@ illumos
 librt
 memkind
 nomail
+parentlocid
 pshm
 stdinredirect
 structors
@@ -4399,6 +4401,14 @@ saltlen
 FILEID: e9a3e440-9db7-11e7-a204-10ddb1d4c3d5
 stddev
 
+FILEID: cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5
+cmake
+
+FILEID: d45846e8-a1b9-11e7-a204-10ddb1d4c3d5
+eliben
+fnints
+pycparser
+
 NATURAL:
 abcd
 abcdefg
@@ -5237,6 +5247,7 @@ hasher
 hashtable
 haskell
 haswell
+haverford
 hayashi
 hdfs
 hdrincl
@@ -5292,6 +5303,7 @@ hwriter
 hyderabad
 hyperthreading
 hyperthreads
+iakovlev
 ibarrier
 icfp
 iclass
@@ -5463,6 +5475,7 @@ keepintvl
 kelly
 kenjiro
 kerberos
+keshav
 kevin
 keydata
 keyfile
@@ -5485,6 +5498,7 @@ knuth
 koenig
 konstantina
 korn
+krishna
 kristina
 kronecker
 kumar
@@ -5595,6 +5609,7 @@ lookups
 lopez
 lossless
 lossy
+louis
 lowell
 lowlevel
 lseek
@@ -5692,6 +5707,7 @@ miniapp
 minint
 minlen
 minloc
+minnesota
 misassumption
 misdistributed
 mitre
@@ -5830,6 +5846,7 @@ noctty
 nodeid
 nodelay
 nodelist
+nodename
 nodepara
 nodesets
 noexec
@@ -5944,6 +5961,7 @@ outfile
 outputfile
 overcommitted
 overlining
+overloadable
 overridable
 oversubscription
 padmanabhan
@@ -5989,6 +6007,7 @@ physmem
 pidigits
 pids
 pipermail
+pittsburgh
 pkgs
 pktinfo
 planckian
@@ -6258,6 +6277,7 @@ sendmsg
 sendto
 september
 seqpacket
+serghei
 serializability
 serializable
 serializers
@@ -6522,6 +6542,7 @@ thomas
 thomasvandoren
 thorat
 thursday
+thusly
 tibetan
 tifinagh
 tilera

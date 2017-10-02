@@ -23,6 +23,7 @@ use Spawn;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
+use MasonEnv;
 use MasonUpdate;
 
 
@@ -56,7 +57,7 @@ private proc checkChplVersion(lockFile : Toml) {
   const (success, low, hi) = verifyChapelVersion(root);
 
   if success == false {
-    writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
+    stderr.writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
     exit(1);
   }
 }
@@ -72,10 +73,15 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     // Make Binary Directory
     makeTargetFiles(binLoc);
 
-    //Install dependencies into .mason/src
+    //Install dependencies into $MASON_HOME/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
     checkChplVersion(lockFile);
+
+    if isDir(MASON_HOME) == false {
+      mkdir(MASON_HOME, parents=true);
+    }
+
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
 
@@ -121,7 +127,7 @@ proc makeTargetFiles(binLoc: string) {
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool, 
 		release: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
-  var depPath = MASON_HOME + '/.mason/src/';
+  var depPath = MASON_HOME + '/src/';
   var project = lockFile["root"]["name"].s;
   var pathToProj = 'src/'+ project + '.chpl';
   var moveTo = ' -o target/'+ binLoc +'/'+ project;
@@ -175,10 +181,22 @@ proc genSourceList(lockFile: Toml) {
   return sourceList;
 }
 
+/* Checks to see if dependency has already been
+   downloaded previously */
+proc depExists(dependency: string) {
+  var repos = MASON_HOME +'/src/';
+  var exists = false;
+  for dir in listdir(repos) {
+    if dir == dependency then
+      exists = true;
+  }
+  return exists;
+}
+
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceList: [?d] 3*string, show) {
-  var baseDir = MASON_HOME +'/.mason/src/';
+  var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
     const nameVers = name + "-" + version;
     const destination = baseDir + nameVers;

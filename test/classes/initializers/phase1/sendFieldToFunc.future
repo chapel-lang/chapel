@@ -1,0 +1,6 @@
+bug: should allow initialized fields to be sent to functions
+
+We currently only allow initialized fields to be sent to functions when the
+function is used in creating the initial value of another field.  We should
+allow it generally, but verify that the intent used is good (no ref, no out, no
+inout, etc).

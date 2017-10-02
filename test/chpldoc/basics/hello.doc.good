@@ -12,5 +12,5 @@ hello.doc
 
 .. function:: proc hello()
 
-   This method prints out a greeting.
+   This function prints out a greeting.
 
