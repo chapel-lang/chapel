@@ -1225,7 +1225,7 @@ module Sparse {
   pragma "no doc"
   /* Sparse-accumulator */
   record _SPA {
-    var cols: range;
+    var cols; // range(?)
     type eltType = int;
     var b: [cols] bool,      // occupation
         w: [cols] eltType,   // values
