@@ -956,6 +956,11 @@ class LocCyclicArr {
   inline proc unlockLocRAD() {
     locRADLock.clear();
   }
+
+  proc deinit() {
+    if locRAD != nil then
+      delete locRAD;
+  }
 }
 
 proc LocCyclicArr.this(i) ref {
