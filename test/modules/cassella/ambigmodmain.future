@@ -10,5 +10,5 @@ main function and potentially a bug in scope resolve's resolution of module
 names - ideally, we would like to see an error because M is ambiguous instead
 of arbitrarily choosing one or the other.
 
-When this is resolved, please update Jira issue 176
-(https://chapel.atlassian.net/projects/CHAPEL/issues/CHAPEL-176)
+When this is resolved, please update issue #7511
+(https://github.com/chapel-lang/chapel/issues/7511)
