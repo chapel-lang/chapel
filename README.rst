@@ -32,9 +32,9 @@ For more information about Chapel, please refer to the following resources:
 Project homepage:      http://chapel.cray.com
 Installing Chapel:     http://chapel.cray.com/download.html
 Building from source:  http://chapel.cray.com/docs/latest/usingchapel/QUICKSTART.html
-Sample computations:   http://chapel.cray.com/hellos.html
+Sample computations:   http://chapel.cray.com/docs/latest/examples/
 Learning Chapel:       http://chapel.cray.com/learning.html
-Reporting bugs:        http://chapel.cray.com/bugs.html
+Reporting bugs:        http://chapel.cray.com/docs/master/usingchapel/bugs.html
 Online documentation:  http://chapel.cray.com/docs/latest/
 GitHub:                https://github.com/chapel-lang/chapel
 Mailing lists:         https://sourceforge.net/p/chapel/mailman
