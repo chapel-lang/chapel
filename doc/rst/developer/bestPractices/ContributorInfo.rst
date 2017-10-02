@@ -735,8 +735,8 @@ rely on should be committed to the chapel repository:
 - Under what license does this code operate?
 
   - We try not to add dependencies on code that is under GPL or LGPL, as those
-    licenses are copyleft and force derivative works to be distributed under the
-    same license.
+    licenses have copyleft properties and force derivative works to be
+    distributed under the same license.
 
     - Is there an alternate package with a more permissive license that can
       accomplish the same purpose?
@@ -929,7 +929,9 @@ What Copyright Should I Use?
 ++++++++++++++++++++++++++++
 
 By signing a Contributor Agreement, you have agreed that code you contribute
-will fall under the license and copyright of the project as a whole.  This
-license is required at the top of every compiler, runtime, and module code file.
+will be governed by the license and copyright of the project as a whole.  A
+standard block of license text is required at the top of every compiler,
+runtime, and module code file.  Browse other files of the same type to see the
+required license block.
 
-Additional licenses may also be applied, as appropriate.
+Additional copyrights may also be applied, as appropriate.
