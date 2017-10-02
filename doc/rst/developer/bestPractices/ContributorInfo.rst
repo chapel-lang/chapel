@@ -18,11 +18,11 @@ Developer Workflow
 Overview:
 
 #. `Discuss design changes or big development efforts`_
-#. `Getting set up`_
+#. `Get set up`_
 #. `Create new branch`_
 #. `Develop and test contributions locally`_
 
-   #. `Adding new tests`_
+   #. `Add new tests`_
 
 #. `Request feedback on your changes`_
 
@@ -32,7 +32,7 @@ Overview:
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
 
-#. `Getting ready to merge`_
+#. `Get ready to merge`_
 #. `Watch automatic testing and address issues`_
 
 `HOWTO and Git details`_
@@ -50,10 +50,10 @@ subject header for discussion with the community and to ensure that you are
 aware of any parallel efforts in that area.  It may also be a good idea to ask
 for input from the user community via the chapel-users_ mailing list.
 
-.. _Getting set up:
+.. _Get set up:
 
-Getting set up
-~~~~~~~~~~~~~~
+Get set up
+~~~~~~~~~~
 
 This should only need to happen once per developer.
 
@@ -118,10 +118,10 @@ As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
 
-.. _Adding new tests:
+.. _Add new tests:
 
-Adding new tests
-++++++++++++++++
+Add new tests
++++++++++++++
 
 You will probably need to create new tests for your feature. See
 `Creating a Simple Test`_ in `Test System`_ for more information on this
@@ -224,10 +224,10 @@ Work with your reviewers
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
-.. _Getting ready to merge:
+.. _Get ready to merge:
 
-Getting ready to merge
-~~~~~~~~~~~~~~~~~~~~~~
+Get ready to merge
+~~~~~~~~~~~~~~~~~~
 
 Before the change can be merged, go through this checklist to ensure:
 
