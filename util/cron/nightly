@@ -618,14 +618,6 @@ if (!($dist eq "")) {
     $testdirs .= " distributions/robust/arithmetic";
     $testflags = "$testflags distributions/robust/arithmetic";
 }
-if ($parnodefile eq "") {
-} else {
-    if ($gasnet == 1) {
-        $testflags = "$testflags -comm gasnet";
-    } elsif ($mpi == 1) {
-        $testflags = "$testflags -comm mpi";
-    }
-}
 
 if ($hello == 1) {
     if ($parnodefile eq "") {
