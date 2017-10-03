@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Guard pages are expensive on Xeon Phi. See JIRA issue 160
+# Guard pages are expensive on Xeon Phi. See issue #7533
 
 import os
 if os.getenv('CHPL_TARGET_ARCH', '') in ['mic-knl']:
