@@ -6,5 +6,5 @@ and both define a main, if the ambiguous name is specified with the
 as the desired module.  Ideally, we would like to see an error because M is
 ambiguous instead of arbitrarily choosing one or the other.
 
-When this is resolved, please update Jira issue 176
-(https://chapel.atlassian.net/projects/CHAPEL/issues/CHAPEL-176)
+When this is resolved, please update issue #7511
+(https://github.com/chapel-lang/chapel/issues/7511)

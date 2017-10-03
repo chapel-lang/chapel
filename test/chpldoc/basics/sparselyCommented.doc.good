@@ -26,19 +26,19 @@ sparselyCommented.doc
 
 .. function:: proc body()
 
-   Comment for method with a body 
+   Comment for a function with a body 
 
 .. function:: proc bodyCommentless()
 
 .. function:: proc hasArg(val: int)
 
-   Comment for method with an argument 
+   Comment for a function with an argument 
 
 .. function:: proc hasArgCommentless(val: int)
 
 .. function:: proc argAndBody(val: int)
 
-   Comment for method with argument and body 
+   Comment for a function with argument and body 
 
 .. function:: proc argAndBodyCommentless(val: int)
 
@@ -56,25 +56,25 @@ Other
 
 .. function:: proc inside()
 
-   Comment for method inside module 
+   Comment for a function inside module 
 
 .. function:: proc insideCommentless()
 
 .. function:: proc body()
 
-   Comment for method with a body inside module 
+   Comment for a function with a body inside module 
 
 .. function:: proc bodyCommentless()
 
 .. function:: proc hasArg(val: int)
 
-   Comment for method with an argument inside module 
+   Comment for a function with an argument inside module 
 
 .. function:: proc hasArgCommentless(val: int)
 
 .. function:: proc argAndBody(val: int)
 
-   Comment for method with argument and body inside module 
+   Comment for a function with argument and body inside module 
 
 .. function:: proc argAndBodyCommentless(val: int)
 

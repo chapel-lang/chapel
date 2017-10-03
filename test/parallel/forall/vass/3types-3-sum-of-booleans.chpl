@@ -25,6 +25,10 @@
     /* accumulate a single element onto the state */
     proc accumulateOntoState(ref state, elm)  { state = state + elm; }
 
+    /* accumulate the initial value of the outer variable onto the state */
+    // make it an error if things don't work smoothly
+    proc initialAccumulate(outerVar)  { assert(outerVar==(0:outerVar.type)); }
+
     // Note: 'this' can be accessed by multiple calls to combine()
     // concurrently. The Chapel implementation serializes such calls
     // with a lock on 'this'.

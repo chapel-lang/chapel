@@ -23,7 +23,8 @@ use Spawn;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
-
+use MasonEnv;
+use MasonUpdate;
 
 
 proc masonBuild(args) {
@@ -47,10 +48,19 @@ proc masonBuild(args) {
       } 
     }
   }
-  UpdateLock();
+  UpdateLock(args);
   BuildProgram(release, show, compopts);
 }
 
+private proc checkChplVersion(lockFile : Toml) {
+  const root = lockFile["root"];
+  const (success, low, hi) = verifyChapelVersion(root);
+
+  if success == false {
+    stderr.writeln("Build failure: lock file expecting chplVersion ", prettyVersionRange(low, hi));
+    exit(1);
+  }
+}
 
 proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
@@ -63,18 +73,29 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     // Make Binary Directory
     makeTargetFiles(binLoc);
 
-    //Install dependencies into .mason/src
+    //Install dependencies into $MASON_HOME/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
+    checkChplVersion(lockFile);
+
+    if isDir(MASON_HOME) == false {
+      mkdir(MASON_HOME, parents=true);
+    }
+
     var sourceList = genSourceList(lockFile);
     getSrcCode(sourceList, show);
+
+    // Checks if dependencies exist and retrieves them for compilation
+    if lockFile.pathExists('root.compopts') {
+      const cmpFlags = lockFile["root"]["compopts"].s;
+      compopts.push_back(cmpFlags);
+    }
 
     // Compile Program
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
     else writeln("Build Failed");
-
     // Close memory
      delete lockFile;
      toParse.close();
@@ -106,7 +127,7 @@ proc makeTargetFiles(binLoc: string) {
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool, 
 		release: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
-  var depPath = MASON_HOME + '/.mason/src/';
+  var depPath = MASON_HOME + '/src/';
   var project = lockFile["root"]["name"].s;
   var pathToProj = 'src/'+ project + '.chpl';
   var moveTo = ' -o target/'+ binLoc +'/'+ project;
@@ -160,22 +181,35 @@ proc genSourceList(lockFile: Toml) {
   return sourceList;
 }
 
+/* Checks to see if dependency has already been
+   downloaded previously */
+proc depExists(dependency: string) {
+  var repos = MASON_HOME +'/src/';
+  var exists = false;
+  for dir in listdir(repos) {
+    if dir == dependency then
+      exists = true;
+  }
+  return exists;
+}
+
 /* Clones the git repository of each dependency into
    the src code dependency pool */
 proc getSrcCode(sourceList: [?d] 3*string, show) {
-  var destination = MASON_HOME +'/.mason/src/';
+  var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
     const nameVers = name + "-" + version;
+    const destination = baseDir + nameVers;
     if !depExists(nameVers) {
       writeln("Downloading dependency: " + nameVers);
-      var getDependency = "git clone -qn "+ srcURL + ' ' + destination + nameVers+'/';
-      var checkout = "git -C "+ destination + nameVers + " checkout -q v" + version;
+      var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+      var checkout = "git checkout -q v" + version;
       if show {
-	getDependency = "git clone -n " + srcURL + ' ' + destination + nameVers + '/';
-	checkout = "git -C "+ destination + nameVers + " checkout v" + version;
+	getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+	checkout = "git checkout v" + version;
       }
       runCommand(getDependency);
-      runCommand(checkout);
+      gitC(destination, checkout);
     }
   }
 }

@@ -1,5 +1,0 @@
-perfkeys: Execution time =
-files: hpl.hpcc2012-22k.200.dat
-graphkeys: hpl hpcc runtime
-graphtitle: HPCC: HPL HPCC Version Time (sec) - n=22k, nb=200
-ylabel: Time (seconds)

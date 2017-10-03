@@ -42,7 +42,6 @@ char sysFilename[FILENAME_MAX];
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
-#define versionBuffLen 80
 
 #define launcherAccountEnvvar "CHPL_LAUNCHER_ACCOUNT"
 
@@ -54,31 +53,23 @@ typedef enum {
 } qsubVersion;
 
 static qsubVersion determineQsubVersion(void) {
-  char version[versionBuffLen+1] = "";
-  char* versionPtr = version;
-  FILE* sysFile;
-  int i;
+  const int buflen = 256;
+  char version[buflen];
+  char *argv[3];
+  argv[0] = (char *) "qsub";
+  argv[1] = (char *) "--version";
+  argv[2] = NULL;
 
-  char* command = chpl_glom_strings(3, "qsub --version > ", sysFilename, " 2>&1");
-  system(command);
-  sysFile = fopen(sysFilename, "r");
-  for (i=0; i<versionBuffLen; i++) {
-    char tmp;
-    fscanf(sysFile, "%c", &tmp);
-    if (tmp == '\n') {
-      *versionPtr++ = '\0';
-      break;
-    } else {
-      *versionPtr++ = tmp;
-    }
+  memset(version, 0, buflen);
+  if (chpl_run_utility1K("qsub", argv, version, buflen) <= 0) {
+    chpl_error("Error trying to determine qsub version", 0, 0);
   }
 
-  fclose(sysFile);
   if (strstr(version, "NCCS")) {
     return nccs;
   } else if (strstr(version, "PBSPro")) {
     return pbspro;
-  } else if (strstr(version, "version: ")) {
+  } else if (strstr(version, "version:") || strstr(version, "Version:")) {
     return torque;
   } else {
     return unknown;

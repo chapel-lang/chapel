@@ -18,7 +18,7 @@ even when before the defined module
 
 .. function:: proc commentLess()
 
-   This comment should be attached to the method 
+   This comment should be attached to the function 
 
 .. function:: proc commentLess2()
 
@@ -28,7 +28,7 @@ even when before the defined module
 .. function:: proc commentLess3()
 
    This comment also should be attached, even though
-   it is further away from the method 
+   it is further away from the function 
 
 .. function:: proc hasArg(val: int)
 

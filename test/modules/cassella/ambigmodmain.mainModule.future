@@ -12,5 +12,5 @@ module works, so the .compopts should be expanded to:
 --main-module X.M # ambigmodmain.X.good
 --main-module Y.M # ambigmodmain.Y.good
 
-and please update Jira issue 177
-(https://chapel.atlassian.net/projects/CHAPEL/issues/CHAPEL-177)
+and please update issue #7510
+(https://github.com/chapel-lang/chapel/issues/7510)

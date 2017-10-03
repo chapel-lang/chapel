@@ -111,6 +111,9 @@ proc main() {
 
 	writeln("Success!");
 	if perfTest then writeln("Chapel time = ", t.elapsed(), " s");
+
+        forall cache in caches do
+          delete cache;
 }
 
 proc checkExpected(itr: int, atoms: [?AtomDom] AtomMatrix) {

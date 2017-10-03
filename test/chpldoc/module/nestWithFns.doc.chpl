@@ -1,11 +1,11 @@
-/* This module has a comment, but uncommented first method */
+/* This module has a comment, but uncommented first function */
 module OuterMod {
 
   proc outerFn() {
 
   }
 
-  /* The second method is commented */
+  /* The second function is commented */
   proc outerCommented() {
 
   }

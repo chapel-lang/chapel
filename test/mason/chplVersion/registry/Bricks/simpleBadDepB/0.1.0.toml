@@ -1,0 +1,9 @@
+
+[brick]
+name = "simpleBadDepB"
+version = "0.1.0"
+chplVersion = "1.0..1.0"
+author = "foo"
+source = "foo"
+
+[dependencies]

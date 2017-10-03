@@ -11,6 +11,7 @@ declare -a NAME
 declare -a RESULT
 
 echo > log
+echo > log2
 echo "Running command on images:" | tee -a log
 echo "$*" | tee -a log
 
@@ -39,14 +40,15 @@ do
     echo
     echo "     ---- $display ---- " | tee -a ../log
     vagrant up 2>&1 | tee -a ../log
-    vagrant ssh --command "$*" -- -q 2>&1 | tee -a ../log
-    if (( $? == 0 ))
-    then
+    ( vagrant ssh --command "$*" -- -q 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> ../log2 | tee -a ../log
+    case "$(tail -n 1 ../log2)" in
+    ( ok )
       echo
       lastline=`tail -n 1 ../log`
       RESULT[$i]="  OK: $lastline"
       #echo "     SUCCESS:" $name
-    else
+      ;;
+    ( error* )
       lastline=`tail -n 1 ../log`
       RESULT[$i]="FAIL: $lastline"
       echo "     FAIL:" $name
@@ -60,7 +62,8 @@ do
       echo
       echo
       exit 1
-    fi
+      ;;
+    esac
     vagrant halt 2>&1 | tee -a ../log
     cd ..
 

@@ -1,0 +1,9 @@
+
+[brick]
+name = "failMultipleDeps"
+version = "0.1.0"
+chplVersion = "1.16"
+
+[dependencies]
+simpleBadDepA = "0.1.0"
+simpleBadDepB = "0.1.0"

@@ -14,11 +14,11 @@ recordsAndClasses.doc
 
 .. function:: proc takesAThingy(val: thingy)
 
-   This method takes a record as its argument 
+   This function takes a record as its argument 
 
 .. class:: whatchamacallit
 
 .. function:: proc takesAWhatchamacallit(val: whatchamacallit)
 
-   This method takes a whatchamacallit as its argument 
+   This function takes a whatchamacallit as its argument 
 

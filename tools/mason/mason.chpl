@@ -21,11 +21,13 @@
  */
 
 
+use MasonUtils;
+use MasonHelp;
+use MasonEnv;
 use MasonNew;
 use MasonBuild;
 use MasonUpdate;
-use MasonUtils;
-use MasonHelp;
+use MasonSearch;
 use FileSystem;
 
 /*
@@ -51,7 +53,7 @@ The Design of Mason
            Contains necessary build information
            Serialized directed acyclic graph of the dependencies build options
            from the manifest
-  4) Dependency Code:  ``$MASON_HOME/.mason/src``
+  4) Dependency Code:  ``$MASON_HOME/src``
            Local dependencies downloaded by mason after the user lists them in
            a project manifest.
 
@@ -64,25 +66,28 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 proc main(args: [] string) {
   if args.size < 2 {
     masonHelp();
-    exit();}
-
-  select (args[1]) {
-  when 'new' do masonNew(args);
-  when 'build' do masonBuild(args);
-  when 'update' do UpdateLock();
-  when 'run' do masonRun(args);
-  when 'doc' do masonDoc(args);
-  when 'clean' do masonClean();
-  when '--list' do masonList();
-  when '-h' do masonHelp();
-  when '--help' do masonHelp();
-  when '-V' do printVersion();
-  when '--version' do printVersion();
-  otherwise {
-    writeln('error: no such subcommand');
-    writeln('try mason --help');
     exit();
   }
+
+  select (args[1]) {
+    when 'new' do masonNew(args);
+    when 'build' do masonBuild(args);
+    when 'update' do UpdateLock(args);
+    when 'run' do masonRun(args);
+    when 'search' do masonSearch(args);
+    when 'env' do masonEnv(args);
+    when 'doc' do masonDoc(args);
+    when 'clean' do masonClean();
+    when '--list' do masonList();
+    when '-h' do masonHelp();
+    when '--help' do masonHelp();
+    when '-V' do printVersion();
+    when '--version' do printVersion();
+    otherwise {
+      writeln('error: no such subcommand');
+      writeln('try mason --help');
+      exit();
+    }
   }
 }
 
@@ -155,13 +160,6 @@ proc masonDoc(args) {
     runCommand('chpldoc');
   }
 }
-
-
-
-// TODO
-proc masonInit(args) {}
-
-
 
 proc printVersion() {
   writeln('mason 0.1.0');

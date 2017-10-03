@@ -1,4 +1,4 @@
-/* This is the only valid doc string in this modules. */
+/* This is the only valid doc string in this module. */
 module main {
 
   begin {

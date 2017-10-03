@@ -2071,10 +2071,10 @@ module BLAS {
 
       :returns: Scalar value of dot product
   */
-  proc dot(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1):eltType
-  where D.rank == 1 {
+  proc dot(X: [?xD]?eltType,  Y: [?yD] eltType, incY: c_int = 1, incX: c_int = 1) : eltType
+  where xD.rank == 1 && yD.rank == 1 {
 
-    const N = D.size: c_int;
+    const N = xD.size: c_int;
 
     select eltType {
       when real(32) do{

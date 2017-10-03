@@ -436,11 +436,27 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
   return iterCall;
 }
 
+static void checkForExplicitTagArgs(CallExpr* iterCall) {
+  int cnt = 0;
+  for_actuals(actual, iterCall) {
+    ++cnt;
+    if ((actual->qualType().type()->getValType() == gStandaloneTag->type) ||
+        (isNamedExpr(actual) && toNamedExpr(actual)->name == astrTag)
+    ) {
+      USR_FATAL_CONT(iterCall, "user invocation of a parallel iterator should not supply tag arguments -- they are added implicitly by the compiler");
+      USR_PRINT(iterCall, "actual argument %d of the iterator call", cnt);
+      USR_STOP();
+    }
+  }
+}
+
 static bool findStandaloneOrLeader(ForallStmt* pfs,
                                    CallExpr* iterCall)
 {
   bool gotParallel = false;
   bool gotSA = true;
+
+  checkForExplicitTagArgs(iterCall);
 
   // We are starting with a serial-iterator call.
   // Transform it to a standalone/leader call.
@@ -545,6 +561,9 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(parIter, iterCall);
   VarSymbol* idxVar = parIdxVar(pfs);
+
+  if (idxVar->id == breakOnResolveID)
+    gdbShouldBreakHere();
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }

@@ -12,7 +12,8 @@ var deque = (if isBounded then new DistDeque(int, cap = nElems) else new DistDeq
 // First-In-First-Out Test
 // We add elements in a queue-like fashion, testing queue capabilities.
 for i in 1 .. nElems {
-  deque.enqueue(i);
+  var inserted = deque.enqueue(i);
+  assert(inserted == true);
 }
 
 // Sanity Check: Ensure size is correct
@@ -34,8 +35,9 @@ for elem in deque.these(Ordering.FIFO) {
 // First-In-First-Out Check [Pt. 2]
 // Since we added elements in queue-like fashion, we should receive it in a queue-like fashion.
 // This tests the removal operations...
+var (hasElem, elem) : (bool, int);
 for i in 1 .. nElems {
-  var (hasElem, elem) = deque.dequeue();
+  (hasElem, elem) = deque.dequeue();
   assert(hasElem && elem == i);
 }
 
@@ -71,14 +73,14 @@ for elem in deque.these(Ordering.LIFO) {
 // Since we added elements in stack-like fashion, we should receive it in a stack-like fashion.
 // This tests the removal operations...
 for i in 0 .. #nElems {
-  var (hasElem, elem) = deque.pop();
+  (hasElem, elem) = deque.pop();
   assert(hasElem && elem == nElems - i);
 }
 
 // Sanity Check: Ensures size is correct
 assert(deque.size == 0 && deque.isEmpty());
 // Sanity Check: Ensures that we handle being empty.
-var hasElem = deque.pop()[1];
+hasElem = deque.pop()[1];
 assert(deque.size == 0 && deque.isEmpty() && !hasElem);
 
 // Total Ordering Test
@@ -121,7 +123,7 @@ for elem in deque.these(Ordering.LIFO) {
 // Total Ordering Check [Pt. 3]
 // Finally, we should be able to remove elements in FIFO order.
 for i in 1 .. nElems {
-  var (hasElem, elem) = deque.dequeue();
+  (hasElem, elem) = deque.dequeue();
   assert(hasElem && elem == i);
 }
 

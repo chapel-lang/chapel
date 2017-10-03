@@ -234,6 +234,11 @@ llvm::Value *convertValueToType(
     return builder->CreateIntToPtr(value, newType);
   }
 
+  //Pointer to integer
+  if(newType->isIntegerTy() && curType->isPointerTy()) {
+    return builder->CreatePtrToInt(value, newType);
+  }
+
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
     if( newType->getPointerAddressSpace() !=

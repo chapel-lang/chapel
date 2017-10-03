@@ -55,6 +55,13 @@ module CPtr {
       if x then do writeln("x is not nil");
       if !x then do writeln("x is nil");
 
+    Additionally, a ``c_ptr`` can be output like so:
+
+    .. code-block:: chapel
+
+      var x: c_ptr = c_ptrTo(...);
+      writeln(x); // outputs nil or e.g. 0xabc123000000
+
   */
 
   //   Similar to _ddata from ChapelBase, but differs
@@ -87,14 +94,10 @@ module CPtr {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
-    if this == c_nil {
-      ch <~> "(nil)";
-    } else {
-      var err:syserr = ENOERR;
-      ch.writef(error=err, "0x%xu", this:uint(64));
-      if err then
-        ch.setError(err);
-    }
+    var err:syserr = ENOERR;
+    ch.writef(error=err, "0x%xu", this:c_uintptr);
+    if err then
+      ch.setError(err);
   }
 
   pragma "no doc"
@@ -142,11 +145,9 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_ptr {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_void_ptr {
+  inline proc _cast(type t, x)
+  where (t:c_intptr || t:c_uintptr || t:int(64) || t:uint(64)) &&
+        (x.type:c_void_ptr || x.type:c_ptr) {
     return __primitive("cast", t, x);
   }
 

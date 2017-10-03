@@ -219,7 +219,7 @@ bool Symbol::isConstant() const {
   return false;
 }
 
-bool Symbol::isConstValWillNotChange() const {
+bool Symbol::isConstValWillNotChange() {
   return false;
 }
 
@@ -580,11 +580,12 @@ bool VarSymbol::isConstant() const {
 }
 
 
-bool VarSymbol::isConstValWillNotChange() const {
+bool VarSymbol::isConstValWillNotChange() {
   // todo: how about QUAL_CONST ?
   return qual == QUAL_CONST_VAL         ||
          hasFlag(FLAG_REF_TO_IMMUTABLE) ||
-         (hasFlag(FLAG_CONST) && !hasFlag(FLAG_REF_VAR));
+         (hasFlag(FLAG_CONST) &&
+          !(hasFlag(FLAG_REF_VAR) || isRef()));
 }
 
 
@@ -825,7 +826,7 @@ static void isConstValWillNotChangeHelp(IntentTag intent,
   return; // dummy
 }  
 
-bool ArgSymbol::isConstValWillNotChange() const {
+bool ArgSymbol::isConstValWillNotChange() {
   if (hasFlag(FLAG_REF_TO_IMMUTABLE))
     return true;
 
@@ -835,7 +836,7 @@ bool ArgSymbol::isConstValWillNotChange() const {
 
   if (absIntent) {
     // Try again with the corresponding concrete intent.
-    // Caller is responsibile that concreteIntent() succeeds.
+    // Caller is responsible that concreteIntent() succeeds.
     isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
                                 result, absIntent);
     INT_ASSERT(!absIntent);
@@ -1020,7 +1021,7 @@ bool ShadowVarSymbol::isConstant() const {
   return false; // dummy
 }
 
-bool ShadowVarSymbol::isConstValWillNotChange() const {
+bool ShadowVarSymbol::isConstValWillNotChange() {
   //
   // This is written to only be called post resolveIntents
   //
@@ -2033,6 +2034,12 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << ": ";
     *file << info.text();
   }
+
+  // Print throws
+  if (this->throwsError()) {
+    *file << " throws";
+  }
+
   *file << std::endl;
 
   if (!fDocsTextOnly) {

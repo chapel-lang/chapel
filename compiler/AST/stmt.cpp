@@ -1002,6 +1002,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef) :
   toFnDef(toFnDef),
   fnReturningForwarding(NULL),
   type(NULL),
+  scratchFn(NULL),
   named(),
   renamed(),
   except(false)
@@ -1018,6 +1019,7 @@ ForwardingStmt::ForwardingStmt(DefExpr* toFnDef, std::set<const char*>* args, bo
   toFnDef(toFnDef),
   fnReturningForwarding(NULL),
   type(NULL),
+  scratchFn(NULL),
   named(),
   renamed(),
   except(exclude)

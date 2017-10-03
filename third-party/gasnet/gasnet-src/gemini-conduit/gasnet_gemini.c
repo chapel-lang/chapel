@@ -935,7 +935,6 @@ uintptr_t gasnetc_init_messaging(void)
   gni_nic_handle_t nic_handle;
   gni_cq_handle_t bound_cq_handle;
   peer_struct_t *peer_data;
-  gasneti_lifo_head_t post_descriptor_pool = GASNETI_LIFO_INITIALIZER;
   gasnetc_domain_count = gasneti_getenv_int_withdefault("GASNET_DOMAIN_COUNT",
                GASNETC_DOMAIN_COUNT_DEFAULT,0);
   gasnetc_poll_am_domain_mask = gasneti_getenv_int_withdefault("GASNET_AM_DOMAIN_POLL_MASK",
@@ -1200,14 +1199,13 @@ uintptr_t gasnetc_init_messaging(void)
   for (i=0; i < gasnetc_log2_remote; ++i) {
     /* allocate individually to ease later destruction of this pool. */
     gasnetc_post_descriptor_t *gpd = gasneti_calloc(1, sizeof(gasnetc_post_descriptor_t));
-    gasneti_lifo_push(&post_descriptor_pool, gpd);
+    gasneti_lifo_push(&DOMAIN_SPECIFIC_VAL(post_descriptor_pool), gpd);
   }
 
 #if GASNETC_USE_MULTI_DOMAIN 
   DOMAIN_SPECIFIC_VAL(cdm_handle) = cdm_handle;
   DOMAIN_SPECIFIC_VAL(nic_handle) = nic_handle;
   DOMAIN_SPECIFIC_VAL(bound_cq_handle) = bound_cq_handle;
-  DOMAIN_SPECIFIC_VAL(post_descriptor_pool) = post_descriptor_pool;
   DOMAIN_SPECIFIC_VAL(peer_data) = peer_data;
   DOMAIN_SPECIFIC_VAL(threads_per_domain) = 1;
   DOMAIN_SPECIFIC_VAL(initialized) = 1;

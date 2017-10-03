@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+reqMajor=1
+reqMinor=0
+reqPatch=1
+
+version=`openssl version | sed -e 's/^OpenSSL \([^ ]*\) .*$/\1/'`
+major=`echo $version | sed -e 's/\..*$//'`
+minor=`echo $version | sed -e 's/.*\.\([^\.]*\)\..*$/\1/'`
+patch=`echo $version | sed -e 's/.*\.//'`
+
+# Skip if the OpenSSL version is too old
+if [[ $major < $reqMajor ]] ; then
+  echo True
+elif [[ $minor < $reqMinor ]] ; then
+  echo True
+elif [[ $patch < $reqPatch ]] ; then
+  echo True
+else
+  echo False
+fi

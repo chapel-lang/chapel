@@ -1393,14 +1393,16 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
   //
   // by default, mangle all Chapel symbols to avoid clashing with C
-  // identifiers.  This can be disabled via the --munge-user-idents
-  // flag.
+  // identifiers.  To disable, compile with --no-munge-user-idents
   //
   if (fMungeUserIdents) {
     forv_Vec(ModuleSymbol, sym, gModuleSymbols) {
       protectNameFromC(sym);
     }
     forv_Vec(VarSymbol, sym, gVarSymbols) {
+      protectNameFromC(sym);
+    }
+    forv_Vec(ShadowVarSymbol, sym, gShadowVarSymbols) {
       protectNameFromC(sym);
     }
     forv_Vec(ArgSymbol, sym, gArgSymbols) {

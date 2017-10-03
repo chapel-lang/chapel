@@ -227,6 +227,7 @@ static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
                            std::set<FnSymbol*>* alreadyCalled = NULL);
+static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
@@ -1683,6 +1684,7 @@ static void reissueCompilerWarning(const char* str, int offset) {
         !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
       break;
   }
+  gdbShouldBreakHere();
   USR_WARN(from, "%s", str);
 }
 
@@ -1960,7 +1962,9 @@ static void collectVisibleMethodsNamed(Type*                   t,
     for (size_t i = maxChildMethods; i < methods.size(); i++) {
       bool remove = false;
       for (size_t j = 0; j < maxChildMethods; j++) {
-        if (signatureMatch(methods[i], methods[j])) {
+        if (methods[i] != NULL &&
+            methods[j] != NULL &&
+            signatureMatch(methods[i], methods[j])) {
           remove = true;
           break;
         }
@@ -1980,19 +1984,31 @@ static void collectVisibleMethodsNamed(Type*                   t,
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
 static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
-  FnSymbol*      retval = NULL;
+  Expr*          retval = NULL;
 
   if (at == NULL || at->defaultInitializer == NULL) {
-    retval = resolveUninsertedCall(chpl_gen_main->body, call);
+    retval = chpl_gen_main->body;
 
   } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = resolveUninsertedCall(point, call);
+    retval = point;
 
   } else {
-    retval = resolveUninsertedCall(at->symbol->defPoint, call);
+    retval = at->symbol->defPoint;
   }
+
+  return retval;
+}
+
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+  FnSymbol*      retval = NULL;
+
+  Expr* where = getInsertPointForTypeFunction(type);
+  if (BlockStmt* stmt = toBlockStmt(where))
+    retval = resolveUninsertedCall(stmt, call);
+  else
+    retval = resolveUninsertedCall(where, call);
 
   return retval;
 }
@@ -2756,7 +2772,7 @@ static void findVisibleFunctionsAndCandidates(
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
 
-  // First, try finding candidates without delegation
+  // First, try finding candidates without forwarding
   if (fn != NULL) {
     visibleFns.add(fn);
 
@@ -2768,7 +2784,7 @@ static void findVisibleFunctionsAndCandidates(
 
   findVisibleCandidates(info, visibleFns, candidates);
 
-  // If no candidates were found and it's a method, try delegating
+  // If no candidates were found and it's a method, try forwarding
   if (candidates.n             == 0 &&
       call->numActuals()       >= 1 &&
       call->get(1)->typeInfo() == dtMethodToken) {
@@ -2982,6 +2998,22 @@ static bool populateForwardingMethods(CallInfo& info) {
     // Make sure methodName is a blessed string
     methodName = astr(methodName);
 
+    // Populate delegate->scratchFn now
+    if (delegate->scratchFn == NULL) {
+      FnSymbol* scratch = new FnSymbol("delegate_scratch_fn");
+      scratch->addFlag(FLAG_COMPILER_GENERATED);
+
+      Expr* where = getInsertPointForTypeFunction(at);
+      if (BlockStmt* block = toBlockStmt(where))
+        block->insertAtHead(new DefExpr(scratch));
+      else
+        where->insertBefore(new DefExpr(scratch));
+
+      normalize(scratch);
+
+      delegate->scratchFn = scratch;
+    }
+
     // There are 2 ways that more methods can be added to
     // delegate->type during resolution:
     //   1) delegate->type itself use a 'delegate'
@@ -3002,6 +3034,11 @@ static bool populateForwardingMethods(CallInfo& info) {
 
       int        i        = 0;
 
+      // The test call should have the same parentheses-less/partial
+      // properties as the call we are working with.
+      test->methodTag = forCall->methodTag;
+      test->partialTag = forCall->partialTag;
+
       for_actuals(actual, forCall) {
         if (i > 1) { // skip method token, object
           test->insertAtTail(actual->copy());
@@ -3013,11 +3050,9 @@ static bool populateForwardingMethods(CallInfo& info) {
       block->insertAtTail(new DefExpr(tmp));
       block->insertAtTail(test);
 
-      forCall->getStmtExpr()->insertAfter(block);
+      delegate->scratchFn->insertAtHead(block);
 
       tryResolveCall(test);
-
-      block->remove();
     }
 
     // Now, forward all methods named 'methodName' as 'calledName'.
@@ -3075,6 +3110,11 @@ static bool populateForwardingMethods(CallInfo& info) {
 
       // Never give an error when returning 'void' from a forwarding fn
       fn->removeFlag(FLAG_VOID_NO_RETURN_VALUE);
+
+      // Also, don't consider it an iterator, since instead it is a
+      // function returning an iterator.
+      //  (e.g. proc these() return _value.these(); )
+      fn->removeFlag(FLAG_ITERATOR_FN);
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_INLINE);
@@ -5197,22 +5237,6 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
 
     moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, false);
 
-  } else if (resolvedFn->hasFlag(FLAG_NEW_ALIAS_FN) == true &&
-             lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true) {
-    if (lhsSym->isConstant() == false) {
-      // We are creating a var alias - ensure aliasee is not const either.
-      SymExpr* aliaseeSE = toSymExpr(rhs->get(2));
-
-      INT_ASSERT(aliaseeSE);
-
-      if (aliaseeSE->symbol()->isConstant() == true) {
-        USR_FATAL_CONT(rhs,
-                       "creating a non-const alias '%s' of a const array "
-                       "or domain",
-                       lhsSym->name);
-      }
-    }
-
   } else if (refConstWCT == true) {
     Symbol* baseSym = getBaseSymForConstCheck(rhs);
 
@@ -5221,10 +5245,6 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
         baseSym->hasFlag(FLAG_REF_TO_CONST) == true) {
       moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, true);
     }
-
-  } else if (lhsSym->hasFlag(FLAG_ARRAY_ALIAS)      == true &&
-             resolvedFn->hasFlag(FLAG_AUTO_COPY_FN) == true) {
-    INT_ASSERT(false);
   }
 }
 
@@ -5530,7 +5550,13 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
     call->insertBefore(def);
 
   } else {
-    call->parentExpr->insertBefore(def);
+    Expr* parent = call->parentExpr;
+    parent->insertBefore(def);
+
+    if (isClass(at) == false) {
+      call->replace(new SymExpr(new_temp));
+      parent->insertBefore(call);
+    }
   }
 
   // Invoking an instance method
@@ -6594,6 +6620,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
     if (call->isPrimitive(PRIM_ERROR) == true) {
       USR_FATAL(from, "%s", str);
     } else {
+      gdbShouldBreakHere();
       USR_WARN (from, "%s", str);
     }
 
@@ -7429,6 +7456,9 @@ void resolve() {
     printCallGraph();
   }
 
+  if (fPrintUnusedFns || fPrintUnusedInternalFns)
+    printUnusedFunctions();
+
   pruneResolvedTree();
 
   freeCache(ordersCache);
@@ -8093,7 +8123,7 @@ static void insertReturnTemps() {
   //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
-      if (FnSymbol* fn = call->resolvedFunction()) {
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
           Expr*            contextCallOrCall; // insert before, remove it
@@ -8228,6 +8258,69 @@ static void cleanupAfterRemoves() {
 }
 
 
+static void printUnusedFunctions() {
+/* Defining the macro PRINT_UNUSED_FNS_TO_FILE will cause
+   --print-unused-internal-functions to print the unused functions to a file
+   named 'execFilename.unused'. Then paratest can be run to print all unused
+   functions across the test suite into files to determine what functions
+   are not used by any tests.
+
+   The macro EXIT_AFTER_PRINTING_UNUSED_FNS can also be defined to cause the
+   compiler to immediately exit after printing unused functions for faster
+   checking.
+*/
+#ifdef PRINT_UNUSED_FNS_TO_FILE
+  char fname[FILENAME_MAX+1];
+  snprintf(fname, FILENAME_MAX, "%s.%s", executableFilename, "unused");
+  FILE* outFile = fopen(fname, "w");
+#else
+  FILE* outFile = stdout;
+#endif
+  // map from generic functions to instantiated versions
+  // a generic function is 'used' if it is instantiated.
+  std::map<FnSymbol*, std::vector<FnSymbol*> > instantiations;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (FnSymbol* instantiatedFrom = fn->instantiatedFrom) {
+      while (instantiatedFrom->instantiatedFrom != NULL) {
+        instantiatedFrom = instantiatedFrom->instantiatedFrom;
+      }
+      instantiations[instantiatedFrom].push_back(fn);
+    }
+  }
+
+  bool first = true;
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_PRINT_MODULE_INIT_FN)) continue;
+    if (fn->defPoint && fn->defPoint->parentSymbol) {
+      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+      if (!fn->isResolved() || fn->retTag == RET_PARAM) {
+        if (!fn->instantiatedFrom) {
+          if (instantiations.count(fn) == 0 || instantiations[fn].size() == 0) {
+            if (fPrintUnusedInternalFns ||
+                fn->defPoint->getModule()->modTag == MOD_USER) {
+              if (first) {
+                first = false;
+                fprintf(outFile, "The following functions are unused:\n");
+              }
+              fprintf(outFile, "  %s:%d: %s\n",
+                      fn->defPoint->fname(), fn->defPoint->linenum(), fn->name);
+            }
+          }
+        }
+      }
+    }
+  }
+
+#ifdef PRINT_UNUSED_FNS_TO_FILE
+  fclose(outFile);
+#ifdef EXIT_AFTER_PRINTING_UNUSED_FNS
+  clean_exit(0);
+#endif
+#endif
+}
+
 //
 // Print a representation of the call graph of the program.
 // This needs to be done after function resolution so we can follow calls
@@ -8266,9 +8359,20 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
   for_vector(BaseAST, ast, asts) {
     if (CallExpr* call = toCallExpr(ast)) {
       if (FnSymbol* fn = call->resolvedFunction()) {
-        if (fn->getModule()->modTag == MOD_USER &&
+        if ((fn->getModule()->modTag == MOD_USER ||
+             call->getModule()->modTag == MOD_USER) &&
+            fn->getModule()->modTag != MOD_INTERNAL &&
             !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+
+          if (strncmp("chpl_", fn->name, 5) == 0 &&
+              !fn->hasFlag(FLAG_MODULE_INIT)) {
+            // skip any functions that are internal (start with "chpl_")
+            // except for the init function for the module, which needs
+            // to be traversed to find top-level calls in the module
+            continue;
+          }
+
           FnSymbol* instFn = fn;
           if (fn->instantiatedFrom) {
             instFn = fn->instantiatedFrom;

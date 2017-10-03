@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "initializerRules.h"
 #include "stlUtil.h"
 
 
@@ -51,21 +52,7 @@ static void checkFunctionSignatures() {
         USR_FATAL_CONT(fn, "initializers may not declare a return type");
       }
 
-      for_formals(formal, fn) {
-        std::vector<SymExpr*> symExprs;
-
-        collectSymExprs(formal, symExprs);
-
-        for_vector(SymExpr, se, symExprs) {
-          if (se->symbol() == fn->_this) {
-            USR_FATAL_CONT(se,
-                           "invalid access of class member in "
-                           "initializer argument list");
-
-            break;
-          }
-        }
-      }
+      errorOnFieldsInArgList(fn);
 
     } else if (fn->hasFlag(FLAG_DESTRUCTOR) == true) {
       if (fn->retExprType != NULL) {

@@ -3024,7 +3024,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // to stop writing if there was an error.
   qio_channel_clear_error(_channel_internal);
 
-  if (isClassType(t) || chpl_isDdata(t)) && x == nil {
+  if (isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t)) && x == nil {
     // future - write class IDs, have serialization format
     var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
     var iolit:ioLiteral;

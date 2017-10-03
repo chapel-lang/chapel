@@ -152,26 +152,78 @@ myinstalldir () {
   FROM="$CHPL_HOME/$1"
   TO="$2"
   #echo myinstalldir $FROM $TO
-  mkdir -p $TO
-  ( cd $FROM ; tar cf - . ) | ( cd $TO ; tar xf - )
-  return $?
+  mkdir -p "$TO"
+
+  if [ ! -d "$FROM" ]
+  then
+    echo "Error: source directory '$FROM' missing"
+    exit -1
+  fi
+  if [ ! -d "$TO" ]
+  then
+    echo "Error: could not find/create destination directory '$TO'"
+    exit -1
+  fi
+
+  ( cd "$FROM" ; tar cf - . ) | ( cd "$TO" ; tar xf - )
+
+  if [ $? -ne 0 ]
+  then
+    echo "Error: failed directory copy '$FROM' '$TO'"
+    exit -1
+  fi
 }
 
 myinstallfile () {
   FROM="$CHPL_HOME/$1"
   TO="$2"
-  mkdir -p $TO
+
+  mkdir -p "$TO"
+
+  if [ ! -f "$FROM" ]
+  then
+    echo "Error: source file '$FROM' missing"
+    exit -1
+  fi
+  if [ ! -d "$TO" ]
+  then
+    echo "Error: could not find/create destination directory '$TO'"
+    exit -1
+  fi
+
   #echo myinstallfile $FROM $TO
-  cp $FROM $TO
-  return $?
+  cp "$FROM" "$TO"
+
+  if [ $? -ne 0 ]
+  then
+    echo "Error: failed cp '$FROM' '$TO'"
+    exit -1
+  fi
 }
 
 myinstallfileto () {
   FROM="$CHPL_HOME/$1"
   TO="$2"
   #echo myinstallfile $FROM $TO
-  cp $FROM $TO
-  return $?
+  if [ ! -f "$FROM" ]
+  then
+    echo "Error: source file '$FROM' missing"
+    exit -1
+  fi
+
+  cp "$FROM" "$TO"
+
+  if [ $? -ne 0 ]
+  then
+    echo "Error: failed cp '$FROM' '$TO'"
+    exit -1
+  fi
+
+  if [ ! -f "$TO" ]
+  then
+    echo "Error: could not install to '$TO'"
+    exit -1
+  fi
 }
 
 
@@ -206,7 +258,7 @@ myinstallfile README.rst              "$DEST_CHPL_HOME"
 # copy modules
 myinstalldir  modules                 "$DEST_CHPL_HOME"/modules
 
-# copy util/printchplenv 
+# copy util/printchplenv
 myinstallfile util/printchplenv       "$DEST_CHPL_HOME"/util/
 
 # copy util/chplenv

@@ -55,14 +55,14 @@ extern FnSymbol *gBuildTupleType;
 extern FnSymbol *gBuildTupleTypeNoRef;
 extern FnSymbol *gBuildStarTupleType;
 extern FnSymbol *gBuildStarTupleTypeNoRef;
-extern FnSymbol *gChplDeleteError;
 extern FnSymbol *gPrintModuleInitFn;
 extern FnSymbol *gGetDynamicEndCount;
 extern FnSymbol *gSetDynamicEndCount;
+extern FnSymbol *gChplDeleteError;
 extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
-extern FnSymbol *gSaveTaskErrorFn;
-extern FnSymbol *gSaveLineInErrorFn;
+extern FnSymbol *gChplSaveTaskError;
+extern FnSymbol *gChplFixThrownError;
 extern FnSymbol *gChplForallError;
 
 #endif

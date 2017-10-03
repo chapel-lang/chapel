@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "InitNormalize.h"
 #include "passes.h"
 #include "stmt.h"
@@ -35,13 +36,13 @@ enum InitStyle {
   STYLE_BOTH
 };
 
-static bool      isInitStmt (Expr* stmt);
-static bool      isSuperInit(Expr* stmt);
-static bool      isThisInit (Expr* stmt);
+static bool     isInitStmt (Expr* stmt);
+static bool     isSuperInit(Expr* stmt);
+static bool     isThisInit (Expr* stmt);
 
-static bool      isUnacceptableTry(Expr* stmt);
+static bool     isUnacceptableTry(Expr* stmt);
 
-static void      preNormalize(FnSymbol* fn);
+static void     preNormalizeInit(FnSymbol* fn);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
@@ -164,14 +165,38 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
 static bool isReturnVoid(FnSymbol* fn);
 
 void preNormalizeInitMethod(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_NO_PARENS)   ==  true) {
+  if (fn->hasFlag(FLAG_NO_PARENS) ==  true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
-  } else if (isReturnVoid(fn)       == false) {
+  } else if (isReturnVoid(fn)     == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
   } else {
-    preNormalize(fn);
+    preNormalizeInit(fn);
+
+    errorOnFieldsInArgList(fn);
+  }
+}
+
+// Generates an error if a field is used in the argument list to an initializer
+// or constructor
+// Lydia NOTE 09/14/17: Make this static and unexported once constructors are
+// deprecated
+void errorOnFieldsInArgList(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    std::vector<SymExpr*> symExprs;
+
+    collectSymExprs(formal, symExprs);
+
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == fn->_this) {
+        USR_FATAL_CONT(se,
+                       "invalid access of class member in "
+                       "initializer argument list");
+
+        break;
+      }
+    }
   }
 }
 
@@ -229,9 +254,16 @@ static bool      isThisInit(Expr* stmt);
 static bool      hasReferenceToThis(Expr* expr);
 static bool      isMethodCall(CallExpr* callExpr);
 
-static void preNormalize(FnSymbol* fn) {
-  AggregateType* at         = toAggregateType(fn->_this->type);
+static void preNormalizeInit(FnSymbol* fn) {
+  ArgSymbol*     _this = fn->getFormal(2);
+  AggregateType* at    = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
+
+  if (_this->intent == INTENT_BLANK) {
+    if (isRecord(at) == true) {
+      _this->intent = INTENT_REF;
+    }
+  }
 
   if (at->isGeneric() == true) {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
@@ -389,6 +421,19 @@ static InitNormalize preNormalize(BlockStmt*    block,
             INT_ASSERT(false);
           }
 
+        } else if (state.inForall() == true) {
+          if (isSuperInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of super.init() call in a forall loop body");
+
+          } else if (isThisInit(callExpr) == true) {
+            USR_FATAL(stmt,
+                      "use of this.init() call in a forall loop body");
+
+          } else {
+            INT_ASSERT(false);
+          }
+
         } else if (state.inOn() == true) {
           if (isSuperInit(callExpr) == true) {
             USR_FATAL(stmt,
@@ -459,6 +504,13 @@ static InitNormalize preNormalize(BlockStmt*    block,
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "coforall during phase 1 of initialization",
+                    field->sym->name);
+
+
+        } else if (state.inForall() == true) {
+          USR_FATAL(stmt,
+                    "can't initialize field \"%s\" inside a "
+                    "forall during phase 1 of initialization",
                     field->sym->name);
 
 
@@ -569,6 +621,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
       preNormalize((BlockStmt*) stmt, InitNormalize(loop, state));
       stmt = stmt->next;
 
+    } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      preNormalize(forall->loopBody(), InitNormalize(forall, state));
+      stmt = stmt->next;
+
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
       state.merge(preNormalize(block, InitNormalize(block, state)));
       stmt  = stmt->next;
@@ -635,7 +691,6 @@ static bool isMethodCall(CallExpr* callExpr) {
 
   return retval;
 }
-
 
 /************************************* | **************************************
 *                                                                             *

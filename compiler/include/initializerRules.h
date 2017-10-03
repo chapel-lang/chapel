@@ -23,6 +23,8 @@
 class AggregateType;
 class FnSymbol;
 
+void      errorOnFieldsInArgList(FnSymbol* fn);
+
 void      preNormalizeFields(AggregateType* at);
 void      preNormalizeInitMethod(FnSymbol* fn);
 FnSymbol* buildClassAllocator(FnSymbol* initMethod);

@@ -23,6 +23,7 @@ use Spawn;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
+use MasonEnv;
 
 
 
@@ -97,8 +98,12 @@ proc addGitIgnore(name: string) {
 
 
 proc makeBasicToml(name: string) {
-  const baseToml = '\n[brick]\nname = "' + name +
-    '"\nversion = "0.1.0"\n\n[dependencies]\n';
+  const baseToml = '\n[brick]\n' +
+                     'name = "' + name + '"\n' +
+                     'version = "0.1.0"\n' +
+                     'chplVersion = "' + getChapelVersionStr() + '"\n' +
+                     '\n' +
+                     '[dependencies]\n';
   var tomlFile = open(name+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
@@ -109,7 +114,7 @@ proc makeBasicToml(name: string) {
 proc makeProjectFiles(name: string) {
   mkdir(name + "/src");
   const libTemplate = '/* Documentation for ' + name +
-    ' */\nmodule '+ name + ' {\n   writeln("New library: '+ name +'");\n}';
+    ' */\nmodule '+ name + ' {\n  writeln("New library: '+ name +'");\n}';
   var lib = open(name+'/src/'+name+'.chpl', iomode.cw);
   var libWriter = lib.writer();
   libWriter.write(libTemplate);

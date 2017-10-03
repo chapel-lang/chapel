@@ -162,19 +162,9 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
 
 FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
 {
-  // The common case of a user-level call to a resolved function
-  FnSymbol* theCall = call->resolvedFunction();
-
+  // The common case is a user-level call to a resolved function
   // Also handle the PRIMOP for a virtual method call
-  if (theCall == NULL)
-  {
-    if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL) == true)
-    {
-      SymExpr* arg1 = toSymExpr(call->get(1));
-
-      theCall = toFnSymbol(arg1->symbol());
-    }
-  }
+  FnSymbol* theCall = call->resolvedOrVirtualFunction();
 
   return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
@@ -506,7 +496,7 @@ void ReturnByRef::transform()
     }
     else
     {
-      FnSymbol* calledFn = call->resolvedFunction();
+      FnSymbol* calledFn = call->resolvedOrVirtualFunction();
 
       if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
         // fixupNewAlias removes some - but not all - calls
