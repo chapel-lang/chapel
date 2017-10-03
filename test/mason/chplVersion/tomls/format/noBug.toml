@@ -2,6 +2,6 @@
 [brick]
 name = "noBug"
 version = "0.1.0"
-chplVersion = "1.16..1.16"
+chplVersion = "1.17..1.17"
 
 [dependencies]

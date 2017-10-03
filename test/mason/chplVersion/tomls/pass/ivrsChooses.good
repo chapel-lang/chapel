@@ -3,26 +3,26 @@
 [root]
 name = "ivrsChooses"
 version = "0.1.0"
-chplVersion = "1.16.0..1.16.0"
+chplVersion = "1.17.0..1.17.0"
 dependencies = ["usesBad 0.1.0 foo", "usesGood 0.1.0 foo"]
 
 [badThenGood]
 name = "badThenGood"
 version = "0.2.0"
-chplVersion = "1.16.0..1.16.0"
+chplVersion = "1.17.0..1.17.0"
 source = "foo"
 
 [usesBad]
 name = "usesBad"
 version = "0.1.0"
-chplVersion = "1.16.0..1.16.0"
+chplVersion = "1.17.0..1.17.0"
 source = "foo"
 dependencies = ["badThenGood 0.2.0 foo"]
 
 [usesGood]
 name = "usesGood"
 version = "0.1.0"
-chplVersion = "1.16.0..1.16.0"
+chplVersion = "1.17.0..1.17.0"
 source = "foo"
 dependencies = ["badThenGood 0.2.0 foo"]
 
