@@ -74,11 +74,12 @@ public:
   virtual int            codegenStructure(FILE*       outfile,
                                           const char* baseoffset);
 
-  virtual Symbol*        getField(const char* name, bool fatal = true);
+  virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
   void                   addSymbol(TypeSymbol* newSymbol);
 
   bool                   isDefaultIntentConst()                          const;
+  bool                   isWidePtrType()                                 const;
 
   // get/set on the type destructor
   bool                   hasDestructor()                                 const;

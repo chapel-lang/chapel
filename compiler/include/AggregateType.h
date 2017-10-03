@@ -94,8 +94,8 @@ public:
   int                         getFieldPosition(const char* name,
                                                bool        fatal = true);
 
-  Symbol*                     getField(const char* name, bool fatal = true);
-  Symbol*                     getField(int i);
+  Symbol*                     getField(const char* name, bool fatal = true) const;
+  Symbol*                     getField(int i)                            const;
 
   // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
   QualifiedType               getFieldType(Expr* e);

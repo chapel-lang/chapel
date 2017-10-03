@@ -563,10 +563,13 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
 }
 
 
-Symbol* AggregateType::getField(const char* name, bool fatal) {
+Symbol* AggregateType::getField(const char* name, bool fatal) const {
+  // non-const-this: a workaround for const issues with Vec, baseAST
+  AggregateType* ncThis = const_cast<AggregateType*>(this);
+
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
-  current_p->set_add(this);
+  current_p->set_add(ncThis);
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
       if (AggregateType* ct = toAggregateType(t)) {
@@ -598,7 +601,7 @@ Symbol* AggregateType::getField(const char* name, bool fatal) {
 }
 
 
-Symbol* AggregateType::getField(int i) {
+Symbol* AggregateType::getField(int i) const {
   return toDefExpr(fields.get(i))->sym;
 }
 

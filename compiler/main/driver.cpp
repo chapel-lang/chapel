@@ -80,12 +80,9 @@ const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
 const char* CHPL_HWLOC = NULL;
 const char* CHPL_REGEXP = NULL;
-const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
-
-bool widePointersStruct;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -903,7 +900,6 @@ static ArgumentDescription arg_desc[] = {
  {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
  {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
  {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
- {"wide-pointers", ' ', "<format>", "Specify wide pointer format", "S", NULL, "_CHPL_WIDE_POINTERS", setEnv},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_COPYRIGHT,
@@ -1144,7 +1140,6 @@ static void setChapelEnvs() {
   CHPL_GMP             = envMap["CHPL_GMP"];
   CHPL_HWLOC           = envMap["CHPL_HWLOC"];
   CHPL_REGEXP          = envMap["CHPL_REGEXP"];
-  CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
@@ -1205,14 +1200,6 @@ static void setMaxCIndentLen() {
   if (gotPGI) fMaxCIdentLen = 1020;
 }
 
-static void setWidePointersStruct() {
-  if (0 == strcmp(CHPL_WIDE_POINTERS, "struct")) {
-    widePointersStruct = true;
-  } else {
-    widePointersStruct = false;
-  }
-}
-
 static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
@@ -1244,8 +1231,6 @@ static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
   setMaxCIndentLen();
-
-  setWidePointersStruct();
 
   postLocal();
 
