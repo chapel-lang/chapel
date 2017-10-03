@@ -5,7 +5,7 @@
          break;
 
 -      ByteOffset += GEPOffset.getSExtValue();
-+      ByteOffset += GEPOffset;
++      ByteOffset += GEPOffset.sextOrTrunc(ByteOffset.getBitWidth());
 
        Ptr = GEP->getPointerOperand();
      } else if (Operator::getOpcode(Ptr) == Instruction::BitCast ||
