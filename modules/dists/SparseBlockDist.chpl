@@ -94,6 +94,13 @@ class SparseBlockDom: BaseSparseDomImpl {
     //    writeln("Exiting setup()");
   }
 
+  proc dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom do {
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
+    }
+  }
+
   // TODO: For some reason I have to make all the methods for these classes primary
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
@@ -351,6 +358,14 @@ class SparseBlockArr: BaseSparseArr {
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
+      }
+    }
+  }
+
+  proc dsiDestroyArr() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on locArr(localeIdx) {
+        delete locArr(localeIdx);
       }
     }
   }
