@@ -248,7 +248,12 @@ class Cyclic1DDom {
   //
   var locDoms: [dist.targetLocDom] LocCyclic1DDom(glbIdxType);
 
-  proc initialize() {
+  proc init(type idxType, myDist, myDom) {
+    glbIdxType = idxType;
+    dist = myDist;
+    whole = myDom;
+
+    super.init();
     for locid in dist.targetLocDom do
       on dist.targetLocs(locid) do {
         locDoms(locid) = new LocCyclic1DDom(glbIdxType, this, 
