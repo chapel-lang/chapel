@@ -2165,6 +2165,8 @@ void makeBinaryLLVM(void) {
 
   std::string moduleFilename = genIntermediateFilename("chpl__module.o");
   std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
+  std::string opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
+  std::string opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
 
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
@@ -2233,8 +2235,8 @@ void makeBinaryLLVM(void) {
 
   // Add the Global to Wide optimization if necessary.
   if (fLLVMWideOpt) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addAggregateGlobalOps);
-    PMBuilder.addExtension(PassManagerBuilder::EP_ScalarOptimizerLate, addGlobalToWide);
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addAggregateGlobalOps);
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addGlobalToWide);
     PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
   }
 
@@ -2243,17 +2245,40 @@ void makeBinaryLLVM(void) {
     adjustLayoutForGlobalToWide();
 
     llvm::legacy::PassManager mpm;
+    llvm::legacy::PassManager mpm2;
 
     // Add the TransformInfo pass
     mpm.add(createTargetTransformInfoWrapperPass(
             info->targetMachine->getTargetIRAnalysis()));
+    mpm2.add(createTargetTransformInfoWrapperPass(
+             info->targetMachine->getTargetIRAnalysis()));
 
     // Add the TargetLibraryInfo pass
     Triple TargetTriple(info->module->getTargetTriple());
     llvm::TargetLibraryInfoImpl TLII(TargetTriple);
     mpm.add(new TargetLibraryInfoWrapperPass(TLII));
+    mpm2.add(new TargetLibraryInfoWrapperPass(TLII));
 
     PMBuilder.populateModulePassManager(mpm);
+
+    // Run the optimizations now!
+    mpm.run(*info->module);
+
+    if( saveCDir[0] != '\0' ) {
+      // Save the generated LLVM after first chunk of optimization
+      tool_output_file output1 (opt1Filename.c_str(),
+                               errorInfo,
+#if HAVE_LLVM_VER >= 34
+                               sys::fs::F_None
+#else
+                               raw_fd_ostream::F_Binary
+#endif
+                               );
+      WriteBitcodeToFile(info->module, output1.os());
+      output1.keep();
+      output1.os().flush();
+    }
+
 
     if (fLLVMWideOpt) {
       // the GlobalToWide pass creates calls to inline functions, among
@@ -2263,15 +2288,33 @@ void makeBinaryLLVM(void) {
       PassManagerBuilder PMBuilder2;
 
       configurePMBuilder(PMBuilder2, /* opt level */ 1);
+      // Should we disable vectorization since we did that?
+      // Or run select few cleanup passes?
+      // Inlining is definately important here..
 
-      PMBuilder2.populateModulePassManager(mpm);
+      PMBuilder2.populateModulePassManager(mpm2);
+
+      // Reset the data layout.
+      info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+
+      // Run the optimizations now!
+      mpm2.run(*info->module);
+
+      if( saveCDir[0] != '\0' ) {
+        // Save the generated LLVM after second chunk of optimization
+        tool_output_file output2 (opt2Filename.c_str(),
+                                 errorInfo,
+#if HAVE_LLVM_VER >= 34
+                                 sys::fs::F_None
+#else
+                                 raw_fd_ostream::F_Binary
+#endif
+                                 );
+        WriteBitcodeToFile(info->module, output2.os());
+        output2.keep();
+        output2.os().flush();
+      }
     }
-
-    // Run the optimizations now!
-    mpm.run(*info->module);
-
-    // Reset the data layout.
-    info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
   }
 
   // Handle --llvm-print-ir-stage=full
