@@ -27,9 +27,12 @@
 #ifdef HAVE_LLVM
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/ToolOutputFile.h"
 using namespace llvm;
 
 //#define DEBUG_TYPE "hello"
@@ -59,6 +62,23 @@ namespace {
       AU.setPreservesAll();
     }
   };
+
+  struct SaveModule : public ModulePass {
+    static char ID;
+
+    SaveModule() : ModulePass(ID) {}
+    bool runOnModule(Module &M) override {
+        std::error_code errorInfo;
+        sys::fs::OpenFlags flags = sys::fs::F_None;
+        tool_output_file output ("save_module.bc",
+                                 errorInfo,
+                                 flags
+                                 );
+        WriteBitcodeToFile(&M, output.os());
+        output.keep();
+        output.os().flush();
+    }
+  };
 }
 
 // createDumpIrPass - The public interface to this file...
@@ -66,10 +86,19 @@ FunctionPass *createDumpIrPass(llvmStageNum_t stage)
 {
   return new DumpIR(stage);
 }
+ModulePass *createSaveModulePass()
+{
+  return new SaveModule();
+}
+
 
 
 char DumpIR::ID = 0;
 static RegisterPass<DumpIR>
 X("dump-ir", "Dump LLVM IR from Chapel compilation");
+char SaveModule::ID = 0;
+static RegisterPass<SaveModule>
+Y("save-module", "Save LLVM module during Chapel compilation");
+
 
 #endif
