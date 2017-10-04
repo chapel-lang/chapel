@@ -286,10 +286,6 @@ class LocSparseBlockDom {
   var sparseDist = new sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
-  proc initialize() {
-    //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
-  }
-
   proc dsiAdd(ind: rank*idxType) {
     return mySparseBlock.add(ind);
   }
