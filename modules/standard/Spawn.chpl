@@ -458,7 +458,7 @@ module Spawn {
     // informative error message instead of a segfault. Note that we don't
     // register with the NIC for numLocales == 1, and vfork is used instead of
     // fork when stdin, stdout, stderr=FORWARD so we won't run into this issue
-    // under those circumstances. See JIRA issue 113 for more details.
+    // under those circumstances. See issue #7550 for more details.
     if CHPL_COMM == "ugni" then
       if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
         if numLocales > 1 {
