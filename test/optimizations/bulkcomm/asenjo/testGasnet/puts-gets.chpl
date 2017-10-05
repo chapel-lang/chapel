@@ -30,73 +30,64 @@ proc BlockArr.TestGetsPuts(B)
       count[1]=2;
       count[2]=4;
       writeln();
-      assert(locArr[0].myElems._value.oneDData); // fend off multi-ddata
-      var dest = locArr[0].myElems._value.theDataChunk(0); // can this be myLocArr?
-      assert(B._value.locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-      var srcl = B._value.locArr[lid].myElems._value.theDataChunk(0);
-      assert(B._value.locArr[rid].myElems._value.oneDData); // fend off multi-ddata
-      var srcr = B._value.locArr[rid].myElems._value.theDataChunk(0);
-      assert(dststrides._value.oneDData); // fend off multi-ddata
-      var dststr=dststrides._value.theDataChunk(0);
-      assert(srcstrides._value.oneDData); // fend off multi-ddata
-      var srcstr=srcstrides._value.theDataChunk(0);
-      assert(count._value.oneDData); // fend off multi-ddata
-      var cnt=count._value.theDataChunk(0);
+      var dest = locArr[0].myElems._value.theData; // can this be myLocArr?
+      var srcl = B._value.locArr[lid].myElems._value.theData;
+      var srcr = B._value.locArr[rid].myElems._value.theData;
+      var dststr=dststrides._value.theData;
+      var srcstr=srcstrides._value.theData;
+      var cnt=count._value.theData;
 
 // 1.- get some elements from B on locale 1 to A on locale 0      
       __primitive("chpl_comm_get_strd",
-      		  __primitive("array_get",dest,
-      			      locArr[0].myElems._value.getDataIndex(8, getChunked=false)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
-      		  rid,
-      		  __primitive("array_get",srcr,
-      			      B._value.locArr[rid].myElems._value.getDataIndex(58, getChunked=false)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
-      		  stridelevels);
+                 __primitive("array_get",dest,
+                             locArr[0].myElems._value.getDataIndex(8)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 rid,
+                 __primitive("array_get",srcr,
+                             B._value.locArr[rid].myElems._value.getDataIndex(58)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
 // 2.- get some elements from B on locale 0 to A on locale 0
       __primitive("chpl_comm_get_strd",
-      		  __primitive("array_get",dest,
-      			      locArr[0].myElems._value.getDataIndex(24, getChunked=false)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
-      		  lid,
-      		  __primitive("array_get",srcl,
-      			      B._value.locArr[lid].myElems._value.getDataIndex(8, getChunked=false)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
-      		  stridelevels);
+                 __primitive("array_get",dest,
+                             locArr[0].myElems._value.getDataIndex(24)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 lid,
+                 __primitive("array_get",srcl,
+                             B._value.locArr[lid].myElems._value.getDataIndex(8)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
-      assert(locArr[0].myElems._value.oneDData); // fend off multi-ddata
-      var src = locArr[0].myElems._value.theDataChunk(0); // can this be myLocArr?
-      assert(B._value.locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-      var destl = B._value.locArr[lid].myElems._value.theDataChunk(0);
-      assert(B._value.locArr[rid].myElems._value.oneDData); // fend off multi-ddata
-      var destr = B._value.locArr[rid].myElems._value.theDataChunk(0);
+      var src = locArr[0].myElems._value.theData; // can this be myLocArr?
+      var destl = B._value.locArr[lid].myElems._value.theData;
+      var destr = B._value.locArr[rid].myElems._value.theData;
 
 // 3.- put some elements from A on locale 0 to B on locale 1
       __primitive("chpl_comm_put_strd",
-      		  __primitive("array_get",destr,
-			      B._value.locArr[rid].myElems._value.getDataIndex(76, getChunked=false)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
-      		  rid,
-      		  __primitive("array_get",src,
-      			      locArr[0].myElems._value.getDataIndex(26, getChunked=false)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
-      		  stridelevels);
+                 __primitive("array_get",destr,
+                             B._value.locArr[rid].myElems._value.getDataIndex(76)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 rid,
+                 __primitive("array_get",src,
+                             locArr[0].myElems._value.getDataIndex(26)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
 // 4.- put some elements from A on locale 0 to B on locale 0
       __primitive("chpl_comm_put_strd",
-      		  __primitive("array_get",destl,
-			      B._value.locArr[lid].myElems._value.getDataIndex(16, getChunked=false)),
-      		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
-      		  lid,
-      		  __primitive("array_get",src,
-      			      locArr[0].myElems._value.getDataIndex(2, getChunked=false)),
-      		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-      		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
-      		  stridelevels);
+                 __primitive("array_get",destl,
+                             B._value.locArr[lid].myElems._value.getDataIndex(16)),
+                 __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
+                 lid,
+                 __primitive("array_get",src,
+                             locArr[0].myElems._value.getDataIndex(2)),
+                 __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+                 __primitive("array_get",cnt, count._value.getDataIndex(1)),
+                 stridelevels);
 
   }
 }

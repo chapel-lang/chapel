@@ -291,10 +291,10 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
     //         myBucketedKeys[srcOffset..#transferSize];
     ref LHS = allBucketKeys[dstlocid]._instance;
     var Lidx = LHS.getDataIndex(dstOffset);
-    var Ldata = _ddata_shift(keyType, LHS.theDataChunk(0), Lidx);
+    var Ldata = _ddata_shift(keyType, LHS.theData, Lidx);
 
     var Ridx = myBucketedKeys._instance.getDataIndex(srcOffset);
-    var Rdata = _ddata_shift(keyType, myBucketedKeys._instance.theDataChunk(0), Ridx);
+    var Rdata = _ddata_shift(keyType, myBucketedKeys._instance.theData, Ridx);
     __primitive("chpl_comm_array_put", Rdata[0], Ldata.locale.id, Ldata[0], transferSize);
   }
 
