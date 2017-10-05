@@ -8,9 +8,7 @@ record R {
   }
 }
 
-use BlockDist;
-
-var D = {1..10} dmapped Block({1..10});
+var D = {1..10};
 var A: [D] R;
 writeln(A);
 D = {1..5};
