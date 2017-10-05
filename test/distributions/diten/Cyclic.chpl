@@ -53,10 +53,10 @@ class Cyclic1DDist {
 
   //
   // an array of local distribution class descriptors -- set up in
-  // initialize() below
+  // initializer below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the initializer; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
@@ -237,11 +237,11 @@ class Cyclic1DDom {
 
   //
   // an array of local domain class descriptors -- set up in
-  // initialize() below
+  // initializer below
   //
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the initializer; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
@@ -484,7 +484,11 @@ class Cyclic1DArr {
   //
   var locArr: [dom.dist.targetLocDom] LocCyclic1DArr(glbIdxType, elemType);
 
-  proc initialize() {
+  proc init(type idxType, type eltType, myDom) {
+    glbIdxType = idxType;
+    elemType = eltType;
+    dom = myDom;
+    super.init();
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
