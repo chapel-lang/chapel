@@ -2290,7 +2290,7 @@ void makeBinaryLLVM(void) {
       configurePMBuilder(PMBuilder2, /* opt level */ 1);
       // Should we disable vectorization since we did that?
       // Or run select few cleanup passes?
-      // Inlining is definately important here..
+      // Inlining is definitely important here..
 
       PMBuilder2.populateModulePassManager(mpm2);
 
