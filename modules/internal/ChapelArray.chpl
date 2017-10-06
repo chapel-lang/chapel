@@ -1286,7 +1286,19 @@ module ChapelArray {
 
       return _newArray(x);
     }
+
     /* Remove all indices from this domain, leaving it empty */
+
+    // For rectangular domains, create an empty domain and assign it to this
+    // one to make sure that we leverage all of the array's normal resizing
+    // machinery.
+    proc clear() where isRectangularDom(this) {
+      var emptyDom: this.type;
+      this = emptyDom;
+    }
+
+    // For other domain types, the implementation probably knows the most
+    // efficient way to clear its index set, so make a dsiClear() call.
     proc clear() {
       _value.dsiClear();
     }

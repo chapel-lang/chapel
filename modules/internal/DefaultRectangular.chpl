@@ -132,12 +132,6 @@ module DefaultRectangular {
       writeln("ranges = ", ranges);
     }
 
-    proc dsiClear() {
-      var emptyRange: range(idxType, BoundedRangeType.bounded, stridable);
-      for param i in 1..rank do
-        ranges(i) = emptyRange;
-    }
-
     // function and iterator versions, also for setIndices
     proc dsiGetIndices() return ranges;
 
