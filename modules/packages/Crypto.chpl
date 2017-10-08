@@ -25,6 +25,7 @@
     - Symmetric Ciphers
 
       + :chpl:class:`AES`
+      + :chpl:class:`Blowfish`
 
     - Asymmetric Ciphers
 
@@ -638,6 +639,169 @@ module Crypto {
     }
   }
 
+pragma "no doc"
+proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
+
+    var ctx: EVP_CIPHER_CTX;
+    EVP_CIPHER_CTX_init(ctx);
+
+    var keyData = key.getBuffData();
+    var ivData = IV.getBuffData();
+    var plaintextData = plaintext.getBuffData();
+    var plaintextLen = plaintext.getBuffSize();
+
+    var ciphertextLen = plaintextLen + 8; // block size length for blowfish
+    var cipherDomain: domain(1) = {0..#ciphertextLen};
+    var ciphertext: [cipherDomain] uint(8);
+    var updateCipherLen: c_int;
+
+    EVP_EncryptInit_ex(ctx,
+                       cipher,
+                       c_nil: ENGINE_PTR,
+                       c_ptrTo(keyData): c_ptr(c_uchar),
+                       c_ptrTo(ivData): c_ptr(c_uchar));
+    EVP_EncryptUpdate(ctx,
+                      c_ptrTo(ciphertext): c_ptr(c_uchar),
+                      c_ptrTo(ciphertextLen): c_ptr(c_int),
+                      c_ptrTo(plaintextData): c_ptr(c_uchar),
+                      plaintextLen: c_int);
+    EVP_EncryptFinal_ex(ctx,
+                        c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
+                        c_ptrTo(updateCipherLen): c_ptr(c_int));
+    cipherDomain = {0..#(ciphertextLen + updateCipherLen)};
+    return ciphertext;
+  }
+
+  pragma "no doc"
+  proc bfDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
+
+    var ctx: EVP_CIPHER_CTX;
+    EVP_CIPHER_CTX_init(ctx);
+
+    var keyData = key.getBuffData();
+    var ivData = IV.getBuffData();
+    var ciphertextData = ciphertext.getBuffData();
+    var ciphertextLen = ciphertext.getBuffSize();
+
+    var plaintextLen = ciphertextLen;
+    var updatedPlainLen: c_int = 0;
+    var plainDomain: domain(1) = {0..plaintextLen};
+    var plaintext: [plainDomain] uint(8);
+
+    EVP_DecryptInit_ex(ctx,
+                       cipher,
+                       c_nil: ENGINE_PTR,
+                       c_ptrTo(keyData): c_ptr(c_uchar),
+                       c_ptrTo(ivData): c_ptr(c_uchar));
+    EVP_DecryptUpdate(ctx,
+                      c_ptrTo(plaintext): c_ptr(c_uchar),
+                      c_ptrTo(plaintextLen): c_ptr(c_int),
+                      c_ptrTo(ciphertextData): c_ptr(c_uchar),
+                      ciphertextLen: c_int);
+    EVP_DecryptFinal_ex(ctx,
+                        c_ptrTo(plaintext[plaintextLen..]): c_ptr(c_uchar),
+                        c_ptrTo(updatedPlainLen): c_ptr(c_int));
+
+    plainDomain = {0..#(plaintextLen + updatedPlainLen)};
+    return plaintext;
+  }
+
+  class Blowfish {
+    pragma "no doc"
+    var cipher: CONST_EVP_CIPHER_PTR;
+    pragma "no doc"
+    var byteLen: int;
+
+    /* The `Blowfish` class constructor that initializes the Blowfish encryption
+       algorithm with the right key length and chaining mode.
+
+
+       :arg mode: Name of the chaining mode to be used.
+       :type mode: `string`
+
+       :return: An object of class `Blowfish`.
+       :rtype: `Blowfish`
+
+    */
+    proc init(mode: string) {
+      var tmpCipher: CONST_EVP_CIPHER_PTR;
+      select mode {
+        when "cbc"  do tmpCipher = EVP_bf_cbc();
+        when "ecb"  do tmpCipher = EVP_bf_ecb();
+        when "cfb"  do tmpCipher = EVP_bf_cfb();
+        when "ofb"  do tmpCipher = EVP_bf_ofb();
+        otherwise do halt("The desired variant of Blowfish does not exist.");
+      }
+      this.cipher = tmpCipher;
+      this.byteLen = 8;
+      super.init();
+    }
+
+    /* This function returns the size in bytes of the key of the
+       Blowfish encryption algorithm. Returns the value `8`.
+
+       :return: Key length of Blowfish in bytes.
+       :rtype: `int`
+
+    */
+    proc getByteSize(): int {
+        return this.byteLen;
+    }
+
+    /* This is the 'Blowfish' encrypt routine that encrypts the user supplied message buffer
+       using the key and IV.
+
+       The `encrypt` takes in the plaintext buffer, key buffer and IV buffer as the
+       arguments and returns a buffer of the ciphertext.
+
+       :arg plaintext: A `CryptoBuffer` representing the plaintext to be encrypted.
+       :type plaintext: `CryptoBuffer`
+
+       :arg key: A `CryptoBuffer` representing the key to be used for encryption.
+       :type key: `CryptoBuffer`
+
+       :arg IV: A `CryptoBuffer` representing the initialization vector to be used
+                for encryption.
+       :type IV: `CryptoBuffer`
+
+       :return: A `CryptoBuffer` representing the ciphertext.
+       :rtype: `CryptoBuffer`
+
+    */
+    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+      var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
+      var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
+      return encryptedPlaintextBuff;
+    }
+
+    /* This is the 'Blowfish' decrypt routine that decrypts the user supplied ciphertext
+       buffer using the same key and IV used for encryption.
+
+       The `decrypt` takes in the ciphertext buffer, key buffer and IV buffer as the
+       arguments and returns a buffer of the decrypted plaintext.
+
+       :arg ciphertext: A `CryptoBuffer` representing the ciphertext to be decrypted.
+       :type ciphertext: `CryptoBuffer`
+
+       :arg key: A `CryptoBuffer` representing the key to be used for decryption
+                 (same as the one used in encryption).
+       :type key: `CryptoBuffer`
+
+       :arg IV: A `CryptoBuffer` representing the initialization vector to be used
+                for decryption (same as the one used in encryption).
+       :type IV: `CryptoBuffer`
+
+       :return: A `CryptoBuffer` representing the obtained plaintext.
+       :rtype: `CryptoBuffer`
+
+    */
+    proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+      var decryptedCiphertext = bfDecrypt(ciphertext, key, IV, this.cipher);
+      var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
+      return decryptedCiphertextBuff;
+    }
+  }
+
   pragma "no doc"
   proc createRandomBuffer(buffLen: int) {
     var buff: [0..#buffLen] uint(8);
@@ -1077,6 +1241,10 @@ module Crypto {
     extern proc EVP_aes_256_ecb(): CONST_EVP_CIPHER_PTR;
     extern proc EVP_aes_256_cfb(): CONST_EVP_CIPHER_PTR;
     extern proc EVP_aes_256_ofb(): CONST_EVP_CIPHER_PTR;
+    extern proc EVP_bf_cbc(): CONST_EVP_CIPHER_PTR;
+    extern proc EVP_bf_ecb(): CONST_EVP_CIPHER_PTR;
+    extern proc EVP_bf_cfb(): CONST_EVP_CIPHER_PTR;
+    extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
     extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
   }
