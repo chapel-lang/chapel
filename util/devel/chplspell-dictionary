@@ -1115,6 +1115,7 @@ subminor
 subobject
 subparts
 substring
+subtarget
 subtask
 suppresswarnings
 suseconds
@@ -2735,8 +2736,10 @@ ures
 urse
 
 FILEID: 4f065520-1d85-11e6-a3a6-10ddb1d4c3d5
+intented
 orse
 shadowvar
+ssvar
 ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
@@ -2746,11 +2749,14 @@ rauto
 FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
 fsyntax
 infs
+ipra
 maino
 qunused
+tlii
 
 FILEID: 4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5
 sroa
+widecast
 
 FILEID: 606babf2-1d86-11e6-a3a6-10ddb1d4c3d5
 xfloat
@@ -4297,6 +4303,7 @@ rhsv
 
 FILEID: e95fef8a-2015-11e7-980e-10ddb1d4c3d5
 icts
+pthis
 
 FILEID: f8d1f5e4-2015-11e7-980e-10ddb1d4c3d5
 cfns
@@ -4409,6 +4416,20 @@ eliben
 fnints
 pycparser
 
+FILEID: c4a256e8-ad6d-11e7-a204-10ddb1d4c3d5
+agoid
+agomask
+
+FILEID: cd80a742-ad6d-11e7-a204-10ddb1d4c3d5
+intented
+
+FILEID: da2ea3b8-ad6d-11e7-a204-10ddb1d4c3d5
+adom
+bdom
+cblas
+cdom
+lblas
+
 NATURAL:
 abcd
 abcdefg
@@ -4432,6 +4453,7 @@ albert
 alberto
 albrecht
 alexey
+algebralib
 algol
 aliasee
 alice
@@ -4721,6 +4743,7 @@ coordfmt
 coords
 copenhagen
 coptic
+copyleft
 copyout
 copypostfields
 cory
@@ -5328,6 +5351,7 @@ indexable
 indexx
 indiana
 indirecting
+inds
 indvars
 inet
 infile
@@ -5545,6 +5569,7 @@ lfoo
 lgamma
 lgfortran
 lgmp
+lgpl
 lhdfs
 libclang
 libcrypto
@@ -5645,6 +5670,7 @@ malayalam
 malloc
 maltzahn
 mandelbrot
+mannari
 manpage
 manpath
 mantevo
@@ -5696,6 +5722,7 @@ memmaps
 memmove
 memoize
 memreg
+mergeable
 mersenne
 mfac
 mferguson
@@ -5919,6 +5946,7 @@ nvidia
 nview
 objs
 october
+ofile
 ogham
 ohio
 okey
@@ -6030,6 +6058,7 @@ pouchet
 powerof
 powm
 pozo
+prabhanjan
 pragmas
 prasun
 preadv
@@ -6225,6 +6254,7 @@ rtype
 runcmd
 runtest
 rvalue
+rvalues
 sadayappan
 safecasts
 sagar
