@@ -104,6 +104,12 @@ class Cyclic1DDist {
       on targetLocs(locid) do
         locDist(locid) = new LocCyclic1DDist(glbIdxType, locid, this);
   }
+
+  proc deinit() {
+    for locid in targetLocDom do
+      on targetLocs(locid) do
+        delete locDist(locid);
+  }
   //
   // END WORKAROUND
   //
@@ -250,6 +256,12 @@ class Cyclic1DDom {
       }
     if debugCyclic1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
+  }
+
+  proc deinit() {
+    for locid in dist.targetLocDom do
+      on dist.targetLocs(locid) do
+        delete locDoms(locid);
   }
 
   //
@@ -471,6 +483,12 @@ class Cyclic1DArr {
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
         locArr(locid) = new LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
+  }
+
+  proc deinit() {
+    for locid in dom.dist.targetLocDom do
+      on dom.dist.targetLocs(locid) do
+        delete locArr(locid);
   }
 
   //
