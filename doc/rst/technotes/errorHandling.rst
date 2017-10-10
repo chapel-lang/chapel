@@ -292,7 +292,7 @@ Methods
 -------
 
 Errors can be thrown by methods, just as with any other function.
-An overriding method must throw if the overriden method throws,
+An overriding method must throw if the overridden method throws,
 or not throw if the overridden method does not throw.
 
 .. code-block:: chapel
