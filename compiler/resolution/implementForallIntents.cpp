@@ -1071,13 +1071,13 @@ General Context
 Let's say we are extending the parallel iterator with a variable
 that corresponds to a reduce intent. For example, from this:
 
-  iter myIter(param tag == standlone) {
+  iter myIter(param tag == standalone) {
     ... yield 555; ...
   }
 
 to this:
 
-  iter myIter(param tag == standlone, x1_reduceParent:SumReduceScanOp) {
+  iter myIter(param tag == standalone, x1_reduceParent:SumReduceScanOp) {
     var x1_shadowVarReduc = x1_reduceParent.identity;
     ... yield (555, addr-of(x1_shadowVarReduc)); ...
     x1_reduceParent.accumulate(x1_shadowVarReduc);
@@ -1107,7 +1107,7 @@ Need to handle these cases:
 
 * The yield is in >1 nested foralls --> create a new shadow var for each:
 
-  iter myIter(param tag == standlone, x1_reduceParent:SumReduceScanOp) {
+  iter myIter(param tag == standalone, x1_reduceParent:SumReduceScanOp) {
     var x1_shadowVarReduc = x1_reduceParent.identity;
 
     forall ... with (x1_reduceParent reduce x1_shadowVarReduc) {
