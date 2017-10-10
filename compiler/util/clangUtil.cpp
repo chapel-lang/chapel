@@ -1165,7 +1165,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
     PMBuilder.Inliner = createFunctionInliningPass(optLevel,
                                                    opts.OptimizeSize
 #if HAVE_LLVM_VER >= 50
-                                                   , /*DisableInlineHotCalsite*/
+                                                   ,/*DisableInlineHotCallsite*/
                                                    false
 #endif
                                                   );
