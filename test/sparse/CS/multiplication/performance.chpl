@@ -72,6 +72,8 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where isSparseArr(A) {
   for idx in ADom {
     A[idx] = randomReals.getNext();
   }
+  delete randomIndices;
+  delete randomReals;
 }
 
 /* Populate dense matrix with random elements according to "sparsity" */
@@ -92,4 +94,6 @@ proc populate(ref A: [?ADom], sparsity: real, seed: int) where !isSparseArr(A) {
   for idx in indices {
     A[idx] = randomReals.getNext();
   }
+  delete randomReals;
+  delete randomIndices;
 }

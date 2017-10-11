@@ -94,6 +94,13 @@ class SparseBlockDom: BaseSparseDomImpl {
     //    writeln("Exiting setup()");
   }
 
+  proc dsiDestroyDom() {
+    coforall localeIdx in dist.targetLocDom do {
+      on locDoms(localeIdx) do
+        delete locDoms(localeIdx);
+    }
+  }
+
   // TODO: For some reason I have to make all the methods for these classes primary
   // rather than secondary methods.  This doesn't seem right, but I couldn't boil
   // it down to a smaller test case in the time I spent on it.
@@ -286,10 +293,6 @@ class LocSparseBlockDom {
   var sparseDist = new sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
-  proc initialize() {
-    //    writeln("On locale ", here.id, " LocSparseBlockDom = ", this);
-  }
-
   proc dsiAdd(ind: rank*idxType) {
     return mySparseBlock.add(ind);
   }
@@ -351,6 +354,14 @@ class SparseBlockArr: BaseSparseArr {
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
+      }
+    }
+  }
+
+  proc dsiDestroyArr() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on locArr(localeIdx) {
+        delete locArr(localeIdx);
       }
     }
   }
@@ -736,87 +747,6 @@ proc SparseBlockArr.doiCanBulkTransfer() {
 // from dsiSupportsBulkTransfer, so this function should never be compiled
 proc SparseBlockArr.doiBulkTransfer(B, viewDom) {
   halt("SparseBlockArr.doiBulkTransfer not yet implemented");
-/*
-  if debugSparseBlockDistBulkTransfer then resetCommDiagnostics();
-  var sameDomain: bool;
-  // We need to do the following on the locale where 'this' was allocated,
-  //  but hopefully, most of the time we are initiating the transfer
-  //  from the same locale (local on clauses are optimized out).
-  on this do sameDomain = dom==B._value.dom;
-  // Use zippered iteration to piggyback data movement with the remote
-  //  fork.  This avoids remote gets for each access to locArr[i] and
-  //  B._value.locArr[i]
-  coforall (i, myLocArr, BmyLocArr) in zip(dom.dist.targetLocDom,
-                                           locArr,
-                                           B._value.locArr) do
-    on dom.dist.targetLocales(i) {
-
-    if sameDomain &&
-      chpl__useBulkTransfer(myLocArr.myElems, BmyLocArr.myElems) {
-      // Take advantage of DefaultRectangular bulk transfer
-      if debugSparseBlockDistBulkTransfer then startCommDiagnosticsHere();
-      local {
-        myLocArr.myElems._value.doiBulkTransfer(BmyLocArr.myElems);
-      }
-      if debugSparseBlockDistBulkTransfer then stopCommDiagnosticsHere();
-    } else {
-      if debugSparseBlockDistBulkTransfer then startCommDiagnosticsHere();
-      if (rank==1) {
-        var lo=dom.locDoms[i].mySparseBlock.low;
-        const start=lo;
-        //use divCeilPos(i,j) to know the limits
-        //but i and j have to be positive.
-        for (rid, rlo, size) in ConsecutiveChunks(dom,B._value.dom,i,start) {
-          if debugSparseBlockDistBulkTransfer then writeln("Local Locale id=",i,
-                                            "; Remote locale id=", rid,
-                                            "; size=", size,
-                                            "; lo=", lo,
-                                            "; rlo=", rlo
-                                            );
-          // NOTE: This does not work with --heterogeneous, but heterogeneous
-          // compilation does not work right now.  This call should be changed
-          // once that is fixed.
-          var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
-          __primitive("chpl_comm_get",
-                      __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
-                      rid,
-                      __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
-                      size);
-          lo+=size;
-        }
-      } else {
-        var orig=dom.locDoms[i].mySparseBlock.low(dom.rank);
-        for coord in dropDims(dom.locDoms[i].mySparseBlock, dom.locDoms[i].mySparseBlock.rank) {
-          var lo=if rank==2 then (coord,orig) else ((...coord), orig);
-          const start=lo;
-          for (rid, rlo, size) in ConsecutiveChunksD(dom,B._value.dom,i,start) {
-            if debugSparseBlockDistBulkTransfer then writeln("Local Locale id=",i,
-                                        "; Remote locale id=", rid,
-                                        "; size=", size,
-                                        "; lo=", lo,
-                                        "; rlo=", rlo
-                                        );
-          var dest = myLocArr.myElems._value.theDataChunk(0);
-          const src = B._value.locArr[rid].myElems._value.theDataChunk(0);
-          __primitive("chpl_comm_get",
-                      __primitive("array_get", dest,
-                                  myLocArr.myElems._value.getDataIndex(lo, getChunked=false)),
-                      dom.dist.targetLocales(rid).id,
-                      __primitive("array_get", src,
-                                  B._value.locArr[rid].myElems._value.getDataIndex(rlo, getChunked=false)),
-                      size);
-            lo(rank)+=size;
-          }
-        }
-      }
-      if debugSparseBlockDistBulkTransfer then stopCommDiagnosticsHere();
-    }
-  }
-  if debugSparseBlockDistBulkTransfer then writeln("Comms:",getCommDiagnostics());
-*/
 }
 
 iter ConsecutiveChunks(d1,d2,lid,lo) {

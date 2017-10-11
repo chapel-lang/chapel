@@ -687,12 +687,6 @@ OPTIONS
     corresponds with and overrides the $CHPL\_TIMERS environment variable
     (defaults to 'generic').
 
-**--wide-pointers <format>**
-
-    Specify the wide pointer format format. This flag corresponds with and
-    overrides the $CHPL\_WIDE\_POINTERS environment variable (defaults to
-    'struct').
-
 *Compiler Information Options*
 
 **--copyright**

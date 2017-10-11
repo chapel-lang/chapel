@@ -890,6 +890,9 @@ module String {
         var joinedSize: int = this.len * (S.size - 1);
         for s in S do joinedSize += s.length;
 
+        if joinedSize == 0 then
+          return '';
+
         var joined: string;
         joined.len = joinedSize;
         const allocSize = chpl_here_good_alloc_size(joined.len + 1);

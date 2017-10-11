@@ -13,25 +13,21 @@ proc BlockArr.copyBtoC(B)
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
-    var dststrides:[1..#stridelevels] size_t; 
+    var dststrides:[1..#stridelevels] size_t;
     var srcstrides: [1..#stridelevels] size_t;
     var count: [1..#(stridelevels+1)] size_t;
-    var lid=loc.id; 
+    var lid=loc.id;
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
-    assert(locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-    var src = locArr[lid].myElems._value.theDataChunk(0);
+    var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales.safeCast(size_t);
 
-    assert(dststrides._value.oneDData); // fend off multi-ddata
-    var dststr=dststrides._value.theDataChunk(0);
-    assert(srcstrides._value.oneDData); // fend off multi-ddata
-    var srcstr=srcstrides._value.theDataChunk(0);
-    assert(count._value.oneDData); // fend off multi-ddata
-    var cnt=count._value.theDataChunk(0);
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //Domain size (n) and first index (arrayini)
 
@@ -40,7 +36,7 @@ proc BlockArr.copyBtoC(B)
     //writeln("Domain: ",dom.whole.dims());
 
     //a,b: first and last global indices in each locale
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     var blksize=b-a+1;
     //writeln("Locale", here.id," : blksize ",blksize," subblock first index  a ",a,
@@ -61,21 +57,20 @@ proc BlockArr.copyBtoC(B)
       if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
       else chunksize=blksize/numLocales+1;
 
-      //var destr = privB.locArr[dst].myElems._value.theDataChunk(0);
-      assert(B._value.locArr[dst].myElems._value.oneDData); // fend off multi-ddata
-      var destr = B._value.locArr[dst].myElems._value.theDataChunk(0);
+      //var destr = privB.locArr[dst].myElems._value.theData;
+      var destr = B._value.locArr[dst].myElems._value.theData;
       count[1]=1;
       count[2]=chunksize.safeCast(size_t);
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",src,
-			      locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),  
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
+			      locArr[lid].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
 		  stridelevels);
 
     } // end for dst
@@ -84,34 +79,30 @@ proc BlockArr.copyBtoC(B)
 
 proc  BlockArr.copyCtoB(B)
 {
- 
+
   coforall loc in Locales do on loc
   {
     param stridelevels=1;
     var dststrides:[1..#stridelevels] size_t;
     var srcstrides: [1..#stridelevels] size_t;
-    var count: [1..#(stridelevels+1)] size_t; 
+    var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id;
     var numLocales: int=dom.dist.targetLocDom.dim(1).length;
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
 
-    assert(dststrides._value.oneDData); // fend off multi-ddata
-    var dststr=dststrides._value.theDataChunk(0);
-    assert(srcstrides._value.oneDData); // fend off multi-ddata
-    var srcstr=srcstrides._value.theDataChunk(0);
-    assert(count._value.oneDData); // fend off multi-ddata
-    var cnt=count._value.theDataChunk(0);
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //On each locale (src) we compute the chunk that goes to each dst
     var num: int;
     var schunkini: int;
     var chunksize: int;
-    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32); 
+    var a: int(32)=dom.locDoms[lid].myBlock.low:int(32);
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
-    assert(locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-    var src = locArr[lid].myElems._value.theDataChunk(0);
+    var src = locArr[lid].myElems._value.theData;
     var arrayini:int(32)=dom.dsiLow:int(32);
 
     var t,t1,t2: real;
@@ -126,8 +117,7 @@ proc  BlockArr.copyCtoB(B)
       if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
       else chunksize=num/numLocales+1;
 
-      assert(B._value.locArr[dst].myElems._value.oneDData); // fend off multi-ddata
-      var destr = B._value.locArr[dst].myElems._value.theDataChunk(0);
+      var destr = B._value.locArr[dst].myElems._value.theData;
       dststrides[1]=numLocales:size_t;
       srcstrides[1]=1;
       count[1]=1;
@@ -135,13 +125,13 @@ proc  BlockArr.copyCtoB(B)
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
-                              locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
+                              locArr[lid].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-		  __primitive("array_get",cnt,count._value.getDataIndex(1, getChunked=false)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
 		  stridelevels);
     } //end for dst
   }//end for loc
@@ -214,7 +204,7 @@ proc main() {
   // This implementation assumes 4**k locales due to its assertion that
   // all butterflies are local to a given locale
   //
-  assert(4**log4(numLocales) == numLocales, 
+  assert(4**log4(numLocales) == numLocales,
          "numLocales must be a power of 4 for this fft implementation");
 
   //
@@ -251,19 +241,19 @@ proc main() {
     domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
-  
+
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
   var t1,t2,T1,T2,T3,T4: real;
   const startTime = getCurrentTime();  // capture the start time
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
 
-  //Comm y tieme bitReverse 
+  //Comm y tieme bitReverse
   t1=getCurrentTime();
   bitReverseShuffle(Zblk);                // permute Zblk
   t2=getCurrentTime();
   T1=t2-t1;
 
-  //Comm and Time dfft  
+  //Comm and Time dfft
   t1=getCurrentTime();
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
   t2=getCurrentTime();
@@ -285,8 +275,8 @@ proc main() {
   t1=getCurrentTime();
   dfft(Zcyc, Twiddles, cyclicPhase=true); // compute the DFFT, cyclic phases
   t2=getCurrentTime();
-  T2=T2+t2-t1; 
- 
+  T2=T2+t2-t1;
+
   t1=getCurrentTime();
   //    forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
   //   b = c;
@@ -295,7 +285,7 @@ proc main() {
   T4=t2-t1;
 
   const execTime = getCurrentTime() - startTime;     // store the elapsed time
-  //  writeln("bitReverse Time = ",T1);  
+  //  writeln("bitReverse Time = ",T1);
   //  writeln("dffts Time = ",T2," copyBtoC time= ",T3, " copyCtoB time= ",T4);
 
   const validAnswer = verifyResults(z, Zblk, Zcyc, Twiddles); // validate answer
@@ -410,7 +400,7 @@ proc butterfly(wk1, wk2, wk3, X:[?D]) {
 // of the DFFT simply by yielding tuples: (radix**i, radix**(i+1))
 //
 iter genDFTStrideSpan(numElements, cyclicPhase) {
-  const (start, end) = if !cyclicPhase then (1, numLocales:idxType) 
+  const (start, end) = if !cyclicPhase then (1, numLocales:idxType)
     else (numLocales, numElements-1);
   var stride = start;
   for i in log4(start)+1..log4(end):int {
@@ -488,7 +478,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);  
+proc log4(x) return logBasePow2(x, 2);
 
 	     //
 	     // verify that the results are correct by reapplying the dfft and then

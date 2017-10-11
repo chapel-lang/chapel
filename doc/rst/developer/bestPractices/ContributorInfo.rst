@@ -741,7 +741,7 @@ rely on should be committed to the chapel repository:
     - Is there an alternate package with a more permissive license that can
       accomplish the same purpose?
 
-      - If so, we recommend relying on that package instead
+      - If so, we recommend relying on that package instead.
 
       - If not, it would be better to add directions on how to install this
         dependency.
@@ -757,9 +757,9 @@ rely on should be committed to the chapel repository:
   - The compiler for ordinary Chapel?  A commonly used runtime configuration?
 
     - In these cases, we will probably want to include the code in our
-      distribution
+      distribution.
 
-  - A standard or package module that is not include by default?
+  - A standard or package module that is not included by default?
 
     - Depending on the circumstances, it might be better to just include
       directions on how to install this code.

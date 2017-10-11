@@ -45,8 +45,7 @@ pragma "locale private" var A: DistributedArray;
   for loc in Locales do on loc {
     A.others = AS;
     for i in 0..numLocales-1 {
-      assert(AS[i].data._value.oneDData); // fend off multi-ddata
-      A.otherBases[i] = AS[i].data._value.dataChunk(0);
+      A.otherBases[i] = AS[i].data._value.data;
     }
   }
 }

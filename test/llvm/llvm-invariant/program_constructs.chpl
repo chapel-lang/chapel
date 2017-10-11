@@ -11,24 +11,33 @@ proc f(n)
   var sum = 0;
   for i in 1..10
   {
-// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl
-// CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast %A_chpl* %localConst_chpl to i8*
-// CHECK-NEXT: %{{[0-9]+}} = call {}* @llvm.invariant.start.p0i8(i64 8, i8* %[[REG1]])
+// CHECK: @_construct_A_chpl
+// CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST1:%.*]])
+// CHECK-DAG: [[CAST1]] = bitcast %A_chpl* [[PTR1:%.*]] to i8*
+// CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR1]]
+// CHECK: getelementptr
+// CHECK-SAME:[[PTR1]]
     const localConst = new A(i*10);
     sum += localConst.a;
   }
 
   if n < 10 {
-// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl2
-// CHECK-NEXT: %[[REG2:[0-9]+]] = bitcast %A_chpl* %localConst_chpl2 to i8*
-// CHECK-NEXT: %{{[0-9]+}} = call {}* @llvm.invariant.start.p0i8(i64 8, i8* %[[REG2]])
+// CHECK: @_construct_A_chpl
+// CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST2:%.*]])
+// CHECK-DAG: [[CAST2]] = bitcast %A_chpl* [[PTR2:%.*]] to i8*
+// CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR2]]
+// CHECK: getelementptr
+// CHECK-SAME:[[PTR2]]
     const localConst = new A(n*10);
     return localConst.a;
   }
   else {
-// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl3
-// CHECK-NEXT: %[[REG3:[0-9]+]] = bitcast %A_chpl* %localConst_chpl3 to i8*
-// CHECK-NEXT: %{{[0-9]+}} = call {}* @llvm.invariant.start.p0i8(i64 8, i8* %[[REG3]])
+// CHECK: @_construct_A_chpl
+// CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST3:%.*]])
+// CHECK-DAG: [[CAST3]] = bitcast %A_chpl* [[PTR3:%.*]] to i8*
+// CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR3]]
+// CHECK: getelementptr
+// CHECK-SAME:[[PTR3]]
     const localConst = new A(n*5);
     return localConst.a;
   }

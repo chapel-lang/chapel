@@ -131,7 +131,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   if(N) return toDITYPE(N);
 
   GenInfo* info = gGenInfo;
-  LLVM_TARGET_DATA *layout = info->targetData; 
+  const llvm::DataLayout& layout = info->module->getDataLayout();
   
   llvm::Type* ty = type->symbol->llvmType;
   const char* name = type->symbol->name;
@@ -157,9 +157,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   if(ty->isIntegerTy()) {
     N = this->dibuilder.createBasicType(
       name, /* Name */
-      layout->getTypeSizeInBits(ty), /* SizeInBits */
+      layout.getTypeSizeInBits(ty), /* SizeInBits */
 #if HAVE_LLVM_VER <= 39
-      8*layout->getABITypeAlignment(ty), /* AlignInBits */
+      8*layout.getABITypeAlignment(ty), /* AlignInBits */
 #endif
       (is_signed(type))? 
       (llvm::dwarf::DW_ATE_signed):
@@ -172,9 +172,9 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   else if(ty->isFloatingPointTy()) {
     N = this->dibuilder.createBasicType(
       name,
-      layout->getTypeSizeInBits(ty),
+      layout.getTypeSizeInBits(ty),
 #if HAVE_LLVM_VER <= 39
-      8*layout->getABITypeAlignment(ty),
+      8*layout.getABITypeAlignment(ty),
 #endif
       llvm::dwarf::DW_ATE_float);
     
@@ -186,7 +186,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     if(type != type->getValType()) {//Add this condition to avoid segFault 
       N = this->dibuilder.createPointerType(
         get_type(type->getValType()),//it should return the pointee's DIType
-        layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
+        layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
 #if HAVE_LLVM_VER >= 50
         llvm::None,
@@ -204,15 +204,15 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
           LLVM_DITYPE pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(
             myGetTypeName(PointeeTy), 
-            layout->getTypeSizeInBits(PointeeTy),
+            layout.getTypeSizeInBits(PointeeTy),
 #if HAVE_LLVM_VER <= 39
-            8*layout->getABITypeAlignment(PointeeTy),
+            8*layout.getABITypeAlignment(PointeeTy),
 #endif
             llvm::dwarf::DW_ATE_unsigned);
 
           N = this->dibuilder.createPointerType(
             pteIntDIType, 
-            layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
+            layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
 #if HAVE_LLVM_VER >= 50
             llvm::None,
@@ -231,10 +231,10 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             get_file(defFile), /* File */
             0, /* LineNumber */
             (PointeeTy->isSized()?
-            layout->getTypeSizeInBits(PointeeTy):
+            layout.getTypeSizeInBits(PointeeTy):
             8), /* SizeInBits */
             (PointeeTy->isSized()?
-            8*layout->getABITypeAlignment(PointeeTy):
+            8*layout.getABITypeAlignment(PointeeTy):
             8), /* AlignInBits */
             FLAG_ZERO, /* Flags */
             toDITYPE(NULL), /* DerivedFrom */
@@ -247,7 +247,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         
           N = this->dibuilder.createPointerType(
             pteStrDIType,
-            layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
+            layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
 #if HAVE_LLVM_VER >= 50
             llvm::None,
@@ -272,7 +272,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
           if(vt) {
             N = this->dibuilder.createPointerType(
               get_type(vt),
-              layout->getPointerSizeInBits(ty->getPointerAddressSpace()),
+              layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
 #if HAVE_LLVM_VER >= 50
               llvm::None,
@@ -297,15 +297,15 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               get_file(defFile),
               defLine,
               0, // RuntimeLang
-              layout->getTypeSizeInBits(ty),
-              8*layout->getABITypeAlignment(ty));
+              layout.getTypeSizeInBits(ty),
+              8*layout.getABITypeAlignment(ty));
      
             //N is added to the map (early) so that element search below can find it,
             //so as to avoid infinite recursion for structs that contain pointers to
             //their own type.
             myTypeDescriptors[type] = N;
 
-            slayout = layout->getStructLayout(struct_type); 
+            slayout = layout.getStructLayout(struct_type); 
             for_fields(field, this_class) {
               // field is a Symbol
               const char* fieldDefFile = field->defPoint->fname();
@@ -326,8 +326,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
                 field->name,
                 get_file(fieldDefFile),
                 fieldDefLine,
-                layout->getTypeSizeInBits(fty),
-                8*layout->getABITypeAlignment(fty),
+                layout.getTypeSizeInBits(fty),
+                8*layout.getABITypeAlignment(fty),
                 slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
                 FLAG_ZERO,
                 fditype);
@@ -341,8 +341,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
               name, /* Name */
               get_file(defFile), /* File */
               defLine, /* LineNumber */
-              layout->getTypeSizeInBits(ty), /* SizeInBits */
-              8*layout->getABITypeAlignment(ty), /* AlignInBits */
+              layout.getTypeSizeInBits(ty), /* SizeInBits */
+              8*layout.getABITypeAlignment(ty), /* AlignInBits */
               FLAG_ZERO, /* Flags */
               derivedFrom, /* DerivedFrom */
               this->dibuilder.getOrCreateArray(EltTys) /* Elements */
@@ -364,7 +364,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
 
     const llvm::StructLayout* slayout = NULL;
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
-    slayout = layout->getStructLayout(struct_type);
+    slayout = layout.getStructLayout(struct_type);
    
     N = this->dibuilder.createForwardDecl(
       llvm::dwarf::DW_TAG_structure_type, 
@@ -373,8 +373,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
       get_file(defFile),
       defLine,
       0, // RuntimeLang
-      layout->getTypeSizeInBits(ty),
-      8*layout->getABITypeAlignment(ty));
+      layout.getTypeSizeInBits(ty),
+      8*layout.getABITypeAlignment(ty));
 
     //N is added to the map (early) so that element search below can find it,
     //so as to avoid infinite recursion for structs that contain pointers to
@@ -401,8 +401,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         field->name,
         get_file(fieldDefFile),
         fieldDefLine,
-        layout->getTypeSizeInBits(fty),
-        8*layout->getABITypeAlignment(fty),
+        layout.getTypeSizeInBits(fty),
+        8*layout.getABITypeAlignment(fty),
         slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
         FLAG_ZERO,
         fditype);
@@ -416,8 +416,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         name,
         get_file(defFile),
         defLine,
-        layout->getTypeSizeInBits(ty),
-        8*layout->getABITypeAlignment(ty),
+        layout.getTypeSizeInBits(ty),
+        8*layout.getABITypeAlignment(ty),
         FLAG_ZERO,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
@@ -431,8 +431,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         name,
         get_file(defFile),
         defLine,
-        layout->getTypeSizeInBits(ty),
-        8*layout->getABITypeAlignment(ty),
+        layout.getTypeSizeInBits(ty),
+        8*layout.getABITypeAlignment(ty),
         FLAG_ZERO,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
@@ -446,8 +446,8 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
         name,
         get_file(defFile),
         defLine,
-        layout->getTypeSizeInBits(ty),
-        8*layout->getABITypeAlignment(ty),
+        layout.getTypeSizeInBits(ty),
+        8*layout.getABITypeAlignment(ty),
         FLAG_ZERO,
         this->dibuilder.getOrCreateArray(EltTys));
         
@@ -467,7 +467,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     Type *eleType = eleSym->type;
     N = this->dibuilder.createArrayType(
       Asize, 
-      8*layout->getABITypeAlignment(ty), 
+      8*layout.getABITypeAlignment(ty), 
       get_type(eleType),  
       this->dibuilder.getOrCreateArray(Subscripts)); 
       

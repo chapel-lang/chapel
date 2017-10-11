@@ -1,6 +1,9 @@
 var r = 1..10;
 writeln(r.alignment);
 
+var r1 = r by 1;
+writeln(r1.alignment);
+
 var r2 = 1..10 align 3;
 writeln(r2.alignment);
 

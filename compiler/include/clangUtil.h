@@ -141,6 +141,8 @@ bool lookupInExternBlock(ModuleSymbol* module, const char* name,
 bool alreadyConvertedExtern(ModuleSymbol* module, const char* name);
 bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 
+void checkAdjustedDataLayout();
+
 extern fileinfo gAllExternCode;
 extern fileinfo gChplCompilationConfig;
 

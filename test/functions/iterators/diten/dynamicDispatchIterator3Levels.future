@@ -1,3 +1,0 @@
-bug: Iterator inheriting 3 or more levels deep causes assertion failure
-
-Issue #7429

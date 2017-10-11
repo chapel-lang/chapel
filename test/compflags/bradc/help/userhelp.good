@@ -156,7 +156,6 @@ Compiler Configuration Options:
       --target-platform <platform>    Platform for cross-compilation
       --tasks <task-impl>             Specify tasking implementation
       --timers <timer-impl>           Specify timer implementation
-      --wide-pointers <format>        Specify wide pointer format
 
 Compiler Information Options:
       --copyright                     Show copyright

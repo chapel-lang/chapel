@@ -531,10 +531,8 @@ module ChapelLocale {
       // so tell the compiler to not insert them.
       pragma "no copy" pragma "no auto destroy"
       const ref origLocales = (origRootLocale:RootLocale).getDefaultLocaleArray();
-      assert(origLocales._value.oneDData
-             && newRootLocale.getDefaultLocaleArray()._value.oneDData);
-      var origRL = origLocales._value.theDataChunk(0);
-      var newRL = newRootLocale.getDefaultLocaleArray()._value.theDataChunk(0);
+      var origRL = origLocales._value.theData;
+      var newRL = newRootLocale.getDefaultLocaleArray()._value.theData;
       // We must directly implement a bulk copy here, as the mechanisms
       // for doing so via a whole array assignment are not initialized
       // yet and copying element-by-element via a for loop is costly.

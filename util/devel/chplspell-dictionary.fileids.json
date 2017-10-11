@@ -197,6 +197,9 @@
   "390fbcc4-4e3c-11e6-907f-843835579daa": [
     "compiler/util/files.cpp"
   ],
+  "c4a256e8-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "compiler/util/llvmAggregateGlobalOps.cpp"
+  ],
   "4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/util/llvmGlobalToWide.cpp"
   ],
@@ -286,6 +289,9 @@
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
   ],
+  "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/technotes/reduceIntents.rst"
+  ],
   "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/tools/c2chapel/c2chapel.rst"
   ],
@@ -333,7 +339,6 @@
     "modules/dists/DimensionalDist2D.chpl"
   ],
   "3efba760-1f11-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/dists/OldReplicatedDist.chpl",
     "modules/dists/ReplicatedDist.chpl"
   ],
   "6c8e8208-1f0f-11e6-a3a6-10ddb1d4c3d5": [
@@ -692,6 +697,9 @@
   ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/LAPACKlib.chpl"
+  ],
+  "da2ea3b8-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "test/release/examples/primers/LinearAlgebralib.chpl"
   ],
   "03dbf2b0-31dc-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/README"
