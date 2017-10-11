@@ -270,7 +270,7 @@ module ArrayViewRankChange {
       && chpl__isDROrDRView(downDom)
       && __primitive("method call resolves", upDom, "these", tag)
     {
-      for i in upDom.these(tag) do
+      forall i in upDom do
         yield i;
     }
 
@@ -279,7 +279,7 @@ module ArrayViewRankChange {
       && !chpl__isDROrDRView(downDom)
       && __primitive("method call resolves", downDom, "these", tag)
     {
-      for i in downDom.these(tag) do
+      forall i in downDom do
         yield downIdxToUpIdx(i);
     }
 
@@ -549,7 +549,7 @@ module ArrayViewRankChange {
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
-      for i in privDom.these(tag) {
+      forall i in privDom {
         yield if shouldUseIndexCache()
                 then indexCache.getDataElem(indexCache.getDataIndex(i))
                 else arr.dsiAccess(chpl_rankChangeConvertIdx(i, collapsedDim, idx));
