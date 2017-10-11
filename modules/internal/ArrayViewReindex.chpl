@@ -99,7 +99,7 @@ module ArrayViewReindex {
   //
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    forwarding var updom: DefaultRectangularDom(rank, idxType, stridable);
 
     // the old original index set that we're equivalent to
     var downdomPid;
@@ -146,57 +146,6 @@ module ArrayViewReindex {
                                         ownsArrInstance=true);
     }
 
-    // TODO: Use delegation feature for these?
-    // TODO: Can't all these be implemented in ChapelArray given dsiDim()?
-
-    proc dsiNumIndices {
-      return updom.dsiNumIndices;
-    }
-
-    proc dsiLow {
-      return updom.dsiLow;
-    }
-
-    proc dsiHigh {
-      return updom.dsiHigh;
-    }
-
-    proc dsiAlignedLow {
-      return updom.dsiAlignedLow;
-    }
-
-    proc dsiAlignedHigh {
-      return updom.dsiAlignedHigh;
-    }
-
-    proc dsiStride {
-      return updom.dsiStride;
-    }
-
-    proc dsiAlignment {
-      return updom.dsiAlignment;
-    }
-
-    proc dsiFirst {
-      return updom.dsiFirst;
-    }
-
-    proc dsiLast {
-      return updom.dsiLast;
-    }
-
-    proc dsiDim(d: int) {
-      return updom.dsiDim(d);
-    }
-
-    proc dsiDims() {
-      return updom.dsiDims();
-    }
-
-    proc dsiGetIndices() {
-      return updom.dsiGetIndices();
-    }
-
     proc dsiSetIndices(inds) {
       pragma "no auto destroy"
       var updomRec = {(...inds)};
@@ -222,10 +171,6 @@ module ArrayViewReindex {
       downdomPid = downdomLoc._pid;
       downdomInst = downdomLoc._instance;
       ownsDownDomInst = true;
-    }
-
-    proc dsiMember(i) {
-      return updom.dsiMember(i);
     }
 
     iter these() {
@@ -291,11 +236,6 @@ module ArrayViewReindex {
         ind(d) = updom.dsiDim(d).orderToIndex(downdom.dsiDim(d).indexOrder(i(d)));
       }
       return ind;
-    }
-
-    // TODO: Is there something we can re-use here?
-    proc dsiSerialWrite(f) {
-      updom.dsiSerialWrite(f);
     }
 
     proc dsiMyDist() {
@@ -397,6 +337,8 @@ module ArrayViewReindex {
     const indexCache = buildIndexCache();
 
     const ownsArrInstance = false;
+
+    forwarding arr;
 
     proc downdom {
       // TODO: This routine may get a remote domain if this is a view
@@ -573,27 +515,12 @@ module ArrayViewReindex {
     // locality-oriented queries
     //
 
-    proc dsiTargetLocales() {
-      return arr.dsiTargetLocales();
-    }
-
     proc dsiHasSingleLocalSubdomain() param
       return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain() {
       return privDom.dsiLocalSubdomain();
     }
-
-    proc dsiNoFluffView() {
-      // For now avoid implementing 'noFluffView' on each class and use
-      // 'canResolve' to print a better error message.
-      if canResolveMethod(arr, "dsiNoFluffView") {
-        return arr.dsiNoFluffView();
-      } else {
-        compilerError("noFluffView is not supported on this array type.");
-      }
-    }
-
 
     //
     // privatization
@@ -620,11 +547,16 @@ module ArrayViewReindex {
     //
     // bulk-transfer
     //
-
+    //
+    // If these methods were nonexistant, calls to these methods would use
+    // BaseArr's implementation instead of arr's.
+    //
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
     }
-    proc dsiSupportsBulkTransferInterface() param return arr.dsiSupportsBulkTransferInterface();
+    proc dsiSupportsBulkTransferInterface() param {
+      return arr.dsiSupportsBulkTransferInterface();
+    }
 
     proc _viewHelper(dims) {
       if dims.size != dom.rank {
@@ -643,46 +575,6 @@ module ArrayViewReindex {
       // BHARSH TODO
       return _viewHelper(privDom.dsiDims());
     }
-
-    proc doiUseBulkTransfer(B) {
-      return arr.doiUseBulkTransfer(B);
-    }
-
-    proc doiCanBulkTransfer(viewDom) {
-      return arr.doiCanBulkTransfer(viewDom);
-    }
-
-    proc doiBulkTransfer(B, viewDom) {
-      arr.doiBulkTransfer(B, viewDom);
-    }
-
-    // strided transfer support
-    proc doiUseBulkTransferStride(B) {
-      return arr.doiUseBulkTransferStride(B);
-    }
-
-    proc doiCanBulkTransferStride(viewDom) {
-      return arr.doiCanBulkTransferStride(viewDom);
-    }
-
-    proc doiBulkTransferStride(B, viewDom) {
-      arr.doiBulkTransferStride(B, viewDom);
-    }
-
-
-    // distributed transfer support
-    proc doiBulkTransferToDR(B, viewDom) {
-      arr.doiBulkTransferToDR(B, viewDom);
-    }
-
-    proc doiBulkTransferFromDR(B, viewDom) {
-      arr.doiBulkTransferFromDR(B, viewDom);
-    }
-
-    proc doiBulkTransferFrom(B, viewDom) {
-      arr.doiBulkTransferFrom(B, viewDom);
-    }
-
 
     //
     // utility functions used to set up the index cache
