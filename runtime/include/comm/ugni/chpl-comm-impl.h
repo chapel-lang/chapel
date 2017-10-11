@@ -28,6 +28,10 @@
     chpl_comm_impl_regMemHeapInfo(start_p, size_p)
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p);
 
+#define CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE() \
+        chpl_comm_impl_regMemHeapPageSize()
+size_t chpl_comm_impl_regMemHeapPageSize(void);
+
 #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() \
         chpl_comm_impl_regMemAllocThreshold()
 size_t chpl_comm_impl_regMemAllocThreshold(void);

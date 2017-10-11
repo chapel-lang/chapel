@@ -131,7 +131,7 @@ static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                            chpl_bool* callAgain, void* repeat_p,
                            int32_t lineno, int32_t filename) {
-  size_t size = nmemb * eltSize;
+  const size_t size = nmemb * eltSize;
   void* p;
 
   //
@@ -153,7 +153,8 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
 
     p = NULL;
     *callAgain = false;
-    if (size >= chpl_comm_regMemAllocThreshold()) {
+    if (size >= chpl_comm_regMemAllocThreshold()
+        && size >= 2 * chpl_comm_regMemHeapPageSize()) {
       p = chpl_comm_regMemAlloc(size);
       if (p != NULL) {
         *callAgain = true;
@@ -198,8 +199,15 @@ static inline
 void chpl_mem_array_free(void* p,
                          size_t nmemb, size_t eltSize,
                          int32_t lineno, int32_t filename) {
-  if (!chpl_comm_regMemFree(p, nmemb * eltSize))
-    chpl_mem_free(p, lineno, filename);
+  const size_t size = nmemb * eltSize;
+
+  if (size >= chpl_comm_regMemAllocThreshold()
+      && size >= 2 * chpl_comm_regMemHeapPageSize()) {
+    if (chpl_comm_regMemFree(p, size))
+      return;
+  }
+
+  chpl_mem_free(p, lineno, filename);
 }
 
 static inline

@@ -2735,6 +2735,13 @@ void set_hugepage_info(void)
 }
 
 
+size_t chpl_comm_impl_regMemHeapPageSize(void)
+{
+  ensure_hugepage_info_set();
+  return using_hugepages ? hugepage_size : chpl_getSysPageSize();
+}
+
+
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p)
 {
   ensure_registered_heap_info_set();
@@ -2747,9 +2754,7 @@ inline
 size_t chpl_comm_impl_regMemAllocThreshold(void)
 {
   ensure_hugepage_info_set();
-  if (using_hugepages)
-    return 2 * hugepage_size;
-  return SIZE_MAX;
+  return using_hugepages ? hugepage_size : SIZE_MAX;
 }
 
 
@@ -2758,7 +2763,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   int mr_i;
   void* p;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (!using_hugepages)
     return NULL;
 
   PERFSTATS_INC(regMem_cnt);
@@ -2830,7 +2835,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (!using_hugepages)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
@@ -2915,7 +2920,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (!using_hugepages)
     return false;
 
   //

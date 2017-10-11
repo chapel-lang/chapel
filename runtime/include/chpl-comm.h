@@ -23,6 +23,7 @@
 #ifndef LAUNCHER
 
 #include <stdint.h>
+#include "chplsys.h"
 #include "chpltypes.h"
 #include "chpl-comm-impl.h"
 #include "chpl-comm-heap-macros.h"
@@ -221,6 +222,10 @@ void chpl_comm_rollcall(void);
 // chpl_comm_regMemHeapInfo():
 //   This provides the address and size of the initial registered heap.
 //
+// chpl_comm_regMemHeapPageSize():
+//   This returns the page size for the comm layer registered heap,
+//   either the size of a system page or some hugepage size.
+//
 // chpl_comm_regMemAllocThreshold():
 //   Allocations smaller than this should be done normally, by the
 //   memory layer.  Those at least this size may be done through this
@@ -252,6 +257,14 @@ void chpl_comm_rollcall(void);
 static inline
 void chpl_comm_regMemHeapInfo(void** start_p, size_t* size_p) {
   CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE
+  #define CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE() chpl_getSysPageSize()
+#endif
+static inline
+size_t chpl_comm_regMemHeapPageSize(void) {
+  return CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE();
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
