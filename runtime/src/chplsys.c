@@ -244,7 +244,7 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
   // in the heap.
   heapPageSize = page_size_in;
 
-  chpl_comm_get_registered_heap(&heap_start, &heap_size);
+  chpl_comm_regMemHeapInfo(&heap_start, &heap_size);
 
   if (heap_start != NULL && heap_size != 0) {
 

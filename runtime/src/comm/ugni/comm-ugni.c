@@ -365,11 +365,14 @@ static gni_nic_device_t nic_type;
 // and from other areas by bouncing them through a buffer in the main
 // heap.
 //
-static int    registered_heap_info_set;
+static int registered_heap_info_set;
+static pthread_once_t registered_heap_once_flag = PTHREAD_ONCE_INIT;
 static size_t registered_heap_size;
 static void*  registered_heap_start;
 
-static int    using_hugepages;
+static int hugepage_info_set;
+static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
+static int using_hugepages;
 static size_t hugepage_size;
 
 //
@@ -1253,6 +1256,10 @@ static mem_region_t* mreg_for_local_addr(void*);
 static mem_region_t* mreg_for_remote_addr(void*, c_nodeid_t);
 static void      polling_task(void*);
 static void      set_up_for_polling(void);
+static void      ensure_registered_heap_info_set(void);
+static void      make_registered_heap(void);
+static void      ensure_hugepage_info_set(void);
+static void      set_hugepage_info(void);
 static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*, void*);
@@ -2542,25 +2549,27 @@ void chpl_comm_rollcall(void)
 }
 
 
-static void make_shared_heap(void)
+static
+void ensure_registered_heap_info_set(void)
 {
-  assert(!registered_heap_info_set);
-
-  if (chpl_numNodes == 1) {
-    using_hugepages = false;
-    registered_heap_start = NULL;
-    registered_heap_size  = 0;
-    registered_heap_info_set = 1;
-    return;
+  if (!registered_heap_info_set
+      && pthread_once(&registered_heap_once_flag, make_registered_heap) != 0) {
+    CHPL_INTERNAL_ERROR("pthread_once(&registered_heap_once_flag) failed");
   }
+}
 
-  using_hugepages = (getenv("HUGETLB_MORECORE") == NULL) ? false : true;
-  if (using_hugepages) {
+
+static
+void make_registered_heap(void)
+{
+  ensure_hugepage_info_set();
+
+  if (using_hugepages && getenv("HUGETLB_MORECORE") != NULL) {
     //
     // If the heap is supposed to be on hugepages, acquire that space
     // now.
     //
-    const size_t page_size = hugepage_size = gethugepagesize();
+    const size_t page_size = hugepage_size;
     const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
     const size_t nic_max_mem = nic_max_pages * page_size;
     size_t nic_allowed_mem;
@@ -2691,15 +2700,44 @@ static void make_shared_heap(void)
   }
 
   registered_heap_info_set = 1;
+  atomic_thread_fence(memory_order_release);
 }
 
 
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
+static
+void ensure_hugepage_info_set(void)
 {
-  if (!registered_heap_info_set)
-    make_shared_heap();
+  if (!hugepage_info_set
+      && pthread_once(&hugepage_once_flag, set_hugepage_info) != 0) {
+    CHPL_INTERNAL_ERROR("pthread_once(&hugepage_once_flag) failed");
+  }
+}
 
-  assert(registered_heap_info_set);
+
+static
+void set_hugepage_info(void)
+{
+  if (chpl_numNodes == 1) {
+    using_hugepages = false;
+  } else {
+    using_hugepages = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
+    if (using_hugepages) {
+      hugepage_size = gethugepagesize();
+    }
+  }
+
+  hugepage_info_set = 1;
+  atomic_thread_fence(memory_order_release);
+
+  DBG_P_L(DBGF_HUGEPAGES,
+          "setting hugepage info: using_hugepages %s, sz %#zx",
+          using_hugepages ? "yes" : "no", hugepage_size);
+}
+
+
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p)
+{
+  ensure_registered_heap_info_set();
   *start_p = registered_heap_start;
   *size_p  = registered_heap_size;
 }
@@ -2708,6 +2746,7 @@ void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
 inline
 size_t chpl_comm_impl_regMemAllocThreshold(void)
 {
+  ensure_hugepage_info_set();
   if (using_hugepages)
     return 2 * hugepage_size;
   return SIZE_MAX;

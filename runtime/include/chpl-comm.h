@@ -214,23 +214,17 @@ void chpl_comm_post_task_init(void);
 void chpl_comm_rollcall(void);
 
 //
-// Communication layers that need or want to register memory with the
-// network interface may have to provide the space for the Chapel heap
-// themselves.  If so, this provides that heap's address and length.
+// This is the comm layer sub-interface for heap management and dynamic
+// memory allocation, when memory has to be registered with the network
+// for best performance.
 //
-// This function may be called multiple times during program
-// initialization.
-//
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p);
-
-//
-// This is the comm layer sub-interface for dynamic allocation and
-// registration of memory. The functions are as follows:
+// chpl_comm_regMemHeapInfo():
+//   This provides the address and size of the initial registered heap.
 //
 // chpl_comm_regMemAllocThreshold():
 //   Allocations smaller than this should be done normally, by the
-//   memory layer.  Others should be done through this comm layer
-//   sub-interface.
+//   memory layer.  Those at least this size may be done through this
+//   comm layer sub-interface.
 //
 // chpl_comm_regMemAlloc()
 //   Allocate memory, returning either a non-NULL pointer or NULL when
@@ -251,6 +245,15 @@ void chpl_comm_get_registered_heap(void** start_p, size_t* size_p);
 //   perhaps not performance-optimal, to first try to free it here, and 
 //   only free it elsewhere if this function returns false.
 //
+#ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_INFO
+#define CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p)   \
+        do { *(start_p) = NULL ; *(size_p) = 0; } while (0)
+#endif
+static inline
+void chpl_comm_regMemHeapInfo(void** start_p, size_t* size_p) {
+  CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p);
+}
+
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
   #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX
 #endif
