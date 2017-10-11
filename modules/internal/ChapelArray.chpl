@@ -2887,9 +2887,10 @@ module ChapelArray {
 
       const shift = vals.size,
             shiftRange = pos..this.domain.high,
-            newRange = this.domain.low..(this.domain.high + vals.size);
+            newRange = this.domain.low..(this.domain.high + vals.size),
+            validInsertRange = this.domain.low..(this.domain.high + 1);
 
-      if boundsChecking && !newRange.member(pos) then
+      if boundsChecking && !validInsertRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");

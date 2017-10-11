@@ -1,3 +1,0 @@
-bug: Bounds check in array.insert(a: []) misses out of bounds insert
-
-Issue #7575
