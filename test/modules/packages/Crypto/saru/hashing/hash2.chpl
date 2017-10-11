@@ -5,6 +5,11 @@ proc main(){
   var s = "The quick brown fox jumps over the lazy dog";
   writeln(s);
 
-  var digest = SHA.getDigest(new CryptoBuffer(s));
+  var buf = new CryptoBuffer(s);
+  var digest = SHA.getDigest(buf);
   writeln(SHA.getDigestName() + " = " + digest.toHexString());
+
+  delete digest;
+  delete buf;
+  delete SHA;
 }
