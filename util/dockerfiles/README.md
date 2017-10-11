@@ -5,7 +5,7 @@
 
 # What is Chapel?
 
-[Chapel](http://chapel.cray.com/) is a parallel programming language designed for productivity at scale. It is developed as [open source on GitHub](https://github.com/chapel-lang/chapel/).
+[Chapel](https://chapel-lang.org/) is a parallel programming language designed for productivity at scale. It is developed as [open source on GitHub](https://github.com/chapel-lang/chapel/).
 
 # Docker Images
 
@@ -26,7 +26,7 @@ This is the core image for Chapel. It provides the complete Chapel compiler and 
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
 
-Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](http://chapel.cray.com/docs/latest/usingchapel/multilocale.html) for details.
+Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](https://chapel-lang.org/docs/latest/usingchapel/multilocale.html) for details.
 
 # How to use the image
 
@@ -68,13 +68,13 @@ Hello, world!
 
 # Documentation
 
-Chapel's documentation is [available online](http://chapel.cray.com/docs/latest/).
-Documentation for a specific release is also available: [1.16](http://chapel.cray.com/docs/1.16/), [1.15](http://chapel.cray.com/docs/1.15/), [1.14](http://chapel.cray.com/docs/1.14/), [1.13](http://chapel.cray.com/docs/1.13/).
+Chapel's documentation is [available online](https://chapel-lang.org/docs/latest/).
+Documentation for a specific release is also available: [1.16](https://chapel-lang.org/docs/1.16/), [1.15](https://chapel-lang.org/docs/1.15/), [1.14](https://chapel-lang.org/docs/1.14/), [1.13](https://chapel-lang.org/docs/1.13/).
 
 # License
 
-View [license information](http://chapel.cray.com/license.html) for the software contained in this image.
+View [license information](https://chapel-lang.org/license.html) for the software contained in this image.
 
 # User Feedback
 
-If you have any questions about or problems with this image, please write to the [Chapel developers mailing list](https://lists.sourceforge.net/lists/listinfo/chapel-developers). To post a message to all the list members, send email to [chapel-developers@lists.sourceforge.net](mailto:chapel-developers@lists.sourceforge.net). You may also be interested in other [Chapel resources for developers](http://chapel.cray.com/developers.html), including the `#chapel-developers` IRC channel on Freenode.
+If you have any questions about or problems with this image, please write to the [Chapel developers mailing list](https://lists.sourceforge.net/lists/listinfo/chapel-developers). To post a message to all the list members, send email to [chapel-developers@lists.sourceforge.net](mailto:chapel-developers@lists.sourceforge.net). You may also be interested in other [Chapel resources for developers](https://chapel-lang.org/developers.html), including the `#chapel-developers` IRC channel on Freenode.

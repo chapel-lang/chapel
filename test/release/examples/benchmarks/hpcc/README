@@ -19,7 +19,7 @@ approximately as follows:
 
 Our intention is to continue improving the implementation of all of
 these benchmarks over time.  Please refer to the Chapel website
-(http://chapel.cray.com) for an archive of past reports that evaluate
+(https://chapel-lang.org) for an archive of past reports that evaluate
 these benchmarks.
 
 The main files for these benchmarks are as follows:

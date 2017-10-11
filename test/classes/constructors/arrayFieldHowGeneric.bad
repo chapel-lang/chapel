@@ -1,0 +1,2 @@
+arrayFieldHowGeneric.chpl:21: error: unresolved call 'C1.init([BlockDom(1,int(64),false,DefaultDist)] real(64))'
+arrayFieldHowGeneric.chpl:5: note: candidates are: C1.init(X: [domain(1,int(64),false)] real(64))

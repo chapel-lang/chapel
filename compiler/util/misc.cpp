@@ -35,7 +35,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-static const char* help_url = "http://chapel.cray.com/bugs.html";
+static const char* help_url = "https://chapel-lang.org/bugs.html";
 
 // Support for internal errors, adopted from ZPL compiler
 

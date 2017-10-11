@@ -114,8 +114,8 @@ Contributors to previous releases
 * Tim Zakian, [Cray Inc.] / [Indiana University]
 * Hui Zhang, [University of Maryland]
 
-[Logo Design](http://chapel.cray.com/logo.html)
------------------------------------------------
+[Logo Design](https://chapel-lang.org/logo.html)
+------------------------------------------------
 * Jim Cissell
 * Kristina Davis
 * Oli Laurelle

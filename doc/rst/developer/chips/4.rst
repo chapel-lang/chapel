@@ -308,7 +308,7 @@ to enforce this constraint.
 
 The rest of the required syntax is supplied by productions that render the
 ``field-initializer-clause`` in terms of previously-defined language elements
-(consult the Syntax chapter in the `Chapel Specification <http://chapel.cray.com/spec/spec-0.97.pdf` for their definitions)::
+(consult the Syntax chapter in the `Chapel Specification <https://chapel-lang.org/spec/spec-0.97.pdf` for their definitions)::
 
    field-initializer-clause:
      `init' ( field-initializer-list )

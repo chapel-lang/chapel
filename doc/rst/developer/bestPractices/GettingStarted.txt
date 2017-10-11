@@ -14,7 +14,7 @@ project via the following steps:
   clearer for new users.
 
 * The papers "The State of the Chapel Union" and "A Brief Overview of
-  Chapel" (available at http://chapel.cray.com/papers.html) are the
+  Chapel" (available at https://chapel-lang.org/papers.html) are the
   current best documents providing a broad overview of the history of
   the project, the motivation for the language, a high-level language
   overview, and the future.  The former is a bit more recent while the
@@ -39,8 +39,8 @@ project via the following steps:
   Overview of Chapel" paper mentioned above, read through the
   release's primer examples (located in test/[release/]examples/primers), 
   look through tutorial slides from the Chapel webpage (located at:
-  http://chapel.cray.com/tutorials.html), and/or other Chapel overview
-  presentations (located at http://chapel.cray.com/presentations.html).
+  https://chapel-lang.org/tutorials.html), and/or other Chapel overview
+  presentations (located at https://chapel-lang.org/presentations.html).
   Most slide decks are better with a human delivering them, so see if
   you can find someone to walk you through any that aren't
   self-explanatory.

@@ -1,4 +1,4 @@
-.. image:: http://chapel.cray.com/images/cray-chapel-logo-200.png
+.. image:: https://chapel-lang.org/images/cray-chapel-logo-200.png
     :align: center
 
 The Chapel Language
@@ -29,13 +29,13 @@ For more information about Chapel, please refer to the following resources:
    doc/README.rst for local references to documentation and resources.
 
 =====================  ==================================================================================
-Project homepage:      http://chapel.cray.com
-Installing Chapel:     http://chapel.cray.com/download.html
-Building from source:  http://chapel.cray.com/docs/latest/usingchapel/QUICKSTART.html
-Sample computations:   http://chapel.cray.com/hellos.html
-Learning Chapel:       http://chapel.cray.com/learning.html
-Reporting bugs:        http://chapel.cray.com/bugs.html
-Online documentation:  http://chapel.cray.com/docs/latest/
+Project homepage:      https://chapel-lang.org
+Installing Chapel:     https://chapel-lang.org/download.html
+Building from source:  https://chapel-lang.org/docs/latest/usingchapel/QUICKSTART.html
+Sample computations:   https://chapel-lang.org/hellos.html
+Learning Chapel:       https://chapel-lang.org/learning.html
+Reporting bugs:        https://chapel-lang.org/bugs.html
+Online documentation:  https://chapel-lang.org/docs/latest/
 GitHub:                https://github.com/chapel-lang/chapel
 Mailing lists:         https://sourceforge.net/p/chapel/mailman
 Facebook:              https://www.facebook.com/ChapelLanguage

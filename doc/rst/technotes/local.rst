@@ -39,7 +39,7 @@ The ``local`` construct does not necessarily indicate the cause of
 communication when present. See the `Module\: CommDiagnostics`_ for ways to
 diagnose communication.
 
-.. _Module\: CommDiagnostics:    http://chapel.cray.com/docs/latest/modules/standard/CommDiagnostics.html
+.. _Module\: CommDiagnostics:    https://chapel-lang.org/docs/latest/modules/standard/CommDiagnostics.html
 
 
 
