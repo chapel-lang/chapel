@@ -49,7 +49,7 @@ module ArrayViewSlice {
     // through the array field above.
     const indexCache = buildIndexCache();
 
-    forwarding arr;
+    forwarding arr except these;
 
 
     //
@@ -234,9 +234,10 @@ module ArrayViewSlice {
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
     }
-
     proc dsiSupportsBulkTransferInterface() param
       return arr.dsiSupportsBulkTransferInterface();
+    proc doiCanBulkTransfer() param return arr.doiCanBulkTransfer();
+    proc doiCanBulkTransferStride(viewDom) param return arr.doiCanBulkTransferStride(viewDom);
 
     proc _viewHelper(dims) {
       compilerError("viewHelper not supported on ArrayViewSlice.");

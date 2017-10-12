@@ -117,7 +117,8 @@ module ArrayViewRankChange {
   //
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
-    forwarding var upDom: DefaultRectangularDom(rank, idxType, stridable);
+    var upDom: DefaultRectangularDom(rank, idxType, stridable);
+    forwarding upDom except these;
 
     // the collapsed dimensions and indices in those dimensions
     //
@@ -442,7 +443,7 @@ module ArrayViewRankChange {
     const ownsArrInstance = false;
 
     // Forward all unhandled methods to underlying privatized array
-    forwarding arr;
+    forwarding arr except these;
 
 
     //
@@ -661,9 +662,10 @@ module ArrayViewRankChange {
     proc dsiSupportsBulkTransfer() param {
       return arr.dsiSupportsBulkTransfer();
     }
-
     proc dsiSupportsBulkTransferInterface() param
       return arr.dsiSupportsBulkTransferInterface();
+    proc doiCanBulkTransfer() param return arr.doiCanBulkTransfer();
+    proc doiCanBulkTransferStride(viewDom) param return arr.doiCanBulkTransferStride(viewDom);
 
     // Recursively builds up the view-domain given an initial tuple of
     // dimensions. Handles nested rank-changes.

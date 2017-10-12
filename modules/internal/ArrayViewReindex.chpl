@@ -99,7 +99,8 @@ module ArrayViewReindex {
   //
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    forwarding var updom: DefaultRectangularDom(rank, idxType, stridable);
+    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    forwarding updom except these;
 
     // the old original index set that we're equivalent to
     var downdomPid;
@@ -338,7 +339,7 @@ module ArrayViewReindex {
 
     const ownsArrInstance = false;
 
-    forwarding arr;
+    forwarding arr except these;
 
     proc downdom {
       // TODO: This routine may get a remote domain if this is a view
@@ -557,6 +558,8 @@ module ArrayViewReindex {
     proc dsiSupportsBulkTransferInterface() param {
       return arr.dsiSupportsBulkTransferInterface();
     }
+    proc doiCanBulkTransfer() param return arr.doiCanBulkTransfer();
+    proc doiCanBulkTransferStride(viewDom) param return arr.doiCanBulkTransferStride(viewDom);
 
     proc _viewHelper(dims) {
       if dims.size != dom.rank {
