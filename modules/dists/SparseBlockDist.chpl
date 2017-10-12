@@ -245,7 +245,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   {
     coforall locDom in locDoms {
       on locDom {
-        for i in locDom.mySparseBlock._value.these(tag) {
+        forall i in locDom.mySparseBlock {
           yield i;
         }
       }
@@ -401,7 +401,7 @@ class SparseBlockArr: BaseSparseArr {
    {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
-      for i in locA.myElems._value.these(tag) {
+      forall i in locA.myElems {
         yield i;
       }
     }

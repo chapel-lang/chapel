@@ -144,6 +144,9 @@ module DefaultSparse {
       // if the index already existed, then return
       if (found) then return 0;
 
+      if boundsChecking then
+        this.boundsCheck(ind);
+
       // increment number of nonzeroes
       nnz += 1;
 
