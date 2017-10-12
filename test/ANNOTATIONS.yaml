@@ -805,6 +805,10 @@ miniMD:
 miniMD.ml-time:
   09/14/17:
     - Introduce ShadowVarSymbol for forall intents (#7307)
+  09/22/17:
+    - Manually hoist loop-invariant array access in miniMD (#7432)
+  09/26/17:
+    - Prevent certain data races upon 'in' forall intents (#7467)
 
 nbody:
   03/17/14:
@@ -910,6 +914,10 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+
+ra-atomics.ml-perf:
+  10/03/17:
+    - Increase the number of updates for RA to stabilize performance timings (#7522)
 
 RBC:
   02/22/17:
@@ -1105,6 +1113,10 @@ timeVectorArray:
     - Resolve timeVectorArray regressions (#7333)
   09/20/17:
     - Resolve push_back / pop_front regressions w/ inline (#7397)
+
+views-forall-iter:
+  10/12/17:
+    - Switch from these(tag) to foralls for some standalone iters (#7578)
 
 dynamic:
   02/28/17:
