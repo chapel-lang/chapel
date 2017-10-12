@@ -430,17 +430,31 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.boundedLow
+    where !stridable && this.boundedType == BoundedRangeType.boundedLow
   {
     return this.alignedLow == _low;
   }
 
   pragma "no doc"
+  inline proc range.isNaturallyAligned()
+    where stridable && this.boundedType == BoundedRangeType.boundedLow
+  {
+    return stride > 0 && this.alignedLow == _low;
+  }
+
+  pragma "no doc"
   inline proc range.isNaturallyAligned() param
     where this.boundedType == BoundedRangeType.boundedNone ||
-          this.boundedType == BoundedRangeType.boundedHigh
+          !stridable && this.boundedType == BoundedRangeType.boundedHigh
   {
     return false;
+  }
+
+  pragma "no doc"
+  inline proc range.isNaturallyAligned()
+    where stridable && this.boundedType == BoundedRangeType.boundedHigh
+  {
+    return stride < 0 && this.alignedLow == _low;
   }
 
   /* Returns true if the range is ambiguously aligned, false otherwise */
