@@ -1402,10 +1402,11 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   if (functionTypeMap.find(parent_name) != functionTypeMap.end()) {
     std::pair<AggregateType*, FnSymbol*> ctfs = functionTypeMap[parent_name];
-    parent = ctfs.first;
+
+    parent           = ctfs.first;
     thisParentMethod = ctfs.second;
-  }
-  else {
+
+  } else {
     parent = createAndInsertFunParentClass(call, parent_name.c_str());
     thisParentMethod = createAndInsertFunParentMethod(call, parent, captured_fn->formals, true, captured_fn->retType);
     functionTypeMap[parent_name] = std::pair<AggregateType*, FnSymbol*>(parent, thisParentMethod);
@@ -1413,15 +1414,27 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   AggregateType *ct = new AggregateType(AGGREGATE_CLASS);
   std::ostringstream fcf_name;
+
   fcf_name << "_chpl_fcf_" << unique_fcf_id++ << "_" << flname;
 
   TypeSymbol *ts = new TypeSymbol(astr(fcf_name.str().c_str()), ct);
 
-  call->parentExpr->insertBefore(new DefExpr(ts));
+  // Allow a use of a FCF to appear at the statement level i.e.
+  //    nameOfFunc;
+  //
+  // In the longer term it might be good to generate a warning for this
+  if (isBlockStmt(call->parentExpr) == true) {
+    call->insertBefore(new DefExpr(ts));
+
+  // The common case in which the reference is within a move/assign/call
+  } else {
+    call->parentExpr->insertBefore(new DefExpr(ts));
+  }
 
   ct->dispatchParents.add(parent);
 
   bool inserted = parent->dispatchChildren.add_exclusive(ct);
+
   INT_ASSERT(inserted);
 
   VarSymbol* super = new VarSymbol("super", parent);
@@ -1508,7 +1521,13 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     thisMethod->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
   }
 
-  call->parentExpr->insertBefore(new DefExpr(thisMethod));
+  // (Seen note above)
+  if (isBlockStmt(call->parentExpr) == true) {
+    call->insertBefore(new DefExpr(thisMethod));
+
+  } else {
+    call->parentExpr->insertBefore(new DefExpr(thisMethod));
+  }
 
   normalize(thisMethod);
 

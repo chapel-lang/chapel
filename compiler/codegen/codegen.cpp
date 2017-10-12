@@ -2005,29 +2005,6 @@ void codegen(void) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
-    if ( widePointersStruct ) {
-      // generating global pointers of size > 64 bits is not
-      // possible with LLVM 3.3; it might be possible in the future.
-
-      // If we have -fLLVMWideOpt, we must use packed wide
-      // pointers (because optimizations assume pointer size
-      //  is the same - at most 64 bits - for all address spaces.
-      //  'multiple address space' patch series, submitted to LLVM 3.2,
-      //  was backed out mostly for lack of testing. Perhaps the situation
-      //  will be resolved in LLVM 3.4).
-      USR_FATAL("--llvm-wide-opt requires packed wide pointers; " \
-                "try export CHPL_WIDE_POINTERS=node16");
-    }
-  }
-
-  if( widePointersStruct ) {
-    // OK
-  } else {
-    // While the C code generator can emit packed pointers,
-    // it does so only to help make sure that packed pointer code
-    // generation is correct. It is not a "supported configuration".
-    if( ! llvmCodegen )
-      USR_WARN("C code generation for packed pointers not supported");
   }
 
   // Set the executable name if it isn't set already.
@@ -2198,6 +2175,7 @@ void codegen(void) {
   // just codegen the modules.
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
+    checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
       mysystem(astr("# codegen-ing module", currentModule->name),
                "generating comment for --print-commands option");
@@ -2276,65 +2254,18 @@ void makeBinary(void) {
   }
 }
 
-#ifdef HAVE_LLVM
-GenInfo::GenInfo(
-    std::string clangCcIn,
-    std::string clangCxxIn,
-    std::string compilelineIn,
-    std::vector<std::string> clangCCArgsIn,
-    std::vector<std::string> clangLDArgsIn,
-    std::vector<std::string> clangOtherArgsIn,
-    bool parseOnlyIn )
-       :   cfile(NULL), cLocalDecls(), cStatements(),
-           lineno(-1), filename(NULL), parseOnly(parseOnlyIn),
-           // the rest of these are only in GenInfo with HAVE_LLVM
-           module(NULL), builder(NULL), lvt(NULL),
-           clangCC(clangCcIn),
-           clangCXX(clangCxxIn),
-           compileline(compilelineIn),
-           clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
-           clangOtherArgs(clangOtherArgsIn),
-           codegenOptions(), diagOptions(NULL),
-           DiagClient(NULL),
-           DiagID(NULL),
-           Diags(NULL),
-           Clang(NULL), clangTargetOptions(), clangLangOptions(),
-           moduleName("root"), llvmContext(), Ctx(NULL),
-           targetData(NULL), cgBuilder(NULL), cgAction(NULL),
-           tbaaRootNode(NULL),
-           targetLayout(), globalToWideInfo(),
-           FPM_postgen(NULL)
-{
-  std::string home(CHPL_HOME);
-  std::string rtmain = home + "/runtime/etc/rtmain.c";
-
-  setupClang(this, rtmain);
-
-  // Create a new LLVM module, IRBuilder, and LayeredValueTable.
-  if( ! parseOnly ) {
-    module = new llvm::Module(moduleName, llvmContext);
-    builder = new llvm::IRBuilder<>(module->getContext());
-  }
-
-  lvt = new LayeredValueTable();
-
-  // These are initialized only after we have types
-  // for everything and are deciding what calls to make.
-  // these are set by setupClangContext from CCodeGenAction.
-  Ctx = NULL;
-  targetData = NULL;
-  cgBuilder = NULL;
-}
-#endif
-// No LLVM
 GenInfo::GenInfo()
          :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL), parseOnly(false)
+             lineno(-1), filename(NULL)
 #ifdef HAVE_LLVM
-             // Could set more of these to NULL, but the real
-             // point is to just core-dump if we end up trying
-             // to use them....
-             , module(NULL), builder(NULL), lvt(NULL)
+             ,
+             lvt(NULL), module(NULL), builder(NULL),
+             loopStack(),
+             llvmContext(),
+             tbaaRootNode(NULL),
+             globalToWideInfo(),
+             FPM_postgen(NULL),
+             clangInfo(NULL)
 #endif
 {
 }

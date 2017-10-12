@@ -376,10 +376,6 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    proc dsiClear() {
-      halt("clear not implemented for this distribution");
-    }
-
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
       return 0;

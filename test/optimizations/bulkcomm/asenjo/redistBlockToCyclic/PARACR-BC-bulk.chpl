@@ -20,18 +20,14 @@ proc BlockArr.copyBtoC(B)
 
     var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
-    assert(locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-    var src = locArr[lid].myElems._value.theDataChunk(0);
+    var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales.safeCast(size_t);
 
-    assert(dststrides._value.oneDData); // fend off multi-ddata
-    var dststr=dststrides._value.theDataChunk(0);
-    assert(srcstrides._value.oneDData); // fend off multi-ddata
-    var srcstr=srcstrides._value.theDataChunk(0);
-    assert(count._value.oneDData); // fend off multi-ddata
-    var cnt=count._value.theDataChunk(0);
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //Domain size (n) and first index (arrayini)
 
@@ -61,21 +57,20 @@ proc BlockArr.copyBtoC(B)
       if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
       else chunksize=blksize/numLocales+1;
 
-      //var destr = privB.locArr[dst].myElems._value.theDataChunk(0);
-      assert(B._value.locArr[dst].myElems._value.oneDData); // fend off multi-ddata
-      var destr = B._value.locArr[dst].myElems._value.theDataChunk(0);
+      //var destr = privB.locArr[dst].myElems._value.theData;
+      var destr = B._value.locArr[dst].myElems._value.theData;
       count[1]=1;
       count[2]=chunksize.safeCast(size_t);
 
       __primitive("chpl_comm_put_strd",
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",src,
-			      locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),  
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-		  __primitive("array_get",cnt, count._value.getDataIndex(1, getChunked=false)),
+			      locArr[lid].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt, count._value.getDataIndex(1)),
 		  stridelevels);
 
     } // end for dst
@@ -95,12 +90,9 @@ proc  BlockArr.copyCtoB(B)
     var numLocales: int=dom.dist.targetLocDom.dim(1).length;
     var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
 
-    assert(dststrides._value.oneDData); // fend off multi-ddata
-    var dststr=dststrides._value.theDataChunk(0);
-    assert(srcstrides._value.oneDData); // fend off multi-ddata
-    var srcstr=srcstrides._value.theDataChunk(0);
-    assert(count._value.oneDData); // fend off multi-ddata
-    var cnt=count._value.theDataChunk(0);
+    var dststr=dststrides._value.theData;
+    var srcstr=srcstrides._value.theData;
+    var cnt=count._value.theData;
 
     //On each locale (src) we compute the chunk that goes to each dst
     var num: int;
@@ -110,8 +102,7 @@ proc  BlockArr.copyCtoB(B)
     var b: int(32)=dom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
-    assert(locArr[lid].myElems._value.oneDData); // fend off multi-ddata
-    var src = locArr[lid].myElems._value.theDataChunk(0);
+    var src = locArr[lid].myElems._value.theData;
     var arrayini:int(32)=dom.dsiLow:int(32);
 
     var t,t1,t2: real;
@@ -126,8 +117,7 @@ proc  BlockArr.copyCtoB(B)
       if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
       else chunksize=num/numLocales+1;
 
-      assert(B._value.locArr[dst].myElems._value.oneDData); // fend off multi-ddata
-      var destr = B._value.locArr[dst].myElems._value.theDataChunk(0);
+      var destr = B._value.locArr[dst].myElems._value.theData;
       dststrides[1]=numLocales:size_t;
       srcstrides[1]=1;
       count[1]=1;
@@ -135,13 +125,13 @@ proc  BlockArr.copyCtoB(B)
 
       __primitive("chpl_comm_get_strd",
 		  __primitive("array_get",src,
-                              locArr[lid].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1, getChunked=false)),
+                              locArr[lid].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
 		  dst,
 		  __primitive("array_get",destr,
-			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini, getChunked=false)),
-		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1, getChunked=false)),
-		  __primitive("array_get",cnt,count._value.getDataIndex(1, getChunked=false)),
+			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
+		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
+		  __primitive("array_get",cnt,count._value.getDataIndex(1)),
 		  stridelevels);
     } //end for dst
   }//end for loc

@@ -46,3 +46,8 @@ writeln(A);
 writeln(B);
 writeln(C);
 
+delete C;
+delete B;
+delete A;
+delete ProblemDom;
+delete ProblemDist;

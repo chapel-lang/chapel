@@ -29,50 +29,11 @@ iteration, based on ``DSIUtil.chpl:_computeChunkStuff()`` and related
 functionality.  (From here on this will be referred to as *DSIUtil
 chunking*.)  DSIUtil chunking divides the domain as equally as possible
 into subdomains, one for each sublocale, and then creates a task on each
-sublocale to process each subdomain.  What was missing was the ability
-to localize array data in a matching NUMA-sensitive way.  Recent work
-added so-called *multi-ddata* storage for ``DefaultRectangularArr``
-arrays.  When the locale model supports sublocales, as ``numa`` does,
-this replaces the single *ddata* which provides the array storage with
-multiple ddatas, one per sublocale, and places array elements in these
-ddatas using the same DSIUtil chunking the DefaultRectangular domain
-parallel iterator uses to assign subdomains to sublocales.
+sublocale to process each subdomain.  What has been missing is the ability
+to localize array data in a matching NUMA-sensitive way, in all cases.
 
-The resulting code performs well in some cases but badly in others.  The
-multi-chunk array addressing code is more complicated than that for
-single-chunk addressing because of the need to compute a chunk index
-from the array index.  Thus the dsiAccess() array access method runs
-about 8x slower for multi-ddata arrays than for single-ddata ones.  In
-some cases the extra computation in effect can be hoisted out of kernel
-loops, but not always.  At present any loop which does not use the
-``DefaultRectangularArr`` serial, parallel standalone, or parallel
-follower iterators performs quite poorly, and really only the parallel
-iterators give good performance.  The serial one is distinctly slower
-than for single-ddata, just not as bad as some other cases.  As an
-example, the following loop written in a natural style performs quite
-badly with the current multi-ddata implementation, compared to how it
-does with single-ddata.
-
-.. code-block:: chapel
-
-  forall i in A.domain do
-    A(i) = i;
-
-But the following fairly similar loop performs quite well, similarly to
-how it does with ``locModel=flat``.
-
-.. code-block:: chapel
-
-  forall (a,i) in zip(A,A.domain) do
-    a = i;
-
-This CHIP documents our mid-course exploration of solutions for this
-problem and some other related ones.
-
-Note that throughout the rest of the document and especially with regard
-to setting memory locality we are discussing possible future work rather
-than existing implementations.  At present the only "NUMA localization"
-done in Chapel is a side effect of first-touch memory semantics.
+This CHIP documents our exploration of solutions for this problem and
+some other related ones.
 
 
 Description
@@ -137,10 +98,10 @@ What Matters for NUMA
   valuable.  Starting a task takes about the same amount of time no
   matter where it is placed, but it may take just as long to change
   where an already existing one is running.  Touching a memory page into
-  existence, which requires storing zeroes into it, costs the same on
+  existence, which requires storing to it, costs the same on
   any NUMA domain but moving a page from one NUMA domain to another
-  takes even longer because the contents are copied even if they are
-  dead (the kernel cannot know).
+  takes longer because the contents are copied even if they are
+  dead (which the kernel cannot know).
 
   As a corollary to the above, where tasks or memory already have NUMA
   locality and that can be taken advantage of without additional effort
@@ -406,6 +367,38 @@ but not eliminated, because there would still be the need for dynamic
 registration and broadcast as arrays were created.
 
 
+Current Status
+..............
+
+Single-ddata with separate arrays is currently implemented in cases
+where ``CHPL_COMM=ugni``, ``CHPL_MEM=jemalloc``, and hugepages are
+present.  This includes the default configurations on Cray XE and XC
+systems.  In these configurations memory needs to be registered with the
+Gemini or Aries NIC.  Only arrays that occupy at least 2 hugepages worth
+of memory are allocated separately.  The array memory is not registered
+until after it has been initialized, so it has appropriate NUMA locality
+via first touch.  This is independent of the locale model, so the
+``flat`` locale model gains as much from it as ``numa`` does.
+
+Arrays smaller than 2 hugepages in this configuration, and all arrays in
+all other configurations, still come out of the general heap.
+
+We have seen some performance degradations with this technique that we
+believe are due to the overhead of dealing with large tables (on the
+order of 100 elements) of registered memory regions, whether updating
+them, searching them, or broadcasting updates to them.  An example is
+the ``ISx`` benchmark run on compute nodes with many (>=24) processor
+cores.  Among other things it creates a task per core and multiple
+arrays large enough to be separately allocated and registered in each of
+those tasks, so the all of these arrays need to be registered and
+broadcast across all the nodes.
+
+There is a Chapel issue_ that tracks improvements for separate array
+allocation.
+
+.. _issue: https://github.com/chapel-lang/chapel/issues/6949
+
+
 Single-ddata with Cyclic Localization
 '''''''''''''''''''''''''''''''''''''
 
@@ -545,6 +538,19 @@ limit issue that applies to all the single-ddata alternatives.  At least
 if the allocation comes from an already-localized memory pool, as could
 be the case with a NUMA-aware allocator, there is no effective lower
 limit on the array size.
+
+
+Current Status
+..............
+
+In the 1.15 release, storage for ``DefaultRectangularArr`` arrays used
+the multi-ddata technique under the ``numa`` locale model.  However, the
+resulting performance loss in the cases described above caused us to
+disable multi-ddata soon afterward.  We have not been able to come up
+with way to overcome the performance problems or even a straightforward
+way for programmers to use multi-ddata only where it performs well, so
+we expect to actually remove the disabled multi-ddata support in the
+future.
 
 
 Other Techniques
@@ -810,57 +816,15 @@ when iterating other than directly over them.  Neither seems like a full
 solution in the sense of providing adequate performance in all common
 circumstances, or even all desired ones.
 
-It seems premature at this point to pick a single winning solution and
-go forward only with that.  None of the existing implementations have
-actually been connected up to a NUMA-aware allocator so we can measure
-their performance.  And, there are known improvements we could make to
-multi-ddata to reduce its ``dsiAccess`` cost.  All of this should be
-done before hard performance comparisons are made.  Fortunately, tuning
-the implementations and doing NUMA-aware allocation, at least to the
-extent needed here, is not a very large amount of work.
+Currently Chapel uses single-ddata with separate arrays in
+configurations where ``CHPL_COMM=ugni``, ``CHPL_MEM=jemalloc`` and
+hugepages are in use (thus memory is registered), which includes the
+default configurations on Cray XE and XC systems.  It uses plain
+single-ddata in all other cases.  (More details are available in the
+`Single-ddata with Separate Arrays`_ Current Status subsection, above.)
+The current implementation produces good affinity on NUMA compute
+architectures for both the flat and numa locale models.
 
-We therefore recommend short-term (1.15) and longer-term (1.16)
-solutions.  In the short term, we should support both "plain"
-single-ddata and multi-ddata for ``locModel=numa``, and implement NUMA
-localization as described above for both.  (Except: we should not
-implement the cyclic NUMA localization pattern needed for single-ddata
-when the DSIUtil subdomain partitioning is not on the leftmost
-dimension.)  We should default to single-ddata for ``locModel=flat`` and
-multi-ddata for ``locModel=numa``.  To allow changing the default easily
-for ``locModel=numa`` we should add a config param that forces the use
-of single-ddata even in that case.  (There is no need to be able to
-force the opposite configuration of multi-ddata with ``locModel=flat``.)
-We should make the known improvements to reduce addressing overheads in
-multi-ddata.
-
-Most of this work will consist of creating support for NUMA-localizing
-memory and applying that support to single-ddata memory.  Tuning the
-multi-ddata access code is a small effort in comparison.  And since
-multi-ddata already makes separate allocation calls for each chunk,
-getting NUMA localization correct in that case just requires changing
-the allocation calls to use a NUMA-aware allocation interface.  It is
-expected that this NUMA-aware allocation interface will be relatively
-production-ready (subject to time constraints), but the array-oriented
-localization may be less so.
-
-As stated, all of this will be completed in the 1.15 release.
-
-*[Author's note: I selected this short-term work as I did partly because
-I think it's the right way to proceed, but also because I know I can get
-it done for 1.15.]*
-
-The longer term work can start as early as now but certainly not later
-than right after the 1.15 release.  In that effort we should add support
-for single ddata with separate arrays and perhaps cyclic NUMA also, as
-the latter's design is refined and it seems worthwhile.  We can
-experiment with the various techniques, refine implementations, and
-decide what we want to keep going forward.  If we end up wanting to
-retain multi-ddata as well as single-ddata we can implement them as real
-domain maps and improve and perhaps further parameterize how we select
-between them, especially with respect to when each is the default.  If
-we decide to drop multi-ddata later as opposed to now we will have only
-wasted the tuning done for 1.15.  This work should be completed in 1.16.
-
-*[Author's note: If anybody has spare cycles to get this additional work
-done in 1.15 that would be great, too, but I don't think it's
-necessary.]*
+Whether it makes sense to have a ``numa`` locale model if ``flat`` can
+achieve ideal performance on NUMA architectures is a question we have
+not addressed, but ought to.

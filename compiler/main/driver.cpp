@@ -80,12 +80,9 @@ const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
 const char* CHPL_HWLOC = NULL;
 const char* CHPL_REGEXP = NULL;
-const char* CHPL_WIDE_POINTERS = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
-
-bool widePointersStruct;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -855,8 +852,6 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
- {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_PRINT_IR", NULL},
- {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
@@ -905,7 +900,6 @@ static ArgumentDescription arg_desc[] = {
  {"target-platform", ' ', "<platform>", "Platform for cross-compilation", "S", NULL, "_CHPL_TARGET_PLATFORM", setEnv},
  {"tasks", ' ', "<task-impl>", "Specify tasking implementation", "S", NULL, "_CHPL_TASKS", setEnv},
  {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
- {"wide-pointers", ' ', "<format>", "Specify wide pointer format", "S", NULL, "_CHPL_WIDE_POINTERS", setEnv},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
  DRIVER_ARG_COPYRIGHT,
@@ -930,6 +924,8 @@ static ArgumentDescription arg_desc[] = {
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
  {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
+ {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S256", llvmPrintIrName, "CHPL_LLVM_PRINT_IR", NULL},
+ {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S256", llvmPrintIrStage, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", 'D', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -1144,7 +1140,6 @@ static void setChapelEnvs() {
   CHPL_GMP             = envMap["CHPL_GMP"];
   CHPL_HWLOC           = envMap["CHPL_HWLOC"];
   CHPL_REGEXP          = envMap["CHPL_REGEXP"];
-  CHPL_WIDE_POINTERS   = envMap["CHPL_WIDE_POINTERS"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
@@ -1205,14 +1200,6 @@ static void setMaxCIndentLen() {
   if (gotPGI) fMaxCIdentLen = 1020;
 }
 
-static void setWidePointersStruct() {
-  if (0 == strcmp(CHPL_WIDE_POINTERS, "struct")) {
-    widePointersStruct = true;
-  } else {
-    widePointersStruct = false;
-  }
-}
-
 static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
@@ -1244,8 +1231,6 @@ static void postprocess_args() {
   // Processes that depend on results of passed arguments or values of CHPL_vars
 
   setMaxCIndentLen();
-
-  setWidePointersStruct();
 
   postLocal();
 

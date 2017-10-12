@@ -33,6 +33,7 @@ In order to compile a Chapel program with this module, be sure
 to have a BLAS implementation available on your system. See the :mod:`BLAS`
 documentation for further details.
 
+.. _LinearAlgebraInterface:
 
 Linear Algebra Interface
 ------------------------
@@ -155,7 +156,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
 
 pragma "no doc"
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
-  type eltType = Scalars(1).type;
+  type eltType = x.type;
   return Vector(x, (...Scalars), eltType=eltType);
 }
 
@@ -212,14 +213,42 @@ proc Matrix(Dom: domain, type eltType=real) where Dom.rank == 2 {
 }
 
 
+/* Return a matrix (2D array) with domain and values of ``A``.
 
-// TODO: CSR -> Dense
-/* Return a matrix (2D array) with domain and values of ``A`` */
-proc Matrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 {
+   ``A`` can be sparse (CS) or dense.
+*/
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
+  where Dom.rank == 2 && isDefaultRectangularArr(A)
+{
   var M: [Dom] eltType = A: eltType;
   return M;
 }
 
+pragma "no doc"
+/* Return a matrix (2D array) with domain and values of ``A`` - sparse case */
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
+  where Dom.rank == 2 && Sparse.isCSArr(A)
+{
+  var M: [Dom._value.parentDom] eltType;
+
+  forall (i,j) in Dom {
+    M[i, j] = A[i, j]: eltType;
+  }
+
+  return M;
+}
+
+pragma "no doc"
+/* Return a matrix (2D array) with domain and values of ``A`` - sparse case */
+proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
+  where Dom.rank == 2 && isDefaultSparseArr(A)
+{
+  var M: [Dom._value.parentDom] eltType;
+  forall (i,j) in Dom {
+    M[i,j] = A[i,j]: eltType;
+  }
+  return M;
+}
 
 pragma "no doc"
 proc Matrix(Arrays...?n) {
@@ -328,7 +357,7 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
       a vector to this function will return that vector unchanged
 
 */
-proc transpose(A: [?Dom] ?eltType) where Dom: domain(2) {
+proc transpose(A: [?Dom] ?eltType) where isDefaultRectangularArr(A) && Dom.rank == 2 {
   if Dom.shape(1) == 1 then
     return reshape(A, transpose(Dom));
   else if Dom.shape(2) == 1 then
@@ -343,25 +372,55 @@ proc transpose(A: [?Dom] ?eltType) where Dom: domain(2) {
   }
 }
 
-
 /* Transpose vector or matrix */
-proc _array.T where this.domain.rank == 2 { return transpose(this); }
+proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
+{
+  return transpose(this);
+}
 
+/* Add matrices, maintaining dimensions, deprecated for ``_array.plus`` */
+proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
+  compilerWarning('matPlus has been deprecated for _array.plus, ' +
+                  'try: A.plus(B)');
+  return A.plus(B);
+}
 
 /* Add matrices, maintaining dimensions */
-proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.rank != Bdom.rank then compilerError("Unmatched ranks");
-  if Adom.shape != Bdom.shape then halt("Unmatched shapes");
-  var C: [Adom] eltType = A + B;
+proc _array.plus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+  if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+  if Adom.shape != this.domain.shape then halt("Unmatched shapes");
+  var C: [Adom] eltType = this + A;
   return C;
 }
 
+/* Subtract matrices, maintaining dimensions, deprecated for ``_array.minus``*/
+proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
+  compilerWarning('matMinus has been deprecated for _array.plus, ' +
+                  'try: A.minus(B)');
+  return A.minus(B);
+}
 
 /* Subtract matrices, maintaining dimensions */
-proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
-  if Adom.rank != Bdom.rank then compilerError("Unmatched ranks");
-  if Adom.shape != Bdom.shape then halt("Unmatched shapes");
-  var C: [Adom] eltType = A - B;
+proc _array.minus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+  if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+  if Adom.shape != this.domain.shape then halt("Unmatched shapes");
+  var C: [Adom] eltType = this - A;
+  return C;
+}
+
+/* Element-wise multiplication, maintaining dimensions */
+proc _array.times(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+  if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+  if Adom.shape != this.domain.shape then halt("Unmatched shapes");
+  var C: [Adom] eltType = this * A;
+  return C;
+}
+
+/* Element-wise division, maintaining dimensions */
+proc _array.elementDiv(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+  if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+  if Adom.shape != this.domain.shape then halt("Unmatched shapes");
+  var C: [Adom] eltType = this / A;
   return C;
 }
 
@@ -373,7 +432,7 @@ proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
     computes ``dot(transpose(A), B)``, which may not be as efficient as
     passing ``A`` and ``B`` in the reverse order.
 */
-proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultArr(A) && isDefaultArr(B) {
+proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
   // vector-vector
   if Adom.rank == 1 && Bdom.rank == 1 then
     return inner(A, B);
@@ -382,11 +441,16 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultArr(A) && isDef
     return matMult(A, B);
 }
 
+/* Compute the dot-product */
+proc _array.dot(A: []) where isDefaultRectangularArr(this) && isDefaultRectangularArr(A) {
+  return LinearAlgebra.dot(this, A);
+}
+
 
 pragma "no doc"
 /* Element-wise scalar multiplication */
 proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
-  var C: [Adom] eltType = A*b;
+  var C: A.type = A * b;
   return C;
 }
 
@@ -394,7 +458,8 @@ proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
 pragma "no doc"
 /* Element-wise scalar multiplication */
 proc dot(a, B: []) where isNumeric(a) {
-  return dot(B, a);
+  var C: B.type = B * a ;
+  return C;
 }
 
 
@@ -846,11 +911,14 @@ proc trace(A: [?D] ?eltType) {
 //
 // Type helpers
 //
-private proc isDefaultArr (A: []) param where A.domain._value.dist: DefaultDist { return true; }
-private proc isDefaultArr (A: []) param { return false; }
+private proc isDefaultRectangularDom (D: domain) param where D._value: DefaultRectangularDom { return true; }
+private proc isDefaultRectangularDom (D: domain) param { return false; }
+private proc isDefaultRectangularArr (A: []) param { return isDefaultRectangularDom(A.domain); }
 
-private proc isDefaultDom (D: domain) param where D._value.dist: DefaultDist { return true; }
-private proc isDefaultDom (D: domain) param { return false; }
+private proc isDefaultSparseDom(D: domain) param where D._value: DefaultSparseDom { return true; }
+private proc isDefaultSparseDom(D: domain) param { return false; }
+private proc isDefaultSparseArr(A: []) param { return isDefaultSparseDom(A.domain); }
+
 
 
 /* Linear Algebra Sparse Submodule
@@ -860,9 +928,9 @@ matrices (2D arrays).
 
 Sparse matrices are represented as 2D arrays domain-mapped to a sparse *layout*.
 Only the ``CS(compressRows=true)`` (CSR) layout of the
-`:mod:`LayoutCS` layout module is currently supported.
+:mod:`LayoutCS` layout module is currently supported.
 
-See the `Sparse Primer <primers-sparse>`_ for more information about working
+See the :ref:`Sparse Primer <primers-sparse>` for more information about working
 with sparse domains and arrays in Chapel.
 
 Sparse Linear Algebra Interface
@@ -978,7 +1046,7 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
-  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isDefaultDom(Dom) {
+  proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 && isDefaultRectangularDom(Dom) {
     var csrDom = CSRDomain(Dom);
     var M: [csrDom] eltType;
     return M;
@@ -1000,7 +1068,7 @@ module Sparse {
 
   pragma "no doc"
   /* Return a CSR matrix with domain and values of ``A`` - Dense case */
-  proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 && isDefaultArr(A) {
+  proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where Dom.rank == 2 && isDefaultRectangularArr(A) {
     var D = CSRDomain(Dom);
     var M: [D] eltType;
 
@@ -1055,8 +1123,13 @@ module Sparse {
   }
 
   /* Compute the dot-product */
-  proc _array.dot(A: []) where isCSArr(A) {
-    return dot(this, A);
+  proc _array.dot(A: []) where isCSArr(A) || isCSArr(this) {
+    return LinearAlgebra.Sparse.dot(this, A);
+  }
+
+  /* Compute the dot-product */
+  proc _array.dot(a) where isNumeric(a) && isCSArr(this) {
+    return LinearAlgebra.dot(this, a);
   }
 
 
@@ -1107,30 +1180,30 @@ module Sparse {
 
    */
   private proc _csrmatmatMult(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
-    const D = Adom._value.parentDom;
+
+    const D = {Adom.dim(1), Bdom.dim(2)};
     var Cdom: sparse subdomain(D) dmapped CS();
     var C: [Cdom] A.eltType;
 
-    // pre-allocate nnz(A) + nnz(B) -- shrink later
+    // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
     const nnzAB = Adom._value.nnz + Bdom._value.nnz;
     Cdom._value.nnzDom = {1..nnzAB};
 
-    var spa = new _SPA(cols=D.dim(1).size, eltType=A.eltType);
+    var spa = new _SPA(cols=D.dim(1), eltType=A.eltType);
 
     /*
      IR (row)     - nnz-rows  - A.domain._value.startIdx
      JC (column)  - nnz       - A.domain._value.idx
      VAL (values) - nnz       - A._value.data
     */
+
     for i in A.domain.dim(1) {
       const colRange = A.IR(i)..(A.IR(i+1)-1);
       for k in colRange {
-        if A.JC(k) == 0 then continue;
         const jRange = B.IR(A.JC(k))..(B.IR(A.JC(k)+1)-1);
         for j in jRange {
           const value = A.NUM(k) * B.NUM(j),
                 pos = B.JC(j);
-          if pos == 0 then continue;
           spa.scatter(value, pos);
         }
       }
@@ -1152,18 +1225,17 @@ module Sparse {
   pragma "no doc"
   /* Sparse-accumulator */
   record _SPA {
-    var cols: int;
+    var cols; // range(?)
     type eltType = int;
-    var D = {1..cols},
-        b: [D] bool,      // occupation
-        w: [D] eltType,   // values
-        ls: list(int);  // indices
+    var b: [cols] bool,      // occupation
+        w: [cols] eltType,   // values
+        ls: [1..0] int;  // indices
 
     /* Reset w, b, and ls to empty */
     proc reset() {
       b = false;
       w = 0;
-      ls.destroy();
+      ls.clear();
     }
 
     /* Accumulate nonzeros in SPA */
@@ -1171,19 +1243,24 @@ module Sparse {
       if this.b[pos] == 0 {
         this.w[pos] = value;
         this.b[pos] = true;
-        this.ls.append(pos);
+        this.ls.push_back(pos);
       } else {
         this.w[pos] += value;
       }
     }
 
-    proc gather(ref C: [], i) {
+    proc gather(ref C: [?Cdom], i) {
+      use Sort;
+
       const nzcur = C.IR[i];
       var nzi = 0;
+      sort(this.ls);
+
       for idx in this.ls {
         if nzcur + nzi  > C.JC.size then break;
         C.JC[nzcur+nzi] = idx;
         C.NUM[nzcur+nzi] = w[idx];
+        Cdom._value.nnz += 1;
         nzi += 1;
       }
       return nzi;
@@ -1199,7 +1276,8 @@ module Sparse {
       }
     }
 
-    var Dom: sparse subdomain(D._value.parentDom) dmapped CS();
+    const parentDT = transpose(D._value.parentDom);
+    var Dom: sparse subdomain(parentDT) dmapped CS();
     Dom += indices;
     return Dom;
   }
@@ -1225,15 +1303,17 @@ module Sparse {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot add sparse arrays with non-matching parent domains');
 
-    // Create a copy of 'this'
+    // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do A[i,j] = this[i,j];
+    forall (i,j) in B.domain do B[i,j] = this[i,j];
 
-    // Bulk add new indices
-    BDom += A.domain;
+    // If domain indices do not match, bulk add A's indices to B
+    if this.domain != A.domain {
+      BDom += A.domain;
+    }
 
-    // Do in-place addition on A
+    // Do in-place addition of A into B
     forall (i,j) in A.domain do B[i,j] += A[i,j];
 
     return B;
@@ -1244,15 +1324,17 @@ module Sparse {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot add sparse arrays with non-matching parent domains');
 
-    // Create a copy of 'this'
+    // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
     forall (i,j) in B.domain do B[i,j] = this[i,j];
 
-    // Bulk add new indices
-    BDom += A.domain;
+    // If domain indices do not match, bulk add A's indices to B
+    if this.domain != A.domain {
+      BDom += A.domain;
+    }
 
-    // Do in-place subtraction on B
+    // Do in-place addition of A into B
     forall (i,j) in A.domain do B[i,j] -= A[i,j];
 
     return B;
@@ -1263,15 +1345,17 @@ module Sparse {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot subtract sparse arrays with non-matching parent domains');
 
-    // Create a copy of 'this'
+    // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
     forall (i,j) in B.domain do B[i,j] = this[i,j];
 
-    // Bulk add new indices
-    BDom += A.domain;
+    // If domain indices do not match, bulk add A's indices to B
+    if this.domain != A.domain {
+      BDom += A.domain;
+    }
 
-    // Do in-place multiplication on B
+    // Do in-place addition of A into B
     forall (i,j) in A.domain do B[i,j] *= A[i,j];
 
     return B;
@@ -1281,15 +1365,18 @@ module Sparse {
   proc _array.elementDiv(A) where isCSArr(this) && isCSArr(A) {
     if this.domain._value.parentDom != A.domain._value.parentDom then
       halt('Cannot element-wise divide sparse arrays with non-matching parent domains');
-    // Create a copy of 'this'
+
+    // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
     forall (i,j) in B.domain do B[i,j] = this[i,j];
 
-    // Bulk add new indices
-    BDom += A.domain;
+    // If domain indices do not match, bulk add A's indices to B
+    if this.domain != A.domain {
+      BDom += A.domain;
+    }
 
-    // Do in-place division on B
+    // Do in-place addition of A into B
     forall (i,j) in A.domain do B[i,j] /= A[i,j];
 
     return B;
@@ -1304,8 +1391,10 @@ module Sparse {
   //
   // Type helpers
   //
-  private proc isCSArr(A: []) param { return isCSType(A.domain._value.dist.type); }
-  private proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
+  pragma "no doc"
+  proc isCSArr(A: []) param { return isCSType(A.domain._value.dist.type); }
+  pragma "no doc"
+  proc isCSDom(D: domain) param { return isCSType(D._value.dist.type); }
 
 } // submodule LinearAlgebra.Sparse
 

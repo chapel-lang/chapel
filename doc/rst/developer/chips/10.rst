@@ -247,13 +247,14 @@ body.  It appears more visually simple to the type designer's eyes, though the
 implementation may need to be more complicated to accommodate this benefit
 (which is not necessarily an argument against it).  Local variables can be
 shared from Phase 1 to Phase 2, and ``param`` or compile-time const ``if``
-statements may be used to wrap across both phases, though loops and parallel
-statements are not allowed to encapsulate both phases.  However, since the call
-to the parent initializer serves as the division between the two phases, it
-would be easy for this statement to get lost amid a larger and more complex
-initializer body.  Additionally, because the phase split is not as extreme as in
-the second syntax, the type designer may be more confused or frustrated when
-code placed after the call is valid but identical code before it is not.
+statements may be used to wrap across both phases; though loops, on statements,
+and parallel statements are not allowed to encapsulate both phases.  However,
+since the call to the parent initializer serves as the division between the two
+phases, it would be easy for this statement to get lost amid a larger and more
+complex initializer body.  Additionally, because the phase split is not as
+extreme as in the second syntax, the type designer may be more confused or
+frustrated when code placed after the call is valid but identical code before it
+is not.
 
 In contrast, the second syntax denotes more obviously the divide between the two
 phases.  Different rules for the different portions of the initializer would
@@ -428,6 +429,152 @@ argument list for all constructors, but forbade the manipulation of these fields
 within the constructor body.  That design was deemed unnecessarily confusing and
 restrictive for users.
 
+Type Declarations of Generic Instantiations
++++++++++++++++++++++++++++++++++++++++++++
+
+In keeping with prior practice, an instance of a generic class or record that
+defines an initializer may be declared with a specific generic instantiation of
+its type (with or without an initial value).  This generic instantiation must
+include an argument per generic field, even if no initializers are provided that
+match it.  ``type`` fields require a ``type`` argument in the type declaration,
+``param`` fields require a ``param`` argument, and generic ``var`` / ``const``
+fields require a ``type`` argument.  For instance:
+
+.. code-block:: chapel
+
+   class Foo {
+     param p: int;
+
+     proc init() {
+       p = 4;
+       super.init();
+     }
+   }
+
+   var foo: Foo(4); // Declares an instantiation where p = 4.
+
+The above program declares a legal generic instantiation of ``Foo``.  An
+instance of that instantiation can be created via a call to ``new`` with no
+arguments:
+
+.. code-block:: chapel
+
+   foo = new Foo();
+
+The following line is also a legal generic instantiation of ``Foo``:
+
+.. code-block:: chapel
+
+   var foo: Foo(2);
+
+However, no instance of that instantiation can be created (other than ``nil``),
+as the sole provided initializer will only generate instances of ``Foo(4)``.
+The following line would generate a type mismatch:
+
+.. code-block:: chapel
+
+   var foo: Foo(2) = new Foo();
+
+This allows the type creator to limit the instances and instantiations of
+``Foo`` available to the user.
+
+This becomes more obvious in the case of generic records.  Records are
+initialized upon declaration, so a call to one of the record's initializers
+would be generated after the type instantiation was determined.  In the case
+where the record is concrete, the generated call contains no actuals.  If the
+record is generic, it will contain an argument per generic field, determined by
+the type constructor call that was used.  ``type`` fields will still send a
+``type`` actual, ``param`` fields will still send a ``param`` actual, but
+generic ``var`` / ``const`` fields will use the default value of the ``type``
+argument used for determining the type instantiation.  For instance,
+
+.. code-block:: chapel
+
+   record Foo {
+     type t;
+     var x: int;
+
+     proc init(type tVal) {
+       t = tVal;
+       x = 10;
+       super.init();
+     }
+   }
+
+   var foo: Foo(int);
+
+The above code will create an instance of ``Foo`` with t set to ``int`` and x
+set to ``10``, as specified by the defined initializer, because the initializer
+contains just one type argument and so matches against the generated call.  The
+defined type and the type created by the initializer match, so no issues will be
+encountered.
+
+If the initializer were defined thusly:
+
+.. code-block:: chapel
+
+   proc init(type tVal) {
+     if (tVal != x.type) {
+       t = x.type;
+     } else {
+       t = tVal;
+     }
+     x = 10;
+     super.init();
+   }
+
+then a call of the form
+
+.. code-block:: chapel
+
+   var foo: Foo(real);
+
+would run into issues - the initializer accepts a ``type`` argument; however, it
+might not use that argument when setting the generic ``type`` field.  This means
+that the initializer may generate a different type than the type constructor
+with the same argument, so the program will fail to compile.
+
+In the case of a record with a generic ``var`` / ``const`` field:
+
+.. code-block:: chapel
+
+   record Foo {
+     var x;
+
+     proc init(xVal) {
+       x = xVal;
+       super.init();
+     }
+   }
+
+   var foo: Foo(bool);
+
+the type of foo will be ``Foo(bool)`` and its x field will store ``false``, the
+default value of the bool type.
+
+Should no initializer be defined that matches the generated call, an unresolved
+call error will be generated:
+
+.. code-block:: chapel
+
+   record Foo {
+     type t;
+     var x: int;
+
+     proc init(xVal) {
+       t = xVal.type;
+       x = xVal;
+       super.init();
+     }
+   }
+
+   var foo: Foo(real);
+
+In the above example, since it is the t field that is generic, the call to
+initialize foo will try to use ``real`` as its only argument.  Since the only
+initializer defined does not take a ``type`` argument, this call will fail to
+resolve.
+
 
 Implementation Strategy, Misc.
 ++++++++++++++++++++++++++++++
@@ -532,9 +679,9 @@ Deinitialization
 ++++++++++++++++
 
 To specify actions that occur upon deinitialization, specify a ``proc
-deinit()`` method. This method must have zero arguments and cannot be called
-directly. If a type does not specify a ``proc deinit()`` method, the compiler
-will generate one.
+deinit()`` method. This method must have zero arguments and must be
+declared with parentheses. It cannot be called directly. If a type
+does not specify a ``proc deinit()`` method, the compiler will generate one.
 It will be equivalent to a user-written ``deinit`` with an empty body.
 
 In addition to the actions specified by the ``deinit`` method, whether

@@ -82,6 +82,10 @@ var branchInfo = [
                   { "release" : "1.15",
                     "releaseDate": "2017-04-06",
                     "branchDate" : "2017-03-27",
+                    "revision" : -1},
+                  { "release" : "1.16",
+                    "releaseDate": "2017-10-05",
+                    "branchDate" : "2017-09-27",
                     "revision" : -1}
                   ];
 
@@ -559,7 +563,12 @@ function captureScreenshot(g, graphInfo) {
           ctx.fillText(label, 0, fontSize);
 
           // open the screenshot in a new window
-          window.open(captureCanvas.toDataURL());
+          //
+          // BHARSH 2017-10-09: recent browser versions no longer allow 'window.open'
+          // with a data URL due to security concerns.
+          //
+          var screenWin = window.open();
+          screenWin.document.write("<img src='" + captureCanvas.toDataURL() + "'/>");
 
           // restore the roll box and ylabel
           g.updateOptions(restoreOpts);

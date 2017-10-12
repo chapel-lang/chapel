@@ -267,7 +267,8 @@ module ZMQ {
   use Reflection;
   use ExplicitRefCount;
 
-  private extern var errno: c_int;
+  private extern proc chpl_macro_int_errno():c_int;
+  private inline proc errno return chpl_macro_int_errno():c_int;
 
   // Types
   pragma "no doc"

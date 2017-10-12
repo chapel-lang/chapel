@@ -1,0 +1,31 @@
+import os
+import re
+import platform
+from  lit import formats
+
+config.name = 'llvm-pgas'
+config.test_source_root = os.path.join("@CMAKE_CURRENT_SOURCE_DIR@", 'test')
+
+# Configuration file for the 'lit' test runner.
+config.test_format = formats.ShTest(True)
+
+# suffixes: A list of file extensions to treat as test files. This is overriden
+# by individual lit.local.cfg files in the test subdirectories.
+config.suffixes = ['.ll', '.c', '.cpp', '.test', '.txt', '.s']
+
+# excludes: A list of directories to exclude from the testsuite. The 'Inputs'
+# subdirectories contain auxiliary inputs for various tests in their parent
+# directories.
+config.excludes = ['CMakeCache.txt', 'CMakeFiles', 'CMakeLists.txt']
+
+config.substitutions.append(('%bindir', "@CMAKE_BINARY_DIR@"))
+
+
+# environment: Set PATH as required
+config.environment['PATH'] = os.pathsep.join([os.path.join("@LLVM_ROOT@", "bin"),
+                                              config.environment['PATH']])
+config.environment['LLVM_ROOT'] = "@LLVM_ROOT@"
+config.environment['CMAKE_SOURCE_DIR'] = "@CMAKE_SOURCE_DIR@"
+config.environment['MOD_EXT'] = "@CMAKE_SHARED_LIBRARY_SUFFIX@"
+
+# vim:ft=python

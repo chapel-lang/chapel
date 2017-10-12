@@ -92,7 +92,18 @@ bool Type::isDefaultIntentConst() const {
   return retval;
 }
 
-Symbol* Type::getField(const char* name, bool fatal) {
+bool Type::isWidePtrType() const {
+  if (symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS)) {
+    // Workaround an ugly hack in insert wide references
+    // which can make a wide _array record containing an "addr" record
+    Type* baseType = this->getField("addr")->type;
+    if (isReferenceType(baseType) || isClass(baseType) || baseType == dtNil)
+      return true;
+  }
+  return false;
+}
+
+Symbol* Type::getField(const char* name, bool fatal) const {
   INT_FATAL(this, "getField not called on AggregateType");
   return NULL;
 }

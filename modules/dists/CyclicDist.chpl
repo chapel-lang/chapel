@@ -754,16 +754,7 @@ inline proc _remoteAccessData.getDataIndex(
       sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
     }
   }
-  if defRectSimpleDData {
-    return sum;
-  } else {
-    if mdNumChunks == 1 {
-      return (0, sum);
-    } else {
-      const chunk = mdInd2Chunk(ind(mdParDim));
-      return (chunk, sum);
-    }
-  }
+  return sum;
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
@@ -799,7 +790,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).dataChunk(0) != nil {
+      if radata(rlocIdx).data != nil {
         const startIdx = myLocArr.locCyclicRAD.startIdx;
         const dimLength = myLocArr.locCyclicRAD.targetLocDomDimLength;
         type strType = chpl__signedType(idxType);
@@ -956,6 +947,11 @@ class LocCyclicArr {
   inline proc unlockLocRAD() {
     locRADLock.clear();
   }
+
+  proc deinit() {
+    if locRAD != nil then
+      delete locRAD;
+  }
 }
 
 proc LocCyclicArr.this(i) ref {
@@ -993,43 +989,11 @@ proc CyclicArr.doiCanBulkTransferStride(viewDom) param {
   return useBulkTransferDist;
 }
 
-proc CyclicArr.oneDData {
-  if defRectSimpleDData {
-    return true;
-  } else {
-    // TODO: do this when we create the array?  if not, then consider:
-    // TODO: use locRad oneDData, if available
-    // TODO: with more coding complexity we could get a much quicker
-    //       answer in the 'false' case, but how to avoid penalizing
-    //       the 'true' case at scale?
-    var allBlocksOneDData: bool;
-    on this {
-      var myAllBlocksOneDData: atomic bool;
-      myAllBlocksOneDData.write(true);
-      forall la in locArr {
-        if !la.myElems._value.oneDData then
-          myAllBlocksOneDData.write(false);
-      }
-      allBlocksOneDData = myAllBlocksOneDData.read();
-    }
-    return allBlocksOneDData;
-  }
-}
-
 proc CyclicArr.doiUseBulkTransferStride(B) {
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiUseBulkTransferStride()");
 
-  //
-  // Absent multi-ddata, for the array as a whole, say bulk transfer
-  // is possible.
-  //
-  // If multi-ddata is possible then we can only do strided bulk
-  // transfer when all the blocks have but a single ddata chunk.
-  //
-  if this.rank != B.rank then return false;
-  return defRectSimpleDData
-         || (oneDData && chpl__getActualArray(B).oneDData);
+  return this.rank == B.rank;
 }
 
 //For assignments of the form: "Cyclic = any"

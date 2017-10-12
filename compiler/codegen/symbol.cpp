@@ -68,6 +68,7 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
   "loop-optimizer-end",
@@ -580,15 +581,11 @@ void VarSymbol::codegenDefC(bool global, bool isHeader) {
     } else if (ct->symbol->hasFlag(FLAG_WIDE_REF) ||
                ct->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       if (isFnSymbol(defPoint->parentSymbol)) {
-        if (widePointersStruct) {
-          //
-          // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
-          // file in the runtime, for the selected locale model.
-          //
-          str += " = {CHPL_LOCALEID_T_INIT, NULL}";
-        } else {
-          str += " = ((wide_ptr_t) NULL)";
-        }
+        //
+        // CHPL_LOCALEID_T_INIT is #defined in the chpl-locale-model.h
+        // file in the runtime, for the selected locale model.
+        //
+        str += " = {CHPL_LOCALEID_T_INIT, NULL}";
       }
     }
   }
@@ -1287,6 +1284,8 @@ void FnSymbol::codegenDef() {
         func->addFnAttr(llvm::Attribute::NoInline);
         llvmPrintIrCName = cname;
     }
+    if (fNoInline)
+      func->addFnAttr(llvm::Attribute::NoInline);
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
@@ -1368,7 +1367,8 @@ void FnSymbol::codegenDef() {
       }
     }
 
-    if(llvmPrintIrStageNum == llvmStageNum::NONE
+    if((llvmPrintIrStageNum == llvmStageNum::NONE ||
+        llvmPrintIrStageNum == llvmStageNum::EVERY)
             && strcmp(llvmPrintIrName, name) == 0)
         printLlvmIr(func, llvmStageNum::NONE);
 
@@ -1380,7 +1380,8 @@ void FnSymbol::codegenDef() {
     // (note, in particular, the default pass manager's
     //  populateFunctionPassManager does not include vectorization)
     info->FPM_postgen->run(*func);
-    if(llvmPrintIrStageNum == llvmStageNum::BASIC
+    if((llvmPrintIrStageNum == llvmStageNum::BASIC ||
+        llvmPrintIrStageNum == llvmStageNum::EVERY)
             && strcmp(llvmPrintIrName, name) == 0)
         printLlvmIr(func, llvmStageNum::BASIC);
 #endif

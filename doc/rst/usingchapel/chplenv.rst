@@ -33,7 +33,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.15.0
+        export CHPL_HOME=~/chapel-1.16.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -490,8 +490,8 @@ CHPL_GMP
 CHPL_HWLOC
 ~~~~~~~~~~
    Optionally, the ``CHPL_HWLOC`` environment variable can select between
-   no hwloc support, using the hwloc package distributed with Chapel in
-   third-party, or using a system jemalloc.
+   no hwloc support or using the hwloc package distributed with Chapel in
+   third-party.
 
        ======== ==============================================================
        Value    Description
@@ -624,7 +624,7 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 3.7.
+   Chapel currently supports LLVM 3.7 through 4.0.
 
    .. note::
 
@@ -637,39 +637,6 @@ CHPL_LLVM
 
             # Ubuntu 16.04
             apt-get install llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
-
-
-.. _readme-chplenv.CHPL_WIDE_POINTERS:
-
-CHPL_WIDE_POINTERS
-~~~~~~~~~~~~~~~~~~
-   Optionally, the ``CHPL_WIDE_POINTERS`` environment variable can be used to
-   specify the wide pointer format for multilocale programs.  Current options
-   are:
-
-       ======== =============================================================
-       Value    Description
-       ======== =============================================================
-       struct   store wide pointers in structures which may span more than
-                one word
-       nodeN    ("N" a number, 2 <= N <= 60) store wide pointers in single
-                words, with N bits used to store the node (top level locale)
-                number and the rest containing the address on that node
-       ======== =============================================================
-
-   ``CHPL_WIDE_POINTERS`` is used to select between two modes of operation.  One is
-   universally applicable; the other has restricted applicability but may
-   reduce remote communication.
-
-   If unset, ``CHPL_WIDE_POINTERS`` defaults to ``struct``.  This setting works in
-   all situations and in particular, it is compatible with all locale models
-   including the hierarchical ones.  The ``nodeN`` option does not work with
-   hierarchical locale models and is only useful with the LLVM backend, which
-   is currently experimental.  However, when used, it allows LLVM to understand
-   and optimize remote transfers, potentially reducing the amount of
-   communication a program performs.  See :ref:`readme-llvm` for more
-   information about ``CHPL_WIDE_POINTERS=nodeN``.
-
 
 .. _readme-chplenv.CHPL_UNWIND:
 

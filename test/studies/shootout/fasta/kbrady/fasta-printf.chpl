@@ -159,7 +159,6 @@ proc repeatMake(desc : string, alu : [], n : int) {
   write(desc);
   var r : int = alu.size;
   var s : [0..(r+LINE_LENGTH)] int(8);
-  assert(s._value.oneDData); // fend off multi-ddata
   for indx in s.domain {
     s[indx] = alu[indx % r];
   }

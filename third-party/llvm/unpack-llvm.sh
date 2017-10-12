@@ -24,6 +24,8 @@ tar xf llvm-4.0.1.src.tar.xz
 tar xf cfe-4.0.1.src.tar.xz
 mv llvm-4.0.1.src llvm
 mv cfe-4.0.1.src llvm/tools/clang
+patch -p0 < llvm-4.0.1-BasicAliasAnalysis-patch.txt
+patch -p0 < llvm-4.0.1-ValueTracking-patch.txt
 
 #tar xf llvm-3.9.1.src.tar.xz
 #tar xf cfe-3.9.1.src.tar.xz

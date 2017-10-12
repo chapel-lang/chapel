@@ -25,6 +25,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -38,6 +39,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// This function just returns errno (needed for LLVM compiles)
+static inline int chpl_macro_int_errno(void) { return errno; }
 
 #ifndef LUSTRE_SUPER_MAGIC
 // Magic value to be found in the statfs man page

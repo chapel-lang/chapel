@@ -40,7 +40,6 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/DataLayout.h"
-#define LLVM_TARGET_DATA llvm::DataLayout
 #define LLVM_ATTRIBUTE llvm::Attribute
 static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attribute::AttrKind v)
 {
@@ -56,7 +55,6 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
 #include "llvm/Intrinsics.h"
 #include "llvm/IntrinsicInst.h"
 #include "llvm/Attributes.h"
-#define LLVM_TARGET_DATA llvm::DataLayout
 #define LLVM_ATTRIBUTE llvm::Attributes
 static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attributes::AttrVal v)
 {
@@ -64,21 +62,9 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   return f->getParamAttributes(idx).hasAttribute(v);
 }
 
-#elif HAVE_LLVM_VER >= 31
+#else
 
-#include "llvm/Module.h"
-#include "llvm/Value.h"
-#include "llvm/Support/IRBuilder.h"
-#include "llvm/Target/TargetData.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/IntrinsicInst.h"
-#include "llvm/Attributes.h"
-#define LLVM_TARGET_DATA llvm::TargetData
-#define LLVM_ATTRIBUTE llvm::Attribute
-static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::AttrConst v)
-{
-  return f->paramHasAttr(idx, v);
-}
+#error LLVM version is too old for this version of Chapel
 
 #endif
 
@@ -108,12 +94,12 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
 llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* builder, llvm::Type* type, const char* name);
-llvm::Value *convertValueToType(llvm::IRBuilder<> *builder, LLVM_TARGET_DATA * targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false);
+llvm::Value *convertValueToType(llvm::IRBuilder<> *builder, const llvm::DataLayout& targetData, llvm::Value *value, llvm::Type *newType, bool isSigned = false, bool force = false);
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
 
-int64_t getTypeSizeInBytes(LLVM_TARGET_DATA * layout, llvm::Type* ty);
-bool isTypeSizeSmallerThan(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t max_size_bytes);
-uint64_t getTypeFieldNext(LLVM_TARGET_DATA * layout, llvm::Type* ty, uint64_t offset);
+int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
+bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
+uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset);
 
 
 // And create a type for a metadata operand 

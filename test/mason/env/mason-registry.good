@@ -1,0 +1,5 @@
+MASON_HOME: $PWD/tempHome *
+MASON_REGISTRY: $PWD/tempHome/myRegistry *
+Initializing mason-registry...
+multiple (0.2.0)
+simple (0.1.0)

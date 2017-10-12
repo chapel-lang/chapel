@@ -147,11 +147,6 @@ record Timer {
   pragma "no doc"
   var running:     bool       = false;
 
-  pragma "no doc"
-  proc initialize() {
-    // does nothing.
-  }
-
   /*
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.

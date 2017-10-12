@@ -8,4 +8,5 @@ proc main(){
   writeln(c.toHexString());
   writeln(c.getBuffData());
   writeln(c.getBuffSize());
+  delete c;
 }

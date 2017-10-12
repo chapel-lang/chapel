@@ -1286,7 +1286,19 @@ module ChapelArray {
 
       return _newArray(x);
     }
+
     /* Remove all indices from this domain, leaving it empty */
+
+    // For rectangular domains, create an empty domain and assign it to this
+    // one to make sure that we leverage all of the array's normal resizing
+    // machinery.
+    proc clear() where isRectangularDom(this) {
+      var emptyDom: this.type;
+      this = emptyDom;
+    }
+
+    // For other domain types, the implementation probably knows the most
+    // efficient way to clear its index set, so make a dsiClear() call.
     proc clear() {
       _value.dsiClear();
     }
@@ -2875,9 +2887,10 @@ module ChapelArray {
 
       const shift = vals.size,
             shiftRange = pos..this.domain.high,
-            newRange = this.domain.low..(this.domain.high + vals.size);
+            newRange = this.domain.low..(this.domain.high + vals.size),
+            validInsertRange = this.domain.low..(this.domain.high + 1);
 
-      if boundsChecking && !newRange.member(pos) then
+      if boundsChecking && !validInsertRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");

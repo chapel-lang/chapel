@@ -55,6 +55,12 @@ class Block1DDist {
         locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
   }
 
+  proc deinit() {
+    for loc in targetLocs do
+      on loc do
+        delete locDist(loc);
+  }
+
   //
   // Create a new domain over this distribution with the given index
   // set (inds) and the given global and local index type (idxType,
@@ -178,6 +184,12 @@ class Block1DDom {
         locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
     if debugBradsBlock1D then
       [loc in dist.targetLocs] writeln(loc, " owns ", locDom(loc));
+  }
+
+  proc deinit() {
+    for loc in dist.targetLocs do
+      on loc do
+        delete locDom(loc);
   }
 
   //
@@ -311,6 +323,12 @@ class Block1DArr {
     for loc in dom.dist.targetLocs do
       on loc do
         locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
+  }
+
+  proc deinit() {
+    for loc in dom.dist.targetLocs do
+      on loc do
+        delete locArr(loc);
   }
 
   //

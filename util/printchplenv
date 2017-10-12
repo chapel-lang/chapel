@@ -121,12 +121,6 @@ def print_mode(mode='list', anonymize=False):
     regexp = chpl_regexp.get()
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
 
-    wide_pointers = chpl_wide_pointers.get()
-    print_var('CHPL_WIDE_POINTERS', wide_pointers, mode, 'wide')
-    if mode == 'make':
-        wide_pointer_defines = chpl_wide_pointers.get('define')
-        print_var('CHPL_WIDE_POINTERS_DEFINES', wide_pointer_defines, mode, 'widedef')
-
     if mode != 'list':
         llvm = chpl_llvm.get()
         print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))

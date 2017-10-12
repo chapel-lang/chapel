@@ -809,6 +809,7 @@ typedef enum {
        NONE,
        BASIC,
        FULL,
+       EVERY, // after every optimization if possible
        // These options allow instrumenting the pass pipeline
        // and match ExtensionPointTy in PassManagerBuilder
        EarlyAsPossible,

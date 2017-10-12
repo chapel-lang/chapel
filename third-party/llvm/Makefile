@@ -100,12 +100,15 @@ $(LLVM_HEADER_FILE):
 # if cmake us also using Make.
 $(LLVM_SUPPORT_FILE):
 	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
 	  cd $(LLVM_BUILD_DIR)/lib/Support && $(MAKE) ; \
 	  cd $(LLVM_BUILD_DIR)/lib/Support && $(MAKE) install ; \
-        elif [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	elif [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) LLVMSupport ; \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-LLVMSupport ; \
 	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
 	fi

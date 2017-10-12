@@ -7,11 +7,14 @@ record A
   var a : int;
 }
 
-
-// CHECK: store %A_chpl %{{[0-9]+}}, %A_chpl* %localConst_chpl
-// CHECK-NEXT: %[[REG1:[0-9]+]] = bitcast %A_chpl* %localConst_chpl to i8*
-// CHECK-NEXT: %{{[0-9]+}} = call {}* @llvm.invariant.start.p0i8(i64 8, i8* %[[REG1]])
-
+// CHECK: @_construct_A_chpl
+// CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST:%.*]])
+// CHECK-DAG: [[CAST]] = bitcast %A_chpl* [[PTR:%.*]] to i8*
+// CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR]]
+// CHECK: getelementptr
+// CHECK-SAME:[[PTR]]
+// CHECK: load
+// CHECK: ret
 proc f(n)
 {
   const localConst = new A(n*10);

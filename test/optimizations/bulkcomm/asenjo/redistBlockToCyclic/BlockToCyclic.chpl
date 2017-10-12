@@ -25,18 +25,14 @@ proc BlockArr.copyBtoC(B)
 
     var numLocales: int(32)=privdom.dist.targetLocDom.dim(1).length:int(32);
     var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
-    assert(privarr.locArr[lid].myElems._value.oneDData);
-    var src = privarr.locArr[lid].myElems._value.dataChunk(0);
+    var src = privarr.locArr[lid].myElems._value.data;
 
     dststrides[1]=1;
     srcstrides[1]=numLocales;
 
-    assert(dststrides._value.oneDData);
-    var dststr=dststrides._value.dataChunk(0);
-    assert(srcstrides._value.oneDData);
-    var srcstr=srcstrides._value.dataChunk(0);
-    assert(count._value.oneDData);
-    var cnt=count._value.dataChunk(0);
+    var dststr=dststrides._value.data;
+    var srcstr=srcstrides._value.data;
+    var cnt=count._value.data;
 
     //Domain size (n) and first index (arrayini)
 
@@ -68,8 +64,7 @@ proc BlockArr.copyBtoC(B)
       if (schunkini+(blksize/numLocales)*numLocales>b) then chunksize=blksize/numLocales;
       else chunksize=blksize/numLocales+1;
 
-      assert(privB.locArr[dst].myElems._value.oneDData);
-      var destr = privB.locArr[dst].myElems._value.dataChunk(0);
+      var destr = privB.locArr[dst].myElems._value.data;
       count[1]=1;
       count[2]=chunksize;
 
@@ -105,12 +100,9 @@ proc  BlockArr.copyCtoB(B)
     var numLocales: int=privdom.dist.targetLocDom.dim(1).length;
     var n:int(32)=privdom.dist.boundingBox.dim(1).length:int(32);
 
-    assert(dststrides._value.oneDData);
-    var dststr=dststrides._value.dataChunk(0);
-    assert(srcstrides._value.oneDData);
-    var srcstr=srcstrides._value.dataChunk(0);
-    assert(count._value.oneDData);
-    var cnt=count._value.dataChunk(0);
+    var dststr=dststrides._value.data;
+    var srcstr=srcstrides._value.data;
+    var cnt=count._value.data;
 
     //On each locale (src) we compute the chunk that goes to each dst
     var num: int;
@@ -120,8 +112,7 @@ proc  BlockArr.copyCtoB(B)
     var b: int(32)=privdom.locDoms[lid].myBlock.high:int(32);
     num=b-a+1;
 
-    assert(privarr.locArr[lid].myElems._value.oneDData);
-    var src = privarr.locArr[lid].myElems._value.dataChunk(0);
+    var src = privarr.locArr[lid].myElems._value.data;
     var arrayini:int(32)=dom.dsiLow:int(32);
 
     var t,t1,t2: real;
@@ -136,8 +127,7 @@ proc  BlockArr.copyCtoB(B)
       if (schunkini+(num/numLocales)*numLocales>b) then chunksize=num/numLocales;
       else chunksize=num/numLocales+1;
 
-      assert(privB.locArr[dst].myElems._value.oneDData);
-      var destr = privB.locArr[dst].myElems._value.dataChunk(0);
+      var destr = privB.locArr[dst].myElems._value.data;
       dststrides[1]=numLocales:int(32);
       srcstrides[1]=1;
       count[1]=1;

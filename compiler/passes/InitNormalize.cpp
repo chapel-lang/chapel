@@ -20,6 +20,7 @@
 #include "InitNormalize.h"
 
 #include "stmt.h"
+#include "ForallStmt.h"
 
 static bool isSuperInit(Expr* stmt);
 static bool isThisInit (Expr* stmt);
@@ -87,6 +88,13 @@ InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
   mCurrField  = curr.mCurrField;
   mPhase      = curr.mPhase;
   mBlockType  = cBlockLoop;
+}
+
+InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
+  mFn         = curr.mFn;
+  mCurrField  = curr.mCurrField;
+  mPhase      = curr.mPhase;
+  mBlockType  = cBlockForall;
 }
 
 
@@ -168,6 +176,10 @@ bool InitNormalize::inParallelStmt() const {
 
 bool InitNormalize::inCoforall() const {
   return mBlockType == cBlockCoforall;
+}
+
+bool InitNormalize::inForall() const {
+  return mBlockType == cBlockForall;
 }
 
 bool InitNormalize::inOn() const {
@@ -1186,6 +1198,15 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
         stmt   = stmt->next;
       }
 
+    } else if (ForallStmt* block = toForallStmt(stmt)) {
+      InitPhase phase = startPhase(block->loopBody());
+
+      if (phase != cPhase2) {
+        retval = phase;
+      } else {
+        stmt   = stmt->next;
+      }
+
     } else {
       stmt = stmt->next;
     }
@@ -1429,6 +1450,10 @@ void InitNormalize::describe(int offset) const {
 
     case cBlockCoforall:
       printf("coforall\n");
+      break;
+
+    case cBlockForall:
+      printf("forall\n");
       break;
 
     case cBlockOn:

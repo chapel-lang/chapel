@@ -237,6 +237,10 @@ I.e. add the following to the AST:
 * before 'call'
     def globalOp = new reduceType(origSym.type);
 
+    // incorporate the initial value of 'origSym'
+    // using one of initialAccumulate() or accumulate(), ex:
+    globalOp.accumulate(origSym);
+
 * pass globalOp to call();
   corresponding formal in 'fn': parentOp
 
@@ -271,6 +275,10 @@ is transformed into
 
     var x: int;
     var globalOp = new OP_SCAN_REDUCE_CLASS(x.type);
+    if (canResolveMethod(globalOp, "initialAccumulate", x))
+      globalOp.initialAccumulate(x);
+    else
+      globalOp.accumulate(x);
 
     proc coforall_fn(parentOp) {
       var currOp = parentOp.clone()
@@ -291,6 +299,20 @@ is transformed into
 Todo: to support cobegin constructs, need to share 'globalOp'
 across all fn+call pairs for the same construct.
 */
+
+static void insertInitialAccumulate(Expr* headAnchor,
+                                    VarSymbol* globalOp,
+                                    Symbol* origSym) {
+  Expr* condExpr = new_Expr("'method call resolves'(%S, %S, %S)", globalOp,
+                            new_StringSymbol("initialAccumulate"), origSym);
+  Expr* thenCase = new_Expr("initialAccumulate(%S, %S, %S)",
+                            gMethodToken, globalOp, origSym);
+  Expr* elseCase = new_Expr("accumulate(%S, %S, %S)",
+                            gMethodToken, globalOp, origSym);
+  CondStmt* condStmt = new CondStmt(condExpr, thenCase, elseCase);
+  headAnchor->insertBefore(condStmt);
+}
+
 static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
                                    TypeSymbol* reduceType, Symbol* origSym,
                                    ArgSymbol*& newFormal, Symbol*& newActual,
@@ -317,6 +339,8 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   CallExpr* newOp = new CallExpr(reduceAt->defaultInitializer->name,
                                  new NamedExpr("eltType", new SymExpr(eltType)));
   headAnchor->insertBefore(new CallExpr(PRIM_MOVE, globalOp, newOp));
+
+  insertInitialAccumulate(headAnchor, globalOp, origSym);
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
   // Doing insertAfter() calls in reverse order.

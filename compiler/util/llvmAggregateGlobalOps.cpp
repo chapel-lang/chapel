@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,8 @@
 // memcpy(%tmp, %p, ...)
 // %i1 = getelementptr ... %tmp, ..., 1
 // %i2 = getelementptr ... %tmp ..., 2
-// %v1 = load %i1 
-// %v2 = load %i2 
+// %v1 = load %i1
+// %v2 = load %i2
 //
 // This optimization doesn't worry about combining such loads
 // or stores into memcpys or memsets since MemCpyOptimizer
@@ -49,6 +49,7 @@
 
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
@@ -77,6 +78,8 @@
 
 #include <cstdio>
 #include <list>
+#include <string>
+#include <unordered_map>
 
 using namespace llvm;
 
@@ -84,9 +87,9 @@ namespace {
 
 
 static const bool DEBUG = false;
-static const bool extraChecks = false;
+static const bool extraChecks = true;
 // Set a function name here to get lots of debugging output.
-static const char* debugThisFn = "";
+static const char* debugThisFn = "";//"deinit6";
 
 
 // If there is a gap between memory that we are loading,
@@ -97,19 +100,21 @@ static const char* debugThisFn = "";
 #define GET_EXTRA 64
 
 static inline
-bool isGlobalLoadOrStore(Instruction* I,
-                         unsigned globalSpace,
-                         bool findLoad, bool findStore)
+bool isMergeableGlobalLoadOrStore(Instruction* I,
+                                  unsigned globalSpace,
+                                  bool findLoad, bool findStore)
 {
   if( findLoad && isa<LoadInst>(I) ) {
     LoadInst *load = cast<LoadInst>(I);
-    if( load->getPointerAddressSpace() == globalSpace ) {
+    if( load->getPointerAddressSpace() == globalSpace &&
+        load->isSimple() ) {
       return true;
     }
   }
   if( findStore && isa<StoreInst>(I)) {
     StoreInst *store = cast<StoreInst>(I);
-    if( store->getPointerAddressSpace() == globalSpace ) {
+    if( store->getPointerAddressSpace() == globalSpace &&
+        store->isSimple() ) {
       return true;
     }
   }
@@ -127,33 +132,6 @@ Value* getLoadStorePointer(Instruction* I)
     return store->getPointerOperand();
   }
   return NULL;
-}
-static
-Value* rebasePointer(Value* ptr, Value* oldBase, Value* newBase, const Twine &name,
-                     IRBuilder<>* builder, const DataLayout &TD,
-                     Value* oldBaseI, Value* newBaseI)
-{
-  Type* iPtrTy = TD.getIntPtrType(ptr->getType());
-  Type* localPtrTy = ptr->getType()->getPointerElementType()->getPointerTo(0);
-
-  Value* ret;
-
-  if( ptr != oldBase ) {
-    // compute newBase + (ptr - oldBase)
-    Value* pI = builder->CreatePtrToInt(ptr, iPtrTy, name + ".ptr.i");
-    assert( oldBaseI );
-    assert( newBaseI );
-    // then subtract
-    Value* diff = builder->CreateSub(pI, oldBaseI, name + ".diff");
-    // then make sure same type
-    Value* ext = builder->CreateSExtOrTrunc(diff, newBaseI->getType(), ".ext.i");
-    // Now add
-    Value* sum = builder->CreateAdd(newBaseI, ext, name + ".sum");
-    ret = builder->CreateIntToPtr(sum, localPtrTy, name + ".cast");
-  } else {
-    ret = builder->CreatePointerCast(newBase, localPtrTy, name + ".cast");
-  }
-  return ret;
 }
 
 // Given a start and end load/store instruction (in the same basic block),
@@ -223,11 +201,15 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
     // Leave loads/stores where they are (they will be removed)
     if( isa<StoreInst>(insn) || isa<LoadInst>(insn) ) {
       if( DebugThis ) {
-        errs() << "found load/store: "; insn->dump();
+        dbgs() << "found load/store: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
     } else if( memopsUses.count(insn) ) {
       if( DebugThis ) {
-        errs() << "found memop use: "; insn->dump();
+        dbgs() << "found memop use: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
       // Move uses of memops to after the final memop.
       insn->removeFromParent();
@@ -235,7 +217,9 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
       LastMemopUse = insn;
     } else {
       if( DebugThis ) {
-        errs() << "found other: "; insn->dump();
+        dbgs() << "found other: ";
+        insn->print(dbgs(), true);
+        dbgs() << '\n';
       }
       // Move addressing instructions to before the first memop.
       insn->removeFromParent();
@@ -250,8 +234,10 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
-static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
-                                  bool &VariableIdxFound, const DataLayout &TD){
+static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
+                                  unsigned Idx,
+                                  bool &VariableIdxFound,
+                                  const DataLayout &DL){
   // Skip over the first indices.
   gep_type_iterator GTI = gep_type_begin(GEP);
   for (unsigned i = 1; i != Idx; ++i, ++GTI)
@@ -261,7 +247,7 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
   int64_t Offset = 0;
   for (unsigned i = Idx, e = GEP->getNumOperands(); i != e; ++i, ++GTI) {
     ConstantInt *OpC = dyn_cast<ConstantInt>(GEP->getOperand(i));
-    if (OpC == 0)
+    if (!OpC)
       return VariableIdxFound = true;
     if (OpC->isZero()) continue;  // No offset.
 
@@ -272,13 +258,13 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
     if (StructType *STy = dyn_cast<StructType>(*GTI))
 #endif
     {
-      Offset += TD.getStructLayout(STy)->getElementOffset(OpC->getZExtValue());
+      Offset += DL.getStructLayout(STy)->getElementOffset(OpC->getZExtValue());
       continue;
     }
 
     // Otherwise, we have a sequential type like an array or vector.  Multiply
     // the index by the ElementSize.
-    uint64_t Size = TD.getTypeAllocSize(GTI.getIndexedType());
+    uint64_t Size = DL.getTypeAllocSize(GTI.getIndexedType());
     Offset += Size*OpC->getSExtValue();
   }
 
@@ -288,9 +274,16 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP, unsigned Idx,
 /// constant offset, and return that constant offset.  For example, Ptr1 might
 /// be &A[42], and Ptr2 might be &A[40].  In this case offset would be -8.
 static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
-                            const DataLayout &TD) {
+                            const DataLayout &DL) {
   Ptr1 = Ptr1->stripPointerCasts();
   Ptr2 = Ptr2->stripPointerCasts();
+
+  // Handle the trivial case first.
+  if (Ptr1 == Ptr2) {
+    Offset = 0;
+    return true;
+  }
+
   GEPOperator *GEP1 = dyn_cast<GEPOperator>(Ptr1);
   GEPOperator *GEP2 = dyn_cast<GEPOperator>(Ptr2);
 
@@ -298,13 +291,13 @@ static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
 
   // If one pointer is a GEP and the other isn't, then see if the GEP is a
   // constant offset from the base, as in "P" and "gep P, 1".
-  if (GEP1 && GEP2 == 0 && GEP1->getOperand(0)->stripPointerCasts() == Ptr2) {
-    Offset = -GetOffsetFromIndex(GEP1, 1, VariableIdxFound, TD);
+  if (GEP1 && !GEP2 && GEP1->getOperand(0)->stripPointerCasts() == Ptr2) {
+    Offset = -GetOffsetFromIndex(GEP1, 1, VariableIdxFound, DL);
     return !VariableIdxFound;
   }
 
-  if (GEP2 && GEP1 == 0 && GEP2->getOperand(0)->stripPointerCasts() == Ptr1) {
-    Offset = GetOffsetFromIndex(GEP2, 1, VariableIdxFound, TD);
+  if (GEP2 && !GEP1 && GEP2->getOperand(0)->stripPointerCasts() == Ptr1) {
+    Offset = GetOffsetFromIndex(GEP2, 1, VariableIdxFound, DL);
     return !VariableIdxFound;
   }
 
@@ -322,8 +315,8 @@ static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
     if (GEP1->getOperand(Idx) != GEP2->getOperand(Idx))
       break;
 
-  int64_t Offset1 = GetOffsetFromIndex(GEP1, Idx, VariableIdxFound, TD);
-  int64_t Offset2 = GetOffsetFromIndex(GEP2, Idx, VariableIdxFound, TD);
+  int64_t Offset1 = GetOffsetFromIndex(GEP1, Idx, VariableIdxFound, DL);
+  int64_t Offset2 = GetOffsetFromIndex(GEP2, Idx, VariableIdxFound, DL);
   if (VariableIdxFound) return false;
 
   Offset = Offset2-Offset1;
@@ -351,8 +344,8 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   /// because each element is relatively large and expensive to copy.
   std::list<MemOpRange> Ranges;
   typedef std::list<MemOpRange>::iterator range_iterator;
-  const DataLayout &TD;
-  MemOpRanges(const DataLayout &td) : TD(td) { }
+  const DataLayout &DL;
+  MemOpRanges(const DataLayout &td) : DL(td) { }
   typedef std::list<MemOpRange>::const_iterator const_iterator;
   const_iterator begin() const { return Ranges.begin(); }
   const_iterator end() const { return Ranges.end(); }
@@ -376,7 +369,7 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
     }
   }
   void addStore(int64_t OffsetFromFirst, StoreInst *SI) {
-    int64_t StoreSize = TD.getTypeStoreSize(SI->getOperand(0)->getType());
+    int64_t StoreSize = DL.getTypeStoreSize(SI->getOperand(0)->getType());
     int64_t Slack = 0; // TODO - compute slack based on structure padding.
                        // Make slack include padding if it is after this
                        // element in a structure.
@@ -387,7 +380,7 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
   void addLoad(int64_t OffsetFromFirst, LoadInst *LI) {
     Type* ptrType = LI->getOperand(0)->getType();
-    int64_t LoadSize = TD.getTypeStoreSize(ptrType->getPointerElementType());
+    int64_t LoadSize = DL.getTypeStoreSize(ptrType->getPointerElementType());
     int64_t Slack =  GET_EXTRA; // Pretend loads use more space...
 
     addRange(OffsetFromFirst, LoadSize, Slack,
@@ -433,7 +426,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
   // This store overlaps with I, add it.
   I->TheStores.push_back(Inst);
 
-  // Update End too.
+  // CUSTOM: Update End too.
   if (End > I->End) I->End = End;
 
   // At this point, we may have an interval that completely contains our store.
@@ -475,18 +468,18 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 // END stolen from MemCpyOptimizer.
 
   struct AggregateGlobalOpsOpt : public FunctionPass {
-    const DataLayout *TD;
+    const DataLayout *DL;
     unsigned globalSpace;
 
   public:
     static char ID; // Pass identification, replacement for typeid
     AggregateGlobalOpsOpt() : FunctionPass(ID) {
-      TD = 0;
+      DL = 0;
       errs() << "Warning: aggregate-global-opts using default configuration\n";
       globalSpace = 100;
     }
     AggregateGlobalOpsOpt(unsigned _globalSpace) : FunctionPass(ID) {
-      TD = 0;
+      DL = 0;
       globalSpace = _globalSpace;
     }
 
@@ -525,27 +518,27 @@ FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace)
 /// removed some loads or stores and that might invalidate an iterator.
 Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value *StartPtr,
     bool DebugThis) {
-  if (TD == 0) return 0;
+  if (DL == 0) return 0;
 
   Module* M = StartInst->getParent()->getParent()->getParent();
   LLVMContext& Context = StartInst->getContext();
 
   Type* int8Ty = Type::getInt8Ty(Context);
-  Type* sizeTy = Type::getInt64Ty(Context);
+  Type* sizeTy = DL->getIntPtrType(Context, 0);
   Type* globalInt8PtrTy = int8Ty->getPointerTo(globalSpace);
   bool isLoad = isa<LoadInst>(StartInst);
   bool isStore = isa<StoreInst>(StartInst);
   Instruction *lastAddedInsn = NULL;
   Instruction *LastLoadOrStore = NULL;
- 
+
   SmallVector<Instruction*, 8> toRemove;
 
   // Okay, so we now have a single global load/store. Scan to find
   // all subsequent stores of the same value to offset from the same pointer.
   // Join these together into ranges, so we can decide whether contiguous blocks
   // are stored.
-  MemOpRanges Ranges(*TD);
- 
+  MemOpRanges Ranges(*DL);
+
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
@@ -558,7 +551,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
-    if( isGlobalLoadOrStore(insn, globalSpace, isLoad, isStore) ) {
+    if( isMergeableGlobalLoadOrStore(insn, globalSpace, isLoad, isStore) ) {
       // OK!
     } else {
       // If the instruction is readnone, ignore it, otherwise bail out.  We
@@ -578,7 +571,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this store is to a constant offset from the start ptr.
       int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextStore->getPointerOperand(), Offset, *TD))
+      if (!IsPointerOffset(StartPtr, NextStore->getPointerOperand(), Offset, *DL))
         break;
 
       Ranges.addStore(Offset, NextStore);
@@ -589,7 +582,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this load is to a constant offset from the start ptr.
       int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextLoad->getPointerOperand(), Offset, *TD))
+      if (!IsPointerOffset(StartPtr, NextLoad->getPointerOperand(), Offset, *DL))
         break;
 
       Ranges.addLoad(Offset, NextLoad);
@@ -614,8 +607,6 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   for (MemOpRanges::const_iterator I = Ranges.begin(), E = Ranges.end();
        I != E; ++I) {
     const MemOpRange &Range = *I;
-    Value* oldBaseI = NULL;
-    Value* newBaseI = NULL;
 
     if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
 
@@ -626,8 +617,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     StartPtr = Range.StartPtr;
 
     if( DebugThis ) {
-      errs() << "base is:";
-      StartPtr->dump();
+      dbgs() << "base is:";
+      StartPtr->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
     // Determine alignment
@@ -635,24 +627,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     if (Alignment == 0) {
       Type *EltType =
         cast<PointerType>(StartPtr->getType())->getElementType();
-      Alignment = TD->getABITypeAlignment(EltType);
+      Alignment = DL->getABITypeAlignment(EltType);
     }
 
     Instruction *alloc = NULL;
-    Value *globalPtr = NULL;
 
     // create temporary alloca space to communicate to/from.
     alloc = makeAlloca(int8Ty, "agg.tmp", insertBefore,
                        Range.End-Range.Start, Alignment);
 
-    // Generate the old and new base pointers before we output
-    // anything else.
-    {
-      Type* iPtrTy = TD->getIntPtrType(alloc->getType());
-      Type* iNewBaseTy = TD->getIntPtrType(alloc->getType());
-      oldBaseI = builder.CreatePtrToInt(StartPtr, iPtrTy, "agg.tmp.oldb.i");
-      newBaseI = builder.CreatePtrToInt(alloc, iNewBaseTy, "agg.tmp.newb.i");
-    }
+    // Cast the old base pointer to i8, but with the same address space.
+    //Value* StartPtrI8 = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
 
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
@@ -662,29 +647,36 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         if( DebugThis ) {
-          errs() << "have store in range:";
-          oldStore->dump();
+          dbgs() << "have store in range:";
+          oldStore->print(dbgs(), true);
+          dbgs() << '\n';
         }
 
-        Value* ptrToAlloc = rebasePointer(oldStore->getPointerOperand(),
-                                          StartPtr, alloc, "agg.tmp",
-                                          &builder, *TD, oldBaseI, newBaseI);
-        // Old load must not be volatile or atomic... or we shouldn't have put
-        // it in ranges
+        int64_t offset = 0;
+        bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
+                                  offset, *DL);
+        assert(ok && offset >= 0); // we used this before, didn't we?
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
+
+        Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
+        Value* offsets[] = {offsetC};
+        Value* i8Dst = builder.CreateInBoundsGEP(int8Ty,
+                                                 alloc,
+                                                 offsets);
+
+        Type* origDstTy = oldStore->getPointerOperand()->getType();
+        Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
+        Value* Dst = builder.CreatePointerCast(i8Dst, DstTy);
+
         StoreInst* newStore =
-          builder.CreateStore(oldStore->getValueOperand(), ptrToAlloc);
+          builder.CreateStore(oldStore->getValueOperand(), Dst);
         newStore->setAlignment(oldStore->getAlignment());
         newStore->takeName(oldStore);
       }
     }
 
     // cast the pointer that was load/stored to i8 if necessary.
-    if( StartPtr->getType()->getPointerElementType() == int8Ty ) {
-      globalPtr = StartPtr;
-    } else {
-      globalPtr = builder.CreatePointerCast(StartPtr, globalInt8PtrTy, "agg.cast");
-    }
+    Value *globalPtr = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
 
     // Get a Constant* for the length.
     Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
@@ -739,17 +731,27 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         if( DebugThis ) {
-          errs() << "have load in range:";
-          oldLoad->dump();
+          dbgs() << "have load in range:";
+          oldLoad->print(dbgs(), true);
+          dbgs() << '\n';
         }
 
-        Value* ptrToAlloc = rebasePointer(oldLoad->getPointerOperand(),
-                                          StartPtr, alloc, "agg.tmp",
-                                          &builder, *TD, oldBaseI, newBaseI);
-        // Old load must not be volatile or atomic... or we shouldn't have put
-        // it in ranges
+        int64_t offset = 0;
+        bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
+                                  offset, *DL);
+        assert(ok && offset >= 0); // we used this before, didn't we?
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
-        LoadInst* newLoad = builder.CreateLoad(ptrToAlloc);
+
+        Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
+        Value* offsets[] = {offsetC};
+        Value* i8Src = builder.CreateInBoundsGEP(int8Ty,
+                                                 alloc,
+                                                 offsets);
+        Type* origSrcTy = oldLoad->getPointerOperand()->getType();
+        Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
+        Value* Src = builder.CreatePointerCast(i8Src, SrcTy);
+
+        LoadInst* newLoad = builder.CreateLoad(Src);
         newLoad->setAlignment(oldLoad->getAlignment());
         oldLoad->replaceAllUsesWith(newLoad);
         newLoad->takeName(oldLoad);
@@ -776,32 +778,54 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   return lastAddedInsn;
 }
 
-// MemCpyOpt::runOnFunction - This is the main transformation entry point for a
-// function.
+// AggregateGlobalOpsOpt::runOnFunction - This is the main transformation
+// entry point for a function.
 //
 bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
-  bool MadeChange = false;
+  bool ChangedFn = false;
   bool DebugThis = DEBUG;
-  
+
+/*  std::string fname = F.getName();
+  std::hash<std::string> hasher;
+  int h = (int) hasher(fname);
+  int mask = AGOMASK;
+  int id = AGOID;
+  if( (h & mask) != id) return false;
+
+  if( fname.size() != 7 ) return false;
+
+  if( F.getName().startswith("on_fn") ) return false;
+
+  if (fname == "string2" || fname == "message") return false;
+
+  if (fname == "deinit9") return false; // OK
+  if (fname == "deinit5") return false; // OK
+  //if (fname == "deinit6") return false;
+  //if( F.getName().startswith("deinit") ) return false;
+*/
   if( debugThisFn[0] && F.getName() == debugThisFn ) {
     DebugThis = true;
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
 #if HAVE_LLVM_VER >= 37
-  TD = & F.getParent()->getDataLayout();
+  DL = & F.getParent()->getDataLayout();
 #elif HAVE_LLVM_VER >= 35
-  TD = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
+  DL = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
 #else
-  TD = getAnalysisIfAvailable<DataLayout>();
+  DL = getAnalysisIfAvailable<DataLayout>();
 #endif
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
   for (Function::iterator BB = F.begin(), BBE = F.end(); BB != BBE; ++BB) {
+
+    bool ChangedBB = false;
+
     if( DebugThis ) {
-      errs() << "Working on BB ";
-      BB->dump();
+      dbgs() << "Working on BB ";
+      BB->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
     for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE;) {
@@ -810,10 +834,11 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
       Instruction *I = &insnRef;
       ++BI;
 
-      if( isGlobalLoadOrStore(I, globalSpace, true, true) ) {
+      if( isMergeableGlobalLoadOrStore(I, globalSpace, true, true) ) {
         Instruction* lastAdded = tryAggregating(I, getLoadStorePointer(I), DebugThis);
         if( lastAdded ) {
-          MadeChange = true;
+          ChangedBB = true;
+          ChangedFn = true;
 #if HAVE_LLVM_VER >= 38
           BI = lastAdded->getIterator();
 #else
@@ -823,9 +848,11 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
       }
     }
 
-    if( DebugThis && MadeChange ) {
-      errs() << "After transform BB is ";
-      BB->dump();
+    if( DebugThis && ChangedBB ) {
+      dbgs() << "in function " << F.getName() << "\n";
+      dbgs() << "After transform BB is ";
+      BB->print(dbgs(), true);
+      dbgs() << '\n';
     }
 
   }
@@ -838,8 +865,11 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
 #endif
   }
 
+  if (DebugThis && ChangedFn)
+    printf("AggregateGlobalOpsOpt changed %s\n", F.getName().str().c_str());
+
   //MD = 0;
-  return MadeChange;
+  return ChangedFn;
 }
 
 

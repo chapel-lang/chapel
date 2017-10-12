@@ -1454,21 +1454,62 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     compilerError("can't apply 'by' to a range with idxType ",
                   int(w):string, " using a step of type ",
                   stride.type:string);
-    yield nil; // iters needs a yield in them
   }
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride) {
     compilerError("can't apply 'by' to a range with idxType ",
                   uint(w):string, " using a step of type ",
                   stride.type:string);
-    yield nil; // iters needs a yield in them
   }
-
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_range_iter(low, high, stride) {
-    compilerError("Bounds of '..' must be integers of compatible types, when specified.");
-    yield nil; // iters needs a yield in them
+    compilerError("Bounds of 'low..high' must be integers of compatible types.");
+  }
+
+
+  //
+  // Direct range iterators for low bounded counted ranges (low..#count)
+  //
+
+  iter chpl_direct_counted_range_iter(low: int(?w), count: int(w)) {
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: int(?w), count: uint(w)) {
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: uint(?w), count: int(w)) {
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
+    for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: integral, count) {
+    compilerError("can't apply '#' to a range with idxType ",
+                  low.type:string, " using a count of type ",
+                  count.type:string);
+  }
+
+  iter chpl_direct_counted_range_iter(low, count) {
+    compilerError("Bound of 'low..' must be an integer");
+  }
+
+  // The "actual" counted range iter. Turn the bounds of a low bounded counted
+  // range into the bounds of a fully bounded non-strided range. `low..#count`
+  // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
+  // and for zero counts iterates over a degenerate `1..0`.
+  iter chpl_direct_counted_range_iter_helper(low, count) {
+    if isIntType(count.type) && count < 0 then
+      halt("With a negative count, the range must have a last index.");
+
+    const (start, end) = if count == 0 then (1:low.type, 0:low.type)
+                                       else (low, low + (count:low.type - 1));
+
+    for i in chpl_direct_param_stride_range_iter(start, end, 1) do yield i;
   }
 
 
