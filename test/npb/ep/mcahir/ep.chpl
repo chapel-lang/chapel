@@ -111,6 +111,8 @@ proc gaussPairsBatch(k: int(64), numPairs: int) {
 		}
 	}
 
+        delete rs;
+
 	return (q, sx, sy);
 }
 

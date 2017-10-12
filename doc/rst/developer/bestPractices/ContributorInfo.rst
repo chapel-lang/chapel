@@ -18,11 +18,11 @@ Developer Workflow
 Overview:
 
 #. `Discuss design changes or big development efforts`_
-#. `Getting set up`_
+#. `Get set up`_
 #. `Create new branch`_
 #. `Develop and test contributions locally`_
 
-   #. `Adding new tests`_
+   #. `Add new tests`_
 
 #. `Request feedback on your changes`_
 
@@ -32,7 +32,7 @@ Overview:
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
 
-#. `Getting ready to merge`_
+#. `Get ready to merge`_
 #. `Watch automatic testing and address issues`_
 
 `HOWTO and Git details`_
@@ -50,10 +50,10 @@ subject header for discussion with the community and to ensure that you are
 aware of any parallel efforts in that area.  It may also be a good idea to ask
 for input from the user community via the chapel-users_ mailing list.
 
-.. _Getting set up:
+.. _Get set up:
 
-Getting set up
-~~~~~~~~~~~~~~
+Get set up
+~~~~~~~~~~
 
 This should only need to happen once per developer.
 
@@ -118,10 +118,10 @@ As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
 
-.. _Adding new tests:
+.. _Add new tests:
 
-Adding new tests
-++++++++++++++++
+Add new tests
++++++++++++++
 
 You will probably need to create new tests for your feature. See
 `Creating a Simple Test`_ in `Test System`_ for more information on this
@@ -154,7 +154,7 @@ branch will update the pull request.
 Ask for feedback on your branch early (optional)
 ++++++++++++++++++++++++++++++++++++++++++++++++
 
-Not ready to merge yours changes, but still want to see if your work is going in
+Not ready to merge your changes, but still want to see if your work is going in
 the right direction?  Feel free to ask for early feedback!  Exposing the code is
 generally done by:
 
@@ -224,10 +224,10 @@ Work with your reviewers
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
-.. _Getting ready to merge:
+.. _Get ready to merge:
 
-Getting ready to merge
-~~~~~~~~~~~~~~~~~~~~~~
+Get ready to merge
+~~~~~~~~~~~~~~~~~~
 
 Before the change can be merged, go through this checklist to ensure:
 
@@ -440,7 +440,7 @@ If you want to understand the changes that occurred upstream, see
 How to modify git history
 +++++++++++++++++++++++++
 
-The following commands are **may cause problems** if the changes they overwrite
+The following commands **may cause problems** if the changes they overwrite
 have been pulled by other repositories.
 
 Fixing a commit message:
@@ -449,11 +449,26 @@ Fixing a commit message:
 
     git commit --amend
 
-Un-do the last commit (leaving changed files in your working directory)
+Un-do the last commit (leaving changed files in your working directory):
 
 .. code-block:: bash
 
     git reset --soft HEAD~1
+
+Reapplying changes from the current branch onto an updated version of master:
+
+.. code-block:: bash
+
+    git rebase master
+
+Reapplying changes from the current branch onto an updated version of
+upstream/master, without updating your local master (note: you will need to
+perform a pull next time you checkout your local master):
+
+.. code-block:: bash
+
+    git fetch upstream
+    git rebase upstream/master
 
 Pushing such changes to your repository (again, **this may cause problems** if
 other repositories have pulled the changes):
@@ -709,6 +724,55 @@ developing yourself (or code that you've developed as a standalone package),
 alert the chapel-developers_ mailing list of this as, presently, such code
 packages must be approved by Cray leadership before being committed.
 
+Here are some guiding questions to determine whether a third-party package you
+rely on should be committed to the chapel repository:
+
+- How large is the third-party code you wish to include?
+
+  - If the code is very large, perhaps it would be better to add directions on
+    how to install this dependency.
+
+- Under what license does this code operate?
+
+  - We try not to add dependencies on code that is under GPL or LGPL, as those
+    licenses have copyleft properties and force derivative works to be
+    distributed under the same license.
+
+    - Is there an alternate package with a more permissive license that can
+      accomplish the same purpose?
+
+      - If so, we recommend relying on that package instead.
+
+      - If not, it would be better to add directions on how to install this
+        dependency.
+
+- How easy is this code to obtain?
+
+  - Will it be installed by default on an ordinary machine?
+
+    - If so, we do not need to redistribute it ourselves.
+
+- How much of the Chapel implementation will rely on this code?
+
+  - The compiler for ordinary Chapel?  A commonly used runtime configuration?
+
+    - In these cases, we will probably want to include the code in our
+      distribution.
+
+  - A standard or package module that is not included by default?
+
+    - Depending on the circumstances, it might be better to just include
+      directions on how to install this code.
+
+- Do we require Chapel-specific modifications to the code in order to use it?
+
+  - If so, we will probably want to distribute this package, or at least include
+    the modifications and an easy way to install them.
+
+Please include the answers to these questions when you contact the
+chapel-developers_ mailing list, if you believe the code should be included or
+you remain uncertain.
+
 .. _Testing your patch:
 
 Testing your patch
@@ -860,3 +924,14 @@ Reviewer responsibilities
 .. _Fork the repo: https://guides.github.com/activities/forking/
 .. _Submit a pull request: https://help.github.com/articles/using-pull-requests
 .. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
+
+What Copyright Should I Use?
+++++++++++++++++++++++++++++
+
+By signing a Contributor Agreement, you have agreed that code you contribute
+will be governed by the license and copyright of the project as a whole.  A
+standard block of license text is required at the top of every compiler,
+runtime, and module code file.  Browse other files of the same type to see the
+required license block.
+
+Additional copyrights may also be applied, as appropriate.

@@ -12,5 +12,5 @@ for iterating over ranges that will overflow.
 When this bug is resolved, the test should be updated with a description and be
 made more like the nearMaxmialUintArray test.
 
-See JIRA issue 162 for more info:
-  https://chapel.atlassian.net/browse/CHAPEL-162
+See issue #7531 for more info:
+  https://github.com/chapel-lang/chapel/issues/7531

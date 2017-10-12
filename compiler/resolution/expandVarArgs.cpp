@@ -223,6 +223,7 @@ static FnSymbol* expandVarArgsQuery(FnSymbol* fn, CallInfo& info) {
 
         retval = fn->copy(&substitutions);
         retval->addFlag(FLAG_INVISIBLE_FN);
+        retval->instantiatedFrom = fn;
 
         fn->defPoint->insertBefore(new DefExpr(retval));
 

@@ -109,7 +109,6 @@ struct GlobalPointerInfo {
                         globalToWideFn(NULL), wideToGlobalFn(NULL) { }
 };
 
-#define GLOBAL_PTR_BITS 64
 #define GLOBAL_TYPE ".gt."
 #define GLOBAL_FN ".gf."
 #define GLOBAL_FN_GLOBAL_ADDR ".gf.addr."
@@ -120,40 +119,37 @@ struct GlobalPointerInfo {
 #define GLOBAL_FN_WIDE_TO_GLOBAL ".gf.w2g."
 
 typedef llvm::DenseMap<llvm::Type*, GlobalPointerInfo> globalTypes_t;
-typedef llvm::SmallPtrSet<llvm::Function*, 32> specialFunctions_t;
+typedef std::vector<llvm::WeakVH> specialFunctions_t;
 typedef llvm::TrackingVH<llvm::Constant> runtime_fn_t;
 
 struct GlobalToWideInfo {
   unsigned globalSpace;
   unsigned wideSpace;
+
+  unsigned globalPtrBits;
+  // this optimization currently assumes wide pointers are
+  // stored in a 128-bit struct representation that contains
+  //  locale-id
+  //      node
+  //  addr
+
   llvm::Type* localeIdType;
   llvm::Type* nodeIdType;
+
   globalTypes_t gTypes;
   specialFunctions_t specialFunctions;
 
-  // args:  packed wide ptr. Returns the address portion.
-  runtime_fn_t addrFn;
-  // args:  packed wide ptr, &locale. sets locale = wide.locale.
-  // It has the complicated signature in order to keep
-  //  arguments passed by pointer (vs structure) to avoid
-  //  some issues with passing/returning structures.
-  runtime_fn_t locFn;
-  // args:  packed wide ptr. Returns the node number portion.
-  runtime_fn_t nodeFn;
-  // args:  const locale*, address. Returns a packed wide pointer (void*).
-  runtime_fn_t makeFn;
-
-  // args:  dst local address, wide address {locale,i8*}, num bytes, atomicness
+  // args:  dst local address, src nodeid, src address, num bytes, atomicness
   runtime_fn_t getFn;
-  // args:  dst wide address {locale,i8*}, local address, num bytes, atomicness
+  // args:  dst nodeid, dst address, local address, num bytes, atomicness
   runtime_fn_t putFn;
 
-  // args:  dst wide address {locale,i8*};
-  //        src wide address {locale,i8*},
+  // args:  dst nodeid, dst address
+  //        src nodeid, src address
   //        num bytes
   runtime_fn_t getPutFn;
 
-  // args:  dst wide address {locale,i8*}, c (byte), num bytes
+  // args:  dst nodeid, dst addr, c (byte), num bytes
   runtime_fn_t memsetFn;
 
   // Dummy function storing the runtime dependencies
@@ -163,10 +159,12 @@ struct GlobalToWideInfo {
   runtime_fn_t preservingFn;
 
   GlobalToWideInfo()
-    : globalSpace(0), wideSpace(0), localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
+    : globalSpace(0), wideSpace(0), globalPtrBits(0),
+      localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions() { }
 };
 
-llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout);
+llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,
+                                     std::string setLayout);
 
 llvm::Type* convertTypeGlobalToWide(llvm::Module *module, GlobalToWideInfo* info, llvm::Type* t);
 

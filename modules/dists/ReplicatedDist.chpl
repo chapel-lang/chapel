@@ -596,5 +596,3 @@ proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
 proc ReplicatedArr.dsiLocalSubdomain() {
   return chpl_myLocArr().myDom.domLocalRep;
 }
-
-use OldReplicatedDist;

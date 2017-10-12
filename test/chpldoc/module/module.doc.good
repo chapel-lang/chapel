@@ -82,7 +82,7 @@ Q
 
 .. function:: proc main()
 
-   Sadly, this method's module does not 
+   Sadly, this function's module does not 
 
 .. default-domain:: chpl
 
@@ -98,5 +98,5 @@ R
 
 .. function:: proc furthermore()
 
-   Nor this method's module 
+   Nor this function's module 
 

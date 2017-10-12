@@ -55,6 +55,13 @@ module CPtr {
       if x then do writeln("x is not nil");
       if !x then do writeln("x is nil");
 
+    Additionally, a ``c_ptr`` can be output like so:
+
+    .. code-block:: chapel
+
+      var x: c_ptr = c_ptrTo(...);
+      writeln(x); // outputs nil or e.g. 0xabc123000000
+
   */
 
   //   Similar to _ddata from ChapelBase, but differs
@@ -87,14 +94,10 @@ module CPtr {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) {
-    if this == c_nil {
-      ch <~> "(nil)";
-    } else {
-      var err:syserr = ENOERR;
-      ch.writef(error=err, "0x%xu", this:uint(64));
-      if err then
-        ch.setError(err);
-    }
+    var err:syserr = ENOERR;
+    ch.writef(error=err, "0x%xu", this:c_uintptr);
+    if err then
+      ch.setError(err);
   }
 
   pragma "no doc"
@@ -142,11 +145,9 @@ module CPtr {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_ptr {
-    return __primitive("cast", t, x);
-  }
-  pragma "no doc"
-  inline proc _cast(type t, x) where t:uint(64) && x.type:c_void_ptr {
+  inline proc _cast(type t, x)
+  where (t:c_intptr || t:c_uintptr || t:int(64) || t:uint(64)) &&
+        (x.type:c_void_ptr || x.type:c_ptr) {
     return __primitive("cast", t, x);
   }
 
@@ -266,26 +267,7 @@ module CPtr {
     :arg arr: the array for which we should retrieve a pointer
     :returns: a pointer to the array data
   */
-  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) && !chpl__isDROrDRView(arr) {
-    if !chpl__getActualArray(arr).oneDData then halt("error: c_ptrTo(multi_ddata array");
-    return c_pointer_return(arr[arr.domain.low]);
-  }
-
-  pragma "no doc"
-  inline proc c_ptrTo(arr: []) where chpl__isDROrDRView(arr) {
-    const val = arr._value;
-    if chpl__isArrayView(val) {
-      // BHARSH TODO: there *has* to be a cleaner way to do this sort of thing...
-      const cache = if val.shouldUseIndexCache() then
-                      val.indexCache
-                    else if val.isSliceArrayView() then
-                      val._getActualArray().dsiGetRAD().toSlice(val.dom)
-                    else
-                      val._getActualArray().dsiGetRAD(); // Should never get here
-      if !cache.oneDData then halt("error: c_ptrTo(multi_ddata array");
-    } else {
-      if !chpl__getActualArray(arr).oneDData then halt("error: c_ptrTo(multi_ddata array");
-    }
+  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
     return c_pointer_return(arr[arr.domain.low]);
   }
 

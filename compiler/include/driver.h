@@ -110,12 +110,6 @@ extern const char* CHPL_UNWIND;
 extern bool  printPasses;
 extern FILE* printPassesFile;
 
-// Set true if CHPL_WIDE_POINTERS==struct.
-// In that case, the code generator emits structures
-// for wide pointers. Otherwise, wide pointers are
-// packed into a wide pointer type.
-extern bool widePointersStruct;
-
 extern char fExplainCall[256];
 extern int  explainCallID;
 extern int  breakOnResolveID;
@@ -132,6 +126,8 @@ extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;
 extern char fPrintStatistics[256];
 extern bool fPrintDispatch;
+extern bool fPrintUnusedFns;
+extern bool fPrintUnusedInternalFns;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
@@ -183,6 +179,8 @@ extern bool fReportPromotion;
 extern bool fReportScalarReplace;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
+
+extern bool fPermitUnhandledModuleErrors;
 
 extern bool debugCCode;
 extern bool optimizeCCode;

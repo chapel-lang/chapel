@@ -58,9 +58,8 @@ record Population {
   //
   proc init(colors) {
     chamSpace = colors.domain;
+    chameneos = new Chameneos(1..colors.size, colors);
     super.init();
-    forall i in chamSpace do
-      chameneos[i] = new Chameneos(i, colors[i]);
   }
 
   //
@@ -98,7 +97,7 @@ record Population {
   //
   // Delete the chameneos objects.
   //
-  proc ~Population {
+  proc deinit() {
     for c in chameneos do
       delete c;
   }

@@ -22,7 +22,6 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
-#include "codegen.h"
 #include "DeferStmt.h"
 
 #include <algorithm>
@@ -87,12 +86,11 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
       range = toCallExpr(call->get(1)->copy());
       stride = toExpr(call->get(2)->copy());
     }
-    // or grab the count if we have a counted range and set unit stride
+    // or grab the count if we have a counted range
     else if (call->isNamed("#"))
     {
       range = toCallExpr(call->get(1)->copy());
       count = toExpr(call->get(2)->copy());
-      stride = new SymExpr(new_IntSymbol(1));
     }
     // or assume the call is the range (checked below) and set unit stride
     else
@@ -114,7 +112,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     // with:
     //
     // `chpl_direct_range_iter(low, high, stride)`
-    if (range && range->isNamed("chpl_build_bounded_range"))
+    if (!count && range && range->isNamed("chpl_build_bounded_range"))
     {
       // replace the range construction with a direct range iterator
       Expr* low = range->get(1)->copy();
@@ -133,8 +131,7 @@ static void tryToReplaceWithDirectRangeIterator(Expr* iteratorExpr)
     else if (count && range && range->isNamed("chpl_build_low_bounded_range"))
     {
       Expr* low = range->get(1)->copy();
-      Expr* high = new CallExpr("-", new CallExpr("+", low->copy(), count), new_IntSymbol(1));
-      iteratorExpr->replace(new CallExpr("chpl_direct_range_iter", low, high, stride));
+      iteratorExpr->replace(new CallExpr("chpl_direct_counted_range_iter", low, count));
     }
   }
 }

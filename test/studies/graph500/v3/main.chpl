@@ -284,6 +284,8 @@ module Graph500_main
              BFS_time_array, BFS_nedges_traversed );
       }
 
+    delete Rand_Gen;
+    delete G;
   }
 
 }

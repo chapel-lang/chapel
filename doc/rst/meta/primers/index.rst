@@ -16,6 +16,7 @@ Language Basics
    Variadic Arguments (var args) <varargs>
    Modules <modules>
    Void Variables <voidVariables>
+   Error Handling <errorHandling>
 
 Iterators
 ---------
@@ -78,6 +79,7 @@ Numerical Libraries
 .. toctree::
    :maxdepth: 1
 
+   LinearAlgebra <LinearAlgebralib>
    LAPACK <LAPACKlib>
    FFTW <FFTWlib>
    Random <randomNumbers>

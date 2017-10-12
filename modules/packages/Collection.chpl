@@ -18,7 +18,7 @@
  */
 
 /*
-  
+
   Summary
   _______
 
@@ -31,16 +31,17 @@
     a. Insertion of an arbitrary element. From this, we can insert bulk arbitrary elements.
     b. Removal of an arbitrary element. From this, we can remove bulk arbitrary elements.
     c. Iteration over all elements. From this, we can perform lookups over all elements.
-  
+
   From the standpoint of the user, who directly benefits, they obtain a very nice but minimal
   guarantee on the object they are using, and from the implementor's view, they get to the
-  benefit from both implementing a well-design interface, and from getting some utility methods 
+  benefit from both implementing a well-design interface, and from getting some utility methods
   'for-free'.
 
   .. note::
 
-    The documentation for the Collection modules are being incrementally revised and improved.
-  
+    The interface for the Collection modules may change. The documentation for
+    the Collection modules are being incrementally revised and improved.
+
   Bugs and Known Issues
   _____________________
 
@@ -50,16 +51,6 @@
       fact with the fact that ``break`` ing out of a serial iterator will result in resource leakage, where destructors
       are not called, hence Collections using some RAII-based resource cleanup will end up leaking and potentially leaving
       the Collection in an undefined state. This has been documented under issue `#6912 <https://github.com/chapel-lang/chapel/issues/6912>`_ .
-  2.  There are issues with :proc:`remove` where the compiler will crash (segmentation fault) if the
-      return value is not captured at the callsite, documented as issue `#6542 <https://github.com/chapel-lang/chapel/issues/6542>`_ .
-      Lastly, there is yet another bug, of which the cause is currently unknown, that triggers a compiler internal error, which requires
-      the user to declare the express type at callsite. A 'safe' way to use :proc:`remove` in a loop is documented below.
-
-      .. code-block:: chapel
-
-        for i in 1 .. N {
-          var retval : (bool, eltType) = c.remove();
-        }
 
   Methods
   _______
@@ -107,7 +98,7 @@ module Collection {
     /*
       Removes `nElts` elements from this data structure, returning them as an array.
       If the data structure fails to produce a new element, we cease and shrink the array
-      to its appropriate size and return that. 
+      to its appropriate size and return that.
     */
     proc removeBulk(nElts : int) {
       var dom = {0..#nElts};

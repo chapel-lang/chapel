@@ -561,6 +561,9 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(parIter, iterCall);
   VarSymbol* idxVar = parIdxVar(pfs);
+
+  if (idxVar->id == breakOnResolveID)
+    gdbShouldBreakHere();
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }

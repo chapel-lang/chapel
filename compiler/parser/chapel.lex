@@ -162,6 +162,7 @@ pragma           return processToken(yyscanner, TPRAGMA);
 __primitive      return processToken(yyscanner, TPRIMITIVE);
 private          return processToken(yyscanner, TPRIVATE);
 proc             return processToken(yyscanner, TPROC);
+prototype        return processToken(yyscanner, TPROTOTYPE);
 public           return processToken(yyscanner, TPUBLIC);
 record           return processToken(yyscanner, TRECORD);
 reduce           return processToken(yyscanner, TREDUCE);

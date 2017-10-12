@@ -35,7 +35,7 @@ class LevelSolution {
   //| >  deinitializer   | >
   //|/...................|/
   
-  proc deinit
+  proc deinit()
   {
     delete old_data;
     delete current_data;

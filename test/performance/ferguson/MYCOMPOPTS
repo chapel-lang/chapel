@@ -35,15 +35,12 @@ f('--no-llvm --no-cache-remote ' + checkMaxAttained, 'c')
 # C backend, cache remote
 f('--no-llvm --cache-remote', 'c-cache')
 
-#if do_llvm:
+if do_llvm:
   # LLVM backend, no cache remote
-#  f('--llvm --no-cache-remote', 'llvm')
+  #f('--llvm --no-cache-remote', 'llvm')
   # LLVM backend, cache remote
-#  print(basecompopts + '--llvm --cache-remote' + perfkeys)
-#  f('--llvm --cache-remote', 'llvm-cache')
+  #f('--llvm --cache-remote', 'llvm-cache')
   # LLVM backend, llvm wide opts, no cache remote
-##  print(basecompopts + '--llvm --llvm-wide-opt --no-cache-remote')
-#  f('--llvm --llvm-wide-opt --no-cache-remote', 'llvm-wide-opt')
+  f('--llvm --llvm-wide-opt --no-cache-remote', 'llvm-wide-opt')
   # LLVM backend, llvm wide opts, cache remote
-##  print(basecompopts + '--llvm --llvm-wide-opt --cache-remote')
-#  f('--llvm --llvm-wide-opt --cache-remote', 'llvm-wide-opt-cache')
+  f('--llvm --llvm-wide-opt --cache-remote', 'llvm-wide-opt-cache')

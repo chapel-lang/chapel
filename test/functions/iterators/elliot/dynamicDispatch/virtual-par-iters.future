@@ -1,1 +1,0 @@
-bug: virtual parallel iterators cause compiler segfault (#6998)

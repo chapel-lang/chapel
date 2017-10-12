@@ -532,6 +532,8 @@ proc create_and_analyze_graph(Pairs)
               nodeToId[labels[vid].read(memory_order_relaxed)]);
     }
   }
+
+  delete G;
 }
 
 

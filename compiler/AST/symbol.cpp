@@ -836,7 +836,7 @@ bool ArgSymbol::isConstValWillNotChange() {
 
   if (absIntent) {
     // Try again with the corresponding concrete intent.
-    // Caller is responsibile that concreteIntent() succeeds.
+    // Caller is responsible that concreteIntent() succeeds.
     isConstValWillNotChangeHelp(concreteIntent(intent, type->getValType()),
                                 result, absIntent);
     INT_ASSERT(!absIntent);
@@ -2034,6 +2034,12 @@ void FnSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     *file << ": ";
     *file << info.text();
   }
+
+  // Print throws
+  if (this->throwsError()) {
+    *file << " throws";
+  }
+
   *file << std::endl;
 
   if (!fDocsTextOnly) {

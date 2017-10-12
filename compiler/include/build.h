@@ -71,6 +71,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
+                          bool        prototype,
                           const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);

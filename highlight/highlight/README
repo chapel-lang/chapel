@@ -7,7 +7,10 @@ which you can find at highlight http://www.andre-simon.de/
 This is the highlighter used by the Computer Languages Benchmark Game.
 
 For example, run from this directory:
-  highlight --config-file=./langDefs/chpl.lang your_file.chpl
+  highlight -O ansi --config-file=./langDefs/chpl.lang your_file.chpl
+
+  (Note that you might need to install highlight for it to work
+  correctly).
 
 For more options, try:
   highlight --help

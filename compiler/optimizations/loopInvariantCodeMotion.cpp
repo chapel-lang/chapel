@@ -1,4 +1,5 @@
 /*
+ * Copyright 2017 Advanced Micro Devices, Inc.
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -93,6 +94,7 @@ Timer overallTimer;
 class Loop {
 private:
     std::vector<BasicBlock*>* loopBlocks;
+    LoopStmt*                 loopAST;
     BasicBlock*               header;
     BitVec*                   bitBlocks;
     BitVec*                   bitExits;
@@ -110,29 +112,29 @@ public:
       delete bitExits;
     }
 
-    // This function exists to place an expr in the
-    // "preheader" of the loop,
+    // This function exists to place an expr in the "preheader" of the loop
     void insertBefore(Expr* expr) {
-      if (header->exprs.size() != 0) {
-        // find the first expr in the header, and get it's parent expr (for
-        // most cases it will be the surrounding block statement of the loop)
-        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
-          if (blockStmt->isLoopStmt()) {
-            blockStmt->insertBefore(expr->remove());
-
-          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
-            CForLoop* cforLoop = CForLoop::loopForClause(blockStmt);
-
-            cforLoop->insertBefore(expr->remove());
-          }
-        }
+      if (loopAST) {
+        loopAST->insertBefore(expr->remove());
       }
     }
 
-    //Set the header, and insert the header into the loop blocks
+    //Set the header, insert the header into the loop blocks, and build up the
+    //relationship between the basic-block loop and the actual loop AST
     void setHeader(BasicBlock* setHeader) {
       header = setHeader;
       insertBlock(setHeader);
+
+      loopAST = NULL;
+      if (header->exprs.size() != 0) {
+        if (BlockStmt* blockStmt = toBlockStmt(header->exprs.at(0)->parentExpr)) {
+          if (LoopStmt* loop = toLoopStmt(blockStmt)) {
+            loopAST = loop;
+          } else if (blockStmt->blockTag == BLOCK_C_FOR_LOOP) {
+            loopAST = CForLoop::loopForClause(blockStmt);
+          }
+        }
+      }
     }
 
     //add all the blocks from other loop to this loop
@@ -680,13 +682,13 @@ static bool allOperandsAreLoopInvariant(Expr* expr, std::set<SymExpr*>& loopInva
  * Then a is an alias for b. The current alias analysis is extremely conservative. If there is only one def
  * of a variable check if it is composed of loop invariant operands and operations. 
  */
-static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
-    loop, symToVecSymExprMap& localDefMap, FnSymbol* fn) {
- 
+static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants,
+    std::set<Symbol*>& defsInLoop, Loop* loop, symToVecSymExprMap& localDefMap,
+    FnSymbol* fn) {
+
   // collect all of the symExprs, defExprs, and callExprs in the loop
   startTimer(collectSymExprAndDefTimer);
   std::vector<SymExpr*> loopSymExprs;
-  std::set<Symbol*> defsInLoop;
   std::vector<CallExpr*> callsInLoop;
   for_vector(BasicBlock, block, *loop->getBlocks()) {
     for_vector(Expr, expr, block->exprs) {
@@ -890,6 +892,14 @@ static void computeLoopInvariants(std::vector<SymExpr*>& loopInvariants, Loop*
       // TODO this could be improved to check which functions modify the global
       // and see if any of those functions are being called in this loop.
       if (callsInLoop.size() != 0) {
+        mightHaveBeenDeffedElseWhere = true;
+      }
+    }
+    if (symExpr->symbol()->isRef()) {
+        mightHaveBeenDeffedElseWhere = true;
+    }
+    for_set(Symbol, aliasSym, aliases[symExpr->symbol()]) {
+      if (aliasSym->isRef()) {
         mightHaveBeenDeffedElseWhere = true;
       }
     }
@@ -1172,7 +1182,8 @@ void loopInvariantCodeMotion(void) {
       //and use the defUseMaps to compute loop invariants 
       startTimer(computeLoopInvariantsTimer);
       std::vector<SymExpr*> loopInvariants;
-      computeLoopInvariants(loopInvariants, curLoop, localDefMap, fn);
+      std::set<Symbol*> defsInLoop;
+      computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, fn);
       stopTimer(computeLoopInvariantsTimer);
 
       //For each invariant, only move it if its def, dominates all uses and all exits 
@@ -1180,6 +1191,9 @@ void loopInvariantCodeMotion(void) {
         if(CallExpr* call = toCallExpr(symExpr->parentExpr)) {
           if(defDominatesAllUses(curLoop, symExpr, dominators, localMap, localUseMap)) {
             if(defDominatesAllExits(curLoop, symExpr, dominators, localMap)) {
+              if(defsInLoop.count(symExpr->symbol()) == 1) {
+                curLoop->insertBefore(symExpr->symbol()->defPoint);
+              }
               curLoop->insertBefore(call);
             }
           }   

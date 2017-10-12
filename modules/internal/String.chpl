@@ -262,12 +262,12 @@ module String {
             const allocSize = chpl_here_good_alloc_size(s_len+1);
             this.buff = chpl_here_alloc(allocSize,
                                        CHPL_RT_MD_STR_COPY_DATA):bufferType;
-            this.buff[s_len] = 0;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
             this.owned = true;
           }
           c_memmove(this.buff, buf, s_len);
+          this.buff[s_len] = 0;
         } else {
           if this.owned && !this.isEmptyString() then
             chpl_here_free(this.buff);
@@ -275,6 +275,7 @@ module String {
           this._size = size;
         }
       } else {
+        // s_len == 0 so the source string is empty
         // free the old buffer
         if this.owned && !this.isEmptyString() then chpl_here_free(this.buff);
         this.buff = nil;
@@ -465,10 +466,11 @@ module String {
           thisBuff = this.buff;
         }
 
+        var buff = ret.buff; // Has perf impact and our LICM can't hoist :(
         for (r2_i, i) in zip(r2, 0..) {
-          ret.buff[i] = thisBuff[r2_i-1];
+          buff[i] = thisBuff[r2_i-1];
         }
-        ret.buff[ret.len] = 0;
+        buff[ret.len] = 0;
 
         if remoteThis then chpl_here_free(thisBuff);
       }
@@ -887,6 +889,9 @@ module String {
       } else {
         var joinedSize: int = this.len * (S.size - 1);
         for s in S do joinedSize += s.length;
+
+        if joinedSize == 0 then
+          return '';
 
         var joined: string;
         joined.len = joinedSize;

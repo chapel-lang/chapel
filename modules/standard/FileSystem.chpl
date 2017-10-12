@@ -1252,14 +1252,14 @@ proc remove(name: string) throws {
 
 private proc rmTreeHelper(out error: syserr, root: string) {
   // Go through all the files in this current directory and remove them
-  for filename in listdir(path=root, dirs=false, files=true, listlinks=true) {
+  for filename in listdir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
     var name = root + "/" + filename;
     remove(error, name);
     if (error != ENOERR) then return;
   }
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
-  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true) {
+  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
     var dirIsLink = isLink(error, fullpath);
     if (error != ENOERR) then return;
@@ -1294,7 +1294,7 @@ proc rmTree(out error: syserr, root: string) {
   }
 
   var rootPath = realPath(error=error, root);
-  if error != ENOERR then // error occured in realPath
+  if error != ENOERR then // error occurred in realPath
     return;
 
   rmTreeHelper(error, rootPath);

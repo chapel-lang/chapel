@@ -21,21 +21,15 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(realpath $(shell pwd)/../..)
 endif
 
-ifndef MASON_HOME
-export MASON_HOME=$(HOME)
-endif
-
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+unexport CHPL_MAKE_SETTINGS_NO_NEWLINES
+
 bdir=$(CHPL_BIN_DIR)
-link=$(bdir)/mason
+link=../../tools/mason/mason
+linkFile=$(bdir)/mason
 
-TOML=$(CHPL_HOME)/test/modules/packages/Toml/
-REGISTRY=https://github.com/chapel-lang/mason-registry
-
-registry = $(MASON_HOME)/.mason/registry/
-
-MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonUtils.chpl mason.chpl
+MASON_SOURCES=MasonBuild.chpl MasonHelp.chpl MasonNew.chpl MasonUpdate.chpl MasonSearch.chpl MasonUtils.chpl mason.chpl
 
 all: mason
 
@@ -45,40 +39,31 @@ mason: $(MASON_SOURCES)
         echo "CHPL_REGEXP=re2 is required to build mason"; \
         exit 1;\
 	fi;
-	@mkdir -p $(MASON_HOME)/.mason/src
-ifneq ($(wildcard $(registry)),)
-	@echo "Removing old registry..."
-	@rm -rf $(MASON_HOME)/.mason/registry
-endif
-	@echo "Registry - $(registry)"
-	@git -C $(MASON_HOME)/.mason/ clone $(REGISTRY) registry
 	@echo "Building Mason..."
-	@chpl mason.chpl -M $(TOML)
+	@chplBinDir=$(bdir) ./buildMason
 
 install: mason
-ifneq ($(wildcard $(link)),)
+ifneq ($(wildcard $(linkFile)),)
 	@echo "Removing old symbolic link..."
-	rm -f $(link)
+	rm -f $(linkFile)
 	@echo
 endif
 	@echo "Installing symbolic link..."
 	@mkdir -p $(bdir)
-	@ln -s $(shell pwd)/mason $(link)
+	cd $(CHPL_BIN_DIR) && ln -s $(link) mason
 
 update:
 	@echo "Re-building Mason..."
-	@chpl mason.chpl -M $(TOML)
+	@chplBinDir=$(bdir) ./buildMason
 
 clean:
 	@echo "Removing Mason..."
 	rm -f $(shell pwd)/mason
-ifneq ($(wildcard $(link)),)
+ifneq ($(wildcard $(linkFile)),)
 	@echo "Removing old symbolic link..."
-	@rm -f $(link)
+	@rm -f $(linkFile)
 	@echo
 endif
 
 
 clobber: clean
-	@echo "Removing Registry..."
-	rm -rf $(MASON_HOME)/.mason/registry

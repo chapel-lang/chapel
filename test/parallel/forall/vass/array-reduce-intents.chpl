@@ -11,10 +11,12 @@ var dataM: [dataDom] int = [i in 1..n] i % b + 1;
 var dataB: [dataDom] int = 1..n;
 
 type HistM = [1..b] int;
-var histoM: HistM;
+var histoM: HistM = 1;
 
 type HistB = [1..n] uint(8);
-var histoBA, histoBO, histoBX: HistB;
+var histoBA: HistB = _band_id(uint(8));
+var histoBO: HistB = _bor_id(uint(8));
+var histoBX: HistB = _bxor_id(uint(8));
 
 proc showBits(name: string, histo: HistB) {
   writeln(name, " =");
@@ -41,6 +43,8 @@ proc main {
   showBits("histoBA", histoBA);
   showBits("histoBO", histoBO);
   showBits("histoBX", histoBX);
+
+  histoBX = _bxor_id(uint(8));
 
   forall d in dataB with (^ reduce histoBX)
   {

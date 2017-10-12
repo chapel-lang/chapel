@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/layouts/LayoutCSR.chpl:29: warning: Module 'LayoutCSR' has been deprecated in favor of 'LayoutCS'
+$CHPL_HOME/modules/layouts/LayoutCSR.chpl:31: warning: Module 'LayoutCSR' has been deprecated in favor of 'LayoutCS'

@@ -52,6 +52,14 @@ var myOpaqueC = new OpaqueC(real);
 var mySparseC = new SparseC(real);
 var myEnumC = new EnumC(real);
 
+proc deinit() {
+  delete myEnumC;
+  delete mySparseC;
+  delete myOpaqueC;
+  delete myAssocC;
+  delete myArithC;
+}
+
 // initialize class instances
 
 [i in myArithC.x.domain] myArithC.x(i) = i + i/10.0;

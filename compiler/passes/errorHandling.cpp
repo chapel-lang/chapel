@@ -21,6 +21,7 @@
 
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "ForLoop.h"
 #include "driver.h"
 #include "stmt.h"
@@ -295,8 +296,16 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
         currHandler = nextHandler;
       }
     }
-    catchBody->insertAtTail(
-        new CallExpr(gChplDeleteError, castToError(toDelete)));
+
+    BlockStmt* deferDeleteBody = new BlockStmt();
+    DeferStmt* deferDelete     = new DeferStmt(deferDeleteBody);
+    CallExpr*  deleteError     = new CallExpr(gChplDeleteError,
+                                              castToError(toDelete));
+    AList      deleteCond      = errorCond(toDelete,
+                                           new BlockStmt(deleteError));
+
+    deferDeleteBody->insertAtHead(deleteCond);
+    catchBody->insertAtHead(deferDelete);
   }
 
   if (!hasCatchAll) {
@@ -323,15 +332,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   bool insideTry = !tryStack.empty();
 
   // The common case of a user-level call to a resolved function
-  FnSymbol* calledFn = node->resolvedFunction();
-
-  // Also handle the PRIMOP for a virtual method call
-  if (calledFn == NULL) {
-    if (node->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-        SymExpr* arg1 = toSymExpr(node->get(1));
-        calledFn = toFnSymbol(arg1->symbol());
-    }
-  }
+  FnSymbol* calledFn = node->resolvedOrVirtualFunction();
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
@@ -388,6 +389,27 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
     throwBlock->insertAtTail(new DefExpr(fixedError));
     throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
+
+    if (!catchesStack.empty()) {
+      Expr*      parent      = throwBlock;
+      CatchStmt* parentCatch = NULL;
+      while (parentCatch == NULL) {
+        parent      = parent->parentExpr;
+        parentCatch = toCatchStmt(parent);
+      }
+
+      if (DefExpr* catchFilter = parentCatch->expr()) {
+        VarSymbol* handledError = toVarSymbol(catchFilter->sym);
+
+        VarSymbol* throwingHandledVar = newTemp("throwingHandledError", dtBool);
+        CallExpr*  throwingHandled    = new CallExpr(PRIM_EQUAL, thrownError, handledError);
+
+        throwBlock->insertAtTail(new DefExpr(throwingHandledVar));
+        throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, throwingHandledVar, throwingHandled));
+        throwBlock->insertAtTail(new CondStmt(new SymExpr(throwingHandledVar),
+                                              new CallExpr(PRIM_MOVE, handledError, gNil)));
+      }
+    }
 
     if (insideTry) {
       throwBlock->insertAtTail(setOuterErrorAndGotoHandler(fixedError));
@@ -477,6 +499,8 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
   return ret;
 }
+
+
 
 GotoStmt* ErrorHandlingVisitor::gotoHandler() {
 
@@ -931,7 +955,9 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
     // No mode was chosen explicitly, find the default.
 
     ModuleSymbol* mod = fn->getModule();
-    if (mod->hasFlag(FLAG_IMPLICIT_MODULE))
+    if (mod->hasFlag(FLAG_IMPLICIT_MODULE) ||
+        fPermitUnhandledModuleErrors ||
+        mod->hasFlag(FLAG_PROTOTYPE_MODULE))
       mode = ERROR_MODE_FATAL;
     else
       mode = ERROR_MODE_RELAXED;

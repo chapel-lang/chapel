@@ -27,6 +27,7 @@ class CondStmt;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForallStmt;
 class LoopStmt;
 class SymExpr;
 
@@ -40,9 +41,10 @@ public:
 
 
                   InitNormalize(FnSymbol*  fn);
-                  InitNormalize(BlockStmt* block, const InitNormalize& curr);
-                  InitNormalize(LoopStmt*  loop,  const InitNormalize& curr);
-                  InitNormalize(CondStmt*  cond,  const InitNormalize& curr);
+                  InitNormalize(BlockStmt*  block, const InitNormalize& curr);
+                  InitNormalize(LoopStmt*   loop,  const InitNormalize& curr);
+                  InitNormalize(ForallStmt* loop,  const InitNormalize& curr);
+                  InitNormalize(CondStmt*   cond,  const InitNormalize& curr);
 
   void            merge(const InitNormalize& fork);
 
@@ -70,6 +72,7 @@ public:
   bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
   bool            inCoforall()                                           const;
+  bool            inForall()                                             const;
   bool            inOn()                                                 const;
 
   DefExpr*        currField()                                            const;
@@ -93,6 +96,7 @@ private:
     cBlockBegin,
     cBlockCobegin,
     cBlockCoforall,
+    cBlockForall,
     cBlockOn
   };
 

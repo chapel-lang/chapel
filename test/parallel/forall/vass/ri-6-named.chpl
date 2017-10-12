@@ -27,6 +27,7 @@ proc main {
   writeln("n = ", n);
 
   var maxPos, maxNeg, minPos, minNeg, sumLib, sumUsr: int;
+  maxNeg = min(int); minPos = max(int); // others can start at 0
 
   forall arrElm in ARR with (max reduce maxPos, max reduce maxNeg,
                              min reduce minPos, min reduce minNeg,

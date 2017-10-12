@@ -18,9 +18,11 @@
  */
 
 
+
 /* A helper file of utilities for Mason */
 use Spawn;
 use FileSystem;
+
 
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
@@ -31,15 +33,23 @@ proc getEnv(name: string): string {
 }
 
 
+
 /* Uses the Spawn module to create a subprocess */
-proc runCommand(cmd) {
+proc runCommand(cmd, quiet=false) : string {
+  var ret : string;
+
   var splitCmd = cmd.split();
   var process = spawn(splitCmd, stdout=PIPE);
   process.wait();
 
   for line in process.stdout.lines() {
-    write(line);
+    ret += line;
+    if quiet == false {
+      write(line);
+    }
   }
+
+  return ret;
 }
 
 
@@ -55,33 +65,146 @@ proc runWithStatus(command): int {
   return sub.exit_status;
 }
 
+proc hasOptions(args : [] string, const opts : string ...) {
+  var ret = false;
 
-
-/* Checks to see if dependency has already been
-   downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/.mason/src/';
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency then
-      exists = true;
-  }
-  return exists;
-}
-
-
-proc MASON_HOME: string {
-  // possible locations
-  var masonHome = getEnv("MASON_HOME");
-  var home = getEnv('HOME');
-  if masonHome == '' {
-    if isDir(home + '/.mason') then
-      return home;
-    else {
-      writeln("Mason could not find MASON_HOME");
-      writeln("Consider setting MASON_HOME in your .bashrc");
-      halt();
+  for o in opts {
+    const (found, idx) = args.find(o);
+    if found {
+      ret = true;
+      break;
     }
   }
-  else return masonHome;
+
+  return ret;
 }
+
+record VersionInfo {
+  var major = -1, minor = -1, bug = 0;
+
+  proc init() {
+    major = -1;
+    minor = -1;
+    bug = 0;
+  }
+
+  proc init(other:VersionInfo) {
+    this.major = other.major;
+    this.minor = other.minor;
+    this.bug   = other.bug;
+  }
+
+  proc init(maj : int, min : int, bug: int) {
+    this.major = maj;
+    this.minor = min;
+    this.bug   = bug;
+  }
+
+  proc init(str:string) {
+    super.init();
+    const s : [1..3] string = str.split(".");
+    assert(s.size == 3);
+
+    major = s[1]:int;
+    minor = s[2]:int;
+    bug   = s[3]:int;
+  }
+
+  proc str() {
+    return major + "." + minor + "." + bug;
+  }
+
+  proc cmp(other:VersionInfo) {
+    const A = (major, minor, bug);
+    const B = (other.major, other.minor, other.bug);
+    for i in 1..3 {
+      if A(i) > B(i) then return 1;
+      else if A(i) < B(i) then return -1;
+    }
+    return 0;
+  }
+}
+
+proc >=(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) >= 0;
+}
+proc <=(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) <= 0;
+}
+proc ==(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) == 0;
+}
+proc >(a:VersionInfo, b:VersionInfo) : bool {
+  return a.cmp(b) > 0;
+}
+
+
+private var chplVersionInfo = (-1, -1, -1, false);
+/*
+   Returns a tuple containing information about the `chpl --version`:
+   (major, minor, bugFix, isMaster)
+*/
+proc getChapelVersionInfo() {
+  use Regexp;
+
+  if chplVersionInfo(1) == -1 {
+    try {
+      var ret : (int, int, int, bool);
+
+      var process = spawn(["chpl", "--version"], stdout=PIPE);
+      process.wait();
+
+      var output : string;
+      for line in process.stdout.lines() {
+        output += line;
+      }
+
+      const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
+      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+      var release = compile(semverPattern);
+
+      var semver, sha : string;
+      if master.search(output, semver, sha) {
+        ret(4) = true;
+      } else if release.search(output, semver) {
+        ret(4) = false;
+      } else {
+        throw new Error("Failed to match output of 'chpl --version':\n" + output);
+      }
+
+      const split = semver.split(".");
+      for param i in 1..3 do ret(i) = split(i):int;
+
+      chplVersionInfo = ret;
+    } catch e : Error {
+      stderr.writeln("Error while getting Chapel version:");
+      stderr.writeln(e.message());
+      exit(1);
+    }
+  }
+
+  return chplVersionInfo;
+}
+
+private var chplVersion = "";
+proc getChapelVersionStr() {
+  if chplVersion == "" {
+    const version = getChapelVersionInfo();
+    chplVersion = version(1) + "." + version(2) + "." + version(3);
+  }
+  return chplVersion;
+}
+
+proc gitC(newDir, command, quiet=false) {
+  var ret : string;
+
+  const oldDir = here.cwd();
+  here.chdir(newDir);
+
+  ret = runCommand(command, quiet);
+
+  here.chdir(oldDir);
+
+  return ret;
+}
+

@@ -369,6 +369,11 @@ class LocStencilArr {
   inline proc unlockLocRAD() {
     locRADLock.clear();
   }
+
+  proc deinit() {
+    if locRAD != nil then
+      delete locRAD;
+  }
 }
 
 private proc makeZero(param rank : int, type idxType) {
@@ -1077,7 +1082,7 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
       }
       pragma "no copy" pragma "no auto destroy" var myLocRAD = myLocArr.locRAD;
       pragma "no copy" pragma "no auto destroy" var radata = myLocRAD.RAD;
-      if radata(rlocIdx).shiftedDataChunk(0) != nil {
+      if radata(rlocIdx).shiftedData != nil {
         var dataIdx = radata(rlocIdx).getDataIndex(i);
         return radata(rlocIdx).getDataElem(dataIdx);
       }
@@ -1712,65 +1717,18 @@ proc StencilArr.doiCanBulkTransferStride(viewDom) param {
   return useBulkTransferDist;
 }
 
-proc StencilArr.oneDData {
-  if defRectSimpleDData {
-    return true;
-  } else {
-    // TODO: do this when we create the array?  if not, then consider:
-    // TODO: use locRad oneDData, if available
-    // TODO: with more coding complexity we could get a much quicker
-    //       answer in the 'false' case, but how to avoid penalizing
-    //       the 'true' case at scale?
-    var allBlocksOneDData: bool;
-    on this {
-      var myAllBlocksOneDData: atomic bool;
-      myAllBlocksOneDData.write(true);
-      forall la in locArr {
-        if !la.myElems._value.oneDData then
-          myAllBlocksOneDData.write(false);
-      }
-      allBlocksOneDData = myAllBlocksOneDData.read();
-    }
-    return allBlocksOneDData;
-  }
-}
-
 proc StencilArr.doiUseBulkTransfer(B) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiUseBulkTransfer()");
 
-  //
-  // Absent multi-ddata, for the array as a whole, say bulk transfer
-  // is possible.  We'll make a final determination for each block in
-  // doiBulkTransfer(), based on the characteristics of the blocks
-  // themselves.
-  //
-  // If multi-ddata is possible then we can only do bulk transfer when
-  // either the domains are identical (so we can defer the decision as
-  // above) or all the blocks of both arrays have but a single ddata
-  // chunk.
-  //
-  if this.rank != B.rank then return false;
-  return defRectSimpleDData
-         || dom == B._value.dom
-         || (oneDData && chpl__getActualArray(B).oneDData);
+  return this.rank == B.rank;
 }
 
 proc StencilArr.doiUseBulkTransferStride(B) {
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiUseBulkTransferStride()");
 
-  //
-  // Absent multi-ddata, for the array as a whole, say bulk transfer
-  // is possible even though as things are currently coded we'll always
-  // do regular bulk transfer and never even ask about strided.
-  //
-  // If multi-ddata is possible then we can only do strided bulk
-  // transfer when all the blocks have but a single ddata chunk.
-  //
-  if this.rank != B.rank then return false;
-  return defRectSimpleDData
-         || (oneDData && chpl__getActualArray(B).oneDData);
+  return this.rank == B.rank;
 }
 
 proc StencilArr.doiBulkTransfer(B, viewDom) {
@@ -1861,11 +1819,11 @@ proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFrom()");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const Src = chpl__getActualArray(Barg);
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const Src = chpl__getActualArray(Barg);
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == Src.rank {
     coforall i in Dest.dom.dist.targetLocDom do // for all locales
       on Dest.dom.dist.targetLocales(i)
       {
@@ -1890,7 +1848,7 @@ proc StencilArr.doiBulkTransferFrom(Barg, viewDom)
           if debugStencilDistBulkTransfer then
               writeln("B{",(...r1),"}.ToDR",regionDest);
 
-          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], Barg.domain[(...r1)]);
+          Barg._value.doiBulkTransferToDR(Dest.locArr[i].myElems[regionDest], {(...r1)});
         }
       }
   }
@@ -1903,11 +1861,11 @@ proc StencilArr.doiBulkTransferToDR(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferToDR()");
 
-  if this.rank == Barg.rank {
-    const Src = this;
-    const Dest = chpl__getActualArray(Barg);
-    const destView = chpl__getViewDom(Barg);
-    type el = Src.idxType;
+  const Src = this;
+  const Dest = chpl__getActualArray(Barg);
+  const destView = chpl__getViewDom(Barg);
+  type el = Src.idxType;
+  if this.rank == Dest.rank {
     coforall j in Src.dom.dist.targetLocDom do
       on Src.dom.dist.targetLocales(j)
       {
@@ -1943,10 +1901,10 @@ proc StencilArr.doiBulkTransferFromDR(Barg, viewDom)
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromDR");
 
-  if this.rank == Barg.rank {
-    const Dest = this;
-    const srcView = chpl__getViewDom(Barg);
-    type el = Dest.idxType;
+  const Dest = this;
+  const srcView = chpl__getViewDom(Barg);
+  type el = Dest.idxType;
+  if this.rank == srcView.rank {
     coforall j in Dest.dom.dist.targetLocDom do
       on Dest.dom.dist.targetLocales(j)
       {

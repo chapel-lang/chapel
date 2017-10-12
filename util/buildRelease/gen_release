@@ -113,9 +113,11 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "README.rst",
        "README.files",
        "compiler/codegen/reservedSymbolNames",
+       "configure",
        "highlight/README.md",
        "util/README",
        "util/build_configs.py",
+       "util/buildRelease/install.sh",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
@@ -148,7 +150,9 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/config",
     "util/quickstart",
     "util/test",
-    "tools/chplvis"
+    "tools/chplvis",
+    "tools/c2chapel",
+    "tools/mason"
 );
 
 

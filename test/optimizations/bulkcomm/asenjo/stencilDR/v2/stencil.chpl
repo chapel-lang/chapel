@@ -68,6 +68,11 @@ proc GlobalInfo.init() {
   }
 }
 
+proc GlobalInfo.deinit() {
+  forall inf in infos do
+    delete inf;
+}
+
 // Here are all our local domains. WI <- "Working Indices".
 const WI = new GlobalInfo();
 
@@ -135,9 +140,20 @@ proc GlobalData.init(nameArg: string) {
   }  // forall
 }  // GlobalData constructor
 
+proc GlobalData.deinit() {
+  forall dat in datas do
+    delete dat;
+}
+
 // Our two global arrays, to switch between.
 const WA = new GlobalData("WA"),
       WB = new GlobalData("WB");
+
+proc deinit() {
+  delete WA;
+  delete WB;
+  delete WI;
+}
 
 // Reuse the name for an indexing operation.
 // This does not access neighbor caches.

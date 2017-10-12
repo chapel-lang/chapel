@@ -6,7 +6,7 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT) --enable-allow-gcc4
+CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 
 # pshm can only be used with CHPL_GASNET_SEGMENT={fast,large} and the
 # udp conduit, but there it lowers nightly testing time by 20% and the

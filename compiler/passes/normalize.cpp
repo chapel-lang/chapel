@@ -51,7 +51,6 @@ static void handleReduceAssign();
 static void fixup_array_formals(FnSymbol* fn);
 static void fixup_query_formals(FnSymbol* fn);
 
-
 static bool isConstructor(FnSymbol* fn);
 static bool isInitMethod (FnSymbol* fn);
 
@@ -76,7 +75,6 @@ static void insertCallTemps(CallExpr* call);
 static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void normalizeTypeAlias(DefExpr* defExpr);
-static void normalizeArrayAlias(DefExpr* defExpr);
 static void normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void normalizeVariableDefinition(DefExpr* defExpr);
 
@@ -228,9 +226,13 @@ void normalize() {
                     "destructor name must match class/record name "
                     "or deinit()");
 
-        } else {
-          fn->name = astrDeinit;
         }
+
+        if (!notDeinit && fn->hasFlag(FLAG_NO_PARENS)) {
+          USR_FATAL_CONT(fn, "deinitializers must have parentheses");
+        }
+
+        fn->name = astrDeinit;
       }
 
     // make sure methods don't attempt to overload operators
@@ -337,6 +339,8 @@ static void handleModuleDeinitFn(ModuleSymbol* mod) {
   if (!deinitFn)
     // We could alternatively create an empty function here.
     return;
+  if (deinitFn->hasFlag(FLAG_NO_PARENS))
+    USR_FATAL_CONT(deinitFn, "module deinit() functions must have parentheses");
 
   deinitFn->name = astr("chpl__deinit_", mod->name);
   deinitFn->removeFlag(FLAG_DESTRUCTOR);
@@ -431,13 +435,17 @@ static void handleReduceAssign() {
 //
 static void insertCallTempsForRiSpecs(BaseAST* base) {
   std::vector<ForallStmt*> forallStmts;
-  collectForallStmts(base, forallStmts);
-  for_vector(ForallStmt, fs, forallStmts)
-    for_shadow_vars(svar, temp, fs)
-      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr()))
-        insertCallTempsWithStmt(specCall, fs);
-}
 
+  collectForallStmts(base, forallStmts);
+
+  for_vector(ForallStmt, fs, forallStmts) {
+    for_shadow_vars(svar, temp, fs) {
+      if (CallExpr* specCall = toCallExpr(svar->reduceOpExpr())) {
+        insertCallTempsWithStmt(specCall, fs);
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -499,9 +507,6 @@ static void normalize(BaseAST* base) {
           if (type != NULL || init != NULL) {
             if (var->isType() == true) {
               normalizeTypeAlias(defExpr);
-
-            } else if (var->hasFlag(FLAG_ARRAY_ALIAS) == true) {
-              normalizeArrayAlias(defExpr);
 
             } else if (var->hasFlag(FLAG_CONFIG) == true) {
               normalizeConfigVariableDefinition(defExpr);
@@ -1293,16 +1298,23 @@ static bool  moveMakesTypeAlias(CallExpr* call);
 static Type* typeForNewNonGenericRecord(CallExpr* call);
 
 static void insertCallTemps(CallExpr* call) {
-  if (shouldInsertCallTemps(call))
+  if (shouldInsertCallTemps(call) == true) {
     insertCallTempsWithStmt(call, call->getStmtExpr());
+  }
 }
 
 static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
-    SET_LINENO(call);
+  SET_LINENO(call);
 
-    CallExpr*  parentCall = toCallExpr(call->parentExpr);
-    VarSymbol* tmp        = newTemp("call_tmp");
+  CallExpr*  parentCall = toCallExpr(call->parentExpr);
+  VarSymbol* tmp        = newTemp("call_tmp");
 
+  stmt->insertBefore(new DefExpr(tmp));
+
+  if (call->isPrimitive(PRIM_NEW)    == true) {
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+  } else {
     // Add FLAG_EXPR_TEMP unless this tmp is being used
     // as a sub-expression for a variable initialization.
     // This flag triggers autoCopy/autoDestroy behavior.
@@ -1311,63 +1323,56 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
          parentCall->isPrimitive(PRIM_INIT_VAR) == false)) {
       tmp->addFlag(FLAG_EXPR_TEMP);
     }
+  }
 
-    if (call->isPrimitive(PRIM_NEW)    == true) {
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-    }
+  if (call->isPrimitive(PRIM_TYPEOF) == true) {
+    tmp->addFlag(FLAG_TYPE_VARIABLE);
+  }
 
-    if (call->isPrimitive(PRIM_TYPEOF) == true) {
-      tmp->addFlag(FLAG_TYPE_VARIABLE);
-    }
+  evaluateAutoDestroy(call, tmp);
 
-    evaluateAutoDestroy(call, tmp);
+  tmp->addFlag(FLAG_MAYBE_PARAM);
+  tmp->addFlag(FLAG_MAYBE_TYPE);
 
-    tmp->addFlag(FLAG_MAYBE_PARAM);
-    tmp->addFlag(FLAG_MAYBE_TYPE);
+  if (call->isNamed("super")            == true &&
+      parentCall                        != NULL &&
+      parentCall->isNamedAstr(astrSdot) == true &&
+      parentCall->get(1)                == call) {
+    // We've got an access to a method or field on the super type.
+    // This means we should preserve that knowledge for when we
+    // attempt to access the method on the super type.
+    tmp->addFlag(FLAG_SUPER_TEMP);
+  }
 
-    if (call->isNamed("super")   == true &&
+  // Is this a new-expression for a record with an initializer?
+  if (Type* type = typeForNewNonGenericRecord(call)) {
+    // Define the type for the tmp
+    tmp->type = type;
 
-        parentCall               != NULL &&
-        parentCall->isNamedAstr(astrSdot) &&
-        parentCall->get(1)       == call) {
-      // We've got an access to a method or field on the super type.
-      // This means we should preserve that knowledge for when we
-      // attempt to access the method on the super type.
-      tmp->addFlag(FLAG_SUPER_TEMP);
-    }
+    // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
+    // Extract the argument to the new expression
+    CallExpr* newArg = toCallExpr(call->get(1));
 
-    // Define the tmp
-    stmt->insertBefore(new DefExpr(tmp));
+    // Convert the argument for the new-expression into an init call
+    newArg->setUnresolvedFunction("init");
 
-    // Is this a new-expression for a record with an initializer?
-    if (Type* type = typeForNewNonGenericRecord(call)) {
-      // Define the type for the tmp
-      tmp->type = type;
+    // Add _mt and _this (insert at head in reverse order)
+    newArg->insertAtHead(tmp);
+    newArg->insertAtHead(gMethodToken);
 
-      // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
-      // Extract the argument to the new expression
-      CallExpr* newArg = toCallExpr(call->get(1));
+    // Move the tmp.init(args) expression to before the call
+    stmt->insertBefore(newArg->remove());
 
-      // Convert the argument for the new-expression into an init call
-      newArg->setUnresolvedFunction("init");
-
-      // Add _mt and _this (insert at head in reverse order)
-      newArg->insertAtHead(tmp);
-      newArg->insertAtHead(gMethodToken);
-
-      // Move the tmp.init(args) expression to before the call
-      stmt->insertBefore(newArg->remove());
-
-      // Replace the degenerate new-expression with a use of the tmp variable
-      call->replace(new SymExpr(tmp));
+    // Replace the degenerate new-expression with a use of the tmp variable
+    call->replace(new SymExpr(tmp));
 
 
-    // No.  The simple case
-    } else {
-      call->replace(new SymExpr(tmp));
+  // No.  The simple case
+  } else {
+    call->replace(new SymExpr(tmp));
 
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-    }
+    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+  }
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {
@@ -1531,35 +1536,6 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   INT_ASSERT(init != NULL);
 
   defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, init->copy()));
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void normalizeArrayAlias(DefExpr* defExpr) {
-  SET_LINENO(defExpr);
-
-  Symbol* var  = defExpr->sym;
-  Expr*   init = defExpr->init->remove();
-
-  if (defExpr->exprType == NULL) {
-    CallExpr* newAlias = new CallExpr("newAlias", gMethodToken, init);
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, newAlias));
-
-  } else {
-    Expr*     type    = defExpr->exprType->remove();
-    CallExpr* reindex = new CallExpr("reindex",  gMethodToken, init);
-    CallExpr* partial = new CallExpr(reindex,    type);
-
-    reindex->partialTag = true;
-    reindex->methodTag  = true;
-
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, partial));
-  }
 }
 
 /************************************* | **************************************

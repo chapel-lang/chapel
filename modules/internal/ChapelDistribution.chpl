@@ -376,10 +376,6 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    proc dsiClear() {
-      halt("clear not implemented for this distribution");
-    }
-
     proc dsiAdd(x) {
       compilerError("Cannot add indices to a rectangular domain");
       return 0;
@@ -420,7 +416,7 @@ module ChapelDistribution {
 
     // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
     //       - would have to put the conditional outside of the call
-    /* Grow domain if necesary */
+    /* Grow domain if necessary */
     inline proc _grow(size: int, factor=arrayAsVecGrowthFactor) {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {

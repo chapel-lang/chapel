@@ -1,0 +1,9 @@
+
+[brick]
+name = "ivrsTwo"
+version = "0.1.0"
+chplVersion = "1.16"
+
+[dependencies]
+innerBadDep = "0.1.0"
+outerBadDep = "0.1.0"

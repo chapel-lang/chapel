@@ -1286,7 +1286,19 @@ module ChapelArray {
 
       return _newArray(x);
     }
+
     /* Remove all indices from this domain, leaving it empty */
+
+    // For rectangular domains, create an empty domain and assign it to this
+    // one to make sure that we leverage all of the array's normal resizing
+    // machinery.
+    proc clear() where isRectangularDom(this) {
+      var emptyDom: this.type;
+      this = emptyDom;
+    }
+
+    // For other domain types, the implementation probably knows the most
+    // efficient way to clear its index set, so make a dsiClear() call.
     proc clear() {
       _value.dsiClear();
     }
@@ -2433,20 +2445,15 @@ module ChapelArray {
         if newDims(i).length != _value.dom.dsiDim(i).length then
           halt("extent in dimension ", i, " does not match actual");
 
-      //
-      // TODO: Currently, the domain created to represent the
-      // rank-change domain is non-distributed.  Ultimately, we need
-      // to create a domain view class that supports a rank-change
-      // view on a higher-dimensional domain as in the original array
-      // view attempt.
-      //
       const thisDomClass = this._value.dom;
       const (dom, dompid) = (thisDomClass, thisDomClass.pid);
 
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
-      const redist = new ArrayViewReindexDist(downdist = thisDomClass.dist,
+
+      const redist = new ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
+                                              downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
                                               downdomPid = dompid,
                                               downdomInst = dom);
@@ -2609,7 +2616,7 @@ module ChapelArray {
     inline proc resizeAllocRange(r2: range, factor=arrayAsVecGrowthFactor,
                                  param direction=1, param grow=1) {
       // This should only be called for 1-dimensional arrays
-      const r = this._value.dataAllocRange;
+      const ref r = this._value.dataAllocRange;
       const lo = r.low,
             hi = r.high,
             size = r.size;
@@ -2648,8 +2655,8 @@ module ChapelArray {
 
     pragma "no doc"
     /* Internal helper method to reallocate an array */
-    proc reallocateArray(newRange: range, param direction=1,
-                         debugMsg="reallocateArray")
+    inline proc reallocateArray(newRange: range, param direction=1,
+                                debugMsg="reallocateArray")
     {
       on this._value {
         const check = if direction > 0 then newRange.high else newRange.low;
@@ -2880,9 +2887,10 @@ module ChapelArray {
 
       const shift = vals.size,
             shiftRange = pos..this.domain.high,
-            newRange = this.domain.low..(this.domain.high + vals.size);
+            newRange = this.domain.low..(this.domain.high + vals.size),
+            validInsertRange = this.domain.low..(this.domain.high + 1);
 
-      if boundsChecking && !newRange.member(pos) then
+      if boundsChecking && !validInsertRange.member(pos) then
         halt("insert at position " + pos + " out of bounds");
 
       reallocateArray(newRange, debugMsg="insert reallocate");
@@ -3074,7 +3082,7 @@ module ChapelArray {
     // true everywhere
     //
     if isArrayType(this.eltType) {
-      var ret: bool;
+      var ret = true;
       forall (thisArr, thatArr) in zip(this, that) with (&& reduce ret) do
         ret &&= thisArr.equals(thatArr);
       return ret;

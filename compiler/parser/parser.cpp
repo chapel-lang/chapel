@@ -610,7 +610,7 @@ static ModuleSymbol* parseFile(const char* path,
     } else {
       const char* modName = filenameToModulename(path);
 
-      retval = buildModule(modName, modTag, yyblock, yyfilename, false, NULL);
+      retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
 
       ModuleSymbol::addTopLevelModule(retval);
 
