@@ -436,15 +436,9 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.boundedHigh
-  {
-    return this.alignedHigh == _high;
-  }
-
-  pragma "no doc"
   inline proc range.isNaturallyAligned() param
-    where this.boundedType == BoundedRangeType.boundedNone
+    where this.boundedType == BoundedRangeType.boundedNone ||
+          this.boundedType == BoundedRangeType.boundedHigh
   {
     return false;
   }
