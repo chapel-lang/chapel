@@ -148,6 +148,11 @@ fi
 
 TEST_JOB=${TEST_JOB_BASENAME}
 
+if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
+    log_debug "printchplenv, because \$CHPL_CHECK_DEBUG == 1"
+    $CHPL_HOME/util/printchplenv
+fi
+
 # Collect comm protocol environment variables (lowercase to avoid conflicts)
 chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
 chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
