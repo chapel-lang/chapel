@@ -1,0 +1,4 @@
+bug: forwarding generic virtual method causes resolution errors
+
+The 'action' method on 'Rect' should only be called with rank-compatible Rects,
+yet we try to call Rect(1).action(Rect(3)). Why?
