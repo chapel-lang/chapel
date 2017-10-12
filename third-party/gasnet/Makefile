@@ -6,7 +6,7 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
+ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
