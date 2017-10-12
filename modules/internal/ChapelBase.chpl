@@ -983,6 +983,22 @@ module ChapelBase {
   // sync statements and for joining coforall and cobegin tasks
   //
 
+  inline proc chpl_rt_reset_task_spawn() {
+    if CHPL_TASKS == 'qthreads' {
+      pragma "fn synchronization free"
+      extern proc qthread_chpl_reset_spawn_order();
+      qthread_chpl_reset_spawn_order();
+    }
+  }
+
+  proc chpl_resetTaskSpawn(numTasks) {
+    const dptpl = if dataParTasksPerLocale==0 then here.maxTaskPar
+                  else dataParTasksPerLocale;
+
+    if numTasks >= dptpl then
+      chpl_rt_reset_task_spawn();
+  }
+
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
 
   // Parent class for _EndCount instances so that it's easy
