@@ -2520,6 +2520,13 @@ void API_FUNC qthread_flushsc(void)
  */
 #define QTHREAD_SPAWN_MASK_TEAMS (QTHREAD_SPAWN_NEW_TEAM | QTHREAD_SPAWN_NEW_SUBTEAM)
 
+void API_FUNC qthread_reset_spawn_order(void) {
+  for (unsigned int i=0; i<qlib->nshepherds; i++) {
+    qlib->shepherds[i].sched_shepherd =1;
+  }
+  qlib->sched_shepherd = 1;
+}
+
 int API_FUNC qthread_spawn(qthread_f             f,
                            const void           *arg,
                            size_t                arg_size,
@@ -2589,6 +2596,10 @@ int API_FUNC qthread_spawn(qthread_f             f,
             assert((feature_flag & QTHREAD_SPAWN_PC_SYNCVAR_T) == 0);
         }
 #endif  /* ifdef QTHREAD_DEBUG */
+    }
+    int shep_debug = qt_internal_get_env_bool("SHEP_DEBUG", 0);
+    if (shep_debug) {
+      printf("Spawning to shepherd %hu. myshep=%p\n", (unsigned short)dest_shep, myshep);
     }
     qthread_debug(THREAD_BEHAVIOR, "target_shep(%i) => dest_shep(%i)\n", target_shep, dest_shep);
     /* Step 3: Allocate & init the structure */

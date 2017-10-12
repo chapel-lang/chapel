@@ -298,6 +298,8 @@ enum _qthread_features {
 #define QTHREAD_SPAWN_AGGREGABLE    (1 << SPAWN_AGGREGABLE)
 #define QTHREAD_SPAWN_LOCAL_PRIORITY (1 << SPAWN_LOCAL_PRIORITY)
 
+void qthread_reset_spawn_order(void);
+
 int qthread_spawn(qthread_f             f,
                   const void           *arg,
                   size_t                arg_size,
