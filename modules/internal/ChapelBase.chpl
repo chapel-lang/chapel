@@ -23,6 +23,13 @@
 module ChapelBase {
   use ChapelStandard;
 
+  proc resetTaskSpawn() {
+    if CHPL_TASKS == 'qthreads' {
+      extern proc qthread_reset_spawn_order();
+      qthread_reset_spawn_order();
+    }
+  }
+
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;

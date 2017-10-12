@@ -213,6 +213,7 @@ module DefaultRectangular {
         if debugDefaultDist {
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         }
+        resetTaskSpawn();
         coforall chunk in 0..#numChunks {
           var followMe: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).length,
@@ -394,6 +395,7 @@ module DefaultRectangular {
             locBlock(i) = offset(i)..#(ranges(i).length);
           if debugDefaultDist then
             chpl_debug_writeln("*** DI: locBlock = ", locBlock);
+          resetTaskSpawn();
           coforall chunk in 0..#numChunks {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,

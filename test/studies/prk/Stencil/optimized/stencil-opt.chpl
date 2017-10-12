@@ -43,11 +43,6 @@ const activePoints = (order-2*R)*(order-2*R),
 
 var timer: Timer;
 
-proc resetTaskSpawn() {
-  extern proc qthread_reset_spawn_order();
-  coforall loc in Locales do on loc do qthread_reset_spawn_order();
-}
-
 /* Parallel Research Kernel - Stencil */
 proc main() {
 
@@ -86,7 +81,6 @@ proc main() {
   const outputDom = localDom dmapped outDist;
 
   /* Input and Output matrices represented as arrays over a 2D domain */
-  resetTaskSpawn();
   var input: [Dom] dtype = 0.0,
       output: [outputDom] dtype = 0.0;
 
@@ -139,8 +133,6 @@ proc main() {
 
   var stenTime, incTime, commTime : real;
   var subTimer : Timer;
- 
-  resetTaskSpawn();
 
   //
   // Main loop of Stencil

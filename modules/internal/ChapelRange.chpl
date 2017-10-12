@@ -1779,6 +1779,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         yield i;
       }
     } else {
+      resetTaskSpawn();
       coforall chunk in 0..#numChunks {
         if stridable {
           // TODO: find a way to avoid this densify/undensify for strided
@@ -1893,6 +1894,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         yield (0..v-1,);
       else
       {
+        resetTaskSpawn();
         coforall chunk in 0..#numChunks
         {
           const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
