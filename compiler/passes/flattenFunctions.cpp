@@ -131,6 +131,16 @@ passByRef(Symbol* sym) {
 
   Type* type = sym->type;
 
+  //
+  // BHARSH: 2017-10-13: By passing ICs by value, it will be easier later in
+  // the pipeline to scalar replace or hoist them. This is hardly the ideal
+  // place for this 'optimization', but it's easier than revamping
+  // scalarReplacement or iterators.
+  //
+  if (type->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+    return false;
+  }
+
   if (sym->hasFlag(FLAG_ARG_THIS) == true &&
       passableByVal(type)         == true) {
     // This is also constant. TODO: mark with FLAG_CONST.
