@@ -2030,7 +2030,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value;
+    forwarding _value except these;
 
     inline proc _do_destroy() {
       if ! _unowned {
