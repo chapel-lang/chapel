@@ -1195,7 +1195,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
     VarSymbol* cloneOp = new VarSymbol("fsCloneOp");
     efs->insertBefore(new DefExpr(cloneOp));
     efs->insertBefore("'move'(%S,clone(%S,%S))", cloneOp, gMethodToken, parentOp);
-    efs->insertAfter("'delete'(%S)", cloneOp);
+    efs->insertAfter("chpl__delete(%S)", cloneOp);
     spec = new SymExpr(cloneOp);
   }
 
