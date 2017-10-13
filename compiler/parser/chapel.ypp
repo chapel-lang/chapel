@@ -203,6 +203,7 @@
   #include "flex-chapel.h"
   #include "ForallStmt.h"
   #include "ForLoop.h"
+  #include "misc.h"
   #include "parser.h"
   #include "stmt.h"
   #include "stringutil.h"
@@ -235,10 +236,14 @@
   void yyerror(YYLTYPE*       ignored,
                ParserContext* context,
                const char*    str) {
+
+    // like USR_FATAL_CONT
+    setupError(__FILE__, __LINE__, 3);
+
     // TODO -- should this begin with error:
     if (!chplParseString) {
       const char* yyText = yyget_text(context->scanner);
-
+ 
       fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
 
       if (strlen(yyText) > 0) {
@@ -253,8 +258,6 @@
     }
 
     fprintf(stderr, "\n");
-
-    clean_exit(1);
   }
 }
 
@@ -266,6 +269,9 @@
 
 %debug
 %verbose
+// Thes would print out expected token names
+//%define parse.lac full
+//%define parse.error verbose
 
 %locations
 %define api.pure
@@ -445,6 +451,7 @@ program:
 toplevel_stmt_ls:
                                        { $$ = new BlockStmt();                                  resetTempID(); }
 | toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
+//| toplevel_stmt_ls error               { context->generatedStmt = $1; resetTempID(); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
@@ -491,7 +498,7 @@ stmt:
 | TSERIAL do_stmt                      { $$ = buildSerialStmt(new SymExpr(gTrue), $2); }
 | TSYNC stmt                           { $$ = buildSyncStmt($2); }
 | TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
-| error                                { printf("syntax error"); clean_exit(1); }
+| error TSEMI                          { $$ = buildErrorStandin(); }
 ;
 
 module_decl_stmt:
@@ -500,6 +507,9 @@ module_decl_stmt:
     new BlockStmt(), yyfilename, $1, $2, @1.comment))); }
 | access_control opt_prototype TMODULE ident TLCBR stmt_ls TRCBR
     { $$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType, $6, yyfilename, $1, $2, @1.comment))); }
+| access_control opt_prototype TMODULE ident TLCBR error TRCBR
+    {$$ = buildChapelStmt(new DefExpr(buildModule($4, currentModuleType,
+        buildErrorStandin(), yyfilename, $1, $2, @1.comment))); }
 ;
 
 access_control:
@@ -525,6 +535,7 @@ opt_prototype:
 block_stmt:
   TLCBR         TRCBR                  { $$ = new BlockStmt(); }
 | TLCBR stmt_ls TRCBR                  { $$ = $2;              }
+| TLCBR error   TRCBR                  { $$ = buildErrorStandin(); }
 ;
 
 // Sequence of toplevel_stmts
@@ -782,6 +793,8 @@ throw_stmt:
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
     { $$ = buildChapelStmt(buildSelectStmt($2, $4)); }
+| TSELECT expr TLCBR error TRCBR
+    { $$ = buildErrorStandin(); }
 ;
 
 when_stmt_ls:
@@ -818,6 +831,26 @@ class_decl_stmt:
                                              $3,
                                              $5,
                                              $7,
+                                             FLAG_EXTERN,
+                                             @3.comment));
+    }
+| class_tag ident opt_inherit TLCBR error TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($2,
+                                             NULL,
+                                             $1,
+                                             $3,
+                                             new BlockStmt(),
+                                             FLAG_UNKNOWN,
+                                             @1.comment));
+    }
+| TEXTERN opt_ident_or_string class_tag ident opt_inherit TLCBR error TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             $2,
+                                             $3,
+                                             $5,
+                                             new BlockStmt(),
                                              FLAG_EXTERN,
                                              @3.comment));
     }
@@ -871,6 +904,11 @@ enum_decl_stmt:
       TypeSymbol* pst = new TypeSymbol($2, pdt);
       $1->symbol = pst;
       $$ = buildChapelStmt(new DefExpr(pst));
+    }
+| TENUM ident TLCBR error TRCBR
+    {
+      TypeSymbol* pst = new TypeSymbol($2, new EnumType());
+      $$ = buildErrorStandin();
     }
 ;
 
@@ -1319,7 +1357,7 @@ opt_type:
                           { $$ = NULL; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON array_type       { $$ = $2; }
-| error {printf("bad type specification"); }
+| error                   { $$ = NULL; }
 ;
 
 /* NOTE: Some things about the following rule concern me (blc), but I
@@ -1355,7 +1393,10 @@ array_type:
              new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
     }
-| error  {printf("bad array type specification"); clean_exit(1); }
+| TLSBR error TRSBR
+    {
+      $$ = new CallExpr(PRIM_ERROR);
+    }
 ;
 
 opt_formal_array_elt_type:

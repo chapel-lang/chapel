@@ -361,6 +361,9 @@ BlockStmt* buildChapelStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
+BlockStmt* buildErrorStandin() {
+  return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
+}
 
 static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
