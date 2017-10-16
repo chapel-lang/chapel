@@ -1117,6 +1117,8 @@ timeVectorArray:
 views-forall-iter:
   10/12/17:
     - Switch from these(tag) to foralls for some standalone iters (#7578)
+  10/14/17:
+    - Pass Iterator Classes by Value (#7596)
 
 dynamic:
   02/28/17:
