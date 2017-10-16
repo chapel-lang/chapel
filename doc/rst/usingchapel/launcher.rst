@@ -57,6 +57,7 @@ pbs-aprun            Cray application launcher using PBS (qsub) + aprun
 pbs-gasnetrun_ibv    GASNet launcher using PBS (qsub) over Infiniband     
 slurm-gasnetrun_ibv  GASNet launcher using SLURM over Infiniband          
 slurm-srun           native SLURM launcher                                
+smp                  GASNet launcher for programs running over shared-memory
 none                 do not use a launcher                                
 ===================  ====================================================
 
@@ -85,6 +86,7 @@ follows:
   CHPL_COMM_SUBSTRATE=mpi  gasnetrun_mpi
   CHPL_COMM_SUBSTRATE=mxm  gasnetrun_ibv
   CHPL_COMM_SUBSTRATE=psm  gasnetrun_psm
+  CHPL_COMM_SUBSTRATE=smp  smp
   CHPL_COMM_SUBSTRATE=udp  amudprun
   otherwise                none
   =======================  ==============================================

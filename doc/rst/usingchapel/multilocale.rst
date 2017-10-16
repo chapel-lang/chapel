@@ -125,6 +125,8 @@ psm
     PSM for Intel's OmniPath fabric
 shmem
     SHMEM for SGI Altix
+smp
+    Simulates multiple locales on a single shared-memory machine
 
 See the `GASNet website <http://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
