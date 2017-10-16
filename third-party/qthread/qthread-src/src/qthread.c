@@ -2597,10 +2597,6 @@ int API_FUNC qthread_spawn(qthread_f             f,
         }
 #endif  /* ifdef QTHREAD_DEBUG */
     }
-    int shep_debug = qt_internal_get_env_bool("SHEP_DEBUG", 0);
-    if (shep_debug) {
-      printf("Spawning to shepherd %hu. myshep=%p\n", (unsigned short)dest_shep, myshep);
-    }
     qthread_debug(THREAD_BEHAVIOR, "target_shep(%i) => dest_shep(%i)\n", target_shep, dest_shep);
     /* Step 3: Allocate & init the structure */
 
