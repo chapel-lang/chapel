@@ -317,6 +317,19 @@ done
 # copy utf8-decoder header
 myinstallfile third-party/utf8-decoder/utf8-decoder.h "$DEST_THIRD_PARTY"/utf8-decoder/
 
+# copy mason
+if [ -f tools/mason/mason ]
+then
+  if [ ! -z "$PREFIX" ]
+  then
+    myinstallfile tools/mason/mason "$PREFIX/share/chapel/$VERS/tools/mason"
+    ln -s "$PREFIX/share/chapel/$VERS/tools/mason/mason" "$PREFIX/bin/mason"
+  else
+    myinstallfile tools/mason/mason "$DEST_CHPL_HOME/tools/mason"
+    ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_HOST_PLATFORM"/mason
+  fi
+fi
+
 # copy chplconfig
 if [ -f chplconfig ]
 then
