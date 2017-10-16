@@ -15,9 +15,9 @@ endif
 # conduit. In "production" we only run a single gasnet client per node so this
 # doesn't help, but for smp it's required, and we've noticed faster testing
 # times since we do local spawning, which will result in multiple gasnet
-# clients on the same node.
+# clients on the same node. Note that pshm only works with segment fast/large.
 SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
-ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large, smp-none))
+ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
