@@ -1385,7 +1385,6 @@ expr_ls:
 simple_expr_ls:
   expr                             { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1);}
 | simple_expr_ls TCOMMA expr       { $1->insertAtTail($3); }
-| simple_expr_ls TCOMMA query_expr { $1->insertAtTail($3); }
 ;
 
 tuple_component:
