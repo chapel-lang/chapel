@@ -454,7 +454,7 @@ module ChapelRange {
   inline proc range.isNaturallyAligned()
     where stridable && this.boundedType == BoundedRangeType.boundedHigh
   {
-    return stride < 0 && this.alignedLow == _low;
+    return stride < 0 && this.alignedHigh == _high;
   }
 
   /* Returns true if the range is ambiguously aligned, false otherwise */
