@@ -770,7 +770,8 @@ domain-alignment-expression:
   domain-expression `align' expression
 \end{syntax}
 
-The type of the resulting domain is the same as the original domain.
+The type of the resulting domain is the same as the original domain
+but with \chpl{stridable} set to true.
 In the case of an integer alignment value, the value of the resulting
 domain is computed by applying the integer value to each range in the
 value using the \chpl{align} operator.  In the case of a tuple

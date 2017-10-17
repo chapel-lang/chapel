@@ -717,7 +717,8 @@ aligned-range-expression:
   range-expression `align' expression
 \end{syntax}
 \noindent The type of the resulting range expression is the same as that of the
-range appearing as the left operand.  An implicit conversion from
+range appearing as the left operand, but with the \chpl{stridable} parameter
+set to \chpl{true}.  An implicit conversion from
 the type of the right operand to the index type of the operand range
 must be allowed.
 The resulting range has the
@@ -1017,7 +1018,7 @@ proc $range$.aligned : bool
 \end{protohead}
 %REVIEW: better name?
 \begin{protobody}
-Reports whether the range's alignment is \emph{not} ambiguous.
+Reports whether the range's alignment is unambiguous.
 \end{protobody}
 
 \index{ranges!alignedHigh@\chpl{alignedHigh}}
