@@ -2220,9 +2220,9 @@ Highlights
 * revamped 'chpldoc' and used it to create web docs for all standard modules
   (see https://chapel-lang.org/docs/latest/)
 * added a new FileSystem standard module supporting operations on files/dirs
-  (see https://chapel-lang.org/docs/latest/modules/standard/FileSystem.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * added a new FFTW standard module supporting key FFTW routines
-  (see https://chapel-lang.org/docs/latest/modules/standard/FFTW.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FFTW.html)
 * added task intents to forall loops, plus new intents such as 'in' and 'reduce'
   (see 'Semantic Changes' and 'New Features' sections below)
 * added support for standalone parallel iterators, used by non-zippered foralls
@@ -2313,31 +2313,31 @@ New Interoperability Features
 Standard Library/Modules
 ------------------------
 * added a new module, FileSystem, containing numerous file system operations
-  (see https://chapel-lang.org/docs/latest/modules/standard/FileSystem.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * added support for key 64-bit FFTW routines (single- and multi-threaded)
-  (see https://chapel-lang.org/docs/latest/modules/standard/FFTW.html and
-   https://chapel-lang.org/docs/latest/modules/standard/FFTW_MT.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FFTW.html and
+   https://chapel-lang.org/docs/1.11/modules/standard/FFTW_MT.html)
 * added parity() and rotate() operations to the BitOps module
-  (see https://chapel-lang.org/docs/latest/modules/standard/BitOps.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/BitOps.html)
 * added parallel versions of the glob(), walkdirs(), and findfiles() iterators
-  (see https://chapel-lang.org/docs/latest/modules/standard/FileSystem.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * started a new module, Path, supporting realPath(), curDir, parentDir, pathSep
-  (see https://chapel-lang.org/docs/latest/modules/standard/Path.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Path.html)
 * added a new module, Assert, defining a simple assertion capability
-  (see https://chapel-lang.org/docs/latest/modules/standard/Assert.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Assert.html)
 * added support for C types c_ptrdiff, c_uintptr, and c_intptr to SysCTypes.chpl
-  (see https://chapel-lang.org/docs/latest/modules/standard/gen/doc/SysCTypes.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/gen/doc/SysCTypes.html)
 * changed cwd() and chdir() from standalone functions to locale methods
-  (see https://chapel-lang.org/docs/latest/modules/standard/FileSystem.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * made mkdir(parents=true) behave more like 'mkdir -p'
 * added a .safeCast() method to integer types to value-check downcasts
-  (see https://chapel-lang.org/docs/latest/modules/standard/Types.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Types.html)
 * changed min(t) and max(t) to return 'param' values for integral types 't'
-  (see https://chapel-lang.org/docs/latest/modules/standard/Types.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Types.html)
 * parameterized RandomStream by an 'eltType' and updated its methods accordingly
-  (see https://chapel-lang.org/docs/latest/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Random.html)
 * removed the parSafe arguments from RandomStream's methods in the Random module
-  (see https://chapel-lang.org/docs/latest/modules/standard/Random.html)
+  (see https://chapel-lang.org/docs/1.11/modules/standard/Random.html)
 * added support for escaping pattern-style format strings using %{}
   (e.g., "writef("#%{##}", 10)" => "#10")
 * added support for readf()/writef() of octal values
