@@ -1387,12 +1387,7 @@ iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standa
 // array
 //
 pragma "no copy return"
-proc _array.noFluffView() {
-  var a = _value.dsiNoFluffView();
-  return _newArray(a);
-}
-
-proc StencilArr.dsiNoFluffView() {
+proc StencilArr.noFluffView() {
   var tempDist = new Stencil(dom.dist.boundingBox, dom.dist.targetLocales,
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
@@ -1408,12 +1403,7 @@ proc StencilArr.dsiNoFluffView() {
   alias.myLocArr = this.myLocArr;
 
   newDom.add_arr(alias, locking=false);
-  return alias;
-}
-
-// wrapper
-proc _array.updateFluff() {
-  _value.dsiUpdateFluff();
+  return _newArray(alias);
 }
 
 //
@@ -1559,7 +1549,7 @@ proc StencilArr.shouldDoPackedUpdate() param : bool {
 // approach. What we really want is to do a naive transfer if the periodic
 // neighbor is the current locale.
 //
-proc StencilArr.dsiUpdateFluff() {
+proc StencilArr.updateFluff() {
   if isZeroTuple(dom.fluff) then return;
 
   if shouldDoPackedUpdate() && dom.dist.targetLocales.size > 1 {

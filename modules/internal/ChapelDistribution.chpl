@@ -750,9 +750,6 @@ module ChapelDistribution {
 
     proc dsiSupportsBulkTransfer() param return false;
     proc doiCanBulkTransfer() param return false;
-    proc doiBulkTransfer(B, viewDom) {
-      halt("This array type does not support bulk transfer.");
-    }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
     proc isDefaultRectangular() param return false;
