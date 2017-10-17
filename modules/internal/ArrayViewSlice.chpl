@@ -228,7 +228,7 @@ module ArrayViewSlice {
     //
     // bulk-transfer
     //
-    // If these methods were nonexistant, calls to these methods would use
+    // If these methods were nonexistent, calls to these methods would use
     // BaseArr's implementation instead of arr's.
     //
     proc dsiSupportsBulkTransfer() param {
