@@ -17,7 +17,7 @@ enable more features, such as distributed memory execution.
    tools and packages you may need to have installed to build and run Chapel.
 
 1) If you don't already have Chapel 1.16, see
-   http://chapel.cray.com/download.html .
+   https://chapel-lang.org/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
    configuration. The *quickstart* script used below is designed to help you
@@ -162,7 +162,7 @@ What's next?
 For more information about Chapel, refer to the following resources:
 
 ============================ ==================================================
-Online documentation:        :ref:`chapel.cray.com/docs <chapel-documentation>`
+Online documentation:        :ref:`chapel-lang.org/docs <chapel-documentation>`
 Platform-specific notes:     :ref:`../platforms <platforms-index>`
 Example Chapel programs:     ``$CHPL_HOME/examples/README``
 Setting Chapel env vars:     :ref:`chplenv.rst <readme-chplenv>`

@@ -4,7 +4,7 @@ Chapel Documentation
 This directory contains Chapel's documentation in two formats:
 
 ``html/`` contains a web-rendered format of the documentation, which reflects
-the online documentation hosted at ``http://chapel.cray.com/docs``. This can be
+the online documentation hosted at ``https://chapel-lang.org/docs``. This can be
 viewed by pointing a web browser of your choice to ``html/index.html``.
 
 ``rst/`` contains the documentation in the format of reStructuredText (rst), a

@@ -7,7 +7,7 @@
  * waiting for flight home from HPLS workshop.  Updated since then to
  * reflect syntax changes and language improvements.
  *
- * For more information, see http://chapel.cray.com
+ * For more information, see https://chapel-lang.org
  *
  * Notes: 
  * o as in all good parallel computations, boundary conditions

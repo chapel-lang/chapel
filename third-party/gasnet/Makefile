@@ -6,14 +6,18 @@ export CHPL_COMM=gasnet
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
+ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
+endif
 
-# pshm can only be used with CHPL_GASNET_SEGMENT={fast,large} and the
-# udp conduit, but there it lowers nightly testing time by 20% and the
-# reduced overhead helps expose races.  Enable it for that case and
-# disable it in all others.
+# PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
+# on the same node to communicate through shared memory instead of the real
+# conduit. In "production" we only run a single gasnet client per node so this
+# doesn't help, but for smp it's required, and we've noticed faster testing
+# times since we do local spawning, which will result in multiple gasnet
+# clients on the same node. Note that pshm only works with segment fast/large.
 SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
-ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large))
+ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm

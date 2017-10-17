@@ -1,21 +1,28 @@
 use LayoutCS;
 
-config param useCS = false;
+config const useCS = false;
 
 const D = {1..10, 1..10};
-const D2 = D by 2;
-var SD: if useCS then sparse subdomain(D2) dmapped CS()
-                 else sparse subdomain(D2);
 
-SD += (1,1);
-SD += (5,3);
+var SDdefault: sparse subdomain(D);
+var SDCS: sparse subdomain(D) dmapped CS();
 
-var A: [SD] real;
+if useCS then
+  foo(SDCS);
+else
+  foo(SDdefault);
 
-for ij in SD do
-  writeln("A[",ij,"] = ", A[ij]);
+proc foo(ref SD) {
+  SD += (1,1);
+  SD += (5,3);
 
-SD += (0,0);
+  var A: [SD] real;
 
-for ij in SD do
-  writeln("A[",ij,"] = ", A[ij]);
+  for ij in SD do
+    writeln("A[",ij,"] = ", A[ij]);
+
+  SD += (0,0);
+
+  for ij in SD do
+    writeln("A[",ij,"] = ", A[ij]);
+}

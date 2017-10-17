@@ -16,7 +16,7 @@ def get():
         segment_val = overrides.get('CHPL_GASNET_SEGMENT')
         if not segment_val:
             substrate_val = chpl_comm_substrate.get()
-            if substrate_val == 'portals' or substrate_val == 'gemini' or substrate_val == 'aries':
+            if substrate_val in ('portals', 'gemini', 'aries', 'smp'):
                 segment_val = 'fast'
             elif substrate_val == 'ibv':
                 segment_val = 'large'

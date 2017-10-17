@@ -1,0 +1,13 @@
+bug: should be able to init record fields that have const fields
+
+If a record has a const field, we should still be able to store
+members of it and to initialize that field, but our current reliance
+on assignment for record initialization shows that we can't do this
+today.
+
+The prevailing theory is that this is due to the fact that the record
+doesn't define an initializer and so today is getting a
+compiler-generated _constructor_ which doesn't support copy
+initialization.  The theory is that once the compiler is generating
+initializers, all will be better.  That said, I can't seem to get the
+test working by providing an explicit initializer either.

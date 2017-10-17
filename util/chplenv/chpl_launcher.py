@@ -44,7 +44,9 @@ def get():
             launcher_val = 'marenostrum'
         elif comm_val == 'gasnet':
             substrate_val = chpl_comm_substrate.get()
-            if substrate_val == 'udp':
+            if substrate_val == 'smp':
+                launcher_val = 'smp'
+            elif substrate_val == 'udp':
                 launcher_val = 'amudprun'
             elif substrate_val == 'mpi':
                 launcher_val = 'gasnetrun_mpi'

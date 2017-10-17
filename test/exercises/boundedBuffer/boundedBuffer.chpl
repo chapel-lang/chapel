@@ -187,7 +187,7 @@ proc consumer(b: BoundedBuffer, cid: int) {
 // with atomics before, refer to the online documentation or ask one
 // of the helpers for a hint:
 //
-//   http://chapel.cray.com/docs/latest/builtins/Atomics.html
+//   https://chapel-lang.org/docs/latest/builtins/internal/Atomics.html
 //
 // STEP 5 (optional): Compare the performance of your two versions
 // (note: you may want to turn off the --noisy and/or --verbose

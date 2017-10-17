@@ -1,6 +1,6 @@
 # IMSuite: IIT Madras Benchmark Suite for Simulating Distributed Algorithms
 
-http://www.cse.iitm.ac.in/~suyash/imsuite/
+http://www.cse.iitm.ac.in/~krishna/imsuite/
 
 IMSuite implements some of the classical distributed algorithms. These classical
 algorithms cover important characteristics of distributed systems such as communication

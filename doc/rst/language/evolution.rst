@@ -539,7 +539,7 @@ reflect what we think it intuitive to users and correct what is viewed in many
 circles to be a regrettable mistake in C. At the same time, we changed the
 binding of ``in`` and ``..`` to support some other Chapel idioms more naturally,
 like ``1..10 == 1..10``. To see the current operator precedence, refer to the
-:download:Quick Reference <http://chapel.cray.com/spec/quickReference.pdf> sheet.
+:download:Quick Reference <https://chapel-lang.org/spec/quickReference.pdf> sheet.
 
 improved interpretation of {D}
 ******************************

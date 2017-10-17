@@ -422,7 +422,7 @@
 %type <pdefexpr> formal enum_item
 %type <pdefexpr> query_expr opt_query_expr
 
-%type <pcallexpr> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
+%type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
 %type <pcallexpr> opt_actual_ls actual_ls
 %type <pcallexpr> opt_task_intent_ls task_intent_ls task_intent_clause
 %type <pcallexpr> forall_intent_clause forall_intent_ls
@@ -480,7 +480,7 @@ stmt:
 | TBREAK opt_ident TSEMI               { $$ = buildGotoStmt(GOTO_BREAK, $2); }
 | TCOBEGIN opt_task_intent_ls block_stmt { $$ = buildCobeginStmt($2, $3);  }
 | TCONTINUE opt_ident TSEMI            { $$ = buildGotoStmt(GOTO_CONTINUE, $2); }
-| TDELETE expr TSEMI                   { $$ = buildPrimitiveStmt(PRIM_DELETE, $2); }
+| TDELETE simple_expr_ls TSEMI         { $$ = buildDeleteStmt($2); }
 | TLABEL ident stmt                    { $$ = buildLabelStmt($2, $3); }
 | TLOCAL expr do_stmt                  { $$ = buildLocalStmt($2, $3); }
 | TLOCAL do_stmt                       { $$ = buildLocalStmt($2); }
@@ -1380,6 +1380,11 @@ expr_ls:
 | query_expr                 { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
 | expr_ls TCOMMA expr        { $1->insertAtTail($3); }
 | expr_ls TCOMMA query_expr  { $1->insertAtTail($3); }
+;
+
+simple_expr_ls:
+  expr                             { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1);}
+| simple_expr_ls TCOMMA expr       { $1->insertAtTail($3); }
 ;
 
 tuple_component:

@@ -275,7 +275,6 @@ void checkPrimitives()
      case PRIM_BLOCK_COFORALL_ON:
      case PRIM_BLOCK_LOCAL:             // BlockStmt::blockInfo - local block
      case PRIM_BLOCK_UNLOCAL:           // BlockStmt::blockInfo - unlocal local block
-     case PRIM_DELETE:
      case PRIM_CALL_DESTRUCTOR:         // call destructor on type (do not free)
      case PRIM_LOGICAL_FOLDER:          // Help fold logical && and ||
      case PRIM_WIDE_GET_LOCALE:         // Returns the "locale" portion of a wide pointer.

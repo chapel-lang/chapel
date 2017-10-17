@@ -346,7 +346,6 @@ classifyPrimitive(CallExpr *call) {
     // here until they are proven fast.
   case PRIM_TO_LEADER:
   case PRIM_TO_FOLLOWER:
-  case PRIM_DELETE:
   case PRIM_CALL_DESTRUCTOR:
   case PRIM_HEAP_REGISTER_GLOBAL_VAR:
   case PRIM_HEAP_BROADCAST_GLOBAL_VARS:

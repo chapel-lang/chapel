@@ -18,7 +18,7 @@ defining every corner case in the language.
    This users guide is a work-in-progress.  We are writing it in a
    breadth-first manner in order to cover features that are more
    unique to Chapel sooner.  If you're not already using the `master
-   branch <http://chapel.cray.com/docs/master/users-guide/>`_ of the
+   branch <https://chapel-lang.org/docs/master/users-guide/>`_ of the
    documentation (which tracks real-time GitHub development), you may
    find that it contains a more complete set of sections.  We welcome
    feedback and requests on the guide as we go.

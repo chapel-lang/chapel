@@ -1275,6 +1275,11 @@ module ChapelBase {
       chpl_here_free(__primitive("_wide_get_addr", arg));
   }
 
+  proc chpl__delete(arr: []) {
+    forall a in arr do
+      chpl__delete(a);
+  }
+
   // report an error when 'delete' is inappropriate
   proc chpl__delete(arg) {
     if isRecord(arg) then
@@ -1283,6 +1288,13 @@ module ChapelBase {
     else
       compilerError("'delete' is not allowed on non-class type ",
                     arg.type:string);
+  }
+
+  // delete two or more things
+  inline proc chpl__delete(arg, args...) {
+    chpl__delete(arg);
+    for param i in 1..args.size do
+      chpl__delete(args(i));
   }
 
   // c_void_ptr operations
