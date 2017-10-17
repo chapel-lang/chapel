@@ -175,8 +175,6 @@ enum PrimitiveTag {
   PRIM_TO_FOLLOWER,
   PRIM_TO_STANDALONE,
 
-  PRIM_DELETE,
-
   PRIM_CALL_DESTRUCTOR,         // call destructor on type (do not free)
 
   PRIM_LOGICAL_FOLDER,          // Help fold logical && and ||

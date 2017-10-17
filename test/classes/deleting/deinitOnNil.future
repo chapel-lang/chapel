@@ -1,0 +1,5 @@
+bug: deinit() called on nil class references
+
+This test shows that we're currently calling deinit() on nil class
+references even though the spec says we don't (and its example shows
+that we do... :(

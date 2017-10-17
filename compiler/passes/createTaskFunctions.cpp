@@ -345,7 +345,7 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
   // Doing insertAfter() calls in reverse order.
   // Can't insertBefore() on tailAnchor->next - that can be NULL.
-  tailAnchor->insertAfter("'delete'(%S)",
+  tailAnchor->insertAfter("chpl__delete(%S)",
                          globalOp);
   tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
                          origSym, gMethodToken, globalOp);
