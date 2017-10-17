@@ -700,8 +700,10 @@ proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   var c = new SparseBlockDom(rank=rank, idxType=idxType,
-      sparseLayoutType=sparseLayoutType, dist=privdist, whole=whole,
-      parentDom=parentDom);
+                             sparseLayoutType=sparseLayoutType,
+                             stridable=parentDom.stridable, dist=privdist,
+                             whole=whole,
+                             parentDom=parentDom);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};

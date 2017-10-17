@@ -145,8 +145,8 @@ module ChapelRange {
     var _low: idxType = 1;                         // lower bound
     var _high: idxType = 0;                        // upper bound
     var _stride = if stridable then 1:strType else _void; // signed stride
-    var _alignment: idxType = 0;                   // alignment
-    var _aligned : bool = false;
+    var _alignment: if stridable then idxType else void;  // alignment
+    var _aligned : if stridable then bool else void;
 
     proc strType type  return indexToStrideType(idxType);
 
@@ -177,14 +177,36 @@ module ChapelRange {
   {
     this._low = _low;
     this._high = _high;
-    if stridable then this._stride = _stride;
-    this._alignment = _alignment;
+    if stridable {
+      this._stride = _stride;
+      this._alignment = _alignment;
+      this._aligned = _aligned;
+    }
+
 
     // todo: remove the check for boundsChecking once assert is no-op upon --fast
     if !stridable && boundsChecking then
       assert(_stride == 1);
+  }
 
-    this._aligned = _aligned;
+    pragma "no doc"
+  proc range.range(type idxType = int,
+                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                   param stridable : bool = false,
+                   _low : idxType = 1,
+                   _high : idxType = 0,
+                   _stride : indexToStrideType(idxType) = 1,
+                   _alignment : void,
+                   _aligned /* : void | bool */)
+  {
+    this._low = _low;
+    this._high = _high;
+    if stridable then
+      compilerError("non-stridable range constructor called with stridable=true");
+    else
+      if boundsChecking then
+        // todo: remove the check for boundsChecking once assert is no-op upon --fast
+        assert(_stride == 1);
   }
 
   /////////////////////////////////
@@ -271,10 +293,23 @@ module ChapelRange {
   proc range.stride param where !stridable return 1 : strType;
 
   /* Returns the alignment of the range */
-  inline proc range.alignment return _alignment;
+  inline proc range.alignment where stridable return _alignment;
+  pragma "no doc"
+  proc range.alignment where !stridable && hasLowBound() return low;
+  pragma "no doc"
+  proc range.alignment param return 0;
 
   /* Returns true if the range is aligned */
-  inline proc range.aligned   return _aligned;
+  inline proc range.aligned where stridable return _aligned;
+
+  pragma "no doc"
+  proc range.aligned param where !stridable &&
+                                 (boundedType == BoundedRangeType.bounded ||
+                                  boundedType == BoundedRangeType.boundedLow)
+    return true;
+  pragma "no doc"
+  proc range.aligned param /* !stridable && (boundedHigh || boundedNone) */
+    return false;
 
   /* Return the first element in the sequence the range represents */
   inline proc range.first {
@@ -300,10 +335,11 @@ module ChapelRange {
      undefined (does not exist), the behavior is undefined.
    */
   inline proc range.alignedLow : idxType {
-    if ! stridable then return _low;
-
-    // Adjust _low upward by the difference between _alignment and _low.
-    return _low + chpl__diffMod(_alignment, _low, stride);
+    if !stridable then
+      return _low;
+    else
+      // Adjust _low upward by the difference between _alignment and _low.
+      return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
   /* Returns the range's aligned high bound. If the aligned high bound is
@@ -311,10 +347,11 @@ module ChapelRange {
    */
   // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
-    if ! stridable then return _high;
-
-    // Adjust _high downward by the difference between _high and _alignment.
-    return _high - chpl__diffMod(_high, _alignment, stride);
+    if ! stridable then
+      return _high;
+    else
+      // Adjust _high downward by the difference between _high and _alignment.
+      return _high - chpl__diffMod(_high, _alignment, stride);
   }
 
   /* If the sequence represented by the range is empty, return true.  An
@@ -374,7 +411,7 @@ module ChapelRange {
 
   /* Returns true if this range is naturally aligned, false otherwise */
   proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.bounded
+    where stridable && this.boundedType == BoundedRangeType.bounded
   {
     // If the stride is positive, we must be aligned on the low bound.
     if stride > 0 then return this.alignedLow == _low;
@@ -385,24 +422,39 @@ module ChapelRange {
   }
 
   pragma "no doc"
+  inline proc range.isNaturallyAligned() param
+    where !stridable && this.boundedType == BoundedRangeType.bounded
+  {
+    return true;
+  }
+
+  pragma "no doc"
   inline proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.boundedLow
+    where !stridable && this.boundedType == BoundedRangeType.boundedLow
   {
     return this.alignedLow == _low;
   }
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
-    where this.boundedType == BoundedRangeType.boundedHigh
+    where stridable && this.boundedType == BoundedRangeType.boundedLow
   {
-    return this.alignedHigh == _high;
+    return stride > 0 && this.alignedLow == _low;
+  }
+
+  pragma "no doc"
+  inline proc range.isNaturallyAligned() param
+    where this.boundedType == BoundedRangeType.boundedNone ||
+          !stridable && this.boundedType == BoundedRangeType.boundedHigh
+  {
+    return false;
   }
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
+    where stridable && this.boundedType == BoundedRangeType.boundedHigh
   {
-    if _alignment == 0 then return true;
-    return false;
+    return stride < 0 && this.alignedHigh == _high;
   }
 
   /* Returns true if the range is ambiguously aligned, false otherwise */
@@ -544,14 +596,15 @@ proc range.safeCast(type t) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = this.stride;
+    tmp._alignment = this.alignment.safeCast(tmp.idxType);
+    tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     halt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
   tmp._low = this.low.safeCast(tmp.idxType);
   tmp._high = this.high.safeCast(tmp.idxType);
-  tmp._alignment = this.alignment.safeCast(tmp.idxType);
-  tmp._aligned = this.aligned;
+
   return tmp;
 }
 
@@ -569,12 +622,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   if tmp.stridable {
     tmp._stride = r.stride;
+    tmp._alignment = r.alignment: tmp.idxType;
+    tmp._aligned = r.aligned;
   }
 
   tmp._low = r.low: tmp.idxType;
   tmp._high = r.high: tmp.idxType;
-  tmp._alignment = r.alignment: tmp.idxType;
-  tmp._aligned = r.aligned;
   return tmp;
 }
 
@@ -606,7 +659,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
                           other.stride,
-                          other._alignment,
+                          other.alignment,
                           true);
 
     return (boundedOther.length == 0) || member(boundedOther);
@@ -767,13 +820,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 - i, stride, _effAlmt(), _aligned);
+                       _low, _low - 1 - i, stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       _high + 1 - i, _high, stride, _effAlmt(), _aligned);
+                       _high + 1 - i, _high, stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), _aligned);
+                     _low, _high, stride, _effAlmt(), aligned);
   }
 
   pragma "no doc"
@@ -800,13 +853,13 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     if i < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low + i, _low - 1, stride, _effAlmt(), _aligned);
+                       _low + i, _low - 1, stride, _effAlmt(), aligned);
     if i > 0 then
       return new range(idxType, boundedType, stridable,
-                       _high + 1, _high + i, stride, _effAlmt(), _aligned);
+                       _high + 1, _high + i, stride, _effAlmt(), aligned);
     // if i == 0 then
     return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), _aligned);
+                     _low, _high, stride, _effAlmt(), aligned);
   }
 
   // Returns an expanded range, or a contracted range if i < 0.
@@ -879,8 +932,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     r1._low = r2._low;
     r1._high = r2._high;
 
-    r1._alignment = r2._alignment;
-    r1._aligned = r2._aligned;
+    if s1 {
+      r1._alignment = r2.alignment;
+      r1._aligned = r2.aligned;
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////////
@@ -897,7 +952,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     return new range(resultType, b, s,
                      r._low + i, r._high + i,
-           r.stride : strType, r._alignment + i : resultType, r._aligned);
+           r.stride : strType, r.alignment + i : resultType, r.aligned);
   }
 
   inline proc +(i:integral, r: range(?e,?b,?s))
@@ -910,7 +965,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
-           r.stride : strType, r._alignment - i : resultType, r._aligned);
+           r.stride : strType, r.alignment - i : resultType, r.aligned);
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -969,12 +1024,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           st: r.strType = r.stride * step:r.strType;
 
     const (ald, alt): (bool, i) =
-      if r.isAmbiguous() then                   (false, r.alignment)
+      if r.isAmbiguous() then
+        if r.stridable then (false, r.alignment)
+                       else (false, 0:r.idxType)                            
       else
         // we could talk about aligned bounds
         if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
         else if r.hasHighBound() && st < 0 then (true, r.alignedHigh)
-        else                                    (r.aligned, r.alignment);
+        else
+          if r.stridable then (r.aligned, r.alignment)
+                         else (false, 0:r.idxType);
 
     return new range(i, b, true,  lw, hh, st, alt, ald);
   }
@@ -1025,7 +1084,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   {
     // Note that aligning an unstrided range will set the field value,
     // but has no effect on the index set produced (a mod 1 == 0).
-    return new range(i, b, s,
+    return new range(i, b, true,
                      r._low, r._high, r.stride, algn, true);
   }
 
@@ -1047,10 +1106,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   /* Returns a range whose alignment is this range's first index plus ``n``.
      If the range has no first index, a runtime error is generated.
    */
-  proc range.offset(offs : idxType)
+  proc range.offset(in offs : idxType)
   {
-    if !stridable then
+    if !stridable {
       compilerWarning("invoking 'offset' on an unstrided range has no effect.");
+      offs = 0;
+    }
 
     if !hasFirst() then
       halt("invoking 'offset' on a range without the first index");
@@ -1207,11 +1268,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            newhi,
                            newStride,
                            0,
-                           !ambig && (this._aligned || other._aligned));
+                           !ambig && (this.aligned || other.aligned));
 
     if result.stridable {
-      var al1 = (this._alignment % st1:idxType):int;
-      var al2 = (other._alignment % st2:other.idxType):int;
+      var al1 = (this.alignment % st1:idxType):int;
+      var al2 = (other.alignment % st2:other.idxType):int;
 
       if (al2 - al1) % g != 0 then
       {
@@ -1325,9 +1386,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      stridable = r.stridable,
                      _low = lo,
                      _high = hi,
-                     _stride = r.stride : strType,
-                     _alignment = r._alignment,
-                     _aligned = r._aligned);
+                     _stride = if r.stridable then (r.stride: strType)
+                                            else _void,
+                     _alignment = if r.stridable then r._alignment else _void,
+                     _aligned = if r.stridable then r._aligned else _void);
   }
 
   proc #(r:range(?i), count:chpl__signedType(i)) {
@@ -1978,14 +2040,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if !(alignCheckRange.isNaturallyAligned()) then
-        ret += " align " + chpl__mod(x._alignment, x.stride);
+        ret += " align " + chpl__mod(x.alignment, x.stride);
     return ret;
   }
 
   pragma "no doc"
   proc ref range.normalizeAlignment()
   {
-    if !aligned {
+    if stridable && !aligned {
       _alignment =
         if isBoundedRange(this) then
           (if stride > 0 then _low else _high)
@@ -2022,8 +2084,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if f.writing {
-      if ! alignCheckRange.isNaturallyAligned() then
-        f <~> new ioLiteral(" align ") <~> chpl__mod(_alignment, stride);
+      if ! alignCheckRange.isNaturallyAligned() && aligned then
+        f <~> new ioLiteral(" align ") <~> chpl__mod(alignment, stride);
     } else {
       // try reading an 'align'
       if !f.error() {
@@ -2032,10 +2094,14 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           // naturally aligned.
           f.clearError();
         } else {
-          // un-naturally aligned - read the un-natural alignment
-          var a: idxType;
-          f <~> a;
-          _alignment = a;
+          if stridable {
+            // un-naturally aligned - read the un-natural alignment
+            var a: idxType;
+            f <~> a;
+            _alignment = a;
+          } else {
+            halt("Trying to read an aligned range value into a non-stridable array");
+          }
         }
       }
     }

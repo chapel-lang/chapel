@@ -664,10 +664,11 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
     r1._high      = r2._high: r1.idxType;
-    if r1.stridable then
+    if r1.stridable {
       r1._stride  = r2.stride: r1.strType;
-    r1._alignment = r2._alignment: r1.idxType;
-    r1._aligned = r2._aligned;
+      r1._alignment = r2._alignment: r1.idxType;
+      r1._aligned = r2._aligned;
+    }
   }
 
   // todo: make a cheaper densify() for this case, where
