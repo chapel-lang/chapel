@@ -182,7 +182,7 @@ proc main() {
   // balanced since some pixels result in far more pixel bounces than
   // others.  Can you achieve a speed improvement by applying the
   // dynamic() iterator from the DynamicIters module:
-  // http://chapel.cray.com/docs/latest/modules/standard/DynamicIters.html
+  // https://chapel-lang.org/docs/latest/modules/standard/DynamicIters.html
   // Do you need to create a more load-imbalanced scene (or increase
   // the value of 'maxRayDepth') in order to see a noticeable
   // difference?

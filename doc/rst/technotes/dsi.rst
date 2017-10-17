@@ -61,7 +61,7 @@ information on domain maps in general.
 
     The high level motivation and overview of DSI.
 
-    http://chapel.cray.com/publications/hotpar10-final.pdf
+    https://chapel-lang.org/publications/hotpar10-final.pdf
 
 - "Authoring User-Defined Domain Maps in Chapel."  Bradford
   L. Chamberlain, Sung-Eun Choi, Steven J. Deitz, David Iten, Vassily
@@ -69,7 +69,7 @@ information on domain maps in general.
 
     A follow-on paper that outlines how to write a domain map.
 
-    http://chapel.cray.com/publications/cug11-final.pdf
+    https://chapel-lang.org/publications/cug11-final.pdf
 
 
 ========

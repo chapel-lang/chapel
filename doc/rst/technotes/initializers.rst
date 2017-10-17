@@ -359,7 +359,7 @@ Please report any bugs encountered using the guidance described at the `bugs`_
 page.
 
 .. _bugs:
-   http://chapel.cray.com/docs/latest/usingchapel/bugs.html
+   https://chapel-lang.org/docs/latest/usingchapel/bugs.html
 
 Compiler Generated Initializers
 +++++++++++++++++++++++++++++++

@@ -26,7 +26,7 @@ and save it into a file, say ``hello.chpl``, you'll have written your
 first Chapel program.
 
 Given a working Chapel compiler (see `Downloading Chapel
-<http://chapel.cray.com/download.html>`_ for details), you can compile
+<https://chapel-lang.org/download.html>`_ for details), you can compile
 the program using::
 
     chpl hello.chpl -o hello

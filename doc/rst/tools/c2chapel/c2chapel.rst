@@ -117,7 +117,7 @@ Future Work
 ``c2chapel`` does not currently handle the entirety of C99, so some human
 intervention may be required (e.g. commenting out unhandled portions of the
 file). There are also some limitations based on Chapel's extern capability.
-See http://chapel.cray.com/bugs.html for instructions on reporting bugs.
+See https://chapel-lang.org/bugs.html for instructions on reporting bugs.
 
 Known issues:
 

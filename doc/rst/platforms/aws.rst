@@ -56,7 +56,7 @@ Once connected to the instance via ssh, do the following:
 
   - Build with ``CHPL_COMM=gasnet`` if you plan to run multilocale programs
 
-.. _Download: http://chapel.cray.com/download.html
+.. _Download: https://chapel-lang.org/download.html
 
 
 Running multilocale Chapel programs
