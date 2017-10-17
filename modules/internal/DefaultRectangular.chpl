@@ -1583,10 +1583,6 @@ module DefaultRectangular {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("isDataContiguous return False");
       return false;
-    } else if !defRectSimpleDData {
-      return A.mdParDim == B.mdParDim &&
-             A.mdNumChunks == B.mdNumChunks &&
-             A.mdRLen == B.mdRLen;
     }
     return true;
   }
@@ -1627,7 +1623,6 @@ module DefaultRectangular {
 
   private proc _simpleTransfer(A, aView, B, bView) {
     param rank     = A.rank;
-    const mdParDim = A.mdParDim;
     type idxType   = A.idxType;
     type eltType   = A.eltType;
 
@@ -1654,8 +1649,8 @@ module DefaultRectangular {
               ", len=", len, ", elemSize=", elemSize);
     }
 
-    const Aidx = getDataIndex(Alo);
-    const Adata = _ddata_shift(eltType, this.theData, Aidx);
+    const Aidx = A.getDataIndex(Alo);
+    const Adata = _ddata_shift(eltType, A.theData, Aidx);
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(eltType, B.theData, Bidx);
     _simpleTransferHelper(A, B, Adata, Bdata, len);
