@@ -12,7 +12,7 @@ class C {
 writeln("---");
 {
   var A: [1..3] C;
-  
+
   delete A;
 }
 writeln("---");
