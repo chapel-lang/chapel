@@ -1263,16 +1263,20 @@ module ChapelBase {
 
   // implements 'delete' statement
   inline proc chpl__delete(arg)
-    where isClassType(arg.type) || isExternClassType(arg.type)
-  {
+    where isClassType(arg.type) || isExternClassType(arg.type) {
+
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
+
     if arg.type == _nilType then
       compilerError("should not delete 'nil'");
 
-    arg.deinit();
-    on arg do
-      chpl_here_free(__primitive("_wide_get_addr", arg));
+    if (arg != nil) {
+      arg.deinit();
+
+      on arg do
+        chpl_here_free(__primitive("_wide_get_addr", arg));
+    }
   }
 
   proc chpl__delete(arr: []) {
