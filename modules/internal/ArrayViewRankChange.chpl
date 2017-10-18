@@ -443,7 +443,9 @@ module ArrayViewRankChange {
     const ownsArrInstance = false;
 
     // Forward all unhandled methods to underlying privatized array
-    forwarding arr except these;
+    forwarding arr except these,
+                      doiBulkTransferFromKnown, doiBulkTransferToKnown,
+                      doiBulkTransferFromAny,  doiBulkTransferToAny;
 
 
     //

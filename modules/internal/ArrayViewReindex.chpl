@@ -339,7 +339,9 @@ module ArrayViewReindex {
 
     const ownsArrInstance = false;
 
-    forwarding arr except these;
+    forwarding arr except these,
+                      doiBulkTransferFromKnown, doiBulkTransferToKnown,
+                      doiBulkTransferFromAny,  doiBulkTransferToAny;
 
     proc downdom {
       // TODO: This routine may get a remote domain if this is a view

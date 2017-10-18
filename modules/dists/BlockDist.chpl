@@ -1469,6 +1469,7 @@ proc dropDims(D: domain, dims...) {
 
 private proc canDoAnyToBlock(Dest, destDom, Src, srcDom) param : bool {
   if Dest.rank != Src.rank then return false;
+  use Reflection;
 
   // Does 'Src' support bulk transfers *to* a DefaultRectangular?
   if !canResolveMethod(Src, "doiBulkTransferToKnown", srcDom,

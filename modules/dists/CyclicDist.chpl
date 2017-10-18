@@ -982,6 +982,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
 private proc canDoAnyToCyclic(A, aView, B, bView) param : bool {
   if A.rank != B.rank then return false;
+  use Reflection;
 
   if !canResolveMethod(B, "doiBulkTransferToKnown", bView,
                        A.locArr[A.locArr.domain.first].myElems._value, aView) {
@@ -997,9 +998,6 @@ proc CyclicArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToCyclic(this, destDom, Src, srcDom) {
   if debugCyclicDistBulkTransfer then
     writeln("In CylicDist.doiBulkTransferFromAny");
-
-  if this.oneDData == false then return false;
-  if canResolveMethod(Src, "oneDData") && Src.oneDData == false then return false;
 
   const Dest = this;
   type el    = Dest.idxType;

@@ -49,7 +49,9 @@ module ArrayViewSlice {
     // through the array field above.
     const indexCache = buildIndexCache();
 
-    forwarding arr except these;
+    forwarding arr except these,
+                      doiBulkTransferFromKnown, doiBulkTransferToKnown,
+                      doiBulkTransferFromAny,  doiBulkTransferToAny;
 
 
     //

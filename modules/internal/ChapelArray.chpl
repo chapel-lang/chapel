@@ -2014,7 +2014,9 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except these;
+    forwarding _value except these,
+                      doiBulkTransferFromKnown, doiBulkTransferToKnown,
+                      doiBulkTransferFromAny,  doiBulkTransferToAny;
 
     inline proc _do_destroy() {
       if ! _unowned {
