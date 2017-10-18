@@ -102,6 +102,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #
 # Warnings squashed for compiler/runtime C/C++ code
 #
+#  279 : controlling expression is constant
 #  304 : requires inherited classes to specify access control (e.g. public)
 #  593 : variable was set but never used
 #  810 : numeric conversion may lose significant bits (e.g., long double->float)
@@ -119,7 +120,7 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 
 # 10121 : something to do with setenv?
 
-WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr304,593,810,869,981,1572,1599
+WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -wr111,174,177
