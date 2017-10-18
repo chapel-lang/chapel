@@ -1,0 +1,14 @@
+doit entered
+  in init of R
+    in init of C 1
+
+  (id = 1, c = {})
+
+  (id = 2, c = {})
+
+doit exiting
+  entered deinit of R 2
+    in deinit of C 1
+      entered deinit of R 1
+      exiting deinit of R 1
+  exiting deinit of R 2

@@ -1,7 +1,12 @@
-bug: multiple destructor calls for nested class in record
+bug: A nested class captures outer record by value rather than ref
 
-When defining a class within a record to use as one of its fields, we have a
-bug where the destructor for the record is getting executed multiple times when
-the record leaves scope.  This doesn't occur when the class is declared outside
-the record, or when the record is made into a class and the destructor is called
-manually.
+When defining a class within a record, the class should have
+a reference to the enclosing record so that it can access
+the outer fields.
+
+There is a bug in the compiler that causes instances of
+the class to get a copy of the outer record at the time
+the class is constructed.
+
+In this test we can see two uses of R.deinit(); one for
+the R defined in doit() and the other for the copy.

@@ -4,35 +4,72 @@ record R
 {
   class C
   {
+    proc init()
+    {
+      writeln("    in init of C ", outer.id);
+    }
+
     proc deinit()
     {
-      writeln("in deinit of C");
+      writeln("    in deinit of C ", outer.id);
     }
   }
-  var c : C;
+
+  var id : int;
+  var c  : C;
 
   proc init()
   {
-    writeln("in init of R");
-    c = new C();
+    writeln("  in init of R");
+
+    id = 1;
+    c  = new C();
   }
 
-  proc init(other:R) {
-    // TODO: maybe have way to allow the user to use a compiler generated copy
-    // initializer?
-    this.c = other.c;
+  proc init(other:R)
+  {
+    writeln("  in copy initializer of R ", other.id);
+
+    // TODO: maybe have way to allow the user to use
+    // a compiler generated copy initializer?
+    this.id = other.id + 1;
+    this.c  = other.c;
+
     super.init();
   }
 
   proc deinit()
   {
-    writeln("in deinit of R");
+    if id == 2 then
+      writeln("  entered deinit of R ", id);
+    else
+      writeln("      entered deinit of R ", id);
+
     delete c;
+
+    if id == 2 then
+      writeln("  exiting deinit of R ", id);
+    else
+      writeln("      exiting deinit of R ", id);
   }
 }
 
-proc doit() {
-  var x: R;
+proc doit()
+{
+  writeln("doit entered");
+
+  var x : R;
+
+  writeln();
+  writeln("  ", x);
+
+  x.id = 2;
+
+  writeln();
+  writeln("  ", x);
+
+  writeln();
+  writeln("doit exiting");
 }
 
 doit();
