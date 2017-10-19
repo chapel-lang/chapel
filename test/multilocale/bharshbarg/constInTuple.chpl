@@ -1,5 +1,6 @@
 
 proc helper(const in idx:3*int) {
+  assert(idx.locale == here);
   writeln("Got ", idx);
 }
 
