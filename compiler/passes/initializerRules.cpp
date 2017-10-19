@@ -488,36 +488,33 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     "multiple initializations of field \"%s\"",
                     field->sym->name);
 
-        } else if (state.inLoopBody() == true) {
+        } else if (state.inLoopBody() == true ||
+                   state.inOnInLoopBody() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "loop during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inParallelStmt() == true) {
+        } else if (state.inParallelStmt() == true ||
+                   state.inOnInParallelStmt() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "parallel statement during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inCoforall() == true) {
+        } else if (state.inCoforall() == true ||
+                   state.inOnInCoforall() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "coforall during phase 1 of initialization",
                     field->sym->name);
 
 
-        } else if (state.inForall() == true) {
+        } else if (state.inForall() == true ||
+                   state.inOnInForall() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "forall during phase 1 of initialization",
-                    field->sym->name);
-
-
-        } else if (state.inOn() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside an "
-                    "on block during phase 1 of initialization",
                     field->sym->name);
 
 
