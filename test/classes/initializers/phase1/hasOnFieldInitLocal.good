@@ -1,2 +1,0 @@
-hasOnFieldInitLocal.chpl:4: In initializer:
-hasOnFieldInitLocal.chpl:6: error: can't initialize field "x" inside an on block during phase 1 of initialization
