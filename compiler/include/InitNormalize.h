@@ -74,6 +74,12 @@ public:
   bool            inCoforall()                                           const;
   bool            inForall()                                             const;
   bool            inOn()                                                 const;
+  bool            inOnInLoopBody()                                       const;
+  bool            inOnInCondStmt()                                       const;
+  bool            inOnInParallelStmt()                                   const;
+  bool            inOnInCoforall()                                       const;
+  bool            inOnInForall()                                         const;
+
 
   DefExpr*        currField()                                            const;
 
@@ -164,6 +170,7 @@ private:
   DefExpr*        mCurrField;
   InitPhase       mPhase;
   BlockType       mBlockType;
+  BlockType       mPrevBlockType;
 };
 
 #endif

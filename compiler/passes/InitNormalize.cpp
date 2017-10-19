@@ -39,16 +39,17 @@ static bool isCompoundAssignment(CallExpr* callExpr);
 ************************************** | *************************************/
 
 InitNormalize::InitNormalize(FnSymbol* fn) {
-  mFn         = fn;
-  mCurrField  = firstField(fn);
-  mPhase      = startPhase(fn);
-  mBlockType  = cBlockNormal;
+  mFn            = fn;
+  mCurrField     = firstField(fn);
+  mPhase         = startPhase(fn);
+  mBlockType     = cBlockNormal;
+  mPrevBlockType = cBlockNormal;
 }
 
 InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
+  mFn            = curr.mFn;
+  mCurrField     = curr.mCurrField;
+  mPhase         = curr.mPhase;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
     if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
@@ -74,27 +75,51 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   } else {
     mBlockType = curr.mBlockType;
   }
+
+  if (mBlockType != curr.mBlockType) {
+    mPrevBlockType = curr.mBlockType;
+  } else {
+    mPrevBlockType = curr.mPrevBlockType;
+  }
 }
 
 InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-  mBlockType  = cBlockCond;
+  mFn            = curr.mFn;
+  mCurrField     = curr.mCurrField;
+  mPhase         = curr.mPhase;
+  mBlockType     = cBlockCond;
+
+  if (mBlockType != curr.mBlockType) {
+    mPrevBlockType = curr.mBlockType;
+  } else {
+    mPrevBlockType = curr.mPrevBlockType;
+  }
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-  mBlockType  = cBlockLoop;
+  mFn            = curr.mFn;
+  mCurrField     = curr.mCurrField;
+  mPhase         = curr.mPhase;
+  mBlockType     = cBlockLoop;
+
+  if (mBlockType != curr.mBlockType) {
+    mPrevBlockType = curr.mBlockType;
+  } else {
+    mPrevBlockType = curr.mPrevBlockType;
+  }
 }
 
 InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
-  mFn         = curr.mFn;
-  mCurrField  = curr.mCurrField;
-  mPhase      = curr.mPhase;
-  mBlockType  = cBlockForall;
+  mFn            = curr.mFn;
+  mCurrField     = curr.mCurrField;
+  mPhase         = curr.mPhase;
+  mBlockType     = cBlockForall;
+
+  if (mBlockType != curr.mBlockType) {
+    mPrevBlockType = curr.mBlockType;
+  } else {
+    mPrevBlockType = curr.mPrevBlockType;
+  }
 }
 
 
@@ -184,6 +209,27 @@ bool InitNormalize::inForall() const {
 
 bool InitNormalize::inOn() const {
   return mBlockType == cBlockOn;
+}
+
+bool InitNormalize::inOnInLoopBody() const {
+  return inOn() && mPrevBlockType == cBlockLoop;
+}
+
+bool InitNormalize::inOnInCondStmt() const {
+  return inOn() && mPrevBlockType == cBlockCond;
+}
+
+bool InitNormalize::inOnInParallelStmt() const {
+  return inOn() && (mPrevBlockType == cBlockBegin   ||
+                    mPrevBlockType == cBlockCobegin  );
+}
+
+bool InitNormalize::inOnInCoforall() const {
+  return inOn() && mPrevBlockType == cBlockCoforall;
+}
+
+bool InitNormalize::inOnInForall() const {
+  return inOn() && mPrevBlockType == cBlockForall;
 }
 
 /************************************* | **************************************
