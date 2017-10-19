@@ -86,6 +86,15 @@ span.highlight {
   border-color: black !important;
 }
 
+.annotationInfo {
+  position: absolute;
+  background-color: white;
+  border: 1px solid black;
+  padding: 4px;
+  font-size: 14px;
+  z-index: 1000;
+}
+
 .grayButton {
   background-color: #d8d8d8;
   border: 1px solid black;

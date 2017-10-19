@@ -89,42 +89,8 @@ var branchInfo = [
                     "revision" : -1}
                   ];
 
-var rebootDates = [
-    "2014-06-21",
-    "2014-07-19",
-    "2014-08-16",
-    "2014-09-20",
-    "2014-10-18",
-    "2014-11-15",
-    "2014-12-20",
-    "2015-01-17",
-    "2015-02-21",
-    "2015-03-21",
-];
 
 var indexMap = {};
-
-// NOTE: I wonder if it makes sense to calculate these rebootDates using
-//       something like Datejs. (thomasvandoren, 2015-04-08)
-//
-//  https://cdnjs.com/libraries/datejs
-//
-/* E.g.
-// Find the third Saturday of every month starting with rebootStartMonth and
-// ending with today.
-var rebootDates = [],
-
-    // Starting with June 2014 (months are 0 based in JS).
-    rebootStartMonth = new Date(2014, 5, 1),
-
-    // Set curThirdDate to the third Saturday of the starting month.
-    curThirdDate = rebootStartMonth.moveToNthOccurrence(6, 3);
-
-while (curThirdDate.isBefore(Date.today())) {
-    rebootDates.push(curThirdDate.toString("yyyy-MM-dd"));
-    curThirdDate.addMonths(1).moveToNthOccurrence(6, 3);
-}
-*/
 
 // array of currently displayed graphs
 var gs = [];
@@ -147,6 +113,22 @@ var diffColorForEachConfig = pageTitle.indexOf("16 node XC") >= 0;
 var lastFilterVal = "";
 
 var filterBox = $("[name='filterBox']")[0];
+
+
+// redirect ctrl+f to the filter box
+$(document).keydown(function(e) {
+  // 'metaKey' for OS X
+  if (e.which == 70 && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    $(filterBox).focus();
+  }
+});
+
+function clearFilter() {
+  filterBox.value = "";
+  doFilter();
+  setDygraphPanePos();
+}
 
 // If 'val' is true, disable typing into the filterBox and set the background
 // color to grey. If false, allow typing and set background to white.
@@ -250,6 +232,7 @@ function getNextDivs(afterDiv) {
   var annToggle        = addButtonHelper('annotations');
   var screenshotToggle = addButtonHelper('screenshot');
   var closeGraphToggle = addButtonHelper('close');
+  var resetY           = addButtonHelper('reset Y zoom');
 
   return {
     div: div,
@@ -258,6 +241,7 @@ function getNextDivs(afterDiv) {
     annToggle: annToggle,
     screenshotToggle: screenshotToggle,
     closeGraphToggle: closeGraphToggle,
+    resetY: resetY,
     gspacer: gspacer,
     container: container,
   }
@@ -360,6 +344,7 @@ function genDygraph(graphInfo, graphDivs, graphData, graphLabels, expandInfo) {
     setupAnnToggle(g, graphInfo, graphDivs.annToggle);
     setupScreenshotToggle(g, graphInfo, graphDivs.screenshotToggle);
     setupCloseGraphToggle(g, graphInfo, graphDivs.closeGraphToggle);
+    setupResetYZoom(g, graphInfo, graphDivs.resetY);
 
     g.isReady = true;
 
@@ -442,18 +427,95 @@ function setupLogToggle(g, graphInfo, logToggle) {
   }
 }
 
+function computeInfoLeft(info, box, parentDiv) {
+  var ret  = 0;
+
+  var infoWidth = $(info).width();
+
+  var boxPos    = $(box).position();
+  var boxOff    = $(box).offset();
+  var boxWidth  = $(box).outerWidth();
+
+  var parentPos = $(parentDiv).position();
+  var parentRight = parentPos.left + $(parentDiv).outerWidth();
+
+  if (boxOff.left + infoWidth > parentRight) {
+    // annotation text will overflow, so align to the right, but don't go past the
+    // parent's left side (e.g. the y-axis label).
+    var room = boxOff.left - parentPos.left + boxWidth;
+    room = Math.min(infoWidth, room);
+    ret = boxPos.left - room + boxWidth;
+  } else {
+    // Otherwise align info's left with the box's left
+    ret = boxPos.left;
+  }
+
+  return ret;
+}
+
+function computeGitHubLinks(text) {
+  // Find snippets that look like PRs (e..g (#1234)) and replace them
+  // with links to the corresponding GitHub PR.
+  var re = /\(#([0-9]+)\)/gi;
+  text = text.replace(re, function(m, num) {
+    var url = "https://github.com/chapel-lang/chapel/pull/" + num;
+    return "<a href='" + url + "'>" + m + "</a>";
+  });
+  text = text.replace("\n", "\n<hr/>");
+
+  return text;
+}
+
+function buildAnnotationHovers(container) {
+  $(container).find('.blackAnnotation').each(function(i, box) {
+    var text = box.title;
+    box.title = ""; // disable tooltip
+
+    var info = document.createElement('div');
+    $(info).addClass("annotationInfo");
+
+    info.innerHTML = computeGitHubLinks(text);
+
+    var parentDiv = $(box).parent();
+    $(parentDiv).append(info);
+
+    var boxHeight = $(box).outerHeight();
+    var style = {
+      top: ($(box).position().top + boxHeight - 1) + "px",
+      left: computeInfoLeft(info, box, parentDiv) + "px",
+    };
+    $(info).css(style).hide();
+
+    // Pass both `box` and `info` so that `info` will remain open if the mouse
+    // transitions from `box` to `info`.
+    var els = [box, info];
+    $(els).hover(function() {
+      $(info).show();
+    }, function() {
+      $(info).hide();
+    });
+
+  });
+}
 
 // Setup the annotation button
 function setupAnnToggle(g, graphInfo, annToggle) {
   annToggle.style.visibility = 'visible';
 
   annToggle.onclick = function() {
+    // Get the current Y zoom. We only have one y axis, so we pass '0'
+    var curYZoom = g.yAxisRange(0);
+
+    // Suppress draws to avoid excess annotation-hover-building
     if (g.annotations().length === 0) {
       updateAnnotationsSeries(g);
-      g.setAnnotations(g.graphInfo.annotations);
+      g.setAnnotations(g.graphInfo.annotations, true);
     } else {
-      g.setAnnotations([]);
+      g.setAnnotations([], true);
+      $(g.divs.container).find(".annotationInfo").remove();
     }
+
+    g.updateOptions({ valueRange: curYZoom });
   }
 }
 
@@ -497,6 +559,14 @@ function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
     // apply fns to remove graphs. Do we need to do something else?
     // Should we set the drawCallback to an empty function?
     g.removed = true;
+  }
+}
+
+function setupResetYZoom(g, graphInfo, resetY) {
+  resetY.style.visibility = 'visible';
+
+  resetY.onclick = function() {
+    g.updateOptions({ valueRange: null });
   }
 }
 
@@ -846,6 +916,7 @@ function customDrawCallback(graph, initial) {
         g.updateOptions({ dateWindow: range });
       }
     });
+    buildAnnotationHovers(graph.divs.container);
   }
 }
 
@@ -1574,6 +1645,26 @@ function parseDate(date) {
   } else {
     return moment(date, "YYYY*MM*DD").toDate().getTime();
   }
+}
+
+function lastTwoWeeks() {
+  var end = getTodaysDate('-');
+
+  // Two weeks ago
+  var sd = new Date();
+  sd.setDate(sd.getDate() - 14);
+  var start = dateFormatter(sd, '-');
+
+  var range = [parseDate(start), parseDate(end)];
+
+  setURLFromDate(OptionsEnum.STARTDATE, Dygraph.dateString_(range[0]));
+  setURLFromDate(OptionsEnum.ENDDATE, Dygraph.dateString_(range[1]));
+
+  applyFnToAllGraphs(function(g) {
+    if (g.isReady && differentDateRanges(range, g.xAxisRange())) {
+      g.updateOptions({ dateWindow: range });
+    }
+  });
 }
 
 function dateFormatter(d, delimiter) {

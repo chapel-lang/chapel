@@ -49,12 +49,15 @@
       <div id="buttonMenu">
         <button class="grayButton" onclick="displaySelectedGraphs()">Display</button>
         <button class="grayButton" onclick="clearDates()">Clear Dates</button>
+        <button class="grayButton" onclick="lastTwoWeeks()">Last Two Weeks</button>
 
         <button class="grayButton" onclick="selectAllGraphs()">Select All</button>
         <button class="grayButton" onclick="unselectAllGraphs()">Unselect All</button>
       </div>
 
-      <p>Filter: <input type="text" name="filterBox"></p>
+      <p>Filter: <input type="text" name="filterBox">&nbsp;
+        <button class="grayButton" onclick="clearFilter()" style="padding: 0px 3px 0px 3px">&#x2715;</button>
+      </p>
 
       <div id="graphlist">
         <!-- populated with checkboxes by javascript -->
