@@ -2378,85 +2378,87 @@ static void hack_resolve_types(ArgSymbol* arg) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
+
 static void fixupArrayFormals(FnSymbol* fn) {
   for_formals(arg, fn) {
     if (arg->typeExpr) {
-      // The argument has a type expression
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
 
       // Not sure why we select the tail here....
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
-        // We are building an array type.
-        bool                  noDomain     = isSymExpr(call->get(1)) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
-        DefExpr*              queryDomain  = toDefExpr(call->get(1));
-        bool                  noEltType    = call->numActuals() == 1;
-        DefExpr*              queryEltType = noEltType == false ? toDefExpr(call->get(2)) : NULL;
-        std::vector<SymExpr*> symExprs;
-
-        // Replace the type expression with "_array" to make it generic.
-        arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
-
-        collectSymExprs(fn, symExprs);
-
-        // If we have an element type, replace reference to its symbol with
-        // "arg.eltType", so we use the instantiated element type.
-        if (queryEltType) {
-          for_vector(SymExpr, se, symExprs) {
-            if (se->symbol() == queryEltType->sym) {
-              SET_LINENO(se);
-
-              se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
-            }
-          }
-        } else if (noEltType == false) {
-          // The element type is supplied, but it is null.
-          // Add a new where clause "eltType == arg.eltType".
-          INT_ASSERT(queryEltType == NULL);
-
-          if (fn->where == NULL) {
-            fn->where = new BlockStmt(new SymExpr(gTrue));
-
-            insert_help(fn->where, NULL, fn);
-
-            fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
-          }
-
-          arg->addFlag(FLAG_NOT_FULLY_GENERIC);
-
-          Expr*     oldWhere = fn->where->body.tail;
-          CallExpr* newWhere = new CallExpr("&");
-
-          oldWhere->replace(newWhere);
-
-          newWhere->insertAtTail(oldWhere);
-          newWhere->insertAtTail(new CallExpr("==",
-                                              call->get(2)->remove(),
-                                              new CallExpr(".", arg, new_CStringSymbol("eltType"))));
-        }
-
-        if (queryDomain) {
-          // Array type is built using a domain.
-          // If we match the domain symbol, replace it with arg._dom.
-          for_vector(SymExpr, se, symExprs) {
-            if (se->symbol() == queryDomain->sym) {
-              SET_LINENO(se);
-
-              se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
-            }
-          }
-
-        } else if (noDomain == false) {
-          // The domain argument is supplied but NULL.
-          INT_ASSERT(queryDomain == NULL);
-
-          // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
-          fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
-                                                     new_CStringSymbol("chpl_checkArrArgDoms")),
-                                        call->get(1)->copy(),
-                                        fNoFormalDomainChecks ? gFalse : gTrue));
-        }
+        fixupArrayFormal(fn, arg);
       }
     }
+  }
+}
+
+// Preliminary validation is performed within the caller
+static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
+  BlockStmt*            typeExpr     = formal->typeExpr;
+
+  CallExpr*             call         = toCallExpr(typeExpr->body.tail);
+  bool                  noDomain     = isSymExpr(call->get(1)) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
+  DefExpr*              queryDomain  = toDefExpr(call->get(1));
+  bool                  noEltType    = call->numActuals() == 1;
+  DefExpr*              queryEltType = noEltType == false ? toDefExpr(call->get(2)) : NULL;
+  std::vector<SymExpr*> symExprs;
+
+  // Replace the type expression with "_array" to make it generic.
+  typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
+
+  collectSymExprs(fn, symExprs);
+
+  // If we have an element type, replace reference to its symbol with
+  // "arg.eltType", so we use the instantiated element type.
+  if (queryEltType) {
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == queryEltType->sym) {
+        SET_LINENO(se);
+
+        se->replace(new CallExpr(".", formal, new_CStringSymbol("eltType")));
+      }
+    }
+
+  } else if (noEltType == false) {
+    if (fn->where == NULL) {
+      fn->where = new BlockStmt(new SymExpr(gTrue));
+
+      insert_help(fn->where, NULL, fn);
+
+      fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
+    }
+
+    formal->addFlag(FLAG_NOT_FULLY_GENERIC);
+
+    Expr*     oldWhere = fn->where->body.tail;
+    CallExpr* newWhere = new CallExpr("&");
+
+    oldWhere->replace(newWhere);
+
+    newWhere->insertAtTail(oldWhere);
+    newWhere->insertAtTail(new CallExpr("==",
+                                        call->get(2)->remove(),
+                                        new CallExpr(".", formal, new_CStringSymbol("eltType"))));
+  }
+
+  if (queryDomain) {
+    // Array type is built using a domain.
+    // If we match the domain symbol, replace it with formal._dom.
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == queryDomain->sym) {
+        SET_LINENO(se);
+
+        se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
+      }
+    }
+
+  } else if (noDomain == false) {
+    fn->insertAtHead(new CallExpr(new CallExpr(".",
+                                               formal,
+                                               new_CStringSymbol("chpl_checkArrArgDoms")),
+                                  call->get(1)->copy(),
+                                  fNoFormalDomainChecks ? gFalse : gTrue));
   }
 }
 
