@@ -1017,6 +1017,10 @@ function perfGraphInit() {
             g.setAnnotations(g.graphInfo.annotations, true);
           }
           setConfigurationVisibility(g);
+
+          // The previous call doesn't trigger the usual callback for some
+          // reason, so rebuild annotation hovers for this graph.
+          buildAnnotationHovers(g.divs.container);
         });
       };
     }
