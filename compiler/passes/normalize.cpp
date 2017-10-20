@@ -2381,13 +2381,20 @@ static void hack_resolve_types(ArgSymbol* arg) {
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
 
 static void fixupArrayFormals(FnSymbol* fn) {
-  for_formals(arg, fn) {
-    if (arg->typeExpr) {
-      CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
+  for_formals(formal, fn) {
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      //
+      // The body is usually a single callExpr.  However there are rare
+      // cases in which normalization generates one or more call_temps
+      // i.e. a sequence of defExpr/primMove pairs.
+      //
+      // In either case the desired callExpr is the tail of the body.
+      //
 
-      // Not sure why we select the tail here....
-      if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
-        fixupArrayFormal(fn, arg);
+      if (CallExpr* call = toCallExpr(typeExpr->body.tail)) {
+        if (call->isNamed("chpl__buildArrayRuntimeType") == true) {
+          fixupArrayFormal(fn, formal);
+        }
       }
     }
   }
@@ -2398,10 +2405,13 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr     = formal->typeExpr;
 
   CallExpr*             call         = toCallExpr(typeExpr->body.tail);
-  bool                  noDomain     = isSymExpr(call->get(1)) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
-  DefExpr*              queryDomain  = toDefExpr(call->get(1));
-  bool                  noEltType    = call->numActuals() == 1;
-  DefExpr*              queryEltType = noEltType == false ? toDefExpr(call->get(2)) : NULL;
+  int                   nArgs        = call->numActuals();
+  Expr*                 domExpr      = call->get(1);
+  Expr*                 eltExpr      = nArgs == 2 ? call->get(2) : NULL;
+
+  bool                  noDomain     = isSymExpr(domExpr) ? toSymExpr(domExpr)->symbol() == gNil : false;
+  DefExpr*              queryDomain  = toDefExpr(domExpr);
+  DefExpr*              queryEltType = toDefExpr(eltExpr);
   std::vector<SymExpr*> symExprs;
 
   // Replace the type expression with "_array" to make it generic.
@@ -2420,7 +2430,7 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
       }
     }
 
-  } else if (noEltType == false) {
+  } else if (eltExpr != NULL) {
     if (fn->where == NULL) {
       fn->where = new BlockStmt(new SymExpr(gTrue));
 
@@ -2438,7 +2448,7 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     newWhere->insertAtTail(oldWhere);
     newWhere->insertAtTail(new CallExpr("==",
-                                        call->get(2)->remove(),
+                                        eltExpr->remove(),
                                         new CallExpr(".", formal, new_CStringSymbol("eltType"))));
   }
 
@@ -2453,12 +2463,14 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
       }
     }
 
-  } else if (noDomain == false) {
-    fn->insertAtHead(new CallExpr(new CallExpr(".",
-                                               formal,
-                                               new_CStringSymbol("chpl_checkArrArgDoms")),
-                                  call->get(1)->copy(),
-                                  fNoFormalDomainChecks ? gFalse : gTrue));
+  } else {
+    if (noDomain == false) {
+      fn->insertAtHead(new CallExpr(new CallExpr(".",
+                                                 formal,
+                                                 new_CStringSymbol("chpl_checkArrArgDoms")),
+                                    domExpr->copy(),
+                                    fNoFormalDomainChecks ? gFalse : gTrue));
+    }
   }
 }
 
