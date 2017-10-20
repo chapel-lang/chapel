@@ -814,6 +814,7 @@ module ChapelDistribution {
 
     // NOTE I tried to put `data` in `BaseSparseArrImpl`. However, it wasn't
     // clear how to initialize this in that class.
+    pragma "local field"
     var data: [dom.nnzDom] eltType;
 
     proc dsiGetBaseDom() return dom;

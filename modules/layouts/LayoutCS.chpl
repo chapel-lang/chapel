@@ -100,8 +100,10 @@ class CSDom: BaseSparseDomImpl {
   const startIdxDom: domain(1, idxType);
 
   /* (row|col) start */
+  pragma "local field"
   var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
   /* (row|col) idx */
+  pragma "local field"
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
