@@ -48,8 +48,8 @@ static void handleModuleDeinitFn(ModuleSymbol* mod);
 static void transformLogicalShortCircuit();
 static void handleReduceAssign();
 
-static void fixup_array_formals(FnSymbol* fn);
-static void fixup_query_formals(FnSymbol* fn);
+static void fixupArrayFormals(FnSymbol* fn);
+static void fixupQueryFormals(FnSymbol* fn);
 
 static bool isConstructor(FnSymbol* fn);
 static bool isInitMethod (FnSymbol* fn);
@@ -145,10 +145,10 @@ void normalize() {
 
     if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == false &&
         fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false) {
-      fixup_array_formals(fn);
+      fixupArrayFormals(fn);
     }
 
-    fixup_query_formals(fn);
+    fixupQueryFormals(fn);
 
     if (isConstructor(fn) == true) {
       updateConstructor(fn);
@@ -2359,33 +2359,43 @@ static void hack_resolve_types(ArgSymbol* arg) {
   }
 }
 
-// Replaces formals whose type is computed by chpl__buildArrayRuntimeType
-// with the generic _array type.
-// I think this prepares the function to be instantiated with various argument types.
-// That is, it reaches through one level in the type hierarchy -- treating all
-// arrays equally and then resolving using the element type.
-// But this is something of a kludge.  The expansion of arrays
-// w.r.t. generic argument types should be done during expansion and resolution,
-// not up front like this. <hilde>
-static void fixup_array_formals(FnSymbol* fn) {
+/************************************* | **************************************
+*                                                                             *
+* The parser represents formals with an array type specifier as a formal with *
+* a typeExpr that use chpl__buildArrayRuntimeType e.g.                        *
+*                                                                             *
+*   : []            -> buildArrayRuntimeType(symExpr(nil))                    *
+*   : [D]           -> buildArrayRuntimeType(symExpr('D'))                    *
+*   : [1..3]        -> buildArrayRuntimeType(buildRange(1, 3));               *
+*   : [?D]          -> buildArrayRuntimeType(defExpr('D'))                    *
+*                                                                             *
+*   : []     string -> buildArrayRuntimeType(symExpr(nil), symExpr(string))   *
+*   : [D]    int    -> buildArrayRuntimeType(symExpr('D'), symExpr(int)       *
+*   : [D]    ?t     -> buildArrayRuntimeType(symExpr('D'), defExpr('t'))      *
+*                                                                             *
+* Replace these with uses of the generic _array type and make other changes   *
+* as necessary.                                                               *
+*                                                                             *
+************************************** | *************************************/
+
+static void fixupArrayFormals(FnSymbol* fn) {
   for_formals(arg, fn) {
-    INT_ASSERT(toArgSymbol(arg));
     if (arg->typeExpr) {
       // The argument has a type expression
       CallExpr* call = toCallExpr(arg->typeExpr->body.tail);
-      // Not sure why we select the tail here....
 
+      // Not sure why we select the tail here....
       if (call && call->isNamed("chpl__buildArrayRuntimeType")) {
         // We are building an array type.
-        bool noDomain = (isSymExpr(call->get(1))) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
-        DefExpr* queryDomain = toDefExpr(call->get(1));
-        bool noEltType = (call->numActuals() == 1);
-        DefExpr* queryEltType = (!noEltType) ? toDefExpr(call->get(2)) : NULL;
+        bool                  noDomain     = isSymExpr(call->get(1)) ?  toSymExpr(call->get(1))->symbol() == gNil : false;
+        DefExpr*              queryDomain  = toDefExpr(call->get(1));
+        bool                  noEltType    = call->numActuals() == 1;
+        DefExpr*              queryEltType = noEltType == false ? toDefExpr(call->get(2)) : NULL;
+        std::vector<SymExpr*> symExprs;
 
         // Replace the type expression with "_array" to make it generic.
         arg->typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
-        std::vector<SymExpr*> symExprs;
         collectSymExprs(fn, symExprs);
 
         // If we have an element type, replace reference to its symbol with
@@ -2394,26 +2404,34 @@ static void fixup_array_formals(FnSymbol* fn) {
           for_vector(SymExpr, se, symExprs) {
             if (se->symbol() == queryEltType->sym) {
               SET_LINENO(se);
+
               se->replace(new CallExpr(".", arg, new_CStringSymbol("eltType")));
             }
           }
-        } else if (!noEltType) {
+        } else if (noEltType == false) {
           // The element type is supplied, but it is null.
           // Add a new where clause "eltType == arg.eltType".
           INT_ASSERT(queryEltType == NULL);
-          if (!fn->where) {
+
+          if (fn->where == NULL) {
             fn->where = new BlockStmt(new SymExpr(gTrue));
+
             insert_help(fn->where, NULL, fn);
+
             fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
           }
+
           arg->addFlag(FLAG_NOT_FULLY_GENERIC);
-          Expr* oldWhere = fn->where->body.tail;
+
+          Expr*     oldWhere = fn->where->body.tail;
           CallExpr* newWhere = new CallExpr("&");
+
           oldWhere->replace(newWhere);
+
           newWhere->insertAtTail(oldWhere);
-          newWhere->insertAtTail(
-            new CallExpr("==", call->get(2)->remove(),
-                         new CallExpr(".", arg, new_CStringSymbol("eltType"))));
+          newWhere->insertAtTail(new CallExpr("==",
+                                              call->get(2)->remove(),
+                                              new CallExpr(".", arg, new_CStringSymbol("eltType"))));
         }
 
         if (queryDomain) {
@@ -2422,24 +2440,31 @@ static void fixup_array_formals(FnSymbol* fn) {
           for_vector(SymExpr, se, symExprs) {
             if (se->symbol() == queryDomain->sym) {
               SET_LINENO(se);
+
               se->replace(new CallExpr(".", arg, new_CStringSymbol("_dom")));
             }
           }
-        } else if (!noDomain) {
+
+        } else if (noDomain == false) {
           // The domain argument is supplied but NULL.
           INT_ASSERT(queryDomain == NULL);
 
           // actualArg.chpl_checkArrArgDoms(arg->typeExpr)
           fn->insertAtHead(new CallExpr(new CallExpr(".", arg,
-                                                     new_CStringSymbol("chpl_checkArrArgDoms")
-                                                     ),
+                                                     new_CStringSymbol("chpl_checkArrArgDoms")),
                                         call->get(1)->copy(),
-                                        (fNoFormalDomainChecks ? gFalse : gTrue)));
+                                        fNoFormalDomainChecks ? gFalse : gTrue));
         }
       }
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void
 clone_for_parameterized_primitive_formals(FnSymbol* fn,
@@ -2504,8 +2529,13 @@ add_to_where_clause(ArgSymbol* formal, Expr* expr, CallExpr* query) {
   where->replace(new CallExpr("&", where->copy(), clause));
 }
 
-static void
-fixup_query_formals(FnSymbol* fn) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void fixupQueryFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (!formal->typeExpr)
       continue;
