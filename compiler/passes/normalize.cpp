@@ -2380,6 +2380,16 @@ static void hack_resolve_types(ArgSymbol* arg) {
 
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal);
 
+static void fixupArrayDomainExpr(FnSymbol*                    fn,
+                                 ArgSymbol*                   formal,
+                                 Expr*                        domExpr,
+                                 const std::vector<SymExpr*>& symExprs);
+
+static void fixupArrayElementExpr(FnSymbol*                    fn,
+                                  ArgSymbol*                   formal,
+                                  Expr*                        eltExpr,
+                                  const std::vector<SymExpr*>& symExprs);
+
 static void fixupArrayFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
@@ -2418,6 +2428,54 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
     collectSymExprs(fn, symExprs);
   }
 
+  fixupArrayDomainExpr(fn, formal, domExpr, symExprs);
+
+  if (eltExpr != NULL) {
+    fixupArrayElementExpr(fn, formal, eltExpr, symExprs);
+  }
+}
+
+static void fixupArrayDomainExpr(FnSymbol*                    fn,
+                                 ArgSymbol*                   formal,
+                                 Expr*                        domExpr,
+                                 const std::vector<SymExpr*>& symExprs) {
+  // : [?D]   -> defExpr('D')
+  if (DefExpr* queryDomain = toDefExpr(domExpr)) {
+    // Walk the body of 'fn' and replace uses of 'D' with 'D'._dom
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == queryDomain->sym) {
+        SET_LINENO(se);
+
+        se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
+      }
+    }
+
+  // : []     -> symExpr('nil')
+  // : [D]    -> symExpr('D')
+  // : [1..3] -> callExpr('buildRange', 1, 3)
+  } else {
+    bool insertCheck = true;
+
+    if (SymExpr* dom = toSymExpr(domExpr)) {
+      if (dom->symbol() == gNil) {
+        insertCheck = false;
+      }
+    }
+
+    if (insertCheck == true) {
+      Symbol* checkDoms = new_CStringSymbol("chpl_checkArrArgDoms");
+
+      fn->insertAtHead(new CallExpr(new CallExpr(".", formal, checkDoms),
+                                    domExpr->copy(),
+                                    fNoFormalDomainChecks ? gFalse : gTrue));
+    }
+  }
+}
+
+static void fixupArrayElementExpr(FnSymbol*                    fn,
+                                  ArgSymbol*                   formal,
+                                  Expr*                        eltExpr,
+                                  const std::vector<SymExpr*>& symExprs) {
   // e.g. : [1..3] ?t
   if (DefExpr* queryEltType = toDefExpr(eltExpr)) {
     // Walk the body of 'fn' and replace uses of 't' with 't'.eltType
@@ -2449,38 +2507,6 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     newWhere->insertAtTail(oldWhere);
     newWhere->insertAtTail(new CallExpr("==", eltExpr->remove(), getEltType));
-  }
-
-  // : [?D]   -> defExpr('D')
-  if (DefExpr* queryDomain = toDefExpr(domExpr)) {
-    // Walk the body of 'fn' and replace uses of 'D' with 'D'._dom
-    for_vector(SymExpr, se, symExprs) {
-      if (se->symbol() == queryDomain->sym) {
-        SET_LINENO(se);
-
-        se->replace(new CallExpr(".", formal, new_CStringSymbol("_dom")));
-      }
-    }
-
-  // : []     -> symExpr('nil')
-  // : [D]    -> symExpr('D')
-  // : [1..3] -> callExpr('buildRange', 1, 3)
-  } else {
-    bool insertCheck = true;
-
-    if (SymExpr* dom = toSymExpr(domExpr)) {
-      if (dom->symbol() == gNil) {
-        insertCheck = false;
-      }
-    }
-
-    if (insertCheck == true) {
-      Symbol* checkDoms = new_CStringSymbol("chpl_checkArrArgDoms");
-
-      fn->insertAtHead(new CallExpr(new CallExpr(".", formal, checkDoms),
-                                    domExpr->copy(),
-                                    fNoFormalDomainChecks ? gFalse : gTrue));
-    }
   }
 }
 
