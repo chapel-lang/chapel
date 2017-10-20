@@ -486,7 +486,10 @@ static void insertSerialization(FnSymbol*  fn,
   }
 
   if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
-    deserializeCall->insertAtTail(new SymExpr(deserialized));
+    VarSymbol* refTemp = newTemp(deserialized->qualType().toRef());
+    anchor->insertBefore(new DefExpr(refTemp));;
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+    deserializeCall->insertAtTail(new SymExpr(refTemp));
     callToAdd = deserializeCall;
   } else {
     callToAdd = new CallExpr(PRIM_MOVE, deserialized, deserializeCall);
