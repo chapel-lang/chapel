@@ -309,13 +309,13 @@ static bool isRefType(BaseAST* bs)
   return bs->typeInfo()->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF);
 }
 
-static bool isArrayRec(BaseAST* bs) {
-  return isRecord(bs->typeInfo()) && bs->typeInfo()->symbol->hasFlag(FLAG_ARRAY) && !fNoInferLocalFields;
+static bool canWidenRecord(BaseAST* bs) {
+  return isRecordWrappedType(bs->typeInfo()) && !fNoInferLocalFields;
 }
 
 static bool isObj(BaseAST* bs) {
   bool isValidClass = isClass(bs->typeInfo()) || bs->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS);
-  return (isValidClass || isArrayRec(bs)) && !bs->isRefOrWideRef();
+  return (isValidClass || canWidenRecord(bs)) && !bs->isRefOrWideRef();
 }
 
 static bool typeCanBeWide(Symbol *sym) {
@@ -326,14 +326,14 @@ static bool typeCanBeWide(Symbol *sym) {
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
               ts->hasFlag(FLAG_NO_WIDE_CLASS);
 
-  if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !isArrayRec(ts) && isRecord(sym->type)) {
+  if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !canWidenRecord(ts) && isRecord(sym->type)) {
     bad = true;
   }
 
   return !bad &&
          (isObj(sym) ||
           sym->isRefOrWideRef() ||
-          isArrayRec(sym) ||
+          canWidenRecord(sym) ||
           ts->hasFlag(FLAG_DATA_CLASS));
 }
 
@@ -763,7 +763,7 @@ static void buildWideClasses()
 {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     AggregateType* ct = toAggregateType(ts->type);
-    bool okAg = ct && (isClass(ct) || isArrayRec(ct));
+    bool okAg = ct && (isClass(ct) || canWidenRecord(ct));
     if (okAg && !ts->hasFlag(FLAG_REF) && !ts->hasFlag(FLAG_NO_WIDE_CLASS)) {
       buildWideClass(ct);
     }
@@ -840,7 +840,7 @@ static void buildWideRefMap()
 static bool fieldCanBeWide(Symbol* field) {
   TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
 
-  return isArrayRec(field) || !(isFullyWide(ts) ||
+  return canWidenRecord(field) || !(isFullyWide(ts) ||
            field->hasFlag(FLAG_SUPER_CLASS) ||
            ts->isRefOrWideRef());
 }
@@ -851,7 +851,7 @@ static bool fieldCanBeWide(Symbol* field) {
 //
 static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
   for_fields(fi, toAggregateType(parent)) {
-    if (isRecord(fi->type) && isArrayRec(fi) == false) {
+    if (isRecord(fi->type) && canWidenRecord(fi) == false) {
       widenSubAggregateTypes(cause, fi->type);
     } else {
       if (fieldCanBeWide(fi)) {
@@ -877,7 +877,7 @@ static void addKnownWides() {
 
       for_fields(fi, ag) {
         if (isRecord(fi->type) &&
-            !isArrayRec(fi) &&
+            !canWidenRecord(fi) &&
             !fi->isRefOrWideRef()) {
           // Record types won't be widened which means that their fields will
           // lose all locality information inside the on-stmt. This means that
@@ -905,7 +905,7 @@ static void addKnownWides() {
         if (typeCanBeWide(var)) {
           setWide(fn, var);
         }
-        if (isRecord(var->type) && !isArrayRec(var)) {
+        if (isRecord(var->type) && !canWidenRecord(var)) {
           widenSubAggregateTypes(fn, var->type);
         }
       }
@@ -1068,7 +1068,7 @@ static void propagateVar(Symbol* sym) {
             // ref_wide_T, we'll take the easy way out and make the field
             // have wide semantics.
             if (call->isPrimitive(PRIM_GET_MEMBER) || call->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-              if (!hasSomeWideness(lhs) && isRecord(lhs->type) && !isArrayRec(lhs)) {
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type) && !canWidenRecord(lhs)) {
                 // This record's fields need to be wide to preserve locality
                 // information.
                 widenSubAggregateTypes(use, lhs->type);
@@ -1103,7 +1103,7 @@ static void propagateVar(Symbol* sym) {
               // exposed by distributions/robust/arithmetic/modules/test_module_Sort.chpl
               // when dereferencing a wide ref to a tuple, which had a narrow
               // class element.
-              if (!hasSomeWideness(lhs) && isRecord(lhs->type) && !isArrayRec(lhs)) {
+              if (!hasSomeWideness(lhs) && isRecord(lhs->type) && !canWidenRecord(lhs)) {
                 widenSubAggregateTypes(use, lhs->type);
               }
             }
@@ -1159,7 +1159,7 @@ static void propagateVar(Symbol* sym) {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        if (isArrayRec(type)) {
+        if (canWidenRecord(type)) {
           if (use  == call->get(3)) {
             setWide(use, base);
           }
@@ -1254,7 +1254,7 @@ static void propagateVar(Symbol* sym) {
               if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                 type = type->getField("addr")->type;
               }
-              if (isArrayRec(type)) {
+              if (canWidenRecord(type)) {
                 setWide(def, base);
               } else {
                 matchWide(def, field->symbol());
@@ -2292,10 +2292,11 @@ static void createRetargTemps() {
     FnSymbol* fn = call->resolvedFunction();
     if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
       for_formals_actuals(formal, actual, call) {
-        if (formal->hasFlag(FLAG_RETARG) && isArrayRec(formal->getValType())) {
+        if (formal->hasFlag(FLAG_RETARG) && canWidenRecord(formal->getValType())) {
           Symbol* act = toSymExpr(actual)->symbol();
           CallExpr* move = NULL;
           bool refNeedsReplacing = false;
+          if (act->id == 2284405) gdbShouldBreakHere();
           for_SymbolSymExprs(se, act) {
             if (CallExpr* parent = toCallExpr(se->parentExpr)) {
               if (parent->isPrimitive(PRIM_MOVE)) {
@@ -2345,27 +2346,24 @@ static void createRetargTemps() {
 //
 // TODO: There *HAS* to be a better way to do this...
 //
-static void fixArrayTypes() {
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* inner = var->type->getField("addr")->type;
-      if (isArrayRec(inner)) {
-        var->type = inner;
-      }
-    }
+static void fixRecordWrappedTypes() {
+#define fixHelper(TypeName) \
+  forv_Vec(TypeName, var, g##TypeName##s) { \
+    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) { \
+      Type* inner = var->type->getField("addr")->type; \
+      if (canWidenRecord(inner)) { \
+        var->type = inner; \
+      } \
+    } \
   }
-  forv_Vec(ArgSymbol, var, gArgSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* inner = var->type->getField("addr")->type;
-      if (isArrayRec(inner)) {
-        var->type = inner;
-      }
-    }
-  }
+  fixHelper(VarSymbol);
+  fixHelper(ArgSymbol);
+  fixHelper(ShadowVarSymbol);
+#undef fixHelper
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       Type* inner = fn->retType->getField("addr")->type;
-      if (isArrayRec(inner)) {
+      if (canWidenRecord(inner)) {
         fn->retType = inner;
       }
     }
@@ -2375,14 +2373,14 @@ static void fixArrayTypes() {
       if (Type* nt = getDataClassType(ts)->type) {
         if (nt->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           Type* inner = nt->getField("addr")->type;
-          if (isArrayRec(inner)) {
+          if (canWidenRecord(inner)) {
             setDataClassType(ts, inner->symbol);
           }
         }
       }
     } else if (ts->hasFlag(FLAG_WIDE_CLASS)) {
       Type* addr = ts->type->getField("addr")->type;
-      if (isArrayRec(addr)) {
+      if (canWidenRecord(addr)) {
         wideClassMap.put(addr, NULL);
       }
     }
@@ -2532,7 +2530,7 @@ insertWideReferences(void) {
   }
 
   if (fNoInferLocalFields == false) {
-    fixArrayTypes();
+    fixRecordWrappedTypes();
   }
 
   // IWR

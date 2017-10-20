@@ -28,6 +28,7 @@ module DefaultSparse {
   class DefaultSparseDom: BaseSparseDomImpl {
     var dist: DefaultDist;
 
+    pragma "local field"
     var indices: [nnzDom] index(rank, idxType);
 
     proc linksDistribution() param return false;
