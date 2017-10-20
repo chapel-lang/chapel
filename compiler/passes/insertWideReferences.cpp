@@ -2346,23 +2346,20 @@ static void createRetargTemps() {
 //
 // TODO: There *HAS* to be a better way to do this...
 //
-static void fixArrayTypes() {
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* inner = var->type->getField("addr")->type;
-      if (canWidenRecord(inner)) {
-        var->type = inner;
-      }
-    }
+static void fixRecordWrappedTypes() {
+#define fixHelper(TypeName) \
+  forv_Vec(TypeName, var, g##TypeName##s) { \
+    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) { \
+      Type* inner = var->type->getField("addr")->type; \
+      if (canWidenRecord(inner)) { \
+        var->type = inner; \
+      } \
+    } \
   }
-  forv_Vec(ArgSymbol, var, gArgSymbols) {
-    if (var->type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      Type* inner = var->type->getField("addr")->type;
-      if (canWidenRecord(inner)) {
-        var->type = inner;
-      }
-    }
-  }
+  fixHelper(VarSymbol);
+  fixHelper(ArgSymbol);
+  fixHelper(ShadowVarSymbol);
+#undef fixHelper
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->retType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       Type* inner = fn->retType->getField("addr")->type;
@@ -2533,7 +2530,7 @@ insertWideReferences(void) {
   }
 
   if (fNoInferLocalFields == false) {
-    fixArrayTypes();
+    fixRecordWrappedTypes();
   }
 
   // IWR
