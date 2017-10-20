@@ -2402,26 +2402,25 @@ static void fixupArrayFormals(FnSymbol* fn) {
 
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
-  BlockStmt*            typeExpr     = formal->typeExpr;
+  BlockStmt*            typeExpr = formal->typeExpr;
 
-  CallExpr*             call         = toCallExpr(typeExpr->body.tail);
-  int                   nArgs        = call->numActuals();
-  Expr*                 domExpr      = call->get(1);
-  Expr*                 eltExpr      = nArgs == 2 ? call->get(2) : NULL;
+  CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+  int                   nArgs    = call->numActuals();
+  Expr*                 domExpr  = call->get(1);
+  Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
-  bool                  noDomain     = isSymExpr(domExpr) ? toSymExpr(domExpr)->symbol() == gNil : false;
-  DefExpr*              queryDomain  = toDefExpr(domExpr);
-  DefExpr*              queryEltType = toDefExpr(eltExpr);
   std::vector<SymExpr*> symExprs;
 
   // Replace the type expression with "_array" to make it generic.
   typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));
 
-  collectSymExprs(fn, symExprs);
+  if (isDefExpr(domExpr) == true || isDefExpr(eltExpr) == true) {
+    collectSymExprs(fn, symExprs);
+  }
 
-  // If we have an element type, replace reference to its symbol with
-  // "arg.eltType", so we use the instantiated element type.
-  if (queryEltType) {
+  // e.g. : [1..3] ?t
+  if (DefExpr* queryEltType = toDefExpr(eltExpr)) {
+    // Walk the body of 'fn' and replace uses of 't' with 't'.eltType
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == queryEltType->sym) {
         SET_LINENO(se);
@@ -2452,9 +2451,9 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
                                         new CallExpr(".", formal, new_CStringSymbol("eltType"))));
   }
 
-  if (queryDomain) {
-    // Array type is built using a domain.
-    // If we match the domain symbol, replace it with formal._dom.
+  // : [?D]   -> defExpr('D')
+  if (DefExpr* queryDomain = toDefExpr(domExpr)) {
+    // Walk the body of 'fn' and replace uses of 'D' with 'D'._dom
     for_vector(SymExpr, se, symExprs) {
       if (se->symbol() == queryDomain->sym) {
         SET_LINENO(se);
@@ -2463,7 +2462,12 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
       }
     }
 
+  // : []     -> symExpr('nil')
+  // : [D]    -> symExpr('D')
+  // : [1..3] -> callExpr('buildRange', 1, 3)
   } else {
+    bool noDomain = isSymExpr(domExpr) ? toSymExpr(domExpr)->symbol() == gNil : false;
+
     if (noDomain == false) {
       fn->insertAtHead(new CallExpr(new CallExpr(".",
                                                  formal,
