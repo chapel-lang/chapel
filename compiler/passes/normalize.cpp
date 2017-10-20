@@ -2440,15 +2440,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     formal->addFlag(FLAG_NOT_FULLY_GENERIC);
 
-    Expr*     oldWhere = fn->where->body.tail;
-    CallExpr* newWhere = new CallExpr("&");
+    Expr*     oldWhere   = fn->where->body.tail;
+    CallExpr* newWhere   = new CallExpr("&");
+    Symbol*   eltType    = new_CStringSymbol("eltType");
+    CallExpr* getEltType = new CallExpr(".", formal, eltType);
 
     oldWhere->replace(newWhere);
 
     newWhere->insertAtTail(oldWhere);
-    newWhere->insertAtTail(new CallExpr("==",
-                                        eltExpr->remove(),
-                                        new CallExpr(".", formal, new_CStringSymbol("eltType"))));
+    newWhere->insertAtTail(new CallExpr("==", eltExpr->remove(), getEltType));
   }
 
   // : [?D]   -> defExpr('D')
@@ -2466,12 +2466,18 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   // : [D]    -> symExpr('D')
   // : [1..3] -> callExpr('buildRange', 1, 3)
   } else {
-    bool noDomain = isSymExpr(domExpr) ? toSymExpr(domExpr)->symbol() == gNil : false;
+    bool insertCheck = true;
 
-    if (noDomain == false) {
-      fn->insertAtHead(new CallExpr(new CallExpr(".",
-                                                 formal,
-                                                 new_CStringSymbol("chpl_checkArrArgDoms")),
+    if (SymExpr* dom = toSymExpr(domExpr)) {
+      if (dom->symbol() == gNil) {
+        insertCheck = false;
+      }
+    }
+
+    if (insertCheck == true) {
+      Symbol* checkDoms = new_CStringSymbol("chpl_checkArrArgDoms");
+
+      fn->insertAtHead(new CallExpr(new CallExpr(".", formal, checkDoms),
                                     domExpr->copy(),
                                     fNoFormalDomainChecks ? gFalse : gTrue));
     }
