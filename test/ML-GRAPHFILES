@@ -3,6 +3,7 @@
 npb/ep/mcahir/ep.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
+studies/hpcc/HPL/vass/hpl.hpcc2012.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
@@ -20,6 +21,7 @@ studies/isx/isx.ml-time.graph
 npb/ep/mcahir/ep.ml-perf.graph
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
+studies/hpcc/HPL/vass/hpl.hpcc2012.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
@@ -34,6 +36,7 @@ npb/ep/mcahir/ep.ml-perf.graph
 # suite: - HPCC (perf)
 release/examples/benchmarks/hpcc/fft.ml-perf.graph
 release/examples/benchmarks/hpcc/hpl.ml-perf.graph
+studies/hpcc/HPL/vass/hpl.hpcc2012.ml-perf.graph
 release/examples/benchmarks/hpcc/ptrans.ml-perf.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-perf.graph
 release/examples/benchmarks/hpcc/ra.ml-perf.graph
@@ -51,6 +54,7 @@ npb/ep/mcahir/ep.ml-time.graph
 users/npadmana/npb-mg/mg.ml-time.graph
 release/examples/benchmarks/hpcc/fft.ml-time.graph
 release/examples/benchmarks/hpcc/hpl.ml-time.graph
+studies/hpcc/HPL/vass/hpl.hpcc2012.ml-time.graph
 release/examples/benchmarks/hpcc/ptrans.ml-time.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-time.graph
 release/examples/benchmarks/hpcc/ra.ml-time.graph
@@ -73,6 +77,7 @@ users/npadmana/npb-mg/mg.ml-time.graph
 # suite: - HPCC (time)
 release/examples/benchmarks/hpcc/fft.ml-time.graph
 release/examples/benchmarks/hpcc/hpl.ml-time.graph
+studies/hpcc/HPL/vass/hpl.hpcc2012.ml-time.graph
 release/examples/benchmarks/hpcc/ptrans.ml-time.graph
 release/examples/benchmarks/hpcc/ra-atomics.ml-time.graph
 release/examples/benchmarks/hpcc/ra.ml-time.graph
