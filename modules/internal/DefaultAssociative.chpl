@@ -848,6 +848,31 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(o: object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
+
+  //
+  // Implementation of chpl__defaultHash for ranges, in case the 'idxType'
+  // contains a range in some way (e.g. tuple of ranges).
+  //
+  // Need to skip '_promotionType' to avoid bizarre compiler errors.
+  // Need to skip 'idxType' because we don't care about compile-time properties
+  //
+  inline proc chpl__defaultHash(r : range): uint {
+    use Reflection;
+    var ret : uint;
+    for param i in 1..numFields(r.type) {
+      const ref field = getField(r, i);
+      if isVoidType(field.type) == false &&
+         getFieldName(r.type, i) != "_promotionType" &&
+         getFieldName(r.type, i) != "idxType" {
+        const fieldHash = chpl__defaultHash(field);
+        if i == 1 then
+          ret = fieldHash;
+        else
+          ret = chpl__defaultHashCombine(fieldHash, ret, i);
+      }
+    }
+    return ret;
+  }
   
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
