@@ -1579,12 +1579,7 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
 static bool considerParamMatches(Type* actualType,
                                  Type* arg1Type,
                                  Type* arg2Type) {
-  /* BLC: Seems weird to have to add this; could just add it in the enum
-     case if enums have to be special-cased here.  Otherwise, how are the
-     int cases handled later...? */
-  if (actualType->symbol->hasFlag(FLAG_REF)) {
-    actualType = actualType->getValType();
-  }
+  INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
   if (actualType == arg1Type && actualType != arg2Type) {
     return true;
@@ -1614,13 +1609,13 @@ static bool considerParamMatches(Type* actualType,
     }
 
     if (isSyncType(actualType)) {
-      return considerParamMatches(actualType->getField("valType")->type,
+      return considerParamMatches(actualType->getField("valType")->getValType(),
                                   arg1Type,
                                   arg2Type);
     }
 
     if (isSingleType(actualType)) {
-      return considerParamMatches(actualType->getField("valType")->type,
+      return considerParamMatches(actualType->getField("valType")->getValType(),
                                   arg1Type,
                                   arg2Type);
     }
