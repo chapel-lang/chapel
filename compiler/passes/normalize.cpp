@@ -2602,38 +2602,50 @@ static void fixupQueryFormals(FnSymbol* fn) {
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       // clone query primitive types
       SymExpr* callFnSymExpr = toSymExpr(call->baseExpr);
+
       if (callFnSymExpr && call->numActuals() == 1) {
         Symbol* callFnSym = callFnSymExpr->symbol();
+
         if (DefExpr* def = toDefExpr(call->get(1))) {
           if (callFnSym == dtBools[BOOL_SIZE_DEFAULT]->symbol) {
-            for (int i=BOOL_SIZE_8; i<BOOL_SIZE_NUM; i++)
-              if (dtBools[i]) {
-                clone_for_parameterized_primitive_formals(fn, def,
-                                                          get_width(dtBools[i]));
-              }
+            for (int i = BOOL_SIZE_8; i < BOOL_SIZE_NUM; i++) {
+              clone_for_parameterized_primitive_formals(fn,
+                                                        def,
+                                                        get_width(dtBools[i]));
+            }
+
             fn->defPoint->remove();
             return;
+
           } else if (callFnSym == dtInt[INT_SIZE_DEFAULT]->symbol ||
                      callFnSym == dtUInt[INT_SIZE_DEFAULT]->symbol) {
-            for( int i=INT_SIZE_8; i<INT_SIZE_NUM; i++)
-              if (dtInt[i])
-                clone_for_parameterized_primitive_formals(fn, def,
+            for (int i = INT_SIZE_8; i < INT_SIZE_NUM; i++) {
+                clone_for_parameterized_primitive_formals(fn,
+                                                          def,
                                                           get_width(dtInt[i]));
+            }
+
             fn->defPoint->remove();
             return;
+
           } else if (callFnSym == dtReal[FLOAT_SIZE_DEFAULT]->symbol ||
                      callFnSym == dtImag[FLOAT_SIZE_DEFAULT]->symbol) {
-            for( int i=FLOAT_SIZE_16; i<FLOAT_SIZE_NUM; i++)
-              if (dtReal[i])
-                clone_for_parameterized_primitive_formals(fn, def,
+            for (int i = FLOAT_SIZE_32; i < FLOAT_SIZE_NUM; i++) {
+                clone_for_parameterized_primitive_formals(fn,
+                                                          def,
                                                           get_width(dtReal[i]));
+            }
+
             fn->defPoint->remove();
             return;
+
           } else if (callFnSym == dtComplex[COMPLEX_SIZE_DEFAULT]->symbol) {
-            for( int i=COMPLEX_SIZE_32; i<COMPLEX_SIZE_NUM; i++)
-              if (dtComplex[i])
-                clone_for_parameterized_primitive_formals(fn, def,
-                                                          get_width(dtComplex[i]));
+            for (int i = COMPLEX_SIZE_64; i < COMPLEX_SIZE_NUM; i++) {
+              clone_for_parameterized_primitive_formals(fn,
+                                                        def,
+                                                        get_width(dtComplex[i]));
+            }
+
             fn->defPoint->remove();
             return;
           }
