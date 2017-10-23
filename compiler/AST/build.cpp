@@ -3064,8 +3064,11 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
           }
         }
       }
+    } else if (BlockStmt* innerBlk = toBlockStmt(node)) {
+      // recursively handle multiple defs in a single statement
+      handleConfigTypes(innerBlk);
     } else {
-      INT_FATAL("Got non-DefExpr in type_alias_decl_stmt");
+      INT_FATAL("Got non-DefExpr/BlockStmt in type_alias_decl_stmt");
     }
   }
   return blk;
