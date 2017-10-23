@@ -1,0 +1,1 @@
+bug: Compiler allows const references to type/param fields
