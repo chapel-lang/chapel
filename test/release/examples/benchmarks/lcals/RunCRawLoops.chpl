@@ -63,7 +63,7 @@ module RunCRawLoops {
             for isamp in 0..#num_samples {
               q = 0.0;
               for k in 0..#len {
-                q = z[k]*x[k];
+                q += z[k] * x[k];
               }
               val = q*isamp;
             }
