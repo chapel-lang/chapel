@@ -1548,6 +1548,20 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
 }
 
 
+static Immediate* getImmediate(Symbol* actual) {
+  Immediate* imm = NULL;
+
+  if (VarSymbol* var = toVarSymbol(actual)) {
+    imm = var->immediate;
+  }
+  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+    ensureEnumTypeResolved(toEnumType(enumsym->type));
+    imm = enumsym->getImmediate();
+  }
+
+  return imm;
+}
+
 static bool paramWorks(Symbol* actual, Type* formalType) {
   Immediate* imm = NULL;
 
@@ -1609,12 +1623,14 @@ static bool considerParamMatches(Type* actualType,
     }
 
     if (isSyncType(actualType)) {
+      INT_ASSERT(false);
       return considerParamMatches(actualType->getField("valType")->getValType(),
                                   arg1Type,
                                   arg2Type);
     }
 
     if (isSingleType(actualType)) {
+      INT_ASSERT(false);
       return considerParamMatches(actualType->getField("valType")->getValType(),
                                   arg1Type,
                                   arg2Type);
@@ -2671,6 +2687,10 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     }
   }
 
+  if (developer == true) {
+    USR_PRINT(call, "unresolved call had id %i", call->id);
+  }
+
   USR_STOP();
 }
 
@@ -3715,6 +3735,10 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
 
+  Type* syncSingleValType = NULL;
+  if (isSyncType(actualType) || isSingleType(actualType))
+    syncSingleValType = actualType->getField("valType")->getValType();
+
   EXPLAIN("Actual's type: %s\n", toString(actualType));
 
   canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
@@ -3811,6 +3835,36 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("G2: Fn %d is more specific\n", i);
     DS.fn2MoreSpecific = true;
 
+  } else if (actualType == f1Type &&
+             actualType != f2Type &&
+             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+             !formal2->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+             getImmediate(actual) == NULL) {
+    EXPLAIN("I0: Fn %d is more specific\n", i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (actualType == f2Type &&
+             actualType != f1Type &&
+             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+             !formal2->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+             getImmediate(actual) == NULL) {
+    EXPLAIN("J0: Fn %d is more specific\n", j);
+    DS.fn2MoreSpecific = true;
+
+  } else if (syncSingleValType != NULL &&
+             syncSingleValType == f1Type &&
+             syncSingleValType != f2Type) {
+
+    EXPLAIN("I: Fn %d is more specific\n", i);
+    DS.fn1MoreSpecific = true;
+
+  } else if (syncSingleValType != NULL &&
+             syncSingleValType == f2Type &&
+             syncSingleValType != f1Type) {
+
+    EXPLAIN("J: Fn %d is more specific\n", j);
+    DS.fn2MoreSpecific = true;
+
   } else if (considerParamMatches(actualType, f1Type, f2Type)) {
     EXPLAIN("In first param case\n");
 
@@ -3832,7 +3886,7 @@ static void testArgMapping(FnSymbol*                    fn1,
       }
 
     } else {
-      EXPLAIN("I: Fn %d is more specific\n", i);
+      EXPLAIN("III: Fn %d is more specific\n", i);
       DS.fn1MoreSpecific = true;
     }
 
@@ -3857,7 +3911,7 @@ static void testArgMapping(FnSymbol*                    fn1,
       }
 
     } else {
-      EXPLAIN("J: Fn %d is more specific\n", j);
+      EXPLAIN("JJJ: Fn %d is more specific\n", j);
       DS.fn2MoreSpecific = true;
     }
 
