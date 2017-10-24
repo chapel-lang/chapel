@@ -854,7 +854,6 @@ module DefaultAssociative {
   // contains a range in some way (e.g. tuple of ranges).
   //
   // Need to skip '_promotionType' to avoid bizarre compiler errors.
-  // Need to skip 'idxType' because we don't care about compile-time properties
   //
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
@@ -863,7 +862,8 @@ module DefaultAssociative {
       const ref field = getField(r, i);
       if isVoidType(field.type) == false &&
          getFieldName(r.type, i) != "_promotionType" &&
-         getFieldName(r.type, i) != "idxType" {
+         isType(getField(r, i)) == false &&
+         isParam(getField(r, i)) == false {
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;
