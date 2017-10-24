@@ -352,11 +352,12 @@ static void nestedName(ModuleSymbol* mod) {
 
 static void
 checkModule(ModuleSymbol* mod) {
-  for_alist(stmt, mod->block->body) {
-    if (CallExpr* call = toCallExpr(stmt)) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(mod->block, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->parentSymbol == mod) {
       if (call->isPrimitive(PRIM_RETURN)) {
         USR_FATAL_CONT(call, "return statement is not in a function or iterator");
-
       } else if (call->isPrimitive(PRIM_YIELD)) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       }
