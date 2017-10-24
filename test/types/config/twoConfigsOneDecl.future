@@ -1,6 +1,0 @@
-bug: declaration lists break 'config type'
-
-This program seems to show that the compiler can't handle multiple
-declarations in a single 'config type' statement.  If the list of
-config types is broken into separate statements, things work fine, but
-this seems unfortunate/inconsistent.
