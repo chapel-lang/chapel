@@ -20,16 +20,12 @@
 #ifndef _CHPL_MATH_H_
 #define _CHPL_MATH_H_
 
-static inline double chpl_macro_INFINITY(void) {
-  double x;
-  *(unsigned long long int*) &x = 0x7ff0000000000000ULL;   // positive infinity
-  return x;
+static inline double chpl_macro_INFINITY64(void) {
+  return INFINITY;
 }
 
-static inline double chpl_macro_NAN(void) {
-  double x;
-  *(unsigned long long int*) &x = 0x7ff8000000000001ULL;   // quiet NaN
-  return x;
+static inline double chpl_macro_NAN64(void) {
+  return NAN;
 }
 
 static inline int chpl_macro_double_isinf(double x) { return isinf(x); }
