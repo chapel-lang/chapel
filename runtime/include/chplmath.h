@@ -20,11 +20,11 @@
 #ifndef _CHPL_MATH_H_
 #define _CHPL_MATH_H_
 
-static inline double chpl_macro_INFINITY64(void) {
+static inline float chpl_macro_INFINITY(void) {
   return INFINITY;
 }
 
-static inline double chpl_macro_NAN64(void) {
+static inline float chpl_macro_NAN(void) {
   return NAN;
 }
 
