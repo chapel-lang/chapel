@@ -1020,6 +1020,39 @@ int get_width(Type *t) {
   return 0;
 }
 
+// numbers up between -2**width .. 2**width
+// will fit exactly in a floating-point representation.
+int get_mantissa_width(Type *t) {
+  // FLOAT_SIZE_16 would have 11 bits of precision
+  if (t == dtReal[FLOAT_SIZE_32] ||
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_64])
+    // mantissa for 32-bit float
+    return 24;
+  if (t == dtReal[FLOAT_SIZE_64] ||
+      t == dtImag[FLOAT_SIZE_64] ||
+      t == dtComplex[COMPLEX_SIZE_128])
+    // mantissa for 64-bit float
+    return 53;
+  INT_FATAL(t, "Unknown mantissa width");
+  return 0;
+}
+
+int get_exponent_width(Type *t) {
+  // FLOAT_SIZE_16 would have 5 bits of exponent
+  if (t == dtReal[FLOAT_SIZE_32] ||
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_64])
+    // exponent bits for 32-bit float
+    return 8;
+  if (t == dtReal[FLOAT_SIZE_64] ||
+      t == dtImag[FLOAT_SIZE_64] ||
+      t == dtComplex[COMPLEX_SIZE_128])
+    // exponent bits for 64-bit float
+    return 15;
+  INT_FATAL(t, "Unknown exponent width");
+  return 0;
+}
 
 bool isClass(Type* t) {
   if (AggregateType* ct = toAggregateType(t))

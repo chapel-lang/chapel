@@ -129,8 +129,8 @@ module Test0 {
     
     // These should work, but don't, because the compiler
     // is unwilling to param-convert.
-    writeln("foo(0.0)");
-    foo(0.0);
+    //writeln("foo(0.0)");
+    //foo(0.0);
     //writeln("foo(0.0+0.0i)"); // TODO: could convert param complexes
     //foo(0.0+0.0i);
   }
@@ -203,7 +203,7 @@ module Test2 {
   use Int16_32Foos;
   
   proc test2() {
-    writeln("Test2 uses only RealFoos");
+    writeln("Test2 uses only RealFoos and Int16_32Foos");
 
     writeln("foo(u8)");
     foo(u8);
@@ -256,6 +256,69 @@ module Test2 {
     foo(0.0+0.0i);
   }
 }
+
+module Test2a {
+  use TestGlobals;
+  use RealComplexImag32Foos;
+  use RealComplexImag64Foos;
+  use Int16_32Foos;
+  use Int64Foos;
+  
+  proc test2a() {
+    writeln("Test2a uses only RealFoos Int16_32Foos and Int64Foos");
+
+    writeln("foo(u8)");
+    foo(u8);
+    writeln("foo(i8)");
+    foo(i8);
+    writeln("foo(u16)");
+    foo(u16);
+    writeln("foo(i16)");
+    foo(i16);
+    writeln("foo(u32)");
+    foo(u32);
+    writeln("foo(i32)");
+    foo(i32);
+    writeln("foo(u64)");
+    foo(u64);
+    writeln("foo(i64)");
+    foo(i64);
+
+    writeln("foo(r32)");
+    foo(r32);
+    writeln("foo(r64)");
+    foo(r64);
+
+    writeln("foo(c64)");
+    foo(c64);
+    writeln("foo(c128)");
+    foo(c128);
+
+    // Test param coercions
+    writeln("foo(1)");
+    foo(1);
+    writeln("foo(-1)");
+    foo(-1);
+    writeln("foo(1000)");
+    foo(1000);
+    writeln("foo(-1000)");
+    foo(-1000);
+    writeln("foo(100000)");
+    foo(100000);
+    writeln("foo(-100000)");
+    foo(-100000);
+    writeln("foo(10000000000)");
+    foo(10000000000);
+    writeln("foo(-10000000000)");
+    foo(-10000000000);
+ 
+    writeln("foo(0.0)");
+    foo(0.0);
+    writeln("foo(0.0+0.0i)");
+    foo(0.0+0.0i);
+  }
+}
+
 
 
 module Test3 {
@@ -383,15 +446,83 @@ module Test4 {
   }
 }
 
+module Test5 {
+  use TestGlobals;
+  
+  proc foo(x:complex(64)) {
+    writeln("    c64 ", x);
+  }
+  proc foo(x:complex(128)) {
+    writeln("    c128 ", x);
+  }
+
+  proc test5() {
+    writeln("Test5 uses only complex foos");
+
+    writeln("foo(u8)");
+    foo(u8);
+    writeln("foo(i8)");
+    foo(i8);
+    writeln("foo(u16)");
+    foo(u16);
+    writeln("foo(i16)");
+    foo(i16);
+    writeln("foo(u32)");
+    foo(u32);
+    writeln("foo(i32)");
+    foo(i32);
+    writeln("foo(u64)");
+    foo(u64);
+    writeln("foo(i64)");
+    foo(i64);
+
+    writeln("foo(r32)");
+    foo(r32);
+    writeln("foo(r64)");
+    foo(r64);
+
+    writeln("foo(c64)");
+    foo(c64);
+    writeln("foo(c128)");
+    foo(c128);
+
+    // Test param coercions
+    writeln("foo(1)");
+    foo(1);
+    writeln("foo(-1)");
+    foo(-1);
+    writeln("foo(1000)");
+    foo(1000);
+    writeln("foo(-1000)");
+    foo(-1000);
+    writeln("foo(100000)");
+    foo(100000);
+    writeln("foo(-100000)");
+    foo(-100000);
+    writeln("foo(10000000000)");
+    foo(10000000000);
+    writeln("foo(-10000000000)");
+    foo(-10000000000);
+   
+    writeln("foo(0.0)");
+    foo(0.0);
+    writeln("foo(0.0+0.0i)");
+    foo(0.0+0.0i);
+  }
+}
+
+
 module Main {
-  use Test0, Test1, Test2, Test3, Test4;
+  use Test0, Test1, Test2, Test2a, Test3, Test4, Test5;
 
   proc main() {
     test0();
     test1();
     test2();
+    test2a();
     test3();
     test4();
+    test5();
     writeln("DONE");
   }
 }

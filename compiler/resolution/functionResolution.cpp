@@ -61,6 +61,7 @@
 
 #include "../ifa/prim_data.h"
 
+#include <cmath>
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -151,6 +152,8 @@ static void protoIteratorClass(FnSymbol* fn);
 static void resolveSpecifiedReturnType(FnSymbol* fn);
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
+static bool fits_in_mantissa(int width, Immediate* imm);
+//static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
@@ -1189,6 +1192,62 @@ static bool canParamCoerce(Type*   actualType,
     }
   }
 
+  // coerce fully representable integers into real / real part of complex
+  if (is_real_type(formalType)) {
+    if (is_bool_type(actualType))
+      return true;
+    if (is_int_type(actualType) &&
+        get_width(actualType) < get_mantissa_width(formalType))
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_mantissa_width(formalType))
+      return true;
+// TODO:: enable param conversion from real(32) to real(64)?
+//    if (is_real_type(actualType) &&
+//        get_width(actualType) < get_width(formalType))
+//      return true;
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        // XYZ immediate not int TODO
+        if (is_int_type(actualType) || is_uint_type(actualType))
+          if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
+            return true;
+        /*if (is_real_type(actualType))
+          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+                                        get_exponent_width(formalType),
+                                        var->immediate))
+            return true;
+         */
+      }
+    }
+  }
+  /*
+  if (is_complex_type(formalType)) {
+    if (is_bool_type(actualType))
+      return true;
+    if (is_int_type(actualType) &&
+        get_width(actualType) < get_mantissa_width(formalType))
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < get_mantissa_width(formalType))
+      return true;
+    if (is_real_type(actualType) &&
+        get_width(actualType) < get_width(formalType)/2)
+      return true;
+    if (is_imag_type(actualType) &&
+        get_width(actualType) < get_width(formalType)/2)
+      return true;
+    if (is_complex_type(actualType) &&
+        (get_width(actualType) < get_width(formalType)))
+      return true;
+    if (VarSymbol* var = toVarSymbol(actualSym))
+      if (var->immediate)
+      if (var->immediate)
+        if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
+          return true;
+  }*/
+
+
   return false;
 }
 
@@ -1269,6 +1328,7 @@ bool canCoerce(Type*     actualType,
   if (canParamCoerce(actualType, actualSym, formalType))
     return true;
 
+  // TODO - move to canParamCoerce
   if (is_real_type(formalType)) {
     if ((is_int_type(actualType) || is_uint_type(actualType))
         && get_width(formalType) >= 64)
@@ -1278,6 +1338,7 @@ bool canCoerce(Type*     actualType,
       return true;
   }
 
+  // TODO - move to canParamCoerce
   if (is_complex_type(formalType)) {
     if ((is_int_type(actualType) || is_uint_type(actualType))
         && get_width(formalType) >= 128)
@@ -1562,6 +1623,8 @@ static Immediate* getImmediate(Symbol* actual) {
   return imm;
 }
 
+// TODO - this seems to be duplicated code from canParamCoerce
+/*
 static bool paramWorks(Symbol* actual, Type* formalType) {
   Immediate* imm = NULL;
 
@@ -1573,76 +1636,184 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     imm = enumsym->getImmediate();
   }
   if (imm) {
+    // This case important for enums
+    if (actual->type == formalType)
+      return true;
+
     if (is_int_type(formalType)) {
       return fits_in_int(get_width(formalType), imm);
     }
     if (is_uint_type(formalType)) {
       return fits_in_uint(get_width(formalType), imm);
     }
+    if (is_real_type(formalType) ||
+        is_imag_type(formalType) ||
+        is_complex_type(formalType) ) {
+      return fits_in_mantissa(get_mantissa_width(formalType), imm);
+    }
     if (imm->const_kind == CONST_KIND_STRING) {
-      if (formalType == dtStringC && actual->type == dtString) {
+      if ((formalType == dtString || formalType == dtStringC) &&
+          (actual->type == dtString || actual->type == dtStringC)) {
         return true;
       }
     }
   }
 
   return false;
+}*/
+
+typedef enum {
+  NUMERIC_TYPE_BOOL,
+  NUMERIC_TYPE_ENUM,
+  NUMERIC_TYPE_INT,
+  NUMERIC_TYPE_UINT,
+  NUMERIC_TYPE_REAL,
+  NUMERIC_TYPE_IMAG,
+  NUMERIC_TYPE_COMPLEX
+} numeric_type_t;
+
+static numeric_type_t classifyNumericType(Type* t)
+{
+  if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
+  if (is_enum_type(t)) return NUMERIC_TYPE_ENUM;
+  if (is_int_type(t)) return NUMERIC_TYPE_INT;
+  if (is_uint_type(t)) return NUMERIC_TYPE_INT; // vs UINT
+  if (is_real_type(t)) return NUMERIC_TYPE_REAL;
+  if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
+  if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
+  INT_ASSERT("Unhandled type in classifyNumericType");
+  return NUMERIC_TYPE_BOOL;
 }
 
-
-static bool considerParamMatches(Type* actualType,
-                                 Type* arg1Type,
-                                 Type* arg2Type) {
+static bool paramPrefers(Symbol* actual,
+                         Type* actualType,
+                         Type* f1Type,
+                         Type* f2Type,
+                         bool f1Param,
+                         bool f2Param) {
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
-  if (actualType == arg1Type && actualType != arg2Type) {
-    return true;
+  // No param preference if we're not working with a param.
+  //if (getImmediate(actual) == NULL)
+  //  return false;
+
+  // If the param doesn't "work", we don't return true.
+  //if (paramWorks(actual, f1Type) == false)
+  //  return false;
+  
+  // If f1Param != f2Param, prefer the one that is a param
+  if (f1Param != f2Param) {
+    // f1Param == true, f2Param == false
+    if (f1Param)
+      return true;
+    // f1Param == false, f2Param == true
+    else return false;
   }
 
-  // If we don't have an exact match in the previous line, let's see if
-  // we have a bool(w1) passed to bool(w2) or non-bool case;  This is
-  // based on the enum case developed in r20208
-  if (is_bool_type(actualType) &&
-      is_bool_type(arg1Type)   &&
-      !is_bool_type(arg2Type)) {
-    return true;
+  bool paramPreferArg1 = false;
+  if (f1Type == f2Type)
+    paramPreferArg1 = false; // no preference yet if types are the same
+  else if(actualType == f1Type)
+    paramPreferArg1 = true; // f1 type matches, looks good
+  else if(actualType == f2Type)
+    paramPreferArg1 = false; // we'd prefer f2
+  else if (actualType != f1Type && actualType != f2Type) {
+    // Is there any preference among coercions of the param?
+    // E.g., would we rather convert 'false' to :int or to :uint(8) ?
+
+    numeric_type_t aT = classifyNumericType(actualType);
+    numeric_type_t f1T = classifyNumericType(f1Type);
+    numeric_type_t f2T = classifyNumericType(f2Type);
+
+    bool aToInt = (aT == NUMERIC_TYPE_BOOL ||
+                   aT == NUMERIC_TYPE_ENUM ||
+                   aT == NUMERIC_TYPE_INT ||
+                   aT == NUMERIC_TYPE_UINT);
+
+    // Prefer e.g. bool(w1) passed to bool(w2) over to int (say)
+    if (aT == f1T && aT != f2T)
+      paramPreferArg1 = true;
+    // Prefer bool/enum/int/uint cast to default-sized integer over another
+    // size of int
+    else if (aToInt &&
+             f1Type == dtInt[INT_SIZE_DEFAULT] &&
+             f2T == NUMERIC_TYPE_INT &&
+             f2Type != dtInt[INT_SIZE_DEFAULT])
+      paramPreferArg1 = true;
+    // Prefer bool/enum/int/uint cast to a default-sized real over another
+    // size of real.
+    else if (aToInt &&
+             f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+             f2T == NUMERIC_TYPE_REAL &&
+             f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+      paramPreferArg1 = true;
   }
 
-  if (actualType != arg1Type && actualType != arg2Type) {
-    // Otherwise, have bool cast to default-sized integer over a smaller size
-    if (is_bool_type(actualType)) {
-      return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
-                                  arg1Type,
-                                  arg2Type);
-    }
+  return paramPreferArg1;
+}
 
-    if (is_enum_type(actualType)) {
-      return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
-                                  arg1Type,
-                                  arg2Type);
-    }
+static bool fits_in_bits_no_sign(int width, int64_t i) {
+  // is it between -2**width .. 2**width, inclusive?
+  int64_t p = 1;
+  p <<= width; // now p is 2**width
 
-    /*
-    if (isSyncType(actualType)) {
-      INT_ASSERT(false);
-      return considerParamMatches(actualType->getField("valType")->getValType(),
-                                  arg1Type,
-                                  arg2Type);
-    }
+  return -p <= i && i <= p;
+}
 
-    if (isSingleType(actualType)) {
-      INT_ASSERT(false);
-      return considerParamMatches(actualType->getField("valType")->getValType(),
-                                  arg1Type,
-                                  arg2Type);
-    }*/
+/*
+static bool fits_in_twos_complement(int width, int64_t i) {
+  // would it fit in a width-bit 2's complement representation?
+
+  INT_ASSERT(width < 64);
+
+  int64_t max_pos = 1;
+  max_pos <<= width-1;
+  max_pos--;
+
+  int64_t min_neg = 1+max_pos;
+  return -min_neg <= i && i <= max_pos;
+}
+*/
+
+// Does the integer in imm fit in a floating point format with 'width'
+// bits of mantissa?
+static bool fits_in_mantissa(int width, Immediate* imm) {
+  // is it between -2**width .. 2**width, inclusive?
+
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+    int64_t i = imm->int_value();
+    return fits_in_bits_no_sign(width, i);
   }
 
   return false;
 }
 
+/*
+static bool fits_in_mantissa_exponent(int mantissa_width,
+                                      int exponent_width,
+                                      Immediate* imm) {
+  double v = 0.0;
+  if (imm->num_index == FLOAT_SIZE_32)
+    v = imm->v_float32;
+  else if(imm->num_index == FLOAT_SIZE_64)
+    v = imm->v_float64;
+  else
+    INT_ASSERT("unsupported floating point size");
 
+  double frac = 0.0;
+  int exp = 0;
 
+  frac = frexp(v, &exp);
+
+  int64_t intpart = 2*frac;
+
+  if (fits_in_bits_no_sign(mantissa_width, intpart) &&
+      fits_in_twos_complement(exponent_width, exp))
+    return true;
+
+  return false;
+}
+*/
 
 bool
 explainCallMatch(CallExpr* call) {
@@ -3736,9 +3907,12 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
 
-  Type* syncSingleValType = NULL;
-  if (isSyncType(actualType) || isSingleType(actualType))
-    syncSingleValType = actualType->getField("valType")->getValType();
+  bool  actualSyncSingle = false;
+  Type* actualNotSyncType = actualType;
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    actualNotSyncType = actualType->getField("valType")->getValType();
+    actualSyncSingle = true;
+  }
 
   EXPLAIN("Actual's type: %s\n", toString(actualType));
 
@@ -3779,6 +3953,9 @@ static void testArgMapping(FnSymbol*                    fn1,
   } else {
     EXPLAIN("Formal 2 is NOT an instantiated param.\n");
   }
+
+  if (fn1->id == 1159564 || fn2->id == 1159564)
+    gdbShouldBreakHere();
 
   if (f1Type == f2Type &&
       formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
@@ -3852,69 +4029,36 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("J0: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (syncSingleValType != NULL &&
-             syncSingleValType == f1Type &&
-             syncSingleValType != f2Type) {
+  } else if (actualSyncSingle &&
+             actualNotSyncType == f1Type &&
+             actualNotSyncType != f2Type) {
 
     EXPLAIN("I: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
-  } else if (syncSingleValType != NULL &&
-             syncSingleValType == f2Type &&
-             syncSingleValType != f1Type) {
+  } else if (actualSyncSingle &&
+             actualNotSyncType == f2Type &&
+             actualNotSyncType != f1Type) {
 
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (considerParamMatches(actualType, f1Type, f2Type)) {
-    EXPLAIN("In first param case\n");
+  } else if (paramPrefers(actual, actualNotSyncType,
+                          f1Type,
+                          f2Type,
+                          formal1->hasFlag(FLAG_INSTANTIATED_PARAM),
+                          formal2->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+    EXPLAIN("III: Fn %d is param preferred\n", i);
+    DS.updateParamPrefers(1, "formal1", DC);
 
-    // The actual matches formal1's type, but not formal2's
-    if (paramWorks(actual, f2Type)) {
-      // but the actual is a param and works for formal2
-      if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but matches
-        // the first lightly better if we had to decide
-        DS.updateParamPrefers(1, "formal1", DC);
+  } else if (paramPrefers(actual, actualNotSyncType,
+                          f2Type,
+                          f1Type,
+                          formal2->hasFlag(FLAG_INSTANTIATED_PARAM),
+                          formal1->hasFlag(FLAG_INSTANTIATED_PARAM))) {
 
-      } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        DS.updateParamPrefers(2, "formal2", DC);
-
-      } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        DS.updateParamPrefers(1, "formal1", DC);
-      }
-
-    } else {
-      EXPLAIN("III: Fn %d is more specific\n", i);
-      DS.fn1MoreSpecific = true;
-    }
-
-  } else if (considerParamMatches(actualType, f2Type, f1Type)) {
-    EXPLAIN("In second param case\n");
-
-    // The actual matches formal2's type, but not formal1's
-    if (paramWorks(actual, f1Type)) {
-      // but the actual is a param and works for formal1
-      if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but matches
-        // the second slightly better if we had to decide
-        DS.updateParamPrefers(2, "formal2", DC);
-
-      } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        DS.updateParamPrefers(1, "formal1", DC);
-
-      } else {
-        // neither is a param, but formal1 is an exact type match,
-        // so prefer that one
-        DS.updateParamPrefers(2, "formal2", DC);
-      }
-
-    } else {
-      EXPLAIN("JJJ: Fn %d is more specific\n", j);
-      DS.fn2MoreSpecific = true;
-    }
+    EXPLAIN("JJJ: Fn %d is param preferred\n", i);
+    DS.updateParamPrefers(2, "formal2", DC);
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     EXPLAIN("K: Fn %d is more specific\n", i);
@@ -3930,6 +4074,38 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
     EXPLAIN("N: Fn %d is more specific\n", j);
+    DS.fn2MoreSpecific = true;
+
+    // uint(8) could resolve to int or uint argument, say
+    // it could also resolve to real or complex of any width
+    //  -> preferred coercion order?
+    // say I have f(all numeric types) available
+    // f(my_uint8)
+    //   the only one really ineligible is int(8)
+    //   other than that, we choose the smallest type
+    //   b/c arg1 can coerce into arg2
+    //     int(16)
+    //       better than int(32) int(64)
+    //     uint(16)
+    //       better than uint(32) uint(64)
+    //     real(32)
+    //       better than real(64)
+    //       better than complex(64) complex(128)
+    //
+    //   Now, how to choose between int(16), uint(16), and real(32)?
+    //   by making int/uint "more specific" than "real"
+    // f(1)
+    //   1 is an int, so prefer the 'int' version
+    //   (i.e. prefer the type attached to the param)
+    //   otherwise,
+  } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
+              (is_real_type(f2Type) || is_complex_type(f2Type))) {
+    EXPLAIN("N1: Fn %d is more specific\n", i);
+    DS.fn1MoreSpecific = true;
+
+  } else if ((is_int_type(f2Type) || is_uint_type(f2Type)) &&
+              (is_real_type(f1Type) || is_complex_type(f1Type))) {
+    EXPLAIN("N2: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
   } else {
