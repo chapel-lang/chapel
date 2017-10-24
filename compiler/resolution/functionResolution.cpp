@@ -1622,6 +1622,7 @@ static bool considerParamMatches(Type* actualType,
                                   arg2Type);
     }
 
+    /*
     if (isSyncType(actualType)) {
       INT_ASSERT(false);
       return considerParamMatches(actualType->getField("valType")->getValType(),
@@ -1634,7 +1635,7 @@ static bool considerParamMatches(Type* actualType,
       return considerParamMatches(actualType->getField("valType")->getValType(),
                                   arg1Type,
                                   arg2Type);
-    }
+    }*/
   }
 
   return false;
