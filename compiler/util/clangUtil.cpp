@@ -535,13 +535,7 @@ void readMacrosClang(void) {
       i != preproc.macro_end();
       i++) {
 
-#if HAVE_LLVM_VER >= 37
     handleMacro(i->first, i->second.getLatest()->getMacroInfo());
-#elif HAVE_LLVM_VER >= 33
-    handleMacro(i->first, i->second->getMacroInfo());
-#else
-    handleMacro(i->first, i->second);
-#endif
   }
 };
 
@@ -636,7 +630,6 @@ class CCodeGenConsumer : public ASTConsumer {
       return Builder->HandleTopLevelDecl(DG);
     }
 
-#if HAVE_LLVM_VER >= 39
    // \brief This callback is invoked each time an inline (method or friend)
    // function definition in a class is completed.
     void HandleInlineFunctionDefinition(FunctionDecl *D) override {
@@ -644,15 +637,6 @@ class CCodeGenConsumer : public ASTConsumer {
       if (parseOnly) return;
       Builder->HandleInlineFunctionDefinition(D);
     }
-#else
-   // \brief This callback is invoked each time an inline method
-   // definition is completed.
-   void HandleInlineMethodDefinition(CXXMethodDecl *D) LLVM_CXX_OVERRIDE {
-      if (Diags->hasErrorOccurred()) return;
-      if (parseOnly) return;
-      Builder->HandleInlineMethodDefinition(D);
-    }
-#endif
 
    void HandleInterestingDecl(DeclGroupRef D) LLVM_CXX_OVERRIDE {
      if (Diags->hasErrorOccurred()) return;
@@ -861,12 +845,8 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->DiagClient= new TextDiagnosticPrinter(errs(),&*clangInfo->diagOptions);
   clangInfo->DiagID = new DiagnosticIDs();
   DiagnosticsEngine* Diags = NULL;
-#if HAVE_LLVM_VER >= 32
   Diags = new DiagnosticsEngine(
       clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
-#else
-  Diags = new DiagnosticsEngine(clangInfo->DiagID, clangInfo->DiagClient);
-#endif
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
@@ -911,7 +891,6 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   {
     // Make sure we include clang's internal header dir
-#if HAVE_LLVM_VER >= 34
     SmallString<128> P;
     SmallString<128> P2; // avoids a valgrind overlapping memcpy
 
@@ -929,36 +908,12 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
     CI->getHeaderSearchOpts().ResourceDir = P.str();
     sys::path::append(P, "include");
-#else
-    sys::Path P(clangexe);
-    if (!P.isEmpty()) {
-      P.eraseComponent();  // Remove /clang from foo/bin/clang
-      P.eraseComponent();  // Remove /bin   from foo/bin
-
-      // Get foo/lib/clang/<version>/
-      P.appendComponent("lib");
-      P.appendComponent("clang");
-      P.appendComponent(CLANG_VERSION_STRING);
-    }
-    CI->getHeaderSearchOpts().ResourceDir = P.str();
-    sys::Path P2(P);
-    P.appendComponent("include");
-#endif
-#if HAVE_LLVM_VER >= 33
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
-#else
-    CI->getHeaderSearchOpts().AddPath(
-        P.str(), frontend::System,false, false, false, true, false);
-#endif
   }
 
   // Create the compilers actual diagnostics engine.
-#if HAVE_LLVM_VER >= 33
   clangInfo->Clang->createDiagnostics();
-#else
-  clangInfo->Clang->createDiagnostics(int(clangArgs.size()),&clangArgs[0]);
-#endif
   if (!clangInfo->Clang->hasDiagnostics())
     INT_FATAL("Bad diagnostics from clang");
 
@@ -1012,14 +967,8 @@ static void setupModule()
 
   INT_ASSERT(info->module);
 
-#if HAVE_LLVM_VER >= 39
   clangInfo->asmTargetLayoutStr =
     clangInfo->Clang->getTarget().getDataLayout().getStringRepresentation();
-#elif HAVE_LLVM_VER >= 38
-  clangInfo->asmTargetLayoutStr = clangInfo->Clang->getTarget().getDataLayoutString();
-#else
-  clangInfo->asmTargetLayoutStr = clangInfo->Clang->getTarget().getTargetDescription();
-#endif
 
   // Set the target triple.
   const llvm::Triple &Triple =
@@ -1135,12 +1084,8 @@ void finishCodegenLLVM() {
   // Verify the LLVM module.
   if( developer ) {
     bool problems;
-#if HAVE_LLVM_VER >= 35
     problems = verifyModule(*info->module, &errs());
     //problems = false;
-#else
-    problems = verifyModule(*info->module, PrintMessageAction);
-#endif
     if(problems) {
       INT_FATAL("LLVM module verification failed");
     }
@@ -1228,12 +1173,8 @@ void prepareCodegenLLVM()
   checkAdjustedDataLayout();
 }
 
-#if HAVE_LLVM_VER >= 33
 static void handleErrorLLVM(void* user_data, const std::string& reason,
                             bool gen_crash_diag)
-#else
-static void handleErrorLLVM(void* user_data, const std::string& reason)
-#endif
 {
   INT_FATAL("llvm fatal error: %s", reason.c_str());
 }
@@ -1986,11 +1927,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
       dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
       return true;
     case llvmStageNum::VectorizerStart:
-#if HAVE_LLVM_VER >= 40
       dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
-#else
-      USR_FATAL("This version of LLVM doesn't have EP_VectorizerStart");
-#endif
       return true;
     case llvmStageNum::EnabledOnOptLevel0:
       dumpIrPoint = PassManagerBuilder::EP_EnabledOnOptLevel0;
@@ -2087,9 +2024,7 @@ void setupForGlobalToWide(void) {
   }
   ginfo->builder->CreateRet(ret);
 
-#if HAVE_LLVM_VER >= 35
   llvm::verifyFunction(*fn, &errs());
-#endif
 
   info->preservingFn = fn;
 }
@@ -2152,11 +2087,7 @@ void checkAdjustedDataLayout() {
 
 
 void makeBinaryLLVM(void) {
-#if HAVE_LLVM_VER >= 36
   std::error_code errorInfo;
-#else
-  std::string errorInfo;
-#endif
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -2171,13 +2102,7 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     // Save the generated LLVM before optimization.
     tool_output_file output (preOptFilename.c_str(),
-                             errorInfo,
-#if HAVE_LLVM_VER >= 34
-                             sys::fs::F_None
-#else
-                             raw_fd_ostream::F_Binary
-#endif
-                             );
+                             errorInfo, sys::fs::F_None);
     WriteBitcodeToFile(info->module, output.os());
     output.keep();
     output.os().flush();
@@ -2267,13 +2192,7 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       tool_output_file output1 (opt1Filename.c_str(),
-                               errorInfo,
-#if HAVE_LLVM_VER >= 34
-                               sys::fs::F_None
-#else
-                               raw_fd_ostream::F_Binary
-#endif
-                               );
+                               errorInfo, sys::fs::F_None);
       WriteBitcodeToFile(info->module, output1.os());
       output1.keep();
       output1.os().flush();
@@ -2303,13 +2222,7 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         tool_output_file output2 (opt2Filename.c_str(),
-                                 errorInfo,
-#if HAVE_LLVM_VER >= 34
-                                 sys::fs::F_None
-#else
-                                 raw_fd_ostream::F_Binary
-#endif
-                                 );
+                                 errorInfo, sys::fs::F_None);
         WriteBitcodeToFile(info->module, output2.os());
         output2.keep();
         output2.os().flush();

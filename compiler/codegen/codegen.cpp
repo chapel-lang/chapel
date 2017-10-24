@@ -1856,11 +1856,7 @@ codegen_config() {
     info->builder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
-#if HAVE_LLVM_VER >= 37
     info->builder->CreateCall(initConfigFunc, {} );
-#else
-    info->builder->CreateCall(initConfigFunc);
-#endif
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 

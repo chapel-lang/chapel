@@ -47,16 +47,10 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
-#if HAVE_LLVM_VER >= 35
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/Verifier.h"
-#else
-#include "llvm/Support/InstIterator.h"
-#include "llvm/Support/CallSite.h"
-#include "llvm/Analysis/Verifier.h"
-#endif
 
 
 #include "llvm/Transforms/Utils/ValueMapper.h"
@@ -923,7 +917,6 @@ namespace {
 
               Value* wDst = callGlobalToWideFn(gDst, call);
               Value* wSrc = callGlobalToWideFn(gSrc, call);
-#if HAVE_LLVM_VER >= 39
               Value* ctl = createLoadStoreControl(M, info,
                                                   AtomicOrdering::NotAtomic,
 #if HAVE_LLVM_VER >= 50
@@ -932,9 +925,6 @@ namespace {
                                                   SingleThread
 #endif
                                                   );
-#else
-              Value* ctl = createLoadStoreControl(M, info, NotAtomic, SingleThread);
-#endif
 
               Instruction* putget = NULL;
 
@@ -1178,11 +1168,7 @@ namespace {
     // This will update PHI nodes incoming blocks that have
     // been remapped.
     //
-#if HAVE_LLVM_VER >= 39
     RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
-#else
-    RemapInstruction(I, VM, RF_IgnoreMissingEntries, TypeMapper);
-#endif
 
     if( extraChecks ) {
       if( VM.count(I) ) {
@@ -1491,11 +1477,7 @@ namespace {
           }
         }
 
-#if HAVE_LLVM_VER >= 38
         F->getParent()->getFunctionList().insert(F->getIterator(), NF);
-#else
-        F->getParent()->getFunctionList().insert(F, NF);
-#endif
         NF->takeName(F);
 
         // Loop over all callers of the function, transforming the call
@@ -1505,12 +1487,8 @@ namespace {
 
         for(Function::use_iterator UI = F->use_begin(), UE = F->use_end();
                 UI!=UE; ) {
-#if HAVE_LLVM_VER >= 35
           Use &U = *UI;
           User *Old = U.getUser();
-#else
-          User *Old = *UI;
-#endif
           ++UI;
           CallSite CS(Old);
           if (CS.getInstruction()) {
@@ -1653,11 +1631,7 @@ namespace {
             dbgs() << '\n';
           }
           if( extraChecks ) {
-#if HAVE_LLVM_VER >= 35
             assert(!verifyFunction(*NF, &errs()));
-#else
-            verifyFunction(*NF);
-#endif
           }
         }
 
@@ -1670,11 +1644,7 @@ namespace {
 
       {
         ValueToValueMapTy VM;
-#if HAVE_LLVM_VER >= 39
         RemapFlags Flags = RF_IgnoreMissingLocals;
-#else
-        RemapFlags Flags = RF_IgnoreMissingEntries;
-#endif
         // iterate through all global variables
         for (Module::global_iterator GI = M.global_begin(), GE = M.global_end();
                 GI != GE; ++GI) {
@@ -1710,11 +1680,7 @@ namespace {
                 AI != AE; ++AI) {
           GlobalAlias *ga = &*AI;
 
-#if HAVE_LLVM_VER >= 35
           GlobalValue *gv = dyn_cast<GlobalValue>(ga->getAliasee());
-#else
-          GlobalValue *gv = const_cast<GlobalValue*>(ga->getAliasedGlobal());
-#endif
           Type *old_type = ga->getType();
           Type *new_type = convertTypeGlobalToWide(&M, info, ga->getType());
           if (new_type == old_type) {
@@ -1722,27 +1688,11 @@ namespace {
           }
 
           Constant *init = ConstantExpr::getPointerCast(gv, new_type);
-#if HAVE_LLVM_VER >= 38
           GlobalAlias *new_alias = GlobalAlias::create(
               llvm::PointerType::get(new_type, 0 /*addr space*/ ),
               0, /* addr space */
               ga->getLinkage(),
               "", init, &M);
-#elif HAVE_LLVM_VER >= 37
-          GlobalAlias *new_alias = GlobalAlias::create(
-              llvm::PointerType::get(new_type, 0 /*addr space*/ ),
-              ga->getLinkage(),
-              "", init, &M);
-#elif HAVE_LLVM_VER >= 35
-          GlobalAlias *new_alias = GlobalAlias::create(new_type,
-              0, // address space
-              ga->getLinkage(),
-              "", init, &M);
-#else
-          GlobalAlias *new_alias = new GlobalAlias(new_type,
-              ga->getLinkage(),
-              "", init, &M);
-#endif
 
           Constant *cast_ptr = ConstantExpr::getPointerCast(new_alias, ga->getType());
 
@@ -1755,11 +1705,7 @@ namespace {
 
       // Pass #2
       ValueToValueMapTy VM;
-#if HAVE_LLVM_VER >= 39
       RemapFlags Flags = RF_IgnoreMissingLocals;
-#else
-      RemapFlags Flags = RF_IgnoreMissingEntries;
-#endif
       SmallVector<Instruction*,16> Junk;
 
       for(Module::iterator func = M.begin(); func!= M.end(); func++)
@@ -1841,11 +1787,7 @@ namespace {
         }
 
         if( extraChecks ) {
-#if HAVE_LLVM_VER >= 35
             assert(!verifyFunction(*F, &errs()));
-#else
-            verifyFunction(*F);
-#endif
         }
 
         if( debugPassTwo ) {
@@ -1938,7 +1880,6 @@ namespace {
         }
 
         if( extraChecks ) {
-#if HAVE_LLVM_VER >= 35
           bool ok = !verifyFunction(*F, &errs());
           if (!ok) {
             dbgs() << "\n";
@@ -1946,9 +1887,6 @@ namespace {
             dbgs() << F->getName() << "\n";
             assert( 0 && "Verify function failed");
           }
-#else
-          verifyFunction(*F);
-#endif
         }
       }
 

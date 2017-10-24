@@ -61,11 +61,7 @@ for more information on LLVM debug information.
 */
 
 // smooth changes in zero DIFlags
-#if HAVE_LLVM_VER >= 40
 #define FLAG_ZERO llvm::DINode::FlagZero
-#else
-#define FLAG_ZERO 0
-#endif
 
 // Note: All char strings must be the same size
 // Very hacky, but completely legal and functional. Only issue is that file_name 
@@ -111,13 +107,8 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   strncpy(current_dir, directory,sizeof(current_dir)-1);
 
   this->dibuilder.createCompileUnit(llvm::dwarf::DW_LANG_C99, /* Lang */
-#if HAVE_LLVM_VER >= 40
                                     this->dibuilder.createFile(
                                       file, directory), /* File */
-#else
-                                    file, /* File */
-                                    directory, /* Directory */
-#endif
                                     chapel_string, /* Producer */
                                     is_optimized, /* isOptimized */
                                     flags, /* Flags */
@@ -138,29 +129,17 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
   if (strstr(defFile, "/modules/")!=NULL || strcmp(defFile, "<internal>")==0) {
-#if HAVE_LLVM_VER >= 37
     return NULL;
-#else
-    return llvm::DIType();
-#endif
-
   }
   int defLine = type->symbol->linenum();
 
   if(!ty) {
-#if HAVE_LLVM_VER >= 37
     return NULL;
-#else
-    return llvm::DIType();
-#endif
   }
   if(ty->isIntegerTy()) {
     N = this->dibuilder.createBasicType(
       name, /* Name */
       layout.getTypeSizeInBits(ty), /* SizeInBits */
-#if HAVE_LLVM_VER <= 39
-      8*layout.getABITypeAlignment(ty), /* AlignInBits */
-#endif
       (is_signed(type))? 
       (llvm::dwarf::DW_ATE_signed):
       (llvm::dwarf::DW_ATE_unsigned) /* Encoding */);
@@ -173,9 +152,6 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
     N = this->dibuilder.createBasicType(
       name,
       layout.getTypeSizeInBits(ty),
-#if HAVE_LLVM_VER <= 39
-      8*layout.getABITypeAlignment(ty),
-#endif
       llvm::dwarf::DW_ATE_float);
     
     myTypeDescriptors[type] = N;
@@ -205,9 +181,6 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
           pteIntDIType = this->dibuilder.createBasicType(
             myGetTypeName(PointeeTy), 
             layout.getTypeSizeInBits(PointeeTy),
-#if HAVE_LLVM_VER <= 39
-            8*layout.getABITypeAlignment(PointeeTy),
-#endif
             llvm::dwarf::DW_ATE_unsigned);
 
           N = this->dibuilder.createPointerType(
@@ -238,11 +211,7 @@ LLVM_DITYPE debug_data::construct_type(Type *type)
             8), /* AlignInBits */
             FLAG_ZERO, /* Flags */
             toDITYPE(NULL), /* DerivedFrom */
-#if HAVE_LLVM_VER >= 37
             NULL /* Elements */
-#else
-            llvm::DIArray(NULL)
-#endif
             );
         
           N = this->dibuilder.createPointerType(
@@ -540,7 +509,6 @@ LLVM_DINAMESPACE debug_data::construct_module_scope(ModuleSymbol* modSym)
   const char* fname = modSym->fname();
   int line = modSym->linenum();
   LLVM_DIFILE file = get_file(fname);
-#if HAVE_LLVM_VER >= 40
   return this->dibuilder.createNameSpace(file, /* Scope */
                                          modSym->name, /* Name */
 #if HAVE_LLVM_VER < 50
@@ -549,9 +517,6 @@ LLVM_DINAMESPACE debug_data::construct_module_scope(ModuleSymbol* modSym)
 #endif
                                          false /* ExportSymbols */
                                         );
-#else
-  return this->dibuilder.createNameSpace(file, modSym->name, file, line);
-#endif
 }
 
 LLVM_DINAMESPACE debug_data::get_module_scope(ModuleSymbol* modSym)
@@ -564,10 +529,6 @@ LLVM_DINAMESPACE debug_data::get_module_scope(ModuleSymbol* modSym)
 
 LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
 {
-#if HAVE_LLVM_VER <= 37
-  const char *file_name = function->astloc.filename;
-  LLVM_DIFILE file = get_file(file_name);
-#endif
   llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE *,16> ret_arg_types;
 
   ret_arg_types.push_back(get_type(function->retType));
@@ -575,19 +536,8 @@ LLVM_DI_SUBROUTINE_TYPE debug_data::get_function_type(FnSymbol *function)
   {
     ret_arg_types.push_back(get_type(arg->type));
   }
-#if HAVE_LLVM_VER >= 38
   llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
   return this->dibuilder.createSubroutineType(ret_arg_arr);
-#elif HAVE_LLVM_VER >= 37
-  llvm::DITypeRefArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
-  return this->dibuilder.createSubroutineType(file, ret_arg_arr);
-#elif HAVE_LLVM_VER >= 36
-  llvm::DITypeArray ret_arg_arr = dibuilder.getOrCreateTypeArray(ret_arg_types);
-  return this->dibuilder.createSubroutineType(file, ret_arg_arr);
-#else
-  llvm::DIArray ret_arg_arr = dibuilder.getOrCreateArray(ret_arg_types);
-  return this->dibuilder.createSubroutineType(file, ret_arg_arr);
-#endif
 }
 
 LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
@@ -599,9 +549,6 @@ LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
   int line_number = function->astloc.lineno;
   // Get the function using the cname since that is how it is
   // stored in the generated code. The name is just used within Chapel.
-#if HAVE_LLVM_VER <= 37
-  llvm::Function* llFunc = getFunctionLLVM(function->cname);
-#endif
 
   LLVM_DINAMESPACE module = get_module_scope(modSym);
   LLVM_DIFILE file = get_file(file_name);
@@ -619,9 +566,6 @@ LLVM_DISUBPROGRAM debug_data::construct_function(FnSymbol *function)
     FLAG_ZERO, /* flags */
     optimized /* isOptimized */
     // TODO - in 3.8, do we need to pass Decl?
-#if HAVE_LLVM_VER <= 37
-    , llFunc
-#endif
     );
   
   return ret;
@@ -645,48 +589,21 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::construct_global_variable(VarSymbol 
   
   LLVM_DIFILE file = get_file(file_name);
   LLVM_DITYPE gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
-#if HAVE_LLVM_VER <= 39
-  GenInfo *info = gGenInfo;
-  GenRet got = info->lvt->getValue(cname); //?use cname since get_function uses it?
-
-#if HAVE_LLVM_VER >= 36
-  llvm::Constant *llVal = NULL;
-  if( got.val ) {
-    llVal = llvm::cast<llvm::Constant>(got.val);
-  }
-#else
-  llvm::Value *llVal = NULL;
-  llVal = got.val;  
-#endif
-#endif
 
   if(gVarSym_type)
-#if HAVE_LLVM_VER >= 40
     return this->dibuilder.createGlobalVariableExpression
-#else
-    return this->dibuilder.createGlobalVariable
-#endif
      (
-#if HAVE_LLVM_VER >= 36
       file, /* Context */
-#endif
       name, /* name */
       cname, /* linkage name */
       file, /* File */
       line_number, /* LineNo */
       gVarSym_type, /* Ty */
       !gVarSym->hasFlag(FLAG_EXPORT) /* is local to unit */
-#if HAVE_LLVM_VER <= 39
-      , llVal /* Val, must be llvm::Constant since LLVM 3.6 */
-#endif
      );
   else {
-    LLVM_DIGLOBALVARIABLEEXPRESSION ret;
     //return an Empty dbg node if the symbol type is unresolved
-#if HAVE_LLVM_VER >= 37
-    ret = NULL;
-#endif
-    return ret;
+    return NULL;
   }
 }
 
@@ -695,14 +612,8 @@ LLVM_DIGLOBALVARIABLEEXPRESSION debug_data::get_global_variable(VarSymbol *gVarS
   if( NULL == gVarSym->llvmDIGlobalVariable ) {
     gVarSym->llvmDIGlobalVariable = construct_global_variable(gVarSym);
   }
-#if HAVE_LLVM_VER >= 40
-  llvm::DIGlobalVariableExpression* ret;
-  ret = llvm::cast_or_null<llvm::DIGlobalVariableExpression>(
+  return llvm::cast_or_null<llvm::DIGlobalVariableExpression>(
               gVarSym->llvmDIGlobalVariable);
-  return ret;
-#else
-  return toDIGLOBALVARIABLE(gVarSym->llvmDIGlobalVariable);
-#endif
 }
 
 LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
@@ -721,12 +632,7 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
   LLVM_DITYPE varSym_type = get_type(varSym->type);
 
   if(varSym_type){
-#if HAVE_LLVM_VER >= 38
     return this->dibuilder.createAutoVariable(
-#else
-    return this->dibuilder.createLocalVariable(
-      llvm::dwarf::DW_TAG_auto_variable, /*Tag*/
-#endif
       scope, /* Scope */
       name, /*Name*/
       file, /*File*/
@@ -737,11 +643,7 @@ LLVM_DIVARIABLE debug_data::construct_variable(VarSymbol *varSym)
   }
   else {
     //Empty dbg node if the symbol type is unresolved
-    LLVM_DIVARIABLE ret;
-#if HAVE_LLVM_VER >= 37
-    ret = NULL;
-#endif
-    return ret;
+    return NULL;
   }
 }
 
@@ -769,7 +671,6 @@ LLVM_DIVARIABLE debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned Arg
   LLVM_DITYPE argSym_type = get_type(argSym->type);
       
   if(argSym_type)
-#if HAVE_LLVM_VER >= 38
     return this->dibuilder.createParameterVariable(
       scope, /* Scope */
       name, /*Name*/
@@ -780,26 +681,9 @@ LLVM_DIVARIABLE debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned Arg
       true,/*AlwaysPreserve, won't be removed when optimized*/
       FLAG_ZERO /*Flags*/
       );
-#else
-    return this->dibuilder.createLocalVariable(
-      llvm::dwarf::DW_TAG_arg_variable, /*Tag: formal arg to a function */
-      scope, /* Scope */
-      name, /*Name*/
-      file, /*File*/
-      line_number, /*Lineno*/
-      argSym_type, /*Type*/
-      true,/*AlwaysPreserve, won't be removed when optimized*/
-      0,  /*Flags*/
-      ArgNo
-      ); 
-#endif
   else {
     //Empty dbg node if the symbol type is unresolved
-    LLVM_DIVARIABLE ret;
-#if HAVE_LLVM_VER >= 37
-    ret = NULL;
-#endif
-    return ret;
+    return NULL;
   }
 }
 

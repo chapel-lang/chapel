@@ -33,20 +33,14 @@
 #include "llvm/Support/Dwarf.h"
 #endif
 
-#if HAVE_LLVM_VER >= 35
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DIBuilder.h"
-#else
-#include "llvm/DebugInfo.h"
-#include "llvm/DIBuilder.h"
-#endif
 
 #include <vector>
 
 //#define DW_LANG_chapel (llvm::dwarf::DW_LANG_lo_user+37)
 #define DW_LANG_chapel llvm::dwarf::DW_LANG_lo_user
 
-#if HAVE_LLVM_VER >= 37
 // This should be renamed to DI versions
 #define LLVM_DITYPE llvm::DIType*
 #define LLVM_DIFILE llvm::DIFile*
@@ -85,62 +79,9 @@ static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
 }
 
 
-
-
-#else
-#define LLVM_DITYPE llvm::DIType
-#define LLVM_DIFILE llvm::DIFile
-#define LLVM_DINAMESPACE llvm::DINameSpace
-#define LLVM_DISUBPROGRAM llvm::DISubprogram
-#define LLVM_DIGLOBALVARIABLE llvm::DIGlobalVariable
-#define LLVM_DIVARIABLE llvm::DIVariable
-#define LLVM_DITYPEARRAY llvm::DITypeArray
-#define LLVM_DIARRAY llvm::DIArray
-
-#if HAVE_LLVM_VER >= 36
-#define LLVM_DI_SUBROUTINE_TYPE llvm::DISubroutineType
-#else
-#define LLVM_DI_SUBROUTINE_TYPE llvm::DICompositeType
-#endif
-
-static inline LLVM_DITYPE toDITYPE(llvm::MDNode* N)
-{
-  return llvm::DIType(N);
-}
-
-static inline LLVM_DINAMESPACE toDINAMESPACE(llvm::MDNode* N)
-{
-  return llvm::DINameSpace(N);
-}
-
-static inline LLVM_DISUBPROGRAM toDISUBPROGRAM(llvm::MDNode* N)
-{
-  return llvm::DISubprogram(N);
-}
-
-static inline LLVM_DIGLOBALVARIABLE toDIGLOBALVARIABLE(llvm::MDNode* N)
-{
-  return llvm::DIGlobalVariable(N);
-}
-
-static inline LLVM_DIVARIABLE toDIVARIABLE(llvm::MDNode* N)
-{
-  return llvm::DIVariable(N);
-}
-
-
-
-#endif
-
-
-
 // LLVM 4.0 added DIGlobalVariableExpression but previously
 // it was basically stored in DIGlobalVariable
-#if HAVE_LLVM_VER >= 40
 #define LLVM_DIGLOBALVARIABLEEXPRESSION llvm::DIGlobalVariableExpression*
-#else
-#define LLVM_DIGLOBALVARIABLEEXPRESSION llvm::DIGlobalVariable*
-#endif
 
 
 

@@ -496,10 +496,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->builder->CreateConstInBoundsGEP2_32(
-#if HAVE_LLVM_VER >= 37
-                NULL,
-#endif
-                constString, 0, 0)));
+                NULL, constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -690,10 +687,7 @@ void VarSymbol::codegenDef() {
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
                 info->builder->CreateConstInBoundsGEP2_32(
-#if HAVE_LLVM_VER >= 37
-                  NULL,
-#endif
-                  globalString, 0, 0)));
+                  NULL, globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
             new llvm::GlobalVariable(
@@ -707,10 +701,7 @@ void VarSymbol::codegenDef() {
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
                 info->builder->CreateConstInBoundsGEP1_32(
-#if HAVE_LLVM_VER >= 37
-                  NULL,
-#endif
-                  globalString, 0)));
+                  NULL, globalString, 0)));
         }
       } else {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
@@ -1353,15 +1344,11 @@ void FnSymbol::codegenDef() {
     info->lvt->removeLayer();
     if( developer ) {
       bool problems = false;
-#if HAVE_LLVM_VER >= 35
       // Debug info generation creates metadata nodes that won't be
       // finished until the whole codegen is complete and finalize
       // is called.
       if( ! debug_info )
         problems = llvm::verifyFunction(*func, &llvm::errs());
-#else
-      problems = llvm::verifyFunction(*func, llvm::PrintMessageAction);
-#endif
       if( problems ) {
         INT_FATAL("LLVM function verification failed");
       }

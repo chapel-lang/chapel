@@ -31,7 +31,7 @@
 // So we can declare our small set insert fixup
 #include "llvm/ADT/SmallSet.h"
 
-#if HAVE_LLVM_VER >= 33
+#if HAVE_LLVM_VER >= 40
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
@@ -46,39 +46,16 @@ static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm:
   return f->getAttributes().hasAttribute(idx, v);
 }
 
-#elif HAVE_LLVM_VER >= 32
-
-#include "llvm/Module.h"
-#include "llvm/Value.h"
-#include "llvm/IRBuilder.h"
-#include "llvm/DataLayout.h"
-#include "llvm/Intrinsics.h"
-#include "llvm/IntrinsicInst.h"
-#include "llvm/Attributes.h"
-#define LLVM_ATTRIBUTE llvm::Attributes
-static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attributes::AttrVal v)
-{
-  //return f->getAttributes().getParamAttributes(idx).hasAttribute(v);
-  return f->getParamAttributes(idx).hasAttribute(v);
-}
-
 #else
 
 #error LLVM version is too old for this version of Chapel
 
 #endif
 
-// PassManager also changed names..
-#if HAVE_LLVM_VER >= 37
 #include "llvm/IR/LegacyPassManager.h"
 #define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
 #define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
 #define LEGACY_MODULE_PASS_MANAGER llvm::legacy::PassManager
-#else
-#include "llvm/PassManager.h"
-#define LEGACY_FUNCTION_PASS_MANAGER llvm::FunctionPassManager
-#define LEGACY_PASS_MANAGER llvm::PassManagerBase
-#endif
 
 struct PromotedPair {
   llvm::Value* a;
@@ -103,7 +80,6 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 
 
 // And create a type for a metadata operand 
-#if HAVE_LLVM_VER >= 36
 #define LLVM_METADATA_OPERAND_TYPE llvm::Metadata
 static inline llvm::ConstantAsMetadata* llvm_constant_as_metadata(llvm::Constant* C)
 {
@@ -114,24 +90,9 @@ static inline
 bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
   return smallset.insert(V).second;
 }
-#else
-#define LLVM_METADATA_OPERAND_TYPE llvm::Value
-static inline llvm::Constant* llvm_constant_as_metadata(llvm::Constant* C)
-{
-  return C;
-}
-template<typename T, unsigned N>
-static inline
-bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
-  return smallset.insert(V);
-}
-
-#endif
 
 // LLVMs after 3.5 require C++11 support
-#if HAVE_LLVM_VER >= 35
 #define HAVE_LLVM_CXX11 1
-#endif
 
 #ifdef HAVE_LLVM_CXX11
 #define LLVM_CXX_OVERRIDE override
