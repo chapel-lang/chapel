@@ -1,3 +1,0 @@
-bug: associative domain of tuple of range causes internal compiler error
-
-This currently causes an assertion error in the scalarReplace pass.
