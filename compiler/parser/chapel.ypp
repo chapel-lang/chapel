@@ -117,6 +117,7 @@
     BlockStmt*                pblockstmt;
     Type*                     ptype;
     EnumType*                 penumtype;
+    std::vector<DefExpr*>*    pvecOfDefs;
     FnSymbol*                 pfnsymbol;
     Flag                      flag;
     ProcIter                  procIter;
@@ -407,7 +408,8 @@
 
 %type <pcallexpr> array_type
 %type <pexpr> opt_type opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <penumtype> enum_ls
+%type <penumtype> enum_header
+%type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
 %type <pexpr> fun_expr call_expr dot_expr lhs_expr unary_op_expr binary_op_expr
@@ -854,24 +856,41 @@ class_level_stmt_ls:
 ;
 
 enum_decl_stmt:
-  TENUM ident TLCBR enum_ls TRCBR
+  enum_header ident TLCBR enum_ls TRCBR
     {
-      EnumType* pdt = $4;
+      EnumType* pdt = $1;
+      for_vector(DefExpr, ec, *$4) {
+        ec->sym->type = pdt;
+        pdt->constants.insertAtTail(ec);
+        if (pdt->defaultValue == NULL) {
+          pdt->defaultValue = ec->sym;
+        }
+      }
+      delete $4;
+      pdt->doc = @1.comment;
       TypeSymbol* pst = new TypeSymbol($2, pdt);
-      $4->symbol = pst;
+      $1->symbol = pst;
       $$ = buildChapelStmt(new DefExpr(pst));
+    }
+;
+
+enum_header:
+  TENUM
+    {
+      $$ = new EnumType();
+      @$.comment = context->latestComment;
+      context->latestComment = NULL;
     }
 ;
 
 enum_ls:
   enum_item
     {
-      $$ = new EnumType();
-      $1->sym->type = $$;
-      $$->constants.insertAtTail($1);
-      $$->defaultValue = $1->sym;
-      $$->doc = context->latestComment;
-      context->latestComment = NULL;
+      $$ = new std::vector<DefExpr*>();
+      $$->push_back($1);
+      //$$->doc = context->latestComment;
+      // start here for enabling documentation of enum constants
+      //context->latestComment = NULL;
     }
 | enum_ls TCOMMA
     {
@@ -879,8 +898,7 @@ enum_ls:
     }
 | enum_ls TCOMMA enum_item
     {
-      $1->constants.insertAtTail($3);
-      $3->sym->type = $1;
+      $1->push_back($3);
     }
 ;
 
