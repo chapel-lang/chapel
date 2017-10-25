@@ -153,7 +153,7 @@ static void resolveSpecifiedReturnType(FnSymbol* fn);
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa(int width, Immediate* imm);
-//static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm);
+static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
 static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
@@ -1196,56 +1196,99 @@ static bool canParamCoerce(Type*   actualType,
   if (is_real_type(formalType)) {
     // don't coerce bools to reals (per spec: "uninteded by programmer")
 
+    // coerce any integer type to maximum width real
+    if ((is_int_type(actualType) || is_uint_type(actualType))
+        && get_width(formalType) >= 64)
+      return true;
+
+    // coerce integer types that are exactly representable
     if (is_int_type(actualType) &&
         get_width(actualType) < get_mantissa_width(formalType))
       return true;
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_mantissa_width(formalType))
       return true;
-// TODO:: enable param conversion from real(32) to real(64)?
-//    if (is_real_type(actualType) &&
-//        get_width(actualType) < get_width(formalType))
-//      return true;
+
+    // coerce real from smaller size
+    if (is_real_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+
+    // coerce literal/param ints that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        // XYZ immediate not int TODO
         if (is_int_type(actualType) || is_uint_type(actualType))
           if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
             return true;
-        /*if (is_real_type(actualType))
+        if (is_real_type(actualType))
           if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
                                         get_exponent_width(formalType),
                                         var->immediate))
             return true;
-         */
       }
     }
   }
-  /*
+
   if (is_complex_type(formalType)) {
-    if (is_bool_type(actualType))
+    // don't coerce bools to reals (per spec: "uninteded by programmer")
+
+    // coerce any integer type to maximum width complex
+    if ((is_int_type(actualType) || is_uint_type(actualType)) &&
+        get_width(formalType) >= 128)
       return true;
+
+    // coerce integer types that are exactly representable
     if (is_int_type(actualType) &&
         get_width(actualType) < get_mantissa_width(formalType))
       return true;
     if (is_uint_type(actualType) &&
         get_width(actualType) < get_mantissa_width(formalType))
       return true;
+
+    // coerce real/imag from smaller size
     if (is_real_type(actualType) &&
-        get_width(actualType) < get_width(formalType)/2)
+        get_width(actualType) <= get_width(formalType)/2)
       return true;
     if (is_imag_type(actualType) &&
-        get_width(actualType) < get_width(formalType)/2)
+        get_width(actualType) <= get_width(formalType)/2)
       return true;
+
+    // coerce smaller complex types
     if (is_complex_type(actualType) &&
         (get_width(actualType) < get_width(formalType)))
       return true;
-    if (VarSymbol* var = toVarSymbol(actualSym))
-      if (var->immediate)
-      if (var->immediate)
-        if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
-          return true;
-  }*/
+
+    // coerce literal/param complexes that are exactly representable
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (is_int_type(actualType) || is_uint_type(actualType))
+          if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
+            return true;
+        if (is_real_type(actualType))
+          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+                                        get_exponent_width(formalType),
+                                        var->immediate))
+            return true;
+        if (is_imag_type(actualType))
+          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+                                        get_exponent_width(formalType),
+                                        var->immediate))
+            return true;
+        if (is_complex_type(actualType)) {
+          bool rePartFits = fits_in_mantissa_exponent(get_mantissa_width(formalType),
+                                                      get_exponent_width(formalType),
+                                                      var->immediate,
+                                                      true);
+          bool imPartFits = fits_in_mantissa_exponent(get_mantissa_width(formalType),
+                                                      get_exponent_width(formalType),
+                                                      var->immediate,
+                                                      false);
+          if (rePartFits && imPartFits)
+            return true;
+        }
+      }
+    }
+  }
 
 
   return false;
@@ -1327,35 +1370,6 @@ bool canCoerce(Type*     actualType,
                bool*     promotes) {
   if (canParamCoerce(actualType, actualSym, formalType))
     return true;
-
-  // TODO - move to canParamCoerce
-  if (is_real_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
-      return true;
-    if (is_real_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-  }
-
-  // TODO - move to canParamCoerce
-  if (is_complex_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 128)
-      return true;
-
-    if (is_real_type(actualType) &&
-        (get_width(actualType) <= get_width(formalType)/2))
-      return true;
-
-    if (is_imag_type(actualType) &&
-        (get_width(actualType) <= get_width(formalType)/2))
-      return true;
-
-    if (is_complex_type(actualType) &&
-        (get_width(actualType) < get_width(formalType)))
-      return true;
-  }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
@@ -1687,6 +1701,7 @@ static numeric_type_t classifyNumericType(Type* t)
 
 static bool weakPrefers(Symbol* actual,
                          Type* actualType,
+                         bool flexibleActual,
                          Type* f1Type,
                          Type* f2Type,
                          bool f1Param,
@@ -1700,7 +1715,7 @@ static bool weakPrefers(Symbol* actual,
   // If the param doesn't "work", we don't return true.
   //if (paramWorks(actual, f1Type) == false)
   //  return false;
-  
+
   // If f1Param != f2Param, prefer the one that is a param
   if (f1Param != f2Param) {
     // f1Param == true, f2Param == false
@@ -1709,6 +1724,8 @@ static bool weakPrefers(Symbol* actual,
     // f1Param == false, f2Param == true
     else return false;
   }
+
+  if (!flexibleActual) return false;
 
   bool paramPreferArg1 = false;
   if (f1Type == f2Type)
@@ -1743,11 +1760,26 @@ static bool weakPrefers(Symbol* actual,
              f2Type != dtInt[INT_SIZE_DEFAULT])
       paramPreferArg1 = true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
-    // size of real.
+    // size of real or complex.
     else if ((aBoolEnum || aIntUint) &&
              f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-             f2T == NUMERIC_TYPE_REAL &&
+             (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
              f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+      paramPreferArg1 = true;
+    // Prefer bool/enum/int/uint cast to a default-sized complex over another
+    // size of complex.
+    else if ((aBoolEnum || aIntUint) &&
+             f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+             f2T == NUMERIC_TYPE_COMPLEX &&
+             f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+      paramPreferArg1 = true;
+    // Prefer real/imag cast to a same-sized complex over another size of
+    // complex.
+    else if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
+             f1T == NUMERIC_TYPE_COMPLEX &&
+             f2T == NUMERIC_TYPE_COMPLEX &&
+             get_width(actualType)*2 == get_width(f1Type) &&
+             get_width(actualType)*2 != get_width(f2Type))
       paramPreferArg1 = true;
   }
 
@@ -1762,7 +1794,6 @@ static bool fits_in_bits_no_sign(int width, int64_t i) {
   return -p <= i && i <= p;
 }
 
-/*
 static bool fits_in_twos_complement(int width, int64_t i) {
   // would it fit in a width-bit 2's complement representation?
 
@@ -1775,7 +1806,6 @@ static bool fits_in_twos_complement(int width, int64_t i) {
   int64_t min_neg = 1+max_pos;
   return -min_neg <= i && i <= max_pos;
 }
-*/
 
 // Does the integer in imm fit in a floating point format with 'width'
 // bits of mantissa?
@@ -1790,17 +1820,35 @@ static bool fits_in_mantissa(int width, Immediate* imm) {
   return false;
 }
 
-/*
 static bool fits_in_mantissa_exponent(int mantissa_width,
                                       int exponent_width,
-                                      Immediate* imm) {
+                                      Immediate* imm,
+                                      bool realPart) {
   double v = 0.0;
-  if (imm->num_index == FLOAT_SIZE_32)
-    v = imm->v_float32;
-  else if(imm->num_index == FLOAT_SIZE_64)
-    v = imm->v_float64;
-  else
-    INT_ASSERT("unsupported floating point size");
+
+  if (imm->const_kind == NUM_KIND_REAL ||
+      imm->const_kind == NUM_KIND_IMAG) {
+    if (imm->num_index == FLOAT_SIZE_32)
+      v = imm->v_float32;
+    else if(imm->num_index == FLOAT_SIZE_64)
+      v = imm->v_float64;
+    else
+      INT_ASSERT("unsupported real/imag size");
+  } else if (imm->const_kind == NUM_KIND_COMPLEX) {
+    if (imm->num_index == COMPLEX_SIZE_64) {
+      if (realPart)
+        v = imm->v_complex64.r;
+      else
+        v = imm->v_complex64.i;
+    } else if (imm->num_index == COMPLEX_SIZE_128) {
+      if (realPart)
+        v = imm->v_complex128.r;
+      else
+        v = imm->v_complex128.i;
+    } else
+      INT_ASSERT("unsupported complex size");
+  } else
+    INT_ASSERT("unsupported number kind");
 
   double frac = 0.0;
   int exp = 0;
@@ -1815,7 +1863,6 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
 
   return false;
 }
-*/
 
 bool
 explainCallMatch(CallExpr* call) {
@@ -3916,6 +3963,32 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualSyncSingle = true;
   }
 
+  bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
+  bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
+
+  bool actualParam = false;
+  bool considerWeakPrefers = true;
+  // Don't enable param/ weak preferences for non-default sized param values.
+  // If somebody bothered to type the param, they probably want it to stay that
+  // way. This is a work-around for ambiguity with e.g.
+  //  +(param x:int(32), param y:int(32)
+  //  +(param x:int(64), param y:int(64)
+  // called with
+  //  param x:int(32), param y:int(64)
+  Immediate* imm = getImmediate(actual);
+  if (imm != NULL) {
+    actualParam = true;
+
+    if (imm->const_kind == NUM_KIND_INT && imm->num_index != INT_SIZE_DEFAULT)
+      considerWeakPrefers = false;
+    if (imm->const_kind == NUM_KIND_REAL && imm->num_index != FLOAT_SIZE_DEFAULT)
+      considerWeakPrefers = false;
+    if (imm->const_kind == NUM_KIND_IMAG && imm->num_index != FLOAT_SIZE_DEFAULT)
+      considerWeakPrefers = false;
+    if (imm->const_kind == NUM_KIND_COMPLEX && imm->num_index != COMPLEX_SIZE_DEFAULT)
+      considerWeakPrefers = false;
+  }
+
   EXPLAIN("Actual's type: %s\n", toString(actualType));
 
   canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
@@ -3956,18 +4029,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("Formal 2 is NOT an instantiated param.\n");
   }
 
-  if (fn1->id == 1159564 || fn2->id == 1159564)
-    gdbShouldBreakHere();
-
-  if (f1Type == f2Type &&
-      formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-      !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+  if (f1Type == f2Type && f1Param && !f2Param) {
     EXPLAIN("A: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
-  } else if (f1Type == f2Type &&
-             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+  } else if (f1Type == f2Type && !f1Param && f2Param) {
     EXPLAIN("B: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
@@ -4017,17 +4083,13 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (actualType == f1Type &&
              actualType != f2Type &&
-             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             !formal2->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             getImmediate(actual) == NULL) {
+             !f1Param && !f2Param && !actualParam) {
     EXPLAIN("I0: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (actualType == f2Type &&
              actualType != f1Type &&
-             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             !formal2->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             getImmediate(actual) == NULL) {
+             !f1Param && !f2Param && !actualParam) {
     EXPLAIN("J0: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
@@ -4045,20 +4107,19 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (weakPrefers(actual, actualNotSyncType,
+  } else if (weakPrefers(actual, actualNotSyncType, considerWeakPrefers,
                          f1Type,
                          f2Type,
-                         formal1->hasFlag(FLAG_INSTANTIATED_PARAM),
-                         formal2->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+                         f1Param,
+                         f2Param)) {
     EXPLAIN("III: Fn %d is param preferred\n", i);
     DS.updateWeakPrefers(1, "formal1", DC);
 
-  } else if (weakPrefers(actual, actualNotSyncType,
+  } else if (weakPrefers(actual, actualNotSyncType, considerWeakPrefers,
                          f2Type,
                          f1Type,
-                         formal2->hasFlag(FLAG_INSTANTIATED_PARAM),
-                         formal1->hasFlag(FLAG_INSTANTIATED_PARAM))) {
-
+                         f2Param,
+                         f1Param)) {
     EXPLAIN("JJJ: Fn %d is param preferred\n", i);
     DS.updateWeakPrefers(2, "formal2", DC);
 
@@ -4100,6 +4161,10 @@ static void testArgMapping(FnSymbol*                    fn1,
     //   1 is an int, so prefer the 'int' version
     //   (i.e. prefer the type attached to the param)
     //   otherwise,
+    //
+    // TODO: are these rules really necessary? could it be covered by other
+    // rules?
+  /*
   } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
               (is_real_type(f2Type) || is_complex_type(f2Type))) {
     EXPLAIN("N1: Fn %d is more specific\n", i);
@@ -4110,6 +4175,16 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("N2: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
+  } else if ((is_real_type(f1Type) || is_imag_type(f1Type)) &&
+              (is_complex_type(f2Type))) {
+    EXPLAIN("N3: Fn %d is more specific\n", i);
+    DS.fn1MoreSpecific = true;
+
+  } else if ((is_real_type(f2Type) || is_imag_type(f2Type)) &&
+              (is_complex_type(f1Type))) {
+    EXPLAIN("N4: Fn %d is more specific\n", j);
+    DS.fn2MoreSpecific = true;
+  */
   } else {
     EXPLAIN("O: no information gained from argument\n");
   }
