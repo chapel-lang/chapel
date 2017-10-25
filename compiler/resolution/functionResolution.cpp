@@ -1725,24 +1725,26 @@ static bool paramPrefers(Symbol* actual,
     numeric_type_t f1T = classifyNumericType(f1Type);
     numeric_type_t f2T = classifyNumericType(f2Type);
 
-    bool aToInt = (aT == NUMERIC_TYPE_BOOL ||
-                   aT == NUMERIC_TYPE_ENUM ||
-                   aT == NUMERIC_TYPE_INT ||
-                   aT == NUMERIC_TYPE_UINT);
+    bool aIntUint = (aT == NUMERIC_TYPE_INT ||
+                     aT == NUMERIC_TYPE_UINT);
 
-    // Prefer e.g. bool(w1) passed to bool(w2) over to int (say)
+    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL ||
+                      aT == NUMERIC_TYPE_ENUM);
+
+    // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
+    // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
       paramPreferArg1 = true;
-    // Prefer bool/enum/int/uint cast to default-sized integer over another
-    // size of int
-    else if (aToInt &&
+    // Prefer bool/enum cast to default-sized integer over another
+    // size of int if aT is not an integral type
+    else if (aBoolEnum &&
              f1Type == dtInt[INT_SIZE_DEFAULT] &&
              f2T == NUMERIC_TYPE_INT &&
              f2Type != dtInt[INT_SIZE_DEFAULT])
       paramPreferArg1 = true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
     // size of real.
-    else if (aToInt &&
+    else if ((aBoolEnum || aIntUint) &&
              f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
              f2T == NUMERIC_TYPE_REAL &&
              f2Type != dtReal[FLOAT_SIZE_DEFAULT])

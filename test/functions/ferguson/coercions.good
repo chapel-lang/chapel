@@ -1,8 +1,28 @@
 Test0 uses only RealComplexImag32Foos
+foo(u8)
+    r32 0.0
+foo(i8)
+    r32 0.0
+foo(u16)
+    r32 0.0
+foo(i16)
+    r32 0.0
 foo(r32)
     r32 0.0
 foo(c64)
     c64 0.0 + 0.0i
+foo(1)
+    r32 1.0
+foo(-1)
+    r32 -1.0
+foo(1000)
+    r32 1000.0
+foo(-1000)
+    r32 -1000.0
+foo(100000)
+    r32 1e+05
+foo(-100000)
+    r32 -1e+05
 Test1 uses only RealFoos
 foo(u8)
     r64 0.0
