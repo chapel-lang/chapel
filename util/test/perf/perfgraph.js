@@ -1315,6 +1315,18 @@ function unselectAllGraphs() {
   checkAll(false);
 }
 
+function invertSelection() {
+  for (var i = 0; i < allGraphs.length; i++) {
+    var elem = document.getElementById('graph' + i);
+    // Only tick the checkboxes that are visible. This allows users to
+    // filter for a string, hit 'select all', and only have that subset
+    // selected.
+    if ($(elem.parentElement).is(":visible")) {
+      elem.checked = !elem.checked;
+    }
+  }
+}
+
 
 function checkAll(val) {
   for (var i = 0; i < allGraphs.length; i++) {
