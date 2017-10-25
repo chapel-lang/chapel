@@ -16,4 +16,11 @@ proc main() {
 
   var pt = bf.decrypt(ct, key, iv);
   writeln("PT: ", pt.toHex());
+
+  delete pt;
+  delete ct;
+  delete key;
+  delete iv;
+  delete msg;
+  delete bf;
 }
