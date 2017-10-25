@@ -1182,6 +1182,46 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
     }
+
+    //
+    // If the actual is an enum, check to see if *all* its values
+    // are small enough that they fit into this integer width
+    //
+    if (EnumType* etype = toEnumType(actualType)) {
+      ensureEnumTypeResolved(etype);
+
+      if (is_uint_type(etype->getIntegerType()) &&
+          get_width(etype->getIntegerType()) <= get_width(formalType)) {
+        return true;
+      }
+    }
+
+    //
+    // For smaller integer types, if the argument is a param, does it
+    // store a value that's small enough that it could dispatch to
+    // this argument?
+    //
+    if (get_width(formalType) < 64) {
+      if (VarSymbol* var = toVarSymbol(actualSym)) {
+        if (var->immediate) {
+          if (fits_in_uint(get_width(formalType), var->immediate)) {
+            return true;
+          }
+        }
+      }
+
+      if (EnumType* etype = toEnumType(actualType)) {
+        ensureEnumTypeResolved(etype);
+
+        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
+          if (Immediate* enumval = enumsym->getImmediate()) {
+            if (fits_in_uint(get_width(formalType), enumval)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
   }
 
   // param strings can coerce between string and c_string
@@ -3119,9 +3159,12 @@ static void filterCandidate(CallInfo&                  info,
        info.call->id == explainCallID)) {
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 
+    /*
     if (info.call->id == breakOnResolveID) {
       gdbShouldBreakHere();
-    }
+    }*/
+    if (fn->id == 365492)
+      gdbShouldBreakHere();
   }
 
   if (candidate->isApplicable(info) == true) {

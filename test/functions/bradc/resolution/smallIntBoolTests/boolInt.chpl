@@ -1,14 +1,9 @@
-//
-// This shows that some int(8)/bool ops that used to be unambiguous when
-// bools chose the smallest integer size are now ambiguous and demonstrates
-// that this is consistent with what we've been doing with enums.
-//
 proc foo(x: int(?w), y: int(w)) {
-  writeln("In int foo");
+  writeln("In int foo ", w);
 }
 
 proc foo(x: uint(?w), y: uint(w)) {
-  writeln("In uint foo");
+  writeln("In uint foo ", w);
 }
 
 proc foo(x: int(64), y: uint(64)) {
@@ -28,5 +23,11 @@ var ui:uint(8);
 var b: bool;
 var myb: mybool;
 
+// The uint(8) / int(8) version is chosen because
+// that argument is an exact match and that has
+// higher priority than the "param preference" of
+// the conversion from bool/enum
 foo(b, i);
 foo(b, ui);
+foo(myb, i);
+foo(myb, ui);

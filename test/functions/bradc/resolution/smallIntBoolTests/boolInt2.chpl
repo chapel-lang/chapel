@@ -1,8 +1,3 @@
-//
-// This shows that some int(8)/bool ops that used to be unambiguous when
-// bools chose the smallest integer size are now ambiguous and demonstrates
-// that this is consistent with what we've been doing with enums.
-//
 proc foo(x: int(?w), y: int(w)) {
   writeln("In int foo");
 }
