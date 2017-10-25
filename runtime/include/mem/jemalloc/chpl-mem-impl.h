@@ -65,7 +65,8 @@ static inline void* chpl_memalign(size_t boundary, size_t size) {
   int rc;
   rc = CHPL_JE_POSIX_MEMALIGN(&ret, boundary, size);
   if( rc == 0 ) return ret;
-  else return NULL;
+  chpl_internal_error("chpl_memalign failed");
+  return NULL;
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
