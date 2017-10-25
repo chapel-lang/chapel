@@ -1701,7 +1701,6 @@ static numeric_type_t classifyNumericType(Type* t)
 
 static bool weakPrefers(Symbol* actual,
                          Type* actualType,
-                         bool flexibleActual,
                          Type* f1Type,
                          Type* f2Type,
                          bool f1Param,
@@ -1725,13 +1724,11 @@ static bool weakPrefers(Symbol* actual,
     else return false;
   }
 
-  if (!flexibleActual) return false;
-
   bool paramPreferArg1 = false;
   if (f1Type == f2Type)
     paramPreferArg1 = false; // no preference yet if types are the same
   else if(actualType == f1Type)
-    paramPreferArg1 = true; // f1 type matches, looks good
+    paramPreferArg1 = true;  // f1 type matches, looks good
   else if(actualType == f2Type)
     paramPreferArg1 = false; // we'd prefer f2
   else if (actualType != f1Type && actualType != f2Type) {
@@ -3967,10 +3964,10 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
 
   bool actualParam = false;
-  bool considerWeakPrefers = true;
+  bool paramWithExplicitSize = false;
   // Don't enable param/ weak preferences for non-default sized param values.
   // If somebody bothered to type the param, they probably want it to stay that
-  // way. This is a work-around for ambiguity with e.g.
+  // way. This is a strategy to resolve ambiguity with e.g.
   //  +(param x:int(32), param y:int(32)
   //  +(param x:int(64), param y:int(64)
   // called with
@@ -3980,16 +3977,23 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualParam = true;
 
     if (imm->const_kind == NUM_KIND_INT && imm->num_index != INT_SIZE_DEFAULT)
-      considerWeakPrefers = false;
+      paramWithExplicitSize = true;
+    if (imm->const_kind == NUM_KIND_UINT && imm->num_index != INT_SIZE_DEFAULT)
+      paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_REAL && imm->num_index != FLOAT_SIZE_DEFAULT)
-      considerWeakPrefers = false;
+      paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_IMAG && imm->num_index != FLOAT_SIZE_DEFAULT)
-      considerWeakPrefers = false;
+      paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_COMPLEX && imm->num_index != COMPLEX_SIZE_DEFAULT)
-      considerWeakPrefers = false;
+      paramWithExplicitSize = true;
   }
 
-  EXPLAIN("Actual's type: %s\n", toString(actualType));
+  EXPLAIN("Actual's type: %s", toString(actualType));
+  if (actualParam)
+    EXPLAIN(" (param)");
+  if (paramWithExplicitSize)
+    EXPLAIN(" (<default)");
+  EXPLAIN("\n");
 
   canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
 
@@ -4093,21 +4097,21 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("J0: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (actualSyncSingle &&
+  } else if ((actualSyncSingle || paramWithExplicitSize) &&
              actualNotSyncType == f1Type &&
              actualNotSyncType != f2Type) {
 
     EXPLAIN("I: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
-  } else if (actualSyncSingle &&
+  } else if ((actualSyncSingle || paramWithExplicitSize) &&
              actualNotSyncType == f2Type &&
              actualNotSyncType != f1Type) {
 
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (weakPrefers(actual, actualNotSyncType, considerWeakPrefers,
+  } else if (weakPrefers(actual, actualNotSyncType,
                          f1Type,
                          f2Type,
                          f1Param,
@@ -4115,12 +4119,12 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("III: Fn %d is param preferred\n", i);
     DS.updateWeakPrefers(1, "formal1", DC);
 
-  } else if (weakPrefers(actual, actualNotSyncType, considerWeakPrefers,
+  } else if (weakPrefers(actual, actualNotSyncType,
                          f2Type,
                          f1Type,
                          f2Param,
                          f1Param)) {
-    EXPLAIN("JJJ: Fn %d is param preferred\n", i);
+    EXPLAIN("JJJ: Fn %d is param preferred\n", j);
     DS.updateWeakPrefers(2, "formal2", DC);
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
@@ -4164,7 +4168,6 @@ static void testArgMapping(FnSymbol*                    fn1,
     //
     // TODO: are these rules really necessary? could it be covered by other
     // rules?
-  /*
   } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
               (is_real_type(f2Type) || is_complex_type(f2Type))) {
     EXPLAIN("N1: Fn %d is more specific\n", i);
@@ -4184,7 +4187,6 @@ static void testArgMapping(FnSymbol*                    fn1,
               (is_complex_type(f1Type))) {
     EXPLAIN("N4: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
-  */
   } else {
     EXPLAIN("O: no information gained from argument\n");
   }
