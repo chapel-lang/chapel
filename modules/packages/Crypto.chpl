@@ -715,7 +715,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     /* The `Blowfish` class constructor that initializes the Blowfish encryption
        algorithm with the right key length and chaining mode.
 
-       It supports 3 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
+       It supports 4 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
 
        - ``cbc`` or `Cipher Block Chaining`
 
