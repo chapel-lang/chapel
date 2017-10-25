@@ -72,9 +72,9 @@ class DisambiguationState {
 public:
         DisambiguationState();
 
-  void  updateParamPrefers(int                          preference,
-                           const char*                  argStr,
-                           const DisambiguationContext& DC);
+  void  updateWeakPrefers(int                          preference,
+                          const char*                  argStr,
+                          const DisambiguationContext& DC);
 
   bool  fn1MoreSpecific;
   bool  fn2MoreSpecific;
@@ -83,7 +83,7 @@ public:
   bool  fn2Promotes;
 
   // 1 == fn1, 2 == fn2, -1 == conflicting signals
-  int   paramPrefers;
+  int   weakPrefers;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -1685,7 +1685,7 @@ static numeric_type_t classifyNumericType(Type* t)
   return NUMERIC_TYPE_BOOL;
 }
 
-static bool paramPrefers(Symbol* actual,
+static bool weakPrefers(Symbol* actual,
                          Type* actualType,
                          Type* f1Type,
                          Type* f2Type,
@@ -3830,11 +3830,11 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       EXPLAIN("\nR: Fn %d is more specific\n", j);
       prefer2 = true;
 
-    } else if (DS.paramPrefers == 1) {
+    } else if (DS.weakPrefers == 1) {
       EXPLAIN("\nS: Fn %d is more specific\n", i);
       prefer1 = true;
 
-    } else if (DS.paramPrefers == 2) {
+    } else if (DS.weakPrefers == 2) {
       EXPLAIN("\nT: Fn %d is more specific\n", j);
       prefer2 = true;
 
@@ -4045,22 +4045,22 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (paramPrefers(actual, actualNotSyncType,
-                          f1Type,
-                          f2Type,
-                          formal1->hasFlag(FLAG_INSTANTIATED_PARAM),
-                          formal2->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+  } else if (weakPrefers(actual, actualNotSyncType,
+                         f1Type,
+                         f2Type,
+                         formal1->hasFlag(FLAG_INSTANTIATED_PARAM),
+                         formal2->hasFlag(FLAG_INSTANTIATED_PARAM))) {
     EXPLAIN("III: Fn %d is param preferred\n", i);
-    DS.updateParamPrefers(1, "formal1", DC);
+    DS.updateWeakPrefers(1, "formal1", DC);
 
-  } else if (paramPrefers(actual, actualNotSyncType,
-                          f2Type,
-                          f1Type,
-                          formal2->hasFlag(FLAG_INSTANTIATED_PARAM),
-                          formal1->hasFlag(FLAG_INSTANTIATED_PARAM))) {
+  } else if (weakPrefers(actual, actualNotSyncType,
+                         f2Type,
+                         f1Type,
+                         formal2->hasFlag(FLAG_INSTANTIATED_PARAM),
+                         formal1->hasFlag(FLAG_INSTANTIATED_PARAM))) {
 
     EXPLAIN("JJJ: Fn %d is param preferred\n", i);
-    DS.updateParamPrefers(2, "formal2", DC);
+    DS.updateWeakPrefers(2, "formal2", DC);
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     EXPLAIN("K: Fn %d is more specific\n", i);
@@ -9927,19 +9927,19 @@ DisambiguationState::DisambiguationState() {
   fn1Promotes     = false;
   fn2Promotes     = false;
 
-  paramPrefers    = 0;
+  weakPrefers     = 0;
 }
 
-void DisambiguationState::updateParamPrefers(
+void DisambiguationState::updateWeakPrefers(
                                      int                          preference,
                                      const char*                  argStr,
                                      const DisambiguationContext& DC) {
-  if (paramPrefers == 0 || paramPrefers == preference) {
-    paramPrefers = preference;
-    EXPLAIN("param prefers %s\n", argStr);
+  if (weakPrefers == 0 || weakPrefers == preference) {
+    weakPrefers = preference;
+    EXPLAIN("weak prefers %s\n", argStr);
 
   } else {
-    paramPrefers = -1;
-    EXPLAIN("param prefers differing things\n");
+    weakPrefers = -1;
+    EXPLAIN("weak prefers differing things\n");
   }
 }
