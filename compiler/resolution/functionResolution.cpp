@@ -1194,8 +1194,8 @@ static bool canParamCoerce(Type*   actualType,
 
   // coerce fully representable integers into real / real part of complex
   if (is_real_type(formalType)) {
-    if (is_bool_type(actualType))
-      return true;
+    // don't coerce bools to reals (per spec: "uninteded by programmer")
+
     if (is_int_type(actualType) &&
         get_width(actualType) < get_mantissa_width(formalType))
       return true;
