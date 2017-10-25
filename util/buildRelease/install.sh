@@ -322,8 +322,7 @@ if [ -f tools/mason/mason ]
 then
   if [ ! -z "$PREFIX" ]
   then
-    myinstallfile tools/mason/mason "$PREFIX/share/chapel/$VERS/tools/mason"
-    ln -s "$PREFIX/share/chapel/$VERS/tools/mason/mason" "$PREFIX/bin/mason"
+    myinstallfile tools/mason/mason "$PREFIX/bin"
   else
     myinstallfile tools/mason/mason "$DEST_CHPL_HOME/tools/mason"
     ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_HOST_PLATFORM"/mason
