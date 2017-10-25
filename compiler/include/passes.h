@@ -95,6 +95,7 @@ void checkReturnTypesHaveRefTypes();
 
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
+void buildDefaultEnumFunctions(EnumType* et);
 
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;

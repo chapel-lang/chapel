@@ -309,9 +309,18 @@ void EnumType::verify() {
 EnumType*
 EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
-  for_enums(def, this)
-    copy->constants.insertAtTail(COPY_INT(def));
+  for_enums(def, this) {
+    DefExpr* newDef = COPY_INT(def);
+    newDef->sym->type = copy;
+    copy->constants.insertAtTail(newDef);
+  }
   copy->addSymbol(symbol);
+
+  // ensure we have the size, cast, assignment functions, etc.
+  // Lydia NOTE: This relies on making no copies of enum types prior to
+  // buildDefaultFunctions
+  buildDefaultEnumFunctions(copy);
+
   return copy;
 }
 

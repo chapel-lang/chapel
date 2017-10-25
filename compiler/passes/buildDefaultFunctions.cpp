@@ -121,13 +121,7 @@ void buildDefaultFunctions() {
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
-        buildStringCastFunction(et);
-
-        build_enum_cast_function(et);
-        build_enum_assignment_function(et);
-        build_enum_first_function(et);
-        build_enum_size_function(et);
-        build_enum_enumerate_function(et);
+        buildDefaultEnumFunctions(et);
 
       } else {
         // The type is a simple type.
@@ -697,6 +691,16 @@ static void build_record_inequality_function(AggregateType* ct) {
   normalize(fn);
 }
 
+void buildDefaultEnumFunctions(EnumType* et) {
+  buildStringCastFunction(et);
+
+  build_enum_cast_function(et);
+  build_enum_assignment_function(et);
+  build_enum_first_function(et);
+  build_enum_size_function(et);
+  build_enum_enumerate_function(et);
+}
+
 
 static void build_enum_size_function(EnumType* et) {
   if (function_exists("size", et))
@@ -730,6 +734,7 @@ static void build_enum_size_function(EnumType* et) {
   reset_ast_loc(fnDef, et->symbol);
 
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 
@@ -770,6 +775,7 @@ static void build_enum_first_function(EnumType* et) {
   reset_ast_loc(fnDef, et->symbol);
 
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 static void build_enum_enumerate_function(EnumType* et) {
@@ -795,6 +801,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 static void build_enum_cast_function(EnumType* et) {
@@ -845,6 +852,8 @@ static void build_enum_cast_function(EnumType* et) {
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 
+  fn->tagIfGeneric();
+
   // string to enumerated type cast function
   fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -889,6 +898,7 @@ static void build_enum_cast_function(EnumType* et) {
   baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 
@@ -1639,6 +1649,7 @@ static void buildStringCastFunction(EnumType* et) {
   baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
+  fn->tagIfGeneric();
 }
 
 
