@@ -4052,6 +4052,9 @@ static void testArgMapping(FnSymbol*                    fn1,
   }
   bool paramWithDefaultSize = actualParam && ! paramWithExplicitSize;
 
+  if (is_enum_type(actualType))
+    paramWithDefaultSize = false;
+
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
     EXPLAIN(" (param)");
