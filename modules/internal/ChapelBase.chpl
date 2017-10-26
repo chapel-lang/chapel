@@ -1786,7 +1786,7 @@ module ChapelBase {
     return __primitive("<=", a, b);
   }
   inline proc <=(param a: int(64), b: int(64)) {
-    if a == 0 then return true; else return __primitive("<=", a, b);
+    return __primitive("<=", a, b);
   }
 
 
