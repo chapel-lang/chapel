@@ -3664,13 +3664,12 @@ static int disambiguateByMatch(CallInfo&                  info,
 
     total = nRef + nConstRef + nValue + nOther;
 
-    // 0 matches -> return now, not a ref pair.
-    if (total == 0) {
+    // 0 or 1 matches -> return now, not a ref pair.
+    if (total <= 1) {
       retval = 0;
 
-    // 1 match   -> It should not be possible to get here
-    } else if (total == 1) {
-      INT_ASSERT(false);
+      // 1 match is possible with best==NULL in cases
+      // where the 'more specific' relation is not transitive.
 
     } else if (nOther > 0) {
       ambiguous.clear();
