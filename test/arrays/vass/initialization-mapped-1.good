@@ -1,2 +1,2 @@
-initialization-mapped-1.chpl:8: warning: BlockDom(1,int(64),false)
-initialization-mapped-1.chpl:9: warning: BlockDom(1,int(64),false)
+initialization-mapped-1.chpl:8: warning: _domain(BlockDom(1,int(64),false,DefaultDist))
+initialization-mapped-1.chpl:9: warning: _domain(BlockDom(1,int(64),false,DefaultDist))
