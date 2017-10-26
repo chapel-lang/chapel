@@ -1274,13 +1274,19 @@ static Expr* preFoldNamed(CallExpr* call) {
           bool fromString = (oldType == dtString || oldType == dtStringC);
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
-          bool fromIntEtc = fromIntUint || is_bool_type(oldType);
+          bool fromRealEtc = is_real_type(oldType) ||
+                             is_imag_type(oldType) ||
+                             is_complex_type(oldType);
+          bool fromIntEtc = fromIntUint || fromRealEtc || is_bool_type(oldType);
 
           bool toEnum = is_enum_type(newType);
           bool toString = (newType == dtString || newType == dtStringC);
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
-          bool toIntEtc = toIntUint || is_bool_type(newType);
+          bool toRealEtc = is_real_type(newType) ||
+                           is_imag_type(newType) ||
+                           is_complex_type(newType);
+          bool toIntEtc = toIntUint || toRealEtc || is_bool_type(newType);
 
 
           // Handle casting between numeric types
