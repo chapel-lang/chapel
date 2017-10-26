@@ -1509,18 +1509,21 @@ module ChapelBase {
   //
   // non-param/param and param/non-param cases -- these cases
   // are provided to support operations on runtime uint and
-  // param uint combinations.  The param/non-param int cases
-  // don't need to be explicitly given because they will default
-  // to the normal int/int cases above.  If these overloads are
-  // not provided, these functions will dispatch to the error
-  // cases just above, which is inconsistent (i.e., one should
-  // be able to add "1" to a uint variable given that "1" is a
-  // legal uint param).
-  //
+  // param uint combinations.  These are expressed in terms of int/uint
+  // functions with one param argument and one non-param argument.
+  // An int and uint version of each is provided in order to
+  // avoid resolution selecting a 'param' argument that crosses
+  // types in a surprising manner (which might lead to ambiguity).
   inline proc +(a: uint(64), param b: uint(64)) {
     return __primitive("+", a, b);
   }
   inline proc +(param a: uint(64), b: uint(64)) {
+    return __primitive("+", a, b);
+  }
+  inline proc +(a: int(64), param b: int(64)) {
+    return __primitive("+", a, b);
+  }
+  inline proc +(param a: int(64), b: int(64)) {
     return __primitive("+", a, b);
   }
 
@@ -1536,6 +1539,12 @@ module ChapelBase {
   inline proc -(param a: uint(64), b: uint(64)) {
     return __primitive("-", a, b);
   }
+  inline proc -(a: int(64), param b: int(64)) {
+    return __primitive("-", a, b);
+  }
+  inline proc -(param a: int(64), b: int(64)) {
+    return __primitive("-", a, b);
+  }
 
 
   // non-param/non-param
@@ -1547,6 +1556,12 @@ module ChapelBase {
     return __primitive("*", a, b);
   }
   inline proc *(param a: uint(64), b: uint(64)) {
+    return __primitive("*", a, b);
+  }
+  inline proc *(a: int(64), param b: int(64)) {
+    return __primitive("*", a, b);
+  }
+  inline proc *(param a: int(64), b: int(64)) {
     return __primitive("*", a, b);
   }
 
@@ -1572,6 +1587,12 @@ module ChapelBase {
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
+  inline proc /(param a: int(64), b: int(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
 
 
   // non-param/non-param
@@ -1585,6 +1606,12 @@ module ChapelBase {
   inline proc **(param a: uint(64), b: uint(64)) {
     return __primitive("**", a, b);
   }
+  inline proc **(a: int(64), param b: int(64)) {
+    return __primitive("**", a, b);
+  }
+  inline proc **(param a: int(64), b: int(64)) {
+    return __primitive("**", a, b);
+  }
 
 
   // non-param/non-param
@@ -1596,17 +1623,20 @@ module ChapelBase {
     if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-
-  // TODO: No longer necessary once param coercion for uints is improved
   inline proc %(param a: uint(64), b: uint(64)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-
   inline proc %(a: int(64), param b: int(64)) {
     if b == 0 then compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline proc %(param a: int(64), b: int(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
@@ -1680,6 +1710,13 @@ module ChapelBase {
   inline proc >(param a: uint(64), b: uint(64)) {
     if a == 0 then return false; else return __primitive(">", a, b);
   }
+  inline proc >(a: int(64), param b: int(64)) {
+    return __primitive(">", a, b);
+  }
+  inline proc >(param a: int(64), b: int(64)) {
+    return __primitive(">", a, b);
+  }
+
 
   // non-param/non-param
   inline proc <(a: uint(64), b: int(64)) {
@@ -1696,6 +1733,13 @@ module ChapelBase {
   inline proc <(param a: uint(64), b: uint(64)) {
     return __primitive("<", a, b);
   }
+  inline proc <(a: int(64), param b: int(64)) {
+    return __primitive("<", a, b);
+  }
+  inline proc <(param a: int(64), b: int(64)) {
+    return __primitive("<", a, b);
+  }
+
 
 
   // non-param/non-param
@@ -1711,6 +1755,12 @@ module ChapelBase {
     if b == 0 then return true; else return __primitive(">=", a, b);
   }
   inline proc >=(param a: uint(64), b: uint(64)) {
+    return __primitive(">=", a, b);
+  }
+  inline proc >=(a: int(64), param b: int(64)) {
+    return __primitive(">=", a, b);
+  }
+  inline proc >=(param a: int(64), b: int(64)) {
     return __primitive(">=", a, b);
   }
 
@@ -1730,6 +1780,13 @@ module ChapelBase {
   inline proc <=(param a: uint(64), b: uint(64)) {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
+  inline proc <=(a: int(64), param b: int(64)) {
+    return __primitive("<=", a, b);
+  }
+  inline proc <=(param a: int(64), b: int(64)) {
+    if a == 0 then return true; else return __primitive("<=", a, b);
+  }
+
 
   proc isClassType(type t) param where t:object return true;
   proc isClassType(type t) param where t == _nilType return true;
