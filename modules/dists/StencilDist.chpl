@@ -1219,7 +1219,7 @@ proc StencilArr.dsiSerialWrite(f) {
   for dim in 1..rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f <~> dsiAccess(i);
+    f <~> do_dsiAccess(true, i);
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
       if ! binary then f <~> " ";
       i(rank) += dom.dsiDim(rank).stride:strType;
