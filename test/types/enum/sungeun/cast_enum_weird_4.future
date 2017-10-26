@@ -1,2 +1,0 @@
-bug: Unable to resolve return type for cast between enum and string if enum declared in function and string passed in as type parameter
-

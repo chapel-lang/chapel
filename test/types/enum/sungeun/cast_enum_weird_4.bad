@@ -1,2 +1,0 @@
-cast_enum_weird_4.chpl:1: In function 'f':
-cast_enum_weird_4.chpl:6: error: illegal cast from string to E
