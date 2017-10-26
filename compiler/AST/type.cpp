@@ -315,12 +315,6 @@ EnumType::copyInner(SymbolMap* map) {
     copy->constants.insertAtTail(newDef);
   }
   copy->addSymbol(symbol);
-
-  // ensure we have the size, cast, assignment functions, etc.
-  // Lydia NOTE: This relies on making no copies of enum types prior to
-  // buildDefaultFunctions
-  buildDefaultEnumFunctions(copy);
-
   return copy;
 }
 

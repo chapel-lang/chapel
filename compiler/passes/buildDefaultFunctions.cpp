@@ -121,7 +121,8 @@ void buildDefaultFunctions() {
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
-        buildDefaultEnumFunctions(et);
+        buildNearScopeEnumFunctions(et);
+        buildFarScopeEnumFunctions(et);
 
       } else {
         // The type is a simple type.
@@ -691,14 +692,23 @@ static void build_record_inequality_function(AggregateType* ct) {
   normalize(fn);
 }
 
-void buildDefaultEnumFunctions(EnumType* et) {
+// Builds default enum functions that are defined in the scope in which the
+// enum type is defined
+void buildNearScopeEnumFunctions(EnumType* et) {
+  build_enum_assignment_function(et);
+  build_enum_enumerate_function(et);
+}
+
+// Builds default enum functions that are defined outside of the scope in which
+// the enum type is defined
+// It is necessary to have this separated out, because such functions are not
+// automatically created when the EnumType is copied.
+void buildFarScopeEnumFunctions(EnumType* et) {
   buildStringCastFunction(et);
 
   build_enum_cast_function(et);
-  build_enum_assignment_function(et);
   build_enum_first_function(et);
   build_enum_size_function(et);
-  build_enum_enumerate_function(et);
 }
 
 
