@@ -309,8 +309,11 @@ void EnumType::verify() {
 EnumType*
 EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
-  for_enums(def, this)
-    copy->constants.insertAtTail(COPY_INT(def));
+  for_enums(def, this) {
+    DefExpr* newDef = COPY_INT(def);
+    newDef->sym->type = copy;
+    copy->constants.insertAtTail(newDef);
+  }
   copy->addSymbol(symbol);
   return copy;
 }

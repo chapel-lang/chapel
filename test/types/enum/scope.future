@@ -1,5 +1,0 @@
-bug: enums declared inside param-arg functions are not initialized correctly
-
-Declaring and using enums inside of functions that take compile-time arguments
-such as params or types results in compilation error due to the enum type being
-unknown.

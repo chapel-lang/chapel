@@ -1,2 +1,0 @@
-scope-type.chpl:3: In function 'enumScopeTest':
-scope-type.chpl:5: error: use of 'one' before encountering its definition, type unknown
