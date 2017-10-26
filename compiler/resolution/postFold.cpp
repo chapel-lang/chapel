@@ -37,56 +37,53 @@ static Expr* postFoldMove(CallExpr* call);
 
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
+/*
 static void  foldEnumOp(int         op,
                         EnumSymbol* e1,
                         EnumSymbol* e2,
                         Immediate*  imm);
+*/
+
+static Immediate* getImmediate(Symbol* actual) {
+  Immediate* imm = NULL;
+
+  if (VarSymbol* var = toVarSymbol(actual)) {
+    imm = var->immediate;
+  }
+  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
+    ensureEnumTypeResolved(toEnumType(enumsym->type));
+    imm = enumsym->getImmediate();
+  }
+
+  return imm;
+}
 
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
-    if (VarSymbol* lhs = toVarSymbol(sym->symbol())) {                  \
-      if (lhs->immediate) {                                             \
-        Immediate i3;                                                   \
-                                                                        \
-        fold_constant(prim, lhs->immediate, NULL, &i3);                 \
-                                                                        \
-        retval = new SymExpr(new_ImmediateSymbol(&i3));                 \
-                                                                        \
-        call->replace(retval);                                          \
-      }                                                                 \
+    if (Immediate* imm = getImmediate(sym->symbol())) {                 \
+      Immediate i3;                                                     \
+								        \
+      fold_constant(prim, imm, NULL, &i3);                              \
+								        \
+      retval = new SymExpr(new_ImmediateSymbol(&i3));                   \
+								        \
+      call->replace(retval);                                            \
     }                                                                   \
   }
 
 #define FOLD_CALL2(prim)                                                \
-  if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
-    if (VarSymbol* lhs = toVarSymbol(sym->symbol())) {                  \
-      if (lhs->immediate) {                                             \
-        if (SymExpr* sym = toSymExpr(call->get(2))) {                   \
-          if (VarSymbol* rhs = toVarSymbol(sym->symbol())) {            \
-            if (rhs->immediate) {                                       \
-              Immediate i3;                                             \
-                                                                        \
-              fold_constant(prim, lhs->immediate, rhs->immediate, &i3); \
-                                                                        \
-              retval = new SymExpr(new_ImmediateSymbol(&i3));           \
-                                                                        \
-              call->replace(retval);                                    \
-            }                                                           \
-          }                                                             \
-        }                                                               \
-      }                                                                 \
-                                                                        \
-    } else if (EnumSymbol* lhs = toEnumSymbol(sym->symbol())) {         \
-      if (SymExpr* sym = toSymExpr(call->get(2))) {                     \
-        if (EnumSymbol* rhs = toEnumSymbol(sym->symbol())) {            \
-          Immediate imm;                                                \
-                                                                        \
-          foldEnumOp(prim, lhs, rhs, &imm);                             \
-                                                                        \
-          retval = new SymExpr(new_ImmediateSymbol(&imm));              \
-                                                                        \
-          call->replace(retval);                                        \
-        }                                                               \
+  if (SymExpr* lhsSe = toSymExpr(call->get(1))) {                       \
+    if (Immediate* lhs = getImmediate(lhsSe->symbol())) {               \
+      if (SymExpr* rhsSe = toSymExpr(call->get(2))) {                   \
+	if (Immediate* rhs = getImmediate(rhsSe->symbol())) {           \
+	  Immediate i3;                                                 \
+								        \
+	  fold_constant(prim, lhs, rhs, &i3);                           \
+								        \
+	  retval = new SymExpr(new_ImmediateSymbol(&i3));               \
+								        \
+	  call->replace(retval);                                        \
+	}                                                               \
       }                                                                 \
     }                                                                   \
   }
@@ -777,7 +774,7 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
 
 // This function acts as if a "long" on the compiler host is at least as big
 // as "int" on the target.  This is not guaranteed to be true.
-
+/*
 static void foldEnumOp(int         op,
                        EnumSymbol* e1,
                        EnumSymbol* e2,
@@ -850,3 +847,4 @@ static void foldEnumOp(int         op,
       break;
   }
 }
+*/
