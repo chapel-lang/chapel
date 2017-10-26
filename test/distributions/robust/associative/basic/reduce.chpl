@@ -32,7 +32,7 @@ testReduceArr(AReal);
 testReduceDom(DomRealType, AReal);
 
 proc testReduceArr(AA) {
-  type idxType = AA.domain._value.idxType;
+  type idxType = AA.domain.idxType;
   var minAA = min reduce AA;
   var checkMin = max(idxType);
   for ai in AA.domain {
@@ -44,7 +44,7 @@ proc testReduceArr(AA) {
 }
 
 proc testReduceDom(Dom, AA) {
-  type idxType = Dom._value.idxType;
+  type idxType = Dom.idxType;
   var minAA = min reduce [ai in Dom] AA(ai);
   var checkMin = max(idxType);
   for ai in AA.domain {
