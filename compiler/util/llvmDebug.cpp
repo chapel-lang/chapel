@@ -60,9 +60,6 @@ http://llvm.org/docs/SourceLevelDebugging.html
 for more information on LLVM debug information.
 */
 
-// smooth changes in zero DIFlags
-#define FLAG_ZERO llvm::DINode::FlagZero
-
 // Note: All char strings must be the same size
 // Very hacky, but completely legal and functional. Only issue is that file_name 
 // will have garbage from beyond full_path.
@@ -209,7 +206,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             (PointeeTy->isSized()?
             8*layout.getABITypeAlignment(PointeeTy):
             8), /* AlignInBits */
-            FLAG_ZERO, /* Flags */
+            llvm::DINode::FlagZero, /* Flags */
             NULL, /* DerivedFrom */
             NULL /* Elements */
             );
@@ -298,7 +295,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
                 layout.getTypeSizeInBits(fty),
                 8*layout.getABITypeAlignment(fty),
                 slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
-                FLAG_ZERO,
+                llvm::DINode::FlagZero,
                 fditype);
 
               EltTys.push_back(mty);
@@ -312,7 +309,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               defLine, /* LineNumber */
               layout.getTypeSizeInBits(ty), /* SizeInBits */
               8*layout.getABITypeAlignment(ty), /* AlignInBits */
-              FLAG_ZERO, /* Flags */
+              llvm::DINode::FlagZero, /* Flags */
               derivedFrom, /* DerivedFrom */
               this->dibuilder.getOrCreateArray(EltTys) /* Elements */
               );
@@ -373,7 +370,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         layout.getTypeSizeInBits(fty),
         8*layout.getABITypeAlignment(fty),
         slayout->getElementOffsetInBits(this_class->getMemberGEP(field->cname)),
-        FLAG_ZERO,
+        llvm::DINode::FlagZero,
         fditype);
 
       EltTys.push_back(mty);
@@ -387,7 +384,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         defLine,
         layout.getTypeSizeInBits(ty),
         8*layout.getABITypeAlignment(ty),
-        FLAG_ZERO,
+        llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
     
@@ -402,7 +399,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         defLine,
         layout.getTypeSizeInBits(ty),
         8*layout.getABITypeAlignment(ty),
-        FLAG_ZERO,
+        llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
     
@@ -417,7 +414,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         defLine,
         layout.getTypeSizeInBits(ty),
         8*layout.getABITypeAlignment(ty),
-        FLAG_ZERO,
+        llvm::DINode::FlagZero,
         this->dibuilder.getOrCreateArray(EltTys));
         
       myTypeDescriptors[type] = N;
@@ -561,7 +558,7 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
     !function->hasFlag(FLAG_EXPORT), /* is local to unit */
     true, /* is definition */
     line_number, /* beginning of scope we start */
-    FLAG_ZERO, /* flags */
+    llvm::DINode::FlagZero, /* flags */
     optimized /* isOptimized */
     // TODO - in 3.8, do we need to pass Decl?
     );
@@ -677,7 +674,7 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
       line_number, /*Lineno*/
       argSym_type, /*Type*/
       true,/*AlwaysPreserve, won't be removed when optimized*/
-      FLAG_ZERO /*Flags*/
+      llvm::DINode::FlagZero /*Flags*/
       );
   else {
     //Empty dbg node if the symbol type is unresolved
