@@ -1029,26 +1029,22 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
-// BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
-// intent
-//
 inline
-proc StencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
-  var i = idx;
+proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   local {
     if myLocArr != nil {
       if setter || this.ignoreFluff {
         // A write: return from actual data and not fluff
-        if myLocArr.locDom.member(i) then return myLocArr.this(i);
+        if myLocArr.locDom.member(idx) then return myLocArr.this(idx);
       } else {
         // A read: return from fluff if possible
         // If there is no fluff, then myFluff == myBlock
-        if myLocArr.locDom.myFluff.member(i) then return myLocArr.this(i);
+        if myLocArr.locDom.myFluff.member(idx) then return myLocArr.this(idx);
       }
     }
   }
 
-  return nonLocalAccess(i);
+  return nonLocalAccess(idx);
 }
 
 proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
