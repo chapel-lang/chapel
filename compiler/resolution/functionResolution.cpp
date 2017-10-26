@@ -72,18 +72,21 @@ class DisambiguationState {
 public:
         DisambiguationState();
 
-  void  updateWeakPrefers(int                          preference,
-                          const char*                  argStr,
-                          const DisambiguationContext& DC);
-
   bool  fn1MoreSpecific;
   bool  fn2MoreSpecific;
 
   bool  fn1Promotes;
   bool  fn2Promotes;
 
-  // 1 == fn1, 2 == fn2, -1 == conflicting signals
-  int   weakPrefers;
+  bool fn1WeakPreferred;
+  bool fn2WeakPreferred;
+
+  int  fn1NumCoercions;
+  int  fn2NumCoercions;
+  int  fn1NumParamNonCoercions;
+  int  fn2NumParamNonCoercions;
+  int  fn1NumParamParamCoercions;
+  int  fn2NumParamParamCoercions;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -3894,48 +3897,66 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 
   if (DS.fn1Promotes != DS.fn2Promotes) {
-    EXPLAIN("\nP: Fn %d does not require argument promotion; Fn %d does\n",
-                                DS.fn1Promotes ? j : i,
-                                DS.fn1Promotes ? i : j);
+    EXPLAIN("\nP: only one of the functions requires argument promotion\n");
 
     // Prefer the version that did not promote
     prefer1 = !DS.fn1Promotes;
     prefer2 = !DS.fn2Promotes;
 
   } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
+    EXPLAIN("\nP1: only one more specific argument mapping\n");
+
     prefer1 = DS.fn1MoreSpecific;
     prefer2 = DS.fn2MoreSpecific;
+
+  } else if (DS.fn1NumCoercions != DS.fn2NumCoercions) {
+    EXPLAIN("\nP2: preferring function with fewer coercions\n");
+    // Prefer the version with fewer coercions
+    if (DS.fn1NumCoercions < DS.fn2NumCoercions)
+      prefer1 = true;
+    else
+      prefer2 = true;
 
   } else {
     // If the decision hasn't been made based on the argument mappings...
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
-      EXPLAIN("\nQ: Fn %d is more specific\n", i);
+      EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
 
     } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
-      EXPLAIN("\nR: Fn %d is more specific\n", j);
+      EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
 
-    } else if (DS.weakPrefers == 1) {
-      EXPLAIN("\nS: Fn %d is more specific\n", i);
-      prefer1 = true;
+    } else if (DS.fn1NumParamNonCoercions != DS.fn2NumParamNonCoercions) {
+      EXPLAIN("\nS1: preferring function with fewer param coercions\n");
+      if (DS.fn1NumParamNonCoercions < DS.fn2NumParamNonCoercions)
+        prefer1 = true;
+      else
+        prefer2 = true;
 
-    } else if (DS.weakPrefers == 2) {
-      EXPLAIN("\nT: Fn %d is more specific\n", j);
-      prefer2 = true;
+    } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
+      EXPLAIN("\nS: preferring based on weak preference\n");
+      prefer1 = DS.fn1WeakPreferred;
+      prefer2 = DS.fn2WeakPreferred;
+
+    } else if (DS.fn1NumParamParamCoercions != DS.fn2NumParamParamCoercions) {
+      EXPLAIN("\nS1: preferring function with fewer param-param coercions\n");
+      if (DS.fn1NumParamParamCoercions < DS.fn2NumParamParamCoercions)
+        prefer1 = true;
+      else
+        prefer2 = true;
 
     } else if (!ignoreWhere) {
       bool fn1where = candidate1->fn->where != NULL &&
                       !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
       bool fn2where = candidate2->fn->where != NULL &&
                       !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      if (fn1where && !fn2where) {
-        EXPLAIN("\nU: Fn %d is more specific\n", i);
-        prefer1 = true;
 
-      } else if (!fn1where && fn2where) {
-        EXPLAIN("\nV: Fn %d is more specific\n", j);
-        prefer2 = true;
+      if (fn1where != fn2where) {
+        EXPLAIN("\nU: preferring function with where clause\n");
+
+        prefer1 = fn1where;
+        prefer2 = fn2where;
       }
     }
   }
@@ -3995,11 +4016,11 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
 
-  bool  actualSyncSingle = false;
+  //bool  actualSyncSingle = false;
   Type* actualNotSyncType = actualType;
   if (isSyncType(actualType) || isSingleType(actualType)) {
     actualNotSyncType = actualType->getField("valType")->getValType();
-    actualSyncSingle = true;
+    //actualSyncSingle = true;
   }
 
   bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
@@ -4057,6 +4078,20 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("Formal 1 is NOT an instantiated param.\n");
   }
 
+  // Adjust number of coercions for f1
+  if (actualType != f1Type) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal 1\n");
+      if (f1Param)
+        DS.fn1NumParamParamCoercions++;
+      else
+        DS.fn1NumParamNonCoercions++;
+    } else {
+      EXPLAIN("Actual requires coercion to match formal 1\n");
+      DS.fn1NumCoercions++;
+    }
+  }
+
   canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
 
   DS.fn2Promotes |= formal2Promotes;
@@ -4073,6 +4108,20 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("Formal 2 is an instantiated param.\n");
   } else {
     EXPLAIN("Formal 2 is NOT an instantiated param.\n");
+  }
+
+  // Adjust number of coercions for f2
+  if (actualType != f2Type) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal 2\n");
+      if (f2Param)
+        DS.fn2NumParamParamCoercions++;
+      else
+        DS.fn2NumParamNonCoercions++;
+    } else {
+      EXPLAIN("Actual requires coercion to match formal 2\n");
+      DS.fn2NumCoercions++;
+    }
   }
 
   if (f1Type == f2Type && f1Param && !f2Param) {
@@ -4129,108 +4178,117 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (actualType == f1Type &&
              actualType != f2Type &&
-             !f1Param && !f2Param && !actualParam) {
+             !actualParam) {
     EXPLAIN("I0: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (actualType == f2Type &&
              actualType != f1Type &&
-             !f1Param && !f2Param && !actualParam) {
+             !actualParam) {
     EXPLAIN("J0: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if ((actualSyncSingle || paramWithExplicitSize) &&
+  } else if (//(actualSyncSingle || paramWithExplicitSize) &&
              actualNotSyncType == f1Type &&
-             actualNotSyncType != f2Type) {
-
+             actualNotSyncType != f2Type &&
+             (f1Param == f2Param || f1Param)) {
     EXPLAIN("I: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
-  } else if ((actualSyncSingle || paramWithExplicitSize) &&
+  } else if (//(actualSyncSingle || paramWithExplicitSize) &&
              actualNotSyncType == f2Type &&
-             actualNotSyncType != f1Type) {
-
+             actualNotSyncType != f1Type &&
+             (f1Param == f2Param || f2Param)) {
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (weakPrefers(actual, actualNotSyncType,
-                         f1Type,
-                         f2Type,
-                         f1Param,
-                         f2Param)) {
-    EXPLAIN("III: Fn %d is param preferred\n", i);
-    DS.updateWeakPrefers(1, "formal1", DC);
-
-  } else if (weakPrefers(actual, actualNotSyncType,
-                         f2Type,
-                         f1Type,
-                         f2Param,
-                         f1Param)) {
-    EXPLAIN("JJJ: Fn %d is param preferred\n", j);
-    DS.updateWeakPrefers(2, "formal2", DC);
-
-  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    EXPLAIN("K: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    EXPLAIN("L: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
-
-  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    EXPLAIN("M: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
-
-  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    EXPLAIN("N: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
-
-    // uint(8) could resolve to int or uint argument, say
-    // it could also resolve to real or complex of any width
-    //  -> preferred coercion order?
-    // say I have f(all numeric types) available
-    // f(my_uint8)
-    //   the only one really ineligible is int(8)
-    //   other than that, we choose the smallest type
-    //   b/c arg1 can coerce into arg2
-    //     int(16)
-    //       better than int(32) int(64)
-    //     uint(16)
-    //       better than uint(32) uint(64)
-    //     real(32)
-    //       better than real(64)
-    //       better than complex(64) complex(128)
-    //
-    //   Now, how to choose between int(16), uint(16), and real(32)?
-    //   by making int/uint "more specific" than "real"
-    // f(1)
-    //   1 is an int, so prefer the 'int' version
-    //   (i.e. prefer the type attached to the param)
-    //   otherwise,
-    //
-    // TODO: are these rules really necessary? could it be covered by other
-    // rules?
-  } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
-              (is_real_type(f2Type) || is_complex_type(f2Type))) {
-    EXPLAIN("N1: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
-
-  } else if ((is_int_type(f2Type) || is_uint_type(f2Type)) &&
-              (is_real_type(f1Type) || is_complex_type(f1Type))) {
-    EXPLAIN("N2: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
-
-  } else if ((is_real_type(f1Type) || is_imag_type(f1Type)) &&
-              (is_complex_type(f2Type))) {
-    EXPLAIN("N3: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
-
-  } else if ((is_real_type(f2Type) || is_imag_type(f2Type)) &&
-              (is_complex_type(f1Type))) {
-    EXPLAIN("N4: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
   } else {
-    EXPLAIN("O: no information gained from argument\n");
+
+    bool weakPrefer1 = false;
+    bool weakPrefer2 = false;
+    bool strongPrefer1 = false;
+    bool strongPrefer2 = false;
+
+    if (weakPrefers(actual, actualNotSyncType,
+                           f1Type,
+                           f2Type,
+                           f1Param,
+                           f2Param)) {
+      EXPLAIN("III: Fn %d is param preferred\n", i);
+      weakPrefer1 = true;
+
+    } else if (weakPrefers(actual, actualNotSyncType,
+                           f2Type,
+                           f1Type,
+                           f2Param,
+                           f1Param)) {
+      EXPLAIN("JJJ: Fn %d is param preferred\n", j);
+      weakPrefer2 = true;
+
+    }
+
+    // either way, compute what strong preference we would have.
+    // We do this so that we can upgrade the weak preference to a
+    // strong preference in the event it matches. If it doesn't match,
+    // we ignore the strong preference.
+    if (actualNotSyncType == f1Type && actualNotSyncType != f2Type) {
+      EXPLAIN("II: Fn %d is more specific\n", i);
+      strongPrefer1 = true;
+
+    } else if (actualNotSyncType == f2Type && actualNotSyncType != f1Type) {
+      EXPLAIN("JJ: Fn %d is more specific\n", j);
+      strongPrefer2 = true;
+
+    } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+      EXPLAIN("K: Fn %d is more specific\n", i);
+      strongPrefer1 = true;
+
+    } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+      EXPLAIN("L: Fn %d is more specific\n", j);
+      strongPrefer2 = true;
+
+    } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
+      EXPLAIN("M: Fn %d is more specific\n", i);
+      strongPrefer1 = true;
+
+    } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
+      EXPLAIN("N: Fn %d is more specific\n", j);
+      strongPrefer2 = true;
+
+      // TODO: are these rules really necessary? could it be covered by other
+      // rules?
+    } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
+                (is_real_type(f2Type) || is_complex_type(f2Type))) {
+      EXPLAIN("N1: Fn %d is more specific\n", i);
+      strongPrefer1 = true;
+
+    } else if ((is_int_type(f2Type) || is_uint_type(f2Type)) &&
+                (is_real_type(f1Type) || is_complex_type(f1Type))) {
+      EXPLAIN("N2: Fn %d is more specific\n", j);
+      strongPrefer2 = true;
+
+    } else if ((is_real_type(f1Type) || is_imag_type(f1Type)) &&
+                (is_complex_type(f2Type))) {
+      EXPLAIN("N3: Fn %d is more specific\n", i);
+      strongPrefer1 = true;
+
+    } else if ((is_real_type(f2Type) || is_imag_type(f2Type)) &&
+                (is_complex_type(f1Type))) {
+      EXPLAIN("N4: Fn %d is more specific\n", j);
+      strongPrefer2 = true;
+    } else {
+      if (!weakPrefer1 && !weakPrefer2)
+        EXPLAIN("O: no information gained from argument\n");
+    }
+
+    // For now, weak preference always overrides strong preference
+    if (weakPrefer1 || weakPrefer2) {
+      DS.fn1WeakPreferred |= weakPrefer1;
+      DS.fn2WeakPreferred |= weakPrefer2;
+    } else {
+      DS.fn1MoreSpecific |= strongPrefer1;
+      DS.fn2MoreSpecific |= strongPrefer2;
+    }
   }
 }
 
@@ -10046,19 +10104,13 @@ DisambiguationState::DisambiguationState() {
   fn1Promotes     = false;
   fn2Promotes     = false;
 
-  weakPrefers     = 0;
-}
+  fn1WeakPreferred= false;
+  fn2WeakPreferred= false;
 
-void DisambiguationState::updateWeakPrefers(
-                                     int                          preference,
-                                     const char*                  argStr,
-                                     const DisambiguationContext& DC) {
-  if (weakPrefers == 0 || weakPrefers == preference) {
-    weakPrefers = preference;
-    EXPLAIN("weak prefers %s\n", argStr);
-
-  } else {
-    weakPrefers = -1;
-    EXPLAIN("weak prefers differing things\n");
-  }
+  fn1NumCoercions = 0;
+  fn2NumCoercions = 0;
+  fn1NumParamNonCoercions = 0;
+  fn2NumParamNonCoercions = 0;
+  fn1NumParamParamCoercions = 0;
+  fn2NumParamParamCoercions = 0;
 }

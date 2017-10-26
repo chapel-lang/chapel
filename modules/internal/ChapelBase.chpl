@@ -1511,6 +1511,8 @@ module ChapelBase {
   // are provided to support operations on runtime uint and
   // param uint combinations.  These are expressed in terms of int/uint
   // functions with one param argument and one non-param argument.
+  // If these functions are not provided, resolution will select
+  // the error version of the function (which is the int/uint overload).
   // An int and uint version of each is provided in order to
   // avoid resolution selecting a 'param' argument that crosses
   // types in a surprising manner (which might lead to ambiguity).
