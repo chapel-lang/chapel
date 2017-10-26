@@ -129,8 +129,8 @@ module Test0 {
     
     // These should work, but don't, because the compiler
     // is unwilling to param-convert.
-    //writeln("foo(0.0)");
-    //foo(0.0);
+    writeln("foo(0.0)");
+    foo(0.0);
     //writeln("foo(0.0+0.0i)"); // TODO: could convert param complexes
     //foo(0.0+0.0i);
   }

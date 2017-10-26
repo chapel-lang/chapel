@@ -23,6 +23,8 @@ foo(100000)
     r32 1e+05
 foo(-100000)
     r32 -1e+05
+foo(0.0)
+    r32 0.0
 Test1 uses only RealFoos
 foo(u8)
     r64 0.0
