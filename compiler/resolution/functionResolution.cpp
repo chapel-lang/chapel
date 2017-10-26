@@ -4050,6 +4050,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (imm->const_kind == NUM_KIND_COMPLEX && imm->num_index != COMPLEX_SIZE_DEFAULT)
       paramWithExplicitSize = true;
   }
+  bool paramWithDefaultSize = actualParam && ! paramWithExplicitSize;
 
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
@@ -4189,6 +4190,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     DS.fn2MoreSpecific = true;
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
+             !paramWithDefaultSize &&
              actualNotSyncType == f1Type &&
              actualNotSyncType != f2Type &&
              (f1Param == f2Param || f1Param)) {
@@ -4196,6 +4198,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     DS.fn1MoreSpecific = true;
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
+             !paramWithDefaultSize &&
              actualNotSyncType == f2Type &&
              actualNotSyncType != f1Type &&
              (f1Param == f2Param || f2Param)) {
