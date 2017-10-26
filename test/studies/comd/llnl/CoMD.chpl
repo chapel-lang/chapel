@@ -39,13 +39,13 @@ proc initGrid(latticeConstant: real, const ref force: Force) {
   const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=targetLocales);
   // assert(locDom == distSpace._value.dist.targetLocDom);
 
-  locGrid = distSpace._value.dist.targetLocales;
+  locGrid = distSpace.targetLocales();
   // assert(locGrid == targetLocales);
 
   coforall ijk in locDom {
     on locGrid[ijk] {
       // grab our chunk of the real domain
-      const MyLocDom = distSpace._value.locDoms[ijk].myBlock;
+      const MyLocDom = distSpace.localSubdomain();
 
       const high = MyLocDom.high;
       const low  = MyLocDom.low - 1;
