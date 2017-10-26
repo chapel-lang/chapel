@@ -2007,6 +2007,32 @@ static void insertNodeComparison(Expr* stmt, SymExpr* lhs, SymExpr* rhs) {
     new CallExpr(PRIM_RT_ERROR, new_CStringSymbol("Attempted to assign to local class field with remote class"))));
 }
 
+//
+// Assumption: actual is a wide reference to a tuple, and the corresponding
+// formal is some variant of the 'in' intent.
+//
+// If a wide-ref to a tuple is passed as an argument to a formal with the in
+// intent, this will lead to errors during code generation. Codegen transforms
+// the formal to have INTENT_REF based on the 'argMustUseCPtr' function. Here
+// we insert a PRIM_DEREF to work around this problem by grabbing a local copy
+// of the tuple to replace the actual.
+//
+// The more principled solution would be to treat INTENT_IN and INTENT_CONST_IN
+// more similarly during resolveIntents. Tuple formals with INTENT_IN are
+// updated with INTENT_REF, while const-in formals are left as-is. When the
+// formal has INTENT_REF, the usual widening in this pass (IWR) will take care
+// of everything.
+//
+static void fixTupleFormal(SymExpr* actual) {
+  Expr* stmt = actual->getStmtExpr();
+  SET_LINENO(stmt);
+  VarSymbol* temp = newTemp(actual->getValType());
+  stmt->insertBefore(new DefExpr(temp));
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, temp,
+                                  new CallExpr(PRIM_DEREF, actual->copy())));
+
+  actual->replace(new SymExpr(temp));
+}
 
 static void fixAST() {
   forv_Vec(CallExpr, call, gCallExprs) {
@@ -2016,6 +2042,12 @@ static void fixAST() {
       for_formals_actuals(formal, actual, call) {
         if (SymExpr* act = toSymExpr(actual)) {
           makeMatch(formal, act);
+
+          if (act->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+            if (act->isWideRef() && formal->intent & INTENT_FLAG_IN) {
+              fixTupleFormal(act);
+            }
+          }
         }
       }
     }

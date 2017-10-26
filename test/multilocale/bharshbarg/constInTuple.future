@@ -1,1 +1,0 @@
-bug: failure to compile generated code with inline wrapper around function with 'const in' tuple formal

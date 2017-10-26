@@ -859,11 +859,11 @@ module DefaultAssociative {
     use Reflection;
     var ret : uint;
     for param i in 1..numFields(r.type) {
-      const ref field = getField(r, i);
-      if isVoidType(field.type) == false &&
-         getFieldName(r.type, i) != "_promotionType" &&
+      if isParam(getField(r, i)) == false &&
          isType(getField(r, i)) == false &&
-         isParam(getField(r, i)) == false {
+         isVoidType(getField(r, i).type) == false &&
+         getFieldName(r.type, i) != "_promotionType" {
+        const ref field = getField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then
           ret = fieldHash;

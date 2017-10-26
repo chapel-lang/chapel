@@ -238,6 +238,10 @@ void resolveArgIntent(ArgSymbol* arg) {
     } else if (intent == INTENT_IN) {
       // MPF note: check types/range/ferguson/range-begin.chpl
       // if you try to add INTENT_CONST_IN here.
+      //
+      // BHARSH: Update insertWideReferences.fixTupleFormal and the following
+      // test if INTENT_CONST_IN is added here:
+      //   multilocale/bharshbarg/constInTuple.chpl
 
       // Resolution already handled copying for INTENT_IN for
       // records/unions.
