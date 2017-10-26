@@ -272,6 +272,8 @@ all:
       config: 16 node XC
   09/19/17:
     - Fix LICM bug (#7371)
+  10/21/17:
+    - Reduce wide pointer overhead for sparse domains/arrays (#7627)
 
 
 AllCompTime:
@@ -614,6 +616,8 @@ LCALS-raw-short: &lcals-base
     - Stop throwing --dataParMinGranularity=1000 (#4917)
   12/10/16:
     - Throw --no-ieee-float for LCALS (#5001)
+  10/24/17:
+    - Fix LCALS inner_prod kernel (#7632)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
