@@ -62,11 +62,11 @@ static Immediate* getImmediate(Symbol* actual) {
   if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
     if (Immediate* imm = getImmediate(sym->symbol())) {                 \
       Immediate i3;                                                     \
-								        \
+                                                                        \
       fold_constant(prim, imm, NULL, &i3);                              \
-								        \
+                                                                        \
       retval = new SymExpr(new_ImmediateSymbol(&i3));                   \
-								        \
+                                                                        \
       call->replace(retval);                                            \
     }                                                                   \
   }
@@ -75,15 +75,15 @@ static Immediate* getImmediate(Symbol* actual) {
   if (SymExpr* lhsSe = toSymExpr(call->get(1))) {                       \
     if (Immediate* lhs = getImmediate(lhsSe->symbol())) {               \
       if (SymExpr* rhsSe = toSymExpr(call->get(2))) {                   \
-	if (Immediate* rhs = getImmediate(rhsSe->symbol())) {           \
-	  Immediate i3;                                                 \
-								        \
-	  fold_constant(prim, lhs, rhs, &i3);                           \
-								        \
-	  retval = new SymExpr(new_ImmediateSymbol(&i3));               \
-								        \
-	  call->replace(retval);                                        \
-	}                                                               \
+        if (Immediate* rhs = getImmediate(rhsSe->symbol())) {           \
+          Immediate i3;                                                 \
+                                                                        \
+          fold_constant(prim, lhs, rhs, &i3);                           \
+                                                                        \
+          retval = new SymExpr(new_ImmediateSymbol(&i3));               \
+                                                                        \
+          call->replace(retval);                                        \
+        }                                                               \
       }                                                                 \
     }                                                                   \
   }
