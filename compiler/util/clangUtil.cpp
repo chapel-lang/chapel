@@ -585,7 +585,7 @@ class CCodeGenConsumer : public ASTConsumer {
     ~CCodeGenConsumer() { }
 
     // Start ASTVisitor Overrides
-    void Initialize(ASTContext &Context) LLVM_CXX_OVERRIDE {
+    void Initialize(ASTContext &Context) override {
 
       setupClangContext(info, &Context);
 
@@ -603,7 +603,7 @@ class CCodeGenConsumer : public ASTConsumer {
     // This is called by the parser to process every top-level Decl*.
     //
     // \returns true to continue parsing, or false to abort parsing.
-    bool HandleTopLevelDecl(DeclGroupRef DG) LLVM_CXX_OVERRIDE {
+    bool HandleTopLevelDecl(DeclGroupRef DG) override {
 
       if (Diags->hasErrorOccurred()) return true;
 
@@ -638,20 +638,20 @@ class CCodeGenConsumer : public ASTConsumer {
       Builder->HandleInlineFunctionDefinition(D);
     }
 
-   void HandleInterestingDecl(DeclGroupRef D) LLVM_CXX_OVERRIDE {
+   void HandleInterestingDecl(DeclGroupRef D) override {
      if (Diags->hasErrorOccurred()) return;
      if (parseOnly) return;
      Builder->HandleInterestingDecl(D);
    }
 
-   void HandleTranslationUnit(ASTContext &Context) LLVM_CXX_OVERRIDE {
+   void HandleTranslationUnit(ASTContext &Context) override {
      // Don't call Builder->HandleTranslationUnit yet, so that we
      // can keep it open to codegen more later.
      savedCtx = &Context;
      INT_ASSERT(savedCtx == info->clangInfo->Ctx);
    }
 
-   void HandleTagDeclDefinition(TagDecl *D) LLVM_CXX_OVERRIDE {
+   void HandleTagDeclDefinition(TagDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
 
       // make a note of C globals
@@ -675,69 +675,69 @@ class CCodeGenConsumer : public ASTConsumer {
       Builder->HandleTagDeclDefinition(D);
     }
 
-    void HandleTagDeclRequiredDefinition(const TagDecl *D) LLVM_CXX_OVERRIDE {
+    void HandleTagDeclRequiredDefinition(const TagDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleTagDeclRequiredDefinition(D);
     }
 
-    void HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) LLVM_CXX_OVERRIDE {
+    void HandleCXXImplicitFunctionInstantiation(FunctionDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleCXXImplicitFunctionInstantiation(D);
     }
 
-    void HandleTopLevelDeclInObjCContainer(DeclGroupRef D) LLVM_CXX_OVERRIDE {
+    void HandleTopLevelDeclInObjCContainer(DeclGroupRef D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleTopLevelDeclInObjCContainer(D);
     }
 
-    void HandleImplicitImportDecl(ImportDecl *D) LLVM_CXX_OVERRIDE {
+    void HandleImplicitImportDecl(ImportDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->HandleImplicitImportDecl(D);
     }
 
-    void CompleteTentativeDefinition(VarDecl *D) LLVM_CXX_OVERRIDE {
+    void CompleteTentativeDefinition(VarDecl *D) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->CompleteTentativeDefinition(D);
     }
 
-    void AssignInheritanceModel(CXXRecordDecl *RD) LLVM_CXX_OVERRIDE {
+    void AssignInheritanceModel(CXXRecordDecl *RD) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
       Builder->AssignInheritanceModel(RD);
     }
 
-    void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) LLVM_CXX_OVERRIDE {
+    void HandleCXXStaticMemberVarInstantiation(VarDecl *VD) override {
       if (Diags->hasErrorOccurred()) return;
       if (parseOnly) return;
        Builder->HandleCXXStaticMemberVarInstantiation(VD);
     }
 
-    void HandleVTable(CXXRecordDecl *RD) LLVM_CXX_OVERRIDE {
+    void HandleVTable(CXXRecordDecl *RD) override {
        if (Diags->hasErrorOccurred()) return;
        if (parseOnly) return;
        Builder->HandleVTable(RD);
      }
 
-    ASTMutationListener *GetASTMutationListener() LLVM_CXX_OVERRIDE {
+    ASTMutationListener *GetASTMutationListener() override {
       if (Builder) return Builder->GetASTMutationListener();
       return nullptr;
     }
 
-    ASTDeserializationListener *GetASTDeserializationListener() LLVM_CXX_OVERRIDE {
+    ASTDeserializationListener *GetASTDeserializationListener() override {
       if (Builder) return Builder->GetASTDeserializationListener();
       return nullptr;
     }
 
-    void PrintStats() LLVM_CXX_OVERRIDE {
+    void PrintStats() override {
       if (Builder) Builder->PrintStats();
     }
 
-    bool shouldSkipFunctionBody(Decl *D) LLVM_CXX_OVERRIDE {
+    bool shouldSkipFunctionBody(Decl *D) override {
       if (Builder) return Builder->shouldSkipFunctionBody(D);
       return true;
     }
@@ -1057,7 +1057,7 @@ static void setupModule()
   llvm::LLVMContext& cx = info->module->getContext();
   // Create the TBAA root node
   {
-    LLVM_METADATA_OPERAND_TYPE* Ops[1];
+    llvm::Metadata* Ops[1];
     Ops[0] = llvm::MDString::get(cx, "Chapel types");
     info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
   }
@@ -1890,7 +1890,7 @@ bool isBuiltinExternCFunction(const char* cname)
 
 static
 void addAggregateGlobalOps(const PassManagerBuilder &Builder,
-    LEGACY_PASS_MANAGER &PM) {
+    llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
@@ -1899,7 +1899,7 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder,
 
 static
 void addGlobalToWide(const PassManagerBuilder &Builder,
-    LEGACY_PASS_MANAGER &PM) {
+    llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
     PM.add(createGlobalToWide(&info->globalToWideInfo, info->clangInfo->asmTargetLayoutStr));
@@ -1949,7 +1949,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
 
 static
 void addDumpIrPass(const PassManagerBuilder &Builder,
-    LEGACY_PASS_MANAGER &PM) {
+    llvm::legacy::PassManagerBase &PM) {
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
@@ -2137,7 +2137,7 @@ void makeBinaryLLVM(void) {
           PassManagerBuilder::addGlobalExtension(
               point,
               [stage] (const PassManagerBuilder &Builder,
-                       LEGACY_PASS_MANAGER &PM) -> void {
+                       llvm::legacy::PassManagerBase &PM) -> void {
                 PM.add(createDumpIrPass(stage));
               });
       }

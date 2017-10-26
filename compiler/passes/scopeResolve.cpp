@@ -1018,7 +1018,7 @@ static bool tryCResolve(ModuleSymbol*                     module,
   if (module == NULL) {
     return false;
 
-  } else if (llvm_small_set_insert(visited, module)) {
+  } else if (visited.insert(module).second) {
     // visited.insert(module)) {
     // we added it to the set, so continue.
 

@@ -2316,7 +2316,8 @@ GenRet codegenCallExpr(GenRet function,
       // argument
       if( llArgs.size() < fnType->getNumParams() &&
           func &&
-          llvm_fn_param_has_attr(func,llArgs.size()+1,LLVM_ATTRIBUTE::ByVal) ){
+          func->getAttributes().hasAttribute(llArgs.size()+1,
+                                             llvm::Attribute::ByVal) ){
         args[i] = codegenAddrOf(codegenValuePtr(args[i]));
         // TODO -- this is not working!
       }

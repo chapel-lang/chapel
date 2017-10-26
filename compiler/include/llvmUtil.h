@@ -31,7 +31,9 @@
 // So we can declare our small set insert fixup
 #include "llvm/ADT/SmallSet.h"
 
-#if HAVE_LLVM_VER >= 40
+#if HAVE_LLVM_VER < 40
+#error LLVM version is too old for this version of Chapel
+#endif
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
@@ -40,22 +42,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/DataLayout.h"
-#define LLVM_ATTRIBUTE llvm::Attribute
-static inline bool llvm_fn_param_has_attr(llvm::Function* f, unsigned idx, llvm::Attribute::AttrKind v)
-{
-  return f->getAttributes().hasAttribute(idx, v);
-}
-
-#else
-
-#error LLVM version is too old for this version of Chapel
-
-#endif
-
 #include "llvm/IR/LegacyPassManager.h"
-#define LEGACY_FUNCTION_PASS_MANAGER llvm::legacy::FunctionPassManager
-#define LEGACY_PASS_MANAGER llvm::legacy::PassManagerBase
-#define LEGACY_MODULE_PASS_MANAGER llvm::legacy::PassManager
 
 struct PromotedPair {
   llvm::Value* a;
@@ -77,28 +64,6 @@ PromotedPair convertValuesToLarger(llvm::IRBuilder<> *builder, llvm::Value *valu
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset);
-
-
-// And create a type for a metadata operand 
-#define LLVM_METADATA_OPERAND_TYPE llvm::Metadata
-static inline llvm::ConstantAsMetadata* llvm_constant_as_metadata(llvm::Constant* C)
-{
-  return llvm::ConstantAsMetadata::get(C);
-}
-template<typename T, unsigned N>
-static inline
-bool llvm_small_set_insert(llvm::SmallSet<T,N> & smallset, const T &V) {
-  return smallset.insert(V).second;
-}
-
-// LLVMs after 3.5 require C++11 support
-#define HAVE_LLVM_CXX11 1
-
-#ifdef HAVE_LLVM_CXX11
-#define LLVM_CXX_OVERRIDE override
-#else
-#define LLVM_CXX_OVERRIDE
-#endif
 
 #endif //HAVE_LLVM
 

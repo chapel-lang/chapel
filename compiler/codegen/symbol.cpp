@@ -890,7 +890,7 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    LLVM_METADATA_OPERAND_TYPE* Ops[1];
+    llvm::Metadata* Ops[1];
     Ops[0] = llvm::MDString::get(ctx, "Chapel types");
     info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
   }
@@ -942,26 +942,26 @@ void TypeSymbol::codegenMetadata() {
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     // Now create tbaa metadata, one for const and one for not.
     {
-      LLVM_METADATA_OPERAND_TYPE* Ops[2];
+      llvm::Metadata* Ops[2];
       Ops[0] = llvm::MDString::get(ctx, cname);
       Ops[1] = parent;
       llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, Ops);
     }
     {
-      LLVM_METADATA_OPERAND_TYPE* Ops[3];
+      llvm::Metadata* Ops[3];
       Ops[0] = llvmTbaaTypeDescriptor;
       Ops[1] = llvmTbaaTypeDescriptor;
-      Ops[2] = llvm_constant_as_metadata(
+      Ops[2] = llvm::ConstantAsMetadata::get(
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
       llvmTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
     }
     {
-      LLVM_METADATA_OPERAND_TYPE* Ops[4];
+      llvm::Metadata* Ops[4];
       Ops[0] = llvmTbaaTypeDescriptor;
       Ops[1] = llvmTbaaTypeDescriptor;
-      Ops[2] = llvm_constant_as_metadata(
+      Ops[2] = llvm::ConstantAsMetadata::get(
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
-      Ops[3] = llvm_constant_as_metadata(
+      Ops[3] = llvm::ConstantAsMetadata::get(
                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
       llvmConstTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
     }
@@ -978,8 +978,8 @@ void TypeSymbol::codegenMetadata() {
 
   if( ct ) {
     // Now create the tbaa.struct metadata nodes.
-    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> Ops;
-    llvm::SmallVector<LLVM_METADATA_OPERAND_TYPE*, 16> ConstOps;
+    llvm::SmallVector<llvm::Metadata*, 16> Ops;
+    llvm::SmallVector<llvm::Metadata*, 16> ConstOps;
 
     const char* struct_name = ct->classStructName(true);
     llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
@@ -998,11 +998,11 @@ void TypeSymbol::codegenMetadata() {
       unsigned gep = ct->getMemberGEP(field->cname);
       llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-      Ops.push_back(llvm_constant_as_metadata(off));
-      Ops.push_back(llvm_constant_as_metadata(sz));
+      Ops.push_back(llvm::ConstantAsMetadata::get(off));
+      Ops.push_back(llvm::ConstantAsMetadata::get(sz));
       Ops.push_back(field->type->symbol->llvmTbaaAccessTag);
-      ConstOps.push_back(llvm_constant_as_metadata(off));
-      ConstOps.push_back(llvm_constant_as_metadata(sz));
+      ConstOps.push_back(llvm::ConstantAsMetadata::get(off));
+      ConstOps.push_back(llvm::ConstantAsMetadata::get(sz));
       ConstOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
     }
     llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, Ops);
@@ -1286,7 +1286,7 @@ void FnSymbol::codegenDef() {
     info->lvt->addLayer();
 
     if(debug_info) {
-      LLVM_DISUBPROGRAM dbgScope = debug_info->get_function(this);
+      llvm::DISubprogram* dbgScope = debug_info->get_function(this);
       info->builder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
