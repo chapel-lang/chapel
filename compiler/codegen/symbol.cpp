@@ -392,8 +392,13 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           INT_ASSERT(immediate->num_index == INT_SIZE_64);
           ret.c = "COMMID(" + int64_to_string(iconst) + ")";
         }
-      } else {
+      } else if ((immediate->const_kind == NUM_KIND_REAL ||
+                  immediate->const_kind == NUM_KIND_IMAG)) {
         ret.c = cname; // in C, all floating point literals are (double)
+      } else if (immediate->const_kind == NUM_KIND_COMPLEX) {
+        INT_ASSERT("Can't code generate a complex number here");
+      } else {
+        INT_ASSERT("Unexpected immediate type");
       }
     } else {
       // not immediate
