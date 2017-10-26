@@ -354,6 +354,19 @@ coerce_immediate(Immediate *from, Immediate *to) {
             default: INT_FATAL("Unhandled case in switch statement"); \
           } \
           break; \
+        case NUM_KIND_COMPLEX: \
+          switch (imm->num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_complex64.r = im1.v_complex64.r _op im2.v_complex64.r; \
+              imm->v_complex64.i = im1.v_complex64.i _op im2.v_complex64.i; \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_complex128.r = im1.v_complex128.r _op im2.v_complex128.r; \
+              imm->v_complex128.i = im1.v_complex128.i _op im2.v_complex128.i; \
+              break; \
+            default: INT_FATAL("Unhandled case in switch statement"); \
+          } \
+          break; \
       }
 
 #define COMPUTE_INT_POW(type, b, e)                      \
