@@ -82,8 +82,8 @@ module Math {
   //////////////////////////////////////////////////////////////////////////
   // Helper constants and functions (not included in chpldocs).
   //
-  private extern proc chpl_macro_INFINITY():real(64);
-  private extern proc chpl_macro_NAN():real(64);
+  private extern proc chpl_macro_INFINITY():real(32);
+  private extern proc chpl_macro_NAN():real(32);
 
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
