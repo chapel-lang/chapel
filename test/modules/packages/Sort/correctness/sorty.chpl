@@ -27,7 +27,7 @@ const D = {1..n};
 proc doSort(param st: SortType, trials: int) {
   const iters = {1..trials};
   var I: [D] real;
-  var RefI: domain(I._value.eltType);
+  var RefI: domain(I.eltType);
   var HistI: [RefI] int;
   var t: Timer;
   for i in iters {
