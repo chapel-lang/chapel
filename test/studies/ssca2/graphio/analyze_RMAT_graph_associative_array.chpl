@@ -91,16 +91,9 @@ proc  generate_and_analyze_associative_array_RMAT_graph_representation {
         yield w;}  // var iterator to avoid a copy
 
     // Simply forward the domain's parallel iterator
-    // FYI: no fast follower opt
     iter   edge_weight(v : index (vertices), param tag: iterKind)
-    where tag == iterKind.leader {
-      for block in Row(v).Weight._value.these(tag) do
-        yield block;
-    }
-
-    iter   edge_weight(v : index (vertices), param tag: iterKind, followThis)
-    where tag == iterKind.follower {
-      for elem in Row(v).Weight._value.these(tag, followThis) do
+    where tag == iterKind.standalone {
+      forall elem in Row(v).Weight do
         yield elem;
     }
 

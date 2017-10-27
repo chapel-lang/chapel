@@ -47,18 +47,11 @@ module analyze_torus_graphs {
           yield neighbors(n);
     }
 
-    // Simply forward the domain's parallel iterator
     iter FilteredNeighbors( v : index (vertices), param tag: iterKind)
-    where tag == iterKind.leader {
-      for block in torus_stencil._value.these(tag) do
-        yield block;
-    }
-
-    iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
-    where tag == iterKind.follower {
+    where tag == iterKind.standalone {
       const ref neighbors = Neighbors[v];
       const ref weights = edge_weight[v];
-      for n in torus_stencil._value.these(tag, followThis) do
+      forall n in torus_stencil do
         if (FILTERING && weights(n)%8 != 0) || !FILTERING then
           yield neighbors(n);
     }
@@ -72,18 +65,11 @@ module analyze_torus_graphs {
         yield (neighbors(n), weights(n));
     }
 
-    // Simply forward the domain's parallel iterator
     iter NeighborPairs( v : index (vertices), param tag: iterKind)
-    where tag == iterKind.leader {
-      for block in torus_stencil._value.these(tag) do
-        yield block;
-    }
-
-    iter NeighborPairs( v : index (vertices), param tag: iterKind, followThis)
-    where tag == iterKind.follower {
+    where tag == iterKind.standalone {
       const ref neighbors = Neighbors[v];
       const ref weights = edge_weight[v];
-      for n in torus_stencil._value.these(tag, followThis) do
+      forall n in torus_stencil do
         yield (neighbors(n), weights(n));
     }
 
