@@ -229,7 +229,8 @@ static Expr* postFoldPrimop(CallExpr* call) {
     SymExpr*    left       = toSymExpr(call->get(1));
     VarSymbol*  varSym     = toVarSymbol(sym);
 
-    if (left != NULL && left->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (left != NULL && left->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true &&
+        !sym->isParameter()) {
       retval = new SymExpr(sym->type->symbol);
 
       call->replace(retval);

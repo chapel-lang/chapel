@@ -318,7 +318,7 @@ static void build_accessor(AggregateType* ct, Symbol* field,
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
   if (typeMethod) {
-    setupTypeIntentArg(_this);
+    _this->addFlag(FLAG_TYPE_VARIABLE);
   }
 
   _this->addFlag(FLAG_ARG_THIS);
@@ -411,8 +411,8 @@ static void build_accessor(AggregateType* ct, Symbol* field,
 static void build_accessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
-//  const bool fieldTypeOrParam = field->isParameter() ||
-//                                field->hasFlag(FLAG_TYPE_VARIABLE);
+  const bool fieldTypeOrParam = field->isParameter() ||
+                                field->hasFlag(FLAG_TYPE_VARIABLE);
 
   FnSymbol *setter = function_exists(field->name,
                                      dtMethodToken, ct, FIND_REF);
@@ -438,9 +438,9 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
   }
 
   // If the field is type/param, add a type-method accessor.
-//  if (fieldTypeOrParam) {
-//    build_accessor(ct, field, /* setter */ false, true);
-//  }
+  if (fieldTypeOrParam) {
+    build_accessor(ct, field, /* setter */ false, true);
+  }
 }
 
 static FnSymbol* chpl_gen_main_exists() {
