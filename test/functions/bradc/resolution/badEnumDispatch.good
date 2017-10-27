@@ -29,7 +29,7 @@ param8Or32OrNot variants
 32-bit not param
 
 allSigs variants
-param 8
+param 64
 param 64
 64
 64

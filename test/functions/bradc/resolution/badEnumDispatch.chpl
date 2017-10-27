@@ -41,11 +41,11 @@ proc param8Or32OrNot(x: int(8)) {
 }
 
 proc param8Or32OrNot(param x: int(32)) {
-  writeln("8-bit param");
+  writeln("32-bit param");
 }
 
 proc param8Or32OrNot(x: int(32)) {
-  writeln("8-bit not param");
+  writeln("32-bit not param");
 }
 
 proc allSigs(x: int(8)) {

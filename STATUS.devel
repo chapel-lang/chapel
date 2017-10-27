@@ -100,13 +100,10 @@ General (see also portability section at the bottom of this file)
 
 Types, Params, Variables, and Consts
 ------------------------------------
-- Enum types always represented using the smallest integer type
-  available, even if the enum values require a larger integer.
-  # functions/bradc/resolution/badEnumDispatch.future
 - Enum member initializations cannot depend on previous enum members
   # types/enum/nspark/dependentElements.future
-- Compile time integer operations on enum values may result in non-param values
-  # users/kreider/bug_enum.future
+- Declaring enum types in a function body can cause compile time errors
+  # types/enum/diten/enumDeclInFn.future
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -153,8 +150,6 @@ Types, Params, Variables, and Consts
 
 Conversions
 -----------
-- Implicit conversions of enums to uint not supported.
-  # types/enum/vass/enum-to-uint-1.future
 - Casts and relational operations involving enum constants may fail to
   compile or produce incorrect answers.
   # types/enum/sungeun/cast_enum_weird_2.future
