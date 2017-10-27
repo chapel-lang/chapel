@@ -44,23 +44,13 @@ static void  foldEnumOp(int         op,
                         Immediate*  imm);
 */
 
-static Immediate* getImmediate(Symbol* actual) {
-  Immediate* imm = NULL;
-
-  if (VarSymbol* var = toVarSymbol(actual)) {
-    imm = var->immediate;
-  }
-  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
-    ensureEnumTypeResolved(toEnumType(enumsym->type));
-    imm = enumsym->getImmediate();
-  }
-
-  return imm;
-}
-
 #define FOLD_CALL1(prim)                                                \
-  if (SymExpr* sym = toSymExpr(call->get(1))) {                         \
-    if (Immediate* imm = getImmediate(sym->symbol())) {                 \
+  if (SymExpr* se = toSymExpr(call->get(1))) {                          \
+    Symbol* sym = se->symbol();                                         \
+    if (isEnumSymbol(sym)) {                      \
+      ensureEnumTypeResolved(toEnumType(sym->type));                    \
+    }                                                                   \
+    if (Immediate* imm = getSymbolImmediate(sym)) {                     \
       Immediate i3;                                                     \
                                                                         \
       fold_constant(prim, imm, NULL, &i3);                              \
@@ -73,9 +63,17 @@ static Immediate* getImmediate(Symbol* actual) {
 
 #define FOLD_CALL2(prim)                                                \
   if (SymExpr* lhsSe = toSymExpr(call->get(1))) {                       \
-    if (Immediate* lhs = getImmediate(lhsSe->symbol())) {               \
-      if (SymExpr* rhsSe = toSymExpr(call->get(2))) {                   \
-        if (Immediate* rhs = getImmediate(rhsSe->symbol())) {           \
+    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {                     \
+      Symbol* lhsSym = lhsSe->symbol();                                 \
+      Symbol* rhsSym = rhsSe->symbol();                                 \
+      if (isEnumSymbol(lhsSym)) {                 \
+        ensureEnumTypeResolved(toEnumType(lhsSym->type));               \
+      }                                                                 \
+      if (isEnumSymbol(rhsSym)) {                 \
+        ensureEnumTypeResolved(toEnumType(rhsSym->type));               \
+      }                                                                 \
+      if (Immediate* lhs = getSymbolImmediate(lhsSym)) {                \
+        if (Immediate* rhs = getSymbolImmediate(rhsSym)) {              \
           Immediate i3;                                                 \
                                                                         \
           fold_constant(prim, lhs, rhs, &i3);                           \

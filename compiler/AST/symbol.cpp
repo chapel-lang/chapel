@@ -2760,6 +2760,24 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   return s;
 }
 
+Immediate *getSymbolImmediate(Symbol* sym) {
+  Immediate* imm = NULL;
+
+  if (VarSymbol* var = toVarSymbol(sym)) {
+    imm = var->immediate;
+  }
+  if (EnumSymbol* enumsym = toEnumSymbol(sym)) {
+    EnumType* et = toEnumType(enumsym->type);
+    // If the integer type is not yet known, the enum type
+    // hasn't been resolved.
+    INT_ASSERT(et->getIntegerType() != NULL);
+    imm = enumsym->getImmediate();
+  }
+
+  return imm;
+}
+
+
 // enable locally-unique temp names?
 bool localTempNames = false;
 

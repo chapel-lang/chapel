@@ -1071,20 +1071,49 @@ static Expr* preFoldNamed(CallExpr* call) {
                 call->replace(retval);
 
               } else if (typeEnum) {
-                int64_t value    = 0;
-                int64_t count    = 0;
+                uint64_t fromUint = 0;
+                int64_t  fromInt  = 0;
+                bool     haveUint = false;
+                bool     haveInt  = false;
+
                 bool    replaced = false;
 
-                if (!get_int(call->castFrom(), &value)) {
-                  INT_FATAL("unexpected case in cast_fold");
-                }
+                ensureEnumTypeResolved(typeEnum);
+
+                haveInt  = get_int(call->castFrom(), &fromInt);
+                haveUint = get_uint(call->castFrom(), &fromUint);
+
+                INT_ASSERT(haveInt || haveUint);
 
                 for_enums(constant, typeEnum) {
-                  if (!get_int(constant->init, &count)) {
-                    count++;
-                  }
 
-                  if (count == value) {
+                  uint64_t cUint = 0;
+                  int64_t   cInt = 0;
+                  bool   gotUint = false;
+                  bool   gotInt  = false;
+
+                  gotInt  = get_int(constant->init, &cInt);
+                  gotUint = get_uint(constant->init, &cUint);
+
+                  INT_ASSERT(gotInt || gotUint);
+
+                  bool match = false;
+                  // both int
+                  if (gotInt && haveInt && cInt == fromInt)
+                    match = true;
+                  // both uint
+                  if (gotUint && haveUint && cUint == fromUint)
+                    match = true;
+                  // int/uint and int is unsigned
+                  if (gotInt && haveUint && cInt >= 0 &&
+                      (uint64_t)cInt == fromUint)
+                    match = true;
+                  // uint/int and int is unsigned
+                  if (gotUint && haveInt && fromInt >= 0 &&
+                      cUint == (uint64_t)fromInt)
+                    match = true;
+
+                  if (match) {
                     retval = new SymExpr(constant->sym);
 
                     call->replace(retval);

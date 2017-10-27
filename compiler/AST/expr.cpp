@@ -1794,50 +1794,52 @@ void NamedExpr::accept(AstVisitor* visitor) {
 
 bool
 get_int(Expr *e, int64_t *i) {
+  Immediate* imm = NULL;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->symbol())) {
-        if (v->immediate) {
-          if (v->immediate->const_kind == NUM_KIND_INT) {
-            *i = v->immediate->int_value();
-            return true;
-          }
-        }
-      }
+      imm = getSymbolImmediate(l->symbol());
     }
   }
+
+  if (imm && imm->const_kind == NUM_KIND_INT) {
+    *i = imm->int_value();
+    return true;
+  }
+
   return false;
 }
 
 bool
 get_uint(Expr *e, uint64_t *i) {
+  Immediate* imm = NULL;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->symbol())) {
-        if (v->immediate) {
-          if (v->immediate->const_kind == NUM_KIND_UINT) {
-            *i = v->immediate->uint_value();
-            return true;
-          }
-        }
-      }
+      imm = getSymbolImmediate(l->symbol());
     }
   }
+
+  if (imm && imm->const_kind == NUM_KIND_UINT) {
+    *i = imm->uint_value();
+    return true;
+  }
+
   return false;
 }
 
 bool
 get_string(Expr *e, const char **s) {
+  Immediate* imm = NULL;
   if (e) {
     if (SymExpr *l = toSymExpr(e)) {
-      if (VarSymbol *v = toVarSymbol(l->symbol())) {
-        if (v->immediate && v->immediate->const_kind == CONST_KIND_STRING) {
-          *s = v->immediate->v_string;
-          return true;
-        }
-      }
+      imm = getSymbolImmediate(l->symbol());
     }
   }
+
+  if (imm && imm->const_kind == CONST_KIND_STRING) {
+    *s = imm->v_string;
+    return true;
+  }
+
   return false;
 }
 

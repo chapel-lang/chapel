@@ -6435,8 +6435,21 @@ void ensureEnumTypeResolved(EnumType* etype) {
       if (def->init != NULL) {
         Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
 
-        if (enumTypeExpr->typeInfo() == dtUnknown) {
+        Type* t = enumTypeExpr->typeInfo();
+
+        if (t == dtUnknown) {
           INT_FATAL(def->init, "Unable to resolve enumerator type expression");
+        }
+        if (!is_int_type(t) && !is_uint_type(t)) {
+          USR_FATAL(def,
+                    "enumerator '%s' is not an integer param value",
+                    def->sym->name);
+        }
+
+        // Replace def->init if it's not the same as enumTypeExpr
+        if (enumTypeExpr != def->init) {
+          enumTypeExpr->remove();
+          def->init->replace(enumTypeExpr);
         }
       }
     }
