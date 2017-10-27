@@ -757,18 +757,21 @@ if ($runtests == 0) {
     $endtime = localtime;
 
 #
-# Sync performance graphs to SF.
+# Sync performance graphs to dreamhost.
 #
 
     if ($performance == 1 or $compperformance == 1) {
-        # sync the performance graphs over to sourceforge
-        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/syncToSourceForge.errors";
-        $rsyncMessage = "syncing performance graph to sourceforge -- log file at $logdir/syncToSourceForge.errors";
+        # sync the performance graphs over to dreamhost
+        my $str = "syncToDreamhost.$perfConfigName/$syncsuffix";
+        $str =~ s,/,-,g;
+        $str =~ s,-*$,,;
+        $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/$str.errors";
+        $rsyncMessage = "syncing performance graph to dreamhost -- log file at $logdir/$str.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
    }
 
 #
-# Splice nightly data into release-over-release performance, and sync to SF.
+# Splice nightly data into release-over-release performance, and sync to dreamhost.
 #
 
     if ($releasePerformance == 1) {
@@ -822,9 +825,12 @@ if ($runtests == 0) {
             $genGraphsMessage = "Generating release over release performance graphs";
             mysystem($genGraphsCommand, $genGraphsMessage, 0, 1, 1);
 
-            # sync the perf graphs over to sourceforge
-            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/syncReleaseToSourceForge.errors";
-            $rsyncMessage = "syncing release performance graph to sourceforge -- log file at $logdir/syncReleaseToSourceForge.errors";
+            # sync the perf graphs over to dreamhost
+            my $str = "syncReleaseToDreamhost.$perfConfigName/releaseOverRelease/$syncsuffix";
+            $str =~ s,/,-,g;
+            $str =~ s,-*$,,;
+            $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/$str.errors";
+            $rsyncMessage = "syncing release performance graph to dreamhost -- log file at $logdir/$str.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
         }
     }
