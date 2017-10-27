@@ -46,6 +46,10 @@ proc getSize(type t) param {
   return t.size;
 }
 
+proc getFirst(type t) type {
+  return t(1);
+}
+
 proc test3() {
   writeln("test3");
 
@@ -54,6 +58,9 @@ proc test3() {
 
   param sz2 = (2*int).size;
   writeln(sz2);
+
+  type t = getFirst( (string, real, int) );
+  writeln(t:string);
 }
 
 test1();
