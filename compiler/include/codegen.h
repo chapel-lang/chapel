@@ -37,7 +37,7 @@
 #ifdef HAVE_LLVM
 
 // forward declare.
-class ClangInfo;
+struct ClangInfo;
 
 #endif
 

@@ -343,11 +343,7 @@ void convertDeclToChpl(ModuleSymbol* module,
   //functions
   if (clang::FunctionDecl *fd =
       llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue)) {
-#if HAVE_LLVM_VER >= 35
     clang::QualType resultType = fd->getReturnType();
-#else
-    clang::QualType resultType = fd->getResultType();
-#endif
     FnSymbol* f = new FnSymbol(name);
     f->addFlag(FLAG_EXTERN);
     f->addFlag(FLAG_LOCAL_ARGS);

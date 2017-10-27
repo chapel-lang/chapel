@@ -303,15 +303,9 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     } else {
 #ifdef HAVE_LLVM
       llvm::Value* adr = info->builder->CreateStructGEP(
-#if HAVE_LLVM_VER >= 37
-          NULL,
-#endif
-          ret.val, WIDE_GEP_ADDR);
+          NULL, ret.val, WIDE_GEP_ADDR);
       llvm::Value* loc = info->builder->CreateStructGEP(
-#if HAVE_LLVM_VER >= 37
-          NULL,
-#endif
-          ret.val, WIDE_GEP_LOC);
+          NULL, ret.val, WIDE_GEP_LOC);
 
       // cast address if needed. This is necessary for building a wide
       // NULL pointer since NULL is actually an i8*.
@@ -343,11 +337,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     // we are supposed to have since null has type void*.
     llvm::Value* locAddr = raddr.val;
     locAddr = info->builder->CreatePointerCast(locAddr, locAddrType);
-#if HAVE_LLVM_VER >= 37
     ret.val = info->builder->CreateCall(fn, {locale.val, locAddr});
-#else
-    ret.val = info->builder->CreateCall2(fn, locale.val, locAddr);
-#endif
 
 #endif
   }
@@ -388,14 +378,9 @@ void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
   llvm::Type *int8PtrTy =
     llvm::Type::getInt8Ty(info->llvmContext)->getPointerTo(0);
 
-  #if HAVE_LLVM_VER >= 40
   llvm::Type *objectPtr = { int8PtrTy };
   llvm::Function *invariantStart =
     llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start, objectPtr);
-  #else
-  llvm::Function *invariantStart =
-    llvm::Intrinsic::getDeclaration(info->module, llvm::Intrinsic::invariant_start);
-  #endif
 
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
@@ -723,10 +708,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
       if (ws.val->getType()->isPointerTy()){
         ret.isLVPtr = GEN_PTR;
         ret.val = info->builder->CreateConstInBoundsGEP2_32(
-#if HAVE_LLVM_VER >= 37
-                                            NULL,
-#endif
-                                            ws.val, 0, field);
+                                            NULL, ws.val, 0, field);
       } else {
         ret.isLVPtr = GEN_VAL;
         ret.val = info->builder->CreateExtractValue(ws.val, field);
@@ -1005,10 +987,7 @@ GenRet codegenFieldPtr(
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
-#if HAVE_LLVM_VER >= 37
-          NULL,
-#endif
-          baseValue, 0, cBaseType->getMemberGEP("_u"));
+          NULL, baseValue, 0, cBaseType->getMemberGEP("_u"));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1018,10 +997,7 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       ret.val = info->builder->CreateConstInBoundsGEP2_32(
-#if HAVE_LLVM_VER >= 37
-          NULL,
-#endif
-          baseValue, 0, cBaseType->getMemberGEP(c_field_name));
+          NULL, baseValue, 0, cBaseType->getMemberGEP(c_field_name));
     }
 #endif
   }
@@ -2340,7 +2316,8 @@ GenRet codegenCallExpr(GenRet function,
       // argument
       if( llArgs.size() < fnType->getNumParams() &&
           func &&
-          llvm_fn_param_has_attr(func,llArgs.size()+1,LLVM_ATTRIBUTE::ByVal) ){
+          func->getAttributes().hasAttribute(llArgs.size()+1,
+                                             llvm::Attribute::ByVal) ){
         args[i] = codegenAddrOf(codegenValuePtr(args[i]));
         // TODO -- this is not working!
       }

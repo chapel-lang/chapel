@@ -56,11 +56,7 @@ void codegenStmt(Expr* stmt) {
       if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
         scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
       } else {
-        scope = info->builder->getCurrentDebugLocation().getScope(
-#if HAVE_LLVM_VER < 37
-                                                      info->llvmContext
-#endif
-                                                      );
+        scope = info->builder->getCurrentDebugLocation().getScope();
       }
 
       info->builder->SetCurrentDebugLocation(

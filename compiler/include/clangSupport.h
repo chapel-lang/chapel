@@ -34,21 +34,9 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/SmallString.h"
 
-#if HAVE_LLVM_VER >= 32
-// workaround for oddities with clang 3.2
-namespace clang {
-  using namespace llvm;
-//  typedef llvm::StringRef StringRef;
-//  typedef llvm::SmallVector StringRef;
-};
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Lex/PreprocessorOptions.h"
-#else
-#include "clang/Frontend/DiagnosticOptions.h"
-#include "clang/Frontend/HeaderSearchOptions.h"
-#include "clang/Frontend/PreprocessorOptions.h"
-#endif
 
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/AST/ASTContext.h"
@@ -96,18 +84,10 @@ namespace clang {
 #include "llvm/Support/Path.h"
 #include "llvm/Support/ToolOutputFile.h"
 
-#if HAVE_LLVM_VER >= 40
 #include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#else
-#include "llvm/Bitcode/ReaderWriter.h"
-#endif
 
-#if HAVE_LLVM_VER >= 35
 #include "llvm/IR/Verifier.h"
-#else
-#include "llvm/Analysis/Verifier.h"
-#endif
 
 
 #include "llvm/ADT/DenseMap.h"

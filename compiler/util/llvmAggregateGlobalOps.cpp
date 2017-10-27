@@ -53,28 +53,17 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
-#if HAVE_LLVM_VER >= 35
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/CallSite.h"
-#else
-#include "llvm/Support/InstIterator.h"
-#include "llvm/Support/CallSite.h"
-#endif
 
 
-#if HAVE_LLVM_VER >= 35
 #include "llvm/IR/Verifier.h"
-#else
-#include "llvm/Analysis/Verifier.h"
-#endif
 
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
-#if HAVE_LLVM_VER >= 37
 #include "llvm/IR/GetElementPtrTypeIterator.h"
-#endif
 
 #include <cstdio>
 #include <list>
@@ -148,15 +137,9 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   SmallPtrSet<Instruction*, 8> memopsUses;
   Instruction *LastMemopUse = NULL;
 
-#if HAVE_LLVM_VER >= 38
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
        !isa<TerminatorInst>(BI);
        ++BI)
-#else
-  for (BasicBlock::iterator BI = FirstLoadOrStore;
-       !isa<TerminatorInst>(BI);
-       ++BI)
-#endif
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -187,13 +170,8 @@ Instruction* reorderAddressingMemopsUses(Instruction *FirstLoadOrStore,
   // Reorder the instructions here.
   // Move all addressing instructions before StartInst.
   // Move all uses of loaded values before LastLoadOrStore (which will be removed).
-#if HAVE_LLVM_VER >= 38
   for (BasicBlock::iterator BI = FirstLoadOrStore->getIterator();
        !isa<TerminatorInst>(BI);)
-#else
-  for (BasicBlock::iterator BI = FirstLoadOrStore;
-       !isa<TerminatorInst>(BI);)
-#endif
   {
     Instruction& insnRef = *BI;
     Instruction* insn = &insnRef;
@@ -252,11 +230,7 @@ static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
     if (OpC->isZero()) continue;  // No offset.
 
     // Handle struct indices, which add their field offset to the pointer.
-#if HAVE_LLVM_VER >= 40
     if (StructType *STy = GTI.getStructTypeOrNull())
-#else
-    if (StructType *STy = dyn_cast<StructType>(*GTI))
-#endif
     {
       Offset += DL.getStructLayout(STy)->getElementOffset(OpC->getZExtValue());
       continue;
@@ -542,11 +516,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   // Put the first store in since we want to preserve the order.
   Ranges.addInst(0, StartInst);
 
-#if HAVE_LLVM_VER >= 38
   BasicBlock::iterator BI = StartInst->getIterator();
-#else
-  BasicBlock::iterator BI = StartInst;
-#endif
   for (++BI; !isa<TerminatorInst>(BI); ++BI) {
 
     Instruction& insnRef = *BI;
@@ -808,13 +778,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   //MD = &getAnalysis<MemoryDependenceAnalysis>();
-#if HAVE_LLVM_VER >= 37
   DL = & F.getParent()->getDataLayout();
-#elif HAVE_LLVM_VER >= 35
-  DL = & getAnalysisIfAvailable<DataLayoutPass>()->getDataLayout();
-#else
-  DL = getAnalysisIfAvailable<DataLayout>();
-#endif
   //TLI = &getAnalysis<TargetLibraryInfo>();
 
   // Walk all instruction in the function.
@@ -839,11 +803,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
         if( lastAdded ) {
           ChangedBB = true;
           ChangedFn = true;
-#if HAVE_LLVM_VER >= 38
           BI = lastAdded->getIterator();
-#else
-          BI = lastAdded;
-#endif
         }
       }
     }
@@ -858,11 +818,7 @@ bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
   }
 
   if( extraChecks ) {
-#if HAVE_LLVM_VER >= 35
     assert(!verifyFunction(F, &errs()));
-#else
-    verifyFunction(F);
-#endif
   }
 
   if (DebugThis && ChangedFn)
