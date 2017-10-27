@@ -1,2 +1,2 @@
 whereClauseIgnored.chpl:8: error: unresolved call 'f(3)'
-whereClauseIgnored.chpl:1: note: candidates are: f(x: int)
+whereClauseIgnored.chpl:1: note: candidates are: f(x: int) where false

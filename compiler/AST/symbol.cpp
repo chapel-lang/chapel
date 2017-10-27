@@ -2085,12 +2085,7 @@ const char* toString(FnSymbol* fn) {
   const char* retval = NULL;
 
   if (fn->userString != NULL) {
-    if (developer == true) {
-      retval = astr(fn->userString, " [", istr(fn->id), "]");
-    } else {
-      retval = fn->userString;
-    }
-
+    retval = fn->userString;
   } else {
     int  start      =     1;
     bool first      =  true;
@@ -2216,10 +2211,16 @@ const char* toString(FnSymbol* fn) {
     if (skipParens == false) {
       retval = astr(retval, ")");
     }
+  }
 
-    if (developer  == true) {
-      retval = astr(retval, " [", istr(fn->id), "]");
-    }
+  if (fn->where && fn->where->body.length == 1) {
+    AstToText info;
+    info.appendExpr(fn->where->body.only(), false);
+    retval = astr(retval, " where ", info.text().c_str());
+  }
+
+  if (developer) {
+    retval = astr(retval, " [", istr(fn->id), "]");
   }
 
   return retval;
