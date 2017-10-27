@@ -4016,12 +4016,7 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
 
-  //bool  actualSyncSingle = false;
-  Type* actualNotSyncType = actualType;
-  if (isSyncType(actualType) || isSingleType(actualType)) {
-    actualNotSyncType = actualType->getField("valType")->getValType();
-    //actualSyncSingle = true;
-  }
+  Type* actualScalarType = actualType;
 
   bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
@@ -4128,6 +4123,16 @@ static void testArgMapping(FnSymbol*                    fn1,
     }
   }
 
+  // Figure out scalar type for candidate matching
+  if ((formal1Promotes || formal2Promotes) &&
+      actualType->scalarPromotionType != NULL) {
+    actualScalarType = actualType->scalarPromotionType;
+  }
+
+  if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
+    actualScalarType = actualScalarType->getField("valType")->getValType();
+  }
+
   if (f1Type == f2Type && f1Param && !f2Param) {
     EXPLAIN("A: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
@@ -4194,16 +4199,16 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
              !paramWithDefaultSize &&
-             actualNotSyncType == f1Type &&
-             actualNotSyncType != f2Type &&
+             actualScalarType == f1Type &&
+             actualScalarType != f2Type &&
              (f1Param == f2Param || f1Param)) {
     EXPLAIN("I: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
              !paramWithDefaultSize &&
-             actualNotSyncType == f2Type &&
-             actualNotSyncType != f1Type &&
+             actualScalarType == f2Type &&
+             actualScalarType != f1Type &&
              (f1Param == f2Param || f2Param)) {
     EXPLAIN("J: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
@@ -4215,7 +4220,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     bool strongPrefer1 = false;
     bool strongPrefer2 = false;
 
-    if (weakPrefers(actual, actualNotSyncType,
+    if (weakPrefers(actual, actualScalarType,
                            f1Type,
                            f2Type,
                            f1Param,
@@ -4223,7 +4228,7 @@ static void testArgMapping(FnSymbol*                    fn1,
       EXPLAIN("III: Fn %d is param preferred\n", i);
       weakPrefer1 = true;
 
-    } else if (weakPrefers(actual, actualNotSyncType,
+    } else if (weakPrefers(actual, actualScalarType,
                            f2Type,
                            f1Type,
                            f2Param,
@@ -4237,11 +4242,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     // We do this so that we can upgrade the weak preference to a
     // strong preference in the event it matches. If it doesn't match,
     // we ignore the strong preference.
-    if (actualNotSyncType == f1Type && actualNotSyncType != f2Type) {
+    if (actualScalarType == f1Type && actualScalarType != f2Type) {
       EXPLAIN("II: Fn %d is more specific\n", i);
       strongPrefer1 = true;
 
-    } else if (actualNotSyncType == f2Type && actualNotSyncType != f1Type) {
+    } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
       EXPLAIN("JJ: Fn %d is more specific\n", j);
       strongPrefer2 = true;
 
