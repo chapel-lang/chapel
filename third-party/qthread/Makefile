@@ -113,7 +113,9 @@ qthread-config: FORCE
 #
 	cd $(QTHREAD_SUBDIR) && touch -c configure.ac
 	cd $(QTHREAD_SUBDIR) && find . -name "*.m4" | xargs touch
+	sleep 1
 	cd $(QTHREAD_SUBDIR) && touch -c aclocal.m4
+	sleep 1
 	cd $(QTHREAD_SUBDIR) && touch configure
 	cd $(QTHREAD_SUBDIR) && find . -name "*.in" | xargs touch
 
