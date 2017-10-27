@@ -1,0 +1,3 @@
+unresolvedWhere.chpl:3: error: unresolved call 'foo("bar")'
+unresolvedWhere.chpl:1: note: candidates are: foo(x) where isIntegral(x)
+unresolvedWhere.chpl:2: note:                 foo(x) where isReal(x)
