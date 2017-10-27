@@ -15,10 +15,8 @@ knowledge, the current form is an accurate implementation of most
 miniMD features. A number of improvements remain, see the TODOs section in 
 this file.
 
-Four versions of miniMD are included in this release. 
-
-The first three are in this directory and share a single source base.
-The fourth is in the explicit/ subdirectory.
+Three versions of miniMD are included in this release and share a single
+source base.
 
 * The first version is a single-locale code. It is compiled by default
   when CHPL_COMM=none.
@@ -36,10 +34,6 @@ The fourth is in the explicit/ subdirectory.
   from the user. A significant difference is the need to manually call
   'updateFluff()', which will cache necessary neighboring values (best
   done after writing to the array).
-
-* The fourth and final version exists in the 'explicit/'
-  directory. This version is essentially an SPMD version written in
-  Chapel, and served as a starting point for the StencilDist version.
 
 This version of miniMD is not yet intended for performance
 comparisons, as it was written primarily to exercise the
@@ -65,8 +59,6 @@ This directory's contents are as follows:
     neighbor.chpl       : calculation and updating of neighbor atoms
   
   miniMD.*              : other files used in the Chapel testing system
-
-  explicit/             : a SPMD version of miniMD
 
   Makefile              : builds an optimized miniMD
 
@@ -211,14 +203,14 @@ Some tips for resolving bugs when modifying/improving this code. These are
 mostly based off of experience, and have proved useful.
 
 Problem size:
-  I suggest testing with the arguments '--size 5 -nl 1' to start out with. If 
+  We suggest testing with the arguments '--size 5 -nl 1' to start out with. If
   you're having problems with 1 locale and such a small sample size, you're 
   going to have problems with more complex configurations. The advantages of 
   this smaller configuration are:
-    less atom/bin debug output to sift through
-    runs fairly quickly. Compile time is long enough, you don't want to wait
-      to long for execution.
-    while small, a size of 5 gives just enough to test -nl 2 as well.
+    - debugging output is proportional to problem size, so less to sift through
+    - runs fairly quickly. Compile time is long enough, you don't want to wait
+      too long for execution.
+    - while small, a size of 5 gives just enough to test -nl 2 as well.
 
 A) This code currently relies on the condition that we only need to look at the 
 nearest neighboring locale for ghost bins. This is influenced by simulation 
