@@ -2213,7 +2213,7 @@ const char* toString(FnSymbol* fn) {
     }
   }
 
-  if (fn->where) {
+  if (fn->where && fn->where->body.length == 1) {
     AstToText info;
     info.appendExpr(fn->where->body.only(), false);
     retval = astr(retval, " where ", info.text().c_str());
