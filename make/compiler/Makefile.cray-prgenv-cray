@@ -46,16 +46,8 @@ CXX11_STD := -h std=c++11
 # if execution time becomes too slow with -O0.
 NO_OPT_CFLAGS += -O0
 
-#
-# The current Cray compiler does not compile GASNet cleanly, so we have
-# to compile GASNet code using the gnu version instead
-#
-MODULECMD = /opt/modules/$(MODULE_VERSION)/bin/modulecmd sh
-
-# this appears to not be needed recently
-# it was added in 2009, see a89bf917ae3102c7ce3544ac3be10b7b4e9fa76c
-#ENSURE_GASNET_COMPATIBLE_COMPILER = eval `$(MODULECMD) swap PrgEnv-cray PrgEnv-gnu` &&
+ifdef CHPL_COMM_DEBUG
+CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
+endif
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv
-
-
