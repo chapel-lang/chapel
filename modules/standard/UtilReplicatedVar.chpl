@@ -114,7 +114,7 @@ private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated
 private proc _rcTargetLocalesHelper(replicatedVar: [?D])
   where replicatedVar._value.type: ReplicatedArr
 {
-  return replicatedVar._value.dom.dist.targetLocales;
+  return replicatedVar.targetLocales();
 }
 
 pragma "no doc" // documented with the following entry
