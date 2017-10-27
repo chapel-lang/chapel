@@ -4126,7 +4126,7 @@ static void testArgMapping(FnSymbol*                    fn1,
   // Figure out scalar type for candidate matching
   if ((formal1Promotes || formal2Promotes) &&
       actualType->scalarPromotionType != NULL) {
-    actualScalarType = actualType->scalarPromotionType;
+    actualScalarType = actualType->scalarPromotionType->getValType();
   }
 
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
