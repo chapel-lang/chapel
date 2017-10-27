@@ -2,19 +2,23 @@ record R {
   type t;
 }
 
-
-// 3 ways of writing R(_).t
-
-writeln(R(int).t:string);
-
-type MyR = R(int);
-writeln(MyR.t:string);
-
 proc subtype(type myr) type {
   return myr.t;
 }
 
-writeln(subtype(R(int)):string);
+proc test1() {
+
+  writeln("test1");
+
+  // 3 ways of writing R(_).t
+
+  writeln(R(int).t:string);
+
+  type MyR = R(int);
+  writeln(MyR.t:string);
+
+  writeln(subtype(R(int)):string);
+}
 
 class X {
   type eltee;
@@ -28,10 +32,30 @@ proc printer(type T) {
   writeln(T.rank);
 }
 
-proc main() {
+proc test2() {
+  writeln("test2");
+
   var A : X(real, false, 1);
   var B : X(uint, true, 3);
 
   printer(A.type);
   printer(B.type);
 }
+
+proc getSize(type t) param {
+  return t.size;
+}
+
+proc test3() {
+  writeln("test3");
+
+  param sz = getSize( 2*int );
+  writeln(sz);
+
+  param sz2 = (2*int).size;
+  writeln(sz2);
+}
+
+test1();
+test2();
+test3();
