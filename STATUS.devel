@@ -107,8 +107,6 @@ Types, Params, Variables, and Consts
   # types/enum/nspark/dependentElements.future
 - Compile time integer operations on enum values may result in non-param values
   # users/kreider/bug_enum.future
-- Declaring enum types in a function body can cause compile time errors
-  # types/enum/diten/enumDeclInFn.future
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -349,10 +347,6 @@ Strings
   # types/string/sungeun/stringInBegin.future
 - Global constant strings are not replicated across locales
   # multilocale/bradc/stringConstRepl.future
-- Unable to resolve return type for casts between an enum type and
-  string if the enum is declared in the function and the string is
-  passed in as a type parameter.
-  # types/enum/sungeun/cast_enum_weird_4.future
 
 
 Tuples
