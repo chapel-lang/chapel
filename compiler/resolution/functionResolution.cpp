@@ -6090,8 +6090,13 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
           callStack.pop();
         }
       }
-
       retval = foldTryCond(postFold(result));
+
+      if (expr != e) {
+        // Avoids issue where modification of expr's contents caused early
+        // termination of the loop.
+        e = retval;
+      }
 
     } else {
       retval = foldTryCond(postFold(e));
