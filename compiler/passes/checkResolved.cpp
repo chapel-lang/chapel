@@ -437,15 +437,18 @@ checkBadAddrOf(CallExpr* call)
         bool lhsConst = lhs && lhs->symbol()->hasFlag(FLAG_CONST);
 
         bool rhsType = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+        bool rhsParam = rhs->symbol()->isParameter();
         // Also detect runtime type variables
         if (rhs->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
           rhsType = true;
 
         if (lhsRef && rhsType) {
           USR_FATAL_CONT(call, "Cannot set a reference to a type variable.");
+        } else if (lhsRef && rhsParam) {
+          USR_FATAL_CONT(call, "Cannot set a reference to a param variable.");
         } else if (lhsRef && !lhsConst) {
           if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-              rhs->symbol()->isConstant() || rhs->symbol()->isParameter()) {
+              rhs->symbol()->isConstant() || rhsParam) {
             if (rhs->symbol()->isImmediate()) {
               USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
             } else {
