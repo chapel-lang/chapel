@@ -150,18 +150,6 @@ Types, Params, Variables, and Consts
 
 Conversions
 -----------
-- Casts and relational operations involving enum constants may fail to
-  compile or produce incorrect answers.
-  # types/enum/sungeun/cast_enum_weird_2.future
-  # types/enum/sungeun/cast_expr_init_1.future
-  # types/enum/sungeun/cast_expr_init_2.future
-  # types/enum/sungeun/cast_neg_start_1.future
-  # types/enum/sungeun/cast_neg_start_2.future
-  # types/enum/sungeun/cast_neg_start_3.future
-  # types/enum/sungeun/cast_neg_start_oor_1.future
-  # types/enum/sungeun/cast_neg_start_oor_2.future
-  # functions/diten/param_enum_to_int.future
-  # functions/diten/param_enum_to_string.future
 - Casts to non-type variables do not result in an error at compile time.
   # expressions/vass/cast-to-non-type-1.future
   # expressions/vass/cast-to-non-type-2.future
