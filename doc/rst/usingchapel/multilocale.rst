@@ -183,6 +183,7 @@ aries                fast
 gemini               fast
 ibv                  large
 portals              fast
+smp                  fast
 other                everything
 ===================  ====================
 
