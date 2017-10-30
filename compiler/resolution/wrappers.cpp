@@ -979,8 +979,6 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
       USR_WARN(info->call, "promotion on %s", info->toString());
     }
 
-    promoted_subs.put(fn, (Symbol*)info->call->square);
-
     FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
 
     if (wrapper == NULL) {
