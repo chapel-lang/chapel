@@ -47,7 +47,11 @@ def get(flag='host'):
         platform_val = uname[0].lower().replace('_', '')
         machine = uname[4]
         if platform_val == 'linux':
-            if machine == 'x86_64':
+            if 'ppc' in machine:
+                endianness = 'le' if 'le' in machine else ''
+                bits = '64' if '64' in machine else '32'
+                platform_val = 'linux_ppc_{0}{1}'.format(endianness, bits)
+            elif machine == 'x86_64':
                 build_64_as_32 = os.environ.get('CHPL_BUILD_X86_64_AS_32')
                 if build_64_as_32 == "1":
                     platform_val = "linux64_32"
