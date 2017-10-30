@@ -1,6 +1,6 @@
-perfkeys: Time:, Time:, Time:, Time:, Time:
-graphkeys:simple, simple nolocal, simple block nolocal,stencil nolocal,explicit nolocal
+perfkeys: Time:, Time:, Time:, Time:
+graphkeys:simple, simple nolocal, simple block nolocal,stencil nolocal
 ylabel: Time (seconds)
-files: miniMD.simple.dat, miniMD.simple-nolocal.dat, miniMD.simple-block.dat, miniMD.stencil.dat, miniMD.explicit.dat
+files: miniMD.simple.dat, miniMD.simple-nolocal.dat, miniMD.simple-block.dat, miniMD.stencil.dat
 graphtitle: miniMD LJ (--size=10) Time
 graphname: miniMD
