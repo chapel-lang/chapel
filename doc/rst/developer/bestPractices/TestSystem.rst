@@ -63,7 +63,7 @@ test/GRAPHFILES     Acts as an index that tracks all .graph that should be
 -------------------------------------------------------------------------------
 foo.future          Describes the future being tested, following the
                     newline-separated format of:
-                    *keyword*, *short description*, *long description*
+                    *category*, *title*, *issue #*
 foo.bad             output generated on a failing test, to track if a known
                     failing future begins failing a different way
 ..
@@ -425,12 +425,15 @@ the output before comparing to ``.bad``, or the ``.bad`` should be omitted.
 Ultimately, our intention is to support a library of common recipes
 for ``.bad`` files, but this has not been implemented yet.
 
-The format of the ``.future`` file itself is minimally structured.  The
+The format of the ``.future`` file itself is minimally structured. The
 first line should contain the type of future (see list below) followed
-by a brief (one 80-column line) description of the future.  The rest
-of the file is free-form and can be used over the future's lifetime to
-describe in what way the test isn't working or should be working,
-implementation notes, philosophical arguments, etc.  The one-line
+by a brief (one 80-column line) description of the future, which ideally
+reflects the associated GitHub issue title. The next line should contain the
+associated GitHub issue number in the `#issue-number` format, e.g. `#1`.
+
+The rest of the file is optional and free-form. It can be used over the
+future's lifetime to describe in what way the test isn't working or should be
+working, implementation notes, philosophical arguments, etc.  The one-line
 summaries of all outstanding futures can be viewed by running
 ``$CHPL_HOME/util/devel/test/list_futures``.
 
