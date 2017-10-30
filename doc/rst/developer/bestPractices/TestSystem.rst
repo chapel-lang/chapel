@@ -63,7 +63,7 @@ test/GRAPHFILES     Acts as an index that tracks all .graph that should be
 -------------------------------------------------------------------------------
 foo.future          Describes the future being tested, following the
                     newline-separated format of:
-                    *keyword*, *short description*, *long description*
+                    *category*, *title*, *issue #*
 foo.bad             output generated on a failing test, to track if a known
                     failing future begins failing a different way
 ..
@@ -425,16 +425,19 @@ the output before comparing to ``.bad``, or the ``.bad`` should be omitted.
 Ultimately, our intention is to support a library of common recipes
 for ``.bad`` files, but this has not been implemented yet.
 
-The format of the ``.future`` file itself is minimally structured.  The
+The format of the ``.future`` file itself is minimally structured. The
 first line should contain the type of future (see list below) followed
-by a brief (one 80-column line) description of the future.  The rest
-of the file is free-form and can be used over the future's lifetime to
-describe in what way the test isn't working or should be working,
-implementation notes, philosophical arguments, etc.  The one-line
+by a brief (one 80-column line) description of the future, which ideally
+reflects the associated GitHub issue title. The next line should contain the
+associated GitHub issue number in the `#issue-number` format, e.g. `#1`.
+
+The rest of the file is optional and free-form. It can be used over the
+future's lifetime to describe in what way the test isn't working or should be
+working, implementation notes, philosophical arguments, etc.  The one-line
 summaries of all outstanding futures can be viewed by running
 ``$CHPL_HOME/util/devel/test/list_futures``.
 
-The current categories of future are:
+The current categories of futures reflect GitHub labels:
 
 * bug: this test exhibits a bug in the implementation
 
@@ -444,28 +447,26 @@ The current categories of future are:
 * feature request: a way of filing a request for a particular feature
   in Chapel
 
-* memory: indicates a test that exhibits a problem with memory usage
-  (such as a memory leak)
-
-* multilocale: shows a problem that only relates to multi-locale
-    executions
-
 * performance: indicates a performance issue that needs to be addressed
 
-* semantic:  this test raises a question about Chapel's semantics
-    that we ultimately need to address
+* design:  this test raises a question about Chapel's semantics
+           that we ultimately need to address
+
+* portability: indicates a portability issue that needs to be addressed
 
 * unimplemented feature: this test uses features that are specified, but
     which have not yet been implemented.
 
-**JIRA and futures**
+**GitHub and futures**
 
-Currently, it is considered good practice to include a future for an issue
-tracked on the `JIRA page`_. You can optionally include a back-reference to
-this JIRA issue from the future, to remind developers to mark the issue
-complete when the future is resolved.
+Currently, it is mandatory to include a GitHub issue number with any new
+futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
+have a description instead of an issue number.
 
-.. _`JIRA page`: https://chapel.atlassian.net/projects/CHAPEL/issues
+When filing a bug report as an issue, it is considered good practice to
+include a future for the issue tracked on the `GitHub issues page`_.
+
+.. _`GitHub issues page`: https://github.com/chapel-lang/chapel/issues
 
 .. _extensions:
 
