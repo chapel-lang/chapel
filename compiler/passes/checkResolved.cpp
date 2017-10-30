@@ -448,12 +448,8 @@ checkBadAddrOf(CallExpr* call)
           USR_FATAL_CONT(call, "Cannot set a reference to a param variable.");
         } else if (lhsRef && !lhsConst) {
           if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-              rhs->symbol()->isConstant() || rhsParam) {
-            if (rhs->symbol()->isImmediate()) {
-              USR_FATAL_CONT(call, "Cannot set a non-const reference to a literal value.");
-            } else {
-              USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
-            }
+              rhs->symbol()->isConstant()) {
+            USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
           }
         }
       }
