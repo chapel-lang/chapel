@@ -1210,17 +1210,34 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   int64_t index;
   uint64_t uindex;
   char field[8];
+  bool zero_error = false;
+  bool error = false;
 
   if (get_int(call->get(3), &index)) {
     sprintf(field, "x%" PRId64, index);
-    if (index <= 0 || index >= baseType->fields.length)
-      USR_FATAL(call, "tuple index out-of-bounds error (%ld)", index);
+    if (index <= 0 || index >= baseType->fields.length) {
+      USR_FATAL_CONT(call, "tuple index out-of-bounds error (%ld)", index);
+      if (index == 0) zero_error = true;
+      error = true;
+    }
   } else if (get_uint(call->get(3), &uindex)) {
     sprintf(field, "x%" PRIu64, uindex);
-    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length)
-      USR_FATAL(call, "tuple index out-of-bounds error (%lu)", uindex);
+    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length) {
+      USR_FATAL_CONT(call, "tuple index out-of-bounds error (%lu)", uindex);
+      if (uindex == 0) zero_error = true;
+      error = true;
+    }
   } else {
     return NULL; // not a tuple indexing expression
+  }
+
+  if (error) {
+    if (zero_error)
+      USR_PRINT(call, "tuple elements start at index 1");
+    else
+      USR_PRINT(call, "this tuple contains elements %i..%i (inclusive)",
+                1, baseType->fields.length-1);
+    USR_STOP();
   }
 
   Type* fieldType = baseType->getField(field)->type;

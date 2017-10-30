@@ -1,0 +1,2 @@
+error-zero.chpl:3: error: tuple index out-of-bounds error (0)
+error-zero.chpl:3: note: tuple elements start at index 1
