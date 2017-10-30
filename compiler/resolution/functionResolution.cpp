@@ -6478,22 +6478,22 @@ void ensureEnumTypeResolved(EnumType* etype) {
         }
 
         // At this point, def->init should be an integer symbol.
-	if( get_int( def->init, &v ) ) {
-	  if( v >= 0 ) uv = v;
-	  else uv = 1;
-	} else if( get_uint( def->init, &uv ) ) {
-	  v = uv;
-	}
+        if( get_int( def->init, &v ) ) {
+          if( v >= 0 ) uv = v;
+          else uv = 1;
+        } else if( get_uint( def->init, &uv ) ) {
+          v = uv;
+        }
       } else {
         // Use the u/v value we had from adding 1 to the previous one
         if( v >= INT32_MIN && v <= INT32_MAX )
-	  def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
-	else if (uv <= UINT32_MAX)
-	  def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
-	else
-	  def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+        else if (uv <= UINT32_MAX)
+          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+        else
+          def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
 
-	parent_insert_help(def, def->init);
+        parent_insert_help(def, def->init);
       }
       if (uv > INT64_MAX) {
         // Switch to uint(64) as the current enum type.
