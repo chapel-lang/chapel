@@ -100,8 +100,6 @@ General (see also portability section at the bottom of this file)
 
 Types, Params, Variables, and Consts
 ------------------------------------
-- Enum member initializations cannot depend on previous enum members
-  # types/enum/nspark/dependentElements.future
 - Declaring enum types in a function body can cause compile time errors
   # types/enum/diten/enumDeclInFn.future
 - The default value for the locale type is incorrect.
