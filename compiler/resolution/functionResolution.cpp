@@ -7466,10 +7466,9 @@ void resolve() {
 
   pruneResolvedTree();
 
-  freeCache(ordersCache);
   freeCache(defaultsCache);
+
   freeCache(genericsCache);
-  freeCache(coercionsCache);
   freeCache(promotionsCache);
 
   visibleFunctionsClear();
