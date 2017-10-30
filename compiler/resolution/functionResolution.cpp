@@ -889,31 +889,15 @@ static bool fits_in_int_helper(int width, int64_t val) {
 }
 
 static bool fits_in_int(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_int_helper(width, i);
-  }
-
-
-  /* BLC: There is some question in my mind about whether this
-     function should include the following code as well -- that is,
-     whether default-sized uint params should get the same special
-     treatment in cases like this.  I didn't enable it for now because
-     nothing seemed to rely on it and I didn't come up with a case
-     that would.  But it's worth keeping around for future
-     consideration.
-
-     Similarly, we may want to consider enabling such param casts for
-     int sizes other then default-width.
-
-  else if (imm->const_kind == NUM_KIND_UINT &&
-           imm->num_index == INT_SIZE_DEFAULT) {
+  } else if (imm->const_kind == NUM_KIND_UINT) {
     uint64_t u = imm->uint_value();
-    int64_t i = (int64_t)u;
-    if (i < 0)
+    if (u > INT64_MAX)
       return false;
-    return fits_in_int_helper(width, i);
-  }*/
+    return fits_in_int_helper(width, (int64_t)u);
+  }
 
   return false;
 }
@@ -934,19 +918,15 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
 }
 
 static bool fits_in_uint(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     if (i < 0)
       return false;
     return fits_in_uint_helper(width, (uint64_t)i);
-  }
-
-  /* BLC: See comment just above in fits_in_int()...
-
-  else if (imm->const_kind == NUM_KIND_UINT && imm->num_index == INT_SIZE_64) {
+  } else if (imm->const_kind == NUM_KIND_UINT) {
     uint64_t u = imm->uint_value();
     return fits_in_uint_helper(width, u);
-  }*/
+  }
 
   return false;
 }
@@ -1135,14 +1115,18 @@ static bool canParamCoerce(Type*   actualType,
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
+      // TODO: aren't these redundand with the last check?
       Type* enumIntType = etype->getIntegerType();
 
       if (enumIntType == formalType)
         return true;
 
-      if (get_width(enumIntType) < get_width(formalType)) {
+      if (get_width(enumIntType) < get_width(formalType))
+	return true;
+
+      if (fits_in_int(get_width(formalType), etype->getMinConstant()) &&
+          fits_in_int(get_width(formalType), etype->getMaxConstant()))
         return true;
-      }
     }
 
     //
@@ -1203,10 +1187,12 @@ static bool canParamCoerce(Type*   actualType,
       if (enumIntType == formalType)
         return true;
 
-      if (is_uint_type(enumIntType) &&
-          get_width(etype->getIntegerType()) < get_width(formalType)) {
+      if (get_width(enumIntType) < get_width(formalType))
+	return true;
+
+      if (fits_in_uint(get_width(formalType), etype->getMinConstant()) &&
+          fits_in_uint(get_width(formalType), etype->getMaxConstant()))
         return true;
-      }
     }
 
     //

@@ -281,7 +281,7 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL),
+  constants(), integerType(NULL), minConstant(), maxConstant(),
   doc(NULL)
 {
   gEnumTypes.add(this);
@@ -302,6 +302,9 @@ void EnumType::verify() {
   for_alist(expr, constants) {
     if (expr->parentSymbol != symbol)
       INT_FATAL(this, "Bad EnumType::constants::parentSymbol");
+    DefExpr* def = toDefExpr(def);
+    if (!def)
+      INT_FATAL(this, "Bad EnumType::constants - not a DefExpr");
   }
 }
 
@@ -309,11 +312,14 @@ void EnumType::verify() {
 EnumType*
 EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
+
   for_enums(def, this) {
     DefExpr* newDef = COPY_INT(def);
     newDef->sym->type = copy;
     copy->constants.insertAtTail(newDef);
   }
+  copy->minConstant = this->minConstant;
+  copy->maxConstant = this->maxConstant;;
   copy->addSymbol(symbol);
   return copy;
 }
@@ -335,6 +341,8 @@ void EnumType::sizeAndNormalize() {
   uint64_t max;
   int64_t min;
   PrimitiveType* ret = NULL;
+  Immediate* minImm = NULL;
+  Immediate* maxImm = NULL;
 
   // First, look for negative numbers in the enum.
   // If there are any, we have to store all
@@ -416,6 +424,7 @@ void EnumType::sizeAndNormalize() {
       if( max_v < v ) max_v = v;
       if( min_uv > uv ) min_uv = uv;
       if( max_uv < uv ) max_uv = uv;
+
     }
     // Increment v for the next one, in case it is not set.
     v++;
@@ -562,15 +571,86 @@ void EnumType::sizeAndNormalize() {
     }
   }
 
+  first = true;
+
+  min_v = max_v = 0;
+  min_uv = max_uv = 0;
+
+  // Set minConstant and maxConstant
+  for_enums(constant, this) {
+    SET_LINENO(constant);
+    INT_ASSERT(constant->init);
+
+    bool got = false;
+
+    v = 0;
+    uv = 0;
+    if (issigned)
+      got = get_int(constant->init, &v);
+    else
+      got = get_uint(constant->init, &uv);
+
+    INT_ASSERT(got);
+
+    Immediate* imm = getSymbolImmediate(constant->sym);
+
+    if (first) {
+      if (issigned) {
+        min_v = v;
+        max_v = v;
+      } else {
+        min_uv = uv;
+        max_uv = uv;
+      }
+      minImm = imm;
+      maxImm = imm;
+      first = false;
+    } else {
+      if (issigned) {
+        if (v < min_v) {
+          min_v = v;
+          minImm = imm;
+        }
+        if (v > max_v) {
+          max_v = v;
+          maxImm = imm;
+        }
+      } else {
+        if (uv < min_uv) {
+          min_uv = uv;
+          minImm = imm;
+        }
+        if (uv > max_uv) {
+          max_uv = uv;
+          maxImm = imm;
+        }
+      }
+    }
+  }
+
+  INT_ASSERT(minImm && maxImm);
+  this->minConstant = *minImm;
+  this->maxConstant = *maxImm;
+
+
   integerType = ret;
 }
 
 PrimitiveType* EnumType::getIntegerType() {
+  INT_ASSERT(integerType);
   if( ! integerType ) {
     sizeAndNormalize();
   }
   return integerType;
 }
+
+Immediate* EnumType::getMinConstant() {
+  return &minConstant;
+}
+Immediate* EnumType::getMaxConstant() {
+  return &maxConstant;
+}
+
 
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {
