@@ -1135,7 +1135,12 @@ static bool canParamCoerce(Type*   actualType,
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
-      if (get_width(etype->getIntegerType()) <= get_width(formalType)) {
+      Type* enumIntType = etype->getIntegerType();
+
+      if (enumIntType == formalType)
+        return true;
+
+      if (get_width(enumIntType) < get_width(formalType)) {
         return true;
       }
     }
@@ -1193,8 +1198,13 @@ static bool canParamCoerce(Type*   actualType,
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
-      if (is_uint_type(etype->getIntegerType()) &&
-          get_width(etype->getIntegerType()) <= get_width(formalType)) {
+      Type* enumIntType = etype->getIntegerType();
+
+      if (enumIntType == formalType)
+        return true;
+
+      if (is_uint_type(enumIntType) &&
+          get_width(etype->getIntegerType()) < get_width(formalType)) {
         return true;
       }
     }
@@ -6436,6 +6446,16 @@ static Expr* resolveTypeOrParamExpr(Expr* expr);
 void ensureEnumTypeResolved(EnumType* etype) {
   if (etype->integerType == NULL) {
     // Make sure to resolve all enum types.
+
+    // Set it to int so we can handle enum constants
+    // referring to previous enum constants.
+    // This might not actually be correct, but it's good enough
+    // for resolving the enum constant initializers.
+    etype->integerType = dtInt[INT_SIZE_DEFAULT];
+
+    int64_t v = 1;
+    uint64_t uv = 1;
+
     for_enums(def, etype) {
       if (def->init != NULL) {
         Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
@@ -6456,7 +6476,31 @@ void ensureEnumTypeResolved(EnumType* etype) {
           enumTypeExpr->remove();
           def->init->replace(enumTypeExpr);
         }
+
+        // At this point, def->init should be an integer symbol.
+	if( get_int( def->init, &v ) ) {
+	  if( v >= 0 ) uv = v;
+	  else uv = 1;
+	} else if( get_uint( def->init, &uv ) ) {
+	  v = uv;
+	}
+      } else {
+        // Use the u/v value we had from adding 1 to the previous one
+        if( v >= INT32_MIN && v <= INT32_MAX )
+	  def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+	else if (uv <= UINT32_MAX)
+	  def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+	else
+	  def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+
+	parent_insert_help(def, def->init);
       }
+      if (uv > INT64_MAX) {
+        // Switch to uint(64) as the current enum type.
+        etype->integerType = dtUInt[INT_SIZE_DEFAULT];
+      }
+      v++;
+      uv++;
     }
 
     // Now try computing the enum size...

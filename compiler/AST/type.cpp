@@ -340,6 +340,10 @@ void EnumType::sizeAndNormalize() {
   // If there are any, we have to store all
   // the values in negative numbers.
   for_enums(constant, this) {
+    // If this passes testing, much of the following can
+    // be significantly simplified.
+    INT_ASSERT(constant->init);
+
     if( constant->init ) {
       if( get_int( constant->init, &v ) ) {
         if( v < 0 ) {
@@ -381,7 +385,8 @@ void EnumType::sizeAndNormalize() {
         if( v >= 0 ) uv = v;
         else uv = 1;
       } else if( get_uint( constant->init, &uv ) ) {
-        v = uv;
+        if (uv <= INT64_MAX) v = uv;
+        else v = 1;
       }
     } else {
       // create initializer with v
@@ -417,6 +422,12 @@ void EnumType::sizeAndNormalize() {
     uv++;
   }
 
+  // User error if the enum contains both negative values and
+  // something needing a uint64.
+  if (min_v < 0 && max_uv > INT64_MAX)
+    USR_FATAL(this,
+              "this enum cannot be represented with a single integer type");
+
   num_bytes = 0;
 
   // Now figure out, based on min/max values, what integer
@@ -445,11 +456,11 @@ void EnumType::sizeAndNormalize() {
 
     if( num_bytes < num_bytes_neg ) num_bytes = num_bytes_neg;
   } else {
-    if( max_v <= UINT8_MAX ) {
+    if( max_uv <= UINT8_MAX ) {
       num_bytes = 1;
-    } else if( max_v <= UINT16_MAX ) {
+    } else if( max_uv <= UINT16_MAX ) {
       num_bytes = 2;
-    } else if( max_v <= UINT32_MAX ) {
+    } else if( max_uv <= UINT32_MAX ) {
       num_bytes = 4;
     } else {
       num_bytes = 8;
@@ -460,43 +471,46 @@ void EnumType::sizeAndNormalize() {
   // and set et->integerType
   min = max = 0;
 
+  IF1_int_type int_size = INT_SIZE_DEFAULT;
+
   if( num_bytes == 1 ) {
+    int_size = INT_SIZE_8;
     if( issigned ) {
       max = INT8_MAX;
       min = INT8_MIN;
-      ret = dtInt[INT_SIZE_8];
     } else {
       max = UINT8_MAX;
-      ret = dtUInt[INT_SIZE_8];
     }
   } else if( num_bytes == 2 ) {
+    int_size = INT_SIZE_16;
     if( issigned ) {
       max = INT16_MAX;
       min = INT16_MIN;
-      ret = dtInt[INT_SIZE_16];
     } else {
       max = UINT16_MAX;
-      ret = dtUInt[INT_SIZE_16];
     }
   } else if( num_bytes == 4 ) {
+    int_size = INT_SIZE_32;
     if( issigned ) {
       max = INT32_MAX;
       min = INT32_MIN;
-      ret = dtInt[INT_SIZE_32];
     } else {
       max = UINT32_MAX;
-      ret = dtUInt[INT_SIZE_32];
     }
   } else if( num_bytes == 8 ) {
+    int_size = INT_SIZE_64;
     if( issigned ) {
       max = INT64_MAX;
       min = INT64_MIN;
-      ret = dtInt[INT_SIZE_64];
     } else {
       max = UINT64_MAX;
-      ret = dtUInt[INT_SIZE_64];
     }
   }
+
+  if (issigned)
+    ret = dtInt[int_size];
+  else
+    ret = dtUInt[int_size];
 
   // At the end of it all, check that each enum
   // symbol fits into the assigned type.
@@ -511,6 +525,39 @@ void EnumType::sizeAndNormalize() {
     } else if( get_uint( constant->init, &uv ) ) {
       if( uv > max ) {
         INT_FATAL(constant, "Does not fit in enum integer type");
+      }
+    }
+  }
+
+  // Replace the immediates with one of the appropriate numeric type.
+  // This is a way of normalizing the enum constants and simplifying
+  // what follow-on passes need to deal with.
+  for_enums(constant, this) {
+    SET_LINENO(constant);
+    INT_ASSERT(constant->init);
+
+    if (ret == constant->init->typeInfo()) {
+      // Nothing to do, constant already has appropriate type
+    } else {
+      bool have_v = true;
+      bool have_uv = true;
+      v = 0;
+      uv = 0;
+      // set v and uv to the initializer value
+      if( get_int( constant->init, &v ) ) {
+        if( v >= 0 ) uv = v;
+        else have_uv = false;
+      } else if( get_uint( constant->init, &uv ) ) {
+        if (uv <= INT64_MAX) v = uv;
+        else have_v = false;
+      }
+
+      if( issigned ) {
+        INT_ASSERT(have_v);
+        constant->init->replace(new SymExpr(new_IntSymbol(v, int_size)));
+      } else {
+        INT_ASSERT(have_uv);
+        constant->init->replace(new SymExpr(new_UIntSymbol(uv, int_size)));
       }
     }
   }
