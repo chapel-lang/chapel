@@ -308,10 +308,12 @@ static void build_accessor(AggregateType* ct, Symbol* field,
 
   fn->addFlag(FLAG_FIELD_ACCESSOR);
 
-  if (fieldIsConst && !typeMethod)
-    fn->addFlag(FLAG_REF_TO_CONST);
-  else if (recordLike && !typeMethod)
-    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  if (!typeMethod) {
+    if (fieldIsConst)
+      fn->addFlag(FLAG_REF_TO_CONST);
+    else if (recordLike)
+      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  }
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);
@@ -429,17 +431,18 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
 
   if (isUnion(ct)) {
     // Unions need a special getter and setter.
-    build_accessor(ct, field, /* setter */ false, false);
-    build_accessor(ct, field, /* setter */ true,  false);
+    build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
+    build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
   } else {
     // Otherwise, only build one version for records and classes.
     // This is normally the 'ref' version.
-    build_accessor(ct, field, /* setter */ !fieldIsConst, false);
+    build_accessor(ct, field,
+                   /* setter? */ !fieldIsConst, /* type method? */ false);
   }
 
   // If the field is type/param, add a type-method accessor.
   if (fieldTypeOrParam) {
-    build_accessor(ct, field, /* setter */ false, true);
+    build_accessor(ct, field, /* getter? */ false, /* type method? */ true);
   }
 }
 
