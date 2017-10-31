@@ -127,10 +127,10 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
-                                     CallInfo&     info,
-                                     Vec<Symbol*>* defaults,
-                                     SymbolMap*    paramMap);
+static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
+                                                 CallInfo&     info,
+                                                 Vec<Symbol*>* defaults,
+                                                 SymbolMap*    paramMap);
 
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
@@ -141,7 +141,7 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
                                       std::vector<ArgSymbol*>& actualFormals) {
   Vec<Symbol*> defaults;
   int          j      = 1;
-  FnSymbol*    retval = fn;
+  FnSymbol*    retval = NULL;
 
   for_formals(formal, fn) {
     bool used = false;
@@ -160,14 +160,14 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
   retval = checkCache(defaultsCache, fn, &defaults);
 
   if (retval == NULL) {
-    retval = buildDefaultWrapper(fn, info, &defaults, &paramMap);
+    retval = buildWrapperForDefaultedFormals(fn, info, &defaults, &paramMap);
 
     resolveFormals(retval);
 
     addCache(defaultsCache, fn, retval, &defaults);
   }
 
-  // update actualFormals for use in reorderActuals
+  // update actualFormals[] for use in reorderActuals
   for_formals(formal, fn) {
     for (size_t i = 0; i < actualFormals.size(); i++) {
       if (actualFormals[i] == formal) {
@@ -179,10 +179,10 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
   return retval;
 }
 
-static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
-                                     CallInfo&     info,
-                                     Vec<Symbol*>* defaults,
-                                     SymbolMap*    paramMap) {
+static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
+                                                 CallInfo&     info,
+                                                 Vec<Symbol*>* defaults,
+                                                 SymbolMap*    paramMap) {
   SET_LINENO(fn);
 
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
