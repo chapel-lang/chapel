@@ -153,6 +153,8 @@ static void      formalIsDefaulted(FnSymbol*  fn,
                                    FnSymbol*  wrapFn,
                                    SymbolMap& copyMap);
 
+static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
+
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     FnSymbol*  wrapFn,
                                                     VarSymbol* temp);
@@ -436,11 +438,10 @@ static void formalIsDefaulted(FnSymbol*  fn,
 
   wrapFn->insertAtTail(new DefExpr(temp));
 
-  if (intent == INTENT_OUT ||
-      !formal->defaultExpr ||
-      (formal->defaultExpr->body.length == 1 &&
-       isSymExpr(formal->defaultExpr->body.tail) &&
-       toSymExpr(formal->defaultExpr->body.tail)->symbol() == gTypeDefaultToken)) {
+  if (defaultedFormalUsesDefaultForType(formal) == true) {
+    defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
+
+  } else if (intent == INTENT_OUT) {
     defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
 
   } else {
@@ -448,7 +449,6 @@ static void formalIsDefaulted(FnSymbol*  fn,
   }
 
   call->insertAtTail(temp);
-
 
   // MPF - this seems really strange since it is assigning to
   // fields that will be set in the construct call at the end.
@@ -474,6 +474,18 @@ static void formalIsDefaulted(FnSymbol*  fn,
       }
     }
   }
+}
+
+static bool defaultedFormalUsesDefaultForType(ArgSymbol* formal) {
+  bool retval = false;
+
+  if (formal->defaultExpr->body.length == 1) {
+    if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
+      retval = se->symbol() == gTypeDefaultToken;
+    }
+  }
+
+  return retval;
 }
 
 static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
