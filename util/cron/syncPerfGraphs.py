@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-# This script is intended to sync the performance graphs to sourceforge. It is
+# This script is intended to sync the performance graphs to dreamhost. It is
 # essentially a large wrapper for rsync. The reason it is separated, rather
-# than just have an rsync command in place is so that we make sure the SF dest
-# is the same, and that we can check for errors consistently before syncing.
+# than just have an rsync command in place is so that we make sure the dreamhost
+# dest is the same, and that we can check for errors consistently before syncing.
 
-# rsync over ssh is used to transfer the files to SourceForge. The user running
-# this script needs to have configured access to web.sourceforge.net.
+# rsync over ssh is used to transfer the files to Dreamhost. The user running
+# this script needs to have configured access to tower.dreamhost.com
 
 import contextlib
 import os
@@ -19,12 +19,12 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description='Syncs chapel performance '
-        'graphs to sourceforge. Assumes user has configured access to '
-        'web.sourceforge.net. Checks for a SUCCESS file in the directory that '
+        'graphs to dreamhost. Assumes user has configured access to '
+        'tower.dreamhost.com. Checks for a SUCCESS file in the directory that '
         'will be synced to ensure the graphs were successfully created.')
     parser.add_argument('dirToSync', metavar='DIR', help='perf directory to '
         'sync that contains the SUCCESS file')
-    parser.add_argument('destDir', metavar='DIR', help='directory on sf to '
+    parser.add_argument('destDir', metavar='DIR', help='directory on dreamhost to '
         'sync the graphs to.')
     parser.add_argument('--logFile','-l', metavar='FILE', default=sys.stdout,
         type=argparse.FileType('w'), help='log file (default is stdout)')
@@ -35,16 +35,16 @@ def main():
     logFile = args.logFile
 
     with contextlib.closing(logFile):
-        sync = syncToSourceForge(dirToSync, destDir, logFile)
+        sync = syncToDreamhost(dirToSync, destDir, logFile)
     exit(sync)
 
-# Send the performance graphs to sourceforge
+# Send the performance graphs to dreamhost
 # Returns the status of the rsync command (0 on success)
 # or 124 (value that doesn't conflict with rsync exit codes) if the SUCCESS
 # file wasn't found in the directory that is being synced
-def syncToSourceForge(dirToSync, destDir, logFile):
+def syncToDreamhost(dirToSync, destDir, logFile):
 
-    logFile.write('SF sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
+    logFile.write('Dreamhost sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
 
     successFile = os.path.join(dirToSync, 'SUCCESS')
 
@@ -53,29 +53,22 @@ def syncToSourceForge(dirToSync, destDir, logFile):
           'unsuccessful. Graphs will NOT be synced.\n'.format(dirToSync))
         return 124
 
-    # Assumes correct username and authentication for web.sourceforge.net is
+    # Assumes correct username and authentication for tower.dreamhost.com is
     # configured for the current system.
-    sfWebHost = 'web.sourceforge.net'
-    sfShellHost = 'shell.sourceforge.net'
-    sfPerfBaseDir = '/home/project-web/chapel/htdocs/perf/'
-    sfPerfDir = posixpath.join(sfPerfBaseDir, destDir)
-
-    # create an interactive shell on sourceforge and immediately exit, which
-    # allows us to do regular ssh commands (SF security thing)
-    getShellCommand = 'ssh chapeladmin,chapel@{0} create '.format(sfShellHost)
-    getShellDesc = 'create interactive sourceforge shell'
-    executeCommand(getShellCommand, getShellDesc, logFile)
+    webHost = 'tower.dreamhost.com'
+    perfBaseDir = '/home/chapeljenkins/chapel-lang.org/perf'
+    perfDir = posixpath.join(perfBaseDir, destDir)
 
     # Delete files older than 100 days. Don't just use `rsync --del` because
     # there might be subdirectories we don't want to delete, ignore errors
-    delOldCommand = 'ssh {0} "find {1} -ctime +100 | xargs rm -rf "'.format(sfShellHost, sfPerfDir)
+    delOldCommand = 'ssh {0} "find {1} -ctime +100 | xargs rm -rf "'.format(webHost, perfDir)
     delOldDesc = 'delete old files'
     executeCommand(delOldCommand, delOldDesc, logFile)
 
     # rsync, authenticating with ssh
-    rsyncDest = '{0}:{1}'.format(sfWebHost, sfPerfDir)
+    rsyncDest = '{0}:{1}'.format(webHost, perfDir)
     rsyncCommand = 'rsync -avz -e ssh {0} {1}'.format(dirToSync, rsyncDest)
-    rsyncDesc = 'rsync perf graphs to sourceforge'
+    rsyncDesc = 'rsync perf graphs to dreamhost'
     return executeCommand(rsyncCommand, rsyncDesc, logFile)
 
 
