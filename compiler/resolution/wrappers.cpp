@@ -132,6 +132,13 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
                                                  Vec<Symbol*>* defaults,
                                                  SymbolMap*    paramMap);
 
+static void      formalIsNotDefaulted(FnSymbol*  fn,
+                                      ArgSymbol* formal,
+                                      CallExpr*  call,
+                                      FnSymbol*  wrapFn,
+                                      SymbolMap& copyMap,
+                                      SymbolMap* paramMap);
+
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
@@ -241,131 +248,8 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
 
     SET_LINENO(formal);
 
-    if (!defaults->in(formal)) {
-      // This formal does not require a default value.  It appears
-      // in the list of actual argument supplied to the call.
-
-      // Copy it into the formals for this wrapper function.
-      ArgSymbol* wrapper_formal = copyFormalForWrapper(formal);
-
-      if (fn->_this == formal) {
-        wrapper->_this = wrapper_formal;
-      }
-
-      if (formal->hasFlag(FLAG_IS_MEME)) {
-        if (wrapper->_this != NULL) {
-          wrapper->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE,
-                                                             wrapper->_this,
-                                                             wrapper_formal));
-          // unexecuted none/gasnet on 4/25/08
-        }
-      }
-
-      wrapper->insertFormalAtTail(wrapper_formal);
-
-      // By default, we simply pass the wrapper formal along to the wrapped
-      // function, but there are some special cases where some fixup is
-      // required.
-      Symbol* temp = wrapper_formal;
-
-      // Check for the fixup cases:
-      if (formal->type->symbol->hasFlag(FLAG_REF)) {
-        // Formal is passed by reference.
-        // MPF - shouldn't this code also check that wrapper_formal
-        // doesn't also have FLAG_REF? Or maybe there is a better way
-        // to write this? When does this code fire? Shouldn't it be
-        // using the ref intent instead?
-        temp = newTemp("wrap_ref_arg");
-
-        temp->addFlag(FLAG_MAYBE_PARAM);
-
-        wrapper->insertAtTail(new DefExpr(temp));
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
-                                           temp,
-                                           new CallExpr(PRIM_ADDR_OF,
-                                                        wrapper_formal)));
-
-      } else if (specializeDefaultConstructor &&
-                 wrapper_formal->typeExpr     &&
-                 isRecordWrappedType(wrapper_formal->type)) {
-        AggregateType* _thisType = toAggregateType(fn->_this->type);
-
-        // Formal has a type expression attached and is array/dom/dist
-        temp = newTemp("wrap_type_arg");
-
-        if (Symbol* field = _thisType->getField(formal->name, false)) {
-          if (field->defPoint->parentSymbol == _thisType->symbol) {
-            temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          }
-        }
-
-        wrapper->insertAtTail(new DefExpr(temp));
-
-        // Give the formal its own copy of the type expression.
-        BlockStmt* typeExpr = wrapper_formal->typeExpr->copy();
-
-        for_alist(expr, typeExpr->body) {
-          wrapper->insertAtTail(expr->remove());
-        }
-
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
-                                           temp,
-                                           new CallExpr(PRIM_INIT,
-                                                        wrapper->body->body.tail->remove())));
-        wrapper->insertAtTail(new CallExpr("=", temp, wrapper_formal));
-      }
-
-      // Add this formal to the map used to copy the function definition.
-      // (Not sure why it is done this way, since we can also make up the
-      // wrapper from whole cloth.)
-      copy_map.put(formal, temp);
-
-      call->insertAtTail(temp);
-
-      // If the wrapped formal is satisfied by a parameter,
-      // copy that parameter value into the wrapper formal as well.
-      if (Symbol* value = paramMap->get(formal)) {
-        paramMap->put(wrapper_formal, value);
-      }
-
-      if (specializeDefaultConstructor          == true &&
-          strcmp(fn->name, "_construct__tuple") != 0) {
-        if (!formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !paramMap->get(formal)               &&
-            formal->type != dtMethodToken) {
-          AggregateType* thisType = toAggregateType(wrapper->_this->type);
-
-          if (Symbol* field = thisType->getField(formal->name, false)) {
-            Symbol* parent = field->defPoint->parentSymbol;
-
-            if (parent == thisType->symbol) {
-              Symbol* copyTemp = newTemp("wrap_arg");
-
-              wrapper->insertAtTail(new DefExpr(copyTemp));
-
-              // MPF: I believe this autoCopy is problematic
-              // adding FLAG_INSERT_AUTO_DESTROY doesn't cover it
-              // because that flag is removed in cullForDefaultConstructor
-              // The autoCopy started in commit
-              //   3788ee34fa9f42bdce19e9e3cf46ccfbb1c60ac2
-              wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
-                                                 copyTemp,
-                                                 new CallExpr("chpl__autoCopy",
-                                                              temp)));
-
-              wrapper->insertAtTail(
-                new CallExpr(PRIM_SET_MEMBER,
-                             wrapper->_this,
-                             new_CStringSymbol(formal->name),
-                             copyTemp));
-
-              copy_map.put(formal, copyTemp);
-
-              call->argList.tail->replace(new SymExpr(copyTemp));
-            }
-          }
-        }
-      }
+    if (defaults->in(formal) == NULL) {
+      formalIsNotDefaulted(fn, formal, call, wrapper, copy_map, paramMap);
 
     } else if (paramMap->get(formal)) {
       // handle instantiated param formals
@@ -549,6 +433,120 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
   normalize(wrapper);
 
   return wrapper;
+}
+
+// The call provides an actual for this formal.  The wrap function should
+// accept this actual and pass it to the underlying function.
+static void formalIsNotDefaulted(FnSymbol*  fn,
+                                 ArgSymbol* formal,
+                                 CallExpr*  call,
+                                 FnSymbol*  wrapFn,
+                                 SymbolMap& copyMap,
+                                 SymbolMap* paramMap) {
+  ArgSymbol* wrapFnFormal                 = copyFormalForWrapper(formal);
+  Symbol*    temp                         = wrapFnFormal;
+  bool       specializeDefaultConstructor = false;
+
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
+    specializeDefaultConstructor = true;
+  }
+
+  if (fn->_this == formal) {
+    wrapFn->_this = wrapFnFormal;
+  }
+
+  if (formal->hasFlag(FLAG_IS_MEME) == true &&
+      wrapFn->_this                 != NULL) {
+    wrapFn->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE,
+                                                      wrapFn->_this,
+                                                      wrapFnFormal));
+  }
+
+  wrapFn->insertFormalAtTail(wrapFnFormal);
+
+  // May need to make adjustements to the actual
+  if (formal->type->symbol->hasFlag(FLAG_REF)) {
+    temp = newTemp("wrap_ref_arg");
+
+    temp->addFlag(FLAG_MAYBE_PARAM);
+
+    wrapFn->insertAtTail(new DefExpr(temp));
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                       temp,
+                                       new CallExpr(PRIM_ADDR_OF,
+                                                    wrapFnFormal)));
+
+  } else if (specializeDefaultConstructor &&
+             wrapFnFormal->typeExpr      &&
+             isRecordWrappedType(wrapFnFormal->type)) {
+    AggregateType* _thisType = toAggregateType(fn->_this->type);
+
+    // Formal has a type expression attached and is array/dom/dist
+    temp = newTemp("wrap_type_arg");
+
+    if (Symbol* field = _thisType->getField(formal->name, false)) {
+      if (field->defPoint->parentSymbol == _thisType->symbol) {
+        temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
+    }
+
+    wrapFn->insertAtTail(new DefExpr(temp));
+
+    // Give the formal its own copy of the type expression.
+    BlockStmt* typeExpr = wrapFnFormal->typeExpr->copy();
+
+    for_alist(expr, typeExpr->body) {
+      wrapFn->insertAtTail(expr->remove());
+    }
+
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                       temp,
+                                       new CallExpr(PRIM_INIT,
+                                                    wrapFn->body->body.tail->remove())));
+    wrapFn->insertAtTail(new CallExpr("=", temp, wrapFnFormal));
+  }
+
+  copyMap.put(formal, temp);
+
+  call->insertAtTail(temp);
+
+  if (Symbol* value = paramMap->get(formal)) {
+    paramMap->put(wrapFnFormal, value);
+  }
+
+  if (specializeDefaultConstructor          == true &&
+      strcmp(fn->name, "_construct__tuple") != 0) {
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+        paramMap->get(formal)               == NULL  &&
+        formal->type != dtMethodToken) {
+      AggregateType* thisType = toAggregateType(wrapFn->_this->type);
+
+      if (Symbol* field = thisType->getField(formal->name, false)) {
+        Symbol* parent = field->defPoint->parentSymbol;
+
+        if (parent == thisType->symbol) {
+          Symbol* copyTemp = newTemp("wrap_arg");
+
+          wrapFn->insertAtTail(new DefExpr(copyTemp));
+
+          wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
+                                             copyTemp,
+                                             new CallExpr("chpl__autoCopy",
+                                                          temp)));
+
+          wrapFn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                            wrapFn->_this,
+                                            new_CStringSymbol(formal->name),
+                                            copyTemp));
+
+          copyMap.put(formal, copyTemp);
+
+          call->argList.tail->replace(new SymExpr(copyTemp));
+        }
+      }
+    }
+  }
 }
 
 static void insertWrappedCall(FnSymbol* fn,
