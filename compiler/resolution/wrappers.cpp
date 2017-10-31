@@ -157,6 +157,12 @@ static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     FnSymbol*  wrapFn,
                                                     VarSymbol* temp);
 
+static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
+                                                  ArgSymbol* formal,
+                                                  IntentTag  intent,
+                                                  FnSymbol*  wrapFn,
+                                                  VarSymbol* temp);
+
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
@@ -438,63 +444,7 @@ static void formalIsDefaulted(FnSymbol*  fn,
     defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
 
   } else {
-    // use argument default for the formal argument
-    BlockStmt* defaultExpr = formal->defaultExpr->copy();
-
-    for_alist(expr, defaultExpr->body) {
-      wrapFn->insertAtTail(expr->remove());
-    }
-
-    // Normally, addLocalCopiesAndWritebacks will handle
-    // adding the copies. However, because of some issues with
-    // default constructors, the copy is added here for them.
-    // (In particular, the called constructor function does not
-    //  include the necessary copies, because it would interfere
-    //  with the array-domain link in
-    //    record { var D={1..2}; var A:[D] int }
-    //  )
-    if (specializeDefaultConstructor) {
-      // Copy construct from the default value.
-      // Sometimes, normalize has already added an initCopy in the
-      // defaultExpr. But if it didn't, we need to add a copy.
-      Expr* fromExpr      = wrapFn->body->body.tail->remove();
-      bool  needsInitCopy = true;
-
-      if (CallExpr* fromCall = toCallExpr(fromExpr)) {
-        Expr* base = fromCall->baseExpr;
-
-        if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
-          if (0 == strcmp(urse->unresolved, "chpl__initCopy") ||
-              0 == strcmp(urse->unresolved, "_createFieldDefault")) {
-            needsInitCopy = false;
-          }
-
-        } else {
-          INT_ASSERT(0); // if resolved, check for FLAG_INIT_COPY_FN
-        }
-      }
-
-      if (needsInitCopy) {
-        fromExpr = new CallExpr("chpl__initCopy", fromExpr);
-      }
-
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
-
-    } else {
-      // Otherwise, just pass it in
-      if (intent & INTENT_FLAG_REF) {
-        // For a ref intent argument, pass in address
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapFn->body->body.tail->remove())));
-
-      } else {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapFn->body->body.tail->remove()));
-      }
-    }
-
-    if (formal->intent == INTENT_INOUT) {
-      INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
-      temp->removeFlag(FLAG_MAYBE_PARAM);
-    }
+    defaultedFormalApplyDefaultValue(fn, formal, intent, wrapFn, temp);
   }
 
   call->insertAtTail(temp);
@@ -577,6 +527,61 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
     } else {
       wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
     }
+  }
+}
+
+static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
+                                             ArgSymbol* formal,
+                                             IntentTag  intent,
+                                             FnSymbol*  wrapFn,
+                                             VarSymbol* temp) {
+  BlockStmt* defaultExpr = formal->defaultExpr->copy();
+
+  for_alist(expr, defaultExpr->body) {
+    wrapFn->insertAtTail(expr->remove());
+  }
+
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
+    // Normalize may have added an initCopy for the defaultExpr.
+    // If it didn't, add the copy here
+    Expr* fromExpr      = wrapFn->body->body.tail->remove();
+    bool  needsInitCopy = true;
+
+    if (CallExpr* fromCall = toCallExpr(fromExpr)) {
+      Expr* base = fromCall->baseExpr;
+
+      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
+        if (0 == strcmp(urse->unresolved, "chpl__initCopy") ||
+            0 == strcmp(urse->unresolved, "_createFieldDefault")) {
+          needsInitCopy = false;
+        }
+
+      } else {
+        INT_ASSERT(false);
+      }
+    }
+
+    if (needsInitCopy) {
+      fromExpr = new CallExpr("chpl__initCopy", fromExpr);
+    }
+
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
+
+  } else {
+    // Otherwise, just pass it in
+    if (intent & INTENT_FLAG_REF) {
+      // For a ref intent argument, pass in address
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapFn->body->body.tail->remove())));
+
+    } else {
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapFn->body->body.tail->remove()));
+    }
+  }
+
+  if (formal->intent == INTENT_INOUT) {
+    INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
+    temp->removeFlag(FLAG_MAYBE_PARAM);
   }
 }
 
