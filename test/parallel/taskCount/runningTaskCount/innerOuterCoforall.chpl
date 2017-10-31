@@ -9,7 +9,7 @@ proc main() {
     coforall tid in 0..#tasksPerLoc {
       barrier.barrier();
       const taskID = (loc.id * tasksPerLoc) + tid;
-      const rt = here.runningTaskCounter.read();
+      const rt = here.runningTasks();
       barrier.barrier();
       taskCounts[loc.id, tid] = (taskID, rt);
     }
