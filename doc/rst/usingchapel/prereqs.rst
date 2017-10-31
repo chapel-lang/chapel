@@ -35,6 +35,9 @@ about your environment for using Chapel:
 
   * Building LLVM requires cmake version 3.4.3 or later.
 
+  * Building GMP requires the m4 macro processing package, which may
+    not be installed by default in all systems.
+
   * If you wish to use Chapel's test system, python-setuptools and
     python-devel (or equivalent packages for your platform) are required.
 
