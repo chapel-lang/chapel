@@ -418,6 +418,7 @@ module ChapelLocale {
         yield locIdx;
         rootLocale = origRootLocale;
         rootLocaleInitialized = true;
+        here.runningTaskCntSet(1);
       }
     }
 
@@ -430,7 +431,7 @@ module ChapelLocale {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
-      coforall locIdx in 0..#numLocales /*ref(b)*/ {
+      coforall locIdx in 0..#numLocales with(ref rootLocaleInitialized) {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
                                           c_sublocid_any)) {
@@ -438,6 +439,17 @@ module ChapelLocale {
           yield locIdx;
           b.wait(locIdx, flags);
           chpl_rootLocaleInitPrivate(locIdx);
+
+          // Now that the locale has been initialized we can start counting
+          // runningTasks. We set the task count to 1 so that it will 1 be on
+          // locale 0 and 0 on non-0 locales after this on-stmt. On locale 0,
+          // we need to count the main task and since it's "local" on stmt, we
+          // won't decrement the runningTaskCounter when this on-stmt is done.
+          // For non-0 locales when this on-stmt is done, we'll decrement the
+          // runningTaskCounter to 0
+          rootLocaleInitialized = true;
+          here.runningTaskCntSet(1);
+
         }
       }
     }
@@ -551,7 +563,6 @@ module ChapelLocale {
       const ref tmp = (rootLocale:RootLocale).getDefaultLocaleArray();
       __primitive("move", Locales, tmp);
     }
-    rootLocaleInitialized = true;
   }
 
   // We need a temporary value for "here" before the architecture is defined.
@@ -651,16 +662,10 @@ module ChapelLocale {
 //########################################################################}
 
   //
-  // Increment and decrement the task count.
-  //
-  // Elsewhere in the module code we adjust the running task count
-  // directly, but at least for now the runtime also needs to be
-  // able to do so.  These functions support that.
+  // The compiler calls these to adjust the running task count for on-stmts
   //
   pragma "no doc"
-  pragma "insert line file info"
   pragma "inc running task"
-  export
   proc chpl_taskRunningCntInc() {
     if rootLocaleInitialized {
       here.runningTaskCntAdd(1);
@@ -668,20 +673,11 @@ module ChapelLocale {
   }
 
   pragma "no doc"
-  pragma "insert line file info"
   pragma "dec running task"
-  export
   proc chpl_taskRunningCntDec() {
     if rootLocaleInitialized {
       here.runningTaskCntSub(1);
     }
-  }
-
-  pragma "no doc"
-  pragma "insert line file info"
-  export
-  proc chpl_taskRunningCntReset() {
-    here.runningTaskCntSet(0);
   }
 
   //
