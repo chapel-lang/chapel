@@ -1,0 +1,3 @@
+generic-method-with-param-arg-1.chpl:1: In function 'getAllocationDomainForDefaultRectangularArray3':
+generic-method-with-param-arg-1.chpl:5: error: unresolved call 'BaseArr.getAllocationDomainForDefaultRectangularArray3()'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2033: note: candidates are: getAllocationDomainForDefaultRectangularArray3(_mt: _MT, this: _array)

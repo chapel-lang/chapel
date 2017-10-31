@@ -272,7 +272,7 @@ module HPCC_PTRANS {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const C_locale_grid = C.domain.dist._value.targetLocales; // block version
+    const C_locale_grid = C.domain.dist.targetLocales(); // block version
     const C_grid_domain = C_locale_grid.domain,
           n_processors  = C_grid_domain.numIndices;
 

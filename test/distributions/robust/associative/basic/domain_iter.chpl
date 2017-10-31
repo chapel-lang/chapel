@@ -47,7 +47,7 @@ if doString {
 }
 
 proc testSerial(Dom, D, Arr, ArrRef) {
-  type idxType = Dom._value.idxType;
+  type idxType = Dom.idxType;
   for ai in Dom {
     if idxType != string then
       Arr(((ai-offset:idxType)/2):int) = ai;
@@ -72,7 +72,7 @@ proc testSerial(Dom, D, Arr, ArrRef) {
 
 // could probably use serial true on testSerial
 proc testParallel(Dom, D, Arr, ArrRef) {
-  type idxType = Dom._value.idxType;
+  type idxType = Dom.idxType;
   forall ai in Dom {
     if idxType != string then
       Arr(((ai-offset:idxType)/2):int) = ai;

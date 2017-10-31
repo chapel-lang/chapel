@@ -124,7 +124,7 @@ if useChplVis then tagVdebug("setupEAMForce");
     ref eamDom = this.eamPot.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyLocDom = distSpace._value.locDoms[ijk].myBlock;
+        const MyLocDom = distSpace.localSubdomain();
         var MyEAMDom = new EAMDomain(localDom = MyLocDom);
         eamDom[ijk] = MyEAMDom;
 

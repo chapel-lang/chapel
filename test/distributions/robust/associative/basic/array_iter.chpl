@@ -62,7 +62,7 @@ if doString {
 }
 
 proc testSerial(AAssoc, D, Arr, ArrRef) {
-  type idxType = AAssoc._value.dom.idxType;
+  type idxType = AAssoc.idxType;
   for aa in AAssoc {
     if idxType != string {
       var ai = aa;
@@ -88,7 +88,7 @@ proc testSerial(AAssoc, D, Arr, ArrRef) {
 
 // could probably use serial true on testSerial
 proc testParallel(AAssoc, D, Arr, ArrRef) {
-  type idxType = AAssoc._value.dom.idxType;
+  type idxType = AAssoc.idxType;
   forall aa in AAssoc {
     if idxType != string {
       var ai = aa;

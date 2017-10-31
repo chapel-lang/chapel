@@ -27,7 +27,7 @@ testWhole(DomRealType);
 testWhole(DomStringType);
 
 proc testWhole(DA) {
-  type idxType = DA._value.idxType;
+  type idxType = DA.idxType;
   var DA2: DA.type;
   if debug then writeln(DA2);
   DA2 = DA;
