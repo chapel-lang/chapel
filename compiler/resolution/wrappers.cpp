@@ -409,15 +409,8 @@ static void formalIsDefaulted(FnSymbol*  fn,
                               CallExpr*  call,
                               FnSymbol*  wrapFn,
                               SymbolMap& copyMap) {
-  const char* temp_name                    = astr("default_arg", formal->name);
-  VarSymbol*  temp                         = newTemp(temp_name);
-  IntentTag   intent                       = formal->intent;
-  bool        specializeDefaultConstructor = false;
-
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
-      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
-    specializeDefaultConstructor = true;
-  }
+  IntentTag  intent = formal->intent;
+  VarSymbol* temp   = newTemp(astr("default_arg", formal->name));
 
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
@@ -430,7 +423,7 @@ static void formalIsDefaulted(FnSymbol*  fn,
     temp->addFlag(FLAG_EXPR_TEMP);
   }
 
-  if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     temp->addFlag(FLAG_TYPE_VARIABLE);
   }
 
@@ -450,15 +443,16 @@ static void formalIsDefaulted(FnSymbol*  fn,
 
   call->insertAtTail(temp);
 
-  // MPF - this seems really strange since it is assigning to
-  // fields that will be set in the construct call at the end.
-  // It is handling the current issue that an iterator to
-  // initialize an array can refer to the fields.
+  // MPF - this seems strange since it is assigning to fields that will be
+  // set in the construct call at the end.  It is handling the current issue
+  // that an iterator to initialize an array can refer to the fields.
   // See arrayDomInClassRecord2.chpl.
+  //
   // In the future, it would probably be better to initialize the
   // fields in order in favor of calling the default constructor.
-  if (specializeDefaultConstructor          == true &&
-      strcmp(fn->name, "_construct__tuple") != 0) {
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true  &&
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false &&
+      strcmp(fn->name, "_construct__tuple")      != 0) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       AggregateType* type = toAggregateType(wrapFn->_this->type);
 
@@ -467,9 +461,9 @@ static void formalIsDefaulted(FnSymbol*  fn,
           VarSymbol* name = new_CStringSymbol(formal->name);
 
           wrapFn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                             wrapFn->_this,
-                                             name,
-                                             temp));
+                                            wrapFn->_this,
+                                            name,
+                                            temp));
         }
       }
     }
