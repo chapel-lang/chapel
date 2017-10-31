@@ -4,7 +4,7 @@ const D: domain(1,int,true) dmapped Dist1D = Space1;
 
 var A: [D] int;
 
-ref AA = A[49..54].reindex(49..55 by 2);
+// We expect this range to straddle two locales
+ref AA = A[48..53].reindex(1..11 by 2);
 
-AA = 1;
-writeln(A[45..55]);
+for i in AA.domain do writeln(i, ": ", AA[i].locale);
