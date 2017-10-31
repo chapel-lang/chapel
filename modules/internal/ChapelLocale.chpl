@@ -189,19 +189,6 @@ module ChapelLocale {
 
     // This many tasks are running on this locale.
     //
-    // Note handling runningTaskCounter <= 0 in runningTaskCnt().  The
-    // references to it are done via here.runningTasks(), and currently
-    // "here" means the requested locale, not the actual or concrete
-    // one.  But this may be "any", and the running task count in it may
-    // be zero, which in turn leads to overindexing the locales array
-    // after the subtraction of 1 in locale.runningTasks(), below.  In
-    // the long run we probably need to go through all the "here" refs
-    // in the module code and differentiate more carefully which need
-    // the requested locale and which need the concrete one.  But for
-    // now, we make the assumption that all requests for the number of
-    // running tasks want the count from the locale the calling task is
-    // running on, so the minimum possible value must be 1.
-    //
     // This field should only be accessed locally, so we will have better
     // performance if we always use a processor atomic.
     pragma "no doc"
@@ -224,8 +211,7 @@ module ChapelLocale {
 
     pragma "no doc"
     inline proc runningTaskCnt() {
-      var rtc = runningTaskCounter.read(memory_order_relaxed);
-      return if (rtc <= 0) then 1 else rtc;
+      return runningTaskCounter.read(memory_order_relaxed);
     }
     //------------------------------------------------------------------------}
 
