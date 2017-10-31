@@ -58,24 +58,25 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 
-static FnSymbol*  wrapDefaultedFormals(FnSymbol*                fn,
-                                       std::vector<ArgSymbol*>* actualToFormal,
-                                       CallInfo*                info);
+static FnSymbol*  wrapDefaultedFormals(
+                               FnSymbol*                fn,
+                               CallInfo&                info,
+                               std::vector<ArgSymbol*>* actualToFormal);
 
 static void       reorderActuals(FnSymbol*                fn,
-                                 std::vector<ArgSymbol*>* actualIdxToFormal,
-                                 CallInfo*                info);
+                                 CallInfo&                info,
+                                 std::vector<ArgSymbol*>* actualIdxToFormal);
 
 static void       coerceActuals(FnSymbol* fn,
-                                CallInfo* info);
+                                CallInfo& info);
 
 static bool       isPromotionRequired(FnSymbol* fn, CallInfo& info);
 
 static FnSymbol*  promotionWrap(FnSymbol* fn,
-                                CallInfo* info,
+                                CallInfo& info,
                                 bool      buildFastFollowerChecks);
 
-static FnSymbol*  buildEmptyWrapper(FnSymbol* fn, CallInfo* info);
+static FnSymbol*  buildEmptyWrapper(FnSymbol* fn, CallInfo& info);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
 
@@ -94,20 +95,20 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   FnSymbol* retval     = fn;
 
   if (numActuals < fn->numFormals()) {
-    retval = wrapDefaultedFormals(retval, actualIdxToFormal, &info);
+    retval = wrapDefaultedFormals(retval, info, actualIdxToFormal);
   }
 
   // Map actuals to formals by position
   if (actualIdxToFormal->size() > 1) {
-    reorderActuals(retval, actualIdxToFormal, &info);
+    reorderActuals(retval, info, actualIdxToFormal);
   }
 
   if (info.actuals.n > 0) {
-    coerceActuals(retval, &info);
+    coerceActuals(retval, info);
   }
 
   if (isPromotionRequired(retval, info) == true) {
-    retval = promotionWrap(retval, &info, fastFollowerChecks);
+    retval = promotionWrap(retval, info, fastFollowerChecks);
   }
 
   return retval;
@@ -127,17 +128,17 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 ************************************** | *************************************/
 
 static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
+                                     CallInfo&     info,
                                      Vec<Symbol*>* defaults,
-                                     SymbolMap*    paramMap,
-                                     CallInfo*     info);
+                                     SymbolMap*    paramMap);
 
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
 
 static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
-                                      std::vector<ArgSymbol*>* actualFormals,
-                                      CallInfo*                info) {
+                                      CallInfo&                info,
+                                      std::vector<ArgSymbol*>* actualFormals) {
   Vec<Symbol*> defaults;
   int          j      = 1;
   FnSymbol*    retval = fn;
@@ -159,7 +160,7 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
   retval = checkCache(defaultsCache, fn, &defaults);
 
   if (retval == NULL) {
-    retval = buildDefaultWrapper(fn, &defaults, &paramMap, info);
+    retval = buildDefaultWrapper(fn, info, &defaults, &paramMap);
 
     resolveFormals(retval);
 
@@ -183,9 +184,9 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
 }
 
 static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
+                                     CallInfo&     info,
                                      Vec<Symbol*>* defaults,
-                                     SymbolMap*    paramMap,
-                                     CallInfo*     info) {
+                                     SymbolMap*    paramMap) {
   SET_LINENO(fn);
 
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
@@ -228,7 +229,7 @@ static FnSymbol* buildDefaultWrapper(FnSymbol*     fn,
 
   CallExpr* call = new CallExpr(fn);
 
-  call->square = info->call->square;    // Copy square brackets call flag.
+  call->square = info.call->square;    // Copy square brackets call flag.
 
   // Now walk the formals list of the called function, and expand formal
   // argument defaults as needed, so every formal in the called function
@@ -582,8 +583,8 @@ static void insertWrappedCall(FnSymbol* fn,
 ************************************** | *************************************/
 
 static void reorderActuals(FnSymbol*                fn,
-                           std::vector<ArgSymbol*>* actualFormals,
-                           CallInfo*                info) {
+                           CallInfo&                info,
+                           std::vector<ArgSymbol*>* actualFormals) {
   int              numArgs       = actualFormals->size();
   std::vector<int> formalsToFormals(numArgs);
   bool             needToReorder = false;
@@ -614,27 +615,27 @@ static void reorderActuals(FnSymbol*                fn,
     int                      index = 0;
 
     // remove all actuals in an order
-    for_actuals(actual, info->call) {
+    for_actuals(actual, info.call) {
       savedActuals[index++] = actual->remove();
     }
 
     // reinsert them in the desired order
     for (int i = 0; i < numArgs; i++) {
-      info->call->insertAtTail(savedActuals[formalsToFormals[i]]);
+      info.call->insertAtTail(savedActuals[formalsToFormals[i]]);
     }
 
     // reorder CallInfo data as well
     // ideally this would be encapsulated in within the CallInfo class
-    INT_ASSERT(info->actuals.n == numArgs);
+    INT_ASSERT(info.actuals.n == numArgs);
 
     for (int i = 0; i < numArgs; i++) {
-      ciActuals[i]     = info->actuals.v[i];
-      ciActualNames[i] = info->actualNames.v[i];
+      ciActuals[i]     = info.actuals.v[i];
+      ciActualNames[i] = info.actualNames.v[i];
     }
 
     for (int i = 0; i < numArgs; i++) {
-      info->actuals.v[i]     = ciActuals[formalsToFormals[i]];
-      info->actualNames.v[i] = ciActualNames[formalsToFormals[i]];
+      info.actuals.v[i]     = ciActuals[formalsToFormals[i]];
+      info.actualNames.v[i] = ciActualNames[formalsToFormals[i]];
     }
   }
 }
@@ -659,8 +660,7 @@ static void      addArgCoercion(FnSymbol*  fn,
                                 Symbol*&   actualSym,
                                 bool&      checkAgain);
 
-static void coerceActuals(FnSymbol* fn, CallInfo* info) {
-
+static void coerceActuals(FnSymbol* fn, CallInfo& info) {
   if (fn->retTag == RET_PARAM) {
     //
     // This call will be tossed in postFold(), so why bother with coercions?
@@ -683,11 +683,11 @@ static void coerceActuals(FnSymbol* fn, CallInfo* info) {
   }
 
   int   j          = -1;
-  Expr* currActual = info->call->get(1);
+  Expr* currActual = info.call->get(1);
 
   for_formals(formal, fn) {
     j++;
-    Symbol* actualSym  = info->actuals.v[j];
+    Symbol* actualSym  = info.actuals.v[j];
     Type*   formalType = formal->type;
     bool    c2         = false;
     int     checksLeft = 6;
@@ -730,7 +730,7 @@ static void coerceActuals(FnSymbol* fn, CallInfo* info) {
           currActual = newActual;
 
         } else {
-          addArgCoercion(fn, info->call, formal, currActual, actualSym, c2);
+          addArgCoercion(fn, info.call, formal, currActual, actualSym, c2);
         }
       }
     } while (c2 && --checksLeft > 0);
@@ -924,9 +924,9 @@ static void addArgCoercion(FnSymbol*  fn,
 
 static FnSymbol*
 buildPromotionWrapper(FnSymbol*  fn,
-                      SymbolMap* promotionSubs,
-                      CallInfo*  info,
-                      bool       buildFastFollowerChecks);
+                      CallInfo&  info,
+                      bool       buildFastFollowerChecks,
+                      SymbolMap* promotionSubs);
 
 static void
 fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
@@ -935,7 +935,7 @@ fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 static void
 buildPromotionFastFollowerCheck(bool                  isStatic,
                                 bool                  addLead,
-                                CallInfo*             info,
+                                CallInfo&             info,
                                 FnSymbol*             wrapper,
                                 std::set<ArgSymbol*>& requiresPromotion);
 
@@ -971,10 +971,10 @@ static bool isPromotionRequired(FnSymbol* fn, CallInfo& info) {
 }
 
 static FnSymbol* promotionWrap(FnSymbol* fn,
-                               CallInfo* info,
+                               CallInfo& info,
                                bool      buildFastFollowerChecks) {
 
-  Vec<Symbol*>* actuals = &info->actuals;
+  Vec<Symbol*>* actuals = &info.actuals;
 
   if (fn->name == astrSequals) {
     return fn;
@@ -1014,16 +1014,17 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   if (promotion_wrapper_required) {
     if (fReportPromotion) {
-      USR_WARN(info->call, "promotion on %s", info->toString());
+      USR_WARN(info.call, "promotion on %s", info.toString());
     }
 
     FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
 
     if (wrapper == NULL) {
       wrapper = buildPromotionWrapper(fn,
-                                      &promoted_subs,
                                       info,
-                                      buildFastFollowerChecks);
+                                      buildFastFollowerChecks,
+                                      &promoted_subs);
+
       addCache(promotionsCache, fn, wrapper, &promoted_subs);
     }
 
@@ -1037,10 +1038,10 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 }
 
 static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
-                                       SymbolMap* promotion_subs,
-                                       CallInfo*  info,
-                                       bool       buildFastFollowerChecks) {
-  SET_LINENO(info->call);
+                                       CallInfo&  info,
+                                       bool       buildFastFollowerChecks,
+                                       SymbolMap* promotion_subs) {
+  SET_LINENO(info.call);
 
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
 
@@ -1177,7 +1178,7 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
     normalize(lifn);
 
     lifn->addFlag(FLAG_GENERIC);
-    lifn->instantiationPoint = getVisibilityBlock(info->call);
+    lifn->instantiationPoint = getVisibilityBlock(info.call);
 
     // Build up the follower iterator
     SymbolMap followerMap;
@@ -1239,7 +1240,7 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
 
     fifn->addFlag(FLAG_GENERIC);
 
-    fifn->instantiationPoint = getVisibilityBlock(info->call);
+    fifn->instantiationPoint = getVisibilityBlock(info.call);
 
     fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
 
@@ -1355,7 +1356,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 static void
 buildPromotionFastFollowerCheck(bool                  isStatic,
                                 bool                  addLead,
-                                CallInfo*             info,
+                                CallInfo&             info,
                                 FnSymbol*             wrapper,
                                 std::set<ArgSymbol*>& requiresPromotion) {
   const char* fnName = isStatic ? "chpl__staticFastFollowCheck" : "chpl__dynamicFastFollowCheck";
@@ -1394,7 +1395,7 @@ buildPromotionFastFollowerCheck(bool                  isStatic,
     }
   }
 
-  fastFollowCheckFn->where = new BlockStmt(new CallExpr("==", new CallExpr(PRIM_TYPEOF, x), new CallExpr(PRIM_TYPEOF, info->call->copy())));
+  fastFollowCheckFn->where = new BlockStmt(new CallExpr("==", new CallExpr(PRIM_TYPEOF, x), new CallExpr(PRIM_TYPEOF, info.call->copy())));
 
   Symbol* p_tup = newTemp("p_tup");
 
@@ -1422,7 +1423,7 @@ buildPromotionFastFollowerCheck(bool                  isStatic,
 
   fastFollowCheckFn->addFlag(FLAG_GENERIC);
 
-  fastFollowCheckFn->instantiationPoint = getVisibilityBlock(info->call);
+  fastFollowCheckFn->instantiationPoint = getVisibilityBlock(info.call);
 }
 
 /************************************* | **************************************
@@ -1431,7 +1432,7 @@ buildPromotionFastFollowerCheck(bool                  isStatic,
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
+static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo& info) {
   FnSymbol* wrapper = new FnSymbol(fn->name);
 
   wrapper->addFlag(FLAG_WRAPPER);
@@ -1488,7 +1489,7 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo* info) {
     wrapper->addFlag(FLAG_ASSIGNOP);
   }
 
-  wrapper->instantiationPoint = getVisibilityBlock(info->call);
+  wrapper->instantiationPoint = getVisibilityBlock(info.call);
 
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
     wrapper->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
