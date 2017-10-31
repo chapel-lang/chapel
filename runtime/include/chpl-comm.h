@@ -229,7 +229,8 @@ void chpl_comm_rollcall(void);
 // chpl_comm_regMemAllocThreshold():
 //   Allocations smaller than this should be done normally, by the
 //   memory layer.  Those at least this size may be done through this
-//   comm layer sub-interface.
+//   comm layer sub-interface.  SIZE_MAX is returned if the comm layer
+//   cannot or will not do allocations at all.
 //
 // chpl_comm_regMemAlloc()
 //   Allocate memory, returning either a non-NULL pointer or NULL when
