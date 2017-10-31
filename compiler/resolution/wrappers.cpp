@@ -479,17 +479,17 @@ static void formalIsDefaulted(FnSymbol*  fn,
 static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                FnSymbol*  wrapFn,
                                                VarSymbol* temp) {
-  // use default value for type as default value for formal argument
-  if (formal->typeExpr) {
+  if (formal->typeExpr != NULL) {
     BlockStmt* typeExpr = formal->typeExpr->copy();
+    Expr*      lastExpr = NULL;
 
     for_alist(expr, typeExpr->body) {
       wrapFn->insertAtTail(expr->remove());
     }
 
-    Expr* lastExpr = wrapFn->body->body.tail;
+    lastExpr = wrapFn->body->body.tail;
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
 
     } else {
@@ -499,7 +499,8 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       // for chpl__buildArrayRuntimeType. This wrapping function then
       // created an invalid AST like this:
       //
-      // (move call_tmp (move _return_tmp_ (call chpl__buildArrayRuntimeType ...)))
+      // (move call_tmp
+      //       (move _return_tmp_ (call chpl__buildArrayRuntimeType ...)))
       //
       // With this change we assume that if the last Expr is a PRIM_MOVE
       // that we can use the LHS of that move in the PRIM_INIT call that
@@ -511,22 +512,26 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       // Compiled with -suseBulkTransferStride
       //
       CallExpr* lastCall = toCallExpr(lastExpr);
+      Expr*     initExpr = NULL;
 
-      if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE)) {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastCall->get(1)->copy())));
+      if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE) == true) {
+        initExpr = new CallExpr(PRIM_INIT, lastCall->get(1)->copy());
 
       } else {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastExpr->remove())));
+        initExpr = new CallExpr(PRIM_INIT, lastExpr->remove());
       }
+
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, initExpr));
     }
 
   } else {
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));
+    Expr* expr = new SymExpr(formal->type->symbol);
 
-    } else {
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      expr = new CallExpr(PRIM_INIT, expr);
     }
+
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
   }
 }
 
