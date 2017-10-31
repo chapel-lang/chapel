@@ -541,25 +541,23 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                              FnSymbol*  wrapFn,
                                              VarSymbol* temp) {
   BlockStmt* defaultExpr = formal->defaultExpr->copy();
+  Expr*      fromExpr    = NULL;
 
   for_alist(expr, defaultExpr->body) {
     wrapFn->insertAtTail(expr->remove());
   }
 
+  fromExpr = wrapFn->body->body.tail->remove();
+
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
       fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
     // Normalize may have added an initCopy for the defaultExpr.
     // If it didn't, add the copy here
-    Expr* fromExpr      = wrapFn->body->body.tail->remove();
-    bool  needsInitCopy = true;
-
     if (CallExpr* fromCall = toCallExpr(fromExpr)) {
-      Expr* base = fromCall->baseExpr;
-
-      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(base)) {
-        if (0 == strcmp(urse->unresolved, "chpl__initCopy") ||
-            0 == strcmp(urse->unresolved, "_createFieldDefault")) {
-          needsInitCopy = false;
+      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(fromCall->baseExpr)) {
+        if (strcmp(urse->unresolved, "chpl__initCopy")      != 0 &&
+            strcmp(urse->unresolved, "_createFieldDefault") != 0) {
+          fromExpr = new CallExpr("chpl__initCopy", fromExpr);
         }
 
       } else {
@@ -567,22 +565,13 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
       }
     }
 
-    if (needsInitCopy) {
-      fromExpr = new CallExpr("chpl__initCopy", fromExpr);
-    }
-
-    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
-
   } else {
-    // Otherwise, just pass it in
-    if (intent & INTENT_FLAG_REF) {
-      // For a ref intent argument, pass in address
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_ADDR_OF, wrapFn->body->body.tail->remove())));
-
-    } else {
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, wrapFn->body->body.tail->remove()));
+    if ((intent & INTENT_FLAG_REF) != 0) {
+      fromExpr = new CallExpr(PRIM_ADDR_OF, fromExpr);
     }
   }
+
+  wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
 
   if (formal->intent == INTENT_INOUT) {
     INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
