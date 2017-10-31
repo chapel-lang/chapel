@@ -153,6 +153,10 @@ static void      formalIsDefaulted(FnSymbol*  fn,
                                    FnSymbol*  wrapFn,
                                    SymbolMap& copyMap);
 
+static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
+                                                    FnSymbol*  wrapFn,
+                                                    VarSymbol* temp);
+
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
@@ -431,55 +435,7 @@ static void formalIsDefaulted(FnSymbol*  fn,
       (formal->defaultExpr->body.length == 1 &&
        isSymExpr(formal->defaultExpr->body.tail) &&
        toSymExpr(formal->defaultExpr->body.tail)->symbol() == gTypeDefaultToken)) {
-    // use default value for type as default value for formal argument
-    if (formal->typeExpr) {
-      BlockStmt* typeExpr = formal->typeExpr->copy();
-
-      for_alist(expr, typeExpr->body) {
-        wrapFn->insertAtTail(expr->remove());
-      }
-
-      Expr* lastExpr = wrapFn->body->body.tail;
-
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
-
-      } else {
-        //
-        // 2016-07-18: benharsh: I was encountering an issue where we were
-        // attempting to wrap a function where we had inserted return temps
-        // for chpl__buildArrayRuntimeType. This wrapping function then
-        // created an invalid AST like this:
-        //
-        // (move call_tmp (move _return_tmp_ (call chpl__buildArrayRuntimeType ...)))
-        //
-        // With this change we assume that if the last Expr is a PRIM_MOVE
-        // that we can use the LHS of that move in the PRIM_INIT call that
-        // needs to be inserted.
-        //
-        // The test that exposed this issue is:
-        //   test/arrays/diten/distArrInRecord.chpl
-        //
-        // Compiled with -suseBulkTransferStride
-        //
-        CallExpr* lastCall = toCallExpr(lastExpr);
-
-        if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE)) {
-          wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastCall->get(1)->copy())));
-
-        } else {
-          wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastExpr->remove())));
-        }
-      }
-
-    } else {
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));
-
-      } else {
-        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
-      }
-    }
+    defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
 
   } else {
     // use argument default for the formal argument
@@ -566,6 +522,60 @@ static void formalIsDefaulted(FnSymbol*  fn,
                                              temp));
         }
       }
+    }
+  }
+}
+
+static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
+                                               FnSymbol*  wrapFn,
+                                               VarSymbol* temp) {
+  // use default value for type as default value for formal argument
+  if (formal->typeExpr) {
+    BlockStmt* typeExpr = formal->typeExpr->copy();
+
+    for_alist(expr, typeExpr->body) {
+      wrapFn->insertAtTail(expr->remove());
+    }
+
+    Expr* lastExpr = wrapFn->body->body.tail;
+
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
+
+    } else {
+      //
+      // 2016-07-18: benharsh: I was encountering an issue where we were
+      // attempting to wrap a function where we had inserted return temps
+      // for chpl__buildArrayRuntimeType. This wrapping function then
+      // created an invalid AST like this:
+      //
+      // (move call_tmp (move _return_tmp_ (call chpl__buildArrayRuntimeType ...)))
+      //
+      // With this change we assume that if the last Expr is a PRIM_MOVE
+      // that we can use the LHS of that move in the PRIM_INIT call that
+      // needs to be inserted.
+      //
+      // The test that exposed this issue is:
+      //   test/arrays/diten/distArrInRecord.chpl
+      //
+      // Compiled with -suseBulkTransferStride
+      //
+      CallExpr* lastCall = toCallExpr(lastExpr);
+
+      if (lastCall != NULL && lastCall->isPrimitive(PRIM_MOVE)) {
+        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastCall->get(1)->copy())));
+
+      } else {
+        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, lastExpr->remove())));
+      }
+    }
+
+  } else {
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new SymExpr(formal->type->symbol)));
+
+    } else {
+      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, new CallExpr(PRIM_INIT, new SymExpr(formal->type->symbol))));
     }
   }
 }
