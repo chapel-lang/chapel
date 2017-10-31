@@ -331,7 +331,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
 
   wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
                                info,
-                               &actualIdxToFormal,
+                               actualIdxToFormal,
                                true);
 
   call->baseExpr->replace(new SymExpr(wrap));

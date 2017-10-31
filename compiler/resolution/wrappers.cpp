@@ -61,11 +61,11 @@
 static FnSymbol*  wrapDefaultedFormals(
                                FnSymbol*                fn,
                                CallInfo&                info,
-                               std::vector<ArgSymbol*>* actualToFormal);
+                               std::vector<ArgSymbol*>& actualToFormal);
 
 static void       reorderActuals(FnSymbol*                fn,
                                  CallInfo&                info,
-                                 std::vector<ArgSymbol*>* actualIdxToFormal);
+                                 std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static void       coerceActuals(FnSymbol* fn,
                                 CallInfo& info);
@@ -89,9 +89,9 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
 
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
-                                std::vector<ArgSymbol*>* actualIdxToFormal,
+                                std::vector<ArgSymbol*>  actualIdxToFormal,
                                 bool                     fastFollowerChecks) {
-  int       numActuals = static_cast<int>(actualIdxToFormal->size());
+  int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
 
   if (numActuals < fn->numFormals()) {
@@ -99,7 +99,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   }
 
   // Map actuals to formals by position
-  if (actualIdxToFormal->size() > 1) {
+  if (actualIdxToFormal.size() > 1) {
     reorderActuals(retval, info, actualIdxToFormal);
   }
 
@@ -138,7 +138,7 @@ static void      insertWrappedCall(FnSymbol* fn,
 
 static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
                                       CallInfo&                info,
-                                      std::vector<ArgSymbol*>* actualFormals) {
+                                      std::vector<ArgSymbol*>& actualFormals) {
   Vec<Symbol*> defaults;
   int          j      = 1;
   FnSymbol*    retval = fn;
@@ -146,7 +146,7 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
   for_formals(formal, fn) {
     bool used = false;
 
-    for_vector(ArgSymbol, arg, *actualFormals) {
+    for_vector(ArgSymbol, arg, actualFormals) {
       if (arg == formal) {
         used = true;
       }
@@ -169,13 +169,9 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
 
   // update actualFormals for use in reorderActuals
   for_formals(formal, fn) {
-    for (size_t i = 0; i < actualFormals->size(); i++) {
-      if ((*actualFormals)[i] == formal) {
-        ArgSymbol* newFormal = retval->getFormal(j);
-
-        (*actualFormals)[i] = newFormal;
-
-        j++;
+    for (size_t i = 0; i < actualFormals.size(); i++) {
+      if (actualFormals[i] == formal) {
+        actualFormals[i] = retval->getFormal(j++);
       }
     }
   }
@@ -584,8 +580,8 @@ static void insertWrappedCall(FnSymbol* fn,
 
 static void reorderActuals(FnSymbol*                fn,
                            CallInfo&                info,
-                           std::vector<ArgSymbol*>* actualFormals) {
-  int              numArgs       = actualFormals->size();
+                           std::vector<ArgSymbol*>& actualFormals) {
+  int              numArgs       = actualFormals.size();
   std::vector<int> formalsToFormals(numArgs);
   bool             needToReorder = false;
   int              i             = 0;
@@ -595,7 +591,7 @@ static void reorderActuals(FnSymbol*                fn,
 
     i++;
 
-    for_vector(ArgSymbol, af, *actualFormals ) {
+    for_vector(ArgSymbol, af, actualFormals) {
       j++;
 
       if (af == formal) {

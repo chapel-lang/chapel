@@ -2482,7 +2482,7 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
                                        bool                 followerChecks) {
   best->fn = wrapAndCleanUpActuals(best->fn,
                                    info,
-                                   &best->actualIdxToFormal,
+                                   best->actualIdxToFormal,
                                    followerChecks);
 
   return best->fn;
