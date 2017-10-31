@@ -24,12 +24,16 @@ NightlyPerformance/chap04 \
 NightlyPerformance/chap08 \
 NightlyPerformance/chap12 \
 NightlyPerformance/chapcs \
+NightlyPerformance/chapcs.comm-counts \
 NightlyPerformance/shootout \
 "
 
 # logs for "Cray hardware" configurations
 loghomeCrayHW=/cray/css/users/chapelu
-logsourcesCrayHW=Nightly
+logsourcesCrayHW="\
+Nightly \
+NightlyWbOnCray \
+"
 
 verbose=false
 numerrors=
