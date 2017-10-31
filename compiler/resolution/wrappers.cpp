@@ -218,75 +218,67 @@ static FnSymbol* buildWrapperForDefaultedFormals(FnSymbol*     fn,
                                                  SymbolMap*    paramMap) {
   SET_LINENO(fn);
 
-  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
+  SymbolMap copyMap;
+  CallExpr* call    = new CallExpr(fn);
+  FnSymbol* retval  = buildEmptyWrapper(fn, info);
 
-  // Prevent name-clash in generated code.
-  // Also, provide a hint where this fcn came from.
-  wrapper->cname = astr("_default_wrap_", fn->cname);
+  retval->cname = astr("_default_wrap_", fn->cname);
 
-  // Mimic return type.
-  if (!fn->isIterator()) {
-    wrapper->retType = fn->retType;
+  if (fn->isIterator() == false) {
+    retval->retType = fn->retType;
   }
 
-  SymbolMap copy_map;
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
+    Symbol* _this = fn->_this->copy();
 
-  bool specializeDefaultConstructor =
-    fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) &&
-    !fn->_this->type->symbol->hasFlag(FLAG_REF);
+    copyMap.put(fn->_this, _this);
 
-  if (specializeDefaultConstructor) {
-    wrapper->removeFlag(FLAG_COMPILER_GENERATED);
-    wrapper->_this = fn->_this->copy();
+    retval->removeFlag(FLAG_COMPILER_GENERATED);
 
-    copy_map.put(fn->_this, wrapper->_this);
+    retval->_this = _this;
 
-    wrapper->insertAtTail(new DefExpr(wrapper->_this));
+    retval->insertAtTail(new DefExpr(_this));
 
-    if (defaults->v[defaults->n-1]->hasFlag(FLAG_IS_MEME)) {
-      if (!isRecord(fn->_this->type) && !isUnion(fn->_this->type)) {
-        wrapper->insertAtTail(new CallExpr(PRIM_MOVE,
-                                           wrapper->_this,
-                                           callChplHereAlloc(wrapper->_this->typeInfo())));
+    if (defaults->v[defaults->n - 1]->hasFlag(FLAG_IS_MEME) == true) {
+      if (isRecord(fn->_this->type) == false &&
+          isUnion(fn->_this->type)  == false) {
+        CallExpr* hereAlloc = callChplHereAlloc(_this->typeInfo());
 
-        wrapper->insertAtTail(new CallExpr(PRIM_SETCID, wrapper->_this));
+        retval->insertAtTail(new CallExpr(PRIM_MOVE,   _this, hereAlloc));
+        retval->insertAtTail(new CallExpr(PRIM_SETCID, _this));
       }
     }
 
-    wrapper->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, wrapper->_this));
+    retval->insertAtTail(new CallExpr(PRIM_INIT_FIELDS, _this));
   }
-
-  CallExpr* call = new CallExpr(fn);
-
-  call->square = info.call->square;    // Copy square brackets call flag.
 
   for_formals(formal, fn) {
     SET_LINENO(formal);
 
     if (defaults->in(formal) == NULL) {
-      formalIsNotDefaulted(fn, formal, call, wrapper, copy_map, paramMap);
+      formalIsNotDefaulted(fn, formal, call, retval, copyMap, paramMap);
 
     } else if (paramMap->get(formal) != NULL) {
-      // handle instantiated param formals
       call->insertAtTail(paramMap->get(formal));
 
     } else if (formal->hasFlag(FLAG_IS_MEME) == true) {
-      formal->type = wrapper->_this->type;
+      formal->type = retval->_this->type;
 
-      call->insertAtTail(wrapper->_this);
+      call->insertAtTail(retval->_this);
 
     } else {
-      formalIsDefaulted(fn, formal, call, wrapper, copy_map);
+      formalIsDefaulted(fn, formal, call, retval, copyMap);
     }
   }
 
-  update_symbols(wrapper->body, &copy_map);
+  update_symbols(retval->body, &copyMap);
 
-  insertWrappedCall(fn, wrapper, call);
+  insertWrappedCall(fn, retval, call);
 
-  normalize(wrapper);
+  normalize(retval);
 
-  return wrapper;
+  return retval;
 }
 
 // The call provides an actual for this formal.  The wrap function should
