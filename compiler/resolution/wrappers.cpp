@@ -139,6 +139,14 @@ static void      formalIsNotDefaulted(FnSymbol*  fn,
                                       SymbolMap& copyMap,
                                       SymbolMap* paramMap);
 
+static void      updateWrapCall(FnSymbol*  fn,
+                                ArgSymbol* formal,
+                                CallExpr*  call,
+                                FnSymbol*  wrapFn,
+                                Symbol*    temp,
+                                SymbolMap& copyMap,
+                                SymbolMap* paramMap);
+
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
@@ -444,8 +452,12 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
                                  SymbolMap& copyMap,
                                  SymbolMap* paramMap) {
   ArgSymbol* wrapFnFormal                 = copyFormalForWrapper(formal);
-  Symbol*    temp                         = wrapFnFormal;
   bool       specializeDefaultConstructor = false;
+
+  // If the formal has a param value, then wrapFormal should have same value
+  if (Symbol* value = paramMap->get(formal)) {
+    paramMap->put(wrapFnFormal, value);
+  }
 
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
       fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
@@ -467,7 +479,7 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
 
   // May need to make adjustements to the actual
   if (formal->type->symbol->hasFlag(FLAG_REF)) {
-    temp = newTemp("wrap_ref_arg");
+    Symbol* temp = newTemp("wrap_ref_arg");
 
     temp->addFlag(FLAG_MAYBE_PARAM);
 
@@ -477,14 +489,15 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
                                        new CallExpr(PRIM_ADDR_OF,
                                                     wrapFnFormal)));
 
+    updateWrapCall(fn, formal, call, wrapFn, temp, copyMap, paramMap);
+
   } else if (specializeDefaultConstructor &&
-             wrapFnFormal->typeExpr      &&
+             wrapFnFormal->typeExpr       &&
              isRecordWrappedType(wrapFnFormal->type)) {
     AggregateType* _thisType = toAggregateType(fn->_this->type);
+    Symbol*        temp      = newTemp("wrap_type_arg");
 
     // Formal has a type expression attached and is array/dom/dist
-    temp = newTemp("wrap_type_arg");
-
     if (Symbol* field = _thisType->getField(formal->name, false)) {
       if (field->defPoint->parentSymbol == _thisType->symbol) {
         temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -505,45 +518,51 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
                                        new CallExpr(PRIM_INIT,
                                                     wrapFn->body->body.tail->remove())));
     wrapFn->insertAtTail(new CallExpr("=", temp, wrapFnFormal));
-  }
 
+    updateWrapCall(fn, formal, call, wrapFn, temp,         copyMap, paramMap);
+
+  } else {
+    updateWrapCall(fn, formal, call, wrapFn, wrapFnFormal, copyMap, paramMap);
+  }
+}
+
+static void updateWrapCall(FnSymbol*  fn,
+                           ArgSymbol* formal,
+                           CallExpr*  call,
+                           FnSymbol*  wrapFn,
+                           Symbol*    temp,
+                           SymbolMap& copyMap,
+                           SymbolMap* paramMap) {
   copyMap.put(formal, temp);
 
   call->insertAtTail(temp);
 
-  if (Symbol* value = paramMap->get(formal)) {
-    paramMap->put(wrapFnFormal, value);
-  }
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true  &&
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false &&
+      strcmp(fn->name, "_construct__tuple")      != 0     &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE)        == false &&
+      paramMap->get(formal)                      == NULL  &&
+      formal->type                               != dtMethodToken) {
+    Symbol*        _this     = wrapFn->_this;
+    AggregateType* _thisType = toAggregateType(_this->type);
 
-  if (specializeDefaultConstructor          == true &&
-      strcmp(fn->name, "_construct__tuple") != 0) {
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-        paramMap->get(formal)               == NULL  &&
-        formal->type != dtMethodToken) {
-      AggregateType* thisType = toAggregateType(wrapFn->_this->type);
+    if (Symbol* field = _thisType->getField(formal->name, false)) {
+      Symbol* parent = field->defPoint->parentSymbol;
 
-      if (Symbol* field = thisType->getField(formal->name, false)) {
-        Symbol* parent = field->defPoint->parentSymbol;
+      if (parent == _thisType->symbol) {
+        Symbol*   tmp      = newTemp("wrap_arg");
+        Symbol*   name     = new_CStringSymbol(formal->name);
+        CallExpr* autoCopy = new CallExpr("chpl__autoCopy", temp);
 
-        if (parent == thisType->symbol) {
-          Symbol* copyTemp = newTemp("wrap_arg");
+        wrapFn->insertAtTail(new DefExpr(tmp));
 
-          wrapFn->insertAtTail(new DefExpr(copyTemp));
+        wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, tmp, autoCopy));
 
-          wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                             copyTemp,
-                                             new CallExpr("chpl__autoCopy",
-                                                          temp)));
+        wrapFn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this, name, tmp));
 
-          wrapFn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                            wrapFn->_this,
-                                            new_CStringSymbol(formal->name),
-                                            copyTemp));
+        copyMap.put(formal, tmp);
 
-          copyMap.put(formal, copyTemp);
-
-          call->argList.tail->replace(new SymExpr(copyTemp));
-        }
+        call->argList.tail->replace(new SymExpr(tmp));
       }
     }
   }
