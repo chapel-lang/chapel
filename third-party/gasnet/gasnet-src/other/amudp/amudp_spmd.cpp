@@ -639,61 +639,6 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
 
     AMUDP_SPMDRedirectStdsockets = strcmp(AMUDP_getenv_prefixed_withdefault("ROUTE_OUTPUT",(DISABLE_STDSOCKET_REDIRECT?"0":"1")),"0");
 
-    //
-    // For ease-of-debugging with Chapel, hacked this so that GASNet
-    // will launch each task in an xterm running a debugger if
-    // CHPL_COMM_USE_GDB or CHPL_COMM_USE_LLDB is set.
-    //
-    if (getenv("CHPL_COMM_USE_GDB") != NULL
-        || getenv("CHPL_COMM_USE_LLDB") != NULL) {
-      char xtermPath[1 << 12];
-      char *pp, *ppn;
-      int new_argc = 4 + *argc;
-      char** new_argv
-             = (char**) AMUDP_malloc((new_argc + 1) * sizeof((*new_argv)));
-
-      if ((pp = getenv("PATH")) == NULL || *pp == '\0')
-        AMUDP_FatalErr("CHPL_COMM_USE_(G|LL)DB: no PATH.  Exiting...");
-      else {
-        do {
-          ppn = strchr(pp, ':');
-          if (ppn == NULL)
-            (void) snprintf(xtermPath, sizeof(xtermPath), "%s/xterm",
-                            (*pp == '\0') ? "." : pp);
-          else if (ppn == pp)
-            (void) snprintf(xtermPath, sizeof(xtermPath), "./xterm");
-          else
-            (void) snprintf(xtermPath, sizeof(xtermPath), "%.*s/xterm",
-                            (int) (ppn - pp), pp);
-          if (access(xtermPath, X_OK) == 0)
-            break;
-          xtermPath[0] = '\0';
-          pp = ppn + 1;
-        } while (ppn != NULL);
-
-        if (xtermPath[0] == '\0')
-          AMUDP_FatalErr("CHPL_COMM_USE_(G|LL)DB: no xterm in PATH.  "
-                         "Exiting...");
-        else {
-          new_argv[0] = (char*) AMUDP_malloc(strlen(xtermPath) + 1);
-          strcpy(new_argv[0], xtermPath);
-          new_argv[1] = (char *) "-e";
-
-          if (getenv("CHPL_COMM_USE_GDB") != NULL) {
-            new_argv[2] = (char *) "gdb";
-            new_argv[3] = (char *) "--args";
-          } else {
-            new_argv[2] = (char *) "lldb";
-            new_argv[3] = (char *) "--";
-          }
-
-          memcpy(&new_argv[4], *argv, (*argc + 1) * sizeof(*new_argv));
-          *argc = new_argc;
-          *argv = new_argv;
-        }
-      }
-    }
-
     // call system-specific spawning routine
     AMUDP_SPMDSpawnRunning = TRUE;
     if (!spawnfn(AMUDP_SPMDNUMPROCS, *argc, *argv, extra_env))
