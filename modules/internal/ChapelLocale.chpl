@@ -649,7 +649,9 @@ module ChapelLocale {
 
   //
   // The compiler calls these to adjust the running task count for on-stmts
+  // TODO directly call here.runningTaskCnt{Add, Sub}?
   //
+  
   pragma "no doc"
   pragma "inc running task"
   proc chpl_taskRunningCntInc() {
