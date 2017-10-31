@@ -451,17 +451,13 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
                                  FnSymbol*  wrapFn,
                                  SymbolMap& copyMap,
                                  SymbolMap* paramMap) {
-  ArgSymbol* wrapFnFormal                 = copyFormalForWrapper(formal);
-  bool       specializeDefaultConstructor = false;
+  ArgSymbol* wrapFnFormal = copyFormalForWrapper(formal);
+
+  wrapFn->insertFormalAtTail(wrapFnFormal);
 
   // If the formal has a param value, then wrapFormal should have same value
   if (Symbol* value = paramMap->get(formal)) {
     paramMap->put(wrapFnFormal, value);
-  }
-
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
-      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
-    specializeDefaultConstructor = true;
   }
 
   if (fn->_this == formal) {
@@ -470,34 +466,32 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
 
   if (formal->hasFlag(FLAG_IS_MEME) == true &&
       wrapFn->_this                 != NULL) {
-    wrapFn->_this->defPoint->insertAfter(new CallExpr(PRIM_MOVE,
-                                                      wrapFn->_this,
-                                                      wrapFnFormal));
+    Symbol* _this = wrapFn->_this;
+
+    _this->defPoint->insertAfter(new CallExpr(PRIM_MOVE, _this, wrapFnFormal));
   }
 
-  wrapFn->insertFormalAtTail(wrapFnFormal);
-
-  // May need to make adjustements to the actual
-  if (formal->type->symbol->hasFlag(FLAG_REF)) {
-    Symbol* temp = newTemp("wrap_ref_arg");
+  if (formal->type->symbol->hasFlag(FLAG_REF) == true) {
+    Symbol*   temp         = newTemp("wrap_ref_arg");
+    CallExpr* addrOfFormal = new CallExpr(PRIM_ADDR_OF, wrapFnFormal);
 
     temp->addFlag(FLAG_MAYBE_PARAM);
 
     wrapFn->insertAtTail(new DefExpr(temp));
-    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                       temp,
-                                       new CallExpr(PRIM_ADDR_OF,
-                                                    wrapFnFormal)));
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, addrOfFormal));
 
     updateWrapCall(fn, formal, call, wrapFn, temp, copyMap, paramMap);
 
-  } else if (specializeDefaultConstructor &&
-             wrapFnFormal->typeExpr       &&
-             isRecordWrappedType(wrapFnFormal->type)) {
-    AggregateType* _thisType = toAggregateType(fn->_this->type);
+  // Formal has a type expression attached and is array/dom/dist
+  } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true  &&
+             fn->_this->type->symbol->hasFlag(FLAG_REF) == false &&
+             wrapFnFormal->typeExpr                     != NULL  &&
+             isRecordWrappedType(wrapFnFormal->type)    == true) {
     Symbol*        temp      = newTemp("wrap_type_arg");
+    AggregateType* _thisType = toAggregateType(fn->_this->type);
+    BlockStmt*      typeExpr = wrapFnFormal->typeExpr->copy();
+    CallExpr*       initExpr = NULL;
 
-    // Formal has a type expression attached and is array/dom/dist
     if (Symbol* field = _thisType->getField(formal->name, false)) {
       if (field->defPoint->parentSymbol == _thisType->symbol) {
         temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -506,18 +500,14 @@ static void formalIsNotDefaulted(FnSymbol*  fn,
 
     wrapFn->insertAtTail(new DefExpr(temp));
 
-    // Give the formal its own copy of the type expression.
-    BlockStmt* typeExpr = wrapFnFormal->typeExpr->copy();
-
     for_alist(expr, typeExpr->body) {
       wrapFn->insertAtTail(expr->remove());
     }
 
-    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE,
-                                       temp,
-                                       new CallExpr(PRIM_INIT,
-                                                    wrapFn->body->body.tail->remove())));
-    wrapFn->insertAtTail(new CallExpr("=", temp, wrapFnFormal));
+    initExpr = new CallExpr(PRIM_INIT, wrapFn->body->body.tail->remove());
+
+    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, initExpr));
+    wrapFn->insertAtTail(new CallExpr("=",       temp, wrapFnFormal));
 
     updateWrapCall(fn, formal, call, wrapFn, temp,         copyMap, paramMap);
 
