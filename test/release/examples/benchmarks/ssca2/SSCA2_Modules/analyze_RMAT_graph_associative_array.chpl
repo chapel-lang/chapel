@@ -244,25 +244,11 @@ module analyze_RMAT_graph_associative_array {
             yield nleNID(nlElm);
       }
 
-      // Stand-alone parallel iterator would be nice
       iter FilteredNeighbors( v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        pragma "no copy" pragma "no auto destroy"
-        const myDom = Row(v).ndom._value; // Cache the value
-        // 1-d, no stride assumed in the follower
-        const wholeLow = myDom.ranges(1).low;
-        for block in myDom.these(tag) do
-          yield (block(1).low, block(1).high, wholeLow);
-      }
-
-      // WARNING: This can't be zippered with anything other than itself
-      iter FilteredNeighbors( v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
+      where tag == iterKind.standalone {
         const ref neighbors = Row(v).neighborList;
-        const (low, high, wholeLow) = followThis;
         // 1-d, no stride
-        const myElems = (low..high) + wholeLow;
-        for n in myElems {
+        forall n in Row(v).ndom {
           if !FILTERING || nleWeight(neighbors(n))%8 != 0 then
             yield nleNID(neighbors(n));
         }
@@ -282,14 +268,8 @@ module analyze_RMAT_graph_associative_array {
       }
 
       iter Neighbors( v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        for block in Row(v).neighborList._value.these(tag) do
-          yield block;
-      }
-
-      iter Neighbors( v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+      where tag == iterKind.standalone {
+        forall nlElm in Row(v).neighborList do
           yield nleNID(nlElm);
       }
 
@@ -301,14 +281,8 @@ module analyze_RMAT_graph_associative_array {
       }
 
       iter edge_weight( v : index (vertices), param tag: iterKind)
-      where tag == iterKind.leader {
-        for block in Row(v).neighborList._value.these(tag) do
-          yield block;
-      }
-
-      iter edge_weight( v : index (vertices), param tag: iterKind, followThis)
-      where tag == iterKind.follower {
-        for nlElm in Row(v).neighborList._value.these(tag, followThis) do
+      where tag == iterKind.standalone {
+        for nlElm in Row(v).neighborList do
           yield nleWeight(nlElm);
       }
 
