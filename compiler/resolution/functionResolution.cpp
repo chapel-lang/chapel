@@ -81,12 +81,20 @@ public:
   bool fn1WeakPreferred;
   bool fn2WeakPreferred;
 
+  bool fn1WeakerPreferred;
+  bool fn2WeakerPreferred;
+
+  bool fn1WeakestPreferred;
+  bool fn2WeakestPreferred;
+
   int  fn1NumCoercions;
   int  fn2NumCoercions;
   int  fn1NumParamNonCoercions;
   int  fn2NumParamNonCoercions;
   int  fn1NumParamParamCoercions;
   int  fn2NumParamParamCoercions;
+  int  f1NumParamNarrows;
+  int  f2NumParamNarrows;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -157,7 +165,7 @@ static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa(int width, Immediate* imm);
 static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
-static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static BlockStmt* getParentBlock(Expr* expr);
@@ -1083,12 +1091,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
 //
 // returns true if dispatching from actualType to formalType results
-// in a compile-time coercion; this is a subset of canCoerce below as,
-// for example, real(32) cannot be coerced to real(64) at compile-time
+// in a compile-time coercion; this is a subset of canCoerce below.
 //
 static bool canParamCoerce(Type*   actualType,
                            Symbol* actualSym,
-                           Type*   formalType) {
+                           Type*   formalType,
+                           bool*   paramNarrows) {
   if (is_bool_type(formalType) && is_bool_type(actualType)) {
     return true;
   }
@@ -1138,6 +1146,7 @@ static bool canParamCoerce(Type*   actualType,
       if (VarSymbol* var = toVarSymbol(actualSym)) {
         if (var->immediate) {
           if (fits_in_int(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
             return true;
           }
         }
@@ -1149,6 +1158,7 @@ static bool canParamCoerce(Type*   actualType,
         if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
           if (Immediate* enumval = enumsym->getImmediate()) {
             if (fits_in_int(get_width(formalType), enumval)) {
+              *paramNarrows = true;
               return true;
             }
           }
@@ -1170,6 +1180,7 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (fits_in_uint(get_width(formalType), var->immediate)) {
+          *paramNarrows = true;
           return true;
         }
       }
@@ -1204,6 +1215,7 @@ static bool canParamCoerce(Type*   actualType,
       if (VarSymbol* var = toVarSymbol(actualSym)) {
         if (var->immediate) {
           if (fits_in_uint(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
             return true;
           }
         }
@@ -1215,6 +1227,7 @@ static bool canParamCoerce(Type*   actualType,
         if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
           if (Immediate* enumval = enumsym->getImmediate()) {
             if (fits_in_uint(get_width(formalType), enumval)) {
+              *paramNarrows = true;
               return true;
             }
           }
@@ -1233,6 +1246,8 @@ static bool canParamCoerce(Type*   actualType,
 
   // coerce fully representable integers into real / real part of complex
   if (is_real_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
     // don't coerce bools to reals (per spec: "uninteded by programmer")
 
     // coerce any integer type to maximum width real
@@ -1242,10 +1257,10 @@ static bool canParamCoerce(Type*   actualType,
 
     // coerce integer types that are exactly representable
     if (is_int_type(actualType) &&
-        get_width(actualType) < get_mantissa_width(formalType))
+        get_width(actualType) < mantissa_width)
       return true;
     if (is_uint_type(actualType) &&
-        get_width(actualType) < get_mantissa_width(formalType))
+        get_width(actualType) < mantissa_width)
       return true;
 
     // coerce real from smaller size
@@ -1256,19 +1271,27 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param ints that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType))
-          if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
-            return true;
-        if (is_real_type(actualType))
-          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+        if (is_int_type(actualType) || is_uint_type(actualType)) {
+          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+              *paramNarrows = true;
+              return true;
+          }
+        }
+        if (is_real_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
-                                        var->immediate))
+                                        var->immediate)) {
+            *paramNarrows = true;
             return true;
+          }
+        }
       }
     }
   }
 
   if (is_complex_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
     // don't coerce bools to reals (per spec: "uninteded by programmer")
 
     // coerce any integer type to maximum width complex
@@ -1278,10 +1301,10 @@ static bool canParamCoerce(Type*   actualType,
 
     // coerce integer types that are exactly representable
     if (is_int_type(actualType) &&
-        get_width(actualType) < get_mantissa_width(formalType))
+        get_width(actualType) < mantissa_width)
       return true;
     if (is_uint_type(actualType) &&
-        get_width(actualType) < get_mantissa_width(formalType))
+        get_width(actualType) < mantissa_width)
       return true;
 
     // coerce real/imag from smaller size
@@ -1300,30 +1323,41 @@ static bool canParamCoerce(Type*   actualType,
     // coerce literal/param complexes that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
-        if (is_int_type(actualType) || is_uint_type(actualType))
-          if (fits_in_mantissa(get_mantissa_width(formalType), var->immediate))
+        if (is_int_type(actualType) || is_uint_type(actualType)) {
+          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+            *paramNarrows = true;
             return true;
-        if (is_real_type(actualType))
-          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+          }
+        }
+        if (is_real_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
-                                        var->immediate))
+                                        var->immediate)) {
+            *paramNarrows = true;
             return true;
-        if (is_imag_type(actualType))
-          if (fits_in_mantissa_exponent(get_mantissa_width(formalType),
+          }
+        }
+        if (is_imag_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
                                         get_exponent_width(formalType),
-                                        var->immediate))
+                                        var->immediate)) {
+            *paramNarrows = true;
             return true;
+          }
+        }
         if (is_complex_type(actualType)) {
-          bool rePartFits = fits_in_mantissa_exponent(get_mantissa_width(formalType),
+          bool rePartFits = fits_in_mantissa_exponent(mantissa_width,
                                                       get_exponent_width(formalType),
                                                       var->immediate,
                                                       true);
-          bool imPartFits = fits_in_mantissa_exponent(get_mantissa_width(formalType),
+          bool imPartFits = fits_in_mantissa_exponent(mantissa_width,
                                                       get_exponent_width(formalType),
                                                       var->immediate,
                                                       false);
-          if (rePartFits && imPartFits)
+          if (rePartFits && imPartFits) {
+            *paramNarrows = true;
             return true;
+          }
         }
       }
     }
@@ -1372,7 +1406,8 @@ bool canCoerceTuples(Type*     actualType,
       // Can we coerce without promotion?
       // If the types are the same, yes
       if (atFieldType != ftFieldType) {
-        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn, &prom, false);
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn,
+                         &prom, NULL, false);
 
         // If we couldn't coerce or the coercion would promote, no
         if (!ok || prom)
@@ -1406,14 +1441,20 @@ bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
                FnSymbol* fn,
-               bool*     promotes) {
-  if (canParamCoerce(actualType, actualSym, formalType))
+               bool*     promotes,
+               bool*     paramNarrows) {
+  bool tmpParamNarrows = false;
+  if (canParamCoerce(actualType, actualSym, formalType, &tmpParamNarrows)) {
+    if (paramNarrows) *paramNarrows = tmpParamNarrows;
     return true;
+  }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
 
-    return canDispatch(baseType, NULL, formalType, fn, promotes);
+    // sync can't store an array or a param, so no need to
+    // propagate promotes / paramNarrows
+    return canDispatch(baseType, NULL, formalType, fn);
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -1421,6 +1462,7 @@ bool canCoerce(Type*     actualType,
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))
+    // ref can't store a param, so no need to propagate paramNarrows
     return canDispatch(actualType->getValType(),
                        NULL,
                        // MPF: Should this be formalType->getValType() ?
@@ -1455,16 +1497,14 @@ static bool isGenericInstantiation(Type*     actualType,
                                    Type*     formalType,
                                    FnSymbol* fn);
 
-bool canDispatch(Type*     actualType,
-                 Symbol*   actualSym,
-                 Type*     formalType,
-                 FnSymbol* fn,
-                 bool*     promotes,
-                 bool      paramCoerce) {
-  if (promotes) {
-    *promotes = false;
-  }
-
+static
+bool doCanDispatch(Type*     actualType,
+                   Symbol*   actualSym,
+                   Type*     formalType,
+                   FnSymbol* fn,
+                   bool*     promotes,
+                   bool*     paramNarrows,
+                   bool      paramCoerce) {
   if (actualType == formalType) {
     return true;
   }
@@ -1494,18 +1534,18 @@ bool canDispatch(Type*     actualType,
   }
 
   if (paramCoerce == false &&
-      canCoerce(actualType, actualSym, formalType, fn, promotes) == true) {
+      canCoerce(actualType, actualSym, formalType, fn, promotes, paramNarrows) == true) {
     return true;
   }
 
   if (paramCoerce == true  &&
-      canParamCoerce(actualType, actualSym, formalType) == true) {
+      canParamCoerce(actualType, actualSym, formalType, paramNarrows) == true) {
     return true;
   }
 
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent                                              == formalType ||
-        canDispatch(parent, NULL, formalType, fn, promotes) == true) {
+        doCanDispatch(parent, NULL, formalType, fn, promotes, paramNarrows, paramCoerce) == true) {
       return true;
     }
   }
@@ -1513,16 +1553,37 @@ bool canDispatch(Type*     actualType,
   if (fn                              != NULL        &&
       fn->name                        != astrSequals &&
       actualType->scalarPromotionType != NULL        &&
-      canDispatch(actualType->scalarPromotionType, NULL, formalType, fn)) {
+      doCanDispatch(actualType->scalarPromotionType, NULL, formalType, fn,
+                    promotes, paramNarrows, false)) {
 
-    if (promotes) {
-      *promotes = true;
-    }
-
+    *promotes = true;
     return true;
   }
 
   return false;
+}
+
+bool canDispatch(Type*     actualType,
+                 Symbol*   actualSym,
+                 Type*     formalType,
+                 FnSymbol* fn,
+                 bool*     promotes,
+                 bool*     paramNarrows,
+                 bool      paramCoerce) {
+  bool tmpPromotes = false;
+  bool tmpParamNarrows = false;
+  bool ret = doCanDispatch(actualType, actualSym,
+                           formalType, fn,
+                           &tmpPromotes, &tmpParamNarrows,
+                           paramCoerce);
+
+  if (promotes)
+    *promotes = tmpPromotes;
+
+  if (paramNarrows)
+    *paramNarrows = tmpParamNarrows;
+
+  return ret;
 }
 
 static bool isGenericInstantiation(Type*     actualType,
@@ -1755,22 +1816,23 @@ static bool weakPrefers(Symbol* actual,
   //  return false;
 
   // If f1Param != f2Param, prefer the one that is a param
-  if (f1Param != f2Param) {
+  /*if (f1Param != f2Param) {
     // f1Param == true, f2Param == false
     if (f1Param)
       return true;
     // f1Param == false, f2Param == true
     else return false;
-  }
+  }*/
 
   bool paramPreferArg1 = false;
-  if (f1Type == f2Type)
+  /*if (f1Type == f2Type)
     paramPreferArg1 = false; // no preference yet if types are the same
   else if(actualType == f1Type)
     paramPreferArg1 = true;  // f1 type matches, looks good
   else if(actualType == f2Type)
     paramPreferArg1 = false; // we'd prefer f2
-  else if (actualType != f1Type && actualType != f2Type) {
+  else*/
+  if (actualType != f1Type && actualType != f2Type) {
     // Is there any preference among coercions of the param?
     // E.g., would we rather convert 'false' to :int or to :uint(8) ?
 
@@ -1788,6 +1850,14 @@ static bool weakPrefers(Symbol* actual,
     // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
       paramPreferArg1 = true;
+    // Prefer param x:int(16) dispatch to int(32) over int(8)
+    /*else if (aIntUint &&
+             f1T == NUMERIC_TYPE_INT &&
+             f2T == NUMERIC_TYPE_INT &&
+             get_width(f1Type) >= get_width(actualType) &&
+             get_width(f2Type) < get_width(actualType))
+      paramPreferArg1 = true;
+     */
     // Prefer bool/enum cast to default-sized integer over another
     // size of int if aT is not an integral type
     else if (aBoolEnum &&
@@ -3923,25 +3993,40 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
 
+      /*
     } else if (DS.fn1NumParamNonCoercions != DS.fn2NumParamNonCoercions) {
-      EXPLAIN("\nS1: preferring function with fewer param coercions\n");
+      EXPLAIN("\nS1: preferring function with fewer param coercions %i %i\n",
+              DS.fn1NumParamNonCoercions,DS.fn2NumParamNonCoercions);
       if (DS.fn1NumParamNonCoercions < DS.fn2NumParamNonCoercions)
         prefer1 = true;
       else
         prefer2 = true;
+      */
 
     } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
       EXPLAIN("\nS: preferring based on weak preference\n");
       prefer1 = DS.fn1WeakPreferred;
       prefer2 = DS.fn2WeakPreferred;
 
+    } else if (DS.fn1WeakerPreferred != DS.fn2WeakerPreferred) {
+      EXPLAIN("\nS: preferring based on weaker preference\n");
+      prefer1 = DS.fn1WeakerPreferred;
+      prefer2 = DS.fn2WeakerPreferred;
+
+    } else if (DS.fn1WeakestPreferred != DS.fn2WeakestPreferred) {
+      EXPLAIN("\nS: preferring based on weakest preference\n");
+      prefer1 = DS.fn1WeakestPreferred;
+      prefer2 = DS.fn2WeakestPreferred;
+
+
+      /*
     } else if (DS.fn1NumParamParamCoercions != DS.fn2NumParamParamCoercions) {
       EXPLAIN("\nS1: preferring function with fewer param-param coercions\n");
       if (DS.fn1NumParamParamCoercions < DS.fn2NumParamParamCoercions)
         prefer1 = true;
       else
         prefer2 = true;
-
+       */
     } else if (!ignoreWhere) {
       bool fn1where = candidate1->fn->where != NULL &&
                       !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
@@ -4011,6 +4096,8 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
+  bool  formal1Narrows = false;
+  bool  formal2Narrows = false;
 
   Type* actualScalarType = actualType;
 
@@ -4019,6 +4106,7 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   bool actualParam = false;
   bool paramWithExplicitSize = false;
+
   // Don't enable param/ weak preferences for non-default sized param values.
   // If somebody bothered to type the param, they probably want it to stay that
   // way. This is a strategy to resolve ambiguity with e.g.
@@ -4032,8 +4120,12 @@ static void testArgMapping(FnSymbol*                    fn1,
 
     if (imm->const_kind == NUM_KIND_INT && imm->num_index != INT_SIZE_DEFAULT)
       paramWithExplicitSize = true;
-    if (imm->const_kind == NUM_KIND_UINT && imm->num_index != INT_SIZE_DEFAULT)
+    // not possible to write a uint literal
+    if (imm->const_kind == NUM_KIND_UINT)
       paramWithExplicitSize = true;
+
+    /*if (imm->const_kind == NUM_KIND_UINT && imm->num_index != INT_SIZE_DEFAULT)
+      paramWithExplicitSize = true; */
     if (imm->const_kind == NUM_KIND_REAL && imm->num_index != FLOAT_SIZE_DEFAULT)
       paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_IMAG && imm->num_index != FLOAT_SIZE_DEFAULT)
@@ -4053,25 +4145,18 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (<default)");
   EXPLAIN("\n");
 
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
+  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes, &formal1Narrows);
 
   DS.fn1Promotes |= formal1Promotes;
 
-  EXPLAIN("Formal 1's type: %s\n", toString(f1Type));
-
-  if (formal1Promotes) {
-    EXPLAIN("Actual requires promotion to match formal 1\n");
-
-  } else {
-    EXPLAIN("Actual DOES NOT require promotion to match formal 1\n");
-  }
-
-  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("Formal 1 is an instantiated param.\n");
-
-  } else {
-    EXPLAIN("Formal 1 is NOT an instantiated param.\n");
-  }
+  EXPLAIN("Formal 1's type: %s", toString(f1Type));
+  if (formal1Promotes)
+    EXPLAIN(" (promotes)");
+  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (formal1Narrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
 
   // Adjust number of coercions for f1
   if (actualType != f1Type) {
@@ -4081,29 +4166,27 @@ static void testArgMapping(FnSymbol*                    fn1,
         DS.fn1NumParamParamCoercions++;
       else
         DS.fn1NumParamNonCoercions++;
+
+      if (formal1Narrows)
+        DS.f1NumParamNarrows++;
     } else {
       EXPLAIN("Actual requires coercion to match formal 1\n");
       DS.fn1NumCoercions++;
     }
   }
 
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
+  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes, &formal2Narrows);
 
   DS.fn2Promotes |= formal2Promotes;
 
-  EXPLAIN("Formal 2's type: %s\n", toString(f2Type));
-
-  if (formal2Promotes) {
-    EXPLAIN("Actual requires promotion to match formal 2\n");
-  } else {
-    EXPLAIN("Actual DOES NOT require promotion to match formal 2\n");
-  }
-
-  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("Formal 2 is an instantiated param.\n");
-  } else {
-    EXPLAIN("Formal 2 is NOT an instantiated param.\n");
-  }
+  EXPLAIN("Formal 2's type: %s", toString(f2Type));
+  if (formal2Promotes)
+    EXPLAIN(" (promotes)");
+  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (formal2Narrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
 
   // Adjust number of coercions for f2
   if (actualType != f2Type) {
@@ -4113,6 +4196,9 @@ static void testArgMapping(FnSymbol*                    fn1,
         DS.fn2NumParamParamCoercions++;
       else
         DS.fn2NumParamNonCoercions++;
+
+      if (formal2Narrows)
+        DS.f2NumParamNarrows++;
     } else {
       EXPLAIN("Actual requires coercion to match formal 2\n");
       DS.fn2NumCoercions++;
@@ -4194,7 +4280,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     DS.fn2MoreSpecific = true;
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
-             !paramWithDefaultSize &&
+             //!paramWithDefaultSize &&
+             !actualParam &&
+             formal1Narrows == formal2Narrows &&
              actualScalarType == f1Type &&
              actualScalarType != f2Type &&
              (f1Param == f2Param || f1Param)) {
@@ -4202,7 +4290,9 @@ static void testArgMapping(FnSymbol*                    fn1,
     DS.fn1MoreSpecific = true;
 
   } else if (//(actualSyncSingle || paramWithExplicitSize) &&
-             !paramWithDefaultSize &&
+             //!paramWithDefaultSize &&
+             !actualParam &&
+             formal1Narrows == formal2Narrows &&
              actualScalarType == f2Type &&
              actualScalarType != f1Type &&
              (f1Param == f2Param || f2Param)) {
@@ -4210,19 +4300,52 @@ static void testArgMapping(FnSymbol*                    fn1,
     DS.fn2MoreSpecific = true;
 
   } else {
-
     bool weakPrefer1 = false;
     bool weakPrefer2 = false;
+    bool weakerPrefer1 = false;
+    bool weakerPrefer2 = false;
+    bool weakestPrefer1 = false;
+    bool weakestPrefer2 = false;
     bool strongPrefer1 = false;
     bool strongPrefer2 = false;
 
-    if (weakPrefers(actual, actualScalarType,
+    if (f1Param != f2Param && f1Param) {
+      EXPLAIN("AA: Fn %d is param preferred\n", i);
+      weakPrefer1 = true;
+    } else if (f1Param != f2Param && f2Param) {
+      EXPLAIN("BB: Fn %d is param preferred\n", j);
+      weakPrefer2 = true;
+    } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+      EXPLAIN("CC: Fn %d is param preferred\n", i);
+      //if (paramWithDefaultSize)
+     //   weakerPrefer1 = true;
+      //else
+        weakPrefer1 = true;
+    } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
+      EXPLAIN("DD: Fn %d is param preferred\n", j);
+      //if (paramWithDefaultSize)
+      //  weakerPrefer2 = true;
+      //else
+        weakPrefer2 = true;
+    } else if (!paramWithDefaultSize && actualScalarType == f1Type && actualScalarType != f2Type) {
+      EXPLAIN("XX: Fn %d is param preferred\n", i);
+      //if (paramWithDefaultSize)
+        weakerPrefer1 = true;
+      //else
+      //  weakPrefer1 = true;
+    } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
+      EXPLAIN("YY: Fn %d is param preferred\n", j);
+      //if (paramWithDefaultSize)
+        weakerPrefer2 = true;
+      //else
+      //  weakPrefer2 = true;
+    } else if (weakPrefers(actual, actualScalarType,
                            f1Type,
                            f2Type,
                            f1Param,
                            f2Param)) {
       EXPLAIN("III: Fn %d is param preferred\n", i);
-      weakPrefer1 = true;
+      weakerPrefer1 = true;
 
     } else if (weakPrefers(actual, actualScalarType,
                            f2Type,
@@ -4230,15 +4353,55 @@ static void testArgMapping(FnSymbol*                    fn1,
                            f2Param,
                            f1Param)) {
       EXPLAIN("JJJ: Fn %d is param preferred\n", j);
-      weakPrefer2 = true;
+      weakerPrefer2 = true;
 
+    } else if (actualParam && //paramWithDefaultSize &&
+               actualScalarType == f1Type && actualScalarType != f2Type) {
+      EXPLAIN("MM: Fn %d is param preferred\n", i);
+      //if (paramWithDefaultSize)
+        weakestPrefer1 = true;
+      //else
+      //  weakPrefer1 = true;
+    } else if (actualParam && //paramWithDefaultSize &&
+               actualScalarType == f2Type && actualScalarType != f1Type) {
+      EXPLAIN("NN: Fn %d is param preferred\n", j);
+      //if (paramWithDefaultSize)
+        weakestPrefer2 = true;
+      //else
+      //  weakPrefer2 = true;
+    } else if (actualParam && //paramWithDefaultSize &&
+               moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+      EXPLAIN("OO: Fn %d is param preferred\n", i);
+      //if (paramWithDefaultSize)
+        weakestPrefer1 = true;
+      //else
+      //  weakPrefer1 = true;
+    } else if (actualParam && //paramWithDefaultSize &&
+               moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+      EXPLAIN("PP: Fn %d is param preferred\n", j);
+      //if (paramWithDefaultSize)
+        weakestPrefer2 = true;
+      //else
+      //  weakPrefer2 = true;
+    } else if (actualParam && // paramWithDefaultSize &&
+               is_int_type(f1Type) && is_uint_type(f2Type)) {
+      EXPLAIN("MM: Fn %d is more specific\n", i);
+        weakestPrefer1 = true;
+
+    } else if (actualParam && //paramWithDefaultSize &&
+               is_int_type(f2Type) && is_uint_type(f1Type)) {
+      EXPLAIN("NN: Fn %d is more specific\n", j);
+        weakestPrefer2 = true;
     }
+
 
     // either way, compute what strong preference we would have.
     // We do this so that we can upgrade the weak preference to a
     // strong preference in the event it matches. If it doesn't match,
     // we ignore the strong preference.
-    if (actualScalarType == f1Type && actualScalarType != f2Type) {
+    if (paramWithDefaultSize) {
+      // don't strong prefer
+    } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
       EXPLAIN("II: Fn %d is more specific\n", i);
       strongPrefer1 = true;
 
@@ -4289,9 +4452,15 @@ static void testArgMapping(FnSymbol*                    fn1,
     }
 
     // For now, weak preference always overrides strong preference
-    if (weakPrefer1 || weakPrefer2) {
+    if (weakPrefer1 != weakPrefer2) {
       DS.fn1WeakPreferred |= weakPrefer1;
       DS.fn2WeakPreferred |= weakPrefer2;
+    } else if (weakerPrefer1 != weakerPrefer2) {
+      DS.fn1WeakerPreferred |= weakerPrefer1;
+      DS.fn2WeakerPreferred |= weakerPrefer2;
+    } else if (weakestPrefer1 != weakestPrefer2) {
+      DS.fn1WeakestPreferred |= weakestPrefer1;
+      DS.fn2WeakestPreferred |= weakestPrefer2;
     } else {
       DS.fn1MoreSpecific |= strongPrefer1;
       DS.fn2MoreSpecific |= strongPrefer2;
@@ -5568,9 +5737,10 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         // (since that is what the primitive returns as its type).
         Type* coerceType = coerceSym->type;
         Type* rhsType    = rhs->typeInfo();
+        bool tmpParamNarrows = false;
 
         if (coerceType                                     == rhsType ||
-            canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
+            canParamCoerce(coerceType, coerceSym, rhsType, &tmpParamNarrows) == true)   {
           SymExpr* lhs = toSymExpr(call->get(1));
 
           call->get(1)->replace(lhs->copy());
@@ -10160,6 +10330,10 @@ DisambiguationState::DisambiguationState() {
 
   fn1WeakPreferred= false;
   fn2WeakPreferred= false;
+  fn1WeakerPreferred= false;
+  fn2WeakerPreferred= false;
+  fn1WeakestPreferred= false;
+  fn2WeakestPreferred= false;
 
   fn1NumCoercions = 0;
   fn2NumCoercions = 0;
@@ -10167,4 +10341,6 @@ DisambiguationState::DisambiguationState() {
   fn2NumParamNonCoercions = 0;
   fn1NumParamParamCoercions = 0;
   fn2NumParamParamCoercions = 0;
+  f1NumParamNarrows = 0;
+  f2NumParamNarrows = 0;
 }

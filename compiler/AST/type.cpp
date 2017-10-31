@@ -302,8 +302,7 @@ void EnumType::verify() {
   for_alist(expr, constants) {
     if (expr->parentSymbol != symbol)
       INT_FATAL(this, "Bad EnumType::constants::parentSymbol");
-    DefExpr* def = toDefExpr(def);
-    if (!def)
+    if (!isDefExpr(expr))
       INT_FATAL(this, "Bad EnumType::constants - not a DefExpr");
   }
 }
