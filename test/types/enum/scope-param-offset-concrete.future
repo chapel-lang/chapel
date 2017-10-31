@@ -1,0 +1,2 @@
+bug: function-scoped enum can't be initialized with global param
+#7681

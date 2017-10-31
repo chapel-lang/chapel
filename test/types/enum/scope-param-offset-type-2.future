@@ -1,0 +1,2 @@
+bug: function-scoped enum can't be initialized with int-typed function param
+#7681
