@@ -2,9 +2,8 @@ use BlockDist;
 
 config const m = 10;
 
-const myBlocking = new Block1D(idxType=int(32), boundingBox={1..m});
-
-const ProblemSpace: domain(1) dmapped myBlocking = {1..m};
+const Dom = {1..m};
+const ProblemSpace = Dom dmapped Block(Dom);
 
 var A: [ProblemSpace] real;
 
