@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -101,7 +102,8 @@ static chpl_bool debug_exiting = false;
                            || chpl_nodeID == debug_nodeID)
 
 #define DBG_INIT()  dbg_init()
-#define DBG_INIT_OUTPUT_FILE()  dbg_init_output_file()
+
+static pthread_t proc_thread_id;
 
 static __thread uint32_t thread_idx      = ~(uint32_t) 0;
 static atomic_uint_least32_t next_thread_idx;
@@ -128,12 +130,12 @@ static atomic_uint_least32_t next_thread_idx;
         _DBG_P(_DBG_DO(flg), " (%d): " f, chpl_nodeID, ## __VA_ARGS__)
 #define DBG_P_LP(flg, f, ...)                                           \
         _DBG_P(_DBG_DO(flg),                                            \
-               " (%d/%" PRId64 "/%d): " f,                              \
+               " (%d/%s/%d): " f,                                       \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
                (int) thread_idx, ## __VA_ARGS__)
 #define DBG_P_LPS(flg, f, li, cdi, rbi, seq, ...)                       \
         _DBG_P(_DBG_DO(flg),                                            \
-               " (%d/%" PRId64 "/%d) %d/%d/%d <%" PRIu64 ">: " f,       \
+               " (%d/%s/%d) %d/%d/%d <%" PRIu64 ">: " f,                \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
                (int) thread_idx,                                        \
                (int) li, cdi, rbi, seq, ## __VA_ARGS__)
@@ -170,20 +172,23 @@ static atomic_uint_least32_t next_thread_idx;
           CHPL_INTERNAL_ERROR(msg);                                     \
         } while (0)
 
-static int64_t task_id(int);
-static int64_t task_id(int firmly_bound)
+static const char* task_id(int);
+static const char* task_id(int firmly_bound)
 {
-  if (firmly_bound)
-    return -(int64_t) 1;
+  if (pthread_self() == proc_thread_id)
+    return "PROC";
   if (debug_exiting)
-    return -(int64_t) 2;
-  return (int64_t) chpl_task_getId();
+    return "EXIT";
+  if (firmly_bound)
+    return "POLL";
+  static __thread char buf[20];
+  snprintf(buf, sizeof(buf), "%" PRId64, (int64_t) chpl_task_getId());
+  return buf;
 }
 #else
 #undef DEBUG_STATS
 
 #define DBG_INIT()
-#define DBG_INIT_OUTPUT_FILE()
 
 #define DBG_P(flg, f, ...)
 #define DBG_P_L(flg, f, ...)
@@ -1336,7 +1341,7 @@ static void dbg_init(void)
   uint64_t flg;
 
   atomic_init_uint_least32_t(&next_thread_idx, 0);
-  debug_file = stderr;
+  proc_thread_id = pthread_self();
 
   if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG", NULL)) != NULL
       && sscanf(ev, "%" SCNi64, &flg) == 1) {
@@ -1351,20 +1356,7 @@ static void dbg_init(void)
     }
   }
 
-  if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
-      && sscanf(ev, "%" SCNi64, &flg) == 1) {
-    debug_stats_flag = flg;
-  }
-
-  if ((ev = chpl_get_rt_env("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL
-      && sscanf(ev, "%d", &FORK_REQ_BUFS_PER_CD) != 1)
-    CHPL_INTERNAL_ERROR("bad FORK_REQ_BUFS_PER_CD env var value");
-}
-
-
-static void dbg_init_output_file(void);
-static void dbg_init_output_file(void)
-{
+  debug_file = stderr;
   if (_DBG_DO(DBGF_IN_FILE)) {
     char fname[100];
     FILE* f;
@@ -1376,6 +1368,30 @@ static void dbg_init_output_file(void)
       setbuf(debug_file, NULL);
     }
   }
+
+  if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG_CORE_NODE", NULL)) != NULL) {
+    int nodeID;
+    if (sscanf(ev, "%i", &nodeID) == 1) {
+      if ((int) chpl_nodeID != nodeID) {
+        struct rlimit rl;
+        rl.rlim_cur = 0;
+        rl.rlim_max = RLIM_SAVED_MAX;
+        if (setrlimit(RLIMIT_CORE, &rl) != 0)
+          CHPL_INTERNAL_ERROR("setrlimit(RLIMIT_CORE)");
+        printf("%d: core limit set to 0\n", (int) chpl_nodeID);
+        fflush(stdout);
+      }
+    }
+  }
+
+  if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
+      && sscanf(ev, "%" SCNi64, &flg) == 1) {
+    debug_stats_flag = flg;
+  }
+
+  if ((ev = chpl_get_rt_env("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL
+      && sscanf(ev, "%d", &FORK_REQ_BUFS_PER_CD) != 1)
+    CHPL_INTERNAL_ERROR("bad FORK_REQ_BUFS_PER_CD env var value");
 }
 
 
@@ -1566,8 +1582,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
-  DBG_INIT();
-
   {
     PMI_BOOL initialized;
     PMI_BOOL spawned;
@@ -1586,7 +1600,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
     chpl_nodeID = (int32_t) rank;
   }
 
-  DBG_INIT_OUTPUT_FILE();  // needs chpl_nodeID
+  DBG_INIT();  // needs chpl_nodeID
 
   {
     int app_size;
