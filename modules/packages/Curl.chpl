@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     https://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,7 @@
 Simple support for many network protocols with libcurl
 
 This module provides support for libcurl, enabling Chapel programs
-to work with many network protocols. 
+to work with many network protocols.
 
 The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
 
@@ -31,7 +31,7 @@ The `curl homepage <https://curl.haxx.se/libcurl/>`_ describes libcurl thus::
  POP3S, RTMP, RTSP, SCP, SFTP, SMTP, SMTPS, Telnet and TFTP.  libcurl supports
  SSL certificates, HTTP POST, HTTP PUT, FTP uploading, HTTP form based upload,
  proxies, cookies, user+password authentication (Basic, Digest, NTLM,
- Negotiate, Kerberos), file transfer resume, http proxy tunneling and more! 
+ Negotiate, Kerberos), file transfer resume, http proxy tunneling and more!
 
 Dependencies
 ------------
@@ -288,7 +288,7 @@ private extern proc chpl_curl_slist_free(list:chpl_slist);
 
 private extern const CHPL_CURL_SLIST_NULL:chpl_slist;
 
-/* This function is the equivalent to the 
+/* This function is the equivalent to the
    `curl_easy_setopt <https://curl.haxx.se/libcurl/c/curl_easy_setopt.html>`_
    function in libcurl. It sets information on the curl file handle
    that can change libcurl's behavior.
@@ -299,18 +299,18 @@ private extern const CHPL_CURL_SLIST_NULL:chpl_slist;
    :arg arg: the value to set the curl option specified by opt.
    :type arg: `int`, `string`, `bool`, or `slist`
 */
-proc file.setopt(opt:c_int, arg):bool {
+proc file.setopt(opt:c_int, arg):bool throws {
   var err:syserr = ENOERR;
 
   if (arg.type == slist) && (slist.home != this.home) {
-    ioerror(EFAULT:syserr, "in file.setopt(): slist, and curl handle do not reside on the same locale");
+    try ioerror(EFAULT:syserr, "in file.setopt(): slist, and curl handle do not reside on the same locale");
   }
 
   on this.home {
     err = chpl_curl_set_opt(this._file_internal, opt, arg);
   }
 
-  if err then ioerror(err, "in file.setopt(opt:c_int, arg)");
+  if err then try ioerror(err, "in file.setopt(opt:c_int, arg)");
   return true;
 }
 
@@ -336,7 +336,7 @@ proc file.setopt(args ...?k) {
 /* Perform any blocking file transfer operations on the curl file.
    This function calls
    `curl_easy_perform <https://curl.haxx.se/libcurl/c/curl_easy_perform.html>`_.
- 
+
    Corresponds to
    `curl_easy_perform <https://curl.haxx.se/libcurl/c/curl_easy_perform.html>`_
    where the file has been opened up by specifying that `url=<some url>`.
@@ -345,21 +345,21 @@ proc file.setopt(args ...?k) {
              but future versions will support returning an error code instead
              of halting.
  */
-proc file.perform():bool {
+proc file.perform():bool throws {
   var err:syserr = ENOERR;
 
   on this.home {
     err = chpl_curl_perform(this._file_internal);
   }
 
-  if err then ioerror(err, "in file.perform()");
+  if err then try ioerror(err, "in file.perform()");
   return true;
 }
 
-/* 
+/*
    A linked list of strings used in many curl setopt calls. This type
    corresponds to the libcurl type curl_slist.
-   
+
 .. note::
 
    The slist type is not reference counted. Therefore the user is responsible
@@ -378,18 +378,18 @@ record slist {
 /* Append the string argument to an slist. This function is the same
    as calling
    `curl_slist_append <https://curl.haxx.se/libcurl/c/curl_slist_append.html>`_
-   
+
    This function halts if an error is encountered. Future versions will
    support returning an error code instead of halting.
 
    :arg str: a string argument to append
   */
-proc slist.append(str:string) {
+proc slist.append(str:string) throws {
   var err: syserr = ENOERR;
   on this.home {
     err = chpl_curl_slist_append(this.list, str.localize().c_str());
   }
-  if err then ioerror(err, "in slist.append()");
+  if err then try ioerror(err, "in slist.append()");
 }
 
 /* Free an slist. Chapel programs must call this function after using an slist.
@@ -402,7 +402,7 @@ proc slist.free() {
   }
 }
 
-// These are meant to be used with the file.setopt() function. This way, a user 
+// These are meant to be used with the file.setopt() function. This way, a user
 // has access to the easy interface.
 
 
