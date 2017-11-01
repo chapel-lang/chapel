@@ -1,0 +1,2 @@
+recursiveRecord.chpl:1: error: unable to resolve return type of function 'chpl__initCopy'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1192: error: called recursively at this point
