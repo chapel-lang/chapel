@@ -4427,6 +4427,7 @@ static void testArgMapping(FnSymbol*                    fn1,
 
       // TODO: are these rules really necessary? could it be covered by other
       // rules?
+    /*
     } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
                 (is_real_type(f2Type) || is_complex_type(f2Type))) {
       EXPLAIN("N1: Fn %d is more specific\n", i);
@@ -4446,6 +4447,7 @@ static void testArgMapping(FnSymbol*                    fn1,
                 (is_complex_type(f1Type))) {
       EXPLAIN("N4: Fn %d is more specific\n", j);
       strongPrefer2 = true;
+      */
     } else {
       if (!weakPrefer1 && !weakPrefer2)
         EXPLAIN("O: no information gained from argument\n");
