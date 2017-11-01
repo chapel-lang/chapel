@@ -1728,45 +1728,6 @@ static Immediate* getImmediate(Symbol* actual) {
   return imm;
 }
 
-// TODO - this seems to be duplicated code from canParamCoerce
-/*
-static bool paramWorks(Symbol* actual, Type* formalType) {
-  Immediate* imm = NULL;
-
-  if (VarSymbol* var = toVarSymbol(actual)) {
-    imm = var->immediate;
-  }
-  if (EnumSymbol* enumsym = toEnumSymbol(actual)) {
-    ensureEnumTypeResolved(toEnumType(enumsym->type));
-    imm = enumsym->getImmediate();
-  }
-  if (imm) {
-    // This case important for enums
-    if (actual->type == formalType)
-      return true;
-
-    if (is_int_type(formalType)) {
-      return fits_in_int(get_width(formalType), imm);
-    }
-    if (is_uint_type(formalType)) {
-      return fits_in_uint(get_width(formalType), imm);
-    }
-    if (is_real_type(formalType) ||
-        is_imag_type(formalType) ||
-        is_complex_type(formalType) ) {
-      return fits_in_mantissa(get_mantissa_width(formalType), imm);
-    }
-    if (imm->const_kind == CONST_KIND_STRING) {
-      if ((formalType == dtString || formalType == dtStringC) &&
-          (actual->type == dtString || actual->type == dtStringC)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}*/
-
 typedef enum {
   NUMERIC_TYPE_BOOL,
   NUMERIC_TYPE_ENUM,
@@ -1798,33 +1759,10 @@ static bool weakPrefers(Symbol* actual,
                          bool f2Param) {
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
-  // No param preference if we're not working with a param.
-  //if (getImmediate(actual) == NULL)
-  //  return false;
-
-  // If the param doesn't "work", we don't return true.
-  //if (paramWorks(actual, f1Type) == false)
-  //  return false;
-
-  // If f1Param != f2Param, prefer the one that is a param
-  /*if (f1Param != f2Param) {
-    // f1Param == true, f2Param == false
-    if (f1Param)
-      return true;
-    // f1Param == false, f2Param == true
-    else return false;
-  }*/
-
   bool paramPreferArg1 = false;
-  /*if (f1Type == f2Type)
-    paramPreferArg1 = false; // no preference yet if types are the same
-  else if(actualType == f1Type)
-    paramPreferArg1 = true;  // f1 type matches, looks good
-  else if(actualType == f2Type)
-    paramPreferArg1 = false; // we'd prefer f2
-  else*/
+
   if (actualType != f1Type && actualType != f2Type) {
-    // Is there any preference among coercions of the param?
+    // Is there any preference among coercions of the built-in type?
     // E.g., would we rather convert 'false' to :int or to :uint(8) ?
 
     numeric_type_t aT = classifyNumericType(actualType);
@@ -1841,14 +1779,6 @@ static bool weakPrefers(Symbol* actual,
     // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
       paramPreferArg1 = true;
-    // Prefer param x:int(16) dispatch to int(32) over int(8)
-    /*else if (aIntUint &&
-             f1T == NUMERIC_TYPE_INT &&
-             f2T == NUMERIC_TYPE_INT &&
-             get_width(f1Type) >= get_width(actualType) &&
-             get_width(f2Type) < get_width(actualType))
-      paramPreferArg1 = true;
-     */
     // Prefer bool/enum cast to default-sized integer over another
     // size of int if aT is not an integral type
     else if (aBoolEnum &&
@@ -3219,12 +3149,9 @@ static void filterCandidate(CallInfo&                  info,
        info.call->id == explainCallID)) {
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 
-    /*
     if (info.call->id == breakOnResolveID) {
       gdbShouldBreakHere();
-    }*/
-    if (fn->id == 365492)
-      gdbShouldBreakHere();
+    }
   }
 
   if (candidate->isApplicable(info) == true) {
@@ -4224,9 +4151,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("J0: Fn %d is more specific\n", j);
     DS.fn2MoreSpecific = true;
 
-  } else if (//(actualSyncSingle || paramWithExplicitSize) &&
-             //!paramWithDefaultSize &&
-             !actualParam &&
+  } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f1Type &&
              actualScalarType != f2Type &&
@@ -4234,9 +4159,7 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN("I: Fn %d is more specific\n", i);
     DS.fn1MoreSpecific = true;
 
-  } else if (//(actualSyncSingle || paramWithExplicitSize) &&
-             //!paramWithDefaultSize &&
-             !actualParam &&
+  } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f2Type &&
              actualScalarType != f1Type &&
@@ -4262,28 +4185,16 @@ static void testArgMapping(FnSymbol*                    fn1,
       weakPrefer2 = true;
     } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
       EXPLAIN("CC: Fn %d is param preferred\n", i);
-      //if (paramWithDefaultSize)
-     //   weakerPrefer1 = true;
-      //else
-        weakPrefer1 = true;
+      weakPrefer1 = true;
     } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
       EXPLAIN("DD: Fn %d is param preferred\n", j);
-      //if (paramWithDefaultSize)
-      //  weakerPrefer2 = true;
-      //else
-        weakPrefer2 = true;
+      weakPrefer2 = true;
     } else if (!paramWithDefaultSize && actualScalarType == f1Type && actualScalarType != f2Type) {
       EXPLAIN("XX: Fn %d is param preferred\n", i);
-      //if (paramWithDefaultSize)
-        weakerPrefer1 = true;
-      //else
-      //  weakPrefer1 = true;
+      weakerPrefer1 = true;
     } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
       EXPLAIN("YY: Fn %d is param preferred\n", j);
-      //if (paramWithDefaultSize)
-        weakerPrefer2 = true;
-      //else
-      //  weakPrefer2 = true;
+      weakerPrefer2 = true;
     } else if (weakPrefers(actual, actualScalarType,
                            f1Type,
                            f2Type,
@@ -4300,43 +4211,31 @@ static void testArgMapping(FnSymbol*                    fn1,
       EXPLAIN("JJJ: Fn %d is param preferred\n", j);
       weakerPrefer2 = true;
 
-    } else if (actualParam && //paramWithDefaultSize &&
+    } else if (actualParam &&
                actualScalarType == f1Type && actualScalarType != f2Type) {
       EXPLAIN("MM: Fn %d is param preferred\n", i);
-      //if (paramWithDefaultSize)
-        weakestPrefer1 = true;
-      //else
-      //  weakPrefer1 = true;
-    } else if (actualParam && //paramWithDefaultSize &&
+      weakestPrefer1 = true;
+    } else if (actualParam &&
                actualScalarType == f2Type && actualScalarType != f1Type) {
       EXPLAIN("NN: Fn %d is param preferred\n", j);
-      //if (paramWithDefaultSize)
-        weakestPrefer2 = true;
-      //else
-      //  weakPrefer2 = true;
-    } else if (actualParam && //paramWithDefaultSize &&
+      weakestPrefer2 = true;
+    } else if (actualParam &&
                moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
       EXPLAIN("OO: Fn %d is param preferred\n", i);
-      //if (paramWithDefaultSize)
-        weakestPrefer1 = true;
-      //else
-      //  weakPrefer1 = true;
-    } else if (actualParam && //paramWithDefaultSize &&
+      weakestPrefer1 = true;
+    } else if (actualParam &&
                moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
       EXPLAIN("PP: Fn %d is param preferred\n", j);
-      //if (paramWithDefaultSize)
-        weakestPrefer2 = true;
-      //else
-      //  weakPrefer2 = true;
-    } else if (actualParam && // paramWithDefaultSize &&
+      weakestPrefer2 = true;
+    } else if (actualParam &&
                is_int_type(f1Type) && is_uint_type(f2Type)) {
       EXPLAIN("MM: Fn %d is more specific\n", i);
-        weakestPrefer1 = true;
+      weakestPrefer1 = true;
 
-    } else if (actualParam && //paramWithDefaultSize &&
+    } else if (actualParam &&
                is_int_type(f2Type) && is_uint_type(f1Type)) {
       EXPLAIN("NN: Fn %d is more specific\n", j);
-        weakestPrefer2 = true;
+      weakestPrefer2 = true;
     }
 
 
@@ -6531,8 +6430,10 @@ void ensureEnumTypeResolved(EnumType* etype) {
 
     // Set it to int so we can handle enum constants
     // referring to previous enum constants.
-    // This might not actually be correct, but it's good enough
+    // This might be temporarily incorrect, but it's good enough
     // for resolving the enum constant initializers.
+    // We'll set finally and correctly in the call to sizeAndNormalize()
+    // below.
     etype->integerType = dtInt[INT_SIZE_DEFAULT];
 
     int64_t v = 1;

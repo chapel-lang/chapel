@@ -37,13 +37,6 @@ static Expr* postFoldMove(CallExpr* call);
 
 static Expr* postFoldSymExpr(SymExpr* symExpr);
 
-/*
-static void  foldEnumOp(int         op,
-                        EnumSymbol* e1,
-                        EnumSymbol* e2,
-                        Immediate*  imm);
-*/
-
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* se = toSymExpr(call->get(1))) {                          \
     Symbol* sym = se->symbol();                                         \
@@ -769,80 +762,3 @@ static Expr* postFoldSymExpr(SymExpr* sym) {
 
   return retval;
 }
-
-// This function acts as if a "long" on the compiler host is at least as big
-// as "int" on the target.  This is not guaranteed to be true.
-/*
-static void foldEnumOp(int         op,
-                       EnumSymbol* e1,
-                       EnumSymbol* e2,
-                       Immediate*  imm) {
-  int64_t   val1  = -1;
-  int64_t   val2  = -1;
-  int64_t   count =  0;
-
-  EnumType* type1 = toEnumType(e1->type);
-  EnumType* type2 = toEnumType(e2->type);
-
-
-  // Loop over the enum values to find the int value of e1
-  for_enums(constant, type1) {
-    if (!get_int(constant->init, &count)) {
-      count++;
-    }
-
-    if (constant->sym == e1) {
-      val1 = count;
-      break;
-    }
-  }
-
-  // Loop over the enum values to find the int value of e2
-  count = 0;
-
-  for_enums(constant, type2) {
-    if (!get_int(constant->init, &count)) {
-      count++;
-    }
-
-    if (constant->sym == e2) {
-      val2 = count;
-      break;
-    }
-  }
-
-  // All operators on enum types result in a bool
-  imm->const_kind = NUM_KIND_BOOL;
-  imm->num_index  = BOOL_SIZE_SYS;
-
-  switch (op) {
-    default:
-      INT_FATAL("fold constant op not supported");
-      break;
-
-    case P_prim_equal:
-      imm->v_bool = val1 == val2;
-      break;
-
-    case P_prim_notequal:
-      imm->v_bool = val1 != val2;
-      break;
-
-    case P_prim_less:
-      imm->v_bool = val1 < val2;
-      break;
-
-    case P_prim_lessorequal:
-      imm->v_bool = val1 <= val2;
-      break;
-
-    case P_prim_greater:
-      imm->v_bool = val1 > val2;
-      break;
-
-    case P_prim_greaterorequal:
-      imm->v_bool = val1 >= val2;
-      break;
-  }
-}
-*/

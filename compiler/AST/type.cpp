@@ -1146,7 +1146,7 @@ int get_width(Type *t) {
   return 0;
 }
 
-// numbers up between -2**width .. 2**width
+// numbers between -2**width .. 2**width
 // will fit exactly in a floating-point representation.
 int get_mantissa_width(Type *t) {
   // FLOAT_SIZE_16 would have 11 bits of precision

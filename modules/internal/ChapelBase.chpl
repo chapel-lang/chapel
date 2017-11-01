@@ -208,12 +208,6 @@ module ChapelBase {
       return -(a:int(w));
   }
 
-  /*
-  inline proc -(param a: real(?w)) param return __primitive("u-", a);
-  inline proc -(param a: imag(?w)) param return __primitive("u-", a);
-  inline proc -(param a: complex(?w)) param return __primitive("u-", a);
-  */
-
   //
   // binary + and - on primitive types for runtime values
   //
@@ -309,8 +303,6 @@ module ChapelBase {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-
-  //inline proc /(param a: real(?w), param b: real(w)) param return __primitive("/", a, b);
 
   //
   // % on primitive types
