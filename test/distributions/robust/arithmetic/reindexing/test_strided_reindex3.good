@@ -1,1 +1,6 @@
-test_strided_reindex3.chpl:7: error: halt reached - array reindex cannot redistribute array
+1: LOCALE1
+3: LOCALE1
+5: LOCALE1
+7: LOCALE2
+9: LOCALE2
+11: LOCALE2
