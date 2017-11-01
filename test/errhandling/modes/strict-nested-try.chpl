@@ -2,7 +2,7 @@ pragma "error mode strict"
 module OuterModule {
 
   module InnerModule {
-    use ThrowError;
+    use ExampleErrors;
 
     proc propError() throws {
       throwAnError();

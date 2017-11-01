@@ -1,5 +1,6 @@
+use ExampleErrors;
 proc oops(): int throws {
-  throw new Error("called oops()");
+  throw new StringError("called oops()");
   return 99;
 }
 
@@ -8,5 +9,5 @@ try {
   var y = oops();
   writeln("after");
 } catch err {
-  writeln(err.msg);
+  writeln(err.message());
 }

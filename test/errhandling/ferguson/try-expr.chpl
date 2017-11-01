@@ -1,12 +1,12 @@
 pragma "error mode strict"
 module MyModule {
-
+  use ExampleErrors;
   config const test = 1;
 
 
   proc throwit(i:int):int throws {
     if i == test then
-      throw new Error("Test");
+      throw new StringError("Test");
     return i;
   }
 

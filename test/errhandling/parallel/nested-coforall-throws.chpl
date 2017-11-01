@@ -1,3 +1,5 @@
+use ExampleErrors;
+
 config const option = 2;
 
 proc printErrors(errors: TaskErrors, depth:int)
@@ -8,7 +10,7 @@ proc printErrors(errors: TaskErrors, depth:int)
       writeln(" "*depth, "TaskErrors");
       printErrors(g, depth + 1);
     } else
-      writeln(" "*depth, "err:", e.msg);
+      writeln(" "*depth, "err:", e.message());
   }
 }
 
@@ -20,7 +22,7 @@ proc test() {
       coforall j in 1..2 {
         coforall k in 1..2 {
           if k <= option then
-            throw new Error("test error");
+            throw new StringError("test error");
         }
       }
     }
@@ -28,7 +30,7 @@ proc test() {
   } catch errors: TaskErrors {
     printErrors(errors,0);
   } catch e {
-    writeln("Caught other error ", e.msg);
+    writeln("Caught other error ", e.message());
   }
 }
 

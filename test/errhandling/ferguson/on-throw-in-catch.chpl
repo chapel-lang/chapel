@@ -1,3 +1,5 @@
+use ExampleErrors;
+
 proc test() throws {
 
   for i in 1..10 {
@@ -5,7 +7,7 @@ proc test() throws {
       try {
         writeln(i);
         if i == 4 then
-          throw new Error("test");
+          throw new StringError("test");
       } catch e {
         writeln("inner catch caught error");
         throw e;

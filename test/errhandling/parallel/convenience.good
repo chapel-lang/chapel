@@ -4,4 +4,4 @@ iterating MyError:
 1
 1
 iterating everything else:
-Error: other error
+StringError: other error

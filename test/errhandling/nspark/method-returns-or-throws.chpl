@@ -1,3 +1,4 @@
+use ExampleErrors;
 record Wrapper {
 
   var val: int;
@@ -9,7 +10,7 @@ record Wrapper {
   }
 
   proc oops() {
-    err = new Error("called oops()");
+    err = new StringError("called oops()");
   }
 }
 
@@ -19,5 +20,5 @@ try {
   w.oops();
   writeln(w.get());
 } catch err {
-  writeln(err.msg);
+  writeln(err.message());
 }

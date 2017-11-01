@@ -397,8 +397,12 @@ private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string,
 // This one is documented below.
 
 class BadRegexpError : Error {
+  var msg:string;
   proc BadRegexpError(msg: string) {
     this.msg = msg;
+  }
+  proc message() {
+    return msg;
   }
 }
 

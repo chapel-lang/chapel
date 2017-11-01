@@ -1,11 +1,13 @@
 config const cthrow = false;
 config const dthrow = false;
 
+use ExampleErrors;
+
 class C {
   proc foo() throws {
     writeln("C.foo()");
     if cthrow then
-      throw new Error("test error C");
+      throw new StringError("test error C");
   }
 }
 
@@ -13,7 +15,7 @@ class D : C {
   proc foo() throws {
     writeln("D.foo()");
     if dthrow then
-      throw new Error("test error D");
+      throw new StringError("test error D");
   }
 }
 

@@ -1,10 +1,11 @@
 use Time;
+use ExampleErrors;
 
 config const taskWait = 2;
 config const syncWait = 0;
 
 proc throwingFn() throws {
-  throw new Error("test error");
+  throw new StringError("test error");
 }
 
 var s$:sync int;

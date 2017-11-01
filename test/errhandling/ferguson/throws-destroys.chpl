@@ -1,6 +1,6 @@
 // Some testing that return-via-throw destroys records appropriately
 config const test = 1;
-use ThrowError;
+use ExampleErrors;
 
 run();
 

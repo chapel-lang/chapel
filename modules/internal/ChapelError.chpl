@@ -26,12 +26,10 @@
 module ChapelError {
   use ChapelStandard;
 
-  // TODO: should base class Error have a string message at all?
+  // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?
   /* :class:`Error` is the base class for errors */
   class Error {
-    pragma "no doc"
-    var msg: string;
     pragma "no doc"
     var _next: Error = nil; // managed by lock in record TaskErrorsRecord
 
@@ -41,14 +39,20 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
-    /* Construct an Error */
-    proc Error() {
-      _next = nil;
+    pragma "no doc"
+    proc msg: string {
+      compilerError("msg field in Error is no longer available");
+      return "";
     }
 
     pragma "no doc"
-    proc Error(_msg: string) {
-      msg = _msg;
+    proc Error(_msg:string) {
+      _next = nil;
+      compilerError("Error constructor accepting a string is no longer available");
+    }
+
+    /* Construct an Error */
+    proc Error() {
       _next = nil;
     }
 
@@ -56,7 +60,7 @@ module ChapelError {
        in case the error is printed out or never caught.
      */
     proc message() {
-      return msg;
+      return "";
     }
 
     /* Errors can be printed out. In that event, they will

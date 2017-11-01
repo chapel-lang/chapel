@@ -1,4 +1,4 @@
-use ThrowError;
+use ExampleErrors;
 
 proc doesNotThrow() {
   try {

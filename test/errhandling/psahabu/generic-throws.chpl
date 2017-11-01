@@ -1,5 +1,7 @@
+use ExampleErrors;
+
 proc test(x) throws {
-  throw new Error(x:string + " is a numeric type");
+  throw new StringError(x:string + " is a numeric type");
 }
 
 config const num = 42;

@@ -1,6 +1,6 @@
 pragma "error mode relaxed"
 module mymodule {
-  use ThrowError;
+  use ExampleErrors;
 
   proc propError() throws {
     throwAnError();

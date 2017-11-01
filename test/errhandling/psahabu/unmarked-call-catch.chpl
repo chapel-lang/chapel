@@ -1,4 +1,4 @@
-use ThrowError;
+use ExampleErrors;
 
 try {
   writeln("outer try");

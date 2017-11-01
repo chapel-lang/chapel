@@ -67,10 +67,6 @@ class SystemError : Error {
     return err_msg;
   }
 
-  proc writeThis(f) {
-    f <~> msg;
-  }
-
   /*
     Return the matching ``SystemError`` subtype for a given ``syserr``,
     with an optional string containing extra details.

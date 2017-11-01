@@ -1,5 +1,7 @@
 require "err-return.h";
 
+use ExampleErrors;
+
 extern record my_struct {
   var x:c_int;
 }
@@ -20,7 +22,7 @@ config const case = 1;
 proc returnOrThrow(i:int):MyRecord throws {
 
   if case == i {
-    throw new Error("test error");
+    throw new StringError("test error");
   }
   return new MyRecord(i);
 }
