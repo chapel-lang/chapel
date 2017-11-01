@@ -413,8 +413,8 @@ pragma "no doc"
 proc isProperSubtype(type sub, type super) param
   return false;
 
-
-
+/* Returns `true` if `x` contains a `these()` method. */
+proc isIterable(x) param return canResolveMethod(x, 'these');
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
 pragma "no doc"
