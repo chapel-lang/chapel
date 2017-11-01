@@ -41,9 +41,11 @@ static void chpl_exit_common(int status, int all) {
     chpl_task_exit();
     chpl_reportMemInfo();
   }
-  chpl_mem_exit();
   chpl_comm_exit(all, status);
-  chpl_topo_exit();
+  if (all) {
+    chpl_mem_exit();
+    chpl_topo_exit();
+  }
   exit(status);
 }
 
