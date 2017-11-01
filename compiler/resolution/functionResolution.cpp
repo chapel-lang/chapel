@@ -4417,6 +4417,8 @@ static void testArgMapping(FnSymbol*                    fn1,
       EXPLAIN("L: Fn %d is more specific\n", j);
       strongPrefer2 = true;
 
+      // These rules support choosing between an 'int' and 'uint'
+      // overload when passed say a uint(32).
     } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
       EXPLAIN("M: Fn %d is more specific\n", i);
       strongPrefer1 = true;
