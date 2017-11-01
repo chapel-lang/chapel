@@ -65,6 +65,12 @@ int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset);
 
+#if HAVE_LLVM_VER >= 60
+#define TOOL_OUTPUT_FILE ToolOutputFile
+#else
+#define TOOL_OUTPUT_FILE tool_output_file
+#endif
+
 #endif //HAVE_LLVM
 
 #endif //LLVMUTIL_H
