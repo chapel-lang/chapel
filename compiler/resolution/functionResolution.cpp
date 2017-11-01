@@ -86,15 +86,6 @@ public:
 
   bool fn1WeakestPreferred;
   bool fn2WeakestPreferred;
-
-  int  fn1NumCoercions;
-  int  fn2NumCoercions;
-  int  fn1NumParamNonCoercions;
-  int  fn2NumParamNonCoercions;
-  int  fn1NumParamParamCoercions;
-  int  fn2NumParamParamCoercions;
-  int  f1NumParamNarrows;
-  int  f2NumParamNarrows;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -3975,14 +3966,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     prefer1 = DS.fn1MoreSpecific;
     prefer2 = DS.fn2MoreSpecific;
 
-  /*} else if (DS.fn1NumCoercions != DS.fn2NumCoercions) {
-    EXPLAIN("\nP2: preferring function with fewer coercions\n");
-    // Prefer the version with fewer coercions
-    if (DS.fn1NumCoercions < DS.fn2NumCoercions)
-      prefer1 = true;
-    else
-      prefer2 = true;
-  */
   } else {
     // If the decision hasn't been made based on the argument mappings...
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
@@ -3992,16 +3975,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
       EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
-
-      /*
-    } else if (DS.fn1NumParamNonCoercions != DS.fn2NumParamNonCoercions) {
-      EXPLAIN("\nS1: preferring function with fewer param coercions %i %i\n",
-              DS.fn1NumParamNonCoercions,DS.fn2NumParamNonCoercions);
-      if (DS.fn1NumParamNonCoercions < DS.fn2NumParamNonCoercions)
-        prefer1 = true;
-      else
-        prefer2 = true;
-      */
 
     } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
       EXPLAIN("\nS: preferring based on weak preference\n");
@@ -4018,15 +3991,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       prefer1 = DS.fn1WeakestPreferred;
       prefer2 = DS.fn2WeakestPreferred;
 
-
-      /*
-    } else if (DS.fn1NumParamParamCoercions != DS.fn2NumParamParamCoercions) {
-      EXPLAIN("\nS1: preferring function with fewer param-param coercions\n");
-      if (DS.fn1NumParamParamCoercions < DS.fn2NumParamParamCoercions)
-        prefer1 = true;
-      else
-        prefer2 = true;
-       */
     } else if (!ignoreWhere) {
       bool fn1where = candidate1->fn->where != NULL &&
                       !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
@@ -4124,8 +4088,6 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (imm->const_kind == NUM_KIND_UINT)
       paramWithExplicitSize = true;
 
-    /*if (imm->const_kind == NUM_KIND_UINT && imm->num_index != INT_SIZE_DEFAULT)
-      paramWithExplicitSize = true; */
     if (imm->const_kind == NUM_KIND_REAL && imm->num_index != FLOAT_SIZE_DEFAULT)
       paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_IMAG && imm->num_index != FLOAT_SIZE_DEFAULT)
@@ -4158,20 +4120,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (narrows param)");
   EXPLAIN("\n");
 
-  // Adjust number of coercions for f1
   if (actualType != f1Type) {
     if (actualParam) {
       EXPLAIN("Actual requires param coercion to match formal 1\n");
-      if (f1Param)
-        DS.fn1NumParamParamCoercions++;
-      else
-        DS.fn1NumParamNonCoercions++;
-
-      if (formal1Narrows)
-        DS.f1NumParamNarrows++;
     } else {
       EXPLAIN("Actual requires coercion to match formal 1\n");
-      DS.fn1NumCoercions++;
     }
   }
 
@@ -4192,16 +4145,8 @@ static void testArgMapping(FnSymbol*                    fn1,
   if (actualType != f2Type) {
     if (actualParam) {
       EXPLAIN("Actual requires param coercion to match formal 2\n");
-      if (f2Param)
-        DS.fn2NumParamParamCoercions++;
-      else
-        DS.fn2NumParamNonCoercions++;
-
-      if (formal2Narrows)
-        DS.f2NumParamNarrows++;
     } else {
       EXPLAIN("Actual requires coercion to match formal 2\n");
-      DS.fn2NumCoercions++;
     }
   }
 
@@ -4427,29 +4372,6 @@ static void testArgMapping(FnSymbol*                    fn1,
       EXPLAIN("N: Fn %d is more specific\n", j);
       strongPrefer2 = true;
 
-      // TODO: are these rules really necessary? could it be covered by other
-      // rules?
-    /*
-    } else if ((is_int_type(f1Type) || is_uint_type(f1Type)) &&
-                (is_real_type(f2Type) || is_complex_type(f2Type))) {
-      EXPLAIN("N1: Fn %d is more specific\n", i);
-      strongPrefer1 = true;
-
-    } else if ((is_int_type(f2Type) || is_uint_type(f2Type)) &&
-                (is_real_type(f1Type) || is_complex_type(f1Type))) {
-      EXPLAIN("N2: Fn %d is more specific\n", j);
-      strongPrefer2 = true;
-
-    } else if ((is_real_type(f1Type) || is_imag_type(f1Type)) &&
-                (is_complex_type(f2Type))) {
-      EXPLAIN("N3: Fn %d is more specific\n", i);
-      strongPrefer1 = true;
-
-    } else if ((is_real_type(f2Type) || is_imag_type(f2Type)) &&
-                (is_complex_type(f1Type))) {
-      EXPLAIN("N4: Fn %d is more specific\n", j);
-      strongPrefer2 = true;
-      */
     } else {
       if (!weakPrefer1 && !weakPrefer2)
         EXPLAIN("O: no information gained from argument\n");
@@ -10338,13 +10260,4 @@ DisambiguationState::DisambiguationState() {
   fn2WeakerPreferred= false;
   fn1WeakestPreferred= false;
   fn2WeakestPreferred= false;
-
-  fn1NumCoercions = 0;
-  fn2NumCoercions = 0;
-  fn1NumParamNonCoercions = 0;
-  fn2NumParamNonCoercions = 0;
-  fn1NumParamParamCoercions = 0;
-  fn2NumParamParamCoercions = 0;
-  f1NumParamNarrows = 0;
-  f2NumParamNarrows = 0;
 }
