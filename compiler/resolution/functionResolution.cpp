@@ -3975,14 +3975,14 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     prefer1 = DS.fn1MoreSpecific;
     prefer2 = DS.fn2MoreSpecific;
 
-  } else if (DS.fn1NumCoercions != DS.fn2NumCoercions) {
+  /*} else if (DS.fn1NumCoercions != DS.fn2NumCoercions) {
     EXPLAIN("\nP2: preferring function with fewer coercions\n");
     // Prefer the version with fewer coercions
     if (DS.fn1NumCoercions < DS.fn2NumCoercions)
       prefer1 = true;
     else
       prefer2 = true;
-
+  */
   } else {
     // If the decision hasn't been made based on the argument mappings...
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
