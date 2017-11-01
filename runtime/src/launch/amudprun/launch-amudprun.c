@@ -78,13 +78,35 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
   static char nlbuf[16];
-  const int largc = 3;
-  char *largv[largc];
+  int largc;
+  const int largv_size = 7;
+  char *largv[largv_size];
 
-  largv[0] = (char *) launch_cmd;
-  largv[1] = (char *) "-np";
+  largc = 0;
+  largv[largc++] = (char *) launch_cmd;
+  largv[largc++] = (char *) "-np";
   snprintf(nlbuf, sizeof(nlbuf), "%d", numLocales);
-  largv[2] = nlbuf;
+  largv[largc++] = nlbuf;
+
+  //
+  // If the user wants us to run each program instance in its own
+  // debugger window, arrange for that.
+  //
+  {
+    const char* ev_use_gdb = getenv("CHPL_COMM_USE_GDB");
+    const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
+
+    if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
+      char xterm_path[PATH_MAX];  // understood questionable; hopefully enough
+
+      if (chpl_run_cmdstr("which xterm", xterm_path, sizeof(xterm_path)) > 0) {
+        largv[largc++] = (char *) strdup(xterm_path);
+        largv[largc++] = (char *) "-e";
+        largv[largc++] = (char *) "gdb";
+        largv[largc++] = (char *) "--args";
+      }
+    }
+  }
 
   {
     const char* s = getenv("GASNET_SPAWNFN");
