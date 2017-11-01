@@ -102,8 +102,15 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
       if (chpl_run_cmdstr("which xterm", xterm_path, sizeof(xterm_path)) > 0) {
         largv[largc++] = (char *) strdup(xterm_path);
         largv[largc++] = (char *) "-e";
-        largv[largc++] = (char *) "gdb";
-        largv[largc++] = (char *) "--args";
+        if (ev_use_gdb != NULL) {
+          largv[largc++] = (char *) "gdb";
+          largv[largc++] = (char *) "--args";
+        } else {
+          largv[largc++] = (char *) "lldb";
+          largv[largc++] = (char *) "--";
+        }
+      } else {
+        chpl_warning("CHPL_COMM_USE_(G|LL)DB ignored because no xterm", 0, 0);
       }
     }
   }
