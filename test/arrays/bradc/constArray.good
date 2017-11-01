@@ -1,1 +1,1 @@
-constArray.chpl:3: error: Assigning to a constant expression
+constArray.chpl:3: error: illegal lvalue in assignment
