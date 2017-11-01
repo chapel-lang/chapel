@@ -1,13 +1,3 @@
 feature request: 'accessing the locale of a local expression' on more exprs
 
-When discussing test_dot_locale_error.chpl with Tom and Vass today,
-we stumbled across the fact that expressions like 1.locale or 'on 1'
-don't generate the same 'accessing the locale of a local expression'
-warning that other non-lvalue expressions do.  The commit in r13756
-suggests that all non-lvalue, non-class, non-locale expressions should
-trigger this warning.  Not sure whether that capability eroded over
-time or whether this case never worked.  (In super-ancient times, we
-used this as a cheap bootstrapping mechanism before we introduced the
-primitive that we use today, but I wouldn't think that's the reason...
-In particular, the same behavior seems to occur with non-integer types).
-
+Issue #7711
