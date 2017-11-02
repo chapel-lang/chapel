@@ -1,7 +1,0 @@
-bug: program generates an internal error in dead code elimination
-
----
-
-The top level module M2 is unused and so M2 and M2.M1 are unused but,
-for some reason, neither module has an init function by this point.
-This is explicitly noted and trapped.

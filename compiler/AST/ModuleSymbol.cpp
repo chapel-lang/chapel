@@ -38,7 +38,7 @@ Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
 Vec<ModuleSymbol*>                 allModules;  // Contains all modules
 
 static ModuleSymbol*               sMainModule           = NULL;
-static char*                       sMainModuleName       = NULL;
+static std::string                 sMainModuleName;
 
 static std::vector<ModuleSymbol*>  sTopLevelModules;
 
@@ -88,9 +88,7 @@ const char* ModuleSymbol::modTagToString(ModTag modTag) {
 
 void ModuleSymbol::mainModuleNameSet(const ArgumentDescription* desc,
                                      const char*                arg) {
-  sMainModuleName = (char*) malloc(strlen(arg) + 1);
-
-  strcpy(sMainModuleName, arg);
+  sMainModuleName = arg;
 }
 
 ModuleSymbol* ModuleSymbol::mainModule() {
@@ -114,15 +112,15 @@ ModuleSymbol* ModuleSymbol::mainModule() {
 ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   ModuleSymbol* retval = NULL;
 
-  if (sMainModuleName != NULL) {
+  if (sMainModuleName != "") {
     forv_Vec(ModuleSymbol, mod, userModules) {
-      if (strcmp(mod->name, sMainModuleName) == 0) {
+      if (sMainModuleName == mod->path()) {
         retval = mod;
       }
     }
 
     if (retval == NULL) {
-      USR_FATAL("Couldn't find module %s", sMainModuleName);
+      USR_FATAL("Couldn't find module %s", sMainModuleName.c_str());
     }
   }
 
@@ -424,8 +422,33 @@ void ModuleSymbol::printTableOfContents(std::ostream* file) {
 /*
  * Returns name of module, including any prefixes that have been set.
  */
-std::string ModuleSymbol::docsName() {
-  return this->name;
+std::string ModuleSymbol::docsName() const {
+  return name;
+}
+
+/*
+ * Generate a name that represents the path to the module
+ * For a top-level module this is simply the name.
+ * For nested modules that name corresponds to the "use name"
+ */
+
+std::string ModuleSymbol::path() const {
+  std::string retval;
+
+  if (this == rootModule) {
+    retval = name;
+
+  } else {
+    ModuleSymbol* parent = toModuleSymbol(defPoint->parentSymbol);
+
+    if (parent == theProgram) {
+      retval = name;
+    } else {
+      retval = (parent->path() + ".") + name;
+    }
+  }
+
+  return retval;
 }
 
 

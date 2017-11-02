@@ -6,4 +6,4 @@ module X {
 
 module M {
   proc main() { writeln("M"); }
-} 
+}
