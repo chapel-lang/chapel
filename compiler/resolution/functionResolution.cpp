@@ -1768,10 +1768,10 @@ static bool isNumericParamDefaultType(Type* t)
 // over f2Type.
 // This method implements rules such as that a bool would prefer to
 // coerce to 'int' over 'int(8)'.
-static bool prefersCoercionToOtherNumericType(Symbol* actual,
-                                          Type* actualType,
-                                          Type* f1Type,
-                                          Type* f2Type) {
+static bool prefersCoercionToOtherNumericType(Type* actualType,
+                                              Type* f1Type,
+                                              Type* f2Type) {
+
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
   if (actualType != f1Type && actualType != f2Type) {
@@ -4138,28 +4138,22 @@ static void testArgMapping(FnSymbol*                    fn1,
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     prefer2 = STRONG; reason = "partially generic vs generic";
 
-  } else if (actualType == f1Type &&
-             actualType != f2Type &&
-             !actualParam) {
+  } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
     prefer1 = STRONG; reason = "actual type vs not";
 
-  } else if (actualType == f2Type &&
-             actualType != f1Type &&
-             !actualParam) {
+  } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
     prefer2 = STRONG; reason = "actual type vs not";
 
   } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f1Type &&
-             actualScalarType != f2Type &&
-             (f1Param == f2Param || f1Param)) {
+             actualScalarType != f2Type) {
     prefer1 = STRONG; reason = "not param/narrows, scalar type vs not";
 
   } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f2Type &&
-             actualScalarType != f1Type &&
-             (f1Param == f2Param || f2Param)) {
+             actualScalarType != f1Type) {
     prefer2 = STRONG; reason = "not param/narrows, scalar type vs not";
 
   } else if (f1Param != f2Param && f1Param) {
@@ -4169,30 +4163,36 @@ static void testArgMapping(FnSymbol*                    fn1,
     prefer2 = WEAK; reason = "param vs not";
 
   } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
-    prefer1 = WEAK; reason = "not-1, no narrows vs narrows";
+    prefer1 = WEAK; reason = "no narrows vs narrows";
 
   } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "not-1, no narrows vs narrows";
-
-  } else if (!paramWithDefaultSize && actualScalarType == f1Type && actualScalarType != f2Type) {
-    prefer1 = WEAKER; reason = "not-1, scalar type vs not";
-
-  } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
-    prefer2 = WEAKER; reason = "not-1, scalar type vs not";
-
-  } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f1Type, f2Type)) {
-    prefer1 = WEAKER; reason = "preferred coercion to other";
-
-  } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f2Type, f1Type)) {
-    prefer2 = WEAKER; reason = "preferred coercion to other";
+    prefer2 = WEAK; reason = "no narrows vs narrows";
 
   } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
-    prefer1 = actualParam ? WEAKEST : STRONG;
+    if (paramWithDefaultSize)
+      prefer1 = WEAKEST;
+    else if (actualParam)
+      prefer1 = WEAKER;
+    else
+      prefer1 = STRONG;
+
     reason = "scalar type vs not";
 
   } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
-    prefer2 = actualParam ? WEAKEST : STRONG;
+    if (paramWithDefaultSize)
+      prefer2 = WEAKEST;
+    else if (actualParam)
+      prefer2 = WEAKER;
+    else
+      prefer2 = STRONG;
+
     reason = "scalar type vs not";
+
+  } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
+    prefer1 = WEAKER; reason = "preferred coercion to other";
+
+  } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
+    prefer2 = WEAKER; reason = "preferred coercion to other";
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
     prefer1 = actualParam ? WEAKEST : STRONG;
