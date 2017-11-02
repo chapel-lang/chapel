@@ -14,12 +14,13 @@ class InterpolationObject {
   var nSpace : domain(1);
   var values : [nSpace] real;
 
-  proc InterpolationObject(n:int, x0:real, dx:real, values:[] real) {
+  proc init(n:int, x0:real, dx:real, values:[] real) {
     this.n = n;
+    this.x0 = x0;
     this.dx = dx;
     this.invDx = 1.0/dx;
-    this.x0 = x0;
     this.nSpace = -1..n+1;
+    super.init();
 
     var nSpaceInner : domain(1) = 0..n-1;
 
