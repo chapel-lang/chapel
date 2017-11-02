@@ -1680,9 +1680,6 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  /*inline proc >(a: uint(64), param b: uint(64)) {
-    return __primitive(">", a, b);
-  }*/
   inline proc >(param a: uint(64), b: uint(64)) {
     if a == 0 then return false; else return __primitive(">", a, b);
   }
