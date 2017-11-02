@@ -998,16 +998,6 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   Vec<Symbol*>* actuals = &info.actuals;
 
-  if (fn->name == astrSequals) {
-    return fn;
-  }
-
-  // Don't try to promotion wrap _ref type constructor
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    return fn;
-  }
-
-  bool      promotion_wrapper_required = false;
   int       j                          = -1;
   SymbolMap promoted_subs;
 
@@ -1028,35 +1018,29 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
     if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)) {
       if (promotes) {
-        promotion_wrapper_required = true;
         promoted_subs.put(formal, actualType->symbol);
       }
     }
   }
 
-  if (promotion_wrapper_required) {
-    if (fReportPromotion) {
-      USR_WARN(info.call, "promotion on %s", info.toString());
-    }
-
-    FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
-
-    if (wrapper == NULL) {
-      wrapper = buildPromotionWrapper(fn,
-                                      info,
-                                      buildFastFollowerChecks,
-                                      &promoted_subs);
-
-      addCache(promotionsCache, fn, wrapper, &promoted_subs);
-    }
-
-    resolveFormals(wrapper);
-
-    return wrapper;
-
-  } else {
-    return fn;
+  if (fReportPromotion) {
+    USR_WARN(info.call, "promotion on %s", info.toString());
   }
+
+  FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
+
+  if (wrapper == NULL) {
+    wrapper = buildPromotionWrapper(fn,
+                                    info,
+                                    buildFastFollowerChecks,
+                                    &promoted_subs);
+
+    addCache(promotionsCache, fn, wrapper, &promoted_subs);
+  }
+
+  resolveFormals(wrapper);
+
+  return wrapper;
 }
 
 static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
