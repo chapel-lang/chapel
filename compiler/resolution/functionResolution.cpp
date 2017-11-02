@@ -4138,29 +4138,23 @@ static void testArgMapping(FnSymbol*                    fn1,
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
     prefer2 = STRONG; reason = "partially generic vs generic";
 
+  } else if (f1Param != f2Param && f1Param) {
+    prefer1 = WEAK; reason = "param vs not";
+
+  } else if (f1Param != f2Param && f2Param) {
+    prefer2 = WEAK; reason = "param vs not";
+
   } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
     prefer1 = STRONG; reason = "actual type vs not";
 
   } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
     prefer2 = STRONG; reason = "actual type vs not";
 
-  } else if (!actualParam &&
-             formal1Narrows == formal2Narrows &&
-             actualScalarType == f1Type &&
-             actualScalarType != f2Type) {
+  } else if (!actualParam && actualScalarType == f1Type && actualScalarType != f2Type) {
     prefer1 = STRONG; reason = "not param/narrows, scalar type vs not";
 
-  } else if (!actualParam &&
-             formal1Narrows == formal2Narrows &&
-             actualScalarType == f2Type &&
-             actualScalarType != f1Type) {
+  } else if (!actualParam && actualScalarType == f2Type && actualScalarType != f1Type) {
     prefer2 = STRONG; reason = "not param/narrows, scalar type vs not";
-
-  } else if (f1Param != f2Param && f1Param) {
-    prefer1 = WEAK; reason = "param vs not";
-
-  } else if (f1Param != f2Param && f2Param) {
-    prefer2 = WEAK; reason = "param vs not";
 
   } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
     prefer1 = WEAK; reason = "no narrows vs narrows";
