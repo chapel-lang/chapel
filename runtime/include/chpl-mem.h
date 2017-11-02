@@ -128,6 +128,17 @@ void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
 }
 
 static inline
+chpl_bool chpl_mem_size_justifies_comm_alloc(size_t size) {
+  //
+  // Don't try to use comm layer allocation unless the size is beyond
+  // the comm layer threshold and enough pages to make localization
+  // worthwhile.
+  //
+  return (size >= chpl_comm_regMemAllocThreshold()
+          && size >= 2 * chpl_comm_regMemHeapPageSize());
+}
+
+static inline
 void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                            chpl_bool* callAgain, void* repeat_p,
                            int32_t lineno, int32_t filename) {
@@ -153,8 +164,7 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
 
     p = NULL;
     *callAgain = false;
-    if (size >= chpl_comm_regMemAllocThreshold()
-        && size >= 2 * chpl_comm_regMemHeapPageSize()) {
+    if (chpl_mem_size_justifies_comm_alloc(size)) {
       p = chpl_comm_regMemAlloc(size);
       if (p != NULL) {
         *callAgain = true;
@@ -201,10 +211,15 @@ void chpl_mem_array_free(void* p,
                          int32_t lineno, int32_t filename) {
   const size_t size = nmemb * eltSize;
 
-  if (size >= chpl_comm_regMemAllocThreshold()
-      && size >= 2 * chpl_comm_regMemHeapPageSize()) {
-    if (chpl_comm_regMemFree(p, size))
-      return;
+  //
+  // If the size indicates we might have gotten this memory from the
+  // comm layer then try to free it there.  If not, or if so but the
+  // comm layer says it didn't come from there, free it in the memory
+  // layer.
+  //
+  if (chpl_mem_size_justifies_comm_alloc(size)
+      && chpl_comm_regMemFree(p, size)) {
+    return;
   }
 
   chpl_mem_free(p, lineno, filename);
