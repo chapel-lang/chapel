@@ -83,8 +83,9 @@ public:
 
   void                    printTableOfContents(std::ostream* file);
 
-  std::string             docsName();
+  std::string             docsName()                                     const;
 
+  std::string             path()                                         const;
 
   ModTag                  modTag;
 
