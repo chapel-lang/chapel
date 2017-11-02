@@ -970,6 +970,12 @@ static void       buildFollowerIterator(FnSymbol* wrapFn,
                                         FnSymbol* fn,
                                         CallExpr* wrapCall);
 
+static CondStmt*  selectFollower(ArgSymbol* fastFollower,
+                                 Expr*      iterator,
+                                 VarSymbol* followerIterator,
+                                 SymbolMap& followerMap,
+                                 ArgSymbol* fiFnFollower);
+
 static FnSymbol*  initPromotionWrapper(FnSymbol*  fn,
                                        CallInfo&  info,
                                        SymbolMap& subs);
@@ -1258,15 +1264,11 @@ static void buildFollowerIterator(FnSymbol* wrapFn,
 
   fifn->insertAtTail(new DefExpr(followerIterator));
 
-  if (zippered == false) {
-    fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
-                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollower", iterator->copy(&followerMap), fifnFollower)),
-                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower))));
-  } else {
-    fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
-                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollowerZip", iterator->copy(&followerMap), fifnFollower)),
-                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", iterator->copy(&followerMap), fifnFollower))));
-  }
+  fifn->insertAtTail(selectFollower(fastFollower,
+                                    iterator,
+                                    followerIterator,
+                                    followerMap,
+                                    fifnFollower));
 
   BlockStmt* followerBlock = new BlockStmt();
   Symbol*    yieldTmp      = newTemp("p_yield");
@@ -1288,6 +1290,37 @@ static void buildFollowerIterator(FnSymbol* wrapFn,
   fifn->instantiationPoint = getVisibilityBlock(info.call);
 
   fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
+}
+
+static CondStmt* selectFollower(ArgSymbol* fastFollower,
+                                Expr*      iterator,
+                                VarSymbol* followerIterator,
+                                SymbolMap& followerMap,
+                                ArgSymbol* fiFnFollower) {
+  const char* name1 = NULL;
+  CallExpr*   call1 = NULL;
+  CallExpr*   move1 = NULL;
+
+  const char* name2 = NULL;
+  CallExpr*   call2 = NULL;
+  CallExpr*   move2 = NULL;
+
+  if (isCallExpr(iterator) == true) {
+    name1 = "_toFastFollowerZip";
+    name2 = "_toFollowerZip";
+
+  } else {
+    name1 = "_toFastFollower";
+    name2 = "_toFollower";
+  }
+
+  call1 = new CallExpr(name1, iterator->copy(&followerMap), fiFnFollower);
+  call2 = new CallExpr(name2, iterator->copy(&followerMap), fiFnFollower);
+
+  move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
+  move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
+
+  return new CondStmt(new SymExpr(fastFollower), move1, move2);
 }
 
 static FnSymbol* initPromotionWrapper(FnSymbol*  fn,
