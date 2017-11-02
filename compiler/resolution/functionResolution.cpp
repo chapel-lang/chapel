@@ -1731,8 +1731,7 @@ static Immediate* getImmediate(Symbol* actual) {
 typedef enum {
   NUMERIC_TYPE_BOOL,
   NUMERIC_TYPE_ENUM,
-  NUMERIC_TYPE_INT,
-  NUMERIC_TYPE_UINT,
+  NUMERIC_TYPE_INT_UINT,
   NUMERIC_TYPE_REAL,
   NUMERIC_TYPE_IMAG,
   NUMERIC_TYPE_COMPLEX
@@ -1742,8 +1741,8 @@ static numeric_type_t classifyNumericType(Type* t)
 {
   if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
   if (is_enum_type(t)) return NUMERIC_TYPE_ENUM;
-  if (is_int_type(t)) return NUMERIC_TYPE_INT;
-  if (is_uint_type(t)) return NUMERIC_TYPE_INT; // vs UINT
+  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
+  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
   if (is_real_type(t)) return NUMERIC_TYPE_REAL;
   if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
   if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
@@ -1754,9 +1753,7 @@ static numeric_type_t classifyNumericType(Type* t)
 static bool weakPrefers(Symbol* actual,
                          Type* actualType,
                          Type* f1Type,
-                         Type* f2Type,
-                         bool f1Param,
-                         bool f2Param) {
+                         Type* f2Type) {
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
 
   bool paramPreferArg1 = false;
@@ -1769,33 +1766,34 @@ static bool weakPrefers(Symbol* actual,
     numeric_type_t f1T = classifyNumericType(f1Type);
     numeric_type_t f2T = classifyNumericType(f2Type);
 
-    bool aIntUint = (aT == NUMERIC_TYPE_INT ||
-                     aT == NUMERIC_TYPE_UINT);
-
-    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL ||
-                      aT == NUMERIC_TYPE_ENUM);
+    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL || aT == NUMERIC_TYPE_ENUM);
 
     // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
     // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
       paramPreferArg1 = true;
-    // Prefer bool/enum cast to default-sized integer over another
-    // size of int if aT is not an integral type
+    // Prefer bool/enum cast to int over uint
+    else if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
+      paramPreferArg1 = true;
+    // Prefer bool/enum cast to default-sized int/uint over another
+    // size of int/uint
     else if (aBoolEnum &&
-             f1Type == dtInt[INT_SIZE_DEFAULT] &&
-             f2T == NUMERIC_TYPE_INT &&
-             f2Type != dtInt[INT_SIZE_DEFAULT])
+             (f1Type == dtInt[INT_SIZE_DEFAULT] ||
+              f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
+             f2T == NUMERIC_TYPE_INT_UINT &&
+             !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
+               f2Type == dtUInt[INT_SIZE_DEFAULT]))
       paramPreferArg1 = true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
     // size of real or complex.
-    else if ((aBoolEnum || aIntUint) &&
+    else if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
              f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
              (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
              f2Type != dtReal[FLOAT_SIZE_DEFAULT])
       paramPreferArg1 = true;
     // Prefer bool/enum/int/uint cast to a default-sized complex over another
     // size of complex.
-    else if ((aBoolEnum || aIntUint) &&
+    else if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
              f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
              f2T == NUMERIC_TYPE_COMPLEX &&
              f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
@@ -4197,17 +4195,13 @@ static void testArgMapping(FnSymbol*                    fn1,
       weakerPrefer2 = true;
     } else if (weakPrefers(actual, actualScalarType,
                            f1Type,
-                           f2Type,
-                           f1Param,
-                           f2Param)) {
+                           f2Type)) {
       EXPLAIN("III: Fn %d is param preferred\n", i);
       weakerPrefer1 = true;
 
     } else if (weakPrefers(actual, actualScalarType,
                            f2Type,
-                           f1Type,
-                           f2Param,
-                           f1Param)) {
+                           f1Type)) {
       EXPLAIN("JJJ: Fn %d is param preferred\n", j);
       weakerPrefer2 = true;
 
