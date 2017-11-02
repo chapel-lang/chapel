@@ -422,6 +422,10 @@ static bool isDeadModule(ModuleSymbol* mod) {
           INT_ASSERT(false);
         }
 
+      // The single definition is a nested module.  This module is not dead.
+      } else if (isModuleSymbol(defExpr->sym) == true) {
+        retval = false;
+
       } else {
         INT_ASSERT(false);
       }
