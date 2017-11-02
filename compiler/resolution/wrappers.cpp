@@ -1043,6 +1043,9 @@ static bool isPromotionRequired(FnSymbol* fn, CallInfo& info) {
   return retval;
 }
 
+// NB: This function is only invoked if isPromotionRequired() has
+// returned true.  This function is only required to perform the
+// desired transformations.
 static FnSymbol* promotionWrap(FnSymbol* fn,
                                CallInfo& info,
                                bool      fastFollowerChecks) {
