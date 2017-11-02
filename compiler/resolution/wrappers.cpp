@@ -959,6 +959,10 @@ static BlockStmt* buildPromotionLoop(FnSymbol*  fn,
                                      SymbolMap& subs,
                                      FnSymbol*  wrapFn);
 
+static void       buildLeaderIterator(FnSymbol* wrapFn,
+                                      CallInfo& info,
+                                      Expr*     iterator);
+
 static FnSymbol*  initPromotionWrapper(FnSymbol*  fn,
                                        CallInfo&  info,
                                        SymbolMap& subs);
@@ -1116,58 +1120,7 @@ static BlockStmt* buildPromotionLoop(FnSymbol*  fn,
   wrapFn->addFlag(FLAG_ITERATOR_FN);
   wrapFn->removeFlag(FLAG_INLINE);
 
-
-  // Build up the leader iterator
-  SymbolMap leaderMap;
-  FnSymbol* lifn       = wrapFn->copy(&leaderMap);
-
-  INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
-
-  iteratorLeaderMap.put(wrapFn,lifn);
-
-  lifn->body = new BlockStmt(); // indices are not used in leader
-
-  form_Map(SymbolMapElem, e, leaderMap) {
-    if (Symbol* s = paramMap.get(e->key)) {
-      paramMap.put(e->value, s);
-    }
-  }
-
-  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
-
-  // Leader iterators are always inlined.
-  lifn->addFlag(FLAG_INLINE_ITERATOR);
-
-  lifn->insertFormalAtTail(lifnTag);
-
-  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
-
-  VarSymbol* leaderIndex    = newTemp("p_leaderIndex");
-  VarSymbol* leaderIterator = newTemp("p_leaderIterator");
-
-  leaderIterator->addFlag(FLAG_EXPR_TEMP);
-
-  lifn->insertAtTail(new DefExpr(leaderIterator));
-
-  if (zippered == false) {
-    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-  } else {
-    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
-  }
-
-  BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-  BlockStmt* loop = ForLoop::buildForLoop(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
-
-  lifn->insertAtTail(loop);
-
-  theProgram->block->insertAtTail(new DefExpr(lifn));
-
-  toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
-
-  normalize(lifn);
-
-  lifn->addFlag(FLAG_GENERIC);
-  lifn->instantiationPoint = getVisibilityBlock(info.call);
+  buildLeaderIterator(wrapFn, info, iterator);
 
   // Build up the follower iterator
   SymbolMap followerMap;
@@ -1262,6 +1215,68 @@ static BlockStmt* buildPromotionLoop(FnSymbol*  fn,
   return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
 }
 
+static void buildLeaderIterator(FnSymbol* wrapFn,
+                                CallInfo& info,
+                                Expr*     iterator) {
+  SymbolMap   leaderMap;
+  FnSymbol*   liFn       = wrapFn->copy(&leaderMap);
+
+  Type*       tagType    = gLeaderTag->type;
+  ArgSymbol*  liFnTag    = new ArgSymbol(INTENT_PARAM, "tag", tagType);
+
+  VarSymbol*  liIndex    = newTemp("p_leaderIndex");
+  VarSymbol*  liIterator = newTemp("p_leaderIterator");
+
+  bool        zippered   = isCallExpr(iterator) ? true : false;
+  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
+
+  BlockStmt*  loop       = NULL;
+  BlockStmt*  loopBody   = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
+  CallExpr*   toLeader   = NULL;
+
+  INT_ASSERT(liFn->hasFlag(FLAG_RESOLVED) == false);
+
+  iteratorLeaderMap.put(wrapFn, liFn);
+
+  form_Map(SymbolMapElem, e, leaderMap) {
+    if (Symbol* s = paramMap.get(e->key)) {
+      paramMap.put(e->value, s);
+    }
+  }
+
+  liIterator->addFlag(FLAG_EXPR_TEMP);
+
+  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+
+  loop     = ForLoop::buildForLoop(new SymExpr(liIndex),
+                                   new SymExpr(liIterator),
+                                   loopBody,
+                                   false,
+                                   zippered);
+
+  liFn->addFlag(FLAG_INLINE_ITERATOR);
+  liFn->addFlag(FLAG_GENERIC);
+
+  liFn->insertFormalAtTail(liFnTag);
+
+  liFn->where = new BlockStmt(new CallExpr("==", liFnTag, gLeaderTag));
+
+  liFn->body  = new BlockStmt();
+
+  liFn->insertAtTail(new DefExpr(liIterator));
+
+  liFn->insertAtTail(new CallExpr(PRIM_MOVE, liIterator, toLeader));
+
+  liFn->insertAtTail(loop);
+
+  theProgram->block->insertAtTail(new DefExpr(liFn));
+
+  toBlockStmt(loopBody->parentExpr)->insertAtHead(new DefExpr(liIndex));
+
+  normalize(liFn);
+
+  liFn->instantiationPoint = getVisibilityBlock(info.call);
+}
 
 static FnSymbol* initPromotionWrapper(FnSymbol*  fn,
                                       CallInfo&  info,
