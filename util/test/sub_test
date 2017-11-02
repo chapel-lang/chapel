@@ -2106,6 +2106,12 @@ for testname in testsrc:
                                     extra_msg = '(possible JIRA 274) '
                                     break
 
+                            err_strings = ['Clock skew detected']
+                            for s in err_strings:
+                                if re.search(s, output, re.IGNORECASE) != None:
+                                    extra_msg = '(possible JIRA 287) '
+                                    break
+
                             sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))
 
                         sys.stdout.write('matching program output for %s/%s'%
