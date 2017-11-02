@@ -976,6 +976,12 @@ static CondStmt*  selectFollower(ArgSymbol* fastFollower,
                                  SymbolMap& followerMap,
                                  ArgSymbol* fiFnFollower);
 
+static BlockStmt* followerForLoop(Expr*      indices,
+                                  Expr*      iterator,
+                                  VarSymbol* followerIterator,
+                                  SymbolMap& followerMap,
+                                  CallExpr*  wrapCall);
+
 static FnSymbol*  initPromotionWrapper(FnSymbol*  fn,
                                        CallInfo&  info,
                                        SymbolMap& subs);
@@ -1231,13 +1237,19 @@ static void buildFollowerIterator(FnSymbol* wrapFn,
                                   Expr*     iterator,
                                   FnSymbol* fn,
                                   CallExpr* wrapCall) {
-  SymbolMap followerMap;
-  bool      zippered = isCallExpr(iterator) ? true : false;
-  FnSymbol* fifn     = wrapFn->copy(&followerMap);
+  SymbolMap  followerMap;
 
-  INT_ASSERT(fifn->hasFlag(FLAG_RESOLVED) == false);
+  SymExpr*   symFalse         = new SymExpr(gFalse);
 
-  iteratorFollowerMap.put(wrapFn,fifn);
+  ArgSymbol* fiFnTag          = NULL;
+  ArgSymbol* fiFnFollower     = NULL;
+  ArgSymbol* fastFollower     = NULL;
+
+  VarSymbol* followerIterator = newTemp("p_followerIterator");
+
+  FnSymbol*  fiFn             = wrapFn->copy(&followerMap);
+
+  iteratorFollowerMap.put(wrapFn, fiFn);
 
   form_Map(SymbolMapElem, e, followerMap) {
     if (Symbol* s = paramMap.get(e->key)) {
@@ -1245,51 +1257,43 @@ static void buildFollowerIterator(FnSymbol* wrapFn,
     }
   }
 
-  ArgSymbol* fifnTag      = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
-  fifn->insertFormalAtTail(fifnTag);
-
-  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-
-  fifn->insertFormalAtTail(fifnFollower);
-
-  ArgSymbol* fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, new SymExpr(gFalse));
-
-  fifn->insertFormalAtTail(fastFollower);
-
-  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
-
-  VarSymbol* followerIterator = newTemp("p_followerIterator");
+  INT_ASSERT(fiFn->hasFlag(FLAG_RESOLVED) == false);
 
   followerIterator->addFlag(FLAG_EXPR_TEMP);
 
-  fifn->insertAtTail(new DefExpr(followerIterator));
+  fiFnTag      = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+  fiFnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+  fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, symFalse);
 
-  fifn->insertAtTail(selectFollower(fastFollower,
+  fiFn->addFlag(FLAG_GENERIC);
+
+  fiFn->insertFormalAtTail(fiFnTag);
+  fiFn->insertFormalAtTail(fiFnFollower);
+  fiFn->insertFormalAtTail(fastFollower);
+
+  fiFn->where = new BlockStmt(new CallExpr("==", fiFnTag, gFollowerTag));
+
+  fiFn->insertAtTail(new DefExpr(followerIterator));
+
+  fiFn->insertAtTail(selectFollower(fastFollower,
                                     iterator,
                                     followerIterator,
                                     followerMap,
-                                    fifnFollower));
+                                    fiFnFollower));
 
-  BlockStmt* followerBlock = new BlockStmt();
-  Symbol*    yieldTmp      = newTemp("p_yield");
+  fiFn->insertAtTail(followerForLoop(indices,
+                                     iterator,
+                                     followerIterator,
+                                     followerMap,
+                                     wrapCall));
 
-  yieldTmp->addFlag(FLAG_EXPR_TEMP);
+  theProgram->block->insertAtTail(new DefExpr(fiFn));
 
-  followerBlock->insertAtTail(new DefExpr(yieldTmp));
-  followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall->copy(&followerMap)));
-  followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+  normalize(fiFn);
 
-  fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+  fiFn->instantiationPoint = getVisibilityBlock(info.call);
 
-  theProgram->block->insertAtTail(new DefExpr(fifn));
-
-  normalize(fifn);
-
-  fifn->addFlag(FLAG_GENERIC);
-
-  fifn->instantiationPoint = getVisibilityBlock(info.call);
-
-  fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
+  fixUnresolvedSymExprsForPromotionWrapper(fiFn, fn);
 }
 
 static CondStmt* selectFollower(ArgSymbol* fastFollower,
@@ -1321,6 +1325,31 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
   move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
 
   return new CondStmt(new SymExpr(fastFollower), move1, move2);
+}
+
+static BlockStmt* followerForLoop(Expr*      indices,
+                                  Expr*      iterator,
+                                  VarSymbol* followerIterator,
+                                  SymbolMap& followerMap,
+                                  CallExpr*  wrapCall) {
+  VarSymbol* yieldTmp = newTemp("p_yield");
+  BlockStmt* block    = new BlockStmt();
+
+  yieldTmp->addFlag(FLAG_EXPR_TEMP);
+
+  block->insertAtTail(new DefExpr(yieldTmp));
+
+  block->insertAtTail(new CallExpr(PRIM_MOVE,
+                                   yieldTmp,
+                                   wrapCall->copy(&followerMap)));
+
+  block->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+
+  return ForLoop::buildForLoop(indices->copy(&followerMap),
+                               new SymExpr(followerIterator),
+                               block,
+                               false,
+                               isCallExpr(iterator) ? true : false);
 }
 
 static FnSymbol* initPromotionWrapper(FnSymbol*  fn,
