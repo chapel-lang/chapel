@@ -1654,18 +1654,6 @@ module ChapelBase {
   // non-param/param and param/non-param
   // not necessary since the == versions above
   // work there (and aren't an error)
-  /*inline proc ==(a: uint(64), param b: uint(64)) {
-    return __primitive("==", a, b);
-  }
-  inline proc ==(param a: uint(64), b: uint(64)) {
-    return __primitive("==", a, b);
-  }
-  inline proc ==(a: int(64), param b: int(64)) {
-    return __primitive("==", a, b);
-  }
-  inline proc ==(param a: int(64), b: int(64)) {
-    return __primitive("==", a, b);
-  }*/
 
 
 
@@ -1680,18 +1668,6 @@ module ChapelBase {
   // non-param/param and param/non-param
   // not necessary since the == versions above
   // work there (and aren't an error)
-  /*inline proc !=(a: uint(64), param b: uint(64)) {
-    return __primitive("!=", a, b);
-  }
-  inline proc !=(param a: uint(64), b: uint(64)) {
-    return __primitive("!=", a, b);
-  }
-  inline proc !=(a: int(64), param b: int(64)) {
-    return __primitive("!=", a, b);
-  }
-  inline proc !=(param a: int(64), b: int(64)) {
-    return __primitive("!=", a, b);
-  }*/
 
 
   // non-param/non-param
@@ -1710,10 +1686,6 @@ module ChapelBase {
   inline proc >(param a: uint(64), b: uint(64)) {
     if a == 0 then return false; else return __primitive(">", a, b);
   }
-  /*
-  inline proc >(a: int(64), param b: int(64)) {
-    return __primitive(">", a, b);
-  }*/
   inline proc >(param a: int(64), b: int(64)) {
     return __primitive(">", a, b);
   }
@@ -1732,17 +1704,9 @@ module ChapelBase {
   inline proc <(a: uint(64), param b: uint(64)) {
     if b == 0 then return false; else return __primitive("<", a, b);
   }
-  /*
-  inline proc <(param a: uint(64), b: uint(64)) {
-    return __primitive("<", a, b);
-  }*/
   inline proc <(a: int(64), param b: int(64)) {
     return __primitive("<", a, b);
   }
-  /*
-  inline proc <(param a: int(64), b: int(64)) {
-    return __primitive("<", a, b);
-  }*/
 
 
 
@@ -1758,15 +1722,9 @@ module ChapelBase {
   inline proc >=(a: uint(64), param b: uint(64)) {
     if b == 0 then return true; else return __primitive(">=", a, b);
   }
-  /*inline proc >=(param a: uint(64), b: uint(64)) {
-    return __primitive(">=", a, b);
-  }*/
   inline proc >=(a: int(64), param b: int(64)) {
     return __primitive(">=", a, b);
-  }/*
-  inline proc >=(param a: int(64), b: int(64)) {
-    return __primitive(">=", a, b);
-  }*/
+  }
 
 
   // non-param/non-param
@@ -1778,16 +1736,9 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  /*inline proc <=(a: uint(64), param b: uint(64)) {
-    return __primitive("<=", a, b);
-  }*/
   inline proc <=(param a: uint(64), b: uint(64)) {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
-  /*
-  inline proc <=(a: int(64), param b: int(64)) {
-    return __primitive("<=", a, b);
-  }*/
   inline proc <=(param a: int(64), b: int(64)) {
     return __primitive("<=", a, b);
   }
