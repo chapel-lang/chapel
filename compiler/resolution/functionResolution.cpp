@@ -1764,13 +1764,15 @@ static bool isNumericParamDefaultType(Type* t)
   return false;
 }
 
-static bool weakPrefers(Symbol* actual,
-                         Type* actualType,
-                         Type* f1Type,
-                         Type* f2Type) {
+// Returns 'true' if we should prefer passing actual to f1Type
+// over f2Type.
+// This method implements rules such as that a bool would prefer to
+// coerce to 'int' over 'int(8)'.
+static bool prefersCoercionToOtherNumericType(Symbol* actual,
+                                          Type* actualType,
+                                          Type* f1Type,
+                                          Type* f2Type) {
   INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
-
-  bool paramPreferArg1 = false;
 
   if (actualType != f1Type && actualType != f2Type) {
     // Is there any preference among coercions of the built-in type?
@@ -1785,44 +1787,44 @@ static bool weakPrefers(Symbol* actual,
     // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
     // Prefer uint(8) passed to uint(16) over passing to a real
     if (aT == f1T && aT != f2T)
-      paramPreferArg1 = true;
+      return true;
     // Prefer bool/enum cast to int over uint
-    else if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
-      paramPreferArg1 = true;
+    if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
+      return true;
     // Prefer bool/enum cast to default-sized int/uint over another
     // size of int/uint
-    else if (aBoolEnum &&
-             (f1Type == dtInt[INT_SIZE_DEFAULT] ||
-              f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
-             f2T == NUMERIC_TYPE_INT_UINT &&
-             !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
-               f2Type == dtUInt[INT_SIZE_DEFAULT]))
-      paramPreferArg1 = true;
+    if (aBoolEnum &&
+        (f1Type == dtInt[INT_SIZE_DEFAULT] ||
+         f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
+        f2T == NUMERIC_TYPE_INT_UINT &&
+        !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
+          f2Type == dtUInt[INT_SIZE_DEFAULT]))
+      return true;
     // Prefer bool/enum/int/uint cast to a default-sized real over another
     // size of real or complex.
-    else if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-             f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
-             (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
-             f2Type != dtReal[FLOAT_SIZE_DEFAULT])
-      paramPreferArg1 = true;
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+        f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+      return true;
     // Prefer bool/enum/int/uint cast to a default-sized complex over another
     // size of complex.
-    else if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
-             f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
-             f2T == NUMERIC_TYPE_COMPLEX &&
-             f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
-      paramPreferArg1 = true;
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+      return true;
     // Prefer real/imag cast to a same-sized complex over another size of
     // complex.
-    else if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
-             f1T == NUMERIC_TYPE_COMPLEX &&
-             f2T == NUMERIC_TYPE_COMPLEX &&
-             get_width(actualType)*2 == get_width(f1Type) &&
-             get_width(actualType)*2 != get_width(f2Type))
-      paramPreferArg1 = true;
+    if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
+        f1T == NUMERIC_TYPE_COMPLEX &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        get_width(actualType)*2 == get_width(f1Type) &&
+        get_width(actualType)*2 != get_width(f2Type))
+      return true;
   }
 
-  return paramPreferArg1;
+  return false;
 }
 
 static bool fits_in_bits_no_sign(int width, int64_t i) {
@@ -4190,15 +4192,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
       EXPLAIN("YY: Fn %d is param preferred\n", j);
       weakerPrefer2 = true;
-    } else if (weakPrefers(actual, actualScalarType,
-                           f1Type,
-                           f2Type)) {
+    } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f1Type, f2Type)) {
       EXPLAIN("III: Fn %d is param preferred\n", i);
       weakerPrefer1 = true;
 
-    } else if (weakPrefers(actual, actualScalarType,
-                           f2Type,
-                           f1Type)) {
+    } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f2Type, f1Type)) {
       EXPLAIN("JJJ: Fn %d is param preferred\n", j);
       weakerPrefer2 = true;
 
