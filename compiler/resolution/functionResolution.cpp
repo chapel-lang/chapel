@@ -1121,7 +1121,7 @@ static bool canParamCoerce(Type*   actualType,
         return true;
 
       if (get_width(enumIntType) < get_width(formalType))
-	return true;
+        return true;
 
       if (fits_in_int(get_width(formalType), etype->getMinConstant()) &&
           fits_in_int(get_width(formalType), etype->getMaxConstant()))
@@ -1190,7 +1190,7 @@ static bool canParamCoerce(Type*   actualType,
         return true;
 
       if (get_width(enumIntType) < get_width(formalType))
-	return true;
+        return true;
 
       if (fits_in_uint(get_width(formalType), etype->getMinConstant()) &&
           fits_in_uint(get_width(formalType), etype->getMaxConstant()))
