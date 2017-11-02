@@ -1,22 +1,15 @@
-config const n = 7;
+config const n = 6;
 
 const D = {1..n*n};
 
 var D1: sparse subdomain(D);
-D1 += max(int);
-D1 += max(int)/2;
-D1 += max(int)/4;
-D1 += max(int)/8;
+for i in 1..D.size by n do
+  D1 += i;
 writeln(D1);
 
 var D2: sparse subdomain(D);
-D2 += max(int)/8;
-D2 += max(int)/4;
-D2 += max(int)/2;
-D2 += max(int);
-D2 += max(int)/16;
-D2 += max(int)/32;
-D2 += max(int)/64;
+for i in 1..D.size by n/2 do
+  D2 += i;
 writeln(D2);
 
 D2 -= D1;
