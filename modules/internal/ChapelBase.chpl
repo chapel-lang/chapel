@@ -1503,11 +1503,10 @@ module ChapelBase {
   // are provided to support operations on runtime uint and
   // param uint combinations.  These are expressed in terms of int/uint
   // functions with one param argument and one non-param argument.
-  // If these functions are not provided, resolution will select
-  // the error version of the function (which is the int/uint overload).
-  // An int and uint version of each is provided in order to
-  // avoid resolution selecting a 'param' argument that crosses
-  // types in a surprising manner (which might lead to ambiguity).
+  // Since function disambiguation prefers a 'param' argument over
+  // a non-param one, if the 'int' version here is not provided,
+  // anEnumVariable + 1 (say) will resolve to the uint + here
+  // and that would give the wrong result type (uint rather than int).
   inline proc +(a: uint(64), param b: uint(64)) {
     return __primitive("+", a, b);
   }
