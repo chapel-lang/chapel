@@ -46,6 +46,7 @@
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
@@ -1338,22 +1339,15 @@ static void dbg_init(void);
 static void dbg_init(void)
 {
   const char* ev;
-  uint64_t flg;
 
   atomic_init_uint_least32_t(&next_thread_idx, 0);
   proc_thread_id = pthread_self();
 
-  if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG", NULL)) != NULL
-      && sscanf(ev, "%" SCNi64, &flg) == 1) {
-    debug_flag = flg;
-
-    if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG_NODE", NULL)) != NULL) {
-      int nodeID;
-      if (sscanf(ev, "%i", &nodeID) == 1) {
-        debug_nodeID = nodeID;
-        debug_flag |= DBGF_1_NODE;
-      }
-    }
+  debug_flag = (uint64_t) chpl_env_rt_get_int("COMM_UGNI_DEBUG", 0);
+  if (debug_flag != 0) {
+    debug_nodeID = (int) chpl_env_rt_get_int("COMM_UGNI_DEBUG_NODE", -1);
+    if (debug_nodeID >= 0)
+      debug_flag |= DBGF_1_NODE;
   }
 
   debug_file = stderr;
@@ -1369,29 +1363,24 @@ static void dbg_init(void)
     }
   }
 
-  if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG_CORE_NODE", NULL)) != NULL) {
-    int nodeID;
-    if (sscanf(ev, "%i", &nodeID) == 1) {
-      if ((int) chpl_nodeID != nodeID) {
-        struct rlimit rl;
-        rl.rlim_cur = 0;
-        rl.rlim_max = RLIM_SAVED_MAX;
-        if (setrlimit(RLIMIT_CORE, &rl) != 0)
-          CHPL_INTERNAL_ERROR("setrlimit(RLIMIT_CORE)");
-        printf("%d: core limit set to 0\n", (int) chpl_nodeID);
-        fflush(stdout);
-      }
+  const int evNode = (int) chpl_env_rt_get_int("COMM_UGNI_DEBUG_CORE_NODE", -1);
+  if (evNode >= 0) {
+    if ((int) chpl_nodeID != evNode) {
+      struct rlimit rl;
+      rl.rlim_cur = 0;
+      rl.rlim_max = RLIM_SAVED_MAX;
+      if (setrlimit(RLIMIT_CORE, &rl) != 0)
+        CHPL_INTERNAL_ERROR("setrlimit(RLIMIT_CORE)");
+      printf("%d: core limit set to 0\n", (int) chpl_nodeID);
+      fflush(stdout);
     }
   }
 
-  if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
-      && sscanf(ev, "%" SCNi64, &flg) == 1) {
-    debug_stats_flag = flg;
-  }
+  debug_stats_flag = chpl_env_rt_get_int("COMM_UGNI_DEBUG_STATS", 0);
 
-  if ((ev = chpl_get_rt_env("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL
-      && sscanf(ev, "%d", &FORK_REQ_BUFS_PER_CD) != 1)
-    CHPL_INTERNAL_ERROR("bad FORK_REQ_BUFS_PER_CD env var value");
+  if ((ev = chpl_env_rt_get("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL) {
+    FORK_REQ_BUFS_PER_CD = chpl_env_str_to_int(ev, 1);
+  }
 }
 
 

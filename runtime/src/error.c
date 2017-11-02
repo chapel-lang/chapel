@@ -99,7 +99,7 @@ static void chpl_stack_unwind(void){
 #endif
 
   // Check if we need to print the stack trace (default = yes)
-  if(! chpl_get_rt_env_bool("UNWIND", true)) {
+  if(! chpl_env_rt_get_bool("UNWIND", true)) {
     return;
   }
 

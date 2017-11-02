@@ -21,11 +21,13 @@
 // System and heap page sizes, for the uGNI communication interface.
 //
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "chplrt.h"
 #include "chplcgfns.h"
+#include "chpl-env.h"
 #include "comm-ugni-heap-pages.h"
 #include "error.h"
 
@@ -57,47 +59,32 @@ size_t chpl_comm_ugni_getSysPageSize(void) {
 //
 // Figure out what the heap page size will be.
 //
+static pthread_once_t hps_once = PTHREAD_ONCE_INIT;
+static size_t hps = 0;
+
+
+static
+void set_hps(void)
+{
+  hps = chpl_comm_ugni_getSysPageSize();
+
+  //
+  // If we have mem=jemalloc, a dynamically extensible heap, and
+  // hugepages, then the heap page size is the hugepage size.
+  //
+  char* ev;
+  if (strcmp(CHPL_MEM, "jemalloc") == 0
+      && chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL
+      && (ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE")) != NULL) {
+    hps = chpl_env_str_to_size(ev, hps);
+  }
+}
+
+
 size_t chpl_comm_ugni_getHeapPageSize(void) {
-  static size_t hps = 0;
-
-  if (hps != 0)
-    return hps;
-
-  //
-  // Do we have mem=jemalloc and a dynamically extensible heap?
-  //
-  if (strcmp(CHPL_MEM, "jemalloc") != 0
-      || getenv("CHPL_RT_MAX_HEAP_SIZE") != NULL) {
-    return (hps = chpl_comm_ugni_getSysPageSize());
-  }
-
-  //
-  // Do we have hugepages?
-  //
-  const char* ev = getenv("HUGETLB_DEFAULT_PAGE_SIZE");
-
-  if (ev == NULL) {
-    return (hps = chpl_comm_ugni_getSysPageSize());
-  }
-
-  //
-  // Figure out the heap page size.
-  //
-  int num_scanned;
-  char units;
-
-  if ((num_scanned = sscanf(ev, "%zi%c", &hps, &units)) != 1) {
-    if (num_scanned == 2 && strchr("kKmMgG", units) != NULL) {
-      switch (units) {
-      case 'k' : case 'K': hps <<= 10; break;
-      case 'm' : case 'M': hps <<= 20; break;
-      case 'g' : case 'G': hps <<= 30; break;
-      }
-    }
-    else {
-      chpl_error("Cannot parse HUGETLB_DEFAULT_PAGE_SIZE environment variable",
-                 0, 0);
-    }
+  if (hps == 0
+      && pthread_once(&hps_once, set_hps) != 0) {
+    chpl_internal_error("pthread_once(&hps_once) failed");
   }
 
   return hps;
