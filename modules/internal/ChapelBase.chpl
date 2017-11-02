@@ -1617,6 +1617,7 @@ module ChapelBase {
     if b == 0 then compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
+  // necessary to support e.g. 10 % myuint
   inline proc %(param a: uint(64), b: uint(64)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
@@ -1651,7 +1652,9 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline proc ==(a: uint(64), param b: uint(64)) {
+  // not necessary since the == versions above
+  // work there (and aren't an error)
+  /*inline proc ==(a: uint(64), param b: uint(64)) {
     return __primitive("==", a, b);
   }
   inline proc ==(param a: uint(64), b: uint(64)) {
@@ -1662,7 +1665,7 @@ module ChapelBase {
   }
   inline proc ==(param a: int(64), b: int(64)) {
     return __primitive("==", a, b);
-  }
+  }*/
 
 
 
@@ -1675,7 +1678,9 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline proc !=(a: uint(64), param b: uint(64)) {
+  // not necessary since the == versions above
+  // work there (and aren't an error)
+  /*inline proc !=(a: uint(64), param b: uint(64)) {
     return __primitive("!=", a, b);
   }
   inline proc !=(param a: uint(64), b: uint(64)) {
@@ -1686,7 +1691,7 @@ module ChapelBase {
   }
   inline proc !=(param a: int(64), b: int(64)) {
     return __primitive("!=", a, b);
-  }
+  }*/
 
 
   // non-param/non-param
@@ -1698,15 +1703,17 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline proc >(a: uint(64), param b: uint(64)) {
+  // non-param/param version not necessary since > above works fine for that
+  /*inline proc >(a: uint(64), param b: uint(64)) {
     return __primitive(">", a, b);
-  }
+  }*/
   inline proc >(param a: uint(64), b: uint(64)) {
     if a == 0 then return false; else return __primitive(">", a, b);
   }
+  /*
   inline proc >(a: int(64), param b: int(64)) {
     return __primitive(">", a, b);
-  }
+  }*/
   inline proc >(param a: int(64), b: int(64)) {
     return __primitive(">", a, b);
   }
@@ -1721,18 +1728,21 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
+  // param/non-param version not necessary since < above works fine for that
   inline proc <(a: uint(64), param b: uint(64)) {
     if b == 0 then return false; else return __primitive("<", a, b);
   }
+  /*
   inline proc <(param a: uint(64), b: uint(64)) {
     return __primitive("<", a, b);
-  }
+  }*/
   inline proc <(a: int(64), param b: int(64)) {
     return __primitive("<", a, b);
   }
+  /*
   inline proc <(param a: int(64), b: int(64)) {
     return __primitive("<", a, b);
-  }
+  }*/
 
 
 
@@ -1748,15 +1758,15 @@ module ChapelBase {
   inline proc >=(a: uint(64), param b: uint(64)) {
     if b == 0 then return true; else return __primitive(">=", a, b);
   }
-  inline proc >=(param a: uint(64), b: uint(64)) {
+  /*inline proc >=(param a: uint(64), b: uint(64)) {
     return __primitive(">=", a, b);
-  }
+  }*/
   inline proc >=(a: int(64), param b: int(64)) {
     return __primitive(">=", a, b);
-  }
+  }/*
   inline proc >=(param a: int(64), b: int(64)) {
     return __primitive(">=", a, b);
-  }
+  }*/
 
 
   // non-param/non-param
@@ -1768,15 +1778,16 @@ module ChapelBase {
   }
 
   // non-param/param and param/non-param
-  inline proc <=(a: uint(64), param b: uint(64)) {
+  /*inline proc <=(a: uint(64), param b: uint(64)) {
     return __primitive("<=", a, b);
-  }
+  }*/
   inline proc <=(param a: uint(64), b: uint(64)) {
     if a == 0 then return true; else return __primitive("<=", a, b);
   }
+  /*
   inline proc <=(a: int(64), param b: int(64)) {
     return __primitive("<=", a, b);
-  }
+  }*/
   inline proc <=(param a: int(64), b: int(64)) {
     return __primitive("<=", a, b);
   }
