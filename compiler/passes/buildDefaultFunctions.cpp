@@ -34,7 +34,8 @@
 static bool mainReturnsInt;
 
 static void build_chpl_entry_points();
-static void build_accessor(AggregateType* ct, Symbol* field, bool setter);
+static void build_accessor(AggregateType* ct, Symbol* field,
+                           bool setter, bool typeMethod);
 static void build_accessors(AggregateType* ct, Symbol* field);
 
 static void buildDefaultOfFunction(AggregateType* ct);
@@ -293,12 +294,8 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
 
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
-static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
-  // Only build a 'ref' version for records and classes.
-  // Unions need a special getter and setter.
-  if (isUnion(ct) == false && setter == false)
-    return;
-
+static void build_accessor(AggregateType* ct, Symbol* field,
+                           bool setter, bool typeMethod) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();
   FnSymbol*  fn           = new FnSymbol(field->name);
@@ -311,15 +308,20 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
 
   fn->addFlag(FLAG_FIELD_ACCESSOR);
 
-  if (fieldIsConst)
-    fn->addFlag(FLAG_REF_TO_CONST);
-  else if (recordLike)
-    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  if (!typeMethod) {
+    if (fieldIsConst)
+      fn->addFlag(FLAG_REF_TO_CONST);
+    else if (recordLike)
+      fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+  }
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->addFlag(FLAG_METHOD);
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  if (typeMethod) {
+    _this->addFlag(FLAG_TYPE_VARIABLE);
+  }
 
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
@@ -330,15 +332,21 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
     fn->retTag = RET_TYPE;
 
-  } else if (field->hasFlag(FLAG_SUPER_CLASS)) {
-    fn->retTag = RET_VALUE;
   } else {
-    if (fieldIsConst || !setter)
-      fn->retTag = RET_CONST_REF;
-    else {
-      fn->retTag = RET_REF;
-      if (recordLike) {
-        _this->intent = INTENT_REF;
+    // Can't access the field if we don't return param/type.
+    // This would be different if we added something like C++ static fields
+    INT_ASSERT(!typeMethod);
+
+    if (field->hasFlag(FLAG_SUPER_CLASS)) {
+      fn->retTag = RET_VALUE;
+    } else {
+      if (fieldIsConst || !setter)
+        fn->retTag = RET_CONST_REF;
+      else {
+        fn->retTag = RET_REF;
+        if (recordLike) {
+          _this->intent = INTENT_REF;
+        }
       }
     }
   }
@@ -400,11 +408,13 @@ static void build_accessor(AggregateType* ct, Symbol* field, bool setter) {
 // Getter and setter functions are provided by the compiler if not supplied by
 // the user.
 // These functions have the same binding strength as if they were user-defined.
-// This function calls build_accessor twice, passing
-// true (to build the setter) and false (to build the getter).
+// This function calls build_accessor multiple times to create appropriate
+// accessors.
 static void build_accessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
+  const bool fieldTypeOrParam = field->isParameter() ||
+                                field->hasFlag(FLAG_TYPE_VARIABLE);
 
   FnSymbol *setter = function_exists(field->name,
                                      dtMethodToken, ct, FIND_REF);
@@ -418,8 +428,22 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
     return;
 
   // Otherwise, build compiler-default getter and setter.
-  build_accessor(ct, field, true);
-  build_accessor(ct, field, false);
+
+  if (isUnion(ct)) {
+    // Unions need a special getter and setter.
+    build_accessor(ct, field, /* setter? */ false, /* type method? */ false);
+    build_accessor(ct, field, /* setter? */ true,  /* type method? */ false);
+  } else {
+    // Otherwise, only build one version for records and classes.
+    // This is normally the 'ref' version.
+    build_accessor(ct, field,
+                   /* setter? */ !fieldIsConst, /* type method? */ false);
+  }
+
+  // If the field is type/param, add a type-method accessor.
+  if (fieldTypeOrParam) {
+    build_accessor(ct, field, /* getter? */ false, /* type method? */ true);
+  }
 }
 
 static FnSymbol* chpl_gen_main_exists() {

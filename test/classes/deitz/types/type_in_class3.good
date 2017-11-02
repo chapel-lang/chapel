@@ -1,2 +1,2 @@
-type_in_class3.chpl:12: error: unresolved call 'type node(int(64)).element_type'
-type_in_class3.chpl:2: note: candidates are: node.element_type
+12
+2

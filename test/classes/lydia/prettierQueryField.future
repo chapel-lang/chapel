@@ -1,9 +1,0 @@
-feature request: Syntactic sugar for PRIM_QUERY_TYPE and PRIM_QUERY_PARAM
-
-It would be nice to be able to specify
-
-<type>.<fieldname>
-
-instead of having to type
-
-__primitive("query [type|param] field", <type>, "<fieldname>")
