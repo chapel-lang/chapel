@@ -1,0 +1,2 @@
+COMPOPTS <= distType=DistType.replicated
+CHPL_COMM==none
