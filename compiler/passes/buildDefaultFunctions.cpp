@@ -730,7 +730,7 @@ static void build_enum_size_function(EnumType* et) {
 
   fn->insertFormalAtTail(fn->_this);
 
-  fn->retTag = RET_VALUE;
+  fn->retTag = RET_PARAM;
   //use this function only where the argument is an enum
   fn->where = new BlockStmt(new CallExpr("==", fn->_this, et->symbol));
 
