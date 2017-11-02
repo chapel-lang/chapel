@@ -706,6 +706,22 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     return plaintext;
   }
 
+  /* The `Blowfish` class represents a symmetric-key block cipher called Blowfish, designed
+     in 1993 by Bruce Schneier. Considering current scenario, the Advanced Encryption
+     Standard(AES) cipher is used more in practice. Since, Blowfish is unpatented and placed
+     in the public domain, it receives a decent amount of attention from the community.
+
+     The `Blowfish` class supports 4 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
+
+     - ``cbc`` or `Cipher Block Chaining`
+
+     - ``ecb`` or `Electronic Codebook`
+
+     - ``cfb`` or `Cipher Feedback`
+
+     - ``ofb`` or `Output Feedback`
+
+  */
   class Blowfish {
     pragma "no doc"
     var cipher: CONST_EVP_CIPHER_PTR;
@@ -714,17 +730,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     /* The `Blowfish` class constructor that initializes the Blowfish encryption
        algorithm with the right key length and chaining mode.
-
-       It supports 4 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
-
-       - ``cbc`` or `Cipher Block Chaining`
-
-       - ``ecb`` or `Electronic Codebook`
-
-       - ``cfb`` or `Cipher Feedback`
-
-       - ``ofb`` or `Output Feedback`
-
 
        :arg mode: Name of the chaining mode to be used.
        :type mode: `string`
