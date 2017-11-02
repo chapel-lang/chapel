@@ -4144,23 +4144,17 @@ static void testArgMapping(FnSymbol*                    fn1,
   } else if (f1Param != f2Param && f2Param) {
     prefer2 = WEAK; reason = "param vs not";
 
+  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+    prefer1 = WEAK; reason = "no narrows vs narrows";
+
+  } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
+    prefer2 = WEAK; reason = "no narrows vs narrows";
+
   } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
     prefer1 = STRONG; reason = "actual type vs not";
 
   } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
     prefer2 = STRONG; reason = "actual type vs not";
-
-  } else if (!actualParam && actualScalarType == f1Type && actualScalarType != f2Type) {
-    prefer1 = STRONG; reason = "not param/narrows, scalar type vs not";
-
-  } else if (!actualParam && actualScalarType == f2Type && actualScalarType != f1Type) {
-    prefer2 = STRONG; reason = "not param/narrows, scalar type vs not";
-
-  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
-    prefer1 = WEAK; reason = "no narrows vs narrows";
-
-  } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-    prefer2 = WEAK; reason = "no narrows vs narrows";
 
   } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
     if (paramWithDefaultSize)
