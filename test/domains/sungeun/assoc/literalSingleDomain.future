@@ -1,7 +1,0 @@
-bug: Associative domain literal syntax with a single rectangular domain index initializer drops the extra {} and becomes the same as the rectangular domain
-
-    var D = {{1..3}};
-
-becomes
-
-    var D = {1..3};
