@@ -1570,71 +1570,81 @@ static void buildFastFollowerCheck(bool                  isStatic,
                                    CallInfo&             info,
                                    FnSymbol*             wrapper,
                                    std::set<ArgSymbol*>& requiresPromotion) {
-  const char* fnName = isStatic ? "chpl__staticFastFollowCheck" : "chpl__dynamicFastFollowCheck";
-  const char* forwardFnName = astr(fnName, "Zip") ;
+  const char* fnName     = NULL;
+  FnSymbol*   checkFn    = NULL;
 
-  FnSymbol* fastFollowCheckFn = new FnSymbol(fnName);
+  ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", dtIteratorRecord);
 
-  if (isStatic) {
-    fastFollowCheckFn->retTag = RET_PARAM;
+  CallExpr*   buildTuple = new CallExpr("_build_tuple_always_allow_ref");
+
+  Symbol*     pTup       = newTemp("p_tup");
+  Symbol*     returnTmp  = newTemp("p_ret");
+  CallExpr*   forward    = NULL;
+
+  returnTmp->addFlag(FLAG_EXPR_TEMP);
+  returnTmp->addFlag(FLAG_MAYBE_PARAM);
+
+  if (isStatic == true) {
+    fnName          = "chpl__staticFastFollowCheck";
+
+    checkFn         = new FnSymbol(fnName);
+    checkFn->retTag = RET_PARAM;
+
   } else {
-    fastFollowCheckFn->retTag = RET_VALUE;
+    fnName          = "chpl__dynamicFastFollowCheck";
+
+    checkFn         = new FnSymbol(fnName);
+    checkFn->retTag = RET_VALUE;
   }
 
-  ArgSymbol* x = new ArgSymbol(INTENT_BLANK, "x", dtIteratorRecord);
+  checkFn->addFlag(FLAG_GENERIC);
 
-  fastFollowCheckFn->insertFormalAtTail(x);
+  checkFn->insertFormalAtTail(x);
 
-  ArgSymbol* lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
+  if (addLead == true) {
+    ArgSymbol* lead = new ArgSymbol(INTENT_BLANK, "lead", dtAny);
 
-  if (addLead) {
-    fastFollowCheckFn->insertFormalAtTail(lead);
+    checkFn->insertFormalAtTail(lead);
+
+    forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
+
+  } else {
+    forward = new CallExpr(astr(fnName, "Zip"), pTup);
   }
-
-
-  CallExpr* buildTuple = new CallExpr("_build_tuple_always_allow_ref");
 
   for_formals(formal, wrapper) {
     if (requiresPromotion.count(formal) > 0) {
-      Symbol* field = new VarSymbol(formal->name, formal->type);
+      Symbol*      field       = new VarSymbol(formal->name, formal->type);
 
-      fastFollowCheckFn->insertAtTail(new DefExpr(field));
+      PrimitiveTag primTag     = PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL;
+      CallExpr*    byFormal    = new CallExpr(primTag,   x,     formal);
+      CallExpr*    moveToField = new CallExpr(PRIM_MOVE, field, byFormal);
 
-      fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, field, new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, x, formal)));
+      checkFn->insertAtTail(new DefExpr(field));
+
+      checkFn->insertAtTail(moveToField);
 
       buildTuple->insertAtTail(new SymExpr(field));
     }
   }
 
-  fastFollowCheckFn->where = new BlockStmt(new CallExpr("==", new CallExpr(PRIM_TYPEOF, x), new CallExpr(PRIM_TYPEOF, info.call->copy())));
+  CallExpr* typeOfLhs = new CallExpr(PRIM_TYPEOF, x);
+  CallExpr* typeOfRhs = new CallExpr(PRIM_TYPEOF, info.call->copy());
 
-  Symbol* p_tup = newTemp("p_tup");
+  checkFn->where = new BlockStmt(new CallExpr("==", typeOfLhs, typeOfRhs));
 
-  fastFollowCheckFn->insertAtTail(new DefExpr(p_tup));
-  fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, p_tup, buildTuple));
+  checkFn->insertAtTail(new DefExpr(pTup));
+  checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
 
-  Symbol* returnTmp = newTemp("p_ret");
+  checkFn->insertAtTail(new DefExpr(returnTmp));
+  checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));
+  checkFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
 
-  returnTmp->addFlag(FLAG_EXPR_TEMP);
-  returnTmp->addFlag(FLAG_MAYBE_PARAM);
+  theProgram->block->insertAtTail(new DefExpr(checkFn));
 
-  fastFollowCheckFn->insertAtTail(new DefExpr(returnTmp));
+  normalize(checkFn);
 
-  if (addLead) {
-    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(forwardFnName, p_tup, lead)));
-  } else {
-    fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_MOVE, returnTmp, new CallExpr(forwardFnName, p_tup)));
-  }
-
-  fastFollowCheckFn->insertAtTail(new CallExpr(PRIM_RETURN, returnTmp));
-
-  theProgram->block->insertAtTail(new DefExpr(fastFollowCheckFn));
-
-  normalize(fastFollowCheckFn);
-
-  fastFollowCheckFn->addFlag(FLAG_GENERIC);
-
-  fastFollowCheckFn->instantiationPoint = getVisibilityBlock(info.call);
+  checkFn->instantiationPoint = getVisibilityBlock(info.call);
 }
 
 /************************************* | **************************************
