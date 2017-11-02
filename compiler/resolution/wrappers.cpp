@@ -944,22 +944,23 @@ static void addArgCoercion(FnSymbol*  fn,
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol*
-buildPromotionWrapper(FnSymbol*  fn,
-                      CallInfo&  info,
-                      bool       buildFastFollowerChecks,
-                      SymbolMap* promotionSubs);
+static void       collectPromotionSubs(FnSymbol*  fn,
+                                       CallInfo&  info,
+                                       SymbolMap& subs);
 
-static void
-fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
-                                         FnSymbol* fn);
+static FnSymbol*  buildPromotionWrapper(FnSymbol*  fn,
+                                        CallInfo&  info,
+                                        bool       fastFollowerChecks,
+                                        SymbolMap& subs);
 
-static void
-buildPromotionFastFollowerCheck(bool                  isStatic,
-                                bool                  addLead,
-                                CallInfo&             info,
-                                FnSymbol*             wrapper,
-                                std::set<ArgSymbol*>& requiresPromotion);
+static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
+                                                           FnSymbol* fn);
+
+static void       buildFastFollowerCheck(bool                  isStatic,
+                                         bool                  addLead,
+                                         CallInfo&             info,
+                                         FnSymbol*             wrapper,
+                                         std::set<ArgSymbol*>& formals);
 
 static bool isPromotionRequired(FnSymbol* fn, CallInfo& info) {
   bool retval = false;
@@ -994,59 +995,57 @@ static bool isPromotionRequired(FnSymbol* fn, CallInfo& info) {
 
 static FnSymbol* promotionWrap(FnSymbol* fn,
                                CallInfo& info,
-                               bool      buildFastFollowerChecks) {
-
-  Vec<Symbol*>* actuals = &info.actuals;
-
-  int       j                          = -1;
-  SymbolMap promoted_subs;
-
-  for_formals(formal, fn) {
-    j++;
-
-    Type*   actualType = actuals->v[j]->type;
-    Symbol* actualSym  = actuals->v[j];
-    bool    promotes   = false;
-
-    if (isRecordWrappedType(actualType)) {
-      makeRefType(actualType);
-
-      actualType = actualType->refType;
-
-      INT_ASSERT(actualType);
-    }
-
-    if (canDispatch(actualType, actualSym, formal->type, fn, &promotes)) {
-      if (promotes) {
-        promoted_subs.put(formal, actualType->symbol);
-      }
-    }
-  }
+                               bool      fastFollowerChecks) {
+  SymbolMap subs;
+  FnSymbol* retval = NULL;
 
   if (fReportPromotion) {
     USR_WARN(info.call, "promotion on %s", info.toString());
   }
 
-  FnSymbol* wrapper = checkCache(promotionsCache, fn, &promoted_subs);
+  collectPromotionSubs(fn, info, subs);
 
-  if (wrapper == NULL) {
-    wrapper = buildPromotionWrapper(fn,
-                                    info,
-                                    buildFastFollowerChecks,
-                                    &promoted_subs);
+  retval = checkCache(promotionsCache, fn, &subs);
 
-    addCache(promotionsCache, fn, wrapper, &promoted_subs);
+  if (retval == NULL) {
+    retval = buildPromotionWrapper(fn, info, fastFollowerChecks, subs);
+
+    resolveFormals(retval);
+
+    addCache(promotionsCache, fn, retval, &subs);
   }
 
-  resolveFormals(wrapper);
+  return retval;
+}
 
-  return wrapper;
+static void collectPromotionSubs(FnSymbol*  fn,
+                                 CallInfo&  info,
+                                 SymbolMap& subs) {
+  int j = 0;
+
+  for_formals(formal, fn) {
+    Symbol* actual     = info.actuals.v[j++];
+    Type*   actualType = actual->type;
+    bool    promotes   = false;
+
+    if (isRecordWrappedType(actualType) == true) {
+      makeRefType(actualType);
+
+      actualType = actualType->refType;
+    }
+
+    if (canDispatch(actualType, actual, formal->type, fn, &promotes)) {
+      if (promotes == true) {
+        subs.put(formal, actualType->symbol);
+      }
+    }
+  }
 }
 
 static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
                                        CallInfo&  info,
-                                       bool       buildFastFollowerChecks,
-                                       SymbolMap* promotion_subs) {
+                                       bool       fastFollowerChecks,
+                                       SymbolMap& subs) {
   SET_LINENO(info.call);
 
   FnSymbol* wrapper = buildEmptyWrapper(fn, info);
@@ -1079,7 +1078,7 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
       wrapper->_this = new_formal;
     }
 
-    if (Symbol* sub = promotion_subs->get(formal)) {
+    if (Symbol* sub = subs.get(formal)) {
       TypeSymbol* ts = toTypeSymbol(sub);
 
       requiresPromotion.insert(new_formal);
@@ -1250,16 +1249,15 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
 
     fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
 
-    if (!fNoFastFollowers && buildFastFollowerChecks) {
-      // Build up the static (param) fast follower check functions
-      buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/false, info, wrapper, requiresPromotion);
-      buildPromotionFastFollowerCheck(/*isStatic=*/true,  /*addLead=*/true,  info, wrapper, requiresPromotion);
+    if (fNoFastFollowers == false && fastFollowerChecks == true) {
+      // Build static (param) fast follower check functions
+      buildFastFollowerCheck(true,  false, info, wrapper, requiresPromotion);
+      buildFastFollowerCheck(true,  true,  info, wrapper, requiresPromotion);
 
-      // Build up the dynamic fast follower check functions
-      buildPromotionFastFollowerCheck(/*isStatic=*/false, /*addLead=*/false, info, wrapper, requiresPromotion);
-      buildPromotionFastFollowerCheck(/*isStatic=*/false, /*addLead=*/true,  info, wrapper, requiresPromotion);
+      // Build dynamic fast follower check functions
+      buildFastFollowerCheck(false, false, info, wrapper, requiresPromotion);
+      buildFastFollowerCheck(false, true,  info, wrapper, requiresPromotion);
     }
-
 
     // Finish building the serial iterator. We stopped mid-way so the common
     // code could be copied for the leader/follower
@@ -1359,12 +1357,11 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 // exist yet), we use a primitive as a placeholder. When the record is filled
 // in during iterator lowering, we replace the primitive with the actual field.
 //
-static void
-buildPromotionFastFollowerCheck(bool                  isStatic,
-                                bool                  addLead,
-                                CallInfo&             info,
-                                FnSymbol*             wrapper,
-                                std::set<ArgSymbol*>& requiresPromotion) {
+static void buildFastFollowerCheck(bool                  isStatic,
+                                   bool                  addLead,
+                                   CallInfo&             info,
+                                   FnSymbol*             wrapper,
+                                   std::set<ArgSymbol*>& requiresPromotion) {
   const char* fnName = isStatic ? "chpl__staticFastFollowCheck" : "chpl__dynamicFastFollowCheck";
   const char* forwardFnName = astr(fnName, "Zip") ;
 
