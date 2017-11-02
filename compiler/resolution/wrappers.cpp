@@ -953,6 +953,27 @@ static FnSymbol*  buildPromotionWrapper(FnSymbol*  fn,
                                         bool       fastFollowerChecks,
                                         SymbolMap& subs);
 
+static FnSymbol*  initPromotionWrapper(FnSymbol*  fn,
+                                       CallInfo&  info,
+                                       SymbolMap& subs);
+
+static Expr*      getIndices(FnSymbol*  fn,
+                             SymbolMap& subs,
+                             FnSymbol*  wrapFn);
+
+static Expr*      getIterator(FnSymbol*  fn,
+                              SymbolMap& subs,
+                              FnSymbol*  wrapFn);
+
+static CallExpr*  getCallToWrap(FnSymbol*  fn,
+                                SymbolMap& subs,
+                                FnSymbol*  wrapFn);
+
+static void       collectPromotionFormals(FnSymbol*             fn,
+                                          SymbolMap&            subs,
+                                          FnSymbol*             wrapFn,
+                                          std::set<ArgSymbol*>& formals);
+
 static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
@@ -1048,85 +1069,15 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
                                        SymbolMap& subs) {
   SET_LINENO(info.call);
 
-  FnSymbol* wrapper = buildEmptyWrapper(fn, info);
-
-  wrapper->addFlag(FLAG_PROMOTION_WRAPPER);
-
-  // Special case: When promoting a default constructor, the promotion wrapper
-  // itself is no longer a default constructor.
-  wrapper->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
-
-  wrapper->cname = astr("_promotion_wrap_", fn->cname);
-
-  std::set<ArgSymbol*> requiresPromotion;
-  CallExpr*            indicesCall  = new CallExpr("_build_tuple");
-  CallExpr*            iteratorCall = new CallExpr("_build_tuple");
-  CallExpr*            actualCall   = new CallExpr(fn);
-  bool                 zippered     = true;
-  int                  i            = 1;
-
-  for_formals(formal, fn) {
-    SET_LINENO(formal);
-
-    ArgSymbol* new_formal = copyFormalForWrapper(formal);
-
-    if (Symbol* p = paramMap.get(formal)) {
-      paramMap.put(new_formal, p);
-    }
-
-    if (fn->_this == formal) {
-      wrapper->_this = new_formal;
-    }
-
-    if (Symbol* sub = subs.get(formal)) {
-      TypeSymbol* ts = toTypeSymbol(sub);
-
-      requiresPromotion.insert(new_formal);
-
-      if (!ts) {
-        INT_FATAL(fn, "error building promotion wrapper");
-      }
-
-      new_formal->type = ts->type;
-
-      wrapper->insertFormalAtTail(new_formal);
-
-      iteratorCall->insertAtTail(new_formal);
-
-      // Rely on the 'destructureIndices' function in build.cpp to create a
-      // VarSymbol and DefExpr for these indices. This solves a problem where
-      // these 'p_i_' variables were declared outside of the loop body's scope.
-      const char* name = astr("p_i_", istr(i));
-
-      indicesCall->insertAtTail(new UnresolvedSymExpr(name));
-
-      actualCall->insertAtTail(new UnresolvedSymExpr(name));
-
-    } else {
-      wrapper->insertFormalAtTail(new_formal);
-      actualCall->insertAtTail(new_formal);
-    }
-
-    i++;
-  }
-
-  // Convert 1-tuples to their contents for the second half of this function
-  Expr* indices = indicesCall;
-
-  if (indicesCall->numActuals() == 1) {
-    indices = indicesCall->get(1)->remove();
-  }
-
-  Expr* iterator = iteratorCall;
-
-  if (iteratorCall->numActuals() == 1) {
-    iterator = iteratorCall->get(1)->remove();
-    zippered = false;
-  }
+  FnSymbol* wrapper  = initPromotionWrapper(fn, info, subs);
+  Expr*     indices  = getIndices(fn, subs, wrapper);
+  Expr*     iterator = getIterator(fn, subs, wrapper);
+  CallExpr* wrapCall = getCallToWrap(fn, subs, wrapper);
+  bool      zippered = isCallExpr(iterator) ? true : false;
 
   if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
       (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(actualCall), zippered)));
+      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(wrapCall), zippered)));
 
   } else {
     wrapper->addFlag(FLAG_ITERATOR_FN);
@@ -1234,7 +1185,7 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
     followerBlock->insertAtTail(new DefExpr(yieldTmp));
-    followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall->copy(&followerMap)));
+    followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall->copy(&followerMap)));
     followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
 
     fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
@@ -1250,6 +1201,10 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
     fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
 
     if (fNoFastFollowers == false && fastFollowerChecks == true) {
+      std::set<ArgSymbol*> requiresPromotion;
+
+      collectPromotionFormals(fn, subs, wrapper, requiresPromotion);
+
       // Build static (param) fast follower check functions
       buildFastFollowerCheck(true,  false, info, wrapper, requiresPromotion);
       buildFastFollowerCheck(true,  true,  info, wrapper, requiresPromotion);
@@ -1268,7 +1223,7 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
     yieldTmp->addFlag(FLAG_EXPR_TEMP);
 
     yieldBlock->insertAtTail(new DefExpr(yieldTmp));
-    yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, actualCall));
+    yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall));
     yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
 
     wrapper->insertAtTail(new BlockStmt(ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered)));
@@ -1281,6 +1236,145 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
   fixUnresolvedSymExprsForPromotionWrapper(wrapper, fn);
 
   return wrapper;
+}
+
+static FnSymbol* initPromotionWrapper(FnSymbol*  fn,
+                                      CallInfo&  info,
+                                      SymbolMap& subs) {
+  FnSymbol* retval = buildEmptyWrapper(fn, info);
+
+  retval->cname = astr("_promotion_wrap_", fn->cname);
+
+  retval->addFlag(FLAG_PROMOTION_WRAPPER);
+
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+    retval->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
+  }
+
+  for_formals(formal, fn) {
+    SET_LINENO(formal);
+
+    ArgSymbol* newFormal = copyFormalForWrapper(formal);
+
+    if (Symbol* p = paramMap.get(formal)) {
+      paramMap.put(newFormal, p);
+    }
+
+    if (fn->_this == formal) {
+      retval->_this = newFormal;
+    }
+
+    if (Symbol* sub = subs.get(formal)) {
+      if (TypeSymbol* ts = toTypeSymbol(sub)) {
+        newFormal->type = ts->type;
+
+      } else {
+        INT_FATAL(fn, "error building promotion wrapper");
+      }
+    }
+
+    retval->insertFormalAtTail(newFormal);
+  }
+
+  return retval;
+}
+
+static Expr* getIndices(FnSymbol*  fn,
+                        SymbolMap& subs,
+                        FnSymbol*  wrapFn) {
+  int       numFormals  = fn->numFormals();
+  CallExpr* indicesCall = new CallExpr("_build_tuple");
+  Expr*     retval      = NULL;
+
+  for (int i = 1; i <= numFormals; i++) {
+    ArgSymbol* formal = fn->getFormal(i);
+
+    SET_LINENO(formal);
+
+    if (subs.get(formal) != NULL) {
+      const char* name = astr("p_i_", istr(i));
+
+      indicesCall->insertAtTail(new UnresolvedSymExpr(name));
+    }
+  }
+
+  if (indicesCall->numActuals() == 1) {
+    retval = indicesCall->get(1)->remove();
+  } else {
+    retval = indicesCall;
+  }
+
+  return retval;
+}
+
+static Expr* getIterator(FnSymbol*  fn,
+                         SymbolMap& subs,
+                         FnSymbol*  wrapFn) {
+  int       numFormals   = fn->numFormals();
+  CallExpr* iteratorCall = new CallExpr("_build_tuple");
+  Expr*     retval       = NULL;
+
+  for (int i = 1; i <= numFormals; i++) {
+    ArgSymbol* formal    = fn->getFormal(i);
+    ArgSymbol* newFormal = wrapFn->getFormal(i);
+
+    SET_LINENO(formal);
+
+    if (subs.get(formal) != NULL) {
+      iteratorCall->insertAtTail(newFormal);
+    }
+  }
+
+  if (iteratorCall->numActuals() == 1) {
+    retval = iteratorCall->get(1)->remove();
+  } else {
+    retval = iteratorCall;
+  }
+
+  return retval;
+}
+
+static CallExpr* getCallToWrap(FnSymbol*  fn,
+                               SymbolMap& subs,
+                               FnSymbol*  wrapFn) {
+  int       numFormals = fn->numFormals();
+  CallExpr* retval     = new CallExpr(fn);
+
+  for (int i = 1; i <= numFormals; i++) {
+    ArgSymbol* formal    = fn->getFormal(i);
+    ArgSymbol* newFormal = wrapFn->getFormal(i);
+
+    SET_LINENO(formal);
+
+    if (subs.get(formal) != NULL) {
+      const char* name = astr("p_i_", istr(i));
+
+      retval->insertAtTail(new UnresolvedSymExpr(name));
+
+    } else {
+      retval->insertAtTail(newFormal);
+    }
+  }
+
+  return retval;
+}
+
+static void collectPromotionFormals(FnSymbol*             fn,
+                                    SymbolMap&            subs,
+                                    FnSymbol*             wrapFn,
+                                    std::set<ArgSymbol*>& formals) {
+  int numFormals = fn->numFormals();
+
+  for (int i = 1; i <= numFormals; i++) {
+    ArgSymbol* formal    = fn->getFormal(i);
+    ArgSymbol* newFormal = wrapFn->getFormal(i);
+
+    if (Symbol* sub = subs.get(formal)) {
+      if (isTypeSymbol(sub) == true) {
+        formals.insert(newFormal);
+      }
+    }
+  }
 }
 
 static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
