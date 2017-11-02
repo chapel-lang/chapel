@@ -4085,172 +4085,150 @@ static void testArgMapping(FnSymbol*                    fn1,
   }
 
   const char* reason = "";
+  typedef enum {
+    NONE,
+    WEAKEST,
+    WEAKER,
+    WEAK,
+    STRONG
+  } arg_preference_t;
+
+  arg_preference_t prefer1 = NONE;
+  arg_preference_t prefer2 = NONE;
 
   if (f1Type == f2Type && f1Param && !f2Param) {
-    reason = "same type, param vs not";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "same type, param vs not";
 
   } else if (f1Type == f2Type && !f1Param && f2Param) {
-    reason = "same type, param vs not";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "same type, param vs not";
 
   } else if (!formal1Promotes && formal2Promotes) {
-    reason = "no promotion vs promotes";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "no promotion vs promotes";
 
   } else if (formal1Promotes && !formal2Promotes) {
-    reason = "no promotion vs promotes";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "no promotion vs promotes";
 
   } else if (f1Type == f2Type           &&
              !formal1->instantiatedFrom &&
              formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "concrete vs generic";
 
   } else if (f1Type == f2Type &&
              formal1->instantiatedFrom &&
              !formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "concrete vs generic";
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    reason = "generic any vs generic";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "generic any vs generic";
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    reason = "generic any vs generic";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "generic any vs generic";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "partially generic vs generic";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "partially generic vs generic";
 
   } else if (actualType == f1Type &&
              actualType != f2Type &&
              !actualParam) {
-    reason = "actual type vs not";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "actual type vs not";
 
   } else if (actualType == f2Type &&
              actualType != f1Type &&
              !actualParam) {
-    reason = "actual type vs not";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "actual type vs not";
 
   } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f1Type &&
              actualScalarType != f2Type &&
              (f1Param == f2Param || f1Param)) {
-    reason = "not param/narrows";
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "not param/narrows, scalar type vs not";
 
   } else if (!actualParam &&
              formal1Narrows == formal2Narrows &&
              actualScalarType == f2Type &&
              actualScalarType != f1Type &&
              (f1Param == f2Param || f2Param)) {
-    reason = "not param/narrows";
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "not param/narrows, scalar type vs not";
 
   } else if (f1Param != f2Param && f1Param) {
-      reason = "param vs not";
-      DS.fn1WeakPreferred = true;
-    } else if (f1Param != f2Param && f2Param) {
-      reason = "param vs not";
-      DS.fn2WeakPreferred = true;
-    } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
-      reason = "not-1, no narrows vs narrows";
-      DS.fn1WeakPreferred = true;
-    } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
-      reason = "not-1, no narrows vs narrows";
-      DS.fn2WeakPreferred = true;
-    } else if (!paramWithDefaultSize && actualScalarType == f1Type && actualScalarType != f2Type) {
-      reason = "not-1, scalar type vs not";
-      DS.fn1WeakerPreferred = true;
-    } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
-      reason = "not-1, scalar type vs not";
-      DS.fn2WeakerPreferred = true;
-    } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f1Type, f2Type)) {
-      reason = "preferred coercion to other";
-      DS.fn1WeakerPreferred = true;
+    prefer1 = WEAK; reason = "param vs not";
 
-    } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f2Type, f1Type)) {
-      reason = "preferred coercion to other";
-      DS.fn2WeakerPreferred = true;
+  } else if (f1Param != f2Param && f2Param) {
+    prefer2 = WEAK; reason = "param vs not";
 
-    } else if (actualParam &&
-               actualScalarType == f1Type && actualScalarType != f2Type) {
-      reason = "param, scalar type vs not";
-      DS.fn1WeakestPreferred = true;
-    } else if (actualParam &&
-               actualScalarType == f2Type && actualScalarType != f1Type) {
-      reason = "param, scalar type vs not";
-      DS.fn2WeakestPreferred = true;
+  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+    prefer1 = WEAK; reason = "not-1, no narrows vs narrows";
 
-    } else if (actualParam &&
-               moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-      reason = "param, more specific";
-      DS.fn1WeakestPreferred = true;
+  } else if(!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
+    prefer2 = WEAK; reason = "not-1, no narrows vs narrows";
 
-    } else if (actualParam &&
-               moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-      reason = "param, more specific";
-      DS.fn2WeakestPreferred = true;
+  } else if (!paramWithDefaultSize && actualScalarType == f1Type && actualScalarType != f2Type) {
+    prefer1 = WEAKER; reason = "not-1, scalar type vs not";
 
-    } else if (actualParam &&
-               is_int_type(f1Type) && is_uint_type(f2Type)) {
-      reason = "param, int vs uint";
-      DS.fn1WeakestPreferred = true;
+  } else if (!paramWithDefaultSize && actualScalarType == f2Type && actualScalarType != f1Type) {
+    prefer2 = WEAKER; reason = "not-1, scalar type vs not";
 
-    } else if (actualParam &&
-               is_int_type(f2Type) && is_uint_type(f1Type)) {
-      reason = "param, int vs uint";
-      DS.fn2WeakestPreferred = true;
+  } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f1Type, f2Type)) {
+    prefer1 = WEAKER; reason = "preferred coercion to other";
 
-    } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
-      reason = "scalar type vs not";
-      DS.fn1MoreSpecific = true;
+  } else if (prefersCoercionToOtherNumericType(actual, actualScalarType, f2Type, f1Type)) {
+    prefer2 = WEAKER; reason = "preferred coercion to other";
 
-    } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
-      reason = "scalar type vs not";
-      DS.fn2MoreSpecific = true;
+  } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
+    prefer1 = actualParam ? WEAKEST : STRONG;
+    reason = "scalar type vs not";
 
-    } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-      reason = "more specific";
-      DS.fn1MoreSpecific = true;
+  } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
+    prefer2 = actualParam ? WEAKEST : STRONG;
+    reason = "scalar type vs not";
 
-    } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-      reason = "more specific";
-      DS.fn2MoreSpecific = true;
+  } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
+    prefer1 = actualParam ? WEAKEST : STRONG;
+    reason = "can dispatch";
 
-      // These rules support choosing between an 'int' and 'uint'
-      // overload when passed say a uint(32).
-    } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-      reason = "int vs uint";
-      DS.fn1MoreSpecific = true;
+  } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
+    prefer2 = actualParam ? WEAKEST : STRONG;
+    reason = "can dispatch";
 
-    } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-      reason = "int vs uint";
-      DS.fn2MoreSpecific = true;
+  } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
+    // This int/uint rule supports choosing between an 'int' and 'uint'
+    // overload when passed say a uint(32).
+    prefer1 = actualParam ? WEAKEST : STRONG;
+    reason = "int vs uint";
 
-    } else {
-      reason = "no information gained from argument";
-    }
-    EXPLAIN("%s\n", reason); // TODO
+  } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
+    prefer2 = actualParam ? WEAKEST : STRONG;
+    reason = "int vs uint";
+
+  }
+
+  if (prefer1 != NONE) {
+    const char* level = "";
+    if (prefer1 == STRONG)  { DS.fn1MoreSpecific = true;     level = "strong"; }
+    if (prefer1 == WEAK)    { DS.fn1WeakPreferred = true;    level = "weak"; }
+    if (prefer1 == WEAKER)  { DS.fn1WeakerPreferred = true;  level = "weaker"; }
+    if (prefer1 == WEAKEST) { DS.fn1WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, i, level);
+  } else if (prefer2 != NONE) {
+    const char* level = "";
+    if (prefer2 == STRONG)  { DS.fn2MoreSpecific = true;     level = "strong"; }
+    if (prefer2 == WEAK)    { DS.fn2WeakPreferred = true;    level = "weak"; }
+    if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
+    if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
+  }
 }
 
 /************************************* | **************************************
