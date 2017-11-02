@@ -1750,6 +1750,20 @@ static numeric_type_t classifyNumericType(Type* t)
   return NUMERIC_TYPE_BOOL;
 }
 
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+static bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT])
+    return true;
+
+  return false;
+}
+
 static bool weakPrefers(Symbol* actual,
                          Type* actualType,
                          Type* f1Type,
@@ -3994,7 +4008,7 @@ static void testArgMapping(FnSymbol*                    fn1,
   bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
 
   bool actualParam = false;
-  bool paramWithExplicitSize = false;
+  bool paramWithDefaultSize = false;
 
   // Don't enable param/ weak preferences for non-default sized param values.
   // If somebody bothered to type the param, they probably want it to stay that
@@ -4003,46 +4017,16 @@ static void testArgMapping(FnSymbol*                    fn1,
   //  +(param x:int(64), param y:int(64)
   // called with
   //  param x:int(32), param y:int(64)
-  Immediate* imm = getImmediate(actual);
-  if (imm != NULL) {
+  if (getImmediate(actual) != NULL) {
     actualParam = true;
-
-    if (is_int_type(actualType) && actualType != dtInt[INT_SIZE_DEFAULT])
-      paramWithExplicitSize = true;
-    if (is_uint_type(actualType))
-      paramWithExplicitSize = true;
-    if (is_real_type(actualType) && actualType != dtReal[FLOAT_SIZE_DEFAULT])
-      paramWithExplicitSize = true;
-    if (is_imag_type(actualType) && actualType != dtImag[FLOAT_SIZE_DEFAULT])
-      paramWithExplicitSize = true;
-    if (is_complex_type(actualType) && actualType != dtComplex[COMPLEX_SIZE_DEFAULT])
-      paramWithExplicitSize = true;
-
-    /*
-    if (imm->const_kind == NUM_KIND_INT && imm->num_index != INT_SIZE_DEFAULT)
-      paramWithExplicitSize = true;
-    // not possible to write a uint literal
-    if (imm->const_kind == NUM_KIND_UINT)
-      paramWithExplicitSize = true;
-
-    if (imm->const_kind == NUM_KIND_REAL && imm->num_index != FLOAT_SIZE_DEFAULT)
-      paramWithExplicitSize = true;
-    if (imm->const_kind == NUM_KIND_IMAG && imm->num_index != FLOAT_SIZE_DEFAULT)
-      paramWithExplicitSize = true;
-    if (imm->const_kind == NUM_KIND_COMPLEX && imm->num_index != COMPLEX_SIZE_DEFAULT)
-      paramWithExplicitSize = true;
-      */
+    paramWithDefaultSize = isNumericParamDefaultType(actualType);
   }
-  bool paramWithDefaultSize = actualParam && ! paramWithExplicitSize;
-
-  if (is_enum_type(actualType))
-    paramWithDefaultSize = false;
 
   EXPLAIN("Actual's type: %s", toString(actualType));
   if (actualParam)
     EXPLAIN(" (param)");
-  if (paramWithExplicitSize)
-    EXPLAIN(" (<default)");
+  if (paramWithDefaultSize)
+    EXPLAIN(" (default)");
   EXPLAIN("\n");
 
   canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes, &formal1Narrows);
