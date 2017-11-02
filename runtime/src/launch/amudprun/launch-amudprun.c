@@ -97,10 +97,13 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
     const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
 
     if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
-      char xterm_path[PATH_MAX];  // understood questionable; hopefully enough
+      // hopefully big enough; PATH_MAX is problematic, but what's better?  
+      const size_t xterm_path_size = PATH_MAX;
+      char *xterm_path = chpl_mem_alloc(xterm_path_size,
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-      if (chpl_run_cmdstr("which xterm", xterm_path, sizeof(xterm_path)) > 0) {
-        largv[largc++] = (char *) strdup(xterm_path);
+      if (chpl_run_cmdstr("which xterm", xterm_path, xterm_path_size) > 0) {
+        largv[largc++] = xterm_path;
         largv[largc++] = (char *) "-e";
         if (ev_use_gdb != NULL) {
           largv[largc++] = (char *) "gdb";

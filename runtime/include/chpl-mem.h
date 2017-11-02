@@ -265,6 +265,9 @@ void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
 #define chpl_mem_allocMany(number, size, description, lineno, filename)        \
   sys_malloc((number)*(size))
 
+#define chpl_mem_alloc(size, description, lineno, filename)        \
+  sys_malloc(size)
+
 #define chpl_mem_free(ptr, lineno, filename)        \
   sys_free(ptr)
 
