@@ -1,8 +1,0 @@
-bug: Associative domain of arithmetic domains results in unresolved call error.
-
-The error:
-    unresolved call 'domain(2,int,0)._promotionType()'
-
-When this future was filed, it was said to have crashed the compiler.  I
-guess this is progress.
-

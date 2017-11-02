@@ -1,8 +1,0 @@
-bug: const domains modifiable via function calls
-
-This test shows that while we've made .domain a const
-function, the domain can still be modified if the
-.domain is passed to a function call.  This should
-generate an error since a non-lvalue is being passed
-to a function that takes it by reference and modifies
-it.  Thanks to Steve for thinking of this issue.

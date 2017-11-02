@@ -9,12 +9,12 @@ var sum = -3;
 proc foo (X) {
   var sum = 0;
   D = {0..1};
-  [i in X.domain] sum += X[i]*i;
+  for i in X.domain do sum += X[i]*i;
   return sum;
 }
 
 proc bar () {
-  sum += foo(A[A.domain.low+1..A.domain.high-1]);
+  sum += foo(A[A.domain.expand(-1)]);
 }
 
 bar();
