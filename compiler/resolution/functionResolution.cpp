@@ -4007,6 +4007,18 @@ static void testArgMapping(FnSymbol*                    fn1,
   if (imm != NULL) {
     actualParam = true;
 
+    if (is_int_type(actualType) && actualType != dtInt[INT_SIZE_DEFAULT])
+      paramWithExplicitSize = true;
+    if (is_uint_type(actualType))
+      paramWithExplicitSize = true;
+    if (is_real_type(actualType) && actualType != dtReal[FLOAT_SIZE_DEFAULT])
+      paramWithExplicitSize = true;
+    if (is_imag_type(actualType) && actualType != dtImag[FLOAT_SIZE_DEFAULT])
+      paramWithExplicitSize = true;
+    if (is_complex_type(actualType) && actualType != dtComplex[COMPLEX_SIZE_DEFAULT])
+      paramWithExplicitSize = true;
+
+    /*
     if (imm->const_kind == NUM_KIND_INT && imm->num_index != INT_SIZE_DEFAULT)
       paramWithExplicitSize = true;
     // not possible to write a uint literal
@@ -4019,6 +4031,7 @@ static void testArgMapping(FnSymbol*                    fn1,
       paramWithExplicitSize = true;
     if (imm->const_kind == NUM_KIND_COMPLEX && imm->num_index != COMPLEX_SIZE_DEFAULT)
       paramWithExplicitSize = true;
+      */
   }
   bool paramWithDefaultSize = actualParam && ! paramWithExplicitSize;
 
