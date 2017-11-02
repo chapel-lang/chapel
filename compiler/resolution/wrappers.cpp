@@ -953,6 +953,12 @@ static FnSymbol*  buildPromotionWrapper(FnSymbol*  fn,
                                         bool       fastFollowerChecks,
                                         SymbolMap& subs);
 
+static BlockStmt* buildPromotionLoop(FnSymbol*  fn,
+                                     CallInfo&  info,
+                                     bool       fastFollowerChecks,
+                                     SymbolMap& subs,
+                                     FnSymbol*  wrapFn);
+
 static FnSymbol*  initPromotionWrapper(FnSymbol*  fn,
                                        CallInfo&  info,
                                        SymbolMap& subs);
@@ -1069,174 +1075,193 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
                                        SymbolMap& subs) {
   SET_LINENO(info.call);
 
-  FnSymbol* wrapper  = initPromotionWrapper(fn, info, subs);
-  Expr*     indices  = getIndices(fn, subs, wrapper);
-  Expr*     iterator = getIterator(fn, subs, wrapper);
-  CallExpr* wrapCall = getCallToWrap(fn, subs, wrapper);
-  bool      zippered = isCallExpr(iterator) ? true : false;
+  bool       fnIsExtern = fn->hasFlag(FLAG_EXTERN);
+  BlockStmt* loop       = NULL;
+  FnSymbol*  retval     = initPromotionWrapper(fn, info, subs);
 
-  if ((!fn->hasFlag(FLAG_EXTERN) && fn->getReturnSymbol() == gVoid) ||
-      (fn->hasFlag(FLAG_EXTERN) && fn->retType == dtVoid)) {
-      wrapper->insertAtTail(new BlockStmt(buildForallLoopStmt(indices, iterator, /*byref_vars=*/ NULL, new BlockStmt(wrapCall), zippered)));
+  if ((fnIsExtern == false && fn->getReturnSymbol() == gVoid) ||
+      (fnIsExtern == true  && fn->retType           == dtVoid)) {
+    Expr*      indices  = getIndices (fn, subs, retval);
+    Expr*      iterator = getIterator(fn, subs, retval);
+    BlockStmt* block    = new BlockStmt(getCallToWrap(fn, subs, retval));
+    bool       zippered = isCallExpr(iterator) ? true : false;
+
+    loop = buildForallLoopStmt(indices, iterator, NULL, block, zippered);
 
   } else {
-    wrapper->addFlag(FLAG_ITERATOR_FN);
-    wrapper->removeFlag(FLAG_INLINE);
-
-
-    // Build up the leader iterator
-    SymbolMap leaderMap;
-    FnSymbol* lifn       = wrapper->copy(&leaderMap);
-
-    INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
-
-    iteratorLeaderMap.put(wrapper,lifn);
-
-    lifn->body = new BlockStmt(); // indices are not used in leader
-
-    form_Map(SymbolMapElem, e, leaderMap) {
-      if (Symbol* s = paramMap.get(e->key)) {
-        paramMap.put(e->value, s);
-      }
-    }
-
-    ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
-
-    // Leader iterators are always inlined.
-    lifn->addFlag(FLAG_INLINE_ITERATOR);
-
-    lifn->insertFormalAtTail(lifnTag);
-
-    lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
-
-    VarSymbol* leaderIndex    = newTemp("p_leaderIndex");
-    VarSymbol* leaderIterator = newTemp("p_leaderIterator");
-
-    leaderIterator->addFlag(FLAG_EXPR_TEMP);
-
-    lifn->insertAtTail(new DefExpr(leaderIterator));
-
-    if (zippered == false) {
-      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
-    } else {
-      lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
-    }
-
-    BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
-    BlockStmt* loop = ForLoop::buildForLoop(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
-
-    lifn->insertAtTail(loop);
-
-    theProgram->block->insertAtTail(new DefExpr(lifn));
-
-    toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
-
-    normalize(lifn);
-
-    lifn->addFlag(FLAG_GENERIC);
-    lifn->instantiationPoint = getVisibilityBlock(info.call);
-
-    // Build up the follower iterator
-    SymbolMap followerMap;
-    FnSymbol* fifn = wrapper->copy(&followerMap);
-
-    INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
-
-    iteratorFollowerMap.put(wrapper,fifn);
-
-    form_Map(SymbolMapElem, e, followerMap) {
-      if (Symbol* s = paramMap.get(e->key)) {
-        paramMap.put(e->value, s);
-      }
-    }
-
-    ArgSymbol* fifnTag      = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
-    fifn->insertFormalAtTail(fifnTag);
-
-    ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
-
-    fifn->insertFormalAtTail(fifnFollower);
-
-    ArgSymbol* fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, new SymExpr(gFalse));
-
-    fifn->insertFormalAtTail(fastFollower);
-
-    fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
-
-    VarSymbol* followerIterator = newTemp("p_followerIterator");
-
-    followerIterator->addFlag(FLAG_EXPR_TEMP);
-
-    fifn->insertAtTail(new DefExpr(followerIterator));
-
-    if (zippered == false) {
-      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
-                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollower", iterator->copy(&followerMap), fifnFollower)),
-                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower))));
-    } else {
-      fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
-                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollowerZip", iterator->copy(&followerMap), fifnFollower)),
-                         new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", iterator->copy(&followerMap), fifnFollower))));
-    }
-
-    BlockStmt* followerBlock = new BlockStmt();
-    Symbol*    yieldTmp      = newTemp("p_yield");
-
-    yieldTmp->addFlag(FLAG_EXPR_TEMP);
-
-    followerBlock->insertAtTail(new DefExpr(yieldTmp));
-    followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall->copy(&followerMap)));
-    followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-
-    fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
-
-    theProgram->block->insertAtTail(new DefExpr(fifn));
-
-    normalize(fifn);
-
-    fifn->addFlag(FLAG_GENERIC);
-
-    fifn->instantiationPoint = getVisibilityBlock(info.call);
-
-    fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
-
-    if (fNoFastFollowers == false && fastFollowerChecks == true) {
-      std::set<ArgSymbol*> requiresPromotion;
-
-      collectPromotionFormals(fn, subs, wrapper, requiresPromotion);
-
-      // Build static (param) fast follower check functions
-      buildFastFollowerCheck(true,  false, info, wrapper, requiresPromotion);
-      buildFastFollowerCheck(true,  true,  info, wrapper, requiresPromotion);
-
-      // Build dynamic fast follower check functions
-      buildFastFollowerCheck(false, false, info, wrapper, requiresPromotion);
-      buildFastFollowerCheck(false, true,  info, wrapper, requiresPromotion);
-    }
-
-    // Finish building the serial iterator. We stopped mid-way so the common
-    // code could be copied for the leader/follower
-    BlockStmt* yieldBlock = new BlockStmt();
-
-    yieldTmp = newTemp("p_yield");
-
-    yieldTmp->addFlag(FLAG_EXPR_TEMP);
-
-    yieldBlock->insertAtTail(new DefExpr(yieldTmp));
-    yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall));
-    yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
-
-    wrapper->insertAtTail(new BlockStmt(ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered)));
+    loop = buildPromotionLoop(fn, info, fastFollowerChecks, subs, retval);
   }
 
-  fn->defPoint->insertBefore(new DefExpr(wrapper));
+  retval->insertAtTail(new BlockStmt(loop));
 
-  normalize(wrapper);
+  fn->defPoint->insertBefore(new DefExpr(retval));
 
-  fixUnresolvedSymExprsForPromotionWrapper(wrapper, fn);
+  normalize(retval);
 
-  return wrapper;
+  fixUnresolvedSymExprsForPromotionWrapper(retval, fn);
+
+  return retval;
 }
+
+static BlockStmt* buildPromotionLoop(FnSymbol*  fn,
+                                     CallInfo&  info,
+                                     bool       fastFollowerChecks,
+                                     SymbolMap& subs,
+                                     FnSymbol*  wrapFn) {
+  Expr*     indices  = getIndices(fn, subs, wrapFn);
+  Expr*     iterator = getIterator(fn, subs, wrapFn);
+  CallExpr* wrapCall = getCallToWrap(fn, subs, wrapFn);
+  bool      zippered = isCallExpr(iterator) ? true : false;
+
+  wrapFn->addFlag(FLAG_ITERATOR_FN);
+  wrapFn->removeFlag(FLAG_INLINE);
+
+
+  // Build up the leader iterator
+  SymbolMap leaderMap;
+  FnSymbol* lifn       = wrapFn->copy(&leaderMap);
+
+  INT_ASSERT(! lifn->hasFlag(FLAG_RESOLVED));
+
+  iteratorLeaderMap.put(wrapFn,lifn);
+
+  lifn->body = new BlockStmt(); // indices are not used in leader
+
+  form_Map(SymbolMapElem, e, leaderMap) {
+    if (Symbol* s = paramMap.get(e->key)) {
+      paramMap.put(e->value, s);
+    }
+  }
+
+  ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", gLeaderTag->type);
+
+  // Leader iterators are always inlined.
+  lifn->addFlag(FLAG_INLINE_ITERATOR);
+
+  lifn->insertFormalAtTail(lifnTag);
+
+  lifn->where = new BlockStmt(new CallExpr("==", lifnTag, gLeaderTag));
+
+  VarSymbol* leaderIndex    = newTemp("p_leaderIndex");
+  VarSymbol* leaderIterator = newTemp("p_leaderIterator");
+
+  leaderIterator->addFlag(FLAG_EXPR_TEMP);
+
+  lifn->insertAtTail(new DefExpr(leaderIterator));
+
+  if (zippered == false) {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeader", iterator->copy(&leaderMap))));
+  } else {
+    lifn->insertAtTail(new CallExpr(PRIM_MOVE, leaderIterator, new CallExpr("_toLeaderZip", iterator->copy(&leaderMap))));
+  }
+
+  BlockStmt* body = new BlockStmt(new CallExpr(PRIM_YIELD, leaderIndex));
+  BlockStmt* loop = ForLoop::buildForLoop(new SymExpr(leaderIndex), new SymExpr(leaderIterator), body, false, zippered);
+
+  lifn->insertAtTail(loop);
+
+  theProgram->block->insertAtTail(new DefExpr(lifn));
+
+  toBlockStmt(body->parentExpr)->insertAtHead(new DefExpr(leaderIndex));
+
+  normalize(lifn);
+
+  lifn->addFlag(FLAG_GENERIC);
+  lifn->instantiationPoint = getVisibilityBlock(info.call);
+
+  // Build up the follower iterator
+  SymbolMap followerMap;
+  FnSymbol* fifn = wrapFn->copy(&followerMap);
+
+  INT_ASSERT(! fifn->hasFlag(FLAG_RESOLVED));
+
+  iteratorFollowerMap.put(wrapFn,fifn);
+
+  form_Map(SymbolMapElem, e, followerMap) {
+    if (Symbol* s = paramMap.get(e->key)) {
+      paramMap.put(e->value, s);
+    }
+  }
+
+  ArgSymbol* fifnTag      = new ArgSymbol(INTENT_PARAM, "tag", gFollowerTag->type);
+  fifn->insertFormalAtTail(fifnTag);
+
+  ArgSymbol* fifnFollower = new ArgSymbol(INTENT_BLANK, iterFollowthisArgname, dtAny);
+
+  fifn->insertFormalAtTail(fifnFollower);
+
+  ArgSymbol* fastFollower = new ArgSymbol(INTENT_PARAM, "fast", dtBool, NULL, new SymExpr(gFalse));
+
+  fifn->insertFormalAtTail(fastFollower);
+
+  fifn->where = new BlockStmt(new CallExpr("==", fifnTag, gFollowerTag));
+
+  VarSymbol* followerIterator = newTemp("p_followerIterator");
+
+  followerIterator->addFlag(FLAG_EXPR_TEMP);
+
+  fifn->insertAtTail(new DefExpr(followerIterator));
+
+  if (zippered == false) {
+    fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollower", iterator->copy(&followerMap), fifnFollower)),
+                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollower", iterator->copy(&followerMap), fifnFollower))));
+  } else {
+    fifn->insertAtTail(new CondStmt(new SymExpr(fastFollower),
+                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFastFollowerZip", iterator->copy(&followerMap), fifnFollower)),
+                                    new CallExpr(PRIM_MOVE, followerIterator, new CallExpr("_toFollowerZip", iterator->copy(&followerMap), fifnFollower))));
+  }
+
+  BlockStmt* followerBlock = new BlockStmt();
+  Symbol*    yieldTmp      = newTemp("p_yield");
+
+  yieldTmp->addFlag(FLAG_EXPR_TEMP);
+
+  followerBlock->insertAtTail(new DefExpr(yieldTmp));
+  followerBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall->copy(&followerMap)));
+  followerBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+
+  fifn->insertAtTail(ForLoop::buildForLoop(indices->copy(&followerMap), new SymExpr(followerIterator), followerBlock, false, zippered));
+
+  theProgram->block->insertAtTail(new DefExpr(fifn));
+
+  normalize(fifn);
+
+  fifn->addFlag(FLAG_GENERIC);
+
+  fifn->instantiationPoint = getVisibilityBlock(info.call);
+
+  fixUnresolvedSymExprsForPromotionWrapper(fifn, fn);
+
+  if (fNoFastFollowers == false && fastFollowerChecks == true) {
+    std::set<ArgSymbol*> requiresPromotion;
+
+    collectPromotionFormals(fn, subs, wrapFn, requiresPromotion);
+
+    // Build static (param) fast follower check functions
+    buildFastFollowerCheck(true,  false, info, wrapFn, requiresPromotion);
+    buildFastFollowerCheck(true,  true,  info, wrapFn, requiresPromotion);
+
+    // Build dynamic fast follower check functions
+    buildFastFollowerCheck(false, false, info, wrapFn, requiresPromotion);
+    buildFastFollowerCheck(false, true,  info, wrapFn, requiresPromotion);
+  }
+
+  // Finish building the serial iterator. We stopped mid-way so the common
+  // code could be copied for the leader/follower
+  BlockStmt* yieldBlock = new BlockStmt();
+
+  yieldTmp = newTemp("p_yield");
+
+  yieldTmp->addFlag(FLAG_EXPR_TEMP);
+
+  yieldBlock->insertAtTail(new DefExpr(yieldTmp));
+  yieldBlock->insertAtTail(new CallExpr(PRIM_MOVE, yieldTmp, wrapCall));
+  yieldBlock->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
+
+  return ForLoop::buildForLoop(indices, iterator, yieldBlock, false, zippered);
+}
+
 
 static FnSymbol* initPromotionWrapper(FnSymbol*  fn,
                                       CallInfo&  info,
