@@ -186,6 +186,40 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
 }
 
 //
+// This is an even simpler run-a-command utility.  The command is just
+// a string to be run, by something like `/bin/sh -c "commandStr"`.  It
+// must not expect any input.  Its output to stdout is placed in outbuf,
+// truncated to fit if necessary.  Its output to stderr is discarded.
+// On success, the return value is the number of bytes in outbuf.  On
+// failure, it is -1; output may have been placed in outbuf in this
+// case, but if so it should be ignored.
+//
+int
+chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
+  const char* commandStr_more = "2>/dev/null";
+  char my_cmd[strlen(commandStr) + 1 + strlen(commandStr_more) + 1];
+  FILE* f;
+  int retVal;
+
+  (void) snprintf(my_cmd, sizeof(my_cmd),
+                  "%s %s", commandStr, commandStr_more);
+
+  retVal = -1;
+  if ((f = popen(my_cmd, "r")) != NULL) {
+    if (fgets(outbuf, outbuflen, f) != NULL) {
+      // success; strip any final trailing newline
+      retVal = strlen(outbuf);
+      if (retVal > 0 && outbuf[retVal - 1] == '\n')
+        outbuf[--retVal] = '\0';
+    }
+
+    (void) pclose(f);
+  }
+
+  return retVal;
+}
+
+//
 // This function returns a NULL terminated argv list as required by
 // chpl_launch_using_exec(), i.e., execve(3).
 //

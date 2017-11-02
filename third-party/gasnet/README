@@ -17,13 +17,6 @@ Chapel modifications to GASNet
 The modifications that we have made to the official GASNet release are
 as follows:
 
-* Added support for launching an xterm window running a debugger in the
-  udp active messages layer if either of the environment variables
-  CHPL_COMM_USE_GDB or CHPL_COMM_USE_LLDB is set.  Our modification is
-  not particularly elegant, but it should be innocuous for non-Chapel
-  developers, and has been exceedingly useful for the Chapel development
-  team.
-
 * Added preliminary support for 64-bit ARM.  This adds the new file
   third-party/gasnet/gasnet-src/other/contrib/cross-configure-aarch64-linux
   which is the only ARM change beneath gasnet-src in the tree.

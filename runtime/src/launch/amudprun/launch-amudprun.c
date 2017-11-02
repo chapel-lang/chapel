@@ -78,13 +78,45 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales) {
   static char nlbuf[16];
-  const int largc = 3;
-  char *largv[largc];
+  int largc;
+  const int largv_size = 7;
+  char *largv[largv_size];
 
-  largv[0] = (char *) launch_cmd;
-  largv[1] = (char *) "-np";
+  largc = 0;
+  largv[largc++] = (char *) launch_cmd;
+  largv[largc++] = (char *) "-np";
   snprintf(nlbuf, sizeof(nlbuf), "%d", numLocales);
-  largv[2] = nlbuf;
+  largv[largc++] = nlbuf;
+
+  //
+  // If the user wants us to run each program instance in its own
+  // debugger window, arrange for that.
+  //
+  {
+    const char* ev_use_gdb = getenv("CHPL_COMM_USE_GDB");
+    const char* ev_use_lldb = getenv("CHPL_COMM_USE_LLDB");
+
+    if (ev_use_gdb != NULL || ev_use_lldb != NULL) {
+      // hopefully big enough; PATH_MAX is problematic, but what's better?  
+      const size_t xterm_path_size = PATH_MAX;
+      char *xterm_path = chpl_mem_alloc(xterm_path_size,
+                                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+
+      if (chpl_run_cmdstr("which xterm", xterm_path, xterm_path_size) > 0) {
+        largv[largc++] = xterm_path;
+        largv[largc++] = (char *) "-e";
+        if (ev_use_gdb != NULL) {
+          largv[largc++] = (char *) "gdb";
+          largv[largc++] = (char *) "--args";
+        } else {
+          largv[largc++] = (char *) "lldb";
+          largv[largc++] = (char *) "--";
+        }
+      } else {
+        chpl_warning("CHPL_COMM_USE_(G|LL)DB ignored because no xterm", 0, 0);
+      }
+    }
+  }
 
   {
     const char* s = getenv("GASNET_SPAWNFN");
