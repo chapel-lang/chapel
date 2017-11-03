@@ -474,7 +474,10 @@ static inline bool needsCapture(FnSymbol* taskFn) {
 }
 
 inline Symbol* ShadowVarSymbol::outerVarSym() const {
-  return this->outerVarSE()->symbol();
+  if (SymExpr* ovse = this->outerVarSE())
+    return ovse->symbol();
+  else
+    return NULL;
 }
 
 // E.g. NamedExpr::actual, DefExpr::init.

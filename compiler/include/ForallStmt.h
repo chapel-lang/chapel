@@ -32,9 +32,13 @@ class ForallStmt : public Stmt
 public:
   bool       zippered()       const; // was 'zip' keyword used?
   AList&     inductionVariables();   // DefExprs, one per iterated expr
-  AList&     iteratedExpressions();  // SymExprs, CallExprs
+  AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     intentVariables();      // DefExprs of LoopIntentVars
   BlockStmt* loopBody()       const; // the body of the forall loop
+
+  // when originating from a ForLoop
+  bool       iterCallAlreadyTagged() const;  // already has 'tag' actual
+  bool       noFindOuterVars()       const;  // no add'l shadow variables
 
   DECLARE_COPY(ForallStmt);
 
@@ -50,6 +54,9 @@ public:
   // for the parser
   static BlockStmt* build(Expr* indices, Expr* iterator, CallExpr* intents,
                           BlockStmt* body, bool zippered = false);
+
+  static ForallStmt* fromForLoop(ForLoop* forLoop);
+
   // helpers
   Expr* firstIteratedExpr()        const;
   int   numIteratedExprs()         const;
@@ -64,6 +71,7 @@ private:
   AList          fIterExprs;
   AList          fIntentVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
+  bool           fFromForLoop;
 
   ForallStmt(bool zippered, BlockStmt* body);
 };
@@ -74,6 +82,8 @@ inline AList& ForallStmt::inductionVariables()   { return fIterVars;   }
 inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
 inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
 inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
+inline bool ForallStmt::iterCallAlreadyTagged() const { return fFromForLoop; }
+inline bool ForallStmt::noFindOuterVars()       const { return fFromForLoop; }
 
 // conveniences
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }

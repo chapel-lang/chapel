@@ -950,7 +950,7 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered)
+  if (!iteratorsLowered && !isReduce())
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -958,7 +958,7 @@ void ShadowVarSymbol::verify() {
     INT_FATAL(this, "Bad ShadowVarSymbol::specBlock::parentSymbol");
   if (outerVarRep) {
     verifyNotOnList(outerVarRep);
-    // this assert hold already after scopeResolve
+    // this assert holds already after scopeResolve
     INT_ASSERT(!normalized || isSymExpr(outerVarRep));
   }
   // for VarSymbol
@@ -971,10 +971,9 @@ void ShadowVarSymbol::verify() {
     INT_ASSERT(pfs);
     INT_ASSERT(defPoint->list == &(pfs->intentVariables()));
   }
-  bool reduce = isReduce();
-  INT_ASSERT(reduce == (intent == TFI_REDUCE));
-  if (!iteratorsLowered)
-    INT_ASSERT(reduce == (specBlock != NULL));
+  INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
+  if (!iteratorsLowered && specBlock != NULL)
+    INT_ASSERT(isReduce());
 }
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {

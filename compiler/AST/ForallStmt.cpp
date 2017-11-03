@@ -21,6 +21,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "foralls.h"
+#include "ForLoop.h"
 #include "passes.h"
 #include "stringutil.h"
 
@@ -33,7 +34,8 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
-  fLoopBody(body)
+  fLoopBody(body),
+  fFromForLoop(false)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
@@ -399,4 +401,20 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
   body->blockTag = BLOCK_NORMAL; // do not flatten it in cleanup(), please
 
   return buildChapelStmt(fs);
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// support for converting from a for loop
+/////////////////////////////////////////////////////////////////////////////
+
+ForallStmt* ForallStmt::fromForLoop(ForLoop* forLoop) {
+  // intended only for for-loops
+  INT_ASSERT(forLoop->isForLoop());
+  // conversion from zippered is not implemented
+  INT_ASSERT(forLoop->zipperedGet() == false);
+
+  ForallStmt* result = new ForallStmt(false, new BlockStmt());
+  result->fFromForLoop = true;
+
+  return result;
 }

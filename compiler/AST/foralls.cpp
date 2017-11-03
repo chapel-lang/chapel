@@ -450,8 +450,12 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   }
 }
 
-static bool findStandaloneOrLeader(ForallStmt* pfs,
-                                   CallExpr* iterCall)
+static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
+{
+  return pfs->iterCallAlreadyTagged();
+}
+
+static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
 {
   bool gotParallel = false;
   bool gotSA = true;
@@ -485,7 +489,6 @@ static bool findStandaloneOrLeader(ForallStmt* pfs,
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
   }
 
-  resolveFns(iterCall->resolvedFunction());
   return gotSA;
 }
 
@@ -698,13 +701,11 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                                  SymExpr*    origSE) {
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
+{
   CallExpr* retval = NULL;
 
-  if (pfs->id == breakOnResolveID) {
-    gdbShouldBreakHere();
-  }
+  if (pfs->id == breakOnResolveID) gdbShouldBreakHere();
 
   // We only get here for origSE==firstIteratedExpr() .
   // If at that time there are other elements in iterExprs(), we remove them.
@@ -716,7 +717,9 @@ CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
   INT_ASSERT(origSE->inTree() == false);
 
-  bool gotSA = findStandaloneOrLeader(pfs, iterCall);
+  bool gotSA = acceptUnmodifiedIterCall(pfs, iterCall) ||
+               findStandaloneOrLeader(pfs, iterCall);
+  resolveCallAndCallee(iterCall, false);
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
@@ -730,7 +733,6 @@ CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         removeOrigIterCall(origSE);
       }
-
     } else {
       buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
     }
