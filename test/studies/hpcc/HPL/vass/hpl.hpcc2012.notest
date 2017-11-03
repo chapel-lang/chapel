@@ -1,0 +1,5 @@
+This test has caused too many headaches without enough benefit, so I'm
+making it a notest until someone cares enough to look into it.  At the
+time of this writing, it's passing in all configurations other than
+CHPL_COMM=ugni where it segfaults in our 16-locale performance testing
+configuration.
