@@ -21,14 +21,7 @@
 #ifndef _chpl_mem_impl_H_
 #define _chpl_mem_impl_H_
 
-// Set up a #define to control jemalloc.h
-#ifndef CHPL_JEMALLOC_PREFIX
-// Use the je_ prefix
-#define CHPL_JEMALLOC_PREFIX je_
-// Ask jemalloc.h to provide the je_ functions
-// (i.e. je_malloc rather than just malloc)
-#define JEMALLOC_NO_DEMANGLE
-#endif
+#include "chpl-mem-jemalloc-prefix.h"
 
 #include "jemalloc/jemalloc.h"
 

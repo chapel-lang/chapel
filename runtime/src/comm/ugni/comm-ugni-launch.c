@@ -24,6 +24,7 @@
 #define _POSIX_C_SOURCE 200112L  // for setenv(3) in <stdlib.h>
 
 #include <assert.h>
+#include <ctype.h>
 #include <math.h>
 #include <stdlib.h>
 
@@ -31,6 +32,10 @@
 #include "comm-ugni-heap-pages.h"
 #include "chpl-comm-launch.h"
 #include "error.h"
+
+#ifdef CHPL_TARGET_MEM_JEMALLOC
+#include "chpl-mem-jemalloc-prefix.h"
+#endif
 
 
 //
@@ -41,6 +46,40 @@
 // initialization and we don't have a dependable way to arrange that
 // in the target program.
 //
+static
+char* jemalloc_conf_ev_name(void) {
+#define _STRFY(s)              #s
+#define _EXPAND_THEN_STRFY(s)  _STRFY(s)
+#ifdef CHPL_JEMALLOC_PREFIX
+  #define EVN_PREFIX_STR         _EXPAND_THEN_STRFY(CHPL_JEMALLOC_PREFIX)
+#else
+  #define EVN_PREFIX_STR         ""
+#endif
+
+  static char evn[100] = "";
+
+  // safe because always called serially
+  if (evn[0] != '\0')
+    return evn;
+
+  if (snprintf(evn, sizeof(evn), "%sMALLOC_CONF", EVN_PREFIX_STR)
+      >= sizeof(evn)) {
+    chpl_internal_error("jemalloc conf env var name buffer is too small");
+  }
+
+  for (int i = 0; evn[i] != '\0'; i++) {
+    if (islower(evn[i]))
+      evn[i] = toupper(evn[i]);
+  }
+
+  return evn;
+
+#undef _STRFY
+#undef _EXPAND_THEN_STRFY
+#undef EVN_PREFIX_STR
+}
+
+
 static
 void maybe_set_jemalloc_lg_chunk(void) {
   size_t hps;
@@ -69,19 +108,20 @@ void maybe_set_jemalloc_lg_chunk(void) {
   // lg_chunk is specified as the base-2 log of the expansion chunk size
   hps_log2 = lrint(log2((double) hps));
 
-  if ((ev = getenv("CHPL_JE_MALLOC_CONF")) == NULL) {
+  // Now, set the jemalloc environment variable
+  if ((ev = getenv(jemalloc_conf_ev_name())) == NULL) {
     snprintf(buf, sizeof(buf), "lg_chunk:%d", hps_log2);
   } else {
     // Override any user-specified lg_chunk.  Smaller or larger, it
     // would break our logic either way.
     if (snprintf(buf, sizeof(buf), "%s,lg_chunk:%d", ev, hps_log2)
         >= sizeof(buf)) {
-      chpl_internal_error("setting CHPL_JE_MALLOC_CONF would truncate");
+      chpl_internal_error("setting jemalloc conf env var would truncate");
     }
   }
 
-  if (setenv("CHPL_JE_MALLOC_CONF", buf, 1) != 0)
-    chpl_internal_error("cannot setenv(CHPL_JE_MALLOC_CONF)");
+  if (setenv(jemalloc_conf_ev_name(), buf, 1) != 0)
+    chpl_internal_error("cannot setenv jemalloc conf env var");
 }
 
 
