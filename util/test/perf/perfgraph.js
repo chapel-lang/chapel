@@ -232,7 +232,7 @@ function getNextDivs(afterDiv) {
   var annToggle        = addButtonHelper('annotations');
   var screenshotToggle = addButtonHelper('screenshot');
   var closeGraphToggle = addButtonHelper('close');
-  var resetY           = addButtonHelper('reset Y zoom');
+  var resetY           = addButtonHelper('reset y zoom');
 
   return {
     div: div,
@@ -427,6 +427,13 @@ function setupLogToggle(g, graphInfo, logToggle) {
   }
 }
 
+// Compute x-axis position of the left side of the annotation text box.
+// Attempts to find a value such that the box will fit within the span of the
+// graph.
+//
+// Prefers to align the left of the annotation text box with the left of the
+// annotation number box. If the box would extend past the right side of the
+// graph, we shift the box to the left.
 function computeInfoLeft(info, box, parentDiv) {
   var ret  = 0;
 
@@ -453,9 +460,9 @@ function computeInfoLeft(info, box, parentDiv) {
   return ret;
 }
 
+// Find snippets that look like PRs (e..g (#1234)) and replace them
+// with links to the corresponding GitHub PR.
 function computeGitHubLinks(text) {
-  // Find snippets that look like PRs (e..g (#1234)) and replace them
-  // with links to the corresponding GitHub PR.
   var re = /\(#([0-9]+)\)/gi;
   text = text.replace(re, function(m, num) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
@@ -466,6 +473,9 @@ function computeGitHubLinks(text) {
   return text;
 }
 
+// Generate divs containing annotation text and links to PRs. They replace the
+// tooltip and will only be visible when hovering over the annotation number
+// box.
 function buildAnnotationHovers(container) {
   $(container).find('.blackAnnotation').each(function(i, box) {
     var text = box.title;
@@ -562,6 +572,8 @@ function setupCloseGraphToggle(g, graphInfo, closeGraphToggle) {
   }
 }
 
+// Setting `valueRange` to null will reset the y-axis zoom to the default. Note
+// that the default is different depending on the x-axis slice.
 function setupResetYZoom(g, graphInfo, resetY) {
   resetY.style.visibility = 'visible';
 
@@ -1318,9 +1330,7 @@ function unselectAllGraphs() {
 function invertSelection() {
   for (var i = 0; i < allGraphs.length; i++) {
     var elem = document.getElementById('graph' + i);
-    // Only tick the checkboxes that are visible. This allows users to
-    // filter for a string, hit 'select all', and only have that subset
-    // selected.
+    // Only tick the checkboxes that are visible in case others are filtered.
     if ($(elem.parentElement).is(":visible")) {
       elem.checked = !elem.checked;
     }
@@ -1663,6 +1673,8 @@ function parseDate(date) {
   }
 }
 
+// Compute the date from two weeks ago and set the x-axis slice to:
+//   (today - 2 weeks) .. today
 function lastTwoWeeks() {
   var end = getTodaysDate('-');
 
