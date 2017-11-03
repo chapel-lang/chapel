@@ -972,15 +972,21 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     int64_t   cInt = 0;
     bool   gotUint = false;
     bool   gotInt  = false;
+    const char* extendedName = NULL;
 
     gotInt  = get_int(constant->init, &cInt);
     gotUint = get_uint(constant->init, &cUint);
+
+    if (haveString)
+      extendedName = astr(typeEnum->symbol->name, ".", constant->sym->name);
 
     INT_ASSERT(gotInt || gotUint);
 
     bool match = false;
     // string matches name
-    if (haveString && fromString == constant->sym->name)
+    if (haveString &&
+        (fromString == constant->sym->name ||
+         fromString == extendedName))
       match = true;
     // both int
     else if (gotInt && haveInt && cInt == fromInt)
