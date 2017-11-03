@@ -35,7 +35,7 @@ body {
   width: 300px;
 }
 #buttonMenu .grayButton {
-  min-width: 80px;
+  min-width: 85px;
 }
 
 .graph {
@@ -84,6 +84,15 @@ span.highlight {
 .blackAnnotation {
   color: black !important;
   border-color: black !important;
+}
+
+.annotationInfo {
+  position: absolute;
+  background-color: white;
+  border: 1px solid black;
+  padding: 4px;
+  font-size: 14px;
+  z-index: 1000;
 }
 
 .grayButton {
