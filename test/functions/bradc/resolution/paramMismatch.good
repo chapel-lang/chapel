@@ -1,2 +1,0 @@
-paramMismatch.chpl:5: error: unresolved call 'foo(10: int(32))'
-paramMismatch.chpl:1: note: candidates are: foo(x: int(16))
