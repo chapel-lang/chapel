@@ -459,7 +459,7 @@ function computeGitHubLinks(text) {
   var re = /\(#([0-9]+)\)/gi;
   text = text.replace(re, function(m, num) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
-    return "<a href='" + url + "'>" + m + "</a>";
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
   text = text.replace("\n", "\n<hr/>");
 
