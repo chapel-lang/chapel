@@ -1216,7 +1216,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                                   outx: c_ptr(c_uchar)): c_int;
 
     extern proc EVP_CIPHER_CTX_free(ref c: EVP_CIPHER_CTX);
-    extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): c_int;
+
+    // EVP_CIPHER_CTX_init is documented to have void return type
+    // but in some versions of OpenSSL it becomes a #define that returns int.
+    // For other versions, it actually returns void.
+    extern proc EVP_CIPHER_CTX_init(ref c: EVP_CIPHER_CTX): void;
     extern proc EVP_EncryptInit_ex(ref ctx: EVP_CIPHER_CTX,
                                   cipher: CONST_EVP_CIPHER_PTR,
                                   impl: ENGINE_PTR,
