@@ -38,7 +38,7 @@ public:
 
   // when originating from a ForLoop
   bool       iterCallAlreadyTagged() const;  // already has 'tag' actual
-  bool       noFindOuterVars()       const;  // no add'l shadow variables
+  bool       needToHandleOuterVars() const;  // yes, convert to shadow vars
 
   DECLARE_COPY(ForallStmt);
 
@@ -71,10 +71,24 @@ private:
   AList          fIterExprs;
   AList          fIntentVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
-  bool           fFromForLoop;
+  bool           fFromForLoop; // see comment below
 
   ForallStmt(bool zippered, BlockStmt* body);
 };
+
+/* fFromForLoop / iterCallAlreadyTagged / needToHandleOuterVars
+
+These support handling of some ForLoops by converting them to ForallStmts.
+They cause skipping certain actions for these "conversion" ForallStmt nodes.
+
+Why not just have a single accessor to fFromForLoop? This is to emphasize
+that the two accessors check different properties. These two properties could
+potentially be independent of each other and of fFromForLoop.
+
+As fFromForLoop is currently local to implementForallIntents, we may be able
+to replace fFromForLoop with a HashSet. If so, we need to ensure that the
+set membership is propagated through cloning, if applicable.
+*/
 
 // accessor implementations
 inline bool   ForallStmt::zippered()       const { return fZippered;   }
@@ -83,7 +97,7 @@ inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
 inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
 inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
 inline bool ForallStmt::iterCallAlreadyTagged() const { return fFromForLoop; }
-inline bool ForallStmt::noFindOuterVars()       const { return fFromForLoop; }
+inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 
 // conveniences
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }

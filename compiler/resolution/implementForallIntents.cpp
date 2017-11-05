@@ -1417,7 +1417,7 @@ static void propagateThroughYield(CallExpr* rcall,
         INT_ASSERT(newOrigRet != origIOI);
 
         // Extract and yield the shadow variable reference.
-        Symbol* rvar = new VarSymbol(astrArg(ix, "eflopiRvar"));
+        Symbol* rvar = new VarSymbol(intentArgName(ix, "eflopiRvar"));
         rvar->addFlag(FLAG_REF_VAR);
         eflopiIdx++;
         insertExtractFromYieldAtHead(eflopiLoop, eflopiIdx, rvar, origIOI);
@@ -1436,7 +1436,7 @@ static void propagateThroughYield(CallExpr* rcall,
           // Todo: skip these additions if the current 'rcall' yield
           // is going to be compiled away, e.g. if it is
           // within a param conditional on a not-taken branch.
-          svar = new VarSymbol(astrArg(ix, "shadowVarReduc"));
+          svar = new VarSymbol(intentArgName(ix, "shadowVarReduc"));
           svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
           VarSymbol* stemp  = newTemp("svrTmp");
           redRef1->insertBefore(new DefExpr(svar));
@@ -1454,7 +1454,7 @@ static void propagateThroughYield(CallExpr* rcall,
         // the corresponding shadow variable instead.
         Symbol* ssvar = createShadowVarIfNeeded(NULL, parentOp, svar, rcall);
         // todo: have a single 'sref' per 'svar', not one for each yield
-        VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
+        VarSymbol* sref = new VarSymbol(intentArgName(ix, "svarRef"));
         rcall->insertBefore(new DefExpr(sref));
         rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, ssvar);
         tupleComponent = sref;
@@ -1526,11 +1526,11 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     // Use named args to disambiguate from the already-existing iterator args,
     // just in case. This necessitates toNamedExpr() in handleCaptureArgs().
     const char* eName   =
-      isReduce ? astrArg(ix, "reduceParent") :
+      isReduce ? intentArgName(ix, "reduceParent") :
         nested ? eActual->name :
           strcmp(eActual->name, "_tuple_expand_tmp_") ?
-            astrArg(ix, eActual->name) // uniquify arg name
-            : astrArg(ix, "tet");
+            intentArgName(ix, eActual->name) // uniquify arg name
+            : intentArgName(ix, "tet");
 
     ArgSymbol*  eFormal = new ArgSymbol(INTENT_BLANK, eName, eActual->type);
 
@@ -1547,8 +1547,8 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       INT_ASSERT(isTaskFun(fn));
       setupRedRefs(fn, nested, redRef1, redRef2);
       ArgSymbol* parentOp = eFormal; // the reduceParent arg
-      VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
-      VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
+      VarSymbol* currOp   = new VarSymbol(intentArgName(ix, "reduceCurr"));
+      VarSymbol* svar     = new VarSymbol(intentArgName(ix, "shadowVar"));
       svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
       VarSymbol* stemp    = newTemp("svTmp");
       redRef1->insertBefore(new DefExpr(currOp));
@@ -2155,7 +2155,7 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 static void getOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
                             BlockStmt* body)
 {
-  if (!fs->noFindOuterVars())
+  if (fs->needToHandleOuterVars())
     // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
     findOuterVarsNew(fs, outer2shadow, body);
 

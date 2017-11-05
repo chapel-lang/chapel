@@ -49,8 +49,8 @@ FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
 
 void extendLeaderNew(ForallStmt* fs, FnSymbol* origIterFn, CallExpr* iterCall);
 
-static const char* astrArg(int ix, const char* base) {
-  return astr("x", istr(ix+1), "_", base);
+static const char* intentArgName(int ix, const char* base) {
+  return astr("chpl_", istr(ix+1), "_", base);
 }
 
 #endif

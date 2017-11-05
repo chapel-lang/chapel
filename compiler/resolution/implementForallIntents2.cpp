@@ -174,10 +174,10 @@ public:
   // The iterator's return symbol.
   VarSymbol*   retSym;
 
-  // The FnSymbol for task startup/teardown code, usually 'curFn'.
-  // It is an enclosing function when descending into a task function
-  // that does not create a user-level task. Such a task function
-  // does not affect the intents.
+  // Where to add task startup/teardown code. It is usually 'curFn'.
+  // However, when descending into a task function that does not create
+  // a user-level task (and so does not affect the intents),
+  // it is an enclosing function.
   FnSymbol*    anchorFn;
 
   // Where in 'anchorFn' to insert startup/teardown code.
@@ -263,11 +263,16 @@ public:
 // Is 'forLoop' a loop over a parallel iterator?
 // If so, fill in 'eInfo' with details.
 //
+// The current pattern-matching implementation is far from ideal.
+// We could improve it by using for_SymbolSymExprs()
+// or by having ForLoop include the iterator call directly.
+//
 static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
 {
   Symbol* iterSym = forLoop->iteratorGet()->symbol();
 
   // Find an assignment to 'iterSym'.
+  // It is usually located within a short walk before forLoop.
   CallExpr* asgnToIter = NULL;
   for (Expr* curr = forLoop->prev; curr; curr = curr->prev)
     if (CallExpr* call = toCallExpr(curr))
@@ -567,7 +572,7 @@ static void ensureCurrentReduceOpForReduceIntent(FIcontext& ctx,
     return;
   }
 
-  Symbol* currOp = new VarSymbol(astrArg(ix, "reduceCurrOp"));
+  Symbol* currOp = new VarSymbol(intentArgName(ix, "reduceCurrOp"));
   // 'currOp' always points to the same reduction op class instance.
   currOp->addFlag(FLAG_CONST);
   currOp->qual = QUAL_CONST_VAL;
@@ -599,7 +604,7 @@ static Symbol* shadowVarForReduceIntent(FIcontext& ctx,
   setupAnchors(ctx);
 
   // Create the shadow variable and set it up.
-  VarSymbol* rsvar = new VarSymbol(astrArg(ix, "reduceShadowVar"));
+  VarSymbol* rsvar = new VarSymbol(intentArgName(ix, "reduceShadowVar"));
   rsvar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   VarSymbol* stemp = newTemp("rsvTemp");
@@ -868,13 +873,17 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
 static ArgSymbol* newExtraFormal(FIcontext& ctx, FIinfo& fii, int ix,
                                  Symbol* eActual)
 {
-    bool     isReduce   = fii.svSymbol->isReduce();
-    const char* eName   =
-      isReduce ? astrArg(ix, "reduceParent") :
-        ctx.nested ? eActual->name :
-          !strcmp(eActual->name, "_tuple_expand_tmp_") ?
-            astrArg(ix, "tet") :
-              astrArg(ix, eActual->name); // uniquify user arg name
+    bool     isReduce = fii.svSymbol->isReduce();
+    const char* eName;
+
+    if      (isReduce)
+      eName = intentArgName(ix, "reduceParent");
+    else if (ctx.nested)
+      eName = eActual->name;  // name is already handled at the outer level
+    else if (!strcmp(eActual->name, "_tuple_expand_tmp_"))
+      eName = intentArgName(ix, "tet");
+    else
+      eName = intentArgName(ix, eActual->name);  // uniquify user arg name
 
     Type* efType    = eActual->type;
     IntentTag efInt = isReduce ? INTENT_CONST_IN :
