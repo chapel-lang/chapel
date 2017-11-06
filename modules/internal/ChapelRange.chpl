@@ -1780,6 +1780,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       }
     } else {
       resetTaskSpawn();
+      enableTaskSpawnDebug();
       coforall chunk in 0..#numChunks {
         if stridable {
           // TODO: find a way to avoid this densify/undensify for strided
@@ -1800,6 +1801,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           }
         }
       }
+      disableTaskSpawnDebug();
     }
   }
 
@@ -1895,6 +1897,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       else
       {
         resetTaskSpawn();
+        enableTaskSpawnDebug();
         coforall chunk in 0..#numChunks
         {
           const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
@@ -1902,6 +1905,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
             chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
           yield (lo..hi,);
         }
+       disableTaskSpawnDebug();
       }
     }
   }

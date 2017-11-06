@@ -30,6 +30,26 @@ module ChapelBase {
     }
   }
 
+  proc chpl_setenv(name: string, val: string, overwrite: bool = false) {
+    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
+    setenv(name.c_str(), val.c_str(), overwrite:c_int);
+  }
+
+  proc chpl_unsetenv(name: string) {
+    extern proc unsetenv(name: c_string): void;
+    unsetenv(name.c_str());
+  }
+
+  var allowTaskSpawnDebug = false;
+  proc enableTaskSpawnDebug() {
+    if allowTaskSpawnDebug then 
+      chpl_setenv("QT_SHEP_DEBUG", "1");
+  }
+  proc disableTaskSpawnDebug() {
+    chpl_unsetenv("QT_SHEP_DEBUG");
+  }
+
+
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;

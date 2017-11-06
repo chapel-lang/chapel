@@ -214,6 +214,7 @@ module DefaultRectangular {
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         }
         resetTaskSpawn();
+        enableTaskSpawnDebug();
         coforall chunk in 0..#numChunks {
           var followMe: rank*range(idxType) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).length,
@@ -257,6 +258,7 @@ module DefaultRectangular {
             yield i;
           }
         }
+        disableTaskSpawnDebug();
       }
     }
 
@@ -396,6 +398,7 @@ module DefaultRectangular {
           if debugDefaultDist then
             chpl_debug_writeln("*** DI: locBlock = ", locBlock);
           resetTaskSpawn();
+          enableTaskSpawnDebug();
           coforall chunk in 0..#numChunks {
             var followMe: rank*range(idxType) = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).length,
@@ -408,6 +411,7 @@ module DefaultRectangular {
               chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
             yield followMe;
           }
+          disableTaskSpawnDebug();
         }
       }
     }
