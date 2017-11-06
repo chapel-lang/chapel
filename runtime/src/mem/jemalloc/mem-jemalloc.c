@@ -43,13 +43,13 @@
 #endif
 
 static struct shared_heap {
-  chpl_bool isFixed;
   void* base;
   size_t size;
   size_t cur_offset;
-  size_t page_size;  // valid iff !isFixed
   pthread_mutex_t alloc_lock;
 } heap;
+
+static chpl_bool have_fixed_comm_layer_heap;
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2
@@ -78,7 +78,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   void* cur_chunk_base = NULL;
 
-  if (heap.isFixed) {
+  if (have_fixed_comm_layer_heap) {
     //
     // Get more space out of the fixed heap.
     //
@@ -130,7 +130,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     // we were running on when we allocated it.  It also commits the
     // memory, in the jemalloc sense.
     //
-    for (int i = 0; i < size; i += heap.page_size) {
+    const size_t heap_page_size = chpl_comm_regMemHeapPageSize();
+    for (int i = 0; i < size; i += heap_page_size) {
       ((char*) cur_chunk_base)[i] = 0;
     }
 
@@ -373,8 +374,8 @@ void chpl_mem_layerInit(void) {
   //
   //   jemalloc 4.5.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
-  if (heap_base != NULL) {
-    heap.isFixed = true;
+  have_fixed_comm_layer_heap = (heap_base != NULL);
+  if (have_fixed_comm_layer_heap) {
     heap.base = heap_base;
     heap.size = heap_size;
     heap.cur_offset = 0;
@@ -383,8 +384,6 @@ void chpl_mem_layerInit(void) {
     }
     initializeSharedHeap();
   } else {
-    heap.isFixed = false;
-    heap.page_size = chpl_comm_regMemHeapPageSize();
     if (chpl_comm_regMemAllocThreshold() < SIZE_MAX)
       initializeSharedHeap();
 
