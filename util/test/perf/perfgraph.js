@@ -231,8 +231,10 @@ function getNextDivs(afterDiv) {
   var logToggle        = addButtonHelper('log');
   var annToggle        = addButtonHelper('annotations');
   var screenshotToggle = addButtonHelper('screenshot');
-  var closeGraphToggle = addButtonHelper('close');
   var resetY           = addButtonHelper('reset y zoom');
+
+  // We prefer this button to be last.
+  var closeGraphToggle = addButtonHelper('close');
 
   return {
     div: div,
