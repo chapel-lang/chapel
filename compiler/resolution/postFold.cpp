@@ -258,6 +258,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
       Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
       Type* rt = call->get(1)->getValType();
 
+      if (lt->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(rt)) {
+        AggregateType* ag = toAggregateType(lt);
+        lt = ag->getField("_instance")->type;
+      }
+
       if (lt                                != dtUnknown &&
           rt                                != dtUnknown &&
 
