@@ -379,7 +379,6 @@ static void*  registered_heap_start;
 
 static int hugepage_info_set;
 static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
-static int using_hugepages;
 static size_t hugepage_size;
 
 //
@@ -1263,7 +1262,7 @@ static void      polling_task(void*);
 static void      set_up_for_polling(void);
 static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
-static void      ensure_hugepage_info_set(void);
+static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
 static void      exit_all(int);
 static void      exit_any(int);
@@ -2565,11 +2564,10 @@ void ensure_registered_heap_info_set(void)
 static
 void make_registered_heap(void)
 {
+  size_t page_size = get_hugepage_size();
   size_t size_from_env;
 
-  ensure_hugepage_info_set();
-
-  if (!using_hugepages
+  if (page_size == 0
       || getenv("HUGETLB_MORECORE") == NULL
       || (size_from_env = chpl_comm_getenvMaxHeapSize()) == 0) {
     registered_heap_size  = 0;
@@ -2585,7 +2583,7 @@ void make_registered_heap(void)
   // separately through chpl_comm_regMem*().)
   //
   const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-  const size_t nic_max_mem = nic_max_pages * hugepage_size;
+  const size_t nic_max_mem = nic_max_pages * page_size;
   size_t nic_allowed_mem;
   size_t max_heap_size;
   size_t size;
@@ -2599,7 +2597,7 @@ void make_registered_heap(void)
   // because there we'll get an error if we go over.
   //
   if (nic_type == GNI_DEVICE_GEMINI)
-    nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), hugepage_size);
+    nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
   else
     nic_allowed_mem = nic_max_mem;
 
@@ -2610,7 +2608,7 @@ void make_registered_heap(void)
 
     data_size = 0;
     while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-      data_size += ALIGN_UP(len, hugepage_size);
+      data_size += ALIGN_UP(len, page_size);
 
     if (data_size >= nic_allowed_mem)
       max_heap_size = 0;
@@ -2642,7 +2640,7 @@ void make_registered_heap(void)
 #define P_D_GMK(b, v)  P_GMK_BASE(b, ".1f", v, double)
 
       P_ZI_GMK(nmmBuf, nic_max_mem);
-      P_ZI_GMK(psBuf, hugepage_size);
+      P_ZI_GMK(psBuf, page_size);
 
       if (nic_type == GNI_DEVICE_GEMINI) {
         P_D_GMK(hsBuf, max_heap_size);
@@ -2674,10 +2672,9 @@ void make_registered_heap(void)
   // Work our way down from the starting size in (roughly) 5% steps
   // until we can actually get that much from the system.
   //
-  size = ALIGN_DN(size, hugepage_size);
-  if ((decrement = ALIGN_DN((size_t) (0.05 * size), hugepage_size))
-      < hugepage_size) {
-    decrement = hugepage_size;
+  size = ALIGN_DN(size, page_size);
+  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+    decrement = page_size;
   }
 
   size += decrement;
@@ -2704,40 +2701,40 @@ void make_registered_heap(void)
 
 
 static
-void ensure_hugepage_info_set(void)
+size_t get_hugepage_size(void)
 {
   if (!hugepage_info_set
       && pthread_once(&hugepage_once_flag, set_hugepage_info) != 0) {
     CHPL_INTERNAL_ERROR("pthread_once(&hugepage_once_flag) failed");
   }
+
+  return hugepage_size;
 }
 
 
 static
 void set_hugepage_info(void)
 {
-  if (chpl_numNodes == 1) {
-    using_hugepages = false;
-  } else {
-    using_hugepages = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
-    if (using_hugepages) {
-      hugepage_size = gethugepagesize();
-    }
+  if (chpl_numNodes > 1
+      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+    hugepage_size = gethugepagesize();
   }
 
   hugepage_info_set = 1;
   atomic_thread_fence(memory_order_release);
 
   DBG_P_L(DBGF_HUGEPAGES,
-          "setting hugepage info: using_hugepages %s, sz %#zx",
-          using_hugepages ? "yes" : "no", hugepage_size);
+          "setting hugepage info: use hugepages %s, sz %#zx",
+          (hugepage_size > 0) ? "YES" : "NO", hugepage_size);
 }
 
 
 size_t chpl_comm_impl_regMemHeapPageSize(void)
 {
-  ensure_hugepage_info_set();
-  return using_hugepages ? hugepage_size : chpl_getSysPageSize();
+  size_t sz;
+  if ((sz = get_hugepage_size()) > 0)
+    return sz;
+  return chpl_getSysPageSize();
 }
 
 
@@ -2752,8 +2749,10 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p)
 inline
 size_t chpl_comm_impl_regMemAllocThreshold(void)
 {
-  ensure_hugepage_info_set();
-  return using_hugepages ? hugepage_size : SIZE_MAX;
+  size_t sz;
+  if ((sz = get_hugepage_size()) > 0)
+    return sz;
+  return SIZE_MAX;
 }
 
 
@@ -2762,7 +2761,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   int mr_i;
   void* p;
 
-  if (!using_hugepages)
+  if (get_hugepage_size() == 0)
     return NULL;
 
   PERFSTATS_INC(regMem_cnt);
@@ -2781,7 +2780,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   if (mr_i < MAX_MEM_REGIONS) {
     mem_region_t* mr = &mem_regions.mregs[mr_i];
 
-    p = get_huge_pages(ALIGN_UP(size, hugepage_size), GHP_DEFAULT);
+    p = get_huge_pages(ALIGN_UP(size, get_hugepage_size()), GHP_DEFAULT);
 
     //
     // If we got the memory, reserve the memory region slot we found.
@@ -2834,7 +2833,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages)
+  if (get_hugepage_size() == 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
@@ -2928,7 +2927,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages)
+  if (get_hugepage_size() == 0)
     return false;
 
   //
