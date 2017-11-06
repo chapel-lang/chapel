@@ -306,7 +306,14 @@ module CPtr {
   }
 
 
-  private extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
+  // Offset the CHPL_RT_MD constant in order to preserve the value through
+  // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
+  // for more.
+  private proc offset_ARRAY_ELEMENTS {
+    extern const CHPL_RT_MD_ARRAY_ELEMENTS:chpl_mem_descInt_t;
+    extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+    return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
+  }
 
   /*
     Return the size in bytes of a type, as with the C ``sizeof`` built-in.
@@ -338,7 +345,7 @@ module CPtr {
     */
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    return chpl_here_calloc(alloc_size, 1, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+    return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /*
@@ -351,7 +358,7 @@ module CPtr {
     */
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(size_t) * c_sizeof(eltType);
-    return chpl_here_alloc(alloc_size, CHPL_RT_MD_ARRAY_ELEMENTS):c_ptr(eltType);
+    return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
