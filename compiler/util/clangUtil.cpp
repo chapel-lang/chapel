@@ -1487,13 +1487,23 @@ void runClang(const char* just_parse_filename) {
     llvm_install += "-";
     llvm_install += CHPL_HOST_COMPILER;
     llvm_install += "/bin/";
-    clangCC = llvm_install + get_clang_cc();   // e.g. .../bin/clang
-    clangCXX = llvm_install + get_clang_cxx(); // e.g. .../bin/clang++
+    clangCC = llvm_install + "clang";
+    clangCXX = llvm_install + "clang++";
   } else {
     USR_FATAL("Unspported CHPL_LLVM setting %s", CHPL_LLVM);
   }
 
   // read clang-sysroot-arguments
+  std::string sysroot_arguments(CHPL_THIRD_PARTY);
+  sysroot_arguments += "/llvm/install/";
+  sysroot_arguments += CHPL_HOST_PLATFORM;
+  sysroot_arguments += "-";
+  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += "/configured-clang-sysroot-arguments";
+
+  // read arguments from configured-clang-sysroot-arguments
+  readArgsFromFile(sysroot_arguments, args);
+  // read arguments that we captured at compile time
   readArgsFromString(get_clang_sysroot_args(), args);
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
@@ -2634,6 +2644,22 @@ void makeBinaryLLVM(void) {
   // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
   // to avoid unused argument errors for optimization flags.
 
+  std::vector<std::string> sysroot_args;
+  std::string sysroot_arguments(CHPL_THIRD_PARTY);
+  sysroot_arguments += "/llvm/install/";
+  sysroot_arguments += CHPL_HOST_PLATFORM;
+  sysroot_arguments += "-";
+  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += "/configured-clang-sysroot-arguments";
+
+  readArgsFromFile(sysroot_arguments, sysroot_args);
+
+  // add arguments from configured-clang-sysroot-arguments
+  for (auto &s : sysroot_args) {
+    options += " ";
+    options += s;
+  }
+  // add arguments that we captured at compile time
   options += " ";
   options += get_clang_sysroot_args();
 
