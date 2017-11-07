@@ -91,8 +91,7 @@ const char* filenameToModulename(const char* filename);
 
 const char* getIntermediateDirName();
 
-void        readArgsFromCommand(const char*               cmd,
-                                std::vector<std::string>& cmds);
+void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
 
 char*       dirHasFile(const char* dir, const char* file);
 char*       findProgramPath(const char* argv0);

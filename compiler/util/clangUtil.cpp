@@ -121,9 +121,7 @@ struct ClangInfo {
 
   std::string clangCC;
   std::string clangCXX;
-  std::string compileline;
   std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangLDArgs;
   std::vector<std::string> clangOtherArgs;
 
   clang::CodeGenOptions codegenOptions;
@@ -150,9 +148,7 @@ struct ClangInfo {
   ClangInfo(
     std::string clangCcIn,
     std::string clangCxxIn,
-    std::string compilelineIn,
     std::vector<std::string> clangCCArgsIn,
-    std::vector<std::string> clangLDArgsIn,
     std::vector<std::string> clangOtherArgsIn,
     bool parseOnlyIn);
 };
@@ -160,16 +156,13 @@ struct ClangInfo {
 ClangInfo::ClangInfo(
     std::string clangCcIn,
     std::string clangCxxIn,
-    std::string compilelineIn,
     std::vector<std::string> clangCCArgsIn,
-    std::vector<std::string> clangLDArgsIn,
     std::vector<std::string> clangOtherArgsIn,
     bool parseOnlyIn)
        : parseOnly(parseOnlyIn),
          clangCC(clangCcIn),
          clangCXX(clangCxxIn),
-         compileline(compilelineIn),
-         clangCCArgs(clangCCArgsIn), clangLDArgs(clangLDArgsIn),
+         clangCCArgs(clangCCArgsIn),
          clangOtherArgs(clangOtherArgsIn),
          codegenOptions(), diagOptions(NULL),
          DiagClient(NULL),
@@ -807,9 +800,6 @@ void setupClang(GenInfo* info, std::string mainFile)
   for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
     clangArgs.push_back(clangInfo->clangCCArgs[i].c_str());
   }
-  for( size_t i = 0; i < clangInfo->clangLDArgs.size(); ++i ) {
-    clangArgs.push_back(clangInfo->clangLDArgs[i].c_str());
-  }
   for( size_t i = 0; i < clangInfo->clangOtherArgs.size(); ++i ) {
     clangArgs.push_back(clangInfo->clangOtherArgs[i].c_str());
   }
@@ -1215,52 +1205,88 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name)
 void runClang(const char* just_parse_filename) {
   static bool is_installed_fatal_error_handler = false;
 
-  /* TODO -- note that clang/examples/clang-interpreter/main.cpp
-             includes an example for getting the executable path,
-             so that we could automatically set CHPL_HOME. */
-  std::string home(CHPL_HOME);
-  std::string compileline = home + "/util/config/compileline";
-  compileline += " COMP_GEN_WARN="; compileline += istr(ccwarnings);
-  compileline += " COMP_GEN_DEBUG="; compileline += istr(debugCCode);
-  compileline += " COMP_GEN_OPT="; compileline += istr(optimizeCCode);
-  compileline += " COMP_GEN_SPECIALIZE="; compileline += istr(specializeCCode);
-  compileline += " COMP_GEN_FLOAT_OPT="; compileline += istr(ffloatOpt);
+  const char* clang_warn[] = {"-Wall", "-Werror", "-Wpointer-arith",
+                              "-Wwrite-strings", "-Wno-strict-aliasing",
+                              "-Wmissing-declarations", "-Wmissing-prototypes",
+                              "-Wstrict-prototypes",
+                              "-Wmissing-format-attribute", NULL};
+  const char* clang_debug = "-g";
+  const char* clang_opt = "-O3";
+  const char* clang_fast_float = "-ffast-math";
+  const char* clang_ieee_float = "-fno-fast-math";
 
-  std::string readargsfrom;
-
-  if( !llvmCodegen && just_parse_filename ) {
-    // We're handling an extern block and not using the LLVM backend.
-    // Don't ask for any compiler-specific C flags.
-    readargsfrom = compileline + " --llvm"
-                                 " --clang"
-                                 " --clang-sysroot-arguments"
-                                 " --includes-and-defines";
-  } else {
-    // We're parsing extern blocks AND any parts of the runtime
-    // in order to prepare for an --llvm compilation.
-    // Use compiler-specific flags for clang-included.
-    readargsfrom = compileline + " --llvm"
-                                 " --clang"
-                                 " --clang-sysroot-arguments"
-                                 " --cflags"
-                                 " --includes-and-defines";
-  }
   std::vector<std::string> args;
   std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangLDArgs;
   std::vector<std::string> clangOtherArgs;
-  std::string clangCC, clangCXX;
+
+  // find the path to clang and clang++
+  std::string llvm_install, clangCC, clangCXX;
+
+  if (0 == strcmp(CHPL_LLVM, "system")) {
+    INT_FATAL("TODO");
+    // find llvm-config-3.7 or llvm-config
+    // then s/llvm-config/clang
+    clangCC = "clang";
+    clangCXX = "clang++";
+  } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
+    llvm_install += CHPL_THIRD_PARTY;
+    llvm_install += "/llvm/install/";
+    llvm_install += CHPL_HOST_PLATFORM;
+    llvm_install += "-";
+    llvm_install += CHPL_HOST_COMPILER;
+    llvm_install += "/bin/";
+    clangCC = llvm_install + "clang";
+    clangCXX = llvm_install + "clang++";
+  } else {
+    USR_FATAL("Unspported CHPL_LLVM setting %s", CHPL_LLVM);
+  }
+
+  std::string sysroot_arguments(CHPL_THIRD_PARTY);
+  sysroot_arguments += "/llvm/install/";
+  sysroot_arguments += CHPL_HOST_PLATFORM;
+  sysroot_arguments += "-";
+  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += "/configured-clang-sysroot-arguments";
+
+  readArgsFromFile(sysroot_arguments, args);
+
+
+  std::string runtime_includes(CHPL_RUNTIME_LIB);
+  runtime_includes += "/";
+  runtime_includes += CHPL_RUNTIME_SUBDIR;
+  runtime_includes += "/list-includes-and-defines";
+
+  readArgsFromFile(runtime_includes, args);
+
+
+  if (ccwarnings) {
+    for (int i = 0; clang_warn[i]; i++) {
+      args.push_back(clang_warn[i]);
+    }
+  }
+
+  if (debugCCode)
+    args.push_back(clang_debug);
+
+  if (optimizeCCode)
+    args.push_back(clang_opt);
+
+  if (specializeCCode) {
+    std::string march = "-march=";
+    march += CHPL_TARGET_ARCH;
+  }
+
+  if (ffloatOpt > 0)
+    args.push_back(clang_fast_float);
+
+  if (ffloatOpt < 0)
+    args.push_back(clang_ieee_float);
 
   // Gather information from readargsfrom into clangArgs.
-  readArgsFromCommand(readargsfrom.c_str(), args);
-  if( args.size() < 2 ) USR_FATAL("Could not find runtime dependencies for --llvm build");
-
-  clangCC = args[0];
-  clangCXX = args[1];
 
   // Note that these CC arguments will be saved in info->clangCCArgs
   // and will be used when compiling C files as well.
-  for( size_t i = 2; i < args.size(); ++i ) {
+  for( size_t i = 0; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
   }
 
@@ -1338,12 +1364,12 @@ void runClang(const char* just_parse_filename) {
 
   ClangInfo* clangInfo = NULL;
   clangInfo = new ClangInfo(clangCC, clangCXX,
-                            compileline,
-                            clangCCArgs, clangLDArgs, clangOtherArgs,
+                            clangCCArgs, clangOtherArgs,
                             parseOnly);
 
   gGenInfo->clangInfo = clangInfo;
 
+  std::string home(CHPL_HOME);
   std::string rtmain = home + "/runtime/etc/rtmain.c";
 
   setupClang(gGenInfo, rtmain);
@@ -2262,20 +2288,25 @@ void makeBinaryLLVM(void) {
 
   std::string options = "";
 
-  std::string home(CHPL_HOME);
-  std::string compileline = clangInfo->compileline;
-  compileline += " --llvm"
-                 " --clang"
-                 " --main.o"
-                 " --clang-sysroot-arguments"
-                 " --libraries";
-  std::vector<std::string> args;
-  readArgsFromCommand(compileline.c_str(), args);
-  INT_ASSERT(args.size() >= 1);
+  // TODO: fixme
 
-  std::string clangCC = args[0];
-  std::string clangCXX = args[1];
-  std::string maino = args[2];
+  std::string maino(CHPL_RUNTIME_LIB);
+  maino += "/";
+  maino += CHPL_RUNTIME_SUBDIR;
+  maino += "/main.o";
+
+  std::string runtime_libs(CHPL_RUNTIME_LIB);
+  runtime_libs += "/";
+  runtime_libs += CHPL_RUNTIME_SUBDIR;
+  runtime_libs += "/list-libraries";
+
+  std::vector<std::string> clangLDArgs;
+  readArgsFromFile(runtime_libs, clangLDArgs);
+
+
+  std::string clangCC = clangInfo->clangCC;
+  std::string clangCXX = clangInfo->clangCXX;
+
   std::vector<std::string> dotOFiles;
 
   // Gather C flags for compiling C files.
@@ -2324,14 +2355,32 @@ void makeBinaryLLVM(void) {
   // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
   // to avoid unused argument errors for optimization flags.
 
+  std::vector<std::string> sysroot_args;
+  std::string sysroot_arguments(CHPL_THIRD_PARTY);
+  sysroot_arguments += "/llvm/install/";
+  sysroot_arguments += CHPL_HOST_PLATFORM;
+  sysroot_arguments += "-";
+  sysroot_arguments += CHPL_HOST_COMPILER;
+  sysroot_arguments += "/configured-clang-sysroot-arguments";
+
+  readArgsFromFile(sysroot_arguments, sysroot_args);
+
+  for (auto &s : sysroot_args) {
+    options += " ";
+    options += s;
+  }
+
   if(debugCCode) {
     options += " -g";
   }
 
-  for( size_t i = 0; i < clangInfo->clangLDArgs.size(); ++i ) {
+  // We used to supply link args here *and* later on
+  // in the link line. I think the later position is sufficient.
+  /*
+  for( size_t i = 0; i < clangLDArgs.size(); ++i ) {
     options += " ";
-    options += clangInfo->clangLDArgs[i].c_str();
-  }
+    options += clangLDArgs[i].c_str();
+  }*/
 
   // note: currently ldflags are not stored into clangLDArgs.
   // If they were, these lines would need to be removed.
@@ -2366,10 +2415,9 @@ void makeBinaryLLVM(void) {
     command += dotOFiles[i];
   }
 
-  // 0 is clang, 1 is clang++, 2 is main.o
-  for(size_t i = 3; i < args.size(); ++i) {
+  for(size_t i = 0; i < clangLDArgs.size(); ++i) {
     command += " ";
-    command += args[i];
+    command += clangLDArgs[i];
   }
 
   // Put user-requested libraries at the end of the compile line,
@@ -2382,22 +2430,53 @@ void makeBinaryLLVM(void) {
 
   if( printSystemCommands ) {
     printf("%s\n", command.c_str());
+    fflush(stdout); fflush(stderr);
   }
   mysystem(command.c_str(), "Make Binary - Linking");
 
-  // Now run the makefile to move from tmpbinname to the proper program
-  // name and to build a launcher (if necessary).
-  const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-  const char* makecmd = astr(astr(CHPL_MAKE, " "),
-                             makeflags,
-                             getIntermediateDirName(), "/Makefile");
+  // If we're not using a launcher, copy the program here
+  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
 
-  if( printSystemCommands ) {
-    printf("%s\n", makecmd);
+    std::error_code err;
+
+    // rm -f hello
+    if( printSystemCommands )
+      printf("rm -f %s\n", executableFilename);
+
+    err = llvm::sys::fs::remove(executableFilename);
+    if (err) {
+      USR_FATAL("removing file %s failed: %s\n",
+                executableFilename,
+                err.message().c_str());
+    }
+
+    // mv tmp/hello.tmp hello
+    if( printSystemCommands )
+      printf("mv %s %s\n", tmpbinname, executableFilename);
+
+    err = llvm::sys::fs::rename(tmpbinname, executableFilename);
+    if (err) {
+      USR_FATAL("moving file %s to %s failed: %s\n",
+                tmpbinname,
+                executableFilename,
+                err.message().c_str());
+    }
+
+  } else {
+    // Now run the makefile to move from tmpbinname to the proper program
+    // name and to build a launcher (if necessary).
+    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    const char* makecmd = astr(astr(CHPL_MAKE, " "),
+                               makeflags,
+                               getIntermediateDirName(), "/Makefile");
+
+    if( printSystemCommands ) {
+      printf("%s\n", makecmd);
+      fflush(stdout); fflush(stderr);
+    }
+
+    mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
-
-  mysystem(makecmd, "Make Binary - Building Launcher and Copying");
-
 }
 
 #endif
