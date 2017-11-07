@@ -22,11 +22,14 @@
 
 #ifdef HAVE_LLVM
 
-#include "llvmUtil.h"
+// Forward declare some LLVM things
+namespace llvm {
+  class Type;
+  class Function;
+  class ModulePass;
+}
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SmallPtrSet.h"
-
 #include "llvm/IR/ValueHandle.h"
 
 /* The LLVM Global to Wide transformation allows the Chapel code generator

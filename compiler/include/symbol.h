@@ -35,6 +35,7 @@
 namespace llvm
 {
   class MDNode;
+  class Function;
 }
 #endif
 

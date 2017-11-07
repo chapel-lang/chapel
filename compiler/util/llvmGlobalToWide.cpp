@@ -41,17 +41,20 @@
 
 #include "llvmUtil.h"
 
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/Debug.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/Attributes.h"
-#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/CallSite.h"
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Verifier.h"
 
+#include "llvm/Pass.h"
+
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Debug.h"
 
 #include "llvm/Transforms/Utils/ValueMapper.h"
 

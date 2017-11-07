@@ -22,7 +22,11 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "LayeredValueTable.h"
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
 
 /************************************ | *************************************
 *                                                                           *

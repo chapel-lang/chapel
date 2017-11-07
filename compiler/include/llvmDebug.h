@@ -24,18 +24,15 @@
 
 #ifdef HAVE_LLVM
 
-#include "llvmUtil.h"
-#include "llvm/Support/raw_os_ostream.h"
+namespace llvm {
+  class DIType;
+  class DIFile;
+  class DINamespace;
+  class DISubroutineType;
+  class DISubprogram;
+}
 
-#if HAVE_LLVM_VER >= 50
-#include "llvm/BinaryFormat/Dwarf.h"
-#else
-#include "llvm/Support/Dwarf.h"
-#endif
-
-#include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DIBuilder.h"
-
 #include <vector>
 
 #endif
