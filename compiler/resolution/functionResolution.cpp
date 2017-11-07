@@ -3127,6 +3127,10 @@ static bool populateForwardingMethods(CallInfo& info) {
 
       fn->addFlag(FLAG_LAST_RESORT);
 
+      if (method->throwsError()) {
+        fn->throwsErrorInit();
+      }
+
       fn->retTag = method->retTag;
 
       ArgSymbol* mt    = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
