@@ -72,6 +72,10 @@ parser: FORCE
 
 modules: FORCE
 	cd modules && $(MAKE)
+	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	. ${CHPL_MAKE_HOME}/util/config/set_clang_included.bash && \
+	cd modules && $(MAKE) ; \
+	fi
 
 runtime: FORCE
 	cd runtime && $(MAKE)
