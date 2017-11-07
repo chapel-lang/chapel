@@ -73,6 +73,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "version.h"
 
 #include "codegen.h"
 
@@ -1477,11 +1478,8 @@ void runClang(const char* just_parse_filename) {
   std::string llvm_install, clangCC, clangCXX;
 
   if (0 == strcmp(CHPL_LLVM, "system")) {
-    INT_FATAL("TODO");
-    // find llvm-config-3.7 or llvm-config
-    // then s/llvm-config/clang
-    clangCC = "clang";
-    clangCXX = "clang++";
+    clangCC = get_clang_cc();
+    clangCXX = get_clang_cxx();
   } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
     llvm_install += CHPL_THIRD_PARTY;
     llvm_install += "/llvm/install/";
@@ -1489,21 +1487,14 @@ void runClang(const char* just_parse_filename) {
     llvm_install += "-";
     llvm_install += CHPL_HOST_COMPILER;
     llvm_install += "/bin/";
-    clangCC = llvm_install + "clang";
-    clangCXX = llvm_install + "clang++";
+    clangCC = llvm_install + get_clang_cc();   // e.g. .../bin/clang
+    clangCXX = llvm_install + get_clang_cxx(); // e.g. .../bin/clang++
   } else {
     USR_FATAL("Unspported CHPL_LLVM setting %s", CHPL_LLVM);
   }
 
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  readArgsFromFile(sysroot_arguments, args);
-
+  // read clang-sysroot-arguments
+  readArgsFromString(get_clang_sysroot_args(), args);
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
@@ -2643,20 +2634,8 @@ void makeBinaryLLVM(void) {
   // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
   // to avoid unused argument errors for optimization flags.
 
-  std::vector<std::string> sysroot_args;
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_HOST_PLATFORM;
-  sysroot_arguments += "-";
-  sysroot_arguments += CHPL_HOST_COMPILER;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  readArgsFromFile(sysroot_arguments, sysroot_args);
-
-  for (auto &s : sysroot_args) {
-    options += " ";
-    options += s;
-  }
+  options += " ";
+  options += get_clang_sysroot_args();
 
   if(debugCCode) {
     options += " -g";

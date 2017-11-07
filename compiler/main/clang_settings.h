@@ -17,15 +17,17 @@
  * limitations under the License.
  */
 
-#ifndef _VERSION_H_
-#define _VERSION_H_
+#ifndef _clang_names_H_
+#define clang_names_H_
 
-void get_version(char * buf);
-void get_major_minor_version(char * buf);
-const char* get_configured_prefix();
+// What is the name of clang / clang++ to be used with --llvm ?
+// This is particularly important for CHPL_LLVM=system
 
-const char* get_clang_cc();
-const char* get_clang_cxx();
-const char* get_clang_sysroot_args();
+// What sysroot arguments does clang need to run?
+// This is particularly important for CHPL_LLVM=system or Mac OS X
+
+static const char* CLANG_SETTINGS[] =
+#include "CLANG_SETTINGS"
+;
 
 #endif

@@ -628,15 +628,15 @@ CHPL_LLVM
 
    .. note::
 
-       We have had success with these commands to install LLVM 3.7 dependencies
+       We have had success with these commands to install LLVM 4.0 dependencies
 
         .. code-block:: sh
 
             # Fedora 25
-            dnf install llvm3.7 llvm3.7-devel llvm3.7-static zlib-static
+            dnf install llvm4.0 llvm4.0-devel llvm4.0-static zlib-static
 
-            # Ubuntu 16.04
-            apt-get install llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
+            # Ubuntu 17.10
+            apt-get install llvm-4.0-dev llvm-4.0 clang-4.0 libclang-4.0-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
