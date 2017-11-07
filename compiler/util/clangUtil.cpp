@@ -2387,7 +2387,6 @@ void checkAdjustedDataLayout() {
 
 
 void makeBinaryLLVM(void) {
-  std::error_code errorInfo;
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -2400,9 +2399,12 @@ void makeBinaryLLVM(void) {
   std::string opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
 
   if( saveCDir[0] != '\0' ) {
+    std::error_code tmpErr;
     // Save the generated LLVM before optimization.
     TOOL_OUTPUT_FILE output (preOptFilename.c_str(),
-                             errorInfo, sys::fs::F_None);
+                             tmpErr, sys::fs::F_None);
+    if (tmpErr)
+      USR_FATAL("Could not open output file %s", preOptFilename.c_str());
     WriteBitcodeToFile(info->module, output.os());
     output.keep();
     output.os().flush();
@@ -2491,8 +2493,11 @@ void makeBinaryLLVM(void) {
 
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
+      std::error_code tmpErr;
       TOOL_OUTPUT_FILE output1 (opt1Filename.c_str(),
-                               errorInfo, sys::fs::F_None);
+                               tmpErr, sys::fs::F_None);
+      if (tmpErr)
+        USR_FATAL("Could not open output file %s", opt1Filename.c_str());
       WriteBitcodeToFile(info->module, output1.os());
       output1.keep();
       output1.os().flush();
@@ -2521,8 +2526,11 @@ void makeBinaryLLVM(void) {
 
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
+        std::error_code tmpErr;
         TOOL_OUTPUT_FILE output2 (opt2Filename.c_str(),
-                                 errorInfo, sys::fs::F_None);
+                                 tmpErr, sys::fs::F_None);
+        if (tmpErr)
+          USR_FATAL("Could not open output file %s", opt2Filename.c_str());
         WriteBitcodeToFile(info->module, output2.os());
         output2.keep();
         output2.os().flush();
