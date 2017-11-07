@@ -15,11 +15,18 @@ from utils import error, memoize
 
 
 @memoize
-def get(flag='host'):
+def get(flag='host', llvm_mode='default'):
+
     if flag == 'host':
         compiler_val = overrides.get('CHPL_HOST_COMPILER', '')
     elif flag == 'target':
         compiler_val = overrides.get('CHPL_TARGET_COMPILER', '')
+
+        if llvm_mode == 'llvm':
+            compiler_val = 'clang-included'
+        elif llvm_mode == 'default' and "CHPL_LLVM_CODEGEN" in os.environ:
+            compiler_val = 'clang-included'
+
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
