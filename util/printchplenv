@@ -27,10 +27,28 @@ def print_mode(mode='list', anonymize=False):
     if 'shell' in mode:
         #cshell and shell are the same up until we print
         m = 'shell'
-    elif mode == 'simple' or mode == 'debug':
+    elif mode == 'simple' or mode == 'llvm' or mode == 'debug':
         # make and simple are almost the same barring a few cases and when they
         # are printed
         m = 'make'
+
+    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to clang-included
+    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used.
+    # This happens early because it modifies the environment and other
+    # defaults might depend on this setting.
+    if m != 'compiler' and m != 'launcher':
+      if mode == 'llvm':
+        orig_compiler = chpl_compiler.get('target', llvm_mode='orig')
+        llvm_compiler = chpl_compiler.get('target')
+        os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_compiler
+        print_var('CHPL_ORIG_TARGET_COMPILER', orig_compiler, mode, 'x', (' '))
+        if llvm_compiler != 'clang-included':
+          # This error indicates something about chplenv (probably
+          # chpl_compiler.py) is not working correctly with LLVM mode.
+          # Note that chpl_compiler.py uses the environment variable
+          # CHPL_LLVM_CODEGEN to detect that the default should be
+          # clang-included
+          raise ValueError('LLVM mode but target compiler is set incorrectly')
 
 
     chpl_home = chpl_home_utils.get_chpl_home()
@@ -108,7 +126,7 @@ def print_mode(mode='list', anonymize=False):
 
     atomics = chpl_atomics.get()
     print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or m == 'shell':
+    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or mode == 'llvm' or m == 'shell':
         net_atomics = chpl_atomics.get('network')
         print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
 
@@ -122,8 +140,8 @@ def print_mode(mode='list', anonymize=False):
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
 
     if mode != 'list':
-        llvm = chpl_llvm.get()
-        print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
+        enable_llvm = chpl_llvm.get()
+        print_var('CHPL_LLVM', enable_llvm, mode, 'llvm', ('compiler',))
 
     aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':
@@ -133,6 +151,12 @@ def print_mode(mode='list', anonymize=False):
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
     # NOT using `m` here, 'simple' does not need these values
+    if mode == 'llvm':
+        stdout.write('CHPL_MAKE_RUNTIME_SUBDIR=')
+        print_mode('runtime')
+        stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
+        print_mode('launcher')
+
     if mode == 'make':
         stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
         print_mode('compiler')
@@ -207,7 +231,7 @@ def print_var(env_var, value, mode, short_name='', filters=None):
     elif mode == 'make':
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
         stdout.write("{0}={1}\n".format(make_env_var, value))
-    elif mode == 'simple':
+    elif mode == 'simple' or mode == 'llvm':
         stdout.write("{0}={1}\n".format(env_var.strip(), value))
     elif mode == 'compiler' or mode == 'runtime' or mode == 'launcher':
         if not filters or mode in filters:
@@ -230,7 +254,7 @@ def print_var(env_var, value, mode, short_name='', filters=None):
 
 def _main():
     parser = optparse.OptionParser(
-        usage='usage: %prog [--list|--make|--simple|--anonymize|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
+        usage='usage: %prog [--list|--make|--simple|--llvm|--anonymize|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
                       const='list',
@@ -244,6 +268,9 @@ def _main():
                       help="print out a listing of the environment that is "
                            "meant to be used in the compiler -- "
                            "output is compatible with chplconfig format.")
+    parser.add_option('--llvm', action='store_const', dest='mode', const='llvm',
+                      help="print out a listing of the environment that is "
+                           "meant to be used in the compiler in --llvm mode")
     parser.add_option('--overrides', action='store_const', dest='mode', const='overrides',
                       help="print out a listing of variables that have been "
                            "user supplied via environment or chplconfig -- "
