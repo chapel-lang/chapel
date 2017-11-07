@@ -83,7 +83,7 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap, bool llvm);
 std::string getChplPythonVersion();
 std::string runCommand(std::string& command);
 

@@ -1082,7 +1082,7 @@ static void populateEnvMap() {
   // argument processing
 
   // Call printchplenv and pipe output into string
-  std::string output = runPrintChplEnv(envMap);
+  std::string output = runPrintChplEnv(envMap, llvmCodegen);
 
   // Lines
   std::string line= "";
@@ -1146,6 +1146,19 @@ static void setChapelEnvs() {
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
+
+  if (llvmCodegen) {
+    CHPL_RUNTIME_SUBDIR  = envMap["CHPL_MAKE_RUNTIME_SUBDIR"];
+    CHPL_LAUNCHER_SUBDIR = envMap["CHPL_MAKE_LAUNCHER_SUBDIR"];
+  }
+
+  // Make sure there are no NULLs in envMap
+  // a NULL in envMap might mean that one of the variables
+  // the compiler expected printchplenv to produce was not produced.
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    INT_ASSERT(env->second != NULL);
+  }
 }
 
 static void setupChplGlobals(const char* argv0) {
@@ -1158,6 +1171,11 @@ static void setupChplGlobals(const char* argv0) {
 
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
+  }
+
+  // tell printchplenv that we're doing an LLVM build
+  if (llvmCodegen) {
+    envMap["CHPL_LLVM_CODEGEN"] = "llvm";
   }
 
   // Populate envMap from printchplenv, never overwriting existing elements

@@ -442,7 +442,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
+std::string runPrintChplEnv(std::map<std::string, const char*> varMap, bool llvm) {
   // Run printchplenv script, passing currently known CHPL_vars as well
   std::string command = "";
 
@@ -453,7 +453,8 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   }
 
   // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
-  command += std::string(CHPL_HOME) + "/util/printchplenv --simple 2> /dev/null";
+  command += std::string(CHPL_HOME) + "/util/printchplenv " +
+             (llvm?"--llvm":"--simple") + " 2> /dev/null";
 
   return runCommand(command);
 }
