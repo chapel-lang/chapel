@@ -18,7 +18,7 @@
  */
 
 #ifndef _clang_names_H_
-#define clang_names_H_
+#define _clang_names_H_
 
 // What is the name of clang / clang++ to be used with --llvm ?
 // This is particularly important for CHPL_LLVM=system
