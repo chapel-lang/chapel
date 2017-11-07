@@ -84,6 +84,9 @@ const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
 
+const char* CHPL_RUNTIME_SUBDIR = NULL;
+const char* CHPL_LAUNCHER_SUBDIR = NULL;
+
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static char moduleSearchPath[FILENAME_MAX] = "";
