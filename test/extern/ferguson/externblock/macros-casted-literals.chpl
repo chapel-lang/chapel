@@ -2,10 +2,6 @@ extern {
   typedef long my_long_t;
   #define MY_TYPEDEF_CONSTANT ((my_long_t) 10)
 
-//  #define MY_FLOAT_CONSTANT ((float) 10.0)
-
-//  #define MY_DOUBLE_CONSTANT ((double) 10.0)
-
   #define MY_LONG_CONSTANT ((long) 10)
   #define MY_ULONG_CONSTANT ((unsigned long) 10)
   #define MY_SLONG_CONSTANT ((signed long) 10)
@@ -32,12 +28,6 @@ proc f(type t, x) {
 
 f(c_long, MY_TYPEDEF_CONSTANT);
 writeln();
-
-//f(c_float, MY_FLOAT_CONSTANT);
-//writeln();
-
-//f(c_double, MY_DOUBLE_CONSTANT);
-//writeln();
 
 f(c_long, MY_LONG_CONSTANT);
 f(c_ulong, MY_ULONG_CONSTANT);
