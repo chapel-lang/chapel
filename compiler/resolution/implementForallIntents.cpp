@@ -952,6 +952,12 @@ VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
         if (SymExpr* dest = toSymExpr(call->get(1)))
           if (dest->symbol() == origRetSym) {
             VarSymbol* newOrigRet = newTemp("localRet", origRetSym->type);
+            // Add FLAG_NO_COPY because if newOrigRet is a record, other
+            // forall-intents code will always copy it in to the tuple
+            // containing the extended yield statements. We only need one
+            // copy for the yielded record. This is a workaround - a better
+            // solution would be preferred.
+            newOrigRet->addFlag(FLAG_NO_COPY);
             call->insertBefore(new DefExpr(newOrigRet));
             dest->setSymbol(newOrigRet);
             if (call->isNamedAstr(astrSequals)) {
