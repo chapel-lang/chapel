@@ -838,7 +838,7 @@ static void insertDestructorCalls() {
 // The copy is necessary for yielded values of record type returned by value.
 // In the current implementation, types marked as "iterator record" and
 // "runtime type value" are excluded.
-static void insertYieldTemps()
+/*static void insertYieldTemps()
 {
   // Examine all calls.
   forv_Vec(CallExpr, call, gCallExprs)
@@ -877,7 +877,7 @@ static void insertYieldTemps()
       call->insertAtHead(new SymExpr(tmp)); // New first argument.
     }
   }
-}
+}*/
 
 /************************************* | **************************************
 *                                                                             *
@@ -972,7 +972,7 @@ void callDestructors() {
 
   ReturnByRef::apply();
 
-  insertYieldTemps();
+  //insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
 
