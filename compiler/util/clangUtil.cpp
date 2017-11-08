@@ -430,7 +430,9 @@ static void handleMacroTokens(const MacroInfo* inMacro,
        cur != end;
        ++cur) {
     Token t = *cur;
-    printf("Found token type %i\n", t.getKind());
+    if (debugPrint) {
+      printf("Found token type %i\n", t.getKind());
+    }
   }
 
   // Remove any number of outer parens e.g. (1), ((1)) -> 1
