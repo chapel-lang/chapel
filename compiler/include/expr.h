@@ -521,5 +521,6 @@ GenRet createTempVarWith(GenRet v);
 GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
 GenRet codegenNullPointer();
+GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 
 #endif

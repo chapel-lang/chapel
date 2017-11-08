@@ -284,6 +284,25 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 }
 
 
+static const bool debugPrintMacros = false;
+
+static void handleMacroToken(const MacroInfo* inMacro,
+                             bool negate,
+                             const Token tok,
+                             VarSymbol*& varRet,
+                             TypeDecl*& cTypeRet,
+                             ValueDecl*& cValueRet);
+
+static void handleMacroTokens(const MacroInfo* inMacro,
+                              MacroInfo::tokens_iterator start,
+                              MacroInfo::tokens_iterator end,
+                              bool negate,
+                              VarSymbol*& varRet,
+                              TypeDecl*& cTypeRet,
+                              ValueDecl*& cValueRet,
+                              TypeDecl*& cCastToTypeRet);
+
+
 // Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
 void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
@@ -293,67 +312,299 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
-  VarSymbol* varRet = NULL;
-  TypeDecl* cTypeRet = NULL;
-  ValueDecl* cValueRet = NULL;
+  const bool debugPrint = debugPrintMacros;
 
-  const bool debugPrint = false;
-
-  if( debugPrint) printf("Adding macro %s\n", id->getName().str().c_str());
+  if( debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
 #if HAVE_LLVM_VER >= 50
-  if(macro->getNumParams() > 0) {
+  if(macro->getNumParams() > 0)
 #else
-  if(macro->getNumArgs() > 0) {
+  if(macro->getNumArgs() > 0)
 #endif
+  {
     if( debugPrint) {
       printf("the macro takes arguments\n");
     }
     return; // TODO -- handle macro functions.
   }
 
-  // Check that we have a single token surrounded by any
-  // number of parens. ie 1, (1), ((1))
-  Token tok; // the main token.
-  size_t left_parens = 0;
-  size_t right_parens = 0;
-  ssize_t ntokens = macro->getNumTokens();
-  ssize_t t_idx;
-  bool negate = false;
-  if( ntokens > 0 ) {
-      MacroInfo::tokens_iterator ti = macro->tokens_end() - 1;
-      for( t_idx = ntokens - 1; t_idx >= 0; t_idx-- ) {
-        tok = *ti;
-        if(tok.getKind() == tok::r_paren) right_parens++;
-        else break;
-        --ti;
+  VarSymbol* varRet = NULL;
+  TypeDecl* cTypeRet = NULL;
+  ValueDecl* cValueRet = NULL;
+  TypeDecl* cCastToTypeRet = NULL;
+
+  handleMacroTokens(macro,
+                    macro->tokens_begin(), macro->tokens_end(),
+                    false,
+                    varRet, cTypeRet, cValueRet, cCastToTypeRet);
+
+  const char* castToTypeStr = NULL;
+  if (cCastToTypeRet) {
+    if (cTypeRet) {
+      if (debugPrint) {
+        printf("casting a type?");
       }
+      return;
+    }
+    castToTypeStr = astr(cCastToTypeRet->getName().str().c_str());
   }
+
+  if( debugPrint ) {
+    std::string s = id->getName();
+    const char* kind = NULL;
+    if( varRet ) kind = "var";
+    if( cTypeRet ) kind = "cdecl type";
+    if( cValueRet ) kind = "cdecl value";
+    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
+  }
+  if( varRet ) {
+    info->lvt->addGlobalVarSymbol(id->getName(), varRet, castToTypeStr);
+  }
+  if( cTypeRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cTypeRet);
+  }
+  if( cValueRet ) {
+    info->lvt->addGlobalCDecl(id->getName(), cValueRet, castToTypeStr);
+  }
+
+}
+
+static void removeMacroOuterParens(const MacroInfo* inMacro,
+                                   MacroInfo::tokens_iterator &start,
+                                   MacroInfo::tokens_iterator &end) {
+
+  // Remove any number of outer parens e.g. (1), ((1)) -> 1
+  int left_parens = 0;
+  int right_parens = 0;
+  for (MacroInfo::tokens_iterator cur = end - 1;
+       cur != start;
+       --cur) {
+    if(cur->getKind() == tok::r_paren) right_parens++;
+    else break;
+  }
+
+  for (MacroInfo::tokens_iterator cur = start;
+       cur != end;
+       ++cur) {
+    if(cur->getKind() == tok::l_paren) left_parens++;
+    else break;
+  }
+
+  int min_parens = (left_parens < right_parens) ? left_parens : right_parens;
+  if (min_parens > 0) {
+    start += min_parens;
+    end -= min_parens;
+  }
+}
+
+static void handleMacroTokens(const MacroInfo* inMacro,
+                              MacroInfo::tokens_iterator start,
+                              MacroInfo::tokens_iterator end,
+                              bool negate,
+                              VarSymbol*& varRet,
+                              TypeDecl*& cTypeRet,
+                              ValueDecl*& cValueRet,
+                              TypeDecl*& cCastToTypeRet)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  const bool debugPrint = debugPrintMacros;
+
+  varRet = NULL;
+  cTypeRet = NULL;
+  cValueRet = NULL;
+  cCastToTypeRet = NULL;
+
+  if (start == end) {
+    if( debugPrint) {
+      printf("the macro is empty\n");
+    }
+    return;
+  }
+
+  for (MacroInfo::tokens_iterator cur = start;
+       cur != end;
+       ++cur) {
+    Token t = *cur;
+    if (debugPrint) {
+      printf("Found token type %i\n", t.getKind());
+    }
+  }
+
+  // Remove any number of outer parens e.g. (1), ((1)) -> 1
+  removeMacroOuterParens(inMacro, start, end);
+
+  // Check: are the first 3 symbols a cast expression?
+  bool isCast = false;
+  MacroInfo::tokens_iterator castStart;
+  MacroInfo::tokens_iterator castEnd;
+  MacroInfo::tokens_iterator lastCastToken;
 
   {
-    MacroInfo::tokens_iterator ti = macro->tokens_begin();
-    for( t_idx = 0; t_idx < ntokens; t_idx++ ) {
-      tok = *ti;
-      if(tok.getKind() == tok::l_paren) left_parens++;
-      else if(tok.getKind() == tok::minus) {
-        negate = true;
-        ntokens--;
-      } else break;
-      ++ti;
+    bool inparens = false;
+    for (MacroInfo::tokens_iterator cur = start;
+         cur != end;
+         ++cur) {
+      if (!inparens && cur->getKind() == tok::l_paren) {
+        // OK, found (
+        inparens = true;
+        castStart = cur + 1;
+      } else if (inparens && cur->getKind() != tok::r_paren) {
+        // OK, found casttype
+        // (this could check for type tokens, unsigned int / type_t)
+      } else if (inparens && cur->getKind() == tok::r_paren) {
+        // OK, found )
+        castEnd = cur;
+        lastCastToken = cur;
+        isCast = true;
+        break;
+      } else {
+        // Some other pattern, stop looking for a cast.
+        break;
+      }
     }
-  }
-  if( left_parens == right_parens &&
-      ntokens - left_parens - right_parens == 1 ) {
-    // OK!
-  } else {
-    if( debugPrint) {
-      printf("the following macro is too complicated or empty:\n");
-    }
-    return; // we don't handle complicated expressions like A+B
   }
 
+
+  // If we found a cast, pass it.
+  if (isCast) {
+    start = lastCastToken + 1;
+    removeMacroOuterParens(inMacro, start, end);
+  }
+
+  // If the first symbol is now tok::minus, consume it and set negate
+  if (start->getKind() == tok::minus) {
+    ++start;
+    negate = true;
+    removeMacroOuterParens(inMacro, start, end);
+  }
+
+  if (isCast) {
+    VarSymbol* tmpVar = NULL;
+    TypeDecl* tmpType = NULL;
+    ValueDecl* tmpVal = NULL;
+    TypeDecl* tmpCastType = NULL;
+
+    handleMacroTokens(inMacro, castStart, castEnd,
+                      false,
+                      tmpVar, tmpType, tmpVal, tmpCastType);
+
+    if (tmpCastType) {
+      if (debugPrint) {
+        printf("cast contained a cast\n");
+      }
+      return;
+    }
+    if (!tmpType) {
+      if (debugPrint) {
+        printf("the cast didn't give a C type\n");
+      }
+      return;
+    }
+
+    cCastToTypeRet = tmpType;
+  }
+
+  if (start == end)
+    return;
+
+  // At this point, the only multiple token scenario we
+  // intend to handle is things like 'unsigned int'.
+  int _unsigned = 0;
+  int _signed = 0;
+  int _long = 0;
+  int _short = 0;
+  int _int = 0;
+  int _char = 0;
+  int _float = 0;
+  int _double = 0;
+
+  while (start != end) {
+    if (start->getKind() == tok::kw_unsigned) {
+      _unsigned++;
+      _signed = 0;
+      ++start;
+    } else if (start->getKind() == tok::kw_signed) {
+      _signed++;
+      _unsigned = 0;
+      ++start;
+    } else if (start->getKind() == tok::kw_long) {
+      _long++;
+      _short = 0;
+      ++start;
+    } else if (start->getKind() == tok::kw_short) {
+      _short++;
+      _long = 0;
+      ++start;
+    } else if (start->getKind() == tok::kw_int) {
+      _int++;
+      ++start;
+    } else if (start->getKind() == tok::kw_char) {
+      _char++;
+      ++start;
+    } else if (start->getKind() == tok::kw_float) {
+      _float++;
+      ++start;
+    } else if (start->getKind() == tok::kw_double) {
+      _double++;
+      ++start;
+    } else {
+      break; // not signed / unsigned / long / short
+    }
+  }
+
+  if (_unsigned == 0 && _signed == 0 &&
+      _long == 0 && _short == 0 &&
+      _int == 0 && _char == 0 && _float == 0 && _double == 0) {
+    Token tok = *start; // the main token
+    handleMacroToken(inMacro, negate, tok, varRet, cTypeRet, cValueRet);
+  } else {
+    const char* nType = NULL;
+    if (_double > 0) nType = "c_double";
+    else if (_float > 0) nType = "c_float";
+    else if (_unsigned > 0) {
+      if (_long == 2) nType = "c_ulonglong";
+      if (_long == 1) nType = "c_ulong";
+      if (_long == 0 && _short == 0) nType = "c_uint";
+      if (_short == 1) nType = "c_ushort";
+      if (_char == 1) nType = "c_uchar";
+    } else {
+      if (_long == 2) nType = "c_longlong";
+      if (_long == 1) nType = "c_long";
+      if (_long == 0 && _short == 0) nType = "c_int";
+      if (_short == 1) nType = "c_short";
+      if (_signed > 0 && _char == 1) nType = "c_schar";
+      if (_signed == 0 && _char == 1) nType = "c_char";
+    }
+
+    if (nType) {
+      TypeDecl* tmpType = NULL;
+      ValueDecl* tmpVal = NULL;
+      info->lvt->getCDecl(nType, &tmpType, &tmpVal);
+      cTypeRet = tmpType;
+    }
+  }
+}
+
+static void handleMacroToken(const MacroInfo* inMacro,
+                             bool negate,
+                             const Token tok,
+                             VarSymbol*& varRet,
+                             TypeDecl*& cTypeRet,
+                             ValueDecl*& cValueRet)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
+
+  const bool debugPrint = debugPrintMacros;
 
   switch(tok.getKind()) {
     case tok::numeric_constant: {
@@ -441,7 +692,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       if( !varRet && !cTypeRet && !cValueRet ) {
         // Check to see if it's another macro.
         MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
-        if( otherMacro && otherMacro != macro ) {
+        if( otherMacro && otherMacro != inMacro ) {
           // Handle the other macro to add it to the LVT under the new name
           // The recursive call will add it to the LVT
           if( debugPrint) printf("other macro\n");
@@ -469,27 +720,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
       break;
   }
 
-  if( debugPrint ) {
-    std::string s = id->getName();
-    const char* kind = NULL;
-    if( varRet ) kind = "var";
-    if( cTypeRet ) kind = "cdecl type";
-    if( cValueRet ) kind = "cdecl value";
-    if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
-  }
-  if( varRet ) {
-    info->lvt->addGlobalVarSymbol(id->getName(), varRet);
-  }
-  if( cTypeRet ) {
-    info->lvt->addGlobalCDecl(id->getName(), cTypeRet);
-  }
-  if( cValueRet ) {
-    info->lvt->addGlobalCDecl(id->getName(), cValueRet);
-  }
-
 }
-
-
 
 
 static
@@ -1194,10 +1425,12 @@ module_set_t gModulesWithExternBlocks;
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,
                          clang::TypeDecl** cTypeOut,
                          clang::ValueDecl** cValueOut,
+                         const char** cCastedToTypeOut,
                          ChapelType** chplTypeOut)
 {
   if( ! module->extern_info ) return false;
-  module->extern_info->gen_info->lvt->getCDecl(name, cTypeOut, cValueOut);
+  module->extern_info->gen_info->lvt->getCDecl(name, cTypeOut, cValueOut,
+                                               cCastedToTypeOut);
   VarSymbol* var = module->extern_info->gen_info->lvt->getVarSymbol(name);
   if( var ) *chplTypeOut = var->typeInfo();
   return ( (*cTypeOut) || (*cValueOut) || (*chplTypeOut) );
@@ -1653,7 +1886,7 @@ void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
   }
 }
 
-void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
+void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl, const char* castToType) {
 
   if(RecordDecl *rd = dyn_cast<RecordDecl>(cdecl)) {
     // For record decls, always use the completed definition
@@ -1673,14 +1906,18 @@ void LayeredValueTable::addGlobalCDecl(StringRef name, NamedDecl* cdecl) {
   // both a type and a value (e.g. struct stat and function stat).
   Storage & store = (layers.back())[name];
   if (isa<TypeDecl>(cdecl)) store.u.cTypeDecl = cast<TypeDecl>(cdecl);
-  if (isa<ValueDecl>(cdecl)) store.u.cValueDecl = cast<ValueDecl>(cdecl);
+  if (isa<ValueDecl>(cdecl)) {
+    store.u.cValueDecl = cast<ValueDecl>(cdecl);
+    store.u.castChplVarTo = castToType;
+  }
 }
 
 
-void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var)
+void LayeredValueTable::addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType)
 {
   Storage store;
   store.u.chplVar = var;
+  store.u.castChplVarTo = castToType;
   (layers.back())[name] = store;
 }
 
@@ -1721,9 +1958,15 @@ GenRet LayeredValueTable::getValue(StringRef name) {
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
       VarSymbol* var = store->u.chplVar;
       GenRet ret = var; // code generate it!
+
+      if (store->u.castChplVarTo) {
+        ret = codegenCast(store->u.castChplVarTo, ret);
+      }
+
       store->u.value = ret.val;
       store->isLVPtr = ret.isLVPtr;
       store->isUnsigned = ret.isUnsigned;
+
       return ret;
     }
   }
@@ -1764,10 +2007,11 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
 // Sets the output arguments to NULL if a type/value was not found.
 // Either output argument can be NULL.
 void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
-    ValueDecl** cValueOut) {
+    ValueDecl** cValueOut, const char** cCastedToTypeOut) {
 
   if (cValueOut) *cValueOut = NULL;
   if (cTypeOut) *cTypeOut = NULL;
+  if (cCastedToTypeOut) *cCastedToTypeOut = NULL;
 
   if(Storage *store = get(name)) {
     if( store->u.cValueDecl ) {
@@ -1783,6 +2027,9 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
       // maybe TypedefDecl,EnumDecl,RecordDecl
 
       if (cTypeOut) *cTypeOut = store->u.cTypeDecl;
+    }
+    if (store->u.castChplVarTo) {
+      if (cCastedToTypeOut) *cCastedToTypeOut = store->u.castChplVarTo;
     }
   }
 }

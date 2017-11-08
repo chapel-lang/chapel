@@ -203,15 +203,26 @@ static Expr* convertToChplType(ModuleSymbol* module, const clang::Type *type, Ve
 static void convertMacroToChpl(ModuleSymbol* module,
                                const char*   name,
                                Type*         chplType,
+                               Expr*         chplTypeExpr,
                                Vec<Expr*>&   results) {
   if( ! module->extern_info ) return;
 
-  VarSymbol* v = new VarSymbol(name, chplType);
+  VarSymbol* v = NULL;
+  if (chplType)
+    v = new VarSymbol(name, chplType);
+  else
+    v = new VarSymbol(name);
 
   v->addFlag(FLAG_EXTERN);
   v->addFlag(FLAG_CONST);
 
-  results.add(new DefExpr(v));
+  DefExpr* def = NULL;
+  if (chplTypeExpr)
+    def = new DefExpr(v, NULL, chplTypeExpr);
+  else
+    def = new DefExpr(v);
+
+  results.add(def);
 
   forv_Vec(Expr*, result, results) {
     if (!result->inTree()) {
@@ -295,14 +306,23 @@ void convertDeclToChpl(ModuleSymbol* module,
 
   clang::TypeDecl* cType = NULL;
   clang::ValueDecl* cValue = NULL;
+  const char* cCastedToType = NULL;
   Type* chplType = NULL;
 
   // If we've got nothing... give up.
-  if(!lookupInExternBlock(module, name, &cType, &cValue, &chplType)) return;
+  if(!lookupInExternBlock(module, name, &cType, &cValue, &cCastedToType, &chplType)) return;
 
   // Now, if we have no cdecl, it may be a macro.
   if( (!cType) && (!cValue) ) {
-    convertMacroToChpl(module, name, chplType, results);
+    Expr* chplTypeExpr = NULL;
+    if (cCastedToType) {
+      // If the macro contained a cast, replace the Chapel type
+      // with a type expression.
+      chplType = NULL;
+      chplTypeExpr = new UnresolvedSymExpr(cCastedToType);
+    }
+
+    convertMacroToChpl(module, name, chplType, chplTypeExpr, results);
     return;
   }
 

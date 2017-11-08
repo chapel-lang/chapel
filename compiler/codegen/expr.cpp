@@ -55,7 +55,6 @@ class FnSymbol;
 static GenRet codegenCallExpr(const char* fnName);
 static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
-static GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
 static GenRet createTempVar(Type* t);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
@@ -2901,7 +2900,6 @@ GenRet codegenCast(Type* t, GenRet value, bool Cparens)
 }
 
 
-static
 GenRet codegenCast(const char* typeName, GenRet value, bool Cparens)
 {
   GenInfo* info = gGenInfo;
