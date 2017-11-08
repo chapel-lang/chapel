@@ -361,7 +361,8 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
         if (varLhs != NULL && symRhs != NULL)
         {
           INT_ASSERT(varLhs->isRef() == false && symRhs->isRef());
-          if (isUserDefinedRecord(varLhs->type) == true)
+          if (isUserDefinedRecord(varLhs->type) == true &&
+              !varLhs->hasFlag(FLAG_NO_COPY))
           {
 
             // HARSHBARGER 2015-12-11:
