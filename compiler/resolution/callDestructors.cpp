@@ -679,24 +679,6 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 //
 static Map<FnSymbol*,Vec<FnSymbol*>*> retToArgCache;
 
-// Helper method for changeRetToArgAndClone, assisting in symbol replacement
-//
-// This method takes in the current call which we are replacing around
-// (focalPt), the VarSymbol we are trying to replace (oldSym), the symbol we are
-// replacing it with (newSym), and the function that was called in the first
-// use of oldSym in the callee, to replace oldSym with newSym without breaking
-// the AST.
-inline static void replacementHelper(CallExpr*  focalPt,
-                                     VarSymbol* oldSym,
-                                     Symbol*    newSym,
-                                     FnSymbol* useFn) {
-  focalPt->insertAfter(new CallExpr(PRIM_ASSIGN,
-                                    newSym,
-                                    new CallExpr(useFn, oldSym)));
-}
-
-
-
 static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
