@@ -233,11 +233,13 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
                                value1, value2, isSigned1, isSigned2);
 }
 
-static llvm::Value* extendToPointerSize(GenRet index) {
+// Sign or zero extend a value to an integer that is the size of a
+// pointer in the address space AS.
+static llvm::Value* extendToPointerSize(GenRet index, unsigned AS) {
   GenInfo* info = gGenInfo;
 
   const llvm::DataLayout& DL = info->module->getDataLayout();
-  llvm::Type* sizeTy = DL.getIntPtrType(info->module->getContext(), 0);
+  llvm::Type* sizeTy = DL.getIntPtrType(info->module->getContext(), AS);
   unsigned sizeBits = DL.getTypeSizeInBits(sizeTy);
   unsigned idxBits = DL.getTypeSizeInBits(index.val->getType());
 
@@ -1158,6 +1160,8 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     ret.c = "(" + base.c + " + " + index.c + ")";
   } else {
 #ifdef HAVE_LLVM
+    unsigned AS = base.val->getType()->getPointerAddressSpace();
+
     // in LLVM, arrays are not pointers and cannot be used in
     // calls to CreateGEP, CreateCall, CreateStore, etc.
     // so references to arrays must be used instead
@@ -1170,7 +1174,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
           llvm::Constant::getNullValue(
             llvm::IntegerType::getInt64Ty(info->module->getContext())));
     }
-    GEPLocs.push_back(extendToPointerSize(index));
+    GEPLocs.push_back(extendToPointerSize(index, AS));
 
     ret.val = createInBoundsGEP(base.val, GEPLocs);
 #endif
@@ -1591,9 +1595,11 @@ GenRet codegenAdd(GenRet a, GenRet b)
       // We must have a pointer and an integer.
       INT_ASSERT(ptr && i);
 
+      unsigned AS = ptr->val->getType()->getPointerAddressSpace();
+
       // Emit a GEP instruction to do the addition.
       ret.isUnsigned = true; // returning a pointer, consider them unsigned
-      ret.val = createInBoundsGEP(ptr->val, i->val);
+      ret.val = createInBoundsGEP(ptr->val, extendToPointerSize(*i, AS));
     } else {
       PromotedPair values =
         convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
@@ -2040,7 +2046,7 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     llvm::Value* GEPLocs[2];
     GEPLocs[0] = llvm::Constant::getNullValue(
         llvm::IntegerType::getInt64Ty(info->module->getContext()));
-    GEPLocs[1] = extendToPointerSize(elt);
+    GEPLocs[1] = extendToPointerSize(elt, 0);
 
     llvm::Value* elementPtr;
     elementPtr = createInBoundsGEP(table.val, GEPLocs);
