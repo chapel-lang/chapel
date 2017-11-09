@@ -1,0 +1,22 @@
+foo1
+in loop, got (c = {x = 1})
+destroying {x = 1}
+in loop, got (c = {x = 2})
+destroying {x = 2}
+return at end
+destroying {x = 0}
+foo2
+in loop, got (c = {x = 1})
+destroying {x = 1}
+in loop, got (c = {x = 2})
+destroying {x = 2}
+in loop, got (c = {x = 3})
+destroying {x = 3}
+return at end
+destroying {x = 0}
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+
