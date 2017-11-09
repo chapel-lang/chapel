@@ -897,7 +897,7 @@ module ChapelArray {
       }
     }
 
-    forwarding _value except these;
+    forwarding _value except these, targetLocales;
 
     inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
