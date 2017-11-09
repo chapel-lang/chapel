@@ -101,7 +101,7 @@ bool AutoDestroyScope::handlingFormalTemps(const Expr* stmt) const {
 // If the refStmt is a goto then we need to recurse
 // to the block that contains the target of the goto
 void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
-                                          std::set<VarSymbol*>* ignored) {
+                                          std::set<VarSymbol*> ignored) {
   GotoStmt*               gotoStmt   = toGotoStmt(refStmt);
   bool                    recurse    = (gotoStmt != NULL) ? true : false;
   BlockStmt*              forTarget  = findBlockForTarget(gotoStmt);
@@ -142,7 +142,7 @@ void AutoDestroyScope::insertAutoDestroys(FnSymbol* fn, Expr* refStmt,
 
 void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                         VarSymbol* excludeVar,
-                                        std::set<VarSymbol*>* ignored) const {
+                                        std::set<VarSymbol*> ignored) const {
   // Handle the primary locals
   if (mLocalsHandled == false) {
     Expr*  insertBeforeStmt = refStmt;
@@ -171,8 +171,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       // of interleaving matters.
       INT_ASSERT(var || defer);
 
-      if (var != NULL && var != excludeVar &&
-          (ignored == NULL || ignored->count(var) == 0)) {
+      if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (FnSymbol* autoDestroyFn = autoDestroyMap.get(var->type)) {
           SET_LINENO(var);
 
@@ -222,6 +221,20 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
 static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   VarSymbol* retVar = toVarSymbol(fn->getReturnSymbol());
   VarSymbol* retval = NULL;
+
+  // TODO: migrate variableToExclude to addAutoDestroys
+  // and the excluded set.
+
+  // TODO : handle localized yields
+  // These are not passed through the RVV but rather are just
+  // the result of yielding.
+
+  /*if (CallExpr* call = toCallExpr(refStmt)) {
+    if (call->isPrimitive(PRIM_YIELD) == true) {
+      SymExpr* se = toSymExpr(call->get(1));
+      retVar = toVarSymbol(se->symbol());
+    }
+  }*/
 
   if (retVar != NULL) {
     if (isUserDefinedRecord(retVar)    == true ||

@@ -44,12 +44,12 @@ public:
 
   void                     insertAutoDestroys(FnSymbol* fn,
                                               Expr*     refStmt,
-                                              std::set<VarSymbol*>* ignored);
+                                              std::set<VarSymbol*> ignored);
 
 private:
   void                     variablesDestroy(Expr*      refStmt,
                                             VarSymbol* excludeVar,
-                                            std::set<VarSymbol*>* ignored) const;
+                                            std::set<VarSymbol*> ignored) const;
 
   const AutoDestroyScope*  mParent;
   const BlockStmt*         mBlock;

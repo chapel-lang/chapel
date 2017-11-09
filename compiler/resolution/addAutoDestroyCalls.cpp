@@ -38,7 +38,7 @@ static void cullForDefaultConstructor(FnSymbol* fn);
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*> *ignoredVariables);
+                      std::set<VarSymbol*>& ignoredVariables);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -46,7 +46,8 @@ void addAutoDestroyCalls() {
       cullForDefaultConstructor(fn);
     }
 
-    walkBlock(fn, NULL, fn->body, NULL);
+    std::set<VarSymbol*> empty;
+    walkBlock(fn, NULL, fn->body, empty);
   }
 
   // Finally, remove all defer statements, since they have been lowered.
@@ -133,27 +134,50 @@ static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
 static bool         isErrorLabel(const Expr*        stmt);
+static bool isYieldStmt(const Expr* stmt);
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
-    std::set<VarSymbol*>* ignoredVariables);
+    std::set<VarSymbol*>& ignoredVariables);
+static void gatherIgnoredVariablesForYield(
+    Expr* stmt,
+    std::set<VarSymbol*>& ignoredVariables);
 
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*> *ignoredVariables) {
+                      std::set<VarSymbol*>& ignoredVariables) {
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
+
+  //if (fn->id == 185082)
+  //  gdbShouldBreakHere();
+  if (fn->id == 1143786)
+    gdbShouldBreakHere();
+
+  // Updating the variableToExclude is a good start, but an iterator
+  // can have multiple yields in it. If each yield consumes the value,
+  // shouldn't we be updating ignoredVariables for each yielded value?
+  // (and going back to things moved to it?) Since once it is yielded,
+  // it is no longer available for destruction?
 
   for_alist(stmt, block->body) {
     //
     // Handle the current statement
     //
 
+    // TODO -- maybe we need to handle breakLabel and continueLabel here?
+  
+    // Once a variable is yielded, it should no longer be auto-destroyed,
+    // since such destruction is the responsibility of
+    // the calling loop.
+    if (isYieldStmt(stmt)) {
+      gatherIgnoredVariablesForYield(stmt, ignoredVariables);
+
     // AutoDestroy locals at the start of the error-handling label
     // (when exiting a try block without error)
-    if (isErrorLabel(stmt) == true) {
+    } else if (isErrorLabel(stmt) == true) {
       scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
     // AutoDestroy primary locals at start of function epilogue (1)
@@ -176,20 +200,20 @@ static void walkBlock(FnSymbol*         fn,
 
       // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
       } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
-        walkBlock(fn, &scope, subBlock, NULL);
+        walkBlock(fn, &scope, subBlock, ignoredVariables);
 
       // Recurse in to the BlockStmt(s) of a CondStmt
       } else if (CondStmt*  cond     = toCondStmt(stmt))  {
 
-        std::set<VarSymbol*> ignoredVariables;
+        std::set<VarSymbol*> toIgnore(ignoredVariables);
 
         if (isCheckErrorStmt(cond))
-          gatherIgnoredVariablesForErrorHandling(cond, &ignoredVariables);
+          gatherIgnoredVariablesForErrorHandling(cond, toIgnore);
 
-        walkBlock(fn, &scope, cond->thenStmt, &ignoredVariables);
+        walkBlock(fn, &scope, cond->thenStmt, toIgnore);
 
         if (cond->elseStmt != NULL)
-          walkBlock(fn, &scope, cond->elseStmt, &ignoredVariables);
+          walkBlock(fn, &scope, cond->elseStmt, toIgnore);
 
       }
     }
@@ -302,6 +326,13 @@ static bool isErrorLabel(const Expr* stmt) {
   return false;
 }
 
+static bool isYieldStmt(const Expr* stmt) {
+  if (const CallExpr* call = toConstCallExpr(stmt))
+    if (call->isPrimitive(PRIM_YIELD))
+      return true;
+
+  return false;
+}
 /*
  This function identifies variables that have not yet been initialized
  because the function that would initialize them has thrown an error.
@@ -336,7 +367,7 @@ static bool isErrorLabel(const Expr* stmt) {
 */
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
-    std::set<VarSymbol*>* ignoredVariables)
+    std::set<VarSymbol*>& ignoredVariables)
 {
 
   // Look for the function call immediately preceding
@@ -351,7 +382,7 @@ static void gatherIgnoredVariablesForErrorHandling(
           if (fn->throwsError()) {
             SymExpr *se = toSymExpr(move->get(1));
             ignore = toVarSymbol(se->symbol());
-            ignoredVariables->insert(ignore);
+            ignoredVariables.insert(ignore);
           }
         }
       }
@@ -379,9 +410,59 @@ static void gatherIgnoredVariablesForErrorHandling(
 
         if (dstSe != NULL && srcSe != NULL &&
             srcSe->symbol() == ignore)
-          ignoredVariables->insert(toVarSymbol(dstSe->symbol()));
+          ignoredVariables.insert(toVarSymbol(dstSe->symbol()));
       }
     }
+  }
+}
+
+static void gatherIgnoredVariablesForYield(
+    Expr* yieldStmt,
+    std::set<VarSymbol*>& ignoredVariables)
+{
+  CallExpr* yield = toCallExpr(yieldStmt);
+  SymExpr* yieldedSe = toSymExpr(yield->get(1));
+  INT_ASSERT(yieldedSe);
+  VarSymbol* yieldedVar = toVarSymbol(yieldedSe->symbol());
+  INT_ASSERT(yieldedVar);
+  QualifiedType t = yieldedVar->qualType();
+  VarSymbol* retval = NULL;
+
+  if (isUserDefinedRecord(t.type()) && ! t.isRef() ) {
+
+// TODO: this is copied from variableToExclude, consider
+// making a helper function / method.
+// For example, we could have addReturnedIgnored
+      VarSymbol* needle = yieldedVar;
+      Expr*      expr   = yieldStmt;
+
+      // Walk backwards looking for the variable that is being returned
+      while (retval == NULL && expr != NULL && needle != NULL) {
+        if (CallExpr* move = toCallExpr(expr)) {
+          if (move->isPrimitive(PRIM_MOVE) == true) {
+            SymExpr*   lhs    = toSymExpr(move->get(1));
+            VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+
+            if (needle == lhsVar) {
+              if (SymExpr* rhs = toSymExpr(move->get(2))) {
+                VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
+
+                if (isAutoDestroyedVariable(rhsVar) == true) {
+                  retval = rhsVar;
+                } else {
+                  needle = rhsVar;
+                }
+              } else {
+                needle = NULL;
+              }
+            }
+          }
+        }
+
+        expr = expr->prev;
+      }
+
+      ignoredVariables.insert(retval);
   }
 }
 
@@ -401,6 +482,7 @@ bool isAutoDestroyedVariable(Symbol* sym) {
         (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
          var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
          // TODO - can we remove this isRefCountedType?
+         // X
          isRefCountedType(var->type)                             == false)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
