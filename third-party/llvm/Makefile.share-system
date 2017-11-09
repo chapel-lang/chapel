@@ -1,6 +1,6 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share
 
-PREFERRED_LLVM_VERS=3.7
+PREFERRED_LLVM_VERS=4.0
 
 ifndef LLVM_CONFIG
   export LLVM_CONFIG=$(shell $(THIRD_PARTY_DIR)/llvm/find-llvm-config.sh $(PREFERRED_LLVM_VERS))
