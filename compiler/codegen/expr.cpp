@@ -232,6 +232,43 @@ PromotedPair convertValuesToLarger(llvm::Value *value1, llvm::Value *value2, boo
   return convertValuesToLarger(info->builder,
                                value1, value2, isSigned1, isSigned2);
 }
+
+// Sign or zero extend a value to an integer that is the size of a
+// pointer in the address space AS.
+static llvm::Value* extendToPointerSize(GenRet index, unsigned AS) {
+  GenInfo* info = gGenInfo;
+
+  const llvm::DataLayout& DL = info->module->getDataLayout();
+  llvm::Type* sizeTy = DL.getIntPtrType(info->module->getContext(), AS);
+  unsigned sizeBits = DL.getTypeSizeInBits(sizeTy);
+  unsigned idxBits = DL.getTypeSizeInBits(index.val->getType());
+
+  if (idxBits < sizeBits) {
+    return convertValueToType(index.val, sizeTy, !index.isUnsigned);
+  }
+  return index.val;
+}
+
+static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
+                                      llvm::ArrayRef<llvm::Value*> idxList) {
+  GenInfo* info = gGenInfo;
+
+  if (developer || fVerify) {
+    const llvm::DataLayout& DL = info->module->getDataLayout();
+    unsigned ptrBits = DL.getPointerSizeInBits(0);
+    // Check that each idxList element is at least ptrBits big.
+    // Otherwise, it always does signed extending, but sometimes
+    // we want unsigned.
+    for (auto v : idxList) {
+      unsigned idxSize = DL.getTypeSizeInBits(v->getType());
+      INT_ASSERT(idxSize >= ptrBits);
+      // consider calling extendToPointerSize at the call site
+    }
+  }
+
+  return info->builder->CreateInBoundsGEP(ptr, idxList);
+}
+
 #endif
 
 enum WideThingField {
@@ -1123,6 +1160,8 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     ret.c = "(" + base.c + " + " + index.c + ")";
   } else {
 #ifdef HAVE_LLVM
+    unsigned AS = base.val->getType()->getPointerAddressSpace();
+
     // in LLVM, arrays are not pointers and cannot be used in
     // calls to CreateGEP, CreateCall, CreateStore, etc.
     // so references to arrays must be used instead
@@ -1135,9 +1174,9 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
           llvm::Constant::getNullValue(
             llvm::IntegerType::getInt64Ty(info->module->getContext())));
     }
-    GEPLocs.push_back(index.val);
+    GEPLocs.push_back(extendToPointerSize(index, AS));
 
-    ret.val = info->builder->CreateInBoundsGEP(base.val, GEPLocs);
+    ret.val = createInBoundsGEP(base.val, GEPLocs);
 #endif
   }
 
@@ -1556,9 +1595,11 @@ GenRet codegenAdd(GenRet a, GenRet b)
       // We must have a pointer and an integer.
       INT_ASSERT(ptr && i);
 
+      unsigned AS = ptr->val->getType()->getPointerAddressSpace();
+
       // Emit a GEP instruction to do the addition.
       ret.isUnsigned = true; // returning a pointer, consider them unsigned
-      ret.val = info->builder->CreateInBoundsGEP(ptr->val, i->val);
+      ret.val = createInBoundsGEP(ptr->val, extendToPointerSize(*i, AS));
     } else {
       PromotedPair values =
         convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
@@ -2005,10 +2046,10 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     llvm::Value* GEPLocs[2];
     GEPLocs[0] = llvm::Constant::getNullValue(
         llvm::IntegerType::getInt64Ty(info->module->getContext()));
-    GEPLocs[1] = elt.val;
+    GEPLocs[1] = extendToPointerSize(elt, 0);
 
     llvm::Value* elementPtr;
-    elementPtr = info->builder->CreateInBoundsGEP(table.val, GEPLocs);
+    elementPtr = createInBoundsGEP(table.val, GEPLocs);
 
     llvm::Instruction* element = info->builder->CreateLoad(elementPtr);
 
@@ -4866,7 +4907,7 @@ GenRet CallExpr::codegenPrimitive() {
 
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr   = gGenInfo->builder->CreateInBoundsGEP(ftable.val, GEPLocs);
+      fnPtrPtr   = createInBoundsGEP(ftable.val, GEPLocs);
       fnPtr      = gGenInfo->builder->CreateLoad(fnPtrPtr);
 
       // Generate an LLVM function type based upon the arguments.
@@ -4955,7 +4996,7 @@ GenRet CallExpr::codegenPrimitive() {
       GEPLocs[0] = llvm::Constant::getNullValue(
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr = gGenInfo->builder->CreateInBoundsGEP(table.val, GEPLocs);
+      fnPtrPtr = createInBoundsGEP(table.val, GEPLocs);
       llvm::Instruction* fnPtrV = gGenInfo->builder->CreateLoad(fnPtrPtr);
       fnPtr.val = fnPtrV;
 #endif
