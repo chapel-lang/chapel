@@ -897,6 +897,8 @@ module ChapelArray {
       }
     }
 
+    forwarding _value except these;
+
     inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
         on _instance {
@@ -1039,6 +1041,8 @@ module ChapelArray {
         return _instance;
       }
     }
+
+    forwarding _value except these;
 
     pragma "no doc"
     proc chpl__serialize() where this._value.type : DefaultRectangularDom {
