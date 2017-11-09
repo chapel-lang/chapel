@@ -48,11 +48,10 @@ For now, do this instead:
 
 const distTemp = new Block(dummyBB);
 const DM = new dmap(distTemp);
-const distInForce = DM._value;
 
-distInForce.changeBoundingBox(1..4);
+DM.changeBoundingBox(1..4);
 for idx in 0..6 do writeln("C:  ", idx, " maps to ",
-                           distInForce.dsiIndexToLocale(idx));
+                           DM.idxToLocale(idx));
 
 // Show this one in action, too.
 var Dbis: domain(1) dmapped DM;
