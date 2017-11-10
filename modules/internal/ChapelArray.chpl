@@ -4006,47 +4006,98 @@ module ChapelArray {
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
 
-    // The use of an explicit initCopy() is required
-    // to support nested for/forall expressions.
-    iter _ir_copy_recursive(ir) {
-      for e in ir {
-        pragma "no copy"
-        var ee = chpl__initCopy(e);
+    // We'd like to know the yielded type of the record, but we can't
+    // access the (runtime) component of that until we actually yield
+    // something.
+    //
+    // The below is a work-around that creates a 1-D array by
+    // filling in a ddata and then handing the data to DefaultRectangularArr.
+    // Besides breaking the catch-22 with the runtime type, the other
+    // advantage of this approach is that it moves the yielded value
+    // in to the array instead of assigning it. Alternatives to this strategy
+    // include creating a no-inited array with the static type that the
+    // iterator yields.
+    //
+    // Of course, in the future, we'd like this to support
+    // creating multidimensional arrays - but that requires storing
+    // the yielded shape in the iterator record which doesn't seem close
+    // at hand...
+    //
+    // The resulting array grows dynamically. That wouldn't always be
+    // necessary if we had better shape information in iterator records.
+    // Additionally, the dynamic growing limits parallelism here, so
+    // adding better shape information would allow it to be parallel and
+    // thus enable better performance.
 
-        yield ee;
+    var i  = 0;
+    var size:size_t = 0;
+    var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
+    //type eltType = iteratorToArrayElementType(ir.type);
+    //var data:_ddata(eltType) = nil;
+
+    var callAgain: bool;
+    var subloc = c_sublocid_none;
+
+    for elt in ir {
+
+      // Future: the expring value optimization should remove this copy.
+      // Note though that in some cases it invokes this function
+      // recursively - in that case it shouldn't be removed!
+      pragma "no auto destroy"
+      pragma "no copy"
+      var eltCopy = chpl__initCopy(elt);
+
+      pragma "insert auto destroy"
+      type eltType = eltCopy.type;
+
+      if i >= size {
+        // Allocate a new buffer and then copy.
+        var oldSize = size;
+        var oldData = data;
+
+        if size == 0 then
+          size = 4;
+        else
+          size = 2 * size;
+
+        // data allocation should match DefaultRectangular
+        __primitive("array_alloc", data, size, subloc,
+                    c_ptrTo(callAgain), c_nil);
+
+        // Now copy the data over
+        for i in 0..#oldSize {
+          // this is a move, transfering ownership
+          __primitive("=", data[i], oldData[i]);
+        }
+
+        // Then, free the old data
+        _ddata_free(oldData, oldSize);
       }
+
+      // Now move the element to the array
+      // The intent here is to transfer ownership to the array.
+      __primitive("=", data[i], eltCopy);
+
+      i += 1;
     }
 
-    pragma "no copy"
-    var irc  = _ir_copy_recursive(ir);
+    // let the comm layer adjust array allocation
+    if callAgain then
+      __primitive("array_alloc", data, size, subloc, c_nil, data);
 
-    var i    = 1;
-    var size = 4;
 
+    // Now construct a DefaultRectangular array using the data
     pragma "insert auto destroy"
-    var D    = {1..size};
+    var D = { 1 .. #i };
 
-    // note that _getIterator is called in order to copy the iterator
-    // class since for arrays we need to iterate once to get the
-    // element type (at least for now); this also means that if this
-    // iterator has side effects, we will see them; a better way to
-    // handle this may be to get the static type (not initialize the
-    // array) and use a primitive to set the array's element; that may
-    // also handle skyline arrays
-    var A: [D] iteratorIndexType(irc);
+    var A = D.buildArrayWith(data[0].type, data, size:int);
 
-    for e in irc {
-      // The resulting array grows dynamically
-      if i > size {
-        size = 2 * size;
-        D    = { 1 .. size };
-      }
-
-      A(i) = e;
-      i    = i + 1;
-    }
-
-    D = { 1 .. i - 1 };
+    // Normally, the sub-arrays share a domain with the
+    // parent, but that's not the case for the arrays created
+    // by this routine. Instead, each sub-array owns its own domain.
+    // That allows them to have different runtime sizes.
+    chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
+    A._value._decEltRefCounts = false;
 
     return A;
   }
