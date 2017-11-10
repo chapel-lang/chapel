@@ -101,6 +101,7 @@ public:
   // Used only in PrimitiveType; replace with flag?
   bool                   isInternalType;
 
+  // TODO: can this move to AggregateType?
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;

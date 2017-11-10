@@ -168,6 +168,18 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoScalarPromotionType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  Type* type = tmp.type()->getValType();
+
+  if (type->scalarPromotionType)
+    type = type->scalarPromotionType;
+
+  return QualifiedType(type, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
@@ -577,6 +589,8 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
+  prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+  prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);

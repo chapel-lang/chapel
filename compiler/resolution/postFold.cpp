@@ -613,7 +613,9 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
     } else if (rhs->isPrimitive(PRIM_DEREF)  == true) {
       isTypeVar = isTypeExpr(rhs->get(1));
 
-    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true ||
+               rhs->isPrimitive(PRIM_STATIC_TYPEOF) == true ||
+               rhs->isPrimitive(PRIM_SCALAR_PROMOTION_TYPE) == true) {
       isTypeVar = true;
     }
 
