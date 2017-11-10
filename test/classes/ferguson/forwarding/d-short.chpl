@@ -1,6 +1,9 @@
 record Wrapper {
   forwarding var instance:C;
   proc foo() { writeln("in Wrapper.foo()"); }
+  proc deinit() {
+    delete instance;
+  }
 }
 
 class C {

@@ -46,6 +46,9 @@ record WrapperOuter {
   a.foo(); // should call WrapperOuter.foo
   a.bar(); // should call WrapperOne.bar
   a.baz(); // should call C.baz
+
+  // Can't use deinit, otherwise there will be a double-free
+  delete a.instance.instance;
 }
 
 {
@@ -54,6 +57,8 @@ record WrapperOuter {
   b.dfoo(); // should call WrapperOuter.dfoo
   b.dbar(); // should call WrapperTwo.dbar
   b.dbaz(); // should call D.dbaz
+
+  delete b.instance.instance;
 }
 
 {
@@ -62,6 +67,8 @@ record WrapperOuter {
   c.dfoo(); // should call WrapperOuter.dfoo
   c.dbar(); // should call WrapperOne.dbar
   c.dbaz(); // should call D.dbaz
+
+  delete c.instance.instance;
 }
 
 {
@@ -70,4 +77,6 @@ record WrapperOuter {
   d.foo(); // should call WrapperOuter.foo
   d.bar(); // should call WrapperTwo.bar
   d.baz(); // should call C.baz
+
+  delete d.instance.instance;
 }

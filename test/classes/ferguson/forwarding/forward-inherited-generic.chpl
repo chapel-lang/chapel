@@ -14,12 +14,19 @@ class Deque : Collection {
 
 record wrapper {
     type t;
+    var instance : Deque(t);
 
     inline proc _value { 
-        return new Deque(t);
+        if instance == nil then
+            instance = new Deque(t);
+        return instance;
     }
 
     forwarding _value;
+
+    proc deinit() {
+        delete instance;
+    }
 }
 
 var w : wrapper(int);
