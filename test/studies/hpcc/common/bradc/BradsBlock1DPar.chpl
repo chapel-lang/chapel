@@ -77,6 +77,12 @@ class Block1DDist {
         locDist(locid) = new LocBlock1DDist(idxType, locid, this);
   }
 
+  proc deinit() {
+    for locid in targetLocDom do
+      on targetLocs(locid) do
+        delete locDist(locid);
+  }
+
 
   // DISTRIBUTION INTERFACE:
 
@@ -282,6 +288,12 @@ class Block1DDom {
                                            dist.getChunk(whole, localeIdx));
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
+  }
+
+  proc deinit() {
+    for localeIdx in dist.targetLocDom do
+      on dist.targetLocs(localeIdx) do
+        delete locDoms(localeIdx);
   }
 
 
@@ -536,6 +548,12 @@ class Block1DArr {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
+  }
+
+  proc deinit() {
+    for loc in dom.dist.targetLocDom do
+      on dom.dist.targetLocs(loc) do
+        delete locArr(loc);
   }
 
 

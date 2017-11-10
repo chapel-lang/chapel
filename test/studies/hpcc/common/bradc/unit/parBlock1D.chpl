@@ -9,3 +9,6 @@ D2.dsiSetIndices({2..10});
 
 forall (i,j) in zip(D1, D2) do
   writeln("on ", here.id, ", (i,j) is: ", (i,j));
+
+delete D2;
+delete D1;

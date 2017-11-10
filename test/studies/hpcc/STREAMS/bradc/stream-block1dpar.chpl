@@ -70,6 +70,9 @@ proc main() {
 
   const validAnswer = verifyResults(A, B, C);
   printResults(validAnswer, execTime);
+  delete A, B, C;
+  delete ProblemSpace;
+  delete ProblemDist;
 }
 
 
