@@ -499,6 +499,9 @@
   "af6e03d4-2403-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/launch/pbs-aprun/launch-pbs-aprun.c"
   ],
+  "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
+    "runtime/src/launch/smp/launch-smp.c"
+  ],
   "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
   ],
