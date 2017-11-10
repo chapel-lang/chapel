@@ -72,6 +72,22 @@ module ChapelIteratorSupport {
     return i.type;
   }
 
+  // Returns the type of the array that is created
+  // when this iterator is promoted to an array.
+  pragma "no doc"
+  proc iteratorToArrayType(type t) type {
+    return t;
+  }
+  pragma "no doc"
+  proc iteratorToArrayType(type t:_iteratorRecord) type {
+    var A:[1..0] iteratorToArrayType(__primitive("scalar promotion type", t));
+    return A.type;
+  }
+  pragma "no doc"
+  proc iteratorToArrayElementType(type t:_iteratorRecord) type {
+    return iteratorToArrayType(__primitive("scalar promotion type", t));
+  }
+
   proc _iteratorRecord.writeThis(f) {
     var first: bool = true;
     for e in this {
@@ -88,6 +104,7 @@ module ChapelIteratorSupport {
       e = x;
   }
 
+  // TODO: replace use of iteratorIndexType?
   pragma "suppress lvalue error"
   proc =(ref ic: _iteratorRecord, x: iteratorIndexType(ic)) {
     for e in ic do
