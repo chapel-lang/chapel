@@ -597,6 +597,19 @@ module DefaultRectangular {
                                       stridable=stridable, dom=this);
     }
 
+    proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
+
+      var allocRange:range(idxType) = (ranges(1).low)..#allocSize;
+      return new DefaultRectangularArr(eltType=eltType,
+                                       rank=rank,
+                                       idxType=idxType,
+                                       stridable=stridable,
+                                       dom=this,
+                                       data=data,
+                                       dataAllocRange=allocRange);
+    }
+
+
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
