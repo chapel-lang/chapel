@@ -2715,14 +2715,13 @@ static void addToWhereClause(ArgSymbol* formal,
 
 static void fixupQueryFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (!formal->typeExpr)
-      continue;
+    if (BlockStmt* typeExpr = formal->typeExpr) {
+      Expr* tail = typeExpr->body.tail;
 
-    if (isDefExpr(formal->typeExpr->body.tail) == true) {
-      replaceUsesWithPrimTypeof(fn, formal);
+      if  (isDefExpr(tail) == true) {
+        replaceUsesWithPrimTypeof(fn, formal);
 
-    } else if (isCallExpr(formal->typeExpr->body.tail) == true) {
-      if (isQueryForGenericTypeSpecifier(formal) == true) {
+      } else if (isQueryForGenericTypeSpecifier(formal) == true) {
         expandQueryForGenericTypeSpecifier(fn, formal);
       }
     }
