@@ -38,8 +38,7 @@ If a formal argument is specified with intent \chpl{type}, then a type
 must be passed to the function at the call site.  A copy of the
 function is instantiated for each unique type that is passed to this
 function at a call site.  The formal argument has the semantics of a
-type alias. Note that type arguments can specify a type that they should
-match.
+type alias.
 
 \begin{chapelexample}{build2tuple.chpl}
 The following code defines a function that takes two types at the call
@@ -66,6 +65,10 @@ writeln(t2);
 (1, hello)
 \end{chapeloutput}
 \end{chapelexample}
+
+A formal type argument can include a formal type (a colon followed by a
+type). This pattern is sometimes useful to create generic functions
+accepting type arguments that only apply to a specific group of types.
 
 \begin{chapelexample}{typeColonArgument.chpl}
 Suppose that we'd like to define a function that accepts a type argument
