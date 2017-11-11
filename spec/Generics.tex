@@ -38,7 +38,9 @@ If a formal argument is specified with intent \chpl{type}, then a type
 must be passed to the function at the call site.  A copy of the
 function is instantiated for each unique type that is passed to this
 function at a call site.  The formal argument has the semantics of a
-type alias.
+type alias. Note that type arguments can specify a type that they should
+match.
+
 \begin{chapelexample}{build2tuple.chpl}
 The following code defines a function that takes two types at the call
 site and returns a 2-tuple where the types of the components of the
@@ -64,6 +66,34 @@ writeln(t2);
 (1, hello)
 \end{chapeloutput}
 \end{chapelexample}
+
+\begin{chapelexample}{typeColonArgument.chpl}
+Suppose that we'd like to define a function that accepts a type argument
+and returns 1 represented in that type.
+\begin{chapel}
+proc getOne(type t:real) {
+  return 1.0;
+}
+proc getOne(type t:integral) {
+  return 1:t;
+}
+\end{chapel}
+Now calls to this function will resolve to the appropriate version based
+upon the argument type supplied.
+\begin{chapel}
+var anInt8 = getOne(int(8));
+var aReal = getOne(real);
+\end{chapel}
+\begin{chapelpost}
+writeln(anInt8.type:string, " ", anInt8);
+writeln(aReal.type:string, " ", aReal);
+\end{chapelpost}
+\begin{chapeloutput}
+int(8) 1
+real(64) 1.0
+\end{chapeloutput}
+\end{chapelexample}
+
 
 \subsection{Formal Parameter Arguments}
 \label{Formal_Parameter_Arguments}
