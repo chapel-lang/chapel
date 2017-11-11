@@ -2768,55 +2768,58 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
   return retval;
 }
 
+// The type-expr is known to be a CallExpr with a query definition
 static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
                                                ArgSymbol* formal) {
-  CallExpr*             call        = toCallExpr(formal->typeExpr->body.tail);
-  bool                  isTupleType = false;
+  BlockStmt*            typeExpr  = formal->typeExpr;
+  Expr*                 tail      = typeExpr->body.tail;
+  CallExpr*             call      = toCallExpr(tail);
+  int                   position  = 1;
+  CallExpr*             queryCall = new CallExpr(PRIM_QUERY);
   std::vector<SymExpr*> symExprs;
 
   collectSymExprs(fn, symExprs);
 
-  if (call->isNamed("_build_tuple")) {
-    addToWhereClause(formal,
-                     new SymExpr(new_IntSymbol(call->numActuals())),
-                     new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
+  if (call->isNamed("_build_tuple") == true) {
+    Expr*     actual = new SymExpr(new_IntSymbol(call->numActuals()));
+    CallExpr* query  = new CallExpr(PRIM_QUERY, new_CStringSymbol("size"));
+
+    addToWhereClause(formal, actual, query);
 
     call->baseExpr->replace(new SymExpr(dtTuple->symbol));
-    isTupleType = true;
-  }
 
-  CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
+    position = position + 1;
+  }
 
   for_actuals(actual, call) {
     if (NamedExpr* named = toNamedExpr(actual)) {
-      positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
+      Symbol*   name1 = new_CStringSymbol(named->name);
+      Symbol*   name2 = new_CStringSymbol(named->name);
+      CallExpr* query = new CallExpr(PRIM_QUERY, name1);
 
-      CallExpr* nameQuery = new CallExpr(PRIM_QUERY,
-                                         new_CStringSymbol(named->name));
+      queryCall->insertAtTail(name2);
 
       if (DefExpr* def = toDefExpr(named->actual)) {
-        replaceQueryUses(formal, def, nameQuery, symExprs);
+        replaceQueryUses(formal, def, query, symExprs);
       } else {
-        addToWhereClause(formal, named->actual, nameQuery);
+        addToWhereClause(formal, named->actual, query);
       }
     }
   }
 
-  int position = (isTupleType) ? 2 : 1; // size is first for tuples
-
   for_actuals(actual, call) {
-    if (!toNamedExpr(actual)) {
-      CallExpr* positionQuery = positionQueryTemplate->copy();
+    if (isNamedExpr(actual) == false) {
+      CallExpr* query = queryCall->copy();
 
-      positionQuery->insertAtTail(new_IntSymbol(position));
+      query->insertAtTail(new_IntSymbol(position));
 
       if (DefExpr* def = toDefExpr(actual)) {
-        replaceQueryUses(formal, def, positionQuery, symExprs);
+        replaceQueryUses(formal, def, query, symExprs);
       } else {
-        addToWhereClause(formal, actual, positionQuery);
+        addToWhereClause(formal, actual, query);
       }
 
-      position++;
+      position = position + 1;
     }
   }
 
