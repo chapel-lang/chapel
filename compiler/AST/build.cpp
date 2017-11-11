@@ -2351,7 +2351,8 @@ DefExpr* buildClassDefExpr(const char*  name,
 void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
-  arg->type = dtAny;
+  if (arg->typeExpr == NULL)
+    arg->type = dtAny;
 }
 
 
