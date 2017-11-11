@@ -2697,6 +2697,8 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 *                                                                             *
 ************************************** | *************************************/
 
+static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
+
 static void replaceQueryUses(ArgSymbol*             formal,
                              DefExpr*               def,
                              CallExpr*              query,
@@ -2711,19 +2713,8 @@ static void fixupQueryFormals(FnSymbol* fn) {
     if (!formal->typeExpr)
       continue;
 
-    if (DefExpr* def = toDefExpr(formal->typeExpr->body.tail)) {
-      std::vector<SymExpr*> symExprs;
-
-      collectSymExprs(fn, symExprs);
-
-      for_vector(SymExpr, se, symExprs) {
-        if (se->symbol() == def->sym)
-          se->replace(new CallExpr(PRIM_TYPEOF, formal));
-      }
-
-      // Consider saving as origTypeExpr instead?
-      formal->typeExpr->remove();
-      formal->type = dtAny;
+    if (isDefExpr(formal->typeExpr->body.tail) == true) {
+      replaceUsesWithPrimTypeof(fn, formal);
 
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
       bool queried = false;
@@ -2775,6 +2766,25 @@ static void fixupQueryFormals(FnSymbol* fn) {
       }
     }
   }
+}
+
+// The type-expr is known to be a simple DefExpr
+static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
+  BlockStmt*            typeExpr = formal->typeExpr;
+  DefExpr*              def      = toDefExpr(typeExpr->body.tail);
+  std::vector<SymExpr*> symExprs;
+
+  collectSymExprs(fn, symExprs);
+
+  for_vector(SymExpr, se, symExprs) {
+    if (se->symbol() == def->sym) {
+      se->replace(new CallExpr(PRIM_TYPEOF, formal));
+    }
+  }
+
+  formal->typeExpr->remove();
+
+  formal->type = dtAny;
 }
 
 static void replaceQueryUses(ArgSymbol*             formal,
