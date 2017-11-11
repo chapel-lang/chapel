@@ -2699,6 +2699,8 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
+static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
+
 static void replaceQueryUses(ArgSymbol*             formal,
                              DefExpr*               def,
                              CallExpr*              query,
@@ -2717,20 +2719,12 @@ static void fixupQueryFormals(FnSymbol* fn) {
       replaceUsesWithPrimTypeof(fn, formal);
 
     } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
-      bool queried = false;
-
-      for_actuals(actual, call) {
-        if (toDefExpr(actual))
-          queried = true;
-        if (NamedExpr* named = toNamedExpr(actual))
-          if (toDefExpr(named->actual))
-            queried = true;
-      }
-
-      if (queried) {
-        bool isTupleType = false;
+      if (isQueryForGenericTypeSpecifier(formal) == true) {
+        bool                  isTupleType = false;
         std::vector<SymExpr*> symExprs;
+
         collectSymExprs(fn, symExprs);
+
         if (call->isNamed("_build_tuple")) {
           addToWhereClause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
           call->baseExpr->replace(new SymExpr(dtTuple->symbol));
@@ -2785,6 +2779,27 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal) {
   formal->typeExpr->remove();
 
   formal->type = dtAny;
+}
+
+static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
+  bool retval = false;
+
+  if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+    for_actuals(actual, call) {
+      if (isDefExpr(actual) == true) {
+        retval = true;
+        break;
+
+      } else if (NamedExpr* named = toNamedExpr(actual)) {
+        if (isDefExpr(named->actual) == true) {
+          retval = true;
+          break;
+        }
+      }
+    }
+  }
+
+  return retval;
 }
 
 static void replaceQueryUses(ArgSymbol*             formal,
