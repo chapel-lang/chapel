@@ -138,11 +138,12 @@ each unique actual type.
 \begin{chapelexample}{fillTuple2.chpl}
 The example from the previous section can be extended to be generic on
 a parameter as well as the actual argument that is passed to it by
-omitting the type of the formal argument \chpl{x}.  The following code
+omitting the type of the formal argument \chpl{x}.  Additionally
+the parameter argument can allow any type be passed. The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
 \begin{chapel}
-proc fillTuple(param p: int, x) {
+proc fillTuple(param p, x) {
   var result: p*x.type;
   for param i in 1..p do
     result(i) = x;
