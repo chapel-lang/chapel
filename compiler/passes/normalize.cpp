@@ -2701,6 +2701,9 @@ static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
 
+static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+                                               ArgSymbol* formal);
+
 static void replaceQueryUses(ArgSymbol*             formal,
                              DefExpr*               def,
                              CallExpr*              query,
@@ -2718,45 +2721,9 @@ static void fixupQueryFormals(FnSymbol* fn) {
     if (isDefExpr(formal->typeExpr->body.tail) == true) {
       replaceUsesWithPrimTypeof(fn, formal);
 
-    } else if (CallExpr* call = toCallExpr(formal->typeExpr->body.tail)) {
+    } else if (isCallExpr(formal->typeExpr->body.tail) == true) {
       if (isQueryForGenericTypeSpecifier(formal) == true) {
-        bool                  isTupleType = false;
-        std::vector<SymExpr*> symExprs;
-
-        collectSymExprs(fn, symExprs);
-
-        if (call->isNamed("_build_tuple")) {
-          addToWhereClause(formal, new SymExpr(new_IntSymbol(call->numActuals())), new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
-          call->baseExpr->replace(new SymExpr(dtTuple->symbol));
-          isTupleType = true;
-        }
-        CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
-        for_actuals(actual, call) {
-          if (NamedExpr* named = toNamedExpr(actual)) {
-            positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
-            CallExpr* nameQuery = new CallExpr(PRIM_QUERY, new_CStringSymbol(named->name));
-            if (DefExpr* def = toDefExpr(named->actual)) {
-              replaceQueryUses(formal, def, nameQuery, symExprs);
-            } else {
-              addToWhereClause(formal, named->actual, nameQuery);
-            }
-          }
-        }
-        int position = (isTupleType) ? 2 : 1; // size is first for tuples
-        for_actuals(actual, call) {
-          if (!toNamedExpr(actual)) {
-            CallExpr* positionQuery = positionQueryTemplate->copy();
-            positionQuery->insertAtTail(new_IntSymbol(position));
-            if (DefExpr* def = toDefExpr(actual)) {
-              replaceQueryUses(formal, def, positionQuery, symExprs);
-            } else {
-              addToWhereClause(formal, actual, positionQuery);
-            }
-            position++;
-          }
-        }
-        formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
-        formal->addFlag(FLAG_MARKED_GENERIC);
+        expandQueryForGenericTypeSpecifier(fn, formal);
       }
     }
   }
@@ -2800,6 +2767,63 @@ static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal) {
   }
 
   return retval;
+}
+
+static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
+                                               ArgSymbol* formal) {
+  CallExpr*             call        = toCallExpr(formal->typeExpr->body.tail);
+  bool                  isTupleType = false;
+  std::vector<SymExpr*> symExprs;
+
+  collectSymExprs(fn, symExprs);
+
+  if (call->isNamed("_build_tuple")) {
+    addToWhereClause(formal,
+                     new SymExpr(new_IntSymbol(call->numActuals())),
+                     new CallExpr(PRIM_QUERY, new_CStringSymbol("size")));
+
+    call->baseExpr->replace(new SymExpr(dtTuple->symbol));
+    isTupleType = true;
+  }
+
+  CallExpr* positionQueryTemplate = new CallExpr(PRIM_QUERY);
+
+  for_actuals(actual, call) {
+    if (NamedExpr* named = toNamedExpr(actual)) {
+      positionQueryTemplate->insertAtTail(new_CStringSymbol(named->name));
+
+      CallExpr* nameQuery = new CallExpr(PRIM_QUERY,
+                                         new_CStringSymbol(named->name));
+
+      if (DefExpr* def = toDefExpr(named->actual)) {
+        replaceQueryUses(formal, def, nameQuery, symExprs);
+      } else {
+        addToWhereClause(formal, named->actual, nameQuery);
+      }
+    }
+  }
+
+  int position = (isTupleType) ? 2 : 1; // size is first for tuples
+
+  for_actuals(actual, call) {
+    if (!toNamedExpr(actual)) {
+      CallExpr* positionQuery = positionQueryTemplate->copy();
+
+      positionQuery->insertAtTail(new_IntSymbol(position));
+
+      if (DefExpr* def = toDefExpr(actual)) {
+        replaceQueryUses(formal, def, positionQuery, symExprs);
+      } else {
+        addToWhereClause(formal, actual, positionQuery);
+      }
+
+      position++;
+    }
+  }
+
+  formal->typeExpr->replace(new BlockStmt(call->baseExpr->remove()));
+
+  formal->addFlag(FLAG_MARKED_GENERIC);
 }
 
 static void replaceQueryUses(ArgSymbol*             formal,
