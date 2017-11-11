@@ -2834,45 +2834,63 @@ static void replaceQueryUses(ArgSymbol*             formal,
                              std::vector<SymExpr*>& symExprs) {
   for_vector(SymExpr, se, symExprs) {
     if (se->symbol() == def->sym) {
-      if (formal->variableExpr) {
-        CallExpr* parent = toCallExpr(se->parentExpr);
-        if (!parent || parent->numActuals() != 1)
-          USR_FATAL(se, "illegal access to query type or parameter");
-        se->replace(new SymExpr(formal));
-        parent->replace(se);
+      if (formal->variableExpr != NULL) {
+        CallExpr* parent  = toCallExpr(se->parentExpr);
         CallExpr* myQuery = query->copy();
+
+        if (parent == NULL || parent->numActuals() != 1) {
+          USR_FATAL(se, "illegal access to query type or parameter");
+        }
+
+        se->replace(new SymExpr(formal));
+
+        parent->replace(se);
+
         myQuery->insertAtHead(parent);
+
         se->replace(myQuery);
+
       } else {
         CallExpr* myQuery = query->copy();
+
         myQuery->insertAtHead(formal);
+
         se->replace(myQuery);
       }
     }
   }
 }
 
-static void addToWhereClause(ArgSymbol* formal, Expr* expr, CallExpr* query) {
-  FnSymbol* fn = formal->defPoint->getFunction();
+static void addToWhereClause(ArgSymbol* formal,
+                             Expr*      expr,
+                             CallExpr*  query) {
+  FnSymbol* fn     = formal->defPoint->getFunction();
+  Expr*     where  = NULL;
+  CallExpr* clause = NULL;
 
-  if (!fn->where) {
-    fn->where = new BlockStmt(new SymExpr(gTrue));
+  if (fn->where == NULL) {
+    where = new SymExpr(gTrue);
+
+    fn->where = new BlockStmt(where);
+
     insert_help(fn->where, NULL, fn);
+
     fn->addFlag(FLAG_COMPILER_ADDED_WHERE);
+
+  } else {
+    where = fn->where->body.tail;
   }
 
   formal->addFlag(FLAG_NOT_FULLY_GENERIC);
 
-  Expr* where = fn->where->body.tail;
-
-  CallExpr* clause;
-
   query->insertAtHead(formal);
 
-  if (formal->variableExpr) {
+  if (formal->variableExpr != NULL) {
     clause = new CallExpr(PRIM_TUPLE_AND_EXPAND);
-    while (query->numActuals())
+
+    while (query->numActuals() > 0) {
       clause->insertAtTail(query->get(1)->remove());
+    }
 
     clause->insertAtTail(expr->copy());
 
