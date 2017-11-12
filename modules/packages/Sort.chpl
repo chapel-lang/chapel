@@ -511,6 +511,64 @@ proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 
 
 /*
+   Sort the 1D array `Data` in-place using a sequential, stable binary insertion sort algorithm.
+   Should be used when there is a high cost of comparision.
+
+   :arg Data: The array to be sorted
+   :type Data: [] `eltType`
+   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+      data is sorted.
+
+ */
+
+proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  chpl_check_comparator(comparator, eltType);
+  const low = Dom.low,
+        high = Dom.high,
+        stride = abs(Dom.stride);
+
+  for i in low..high by stride {
+    var ithVal = Data[i];
+
+    var lo: int = low,
+        hi: int = i - stride,
+        loc: int = -1;              // index that ithVal should be inserted at
+
+    while (lo <= hi) {
+      const size = (hi - lo) / stride,
+            mid = if hi == lo then hi
+                  else if size % 2 then lo + ((size - 1)/2) * stride
+                  else lo + (size/2 - 1) * stride;
+
+      if chpl_compare(ithVal, Data[mid], comparator) == 0 {
+          loc = mid;              // index of last occurence of ithVal in 1..mid
+          lo = loc + stride;
+      }
+      else if chpl_compare(ithVal, Data[mid], comparator) > 0 then
+        lo = mid + stride;
+      else
+        hi = mid - stride;
+    }
+    
+    loc = if loc == -1 then lo else loc + stride;
+    for j in loc..i-stride by -stride {
+      // backward swap until loc
+      Data[j+stride] = Data[j];
+    }
+    Data[loc] = ithVal;
+  }
+}
+
+
+pragma "no doc"
+/* Error message for multi-dimension arrays */
+proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
+  where Dom.rank != 1 {
+    compilerError("binaryInsertionSort() requires 1-D array");
+}
+
+
+/*
    Sort the 1D array `Data` in-place using a parallel merge sort algorithm.
 
    :arg Data: The array to be sorted
