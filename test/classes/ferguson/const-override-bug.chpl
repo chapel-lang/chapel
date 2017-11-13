@@ -25,4 +25,4 @@ class myNumaDomain : myAbstractLocaleModel {
 
 var c = new myNumaDomain();
 writeln(c.name);
-
+delete c;

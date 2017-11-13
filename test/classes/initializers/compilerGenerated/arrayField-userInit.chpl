@@ -13,3 +13,4 @@ var A: [D] real;
 
 var myC = new C(A);
 writeln("myC is: ", myC);
+delete myC;

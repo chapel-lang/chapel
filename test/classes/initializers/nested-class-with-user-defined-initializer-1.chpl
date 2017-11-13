@@ -17,3 +17,6 @@ class enclosing {
 var e = new enclosing();
 var i = e.new_inner();
 writeln(i.outer == e);
+
+delete i;
+delete e;
