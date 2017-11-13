@@ -14,7 +14,7 @@ iter myiter() {
   yield 555;
 }
 
-iter myiter(param tag) {
+iter myiter(param tag) where tag == iterKind.standalone {
   coforall ooo in 1..3 {
     yield 666;
   }
@@ -24,7 +24,7 @@ iter pariter() {
   yield 333;
 }
 
-iter pariter(param tag) {
+iter pariter(param tag) where tag == iterKind.standalone {
   for loc in Locales.these(iterKind.standalone) do
     for kkk in myiter(iterKind.standalone) do
       yield kkk + loc.id;
