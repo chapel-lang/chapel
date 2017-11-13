@@ -78,7 +78,7 @@ module Rosslyn
            
 
         /** Explicit form of default constructor */
-        proc BenchmarkRunner(factory : BenchmarkFactory, repeats = 5 )
+        proc init(factory : BenchmarkFactory, repeats = 5 )
         {
             this.factory = factory;
             this.repeats = repeats;

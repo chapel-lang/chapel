@@ -15,7 +15,7 @@ var jmat2, kmat2, jmat2T, kmat2T : [matD] elemType;
 class blockIndices {
   const ilo, ihi, jlo, jhi, klo, khi, llo, lhi : int;
   
-  proc blockIndices(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
+  proc init(ilo, ihi, jlo, jhi, klo, khi, llo, lhi) {
     this.ilo = ilo;
     this.ihi = ihi;
     this.jlo = jlo;
@@ -23,7 +23,8 @@ class blockIndices {
     this.klo = klo;
     this.khi = khi;
     this.llo = llo;
-    this.lhi = lhi;	 
+    this.lhi = lhi;
+    super.init();
   }
 }
 

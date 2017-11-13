@@ -12,8 +12,8 @@ module Utils {
     var D: domain(1);
     var x : int;
 
-    // Old-style constructor
-    proc R() {
+    // New style initializer
+    proc init() {
     }
 
     // No checks
