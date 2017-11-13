@@ -913,7 +913,7 @@ enum_decl_stmt:
       $1->symbol = pst;
       $$ = buildChapelStmt(new DefExpr(pst));
     }
-| TENUM ident TLCBR error TRCBR
+| enum_header ident TLCBR error TRCBR
     {
       TypeSymbol* pst = new TypeSymbol($2, new EnumType());
       $$ = buildErrorStandin();
