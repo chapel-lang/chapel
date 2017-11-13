@@ -444,11 +444,11 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       } else if (c == 'u' || c == 'U') {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
-        break;
+        addCharEscape('t'); // add a valid escape to continue parsing
       } else if ('0' <= c && c <= '7' ) {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "octal escape not supported in string literal");
-        break;
+        addCharEscape('t'); // add a valid escape to continue parsing
       } else if (c != 0) {
         addCharEscape(c);
       }
