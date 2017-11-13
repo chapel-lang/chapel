@@ -915,7 +915,6 @@ enum_decl_stmt:
     }
 | enum_header ident TLCBR error TRCBR
     {
-      TypeSymbol* pst = new TypeSymbol($2, new EnumType());
       $$ = buildErrorStandin();
     }
 ;
