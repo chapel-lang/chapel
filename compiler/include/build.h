@@ -173,4 +173,8 @@ BlockStmt* handleConfigTypes(BlockStmt*);
 Expr* tryExpr(Expr*);
 Expr* tryBangExpr(Expr*);
 
+// Intended to help issue better compile errors
+// Converts a misuse of 'if a=b' into 'if a==b' and warns.
+Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
+
 #endif

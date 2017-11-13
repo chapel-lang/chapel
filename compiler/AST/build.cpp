@@ -3133,3 +3133,15 @@ Expr* tryBangExpr(Expr* e)
 {
   return new CallExpr(PRIM_TRYBANG_EXPR, e);
 }
+
+Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
+{
+  if (0 == strcmp("=", op)) {
+    USR_FATAL_CONT(a, "Use == to check for equality in a conditional");
+  } else {
+    USR_FATAL_CONT(a, "Invalid conditional %s", op);
+  }
+
+  // Either way, continue compiling with ==
+  return new CallExpr("==", a, b);
+}

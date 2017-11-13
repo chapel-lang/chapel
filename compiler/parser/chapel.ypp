@@ -757,6 +757,14 @@ if_stmt:
 | TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+| TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE  {
+$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6); }
+| TIF expr assignop_ident expr block_stmt %prec TNOELSE  {
+$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5); }
+| TIF expr assignop_ident expr TTHEN stmt TELSE stmt     {
+$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
+| TIF expr assignop_ident expr block_stmt TELSE stmt     {
+$$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
 ;
 
 defer_stmt:
