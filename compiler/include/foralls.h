@@ -56,6 +56,7 @@ public:
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
 void lowerForallStmts();
+Symbol* lookupForallIntentsOrigRetSym(FnSymbol* iterFn);
 
 #define for_riSpecs_vector(VAL, FI) \
   for_vector_allowing_0s(Expr, VAL, (FI)->riSpecs)

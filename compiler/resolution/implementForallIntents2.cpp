@@ -19,6 +19,10 @@
 
 #include "implementForallIntents.h"
 
+#include "foralls.h"
+#include <vector>
+#include <map>
+
 /*
 This file contains Part 2 of the new implementation of forall intents.
 "Part 2" is mostly about extending a copy of the parallel iterator in question
@@ -101,6 +105,7 @@ IF THE YIELD IS INSIDE A FOR OVER A PARALLEL ITERATOR
   * process the forall as above
 
 */
+
 
 /////////// helper data structures ///////////
 
@@ -726,6 +731,9 @@ Need to handle these cases:
     }
 */
 
+//
+// Returns the variable to be a TUPle COMponent of the yielded tuple.
+//
 static Symbol* tupcomForYieldInForall(FIcontext& ctx, ForallStmt* efs, int ix)
 {
   FIinfo&          fii = ctx.fiInfos[ix];
@@ -780,6 +788,23 @@ static void checkFor2ndEnclosingParallelLoop(FIcontext& ctx,
     // No concern.
     return;
 
+  // It is OK if the inner loop is 'for', the second one is 'forall',
+  // and there are no 'in' or 'reduce' intents.
+  // Ex. test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+  // that exercises the standalone iter walkdirs() in FileSystem module.
+  //
+  if (efs->createdFromForLoop() && eInfo.eflopiForall != NULL) {
+    bool noUndesiredIntents = true;
+    for_shadow_vars(svar, temp, ctx.forall) {
+      if (svar->intent == TFI_IN || svar->intent == TFI_REDUCE) {
+        noUndesiredIntents = false;
+        break;
+      }
+    }
+    if (noUndesiredIntents)
+      return;
+  }
+
   USR_FATAL_CONT(yieldCall,
      "this yield is nested in two or more enclosing parallel loops");
   USR_PRINT(yieldCall,
@@ -798,6 +823,9 @@ static void checkFor2ndEnclosingParallelLoop(FIcontext& ctx,
 
 /////////// extendYieldNew, simple case ///////////
 
+//
+// Returns the variable to be a TUPle COMponent of the yielded tuple.
+//
 static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
 {
   FIinfo& fii = ctx.fiInfos[ix];
@@ -848,10 +876,10 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
   VarSymbol* newOrigRet = localizeYieldForExtendLeader(origRetArg, yieldCall);
   CallExpr*  buildTuple = new CallExpr("_build_tuple_always_allow_ref",
                                        newOrigRet);
-  int numSVars   = ctx.numShadowVars();
-
   if (efs != NULL)
     checkFor2ndEnclosingParallelLoop(ctx, yieldCall, efs);
+
+  int numSVars = ctx.numShadowVars();
 
   for (int ix = 0; ix < numSVars; ix++) {
     Symbol* tupComponent = (efs == NULL) ?
@@ -879,7 +907,7 @@ static ArgSymbol* newExtraFormal(FIcontext& ctx, FIinfo& fii, int ix,
     if      (isReduce)
       eName = intentArgName(ix, "reduceParent");
     else if (ctx.nested)
-      eName = eActual->name;  // name is already handled at the outer level
+      eName = eActual->name;   // name was uniquified at the outer level
     else if (!strcmp(eActual->name, "_tuple_expand_tmp_"))
       eName = intentArgName(ix, "tet");
     else
@@ -927,7 +955,7 @@ static void propagateExtraLeaderArgsNew(FIcontext& ctx)
                  ctx.curFn->retType == dtVoid));
   }
 
-  const int numSVars = ctx.numShadowVars();
+  int numSVars = ctx.numShadowVars();
 
   for (int ix = 0; ix < numSVars; ix++)
   {
@@ -1028,6 +1056,247 @@ static void propagateRecursivelyNew(FIcontext& ctx)
 }
 
 
+/////////// cache (origIter, allIntents) -> extendedIter ///////////
+
+/*
+A cache entry (origIter, allIntents, extendedIter) indicates that
+we have already executed extendLeader for a ForallStmt such that:
+ (1) its parallel iterator call originally resolved to 'origIter',
+ (2) its forall intents are 'allIntents',
+ (3) extendLeader() converted 'origIter' to 'extendedIter'.
+
+When we encounter another ForallStmt that matches (1) and (2),
+we can reuse (3) instead of executing extendLeader() again.
+
+'origIter' and 'extendedIter' can be parallel iterators, wrappers,
+or iterator forwarding procs.
+
+As of this writing (#7738), caching is needed when the parallel iterator
+is recursive. Specifically, this is needed for iter walkdirs(standalone)
+in the standard module FileSystem, as exercised by the test:
+  modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+*/
+
+// This identifies a forall intent for the purposes of comparison.
+// The name of the corresponding shadow variable is not included,
+// because it has no significant impact on extendLeader().
+class IFI2cacheIntent {
+public:
+  Type*           type;
+  ForallIntentTag intent;
+  Type*           reduceOpTyp;
+};
+
+typedef std::vector<IFI2cacheIntent> IFI2cacheAllIntents;
+
+static void IFI2cacheInitAI(IFI2cacheAllIntents& allIntents,
+                            ForallStmt* fs) {
+    allIntents.resize(fs->numIntentVars());
+    INT_ASSERT(allIntents.size() > 0); // otherwise why extendLeader?
+    int ix = 0;
+    for_shadow_vars(svar, temp, fs) {
+      IFI2cacheIntent& cIntent = allIntents[ix++];
+      cIntent.type        = svar->type;
+      cIntent.intent      = svar->intent;
+      cIntent.reduceOpTyp = (svar->intent == TFI_REDUCE) ?
+                           svar->reduceGlobalOp->type : NULL;
+    }
+}
+
+static bool IFI2cacheSameAI(IFI2cacheAllIntents& ai1,
+                            IFI2cacheAllIntents& ai2) {
+  int sz = (int)ai1.size();
+  if (sz != (int)ai2.size())
+    return false;
+
+  for (int ix = 0; ix < sz; ix++)
+    if (ai1[ix].type        != ai2[ix].type   ||
+        ai1[ix].intent      != ai2[ix].intent  ||
+        ai1[ix].reduceOpTyp != ai2[ix].reduceOpTyp)
+      return false;
+
+  return true;
+}
+
+// A cache entry.
+// It maps (origIter, 'allIntents') to 'extendedIter'.
+class IFI2cacheEntry {
+public:
+  IFI2cacheAllIntents allIntents;
+  FnSymbol*           extendedIter;
+};
+
+static void IFI2cacheInitCE(IFI2cacheEntry&  centry,
+                            ForallStmt* fs, FnSymbol* extdIter) {
+  IFI2cacheInitAI(centry.allIntents, fs);
+  centry.extendedIter = extdIter;
+}
+
+typedef std::vector<IFI2cacheEntry> IFI2cacheValue;
+
+// See if there is already an entry with the given intents.
+// If so, return the corresponding extendedIter. Otherwise return NULL.
+static FnSymbol* IFI2cacheFindEntry(IFI2cacheValue& cval,
+                                    IFI2cacheAllIntents& allIntents) {
+  for (IFI2cacheValue::iterator it = cval.begin(); it != cval.end(); it++)
+    if (IFI2cacheSameAI(it->allIntents, allIntents))
+      // found it
+      return it->extendedIter;
+
+  // nothing found
+  return NULL;
+}
+
+//
+// This is our cache: map an "origIter" to a set of IFI2cacheEntrys.
+//
+typedef std::map<FnSymbol*, IFI2cacheValue> IFI2cacheType;
+static IFI2cacheType IFI2cacheMap;
+
+// counters, for fun
+static int ifi2cacheNumAdds, ifi2cacheNumHits, ifi2cacheNumMisses;
+
+//
+// Add a mapping to the cache: (origIter, fs's intents) -> extdIter.
+//
+void IFI2cacheAdd(ForallStmt* fs, FnSymbol* origIter, FnSymbol* extdIter)
+{
+  INT_ASSERT(fs && origIter && extdIter); // caller responsibility
+  ifi2cacheNumAdds++;
+
+  IFI2cacheValue& cval   = IFI2cacheMap[origIter];
+  IFI2cacheEntry  centry;
+  IFI2cacheInitCE(centry, fs, extdIter);
+
+  // IFI2cacheAdd is invoked only upon a cache miss.
+  // If not, change this to a conditional.
+  INT_ASSERT(IFI2cacheFindEntry(cval, centry.allIntents) == NULL);
+
+  cval.push_back(centry);
+}
+
+//
+// Lookup (origIter, fs's intents) in the cache.
+// If found, return the corresponding extendedIter, otherwise NULL.
+//
+static FnSymbol* IFI2cacheLookup(ForallStmt* fs, FnSymbol* origIter) {
+  INT_ASSERT(fs && origIter); // caller responsibility
+  ifi2cacheNumHits++;
+
+  IFI2cacheValue& cval = IFI2cacheMap[origIter];
+  IFI2cacheAllIntents allIntents;
+  IFI2cacheInitAI(allIntents,fs);
+
+  if (FnSymbol* lookupResult = IFI2cacheFindEntry(cval, allIntents))
+    return lookupResult;
+
+  ifi2cacheNumMisses++;
+  ifi2cacheNumHits--;
+  return NULL;
+
+  // If not for the counters, could return simply IFI2cacheFindEntry(...).
+}
+
+bool redirectedToIfi2Cache(ForallStmt* fs, FnSymbol* origIter,
+                           CallExpr* iterCall) {
+  FnSymbol* lookupResult = IFI2cacheLookup(fs, origIter);
+
+  if (lookupResult == NULL)
+    return false;
+
+  // Cache hit yay! Redirect iterCall to it.
+
+  int numSVars = fs->numIntentVars();
+  int numOrigArgs = origIter->numFormals();
+
+  // The extended iterator has the original formals plus
+  // one formal per shadow variable.
+  INT_ASSERT(lookupResult->numFormals() == numOrigArgs + numSVars);
+
+  // Redirect iterCall.
+  INT_ASSERT(iterCall->resolvedFunction() == origIter);
+  iterCall->baseExpr->replace(new SymExpr(lookupResult));
+
+  // iterCall already has the actuals for the shadow variables.
+  // Wrap them in NamedExprs so we are consistent with the case
+  // where extendLeader() is invoked.
+
+  int ix = 0;
+  for_formals_actuals(formal, actualExpr, iterCall) {
+    // Skip if this is not for a shadow variable.
+    if (++ix <= numOrigArgs) continue;
+
+    SymExpr* actualSE = toSymExpr(actualExpr);
+    INT_ASSERT(actualSE); // not a NamedExpr (yet)
+
+    Expr* prev = actualSE->prev;
+    // There is going to be at least the 'tag' arg to act as 'prev'.
+    // If not (because things change), could ex. add a temp dummy.
+    INT_ASSERT(prev);
+
+    prev->insertAfter(new NamedExpr(formal->name, actualSE->remove()));
+  }
+
+  return true;
+}
+
+// for debugging //
+
+static void printIFI2cacheStats() {
+  int num1elm = 0;
+  for (IFI2cacheType::iterator it = IFI2cacheMap.begin();
+       it != IFI2cacheMap.end(); it++)
+    if (it->second.size() == 1)
+      num1elm++;
+
+  printf("IFI2cacheMap  adds %d  hits %d  misses %d"
+         "   1-elm vals %d  all vals %ld\n",
+         ifi2cacheNumAdds, ifi2cacheNumHits, ifi2cacheNumMisses,
+         num1elm, IFI2cacheMap.size());
+}
+
+static void printIFI2cacheEntry(IFI2cacheEntry& centry) {
+  printf("  %d", centry.extendedIter->id);
+  for (IFI2cacheAllIntents::iterator it = centry.allIntents.begin();
+       it != centry.allIntents.end(); it++)
+    printf("  %s %s", forallIntentTagDescription(it->intent),
+           it->type->symbol->name);
+  printf("  .");
+}
+
+void printIFI2cache() {
+  for (IFI2cacheType::iterator it = IFI2cacheMap.begin();
+       it != IFI2cacheMap.end(); it++) {
+    FnSymbol* origIter = it->first;
+    IFI2cacheValue& cval = it->second;
+    printf("%7d %s  :", origIter->id, origIter->name);
+    if (cval.size() == 1) {
+      printIFI2cacheEntry(cval[0]);
+      printf("\n");
+    } else {
+      printf("  %ld elements\n", cval.size());
+      for (IFI2cacheValue::iterator it = cval.begin(); it != cval.end(); it++)
+        printIFI2cacheEntry(*it),
+        printf("\n");
+    }
+  }
+  printIFI2cacheStats();
+}
+
+
+/////////// cache extended iterator -> its original return symbol ///////////
+
+static SymbolMap forallIntentsOrigRetSymMap;
+
+Symbol* lookupForallIntentsOrigRetSym(FnSymbol* iterFn) {
+  return forallIntentsOrigRetSymMap.get(iterFn);
+}
+
+static void addForallIntentsOrigRetSym(FnSymbol* iterFn, Symbol* origRetSym) {
+  forallIntentsOrigRetSymMap.put(iterFn, origRetSym);
+}
+
+
 /////////// extendLeaderNew ///////////
 
 void extendLeaderNew(ForallStmt* fs, 
@@ -1062,6 +1331,7 @@ void extendLeaderNew(ForallStmt* fs,
     origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
     origRetSym->defPoint->insertBefore(new DefExpr(retSym));
     origRetSym->name = "origRet";
+    addForallIntentsOrigRetSym(iterFn, origRetSym);
   }
 
   // Data for the call from the ForallStmt to the parallel iterator.

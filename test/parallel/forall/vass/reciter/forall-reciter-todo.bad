@@ -1,0 +1,2 @@
+forall-reciter-todo.chpl:50: error: Reduce intents are currently not implemented for forall- or for-loops over recursive parallel iterators
+forall-reciter-todo.chpl:19: note: the parallel iterator is here

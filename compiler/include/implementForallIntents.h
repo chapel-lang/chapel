@@ -46,11 +46,16 @@ void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
 void       checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn);
 FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
+void       printIFI2cache();
+void       IFI2cacheAdd(ForallStmt* fs, FnSymbol* origIter,
+                        FnSymbol* extdIter);
+bool       redirectedToIfi2Cache(ForallStmt* fs, FnSymbol* origIter,
+                                 CallExpr* iterCall);
 
 void extendLeaderNew(ForallStmt* fs, FnSymbol* origIterFn, CallExpr* iterCall);
 
 static const char* intentArgName(int ix, const char* base) {
-  return astr("chpl_", istr(ix+1), "_", base);
+  return astr("_x", istr(ix+1), "_", base);
 }
 
 #endif

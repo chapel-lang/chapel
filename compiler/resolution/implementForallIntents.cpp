@@ -2485,7 +2485,20 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// top-level implementForallIntents2New
+
 static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);
+
+static void checkForNonIterator(CallExpr* parCall) {
+  FnSymbol* dest = parCall->resolvedFunction();
+  AggregateType* retType = toAggregateType(dest->retType);
+  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
+    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
+    USR_STOP();
+  }
+}
 
 //
 // Performs both implementForallIntents1 and implementForallIntents2,
@@ -2496,8 +2509,13 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);
 void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
 {
   INT_ASSERT(parCall == fs->firstIteratedExpr());
+
   implementForallIntents1New(fs, parCall);
-  implementForallIntents2New(fs, parCall);
+
+  checkForNonIterator(parCall);
+
+  if (fs->numIntentVars() > 0)
+   implementForallIntents2New(fs, parCall);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2534,6 +2552,13 @@ static CallExpr* findForwardingCallAndUnresolve(FnSymbol* fDest) {
   INT_ASSERT(fCall);
   return fCall;
 }
+
+static const char* newWrapperFormalName(int ix, Symbol* actual) {
+  if (!strcmp(actual->name, "chpl__reduceGlob"))
+    return intentArgName(ix, "reduceGlob");
+  else
+    return intentArgName(ix, actual->name);
+}
     
 // "Wrap" throughout this function signifies either a wrapper,
 // ex. default wrapper, or an iterator forwarder.
@@ -2566,11 +2591,13 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
   // Extend wDest with formals to match parCall's actuals.
   SymExpr* curArgSE = toSymExpr(
     parCall->get(parCall->numActuals() - numExtraArgs + 1));
+  int ix = 0;
 
   do {
     Symbol*    curArg    = curArgSE->symbol();
     IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
-    ArgSymbol* curFormal = new ArgSymbol(fIntent, curArg->name, curArg->type);
+    const char* curName  = newWrapperFormalName(ix, curArg);
+    ArgSymbol* curFormal = new ArgSymbol(fIntent, curName, curArg->type);
 
     curFormal->qual = curArg->qual;
 
@@ -2581,7 +2608,9 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
     wCall->insertAtTail(curFormal);
     wDest->insertFormalAtTail(curFormal);
 
-  } while ((curArgSE = toSymExpr(curArgSE->next)));
+    curArgSE = toSymExpr(curArgSE->next);
+    ix++;
+  } while (curArgSE);
 
   // Handle whatever wDest is wrapping or forwarding to.
   implementForallIntents2New(fs, wCall);
@@ -2590,9 +2619,14 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
 
 static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
 {
+  FnSymbol* dest = parCall->resolvedFunction();
+
+  if (redirectedToIfi2Cache(fs, dest, parCall))
+    // Cache hit. redirectedToIfi2Cache() adjusted AST as needed.
+    return;
+
   // At the moment, 'dest' can be a wrapper and/or an iterator-forwarding
   // procedure, ex. _array.these() or NPBRandomStream.iterate().
-  FnSymbol* dest = parCall->resolvedFunction();
 
   if (dest->hasFlag(FLAG_WRAPPER)) {
     // a wrapper for either an iterator or an iterator forwarder
@@ -2604,13 +2638,6 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
     // The only way we know that it is an iterator forwarder is by checking
     // its return type. For that, it needs to be resolved.
     INT_ASSERT(dest->isResolved());
-
-    AggregateType* retType = toAggregateType(dest->retType);
-    if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-      USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-      USR_STOP();
-    }
 
     implementForallIntents2NewWrap(fs, dest, parCall);
 
@@ -2629,4 +2656,7 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
 
     extendLeaderNew(fs, dest, parCall);
   }
+
+  // Save the extended iterator for future lookups.
+  IFI2cacheAdd(fs, dest, parCall->resolvedFunction());
 }
