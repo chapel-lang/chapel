@@ -1428,16 +1428,6 @@ module ChapelArray {
       return member(i);
     }
 
-    pragma "no doc"
-    pragma "reference to const when const this"
-    pragma "new alias fn"
-    proc newAlias() {
-      var x = _value;
-      pragma "no copy"
-      var ret = _getDomain(x);
-      return ret;
-    }
-
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {
@@ -2328,17 +2318,6 @@ module ChapelArray {
     proc numElements return _value.dom.dsiNumIndices;
     /* Return the number of elements in the array */
     proc size return numElements;
-
-    pragma "no doc"
-    pragma "reference to const when const this"
-    pragma "new alias fn"
-    pragma "fn returns aliasing array"
-    proc newAlias() {
-      var x = _value;
-      pragma "no copy"
-      var ret = _getArray(x);
-      return ret;
-    }
 
     //
     // This routine determines whether an actual array argument
