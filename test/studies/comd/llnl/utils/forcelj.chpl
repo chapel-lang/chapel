@@ -16,7 +16,7 @@ class ForceLJ : Force {
   var epsilon2 : real;
   var epsilon4 : real;
 
-  proc ForceLJ() {
+  proc init() {
     sigma = 2.315;
     epsilon  = 0.167;
     var locCutoff = 2.5*sigma;
