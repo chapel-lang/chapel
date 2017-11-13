@@ -46,3 +46,5 @@ proc testClass(const ref arg) {
 test(g);
 testRecord(gr);
 testClass(gc);
+
+delete gc;

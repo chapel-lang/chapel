@@ -17,3 +17,5 @@ for 1 .. 5 {
   if b != 0 then writeln("a: ", a, ", b: ", b);
   (a, b) = c.fn();
 }
+
+delete c;

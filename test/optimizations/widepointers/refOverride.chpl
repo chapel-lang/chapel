@@ -27,4 +27,6 @@ proc main() {
   //
   var data = new Foo();
   printer.print(data);
+
+  delete data, printer;
 }

@@ -19,4 +19,6 @@ proc main() {
 
   // Without optimizations, this will return 'true'
   writeln("is 'loc' wide? ", __primitive("is wide pointer", loc));
+
+  delete rem, loc;
 }
