@@ -1250,9 +1250,9 @@ static void printIFI2cacheStats() {
       num1elm++;
 
   printf("IFI2cacheMap  adds %d  hits %d  misses %d"
-         "   1-elm vals %d  all vals %ld\n",
+         "   1-elm vals %d  all vals %d\n",
          ifi2cacheNumAdds, ifi2cacheNumHits, ifi2cacheNumMisses,
-         num1elm, IFI2cacheMap.size());
+         num1elm, (int)IFI2cacheMap.size());
 }
 
 static void printIFI2cacheEntry(IFI2cacheEntry& centry) {
@@ -1274,7 +1274,7 @@ void printIFI2cache() {
       printIFI2cacheEntry(cval[0]);
       printf("\n");
     } else {
-      printf("  %ld elements\n", cval.size());
+      printf("  %d elements\n", (int)cval.size());
       for (IFI2cacheValue::iterator it = cval.begin(); it != cval.end(); it++)
         printIFI2cacheEntry(*it),
         printf("\n");
