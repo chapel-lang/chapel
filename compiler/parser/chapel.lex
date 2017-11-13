@@ -780,6 +780,7 @@ static int processBlockComment(yyscan_t scanner) {
                 startFilename, nestedStartLine);
       }
       yyerror(yyLloc, &context, "EOF in comment");
+      break;
     }
   }
 
