@@ -309,6 +309,8 @@ coforall (lr,lc) in LocaleGridDom {
   }
 }
 
+for loc in LocalDomArrs do delete loc;
+
 //
 // 
 //

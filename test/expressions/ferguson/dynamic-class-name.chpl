@@ -18,3 +18,5 @@ var x:Parent = new Parent(1);
 var y:Parent = new Child(1,2);
 writeln(getNameFromClass(x), " ", x);
 writeln(getNameFromClass(y), " ", y);
+
+delete y, x;

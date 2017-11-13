@@ -526,6 +526,8 @@ proc initRands() {
       u(Y) = rng.getNext() - 0.5;
     for r in irand do
       r = (nran * rng.getNext()): int;
+
+    delete rng;
   }
 }
 
