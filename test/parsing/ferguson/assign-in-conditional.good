@@ -1,0 +1,1 @@
+assign-in-conditional.chpl:4: error: Use == to check for equality in a conditional
