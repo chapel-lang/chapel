@@ -449,11 +449,13 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "octal escape not supported in string literal");
         addCharEscape('t'); // add a valid escape to continue parsing
-      } else if (c != 0) {
+      } else if (c == 0) {
+        // we've reached EOF
+        addCharEscape('t'); // add a valid escape to continue parsing
+        break; // EOF reached, so stop
+      } else {
         addCharEscape(c);
       }
-      else
-        break;
     }
   } /* eat up string */
 
