@@ -451,7 +451,6 @@ program:
 toplevel_stmt_ls:
                                        { $$ = new BlockStmt();                                  resetTempID(); }
 | toplevel_stmt_ls toplevel_stmt       { $1->appendChapelStmt($2); context->generatedStmt = $1; resetTempID(); }
-//| toplevel_stmt_ls error               { context->generatedStmt = $1; resetTempID(); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
