@@ -629,10 +629,6 @@ void ModuleSymbol::addDefaultUses() {
     SET_LINENO(this);
 
     block->useListAdd(rootModule);
-
-    UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStringLiterals");
-
-    block->insertAtHead(new UseStmt(modRef));
   }
 }
 
