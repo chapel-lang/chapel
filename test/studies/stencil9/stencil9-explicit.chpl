@@ -309,8 +309,6 @@ coforall (lr,lc) in LocaleGridDom {
   }
 }
 
-for loc in LocalDomArrs do delete loc;
-
 //
 // 
 //
@@ -342,3 +340,5 @@ if printArrays {
 // use as checksum
 //
 writeln("# iterations: ", numIters.read());
+
+for loc in LocalDomArrs do delete loc;
