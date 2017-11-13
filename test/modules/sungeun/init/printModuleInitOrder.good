@@ -7,7 +7,6 @@ Initializing Modules:
      StringCasts
     ChapelDebugPrint
     ChapelBase
-     ChapelStringLiterals
     MemConsistency
     Atomics
     ChapelThreads
