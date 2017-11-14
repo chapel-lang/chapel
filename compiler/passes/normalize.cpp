@@ -1087,16 +1087,11 @@ static void callConstructor(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     SET_LINENO(call);
 
-    CallExpr*      parent       = toCallExpr(call->parentExpr);
-    CallExpr*      parentParent = NULL;
-    AggregateType* at           = NULL;
+    CallExpr* parent       = toCallExpr(call->parentExpr);
+    CallExpr* parentParent = NULL;
 
     if (parent != NULL) {
       parentParent = toCallExpr(parent->parentExpr);
-    }
-
-    if (TypeSymbol* ts = expandTypeAlias(se)) {
-      at = toAggregateType(ts->type);
     }
 
     if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
@@ -1117,17 +1112,19 @@ static void callConstructor(CallExpr* call) {
         INT_ASSERT(false);
       }
 
-    } else if (at != NULL) {
-      if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-        // Call chpl__buildDistType for syntactic distributions.
-        se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
+    } else if (TypeSymbol* ts = expandTypeAlias(se)) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
+          // Call chpl__buildDistType for syntactic distributions.
+          se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
 
-      } else if (SymExpr* riSpec = callUsedInRiSpec(call, parent)) {
-        restoreReduceIntentSpecCall(riSpec, call);
+        } else if (SymExpr* riSpec = callUsedInRiSpec(call, parent)) {
+          restoreReduceIntentSpecCall(riSpec, call);
 
-      } else {
-        // Transform C ( ... ) into _type_construct_C ( ... ) .
-        se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
+        } else {
+          // Transform C ( ... ) into _type_construct_C ( ... ) .
+          se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
+        }
       }
     }
   }
