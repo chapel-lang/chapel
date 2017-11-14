@@ -1317,8 +1317,8 @@ static void      fork_put(void*, c_nodeid_t, void*, size_t);
 static void      fork_get(void*, c_nodeid_t, void*, size_t);
 static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
-static void      do_fork_post(c_nodeid_t, rf_done_t**,
-                              uint64_t, fork_base_info_t*, int*, int*);
+static void      do_fork_post(c_nodeid_t, chpl_bool,
+                              uint64_t, fork_base_info_t* const, int*, int*);
 static void      acquire_comm_dom(void);
 static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
@@ -4453,13 +4453,13 @@ void do_remote_put_V(int v_len,
     return;
 
   //
-  // Do all these PUTs in one chained transaction.  Except: defer to
-  // the scalar PUT routine for any that refer to unregistered memory
-  // on the remote side.
+  // Do all these PUTs in one chained transaction.  Except: if we can
+  // proxy these PUTs then defer to the scalar PUT routine for any that
+  // refer to unregistered memory on the remote side.
   //
   for (int vi = 0, ci = -1; vi < v_len; vi++) {
     remote_mr = mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi]);
-    if (remote_mr == NULL) {
+    if (remote_mr == NULL && may_proxy == may_proxy_true) {
       do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
                     may_proxy);
       continue;
@@ -6233,7 +6233,6 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   chpl_bool do_fast_fork = fast && !large;
   chpl_comm_on_bundle_t *large_arg = NULL;
   fork_base_info_t *req = NULL;
-  rf_done_t **blockhere = NULL;
   fork_t f;
 
 
@@ -6319,11 +6318,6 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
     f.lc.arg_size = arg_size;
     f_size = sizeof(fork_large_call_info_t);
   }
-  
-  if (blocking) {
-    // do_fork_post will set ack and wait on it
-    blockhere = &f_sc->b.rf_done;
-  }
 
   req = &f_sc->b;
 
@@ -6340,7 +6334,7 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   //
   // Send the request to the target.
   //
-  do_fork_post(locale, blockhere, f_size, req, &cdi, &rbi);
+  do_fork_post(locale, blocking, f_size, req, &cdi, &rbi);
   
   //
   // For fast forks, we free the remote fork request buffer on this
@@ -6385,7 +6379,7 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
   // has arrived here.
   //
   PERFSTATS_INC(fork_put_cnt);
-  do_fork_post(locale, & req.b.rf_done, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6415,7 +6409,7 @@ void fork_get(void* addr, c_nodeid_t locale, void* raddr, size_t size)
   // has arrived.
   //
   PERFSTATS_INC(fork_get_cnt);
-  do_fork_post(locale, & req.b.rf_done, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6438,7 +6432,7 @@ void fork_free(c_nodeid_t locale, void* p)
   // Send the request to the target.
   //
   PERFSTATS_INC(fork_free_cnt);
-  do_fork_post(locale, NULL, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, false /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6469,57 +6463,32 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   // Send the request to the target.
   //
   PERFSTATS_INC(fork_amo_cnt);
-  do_fork_post(locale, &p_rf_req->a.b.rf_done,
-               sizeof(p_rf_req->a), &p_rf_req->b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/,
+               sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
 }
 
 
 static
 void do_fork_post(c_nodeid_t locale,
-                  rf_done_t** rf_done_slot,
-                  uint64_t f_size, fork_base_info_t* p_rf_req,
+                  chpl_bool blocking,
+                  uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
-  rf_done_t             rf_done;
-  rf_done_t*            rf_done_addr;
   gni_post_descriptor_t post_desc;
   int                   rbi;
   gni_return_t          gni_rc;
-  chpl_bool blocking =  (rf_done_slot != NULL);
 
   if (blocking) {
     //
-    // If our completion flag in our activation record isn't in mapped
-    // memory, the remote locale will not be able to PUT directly back
-    // to it.  Instead they will have to do a remote fork back to us
-    // to do a fork_op_get, whereupon we'll end up right back here and
-    // do the same thing again.  Ultimately we'll either recurse this
-    // way until we run out of something (memory, say) or hang because
-    // our tasking layer cannot run any more tasks.  So instead of
-    // doing that, allocate a completion flag from the heap, make sure
-    // it's mapped, and give the target locale that instead of the one
-    // on our stack.
+    // Our completion flag has to be in registered memory so the
+    // remote locale can PUT directly back here to it.
     //
-    // This can happen if task stacks aren't in the registered heap.
-    //
-    mem_region_t* rf_done_mr;
-
-    rf_done_addr = &rf_done;
-    rf_done_mr = mreg_for_local_addr(rf_done_addr);
-    if (rf_done_mr == NULL) {
-      rf_done_addr = rf_done_alloc();
-      rf_done_mr = gnr_mreg;
-      if (rf_done_mr == NULL)
-        CHPL_INTERNAL_ERROR("do_fork_post(): "
-                            "rf_done_addr is not NIC-registered");
-    }
-
-    *rf_done_addr = 0;
+    p_rf_req->rf_done = rf_done_alloc();
+    *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
-    *rf_done_slot = rf_done_addr;
   }
   else
-    rf_done_addr = NULL;
+    p_rf_req->rf_done = NULL;
 
   //
   // Fill in the POST descriptor.
@@ -6567,13 +6536,12 @@ void do_fork_post(c_nodeid_t locale,
 
   if (blocking) {
     PERFSTATS_INC(wait_rfork_cnt);
-    while (! *(volatile rf_done_t*) rf_done_addr) {
+    while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
       local_yield();
     }
 
-    if (rf_done_addr != &rf_done)
-      rf_done_free(rf_done_addr);
+    rf_done_free(p_rf_req->rf_done);
   }
 }
 
