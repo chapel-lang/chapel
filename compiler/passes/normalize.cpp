@@ -1079,6 +1079,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void     fixPrimNew(CallExpr* primNewToFix);
 static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent);
 static void     restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
 
@@ -1086,96 +1087,95 @@ static void callConstructor(CallExpr* call) {
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     SET_LINENO(call);
 
-    CallExpr*      parent       = toCallExpr(call->parentExpr);
-    CallExpr*      parentParent = NULL;
-    AggregateType* at           = NULL;
-    CallExpr*      primNewToFix = NULL;
+    CallExpr* parent       = toCallExpr(call->parentExpr);
+    CallExpr* parentParent = NULL;
 
     if (parent != NULL) {
       parentParent = toCallExpr(parent->parentExpr);
     }
 
-    if (TypeSymbol* ts = expandTypeAlias(se)) {
-      at = toAggregateType(ts->type);
-    }
-
     if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
       if (call->partialTag == false) {
-        primNewToFix = parent;
+        INT_ASSERT(parent->get(1) == call);
 
-        INT_ASSERT(primNewToFix->get(1) == call);
+        fixPrimNew(parent);
       }
 
     } else if (parentParent                        != NULL &&
-               parentParent->isPrimitive(PRIM_NEW) == true &&
-               call->partialTag                    == true) {
-      primNewToFix = parentParent;
+               parentParent->isPrimitive(PRIM_NEW) == true) {
+      if (call->partialTag == true) {
+        INT_ASSERT(parentParent->get(1) == parent);
 
-      INT_ASSERT(primNewToFix->get(1) == parent);
-
-    } else if (at != NULL) {
-      if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-        // Call chpl__buildDistType for syntactic distributions.
-        se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
-
-      } else if (SymExpr* riSpec = callUsedInRiSpec(call, parent)) {
-        restoreReduceIntentSpecCall(riSpec, call);
+        fixPrimNew(parentParent);
 
       } else {
-        // Transform C ( ... ) into _type_construct_C ( ... ) .
-        se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
+        INT_ASSERT(false);
       }
-    }
 
-    if (primNewToFix != NULL) {
-      // Transform   new (call C args...) args2...
-      //      into   new C args... args2...
+    } else if (TypeSymbol* ts = expandTypeAlias(se)) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
+          // Call chpl__buildDistType for syntactic distributions.
+          se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
 
-      // Transform   new (call (call (partial) C _mt this) args...)) args2...
-      //      into   new (call (partial) C _mt this) args... args2...
+        } else if (SymExpr* riSpec = callUsedInRiSpec(call, parent)) {
+          restoreReduceIntentSpecCall(riSpec, call);
 
-      // The resulting AST will be handled in function resolution
-      // where the PRIM_NEW will be removed. It is transformed
-      // to no longer be a call with a type baseExpr in order
-      // to make better sense to function resolution.
-
-      CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
-      CallExpr* newNew       = new CallExpr(PRIM_NEW);
-      Expr*     exprModToken = NULL;
-      Expr*     exprMod      = NULL;
-
-      if (callInNew->numActuals() >= 2) {
-        if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
-          if (se1->symbol() == gModuleToken) {
-            exprModToken = callInNew->get(1)->remove();
-            exprMod      = callInNew->get(1)->remove();
-          }
+        } else {
+          // Transform C ( ... ) into _type_construct_C ( ... ) .
+          se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
         }
       }
+    }
+  }
+}
 
-      callInNew->remove();
+// Transform   new (call C args...) args2...
+//      into   new C args... args2...
 
-      primNewToFix->replace(newNew);
+// Transform   new (call (call (partial) C _mt this) args...)) args2...
+//      into   new (call (partial) C _mt this) args... args2...
 
-      newNew->insertAtHead(callInNew->baseExpr);
+// The resulting AST will be handled in function resolution
+// where the PRIM_NEW will be removed. It is transformed
+// to no longer be a call with a type baseExpr in order
+// to make better sense to function resolution.
+static void fixPrimNew(CallExpr* primNewToFix) {
+  CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
+  CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  Expr*     exprModToken = NULL;
+  Expr*     exprMod      = NULL;
 
-      // Move the actuals from the call to the new PRIM_NEW
-      for_actuals(actual, callInNew) {
-        newNew->insertAtTail(actual->remove());
-      }
-
-      // Move actual from the PRIM_NEW as well
-      // This is not the expected AST form, but keeping this
-      // code here adds some resiliency.
-      for_actuals(actual, primNewToFix) {
-        newNew->insertAtTail(actual->remove());
-      }
-
-      if (exprModToken != NULL) {
-        newNew->insertAtHead(exprMod);
-        newNew->insertAtHead(exprModToken);
+  if (callInNew->numActuals() >= 2) {
+    if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
+      if (se1->symbol() == gModuleToken) {
+        exprModToken = callInNew->get(1)->remove();
+        exprMod      = callInNew->get(1)->remove();
       }
     }
+  }
+
+  callInNew->remove();
+
+  primNewToFix->replace(newNew);
+
+  newNew->insertAtHead(callInNew->baseExpr);
+
+  // Move the actuals from the call to the new PRIM_NEW
+  for_actuals(actual, callInNew) {
+    newNew->insertAtTail(actual->remove());
+  }
+
+  // Move actual from the PRIM_NEW as well
+  // This is not the expected AST form, but keeping this
+  // code here adds some resiliency.
+  for_actuals(actual, primNewToFix) {
+    newNew->insertAtTail(actual->remove());
+  }
+
+  if (exprModToken != NULL) {
+    newNew->insertAtHead(exprMod);
+    newNew->insertAtHead(exprModToken);
   }
 }
 
