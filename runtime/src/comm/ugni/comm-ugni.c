@@ -145,6 +145,7 @@ static atomic_uint_least32_t next_thread_idx;
         do {                                                            \
           DBG_P_LP(1, "%s:%d: internal error: %s",                      \
                    __FILE__, (int) __LINE__, msg);                      \
+          fflush(debug_file);                                           \
           abort();                                                      \
         } while (0)
 
@@ -437,9 +438,7 @@ chpl_bool can_task_yield(void) {
 
 static chpl_bool can_register_memory = false;
 
-#ifdef DEBUG
 static uint32_t mreg_cnt_max;
-#endif
 
 static mem_region_table_t* mem_regions_map;
 static mem_region_table_t** mem_regions_map_addr_map;
@@ -1251,6 +1250,7 @@ static void      gni_setup_per_comm_dom(int);
 static void      gni_init(gni_nic_handle_t*, int);
 static uint8_t   GNIT_Ptag(void);
 static uint32_t  GNIT_Cookie(void);
+static void      mem_regions_map_pre_init(void);
 static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
 static void      register_mem_region(mem_region_t*);
@@ -1610,6 +1610,20 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
       CHPL_INTERNAL_ERROR("unexpected GNI device type");
   }
 
+  //
+  // Supporting data for node-level barriers depends on the number of
+  // nodes and our specific node ID.
+  //
+  bar_min_child = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
+  if (bar_min_child >= chpl_numNodes)
+    bar_num_children = 0;
+  else {
+    bar_num_children = BAR_TREE_NUM_CHILDREN;
+    if (bar_min_child + bar_num_children >= chpl_numNodes)
+      bar_num_children = chpl_numNodes - bar_min_child;
+  }
+  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
+
 #define _PSV_INIT(psv) atomic_init_uint_least64_t(&_PSV_VAR(psv), 0);
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
@@ -1660,11 +1674,13 @@ void chpl_comm_post_task_init(void)
   // do this by gathering (locale, nic_addr) pairs and then scattering
   // the nic_addr values into the map, which is indexed by locale.
   //
+  // While we're at it, also share the barrier info struct addresses
+  // around the job.
+  //
   {
     uint32_t nic_addr;
 
     nic_addr = gni_get_nic_address(0);
-    // chpl_comm_mem_reg no: not communicated
     nic_addr_map =
         (uint32_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(nic_addr_map[0]),
                                        CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -1672,22 +1688,29 @@ void chpl_comm_post_task_init(void)
 
     {
       typedef struct {
-        c_nodeid_t locale;
-        uint32_t gather_val;
+        c_nodeid_t nodeID;
+        uint32_t nic_addr;
+        barrier_info_t* bar_info;
       } gdata_t;
 
-      gdata_t  my_gdata = { chpl_nodeID, nic_addr };
+      gdata_t  my_gdata = { chpl_nodeID, nic_addr, &bar_info };
       gdata_t* gdata;
 
-      // chpl_comm_mem_reg no: not communicated
       gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
                                             0, 0);
       if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
         CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
 
-      for (int i = 0; i < chpl_numNodes; i++)
-        nic_addr_map[gdata[i].locale] = gdata[i].gather_val;
+      for (int i = 0; i < chpl_numNodes; i++) {
+        nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
+
+        if (gdata[i].nodeID >= bar_min_child
+            && gdata[i].nodeID < bar_min_child + bar_num_children)
+          child_bar_info[gdata[i].nodeID - bar_min_child] = gdata[i].bar_info;
+        else if (chpl_nodeID != 0 && gdata[i].nodeID == bar_parent)
+          parent_bar_info = gdata[i].bar_info;
+      }
 
       chpl_mem_free(gdata, 0, 0);
     }
@@ -1701,6 +1724,7 @@ void chpl_comm_post_task_init(void)
   // computing how much NIC-registered memory we need.  Tell the
   // registered-memory module how much we need and then allocate it.
   //
+  mem_regions_map_pre_init();
   get_buf_pre_init();
   rf_done_pre_init();
   amo_res_pre_init();
@@ -1729,65 +1753,6 @@ void chpl_comm_post_task_init(void)
   // Register memory.
   //
   register_memory();
-
-  //
-  // Share the per-locale memory descriptors around the job.  These are
-  // the ones we will use for the remote sides of GETs and PUTs.  While
-  // we're at it, also share the barrier info struct addresses around
-  // the job.
-  //
-  mem_regions_map =
-    (mem_region_table_t*) chpl_mem_allocMany(chpl_numNodes,
-                                             sizeof(mem_regions_map[0]),
-                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                             0, 0);
-  mem_regions_map_addr_map =
-    (mem_region_table_t**)
-      chpl_mem_allocMany(chpl_numNodes,
-                         sizeof(mem_regions_map_addr_map[0]),
-                         CHPL_RT_MD_COMM_PER_LOC_INFO,
-                         0, 0);
-  bar_min_child = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
-  if (bar_min_child >= chpl_numNodes)
-    bar_num_children = 0;
-  else {
-    bar_num_children = BAR_TREE_NUM_CHILDREN;
-    if (bar_min_child + bar_num_children >= chpl_numNodes)
-      bar_num_children = chpl_numNodes - bar_min_child;
-  }
-  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
-
-  {
-    typedef struct {
-      c_nodeid_t locale;
-      mem_region_table_t mem_regions;
-      mem_region_table_t* mem_regions_map;
-      barrier_info_t* bar_info;
-    } gdata_t;
-
-    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map, &bar_info };
-    gdata_t* gdata;
-
-    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                          0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
-
-    for (int i = 0; i < chpl_numNodes; i++) {
-      mem_regions_map[gdata[i].locale] = gdata[i].mem_regions;
-      mem_regions_map_addr_map[gdata[i].locale] = gdata[i].mem_regions_map;
-
-      if (gdata[i].locale >= bar_min_child
-          && gdata[i].locale < bar_min_child + bar_num_children)
-        child_bar_info[gdata[i].locale - bar_min_child] =
-          gdata[i].bar_info;
-      else if (chpl_nodeID != 0 && gdata[i].locale == bar_parent)
-        parent_bar_info = gdata[i].bar_info;
-    }
-
-    chpl_mem_free(gdata, 0, 0);
-  }
 
   //
   // Start the polling task.
@@ -1973,7 +1938,6 @@ void gni_setup_per_comm_dom(int cdi)
   // Create GNI EndPoints (EPs) for the nodes, and bind them to their
   // nodes.  This can be replaced by an EP-Pool for better scalability.
   //
-  // chpl_comm_mem_reg no: not communicated
   cd->remote_eps =
     (gni_ep_handle_t*) chpl_mem_allocMany(chpl_numNodes,
                                           sizeof(cd->remote_eps[0]),
@@ -2085,6 +2049,13 @@ uint32_t GNIT_Cookie(void)
 
 
 static
+void mem_regions_map_pre_init(void)
+{
+  chpl_comm_mem_reg_add_request(chpl_numNodes * sizeof(mem_regions_map[0]));
+}
+
+
+static
 void register_memory(void)
 {
   uint64_t  addr;
@@ -2157,10 +2128,8 @@ void register_memory(void)
       mem_regions.mregs[i].len = len;
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
-#ifdef DEBUG
         if (mem_regions.mreg_cnt > mreg_cnt_max)
           mreg_cnt_max = mem_regions.mreg_cnt;
-#endif
       }
     }
   }
@@ -2176,8 +2145,46 @@ void register_memory(void)
     register_mem_region(&mem_regions.mregs[i]);
   }
 
-  can_register_memory = true;
-  atomic_thread_fence(memory_order_release);
+  //
+  // Share the per-locale memory descriptors around the job.
+  //
+
+  // Must be directly communicable without proxy.
+  mem_regions_map = (mem_region_table_t*)
+                    chpl_comm_mem_reg_allocMany(chpl_numNodes,
+                                                sizeof(mem_regions_map[0]),
+                                                CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                0, 0);
+  mem_regions_map_addr_map =
+    (mem_region_table_t**)
+      chpl_mem_allocMany(chpl_numNodes,
+                         sizeof(mem_regions_map_addr_map[0]),
+                         CHPL_RT_MD_COMM_PER_LOC_INFO,
+                         0, 0);
+
+  {
+    typedef struct {
+      c_nodeid_t nodeID;
+      mem_region_table_t mem_regions;
+      mem_region_table_t* mem_regions_map;
+    } gdata_t;
+
+    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map };
+    gdata_t* gdata;
+
+    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
+                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                          0, 0);
+    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
+      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
+
+    for (int i = 0; i < chpl_numNodes; i++) {
+      mem_regions_map[gdata[i].nodeID] = gdata[i].mem_regions;
+      mem_regions_map_addr_map[gdata[i].nodeID] = gdata[i].mem_regions_map;
+    }
+
+    chpl_mem_free(gdata, 0, 0);
+  }
 
   //
   // Find the memory region associated with guaranteed NIC-registered
@@ -2199,6 +2206,9 @@ void register_memory(void)
     if (gnr_mreg == NULL)
       CHPL_INTERNAL_ERROR("cannot find gnr_mreg");
   }
+
+  can_register_memory = true;
+  atomic_thread_fence(memory_order_release);
 }
 
 
@@ -2275,7 +2285,7 @@ void register_mem_region(mem_region_t* mr)
   gni_return_t gni_rc;
 
   DBG_P_L(DBGF_MEMREG,
-          "GNI_MemRegister[%d](%" PRIx64 ", %" PRIx64 ")",
+          "GNI_MemRegister[%d](%#" PRIx64 ", %#" PRIx64 ")",
           (int) (mr - &mem_regions.mregs[0]), mr->addr, mr->len);
   if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mr->len,
                                 NULL, flags, -1, &mr->mdh))
@@ -2387,14 +2397,12 @@ void set_up_for_polling(void)
   //
   {
     typedef struct {
-      c_nodeid_t locale;
-      uint32_t gather_val;
+      uint32_t comm_dom_cnt;
     } gdata_t;
 
-    gdata_t  my_gdata = { chpl_nodeID, comm_dom_cnt };
+    gdata_t  my_gdata = { comm_dom_cnt };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata =
       (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -2402,10 +2410,10 @@ void set_up_for_polling(void)
     if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
       CHPL_INTERNAL_ERROR("PMI_Allgather(comm_dom_cnt) failed");
 
-    comm_dom_cnt_max = gdata[0].gather_val;
+    comm_dom_cnt_max = gdata[0].comm_dom_cnt;
     for (i = 1; i < chpl_numNodes; i++) {
-      if (gdata[i].gather_val > comm_dom_cnt_max)
-        comm_dom_cnt_max = gdata[i].gather_val;
+      if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
+        comm_dom_cnt_max = gdata[i].comm_dom_cnt;
     }
 
     chpl_mem_free(gdata, 0, 0);
@@ -2415,18 +2423,20 @@ void set_up_for_polling(void)
   // Make the fork request and acknowledgement space, and communicate
   // the location of that space across the locales.
   //
+
+  // Must be directly communicable without proxy.
   fork_reqs =
     (fork_t*) chpl_comm_mem_reg_allocMany(FORK_REQ_BUFS_PER_LOCALE,
                                           sizeof(fork_reqs[0]),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
 
-  // chpl_comm_mem_reg no: not communicated
   fork_reqs_map =
     (fork_t**) chpl_mem_allocMany(chpl_numNodes, sizeof(fork_reqs_map[0]),
                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
                                   0, 0);
 
+  // Must be directly communicable without proxy.
   fork_reqs_free =
     (chpl_bool32*) chpl_comm_mem_reg_allocMany(FORK_REQ_BUFS_PER_LOCALE,
                                                sizeof(fork_reqs_free[0]),
@@ -2435,7 +2445,6 @@ void set_up_for_polling(void)
   for (uint32_t i = 0; i < FORK_REQ_BUFS_PER_LOCALE; i++)
     fork_reqs_free[i] = true;
 
-  // chpl_comm_mem_reg no: not communicated
   fork_reqs_free_map =
     (chpl_bool32**) chpl_mem_allocMany(chpl_numNodes,
                                        sizeof(fork_reqs_free_map[0]),
@@ -2444,16 +2453,15 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      c_nodeid_t   locale;
-      fork_t*      gather_fork_reqs;
-      chpl_bool32* gather_fork_reqs_free;
+      c_nodeid_t   nodeID;
+      fork_t*      fork_reqs;
+      chpl_bool32* fork_reqs_free;
     } gdata_t;
 
     gdata_t  my_gdata = { chpl_nodeID,
                           fork_reqs, (chpl_bool32*) fork_reqs_free };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
@@ -2461,8 +2469,8 @@ void set_up_for_polling(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(fork_reqs_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++) {
-      fork_reqs_map[gdata[i].locale]      = gdata[i].gather_fork_reqs;
-      fork_reqs_free_map[gdata[i].locale] = gdata[i].gather_fork_reqs_free;
+      fork_reqs_map[gdata[i].nodeID]      = gdata[i].fork_reqs;
+      fork_reqs_free_map[gdata[i].nodeID] = gdata[i].fork_reqs_free;
     }
 
     chpl_mem_free(gdata, 0, 0);
@@ -2487,7 +2495,7 @@ void set_up_for_polling(void)
     uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
 
     DBG_P_L(DBGF_MEMREG,
-            "RemFork space: GNI_MemRegister(%" PRIx64 ", %" PRIx64")",
+            "RemFork space: GNI_MemRegister(%#" PRIx64 ", %#" PRIx64")",
             addr, len);
     if ((gni_rc = GNI_MemRegister(cd->nih, addr, len, rf_cqh,
                                   flags, -1, &rf_mdh))
@@ -2499,7 +2507,6 @@ void set_up_for_polling(void)
   // Share the per-locale fork request memory descriptors around the
   // job.
   //
-  // chpl_comm_mem_reg no: not communicated
   rf_mdh_map =
     (gni_mem_handle_t*) chpl_mem_allocMany(chpl_numNodes,
                                            sizeof(rf_mdh_map[0]),
@@ -2508,14 +2515,13 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      c_nodeid_t       locale;
-      gni_mem_handle_t gather_val;
+      c_nodeid_t       nodeID;
+      gni_mem_handle_t rf_mdh;
     } gdata_t;
 
     gdata_t  my_gdata = { chpl_nodeID, rf_mdh };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
@@ -2523,7 +2529,7 @@ void set_up_for_polling(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(rf_mdh_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++)
-      rf_mdh_map[gdata[i].locale] = gdata[i].gather_val;
+      rf_mdh_map[gdata[i].nodeID] = gdata[i].rf_mdh;
 
     chpl_mem_free(gdata, 0, 0);
   }
@@ -2798,15 +2804,13 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
       //
       if (mr_i >= mem_regions.mreg_cnt) {
         mem_regions.mreg_cnt = mr_i + 1;
-#ifdef DEBUG
         if (mem_regions.mreg_cnt > mreg_cnt_max)
           mreg_cnt_max = mem_regions.mreg_cnt;
-#endif
       }
 
       DBG_P_LP(DBGF_MEMREG,
-               "chpl_regMemAlloc(%" PRIx64 "): "
-               "mregs[%d] = %" PRIx64 ", cnt %d",
+               "chpl_regMemAlloc(%#" PRIx64 "): "
+               "mregs[%d] = %#" PRIx64 ", cnt %d",
                size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
     }
   } else {
@@ -2837,7 +2841,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemPostAlloc(%p, %" PRIx64 ")",
+           "chpl_comm_regMemPostAlloc(%p, %#" PRIx64 ")",
            p, size);
 
   //
@@ -2896,7 +2900,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     ci = 0;
     for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
       if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
+        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
         ci = 0;
       }
 
@@ -2914,7 +2918,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     }
 
     if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
+      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
     }
   }
 
@@ -2944,7 +2948,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_INC(deregMem_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemFree(%p, %" PRIx64 "): [%d]",
+           "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
            p, size, mr_i);
 
   //
@@ -2997,7 +3001,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     ci = 0;
     for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
       if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
+        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
         ci = 0;
       }
 
@@ -3015,7 +3019,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     }
 
     if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
+      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
     }
   }
 
@@ -3154,9 +3158,25 @@ void chpl_comm_pre_task_exit(int all)
     }
   }
 
-  DBG_P_L(DBGF_MEMREG,
-          "registered memory regions high water mark: %d",
-          (int) mreg_cnt_max);
+  //
+  // It's handy to be able to print the registered memory regions
+  // high water mark whether set up for debug info or not.
+  //
+  {
+#ifdef DEBUG
+    const int test = _DBG_DO(DBGF_MEMREG);
+    FILE* f = debug_file;
+#else
+    const int test = (chpl_nodeID == 0
+                      && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM", false));
+    FILE* f = stdout;
+#endif
+
+    if (test) {
+      fprintf(f, "ugni comm: reg mem regions high water mark %d\n",
+              (int) mreg_cnt_max);
+    }
+  }
 
   for (uint32_t i = 0; i < comm_dom_cnt; i++) {
     DBGSTAT_P_L(DBGSF_ANY, "cd[%d] acqs:               %12" PRIu64, i,
@@ -3886,6 +3906,7 @@ void rf_done_init(void)
                  "may lead to hangs",
                  0, 0);
 
+  // Must be directly communicable without proxy.
   rf_done_pool = (rf_done_pool_t (*)[RF_DONE_NUM_PER_POOL])
                  chpl_comm_mem_reg_allocMany(RF_DONE_NUM_POOLS,
                                              sizeof(rf_done_pool[0]),
@@ -3991,6 +4012,7 @@ void get_buf_N_init(int size, int nPools, int nPerPool, int64_t **gbp,
 {
   const int pElemSize = size / sizeof(**gbp);
 
+  // Must be directly communicable without proxy.
   *gbp = (int64_t*)
          chpl_comm_mem_reg_allocMany(nPools * nPerPool * pElemSize,
                                      sizeof(**gbp),
@@ -4153,6 +4175,7 @@ void amo_res_init(void)
 {
   int i, j;
 
+  // Must be directly communicable without proxy.
   amo_res_pool = (fork_amo_data_t (*)[AMO_RES_NUM_PER_POOL])
                  chpl_comm_mem_reg_allocMany(AMO_RES_NUM_POOLS,
                                              sizeof(amo_res_pool[0]),
@@ -4913,9 +4936,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
       total=total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    // chpl_comm_mem_reg no: not communicated
     srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    // chpl_comm_mem_reg no: not communicated
     dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
@@ -5070,9 +5091,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
       total=total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    // chpl_comm_mem_reg no: not communicated
     srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    // chpl_comm_mem_reg no: not communicated
     dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
