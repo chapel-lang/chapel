@@ -260,6 +260,7 @@ public:
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
+  VarSymbol(const char* init_name, QualifiedType qType);
   virtual ~VarSymbol();
 
   void verify();

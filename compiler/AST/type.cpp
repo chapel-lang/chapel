@@ -192,6 +192,19 @@ const char* QualifiedType::qualStr() const {
   return qualifierToStr(_qual);
 }
 
+QualifiedType QualifiedType::refToRefType() const {
+  Qualifier qual = _qual;
+  Type* type = _type;
+  if (isRef() && !type->symbol->hasFlag(FLAG_REF)) {
+    // Use a ref type here.
+    // In the future, the Qualifier should be sufficient
+    INT_ASSERT(type->refType != NULL);
+    type = type->refType;
+  }
+
+  return QualifiedType(qual, type);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *

@@ -285,6 +285,12 @@ public:
 
   const char* qualStr() const;
 
+  // If isRef() is true, returns a QualifiedType with
+  // a ref type (i.e. with FLAG_REF). This is useful for
+  // working with parts of the compiler that havn't fully
+  // transferred to QualifiedType.
+  QualifiedType refToRefType() const;
+
 private:
   Type*      _type;
   Qualifier  _qual;
