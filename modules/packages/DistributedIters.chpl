@@ -128,7 +128,7 @@ iter distributedDynamic(param tag:iterKind,
 where tag == iterKind.leader
 {
   compilerAssert(isDomain(c) || isRange(c),
-                 ("DistributedIters: Dynamic iterator (serial): must use a "
+                 ("DistributedIters: Dynamic iterator (leader): must use a "
                   + "valid domain or range"),
                  1);
   assert(chunkSize > 0,
@@ -304,7 +304,7 @@ iter distributedDynamic(param tag:iterKind,
 where tag == iterKind.follower
 {
   compilerAssert(isDomain(c) || isRange(c),
-                 ("DistributedIters: Dynamic iterator (serial): must use a "
+                 ("DistributedIters: Dynamic iterator (follower): must use a "
                   + "valid domain or range"),
                  1);
   const current = if isDomain(c)
