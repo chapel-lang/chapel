@@ -1082,7 +1082,7 @@ static void populateEnvMap() {
   // argument processing
 
   // Call printchplenv and pipe output into string
-  std::string output = runPrintChplEnv(envMap, llvmCodegen);
+  std::string output = runPrintChplEnv(envMap);
 
   // Lines
   std::string line= "";
@@ -1147,10 +1147,8 @@ static void setChapelEnvs() {
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
 
-  if (llvmCodegen) {
-    CHPL_RUNTIME_SUBDIR  = envMap["CHPL_MAKE_RUNTIME_SUBDIR"];
-    CHPL_LAUNCHER_SUBDIR = envMap["CHPL_MAKE_LAUNCHER_SUBDIR"];
-  }
+  CHPL_RUNTIME_SUBDIR  = envMap["CHPL_MAKE_RUNTIME_SUBDIR"];
+  CHPL_LAUNCHER_SUBDIR = envMap["CHPL_MAKE_LAUNCHER_SUBDIR"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
