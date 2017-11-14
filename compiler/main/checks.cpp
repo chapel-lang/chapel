@@ -52,6 +52,7 @@ static void checkIsIterator(); // Ensure each iterator is flagged so.
 static void checkAggregateTypes(); // Checks that class and record types have
                                    // default initializers and default type
                                    // constructors.
+static void check_afterInlineFunctions();
 static void checkResolveRemovedPrims(void); // Checks that certain primitives
                                             // are removed after resolution
 static void checkNoRecordDeletes();  // No 'delete' on records.
@@ -279,6 +280,7 @@ void check_inlineFunctions()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_scalarReplace()
@@ -288,6 +290,7 @@ void check_scalarReplace()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
   // Suggestion: Ensure no constant expressions.
 }
 
@@ -298,6 +301,7 @@ void check_refPropagation()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_copyPropagation()
@@ -307,6 +311,7 @@ void check_copyPropagation()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 
@@ -317,6 +322,7 @@ void check_deadCodeElimination()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
   // Suggestion: Ensure no dead code.
 }
 
@@ -327,6 +333,7 @@ void check_removeWrapRecords()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
   // Suggestion: Ensure no more wrap records.
 }
 
@@ -337,6 +344,7 @@ void check_removeEmptyRecords()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
   // Suggestion: Ensure no empty records.
 }
 
@@ -347,6 +355,7 @@ void check_localizeGlobals()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_loopInvariantCodeMotion()
@@ -356,6 +365,7 @@ void check_loopInvariantCodeMotion()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_prune2()
@@ -365,6 +375,7 @@ void check_prune2()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
   // Suggestion: Ensure no dead classes or functions.
 }
 
@@ -375,6 +386,7 @@ void check_returnStarTuplesByRefArgs()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_insertWideReferences()
@@ -384,6 +396,7 @@ void check_insertWideReferences()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_optimizeOnClauses()
@@ -393,6 +406,7 @@ void check_optimizeOnClauses()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_addInitCalls()
@@ -402,6 +416,7 @@ void check_addInitCalls()
   check_afterCallDestructors();
   check_afterLowerIterators();
   check_afterResolveIntents();
+  check_afterInlineFunctions();
 }
 
 void check_insertLineNumbers()
@@ -410,6 +425,7 @@ void check_insertLineNumbers()
   check_afterNormalization();
   check_afterCallDestructors();
   check_afterLowerIterators();
+  check_afterInlineFunctions();
 }
 
 void check_denormalize() {
@@ -551,6 +567,20 @@ static void check_afterLowerIterators()
   checkLowerIteratorsRemovedPrims();
   if (fVerify)
     checkArgsAndLocals();
+}
+
+static void check_afterInlineFunctions() {
+  if (fVerify) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      Symbol* sym = def->sym;
+      if (isLcnSymbol(sym)) {
+        if (sym->type->symbol->hasFlag(FLAG_REF) ||
+            sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+          INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
+        }
+      }
+    }
+  }
 }
 
 static void checkIsIterator() {

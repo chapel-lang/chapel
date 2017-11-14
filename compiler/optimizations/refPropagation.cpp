@@ -114,6 +114,8 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             // (= call_tmp i_foo)
             //
             // Should that turn into (= call_tmp bar)?
+          } else if (parent && parent->isPrimitive(PRIM_ASSIGN) && parent->get(1) == se) {
+            // for_defs should handle this case
           } else
             stillAlive = true;
         }
@@ -165,7 +167,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
             ++s_ref_repl_count;
             addUse(useMap, se);
           }
-          else if (parent && isMoveOrAssign(parent)) {
+          else if (parent && isMoveOrAssign(parent) && parent->get(2) == se) {
             CallExpr* rhsCopy = rhs->copy();
             parent->get(2)->replace(rhsCopy);
             ++s_ref_repl_count;
@@ -197,7 +199,7 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
               ++s_ref_repl_count;
               addUse(useMap, se);
             } else {
-              VarSymbol* tmp = newTemp(parent->get(2)->typeInfo());
+              VarSymbol* tmp = newTemp(parent->get(2)->qualType().toRef());
               parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
               parent->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
@@ -221,6 +223,27 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
         if (!stillAlive) {
           var->defPoint->remove();
           defMap.get(var)->v[0]->getStmtExpr()->remove();
+        }
+      }
+    } else if (SymExpr* rhs = toSymExpr(move->get(2))) {
+      SymExpr* LHS = toSymExpr(move->get(1));
+      INT_ASSERT(LHS->symbol() == var);
+      for_uses(se, useMap, var) {
+        SET_LINENO(se);
+        if (se != LHS && se->parentExpr) {
+          SymExpr* rcp = rhs->copy();
+          se->replace(rcp);
+          ++s_ref_repl_count;
+          addUse(useMap, rcp);
+        }
+      }
+      for_defs(se, defMap, var) {
+        SET_LINENO(se);
+        if (se != LHS && se->parentExpr) {
+          SymExpr* rcp = rhs->copy();
+          se->replace(rcp);
+          ++s_ref_repl_count;
+          addDef(defMap, rcp);
         }
       }
     }
@@ -261,12 +284,17 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
           if (rhs->isRef()) {
             // Replace each use of the new name with the old name.
             for_uses(se, useMap, var) {
-              if (se->parentExpr) {
+              if (se->parentExpr && se->parentExpr != move) {
                 SET_LINENO(se);
                 SymExpr* rhsCopy = rhs->copy();
                 se->replace(rhsCopy);
                 ++s_ref_repl_count;
                 addUse(useMap, rhsCopy);
+                if (CallExpr* parent = toCallExpr(rhsCopy->parentExpr)) {
+                  if (isMoveOrAssign(parent) && parent->get(1) == rhsCopy) {
+                    addDef(defMap, rhsCopy);
+                  }
+                }
               }
             }
             // Other than the original definition, replace

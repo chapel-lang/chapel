@@ -45,6 +45,8 @@ static void inlineCleanup();
 ************************************** | *************************************/
 
 void inlineFunctions() {
+  convertToQualifiedRefs();
+
   compute_call_sites();
 
   updateRefCalls();

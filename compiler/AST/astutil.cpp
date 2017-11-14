@@ -1024,3 +1024,39 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
     }
   }
 }
+
+static void setQualRef(Symbol* sym) {
+  if (sym->isRefOrWideRef() && sym->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) {
+    Qualifier q = sym->qualType().getQual();
+    const bool isRef = q == QUAL_REF || q == QUAL_CONST_REF ||
+                       q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
+                       q == QUAL_WIDE_REF || q == QUAL_CONST_WIDE_REF;
+    if (isRef == false) {
+      if (sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
+        q = QUAL_WIDE_REF;
+      } else {
+        q = QUAL_REF;
+      }
+      sym->qual = q;
+    }
+    sym->type = sym->getValType();
+  }
+}
+
+void convertToQualifiedRefs() {
+#define fixRefSymbols(SymType) \
+  forv_Vec(SymType, sym, g##SymType##s) { \
+    setQualRef(sym); \
+  }
+
+  fixRefSymbols(VarSymbol);
+  fixRefSymbols(ArgSymbol);
+  fixRefSymbols(ShadowVarSymbol);
+
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_ADDR_OF)) {
+      call->primitive = primitives[PRIM_SET_REFERENCE];
+    }
+  }
+#undef fixRefSymbols
+}

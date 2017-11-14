@@ -315,6 +315,7 @@ bool isDenormalizable(Symbol* sym,
           usePar = se->parentExpr;
           if(CallExpr* ce = toCallExpr(usePar)) {
             if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+                  ce->isPrimitive(PRIM_SET_REFERENCE) ||
                   // TODO: PRIM_SET_REFERENCE?
                   //
                   // TODO: BHARSH: I added PRIM_RETURN here after seeing a case
