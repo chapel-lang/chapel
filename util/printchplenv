@@ -253,7 +253,7 @@ def print_var(env_var, value, mode, short_name='', filters=None):
 
 def _main():
     parser = optparse.OptionParser(
-        usage='usage: %prog [--list|--make|--simple|--llvm|--anonymize|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
+        usage='usage: %prog [--list|--make|--simple|--anonymize|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
 
     parser.add_option('--list', action='store_const', dest='mode', default='list',
                       const='list',
