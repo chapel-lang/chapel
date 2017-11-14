@@ -2467,10 +2467,45 @@ void makeBinaryLLVM(void) {
 
     err = llvm::sys::fs::rename(tmpbinname, executableFilename);
     if (err) {
-      USR_FATAL("moving file %s to %s failed: %s\n",
-                tmpbinname,
-                executableFilename,
-                err.message().c_str());
+      // But that might fail if /tmp is on a different filesystem.
+
+      std::string mv("mv ");
+      mv += tmpbinname;
+      mv += " ";
+      mv += executableFilename;
+
+      mysystem(mv.c_str(), mv.c_str());
+
+      /* For future LLVM,
+      err = llvm::sys::fs::copy_file(tmpbinname, executableFilename);
+      if (err) {
+        USR_FATAL("copying file %s to %s failed: %s\n",
+                  tmpbinname,
+                  executableFilename,
+                  err.message().c_str());
+      }
+
+      // and then set permissions, like mv
+      auto maybePerms = llvm::sys::fs::getPermissions(tmpbinname);
+      if (maybePerms.getError()) {
+        USR_FATAL("reading permissions on %s failed: %s\n",
+                  tmpbinname,
+                  err.message().c_str());
+      }
+      err = llvm::sys::fs::setPermissions(executableFilename, *maybePerms);
+      if (err) {
+        USR_FATAL("setting permissions on %s failed: %s\n",
+                  executableFilename,
+                  err.message().c_str());
+      }
+
+      // and then remove the file, so it's like mv
+      err = llvm::sys::fs::remove(tmpbinname);
+      if (err) {
+        USR_FATAL("removing file %s failed: %s\n",
+                  tmpbinname,
+                  err.message().c_str());
+      }*/
     }
 
   } else {
