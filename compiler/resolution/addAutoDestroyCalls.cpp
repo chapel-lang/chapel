@@ -151,11 +151,6 @@ static void walkBlock(FnSymbol*         fn,
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
 
-  //if (fn->id == 185082)
-  //  gdbShouldBreakHere();
-  if (fn->id == 1143786)
-    gdbShouldBreakHere();
-
   // Updating the variableToExclude is a good start, but an iterator
   // can have multiple yields in it. If each yield consumes the value,
   // shouldn't we be updating ignoredVariables for each yielded value?
