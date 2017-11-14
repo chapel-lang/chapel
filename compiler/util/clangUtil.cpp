@@ -1258,6 +1258,11 @@ void runClang(const char* just_parse_filename) {
 
   readArgsFromFile(runtime_includes, args);
 
+  if (compilingWithPrgEnv()) {
+    std::string gather_prgenv(CHPL_HOME);
+    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile";
+    readArgsFromCommand(gather_prgenv, args);
+  }
 
   if (ccwarnings) {
     for (int i = 0; clang_warn[i]; i++) {
@@ -2302,6 +2307,12 @@ void makeBinaryLLVM(void) {
 
   std::vector<std::string> clangLDArgs;
   readArgsFromFile(runtime_libs, clangLDArgs);
+
+  if (compilingWithPrgEnv()) {
+    std::string gather_prgenv(CHPL_HOME);
+    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link";
+    readArgsFromCommand(gather_prgenv, clangLDArgs);
+  }
 
 
   std::string clangCC = clangInfo->clangCC;
