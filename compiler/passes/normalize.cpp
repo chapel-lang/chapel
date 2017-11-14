@@ -1079,6 +1079,7 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void     fixPrimNew(CallExpr* primNewToFix);
 static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent);
 static void     restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
 
@@ -1089,7 +1090,6 @@ static void callConstructor(CallExpr* call) {
     CallExpr*      parent       = toCallExpr(call->parentExpr);
     CallExpr*      parentParent = NULL;
     AggregateType* at           = NULL;
-    CallExpr*      primNewToFix = NULL;
 
     if (parent != NULL) {
       parentParent = toCallExpr(parent->parentExpr);
@@ -1101,17 +1101,21 @@ static void callConstructor(CallExpr* call) {
 
     if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
       if (call->partialTag == false) {
-        primNewToFix = parent;
+        INT_ASSERT(parent->get(1) == call);
 
-        INT_ASSERT(primNewToFix->get(1) == call);
+        fixPrimNew(parent);
       }
 
     } else if (parentParent                        != NULL &&
-               parentParent->isPrimitive(PRIM_NEW) == true &&
-               call->partialTag                    == true) {
-      primNewToFix = parentParent;
+               parentParent->isPrimitive(PRIM_NEW) == true) {
+      if (call->partialTag == true) {
+        INT_ASSERT(parentParent->get(1) == parent);
 
-      INT_ASSERT(primNewToFix->get(1) == parent);
+        fixPrimNew(parentParent);
+
+      } else {
+        INT_ASSERT(false);
+      }
 
     } else if (at != NULL) {
       if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
@@ -1126,56 +1130,55 @@ static void callConstructor(CallExpr* call) {
         se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
       }
     }
+  }
+}
 
-    if (primNewToFix != NULL) {
-      // Transform   new (call C args...) args2...
-      //      into   new C args... args2...
+// Transform   new (call C args...) args2...
+//      into   new C args... args2...
 
-      // Transform   new (call (call (partial) C _mt this) args...)) args2...
-      //      into   new (call (partial) C _mt this) args... args2...
+// Transform   new (call (call (partial) C _mt this) args...)) args2...
+//      into   new (call (partial) C _mt this) args... args2...
 
-      // The resulting AST will be handled in function resolution
-      // where the PRIM_NEW will be removed. It is transformed
-      // to no longer be a call with a type baseExpr in order
-      // to make better sense to function resolution.
+// The resulting AST will be handled in function resolution
+// where the PRIM_NEW will be removed. It is transformed
+// to no longer be a call with a type baseExpr in order
+// to make better sense to function resolution.
+static void fixPrimNew(CallExpr* primNewToFix) {
+  CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
+  CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  Expr*     exprModToken = NULL;
+  Expr*     exprMod      = NULL;
 
-      CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
-      CallExpr* newNew       = new CallExpr(PRIM_NEW);
-      Expr*     exprModToken = NULL;
-      Expr*     exprMod      = NULL;
-
-      if (callInNew->numActuals() >= 2) {
-        if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
-          if (se1->symbol() == gModuleToken) {
-            exprModToken = callInNew->get(1)->remove();
-            exprMod      = callInNew->get(1)->remove();
-          }
-        }
-      }
-
-      callInNew->remove();
-
-      primNewToFix->replace(newNew);
-
-      newNew->insertAtHead(callInNew->baseExpr);
-
-      // Move the actuals from the call to the new PRIM_NEW
-      for_actuals(actual, callInNew) {
-        newNew->insertAtTail(actual->remove());
-      }
-
-      // Move actual from the PRIM_NEW as well
-      // This is not the expected AST form, but keeping this
-      // code here adds some resiliency.
-      for_actuals(actual, primNewToFix) {
-        newNew->insertAtTail(actual->remove());
-      }
-
-      if (exprModToken != NULL) {
-        newNew->insertAtHead(exprMod);
-        newNew->insertAtHead(exprModToken);
+  if (callInNew->numActuals() >= 2) {
+    if (SymExpr* se1 = toSymExpr(callInNew->get(1))) {
+      if (se1->symbol() == gModuleToken) {
+        exprModToken = callInNew->get(1)->remove();
+        exprMod      = callInNew->get(1)->remove();
       }
     }
+  }
+
+  callInNew->remove();
+
+  primNewToFix->replace(newNew);
+
+  newNew->insertAtHead(callInNew->baseExpr);
+
+  // Move the actuals from the call to the new PRIM_NEW
+  for_actuals(actual, callInNew) {
+    newNew->insertAtTail(actual->remove());
+  }
+
+  // Move actual from the PRIM_NEW as well
+  // This is not the expected AST form, but keeping this
+  // code here adds some resiliency.
+  for_actuals(actual, primNewToFix) {
+    newNew->insertAtTail(actual->remove());
+  }
+
+  if (exprModToken != NULL) {
+    newNew->insertAtHead(exprMod);
+    newNew->insertAtHead(exprModToken);
   }
 }
 
