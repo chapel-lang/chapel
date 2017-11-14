@@ -35,16 +35,17 @@ def print_mode(mode='list', anonymize=False):
     llvm_codegen = "CHPL_LLVM_CODEGEN" in os.environ
 
     # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to clang-included
-    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used.
+    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used
+    # otherwise.
     # This happens early because it modifies the environment and other
     # defaults might depend on this setting.
+    orig_target_compiler = ""
     if m != 'compiler' and m != 'launcher':
+      orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
+      new_target_compiler = chpl_compiler.get('target')
+      os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
       if llvm_codegen:
-        orig_compiler = chpl_compiler.get('target', llvm_mode='orig')
-        llvm_compiler = chpl_compiler.get('target')
-        os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_compiler
-        print_var('CHPL_ORIG_TARGET_COMPILER', orig_compiler, mode, 'x', (' '))
-        if llvm_compiler != 'clang-included':
+        if new_target_compiler != 'clang-included':
           # This error indicates something about chplenv (probably
           # chpl_compiler.py) is not working correctly with LLVM mode.
           raise ValueError('LLVM mode but target compiler is set incorrectly')
@@ -75,6 +76,8 @@ def print_mode(mode='list', anonymize=False):
 
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
+        if mode == 'make' or mode == 'debug':
+          print_var('CHPL_ORIG_TARGET_COMPILER', orig_target_compiler, mode, 'x', (' '))
 
     get_module_lcd = ( chpl_home_utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
