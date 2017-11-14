@@ -196,6 +196,8 @@ module cholesky_test_unsymmetric_ranges {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
+
+    delete Rand;
   }
 
 

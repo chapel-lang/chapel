@@ -17,3 +17,5 @@ var A: [D] int;
 forall e in A {
   writeln(c.i);
 }
+
+delete c;

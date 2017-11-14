@@ -16,6 +16,9 @@ class Child : Parent {
 
 record R {
   var obj:Parent = nil;
+  proc deinit() {
+    delete obj;
+  }
 }
 
 /* user record's can't write their own

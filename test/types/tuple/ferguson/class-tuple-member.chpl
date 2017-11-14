@@ -13,3 +13,4 @@ proc run(c:C) {
 var c = new C();
 run(c);
 writeln(c);
+delete c;

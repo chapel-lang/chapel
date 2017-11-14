@@ -17,3 +17,4 @@ record Bar {
 
 var testit: Foo(11) = new Foo(11);
 writeln(testit);
+delete testit;

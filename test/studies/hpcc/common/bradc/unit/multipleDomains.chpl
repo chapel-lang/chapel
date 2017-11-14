@@ -78,3 +78,6 @@ for block in Dom3.newThese(IteratorType.leader) {
   }
 }
 writeln();
+
+delete Dom3, Dom2, Dom1;
+delete ProblemDist;

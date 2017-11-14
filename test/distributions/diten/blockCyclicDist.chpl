@@ -84,6 +84,12 @@ class BlockCyclicDom {
     }
   }
 
+  proc deinit() {
+    for loc in dist.localeDomain do
+      on dist.locales(loc) do
+        delete locDoms(loc);
+  }
+
   proc buildArray(type eltType) {
     return new BlockCyclicArr(nDims, idxType, eltType, this);
   }
@@ -116,6 +122,12 @@ class BlockCyclicArr {
       }
     }
   }
+  proc deinit() {
+    for ind in dom.dist.localeDomain do
+      on dom.dist.locales(ind) do
+        delete locArrs(ind);
+  }
+
   proc this(ind:idxType...nDims) ref {
     return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
   }
@@ -152,4 +164,7 @@ proc main {
     writeln((i,j), " ", arr(i,j));
     //writeln((i,j), " ", arr(i,j), " ", arr(i,j).locale);
   }
+  delete arr;
+  delete dom;
+  delete dist;
 }

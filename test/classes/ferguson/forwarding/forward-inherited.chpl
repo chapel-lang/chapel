@@ -11,6 +11,9 @@ record wrapper {
   forwarding c;
 }
 
-var w : wrapper = new wrapper(new Child());
+var c = new Child();
+var w : wrapper = new wrapper(c);
 w.f();
 w.g();
+
+delete c;

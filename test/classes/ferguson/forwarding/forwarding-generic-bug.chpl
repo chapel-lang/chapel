@@ -17,3 +17,7 @@ var f = new Wrapper(b);
 f.helper(b);
 var ff = new Wrapper(f);
 ff.helper(f);
+
+delete ff;
+delete f;
+delete b;

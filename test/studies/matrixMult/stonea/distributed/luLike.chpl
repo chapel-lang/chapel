@@ -94,6 +94,8 @@ proc luLikeMultiply(
             }
         }
     }
+    for r in rowCopies do delete r;
+    for c in colCopies do delete c;
 }
 
 
@@ -181,5 +183,7 @@ proc main() {
     }
 
     if passed then writeln("PASSED"); else writeln("FAILED");
+
+    for a in A do delete a;
 }
 

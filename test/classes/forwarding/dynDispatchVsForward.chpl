@@ -16,6 +16,9 @@ class D: C {
 
 class E: C {
   forwarding var myD: D;
+  proc deinit() {
+    delete myD;
+  }
 }
 
 proc E.init() {
@@ -25,3 +28,4 @@ proc E.init() {
 var myE = new E();
 myE.bar();
 myE.foo();
+delete myE;

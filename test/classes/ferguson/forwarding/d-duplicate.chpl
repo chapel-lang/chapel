@@ -1,6 +1,9 @@
 record Wrapper {
   forwarding var a:A;
   forwarding var b:B;
+  proc deinit() {
+    delete a, b;
+  }
 }
 
 class A {

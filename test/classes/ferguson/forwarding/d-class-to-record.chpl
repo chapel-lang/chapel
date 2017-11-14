@@ -16,4 +16,4 @@ var r = new Wrapper(new C());
 r.foo(); // direct method shadows forwarding method
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
 
-
+delete r;

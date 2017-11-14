@@ -31,5 +31,7 @@ proc main() {
       assert(raddr != c_void_nil);
     }
   }
+
+  delete obj;
 }
 

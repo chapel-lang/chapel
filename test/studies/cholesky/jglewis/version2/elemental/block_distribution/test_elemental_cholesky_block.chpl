@@ -105,6 +105,8 @@ module cholesky_test_elemental_symmetric_ranges {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
+
+    delete Rand;
   }
 
 

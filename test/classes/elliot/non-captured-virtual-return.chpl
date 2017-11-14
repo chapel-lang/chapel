@@ -8,3 +8,4 @@ class Child: Parent {
 
 var child: Parent = new Child();
 child.foo();
+delete child;

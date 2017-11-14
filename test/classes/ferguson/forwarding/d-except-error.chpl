@@ -1,6 +1,9 @@
 record Wrapper {
   var instance; // e.g. some class
   forwarding instance except bar;
+  proc deinit() {
+    delete instance;
+  }
 }
 
 class C {
