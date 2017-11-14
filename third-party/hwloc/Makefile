@@ -27,6 +27,7 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cairo \
                           --disable-libxml2 \
                           --disable-libudev \
+                          --disable-cuda \
                           --disable-opencl \
                           --disable-pci
 
