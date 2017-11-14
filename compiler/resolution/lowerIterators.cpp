@@ -546,10 +546,18 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
       // Error variable arguments should have already been handled.
       INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
                      formal->hasFlag(FLAG_ERROR_VARIABLE)));
-      // TODO -- this should use/respect ArgSymbol's Qualifier
-      VarSymbol* tmp = newTemp(formal->name, formal->type);
+
+      QualifiedType qt = formal->qualType();
+      // Workaround: use a ref type here
+      // In the future, the Qualifier should be sufficient
+      qt = qt.refToRefType();
+
+      VarSymbol* tmp = newTemp(formal->name, qt);
 
       stmt->insertBefore(new DefExpr(tmp));
+
+      // fixNumericalGetMemberPrims changes some of these
+      // to PRIM_GET_MEMBER_VALUE
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
       se->setSymbol(tmp);
     }
@@ -2332,28 +2340,30 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (hasAutoCopyForType(field->type)) {
-      FnSymbol* autoCopy = getAutoCopyForType(field->type);
-      Symbol* tmp1 = newTemp(field->name, field->type);
-      Symbol* tmp2 = newTemp(autoCopy->retType);
-      Symbol* refTmp = NULL;
-      block->insertAtTail(new DefExpr(tmp1));
-      block->insertAtTail(new DefExpr(tmp2));
-      if (isReferenceType(autoCopy->getFormal(1)->type)) {
-        refTmp = newTemp(autoCopy->getFormal(1)->type);
-        block->insertAtTail(new DefExpr(refTmp));
+    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+      if (hasAutoCopyForType(field->type)) {
+        FnSymbol* autoCopy = getAutoCopyForType(field->type);
+        Symbol* tmp1 = newTemp(field->name, field->type);
+        Symbol* tmp2 = newTemp(autoCopy->retType);
+        Symbol* refTmp = NULL;
+        block->insertAtTail(new DefExpr(tmp1));
+        block->insertAtTail(new DefExpr(tmp2));
+        if (isReferenceType(autoCopy->getFormal(1)->type)) {
+          refTmp = newTemp(autoCopy->getFormal(1)->type);
+          block->insertAtTail(new DefExpr(refTmp));
+        }
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+        if (refTmp) {
+          block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
+        }
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
+        block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
+      } else {
+        Symbol* tmp = newTemp(field->name, field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+        block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
       }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      if (refTmp) {
-        block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
-      }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
-      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
-    } else {
-      Symbol* tmp = newTemp(field->name, field->type);
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
     }
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
@@ -2368,11 +2378,13 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
-      Symbol* tmp = newTemp(field->name, field->type);
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(autoDestroy, tmp));
+    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+      if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+        Symbol* tmp = newTemp(field->name, field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+        block->insertAtTail(new CallExpr(autoDestroy, tmp));
+      }
     }
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

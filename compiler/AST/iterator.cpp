@@ -1291,7 +1291,8 @@ rebuildGetIterator(IteratorInfo* ii) {
   for_fields(field, ii->irecord) {
     // Load the record field into a temp,
     // and then use that to set the corresponding class field.
-    VarSymbol* fieldReadTmp  = newTemp(field->type);
+    VarSymbol* fieldReadTmp  = newTemp(field->qualType());
+
     CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
 
     getIterator->insertBeforeEpilogue(new DefExpr(fieldReadTmp));
@@ -1371,18 +1372,18 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
     ? "value"
     : astr("F", istr(i++), "_", local->name);
 
-  if (local) {
-    type = local->type;
-    // The return value is automatically dereferenced (I guess).
-    /*if (local == fn->_this && type->symbol->hasFlag(FLAG_REF) &&
-        // TODO -- why is this dereferencing done ever?
-        !isRecordWrappedType(type->getValType()))
-      type = type->getValType();
-     */
-  }
-
   // Add a field to the class
-  Symbol* field = new VarSymbol(fieldName, type);
+
+  // Propagate the Qualifier (e.g. field is ref if local is ref)
+  // This is especially important if local is an ArgSymbol
+  QualifiedType qt(QUAL_UNKNOWN, type);
+  if (local)
+    qt = local->qualType();
+  // Workaround: use a ref type here
+  // In the future, the Qualifier should be sufficient
+  qt = qt.refToRefType();
+  Symbol* field = new VarSymbol(fieldName, qt);
+
   fn->iteratorInfo->iclass->fields.insertAtTail(new DefExpr(field));
 
   return field;
@@ -1428,7 +1429,8 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 
     // Only (live) arguments are added to the record.
     if (isArgSymbol(local)) {
-      Symbol* rfield = new VarSymbol(field->name, field->type);
+      VarSymbol* rfield = new VarSymbol(field->name, field->type);
+      rfield->qual = field->qual;
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
 
