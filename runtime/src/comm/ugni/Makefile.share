@@ -37,8 +37,21 @@ COMM_OBJS = \
 COMM_LAUNCHER_OBJS = \
 	$(COMM_LAUNCHER_SRCS:%.c=$(COMM_LAUNCHER_OBJDIR)/%.o)
 
+
+ifeq ($(CHPL_MAKE_COMPILER), clang-included)
+  ifneq (, $(filter cray-prgenv-%,$(CHPL_ORIG_TARGET_COMPILER)))
+    # if we're clang-included for a cray-prgenv-* build,
+    # gather some extra include paths
+
+    # only run gather-cray-prgenv-argumenst.bash once, as an optimization
+    ifndef CHPL_UGNI_PRGENV_CFLAGS
+      export CHPL_UGNI_PRGENV_CFLAGS := $(shell $(CHPL_MAKE_HOME)/util/config/gather-cray-prgenv-arguments.bash compile)
+    endif
+  endif
+endif
+
 # Get system headers...
-comm_ugni_CFLAGS = $(CHPL_MAKE_BASE_CFLAGS)
+comm_ugni_CFLAGS = $(CHPL_UGNI_PRGENV_CFLAGS)
 
 # Building with IPA enabled results in execution time bugs. See JIRA issue 185
 # for more details: https://chapel.atlassian.net/browse/CHAPEL-185
