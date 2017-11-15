@@ -1282,6 +1282,7 @@ void runClang(const char* just_parse_filename) {
   if (specializeCCode) {
     std::string march = "-march=";
     march += CHPL_TARGET_ARCH;
+    args.push_back(march);
   }
 
   if (ffloatOpt > 0)
