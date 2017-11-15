@@ -43,7 +43,7 @@ typedef struct {
 typedef struct {
   chpl_fn_int_t fid;
   int caller;
-  void* done; // where to indicate completion on caller
+  void* rf_done; // where to indicate completion on caller
 } chpl_comm_bundleData_t;
 
 //

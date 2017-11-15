@@ -260,6 +260,8 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_amo_cnt)                                             \
         MACRO(regMem_cnt)                                               \
         MACRO(deregMem_cnt)                                             \
+        MACRO(local_mreg_cnt)                                           \
+        MACRO(remote_mreg_cnt)                                          \
         MACRO(sent_bytes)                                               \
         MACRO(rcvd_bytes)                                               \
         MACRO(acq_cd_cnt)                                               \
@@ -445,11 +447,12 @@ static mem_region_table_t** mem_regions_map_addr_map;
 
 //
 // This is the memory region for the guaranteed NIC-registered memory
-// in which remote fork descriptors, their is-free flags, and the
-// temporary bounce buffers live.  It saves a little bit of time not
-// to have to look it up.
+// in which the memory region map, remote fork descriptors and their
+// is-free flags, and temporary bounce buffers live.  It saves time
+// not to have to look it up.
 //
 static mem_region_t* gnr_mreg;
+static mem_region_t* gnr_mreg_map;
 
 //
 // Declarations common to memory pools.
@@ -1236,8 +1239,8 @@ static chpl_bool comm_diags_disabled_temporarily = false;
 // argument to do_remote_put() and ..._get().
 //
 typedef enum {
-  may_proxy_false,
-  may_proxy_true
+  may_proxy_false = false,
+  may_proxy_true = true
 } drpg_may_proxy_t;
 
 
@@ -1297,9 +1300,9 @@ static fork_amo_data_t* amo_res_alloc(void);
 static void      amo_res_free(fork_amo_data_t*);
 static void      consume_all_outstanding_cq_events(int);
 static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
-                               drpg_may_proxy_t);
+                               mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
-                                 drpg_may_proxy_t);
+                                 mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
@@ -2146,47 +2149,6 @@ void register_memory(void)
   }
 
   //
-  // Share the per-locale memory descriptors around the job.
-  //
-
-  // Must be directly communicable without proxy.
-  mem_regions_map = (mem_region_table_t*)
-                    chpl_comm_mem_reg_allocMany(chpl_numNodes,
-                                                sizeof(mem_regions_map[0]),
-                                                CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                                0, 0);
-  mem_regions_map_addr_map =
-    (mem_region_table_t**)
-      chpl_mem_allocMany(chpl_numNodes,
-                         sizeof(mem_regions_map_addr_map[0]),
-                         CHPL_RT_MD_COMM_PER_LOC_INFO,
-                         0, 0);
-
-  {
-    typedef struct {
-      c_nodeid_t nodeID;
-      mem_region_table_t mem_regions;
-      mem_region_table_t* mem_regions_map;
-    } gdata_t;
-
-    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map };
-    gdata_t* gdata;
-
-    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                          0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
-
-    for (int i = 0; i < chpl_numNodes; i++) {
-      mem_regions_map[gdata[i].nodeID] = gdata[i].mem_regions;
-      mem_regions_map_addr_map[gdata[i].nodeID] = gdata[i].mem_regions_map;
-    }
-
-    chpl_mem_free(gdata, 0, 0);
-  }
-
-  //
   // Find the memory region associated with guaranteed NIC-registered
   // memory.  Recording this saves time looking it up later.
   //
@@ -2205,6 +2167,52 @@ void register_memory(void)
 
     if (gnr_mreg == NULL)
       CHPL_INTERNAL_ERROR("cannot find gnr_mreg");
+  }
+
+  //
+  // Share the per-locale memory descriptors around the job.
+  //
+
+  // Must be directly communicable without proxy.
+  mem_regions_map = (mem_region_table_t*)
+                    chpl_comm_mem_reg_allocMany(chpl_numNodes,
+                                                sizeof(mem_regions_map[0]),
+                                                CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                0, 0);
+  mem_regions_map_addr_map =
+    (mem_region_table_t**)
+      chpl_mem_allocMany(chpl_numNodes,
+                         sizeof(mem_regions_map_addr_map[0]),
+                         CHPL_RT_MD_COMM_PER_LOC_INFO,
+                         0, 0);
+  gnr_mreg_map = (mem_region_t*)
+                   chpl_mem_allocMany(chpl_numNodes, sizeof(gnr_mreg_map[0]),
+                                      CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+
+  {
+    typedef struct {
+      c_nodeid_t nodeID;
+      mem_region_table_t mem_regions;
+      mem_region_table_t* mem_regions_map;
+      mem_region_t gnr_mreg;
+    } gdata_t;
+
+    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map, *gnr_mreg };
+    gdata_t* gdata;
+
+    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
+                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                          0, 0);
+    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
+      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
+
+    for (int i = 0; i < chpl_numNodes; i++) {
+      mem_regions_map[gdata[i].nodeID] = gdata[i].mem_regions;
+      mem_regions_map_addr_map[gdata[i].nodeID] = gdata[i].mem_regions_map;
+      gnr_mreg_map[gdata[i].nodeID] = gdata[i].gnr_mreg;
+    }
+
+    chpl_mem_free(gdata, 0, 0);
   }
 
   can_register_memory = true;
@@ -2331,6 +2339,7 @@ static
 inline
 mem_region_t* mreg_for_local_addr(void* addr)
 {
+  PERFSTATS_INC(local_mreg_cnt);
   return mreg_for_addr(addr, &mem_regions);
 }
 
@@ -2339,6 +2348,7 @@ static
 inline
 mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
 {
+  PERFSTATS_INC(remote_mreg_cnt);
   return mreg_for_addr(addr, &mem_regions_map[locale]);
 }
 
@@ -2885,6 +2895,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     int32_t node_v[MAX_CHAINED_PUT_LEN];
     void* tgt_v[MAX_CHAINED_PUT_LEN];
     size_t size_v[MAX_CHAINED_PUT_LEN];
+    mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
     int ci;
 
     if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
@@ -2900,7 +2911,8 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     ci = 0;
     for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
       if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
+        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                        may_proxy_false);
         ci = 0;
       }
 
@@ -2913,12 +2925,14 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
         node_v[ci] = ni;
         tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
         size_v[ci] = size;
+        remote_mr_v[ci] = &gnr_mreg_map[ni];
         ci++;
       }
     }
 
     if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
+      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                      may_proxy_false);
     }
   }
 
@@ -2986,6 +3000,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     int32_t node_v[MAX_CHAINED_PUT_LEN];
     void* tgt_v[MAX_CHAINED_PUT_LEN];
     size_t size_v[MAX_CHAINED_PUT_LEN];
+    mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
     int ci;
 
     if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
@@ -3001,7 +3016,8 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     ci = 0;
     for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
       if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
+        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                        may_proxy_false);
         ci = 0;
       }
 
@@ -3014,12 +3030,14 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
         node_v[ci] = ni;
         tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
         size_v[ci] = size;
+        remote_mr_v[ci] = &gnr_mreg_map[ni];
         ci++;
       }
     }
 
     if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, may_proxy_false);
+      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                      may_proxy_false);
     }
   }
 
@@ -3062,7 +3080,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
     if (i != chpl_nodeID) {
       do_remote_put(chpl_private_broadcast_table[id], i,
                     chpl_private_broadcast_table[id], size,
-                    may_proxy_true);
+                    NULL, may_proxy_true);
     }
   }
 }
@@ -3109,7 +3127,7 @@ void chpl_comm_barrier(const char *msg)
     DBG_P_LP(DBGF_BARRIER, "BAR notify parent %d", (int) bar_parent);
     do_remote_put(&bar_flag, bar_parent,
                   (void*) &parent_bar_info->child_notify[child_in_parent],
-                  sizeof(bar_flag), may_proxy_true);
+                  sizeof(bar_flag), NULL, may_proxy_true);
 
     //
     // Wait for our parent locale to release us from the barrier.
@@ -3136,7 +3154,7 @@ void chpl_comm_barrier(const char *msg)
     static uint32_t release_flag = 1;
     do_remote_put(&release_flag, bar_min_child + i,
                   (void*) &child_bar_info[i]->parent_release,
-                  sizeof(release_flag), may_proxy_true);
+                  sizeof(release_flag), NULL, may_proxy_true);
   }
 }
 
@@ -3309,7 +3327,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
         // these are saved in the comm portion of the on_bundle.
         on_bundle->comm.fid = f_c->fid;
         on_bundle->comm.caller = f_c->b.caller;
-        on_bundle->comm.done = f_c->b.rf_done;
+        on_bundle->comm.rf_done = f_c->b.rf_done;
 
         chpl_task_startMovedTask(f_c->fid,
                                  fn,
@@ -3357,7 +3375,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       fork_xfer_info_t f_x = f->x;
 
       release_req_buf(req_li, req_cdi, req_rbi);
-      do_remote_put(f_x.src, req_li, f_x.tgt, f_x.size, may_proxy_false);
+      do_remote_put(f_x.src, req_li, f_x.tgt, f_x.size, NULL, may_proxy_false);
       indicate_done(&f_x.b);
     }
     break;
@@ -3417,7 +3435,7 @@ void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
   // free that argument ourselves.
   //
 
-  indicate_done2(f->comm.caller, (rf_done_t*) f->comm.done);
+  indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
   
 static
@@ -3711,7 +3729,8 @@ void fork_amo_wrapper(fork_amo_info_t* f_a)
 
   res_size = do_amo_on_cpu(f_a->cmd, &res, f_a->obj, &f_a->opnd1, &f_a->opnd2);
   if (f_a->res != NULL) {
-    do_remote_put(&res, f_a->b.caller, f_a->res, res_size, may_proxy_false);
+    do_remote_put(&res, f_a->b.caller, f_a->res, res_size, NULL,
+                  may_proxy_false);
   }
 
   indicate_done(&f_a->b);
@@ -3723,7 +3742,7 @@ void release_req_buf(uint32_t li, int cdi, int rbi)
 {
   static chpl_bool32 free_flag = true;
   do_remote_put(&free_flag, li, RECV_SIDE_FORK_REQ_FREE_ADDR(li, cdi, rbi),
-                sizeof(free_flag), may_proxy_false);
+                sizeof(free_flag), &gnr_mreg_map[li], may_proxy_false);
 }
 
 
@@ -3732,7 +3751,8 @@ inline
 void indicate_done2(int caller, rf_done_t *ack)
 {
   static rf_done_t done = 1;
-  do_remote_put(&done, caller, ack, sizeof(done), may_proxy_false);
+  do_remote_put(&done, caller, ack, sizeof(done), &gnr_mreg_map[caller],
+                may_proxy_false);
 }
 
 
@@ -4300,15 +4320,15 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
     (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.put, 1);
 
-  do_remote_put(addr, locale, raddr, size, may_proxy_true);
+  do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
 }
 
 
 static
 void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
-                   size_t size, drpg_may_proxy_t may_proxy)
+                   size_t size, mem_region_t* remote_mr,
+                   drpg_may_proxy_t may_proxy)
 {
-  mem_region_t*         remote_mr;
   gni_post_descriptor_t post_desc;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemPut %p -> %d:%p (%#zx), proxy %c",
@@ -4324,7 +4344,9 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // also need the source address here to be registered, because GETs
   // must have registered source addresses.
   //
-  remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+  if (remote_mr == NULL)
+    remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+
   if (remote_mr == NULL) {
     mem_region_t* local_mr;
 
@@ -4424,9 +4446,9 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 
 
 static
-void do_remote_put_V(int v_len,
-                     void** src_addr_v, c_nodeid_t* locale_v, void** tgt_addr_v,
-                     size_t* size_v, drpg_may_proxy_t may_proxy)
+void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
+                     void** tgt_addr_v, size_t* size_v,
+                     mem_region_t** remote_mr_v, drpg_may_proxy_t may_proxy)
 {
   mem_region_t* remote_mr;
   gni_post_descriptor_t pd;
@@ -4441,7 +4463,7 @@ void do_remote_put_V(int v_len,
   //
   while (v_len > MAX_CHAINED_PUT_LEN) {
     do_remote_put_V(MAX_CHAINED_PUT_LEN, src_addr_v, locale_v, tgt_addr_v,
-                    size_v, may_proxy);
+                    size_v, remote_mr_v, may_proxy);
     v_len -= MAX_CHAINED_PUT_LEN;
     src_addr_v += MAX_CHAINED_PUT_LEN;
     locale_v += MAX_CHAINED_PUT_LEN;
@@ -4458,10 +4480,17 @@ void do_remote_put_V(int v_len,
   // refer to unregistered memory on the remote side.
   //
   for (int vi = 0, ci = -1; vi < v_len; vi++) {
-    remote_mr = mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi]);
-    if (remote_mr == NULL && may_proxy == may_proxy_true) {
-      do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
-                    may_proxy);
+    remote_mr = ((remote_mr_v == NULL)
+                 ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
+                 : remote_mr_v[vi]);
+    if (remote_mr == NULL) {
+      if (may_proxy) {
+        do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
+                      NULL, may_proxy);
+      } else {
+        CHPL_INTERNAL_ERROR("do_remote_put_V(): "
+                            "remote address is not NIC-registered");
+      }
       continue;
     }
 
@@ -5539,7 +5568,8 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                        GNI_FMA_ATOMIC_FAX, &res);                       \
           }                                                             \
           else {                                                        \
-            do_remote_put(val, loc, obj, sizeof(_t), may_proxy_false);  \
+            do_remote_put(val, loc, obj, sizeof(_t), NULL,              \
+                          may_proxy_false);                             \
           }                                                             \
         }
 
@@ -6111,12 +6141,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-    assert(0); // locale model code should prevent this...
-
-    chpl_ftable_call(fid, arg);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
@@ -6144,20 +6169,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-
-    assert(0); // locale model code should prevent this...
-
-    // No copy of the argument is necessary for a local fork
-    // since the tasking layer will do whatever it takes
-    // to copy the argument to chpl_task_startMovedTask.
-
-    chpl_task_startMovedTask(fid, chpl_ftable[fid],
-                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                             subloc,
-                             chpl_nullTaskID);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
@@ -6186,11 +6198,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-    assert(0); // locale model code should prevent this...
-    chpl_ftable_call(fid, arg);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
