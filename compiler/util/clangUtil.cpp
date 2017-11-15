@@ -1209,7 +1209,10 @@ void runClang(const char* just_parse_filename) {
                               "-Wwrite-strings", "-Wno-strict-aliasing",
                               "-Wmissing-declarations", "-Wmissing-prototypes",
                               "-Wstrict-prototypes",
-                              "-Wmissing-format-attribute", NULL};
+                              "-Wmissing-format-attribute",
+                              // clang can't tell which functions we use
+                              "-Wno-unused-function",
+                              NULL};
   const char* clang_debug = "-g";
   const char* clang_opt = "-O3";
   const char* clang_fast_float = "-ffast-math";
