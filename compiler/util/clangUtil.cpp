@@ -1530,7 +1530,10 @@ void runClang(const char* just_parse_filename) {
   if (optimizeCCode)
     args.push_back(clang_opt);
 
-  if (specializeCCode) {
+  if (specializeCCode &&
+      CHPL_TARGET_ARCH != NULL &&
+      CHPL_TARGET_ARCH[0] != '\0' &&
+      0 != strcmp(CHPL_TARGET_ARCH, "none")) {
     std::string march = "-march=";
     march += CHPL_TARGET_ARCH;
     args.push_back(march);
