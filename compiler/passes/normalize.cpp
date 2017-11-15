@@ -1093,6 +1093,13 @@ static void callConstructor(CallExpr* call) {
       if (isSymExpr(arg1->baseExpr) == true &&
           arg1->partialTag          == false) {
         fixPrimNew(call);
+
+      } else if (CallExpr* subCall = toCallExpr(arg1->baseExpr)) {
+        if (isSymExpr(subCall->baseExpr) == true) {
+          if (subCall->partialTag == true) {
+            fixPrimNew(call);
+          }
+        }
       }
     }
 
@@ -1115,8 +1122,7 @@ static void callConstructor(CallExpr* call) {
                parentParent->isPrimitive(PRIM_NEW) == true) {
       if (call->partialTag == true) {
         INT_ASSERT(parentParent->get(1) == parent);
-
-        fixPrimNew(parentParent);
+        //        fixPrimNew(parentParent);
 
       } else {
         INT_ASSERT(false);
