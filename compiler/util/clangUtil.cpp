@@ -1511,6 +1511,8 @@ void runClang(const char* just_parse_filename) {
   runtime_includes += "/list-includes-and-defines";
 
   readArgsFromFile(runtime_includes, args);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(args);
 
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
@@ -2584,6 +2586,8 @@ void makeBinaryLLVM(void) {
 
   std::vector<std::string> clangLDArgs;
   readArgsFromFile(runtime_libs, clangLDArgs);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(clangLDArgs);
 
   if (compilingWithPrgEnv()) {
     std::string gather_prgenv(CHPL_HOME);
