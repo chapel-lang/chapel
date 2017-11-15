@@ -470,6 +470,10 @@ std::string getChplPythonVersion() {
   return pyVer;
 }
 
+bool compilingWithPrgEnv() {
+  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+}
+
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
@@ -706,9 +710,9 @@ const char* filenameToModulename(const char* filename) {
   return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
-void readArgsFromCommand(const char* cmd, std::vector<std::string>& args) {
+void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
   // Gather information from compileline into clangArgs.
-  if(FILE* fd = popen(cmd,"r")) {
+  if(FILE* fd = popen(cmd.c_str(),"r")) {
     int ch;
     // Read arguments.
     while( (ch = getc(fd)) != EOF ) {
@@ -726,7 +730,34 @@ void readArgsFromCommand(const char* cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
+    fclose(fd);
   }
+}
+
+void readArgsFromFile(std::string path, std::vector<std::string>& args) {
+
+  FILE* fd = fopen(path.c_str(), "r");
+  if (!fd)
+    USR_FATAL("Could not open file %s", path.c_str());
+
+  int ch;
+  // Read arguments.
+  while( (ch = getc(fd)) != EOF ) {
+    // Read the next argument.
+    // skip leading spaces
+    while( ch != EOF && isspace(ch) ) ch = getc(fd);
+    std::string arg;
+    arg.push_back(ch);
+    // read until space. TODO - handle quoting/spaces
+    ch = getc(fd);
+    while( ch != EOF && !isspace(ch) ) {
+      arg += ch;
+      ch = getc(fd);
+    }
+    args.push_back(arg);
+  }
+
+  fclose(fd);
 }
 
 // would just use realpath, but it is not supported on all platforms.

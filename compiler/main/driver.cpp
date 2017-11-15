@@ -65,6 +65,7 @@ const char* CHPL_HOST_PLATFORM = NULL;
 const char* CHPL_HOST_COMPILER = NULL;
 const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
+const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
@@ -83,6 +84,9 @@ const char* CHPL_REGEXP = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
+
+const char* CHPL_RUNTIME_SUBDIR = NULL;
+const char* CHPL_LAUNCHER_SUBDIR = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -1125,6 +1129,7 @@ static void setChapelEnvs() {
   CHPL_HOST_COMPILER   = envMap["CHPL_HOST_COMPILER"];
   CHPL_TARGET_PLATFORM = envMap["CHPL_TARGET_PLATFORM"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
+  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
@@ -1143,6 +1148,17 @@ static void setChapelEnvs() {
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
+
+  CHPL_RUNTIME_SUBDIR  = envMap["CHPL_MAKE_RUNTIME_SUBDIR"];
+  CHPL_LAUNCHER_SUBDIR = envMap["CHPL_MAKE_LAUNCHER_SUBDIR"];
+
+  // Make sure there are no NULLs in envMap
+  // a NULL in envMap might mean that one of the variables
+  // the compiler expected printchplenv to produce was not produced.
+  for (std::map<std::string, const char*>::iterator env=envMap.begin();
+       env!=envMap.end(); ++env) {
+    INT_ASSERT(env->second != NULL);
+  }
 }
 
 static void setupChplGlobals(const char* argv0) {
@@ -1155,6 +1171,11 @@ static void setupChplGlobals(const char* argv0) {
 
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
+  }
+
+  // tell printchplenv that we're doing an LLVM build
+  if (llvmCodegen) {
+    envMap["CHPL_LLVM_CODEGEN"] = "llvm";
   }
 
   // Populate envMap from printchplenv, never overwriting existing elements

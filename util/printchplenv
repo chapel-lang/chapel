@@ -32,6 +32,24 @@ def print_mode(mode='list', anonymize=False):
         # are printed
         m = 'make'
 
+    llvm_codegen = "CHPL_LLVM_CODEGEN" in os.environ
+
+    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to clang-included
+    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used
+    # otherwise.
+    # This happens early because it modifies the environment and other
+    # defaults might depend on this setting.
+    orig_target_compiler = ""
+    if m != 'compiler' and m != 'launcher':
+      orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
+      new_target_compiler = chpl_compiler.get('target')
+      os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
+      if llvm_codegen:
+        if new_target_compiler != 'clang-included':
+          # This error indicates something about chplenv (probably
+          # chpl_compiler.py) is not working correctly with LLVM mode.
+          raise ValueError('LLVM mode but target compiler is set incorrectly')
+
 
     chpl_home = chpl_home_utils.get_chpl_home()
 
@@ -58,6 +76,8 @@ def print_mode(mode='list', anonymize=False):
 
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
+        if mode == 'simple' or mode == 'make' or mode == 'debug':
+          print_var('CHPL_ORIG_TARGET_COMPILER', orig_target_compiler, mode, 'x', (' '))
 
     get_module_lcd = ( chpl_home_utils.using_chapel_module() and
                      (mode == 'runtime' or mode == 'make') )
@@ -122,8 +142,8 @@ def print_mode(mode='list', anonymize=False):
     print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
 
     if mode != 'list':
-        llvm = chpl_llvm.get()
-        print_var('CHPL_LLVM', llvm, mode, 'llvm', ('compiler',))
+        enable_llvm = chpl_llvm.get()
+        print_var('CHPL_LLVM', enable_llvm, mode, 'llvm', ('compiler',))
 
     aux_filesys = chpl_aux_filesys.get()
     if mode == 'make' or mode == 'runtime':
@@ -132,14 +152,17 @@ def print_mode(mode='list', anonymize=False):
         aux_filesys = "_".join(tmp)
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
-    # NOT using `m` here, 'simple' does not need these values
-    if mode == 'make':
-        stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
-        print_mode('compiler')
+    # 'simple' needs these values but not those in the next conditional
+    if m == 'make':
         stdout.write('CHPL_MAKE_RUNTIME_SUBDIR=')
         print_mode('runtime')
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
         print_mode('launcher')
+
+    # 'simple' does not need these values
+    if mode == 'make':
+        stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
+        print_mode('compiler')
 
         link_args_3p = []
 

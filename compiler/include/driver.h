@@ -87,6 +87,7 @@ extern const char* CHPL_HOST_PLATFORM;
 extern const char* CHPL_HOST_COMPILER;
 extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_COMPILER;
+extern const char* CHPL_ORIG_TARGET_COMPILER;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
@@ -106,6 +107,8 @@ extern const char* CHPL_WIDE_POINTERS;
 extern const char* CHPL_LLVM;
 extern const char* CHPL_AUX_FILESYS;
 extern const char* CHPL_UNWIND;
+extern const char* CHPL_RUNTIME_SUBDIR;
+extern const char* CHPL_LAUNCHER_SUBDIR;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
