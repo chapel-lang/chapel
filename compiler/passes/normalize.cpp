@@ -76,7 +76,9 @@ static void normalizeReturns(FnSymbol* fn);
 static bool isCallToConstructor(CallExpr* call);
 static void normalizeCallToConstructor(CallExpr* calll);
 
-static void callConstructor(CallExpr* call);
+static bool isCallToTypeConstructor(CallExpr* call);
+static void normalizeCallToTypeConstructor(CallExpr* call);
+
 static void applyGetterTransform(CallExpr* call);
 static void insertCallTemps(CallExpr* call);
 static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
@@ -537,12 +539,14 @@ static void normalize(BaseAST* base) {
 
   insertCallTempsForRiSpecs(base);
 
+  // Handle calls to "type" constructor or "value" constructor
   for_vector(CallExpr, call, calls2) {
     if (isAlive(call) == true) {
       if (isCallToConstructor(call) == true) {
         normalizeCallToConstructor(call);
-      } else {
-        callConstructor(call);
+
+      } else if (isCallToTypeConstructor(call) == true) {
+        normalizeCallToTypeConstructor(call);
       }
     }
   }
@@ -1147,28 +1151,17 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   }
 }
 
-
 /************************************* | **************************************
 *                                                                             *
-* Normalize constructor/type constructor calls.                               *
-*   a call whose base expression is a symbol referring to an aggregate type   *
-*   is converted to a call to the default type constructor for that class,    *
-*   unless it's in a 'new' expression                                         *
 *                                                                             *
-*   calls to such aggregate types in a 'new' expression are transformed to    *
-*   put the call arguments directly into the PRIM_NEW in order to improve     *
-*   function resolution's ability to handle them.                             *
-*                                                                             *
-*   if the type is "dmap" (syntactic distribution), it is replaced by a call  *
-*   to chpl_buildDistType().                                                  *
 *                                                                             *
 ************************************** | *************************************/
 
-static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent);
+static SymExpr* callUsedInRiSpec(Expr* call);
 static void     restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
 
-static void callConstructor(CallExpr* call) {
-  SET_LINENO(call);
+static bool isCallToTypeConstructor(CallExpr* call) {
+  bool retval = false;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     CallExpr* parent       = toCallExpr(call->parentExpr);
@@ -1179,17 +1172,33 @@ static void callConstructor(CallExpr* call) {
     }
 
     if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
+      retval = false;
 
     } else if (parentParent                        != NULL &&
                parentParent->isPrimitive(PRIM_NEW) == true) {
+      retval = false;
 
     } else if (TypeSymbol* ts = expandTypeAlias(se)) {
+      if (isAggregateType(ts->type) == true) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void normalizeCallToTypeConstructor(CallExpr* call) {
+  if (SymExpr* se = toSymExpr(call->baseExpr)) {
+    if (TypeSymbol* ts = expandTypeAlias(se)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
+        SET_LINENO(call);
+
         if (at->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
           // Call chpl__buildDistType for syntactic distributions.
           se->replace(new UnresolvedSymExpr("chpl__buildDistType"));
 
-        } else if (SymExpr* riSpec = callUsedInRiSpec(call, parent)) {
+        } else if (SymExpr* riSpec = callUsedInRiSpec(call)) {
           restoreReduceIntentSpecCall(riSpec, call);
 
         } else {
@@ -1216,17 +1225,19 @@ static void callConstructor(CallExpr* call) {
 // We do it here to avoid transforming it into _type_construct_C ( ... ).
 // That would be incorrect because this is a special syntax for reduce intent.
 //
-static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent) {
+static SymExpr* callUsedInRiSpec(Expr* call) {
   SymExpr* retval = NULL;
 
-  if (parent != NULL && parent->isPrimitive(PRIM_MOVE) == true) {
-    SymExpr* destSE      = toSymExpr(parent->get(1));
-    Symbol*  dest        = destSE->symbol();
-    SymExpr* riSpecMaybe = dest->firstSymExpr();
+  if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+    if (parent->isPrimitive(PRIM_MOVE) == true) {
+      Symbol*  dest        = toSymExpr(parent->get(1))->symbol();
+      SymExpr* riSpecMaybe = dest->firstSymExpr();
+      Symbol*  symParent   = riSpecMaybe->parentSymbol;
 
-    if (ShadowVarSymbol* svar = toShadowVarSymbol(riSpecMaybe->parentSymbol)) {
-      if (riSpecMaybe == svar->reduceOpExpr()) {
-        retval = riSpecMaybe;
+      if (ShadowVarSymbol* svar = toShadowVarSymbol(symParent)) {
+        if (riSpecMaybe == svar->reduceOpExpr()) {
+          retval = riSpecMaybe;
+        }
       }
     }
   }
