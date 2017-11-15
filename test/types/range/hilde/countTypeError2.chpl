@@ -8,15 +8,6 @@ var u16 = 3:uint(16);
 var u32 = 3:uint(32);
 var u64 = 3:uint(64);
 var u   = 3:uint;
- 
-
-
-
-
-
-
-
-
 
 writeln((i8.. # i16).type:string);
 writeln((i8.. # i32).type:string);

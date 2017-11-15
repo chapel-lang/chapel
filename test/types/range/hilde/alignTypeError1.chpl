@@ -9,15 +9,6 @@ var u32 = 3:uint(32);
 var u64 = 3:uint(64);
 var u   = 3:uint;
  
-
-
-
-
-
-
-
-
-
 writeln((i.. by 10 align u).type:string);
 writeln((i.. by 10 align u64).type:string);
 writeln((i8.. by 10 align u).type:string);
