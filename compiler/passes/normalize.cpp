@@ -534,7 +534,9 @@ static void normalize(BaseAST* base) {
   insertCallTempsForRiSpecs(base);
 
   for_vector(CallExpr, call, calls2) {
-    callConstructor(call);
+    if (isAlive(call) == true) {
+      callConstructor(call);
+    }
   }
 }
 
@@ -1084,9 +1086,17 @@ static SymExpr* callUsedInRiSpec(Expr* call, CallExpr* parent);
 static void     restoreReduceIntentSpecCall(SymExpr* riSpec, CallExpr* call);
 
 static void callConstructor(CallExpr* call) {
-  if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    SET_LINENO(call);
+  SET_LINENO(call);
 
+  if (call->isPrimitive(PRIM_NEW) == true) {
+    if (CallExpr* arg1 = toCallExpr(call->get(1))) {
+      if (isSymExpr(arg1->baseExpr) == true &&
+          arg1->partialTag          == false) {
+        fixPrimNew(call);
+      }
+    }
+
+  } else if (SymExpr* se = toSymExpr(call->baseExpr)) {
     CallExpr* parent       = toCallExpr(call->parentExpr);
     CallExpr* parentParent = NULL;
 
@@ -1098,7 +1108,7 @@ static void callConstructor(CallExpr* call) {
       if (call->partialTag == false) {
         INT_ASSERT(parent->get(1) == call);
 
-        fixPrimNew(parent);
+        //        fixPrimNew(parent);
       }
 
     } else if (parentParent                        != NULL &&
@@ -1122,8 +1132,10 @@ static void callConstructor(CallExpr* call) {
           restoreReduceIntentSpecCall(riSpec, call);
 
         } else {
-          // Transform C ( ... ) into _type_construct_C ( ... ) .
-          se->replace(new UnresolvedSymExpr(at->defaultTypeConstructor->name));
+          // Transform C ( ... ) into _type_construct_C ( ... )
+          const char* name = at->defaultTypeConstructor->name;
+
+          se->replace(new UnresolvedSymExpr(name));
         }
       }
     }
