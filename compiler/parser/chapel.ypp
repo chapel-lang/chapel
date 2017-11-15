@@ -243,7 +243,6 @@
     // TODO -- should this begin with error:
     if (!chplParseString) {
       const char* yyText = yyget_text(context->scanner);
- 
       fprintf(stderr, "%s:%d: %s", yyfilename, chplLineno, str);
 
       if (strlen(yyText) > 0) {
@@ -269,7 +268,8 @@
 
 %debug
 %verbose
-// Thes would print out expected token names
+// These would print out expected token names, but that might just
+// add unnecessary complexity for someone new to the language ...
 //%define parse.lac full
 //%define parse.error verbose
 
