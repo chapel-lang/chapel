@@ -31,6 +31,7 @@
 #include "intlimits.h"
 #include "ipe.h"
 #include "iterator.h"
+#include "LayeredValueTable.h"
 #include "misc.h"
 #include "passes.h"
 #include "stringutil.h"
@@ -38,6 +39,9 @@
 #include "vec.h"
 #include "wellknown.h"
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
 
 
 GenRet Type::codegen() {

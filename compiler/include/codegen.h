@@ -22,24 +22,29 @@
 
 #include <list>
 #include <map>
+#include <stack>
 #include <string>
 #include <vector>
 
 #ifdef HAVE_LLVM
-// TODO -- forward declare more LLVM things
-#include "clangUtil.h"
+
+// forward declare some LLVM things.
+namespace llvm {
+  namespace legacy {
+    class FunctionPassManager;
+  }
+}
+
+#include "llvm/IR/IRBuilder.h"
+
+struct ClangInfo;
+class LayeredValueTable;
 #include "llvmGlobalToWide.h"
+
 #endif
 
 #include "files.h"
 #include "genret.h"
-
-#ifdef HAVE_LLVM
-
-// forward declare.
-struct ClangInfo;
-
-#endif
 
 /* This class contains information helpful in generating
  * code for nested loops. */

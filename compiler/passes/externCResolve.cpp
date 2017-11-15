@@ -21,6 +21,7 @@
 
 #include "astutil.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
@@ -31,6 +32,9 @@
 #include "vec.h"
 
 #ifdef HAVE_LLVM
+// clang headers
+#include "clang/AST/Decl.h"
+#include "clang/AST/Type.h"
 
 // Functions for converting parsed Clang AST (ie C declarations)
 // into Chapel. Note that these functions might create new
