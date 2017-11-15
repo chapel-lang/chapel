@@ -2179,7 +2179,7 @@ static void fixAST() {
             if (!isFullyWide(lhs) && (hasSomeWideness(rhs->typeInfo()) || rhs->isWideRef())) {
               SET_LINENO(lhs);
 
-              VarSymbol* tmp = newTemp(getTupleField(rhs)->type);
+              VarSymbol* tmp = newTemp(getTupleField(rhs)->qualType());
               DEBUG_PRINTF("Temp %d for get_svec_member_value\n", tmp->id);
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
