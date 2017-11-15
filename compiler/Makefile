@@ -61,8 +61,9 @@ endif
 BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 # configured prefix file
 CONFIGURED_PREFIX_FILE = $(COMPILER_ROOT)/main/CONFIGURED_PREFIX
-
-
+# file storing the names of clang, clang++ for CHPL_LLVM=system
+# also stores the clang-sysroot-arguments
+CLANG_SETTINGS_FILE = $(COMPILER_ROOT)/main/CLANG_SETTINGS
 
 #
 # include source subdirectories here
@@ -99,7 +100,7 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 
-PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm
+PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
 TARGETS = $(CHPL)
 
 
@@ -130,6 +131,9 @@ $(CHPL_MAKE_HOME)/configured-prefix:
 
 $(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
 	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
+
+$(CLANG_SETTINGS_FILE):
+	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' > $(CLANG_SETTINGS_FILE)
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)

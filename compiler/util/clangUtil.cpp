@@ -73,6 +73,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "type.h"
+#include "version.h"
 
 #include "codegen.h"
 
@@ -1477,11 +1478,8 @@ void runClang(const char* just_parse_filename) {
   std::string llvm_install, clangCC, clangCXX;
 
   if (0 == strcmp(CHPL_LLVM, "system")) {
-    INT_FATAL("TODO");
-    // find llvm-config-3.7 or llvm-config
-    // then s/llvm-config/clang
-    clangCC = "clang";
-    clangCXX = "clang++";
+    clangCC = get_clang_cc();
+    clangCXX = get_clang_cxx();
   } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
     llvm_install += CHPL_THIRD_PARTY;
     llvm_install += "/llvm/install/";
@@ -1495,6 +1493,7 @@ void runClang(const char* just_parse_filename) {
     USR_FATAL("Unspported CHPL_LLVM setting %s", CHPL_LLVM);
   }
 
+  // read clang-sysroot-arguments
   std::string sysroot_arguments(CHPL_THIRD_PARTY);
   sysroot_arguments += "/llvm/install/";
   sysroot_arguments += CHPL_HOST_PLATFORM;
@@ -1502,8 +1501,10 @@ void runClang(const char* just_parse_filename) {
   sysroot_arguments += CHPL_HOST_COMPILER;
   sysroot_arguments += "/configured-clang-sysroot-arguments";
 
+  // read arguments from configured-clang-sysroot-arguments
   readArgsFromFile(sysroot_arguments, args);
-
+  // read arguments that we captured at compile time
+  readArgsFromString(get_clang_sysroot_args(), args);
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
@@ -2660,10 +2661,14 @@ void makeBinaryLLVM(void) {
 
   readArgsFromFile(sysroot_arguments, sysroot_args);
 
+  // add arguments from configured-clang-sysroot-arguments
   for (auto &s : sysroot_args) {
     options += " ";
     options += s;
   }
+  // add arguments that we captured at compile time
+  options += " ";
+  options += get_clang_sysroot_args();
 
   if(debugCCode) {
     options += " -g";

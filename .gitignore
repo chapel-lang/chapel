@@ -37,6 +37,7 @@ tags
 /compiler/ifa/make_prims/make_prims
 /compiler/ifa/make_prims/cygwin
 /compiler/main/BUILD_VERSION
+/compiler/main/CLANG_SETTINGS
 /compiler/main/CONFIGURED_PREFIX
 /compiler/main/COPYRIGHT
 /compiler/main/LICENSE
