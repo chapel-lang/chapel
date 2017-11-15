@@ -3628,7 +3628,7 @@ module ChapelArray {
     use Reflection;
     var success = false;
 
-    proc bulkTransferDebug(msg:string) {
+    inline proc bulkTransferDebug(msg:string) {
       if debugBulkTransfer then chpl_debug_writeln("proc =(a:[],b:[]): ", msg);
     }
 
