@@ -199,7 +199,9 @@ eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
               ++s_ref_repl_count;
               addUse(useMap, se);
             } else {
-              VarSymbol* tmp = newTemp(parent->get(2)->qualType().toRef());
+              QualifiedType qt = parent->get(2)->qualType();
+              VarSymbol* tmp = newTemp(qt);
+              if (qt.isRef()) tmp->qual = QUAL_REF;
               parent->getStmtExpr()->insertBefore(new DefExpr(tmp));
               parent->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, parent->get(2)->remove()));
               SymExpr* se = toSymExpr(rhs->get(1)->copy());
