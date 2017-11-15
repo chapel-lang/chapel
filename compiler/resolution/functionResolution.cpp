@@ -3932,6 +3932,17 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
       prefer1 = DS.fn1WeakestPreferred;
       prefer2 = DS.fn2WeakestPreferred;
 
+      /* A note about weak-prefers. Why are there 3 levels?
+
+	 Something like 'param x:int(16) = 5' should be able to coerce to any
+	 integral type. Meanwhile, 'param y = 5' should also be able to coerce
+	 to any integral type. Now imagine we are resolving 'x+y'.  We
+	 want it to resolve to the 'int(16)' version because 'x' has a type
+         specified, but 'y' is a default type. Before the 3 weak levels, this
+         version was chosen simply because non-default-sized ints didn't allow
+         param conversion.
+
+       */
     } else if (!ignoreWhere) {
       bool fn1where = candidate1->fn->where != NULL &&
                       !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
