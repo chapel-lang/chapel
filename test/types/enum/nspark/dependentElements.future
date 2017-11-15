@@ -1,7 +1,0 @@
-bug: compiler seg fault when compiling enum with elements dependent on eachother
-
-Current compiler output:
-Segmentation fault: 11
-
-Replacing the dependent element,'three = one + two', with 'three = 3',
-will produce the desired result.

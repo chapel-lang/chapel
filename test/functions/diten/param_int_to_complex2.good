@@ -1,2 +1,1 @@
-param_int_to_complex2.chpl:7: error: unresolved call 'foo(2)'
-param_int_to_complex2.chpl:1: note: candidates are: foo(param c: complex)
+param

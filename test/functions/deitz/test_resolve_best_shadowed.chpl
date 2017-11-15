@@ -13,7 +13,8 @@ proc bar1() {
       proc foo(r: real) {
         writeln("innermost foo, but worst match");
       }
-      foo(1);
+      var x:int = 1;
+      foo(x);
     }
   }
 }

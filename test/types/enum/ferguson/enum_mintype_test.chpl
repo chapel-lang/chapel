@@ -167,16 +167,15 @@ proc myTypeToString(type t)
 
   writeln("B ", myTypeToString(enum_mintype(B)));
 
-  /*
   enum C {
     a = 0xffffffffffffffff
   };
 
   writeln("C ", myTypeToString(enum_mintype(C)));
+
   enum E {
-    a = -0x8000000000000000
+    a = -0x7fffffffffffffff
   };
 
   writeln("E ", myTypeToString(enum_mintype(E)));
-  */
 }

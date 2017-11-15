@@ -715,6 +715,11 @@ VarSymbol *new_CommIDSymbol(int64_t b);
 
 VarSymbol *new_ImmediateSymbol(Immediate *imm);
 
+// Get an Immediate stored in a VarSymbol or an EnumSymbol.
+// When called on an EnumSymbol, requires that the enum type is already
+// resolved.
+Immediate *getSymbolImmediate(Symbol* sym);
+
 void createInitStringLiterals();
 void resetTempID();
 FlagSet getRecordWrappedFlags(Symbol* s);

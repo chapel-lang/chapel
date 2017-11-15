@@ -89,13 +89,15 @@ bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
                FnSymbol* fn,
-               bool*     promotes = NULL);
+               bool*     promotes = NULL,
+               bool*     paramNarrows = NULL);
 
 bool canDispatch(Type*     actualType,
                  Symbol*   actualSym,
                  Type*     formalType,
                  FnSymbol* fn          = NULL,
                  bool*     promotes    = NULL,
+                 bool*     paramNarrows= NULL,
                  bool      paramCoerce = false);
 
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);

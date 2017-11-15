@@ -5,7 +5,7 @@ int8or64 variants
 64
 
 int8or32 variants
-8
+32
 32
 32
 32
@@ -23,13 +23,13 @@ param8OrNot variants
 
 
 param8Or32OrNot variants
-8-bit param
+32-bit param
 32-bit param
 32-bit not param
 32-bit not param
 
 allSigs variants
-param 8
+param 64
 param 64
 64
 64
