@@ -351,12 +351,14 @@ static bool isHandledRecordUse(SymExpr* se) {
   } else if (call->isPrimitive(PRIM_SET_MEMBER) && call->get(1) == se) {
     ret = true;
   } else if (call->isPrimitive(PRIM_MOVE)) {
-    if (call->get(1) == se) {
-      ret = true;
-    } else if (call->get(1)->isRef() && se->isRef() == false) {
-      // If both sides of the move are refs, then the references alias. Ref
-      // aliases are not handled at this time.
-      ret = true;
+    INT_ASSERT(call->get(2) == se);
+    if (call->get(1)->isRef()) {
+      if (se->isRef() == false) {
+        // like a PRIM_ASSIGN: *(ref) = se;
+        ret = true;
+      }
+    } else {
+      ret = true; // var = se;
     }
   }
 
