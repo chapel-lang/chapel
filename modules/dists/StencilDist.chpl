@@ -1868,7 +1868,7 @@ where canDoAnyToStencil(this, destDom, Src, srcDom) {
          //In the case that the number of elements in dimension t for r1 and r2
          //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
-            r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+            r1[t] = (ini[t]:el..end[t]:el by sb[t]);
             if r1[t].length != r2[t].length then
               r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
@@ -1909,7 +1909,7 @@ where useBulkTransferDist {
           r2[t] = (chpl__tuplify(inters.first)[t]
                    ..chpl__tuplify(inters.last)[t]
                    by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+          r1[t] = (ini[t]:el..end[t]:el by sa[t]);
         }
 
         if debugStencilDistBulkTransfer then
@@ -1946,7 +1946,7 @@ where useBulkTransferDist {
           r2[t] = (chpl__tuplify(inters.first)[t]
                    ..chpl__tuplify(inters.last)[t]
                    by chpl__tuplify(inters.stride)[t]);
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]);
         }
 
         if debugStencilDistBulkTransfer then

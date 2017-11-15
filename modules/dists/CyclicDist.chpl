@@ -997,7 +997,7 @@ private proc canDoAnyToCyclic(A, aView, B, bView) param : bool {
 proc CyclicArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToCyclic(this, destDom, Src, srcDom) {
   if debugCyclicDistBulkTransfer then
-    writeln("In CylicDist.doiBulkTransferFromAny");
+    writeln("In CyclicDist.doiBulkTransferFromAny");
 
   const Dest = this;
   type el    = Dest.idxType;
@@ -1016,7 +1016,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]);
           if r1[t].length != r2[t].length then
             r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
@@ -1058,7 +1058,7 @@ where useBulkTransferDist {
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
-          r1[t] = (ini[t]:el..end[t]:el by sa[t]:el);
+          r1[t] = (ini[t]:el..end[t]:el by sa[t]);
           if r1[t].length != r2[t].length then
             r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
@@ -1098,7 +1098,7 @@ where useBulkTransferDist {
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 1..rank {
-          r1[t] = (ini[t]:el..end[t]:el by sb[t]:el);
+          r1[t] = (ini[t]:el..end[t]:el by sb[t]);
           if r1[t].length != r2[t].length then
             r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].length-1));
         }
