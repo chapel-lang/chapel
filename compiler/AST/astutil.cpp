@@ -389,61 +389,60 @@ bool isRelationalOperator(CallExpr* call) {
 // normalize, a DefExpr itself does not set a variable, and so it does not
 // count as a Def.
 int isDefAndOrUse(SymExpr* se) {
+  const int DEF = 1;
+  const int USE = 2;
+  const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
+    bool isFirstActual = (call->get(1) == se);
 
-    // Extract LHS and RHS of a setting primitive.
+    // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
-//    Expr* dest = NULL;
-//    Expr* src = NULL;
-//    if (getSettingPrimitiveDstSrc(call, &dest, &src) && dest == se) {
-//      CallExpr* rhsCall = toCallExpr(src);
-
-    if ((call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) &&
-        call->get(1) == se) {
-      CallExpr*     rhsCall = toCallExpr(call->get(2));
-      QualifiedType lhsQual = se->symbol()->qualType();
-
-      if ((lhsQual.isRef() || lhsQual.isWideRef()) &&
-          !isReferenceType(lhsQual.type()) &&
-          !(rhsCall && rhsCall->isPrimitive(PRIM_SET_REFERENCE))) {
-        // Assigning to a reference variable counts as a 'use'
-        // of the reference and a 'def' of its value
-        return 3;
-
-//      } else if(call->isPrimitive(PRIM_SET_MEMBER) ||
-//                call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-//        // since setting a field might not change the entire object,
-//        // but does change part of it, we consider it both a def
-//        // and a use.
-//        return 3;
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      if (isFirstActual) {
+        if (se->isRef()) {
+          return DEF_USE; // *(se) = ?;
+        } else {
+          return DEF; // se = var;
+        }
+      } else {
+        return USE; // ? = se;
       }
-      return 1;
-
-    } else if (isOpEqualPrim(call) && call->get(1) == se) {
-      return 3;
-
+    } else if (call->isPrimitive(PRIM_MOVE)) {
+      if (isFirstActual) {
+        if (se->isRef()) {
+          if (call->get(2)->isRef() == false) {
+            return DEF_USE; // *(se) = var;
+          } else {
+            return DEF; // se = ref; just copying the pointer
+          }
+        } else {
+          return DEF; // se = ?;
+        }
+      } else {
+        return USE; // ? = se;
+      }
+    } else if (isOpEqualPrim(call) && isFirstActual) {
+      // Both a def and a use:
+      // se   =   se <op> ?
+      // ^-def    ^-use
+      return DEF_USE;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
 
+      // BHARSH TODO: get rid of this 'isRecord' special case
       if (arg->intent == INTENT_REF ||
           arg->intent == INTENT_INOUT ||
           (fn->name == astrSequals &&
            fn->getFormal(1) == arg &&
            isRecord(arg->type))) {
-
-          // special case for record-wrapped types originated in
-          // 02c29c689d55b18551d1771634311d48c2749d1c
-          //isRecordWrappedType(arg->type)) { // pass by reference
-        return 3;
-        // also use; do not "continue"
-
+        return DEF_USE;
       } else if (arg->intent == INTENT_OUT) {
-        return 1;
+        return DEF;
       }
     }
   }
 
-  return 2;
+  return USE;
 }
 
 
@@ -1028,9 +1027,9 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols) {
 static void setQualRef(Symbol* sym) {
   if (sym->isRefOrWideRef() && sym->type->symbol->hasEitherFlag(FLAG_REF, FLAG_WIDE_REF)) {
     Qualifier q = sym->qualType().getQual();
-    const bool isRef = q == QUAL_REF || q == QUAL_CONST_REF ||
+    const bool isRef = q == QUAL_REF        || q == QUAL_CONST_REF        ||
                        q == QUAL_NARROW_REF || q == QUAL_CONST_NARROW_REF ||
-                       q == QUAL_WIDE_REF || q == QUAL_CONST_WIDE_REF;
+                       q == QUAL_WIDE_REF   || q == QUAL_CONST_WIDE_REF;
     if (isRef == false) {
       if (sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
         q = QUAL_WIDE_REF;
@@ -1038,6 +1037,9 @@ static void setQualRef(Symbol* sym) {
         q = QUAL_REF;
       }
       sym->qual = q;
+      if (ArgSymbol* arg = toArgSymbol(sym)) {
+        arg->intent = INTENT_REF;
+      }
     }
     sym->type = sym->getValType();
   }
