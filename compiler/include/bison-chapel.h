@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 2.7.  */
+/* A Bison parser, made by GNU Bison 2.5.  */
 
 /* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,24 +30,17 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
-# define YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
-/* Enabling traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 1
-#endif
-#if YYDEBUG
-extern int yydebug;
-#endif
 /* "%code requires" blocks.  */
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 32 "chapel.ypp"
 
   #include <string>
   extern int         captureTokens;
   extern std::string captureString;
 
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 45 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
@@ -64,7 +57,8 @@ extern int yydebug;
 
   #endif
 
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 65 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
@@ -132,7 +126,8 @@ extern int yydebug;
 
   #endif
 
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 136 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
@@ -151,7 +146,8 @@ extern int yydebug;
 
   #endif
 
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 158 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
@@ -181,8 +177,9 @@ extern int yydebug;
   #endif
 
 
-/* Line 2058 of yacc.c  */
-#line 186 "../include/bison-chapel.h"
+
+/* Line 2068 of yacc.c  */
+#line 183 "../include/bison-chapel.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -338,11 +335,14 @@ extern int yydebug;
 #endif
 
 
+
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 #endif
+
+
 
 #if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
 typedef struct YYLTYPE
@@ -358,15 +358,14 @@ typedef struct YYLTYPE
 #endif
 
 
-#ifndef YYPUSH_MORE_DEFINED
-# define YYPUSH_MORE_DEFINED
-enum { YYPUSH_MORE = 4 };
-#endif
 
+#ifndef YYPUSH_DECLS
+#  define YYPUSH_DECLS
+struct yypstate;
 typedef struct yypstate yypstate;
-
+enum { YYPUSH_MORE = 4 };
 #if defined __STDC__ || defined __cplusplus
-int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLTYPE *pushed_loc, ParserContext* context);
+int yypush_parse (yypstate *yyps, int yypushed_char, YYSTYPE const *yypushed_val, YYLTYPE const *yypushed_loc, ParserContext* context);
 #else
 int yypush_parse ();
 #endif
@@ -377,12 +376,15 @@ yypstate * yypstate_new (void);
 yypstate * yypstate_new ();
 #endif
 #if defined __STDC__ || defined __cplusplus
-void yypstate_delete (yypstate *ps);
+void yypstate_delete (yypstate *yyps);
 #else
 void yypstate_delete ();
 #endif
+#endif
+
 /* "%code provides" blocks.  */
-/* Line 2058 of yacc.c  */
+
+/* Line 2068 of yacc.c  */
 #line 189 "chapel.ypp"
 
   extern int yydebug;
@@ -392,7 +394,6 @@ void yypstate_delete ();
                const char*    str);
 
 
-/* Line 2058 of yacc.c  */
-#line 397 "../include/bison-chapel.h"
 
-#endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */
+/* Line 2068 of yacc.c  */
+#line 400 "../include/bison-chapel.h"
