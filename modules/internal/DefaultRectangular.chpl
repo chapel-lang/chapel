@@ -1710,8 +1710,8 @@ module DefaultRectangular {
     }
   }
 
-  // Compute the active dimensions of this assignment. For example, LViewDom
-  // could be {1..1, 1..10} and RViewDom {1..10, 1..1}. This indicates that
+  // Compute the active dimensions of this assignment. For example, LeftDims
+  // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
   // a rank change occurred and that the inferredRank should be '1', the
   // LeftActives = (2,), the RightActives = (1,)
   private proc computeActiveDims(LeftDims, RightDims) {
