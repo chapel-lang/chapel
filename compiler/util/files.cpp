@@ -823,7 +823,7 @@ void expandInstallationPaths(std::vector<std::string>& args) {
 
       size_t off = 0;
       while (true) {
-        off = s.find(tofix[j], off);
+        off = s.find(key, off);
         if (off == std::string::npos)
           break; // no more occurrences to replace
         s.replace(off, key_len, val);
