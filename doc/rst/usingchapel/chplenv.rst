@@ -632,10 +632,7 @@ CHPL_LLVM
 
         .. code-block:: sh
 
-            # Fedora 25
-            dnf install llvm4.0 llvm4.0-devel llvm4.0-static zlib-static
-
-            # Ubuntu 17.10
+            # Ubuntu 16.04
             apt-get install llvm-4.0-dev llvm-4.0 clang-4.0 libclang-4.0-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
