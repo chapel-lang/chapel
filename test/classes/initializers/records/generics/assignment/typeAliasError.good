@@ -1,0 +1,2 @@
+typeAliasError.chpl:5: In initializer:
+typeAliasError.chpl:6: error: cannot assign expression of type string to field 'eltType' of type int(64)

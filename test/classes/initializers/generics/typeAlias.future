@@ -1,0 +1,2 @@
+bug: classes don't handle explicit type aliases properly when calling init()
+#5143
