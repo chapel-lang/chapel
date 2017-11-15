@@ -3121,9 +3121,7 @@ static bool populateForwardingMethods(CallInfo& info) {
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
 
-      // Mark it as generic if `this` argument is generic
-      if (thisType->symbol->hasFlag(FLAG_GENERIC))
-        fn->addFlag(FLAG_GENERIC);
+      // see below, after arguments added, for adjustment to FLAG_GENERIC
 
       fn->addFlag(FLAG_LAST_RESORT);
 
@@ -3185,6 +3183,13 @@ static bool populateForwardingMethods(CallInfo& info) {
 
         i++;
       }
+
+      // Adjust whether or not fn is generic:
+      //  - it should be marked it as generic if `this` argument is generic
+      //  - it should not be marked generic if all arguments are concrete
+      //    (including if the arguments represent generic types with defaults)
+      fn->removeFlag(FLAG_GENERIC);
+      fn->tagIfGeneric();
 
       // copy the where clause
       if (method->where != NULL) {
