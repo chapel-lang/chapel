@@ -943,6 +943,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+// This function finds the enum constant that matches imm.
+// imm stores a compile-time constant integer or string.
+// It's used when casting from an param integer or a param string to the
+// enum type.
 static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
   uint64_t fromUint = 0;
   int64_t  fromInt  = 0;

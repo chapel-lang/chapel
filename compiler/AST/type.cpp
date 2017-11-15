@@ -388,6 +388,10 @@ void EnumType::sizeAndNormalize() {
     SET_LINENO(constant);
     if( constant->init ) {
       // set v and uv to the initializer value
+      // if the number doesn't fit in one of them, set it
+      // to 1. That avoids overflow when we increment these below,
+      // and won't confuse max/min calculations since any size
+      // integer needs to be able to represent 1.
       if( get_int( constant->init, &v ) ) {
         if( v >= 0 ) uv = v;
         else uv = 1;
