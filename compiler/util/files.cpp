@@ -802,6 +802,39 @@ void readArgsFromFile(std::string path, std::vector<std::string>& args) {
   fclose(fd);
 }
 
+void expandInstallationPaths(std::vector<std::string>& args) {
+
+  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
+                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
+                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
+                         "$CHPL_HOME", CHPL_HOME,
+                         NULL};
+
+  for (size_t i = 0; i < args.size(); i++) {
+    std::string s = args[i];
+
+    // For each of the patterns in tofix, find/replace all occurrences.
+    for (int j = 0; tofix[j] != NULL; j += 2) {
+
+      const char* key = tofix[j];
+      const char* val = tofix[j+1];
+      size_t key_len = strlen(key);
+      size_t val_len = strlen(val);
+
+      size_t off = 0;
+      while (true) {
+        off = s.find(key, off);
+        if (off == std::string::npos)
+          break; // no more occurrences to replace
+        s.replace(off, key_len, val);
+        off += val_len;
+      }
+    }
+
+    args[i] = s;
+  }
+}
+
 // would just use realpath, but it is not supported on all platforms.
 static
 char* chplRealPath(const char* path)
