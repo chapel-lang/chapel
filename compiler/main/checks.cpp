@@ -573,7 +573,9 @@ static void check_afterInlineFunctions() {
   if (fVerify) {
     forv_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
-      if (isLcnSymbol(sym)) {
+      if (isLcnSymbol(sym) &&
+          def->parentSymbol != NULL && // symbol is in the tree
+          def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
           INT_FATAL("Found reference type: %s[%d]\n", sym->cname, sym->id);
