@@ -74,7 +74,7 @@ static void normalize(BaseAST* base);
 static void normalizeReturns(FnSymbol* fn);
 
 static bool isCallToConstructor(CallExpr* call);
-static void normalizeCallToConstructor(CallExpr* calll);
+static void normalizeCallToConstructor(CallExpr* call);
 
 static bool isCallToTypeConstructor(CallExpr* call);
 static void normalizeCallToTypeConstructor(CallExpr* call);
@@ -2727,7 +2727,7 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 *       allowable values of 'w', and then deletes the original AST.           *
 *       Hence these functions are never observed by the following code.       *
 *                                                                             *
-*   NB: This code does not handle the count for varadic functions e.g.        *
+*   NB: This code does not handle the count for variadic functions e.g.       *
 *                                                                             *
 *       proc min(x, y, z...?k) ...                                            *
 *                                                                             *
