@@ -280,7 +280,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 /*
 When we are dealing with a recursive parallel iterator, we call
 fsIterYieldType() while resolving it. At that time, IteratorInfo
-has not been created yet. Also the yield type is not yet avaiable
+has not been created yet. Also the yield type is not yet available
 anywhere, because it is the type of a tuple of the original return type
 plus one component per shadow variable.
 
