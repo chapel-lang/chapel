@@ -1164,23 +1164,23 @@ static bool isCallToTypeConstructor(CallExpr* call) {
   bool retval = false;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    CallExpr* parent       = toCallExpr(call->parentExpr);
-    CallExpr* parentParent = NULL;
-
-    if (parent != NULL) {
-      parentParent = toCallExpr(parent->parentExpr);
-    }
-
-    if (parent != NULL && parent->isPrimitive(PRIM_NEW) == true) {
-      retval = false;
-
-    } else if (parentParent                        != NULL &&
-               parentParent->isPrimitive(PRIM_NEW) == true) {
-      retval = false;
-
-    } else if (TypeSymbol* ts = expandTypeAlias(se)) {
+    if (TypeSymbol* ts = expandTypeAlias(se)) {
       if (isAggregateType(ts->type) == true) {
-        retval = true;
+        // Ensure it is not nested within a new expr
+        CallExpr* parent = toCallExpr(call->parentExpr);
+
+        if (parent == NULL) {
+          retval = true;
+
+        } else if (parent->isPrimitive(PRIM_NEW) == true) {
+          retval = false;
+
+        } else if (CallExpr* parentParent = toCallExpr(parent->parentExpr)) {
+          retval = parentParent->isPrimitive(PRIM_NEW) == false;
+
+        } else {
+          retval = true;
+        }
       }
     }
   }
