@@ -49,9 +49,7 @@ proc main()
   delete t1;
 
 
-  var m = o.manyC();
-  writeln("Many: ", m);
-  for obj in m do delete obj;
+  writeln("Many: ", o.manyC());
 
   delete o;
 }
