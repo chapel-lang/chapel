@@ -20,12 +20,14 @@
 #ifndef _VERSION_H_
 #define _VERSION_H_
 
+#include <string>
+
 void get_version(char * buf);
 void get_major_minor_version(char * buf);
 const char* get_configured_prefix();
 
-const char* get_clang_cc();
-const char* get_clang_cxx();
-const char* get_clang_sysroot_args();
+std::string get_clang_cc();
+std::string get_clang_cxx();
+std::string get_clang_sysroot_args();
 
 #endif
