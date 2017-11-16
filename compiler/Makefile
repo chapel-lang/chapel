@@ -103,6 +103,16 @@ EXECS = $(CHPL) $(CHPLDOC) $(CHPLIPE)
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) llvm $(CLANG_SETTINGS_FILE)
 TARGETS = $(CHPL)
 
+# Set up variables representing paths that will be installed
+# and how to fix them (for CLANG_SETTINGS).
+# So far, this only needs to fix CHPL_THIRD_PARTY/CHPL_HOME.
+ifndef CHPL_MAKE_THIRD_PARTY
+CHPL_MAKE_THIRD_PARTY = $(CHPL_MAKE_HOME)/third-party
+endif
+
+FIXPATH_CMD := $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
+                  --fixpath '$$CHPL_THIRD_PARTY' $(CHPL_MAKE_THIRD_PARTY) \
+                  --fixpath '$$CHPL_HOME' $(CHPL_MAKE_HOME)
 
 #
 # main rules
@@ -133,7 +143,7 @@ $(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
 	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
 
 $(CLANG_SETTINGS_FILE):
-	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' > $(CLANG_SETTINGS_FILE)
+	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
