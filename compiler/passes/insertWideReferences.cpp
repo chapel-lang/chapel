@@ -324,7 +324,7 @@ static bool typeCanBeWide(Symbol *sym) {
   // TODO: Special treatment of extern types may be removed in future
   // AMM work.
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
-              ts->hasFlag(FLAG_NO_WIDE_CLASS);
+             (sym->isRef() == false && ts->hasFlag(FLAG_NO_WIDE_CLASS));
 
   if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !canWidenRecord(ts) && isRecord(sym->type)) {
     bad = true;
@@ -1172,7 +1172,20 @@ static void propagateVar(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
-        fn->retType = sym->type;
+        {
+          QualifiedType qt = sym->qualType();
+          Type* newRetType = qt.type();
+          if (qt.isRefOrWideRef() && isRefType(newRetType) == false) {
+            if (qt.isRef()) {
+              newRetType = newRetType->refType;
+            } else {
+              newRetType = wideRefMap.get(newRetType->refType);
+            }
+          }
+          // Functions don't support qualifiers for return types yet, so we
+          // need to encode wideness in the type.
+          fn->retType = newRetType;
+        }
         INT_ASSERT(fn);
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
