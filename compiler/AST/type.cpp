@@ -396,7 +396,7 @@ void EnumType::sizeAndNormalize() {
         if( v >= 0 ) uv = v;
         else uv = 1;
       } else if( get_uint( constant->init, &uv ) ) {
-        if (uv <= INT64_MAX) v = uv;
+        if (uv <= (uint64_t)INT64_MAX) v = uv;
         else v = 1;
       }
     } else {
@@ -436,7 +436,7 @@ void EnumType::sizeAndNormalize() {
 
   // User error if the enum contains both negative values and
   // something needing a uint64.
-  if (min_v < 0 && max_uv > INT64_MAX)
+  if (min_v < 0 && max_uv > (uint64_t)INT64_MAX)
     USR_FATAL(this,
               "this enum cannot be represented with a single integer type");
 
@@ -560,7 +560,7 @@ void EnumType::sizeAndNormalize() {
         if( v >= 0 ) uv = v;
         else have_uv = false;
       } else if( get_uint( constant->init, &uv ) ) {
-        if (uv <= INT64_MAX) v = uv;
+        if (uv <= (uint64_t)INT64_MAX) v = uv;
         else have_v = false;
       }
 
