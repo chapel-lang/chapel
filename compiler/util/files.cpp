@@ -802,7 +802,7 @@ void readArgsFromFile(std::string path, std::vector<std::string>& args) {
   fclose(fd);
 }
 
-// Explands variables like $CHPL_HOME in the string
+// Expands variables like $CHPL_HOME in the string
 void expandInstallationPaths(std::string& s) {
   const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
                          "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
