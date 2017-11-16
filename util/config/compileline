@@ -5,12 +5,19 @@ import os
 import subprocess
 import sys
 
+script_dir = os.path.dirname(os.path.realpath(__file__))
+chpl_home_dir = os.path.normpath(script_dir + "/../../");
+chplenv_dir = os.path.normpath(chpl_home_dir + "/util/chplenv")
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+import chpl_compiler, chpl_make, utils
+
 def myrun(cmd):
 
   # Run $cmd but filter out e.g. make[2]: lines
   # (about which directory we are in)
   ret = ""
-  output = subprocess.check_output(cmd, shell=True)
+  output = utils.run_command(cmd)
   lines = output.splitlines()
   for line in lines:
     if not line.startswith("make"):
@@ -18,16 +25,22 @@ def myrun(cmd):
 
   return ret
 
+def myrun2(cmd, arg):
+
+  return myrun(cmd + [arg])
+
 def mysystem(cmd):
 
   s = myrun(cmd)
   sys.stdout.write(s)
 
+def mysystem2(cmd, arg):
+
+  mysystem(cmd + [arg])
 
 def _main():
 
-  script_dir = os.path.dirname(os.path.realpath(__file__))
-  chpl_home_dir = os.path.normpath(script_dir + "/../../");
+  global chpl_home_dir
   check_file = os.path.relpath(__file__, chpl_home_dir)
   check_path = chpl_home_dir + "/" + check_file;
   if not os.path.isfile(check_path):
@@ -58,12 +71,11 @@ def _main():
   if "CHPL_THIRD_PARTY" in os.environ:
     os.environ["CHPL_MAKE_THIRD_PARTY"] = os.environ["CHPL_THIRD_PARTY"]
 
-  make = subprocess.check_output([chpl_home_dir +  "/util/chplenv/chpl_make.py"])
-  make = make.strip()
+  make = chpl_make.get()
 
   orig_make = make
   # Do not print directory changes.
-  make = make + " --no-print-directory"
+  make = [make, "--no-print-directory"]
 
   # Make reasonable defaults for environment settings
   os.environ["COMP_GEN_WARN"] = "0";
@@ -132,16 +144,18 @@ def _main():
     if len(kv) == 2:
       os.environ[kv[0]] = os.environ[kv[1]]
 
-  make_helper = make + " -f " + chpl_home_dir + "/runtime/etc/Makefile.include"
+  make_helper = make + ["-f", chpl_home_dir + "/runtime/etc/Makefile.include"]
 
   if options.home:
     sys.stdout.write("{0}\n".format(chpl_home_dir))
   if options.make:
     sys.stdout.write("{0}\n".format(orig_make))
   if options.llvm:
-    orig_target_compiler = subprocess.check_output([chpl_home_dir + "/util/chplenv/chpl_compiler.py", "--target"])
+    os.environ["CHPL_LLVM_CODEGEN"] = "llvm"
+    orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
+    target_compiler = chpl_compiler.get('target', llvm_mode='llvm')
     os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
-    os.environ["CHPL_TARGET_COMPILER"] = "clang-included"
+    os.environ["CHPL_TARGET_COMPILER"] = target_compiler
 
     chpl_llvm = ""
     if "CHPL_LLVM" in os.environ:
@@ -154,33 +168,34 @@ def _main():
       sys.stderr.write("Cannot get --llvm configuration with CHPL_LLVM=none\n");
       sys.exit(1)
   if options.compilecc:
-    mysystem(make_helper + " printcompileline")
+    mysystem2(make_helper, "printcompileline")
   if options.compilecxx:
-    mysystem(make_helper + " printcxxcompileline")
+    mysystem2(make_helper, "printcxxcompileline")
   if options.cflags:
-    mysystem(make_helper + " printcflags")
+    mysystem2(make_helper, "printcflags")
   if options.cxxflags:
-    mysystem(make_helper + " printcxxflags")
+    mysystem2(make_helper, "printcxxflags")
   if options.includesanddefines:
-    mysystem(make_helper + " printincludesanddefines")
+    mysystem2(make_helper, "printincludesanddefines")
   if options.libraries:
-    mysystem(make_helper + " printlibraries")
+    mysystem2(make_helper, "printlibraries")
   if options.maino:
-    mysystem(make_helper + " printmaino")
+    mysystem2(make_helper, "printmaino")
   if options.llvminstalldir:
-    mysystem(make_helper + " printllvminstall")
+    mysystem2(make_helper, "printllvminstall")
   if options.clangcc:
-    mysystem(make_helper + " printclangcc")
+    mysystem2(make_helper, "printclangcc")
   if options.clangcxx:
-    mysystem(make_helper + " printclangcxx")
+    mysystem2(make_helper, "printclangcxx")
   if options.clangsysroot:
-    mysystem(make_helper + " printclangcxx")
-    llvminstall = myrun(make_helper + " printllvminstall")
-    llvminstall = installdir.strip()
+    mysystem2(make_helper, "printclangcxx")
+    llvminstall = myrun2(make_helper, "printllvminstall")
+    llvminstall = llvminstall.strip()
     fname = llvminstall + "/configured-clang-sysroot-arguments"
-    with open(fname) as f:
-      for line in f:
-        sys.stdout.write(line)
+    if os.path.isfile(fname):
+      with open(fname) as f:
+        for line in f:
+          sys.stdout.write(line)
 
 if __name__ == '__main__':
   _main()
