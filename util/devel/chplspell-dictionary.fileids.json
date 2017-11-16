@@ -77,12 +77,21 @@
     "compiler/include/countTokens.h",
     "compiler/parser/countTokens.cpp"
   ],
+  "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/expr.h"
+  ],
+  "e1293828-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/implementForallIntents.h"
+  ],
   "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/list.h"
   ],
   "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
     "compiler/include/llvmDebug.h",
     "compiler/util/llvmDebug.cpp"
+  ],
+  "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/llvmVer.h"
   ],
   "dab54cf8-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/log.h"
@@ -173,11 +182,17 @@
   "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents.cpp"
   ],
+  "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/resolution/implementForallIntents2.cpp"
+  ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
   "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/postFold.cpp"
+  ],
+  "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/resolution/preFold.cpp"
   ],
   "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
     "compiler/resolution/virtualDispatch.cpp"

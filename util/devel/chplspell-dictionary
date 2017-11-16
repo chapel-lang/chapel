@@ -2727,6 +2727,7 @@ fock
 forexpr
 iact
 icts
+intpart
 multipledestructor
 otharrs
 replmt
@@ -2741,6 +2742,7 @@ intented
 orse
 shadowvar
 ssvar
+tupcom
 ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
@@ -2749,6 +2751,7 @@ rauto
 
 FILEID: fe909ee2-1d85-11e6-a3a6-10ddb1d4c3d5
 casttype
+ffast
 fsyntax
 infs
 inparens
@@ -2756,6 +2759,9 @@ ipra
 maino
 qunused
 tlii
+wmissing
+wstrict
+wwrite
 
 FILEID: 4f8f1724-1d86-11e6-a3a6-10ddb1d4c3d5
 sroa
@@ -3572,6 +3578,7 @@ ttag
 
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
+tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
 parenthesesless
@@ -4345,6 +4352,7 @@ FILEID: 26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5
 rtmp
 
 FILEID: ad56c506-780b-11e7-88ba-10ddb1d4c3d5
+constup
 wmikanik
 
 FILEID: 3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5
@@ -4436,6 +4444,31 @@ lblas
 FILEID: c756642a-c5e5-11e7-82fe-10ddb1d4c3d5
 numlocalesval
 pshm
+
+FILEID: 5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5
+atemp
+centry
+cntx
+cval
+extd
+icontext
+iinfo
+mponent
+rsvar
+shadowvar
+tupcom
+
+FILEID: dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5
+ovse
+
+FILEID: de79f068-ca86-11e7-8b8c-10ddb1d4c3d5
+llvmver
+
+FILEID: e1293828-ca86-11e7-8b8c-10ddb1d4c3d5
+extd
+
+FILEID: ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5
+skind
 
 NATURAL:
 abcd
@@ -6674,6 +6707,7 @@ uninserted
 uninstall
 uninstantiated
 uniprocessor
+uniquified
 uniquify
 universidad
 universitet
@@ -6764,6 +6798,7 @@ webserver
 wednesday
 weil
 wellknown
+werror
 westen
 westmere
 whipkey
@@ -6786,6 +6821,7 @@ workgroup
 workgroups
 workitem
 workitems
+wpointer
 wrappee
 writeable
 writebacks
