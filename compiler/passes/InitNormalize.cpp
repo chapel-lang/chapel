@@ -28,6 +28,8 @@ static bool isThisInit (Expr* stmt);
 static bool isStringLiteral(Expr* expr, const char* name);
 static bool isSymbolThis(Expr* expr);
 
+static bool isEquivalentSyncExpr(DefExpr* field, Expr* initExpr);
+
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
 static bool isCompoundAssignment(CallExpr* callExpr);
@@ -725,6 +727,16 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
     }
+
+  } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
+             isEquivalentSyncExpr(field, initExpr)) {
+    // Simplifies the initialization of sync fields in default initializers
+    // to avoid the deadlock when the sync field has no initial value and the
+    // caller relies on the default value for the corresponding argument.
+    Symbol*    _this     = mFn->_this;
+    Symbol*    name      = new_CStringSymbol(field->sym->name);
+    CallExpr* fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, initExpr);
+    insertBefore->insertBefore(fieldSet);
 
   } else {
     VarSymbol* tmp       = newTemp("tmp", type);
@@ -1606,6 +1618,45 @@ static const char* initName(CallExpr* expr) {
     }
   }
 
+  return retval;
+}
+
+// Used to determine if we can simplify the initialization of a field in the
+// case where it is a sync, to allow default initializers with sync fields that
+// are not provided an initial value.
+static bool isEquivalentSyncExpr(DefExpr* field, Expr* initExpr) {
+  bool retval = false;
+
+  CallExpr* fieldType = toCallExpr(field->exprType);
+  CallExpr* initType = NULL;
+
+  // Dive into the initExpr to get its type if it is just a simple access to one
+  // of the arguments
+  if (SymExpr* se = toSymExpr(initExpr)) {
+    if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+      if (arg->typeExpr->body.length == 1) {
+        initType = toCallExpr(arg->typeExpr->body.head);
+      }
+    }
+  }
+
+  // The initExpr and the field were as we expect them to be if the field has
+  // the potential to be a sync and the init expr being used is sufficiently
+  // simple
+  if (fieldType != NULL && initType != NULL) {
+    // Both were to the sync type constructor
+    if (fieldType->isNamed("_type_construct__syncvar") &&
+        initType->isNamed("_type_construct__syncvar")) {
+      SymExpr* ftFirst = toSymExpr(fieldType->get(1));
+      SymExpr* itFirst = toSymExpr(initType->get(1));
+      // Both passed the same argument to it
+      // LYDIA NOTE: won't work if one is using a type alias or a type
+      // function
+      if (ftFirst->symbol() == itFirst->symbol()) {
+        retval = true;
+      }
+    }
+  }
   return retval;
 }
 
