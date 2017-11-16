@@ -6,11 +6,11 @@ import subprocess
 import sys
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
-chpl_home_dir = os.path.normpath(script_dir + "/../../");
-chplenv_dir = os.path.normpath(chpl_home_dir + "/util/chplenv")
+chpl_home_dir = os.path.dirname(os.path.dirname(script_dir))
+chplenv_dir = os.path.join(chpl_home_dir, "util", "chplenv")
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_compiler, chpl_make, utils
+import chpl_compiler, chpl_llvm, chpl_make, utils
 
 def myrun(cmd):
 
@@ -42,15 +42,15 @@ def _main():
 
   global chpl_home_dir
   check_file = os.path.relpath(__file__, chpl_home_dir)
-  check_path = chpl_home_dir + "/" + check_file;
+  check_path = os.path.join(chpl_home_dir, check_file)
   if not os.path.isfile(check_path):
     sys.stderr.write("Warning: check {0} not found\n".format(check_path));
 
   if "CHPL_HOME" in os.environ:
     if os.path.abspath(os.environ["CHPL_HOME"]) != chpl_home_dir:
       # to be sure, check that the inode numbers of our check file match
-      env_check = os.environ["CHPL_HOME"] + "/" + check_file
-      rel_check = chpl_home_dir + "/" + check_file
+      env_check = os.path.join(os.environ["CHPL_HOME"], check_file)
+      rel_check = os.path.join(chpl_home_dir, check_file)
       if os.path.samefile(env_check, rel_check):
         # No warning, it's OK, they are the same file.
         pass
@@ -157,14 +157,14 @@ def _main():
     os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
     os.environ["CHPL_TARGET_COMPILER"] = target_compiler
 
-    chpl_llvm = ""
+    llvm = ""
     if "CHPL_LLVM" in os.environ:
-      chpl_llvm = os.environ["CHPL_LLVM"]
+      llvm = os.environ["CHPL_LLVM"]
     if "CHPL_MAKE_LLVM" in os.environ:
-      chpl_llvm = os.environ["CHPL_MAKE_LLVM"]
-    if chpl_llvm == "":
-      chpl_llvm = subprocess.check_output([chpl_home_dir + "/util/chplenv/chpl_llvm.py"])
-    if chpl_llvm == "none":
+      llvm = os.environ["CHPL_MAKE_LLVM"]
+    if llvm == "":
+      llvm = chpl_llvm.get()
+    if llvm == "none":
       sys.stderr.write("Cannot get --llvm configuration with CHPL_LLVM=none\n");
       sys.exit(1)
   if options.compilecc:
@@ -191,7 +191,7 @@ def _main():
     mysystem2(make_helper, "printclangcxx")
     llvminstall = myrun2(make_helper, "printllvminstall")
     llvminstall = llvminstall.strip()
-    fname = llvminstall + "/configured-clang-sysroot-arguments"
+    fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
     if os.path.isfile(fname):
       with open(fname) as f:
         for line in f:
