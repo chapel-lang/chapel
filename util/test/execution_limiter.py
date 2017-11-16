@@ -4,6 +4,8 @@ running chpl executables """
 import getpass
 import os
 import tempfile
+
+import activate_chpl_test_venv
 import filelock
 
 class NoLock():
