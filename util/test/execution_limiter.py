@@ -4,7 +4,12 @@ running chpl executables """
 import getpass
 import os
 import tempfile
-import filelock
+
+try:
+    import activate_chpl_test_venv
+    import filelock
+except ImportError:
+    pass
 
 class NoLock():
     """ Empty class that can be used with a context manager. Does not limit how
