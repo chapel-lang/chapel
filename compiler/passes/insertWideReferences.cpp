@@ -324,7 +324,7 @@ static bool typeCanBeWide(Symbol *sym) {
   // TODO: Special treatment of extern types may be removed in future
   // AMM work.
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
-             (sym->isRef() == false && ts->hasFlag(FLAG_NO_WIDE_CLASS));
+             (sym->isRefOrWideRef() == false && ts->hasFlag(FLAG_NO_WIDE_CLASS));
 
   if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !canWidenRecord(ts) && isRecord(sym->type)) {
     bad = true;
@@ -1304,6 +1304,7 @@ static void propagateVar(Symbol* sym) {
 static void propagateField(Symbol* sym) {
   debug(sym, "Propagating field\n");
 
+
   for_uses(use, useMap, sym) {
     bool isLocalField = sym->hasFlag(FLAG_LOCAL_FIELD) && isValidLocalFieldType(sym);
     if (CallExpr* call = toCallExpr(use->parentExpr)) {
@@ -2068,6 +2069,8 @@ static void fixAST() {
         call->isPrimitive(PRIM_FTABLE_CALL)) {
       for_actuals(actual, call) {
         SymExpr* act = toSymExpr(actual);
+        if (isFullyWide(act)) continue;
+
         if (Type* wide = wideClassMap.get(act->typeInfo())) {
           insertWideTemp(QualifiedType(QUAL_VAL, wide), act);
         }
@@ -2098,9 +2101,7 @@ static void fixAST() {
           SymExpr* se = new SymExpr(narrowRef);
           act->replace(se);
 
-          Type* wide = wideRefMap.get(se->typeInfo()->getValType()->refType);
-          INT_ASSERT(wide);
-          insertWideTemp(QualifiedType(QUAL_WIDE_REF, wide), se);
+          insertWideTemp(QualifiedType(QUAL_WIDE_REF, se->typeInfo()), se);
         }
       }
     } else {
@@ -2341,7 +2342,6 @@ static void createRetargTemps() {
           Symbol* act = toSymExpr(actual)->symbol();
           CallExpr* move = NULL;
           bool refNeedsReplacing = false;
-          if (act->id == 2284405) gdbShouldBreakHere();
           for_SymbolSymExprs(se, act) {
             if (CallExpr* parent = toCallExpr(se->parentExpr)) {
               if (parent->isPrimitive(PRIM_MOVE)) {
