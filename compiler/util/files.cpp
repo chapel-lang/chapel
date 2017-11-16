@@ -802,35 +802,38 @@ void readArgsFromFile(std::string path, std::vector<std::string>& args) {
   fclose(fd);
 }
 
-void expandInstallationPaths(std::vector<std::string>& args) {
-
+// Expands variables like $CHPL_HOME in the string
+void expandInstallationPaths(std::string& s) {
   const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
                          "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
                          "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
                          "$CHPL_HOME", CHPL_HOME,
                          NULL};
 
+  // For each of the patterns in tofix, find/replace all occurrences.
+  for (int j = 0; tofix[j] != NULL; j += 2) {
+
+    const char* key = tofix[j];
+    const char* val = tofix[j+1];
+    size_t key_len = strlen(key);
+    size_t val_len = strlen(val);
+
+    size_t off = 0;
+    while (true) {
+      off = s.find(key, off);
+      if (off == std::string::npos)
+        break; // no more occurrences to replace
+      s.replace(off, key_len, val);
+      off += val_len;
+    }
+  }
+}
+
+void expandInstallationPaths(std::vector<std::string>& args) {
+
   for (size_t i = 0; i < args.size(); i++) {
     std::string s = args[i];
-
-    // For each of the patterns in tofix, find/replace all occurrences.
-    for (int j = 0; tofix[j] != NULL; j += 2) {
-
-      const char* key = tofix[j];
-      const char* val = tofix[j+1];
-      size_t key_len = strlen(key);
-      size_t val_len = strlen(val);
-
-      size_t off = 0;
-      while (true) {
-        off = s.find(key, off);
-        if (off == std::string::npos)
-          break; // no more occurrences to replace
-        s.replace(off, key_len, val);
-        off += val_len;
-      }
-    }
-
+    expandInstallationPaths(s);
     args[i] = s;
   }
 }

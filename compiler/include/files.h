@@ -94,6 +94,7 @@ const char* getIntermediateDirName();
 
 void readArgsFromCommand(std::string path, std::vector<std::string>& args);
 void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
+void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
 char*       dirHasFile(const char* dir, const char* file);
