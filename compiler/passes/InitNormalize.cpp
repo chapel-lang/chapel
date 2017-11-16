@@ -28,7 +28,7 @@ static bool isThisInit (Expr* stmt);
 static bool isStringLiteral(Expr* expr, const char* name);
 static bool isSymbolThis(Expr* expr);
 
-static bool isEquivalentSyncExpr(DefExpr* field, Expr* initExpr);
+static bool isEquivalentSyncSingleExpr(DefExpr* field, Expr* initExpr);
 
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
@@ -729,7 +729,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
-             isEquivalentSyncExpr(field, initExpr)) {
+             isEquivalentSyncSingleExpr(field, initExpr)) {
     // Simplifies the initialization of sync fields in default initializers
     // to avoid the deadlock when the sync field has no initial value and the
     // caller relies on the default value for the corresponding argument.
@@ -1622,9 +1622,9 @@ static const char* initName(CallExpr* expr) {
 }
 
 // Used to determine if we can simplify the initialization of a field in the
-// case where it is a sync, to allow default initializers with sync fields that
-// are not provided an initial value.
-static bool isEquivalentSyncExpr(DefExpr* field, Expr* initExpr) {
+// case where it is a sync/single, to allow default initializers with
+// sync/single fields that are not provided an initial value.
+static bool isEquivalentSyncSingleExpr(DefExpr* field, Expr* initExpr) {
   bool retval = false;
 
   CallExpr* fieldType = toCallExpr(field->exprType);
@@ -1641,12 +1641,17 @@ static bool isEquivalentSyncExpr(DefExpr* field, Expr* initExpr) {
   }
 
   // The initExpr and the field were as we expect them to be if the field has
-  // the potential to be a sync and the init expr being used is sufficiently
-  // simple
+  // the potential to be a sync/single and the init expr being used is
+  // sufficiently simple
   if (fieldType != NULL && initType != NULL) {
     // Both were to the sync type constructor
-    if (fieldType->isNamed("_type_construct__syncvar") &&
-        initType->isNamed("_type_construct__syncvar")) {
+    bool bothSyncs = fieldType->isNamed("_type_construct__syncvar") &&
+      initType->isNamed("_type_construct__syncvar");
+    // Alternatively, perform a similar operation if both were to the single
+    // type constructor
+    bool bothSingles = fieldType->isNamed("_type_construct__singlevar") &&
+      initType->isNamed("_type_construct__singlevar");
+    if (bothSyncs || bothSingles) {
       SymExpr* ftFirst = toSymExpr(fieldType->get(1));
       SymExpr* itFirst = toSymExpr(initType->get(1));
       // Both passed the same argument to it
