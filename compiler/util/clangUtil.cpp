@@ -1669,8 +1669,9 @@ void runClang(const char* just_parse_filename) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
 
-      // Create a new IRBuilder, and LayeredValueTable.
+      // Create a new IRBuilder and MDBuilder
       gGenInfo->builder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
+      gGenInfo->mdHelper = new llvm::MDBuilder(gGenInfo->module->getContext());
 
       // This seems to be needed, even though it is strange.
       // (otherwise we segfault in info->builder->CreateGlobalString)

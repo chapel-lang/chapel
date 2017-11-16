@@ -2263,7 +2263,7 @@ GenInfo::GenInfo()
              lineno(-1), filename(NULL)
 #ifdef HAVE_LLVM
              ,
-             lvt(NULL), module(NULL), builder(NULL),
+             lvt(NULL), module(NULL), builder(NULL), mdHelper(NULL),
              loopStack(),
              llvmContext(),
              tbaaRootNode(NULL),

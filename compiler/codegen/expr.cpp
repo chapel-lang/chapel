@@ -453,7 +453,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->builder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType ) tbaa = valType->symbol->llvmTbaaAccessTag;
+  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode )
+    tbaa = valType->symbol->llvmTbaaAccessTag;
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
 
   if(!info->loopStack.empty()) {
@@ -511,7 +512,7 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->builder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType ) {
+  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
     else tbaa = valType->symbol->llvmTbaaAccessTag;
   }

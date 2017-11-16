@@ -27,6 +27,7 @@
 #include "llvmVer.h"
 
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/MDBuilder.h"
 
 struct PromotedPair {
   llvm::Value* a;
