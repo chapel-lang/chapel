@@ -1,0 +1,10 @@
+bug: issue with using nil as the default value for an initializer class argument
+
+Our creation of the _new function appears to behave incorrectly when one of the
+arguments for the initializer is only given a default value of nil and no type
+is involved.
+
+This shouldn't be too difficult to fix.
+
+When this future is resolved, we can convert test/users/shetag/objRefAsFormArg
+to use initializers instead of constructors.

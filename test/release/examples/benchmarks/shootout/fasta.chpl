@@ -81,7 +81,7 @@ proc main() {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n"): int(8);
+param newline = ascii("\n");
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'

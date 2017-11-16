@@ -275,24 +275,106 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //  * follower iterator(s), if needed, are invoked from within the leader loop
 //  * all inductionVariables()' DefExprs are moved to the original loop body
 
+/////////// fsIterYieldType ///////////
+
+/*
+When we are dealing with a recursive parallel iterator, we call
+fsIterYieldType() while resolving it. At that time, IteratorInfo
+has not been created yet. Also the yield type is not yet avaiable
+anywhere, because it is the type of a tuple of the original return type
+plus one component per shadow variable.
+
+Ex. standalone iter walkdirs() in FileSystem module, as tested by:
+  test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+
+Therefore we compute this extended yield type manually.
+*/
+static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
+  if (fs->numIntentVars() == 0) {
+    // The iterator has not undergone extendLeader().
+    // It still yields whatever the user wrote.
+    // Its return symbol is still in tact.
+
+    QualifiedType result(iterFn->getReturnSymbol()->type);
+    // What is the right qualifier?
+    return result;
+  }
+
+  // Otherwise, build the tuple mocking what iterFn yields, supposedly.
+  CallExpr* constup = new CallExpr("_type_construct__tuple");
+
+  // The original return type is available: it must have been declared
+  // by the user, since the iterator is recursive.
+  Symbol* origRetSym = lookupForallIntentsOrigRetSym(iterFn);
+  INT_ASSERT(origRetSym != NULL);
+  INT_ASSERT(origRetSym->type != dtUnknown);
+  constup->insertAtTail(origRetSym->type->symbol);
+
+  // The other tuple components are refs to shadow variables,
+  // so their types come from respective outer variables.
+  for_shadow_vars(svar, temp, fs) {
+    Symbol* ovar = NULL;
+    switch (svar->intent) {
+      case TFI_DEFAULT:
+      case TFI_CONST:
+      case TFI_IN:
+      case TFI_CONST_IN:
+      case TFI_REF:
+      case TFI_CONST_REF:
+        ovar = svar->outerVarSym();
+        break;
+
+      case TFI_REDUCE:
+        // ... except for reduce intents - they are TODO.
+        USR_FATAL_CONT(svar, "Reduce intents are currently not implemented"
+          " for forall- or for-loops over recursive parallel iterators");
+        USR_PRINT(iterFn, "the parallel iterator is here");
+        USR_STOP();
+        break;
+    }
+    INT_ASSERT(ovar != NULL);
+    INT_ASSERT(ovar->type != dtUnknown);
+
+    constup->insertAtTail(ovar->type->getRefType()->symbol);
+  }
+
+  int numComponents = constup->numActuals();
+  constup->insertAtHead(new_IntSymbol(numComponents));
+
+  // Resolve it now.
+  fs->insertBefore(constup);
+  resolveCall(constup);
+  constup->remove();
+
+  // What is the right qualifier?
+  QualifiedType result(constup->qualType().type());
+  return result;
+}
+
+
 //
 // Given an iterator function, find the type that it yields.
 // It would be fn->retType, alas protoIteratorClass() messes with that.
-// This helper is ForallStmt-specific because of the error message it issues.
+// This helper is ForallStmt-specific because of the assumptions it makes.
 //
-static QualifiedType fsIterYieldType(FnSymbol* iterFn, CallExpr* iterCall)
+static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
+                                     bool alreadyResolved)
 {
   if (iterFn->isIterator()) {
-    IteratorInfo* ii = iterFn->iteratorInfo;
-    INT_ASSERT(ii);
-    return ii->getValue->getReturnQualType();
+    if (IteratorInfo* ii = iterFn->iteratorInfo) {
+      return ii->getValue->getReturnQualType();
+    } else {
+      // We are in the midst of resolving a recursive iterator.
+      INT_ASSERT(alreadyResolved);
+      return buildIterYieldType(fs, iterFn);
+    }
   } else {
     // e.g. "proc these() return _value.these();"
     AggregateType* retType = toAggregateType(iterFn->retType);
     INT_ASSERT(retType && retType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     FnSymbol* iterator = retType->iteratorInfo->iterator;
     INT_ASSERT(iterator->isIterator()); // no more recursion?
-    return fsIterYieldType(iterator, iterCall);
+    return fsIterYieldType(fs, iterator, alreadyResolved);
   }
 }
 
@@ -450,8 +532,12 @@ static void checkForExplicitTagArgs(CallExpr* iterCall) {
   }
 }
 
-static bool findStandaloneOrLeader(ForallStmt* pfs,
-                                   CallExpr* iterCall)
+static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
+{
+  return pfs->iterCallAlreadyTagged();
+}
+
+static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
 {
   bool gotParallel = false;
   bool gotSA = true;
@@ -485,7 +571,6 @@ static bool findStandaloneOrLeader(ForallStmt* pfs,
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
   }
 
-  resolveFns(iterCall->resolvedFunction());
   return gotSA;
 }
 
@@ -556,10 +641,12 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
 {
   // The par iterator probably has been extendLeader()-ed for forall intents.
   FnSymbol* parIter = iterCall->resolvedFunction();
+  bool alreadyResolved = parIter->isResolved();
+
   resolveFns(parIter);
 
   // Set QualifiedType of the index variable.
-  QualifiedType iType = fsIterYieldType(parIter, iterCall);
+  QualifiedType iType = fsIterYieldType(pfs, parIter, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
 
   if (idxVar->id == breakOnResolveID)
@@ -698,13 +785,11 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                                  SymExpr*    origSE) {
+CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
+{
   CallExpr* retval = NULL;
 
-  if (pfs->id == breakOnResolveID) {
-    gdbShouldBreakHere();
-  }
+  if (pfs->id == breakOnResolveID) gdbShouldBreakHere();
 
   // We only get here for origSE==firstIteratedExpr() .
   // If at that time there are other elements in iterExprs(), we remove them.
@@ -716,7 +801,9 @@ CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
   INT_ASSERT(origSE->inTree() == false);
 
-  bool gotSA = findStandaloneOrLeader(pfs, iterCall);
+  bool gotSA = acceptUnmodifiedIterCall(pfs, iterCall) ||
+               findStandaloneOrLeader(pfs, iterCall);
+  resolveCallAndCallee(iterCall, false);
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
@@ -730,7 +817,6 @@ CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         removeOrigIterCall(origSE);
       }
-
     } else {
       buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
     }

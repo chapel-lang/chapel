@@ -22,3 +22,6 @@ record WrapperTwo {
 var r = new WrapperTwo(new WrapperOne(new C()));
 
 r.baz(); // should call C.foo (baz->bar->foo)
+
+// Can't use deinit, otherwise there will be a double-free
+delete r.instance.instance;

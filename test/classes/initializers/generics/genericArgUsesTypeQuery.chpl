@@ -18,3 +18,4 @@ var otherC = new C(myC);
 writeln(otherC);
 writeln(otherC.t:string);
 
+delete otherC, myC;

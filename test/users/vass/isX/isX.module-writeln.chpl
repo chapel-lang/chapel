@@ -2963,3 +2963,5 @@ report(isPrimitiveType(siReal.type), "siReal");
 report(isPrimitiveType(aInt.type), "aInt");
 report(isPrimitiveType(aReal.type), "aReal");
 writeln("  .");
+
+delete cInstance;

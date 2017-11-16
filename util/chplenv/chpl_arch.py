@@ -284,6 +284,9 @@ def get(location, map_to_compiler=False, get_lcd=False):
     platform_val = chpl_platform.get(location)
 
     isprgenv = compiler_is_prgenv(compiler_val)
+    if compiler_val == 'clang-included':
+      isprgenv = compiler_is_prgenv(chpl_compiler.get(location,
+                                                      llvm_mode="orig"))
 
     if isprgenv:
         cray_arch = os.environ.get('CRAY_CPU_TARGET', 'none')

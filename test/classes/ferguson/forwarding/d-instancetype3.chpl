@@ -26,6 +26,9 @@ record WrapperTwo {
   var aa = new C(2);
 
   a.f(aa);
+
+  // Can't use deinit, otherwise there will be a double-free
+  delete aa, a.instance.instance;
 }
 
 {
@@ -33,4 +36,6 @@ record WrapperTwo {
   var bb = new D(2.0);
 
   b.f(bb);
+
+  delete bb, b.instance.instance;
 }

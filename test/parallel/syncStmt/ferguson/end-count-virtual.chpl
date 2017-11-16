@@ -14,6 +14,7 @@ proc run() {
   sync {
     var obj:Parent = new Child();
     obj.runTask();
+    delete obj;
   }
 }
 run();

@@ -1858,7 +1858,7 @@ for testname in testsrc:
                 exec_limiter = execution_limiter.NoLock()
                 if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
                     exec_name = os.path.join(localdir, test_filename)
-                    exec_limiter = execution_limiter.FileLock(exec_name, timeout)
+                    exec_limiter = execution_limiter.FileLock()
 
                 with exec_limiter:
                     exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting

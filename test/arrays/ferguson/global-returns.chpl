@@ -47,3 +47,5 @@ var e = returnAliasField();
 writeln(e);
 var f = returnAliasSliceField();
 writeln(f);
+
+delete globalC;

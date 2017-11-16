@@ -85,14 +85,16 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
 std::string getChplPythonVersion();
+bool compilingWithPrgEnv();
 std::string runCommand(std::string& command);
 
 const char* filenameToModulename(const char* filename);
 
 const char* getIntermediateDirName();
 
-void        readArgsFromCommand(const char*               cmd,
-                                std::vector<std::string>& cmds);
+void readArgsFromCommand(std::string path, std::vector<std::string>& args);
+void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
+void expandInstallationPaths(std::vector<std::string>& args);
 
 char*       dirHasFile(const char* dir, const char* file);
 char*       findProgramPath(const char* argv0);

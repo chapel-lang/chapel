@@ -18,4 +18,4 @@ r.Array[1] = new C();
 r.foo(); // prints "in Wrapper.foo()"
 r.bar(); // same as r.instance.bar(), prints "in C.foo()"
 
-
+delete r.Array[1];

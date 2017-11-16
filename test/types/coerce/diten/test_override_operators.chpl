@@ -3,8 +3,19 @@ proc +(a: uint(64), b: int(64)) {
   return a + b:uint(64);
 }
 
+// This peculiar definition of == is a workaround for
+// the issue in test_override_equals.future.
+proc ==(param a:int, param b:uint) {
+  if (a >= 0) {
+    var auint = a: uint;
+    return auint == b;
+  } else {
+    return false;
+  }
+}
+
 proc ==(a: int, b: uint) {
-  if (a > 0) {
+  if (a >= 0) {
     var auint = a: uint;
     return auint == b;
   } else {

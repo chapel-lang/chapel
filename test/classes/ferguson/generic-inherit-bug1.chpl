@@ -87,6 +87,8 @@ module Impl {
     d.lst.append(a);
 
     test(d);
+
+    delete d, a, aa;
   }
 }
 

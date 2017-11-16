@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,22 +17,26 @@
  * limitations under the License.
  */
 
+#include "llvmDebug.h"
+
+#include "alist.h"
+#include "clangUtil.h"
+#include "codegen.h"
+#include "expr.h"
+#include "genret.h"
+#include "stringutil.h"
+#include "symbol.h"
+#include "vec.h"
+#include "version.h"
+
 #include <iostream>
 #include <map>
 
-#include "llvmDebug.h"
-#include "stringutil.h"
-#include "expr.h"
-#include "codegen.h"
-#include "symbol.h"
-#include "vec.h"
-#include "alist.h"
-#include "version.h"
-
 #ifdef HAVE_LLVM
 #include "llvm/ADT/ArrayRef.h"
-#include "genret.h" 
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Support/raw_ostream.h"
 
 /*
 LLVM provides a class called DIBuilder, you pass the LLVM module to this
@@ -55,13 +59,13 @@ into the binary. So I think that the only new data structure that I'm
 creating myself is the debug class itself.
 
 
-See 
+See
 http://llvm.org/docs/SourceLevelDebugging.html
 for more information on LLVM debug information.
 */
 
 // Note: All char strings must be the same size
-// Very hacky, but completely legal and functional. Only issue is that file_name 
+// Very hacky, but completely legal and functional. Only issue is that file_name
 // will have garbage from beyond full_path.
 // garbage issue could be solved with scrubbing, if it matters.
 
@@ -120,7 +124,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
-  
+
   llvm::Type* ty = type->symbol->llvmType;
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
@@ -137,7 +141,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     N = this->dibuilder.createBasicType(
       name, /* Name */
       layout.getTypeSizeInBits(ty), /* SizeInBits */
-      (is_signed(type))? 
+      (is_signed(type))?
       (llvm::dwarf::DW_ATE_signed):
       (llvm::dwarf::DW_ATE_unsigned) /* Encoding */);
 
@@ -150,13 +154,13 @@ llvm::DIType* debug_data::construct_type(Type *type)
       name,
       layout.getTypeSizeInBits(ty),
       llvm::dwarf::DW_ATE_float);
-    
+
     myTypeDescriptors[type] = N;
     return llvm::cast_or_null<llvm::DIType>(N);
   }
 
   else if(ty->isPointerTy()) {
-    if(type != type->getValType()) {//Add this condition to avoid segFault 
+    if(type != type->getValType()) {//Add this condition to avoid segFault
       N = this->dibuilder.createPointerType(
         get_type(type->getValType()),//it should return the pointee's DIType
         layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
@@ -176,12 +180,12 @@ llvm::DIType* debug_data::construct_type(Type *type)
         if(PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(
-            myGetTypeName(PointeeTy), 
+            myGetTypeName(PointeeTy),
             layout.getTypeSizeInBits(PointeeTy),
             llvm::dwarf::DW_ATE_unsigned);
 
           N = this->dibuilder.createPointerType(
-            pteIntDIType, 
+            pteIntDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
 #if HAVE_LLVM_VER >= 50
@@ -210,7 +214,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             NULL, /* DerivedFrom */
             NULL /* Elements */
             );
-        
+
           N = this->dibuilder.createPointerType(
             pteStrDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
@@ -219,7 +223,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             llvm::None,
 #endif
             name);
-        
+
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
         }
@@ -244,12 +248,12 @@ llvm::DIType* debug_data::construct_type(Type *type)
               llvm::None,
 #endif
               name);
-            
+
             myTypeDescriptors[type] = N;
             return llvm::cast_or_null<llvm::DIType>(N);
           }
         } //Not sure whether we should directly return getType(vt)
-        
+
         const llvm::StructLayout* slayout = NULL;
         const char *struct_name = this_class->classStructName(true);
         llvm::Type* st = getTypeLLVM(struct_name);
@@ -257,7 +261,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
           llvm::StructType* struct_type = llvm::cast<llvm::StructType>(st);
           if(!struct_type->isOpaque()){
             N = this->dibuilder.createForwardDecl(
-              llvm::dwarf::DW_TAG_structure_type, 
+              llvm::dwarf::DW_TAG_structure_type,
               name,
               get_module_scope(defModule),
               get_file(defFile),
@@ -265,13 +269,13 @@ llvm::DIType* debug_data::construct_type(Type *type)
               0, // RuntimeLang
               layout.getTypeSizeInBits(ty),
               8*layout.getABITypeAlignment(ty));
-     
+
             //N is added to the map (early) so that element search below can find it,
             //so as to avoid infinite recursion for structs that contain pointers to
             //their own type.
             myTypeDescriptors[type] = N;
 
-            slayout = layout.getStructLayout(struct_type); 
+            slayout = layout.getStructLayout(struct_type);
             for_fields(field, this_class) {
               // field is a Symbol
               const char* fieldDefFile = field->defPoint->fname();
@@ -313,14 +317,14 @@ llvm::DIType* debug_data::construct_type(Type *type)
               derivedFrom, /* DerivedFrom */
               this->dibuilder.getOrCreateArray(EltTys) /* Elements */
               );
-            
+
             return llvm::cast_or_null<llvm::DIType>(N);
           }//end of if(!Opaque)
         }// end of if(st)
       } // end of astTag == E_AggregateTy
     } // end of else (type==type->getType)
   } // end of ty->isPointerTy()
-  
+
   else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
     llvm::SmallVector<llvm::Metadata *, 8> EltTys;
@@ -331,9 +335,9 @@ llvm::DIType* debug_data::construct_type(Type *type)
     const llvm::StructLayout* slayout = NULL;
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);
     slayout = layout.getStructLayout(struct_type);
-   
+
     N = this->dibuilder.createForwardDecl(
-      llvm::dwarf::DW_TAG_structure_type, 
+      llvm::dwarf::DW_TAG_structure_type,
       name,
       get_module_scope(defModule),
       get_file(defFile),
@@ -350,7 +354,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     for_fields(field, this_class) {
       const char* fieldDefFile = field->defPoint->fname();
       int fieldDefLine = field->defPoint->linenum();
-      TypeSymbol* fts = field->type->symbol; 
+      TypeSymbol* fts = field->type->symbol;
       llvm::Type* fty = fts->llvmType;
       llvm::DIType* fditype =  get_type(field->type);
       if(fditype == NULL)
@@ -387,10 +391,10 @@ llvm::DIType* debug_data::construct_type(Type *type)
         llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
-    
+
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
-    } 
+    }
     else if(this_class->aggregateTag == AGGREGATE_CLASS) {
       N = this->dibuilder.createStructType(
         get_module_scope(defModule),
@@ -402,10 +406,10 @@ llvm::DIType* debug_data::construct_type(Type *type)
         llvm::DINode::FlagZero,
         derivedFrom,
         this->dibuilder.getOrCreateArray(EltTys));
-    
+
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
-    } 
+    }
     else if(this_class->aggregateTag == AGGREGATE_UNION) {
       N = this->dibuilder.createUnionType(
         get_module_scope(defModule),
@@ -416,7 +420,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         8*layout.getABITypeAlignment(ty),
         llvm::DINode::FlagZero,
         this->dibuilder.getOrCreateArray(EltTys));
-        
+
       myTypeDescriptors[type] = N;
       return llvm::cast_or_null<llvm::DIType>(N);
     }
@@ -432,11 +436,11 @@ llvm::DIType* debug_data::construct_type(Type *type)
     Symbol *eleSym = toDefExpr(this_class->fields.head)->sym;
     Type *eleType = eleSym->type;
     N = this->dibuilder.createArrayType(
-      Asize, 
-      8*layout.getABITypeAlignment(ty), 
-      get_type(eleType),  
-      this->dibuilder.getOrCreateArray(Subscripts)); 
-      
+      Asize,
+      8*layout.getABITypeAlignment(ty),
+      get_type(eleType),
+      this->dibuilder.getOrCreateArray(Subscripts));
+
     myTypeDescriptors[type] = N;
     return llvm::cast_or_null<llvm::DIType>(N);
   }
@@ -477,7 +481,7 @@ llvm::DIFile* debug_data::construct_file(const char *fpath)
   if( last_slash ) {
     file = astr(last_slash+1);
     directory = asubstr(fpath, last_slash);
-  } 
+  }
   else {
     file = fpath;
     directory = astr(current_dir);
@@ -562,7 +566,7 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
     optimized /* isOptimized */
     // TODO - in 3.8, do we need to pass Decl?
     );
-  
+
   return ret;
 }
 
@@ -581,7 +585,7 @@ llvm::DIGlobalVariableExpression* debug_data::construct_global_variable(VarSymbo
   const char *cname = gVarSym->cname;
   const char *file_name = gVarSym->astloc.filename;
   int line_number = gVarSym->astloc.lineno;
-  
+
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
 
@@ -619,9 +623,9 @@ llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
   FnSymbol *funcSym = NULL;
   if(isFnSymbol(varSym->defPoint->parentSymbol))
     funcSym = (FnSymbol*)varSym->defPoint->parentSymbol;//TODO:if parent is a block
-  else 
+  else
     printf("Couldn't find the function parent of variable: %s!\n",name);
-  
+
   llvm::DISubprogram* scope = get_function(funcSym);
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* varSym_type = get_type(varSym->type);
@@ -658,13 +662,13 @@ llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned A
   FnSymbol *funcSym = NULL;
   if(isFnSymbol(argSym->defPoint->parentSymbol))
     funcSym = (FnSymbol*)argSym->defPoint->parentSymbol;
-  else 
+  else
     printf("Couldn't find the function parent of param: %s!\n",name);
-  
+
   llvm::DISubprogram* scope = get_function(funcSym);
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* argSym_type = get_type(argSym->type);
-      
+
   if(argSym_type)
     return this->dibuilder.createParameterVariable(
       scope, /* Scope */

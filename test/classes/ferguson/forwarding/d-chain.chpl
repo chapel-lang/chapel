@@ -34,6 +34,9 @@ record WrapperTwo {
   a.foo(); // should call WrapperTwo.foo
   a.bar(); // should call WrapperOne.bar
   a.baz(); // should call C.baz
+
+  // Can't use deinit, otherwise there will be a double-free
+  delete a.instance.instance;
 }
 
 {
@@ -42,4 +45,6 @@ record WrapperTwo {
   b.foo(); // should call WrapperTwo.foo
   b.bar(); // should call WrapperOne.bar
   b.baz(); // should call D.baz
+
+  delete b.instance.instance;
 }

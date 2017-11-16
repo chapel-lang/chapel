@@ -1,12 +1,12 @@
 In int int8or32orDefault
 In int int8or32orDefault
 
-In int(8) param int8vs32
+In int(32) param int8vs32
 In int(32) param int8vs32
 In int(32) int8vs32
 In int(32) int8vs32
 In int(32) param int8vs32
-In int(8) param int8vs32
+In int(32) param int8vs32
 
 In param int(8) int8paramVsNot
 In param int(8) int8paramVsNot
@@ -21,12 +21,12 @@ In param int(16) int16paramVsNot
 In param int(16) int16paramVsNot
 
 In param int(8) int8vs16
-In param int(8) int8vs16
+In param int(16) int8vs16
 In param int(16) int8vs16
 In int(16) int8vs16
 In int(16) int8vs16
 In param int(16) int8vs16
-In param int(8) int8vs16
+In param int(16) int8vs16
 
 In param int int8vs16vsDefault
 In param int int8vs16vsDefault

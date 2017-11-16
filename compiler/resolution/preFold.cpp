@@ -943,6 +943,79 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
+// This function finds the enum constant that matches imm.
+// imm stores a compile-time constant integer or string.
+// It's used when casting from an param integer or a param string to the
+// enum type.
+static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
+  uint64_t fromUint = 0;
+  int64_t  fromInt  = 0;
+  const char* fromString = NULL;
+  bool haveUint = false;
+  bool haveInt  = false;
+  bool haveString = false;
+
+  ensureEnumTypeResolved(typeEnum);
+
+  if (imm->const_kind == NUM_KIND_INT) {
+    haveInt = true;
+    fromInt = imm->int_value();
+  } else if (imm->const_kind == NUM_KIND_UINT) {
+    haveUint = true;
+    fromUint = imm->uint_value();
+  } else if (imm->const_kind == CONST_KIND_STRING) {
+    haveString = true;
+    fromString = imm->string_value();
+  }
+
+  INT_ASSERT(haveInt || haveUint || haveString);
+
+  for_enums(constant, typeEnum) {
+
+    uint64_t cUint = 0;
+    int64_t   cInt = 0;
+    bool   gotUint = false;
+    bool   gotInt  = false;
+    const char* extendedName = NULL;
+
+    gotInt  = get_int(constant->init, &cInt);
+    gotUint = get_uint(constant->init, &cUint);
+
+    if (haveString)
+      extendedName = astr(typeEnum->symbol->name, ".", constant->sym->name);
+
+    INT_ASSERT(gotInt || gotUint);
+
+    bool match = false;
+    // string matches name
+    if (haveString &&
+        (fromString == constant->sym->name ||
+         fromString == extendedName))
+      match = true;
+    // both int
+    else if (gotInt && haveInt && cInt == fromInt)
+      match = true;
+    // both uint
+    else if (gotUint && haveUint && cUint == fromUint)
+      match = true;
+    // int/uint and int >= 0
+    else if (gotInt && haveUint && cInt >= 0 &&
+             (uint64_t)cInt == fromUint)
+      match = true;
+    // uint/int and int >= 0
+    else if (gotUint && haveInt && fromInt >= 0 &&
+             cUint == (uint64_t)fromInt)
+      match = true;
+
+    if (match) {
+      return constant->sym;
+    }
+  }
+
+  return NULL;
+}
+
+
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -1025,110 +1098,104 @@ static Expr* preFoldNamed(CallExpr* call) {
     retval = dropUnnecessaryCast(call);
 
     if (retval == call) {
-      // The cast was not dropped.  Remove integer casts on immediate values.
-      if (SymExpr* sym = toSymExpr(call->castFrom())) {
-        if (VarSymbol* var = toVarSymbol(sym->symbol())) {
-          if (var->immediate != NULL &&
-              toSE           != NULL) {
-            Type* oldType = var->type;
-            Type* newType = toSE->symbol()->type;
+      // The cast was not dropped.
+      // Handle (fold) casts on param values
+      if (SymExpr* se = toSymExpr(call->castFrom())) {
+        Symbol* sym = se->symbol();
 
-            if ((is_int_type(oldType)  == true     ||
-                 is_uint_type(oldType) == true     ||
-                 is_bool_type(oldType) == true)          &&
+        if (EnumType* enumType = toEnumType(sym->type))
+          ensureEnumTypeResolved(enumType);
 
-                (is_int_type(newType)  == true     ||
-                 is_uint_type(newType) == true     ||
-                 is_bool_type(newType) == true     ||
-                 is_enum_type(newType) == true     ||
-                 newType               == dtString ||
-                 newType               == dtStringC)) {
-              VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
-              EnumType*  typeEnum = toEnumType(newType);
+        Immediate* imm = getSymbolImmediate(sym);
 
-              if (typeVar != NULL) {
-                if (typeVar->immediate == NULL) {
-                  INT_FATAL("unexpected case in cast_fold");
-                }
+        if (imm != NULL && toSE != NULL) {
+          Type* oldType = sym->type;
+          Type* newType = toSE->symbol()->type;
 
-                Immediate coerce = *typeVar->immediate;
+          bool fromEnum = is_enum_type(oldType);
+          bool fromString = (oldType == dtString || oldType == dtStringC);
+          bool fromIntUint = is_int_type(oldType) ||
+                             is_uint_type(oldType);
+          bool fromIntEtc = fromIntUint || is_bool_type(oldType);
 
-                coerce_immediate(var->immediate, &coerce);
+          bool toEnum = is_enum_type(newType);
+          bool toString = (newType == dtString || newType == dtStringC);
+          bool toIntUint = is_int_type(newType) ||
+                           is_uint_type(newType);
+          bool toIntEtc = toIntUint || is_bool_type(newType);
 
-                retval = new SymExpr(new_ImmediateSymbol(&coerce));
 
-                call->replace(retval);
+          // Handle casting between numeric types
+          if ((fromEnum || fromIntEtc) && toIntEtc) {
+            VarSymbol* typeVar  = toVarSymbol(newType->defaultValue);
 
-              } else if (newType == dtString) {
-                // typevar will be null for dtString so we need a special
-                // case.
-                Immediate coerce = Immediate("", STRING_KIND_STRING);
-
-                coerce_immediate(var->immediate, &coerce);
-
-                retval = new SymExpr(new_StringSymbol(coerce.v_string));
-
-                call->replace(retval);
-
-              } else if (typeEnum) {
-                int64_t value    = 0;
-                int64_t count    = 0;
-                bool    replaced = false;
-
-                if (!get_int(call->castFrom(), &value)) {
-                  INT_FATAL("unexpected case in cast_fold");
-                }
-
-                for_enums(constant, typeEnum) {
-                  if (!get_int(constant->init, &count)) {
-                    count++;
-                  }
-
-                  if (count == value) {
-                    retval = new SymExpr(constant->sym);
-
-                    call->replace(retval);
-
-                    replaced = true;
-                  }
-                }
-
-                if (replaced == false) {
-                  USR_FATAL(call->castFrom(), "enum cast out of bounds");
-                }
-
-              } else {
-                INT_FATAL("unexpected case in cast_fold");
-              }
-
-            } else if (oldType == dtString && newType == dtStringC) {
-              Immediate* imm = var->immediate;
-
-              retval = new SymExpr(new_CStringSymbol(imm->v_string));
-              call->replace(retval);
-
-            } else if (oldType == dtStringC && newType == dtString) {
-              Immediate* imm = var->immediate;
-
-              retval = new SymExpr(new_StringSymbol(imm->v_string));
-              call->replace(retval);
+            // handle numeric casts
+            // (or anything handled by coerce_immediate)
+            if (typeVar == NULL || typeVar->immediate == NULL) {
+              INT_FATAL("unexpected case in cast_fold");
             }
-          }
 
-        } else if (EnumSymbol* enumSym = toEnumSymbol(sym->symbol())) {
-          if (toSE != NULL) {
-            Type* newType = toSE->symbol()->type;
+            Immediate coerce = *typeVar->immediate;
 
-            if (newType == dtString) {
+            coerce_immediate(imm, &coerce);
+
+            retval = new SymExpr(new_ImmediateSymbol(&coerce));
+
+            call->replace(retval);
+
+          // Handle casting to enum
+          } else if (toEnum && (fromString || fromIntUint)) {
+
+            EnumType* typeEnum = toEnumType(newType);
+            Symbol* constant = findMatchingEnumSymbol(imm, typeEnum);
+
+            if (constant == NULL)
+              USR_FATAL(call->castFrom(), "enum cast out of bounds");
+
+            retval = new SymExpr(constant);
+            call->replace(retval);
+
+          // Handle enumsym:string casts
+          } else if (fromEnum && toString) {
+            EnumSymbol* enumSym = toEnumSymbol(sym);
+
+            if (newType == dtStringC)
+              retval = new SymExpr(new_CStringSymbol(enumSym->name));
+            else
               retval = new SymExpr(new_StringSymbol(enumSym->name));
 
-              call->replace(retval);
+            call->replace(retval);
 
-            } else if (newType == dtStringC) {
-              retval = new SymExpr(new_CStringSymbol(enumSym->name));
+          // Handle string:c_string and c_string:string casts
+          } else if (fromString && toString) {
 
-              call->replace(retval);
-            }
+            if (newType == dtStringC)
+              retval = new SymExpr(new_CStringSymbol(imm->v_string));
+            else
+              retval = new SymExpr(new_StringSymbol(imm->v_string));
+
+            call->replace(retval);
+
+          // Handle other casts to string
+          } else if (fromIntEtc && toString) {
+            // special case because newType->defaultValue will
+            // be null for dtString
+
+            IF1_string_kind skind = STRING_KIND_STRING;
+            if (newType == dtStringC)
+              skind = STRING_KIND_C_STRING;
+
+            Immediate coerce = Immediate("", skind);
+
+            coerce_immediate(imm, &coerce);
+
+            if (newType == dtStringC)
+              retval = new SymExpr(new_CStringSymbol(coerce.v_string));
+            else
+              retval = new SymExpr(new_StringSymbol(coerce.v_string));
+
+            call->replace(retval);
+
           }
         }
       }

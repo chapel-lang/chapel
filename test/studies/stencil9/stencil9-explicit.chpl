@@ -340,3 +340,5 @@ if printArrays {
 // use as checksum
 //
 writeln("# iterations: ", numIters.read());
+
+for loc in LocalDomArrs do delete loc;

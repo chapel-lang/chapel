@@ -31,10 +31,15 @@
 
 #include "beautify.h"
 #include "driver.h"
+#include "llvmVer.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/Support/FileSystem.h"
+#endif
 
 #include <pwd.h>
 #include <unistd.h>
@@ -82,10 +87,19 @@ void addIncInfo(const char* incDir) {
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
+#ifdef HAVE_LLVM
+  std::error_code err = llvm::sys::fs::create_directories(dirname);
+  if (err) {
+    USR_FATAL("creating directory %s failed: %s\n",
+              dirname,
+              err.message().c_str());
+  }
+#else
   const char* mkdircommand = "mkdir -p ";
   const char* command = astr(mkdircommand, dirname);
 
   mysystem(command, explanation);
+#endif
 }
 
 
@@ -168,9 +182,37 @@ static void ensureTmpDirExists() {
 }
 
 
-void deleteDir(const char* dirname) {
+static
+void deleteDirSystem(const char* dirname) {
   const char* cmd = astr("rm -rf ", dirname);
   mysystem(cmd, astr("removing directory: ", dirname));
+}
+
+#ifdef HAVE_LLVM
+static
+void deleteDirLLVM(const char* dirname) {
+#if HAVE_LLVM_VER >= 50
+  // LLVM 5 added remove_directories
+  std::error_code err = llvm::sys::fs::remove_directories(dirname, false);
+  if (err) {
+    USR_FATAL("removing directory %s failed: %s\n",
+              dirname,
+              err.message().c_str());
+  }
+#else
+  deleteDirSystem(dirname);
+#endif
+}
+#endif
+
+
+
+void deleteDir(const char* dirname) {
+#ifdef HAVE_LLVM
+  deleteDirLLVM(dirname);
+#else
+  deleteDirSystem(dirname);
+#endif
 }
 
 
@@ -470,6 +512,10 @@ std::string getChplPythonVersion() {
   return pyVer;
 }
 
+bool compilingWithPrgEnv() {
+  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+}
+
 std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
@@ -706,9 +752,9 @@ const char* filenameToModulename(const char* filename) {
   return asubstr(moduleName, strrchr(moduleName, '.'));
 }
 
-void readArgsFromCommand(const char* cmd, std::vector<std::string>& args) {
+void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
   // Gather information from compileline into clangArgs.
-  if(FILE* fd = popen(cmd,"r")) {
+  if(FILE* fd = popen(cmd.c_str(),"r")) {
     int ch;
     // Read arguments.
     while( (ch = getc(fd)) != EOF ) {
@@ -726,6 +772,66 @@ void readArgsFromCommand(const char* cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
+    fclose(fd);
+  }
+}
+
+void readArgsFromFile(std::string path, std::vector<std::string>& args) {
+
+  FILE* fd = fopen(path.c_str(), "r");
+  if (!fd)
+    USR_FATAL("Could not open file %s", path.c_str());
+
+  int ch;
+  // Read arguments.
+  while( (ch = getc(fd)) != EOF ) {
+    // Read the next argument.
+    // skip leading spaces
+    while( ch != EOF && isspace(ch) ) ch = getc(fd);
+    std::string arg;
+    arg.push_back(ch);
+    // read until space. TODO - handle quoting/spaces
+    ch = getc(fd);
+    while( ch != EOF && !isspace(ch) ) {
+      arg += ch;
+      ch = getc(fd);
+    }
+    args.push_back(arg);
+  }
+
+  fclose(fd);
+}
+
+void expandInstallationPaths(std::vector<std::string>& args) {
+
+  const char* tofix[] = {"$CHPL_RUNTIME_LIB", CHPL_RUNTIME_LIB,
+                         "$CHPL_RUNTIME_INCL", CHPL_RUNTIME_INCL,
+                         "$CHPL_THIRD_PARTY", CHPL_THIRD_PARTY,
+                         "$CHPL_HOME", CHPL_HOME,
+                         NULL};
+
+  for (size_t i = 0; i < args.size(); i++) {
+    std::string s = args[i];
+
+    // For each of the patterns in tofix, find/replace all occurrences.
+    for (int j = 0; tofix[j] != NULL; j += 2) {
+
+      const char* key = tofix[j];
+      const char* val = tofix[j+1];
+      size_t key_len = strlen(key);
+      size_t val_len = strlen(val);
+
+      size_t off = 0;
+      while (true) {
+        off = s.find(key, off);
+        if (off == std::string::npos)
+          break; // no more occurrences to replace
+        s.replace(off, key_len, val);
+        off += val_len;
+      }
+    }
+
+    args[i] = s;
   }
 }
 

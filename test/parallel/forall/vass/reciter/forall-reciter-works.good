@@ -1,0 +1,37 @@
+starting
+recursing for depth 2
+recursing for depth 1
+myiter start 1
+101
+102
+103
+myiter done  1
+myiter start 2
+201
+202
+203
+myiter done  2
+myiter start 3
+301
+302
+303
+myiter done  3
+done iii0
+recursing for depth 2
+recursing for depth 1
+myiter start 1
+  101      1      2
+  102    102    103
+  103    204    205
+myiter done  1
+myiter start 2
+  201      1    308
+  202    202    509
+  203    404    711
+myiter done  2
+myiter start 3
+  301      1    914
+  302    302   1215
+  303    604   1517
+myiter done  3
+done iii2  1  1820

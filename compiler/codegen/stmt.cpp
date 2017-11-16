@@ -25,11 +25,16 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "LayeredValueTable.h"
 #include "llvmDebug.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
 
 #include <algorithm>
 #include <cstring>

@@ -496,13 +496,7 @@ void ReturnByRef::transform()
     }
     else
     {
-      FnSymbol* calledFn = call->resolvedOrVirtualFunction();
-
-      if (!calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
-        // fixupNewAlias removes some - but not all - calls
-        // to the newAlias function from the tree.
-        INT_ASSERT(false);
-      }
+      INT_ASSERT(false);
     }
   }
 
@@ -1348,53 +1342,6 @@ void insertReferenceTemps(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-// code like
-//    var x => GlobalArray[1..10]; // create a slice
-//    return x;
-// or
-//    var GlobalAlias => GlobalArray[1..10];
-//
-// poses problems because the call_tmp for the slice expression
-// (GlobalArray[1..10] in these examples) is destroyed at the end
-// of the current function. Instead, it should be used to initialize
-// the slice.
-//
-// For similar reasons, code like
-//
-//     class C {
-//      var A: [1..2] int;
-//    }
-//    var GA: [1..5] int = [i in 1..5] i;
-//    var c2 = new C(A=>GA[1..2]);  // <- note A=>GA here
-//
-// also needs special treatment.
-//
-static void fixupNewAlias() {
-  std::vector<CallExpr*> newAliasCalls;
-  std::vector<CallExpr*> hasAliasArgInCtor;
-
-  forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* calledFn = call->resolvedFunction();
-
-    if (calledFn && calledFn->hasFlag(FLAG_NEW_ALIAS_FN)) {
-      newAliasCalls.push_back(call);
-    }
-  }
-
-  for_vector(CallExpr, call, newAliasCalls) {
-    SymExpr* se = toSymExpr(call->get(1));
-
-    if (se->symbol()->hasFlag(FLAG_TEMP) && se->isRef() == false) {
-      // Note: these flags are added in functionResolution's postFold
-      se->symbol()->removeFlag(FLAG_INSERT_AUTO_COPY);
-      se->symbol()->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-
-      call->replace(se->remove());
-    }
-  }
-}
-
-
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
 // with the flag FLAG_ERRONEOUS_INITCOPY. This pattern enables
@@ -1435,7 +1382,6 @@ static void checkForErroneousInitCopies() {
 ************************************** | *************************************/
 
 void callDestructors() {
-  fixupNewAlias();
   fixupDestructors();
 
   insertDestructorCalls();

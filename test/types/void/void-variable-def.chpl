@@ -18,4 +18,6 @@ class c {
   proc init() { if enabled then v = 5; }
 }
 
-writeln(new c());
+var foo = new c();
+writeln(foo);
+delete foo;

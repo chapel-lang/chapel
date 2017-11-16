@@ -22,11 +22,14 @@
 #include "alist.h"
 #include "astutil.h"
 #include "AstVisitor.h"
+#include "clangUtil.h"
 #include "codegen.h"
 #include "driver.h"
 #include "ForLoop.h"
 #include "genret.h"
 #include "insertLineNumbers.h"
+#include "LayeredValueTable.h"
+#include "llvmUtil.h"
 #include "misc.h"
 #include "passes.h"
 #include "stmt.h"
@@ -36,6 +39,9 @@
 #include "WhileStmt.h"
 #include "wellknown.h"
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -456,7 +462,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
     // innermost loop the instruction is in, while for some cases
     // this could refer to the group of loops it is in.
     if(loopData.parallel)
-      ret->setMetadata(StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+      ret->setMetadata("llvm.mem.parallel_loop_access", loopData.loopMetadata);
   }
 
   if(addInvariantStart)

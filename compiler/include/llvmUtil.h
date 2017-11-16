@@ -24,25 +24,9 @@
 
 #include <utility>
 
-#include "llvm/Config/llvm-config.h"
+#include "llvmVer.h"
 
-#define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
-
-// So we can declare our small set insert fixup
-#include "llvm/ADT/SmallSet.h"
-
-#if HAVE_LLVM_VER < 40
-#error LLVM version is too old for this version of Chapel
-#endif
-
-#include "llvm/IR/Module.h"
-#include "llvm/IR/Value.h"
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/IntrinsicInst.h"
-#include "llvm/IR/Attributes.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/LegacyPassManager.h"
 
 struct PromotedPair {
   llvm::Value* a;

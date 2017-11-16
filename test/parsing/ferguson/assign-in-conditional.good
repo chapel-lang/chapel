@@ -1,0 +1,2 @@
+assign-in-conditional.chpl:4: error: Assignment is illegal in a conditional
+assign-in-conditional.chpl:4: note: Use == to check for equality in a conditional

@@ -176,6 +176,8 @@ module test_dataflow_cholesky {
       check_factorization ( A, L );
     else
       writeln ("factorization failed for non-positive semi-definite matrix");
+
+    delete Rand;
   }
 
 

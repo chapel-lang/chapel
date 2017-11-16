@@ -14,3 +14,5 @@ var k : node.element_type;
 k = 2;
 
 writeln(k);
+
+delete n;

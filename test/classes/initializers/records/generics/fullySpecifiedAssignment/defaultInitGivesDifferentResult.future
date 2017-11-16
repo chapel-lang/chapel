@@ -1,0 +1,7 @@
+bug: fully specified assignment leads to weird behavior with mismatched init()
+
+I expected this program to make rec of type MyRec(5), and then properly return
+the result of `new MyRec(3)`, which is of type MyRec(5).  Or to make rec of type
+MyRec(7) and then get an error trying to assign the result of MyRec(5) into it.
+Instead, neither of those things happened: rec is of type MyRec(7), and for some
+reason this doesn't cause issues ...

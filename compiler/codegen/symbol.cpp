@@ -28,6 +28,7 @@
 #include "AstVisitor.h"
 #include "astutil.h"
 #include "build.h"
+#include "clangUtil.h"
 #include "codegen.h"
 #include "CollapseBlocks.h"
 #include "docsDriver.h"
@@ -36,7 +37,9 @@
 #include "files.h"
 #include "intlimits.h"
 #include "iterator.h"
+#include "LayeredValueTable.h"
 #include "llvmDebug.h"
+#include "llvmUtil.h"
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
@@ -53,6 +56,14 @@
 
 #include <inttypes.h>
 #include <stdint.h>
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
+
+#include "llvm/Support/raw_os_ostream.h"
+#endif
 
 /******************************** | *********************************
 *                                                                   *
@@ -234,6 +245,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               llvm::Type::getDoubleTy(info->module->getContext()),
               i->v_float64);
           break;
+        default:
+          INT_ASSERT("unsupported floating point width");
       }
       break;
     case NUM_KIND_COMPLEX:
@@ -264,6 +277,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
               elements);
           break;
         }
+        default:
+          INT_ASSERT("unsupported complex floating point width");
       }
       break;
     case CONST_KIND_STRING:

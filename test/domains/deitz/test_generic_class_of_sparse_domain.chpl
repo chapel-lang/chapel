@@ -5,6 +5,7 @@ class CD { const D; }
 
 var cd = new CD(D);
 writeln("CD = ", cd);
+delete cd;
 
 ////////////////////////////
 
@@ -15,3 +16,4 @@ class CS { const SD; }
 
 var cs = new CS(SD);
 writeln("CSD = ", cs);
+delete cs;

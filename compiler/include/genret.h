@@ -22,8 +22,12 @@
 
 #include <string>
 
-// need llvm::Value, Type
-#include "llvmUtil.h"
+#ifdef HAVE_LLVM
+namespace llvm {
+  class Value;
+  class Type;
+}
+#endif
 
 #define GEN_VAL      0
 #define GEN_PTR      1

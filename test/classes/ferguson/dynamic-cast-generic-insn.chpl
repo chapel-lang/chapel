@@ -24,3 +24,5 @@ writeln(c);
 writeln("Attempting dynamic cast to Grandchild");
 var gc = first:Grandchild(1);
 writeln(gc);
+
+for a in A do delete a;

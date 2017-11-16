@@ -23,5 +23,7 @@ proc main() {
   // cast c_void_ptr into c_string
   var my_cstr2 = my_cstr_v:c_string;
   assert(my_cstr == my_cstr2);
+
+  delete c;
 }
 

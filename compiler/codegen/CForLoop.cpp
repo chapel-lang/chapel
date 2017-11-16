@@ -23,8 +23,13 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
-#include "ForLoop.h"
 #include "driver.h"
+#include "ForLoop.h"
+#include "LayeredValueTable.h"
+
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
 
 #include <algorithm>
 

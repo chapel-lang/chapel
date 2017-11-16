@@ -20,27 +20,35 @@
 #include "codegen.h"
 
 #include "astutil.h"
-#include "stlUtil.h"
+#include "clangBuiltinsWrappedSet.h"
+#include "clangUtil.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "insertLineNumbers.h"
+#include "llvmDebug.h"
+#include "llvmUtil.h"
+#include "LayeredValueTable.h"
 #include "mysystem.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "clangBuiltinsWrappedSet.h"
 #include "virtualDispatch.h"
+
+#ifdef HAVE_LLVM
+// Include relevant LLVM headers
+#include "llvm/IR/Module.h"
+#include "llvm/Pass.h"
+#endif
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
 
 #include <inttypes.h>
-
-#include "llvmDebug.h"
 
 #include <algorithm>
 #include <cctype>

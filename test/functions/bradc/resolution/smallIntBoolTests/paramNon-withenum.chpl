@@ -24,6 +24,17 @@ proc plus(param x: int(64), y: uint(64)) {
   if (x < 0) then writeln("compilerError: param int/uint version"); else writeln(x+y);
 }
 
+proc plus(x: int(64), param y: int(64)) {
+  writeln("In int/param int version");
+  if (x < 0) then writeln("compilerError: uint/param int version"); else writeln(x+y);
+}
+
+proc plus(param x: int(64), y: int(64)) {
+  writeln("In param int/int version");
+  if (x < 0) then writeln("compilerError: param int/uint version"); else writeln(x+y);
+}
+
+
 
 proc plus(x: uint(64), y: int(64)) {
   writeln("In uint/int version");

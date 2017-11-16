@@ -61,6 +61,7 @@
 
 #include "../ifa/prim_data.h"
 
+#include <cmath>
 #include <inttypes.h>
 #include <map>
 #include <sstream>
@@ -71,18 +72,20 @@ class DisambiguationState {
 public:
         DisambiguationState();
 
-  void  updateParamPrefers(int                          preference,
-                           const char*                  argStr,
-                           const DisambiguationContext& DC);
-
   bool  fn1MoreSpecific;
   bool  fn2MoreSpecific;
 
   bool  fn1Promotes;
   bool  fn2Promotes;
 
-  // 1 == fn1, 2 == fn2, -1 == conflicting signals
-  int   paramPrefers;
+  bool fn1WeakPreferred;
+  bool fn2WeakPreferred;
+
+  bool fn1WeakerPreferred;
+  bool fn2WeakerPreferred;
+
+  bool fn1WeakestPreferred;
+  bool fn2WeakestPreferred;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -151,7 +154,9 @@ static void protoIteratorClass(FnSymbol* fn);
 static void resolveSpecifiedReturnType(FnSymbol* fn);
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
-static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType);
+static bool fits_in_mantissa(int width, Immediate* imm);
+static bool fits_in_mantissa_exponent(int mantissa_width, int exponent_width, Immediate* imm, bool realPart=true);
+static bool canParamCoerce(Type* actualType, Symbol* actualSym, Type* formalType, bool* paramNarrows);
 static bool
 moreSpecific(FnSymbol* fn, Type* actualType, Type* formalType);
 static BlockStmt* getParentBlock(Expr* expr);
@@ -883,31 +888,15 @@ static bool fits_in_int_helper(int width, int64_t val) {
 }
 
 static bool fits_in_int(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     return fits_in_int_helper(width, i);
-  }
-
-
-  /* BLC: There is some question in my mind about whether this
-     function should include the following code as well -- that is,
-     whether default-sized uint params should get the same special
-     treatment in cases like this.  I didn't enable it for now because
-     nothing seemed to rely on it and I didn't come up with a case
-     that would.  But it's worth keeping around for future
-     consideration.
-
-     Similarly, we may want to consider enabling such param casts for
-     int sizes other then default-width.
-
-  else if (imm->const_kind == NUM_KIND_UINT &&
-           imm->num_index == INT_SIZE_DEFAULT) {
+  } else if (imm->const_kind == NUM_KIND_UINT) {
     uint64_t u = imm->uint_value();
-    int64_t i = (int64_t)u;
-    if (i < 0)
+    if (u > INT64_MAX)
       return false;
-    return fits_in_int_helper(width, i);
-  }*/
+    return fits_in_int_helper(width, (int64_t)u);
+  }
 
   return false;
 }
@@ -928,19 +917,15 @@ static bool fits_in_uint_helper(int width, uint64_t val) {
 }
 
 static bool fits_in_uint(int width, Immediate* imm) {
-  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+  if (imm->const_kind == NUM_KIND_INT) {
     int64_t i = imm->int_value();
     if (i < 0)
       return false;
     return fits_in_uint_helper(width, (uint64_t)i);
-  }
-
-  /* BLC: See comment just above in fits_in_int()...
-
-  else if (imm->const_kind == NUM_KIND_UINT && imm->num_index == INT_SIZE_64) {
+  } else if (imm->const_kind == NUM_KIND_UINT) {
     uint64_t u = imm->uint_value();
     return fits_in_uint_helper(width, u);
-  }*/
+  }
 
   return false;
 }
@@ -1097,12 +1082,12 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
 //
 // returns true if dispatching from actualType to formalType results
-// in a compile-time coercion; this is a subset of canCoerce below as,
-// for example, real(32) cannot be coerced to real(64) at compile-time
+// in a compile-time coercion; this is a subset of canCoerce below.
 //
 static bool canParamCoerce(Type*   actualType,
                            Symbol* actualSym,
-                           Type*   formalType) {
+                           Type*   formalType,
+                           bool*   paramNarrows) {
   if (is_bool_type(formalType) && is_bool_type(actualType)) {
     return true;
   }
@@ -1129,9 +1114,18 @@ static bool canParamCoerce(Type*   actualType,
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
-      if (get_width(etype->getIntegerType()) <= get_width(formalType)) {
+      // TODO: aren't these redundand with the last check?
+      Type* enumIntType = etype->getIntegerType();
+
+      if (enumIntType == formalType)
         return true;
-      }
+
+      if (get_width(enumIntType) < get_width(formalType))
+        return true;
+
+      if (fits_in_int(get_width(formalType), etype->getMinConstant()) &&
+          fits_in_int(get_width(formalType), etype->getMaxConstant()))
+        return true;
     }
 
     //
@@ -1143,6 +1137,7 @@ static bool canParamCoerce(Type*   actualType,
       if (VarSymbol* var = toVarSymbol(actualSym)) {
         if (var->immediate) {
           if (fits_in_int(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
             return true;
           }
         }
@@ -1154,6 +1149,7 @@ static bool canParamCoerce(Type*   actualType,
         if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
           if (Immediate* enumval = enumsym->getImmediate()) {
             if (fits_in_int(get_width(formalType), enumval)) {
+              *paramNarrows = true;
               return true;
             }
           }
@@ -1175,7 +1171,57 @@ static bool canParamCoerce(Type*   actualType,
     if (VarSymbol* var = toVarSymbol(actualSym)) {
       if (var->immediate) {
         if (fits_in_uint(get_width(formalType), var->immediate)) {
+          *paramNarrows = true;
           return true;
+        }
+      }
+    }
+
+    //
+    // If the actual is an enum, check to see if *all* its values
+    // are small enough that they fit into this integer width
+    //
+    if (EnumType* etype = toEnumType(actualType)) {
+      ensureEnumTypeResolved(etype);
+
+      Type* enumIntType = etype->getIntegerType();
+
+      if (enumIntType == formalType)
+        return true;
+
+      if (get_width(enumIntType) < get_width(formalType))
+        return true;
+
+      if (fits_in_uint(get_width(formalType), etype->getMinConstant()) &&
+          fits_in_uint(get_width(formalType), etype->getMaxConstant()))
+        return true;
+    }
+
+    //
+    // For smaller integer types, if the argument is a param, does it
+    // store a value that's small enough that it could dispatch to
+    // this argument?
+    //
+    if (get_width(formalType) < 64) {
+      if (VarSymbol* var = toVarSymbol(actualSym)) {
+        if (var->immediate) {
+          if (fits_in_uint(get_width(formalType), var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+      }
+
+      if (EnumType* etype = toEnumType(actualType)) {
+        ensureEnumTypeResolved(etype);
+
+        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
+          if (Immediate* enumval = enumsym->getImmediate()) {
+            if (fits_in_uint(get_width(formalType), enumval)) {
+              *paramNarrows = true;
+              return true;
+            }
+          }
         }
       }
     }
@@ -1188,6 +1234,126 @@ static bool canParamCoerce(Type*   actualType,
       return true;
     }
   }
+
+  // coerce fully representable integers into real / real part of complex
+  if (is_real_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
+    // don't coerce bools to reals (per spec: "uninteded by programmer")
+
+    // coerce any integer type to maximum width real
+    if ((is_int_type(actualType) || is_uint_type(actualType))
+        && get_width(formalType) >= 64)
+      return true;
+
+    // coerce integer types that are exactly representable
+    if (is_int_type(actualType) &&
+        get_width(actualType) < mantissa_width)
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < mantissa_width)
+      return true;
+
+    // coerce real from smaller size
+    if (is_real_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
+
+    // coerce literal/param ints that are exactly representable
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (is_int_type(actualType) || is_uint_type(actualType)) {
+          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+              *paramNarrows = true;
+              return true;
+          }
+        }
+        if (is_real_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
+                                        get_exponent_width(formalType),
+                                        var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (is_complex_type(formalType)) {
+    int mantissa_width = get_mantissa_width(formalType);
+
+    // don't coerce bools to reals (per spec: "uninteded by programmer")
+
+    // coerce any integer type to maximum width complex
+    if ((is_int_type(actualType) || is_uint_type(actualType)) &&
+        get_width(formalType) >= 128)
+      return true;
+
+    // coerce integer types that are exactly representable
+    if (is_int_type(actualType) &&
+        get_width(actualType) < mantissa_width)
+      return true;
+    if (is_uint_type(actualType) &&
+        get_width(actualType) < mantissa_width)
+      return true;
+
+    // coerce real/imag from smaller size
+    if (is_real_type(actualType) &&
+        get_width(actualType) <= get_width(formalType)/2)
+      return true;
+    if (is_imag_type(actualType) &&
+        get_width(actualType) <= get_width(formalType)/2)
+      return true;
+
+    // coerce smaller complex types
+    if (is_complex_type(actualType) &&
+        (get_width(actualType) < get_width(formalType)))
+      return true;
+
+    // coerce literal/param complexes that are exactly representable
+    if (VarSymbol* var = toVarSymbol(actualSym)) {
+      if (var->immediate) {
+        if (is_int_type(actualType) || is_uint_type(actualType)) {
+          if (fits_in_mantissa(mantissa_width, var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+        if (is_real_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
+                                        get_exponent_width(formalType),
+                                        var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+        if (is_imag_type(actualType)) {
+          if (fits_in_mantissa_exponent(mantissa_width,
+                                        get_exponent_width(formalType),
+                                        var->immediate)) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+        if (is_complex_type(actualType)) {
+          bool rePartFits = fits_in_mantissa_exponent(mantissa_width,
+                                                      get_exponent_width(formalType),
+                                                      var->immediate,
+                                                      true);
+          bool imPartFits = fits_in_mantissa_exponent(mantissa_width,
+                                                      get_exponent_width(formalType),
+                                                      var->immediate,
+                                                      false);
+          if (rePartFits && imPartFits) {
+            *paramNarrows = true;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
 
   return false;
 }
@@ -1231,7 +1397,8 @@ bool canCoerceTuples(Type*     actualType,
       // Can we coerce without promotion?
       // If the types are the same, yes
       if (atFieldType != ftFieldType) {
-        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn, &prom, false);
+        ok = canDispatch(atFieldType, actualSym, ftFieldType, fn,
+                         &prom, NULL, false);
 
         // If we couldn't coerce or the coercion would promote, no
         if (!ok || prom)
@@ -1265,41 +1432,20 @@ bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
                FnSymbol* fn,
-               bool*     promotes) {
-  if (canParamCoerce(actualType, actualSym, formalType))
+               bool*     promotes,
+               bool*     paramNarrows) {
+  bool tmpParamNarrows = false;
+  if (canParamCoerce(actualType, actualSym, formalType, &tmpParamNarrows)) {
+    if (paramNarrows) *paramNarrows = tmpParamNarrows;
     return true;
-
-  if (is_real_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 64)
-      return true;
-    if (is_real_type(actualType) &&
-        get_width(actualType) < get_width(formalType))
-      return true;
-  }
-
-  if (is_complex_type(formalType)) {
-    if ((is_int_type(actualType) || is_uint_type(actualType))
-        && get_width(formalType) >= 128)
-      return true;
-
-    if (is_real_type(actualType) &&
-        (get_width(actualType) <= get_width(formalType)/2))
-      return true;
-
-    if (is_imag_type(actualType) &&
-        (get_width(actualType) <= get_width(formalType)/2))
-      return true;
-
-    if (is_complex_type(actualType) &&
-        (get_width(actualType) < get_width(formalType)))
-      return true;
   }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
 
-    return canDispatch(baseType, NULL, formalType, fn, promotes);
+    // sync can't store an array or a param, so no need to
+    // propagate promotes / paramNarrows
+    return canDispatch(baseType, NULL, formalType, fn);
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -1307,6 +1453,7 @@ bool canCoerce(Type*     actualType,
   }
 
   if (actualType->symbol->hasFlag(FLAG_REF))
+    // ref can't store a param, so no need to propagate paramNarrows
     return canDispatch(actualType->getValType(),
                        NULL,
                        // MPF: Should this be formalType->getValType() ?
@@ -1341,16 +1488,14 @@ static bool isGenericInstantiation(Type*     actualType,
                                    Type*     formalType,
                                    FnSymbol* fn);
 
-bool canDispatch(Type*     actualType,
-                 Symbol*   actualSym,
-                 Type*     formalType,
-                 FnSymbol* fn,
-                 bool*     promotes,
-                 bool      paramCoerce) {
-  if (promotes) {
-    *promotes = false;
-  }
-
+static
+bool doCanDispatch(Type*     actualType,
+                   Symbol*   actualSym,
+                   Type*     formalType,
+                   FnSymbol* fn,
+                   bool*     promotes,
+                   bool*     paramNarrows,
+                   bool      paramCoerce) {
   if (actualType == formalType) {
     return true;
   }
@@ -1380,18 +1525,18 @@ bool canDispatch(Type*     actualType,
   }
 
   if (paramCoerce == false &&
-      canCoerce(actualType, actualSym, formalType, fn, promotes) == true) {
+      canCoerce(actualType, actualSym, formalType, fn, promotes, paramNarrows) == true) {
     return true;
   }
 
   if (paramCoerce == true  &&
-      canParamCoerce(actualType, actualSym, formalType) == true) {
+      canParamCoerce(actualType, actualSym, formalType, paramNarrows) == true) {
     return true;
   }
 
   forv_Vec(Type, parent, actualType->dispatchParents) {
     if (parent                                              == formalType ||
-        canDispatch(parent, NULL, formalType, fn, promotes) == true) {
+        doCanDispatch(parent, NULL, formalType, fn, promotes, paramNarrows, paramCoerce) == true) {
       return true;
     }
   }
@@ -1399,16 +1544,37 @@ bool canDispatch(Type*     actualType,
   if (fn                              != NULL        &&
       fn->name                        != astrSequals &&
       actualType->scalarPromotionType != NULL        &&
-      canDispatch(actualType->scalarPromotionType, NULL, formalType, fn)) {
+      doCanDispatch(actualType->scalarPromotionType, NULL, formalType, fn,
+                    promotes, paramNarrows, false)) {
 
-    if (promotes) {
-      *promotes = true;
-    }
-
+    *promotes = true;
     return true;
   }
 
   return false;
+}
+
+bool canDispatch(Type*     actualType,
+                 Symbol*   actualSym,
+                 Type*     formalType,
+                 FnSymbol* fn,
+                 bool*     promotes,
+                 bool*     paramNarrows,
+                 bool      paramCoerce) {
+  bool tmpPromotes = false;
+  bool tmpParamNarrows = false;
+  bool ret = doCanDispatch(actualType, actualSym,
+                           formalType, fn,
+                           &tmpPromotes, &tmpParamNarrows,
+                           paramCoerce);
+
+  if (promotes)
+    *promotes = tmpPromotes;
+
+  if (paramNarrows)
+    *paramNarrows = tmpParamNarrows;
+
+  return ret;
 }
 
 static bool isGenericInstantiation(Type*     actualType,
@@ -1548,7 +1714,7 @@ isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2) {
 }
 
 
-static bool paramWorks(Symbol* actual, Type* formalType) {
+static Immediate* getImmediate(Symbol* actual) {
   Immediate* imm = NULL;
 
   if (VarSymbol* var = toVarSymbol(actual)) {
@@ -1558,79 +1724,186 @@ static bool paramWorks(Symbol* actual, Type* formalType) {
     ensureEnumTypeResolved(toEnumType(enumsym->type));
     imm = enumsym->getImmediate();
   }
-  if (imm) {
-    if (is_int_type(formalType)) {
-      return fits_in_int(get_width(formalType), imm);
-    }
-    if (is_uint_type(formalType)) {
-      return fits_in_uint(get_width(formalType), imm);
-    }
-    if (imm->const_kind == CONST_KIND_STRING) {
-      if (formalType == dtStringC && actual->type == dtString) {
-        return true;
-      }
-    }
+
+  return imm;
+}
+
+typedef enum {
+  NUMERIC_TYPE_BOOL,
+  NUMERIC_TYPE_ENUM,
+  NUMERIC_TYPE_INT_UINT,
+  NUMERIC_TYPE_REAL,
+  NUMERIC_TYPE_IMAG,
+  NUMERIC_TYPE_COMPLEX
+} numeric_type_t;
+
+static numeric_type_t classifyNumericType(Type* t)
+{
+  if (is_bool_type(t)) return NUMERIC_TYPE_BOOL;
+  if (is_enum_type(t)) return NUMERIC_TYPE_ENUM;
+  if (is_int_type(t)) return NUMERIC_TYPE_INT_UINT;
+  if (is_uint_type(t)) return NUMERIC_TYPE_INT_UINT;
+  if (is_real_type(t)) return NUMERIC_TYPE_REAL;
+  if (is_imag_type(t)) return NUMERIC_TYPE_IMAG;
+  if (is_complex_type(t)) return NUMERIC_TYPE_COMPLEX;
+  INT_ASSERT("Unhandled type in classifyNumericType");
+  return NUMERIC_TYPE_BOOL;
+}
+
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+static bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT])
+    return true;
+
+  return false;
+}
+
+// Returns 'true' if we should prefer passing actual to f1Type
+// over f2Type.
+// This method implements rules such as that a bool would prefer to
+// coerce to 'int' over 'int(8)'.
+static bool prefersCoercionToOtherNumericType(Type* actualType,
+                                              Type* f1Type,
+                                              Type* f2Type) {
+
+  INT_ASSERT(!actualType->symbol->hasFlag(FLAG_REF));
+
+  if (actualType != f1Type && actualType != f2Type) {
+    // Is there any preference among coercions of the built-in type?
+    // E.g., would we rather convert 'false' to :int or to :uint(8) ?
+
+    numeric_type_t aT = classifyNumericType(actualType);
+    numeric_type_t f1T = classifyNumericType(f1Type);
+    numeric_type_t f2T = classifyNumericType(f2Type);
+
+    bool aBoolEnum = (aT == NUMERIC_TYPE_BOOL || aT == NUMERIC_TYPE_ENUM);
+
+    // Prefer e.g. bool(w1) passed to bool(w2) over passing to int (say)
+    // Prefer uint(8) passed to uint(16) over passing to a real
+    if (aT == f1T && aT != f2T)
+      return true;
+    // Prefer bool/enum cast to int over uint
+    if (aBoolEnum && is_int_type(f1Type) && is_uint_type(f2Type))
+      return true;
+    // Prefer bool/enum cast to default-sized int/uint over another
+    // size of int/uint
+    if (aBoolEnum &&
+        (f1Type == dtInt[INT_SIZE_DEFAULT] ||
+         f1Type == dtUInt[INT_SIZE_DEFAULT]) &&
+        f2T == NUMERIC_TYPE_INT_UINT &&
+        !(f2Type == dtInt[INT_SIZE_DEFAULT] ||
+          f2Type == dtUInt[INT_SIZE_DEFAULT]))
+      return true;
+    // Prefer bool/enum/int/uint cast to a default-sized real over another
+    // size of real or complex.
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        f1Type == dtReal[FLOAT_SIZE_DEFAULT] &&
+        (f2T == NUMERIC_TYPE_REAL || f2T == NUMERIC_TYPE_COMPLEX) &&
+        f2Type != dtReal[FLOAT_SIZE_DEFAULT])
+      return true;
+    // Prefer bool/enum/int/uint cast to a default-sized complex over another
+    // size of complex.
+    if ((aBoolEnum || aT == NUMERIC_TYPE_INT_UINT) &&
+        f1Type == dtComplex[COMPLEX_SIZE_DEFAULT] &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        f2Type != dtComplex[COMPLEX_SIZE_DEFAULT])
+      return true;
+    // Prefer real/imag cast to a same-sized complex over another size of
+    // complex.
+    if ((aT == NUMERIC_TYPE_REAL || aT == NUMERIC_TYPE_IMAG) &&
+        f1T == NUMERIC_TYPE_COMPLEX &&
+        f2T == NUMERIC_TYPE_COMPLEX &&
+        get_width(actualType)*2 == get_width(f1Type) &&
+        get_width(actualType)*2 != get_width(f2Type))
+      return true;
   }
 
   return false;
 }
 
+static bool fits_in_bits_no_sign(int width, int64_t i) {
+  // is it between -2**width .. 2**width, inclusive?
+  int64_t p = 1;
+  p <<= width; // now p is 2**width
 
-static bool considerParamMatches(Type* actualType,
-                                 Type* arg1Type,
-                                 Type* arg2Type) {
-  /* BLC: Seems weird to have to add this; could just add it in the enum
-     case if enums have to be special-cased here.  Otherwise, how are the
-     int cases handled later...? */
-  if (actualType->symbol->hasFlag(FLAG_REF)) {
-    actualType = actualType->getValType();
-  }
+  return -p <= i && i <= p;
+}
 
-  if (actualType == arg1Type && actualType != arg2Type) {
-    return true;
-  }
+static bool fits_in_twos_complement(int width, int64_t i) {
+  // would it fit in a width-bit 2's complement representation?
 
-  // If we don't have an exact match in the previous line, let's see if
-  // we have a bool(w1) passed to bool(w2) or non-bool case;  This is
-  // based on the enum case developed in r20208
-  if (is_bool_type(actualType) &&
-      is_bool_type(arg1Type)   &&
-      !is_bool_type(arg2Type)) {
-    return true;
-  }
+  INT_ASSERT(width < 64);
 
-  if (actualType != arg1Type && actualType != arg2Type) {
-    // Otherwise, have bool cast to default-sized integer over a smaller size
-    if (is_bool_type(actualType)) {
-      return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
-                                  arg1Type,
-                                  arg2Type);
-    }
+  int64_t max_pos = 1;
+  max_pos <<= width-1;
+  max_pos--;
 
-    if (is_enum_type(actualType)) {
-      return considerParamMatches(dtInt[INT_SIZE_DEFAULT],
-                                  arg1Type,
-                                  arg2Type);
-    }
+  int64_t min_neg = 1+max_pos;
+  return -min_neg <= i && i <= max_pos;
+}
 
-    if (isSyncType(actualType)) {
-      return considerParamMatches(actualType->getField("valType")->type,
-                                  arg1Type,
-                                  arg2Type);
-    }
+// Does the integer in imm fit in a floating point format with 'width'
+// bits of mantissa?
+static bool fits_in_mantissa(int width, Immediate* imm) {
+  // is it between -2**width .. 2**width, inclusive?
 
-    if (isSingleType(actualType)) {
-      return considerParamMatches(actualType->getField("valType")->type,
-                                  arg1Type,
-                                  arg2Type);
-    }
+  if (imm->const_kind == NUM_KIND_INT && imm->num_index == INT_SIZE_DEFAULT) {
+    int64_t i = imm->int_value();
+    return fits_in_bits_no_sign(width, i);
   }
 
   return false;
 }
 
+static bool fits_in_mantissa_exponent(int mantissa_width,
+                                      int exponent_width,
+                                      Immediate* imm,
+                                      bool realPart) {
+  double v = 0.0;
 
+  if (imm->const_kind == NUM_KIND_REAL ||
+      imm->const_kind == NUM_KIND_IMAG) {
+    if (imm->num_index == FLOAT_SIZE_32)
+      v = imm->v_float32;
+    else if(imm->num_index == FLOAT_SIZE_64)
+      v = imm->v_float64;
+    else
+      INT_ASSERT("unsupported real/imag size");
+  } else if (imm->const_kind == NUM_KIND_COMPLEX) {
+    if (imm->num_index == COMPLEX_SIZE_64) {
+      if (realPart)
+        v = imm->v_complex64.r;
+      else
+        v = imm->v_complex64.i;
+    } else if (imm->num_index == COMPLEX_SIZE_128) {
+      if (realPart)
+        v = imm->v_complex128.r;
+      else
+        v = imm->v_complex128.i;
+    } else
+      INT_ASSERT("unsupported complex size");
+  } else
+    INT_ASSERT("unsupported number kind");
 
+  double frac = 0.0;
+  int exp = 0;
+
+  frac = frexp(v, &exp);
+
+  int64_t intpart = 2*frac;
+
+  if (fits_in_bits_no_sign(mantissa_width, intpart) &&
+      fits_in_twos_complement(exponent_width, exp))
+    return true;
+
+  return false;
+}
 
 bool
 explainCallMatch(CallExpr* call) {
@@ -2676,6 +2949,10 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     }
   }
 
+  if (developer == true) {
+    USR_PRINT(call, "unresolved call had id %i", call->id);
+  }
+
   USR_STOP();
 }
 
@@ -3121,9 +3398,7 @@ static bool populateForwardingMethods(CallInfo& info) {
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
 
-      // Mark it as generic if `this` argument is generic
-      if (thisType->symbol->hasFlag(FLAG_GENERIC))
-        fn->addFlag(FLAG_GENERIC);
+      // see below, after arguments added, for adjustment to FLAG_GENERIC
 
       fn->addFlag(FLAG_LAST_RESORT);
 
@@ -3185,6 +3460,13 @@ static bool populateForwardingMethods(CallInfo& info) {
 
         i++;
       }
+
+      // Adjust whether or not fn is generic:
+      //  - it should be marked it as generic if `this` argument is generic
+      //  - it should not be marked generic if all arguments are concrete
+      //    (including if the arguments represent generic types with defaults)
+      fn->removeFlag(FLAG_GENERIC);
+      fn->tagIfGeneric();
 
       // copy the where clause
       if (method->where != NULL) {
@@ -3392,13 +3674,12 @@ static int disambiguateByMatch(CallInfo&                  info,
 
     total = nRef + nConstRef + nValue + nOther;
 
-    // 0 matches -> return now, not a ref pair.
-    if (total == 0) {
+    // 0 or 1 matches -> return now, not a ref pair.
+    if (total <= 1) {
       retval = 0;
 
-    // 1 match   -> It should not be possible to get here
-    } else if (total == 1) {
-      INT_ASSERT(false);
+      // 1 match is possible with best==NULL in cases
+      // where the 'more specific' relation is not transitive.
 
     } else if (nOther > 0) {
       ambiguous.clear();
@@ -3623,48 +3904,65 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 
   if (DS.fn1Promotes != DS.fn2Promotes) {
-    EXPLAIN("\nP: Fn %d does not require argument promotion; Fn %d does\n",
-                                DS.fn1Promotes ? j : i,
-                                DS.fn1Promotes ? i : j);
+    EXPLAIN("\nP: only one of the functions requires argument promotion\n");
 
     // Prefer the version that did not promote
     prefer1 = !DS.fn1Promotes;
     prefer2 = !DS.fn2Promotes;
 
   } else if (DS.fn1MoreSpecific != DS.fn2MoreSpecific) {
+    EXPLAIN("\nP1: only one more specific argument mapping\n");
+
     prefer1 = DS.fn1MoreSpecific;
     prefer2 = DS.fn2MoreSpecific;
 
   } else {
     // If the decision hasn't been made based on the argument mappings...
     if (isMoreVisible(DC.scope, candidate1->fn, candidate2->fn)) {
-      EXPLAIN("\nQ: Fn %d is more specific\n", i);
+      EXPLAIN("\nQ: preferring more visible function\n");
       prefer1 = true;
 
     } else if (isMoreVisible(DC.scope, candidate2->fn, candidate1->fn)) {
-      EXPLAIN("\nR: Fn %d is more specific\n", j);
+      EXPLAIN("\nR: preferring more visible function\n");
       prefer2 = true;
 
-    } else if (DS.paramPrefers == 1) {
-      EXPLAIN("\nS: Fn %d is more specific\n", i);
-      prefer1 = true;
+    } else if (DS.fn1WeakPreferred != DS.fn2WeakPreferred) {
+      EXPLAIN("\nS: preferring based on weak preference\n");
+      prefer1 = DS.fn1WeakPreferred;
+      prefer2 = DS.fn2WeakPreferred;
 
-    } else if (DS.paramPrefers == 2) {
-      EXPLAIN("\nT: Fn %d is more specific\n", j);
-      prefer2 = true;
+    } else if (DS.fn1WeakerPreferred != DS.fn2WeakerPreferred) {
+      EXPLAIN("\nS: preferring based on weaker preference\n");
+      prefer1 = DS.fn1WeakerPreferred;
+      prefer2 = DS.fn2WeakerPreferred;
 
+    } else if (DS.fn1WeakestPreferred != DS.fn2WeakestPreferred) {
+      EXPLAIN("\nS: preferring based on weakest preference\n");
+      prefer1 = DS.fn1WeakestPreferred;
+      prefer2 = DS.fn2WeakestPreferred;
+
+      /* A note about weak-prefers. Why are there 3 levels?
+
+         Something like 'param x:int(16) = 5' should be able to coerce to any
+         integral type. Meanwhile, 'param y = 5' should also be able to coerce
+         to any integral type. Now imagine we are resolving 'x+y'.  We
+         want it to resolve to the 'int(16)' version because 'x' has a type
+         specified, but 'y' is a default type. Before the 3 weak levels, this
+         version was chosen simply because non-default-sized ints didn't allow
+         param conversion.
+
+       */
     } else if (!ignoreWhere) {
       bool fn1where = candidate1->fn->where != NULL &&
                       !candidate1->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
       bool fn2where = candidate2->fn->where != NULL &&
                       !candidate2->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
-      if (fn1where && !fn2where) {
-        EXPLAIN("\nU: Fn %d is more specific\n", i);
-        prefer1 = true;
 
-      } else if (!fn1where && fn2where) {
-        EXPLAIN("\nV: Fn %d is more specific\n", j);
-        prefer2 = true;
+      if (fn1where != fn2where) {
+        EXPLAIN("\nU: preferring function with where clause\n");
+
+        prefer1 = fn1where;
+        prefer2 = fn2where;
       }
     }
   }
@@ -3723,171 +4021,221 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   bool  formal1Promotes = false;
   bool  formal2Promotes = false;
+  bool  formal1Narrows = false;
+  bool  formal2Narrows = false;
 
-  EXPLAIN("Actual's type: %s\n", toString(actualType));
+  Type* actualScalarType = actualType;
 
-  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes);
+  bool f1Param = formal1->hasFlag(FLAG_INSTANTIATED_PARAM);
+  bool f2Param = formal2->hasFlag(FLAG_INSTANTIATED_PARAM);
+
+  bool actualParam = false;
+  bool paramWithDefaultSize = false;
+
+  // Don't enable param/ weak preferences for non-default sized param values.
+  // If somebody bothered to type the param, they probably want it to stay that
+  // way. This is a strategy to resolve ambiguity with e.g.
+  //  +(param x:int(32), param y:int(32)
+  //  +(param x:int(64), param y:int(64)
+  // called with
+  //  param x:int(32), param y:int(64)
+  if (getImmediate(actual) != NULL) {
+    actualParam = true;
+    paramWithDefaultSize = isNumericParamDefaultType(actualType);
+  }
+
+  EXPLAIN("Actual's type: %s", toString(actualType));
+  if (actualParam)
+    EXPLAIN(" (param)");
+  if (paramWithDefaultSize)
+    EXPLAIN(" (default)");
+  EXPLAIN("\n");
+
+  canDispatch(actualType, actual, f1Type, fn1, &formal1Promotes, &formal1Narrows);
 
   DS.fn1Promotes |= formal1Promotes;
 
-  EXPLAIN("Formal 1's type: %s\n", toString(f1Type));
+  EXPLAIN("Formal 1's type: %s", toString(f1Type));
+  if (formal1Promotes)
+    EXPLAIN(" (promotes)");
+  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (formal1Narrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
 
-  if (formal1Promotes) {
-    EXPLAIN("Actual requires promotion to match formal 1\n");
-
-  } else {
-    EXPLAIN("Actual DOES NOT require promotion to match formal 1\n");
+  if (actualType != f1Type) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal 1\n");
+    } else {
+      EXPLAIN("Actual requires coercion to match formal 1\n");
+    }
   }
 
-  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("Formal 1 is an instantiated param.\n");
-
-  } else {
-    EXPLAIN("Formal 1 is NOT an instantiated param.\n");
-  }
-
-  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes);
+  canDispatch(actualType, actual, f2Type, fn1, &formal2Promotes, &formal2Narrows);
 
   DS.fn2Promotes |= formal2Promotes;
 
-  EXPLAIN("Formal 2's type: %s\n", toString(f2Type));
+  EXPLAIN("Formal 2's type: %s", toString(f2Type));
+  if (formal2Promotes)
+    EXPLAIN(" (promotes)");
+  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (formal2Narrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
 
-  if (formal2Promotes) {
-    EXPLAIN("Actual requires promotion to match formal 2\n");
-  } else {
-    EXPLAIN("Actual DOES NOT require promotion to match formal 2\n");
+  // Adjust number of coercions for f2
+  if (actualType != f2Type) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal 2\n");
+    } else {
+      EXPLAIN("Actual requires coercion to match formal 2\n");
+    }
   }
 
-  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("Formal 2 is an instantiated param.\n");
-  } else {
-    EXPLAIN("Formal 2 is NOT an instantiated param.\n");
+  // Figure out scalar type for candidate matching
+  if ((formal1Promotes || formal2Promotes) &&
+      actualType->scalarPromotionType != NULL) {
+    actualScalarType = actualType->scalarPromotionType->getValType();
   }
 
-  if (f1Type == f2Type &&
-      formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-      !formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("A: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+  if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
+    actualScalarType = actualScalarType->getField("valType")->getValType();
+  }
 
-  } else if (f1Type == f2Type &&
-             !formal1->hasFlag(FLAG_INSTANTIATED_PARAM) &&
-             formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-    EXPLAIN("B: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+  const char* reason = "";
+  typedef enum {
+    NONE,
+    WEAKEST,
+    WEAKER,
+    WEAK,
+    STRONG
+  } arg_preference_t;
+
+  arg_preference_t prefer1 = NONE;
+  arg_preference_t prefer2 = NONE;
+
+  if (f1Type == f2Type && f1Param && !f2Param) {
+    prefer1 = STRONG; reason = "same type, param vs not";
+
+  } else if (f1Type == f2Type && !f1Param && f2Param) {
+    prefer2 = STRONG; reason = "same type, param vs not";
 
   } else if (!formal1Promotes && formal2Promotes) {
-    EXPLAIN("C: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "no promotion vs promotes";
 
   } else if (formal1Promotes && !formal2Promotes) {
-    EXPLAIN("D: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "no promotion vs promotes";
 
   } else if (f1Type == f2Type           &&
              !formal1->instantiatedFrom &&
              formal2->instantiatedFrom) {
-    EXPLAIN("E: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "concrete vs generic";
 
   } else if (f1Type == f2Type &&
              formal1->instantiatedFrom &&
              !formal2->instantiatedFrom) {
-    EXPLAIN("F: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "concrete vs generic";
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    EXPLAIN("G: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "generic any vs generic";
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    EXPLAIN("H: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "generic any vs generic";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    EXPLAIN("G1: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    prefer1 = STRONG; reason = "partially generic vs generic";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
              !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
              formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    EXPLAIN("G2: Fn %d is more specific\n", i);
-    DS.fn2MoreSpecific = true;
+    prefer2 = STRONG; reason = "partially generic vs generic";
 
-  } else if (considerParamMatches(actualType, f1Type, f2Type)) {
-    EXPLAIN("In first param case\n");
+  } else if (f1Param != f2Param && f1Param) {
+    prefer1 = WEAK; reason = "param vs not";
 
-    // The actual matches formal1's type, but not formal2's
-    if (paramWorks(actual, f2Type)) {
-      // but the actual is a param and works for formal2
-      if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but matches
-        // the first lightly better if we had to decide
-        DS.updateParamPrefers(1, "formal1", DC);
+  } else if (f1Param != f2Param && f2Param) {
+    prefer2 = WEAK; reason = "param vs not";
 
-      } else if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        DS.updateParamPrefers(2, "formal2", DC);
+  } else if (!paramWithDefaultSize && formal2Narrows && !formal1Narrows) {
+    prefer1 = WEAK; reason = "no narrows vs narrows";
 
-      } else {
-        // neither is a param, but formal1 is an exact type
-        // match, so prefer that one
-        DS.updateParamPrefers(1, "formal1", DC);
-      }
+  } else if (!paramWithDefaultSize && formal1Narrows && !formal2Narrows) {
+    prefer2 = WEAK; reason = "no narrows vs narrows";
 
-    } else {
-      EXPLAIN("I: Fn %d is more specific\n", i);
-      DS.fn1MoreSpecific = true;
-    }
+  } else if (!actualParam && actualType == f1Type && actualType != f2Type) {
+    prefer1 = STRONG; reason = "actual type vs not";
 
-  } else if (considerParamMatches(actualType, f2Type, f1Type)) {
-    EXPLAIN("In second param case\n");
+  } else if (!actualParam && actualType == f2Type && actualType != f1Type) {
+    prefer2 = STRONG; reason = "actual type vs not";
 
-    // The actual matches formal2's type, but not formal1's
-    if (paramWorks(actual, f1Type)) {
-      // but the actual is a param and works for formal1
-      if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // the param works equally well for both, but matches
-        // the second slightly better if we had to decide
-        DS.updateParamPrefers(2, "formal2", DC);
+  } else if (actualScalarType == f1Type && actualScalarType != f2Type) {
+    if (paramWithDefaultSize)
+      prefer1 = WEAKEST;
+    else if (actualParam)
+      prefer1 = WEAKER;
+    else
+      prefer1 = STRONG;
 
-      } else if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        DS.updateParamPrefers(1, "formal1", DC);
+    reason = "scalar type vs not";
 
-      } else {
-        // neither is a param, but formal1 is an exact type match,
-        // so prefer that one
-        DS.updateParamPrefers(2, "formal2", DC);
-      }
+  } else if (actualScalarType == f2Type && actualScalarType != f1Type) {
+    if (paramWithDefaultSize)
+      prefer2 = WEAKEST;
+    else if (actualParam)
+      prefer2 = WEAKER;
+    else
+      prefer2 = STRONG;
 
-    } else {
-      EXPLAIN("J: Fn %d is more specific\n", j);
-      DS.fn2MoreSpecific = true;
-    }
+    reason = "scalar type vs not";
+
+  } else if (prefersCoercionToOtherNumericType(actualScalarType, f1Type, f2Type)) {
+    prefer1 = WEAKER; reason = "preferred coercion to other";
+
+  } else if (prefersCoercionToOtherNumericType(actualScalarType, f2Type, f1Type)) {
+    prefer2 = WEAKER; reason = "preferred coercion to other";
 
   } else if (moreSpecific(fn1, f1Type, f2Type) && f2Type != f1Type) {
-    EXPLAIN("K: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    prefer1 = actualParam ? WEAKEST : STRONG;
+    reason = "can dispatch";
 
   } else if (moreSpecific(fn1, f2Type, f1Type) && f2Type != f1Type) {
-    EXPLAIN("L: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+    prefer2 = actualParam ? WEAKEST : STRONG;
+    reason = "can dispatch";
 
   } else if (is_int_type(f1Type) && is_uint_type(f2Type)) {
-    EXPLAIN("M: Fn %d is more specific\n", i);
-    DS.fn1MoreSpecific = true;
+    // This int/uint rule supports choosing between an 'int' and 'uint'
+    // overload when passed say a uint(32).
+    prefer1 = actualParam ? WEAKEST : STRONG;
+    reason = "int vs uint";
 
   } else if (is_int_type(f2Type) && is_uint_type(f1Type)) {
-    EXPLAIN("N: Fn %d is more specific\n", j);
-    DS.fn2MoreSpecific = true;
+    prefer2 = actualParam ? WEAKEST : STRONG;
+    reason = "int vs uint";
 
-  } else {
-    EXPLAIN("O: no information gained from argument\n");
+  }
+
+  if (prefer1 != NONE) {
+    const char* level = "";
+    if (prefer1 == STRONG)  { DS.fn1MoreSpecific = true;     level = "strong"; }
+    if (prefer1 == WEAK)    { DS.fn1WeakPreferred = true;    level = "weak"; }
+    if (prefer1 == WEAKER)  { DS.fn1WeakerPreferred = true;  level = "weaker"; }
+    if (prefer1 == WEAKEST) { DS.fn1WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, i, level);
+  } else if (prefer2 != NONE) {
+    const char* level = "";
+    if (prefer2 == STRONG)  { DS.fn2MoreSpecific = true;     level = "strong"; }
+    if (prefer2 == WEAK)    { DS.fn2WeakPreferred = true;    level = "weak"; }
+    if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
+    if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
+    EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
   }
 }
 
@@ -5160,9 +5508,10 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
         // (since that is what the primitive returns as its type).
         Type* coerceType = coerceSym->type;
         Type* rhsType    = rhs->typeInfo();
+        bool tmpParamNarrows = false;
 
         if (coerceType                                     == rhsType ||
-            canParamCoerce(coerceType, coerceSym, rhsType) == true)   {
+            canParamCoerce(coerceType, coerceSym, rhsType, &tmpParamNarrows) == true)   {
           SymExpr* lhs = toSymExpr(call->get(1));
 
           call->get(1)->replace(lhs->copy());
@@ -6024,14 +6373,63 @@ static Expr* resolveTypeOrParamExpr(Expr* expr);
 void ensureEnumTypeResolved(EnumType* etype) {
   if (etype->integerType == NULL) {
     // Make sure to resolve all enum types.
+
+    // Set it to int so we can handle enum constants
+    // referring to previous enum constants.
+    // This might be temporarily incorrect, but it's good enough
+    // for resolving the enum constant initializers.
+    // We'll set finally and correctly in the call to sizeAndNormalize()
+    // below.
+    etype->integerType = dtInt[INT_SIZE_DEFAULT];
+
+    int64_t v = 1;
+    uint64_t uv = 1;
+
     for_enums(def, etype) {
       if (def->init != NULL) {
         Expr* enumTypeExpr = resolveTypeOrParamExpr(def->init);
 
-        if (enumTypeExpr->typeInfo() == dtUnknown) {
+        Type* t = enumTypeExpr->typeInfo();
+
+        if (t == dtUnknown) {
           INT_FATAL(def->init, "Unable to resolve enumerator type expression");
         }
+        if (!is_int_type(t) && !is_uint_type(t)) {
+          USR_FATAL(def,
+                    "enumerator '%s' is not an integer param value",
+                    def->sym->name);
+        }
+
+        // Replace def->init if it's not the same as enumTypeExpr
+        if (enumTypeExpr != def->init) {
+          enumTypeExpr->remove();
+          def->init->replace(enumTypeExpr);
+        }
+
+        // At this point, def->init should be an integer symbol.
+        if( get_int( def->init, &v ) ) {
+          if( v >= 0 ) uv = v;
+          else uv = 1;
+        } else if( get_uint( def->init, &uv ) ) {
+          v = uv;
+        }
+      } else {
+        // Use the u/v value we had from adding 1 to the previous one
+        if( v >= INT32_MIN && v <= INT32_MAX )
+          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_32));
+        else if (uv <= UINT32_MAX)
+          def->init = new SymExpr(new_IntSymbol(v, INT_SIZE_64));
+        else
+          def->init = new SymExpr(new_UIntSymbol(uv, INT_SIZE_64));
+
+        parent_insert_help(def, def->init);
       }
+      if (uv > INT64_MAX) {
+        // Switch to uint(64) as the current enum type.
+        etype->integerType = dtUInt[INT_SIZE_DEFAULT];
+      }
+      v++;
+      uv++;
     }
 
     // Now try computing the enum size...
@@ -9702,19 +10100,10 @@ DisambiguationState::DisambiguationState() {
   fn1Promotes     = false;
   fn2Promotes     = false;
 
-  paramPrefers    = 0;
-}
-
-void DisambiguationState::updateParamPrefers(
-                                     int                          preference,
-                                     const char*                  argStr,
-                                     const DisambiguationContext& DC) {
-  if (paramPrefers == 0 || paramPrefers == preference) {
-    paramPrefers = preference;
-    EXPLAIN("param prefers %s\n", argStr);
-
-  } else {
-    paramPrefers = -1;
-    EXPLAIN("param prefers differing things\n");
-  }
+  fn1WeakPreferred= false;
+  fn2WeakPreferred= false;
+  fn1WeakerPreferred= false;
+  fn2WeakerPreferred= false;
+  fn1WeakestPreferred= false;
+  fn2WeakestPreferred= false;
 }

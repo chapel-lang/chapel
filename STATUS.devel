@@ -100,13 +100,6 @@ General (see also portability section at the bottom of this file)
 
 Types, Params, Variables, and Consts
 ------------------------------------
-- Enum types always represented using the smallest integer type
-  available, even if the enum values require a larger integer.
-  # functions/bradc/resolution/badEnumDispatch.future
-- Enum member initializations cannot depend on previous enum members
-  # types/enum/nspark/dependentElements.future
-- Compile time integer operations on enum values may result in non-param values
-  # users/kreider/bug_enum.future
 - The default value for the locale type is incorrect.
   # types/locale/bradc/defaultLocaleVal.future
   # multilocale/sungeun/locale_default.future
@@ -153,20 +146,6 @@ Types, Params, Variables, and Consts
 
 Conversions
 -----------
-- Implicit conversions of enums to uint not supported.
-  # types/enum/vass/enum-to-uint-1.future
-- Casts and relational operations involving enum constants may fail to
-  compile or produce incorrect answers.
-  # types/enum/sungeun/cast_enum_weird_2.future
-  # types/enum/sungeun/cast_expr_init_1.future
-  # types/enum/sungeun/cast_expr_init_2.future
-  # types/enum/sungeun/cast_neg_start_1.future
-  # types/enum/sungeun/cast_neg_start_2.future
-  # types/enum/sungeun/cast_neg_start_3.future
-  # types/enum/sungeun/cast_neg_start_oor_1.future
-  # types/enum/sungeun/cast_neg_start_oor_2.future
-  # functions/diten/param_enum_to_int.future
-  # functions/diten/param_enum_to_string.future
 - Casts to non-type variables do not result in an error at compile time.
   # expressions/vass/cast-to-non-type-1.future
   # expressions/vass/cast-to-non-type-2.future

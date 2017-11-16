@@ -780,6 +780,11 @@ static bool needToAddCoercion(Type*      actualType,
              (getIntent(formal) & INTENT_FLAG_REF) != 0) {
     retval = false;
 
+  // If actual and formal are type symbols, no coercion is necessary
+  } else if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
+             formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+    retval = false;
+
   } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
     retval =  true;
 

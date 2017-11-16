@@ -17,18 +17,7 @@
  * limitations under the License.
  */
 
-#include "resolution.h"
-
-#include "astutil.h"
-#include "driver.h"
-#include "ForallStmt.h"
-#include "ForLoop.h"
-#include "passes.h"
-#include "resolveIntents.h"
-#include "stlUtil.h"
-#include "stringutil.h"
-#include "visibleFunctions.h"
-#include <utility>
+#include "implementForallIntents.h"
 
 //
 //-----------------------------------------------------------------------------
@@ -822,10 +811,10 @@ void implementForallIntents1(DefExpr* defChplIter)
 // Todo: for a given leader, we could also cache specializations
 // for each set of outer variables that we have seen.
 // Like SymbolMapCache?
-static Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
+Map<FnSymbol*,FnSymbol*> pristineLeaderIterators;
 
 
-static FnSymbol* copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved) {
+FnSymbol* copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved) {
   SET_LINENO(origFn->defPoint);
   FnSymbol* copyFn = origFn->copy();
   copyFn->addFlag(FLAG_INVISIBLE_FN);
@@ -950,7 +939,7 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
 //
 // Return this new symbol.
 //
-static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
+VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   SymExpr* orse = toSymExpr(origRetExpr);
   INT_ASSERT(orse);
   Symbol* origRetSym = orse->symbol();
@@ -982,7 +971,7 @@ static VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
 //
 // Verify that 'origRet' is not used, and remove it from the tree.
 //
-static void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
+void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
   // parentFn and this assert are just sanity checking for the caller
   INT_ASSERT(origRet->defPoint->parentSymbol == parentFn);
 
@@ -1055,10 +1044,6 @@ bool isReduceOp(Type* type) {
     if (isReduceOp(t))
       return true;
   return false;
-}
-
-static const char* astrArg(int ix, const char* add1) {
-  return astr("x", istr(ix+1), "_", add1);
 }
 
 //
@@ -1214,7 +1199,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
 // within PWL.  We *need* to bypass the machinery related to handling the
 // loop index - otherwise an extraneous new x1_svarRef will be generated.
 //
-static void addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
+void addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
                                                      int numExtraArgs,
                                                      Symbol* extraFormals[])
 {
@@ -1233,7 +1218,7 @@ static void addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
 // Is 'call' invoking a parallel iterator?
 // Since the call is not resolved, we can't use isLeaderIterator(),
 // and this implementation is a heuristic.
-static bool callingParallelIterator(CallExpr* call) {
+bool callingParallelIterator(CallExpr* call) {
   // Check 'call' for an actual argument that's a parallel tag.
   // Todo: handle the case where the actual's value is not known yet.
   for_actuals(actual, call) {
@@ -1432,7 +1417,7 @@ static void propagateThroughYield(CallExpr* rcall,
         INT_ASSERT(newOrigRet != origIOI);
 
         // Extract and yield the shadow variable reference.
-        Symbol* rvar = new VarSymbol(astrArg(ix, "eflopiRvar"));
+        Symbol* rvar = new VarSymbol(intentArgName(ix, "eflopiRvar"));
         rvar->addFlag(FLAG_REF_VAR);
         eflopiIdx++;
         insertExtractFromYieldAtHead(eflopiLoop, eflopiIdx, rvar, origIOI);
@@ -1451,7 +1436,7 @@ static void propagateThroughYield(CallExpr* rcall,
           // Todo: skip these additions if the current 'rcall' yield
           // is going to be compiled away, e.g. if it is
           // within a param conditional on a not-taken branch.
-          svar = new VarSymbol(astrArg(ix, "shadowVarReduc"));
+          svar = new VarSymbol(intentArgName(ix, "shadowVarReduc"));
           svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
           VarSymbol* stemp  = newTemp("svrTmp");
           redRef1->insertBefore(new DefExpr(svar));
@@ -1469,7 +1454,7 @@ static void propagateThroughYield(CallExpr* rcall,
         // the corresponding shadow variable instead.
         Symbol* ssvar = createShadowVarIfNeeded(NULL, parentOp, svar, rcall);
         // todo: have a single 'sref' per 'svar', not one for each yield
-        VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
+        VarSymbol* sref = new VarSymbol(intentArgName(ix, "svarRef"));
         rcall->insertBefore(new DefExpr(sref));
         rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, ssvar);
         tupleComponent = sref;
@@ -1541,11 +1526,11 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     // Use named args to disambiguate from the already-existing iterator args,
     // just in case. This necessitates toNamedExpr() in handleCaptureArgs().
     const char* eName   =
-      isReduce ? astrArg(ix, "reduceParent") :
+      isReduce ? intentArgName(ix, "reduceParent") :
         nested ? eActual->name :
           strcmp(eActual->name, "_tuple_expand_tmp_") ?
-            astrArg(ix, eActual->name) // uniquify arg name
-            : astrArg(ix, "tet");
+            intentArgName(ix, eActual->name) // uniquify arg name
+            : intentArgName(ix, "tet");
 
     ArgSymbol*  eFormal = new ArgSymbol(INTENT_BLANK, eName, eActual->type);
 
@@ -1562,8 +1547,8 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
       INT_ASSERT(isTaskFun(fn));
       setupRedRefs(fn, nested, redRef1, redRef2);
       ArgSymbol* parentOp = eFormal; // the reduceParent arg
-      VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
-      VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
+      VarSymbol* currOp   = new VarSymbol(intentArgName(ix, "reduceCurr"));
+      VarSymbol* svar     = new VarSymbol(intentArgName(ix, "shadowVar"));
       svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
       VarSymbol* stemp    = newTemp("svTmp");
       redRef1->insertBefore(new DefExpr(currOp));
@@ -1877,7 +1862,7 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 /////////////////////////////////////////////////////////////////////////////
 // ForallIntentTag <-> IntentTag
 
-static IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
+IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
   switch (tfi) {
     case TFI_DEFAULT:   return INTENT_BLANK;
     case TFI_CONST:     return INTENT_CONST;
@@ -2012,7 +1997,7 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
 }
 
 /////////////////////////////////////////////////////////////////////////////
-// markOuterVarsWithIntentsNew() and helpers
+// setup for a reduce intent
 //
 
 //
@@ -2116,9 +2101,13 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   return globalOp;
 }
 
-static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
+static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 {
-  Symbol* result = NULL;
+  if (svar->reduceGlobalOp != NULL)
+    // Already handled, ex. in tupcomForYieldInForall().
+    return;
+
+  Symbol* globalOp = NULL;
   Symbol* fiVarSym = svar->outerVarSym();
   Expr*   riSpec   = svar->reduceOpExpr();
   SET_LINENO(riSpec);
@@ -2127,7 +2116,7 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
     Symbol* riSym = riSE->symbol();
 
     if (TypeSymbol* riTypeSym = toTypeSymbol(riSym)) {
-      result = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, NULL);
+      globalOp = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, NULL);
 
     } else {
       INT_ASSERT(isLcnSymbol(riSym)); // what else can a globalOp be??
@@ -2137,7 +2126,7 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
       // The user will manage allocation and deallocation of 'riSym'.
       // So we only need to add a call generate().
       insertFinalGenerate(fs, fiVarSym, riSym);
-      result = riSym;
+      globalOp = riSym;
     }
 
   } else if (CallExpr* riSpecCall = toCallExpr(riSpec)) {
@@ -2151,24 +2140,14 @@ static Symbol* handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 
     riTypeSE->remove();
     Expr* eltTypeArg = riSpecCall->get(1)->remove();
-    result = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, eltTypeArg);
+    globalOp = setupRiGlobalOp(fs, fiVarSym, riSpec, riTypeSym, eltTypeArg);
 
   } else {
     // What else can this be?
     INT_FATAL(fs, "not implemented");
   }
 
-  return result;
-}
-
-// Mark the variables listed in 'with' clauses, if any, with tiMark markers.
-// Same as markOuterVarsWithIntents() in createTaskFunctions.cpp,
-// except different representation.
-static void markOuterVarsWithIntentsNew(ForallStmt* fs)
-{
-  for_shadow_vars(sv, temp, fs)
-    if (sv->isReduce())
-      sv->reduceGlobalOp = handleRISpec(fs, sv);
+  svar->reduceGlobalOp = globalOp;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2176,9 +2155,13 @@ static void markOuterVarsWithIntentsNew(ForallStmt* fs)
 static void getOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
                             BlockStmt* body)
 {
-  // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
-  findOuterVarsNew(fs, outer2shadow, body);
-  markOuterVarsWithIntentsNew(fs);
+  if (fs->needToHandleOuterVars())
+    // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
+    findOuterVarsNew(fs, outer2shadow, body);
+
+  for_shadow_vars(sv, temp, fs)
+    if (sv->isReduce())
+      handleRISpec(fs, sv);
 }
 
 // Append the new ShadowVarSymbols we accumulated to fs->intentVariables().
@@ -2186,8 +2169,6 @@ static void appendNewShadowVars(ForallStmt* fs, SymbolMap& outer2shadow) {
   form_Map(SymbolMapElem, elem, outer2shadow)
     fs->intentVariables().insertAtTail(new DefExpr(elem->value));
 }
-
-/////////////////////////////////////////////////////////////////////////////
 
 // Not to be invoked upon a reduce intent.
 // All our shadow variables are expected to be refs.
@@ -2213,32 +2194,38 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
   }
 }
 
-//
-// This does some processing of the shadow vars.
-// Todo: give it a better name.
-//
-static void createShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowVars)
+static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowVars)
 {
   // todo: prune right away, get rid of 'numShadowVars'
 
-  for_shadow_vars(svar, temp, fs)
-  {
-    Symbol* ovar = svar->outerVarSym();
-    svar->type = ovar->type->getRefType();
-    resolveSVarIntent(svar);
+  for_shadow_vars(svar, temp, fs) {
+    if (svar->isReduce())
+    {
+      Symbol* ovar = svar->outerVarSym();
+      if (ovar && ovar->hasFlag(FLAG_CONST))
+        USR_FATAL_CONT(fs,
+          "reduce intent is applied to a 'const' variable %s", ovar->name);
 
-    // If ovar is a reference, e.g. an index variable of
-    // a 'var' iterator, we do not want to force
-    // that ref type onto 'svar'. Otherwise the generated
-    // code will store into *svar without initializing svar
-    // first. Todo: what if ovar is a domain?
-    Type* valtype = ovar->type->getValType();
+      // The shadow variable will assume the reference from the leadIdx tuple.
+      svar->addFlag(FLAG_REF_VAR);
+      svar->qual = QUAL_REF;
+      svar->type = dtUnknown;
+    }
+    else
+    {
+      Symbol* ovar = svar->outerVarSym();
+      svar->type = ovar->type->getRefType();
+      resolveSVarIntent(svar);
 
-    bool       isReduce = svar->isReduce();
-    IntentTag  tiIntent = INTENT_BLANK; // not used for reduce intents
+      // If ovar is a reference, e.g. an index variable of
+      // a 'var' iterator, we do not want to force
+      // that ref type onto 'svar'. Otherwise the generated
+      // code will store into *svar without initializing svar
+      // first. Todo: what if ovar is a domain?
+      Type* valtype = ovar->type->getValType();
 
-    if (!isReduce) {
-      tiIntent = concreteIntent(argIntentForForallIntent(svar->intent), valtype);
+      IntentTag  tiIntent =
+        concreteIntent(argIntentForForallIntent(svar->intent), valtype);
 
       // See if we want to prune it.
       bool pruneit = false;
@@ -2263,19 +2250,9 @@ static void createShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowV
         svar->pruneit = true;
         continue; // for_shadow_vars
       }
-    }  // if !isReduce
 
-    if (isReduce) {
-      if (ovar->hasFlag(FLAG_CONST))
-        USR_FATAL_CONT(fs,
-          "reduce intent is applied to a 'const' variable %s", ovar->name);
-      // The shadow variable will assume the reference from the leadIdx tuple.
-      svar->addFlag(FLAG_REF_VAR);
-      svar->type = dtUnknown;
-    } else {
       setShadowVarFlagsNew(ovar, svar, tiIntent);
     }
-
     numShadowVars++;
   }
 }
@@ -2487,7 +2464,7 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   int numInitialVars = (fs->intentVariables()).length;
   appendNewShadowVars(fs, outer2shadow);
 
-  createShadowVarsNew(fs, forallBody1, numShadowVars); // updates numShadowVars
+  processShadowVarsNew(fs, forallBody1, numShadowVars); // updates numShadowVars
 
   if (fs->numIntentVars() == numShadowVars)
     needToReplace = (outer2shadow.n > 0);
@@ -2508,7 +2485,20 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////
+// top-level implementForallIntents2New
+
 static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);
+
+static void checkForNonIterator(CallExpr* parCall) {
+  FnSymbol* dest = parCall->resolvedFunction();
+  AggregateType* retType = toAggregateType(dest->retType);
+  if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
+    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
+    USR_STOP();
+  }
+}
 
 //
 // Performs both implementForallIntents1 and implementForallIntents2,
@@ -2519,424 +2509,22 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);
 void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
 {
   INT_ASSERT(parCall == fs->firstIteratedExpr());
+
   implementForallIntents1New(fs, parCall);
-  implementForallIntents2New(fs, parCall);
+
+  checkForNonIterator(parCall);
+
+  if (fs->numIntentVars() > 0)
+   implementForallIntents2New(fs, parCall);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 // implementForallIntents2New and helpers
 //
 
-// Handle a yield within propagateExtraLeaderArgs().
-static void propagateThroughYieldNew(ForallStmt* fs,
-                                  CallExpr* rcall,
-                                  FnSymbol* parentFn,
-                                  VarSymbol* retSym,
-                                  Symbol* extraActuals[],
-                                  Symbol* extraFormals[],
-                                  Symbol* shadowVarsRI[],
-                                  bool nested,
-                                  Expr*& redRef1,
-                                  Expr*& redRef2)
-{
-  // Make a tuple that includes the extra args.
-  Expr* origRetArg = rcall->get(1)->remove();
-  VarSymbol* newOrigRet = localizeYieldForExtendLeader(origRetArg, rcall);
-  CallExpr* buildTuple = new CallExpr("_build_tuple_always_allow_ref",
-                                      newOrigRet);
+// extendLeaderNew() is in implementForallIntents2.cpp
 
-  // Check for an "eflopi" (Enclosing For-Loop Over a Parallel Iterator).
-  // This is specific to a given yield.
-  // Todo: handle multiple yields in a single eflopi.
-  ForLoop*  eflopiLoop    = NULL;
-  CallExpr* eflopiCall    = NULL;
-  int       eflopiIdx     = 1;
-  CallExpr* eflopiHelper  = NULL;
-  int       ix            = -1;
-
-  // sets eflopiLoop and eflopiCall if appropriate:
-  eflopiFind(rcall, eflopiLoop, eflopiCall);
-
-  // add tuple components
-  for_shadow_vars(shadowvar, temp, fs) {
-    ++ix;
-    bool isReduce = shadowvar->isReduce();
-    Symbol* svar = shadowVarsRI[ix];
-    Symbol* tupleComponent;
-    if (isReduce) {
-
-      Symbol* parentOp = extraFormals[ix];
-      // not resolved yet: INT_ASSERT(isReduceOp(extraActuals[ix]->type));
-
-      // Todo: handle eflopi case when !isReduce.
-      if (eflopiCall) {
-        //
-        // Convert the eflopiLoop loop similarly to how a forall is handled:
-        //
-        // * pass parentOp/currOp to its eflopi's iterator
-        //    --> done earlier in propagateExtraLeaderArgs()
-        //        the same way as for non-eflopi reduce-intent args
-        //
-        // * propagate that parentOp/currOp within eflopi's iterator
-        //   and have it yield a tuple containing
-        //   the corresponding shadow var by reference
-        //    --> this is done by calling implementForallIntents2()
-        //        as caused by eflopiHelper, eflopiMap
-        //
-        // * detuple the value yielded by eflopi's iterator
-        //   into the original yielded value plus shadow variable(s)
-        //   for reduce intents
-        //    --> done below
-        //
-        // * yield the shadow variable as part of rcall's tuple
-        //    --> this is done via 'tupleComponent' as in non-eflopi case
-        //
-
-        // Detuple the value yielded by eflopi's parallel iterator
-        //
-        if (eflopiIdx == 1) {
-          // do only once for this yield
-          redirectToNewIOI(eflopiLoop);
-        }
-        Symbol* origIOI = eflopiLoop->indexGet()->symbol();
-        // If it fails, replace newOrigRet with newIOI in buildTuple.
-        INT_ASSERT(newOrigRet != origIOI);
-
-        // Extract and yield the shadow variable reference.
-        Symbol* rvar = new VarSymbol(astrArg(ix, "eflopiRvar"));
-        rvar->addFlag(FLAG_REF_VAR);
-        eflopiIdx++;
-        insertExtractFromYieldAtHead(eflopiLoop, eflopiIdx, rvar, origIOI);
-        eflopiLoop->insertAtHead(new DefExpr(rvar));
-        tupleComponent = rvar;
-
-        // Cause implementForallIntents2() over eflopi's parallel iterator.
-        if (!eflopiHelper)
-          eflopiHelper = new CallExpr(PRIM_ACTUALS_LIST, gVoid); // dummy arg
-        eflopiHelper->insertAtTail(parentOp);
-
-      } else {
-        if (!svar) {
-          INT_ASSERT(!nested); // nested case is handled above
-          setupRedRefs(parentFn, nested, redRef1, redRef2);
-          // Todo: skip these additions if the current 'rcall' yield
-          // is going to be compiled away, e.g. if it is
-          // within a param conditional on a not-taken branch.
-          svar = new VarSymbol(astrArg(ix, "shadowVarReduc"));
-          svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          VarSymbol* stemp  = newTemp("svrTmp");
-          redRef1->insertBefore(new DefExpr(svar));
-          redRef1->insertBefore(new DefExpr(stemp));
-          redRef1->insertBefore("'move'(%S, identity(%S,%S))",
-                                stemp, gMethodToken, parentOp);
-          redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
-                                svar, stemp);
-          redRef2->insertBefore("accumulate(%S,%S,%S)",
-                                gMethodToken, parentOp, svar);
-          shadowVarsRI[ix] = svar;
-        }
-        // pass 'svar' by reference
-        // If the yield is inside a forall, (create and) pass
-        // the corresponding shadow variable instead.
-        Symbol* ssvar = createShadowVarIfNeeded(shadowvar, parentOp, svar, rcall);
-        // todo: have a single 'sref' per 'svar', not one for each yield
-        VarSymbol* sref = new VarSymbol(astrArg(ix, "svarRef"));
-        rcall->insertBefore(new DefExpr(sref));
-        rcall->insertBefore("'move'(%S, 'addr of'(%S))", sref, ssvar);
-        tupleComponent = sref;
-      }
-    } else {
-      if (eflopiLoop != NULL && shadowvar->intent == TFI_IN) {
-        USR_WARN(shadowvar, "switching from 'in' to 'const in' intent for the shadow variable %s", shadowvar->name);
-        USR_PRINT(shadowvar, "'in' intent is currently not implemented");
-        USR_PRINT(eflopiLoop, "due to a loop over a parallel iterator here");
-        shadowvar->intent = TFI_CONST_IN;
-      }
-
-      Symbol* toPass = extraFormals[ix];
-      INT_ASSERT(toPass->type != dtUnknown && // see 'else' below
-                 toPass->type != dtAny);
-      // Note: all shadow variables are yielded by ref.
-      if (toPass->isRef()) {
-        tupleComponent = extraFormals[ix];
-      } else {
-        // If the yield is inside a forall, (create and) pass
-        // the corresponding shadow variable instead.
-        Symbol* ssvar = createShadowVarIfNeeded(shadowvar, NULL, toPass, rcall);
-        // If toPass->type can be dtUnknown, we should do this always,
-        // using PRIM_SET_REFERENCE.
-        VarSymbol* ytemp = newTemp("svarAddrTmp", toPass->getRefType());
-        ytemp->qual = QUAL_REF;
-        rcall->insertBefore(new DefExpr(ytemp));
-        rcall->insertBefore("'move'(%S, 'addr of'(%S))", ytemp, ssvar);
-        tupleComponent = ytemp;                           
-      }
-    }
-    buildTuple->insertAtTail(new SymExpr(tupleComponent));
-  }
-
-  rcall->insertBefore("'move'(%S,%E)", retSym, buildTuple);
-  rcall->insertAtTail(new SymExpr(retSym));
-  if (eflopiHelper)
-    eflopiMap[eflopiCall] = eflopiHelper;
-}
-
-static void propagateRecursivelyNew(ForallStmt* fs,
-                                 FnSymbol* parentFn,
-                                 FnSymbol* currentFn,
-                                 VarSymbol* retSym,
-                                 Symbol* extraActuals[],
-                                 Symbol* extraFormals[],
-                                 Symbol* shadowVarsRI[],
-                                 bool nested,
-                                 Expr*& redRef1,
-                                 Expr*& redRef2);
-
-//
-// Propagate 'extraActuals' through the task constructs, implementing
-// task intents. See the header comment for extendLeader().
-//
-// * 'call' gets each of extraActuals[ix] added as an actual
-// * callee 'fn' gets a newly-created corresponding formal: extraFormals[ix]
-//
-// Within 'fn' :
-// * for each call to a task function: do the above recursively
-// * for each yield: convert to yielding (prev yield value, extraFormals[*])
-//
-// For a reduce-intent position -- when fivec[ix].isReduce():
-// * extraFormals[ix] is a parentOp - passed to task functions, extra treatment
-// * shadowVarsRI[ix] is created - passed to yields, extra treatment
-//
-static void propagateExtraLeaderArgsNew(ForallStmt* fs, CallExpr* call,
-                                     VarSymbol* retSym,
-                                     Symbol* extraActuals[],
-                                     bool nested)
-{
-  FnSymbol* fn = call->resolvedFunction();
-  INT_ASSERT(fn); // callee's responsibility
-
-  if (fn->hasFlag(FLAG_WRAPPER)) {
-    // We are not handling void-returning wrappers at the moment.
-    INT_ASSERT(!(fn->getReturnSymbol() == gVoid || fn->retType == dtVoid));
-  }
-
-  int     numExtraArgs = fs->numIntentVars();
-  Symbol* extraFormals[numExtraArgs];
-  Symbol* shadowVarsRI[numExtraArgs];
-  Expr    *redRef1 = NULL, *redRef2 = NULL;
-  int     ix = -1;
-
-  for_shadow_vars(svar, temp, fs) {
-    ++ix;
-    Symbol* eActual  = extraActuals[ix];
-    bool    isReduce = svar->isReduce();
-
-    // Use named args to disambiguate from the already-existing iterator args,
-    // just in case. This necessitates toNamedExpr() in handleCaptureArgs().
-    const char* eName   =
-      isReduce ? astrArg(ix, "reduceParent") :
-        nested ? eActual->name :
-          strcmp(eActual->name, "_tuple_expand_tmp_") ?
-            astrArg(ix, eActual->name) // uniquify arg name
-            : astrArg(ix, "tet");
-
-    IntentTag efInt = isReduce ? INTENT_BLANK :
-      concreteIntent(argIntentForForallIntent(svar->intent), eActual->type);
-    Type* efType = eActual->type;
-    bool  addFlagImm  = false;
-
-    if (efInt & INTENT_FLAG_REF) {
-      INT_ASSERT(!isReduce); // otherwise efType may be unknown
-      INT_ASSERT(efType != dtUnknown && efType != dtAny);
-
-      //
-      // For ref intents, we need to make it a ref type.
-      // Because eFormal will be passed to _build_tuple_always_allow_ref()
-      // - the call is created in propagateThroughYieldNew.
-      // If _build_tuple_always_allow_ref's actual has a non-ref type,
-      // even if it is an ArgSymbol with a ref intent, the corresponding
-      // component of the resulting tuple will be non-ref, which will break
-      // SSCA2 and test/parallel/forall/vass/intents-all-int.chpl.
-      // Todo: fix resolution of _build_tuple_always_allow_ref.
-      //
-      efType = efType->getRefType();
-
-      if (eActual->isConstValWillNotChange())
-        addFlagImm = true;
-    }
-    
-    ArgSymbol*  eFormal = new ArgSymbol(efInt, eName, efType);
-    if (addFlagImm || eActual->hasFlag(FLAG_REF_TO_IMMUTABLE))
-      eFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
-
-    call->insertAtTail(new NamedExpr(eName, new SymExpr(eActual)));
-    fn->insertFormalAtTail(eFormal);
-    extraFormals[ix] = eFormal;
-
-    // In leader outside any taskFn just use reduceParent.
-    // Todo: also skip if there are no other taskFns or yields in 'fn'.
-    if (isReduce && nested) {
-      // We shouldn't bother with all this when it is not a task function.
-      INT_ASSERT(isTaskFun(fn));
-      setupRedRefs(fn, nested, redRef1, redRef2);
-      ArgSymbol* parentOp = eFormal; // the reduceParent arg
-      VarSymbol* currOp   = new VarSymbol(astrArg(ix, "reduceCurr"));
-      VarSymbol* svar     = new VarSymbol(astrArg(ix, "shadowVar"));
-      svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      VarSymbol* stemp    = newTemp("svTmp");
-      redRef1->insertBefore(new DefExpr(currOp));
-      redRef1->insertBefore("'move'(%S, clone(%S,%S))", // init
-                            currOp, gMethodToken, parentOp);
-      redRef1->insertBefore(new DefExpr(svar));
-      redRef1->insertBefore(new DefExpr(stemp));
-      redRef1->insertBefore("'move'(%S, identity(%S,%S))",
-                            stemp, gMethodToken, currOp);
-      redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
-                            svar, stemp);
-      redRef2->insertBefore("accumulate(%S,%S,%S)",
-                            gMethodToken, currOp, svar);
-      redRef2->insertBefore("chpl__reduceCombine(%S,%S)", parentOp, currOp);
-      redRef2->insertBefore("chpl__cleanupLocalOp(%S,%S)", parentOp, currOp);
-      // use currOp instead of parentOp for yielding and passing to taskFns
-      extraFormals[ix] = currOp;
-      shadowVarsRI[ix]   = svar;
-    } else {
-      shadowVarsRI[ix] = NULL;
-    }
-  }
-
-  if (!nested && fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    INT_ASSERT(!redRef1); // no need to clean them up
-    addArgsToToLeaderCallForPromotionWrapper(fn, numExtraArgs, extraFormals);
-  } else {
-    propagateRecursivelyNew(fs, fn, fn, retSym,
-                         extraActuals, extraFormals, shadowVarsRI,
-                         nested, redRef1, redRef2);
-    cleanupRedRefs(redRef1, redRef2);
-  }
-}
-
-// Propagate the additions of shadow variables to yield statements
-// recursively into task functions.
-static void propagateRecursivelyNew(ForallStmt* fs,
-                                 FnSymbol* parentFn,
-                                 FnSymbol* currentFn,
-                                 VarSymbol* retSym,
-                                 Symbol* extraActuals[],
-                                 Symbol* extraFormals[],
-                                 Symbol* shadowVarsRI[],
-                                 bool nested,
-                                 Expr*& redRef1,
-                                 Expr*& redRef2)
-{
-  std::vector<CallExpr*> rCalls;
-  collectMyCallExprs(currentFn, rCalls, currentFn);
-
-  for_vector(CallExpr, rcall, rCalls) {
-    if (rcall->isPrimitive(PRIM_YIELD)) {
-
-      propagateThroughYieldNew(fs, rcall, parentFn, retSym,
-                            extraActuals, extraFormals,
-                            shadowVarsRI,
-                            nested, redRef1, redRef2);
-
-    } else if (FnSymbol* tfn = resolvedToTaskFun(rcall)) {
-     if (needsCapture(tfn)) {
-      // 'rcall' better be the only call to 'tfn'.
-      // The following assert is a weak assurance of that.
-      // For a strong assurance, we could additionally build a set of task
-      // functions, calls to which we have seen.
-      // OTOH our normal call verification should suffice: it will fail
-      // the first propagated call if a second call propagates to same tfn.
-      INT_ASSERT(tfn->defPoint->parentSymbol == currentFn);
-
-      if (tfn->hasFlag(FLAG_BEGIN)) {
-        // (A) Reduce intents do not make sense when a 'begin' outlives
-        //     the iterator. There used to be a check for that here.
-        // (B) However, currently there can be no yields in a 'begin'
-        //     - see checkControlFlow().
-        //     Without a yield, the above is not a concern.
-        // (C) Generally, if a task function does not have a yield,
-        //     there is nothing to be done w.r.t. forall intents.
-        //     We could check the entire tfn for yields. Instead,
-        //     we just do a fast check for FLAG_BEGIN
-        //     as a conservative approximation.
-        //     We verify the absence of yields, however.
-        if (fVerify) {  // for assertions only
-          std::vector<CallExpr*> bCalls;
-          collectMyCallExprs(tfn, bCalls, tfn);
-          for_vector(CallExpr, bcall, bCalls)
-            INT_ASSERT(!bcall->isPrimitive(PRIM_YIELD));
-        }
-      } else {
-        // Propagate the extra args recursively into 'tfn'.
-        propagateExtraLeaderArgsNew(fs, rcall, retSym, extraFormals, true);
-      }
-     } else {
-      // !needsCapture(tfn) => descend into 'tfn' without argument intents.
-      propagateRecursivelyNew(fs, parentFn, tfn, retSym,
-                           extraActuals, extraFormals, shadowVarsRI,
-                           nested, redRef1, redRef2);
-     }
-    }
-  }
-}
-
-// 'origIterFn' should be either not yet resolved or
-// have been stashed into pristineLeaderIterators before being resolved
-static void extendLeaderNew(ForallStmt* fs,
-                            FnSymbol* origIterFn, CallExpr* call)
-{
-  if (!pristineLeaderIterators.get(origIterFn))
-    stashPristineCopyOfLeaderIter(origIterFn, false);
-
-  int numExtraArgs = fs->numIntentVars();
-  if (numExtraArgs == 0)
-    // no outer variables in the loop body - nothing to do
-    return;
-
-  // Replace the callee with a clone.
-  if (origIterFn->isResolved()) {
-    // ... using a pristine copy if the callee is already resolved.
-    // See the comment on an assert in copyLeaderFn().
-    origIterFn = pristineLeaderIterators.get(origIterFn);
-    INT_ASSERT(origIterFn);
-  }
-
-  FnSymbol* iterFn = copyLeaderFn(origIterFn, /*ignore_isResolved:*/false);
-  iterFn->instantiationPoint = getVisibilityBlock(call);
-  call->baseExpr->replace(new SymExpr(iterFn));
-
-  // Setup the new return/yield symbol.
-  VarSymbol* retSym  = NULL;
-  Symbol* origRetSym = NULL;
-
-  if (!iterFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    retSym  = newTemp("ret"); // its type is to be inferred
-    origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
-    origRetSym->defPoint->insertBefore(new DefExpr(retSym));
-    origRetSym->name = "origRet";
-  }
-
-  INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
-  Expr* origArg = call->get(call->numActuals() - numExtraArgs + 1);
-
-  Symbol* extraActuals[numExtraArgs];
-  for (int ix = 0; ix < numExtraArgs; ix++) {
-    Expr* nextArg = origArg->next;
-    SymExpr* origSE = toSymExpr(origArg->remove());
-    INT_ASSERT(origSE); // if it is not a symbol, still need to make it happen
-    extraActuals[ix] = origSE->symbol();
-    origArg = nextArg;
-  }
-  INT_ASSERT(!origArg); // we should have processed all args
-
-  propagateExtraLeaderArgsNew(fs, call, retSym, extraActuals, false);
-
-  if (origRetSym) {
-    checkAndRemoveOrigRetSym(origRetSym, iterFn);
-  }
-}
+// todo move the rest of this file to that file, too
 
 static CallExpr* findForwardingCallAndUnresolve(FnSymbol* fDest) {
   Symbol* retSym = fDest->getReturnSymbol();
@@ -2963,6 +2551,13 @@ static CallExpr* findForwardingCallAndUnresolve(FnSymbol* fDest) {
   // If we did not find it, is it user error or a new pattern?
   INT_ASSERT(fCall);
   return fCall;
+}
+
+static const char* newWrapperFormalName(int ix, Symbol* actual) {
+  if (!strcmp(actual->name, "chpl__reduceGlob"))
+    return intentArgName(ix, "reduceGlob");
+  else
+    return intentArgName(ix, actual->name);
 }
     
 // "Wrap" throughout this function signifies either a wrapper,
@@ -2996,11 +2591,13 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
   // Extend wDest with formals to match parCall's actuals.
   SymExpr* curArgSE = toSymExpr(
     parCall->get(parCall->numActuals() - numExtraArgs + 1));
+  int ix = 0;
 
   do {
     Symbol*    curArg    = curArgSE->symbol();
     IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
-    ArgSymbol* curFormal = new ArgSymbol(fIntent, curArg->name, curArg->type);
+    const char* curName  = newWrapperFormalName(ix, curArg);
+    ArgSymbol* curFormal = new ArgSymbol(fIntent, curName, curArg->type);
 
     curFormal->qual = curArg->qual;
 
@@ -3011,7 +2608,9 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
     wCall->insertAtTail(curFormal);
     wDest->insertFormalAtTail(curFormal);
 
-  } while ((curArgSE = toSymExpr(curArgSE->next)));
+    curArgSE = toSymExpr(curArgSE->next);
+    ix++;
+  } while (curArgSE);
 
   // Handle whatever wDest is wrapping or forwarding to.
   implementForallIntents2New(fs, wCall);
@@ -3020,9 +2619,14 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
 
 static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
 {
+  FnSymbol* dest = parCall->resolvedFunction();
+
+  if (redirectedToIfi2Cache(fs, dest, parCall))
+    // Cache hit. redirectedToIfi2Cache() adjusted AST as needed.
+    return;
+
   // At the moment, 'dest' can be a wrapper and/or an iterator-forwarding
   // procedure, ex. _array.these() or NPBRandomStream.iterate().
-  FnSymbol* dest = parCall->resolvedFunction();
 
   if (dest->hasFlag(FLAG_WRAPPER)) {
     // a wrapper for either an iterator or an iterator forwarder
@@ -3034,13 +2638,6 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
     // The only way we know that it is an iterator forwarder is by checking
     // its return type. For that, it needs to be resolved.
     INT_ASSERT(dest->isResolved());
-
-    AggregateType* retType = toAggregateType(dest->retType);
-    if (!retType || !retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-      USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-      USR_STOP();
-    }
 
     implementForallIntents2NewWrap(fs, dest, parCall);
 
@@ -3059,4 +2656,7 @@ static void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
 
     extendLeaderNew(fs, dest, parCall);
   }
+
+  // Save the extended iterator for future lookups.
+  IFI2cacheAdd(fs, dest, parCall->resolvedFunction());
 }

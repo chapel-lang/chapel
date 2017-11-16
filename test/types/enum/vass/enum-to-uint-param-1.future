@@ -1,8 +1,0 @@
-feature request: allow positive enum constants to be implicitly convertible to unsigned ints of sufficient size
-
-Basically, we'd like enum constants to be like params, implying that
-they should convert to any type that can represent them.
-
-But at the moment I get:
-
-enum-to-uint-param-1.chpl:3: error: type mismatch in assignment from e to uint(8)
