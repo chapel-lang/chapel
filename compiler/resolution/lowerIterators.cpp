@@ -2231,6 +2231,9 @@ static void cleanupLeaderFollowerIteratorCalls()
   //
   // cleanup leader and follower iterator calls
   //
+  // Fixes uses of formals outside of their function.
+  // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
+  //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->resolvedFunction()) {
@@ -2248,7 +2251,8 @@ static void cleanupLeaderFollowerIteratorCalls()
             int i = 2; // first field is super
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
-              if (isArgSymbol(se->symbol()) && call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
+              if (isArgSymbol(se->symbol()) &&
+                  call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
                 Symbol* field = toAggregateType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 SET_LINENO(call);
