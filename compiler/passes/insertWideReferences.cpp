@@ -851,7 +851,9 @@ static bool fieldCanBeWide(Symbol* field) {
 //
 static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
   for_fields(fi, toAggregateType(parent)) {
-    if (isRecord(fi->type) && canWidenRecord(fi) == false) {
+    if (fi->isRefOrWideRef() == false &&
+        isRecord(fi->type) &&
+        canWidenRecord(fi) == false) {
       widenSubAggregateTypes(cause, fi->type);
     } else {
       if (fieldCanBeWide(fi)) {
@@ -1493,7 +1495,8 @@ static void narrowWideClassesThroughCalls()
           SET_LINENO(call);
           stmt->insertBefore(new DefExpr(var));
 
-          if (narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
+          if (narrowType.isRefOrWideRef() == false &&
+              narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
