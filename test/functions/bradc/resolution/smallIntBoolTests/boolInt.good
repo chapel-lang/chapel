@@ -1,6 +1,4 @@
-boolInt.chpl:31: error: ambiguous call 'foo(bool, int(8))'
-boolInt.chpl:18: note: candidates are: foo(x: uint(64), y: int(64))
-boolInt.chpl:6: note:                 foo(x: int(8), y: int(8))
-boolInt.chpl:6: note:                 foo(x: int(16), y: int(16))
-boolInt.chpl:6: note:                 foo(x: int(32), y: int(32))
-boolInt.chpl:6: note:                 foo(x: int(64), y: int(64))
+In int foo 8
+In uint foo 8
+In int foo 8
+In uint foo 8

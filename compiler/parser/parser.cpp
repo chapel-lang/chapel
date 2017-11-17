@@ -580,6 +580,9 @@ static ModuleSymbol* parseFile(const char* path,
 
     closeInputFile(fp);
 
+    // Halt now if there were parse errors.
+    USR_STOP();
+
     if (yyblock == NULL) {
       INT_FATAL("yyblock should always be non-NULL after yyparse()");
 

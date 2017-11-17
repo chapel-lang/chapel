@@ -361,6 +361,9 @@ BlockStmt* buildChapelStmt(Expr* expr) {
   return new BlockStmt(expr, BLOCK_SCOPELESS);
 }
 
+BlockStmt* buildErrorStandin() {
+  return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
+}
 
 static void addModuleToSearchList(UseStmt* newUse, BaseAST* module) {
   UnresolvedSymExpr* modNameExpr = toUnresolvedSymExpr(module);
@@ -3129,4 +3132,18 @@ Expr* tryExpr(Expr* e)
 Expr* tryBangExpr(Expr* e)
 {
   return new CallExpr(PRIM_TRYBANG_EXPR, e);
+}
+
+Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
+{
+  if (0 == strcmp("=", op)) {
+    USR_FATAL_CONT(a, "Assignment is illegal in a conditional");
+    USR_PRINT(a, "Use == to check for equality in a conditional");
+  } else {
+    USR_FATAL_CONT(a, "Assignment operation %s is illegal in a conditional",
+                   op);
+  }
+
+  // Either way, continue compiling with ==
+  return new CallExpr("==", a, b);
 }

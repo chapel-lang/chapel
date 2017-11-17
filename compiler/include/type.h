@@ -306,7 +306,11 @@ class EnumType : public Type {
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
   PrimitiveType* integerType;
+ private:
+  Immediate minConstant;
+  Immediate maxConstant;
 
+ public:
   const char* doc;
 
   EnumType();
@@ -323,6 +327,8 @@ class EnumType : public Type {
   // This will only really work after the function resolution.
   void sizeAndNormalize();
   PrimitiveType* getIntegerType();
+  Immediate* getMinConstant();
+  Immediate* getMaxConstant();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 
@@ -430,6 +436,8 @@ bool is_complex_type(Type*);
 bool is_enum_type(Type*);
 bool isLegalParamType(Type*);
 int  get_width(Type*);
+int  get_mantissa_width(Type*);
+int  get_exponent_width(Type*);
 bool isClass(Type* t);
 bool isClassOrNil(Type* t);
 bool isRecord(Type* t);

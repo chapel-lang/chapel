@@ -444,14 +444,18 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       } else if (c == 'u' || c == 'U') {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
+        addCharEscape('t'); // add a valid escape to continue parsing
       } else if ('0' <= c && c <= '7' ) {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "octal escape not supported in string literal");
-      } else if (c != 0) {
+        addCharEscape('t'); // add a valid escape to continue parsing
+      } else if (c == 0) {
+        // we've reached EOF
+        addCharEscape('t'); // add a valid escape to continue parsing
+        break; // EOF reached, so stop
+      } else {
         addCharEscape(c);
       }
-      else
-        break;
     }
   } /* eat up string */
 
@@ -780,6 +784,7 @@ static int processBlockComment(yyscan_t scanner) {
                 startFilename, nestedStartLine);
       }
       yyerror(yyLloc, &context, "EOF in comment");
+      break;
     }
   }
 

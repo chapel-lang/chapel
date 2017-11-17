@@ -95,7 +95,10 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
-    else writeln("Build Failed");
+    else {
+      writeln("Build Failed");
+      exit(1);
+    }
     // Close memory
      delete lockFile;
      toParse.close();

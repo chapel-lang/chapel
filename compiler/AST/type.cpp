@@ -281,7 +281,7 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
-  constants(), integerType(NULL),
+  constants(), integerType(NULL), minConstant(), maxConstant(),
   doc(NULL)
 {
   gEnumTypes.add(this);
@@ -302,6 +302,8 @@ void EnumType::verify() {
   for_alist(expr, constants) {
     if (expr->parentSymbol != symbol)
       INT_FATAL(this, "Bad EnumType::constants::parentSymbol");
+    if (!isDefExpr(expr))
+      INT_FATAL(this, "Bad EnumType::constants - not a DefExpr");
   }
 }
 
@@ -309,11 +311,14 @@ void EnumType::verify() {
 EnumType*
 EnumType::copyInner(SymbolMap* map) {
   EnumType* copy = new EnumType();
+
   for_enums(def, this) {
     DefExpr* newDef = COPY_INT(def);
     newDef->sym->type = copy;
     copy->constants.insertAtTail(newDef);
   }
+  copy->minConstant = this->minConstant;
+  copy->maxConstant = this->maxConstant;;
   copy->addSymbol(symbol);
   return copy;
 }
@@ -335,11 +340,17 @@ void EnumType::sizeAndNormalize() {
   uint64_t max;
   int64_t min;
   PrimitiveType* ret = NULL;
+  Immediate* minImm = NULL;
+  Immediate* maxImm = NULL;
 
   // First, look for negative numbers in the enum.
   // If there are any, we have to store all
   // the values in negative numbers.
   for_enums(constant, this) {
+    // If this passes testing, much of the following can
+    // be significantly simplified.
+    INT_ASSERT(constant->init);
+
     if( constant->init ) {
       if( get_int( constant->init, &v ) ) {
         if( v < 0 ) {
@@ -377,11 +388,16 @@ void EnumType::sizeAndNormalize() {
     SET_LINENO(constant);
     if( constant->init ) {
       // set v and uv to the initializer value
+      // if the number doesn't fit in one of them, set it
+      // to 1. That avoids overflow when we increment these below,
+      // and won't confuse max/min calculations since any size
+      // integer needs to be able to represent 1.
       if( get_int( constant->init, &v ) ) {
         if( v >= 0 ) uv = v;
         else uv = 1;
       } else if( get_uint( constant->init, &uv ) ) {
-        v = uv;
+        if (uv <= (uint64_t)INT64_MAX) v = uv;
+        else v = 1;
       }
     } else {
       // create initializer with v
@@ -411,11 +427,18 @@ void EnumType::sizeAndNormalize() {
       if( max_v < v ) max_v = v;
       if( min_uv > uv ) min_uv = uv;
       if( max_uv < uv ) max_uv = uv;
+
     }
     // Increment v for the next one, in case it is not set.
     v++;
     uv++;
   }
+
+  // User error if the enum contains both negative values and
+  // something needing a uint64.
+  if (min_v < 0 && max_uv > (uint64_t)INT64_MAX)
+    USR_FATAL(this,
+              "this enum cannot be represented with a single integer type");
 
   num_bytes = 0;
 
@@ -445,11 +468,11 @@ void EnumType::sizeAndNormalize() {
 
     if( num_bytes < num_bytes_neg ) num_bytes = num_bytes_neg;
   } else {
-    if( max_v <= UINT8_MAX ) {
+    if( max_uv <= UINT8_MAX ) {
       num_bytes = 1;
-    } else if( max_v <= UINT16_MAX ) {
+    } else if( max_uv <= UINT16_MAX ) {
       num_bytes = 2;
-    } else if( max_v <= UINT32_MAX ) {
+    } else if( max_uv <= UINT32_MAX ) {
       num_bytes = 4;
     } else {
       num_bytes = 8;
@@ -460,43 +483,46 @@ void EnumType::sizeAndNormalize() {
   // and set et->integerType
   min = max = 0;
 
+  IF1_int_type int_size = INT_SIZE_DEFAULT;
+
   if( num_bytes == 1 ) {
+    int_size = INT_SIZE_8;
     if( issigned ) {
       max = INT8_MAX;
       min = INT8_MIN;
-      ret = dtInt[INT_SIZE_8];
     } else {
       max = UINT8_MAX;
-      ret = dtUInt[INT_SIZE_8];
     }
   } else if( num_bytes == 2 ) {
+    int_size = INT_SIZE_16;
     if( issigned ) {
       max = INT16_MAX;
       min = INT16_MIN;
-      ret = dtInt[INT_SIZE_16];
     } else {
       max = UINT16_MAX;
-      ret = dtUInt[INT_SIZE_16];
     }
   } else if( num_bytes == 4 ) {
+    int_size = INT_SIZE_32;
     if( issigned ) {
       max = INT32_MAX;
       min = INT32_MIN;
-      ret = dtInt[INT_SIZE_32];
     } else {
       max = UINT32_MAX;
-      ret = dtUInt[INT_SIZE_32];
     }
   } else if( num_bytes == 8 ) {
+    int_size = INT_SIZE_64;
     if( issigned ) {
       max = INT64_MAX;
       min = INT64_MIN;
-      ret = dtInt[INT_SIZE_64];
     } else {
       max = UINT64_MAX;
-      ret = dtUInt[INT_SIZE_64];
     }
   }
+
+  if (issigned)
+    ret = dtInt[int_size];
+  else
+    ret = dtUInt[int_size];
 
   // At the end of it all, check that each enum
   // symbol fits into the assigned type.
@@ -515,15 +541,119 @@ void EnumType::sizeAndNormalize() {
     }
   }
 
+  // Replace the immediates with one of the appropriate numeric type.
+  // This is a way of normalizing the enum constants and simplifying
+  // what follow-on passes need to deal with.
+  for_enums(constant, this) {
+    SET_LINENO(constant);
+    INT_ASSERT(constant->init);
+
+    if (ret == constant->init->typeInfo()) {
+      // Nothing to do, constant already has appropriate type
+    } else {
+      bool have_v = true;
+      bool have_uv = true;
+      v = 0;
+      uv = 0;
+      // set v and uv to the initializer value
+      if( get_int( constant->init, &v ) ) {
+        if( v >= 0 ) uv = v;
+        else have_uv = false;
+      } else if( get_uint( constant->init, &uv ) ) {
+        if (uv <= (uint64_t)INT64_MAX) v = uv;
+        else have_v = false;
+      }
+
+      if( issigned ) {
+        INT_ASSERT(have_v);
+        constant->init->replace(new SymExpr(new_IntSymbol(v, int_size)));
+      } else {
+        INT_ASSERT(have_uv);
+        constant->init->replace(new SymExpr(new_UIntSymbol(uv, int_size)));
+      }
+    }
+  }
+
+  first = true;
+
+  min_v = max_v = 0;
+  min_uv = max_uv = 0;
+
+  // Set minConstant and maxConstant
+  for_enums(constant, this) {
+    SET_LINENO(constant);
+    INT_ASSERT(constant->init);
+
+    bool got = false;
+
+    v = 0;
+    uv = 0;
+    if (issigned)
+      got = get_int(constant->init, &v);
+    else
+      got = get_uint(constant->init, &uv);
+
+    INT_ASSERT(got);
+
+    Immediate* imm = getSymbolImmediate(constant->sym);
+
+    if (first) {
+      if (issigned) {
+        min_v = v;
+        max_v = v;
+      } else {
+        min_uv = uv;
+        max_uv = uv;
+      }
+      minImm = imm;
+      maxImm = imm;
+      first = false;
+    } else {
+      if (issigned) {
+        if (v < min_v) {
+          min_v = v;
+          minImm = imm;
+        }
+        if (v > max_v) {
+          max_v = v;
+          maxImm = imm;
+        }
+      } else {
+        if (uv < min_uv) {
+          min_uv = uv;
+          minImm = imm;
+        }
+        if (uv > max_uv) {
+          max_uv = uv;
+          maxImm = imm;
+        }
+      }
+    }
+  }
+
+  INT_ASSERT(minImm && maxImm);
+  this->minConstant = *minImm;
+  this->maxConstant = *maxImm;
+
+
   integerType = ret;
 }
 
 PrimitiveType* EnumType::getIntegerType() {
+  INT_ASSERT(integerType);
   if( ! integerType ) {
     sizeAndNormalize();
   }
   return integerType;
 }
+
+Immediate* EnumType::getMinConstant() {
+  return &minConstant;
+}
+Immediate* EnumType::getMaxConstant() {
+  return &maxConstant;
+}
+
 
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {
@@ -1020,6 +1150,39 @@ int get_width(Type *t) {
   return 0;
 }
 
+// numbers between -2**width .. 2**width
+// will fit exactly in a floating-point representation.
+int get_mantissa_width(Type *t) {
+  // FLOAT_SIZE_16 would have 11 bits of precision
+  if (t == dtReal[FLOAT_SIZE_32] ||
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_64])
+    // mantissa for 32-bit float
+    return 24;
+  if (t == dtReal[FLOAT_SIZE_64] ||
+      t == dtImag[FLOAT_SIZE_64] ||
+      t == dtComplex[COMPLEX_SIZE_128])
+    // mantissa for 64-bit float
+    return 53;
+  INT_FATAL(t, "Unknown mantissa width");
+  return 0;
+}
+
+int get_exponent_width(Type *t) {
+  // FLOAT_SIZE_16 would have 5 bits of exponent
+  if (t == dtReal[FLOAT_SIZE_32] ||
+      t == dtImag[FLOAT_SIZE_32] ||
+      t == dtComplex[COMPLEX_SIZE_64])
+    // exponent bits for 32-bit float
+    return 8;
+  if (t == dtReal[FLOAT_SIZE_64] ||
+      t == dtImag[FLOAT_SIZE_64] ||
+      t == dtComplex[COMPLEX_SIZE_128])
+    // exponent bits for 64-bit float
+    return 15;
+  INT_FATAL(t, "Unknown exponent width");
+  return 0;
+}
 
 bool isClass(Type* t) {
   if (AggregateType* ct = toAggregateType(t))

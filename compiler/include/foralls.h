@@ -27,7 +27,7 @@
 
 //
 // ForallIntents: with clause/forall intents
-// TODO: replace with LoopIntentVars / ForallStmt::intentVariables
+// TODO: replace with ShadowVarSymbols / ForallStmt::shadowVariables
 //
 class ForallIntents {
 public:

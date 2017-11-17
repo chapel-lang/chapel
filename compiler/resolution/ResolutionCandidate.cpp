@@ -646,6 +646,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              formal->type,
                              fn,
                              NULL,
+                             NULL,
                              formalIsParam) == false) {
         return false;
       }
@@ -695,6 +696,7 @@ bool ResolutionCandidate::checkGenericFormals() {
                            actual,
                            formal->type,
                            fn,
+                           NULL,
                            NULL,
                            formalIsParam) == false) {
             return false;

@@ -19,6 +19,7 @@
 
 #include <cstdio>
 #include "driver.h"
+#include "files.h"
 #include "version.h"
 
 // this include sets BUILD_VERSION
@@ -47,17 +48,23 @@ get_configured_prefix() {
   return CONFIGURED_PREFIX;
 }
 
-const char*
+std::string
 get_clang_cc() {
-  return CLANG_SETTINGS[0];
+  std::string ret = CLANG_SETTINGS[0];
+  expandInstallationPaths(ret);
+  return ret;
 }
 
-const char*
+std::string
 get_clang_cxx() {
-  return CLANG_SETTINGS[1];
+  std::string ret = CLANG_SETTINGS[1];
+  expandInstallationPaths(ret);
+  return ret;
 }
 
-const char*
+std::string
 get_clang_sysroot_args() {
-  return CLANG_SETTINGS[2];
+  std::string ret = CLANG_SETTINGS[2];
+  expandInstallationPaths(ret);
+  return ret;
 }

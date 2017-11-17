@@ -219,6 +219,11 @@ void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
   const char* name = toUnresolvedSymExpr(var)->unresolved;
   ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
   call->insertAtTail(new DefExpr(ss));
+  // SET_LINENO does not work while parsing, so adjust astloc manually.
+  ss->astloc = ss->defPoint->astloc = var->astloc;
+  // Turns out that 'new ShadowVarSymbol' also creates this node.
+  // It is important that it gets the correct astloc as well.
+  ss->outerVarRep->astloc = var->astloc;
 }
 
 //
@@ -250,7 +255,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //                             //
 /////////////////////////////////
 
-// resolveParallelIteratorAndForallIntents() resolves key parts of ForallStmt:
+// resolveForallHeader() resolves key parts of ForallStmt:
 //
 //  * find the target parallel iterator (standalone or leader) and resolve it
 //  * issue an error, if neither is found
@@ -290,7 +295,7 @@ Ex. standalone iter walkdirs() in FileSystem module, as tested by:
 Therefore we compute this extended yield type manually.
 */
 static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
-  if (fs->numIntentVars() == 0) {
+  if (fs->numShadowVars() == 0) {
     // The iterator has not undergone extendLeader().
     // It still yields whatever the user wrote.
     // Its return symbol is still in tact.
@@ -785,7 +790,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
   CallExpr* retval = NULL;
 
@@ -887,7 +892,9 @@ void lowerForallStmts() {
     PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
     PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 
-    currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
+   { // shadow the above SET_LINENO
+    SET_LINENO(fs->loopBody());
+
     ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
     PARBlock->insertAtTail(PARBody);
@@ -898,11 +905,12 @@ void lowerForallStmts() {
     while (Expr* def = fs->inductionVariables().tail)
       userBody->insertAtHead(def->remove());
 
-    while (Expr* ivdef = fs->intentVariables().tail)
-      fs->loopBody()->insertAtHead(ivdef->remove());
+    while (Expr* svdef = fs->shadowVariables().tail)
+      fs->loopBody()->insertAtHead(svdef->remove());
 
     userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
     fs->loopBody()->flattenAndRemove();    // into PARBody
+   }
   }
 }

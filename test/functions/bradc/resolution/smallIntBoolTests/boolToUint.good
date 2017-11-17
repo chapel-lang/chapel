@@ -1,2 +1,2 @@
-boolToUint.chpl:17: error: unresolved call 'foo(mybool)'
-boolToUint.chpl:6: note: candidates are: foo(b: uint)
+In uint foo
+In uint foo
