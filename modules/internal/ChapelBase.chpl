@@ -25,28 +25,23 @@ module ChapelBase {
 
   proc resetTaskSpawn() {
     if CHPL_TASKS == 'qthreads' {
-      extern proc qthread_reset_spawn_order();
-      qthread_reset_spawn_order();
+      extern proc qthread_chpl_reset_spawn_order();
+      qthread_chpl_reset_spawn_order();
     }
   }
 
-  proc chpl_setenv(name: string, val: string, overwrite: bool = false) {
-    extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
-    setenv(name.c_str(), val.c_str(), overwrite:c_int);
+  proc setShepDebug(debug) {
+    extern proc qthread_chpl_set_shep_debug(debug: c_int);
+    qthread_chpl_set_shep_debug(debug:c_int);
   }
 
-  proc chpl_unsetenv(name: string) {
-    extern proc unsetenv(name: c_string): void;
-    unsetenv(name.c_str());
-  }
-
-  var allowTaskSpawnDebug = false;
+  var allowTaskSpawnDebug = false; 
   proc enableTaskSpawnDebug() {
     if allowTaskSpawnDebug then 
-      chpl_setenv("QT_SHEP_DEBUG", "1");
+      setShepDebug(here.id+1);
   }
   proc disableTaskSpawnDebug() {
-    chpl_unsetenv("QT_SHEP_DEBUG");
+    setShepDebug(0);
   }
 
 
