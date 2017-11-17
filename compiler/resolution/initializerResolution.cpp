@@ -29,6 +29,7 @@
 #include "passes.h"
 #include "resolution.h"
 #include "ResolutionCandidate.h"
+#include "resolveFunction.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -237,7 +238,7 @@ static void filterInitCandidate(CallInfo&                  info,
 
 /************************************* | **************************************
 *                                                                             *
-* Copied from resolveFns(FnSymbol* fn) in functionResolution.                 *
+* Copied from resolveFunction(FnSymbol* fn) in functionResolution.            *
 *                                                                             *
 * Removed code for extern functions (since I don't think it will apply),      *
 * iterators, type constructors, and FLAG_PRIVATIZED_CLASS.                    *
@@ -336,7 +337,7 @@ static void makeRecordInitWrappers(CallExpr* call) {
 
   call->baseExpr->replace(new SymExpr(wrap));
 
-  resolveFns(wrap);
+  resolveFunction(wrap);
 }
 
 // Modified version of computeActualFormalAlignment to only populate the

@@ -25,6 +25,7 @@
 #include "expr.h"
 #include "postFold.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -1070,12 +1071,17 @@ static void ensureModuleDeinitFnAnchor(ModuleSymbol* mod, Expr*& anchor) {
     return;
 
   SET_LINENO(mod);
+
   FnSymbol* deinitFn = mod->deinitFn;
+
   if (!deinitFn) {
     deinitFn = new FnSymbol(astr("chpl__deinit_", mod->name));
+
     mod->block->insertAtTail(new DefExpr(deinitFn));
+
     normalize(deinitFn);
-    resolveFns(deinitFn);
+    resolveFunction(deinitFn);
+
     mod->deinitFn = deinitFn;
   }
 

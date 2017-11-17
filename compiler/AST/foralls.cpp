@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-// foralls.h, foralls.cpp - support for forall loops
+#include "foralls.h"
 
+#include "astutil.h"
+#include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "foralls.h"
+#include "ForLoop.h"
 #include "ForallStmt.h"
-#include "astutil.h"
+#include "iterator.h"
+#include "passes.h"
+#include "resolution.h"
+#include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "passes.h" // for normalized, resolved
-#include "AstVisitor.h"
-#include "ForLoop.h"
-#include "resolution.h"
-#include "iterator.h"
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
@@ -648,7 +648,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   FnSymbol* parIter = iterCall->resolvedFunction();
   bool alreadyResolved = parIter->isResolved();
 
-  resolveFns(parIter);
+  resolveFunction(parIter);
 
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter, alreadyResolved);

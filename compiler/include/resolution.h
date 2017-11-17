@@ -168,7 +168,6 @@ void      resolveFormals(FnSymbol* fn);
 void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
-void      resolveFns(FnSymbol* fn);
 void      resolveDefaultGenericType(CallExpr* call);
 void      resolveReturnType(FnSymbol* fn);
 Type*     resolveTypeAlias(SymExpr* se);
