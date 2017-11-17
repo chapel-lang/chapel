@@ -398,6 +398,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
         return false;
       }
       if (parent->isPrimitive(PRIM_GET_MEMBER) ||
+          parent->isPrimitive(PRIM_SET_MEMBER) ||
           parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
         // TODO: svec primitives?
         memberAccessed = true;
