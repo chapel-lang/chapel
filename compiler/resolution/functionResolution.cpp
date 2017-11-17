@@ -6601,7 +6601,7 @@ static Expr* resolveExpr(Expr* expr) {
     makeRefType(se->symbol()->type);
 
     if (ForallStmt* pfs = toForallForIteratedExpr(se)) {
-      CallExpr* call = resolveParallelIteratorAndForallIntents(pfs, se);
+      CallExpr* call = resolveForallHeader(pfs, se);
 
       if (tryFailure == false) {
         retval = resolveExprPhase2(expr, fn, preFold(call));

@@ -32,9 +32,6 @@ For a reduce intent, the global reduce op instance needs to be
 properly allocated, deallocated and connected to the corresponding
 user outer variable. This is the job of "Part 1".
 
-For now, implementForallIntents2New() and immediately-adjacent functions
-are in implementForallIntents.cpp, for historical reasons.
-
 Even though we don't have to, we keep "New" in function names for now, to
 distinguish them from the "old" implementation' in implementForallIntents.cpp.
 
@@ -198,7 +195,7 @@ public:
   bool inTaskFn()   const { return nested; }
 
   int  numShadowVars()   const {
-    int result = forall->numIntentVars();
+    int result = forall->numShadowVars();
     INT_ASSERT(result == (int)fiInfos.size());
     return result;
   }
@@ -214,7 +211,7 @@ public:
     anchorFn(curFn),
     anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
   {
-    fiInfos.resize(forall->numIntentVars());
+    fiInfos.resize(forall->numShadowVars());
   }
 
   // constructor for a nested context
@@ -227,7 +224,7 @@ public:
     anchorFn(curFn),
     anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
   {
-    int numSVars = forall->numIntentVars();
+    int numSVars = forall->numShadowVars();
     fiInfos.resize(numSVars);
     for (int ix = 0; ix < numSVars; ix++) {
       fiInfos[ix].svSymbol = parentCx.fiInfos[ix].svSymbol;
@@ -552,7 +549,7 @@ static void addArgsToToLeaderCallForPromotionWrapper(FIcontext& ctx) {
 // Exception 2: when the yield stmt is in a forall loop, we do not need
 // the shadow variable created from the current op (or parent op).
 // Instead the shadow variable we add to the yielded tuple is one
-// we add to the forall loop's intentVariables(). It will be handled
+// we add to the forall loop's shadowVariables(). It will be handled
 // according to the above scheme when this forall loop's parallel iterator
 // will be processed/extended.
 // The above scheme is still used for yields outside a forall loop, if any.
@@ -758,7 +755,7 @@ static Symbol* tupcomForYieldInForall(FIcontext& ctx, ForallStmt* efs, int ix)
 
   // Here is the new shadow variable.
   ShadowVarSymbol* esv = new ShadowVarSymbol(osv->intent, osv->name, NULL);
-  efs->intentVariables().insertAtTail(new DefExpr(esv));
+  efs->shadowVariables().insertAtTail(new DefExpr(esv));
 
   if (isReduce) {
     ensureCurrentReduceOpForReduceIntent(ctx, fii, ix);
@@ -1091,7 +1088,7 @@ typedef std::vector<IFI2cacheIntent> IFI2cacheAllIntents;
 
 static void IFI2cacheInitAI(IFI2cacheAllIntents& allIntents,
                             ForallStmt* fs) {
-    allIntents.resize(fs->numIntentVars());
+    allIntents.resize(fs->numShadowVars());
     INT_ASSERT(allIntents.size() > 0); // otherwise why extendLeader?
     int ix = 0;
     for_shadow_vars(svar, temp, fs) {
@@ -1159,7 +1156,8 @@ static int ifi2cacheNumAdds, ifi2cacheNumHits, ifi2cacheNumMisses;
 //
 // Add a mapping to the cache: (origIter, fs's intents) -> extdIter.
 //
-void IFI2cacheAdd(ForallStmt* fs, FnSymbol* origIter, FnSymbol* extdIter)
+static void IFI2cacheAdd(ForallStmt* fs, FnSymbol* origIter,
+                         FnSymbol* extdIter)
 {
   INT_ASSERT(fs && origIter && extdIter); // caller responsibility
   ifi2cacheNumAdds++;
@@ -1197,8 +1195,8 @@ static FnSymbol* IFI2cacheLookup(ForallStmt* fs, FnSymbol* origIter) {
   // If not for the counters, could return simply IFI2cacheFindEntry(...).
 }
 
-bool redirectedToIfi2Cache(ForallStmt* fs, FnSymbol* origIter,
-                           CallExpr* iterCall) {
+static bool redirectedToIfi2Cache(ForallStmt* fs, FnSymbol* origIter,
+                                  CallExpr* iterCall) {
   FnSymbol* lookupResult = IFI2cacheLookup(fs, origIter);
 
   if (lookupResult == NULL)
@@ -1206,7 +1204,7 @@ bool redirectedToIfi2Cache(ForallStmt* fs, FnSymbol* origIter,
 
   // Cache hit yay! Redirect iterCall to it.
 
-  int numSVars = fs->numIntentVars();
+  int numSVars = fs->numShadowVars();
   int numOrigArgs = origIter->numFormals();
 
   // The extended iterator has the original formals plus
@@ -1299,13 +1297,13 @@ static void addForallIntentsOrigRetSym(FnSymbol* iterFn, Symbol* origRetSym) {
 
 /////////// extendLeaderNew ///////////
 
-void extendLeaderNew(ForallStmt* fs, 
-                     FnSymbol* origIterFn, CallExpr* iterCall)
+static void extendLeaderNew(ForallStmt* fs, 
+                            FnSymbol* origIterFn, CallExpr* iterCall)
 {
   if (!pristineLeaderIterators.get(origIterFn))
     stashPristineCopyOfLeaderIter(origIterFn, false);
 
-  int numSVars = fs->numIntentVars();
+  int numSVars = fs->numShadowVars();
   if (numSVars == 0)
     // no outer variables in the loop body - nothing to do
     return;
@@ -1373,4 +1371,142 @@ void extendLeaderNew(ForallStmt* fs,
   if (origRetSym) {
     checkAndRemoveOrigRetSym(origRetSym, iterFn);
   }
+}
+
+
+/////////////////////////////////////////////////////////////////////////////
+// top-level implementForallIntents2New and helpers
+
+static CallExpr* findForwardingCallAndUnresolve(FnSymbol* fDest) {
+  Symbol* retSym = fDest->getReturnSymbol();
+  retSym->type = dtUnknown;
+  SymExpr* retSE = retSym->getSingleDef();
+  // We need this. If we don't get it, is that a user error?
+  INT_ASSERT(retSE);
+
+  CallExpr* retMove = toCallExpr(retSE->parentExpr);
+  INT_ASSERT(retMove && retMove->isPrimitive(PRIM_MOVE));
+  Expr* retDef = retMove->get(2);
+
+  if (SymExpr* src = toSymExpr(retDef)) {
+    src->symbol()->type = dtUnknown;
+    SymExpr* srcSE = src->symbol()->getSingleDef();
+    INT_ASSERT(srcSE); // like retSE
+    CallExpr* srcMove = toCallExpr(srcSE->parentExpr);
+    INT_ASSERT(srcMove && srcMove->isPrimitive(PRIM_MOVE));
+    retDef = srcMove->get(2);
+  }
+
+  fDest->removeFlag(FLAG_RESOLVED);
+  CallExpr* fCall = toCallExpr(retDef);
+  // If we did not find it, is it user error or a new pattern?
+  INT_ASSERT(fCall);
+  return fCall;
+}
+
+static const char* newWrapperFormalName(int ix, Symbol* actual) {
+  if (!strcmp(actual->name, "chpl__reduceGlob"))
+    return intentArgName(ix, "reduceGlob");
+  else
+    return intentArgName(ix, actual->name);
+}
+    
+// "Wrap" throughout this function signifies either a wrapper,
+// ex. default wrapper, or an iterator forwarder.
+static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
+                                        CallExpr* parCall)
+{
+  int numExtraArgs = fs->numShadowVars();
+  if (numExtraArgs == 0)
+    // leave as-is
+    return;
+
+  FnSymbol* wDest = dest->copy();
+  wDest->addFlag(FLAG_INVISIBLE_FN);
+  wDest->instantiationPoint = getVisibilityBlock(parCall);
+  // Do we also need to update paramMap like in copyLeaderFn() ?
+  dest->defPoint->insertAfter(new DefExpr(wDest));
+  parCall->baseExpr->replace(new SymExpr(wDest));
+
+  // We cloned the wrapper 'dest' into 'wDest'.  wDest's call 'wCall'
+  // now invokes a clone of the iterator that 'dest' was invoking.
+  // The above code modifies both 'wCall' and the iterator that it invokes.
+  // Alas, 'wCall' inherits FLAG_RESOLVED and its return type from 'dest'
+  // and these are no longer appropriate due to these modifications.
+  //
+  // So 'wDest' will need to be resolved again.
+  // To make that happen, we un-resolve its relevant pieces.
+  //
+  CallExpr* wCall = findForwardingCallAndUnresolve(wDest);
+
+  // Extend wDest with formals to match parCall's actuals.
+  SymExpr* curArgSE = toSymExpr(
+    parCall->get(parCall->numActuals() - numExtraArgs + 1));
+  int ix = 0;
+
+  do {
+    Symbol*    curArg    = curArgSE->symbol();
+    IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
+    const char* curName  = newWrapperFormalName(ix, curArg);
+    ArgSymbol* curFormal = new ArgSymbol(fIntent, curName, curArg->type);
+
+    curFormal->qual = curArg->qual;
+
+    if (curFormal->isRef() &&
+        curArg->isConstValWillNotChange())
+      curFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
+
+    wCall->insertAtTail(curFormal);
+    wDest->insertFormalAtTail(curFormal);
+
+    curArgSE = toSymExpr(curArgSE->next);
+    ix++;
+  } while (curArgSE);
+
+  // Handle whatever wDest is wrapping or forwarding to.
+  implementForallIntents2New(fs, wCall);
+}
+
+void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall)
+{
+  FnSymbol* dest = parCall->resolvedFunction();
+
+  if (redirectedToIfi2Cache(fs, dest, parCall))
+    // Cache hit. redirectedToIfi2Cache() adjusted AST as needed.
+    return;
+
+  // At the moment, 'dest' can be a wrapper and/or an iterator-forwarding
+  // procedure, ex. _array.these() or NPBRandomStream.iterate().
+
+  if (dest->hasFlag(FLAG_WRAPPER)) {
+    // a wrapper for either an iterator or an iterator forwarder
+    implementForallIntents2NewWrap(fs, dest, parCall);
+
+  } else if (!dest->isIterator()) {
+    // an "iterator forwarder" i.e. a 'proc' that returns an iterator
+
+    // The only way we know that it is an iterator forwarder is by checking
+    // its return type. For that, it needs to be resolved.
+    INT_ASSERT(dest->isResolved());
+
+    implementForallIntents2NewWrap(fs, dest, parCall);
+
+  } else {
+    // a call directly to an iterator
+
+    if (!(isLeaderIterator(dest) || isStandaloneIterator(dest))) {
+      // Todo: add our iterator calls to the call stack so the user
+      // can trace where this is coming from.
+      // (It would be useful in other cases as well.)
+      // Further, represent the forall statement itself on the stack, too.
+      USR_FATAL_CONT(fs, "iteration in the forall loop redirects to a non-parallel iterator");
+      USR_PRINT(dest, "the non-parallel iterator is defined here");
+      USR_STOP();
+    }
+
+    extendLeaderNew(fs, dest, parCall);
+  }
+
+  // Save the extended iterator for future lookups.
+  IFI2cacheAdd(fs, dest, parCall->resolvedFunction());
 }

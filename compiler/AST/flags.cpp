@@ -108,6 +108,9 @@ static void viewSymbolFlags(Symbol* sym) {
           fprint_imm(stdout, *toVarSymbol(sym)->immediate, true);
           printf("\n");
         }
+        if (ShadowVarSymbol* svar = toShadowVarSymbol(vs)) {
+          printf("%s shadow var  ", svar->intentDescrString());
+        }
         printf("qual %s\n", qualifierToStr(vs->qual));
 
       } else if (ArgSymbol* as = toArgSymbol(sym)) {

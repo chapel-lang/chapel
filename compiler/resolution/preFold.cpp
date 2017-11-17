@@ -890,7 +890,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Expr*         lhs       = call->get(2)->remove();
     ForallStmt*   fs        = enclosingForallStmt(call);
     // rOpIdx was computed by reduceIntentIdx()
-    ShadowVarSymbol*   svar = fs->getForallIntent(rOpIdx);
+    ShadowVarSymbol*   svar = fs->getShadowVar(rOpIdx);
     Symbol*       globalOp  = toSymExpr(svar->reduceOpExpr())->symbol();
 
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));

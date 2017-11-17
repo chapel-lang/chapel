@@ -250,7 +250,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //                             //
 /////////////////////////////////
 
-// resolveParallelIteratorAndForallIntents() resolves key parts of ForallStmt:
+// resolveForallHeader() resolves key parts of ForallStmt:
 //
 //  * find the target parallel iterator (standalone or leader) and resolve it
 //  * issue an error, if neither is found
@@ -290,7 +290,7 @@ Ex. standalone iter walkdirs() in FileSystem module, as tested by:
 Therefore we compute this extended yield type manually.
 */
 static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
-  if (fs->numIntentVars() == 0) {
+  if (fs->numShadowVars() == 0) {
     // The iterator has not undergone extendLeader().
     // It still yields whatever the user wrote.
     // Its return symbol is still in tact.
@@ -785,7 +785,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
   CallExpr* retval = NULL;
 
@@ -898,8 +898,8 @@ void lowerForallStmts() {
     while (Expr* def = fs->inductionVariables().tail)
       userBody->insertAtHead(def->remove());
 
-    while (Expr* ivdef = fs->intentVariables().tail)
-      fs->loopBody()->insertAtHead(ivdef->remove());
+    while (Expr* svdef = fs->shadowVariables().tail)
+      fs->loopBody()->insertAtHead(svdef->remove());
 
     userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
