@@ -29,6 +29,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "passes.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -453,7 +454,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     newType->methods.add(dtor);
 
     // Resolve it so it stays in AST
-    resolveFns(dtor);
+    resolveFunction(dtor);
 
   }
 

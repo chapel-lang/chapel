@@ -46,6 +46,7 @@
 #include "postFold.h"
 #include "preFold.h"
 #include "ResolutionCandidate.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -268,7 +269,7 @@ static bool typeHasRefField(Type *type) {
 }
 
 //
-// Invoke resolveFns(fn), while having 'call' be on the top of 'callStack'.
+// Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
 //
 void resolveFnForCall(FnSymbol* fn, CallExpr* call)
 {
@@ -277,7 +278,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call)
   INT_ASSERT(callStack.n == 0 || call != callStack.v[callStack.n-1]);
 
   // When 'call' is on 'callStack', its parentSymbol etc. may be queried
-  // in printCallStack(), which resolveFns() may invoke.
+  // in printCallStack(), which resolveFunction() may invoke.
   INT_ASSERT(call->inTree());
 
   // Push 'call' onto the stack. In case of an error or warning,
@@ -285,7 +286,7 @@ void resolveFnForCall(FnSymbol* fn, CallExpr* call)
   callStack.add(call);
 
   // do real work
-  resolveFns(fn);
+  resolveFunction(fn);
 
   callStack.pop();
 }
@@ -355,7 +356,7 @@ hasUserAssign(Type* type) {
   FnSymbol* fn = resolveUninsertedCall(type, call);
   // Don't think we need to resolve the whole function
   // since we're just looking for a flag.
-  //resolveFns(fn);
+  //resolveFunction(fn);
   tmp->defPoint->remove();
   bool compilerAssign = fn->hasFlag(FLAG_COMPILER_GENERATED);
   return !compilerAssign;
@@ -579,7 +580,7 @@ protoIteratorClass(FnSymbol* fn) {
   // and _getIteratorZip functions in the module code.
   ii->iclass->iteratorInfo = ii;
   normalize(ii->getIterator);
-  resolveFns(ii->getIterator);  // No shortcuts.
+  resolveFunction(ii->getIterator);  // No shortcuts.
 }
 
 
@@ -3230,7 +3231,7 @@ static bool populateForwardingMethods(CallInfo& info) {
       CallExpr* getTgtCall = new CallExpr(fnGetTgt, gMethodToken, tmp);
       FnSymbol* fn         = resolveUninsertedCall(at, getTgtCall);
 
-      resolveFns(fn);
+      resolveFunction(fn);
 
       Type* delegateType = fn->retType->getValType();
 
@@ -5936,7 +5937,7 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
       call->get(2)->remove();
       // Need to resolve the allocator
       resolveCall(call);
-      resolveFns(call->resolvedFunction());
+      resolveFunction(call->resolvedFunction());
 
       def->remove();
     }
@@ -6481,10 +6482,10 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
               resolveFormals(fn);
 
               if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
-                resolveFns(fn);
+                resolveFunction(fn);
 
               } else if (fn->retType == dtUnknown) {
-                resolveFns(fn);
+                resolveFunction(fn);
               }
             }
           }
@@ -6708,7 +6709,7 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
         expr = resolveExprResolveEachCall(cc);
 
       } else {
-        resolveFns(call->resolvedFunction());
+        resolveFunction(call->resolvedFunction());
       }
 
       resolveExprExpandGenerics(call);
@@ -6742,7 +6743,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getValueCall()) {
     valueFn    = tmpCall->resolvedFunction();
 
-    resolveFns(valueFn);
+    resolveFunction(valueFn);
 
     n         += 1;
     nIterator += (valueFn->isIterator()    == true) ? 1 : 0;
@@ -6751,7 +6752,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getConstRefCall()) {
     constRefFn = tmpCall->resolvedFunction();
 
-    resolveFns(constRefFn);
+    resolveFunction(constRefFn);
 
     n         += 1;
     nIterator += (constRefFn->isIterator() == true) ? 1 : 0;
@@ -6760,7 +6761,7 @@ static Expr* resolveExprResolveEachCall(ContextCallExpr* cc) {
   if (CallExpr* tmpCall = cc->getRefCall()) {
     refFn      = tmpCall->resolvedFunction();
 
-    resolveFns(refFn);
+    resolveFunction(refFn);
 
     n         += 1;
     nIterator += (refFn->isIterator()      == true) ? 1 : 0;
@@ -6906,7 +6907,7 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
               instantiateBody(ct->defaultTypeConstructor);
             }
 
-            resolveFns(ct->defaultTypeConstructor);
+            resolveFunction(ct->defaultTypeConstructor);
           }
         }
       }
@@ -7309,7 +7310,7 @@ static void instantiate_default_constructor(FnSymbol* fn) {
     resolveCall(call);
     retAt->defaultInitializer = call->resolvedFunction();
     INT_ASSERT(retAt->defaultInitializer);
-    //      resolveFns(retAt->defaultInitializer);
+    //      resolveFunction(retAt->defaultInitializer);
     call->remove();
   }
 }
@@ -7488,7 +7489,7 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
           call->insertAtTail(unrefCall);
           FnSymbol* unrefFn = resolveNormalCall(unrefCall);
-          resolveFns(unrefFn);
+          resolveFunction(unrefFn);
           // Relies on the ArrayView variant having the 'unref fn' flag in
           // ChapelArray.
           if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
@@ -7507,8 +7508,7 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
   }
 }
 
-void
-resolveFns(FnSymbol* fn) {
+void resolveFunction(FnSymbol* fn) {
   if (fn->isResolved())
     return;
 
@@ -7608,7 +7608,7 @@ resolveFns(FnSymbol* fn) {
         resolveFormals(pt->defaultTypeConstructor);
 
         if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
-          resolveFns(pt->defaultTypeConstructor);
+          resolveFunction(pt->defaultTypeConstructor);
         }
       }
     }
@@ -7621,7 +7621,7 @@ resolveFns(FnSymbol* fn) {
             resolveFormals(fct->defaultTypeConstructor);
 
             if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
-              resolveFns(fct->defaultTypeConstructor);
+              resolveFunction(fct->defaultTypeConstructor);
             }
           }
         }
@@ -7813,7 +7813,7 @@ void resolve() {
 
   // --ipe does not build chpl_gen_main
   if (chpl_gen_main)
-    resolveFns(chpl_gen_main);
+    resolveFunction(chpl_gen_main);
 
   resolveSupportForModuleDeinits();
 
@@ -7961,11 +7961,11 @@ static void resolveUses(ModuleSymbol* mod)
 
   FnSymbol* fn = mod->initFn;
   resolveFormals(fn);
-  resolveFns(fn);
+  resolveFunction(fn);
 
   if (FnSymbol* defn = mod->deinitFn) {
     resolveFormals(defn);
-    resolveFns(defn);
+    resolveFunction(defn);
   }
 
   if (fPrintModuleResolution) {
@@ -7988,7 +7988,7 @@ static void resolveSupportForModuleDeinits() {
 
   gAddModuleFn = addModule->resolvedFunction();
 
-  resolveFns(gAddModuleFn);
+  resolveFunction(gAddModuleFn);
 }
 
 static void resolveExports() {
@@ -8004,7 +8004,7 @@ static void resolveExports() {
     if (fn->hasFlag(FLAG_EXPORT)) {
       SET_LINENO(fn);
       resolveFormals(fn);
-      resolveFns(fn);
+      resolveFunction(fn);
     }
   }
 }
@@ -8077,7 +8077,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
   }
 
   if (serializeFn != NULL) {
-    resolveFns(serializeFn);
+    resolveFunction(serializeFn);
     Type* retType = serializeFn->retType->getValType();
 
     if (retType == dtVoid) {
@@ -8095,7 +8095,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
       deserializeFn = resolveNormalSerializer(deserializeCall);
 
       if (deserializeFn != NULL) {
-        resolveFns(deserializeFn);
+        resolveFunction(deserializeFn);
 
         Type* retType = deserializeFn->retType->getValType();
         if (retType == dtVoid) {
@@ -8150,8 +8150,8 @@ static void resolveBroadcasters(AggregateType* at) {
     INT_FATAL("Unable to resolve serialized broadcasting for type %s", at->symbol->cname);
   }
 
-  resolveFns(broadcastFn);
-  resolveFns(destroyFn);
+  resolveFunction(broadcastFn);
+  resolveFunction(destroyFn);
 
   ser.broadcaster = broadcastFn;
   ser.destroyer   = destroyFn;
@@ -8272,7 +8272,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
 
   retval = resolveUninsertedCall(at, call);
 
-  resolveFns(retval);
+  resolveFunction(retval);
 
   INT_ASSERT(retval->hasFlag(FLAG_PROMOTION_WRAPPER) == false);
 
@@ -8480,14 +8480,14 @@ static void resolveOther() {
   //
   if (gPrintModuleInitFn) {
     // Resolve the function that will print module init order
-    resolveFns(gPrintModuleInitFn);
+    resolveFunction(gPrintModuleInitFn);
   }
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
   for_vector(FnSymbol, fn, fns) {
     if (!fn->hasFlag(FLAG_GENERIC)) {
       resolveFormals(fn);
-      resolveFns(fn);
+      resolveFunction(fn);
     }
   }
 }
@@ -8615,7 +8615,7 @@ static void ensureAndResolveInitStringLiterals() {
     INT_ASSERT(fMinimalModules);
     createInitStringLiterals();
   }
-  resolveFns(initStringLiterals);
+  resolveFunction(initStringLiterals);
 }
 
 
