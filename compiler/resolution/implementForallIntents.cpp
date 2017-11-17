@@ -19,6 +19,8 @@
 
 #include "implementForallIntents.h"
 
+#include "resolveFunction.h"
+
 //
 //-----------------------------------------------------------------------------
 //  implementForallIntents1()
