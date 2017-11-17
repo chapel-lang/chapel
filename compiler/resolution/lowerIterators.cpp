@@ -2256,14 +2256,14 @@ static void cleanupLeaderFollowerIteratorCalls()
                 Symbol* field = toAggregateType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 SET_LINENO(call);
-                if (field->type == se->symbol()->type) {
-                  tmp = newTemp(field->name, field->type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
-                } else if (field->type->refType == se->symbol()->type) {
+                if (field->type->refType == se->symbol()->type) {
                   tmp = newTemp(field->name, field->type->refType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterator, field)));
+                } else {
+                  tmp = newTemp(field->name, field->qualType());
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
                 }
                 actual->replace(new SymExpr(tmp));
                 i++;
@@ -2344,31 +2344,34 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
+
+    Symbol* fieldValue = newTemp(field->name, field->qualType());
+    block->insertAtTail(new DefExpr(fieldValue));
+
+    // Read the field
+    block->insertAtTail(new CallExpr(PRIM_MOVE, fieldValue, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+
+    // Now auto-copy it if appropriate
+    Symbol* copyResult = fieldValue;
     if (isUserDefinedRecord(field->type) && !field->isRef() ) {
-      if (hasAutoCopyForType(field->type)) {
-        FnSymbol* autoCopy = getAutoCopyForType(field->type);
-        Symbol* tmp1 = newTemp(field->name, field->type);
-        Symbol* tmp2 = newTemp(autoCopy->retType);
-        Symbol* refTmp = NULL;
-        block->insertAtTail(new DefExpr(tmp1));
-        block->insertAtTail(new DefExpr(tmp2));
-        if (isReferenceType(autoCopy->getFormal(1)->type)) {
-          refTmp = newTemp(autoCopy->getFormal(1)->type);
-          block->insertAtTail(new DefExpr(refTmp));
-        }
-        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-        if (refTmp) {
-          block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
-        }
-        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
-        block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
-      } else {
-        Symbol* tmp = newTemp(field->name, field->type);
-        block->insertAtTail(new DefExpr(tmp));
-        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-        block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
+      FnSymbol* autoCopy = getAutoCopyForType(field->type);
+      Symbol* valueToCopy = fieldValue;
+      Type* copyArgType = autoCopy->getFormal(1)->type;
+      // If the copy function is expecting a reference type that is
+      // a reference to the value we have, do a PRIM_ADDR_OF to pass it.
+      if (isReferenceType(copyArgType) &&
+          copyArgType->getValType() == fieldValue->type) {
+        valueToCopy = newTemp(copyArgType);
+        block->insertAtTail(new DefExpr(valueToCopy));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, valueToCopy, new CallExpr(PRIM_ADDR_OF, fieldValue)));
       }
+      copyResult = newTemp(autoCopy->retType);
+      block->insertAtTail(new DefExpr(copyResult));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult, new CallExpr(autoCopy, valueToCopy)));
     }
+
+    // Now set the field
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, copyResult));
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->body->replace(block);
