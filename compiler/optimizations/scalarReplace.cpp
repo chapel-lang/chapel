@@ -386,14 +386,26 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   }
 
   //
-  // only scalar replace sym if all of the uses are handled primitives
+  // only scalar replace sym if:
+  // - all of the uses are handled primitives
+  // - we access at least one member of 'sym. Otherwise there's no point
   //
+  bool memberAccessed = false;
   for_uses(se, useMap, sym) {
-    if (se->parentSymbol && isCallExpr(se->parentExpr)) {
+    CallExpr* parent = toCallExpr(se->parentExpr);
+    if (se->parentSymbol && parent != NULL) {
       if (isHandledRecordUse(se) == false) {
         return false;
       }
+      if (parent->isPrimitive(PRIM_GET_MEMBER) ||
+          parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+        // TODO: svec primitives?
+        memberAccessed = true;
+      }
     }
+  }
+  if (memberAccessed == false) {
+    return false;
   }
 
   if (fReportScalarReplace) srRecordReplaced++;
