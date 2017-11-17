@@ -23,6 +23,28 @@
 module ChapelBase {
   use ChapelStandard;
 
+  proc resetTaskSpawn() {
+    if CHPL_TASKS == 'qthreads' {
+      extern proc qthread_chpl_reset_spawn_order();
+      qthread_chpl_reset_spawn_order();
+    }
+  }
+
+  proc setShepDebug(debug) {
+    extern proc qthread_chpl_set_shep_debug(debug: c_int);
+    qthread_chpl_set_shep_debug(debug:c_int);
+  }
+
+  var allowTaskSpawnDebug = false; 
+  proc enableTaskSpawnDebug() {
+    if allowTaskSpawnDebug then 
+      setShepDebug(here.id+1);
+  }
+  proc disableTaskSpawnDebug() {
+    setShepDebug(0);
+  }
+
+
   // These two are called by compiler-generated code.
   extern proc chpl_config_has_value(name:c_string, module_name:c_string): bool;
   extern proc chpl_config_get_value(name:c_string, module_name:c_string): c_string;
