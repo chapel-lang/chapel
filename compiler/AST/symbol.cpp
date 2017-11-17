@@ -966,10 +966,10 @@ void ShadowVarSymbol::verify() {
     INT_FATAL(this, "ShadowVarSymbol::type is NULL");
   verifyNotOnList(specBlock);
   if (!resolved) {
-    // Verify that this symbol is on a ForallStmt::intentVariables() list.
+    // Verify that this symbol is on a ForallStmt::shadowVariables() list.
     ForallStmt* pfs = toForallStmt(defPoint->parentExpr);
     INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->intentVariables()));
+    INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
   INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
   if (!iteratorsLowered && specBlock != NULL)

@@ -557,8 +557,6 @@ public:
   void                       codegenPrototype();
   void                       codegenDef();
 
-  void                       printDef(FILE* outfile);
-
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);
 
