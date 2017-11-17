@@ -729,8 +729,8 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
-             isEquivalentSyncSingleExpr(field, initExpr) &&
-             field->init == NULL) {
+             field->init == NULL &&
+             isEquivalentSyncSingleExpr(field, initExpr)) {
     // Simplifies the initialization of sync fields in default initializers
     // to avoid the deadlock when the sync field has no initial value and the
     // caller relies on the default value for the corresponding argument.
@@ -1657,8 +1657,9 @@ static bool isEquivalentSyncSingleExpr(DefExpr* field, Expr* initExpr) {
       SymExpr* itFirst = toSymExpr(initType->get(1));
       // Both passed the same argument to it
       // LYDIA NOTE: won't work if one is using a type alias or a type
-      // function
-      if (ftFirst->symbol() == itFirst->symbol()) {
+      // function, or a specific size of primitives
+      if (ftFirst != NULL && itFirst != NULL &&
+          ftFirst->symbol() == itFirst->symbol()) {
         retval = true;
       }
     }
