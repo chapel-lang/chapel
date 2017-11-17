@@ -646,6 +646,7 @@ static void checkUseBeforeDefs() {
       }
     }
   }
+  USR_STOP();
 }
 
 // If the AST node defines a symbol, then extract that symbol

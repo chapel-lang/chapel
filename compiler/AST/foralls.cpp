@@ -219,6 +219,11 @@ void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
   const char* name = toUnresolvedSymExpr(var)->unresolved;
   ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
   call->insertAtTail(new DefExpr(ss));
+  // SET_LINENO does not work while parsing, so adjust astloc manually.
+  ss->astloc = ss->defPoint->astloc = var->astloc;
+  // Turns out that 'new ShadowVarSymbol' also creates this node.
+  // It is important that it gets the correct astloc as well.
+  ss->outerVarRep->astloc = var->astloc;
 }
 
 //
@@ -887,7 +892,9 @@ void lowerForallStmts() {
     PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
     PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 
-    currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
+   { // shadow the above SET_LINENO
+    SET_LINENO(fs->loopBody());
+
     ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
     PARBlock->insertAtTail(PARBody);
@@ -904,5 +911,6 @@ void lowerForallStmts() {
     userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
     fs->loopBody()->flattenAndRemove();    // into PARBody
+   }
   }
 }
