@@ -729,7 +729,8 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
-             isEquivalentSyncSingleExpr(field, initExpr)) {
+             isEquivalentSyncSingleExpr(field, initExpr) &&
+             field->init == NULL) {
     // Simplifies the initialization of sync fields in default initializers
     // to avoid the deadlock when the sync field has no initial value and the
     // caller relies on the default value for the corresponding argument.
