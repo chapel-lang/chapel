@@ -1384,9 +1384,10 @@ static IntentTag getIntent(ArgSymbol* formal) {
   IntentTag retval = formal->intent;
 
   if (retval == INTENT_BLANK || retval == INTENT_CONST) {
-    if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+    // Why did we previously exclude iterator records?
+    //if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
       retval = concreteIntentForArg(formal);
-    }
+    //}
   }
 
   return retval;
