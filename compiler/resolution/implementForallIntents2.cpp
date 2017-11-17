@@ -20,8 +20,10 @@
 #include "implementForallIntents.h"
 
 #include "foralls.h"
-#include <vector>
+#include "resolveFunction.h"
+
 #include <map>
+#include <vector>
 
 /*
 This file contains Part 2 of the new implementation of forall intents.

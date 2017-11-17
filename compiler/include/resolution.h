@@ -22,8 +22,9 @@
 
 #include "baseAST.h"
 #include "symbol.h"
-#include <vector>
+
 #include <map>
+#include <vector>
 
 class CallInfo;
 class ResolutionCandidate;
@@ -38,6 +39,8 @@ extern Vec<CallExpr*>                 callStack;
 extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
+
+extern Vec<FnSymbol*>                 resolvedFormals;
 
 extern Vec<BlockStmt*>                standardModuleSet;
 
@@ -79,11 +82,9 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-bool isLeaderIterator(FnSymbol* fn);
-
-bool isStandaloneIterator(FnSymbol* fn);
-
 bool isDispatchParent(Type* t, Type* pt);
+
+void protoIteratorClass(FnSymbol* fn);
 
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
@@ -169,22 +170,25 @@ void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 void      resolveDefaultGenericType(CallExpr* call);
-void      resolveReturnType(FnSymbol* fn);
 Type*     resolveTypeAlias(SymExpr* se);
 
 FnSymbol* tryResolveCall(CallExpr* call);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
-void insertFormalTemps(FnSymbol* fn);
-void insertAndResolveCasts(FnSymbol* fn);
-void ensureInMethodList(FnSymbol* fn);
+void      insertFormalTemps(FnSymbol* fn);
+void      insertAndResolveCasts(FnSymbol* fn);
+void      ensureInMethodList(FnSymbol* fn);
 
 
+bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
 FnSymbol* getUnalias(Type* t);
+
+Expr*     resolveExpr(Expr* expr);
+
 
 
 bool isPOD(Type* t);
@@ -196,7 +200,9 @@ void printResolutionErrorUnresolved(CallInfo&                  info,
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
+
+void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 
 void lvalueCheck(CallExpr* call);
 

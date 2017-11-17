@@ -32,6 +32,7 @@ RESOLUTION_SRCS =                                              \
                   postFold.cpp                                 \
                   preFold.cpp                                  \
                   ResolutionCandidate.cpp                      \
+                  resolveFunction.cpp                          \
                   tuples.cpp                                   \
                   typeSpecifier.cpp                            \
                   virtualDispatch.cpp                          \

@@ -20,8 +20,19 @@
 #ifndef _RESOLVE_FUNCTION_H_
 #define _RESOLVE_FUNCTION_H_
 
+class AggregateType;
 class FnSymbol;
+class Type;
 
-void resolveFunction(FnSymbol* fn);
+void  resolveFunction(FnSymbol* fn);
+
+bool  isLeaderIterator(FnSymbol* fn);
+
+bool  isStandaloneIterator(FnSymbol* fn);
+
+void  resolveReturnType(FnSymbol* fn);
+
+Type* getReturnedTupleType(FnSymbol*      fn,
+                           AggregateType* retType);
 
 #endif
