@@ -321,6 +321,25 @@ public:
 };
 
 //
+// Counterpart to SET_LINENO for use while parsing.
+//
+// Given that BaseAST constructor gives precedence to
+// (yystartlineno, yyfilename) over currentAstLoc,
+// we need to handle yy* separately.
+//
+#define SET_YYLINENO(ast) astlocYyMarker markYyAstLoc(ast)
+
+class astlocYyMarker {
+public:
+  astlocYyMarker(BaseAST* ast);
+  astlocYyMarker(int lineno, const char* filename);
+  ~astlocYyMarker();
+
+ int         prevYystartlineno;
+ const char* prevYyfilename;
+};
+
+//
 // class test inlines: determine the dynamic type of a BaseAST*
 //
 static inline bool isExpr(const BaseAST* a)

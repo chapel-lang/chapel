@@ -747,7 +747,7 @@ bool isCForLoop(const BaseAST* a)
 
 /************************************* | **************************************
 *                                                                             *
-* Definitions for astlocMarker                                                *
+* Definitions for astlocMarker and astlocYyMarker                             *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -770,4 +770,28 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
 // destructor, invoked upon leaving SET_LINENO's scope
 astlocMarker::~astlocMarker() {
   currentAstLoc = previousAstLoc;
+}
+
+// constructor, invoked upon SET_YYLINENO
+astlocYyMarker::astlocYyMarker(BaseAST* ast) :
+  prevYystartlineno (yystartlineno),
+  prevYyfilename    (yyfilename)
+{
+  yystartlineno = ast->linenum();
+  yyfilename    = ast->fname();
+}
+
+// constructor, for special occasions
+astlocYyMarker::astlocYyMarker(int lineno, const char* filename) :
+  prevYystartlineno (yystartlineno),
+  prevYyfilename    (yyfilename)
+{
+  yystartlineno = lineno;
+  yyfilename    = filename;
+}
+
+// destructor, invoked upon leaving SET_YYLINENO's scope
+astlocYyMarker::~astlocYyMarker() {
+  yystartlineno = prevYystartlineno;
+  yyfilename    = prevYyfilename;
 }
