@@ -300,14 +300,15 @@ static void checkid(int id) {
 BaseAST::BaseAST(AstTag type) :
   astTag(type),
   id(uid++),
-  astloc(yystartlineno, yyfilename)
+  astloc(currentAstLoc.lineno, currentAstLoc.filename)
 {
   checkid(id);
   if (astloc.filename) {
-    // OK, set from yyfilename
+    // OK, set from currentAstLoc
   } else {
-    if (currentAstLoc.filename) {
-      astloc = currentAstLoc;
+    if (yyfilename) {
+      astloc.filename = yyfilename;
+      astloc.lineno   = yystartlineno;
     } else {
       // neither yy* nor currentAstLoc are set
       INT_FATAL("no line number available");
