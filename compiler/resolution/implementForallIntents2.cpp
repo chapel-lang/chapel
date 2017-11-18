@@ -755,14 +755,14 @@ static Symbol* tupcomForYieldInForall(FIcontext& ctx, ForallStmt* efs, int ix)
         efsShadVar->outerVarSym()  == fii.fiFormal)
       return efsShadVar;
 
-  // Here is the new shadow variable.
+  // Here is the new shadow variable. outerVarRep is set below.
   ShadowVarSymbol* esv = new ShadowVarSymbol(osv->intent, osv->name, NULL);
   efs->shadowVariables().insertAtTail(new DefExpr(esv));
 
   if (isReduce) {
     ensureCurrentReduceOpForReduceIntent(ctx, fii, ix);
     esv->reduceGlobalOp = fii.riCurrentOp;
-    esv->outerVarRep    = NULL;  // no user-level outer var
+    esv->outerVarRep    = NULL;  // NB no user-level outer var
   } else {
     esv->outerVarRep    = new SymExpr(fii.fiFormal);
   }

@@ -207,6 +207,22 @@ static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
   return TFI_DEFAULT; // dummy
 }
 
+ShadowVarSymbol* ShadowVarSymbol::buildFromArgIntent(IntentTag intent,
+                                                     Expr* ovar)
+{
+  ForallIntentTag  fi = argIntentToForallIntent(ovar, intent);
+  const char*    name = toUnresolvedSymExpr(ovar)->unresolved;
+  return new ShadowVarSymbol(fi, name, ovar);
+}
+
+ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
+                                                        Expr* riExpr)
+{
+  INT_ASSERT(riExpr != NULL);
+  const char* name = toUnresolvedSymExpr(ovar)->unresolved;
+  return new ShadowVarSymbol(TFI_REDUCE, name, ovar, riExpr);
+}
+
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
@@ -214,16 +230,8 @@ void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   fi->riSpecs.push_back(ri);
 }
 
-void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
-  ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
-  const char* name = toUnresolvedSymExpr(var)->unresolved;
-  ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
-  call->insertAtTail(new DefExpr(ss));
-  // SET_LINENO does not work while parsing, so adjust astloc manually.
-  ss->astloc = ss->defPoint->astloc = var->astloc;
-  // Turns out that 'new ShadowVarSymbol' also creates this node.
-  // It is important that it gets the correct astloc as well.
-  ss->outerVarRep->astloc = var->astloc;
+void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
+  call->insertAtTail(new DefExpr(svar));
 }
 
 //
