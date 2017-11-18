@@ -84,8 +84,6 @@ bool explainCallMatch(CallExpr* call);
 
 bool isDispatchParent(Type* t, Type* pt);
 
-void protoIteratorClass(FnSymbol* fn);
-
 bool canCoerce(Type*     actualType,
                Symbol*   actualSym,
                Type*     formalType,
@@ -165,11 +163,12 @@ disambiguateForInit(CallInfo&                    info,
                     Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
-void      resolveFormals(FnSymbol* fn);
 void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
+
 void      resolveDefaultGenericType(CallExpr* call);
+Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
 FnSymbol* tryResolveCall(CallExpr* call);
@@ -223,7 +222,6 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
-
 
 extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 

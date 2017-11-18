@@ -51,6 +51,7 @@
 #include "ForLoop.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"

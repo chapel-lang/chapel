@@ -147,9 +147,6 @@ static CapturedValueMap            capturedValues;
 static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
-static FnSymbol*
-protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType);
-static void resolveSpecifiedReturnType(FnSymbol* fn);
 static bool fits_in_int(int width, Immediate* imm);
 static bool fits_in_uint(int width, Immediate* imm);
 static bool fits_in_mantissa(int width, Immediate* imm);
@@ -165,7 +162,6 @@ static bool
 isMoreVisible(Expr* expr, FnSymbol* fn1, FnSymbol* fn2);
 static CallExpr* userCall(CallExpr* call);
 static void reissueCompilerWarning(const char* str, int offset);
-static Type* resolveDefaultGenericTypeSymExpr(SymExpr* se);
 
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
@@ -437,111 +433,6 @@ FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
 
-static FnSymbol*
-protoIteratorMethod(IteratorInfo* ii, const char* name, Type* retType) {
-  FnSymbol* fn = new FnSymbol(name);
-  fn->addFlag(FLAG_AUTO_II);
-  if (strcmp(name, "advance"))
-    fn->addFlag(FLAG_INLINE);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->addFlag(FLAG_METHOD);
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->retType = retType;
-  fn->insertFormalAtTail(fn->_this);
-  ii->iterator->defPoint->insertBefore(new DefExpr(fn));
-  normalize(fn);
-
-  // Pretend that this function is already resolved.
-  // Its body will be filled in during the lowerIterators pass.
-  fn->addFlag(FLAG_RESOLVED);
-  return fn;
-}
-
-
-void protoIteratorClass(FnSymbol* fn) {
-  INT_ASSERT(!fn->iteratorInfo);
-
-  SET_LINENO(fn);
-
-  IteratorInfo* ii = new IteratorInfo();
-  fn->iteratorInfo = ii;
-  fn->iteratorInfo->iterator = fn;
-
-  const char* className = astr(fn->name);
-  if (fn->_this)
-    className = astr(className, "_", fn->_this->type->symbol->cname);
-
-  ii->iclass = new AggregateType(AGGREGATE_CLASS);
-
-  TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
-
-  cts->addFlag(FLAG_ITERATOR_CLASS);
-  cts->addFlag(FLAG_POD);
-
-  ii->iclass->addRootType();
-
-  fn->defPoint->insertBefore(new DefExpr(cts));
-
-  ii->irecord = new AggregateType(AGGREGATE_RECORD);
-
-  TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
-
-  rts->addFlag(FLAG_ITERATOR_RECORD);
-
-  // TODO -- do a better job of deciding if an iterator record is
-  // POD or not POD.
-  rts->addFlag(FLAG_NOT_POD);
-
-  if (fn->retTag == RET_REF) { // TODO -- handle RET_CONST_REF
-    rts->addFlag(FLAG_REF_ITERATOR_CLASS);
-  }
-
-  fn->defPoint->insertBefore(new DefExpr(rts));
-
-  ii->tag      = it_iterator;
-  ii->advance  = protoIteratorMethod(ii, "advance",  dtVoid);
-  ii->zip1     = protoIteratorMethod(ii, "zip1",     dtVoid);
-  ii->zip2     = protoIteratorMethod(ii, "zip2",     dtVoid);
-  ii->zip3     = protoIteratorMethod(ii, "zip3",     dtVoid);
-  ii->zip4     = protoIteratorMethod(ii, "zip4",     dtVoid);
-  ii->hasMore  = protoIteratorMethod(ii, "hasMore",  dtInt[INT_SIZE_DEFAULT]);
-  ii->getValue = protoIteratorMethod(ii, "getValue", fn->retType);
-  ii->init     = protoIteratorMethod(ii, "init",     dtVoid);
-  ii->incr     = protoIteratorMethod(ii, "incr",     dtVoid);
-
-  // Save the iterator info in the iterator record.
-  // The iterator info is still owned by the iterator function.
-  ii->irecord->iteratorInfo        = ii;
-  ii->irecord->scalarPromotionType = fn->retType;
-
-  fn->retType = ii->irecord;
-  fn->retTag  = RET_VALUE;
-
-  makeRefType(fn->retType);
-
-  ii->getIterator = new FnSymbol("_getIterator");
-  ii->getIterator->addFlag(FLAG_AUTO_II);
-  ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = ii->iclass;
-  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", ii->irecord));
-  VarSymbol* ret = newTemp("_ic_", ii->iclass);
-  ii->getIterator->insertAtTail(new DefExpr(ret));
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo());
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
-  // Save the iterator info in the iterator class also.
-  // This makes it easy to obtain the iterator given
-  // just a symbol of the iterator class type.  This may include _getIterator
-  // and _getIteratorZip functions in the module code.
-  ii->iclass->iteratorInfo = ii;
-  normalize(ii->getIterator);
-  resolveFunction(ii->getIterator);  // No shortcuts.
-}
-
-
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.
 // This function returns true for exceptional FnSymbols
@@ -610,207 +501,6 @@ isTupleContainingAnyReferences(Type* t)
   }
 
   return false;
-}
-
-
-static void
-resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType;
-
-  resolveBlockStmt(fn->retExprType);
-  retType = fn->retExprType->body.tail->typeInfo();
-
-  if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
-    // Try resolving global type aliases
-    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
-      retType = resolveTypeAlias(se);
-
-    if (retType->symbol->hasFlag(FLAG_GENERIC)) {
-      SET_LINENO(fn->retExprType->body.tail);
-      // Try resolving records/classes with default types
-      // e.g. range
-      retType = resolveDefaultGenericTypeSymExpr(se);
-    }
-  }
-  fn->retType = retType;
-
-  if (retType != dtUnknown) {
-
-    // Difficult to call e.g. _unref_type in build/normalize
-    // b/c of bugs in pulling out function symbols.
-    // So we make sure returned tuple types capture values here.
-    if (retType->symbol->hasFlag(FLAG_TUPLE) &&
-        !doNotChangeTupleTypeRefLevel(fn, true)) {
-      AggregateType* tupleType = toAggregateType(retType);
-      INT_ASSERT(tupleType);
-
-      retType = getReturnedTupleType(fn, tupleType);
-      fn->retType = retType;
-    } else if (fn->returnsRefOrConstRef()) {
-      makeRefType(retType);
-      retType = fn->retType->refType;
-      fn->retType = retType;
-    }
-
-    fn->retExprType->remove();
-
-    if (fn->isIterator() && !fn->iteratorInfo) {
-      // Note: protoIteratorClass changes fn->retType
-      // to the iterator record. The original return type
-      // is stored here in retType.
-      protoIteratorClass(fn);
-    }
-  }
-
-   // Also update the return symbol type
-   Symbol* ret = fn->getReturnSymbol();
-   if (ret->type == dtUnknown) {
-     // uses the local variable saving the resolved declared return type
-     // since for iterators, fn->retType is the iterator record.
-     ret->type = retType;
-   }
-}
-
-
-//
-// Generally, atomics must also be passed by reference when
-// passed by blank intent.  The following expression checks for
-// these cases by looking for atomics passed by blank intent and
-// changing their type to a ref type.  Interestingly, this
-// conversion does not seem to be required for single-locale
-// compilation, but it is for multi-locale.  Otherwise, updates
-// to atomics are lost (as demonstrated by
-// test/functions/bradc/intents/test_pass_atomic.chpl).
-//
-// I say "generally" because there are a few cases where passing
-// atomics by reference breaks things -- primarily in
-// constructors, assignment operators, and tuple construction.
-// So we have some unfortunate special checks that dance around
-// these cases.
-//
-// While I can't explain precisely why these special cases are
-// required yet, here are the tests that tend to have problems
-// without these special conditions:
-//
-//   test/release/examples/benchmarks/hpcc/ra-atomics.chpl
-//   test/types/atomic/sungeun/no_atomic_assign.chpl
-//   test/functions/bradc/intents/test_construct_atomic_intent.chpl
-//   test/users/vass/barrierWF.test-1.chpl
-//   test/studies/shootout/spectral-norm/spectralnorm.chpl
-//   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
-//   test/parallel/taskPar/sungeun/barrier/*.chpl
-//
-static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
-  return (formal->intent == INTENT_BLANK &&
-          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-          isAtomicType(formal->type))
-    && fn->name != astrSequals
-    && !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
-    && !fn->hasFlag(FLAG_CONSTRUCTOR)
-    && !fn->hasFlag(FLAG_BUILD_TUPLE);
-}
-
-
-void
-resolveFormals(FnSymbol* fn) {
-  static Vec<FnSymbol*> done;
-
-  if (!fn->hasFlag(FLAG_GENERIC)) {
-    if (done.set_in(fn))
-      return;
-    done.set_add(fn);
-
-    for_formals(formal, fn) {
-      if (formal->type == dtUnknown) {
-        if (!formal->typeExpr) {
-          formal->type = dtObject;
-        } else {
-          resolveBlockStmt(formal->typeExpr);
-          formal->type = formal->typeExpr->body.tail->getValType();
-        }
-      }
-
-      //
-      // Fix up value types that need to be ref types.
-      //
-      if (formal->type->symbol->hasFlag(FLAG_REF))
-        // Already a ref type, so done.
-        continue;
-
-      // Don't pass dtString params in by reference
-      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-        continue;
-
-      if (formal->type->symbol->hasFlag(FLAG_RANGE) &&
-          (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) &&
-          fn->hasFlag(FLAG_BEGIN)) {
-        // For begin functions, copy ranges in if passed by blank intent.
-        // This is a temporary workaround.
-        // * arguably blank intent for ranges should be 'const ref',
-        //   but the current compiler uses a mix of 'const in' and 'const ref'.
-        // * resolveIntents is changing INTENT_IN to INTENT_REF
-        //   which interferes with the logic in parallel.cpp
-        //   (another approach to that problem might be to separately
-        //    store the 'requested intent' and the 'concrete intent').
-        formal->intent = INTENT_CONST_IN;
-      }
-
-      if (formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_REF ||
-          formal->intent == INTENT_CONST_REF ||
-          convertAtomicFormalTypeToRef(formal, fn) ||
-          formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
-          (formal == fn->_this &&
-           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-           (isUnion(formal->type) ||
-            isRecord(formal->type)))) {
-        makeRefType(formal->type);
-        if (formal->type->refType) {
-          formal->type = formal->type->refType;
-          // The type of the formal is its own ref type!
-        } else {
-          formal->qual = QUAL_REF;
-        }
-      }
-
-      if (isRecordWrappedType(formal->type) &&
-          fn->hasFlag(FLAG_ITERATOR_FN)) {
-        // Pass domains, arrays into iterators by ref.
-        // This is a temporary workaround for issues with
-        // iterator lowering.
-        // It is temporary because we expect more of the
-        // compiler to handle 'refness' of an ArgSymbol
-        // in the future.
-        makeRefType(formal->type);
-        formal->type = formal->type->refType;
-      }
-
-      // Adjust tuples for intent.
-      // This should not apply to 'ref' , 'out', or 'inout' formals,
-      // but these are currently turned into reference types above.
-      // It probably should not apply to 'const ref' either but
-      // that is more debatable.
-      if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
-          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-          !(formal == fn->_this) &&
-          !doNotChangeTupleTypeRefLevel(fn, false)) {
-
-        // Let 'in' intent work similarly to the blank intent.
-        IntentTag intent = formal->intent;
-        if (intent == INTENT_IN) intent = INTENT_BLANK;
-        AggregateType* tupleType = toAggregateType(formal->type);
-        INT_ASSERT(tupleType);
-        Type* newType = computeTupleWithIntent(intent, tupleType);
-        formal->type = newType;
-      }
-
-    }
-    if (fn->retExprType)
-      resolveSpecifiedReturnType(fn);
-
-    resolvedFormals.set_add(fn);
-  }
 }
 
 static bool fits_in_int_helper(int width, int64_t val) {
@@ -2089,8 +1779,7 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 // also handles some complicated extern vars like
 //   extern var x: c_ptr(c_int)
 // which do not work in the usual order of resolution.
-static Type*
-resolveDefaultGenericTypeSymExpr(SymExpr* te) {
+Type* resolveDefaultGenericTypeSymExpr(SymExpr* te) {
 
   // te could refer to a type in two ways:
   //  1. it could refer to a TypeSymbol directly
@@ -6163,13 +5852,17 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 
           if (callFolded->parentSymbol != NULL) {
             if (FnSymbol* fn = callFolded->resolvedFunction()) {
-              resolveFormals(fn);
+
 
               if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
-                resolveFunction(fn);
+                resolveFormalsAndFunction(fn);
 
               } else if (fn->retType == dtUnknown) {
-                resolveFunction(fn);
+                resolveFormalsAndFunction(fn);
+
+              } else {
+                resolveFormals(fn);
+
               }
             }
           }
@@ -7028,13 +6721,10 @@ static void resolveUses(ModuleSymbol* mod)
             module_resolution_depth, mod->name);
   }
 
-  FnSymbol* fn = mod->initFn;
-  resolveFormals(fn);
-  resolveFunction(fn);
+  resolveFormalsAndFunction(mod->initFn);
 
   if (FnSymbol* defn = mod->deinitFn) {
-    resolveFormals(defn);
-    resolveFunction(defn);
+    resolveFormalsAndFunction(defn);
   }
 
   if (fPrintModuleResolution) {
@@ -7070,10 +6760,10 @@ static void resolveExports() {
       continue;
     }
 
-    if (fn->hasFlag(FLAG_EXPORT)) {
+    if (fn->hasFlag(FLAG_EXPORT) == true) {
       SET_LINENO(fn);
-      resolveFormals(fn);
-      resolveFunction(fn);
+
+      resolveFormalsAndFunction(fn);
     }
   }
 }
@@ -7083,6 +6773,7 @@ static void resolveEnumTypes() {
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
       SET_LINENO(et);
+
       ensureEnumTypeResolved(et);
     }
   }
@@ -7553,10 +7244,10 @@ static void resolveOther() {
   }
 
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
+
   for_vector(FnSymbol, fn, fns) {
-    if (!fn->hasFlag(FLAG_GENERIC)) {
-      resolveFormals(fn);
-      resolveFunction(fn);
+    if (fn->hasFlag(FLAG_GENERIC) == false) {
+      resolveFormalsAndFunction(fn);
     }
   }
 }

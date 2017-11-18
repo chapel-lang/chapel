@@ -25,6 +25,7 @@
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
