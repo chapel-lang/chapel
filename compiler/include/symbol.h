@@ -584,6 +584,8 @@ public:
 
   void                       collapseBlocks();
 
+  CallExpr*                  singleInvocation()                          const;
+
   bool                       tagIfGeneric();
 
   bool                       isResolved()                                const;
