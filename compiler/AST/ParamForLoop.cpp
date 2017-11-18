@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "stringutil.h"
 
 /************************************ | *************************************

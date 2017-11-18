@@ -24,6 +24,10 @@ class AggregateType;
 class FnSymbol;
 class Type;
 
+void  resolveFormalsAndFunction(FnSymbol* fn);
+
+void  resolveFormals(FnSymbol* fn);
+
 void  resolveFunction(FnSymbol* fn);
 
 bool  isLeaderIterator(FnSymbol* fn);
