@@ -16,5 +16,5 @@ proc main() {
   lock.close();
 
   var compopts = ["",];
-  BuildProgram(false, false, compopts);
+  buildProgram(false, false, compopts);
 }
