@@ -40,6 +40,12 @@
 #include "view.h"
 #include "WhileStmt.h"
 
+#include <set>
+
+static void resolveFormals(FnSymbol* fn);
+
+static void resolveSpecifiedReturnType(FnSymbol* fn);
+
 static bool isFollowerIterator(FnSymbol* fn);
 static bool isVecIterator(FnSymbol* fn);
 
@@ -56,8 +62,8 @@ static void instantiateDefaultConstructor(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
-void resolveFormalsAndFunction(FnSymbol* fn) {
-  resolveFormals(fn);
+void resolveSignatureAndFunction(FnSymbol* fn) {
+  resolveSignature(fn);
   resolveFunction(fn);
 }
 
@@ -67,125 +73,126 @@ void resolveFormalsAndFunction(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool      convertAtomicFormalTypeToRef(ArgSymbol* formal,
-                                              FnSymbol*  fn);
+void resolveSignature(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_GENERIC) == false) {
+    static std::set<FnSymbol*> done;
 
-static void      resolveSpecifiedReturnType(FnSymbol* fn);
+    if (done.find(fn) == done.end()) {
+      done.insert(fn);
 
-static void      protoIteratorClass(FnSymbol* fn);
+      resolveFormals(fn);
 
-static FnSymbol* protoIteratorMethod(IteratorInfo* ii,
-                                     const char*   name,
-                                     Type*         retType);
-
-void resolveFormals(FnSymbol* fn) {
-  static Vec<FnSymbol*> done;
-
-  if (!fn->hasFlag(FLAG_GENERIC)) {
-    if (done.set_in(fn))
-      return;
-
-    done.set_add(fn);
-
-    for_formals(formal, fn) {
-      if (formal->type == dtUnknown) {
-        if (!formal->typeExpr) {
-          formal->type = dtObject;
-
-        } else {
-          resolveBlockStmt(formal->typeExpr);
-
-          formal->type = formal->typeExpr->body.tail->getValType();
-        }
+      if (fn->retExprType != NULL) {
+        resolveSpecifiedReturnType(fn);
       }
 
-      //
-      // Fix up value types that need to be ref types.
-      //
-      if (formal->type->symbol->hasFlag(FLAG_REF))
-        // Already a ref type, so done.
-        continue;
-
-      // Don't pass dtString params in by reference
-      if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-        continue;
-
-      if (formal->type->symbol->hasFlag(FLAG_RANGE) &&
-          (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) &&
-          fn->hasFlag(FLAG_BEGIN)) {
-        // For begin functions, copy ranges in if passed by blank intent.
-        // This is a temporary workaround.
-        // * arguably blank intent for ranges should be 'const ref',
-        //   but the current compiler uses a mix of 'const in' and 'const ref'.
-        // * resolveIntents is changing INTENT_IN to INTENT_REF
-        //   which interferes with the logic in parallel.cpp
-        //   (another approach to that problem might be to separately
-        //    store the 'requested intent' and the 'concrete intent').
-        formal->intent = INTENT_CONST_IN;
-      }
-
-      if (formal->intent == INTENT_INOUT ||
-          formal->intent == INTENT_OUT ||
-          formal->intent == INTENT_REF ||
-          formal->intent == INTENT_CONST_REF ||
-          convertAtomicFormalTypeToRef(formal, fn) ||
-          formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
-          (formal == fn->_this &&
-           !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-           (isUnion(formal->type) ||
-            isRecord(formal->type)))) {
-        makeRefType(formal->type);
-
-        if (formal->type->refType) {
-          formal->type = formal->type->refType;
-          // The type of the formal is its own ref type!
-
-        } else {
-          formal->qual = QUAL_REF;
-        }
-      }
-
-      if (isRecordWrappedType(formal->type) &&
-          fn->hasFlag(FLAG_ITERATOR_FN)) {
-        // Pass domains, arrays into iterators by ref.
-        // This is a temporary workaround for issues with
-        // iterator lowering.
-        // It is temporary because we expect more of the
-        // compiler to handle 'refness' of an ArgSymbol
-        // in the future.
-        makeRefType(formal->type);
-
-        formal->type = formal->type->refType;
-      }
-
-      // Adjust tuples for intent.
-      // This should not apply to 'ref' , 'out', or 'inout' formals,
-      // but these are currently turned into reference types above.
-      // It probably should not apply to 'const ref' either but
-      // that is more debatable.
-      if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
-          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-          !(formal == fn->_this) &&
-          !doNotChangeTupleTypeRefLevel(fn, false)) {
-
-        // Let 'in' intent work similarly to the blank intent.
-        IntentTag intent = formal->intent;
-        if (intent == INTENT_IN) intent = INTENT_BLANK;
-        AggregateType* tupleType = toAggregateType(formal->type);
-        INT_ASSERT(tupleType);
-        Type* newType = computeTupleWithIntent(intent, tupleType);
-        formal->type = newType;
-      }
-
+      resolvedFormals.set_add(fn);
     }
-
-    if (fn->retExprType) {
-      resolveSpecifiedReturnType(fn);
-    }
-
-    resolvedFormals.set_add(fn);
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool convertAtomicFormalTypeToRef(ArgSymbol* formal,
+                                         FnSymbol*  fn);
+
+static void resolveFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->type == dtUnknown) {
+      if (formal->typeExpr == NULL) {
+        formal->type = dtObject;
+
+      } else {
+        resolveBlockStmt(formal->typeExpr);
+
+        formal->type = formal->typeExpr->body.tail->getValType();
+      }
+    }
+
+    //
+    // Fix up value types that need to be ref types.
+    //
+    if (formal->type->symbol->hasFlag(FLAG_REF))
+      // Already a ref type, so done.
+      continue;
+
+    // Don't pass dtString params in by reference
+    if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+      continue;
+
+    if (formal->type->symbol->hasFlag(FLAG_RANGE) &&
+        (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) &&
+        fn->hasFlag(FLAG_BEGIN)) {
+      // For begin functions, copy ranges in if passed by blank intent.
+      // This is a temporary workaround.
+      // * arguably blank intent for ranges should be 'const ref',
+      //   but the current compiler uses a mix of 'const in' and 'const ref'.
+      // * resolveIntents is changing INTENT_IN to INTENT_REF
+      //   which interferes with the logic in parallel.cpp
+      //   (another approach to that problem might be to separately
+      //    store the 'requested intent' and the 'concrete intent').
+      formal->intent = INTENT_CONST_IN;
+    }
+
+    if (formal->intent == INTENT_INOUT ||
+        formal->intent == INTENT_OUT ||
+        formal->intent == INTENT_REF ||
+        formal->intent == INTENT_CONST_REF ||
+        convertAtomicFormalTypeToRef(formal, fn) ||
+        formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
+        (formal == fn->_this &&
+         !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+         (isUnion(formal->type) ||
+          isRecord(formal->type)))) {
+      makeRefType(formal->type);
+
+      if (formal->type->refType) {
+        formal->type = formal->type->refType;
+        // The type of the formal is its own ref type!
+
+      } else {
+        formal->qual = QUAL_REF;
+      }
+    }
+
+    if (isRecordWrappedType(formal->type) &&
+        fn->hasFlag(FLAG_ITERATOR_FN)) {
+      // Pass domains, arrays into iterators by ref.
+      // This is a temporary workaround for issues with
+      // iterator lowering.
+      // It is temporary because we expect more of the
+      // compiler to handle 'refness' of an ArgSymbol
+      // in the future.
+      makeRefType(formal->type);
+
+      formal->type = formal->type->refType;
+    }
+
+    // Adjust tuples for intent.
+    // This should not apply to 'ref' , 'out', or 'inout' formals,
+    // but these are currently turned into reference types above.
+    // It probably should not apply to 'const ref' either but
+    // that is more debatable.
+    if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
+        !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+        !(formal == fn->_this) &&
+        !doNotChangeTupleTypeRefLevel(fn, false)) {
+
+      // Let 'in' intent work similarly to the blank intent.
+      IntentTag intent = formal->intent;
+      if (intent == INTENT_IN) intent = INTENT_BLANK;
+      AggregateType* tupleType = toAggregateType(formal->type);
+      INT_ASSERT(tupleType);
+      Type* newType = computeTupleWithIntent(intent, tupleType);
+      formal->type = newType;
+    }
+  }
+}
+
 
 //
 // Generally, atomics must also be passed by reference when
@@ -225,6 +232,17 @@ static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
     && !fn->hasFlag(FLAG_BUILD_TUPLE);
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void      protoIteratorClass(FnSymbol* fn);
+
+static FnSymbol* protoIteratorMethod(IteratorInfo* ii,
+                                     const char*   name,
+                                     Type*         retType);
 
 static void resolveSpecifiedReturnType(FnSymbol* fn) {
   Type* retType;
@@ -520,7 +538,7 @@ void resolveFunction(FnSymbol* fn) {
       if (pt                         != NULL     &&
           pt                         != dtObject &&
           pt->defaultTypeConstructor != NULL) {
-        resolveFormals(pt->defaultTypeConstructor);
+        resolveSignature(pt->defaultTypeConstructor);
 
         if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
           resolveFunction(pt->defaultTypeConstructor);
@@ -534,7 +552,7 @@ void resolveFunction(FnSymbol* fn) {
       for_fields(field, ct) {
         if (AggregateType* fct = toAggregateType(field->type)) {
           if (fct->defaultTypeConstructor) {
-            resolveFormals(fct->defaultTypeConstructor);
+            resolveSignature(fct->defaultTypeConstructor);
 
             if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
               resolveFunction(fct->defaultTypeConstructor);

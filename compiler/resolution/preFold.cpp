@@ -1466,7 +1466,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     }
   }
 
-  resolveFormals(captured_fn);
+  resolveSignature(captured_fn);
+
   resolveFnForCall(captured_fn, call);
 
   //
@@ -1476,12 +1477,13 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     return new SymExpr(captured_fn);
   }
+
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
 
-  AggregateType *parent;
-  FnSymbol *thisParentMethod;
+  AggregateType* parent;
+  FnSymbol*      thisParentMethod;
 
   std::string parent_name = buildParentName(captured_fn->formals, true, captured_fn->retType);
 

@@ -24,9 +24,9 @@ class AggregateType;
 class FnSymbol;
 class Type;
 
-void  resolveFormalsAndFunction(FnSymbol* fn);
+void  resolveSignatureAndFunction(FnSymbol* fn);
 
-void  resolveFormals(FnSymbol* fn);
+void  resolveSignature(FnSymbol* fn);
 
 void  resolveFunction(FnSymbol* fn);
 

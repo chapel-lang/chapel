@@ -629,7 +629,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
    * A derived generic type will use the type of its parent,
    * and expects this to be instantiated before it is.
    */
-  resolveFormals(fn);
+  resolveSignature(fn);
 
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {

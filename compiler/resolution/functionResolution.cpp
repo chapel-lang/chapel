@@ -5855,13 +5855,13 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 
 
               if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
-                resolveFormalsAndFunction(fn);
+                resolveSignatureAndFunction(fn);
 
               } else if (fn->retType == dtUnknown) {
-                resolveFormalsAndFunction(fn);
+                resolveSignatureAndFunction(fn);
 
               } else {
-                resolveFormals(fn);
+                resolveSignature(fn);
 
               }
             }
@@ -6277,7 +6277,7 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
         if (ct != dtString ||
             (sym->isParameter()                    == false   &&
              sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
-          resolveFormals(ct->defaultTypeConstructor);
+          resolveSignature(ct->defaultTypeConstructor);
 
           if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
             if (hasPartialCopyData(ct->defaultTypeConstructor) == true) {
@@ -6721,10 +6721,10 @@ static void resolveUses(ModuleSymbol* mod)
             module_resolution_depth, mod->name);
   }
 
-  resolveFormalsAndFunction(mod->initFn);
+  resolveSignatureAndFunction(mod->initFn);
 
   if (FnSymbol* defn = mod->deinitFn) {
-    resolveFormalsAndFunction(defn);
+    resolveSignatureAndFunction(defn);
   }
 
   if (fPrintModuleResolution) {
@@ -6763,7 +6763,7 @@ static void resolveExports() {
     if (fn->hasFlag(FLAG_EXPORT) == true) {
       SET_LINENO(fn);
 
-      resolveFormalsAndFunction(fn);
+      resolveSignatureAndFunction(fn);
     }
   }
 }
@@ -7247,7 +7247,7 @@ static void resolveOther() {
 
   for_vector(FnSymbol, fn, fns) {
     if (fn->hasFlag(FLAG_GENERIC) == false) {
-      resolveFormalsAndFunction(fn);
+      resolveSignatureAndFunction(fn);
     }
   }
 }

@@ -344,7 +344,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
 
         if (fn) {
-          resolveFormals(fn);
+          resolveSignature(fn);
 
           if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
             resolveFunction(fn);

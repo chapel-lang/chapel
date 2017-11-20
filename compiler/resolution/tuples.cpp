@@ -466,7 +466,7 @@ static void
 getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
 
   // Adjust any formals for blank-intent tuple behavior now
-  resolveFormals(fn);
+  resolveSignature(fn);
 
   INT_ASSERT(fn->numFormals() == 1); // expected of the original function
   arg = fn->getFormal(1);
@@ -574,7 +574,7 @@ static void
 instantiate_tuple_cast(FnSymbol* fn, CallExpr* context)
 {
   // Adjust any formals for blank-intent tuple behavior now
-  resolveFormals(fn);
+  resolveSignature(fn);
 
   AggregateType* toT   = toAggregateType(fn->getFormal(1)->type);
   ArgSymbol*     arg   = fn->getFormal(2);
@@ -586,8 +586,10 @@ instantiate_tuple_cast(FnSymbol* fn, CallExpr* context)
   block->insertAtTail(new DefExpr(retv));
 
   if (fromT->numFields() != toT->numFields()) {
-    USR_FATAL_CONT(context, "tuple size mismatch (expected %d, got %d)", 
-                   toT->numFields()-1, fromT->numFields()-1);
+    USR_FATAL_CONT(context,
+                   "tuple size mismatch (expected %d, got %d)",
+                   toT->numFields()   - 1,
+                   fromT->numFields() - 1);
     return;
   }
 
