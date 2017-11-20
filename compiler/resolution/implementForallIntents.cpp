@@ -635,7 +635,7 @@ static void markOuterVarsWithIntents(ForallIntents* fi, SymbolMap& uses) {
     else
       // TODO: avoid this wrapper, which is here for historical reasons.
       // Requires using something fancier than SymbolMap.
-      marker = tiMarkForTFIntent((int)(fi->fIntents[i]));
+      marker = tiMarkForForallIntent(fi->fIntents[i]);
 
     Symbol* var = toSymExpr(fi->fiVars[i])->symbol();
     SymbolMapElem* elem = uses.get_record(var);
@@ -1187,8 +1187,8 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
   }
 
   // The new shadow variable for 'svar' at 'efs'.
-  ShadowVarSymbol* result = new ShadowVarSymbol(intent, svar->name, spec);
-  result->outerVarRep = new SymExpr(svar);
+  ShadowVarSymbol* result = new ShadowVarSymbol(intent, svar->name,
+                                                new SymExpr(svar), spec);
   efs->shadowVariables().insertAtTail(new DefExpr(result));
 
   return result;
@@ -1990,8 +1990,8 @@ static void findOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
       // if not there already
       if (!outer2shadow.get(sym)) {
         // OK, add it
-        ShadowVarSymbol* ss = new ShadowVarSymbol(TFI_DEFAULT, sym->name);
-        ss->outerVarRep = new SymExpr(sym);
+        ShadowVarSymbol* ss = new ShadowVarSymbol(TFI_DEFAULT, sym->name,
+                                                  new SymExpr(sym));
         outer2shadow.put(sym, ss);
       }
     }

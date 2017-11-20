@@ -926,11 +926,14 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
 // todo: a constructor that also gives a type (and qualifier)?
 
-ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent, const char* name, Expr* spec):
+ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
+                                 const char* name,
+                                 Expr* outerVar,
+                                 Expr* spec):
   VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
   intent(iIntent),
   // For task-private variables, set 'outerVarRep' to NULL.
-  outerVarRep(new UnresolvedSymExpr(name)),
+  outerVarRep(outerVar),
   specBlock(NULL),
   reduceGlobalOp(NULL),
   pruneit(false)
@@ -985,10 +988,10 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
-  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name, NULL);
+  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
+                                            COPY_INT(outerVarRep), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->outerVarRep = COPY_INT(outerVarRep);
   ss->specBlock   = COPY_INT(specBlock);
   ss->copyFlags(this);
   ss->cname = cname;
@@ -1042,6 +1045,9 @@ const char* ShadowVarSymbol::intentDescrString() const {
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
 }
+
+// in foralls.cpp: buildFromArgIntent(), buildFromReduceIntent()
+// in expr.h: outerVarSym()
 
 Expr* ShadowVarSymbol::reduceOpExpr() const {
   if (!specBlock)
