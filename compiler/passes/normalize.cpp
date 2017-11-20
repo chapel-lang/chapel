@@ -997,6 +997,7 @@ static void normalizeReturns(FnSymbol* fn) {
       // (2) return; => goto end_label;
       // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
       // Notice how (3) is the composition of (1) and (2).
+      // MPF: but (3) isn't possible? error: returning a value in an iterator
       if (isVoidReturn(ret) == false) { // Cases 1 and 3
         insertRetMove(fn, retval, ret);
         ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
