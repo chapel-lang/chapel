@@ -705,7 +705,7 @@ bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
 
-    resolveFormals(fn);
+    resolveSignature(fn);
 
     resolveBlockStmt(fn->where);
 

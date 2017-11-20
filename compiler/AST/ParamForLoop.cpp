@@ -491,7 +491,7 @@ Type* ParamForLoop::indexType()
 
   if (FnSymbol* sym = range->resolvedFunction())
   {
-    resolveFormals(sym);
+    resolveSignature(sym);
 
     DefExpr* formal = toDefExpr(sym->formals.get(1));
 

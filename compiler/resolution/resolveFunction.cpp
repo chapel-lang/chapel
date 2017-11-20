@@ -56,8 +56,8 @@ static void instantiateDefaultConstructor(FnSymbol* fn);
 *                                                                             *
 ************************************** | *************************************/
 
-void resolveFormalsAndFunction(FnSymbol* fn) {
-  resolveFormals(fn);
+void resolveSignatureAndFunction(FnSymbol* fn) {
+  resolveSignature(fn);
   resolveFunction(fn);
 }
 
@@ -78,7 +78,7 @@ static FnSymbol* protoIteratorMethod(IteratorInfo* ii,
                                      const char*   name,
                                      Type*         retType);
 
-void resolveFormals(FnSymbol* fn) {
+void resolveSignature(FnSymbol* fn) {
   static Vec<FnSymbol*> done;
 
   if (!fn->hasFlag(FLAG_GENERIC)) {
@@ -520,7 +520,7 @@ void resolveFunction(FnSymbol* fn) {
       if (pt                         != NULL     &&
           pt                         != dtObject &&
           pt->defaultTypeConstructor != NULL) {
-        resolveFormals(pt->defaultTypeConstructor);
+        resolveSignature(pt->defaultTypeConstructor);
 
         if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
           resolveFunction(pt->defaultTypeConstructor);
@@ -534,7 +534,7 @@ void resolveFunction(FnSymbol* fn) {
       for_fields(field, ct) {
         if (AggregateType* fct = toAggregateType(field->type)) {
           if (fct->defaultTypeConstructor) {
-            resolveFormals(fct->defaultTypeConstructor);
+            resolveSignature(fct->defaultTypeConstructor);
 
             if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
               resolveFunction(fct->defaultTypeConstructor);
