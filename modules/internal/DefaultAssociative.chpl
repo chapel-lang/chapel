@@ -285,7 +285,7 @@ module DefaultAssociative {
       return _findFilledSlot(idx)(1);
     }
   
-    proc dsiAdd(idx){
+    proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
       // these two seemingly redundant lines were necessary to work around a
@@ -338,6 +338,10 @@ module DefaultAssociative {
         table[slotNum].status = chpl__hash_status.full;
         table[slotNum].idx = idx;
         numEntries.add(1);
+
+        // default initialize newly added array elements
+        for a in _arrs do
+          a.clearEntry(idx);
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
