@@ -254,13 +254,10 @@ class EflopiInfo {
 public:
   ForallStmt* eflopiForall;
   ForLoop*    eflopiLoop;
+  // more details if eflopiLoop
   CallExpr*   eflopiCall;
-  // more details
-  // todo soon: remove all except asgnToIter?
-  Symbol*    iterSym;
-  CallExpr*  asgnToIter;
-  Symbol*    iterCallTemp;
-  CallExpr*  asgnToCallTemp;
+  CallExpr*   asgnToIter;
+  Symbol*     iterCallTemp;
 };
 
 //
@@ -321,10 +318,8 @@ static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
     eInfo.eflopiForall   = NULL;
     eInfo.eflopiLoop     = forLoop;
     eInfo.eflopiCall     = iterCall;
-    eInfo.iterSym        = iterSym;
     eInfo.asgnToIter     = asgnToIter;
     eInfo.iterCallTemp   = calltemp;
-    eInfo.asgnToCallTemp = asgnToCallTemp;
     return true;
   }
 
@@ -1019,7 +1014,7 @@ static void propagateRecursivelyNew(FIcontext& ctx)
 
       // We will be extending 'tfn' specifically to this situation.
       // So there better be no other users of it.
-      // todo soon: INT_ASSERT(rcall == tfn->singleInvocation());
+      INT_ASSERT(rcall == tfn->singleInvocation());
 
       if (needsCapture(tfn)) {
 

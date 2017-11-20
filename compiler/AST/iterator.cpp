@@ -1160,25 +1160,6 @@ addAllLocalVariables(Vec<Symbol*>& syms, Vec<BaseAST*>& asts) {
   }
 }
 
-// Is 'theCall' the only call to 'callee' ?
-static bool
-noOtherCalls(FnSymbol* callee, CallExpr* theCall) {
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call != theCall && call->inTree()) {
-      // TODO: This forv + filter casts a wide net.
-      // Try to make the filter reject as many cases as possible
-      // by first matching on the callee and then testing if call == theCall.
-      if (FnSymbol* rc = call->resolvedFunction()) {
-        if (rc == callee) {
-          return false;
-        }
-      }
-    }
-  }
-
-  return true;
-}
-
 
 // Preceding calls to the various build...() functions have copied out
 // interesting parts of the iterator function.
@@ -1200,9 +1181,8 @@ rebuildIterator(IteratorInfo* ii,
   // ... and the task functions that it calls.
   for_vector(CallExpr, call, icalls) {
     if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
-      // What to do if multiple calls? may or may not cause unwanted deletion.
-      if (fVerify) // this assert is expensive to compute
-        INT_ASSERT(noOtherCalls(taskFn, call));
+      // If multiple calls to 'taskFn', we probably shouldn't remove it.
+      INT_ASSERT(call == taskFn->singleInvocation());
 
       taskFn->defPoint->remove();
     }

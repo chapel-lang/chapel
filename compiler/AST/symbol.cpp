@@ -1798,6 +1798,31 @@ FnSymbol::collapseBlocks() {
   body->accept(&visitor);
 }
 
+//
+// If 'this' has a single use as the callee of a CallExpr,
+// return that CallExpr. Otherwise return NULL.
+//
+CallExpr* FnSymbol::singleInvocation() const {
+  SymExpr* se = firstSymExpr();
+
+  if (se == NULL)
+    // no uses at all
+    return NULL;
+
+  if (se != lastSymExpr())
+    // more than one use
+    return NULL;
+
+  // Got exactly one use. Check how it is used.
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (se == parent->baseExpr)
+      // yes, it is the callee
+      return parent;
+
+  // The use is not as the callee, ex. as a FCF.
+  return NULL;
+}
+
 
 //
 // If the function is not currently marked as generic
