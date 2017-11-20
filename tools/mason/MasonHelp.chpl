@@ -21,6 +21,7 @@
 /* A help module for the mason package manager */
 
 use Help;
+use MasonUtils;
 
 
 proc masonHelp() {
@@ -88,6 +89,9 @@ proc masonBuildHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --release                Compile to target/release with optimizations (--fast)');
+  if developerMode {
+    writeln('        --debug                  Print debug information');
+  }
   writeln();
   writeln('When no options are provided, the following will take place:');
   writeln('   - Build from mason project if Mason.lock present');
@@ -116,6 +120,9 @@ proc masonSearchHelp() {
   writeln();
   writeln("Usage:");
   writeln("    mason search [options] <query>");
+  if developerMode {
+    writeln('        --debug                 Print debug information');
+  }
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");

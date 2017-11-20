@@ -73,7 +73,7 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     // Make Binary Directory
     makeTargetFiles(binLoc);
 
-    //Install dependencies into $MASON_HOME/src
+    // Install dependencies into $MASON_HOME/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
     checkChplVersion(lockFile);

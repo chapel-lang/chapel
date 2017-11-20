@@ -217,3 +217,10 @@ proc gitC(newDir, command, quiet=false) {
   return ret;
 }
 
+proc developerMode: bool {
+  const env = getEnv("CHPL_DEVELOPER");
+  return env != "";
+}
+
+
+
