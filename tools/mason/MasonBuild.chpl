@@ -30,7 +30,6 @@ use MasonUpdate;
 proc masonBuild(args) {
   var show = false;
   var release = false;
-  var debug = false;
   var compopts: [1..0] string;
   if args.size > 2 {
     for arg in args[2..] {
@@ -44,16 +43,13 @@ proc masonBuild(args) {
       else if arg == '--show' {
         show = true;
       }
-      else if arg == '--debug' {
-        debug = true;
-      }
       else {
         compopts.push_back(arg);
       }
     }
   }
   UpdateLock(args);
-  buildProgram(release, show, compopts, debug);
+  buildProgram(release, show, compopts);
 }
 
 private proc checkChplVersion(lockFile : Toml) {

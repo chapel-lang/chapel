@@ -679,7 +679,7 @@ Used to recursively hold tables and respective values
 
 pragma "no doc"
  /*
- Reader (Lexer) module for use in the Parser Class.
+ Reader module for use in the Parser Class.
  */
 module TomlReader {
 
