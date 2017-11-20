@@ -1300,7 +1300,6 @@ CallExpr* createCast(BaseAST* src, BaseAST* toType)
   return expr;
 }
 
-
 QualifiedType CallExpr::qualType(void) {
   QualifiedType retval(NULL);
 
@@ -1310,12 +1309,14 @@ QualifiedType CallExpr::qualType(void) {
   } else if (isResolved()) {
     FnSymbol* fn = resolvedFunction();
     Qualifier q = QUAL_UNKNOWN;
-    if (fn->retTag == RET_VALUE) {
-      q = QUAL_VAL;
-    } else if (fn->retTag == RET_REF) {
+    if (fn->retType->isRef()) {
       q = QUAL_REF;
-    } else if (fn->retTag == RET_CONST_REF) {
-      q = QUAL_CONST_REF;
+    } else if (fn->retType->isWideRef()) {
+      q = QUAL_WIDE_REF;
+    } else if (fn->retTag == RET_VALUE) {
+      q = QUAL_VAL;
+    } else {
+      q = QUAL_UNKNOWN;
     }
     retval = QualifiedType(q, fn->retType);
 
