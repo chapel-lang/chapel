@@ -97,8 +97,9 @@ void resolveSignature(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool convertAtomicFormalTypeToRef(ArgSymbol* formal,
-                                         FnSymbol*  fn);
+static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
+
+static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
 
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
@@ -113,86 +114,81 @@ static void resolveFormals(FnSymbol* fn) {
       }
     }
 
-    //
-    // Fix up value types that need to be ref types.
-    //
-    if (formal->type->symbol->hasFlag(FLAG_REF))
-      // Already a ref type, so done.
-      continue;
-
-    // Don't pass dtString params in by reference
-    if(formal->type == dtString && formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-      continue;
-
-    if (formal->type->symbol->hasFlag(FLAG_RANGE) &&
-        (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) &&
-        fn->hasFlag(FLAG_BEGIN)) {
-      // For begin functions, copy ranges in if passed by blank intent.
-      // This is a temporary workaround.
-      // * arguably blank intent for ranges should be 'const ref',
-      //   but the current compiler uses a mix of 'const in' and 'const ref'.
-      // * resolveIntents is changing INTENT_IN to INTENT_REF
-      //   which interferes with the logic in parallel.cpp
-      //   (another approach to that problem might be to separately
-      //    store the 'requested intent' and the 'concrete intent').
-      formal->intent = INTENT_CONST_IN;
-    }
-
-    if (formal->intent == INTENT_INOUT ||
-        formal->intent == INTENT_OUT ||
-        formal->intent == INTENT_REF ||
-        formal->intent == INTENT_CONST_REF ||
-        convertAtomicFormalTypeToRef(formal, fn) ||
-        formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) ||
-        (formal == fn->_this &&
-         !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-         (isUnion(formal->type) ||
-          isRecord(formal->type)))) {
-      makeRefType(formal->type);
-
-      if (formal->type->refType) {
-        formal->type = formal->type->refType;
-        // The type of the formal is its own ref type!
-
-      } else {
-        formal->qual = QUAL_REF;
+    if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
+      if (formal->type                             != dtString ||
+          formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {
+        updateIfRefFormal(fn, formal);
       }
-    }
-
-    if (isRecordWrappedType(formal->type) &&
-        fn->hasFlag(FLAG_ITERATOR_FN)) {
-      // Pass domains, arrays into iterators by ref.
-      // This is a temporary workaround for issues with
-      // iterator lowering.
-      // It is temporary because we expect more of the
-      // compiler to handle 'refness' of an ArgSymbol
-      // in the future.
-      makeRefType(formal->type);
-
-      formal->type = formal->type->refType;
-    }
-
-    // Adjust tuples for intent.
-    // This should not apply to 'ref' , 'out', or 'inout' formals,
-    // but these are currently turned into reference types above.
-    // It probably should not apply to 'const ref' either but
-    // that is more debatable.
-    if (formal->type->symbol->hasFlag(FLAG_TUPLE) &&
-        !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !(formal == fn->_this) &&
-        !doNotChangeTupleTypeRefLevel(fn, false)) {
-
-      // Let 'in' intent work similarly to the blank intent.
-      IntentTag intent = formal->intent;
-      if (intent == INTENT_IN) intent = INTENT_BLANK;
-      AggregateType* tupleType = toAggregateType(formal->type);
-      INT_ASSERT(tupleType);
-      Type* newType = computeTupleWithIntent(intent, tupleType);
-      formal->type = newType;
     }
   }
 }
 
+// Fix up value types that need to be ref types.
+static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
+  // For begin functions, copy ranges in if passed by blank intent.
+  if (fn->hasFlag(FLAG_BEGIN)                   == true &&
+      formal->type->symbol->hasFlag(FLAG_RANGE) == true) {
+    if (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) {
+      formal->intent = INTENT_CONST_IN;
+    }
+  }
+
+  if (formal->intent                            == INTENT_INOUT     ||
+      formal->intent                            == INTENT_OUT       ||
+      formal->intent                            == INTENT_REF       ||
+      formal->intent                            == INTENT_CONST_REF ||
+      shouldUpdateAtomicFormalToRef(fn, formal) == true             ||
+      formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) == true             ||
+      (formal                              == fn->_this &&
+       formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
+       (isUnion(formal->type)  == true||
+        isRecord(formal->type) == true))) {
+    makeRefType(formal->type);
+
+    if (formal->type->refType) {
+      formal->type = formal->type->refType;
+
+    } else {
+      formal->qual = QUAL_REF;
+    }
+  }
+
+  if (isRecordWrappedType(formal->type) == true &&
+      fn->hasFlag(FLAG_ITERATOR_FN)     == true) {
+    // Pass domains, arrays into iterators by ref.
+    // This is a temporary workaround for issues with
+    // iterator lowering.
+    // It is temporary because we expect more of the
+    // compiler to handle 'refness' of an ArgSymbol
+    // in the future.
+    makeRefType(formal->type);
+
+    formal->type = formal->type->refType;
+  }
+
+  // Adjust tuples for intent.
+  // This should not apply to 'ref' , 'out', or 'inout' formals,
+  // but these are currently turned into reference types above.
+  // It probably should not apply to 'const ref' either but
+  // that is more debatable.
+  if (formal->type->symbol->hasFlag(FLAG_TUPLE) == true      &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE)       == false     &&
+      formal                                    != fn->_this &&
+      doNotChangeTupleTypeRefLevel(fn, false)   == false) {
+
+    // Let 'in' intent work similarly to the blank intent.
+    AggregateType* tupleType = toAggregateType(formal->type);
+    IntentTag      intent = formal->intent;
+
+    if (intent == INTENT_IN) {
+      intent = INTENT_BLANK;
+    }
+
+    INT_ASSERT(tupleType);
+
+    formal->type = computeTupleWithIntent(intent, tupleType);
+  }
+}
 
 //
 // Generally, atomics must also be passed by reference when
@@ -222,14 +218,16 @@ static void resolveFormals(FnSymbol* fn) {
 //   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
-static bool convertAtomicFormalTypeToRef(ArgSymbol* formal, FnSymbol* fn) {
-  return (formal->intent == INTENT_BLANK &&
-          !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-          isAtomicType(formal->type))
-    && fn->name != astrSequals
-    && !fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)
-    && !fn->hasFlag(FLAG_CONSTRUCTOR)
-    && !fn->hasFlag(FLAG_BUILD_TUPLE);
+static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
+  return formal->intent                        == INTENT_BLANK &&
+         formal->hasFlag(FLAG_TYPE_VARIABLE)   == false        &&
+         isAtomicType(formal->type)            == true         &&
+
+         fn->name                              != astrSequals  &&
+
+         fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == false        &&
+         fn->hasFlag(FLAG_CONSTRUCTOR)         == false        &&
+         fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
 /************************************* | **************************************
