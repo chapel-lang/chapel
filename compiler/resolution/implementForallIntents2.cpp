@@ -1284,19 +1284,6 @@ void printIFI2cache() {
 }
 
 
-/////////// cache extended iterator -> its original return symbol ///////////
-
-static SymbolMap forallIntentsOrigRetSymMap;
-
-Symbol* lookupForallIntentsOrigRetSym(FnSymbol* iterFn) {
-  return forallIntentsOrigRetSymMap.get(iterFn);
-}
-
-static void addForallIntentsOrigRetSym(FnSymbol* iterFn, Symbol* origRetSym) {
-  forallIntentsOrigRetSymMap.put(iterFn, origRetSym);
-}
-
-
 /////////// extendLeaderNew ///////////
 
 static void extendLeaderNew(ForallStmt* fs, 
@@ -1331,7 +1318,6 @@ static void extendLeaderNew(ForallStmt* fs,
     origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
     origRetSym->defPoint->insertBefore(new DefExpr(retSym));
     origRetSym->name = "origRet";
-    addForallIntentsOrigRetSym(iterFn, origRetSym);
   }
 
   // Data for the call from the ForallStmt to the parallel iterator.
