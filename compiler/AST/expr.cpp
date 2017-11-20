@@ -1308,7 +1308,16 @@ QualifiedType CallExpr::qualType(void) {
     retval = primitive->returnInfo(this);
 
   } else if (isResolved()) {
-    retval = QualifiedType(resolvedFunction()->retType);
+    FnSymbol* fn = resolvedFunction();
+    Qualifier q = QUAL_UNKNOWN;
+    if (fn->retTag == RET_VALUE) {
+      q = QUAL_VAL;
+    } else if (fn->retTag == RET_REF) {
+      q = QUAL_REF;
+    } else if (fn->retTag == RET_CONST_REF) {
+      q = QUAL_CONST_REF;
+    }
+    retval = QualifiedType(q, fn->retType);
 
   } else {
     retval = QualifiedType(dtUnknown);
