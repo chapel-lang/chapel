@@ -42,17 +42,17 @@ proc masonNew(args) {
     var name = 'MyPackage';
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
-	masonNewHelp();
-	exit();
+        masonNewHelp();
+        exit();
       }
       else if arg == '--no-vcs' {
-	vcs = false;
+        vcs = false;
       }
       else if arg == '--show' {
-	show = true;
+        show = true;
       }
       else {
-	name = arg;
+        name = arg;
       }
     }
     InitProject(name, vcs, show);
@@ -60,8 +60,8 @@ proc masonNew(args) {
 }
 
 
-  
-  
+
+
 proc InitProject(name, vcs, show) {
   if vcs {
     gitInit(name, show);
@@ -109,7 +109,7 @@ proc makeBasicToml(name: string) {
   tomlWriter.write(baseToml);
   tomlWriter.close();
 }
-  
+
 
 proc makeProjectFiles(name: string) {
   mkdir(name + "/src");

@@ -415,7 +415,7 @@ proc getDependencies(tomlTbl: Toml) {
   for k in tomlTbl.D {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]) {
-	deps.push_back((a, d));
+        deps.push_back((a, d));
       }
     }
   }

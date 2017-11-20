@@ -101,7 +101,7 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
-  
+
 }
 
 proc masonSearchHelp() {
