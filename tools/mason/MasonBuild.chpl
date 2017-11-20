@@ -53,7 +53,7 @@ proc masonBuild(args) {
     }
   }
   UpdateLock(args);
-  buildProgram(release, show, debug, compopts);
+  buildProgram(release, show, compopts, debug);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -66,7 +66,7 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc buildProgram(release: bool, show: bool, debug: bool, compopts: [?d] string) {
+proc buildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
 
     // --fast
@@ -95,12 +95,8 @@ proc buildProgram(release: bool, show: bool, debug: bool, compopts: [?d] string)
       compopts.push_back(cmpFlags);
     }
 
-    if debug {
-      writeln('compopts: ', compopts);
-    }
-
     // Compile Program
-    if compileSrc(lockFile, binLoc, show, release, compopts, debug) {
+    if compileSrc(lockFile, binLoc, show, release, compopts) {
       writeln("Build Successful\n");
     }
     else {
@@ -136,7 +132,7 @@ proc makeTargetFiles(binLoc: string) {
    named after the project folder in which it is
    contained */
 proc compileSrc(lockFile: Toml, binLoc: string, show: bool,
-                release: bool, compopts: [?dom] string, debug: bool) : bool {
+                release: bool, compopts: [?dom] string) : bool {
   var sourceList = genSourceList(lockFile);
   var depPath = MASON_HOME + '/src/';
   var project = lockFile["root"]["name"].s;
