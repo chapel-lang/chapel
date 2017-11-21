@@ -1089,6 +1089,15 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
     }
   }
 
+  // Only go in to nested functions if they are task functions.
+  // Otherwise, we'll get confused by yields in inner functions.
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (FnSymbol* innerFn = toFnSymbol(def->sym)) {
+      if (!innerFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL))
+        return;
+    }
+  }
+
   AST_CHILDREN_CALL(ast,
                     computeReturnTypeParamVectors,
                     retSymbol,
