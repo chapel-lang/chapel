@@ -75,7 +75,7 @@ module TomlParser {
 
 
   /* Prints a line by line output of parsing process */
-  config const debugTomlParser: bool = false;
+  config const debugTomlParser = false;
 
   pragma "no doc"
   class Parser {
@@ -101,6 +101,7 @@ module TomlParser {
       comment = compile("(\\#)"),
       comma = compile("(\\,)");
 
+    var debugCounter = 1;
 
     proc parseLoop() : Toml {
 
@@ -123,6 +124,7 @@ module TomlParser {
           halt("Unexpected token ->", getToken(source));
         }
         if debugTomlParser {
+          debugCounter += 1;
           debugPrint();
         }
       }
@@ -323,13 +325,12 @@ module TomlParser {
     }
 
     proc debugPrint() {
-      writeln();
-      writeln("========================= Debug Info  ==========================");
+      writeln(debugCounter, ':');
+      writeln(rootTable);
+      // Pointer to the line we are currently on
+      write('->');
       source.debug();
       writeln();
-      writeln(rootTable);
-      writeln();
-      writeln("================================================================");
     }
 
   }
@@ -684,6 +685,8 @@ module TomlReader {
 
  use Regexp;
 
+ config const debugTomlReader = false;
+
   /* Returns the next token in the current line without removing it */
   proc top(source) {
     if source.nextLine() {
@@ -747,27 +750,30 @@ module TomlReader {
 
     proc splitLine(line) {
       var linetokens: [1..0] string;
-      const doubleQuotes = '".*?\\[^\\]?"',
-         singleQuotes = "'.*?\\[^\\]?'",
-         bracketContents = "(\\[\\w+\\])",
-         brackets = "(\\[)|(\\])",
-         comments = "(\\#)",
-         commas = "(\\,)",
-         equals = "(\\=)",
-         curly = "(\\{)|(\\})";
+      const doubleQuotes = '(".*?")',           // ""
+            singleQuotes = "('.*?')",           // ''
+            bracketContents = "(\\[\\w+\\])",   // [_]
+            brackets = "(\\[)|(\\])",           // []
+            comments = "(\\#)",                 // #
+            commas = "(\\,)",                   // ,
+            equals = "(\\=)",                   // =
+            curly = "(\\{)|(\\})";              // {}
 
       const pattern = compile('|'.join(doubleQuotes,
-                                    singleQuotes,
-                                    bracketContents,
-                                    brackets,
-                                    comments,
-                                    commas,
-                                    curly,
-                                    equals));
+                                       singleQuotes,
+                                       bracketContents,
+                                       brackets,
+                                       comments,
+                                       commas,
+                                       curly,
+                                       equals));
 
       for token in pattern.split(line) {
         var strippedToken = token.strip();
         if strippedToken.length != 0  {
+          if debugTomlReader {
+            writeln('Tokenized: ', '(', strippedToken, ')');
+          }
           linetokens.push_back(strippedToken);}
       }
       if !linetokens.isEmpty() {
@@ -806,14 +812,15 @@ module TomlReader {
 
 
     proc debug() {
-      var lineCounter: int = 1;
       for line in tokenlist {
-        write("line: ",lineCounter);
-        for token in line {
-          write(" token: " + token);
+        if line.A.size != 0 {
+          for token in line {
+            if token.length != 0 {
+              write("(", token, ")");
+            }
+          }
+          writeln();
         }
-        lineCounter += 1;
-        writeln();
       }
     }
 

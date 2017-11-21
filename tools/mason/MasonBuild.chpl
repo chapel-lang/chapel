@@ -49,7 +49,7 @@ proc masonBuild(args) {
     }
   }
   UpdateLock(args);
-  BuildProgram(release, show, compopts);
+  buildProgram(release, show, compopts);
 }
 
 private proc checkChplVersion(lockFile : Toml) {
@@ -62,7 +62,7 @@ private proc checkChplVersion(lockFile : Toml) {
   }
 }
 
-proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
+proc buildProgram(release: bool, show: bool, compopts: [?d] string) {
   if isFile("Mason.lock") {
 
     // --fast
@@ -73,7 +73,7 @@ proc BuildProgram(release: bool, show: bool, compopts: [?d] string) {
     // Make Binary Directory
     makeTargetFiles(binLoc);
 
-    //Install dependencies into $MASON_HOME/src
+    // Install dependencies into $MASON_HOME/src
     var toParse = open("Mason.lock", iomode.r);
     var lockFile = parseToml(toParse);
     checkChplVersion(lockFile);

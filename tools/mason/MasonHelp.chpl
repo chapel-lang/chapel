@@ -21,6 +21,7 @@
 /* A help module for the mason package manager */
 
 use Help;
+use MasonUtils;
 
 
 proc masonHelp() {
@@ -116,6 +117,9 @@ proc masonSearchHelp() {
   writeln();
   writeln("Usage:");
   writeln("    mason search [options] <query>");
+  if developerMode {
+    writeln('        --debug                 Print debug information');
+  }
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
