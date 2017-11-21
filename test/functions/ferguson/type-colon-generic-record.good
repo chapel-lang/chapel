@@ -1,0 +1,3 @@
+generic R(int(64))
+generic R(string)
+real R(real(64))
