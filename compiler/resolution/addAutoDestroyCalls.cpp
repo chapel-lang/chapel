@@ -421,43 +421,14 @@ static void gatherIgnoredVariablesForYield(
   VarSymbol* yieldedVar = toVarSymbol(yieldedSe->symbol());
   INT_ASSERT(yieldedVar);
   QualifiedType t = yieldedVar->qualType();
-  VarSymbol* retval = NULL;
 
   if (isUserDefinedRecord(t.type()) && ! t.isRef() ) {
 
-// TODO: this is copied from variableToExclude, consider
-// making a helper function / method.
-// For example, we could have addReturnedIgnored
-      VarSymbol* needle = yieldedVar;
-      Expr*      expr   = yieldStmt;
+    SymExpr* foundSe = findSourceOfYield(yield);
+    VarSymbol* var = toVarSymbol(foundSe->symbol());
 
-      // Walk backwards looking for the variable that is being returned
-      while (retval == NULL && expr != NULL && needle != NULL) {
-        if (CallExpr* move = toCallExpr(expr)) {
-          if (move->isPrimitive(PRIM_MOVE) == true) {
-            SymExpr*   lhs    = toSymExpr(move->get(1));
-            VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
-
-            if (needle == lhsVar) {
-              if (SymExpr* rhs = toSymExpr(move->get(2))) {
-                VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
-
-                if (isAutoDestroyedVariable(rhsVar) == true) {
-                  retval = rhsVar;
-                } else {
-                  needle = rhsVar;
-                }
-              } else {
-                needle = NULL;
-              }
-            }
-          }
-        }
-
-        expr = expr->prev;
-      }
-
-      ignoredVariables.insert(retval);
+    if (var && var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+      ignoredVariables.insert(var);
   }
 }
 
@@ -474,16 +445,69 @@ bool isAutoDestroyedVariable(Symbol* sym) {
     if ((var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true &&
          var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false) ||
 
-        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true  &&
+        // This logic seems wrong somehow, but if I comment it out,
+        // I get memory leaks in a missing deinit after the assign
+        // in reader_chpl implementing stdinInit()
+
+        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true/*  &&
          var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
          // TODO - can we remove this isRefCountedType?
          // X
-         isRefCountedType(var->type)                             == false)) {
+         isRefCountedType(var->type)                             == false*/)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
     }
   }
 
   return retval;
+}
+
+// For a yield of a variable, such as iter f() { var x=...; yield x; },
+// unline returning, the yield will result in a copy. This function helps
+// to identify the source variable in such cases, even as there might be
+// various compiler temporaries in between. It returns the SymExpr referring
+// to the yielded variable that was used in the last PRIM_MOVE reading it.
+SymExpr* findSourceOfYield(CallExpr* yield) {
+
+  SymExpr* yieldedSe = toSymExpr(yield->get(1));
+  Symbol* yieldedSym = yieldedSe->symbol();
+
+  Expr* expr = yield;
+  Symbol* needle = yieldedSym;
+  SymExpr* foundSe = yieldedSe;
+
+  // Walk backwards to figure out where the yielded symbol came
+  // from and to find the spot at which we should add an
+  // autoCopy call.
+  while (expr != NULL && needle != NULL) {
+    if (CallExpr* move = toCallExpr(expr)) {
+      if (move->isPrimitive(PRIM_MOVE) == true) {
+	SymExpr*   lhs    = toSymExpr(move->get(1));
+	VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+
+	if (needle == lhsVar) {
+	  if (SymExpr* rhs = toSymExpr(move->get(2))) {
+	    VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
+
+	    if (rhsVar) {
+	      needle = rhsVar;
+
+	      if (rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+                  rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
+		foundSe = rhs;
+		break;
+              }
+	    }
+	  } else {
+	    needle = NULL;
+	  }
+	}
+      }
+    }
+
+    expr = expr->prev;
+  }
+
+  return foundSe;
 }
 

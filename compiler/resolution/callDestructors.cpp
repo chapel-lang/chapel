@@ -23,6 +23,7 @@
 #include "astutil.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "iterator.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -141,22 +142,29 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
 
   forv_Vec(CallExpr, call, gCallExprs)
   {
-    if (FnSymbol* fn = theTransformableFunction(call))
-    {
-      RefMap::iterator iter = calls.find(fn->id);
-      ReturnByRef*     info = NULL;
+    // Only transform calls that are still in the AST tree
+    // (defer statement bodies have been removed at this point
+    //  in this pass)
+    if (call->parentSymbol != NULL) {
 
-      if (iter == calls.end())
+      // Only transform calls to transformable functions
+      if (FnSymbol* fn = theTransformableFunction(call))
       {
-        info          = new ReturnByRef(fn);
-        calls[fn->id] = info;
-      }
-      else
-      {
-        info          = iter->second;
-      }
+        RefMap::iterator iter = calls.find(fn->id);
+        ReturnByRef*     info = NULL;
 
-      info->addCall(call);
+        if (iter == calls.end())
+        {
+          info          = new ReturnByRef(fn);
+          calls[fn->id] = info;
+        }
+        else
+        {
+          info          = iter->second;
+        }
+
+        info->addCall(call);
+      }
     }
   }
 }
@@ -182,7 +190,8 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     else if (fn->hasFlag(FLAG_AUTO_COPY_FN) == true)
       retval = false;
 
-    // Function is an iterator "helper"
+    // Function is an iterator "helper", e.g. getValue
+    // lowerIterators should make sure that getValue returns an "owned" record.
     else if (fn->hasFlag(FLAG_AUTO_II)      == true)
       retval = false;
 
@@ -836,10 +845,20 @@ static void insertDestructorCalls() {
 
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
 // so the calling routine "owns" the returned value.
-// The copy is necessary for yielded values of record type returned by value.
-// In the current implementation, types marked as "iterator record" and
-// "runtime type value" are excluded.
-/*static void insertYieldTemps()
+// The copy is necessary when an iterator yields a variable (rather than an
+// expression temporary).
+//
+// For example
+//
+// iter ex1() {
+//   var x:SomeRecord;
+//   yield x;  //  should yield a copy of x
+// }
+// iter ex2() {
+//   yield returnsSomeRecord();  // no need to copy
+// }
+//
+static void insertYieldTemps()
 {
   // Examine all calls.
   forv_Vec(CallExpr, call, gCallExprs)
@@ -853,32 +872,47 @@ static void insertDestructorCalls() {
       continue;
 
     // This is the symbol passed back in the yield.
-    SymExpr* yieldExpr = toSymExpr(call->get(1));
+    SymExpr* yieldedSe = toSymExpr(call->get(1));
+    Symbol* yieldedSym = yieldedSe->symbol();
 
-    // The transformation is applied only if is has a normal record type
-    // (passed by value).
-    Type* type = yieldExpr->symbol()->type;
+    FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+    IteratorInfo* ii = inFn->iteratorInfo;
 
-    if (isRecord(type) &&
-        !type->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        !type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-    {
-      SET_LINENO(call);
+    // coforall functions in iterators don't seem to have ii
+    RetTag iteratorRetTag = RET_VALUE;
+    if (ii)
+      iteratorRetTag = ii->iteratorRetTag;
 
-      // Replace:
-      //   yield <yieldExpr>
-      // with:
-      //   (def _yield_expr_tmp_:type)
-      //   (move _yield_expr_tmp_ ("chpl__autoCopy" <yieldExpr>))
-      //   yield _yield_expr_tmp_
-      Symbol* tmp = newTemp("_yield_expr_tmp_", type);
-      Expr* stmt = call->getStmtExpr();
-      stmt->insertBefore(new DefExpr(tmp));
-      stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(getAutoCopyForType(type), yieldExpr->remove())));
-      call->insertAtHead(new SymExpr(tmp)); // New first argument.
+
+    // If the yielded symbol is subject to auto-copy/destroy discipline
+    // and it's returned by value (not by reference)
+    // and the yielded value is not an expression temporary
+    //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
+    if (isUserDefinedRecord(yieldedSym->getValType()) &&
+        iteratorRetTag == RET_VALUE) {
+
+      SymExpr* foundSe = findSourceOfYield(call);
+
+      // Now foundSe is in the last simple PRIM_MOVE that set some
+      // chain of symbols (leading to yield) and in particular it
+      // is the RHS of that move.
+      //
+      // Or foundSe is the argument to PRIM_YIELD.
+
+      if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
+        // Add an auto-copy here.
+        SET_LINENO(call);
+        Type* type = foundSe->symbol()->getValType();
+        Symbol* tmp = newTemp("_yield_expr_tmp_", type);
+        Expr* stmt = foundSe->getStmtExpr();
+        stmt->insertBefore(new DefExpr(tmp));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(getAutoCopyForType(type), foundSe->copy())));
+
+        foundSe->replace(new SymExpr(tmp));
+      }
     }
   }
-}*/
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -973,7 +1007,7 @@ void callDestructors() {
 
   ReturnByRef::apply();
 
-  //insertYieldTemps();
+  insertYieldTemps();
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
 
