@@ -1038,7 +1038,9 @@ static void setQualRef(Symbol* sym) {
       }
       sym->qual = q;
       if (ArgSymbol* arg = toArgSymbol(sym)) {
-        arg->intent = INTENT_REF;
+        if (arg->intent != INTENT_CONST_REF) {
+          arg->intent = INTENT_REF;
+        }
       }
     }
     sym->type = sym->getValType();
