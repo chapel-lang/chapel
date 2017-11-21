@@ -2286,7 +2286,9 @@ static void handlePolymorphicIterators()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Find iterator functions that are not in the AST tree.
-    if (fn->defPoint->parentSymbol && fn->iteratorInfo) {
+    if (fn->defPoint->parentSymbol &&
+        fn->iteratorInfo &&
+        !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
       // Assert that the getIterator() function *is* in the tree.
       FnSymbol* getIterator = fn->iteratorInfo->getIterator;
       INT_ASSERT(getIterator->defPoint->parentSymbol);

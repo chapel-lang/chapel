@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 
 static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions);
 
 void flattenFunctions() {
   Vec<FnSymbol*> nestedFunctions;
@@ -37,8 +38,10 @@ void flattenFunctions() {
     }
   }
 
+  markTaskFunctionsInIterators(nestedFunctions);
   flattenNestedFunctions(nestedFunctions);
 }
+
 
 void flattenNestedFunction(FnSymbol* nestedFunction) {
   if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
@@ -49,6 +52,30 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
     flattenNestedFunctions(nestedFunctions);
   }
 }
+
+static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
+
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
+    FnSymbol* curFn = fn;
+    while (curFn &&
+           curFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
+      curFn = toFnSymbol(curFn->defPoint->parentSymbol);
+    }
+    // Now curFn is NULL or the first not-a-task function
+    if (curFn && curFn->isIterator()) {
+      // Mark all of the inner task functions
+      IteratorInfo* ii = curFn->iteratorInfo;
+      curFn = fn;
+      while (curFn &&
+             curFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
+        curFn->addFlag(FLAG_TASK_FN_FROM_ITERATOR_FN);
+        curFn->iteratorInfo = ii;
+        curFn = toFnSymbol(curFn->defPoint->parentSymbol);
+      }
+    }
+  }
+}
+
 
 //
 // returns true if the symbol is defined in an outer function to fn
@@ -332,7 +359,6 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
     }
   }
 }
-
 
 static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();

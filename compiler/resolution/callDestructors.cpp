@@ -207,21 +207,36 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
       retval = false;
   }
 
+  // Task functions within iterators can yield and so also need
+  // this transformation.
+  // Reasonable alternative: update insertYieldTemps to handle
+  // yielding a PRIM_DEREF or yielding a reference argument.
+  if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
+    if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
+      retval = true;
+  }
+
   return retval;
 }
 
 void ReturnByRef::transformFunction(FnSymbol* fn)
 {
-  ArgSymbol* formal = addFormal(fn);
+  ArgSymbol* formal = NULL;
 
-  if (fn->hasFlag(FLAG_ITERATOR_FN) == false) {
+  if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN) == false) {
+    formal = addFormal(fn);
+  }
+
+  if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != NULL) {
     insertAssignmentToFormal(fn, formal);
   }
   updateAssignmentsFromRefArgToValue(fn);
   updateAssignmentsFromRefTypeToValue(fn);
   updateAssignmentsFromModuleLevelValue(fn);
-  updateReturnStatement(fn);
-  updateReturnType(fn);
+  if (formal != NULL) {
+    updateReturnStatement(fn);
+    updateReturnType(fn);
+  }
 }
 
 ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
@@ -398,13 +413,11 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
             if (!isCopied) {
               SET_LINENO(move);
 
-              SymExpr*  lhsCopy0 = symLhs->copy();
-              SymExpr*  lhsCopy1 = symLhs->copy();
-              FnSymbol* autoCopy = getAutoCopyForType(varLhs->type);
-              CallExpr* copyExpr = new CallExpr(autoCopy, lhsCopy0);
-              CallExpr* moveExpr = new CallExpr(PRIM_MOVE,lhsCopy1, copyExpr);
+              FnSymbol* copyFn = getAutoCopyForType(varLhs->type);
 
-              move->insertAfter(moveExpr);
+              callRhs->remove();
+              CallExpr* copyCall = new CallExpr(copyFn, exprRhs);
+              move->insertAtTail(copyCall);
             }
           }
         }
@@ -509,7 +522,9 @@ void ReturnByRef::transform()
     }
     else
     {
-      INT_ASSERT(false);
+      // task functions within iterators can yield
+      // but technically return void
+      //INT_ASSERT(false);
     }
   }
 
@@ -858,6 +873,8 @@ static void insertDestructorCalls() {
 //   yield returnsSomeRecord();  // no need to copy
 // }
 //
+// Note that for parallel iterators, yields can occur in task
+// functions (that aren't iterators themselves).
 static void insertYieldTemps()
 {
   // Examine all calls.
@@ -899,6 +916,10 @@ static void insertYieldTemps()
       //
       // Or foundSe is the argument to PRIM_YIELD.
 
+      // TODO: instead of checking for the case in which a copy
+      // must be added, it might make more sense to check for the
+      // case in which no copy needs to be added (which is that
+      // the yielded value came from a function call)
       if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
         // Add an auto-copy here.
         SET_LINENO(call);
