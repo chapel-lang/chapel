@@ -16,14 +16,15 @@ import utils
 
 def myrun(cmd, arg=None):
 
+    use_cmd = list(cmd)
     if arg:
-        cmd += [arg]
+        use_cmd += [arg]
 
-    # Run $cmd but filter out e.g. make[2]: lines
+    # Run $use_cmd but filter out e.g. make[2]: lines
     # (about which directory we are in)
     ret = ""
-    output = utils.run_command(cmd)
-    lines = output.splitlines()
+    output = utils.run_command(use_cmd)
+    lines = output.splitlines(True)
     for line in lines:
         if not line.startswith("make"):
             ret += line
@@ -33,58 +34,60 @@ def myrun(cmd, arg=None):
 def mysystem(cmd, arg=None):
 
     s = myrun(cmd, arg)
+    s = s.strip()
+    s += "\n"
     sys.stdout.write(s)
 
 def parseArguments():
     parser = optparse.OptionParser(usage="usage: %prog [ENVVAR=VALUE] [flags]")
-    parser.add_option("--home",
-                      dest="home", action='store_true', default=False,
+    parser.add_option("--home", const="home",
+                      dest="actions", action='append_const',
                       help="print out CHPL_HOME")
-    parser.add_option("--make",
-                      dest="make", action='store_true', default=False,
+    parser.add_option("--make", const="make",
+                      dest="actions", action='append_const',
                       help="print out the make command")
-    parser.add_option("--llvm",
-                      dest="llvm", action='store_true', default=False,
+    parser.add_option("--llvm", const="llvm",
+                      dest="actions", action='append_const',
                       help="specify that the rest of the arguments are for a"
                            "compilation working with the LLVM backend. This "
                            "argument causes this script to set "
                            "CHPL_TARGET_COMPILER=clang-included")
-    parser.add_option("--compile", "--compile-cc",
-                      dest="compilecc", action='store_true', default=False,
+    parser.add_option("--compile", "--compile-cc", const="compilecc",
+                      dest="actions", action='append_const',
                       help="print a C compiler invocation that can use"
                            "the Chapel runtime")
-    parser.add_option("--compile-c++",
-                      dest="compilecxx", action='store_true', default=False,
+    parser.add_option("--compile-c++", const="compilecxx",
+                      dest="actions", action='append_const',
                       help="print a C++ compiler invocation that can use"
                            "the Chapel runtime")
-    parser.add_option("--cflags",
-                      dest="cflags", action='store_true', default=False,
+    parser.add_option("--cflags", const="cflags",
+                      dest="actions", action='append_const',
                       help="print C compilation flags that Chapel would use")
-    parser.add_option("--c++flags",
-                      dest="cxxflags", action='store_true', default=False,
+    parser.add_option("--c++flags", const="cxxflags",
+                      dest="actions", action='append_const',
                       help="print C++ compilation flags that Chapel would use")
-    parser.add_option("--includes-and-defines",
-                      dest="includesanddefines", action='store_true', default=False,
+    parser.add_option("--includes-and-defines", const="includesanddefines",
+                      dest="actions", action='append_const',
                       help="Print -D and -I compilation flags to include"
                            "the Chapel runtime")
-    parser.add_option("--libraries",
-                      dest="libraries", action='store_true', default=False,
+    parser.add_option("--libraries", const="libraries",
+                      dest="actions", action='append_const',
                       help="print out -L and -l options to link with"
                            "the Chapel runtime")
-    parser.add_option("--main.o",
-                      dest="maino", action='store_true', default=False,
+    parser.add_option("--main.o", const="maino",
+                      dest="actions", action='append_const',
                       help="pront out the path to the main.o file")
-    parser.add_option("--llvm-install-dir",
-                      dest="llvminstalldir", action='store_true', default=False,
+    parser.add_option("--llvm-install-dir", const="llvminstalldir",
+                      dest="actions", action='append_const',
                       help="print path to included LLVM installation")
-    parser.add_option("--clang",
-                      dest="clangcc", action='store_true', default=False,
+    parser.add_option("--clang", const="clangcc",
+                      dest="actions", action='append_const',
                       help="print which clang C compiler is configured")
-    parser.add_option("--clang++",
-                      dest="clangcxx", action='store_true', default=False,
+    parser.add_option("--clang++", const="clangcxx",
+                      dest="actions", action='append_const',
                       help="print which clang C++ compiler is configured")
-    parser.add_option("--clang-sysroot-arguments",
-                      dest="clangsysroot", action='store_true', default=False,
+    parser.add_option("--clang-sysroot-arguments", const="clangsysroot",
+                      dest="actions", action='append_const',
                       help="print out any saved clang arguments that"
                            "specify the system root")
 
@@ -96,7 +99,10 @@ def parseArguments():
         if len(kv) == 2:
             os.environ[kv[0]] = os.environ[kv[1]]
 
-    return options
+    if options.actions:
+        return options.actions
+    else:
+        return []
 
 
 def main():
@@ -146,60 +152,61 @@ def main():
     os.environ["COMP_GEN_SPECIALIZE"] = "0"
     os.environ["COMP_GEN_IEEE_FLOAT"] = "1"
 
-    options = parseArguments()
+    actions = parseArguments()
 
     make_helper = make + ["-f", chpl_home_dir + "/runtime/etc/Makefile.include"]
 
-    if options.home:
-        sys.stdout.write("{0}\n".format(chpl_home_dir))
-    if options.make:
-        sys.stdout.write("{0}\n".format(orig_make))
-    if options.llvm:
-        os.environ["CHPL_LLVM_CODEGEN"] = "llvm"
-        orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
-        target_compiler = chpl_compiler.get('target', llvm_mode='llvm')
-        os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
-        os.environ["CHPL_TARGET_COMPILER"] = target_compiler
+    for a in actions:
+        if a == "home":
+            sys.stdout.write("{0}\n".format(chpl_home_dir))
+        elif a == "make":
+            sys.stdout.write("{0}\n".format(orig_make))
+        elif a == "llvm":
+            os.environ["CHPL_LLVM_CODEGEN"] = "llvm"
+            orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
+            target_compiler = chpl_compiler.get('target', llvm_mode='llvm')
+            os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
+            os.environ["CHPL_TARGET_COMPILER"] = target_compiler
 
-        llvm = ""
-        if "CHPL_LLVM" in os.environ:
-            llvm = os.environ["CHPL_LLVM"]
-        if "CHPL_MAKE_LLVM" in os.environ:
-            llvm = os.environ["CHPL_MAKE_LLVM"]
-        if llvm == "":
-            llvm = chpl_llvm.get()
-        if llvm == "none":
-            sys.stderr.write("Cannot get --llvm configuration with CHPL_LLVM=none\n")
-            sys.exit(1)
-    if options.compilecc:
-        mysystem(make_helper, "printcompileline")
-    if options.compilecxx:
-        mysystem(make_helper, "printcxxcompileline")
-    if options.cflags:
-        mysystem(make_helper, "printcflags")
-    if options.cxxflags:
-        mysystem(make_helper, "printcxxflags")
-    if options.includesanddefines:
-        mysystem(make_helper, "printincludesanddefines")
-    if options.libraries:
-        mysystem(make_helper, "printlibraries")
-    if options.maino:
-        mysystem(make_helper, "printmaino")
-    if options.llvminstalldir:
-        mysystem(make_helper, "printllvminstall")
-    if options.clangcc:
-        mysystem(make_helper, "printclangcc")
-    if options.clangcxx:
-        mysystem(make_helper, "printclangcxx")
-    if options.clangsysroot:
-        mysystem(make_helper, "printclangcxx")
-        llvminstall = myrun(make_helper, "printllvminstall")
-        llvminstall = llvminstall.strip()
-        fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
-        if os.path.isfile(fname):
-            with open(fname) as f:
-                for line in f:
-                    sys.stdout.write(line)
+            llvm = ""
+            if "CHPL_LLVM" in os.environ:
+                llvm = os.environ["CHPL_LLVM"]
+            if "CHPL_MAKE_LLVM" in os.environ:
+                llvm = os.environ["CHPL_MAKE_LLVM"]
+            if llvm == "":
+                llvm = chpl_llvm.get()
+            if llvm == "none":
+                sys.stderr.write("Cannot get --llvm configuration with CHPL_LLVM=none\n")
+                sys.exit(1)
+        elif a == "compilecc":
+            mysystem(make_helper, "printcompileline")
+        elif a == "compilecxx":
+            mysystem(make_helper, "printcxxcompileline")
+        elif a == "cflags":
+            mysystem(make_helper, "printcflags")
+        elif a == "cxxflags":
+            mysystem(make_helper, "printcxxflags")
+        elif a == "includesanddefines":
+            mysystem(make_helper, "printincludesanddefines")
+        elif a == "libraries":
+            mysystem(make_helper, "printlibraries")
+        elif a == "maino":
+            mysystem(make_helper, "printmaino")
+        elif a == "llvminstalldir":
+            mysystem(make_helper, "printllvminstall")
+        elif a == "clangcc":
+            mysystem(make_helper, "printclangcc")
+        elif a == "clangcxx":
+            mysystem(make_helper, "printclangcxx")
+        elif a == "clangsysroot":
+            mysystem(make_helper, "printclangcxx")
+            llvminstall = myrun(make_helper, "printllvminstall")
+            llvminstall = llvminstall.strip()
+            fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
+            if os.path.isfile(fname):
+                with open(fname) as f:
+                    for line in f:
+                        sys.stdout.write(line)
 
 if __name__ == '__main__':
     main()
