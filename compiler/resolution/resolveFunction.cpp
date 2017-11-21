@@ -99,6 +99,8 @@ void resolveSignature(FnSymbol* fn) {
 
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
 
+static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal);
+
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
 
 static void resolveFormals(FnSymbol* fn) {
@@ -128,21 +130,13 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   // For begin functions, copy ranges in if passed by blank intent.
   if (fn->hasFlag(FLAG_BEGIN)                   == true &&
       formal->type->symbol->hasFlag(FLAG_RANGE) == true) {
-    if (formal->intent == INTENT_BLANK || formal->intent == INTENT_IN) {
+    if (formal->intent == INTENT_BLANK ||
+        formal->intent == INTENT_IN) {
       formal->intent = INTENT_CONST_IN;
     }
   }
 
-  if (formal->intent                            == INTENT_INOUT     ||
-      formal->intent                            == INTENT_OUT       ||
-      formal->intent                            == INTENT_REF       ||
-      formal->intent                            == INTENT_CONST_REF ||
-      shouldUpdateAtomicFormalToRef(fn, formal) == true             ||
-      formal->hasFlag(FLAG_WRAP_WRITTEN_FORMAL) == true             ||
-      (formal                              == fn->_this &&
-       formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
-       (isUnion(formal->type)  == true||
-        isRecord(formal->type) == true))) {
+  if (needRefFormal(fn, formal) == true) {
     makeRefType(formal->type);
 
     if (formal->type->refType) {
@@ -151,34 +145,16 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
     } else {
       formal->qual = QUAL_REF;
     }
-  }
-
-  if (isRecordWrappedType(formal->type) == true &&
-      fn->hasFlag(FLAG_ITERATOR_FN)     == true) {
-    // Pass domains, arrays into iterators by ref.
-    // This is a temporary workaround for issues with
-    // iterator lowering.
-    // It is temporary because we expect more of the
-    // compiler to handle 'refness' of an ArgSymbol
-    // in the future.
-    makeRefType(formal->type);
-
-    formal->type = formal->type->refType;
-  }
 
   // Adjust tuples for intent.
-  // This should not apply to 'ref' , 'out', or 'inout' formals,
-  // but these are currently turned into reference types above.
-  // It probably should not apply to 'const ref' either but
-  // that is more debatable.
-  if (formal->type->symbol->hasFlag(FLAG_TUPLE) == true      &&
-      formal->hasFlag(FLAG_TYPE_VARIABLE)       == false     &&
-      formal                                    != fn->_this &&
-      doNotChangeTupleTypeRefLevel(fn, false)   == false) {
+  } else if (formal->type->symbol->hasFlag(FLAG_TUPLE) == true      &&
+             formal->hasFlag(FLAG_TYPE_VARIABLE)       == false     &&
+             formal                                    != fn->_this &&
+             doNotChangeTupleTypeRefLevel(fn, false)   == false) {
 
     // Let 'in' intent work similarly to the blank intent.
     AggregateType* tupleType = toAggregateType(formal->type);
-    IntentTag      intent = formal->intent;
+    IntentTag      intent    = formal->intent;
 
     if (intent == INTENT_IN) {
       intent = INTENT_BLANK;
@@ -188,6 +164,35 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     formal->type = computeTupleWithIntent(intent, tupleType);
   }
+}
+
+static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
+  bool retval = false;
+
+  if (formal->intent == INTENT_INOUT     ||
+      formal->intent == INTENT_OUT       ||
+      formal->intent == INTENT_REF       ||
+      formal->intent == INTENT_CONST_REF) {
+    retval = true;
+
+  } else if (shouldUpdateAtomicFormalToRef(fn, formal) == true) {
+    retval = true;
+
+  } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
+             isRecordWrappedType(formal->type) == true) {
+    retval = true;
+
+  } else if (formal                              == fn->_this &&
+             formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
+             (isUnion(formal->type)  == true||
+              isRecord(formal->type) == true)) {
+    retval = true;
+
+  } else {
+    retval = false;
+  }
+
+  return retval;
 }
 
 //
