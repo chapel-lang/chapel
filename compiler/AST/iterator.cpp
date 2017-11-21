@@ -1376,12 +1376,14 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
 
   // Propagate the Qualifier (e.g. field is ref if local is ref)
   // This is especially important if local is an ArgSymbol
-  QualifiedType qt(QUAL_UNKNOWN, type);
+  QualifiedType qt(QUAL_VAL, type);
   if (local)
     qt = local->qualType();
   // Workaround: use a ref type here
   // In the future, the Qualifier should be sufficient
   qt = qt.refToRefType();
+
+  INT_ASSERT(qt.type() != dtUnknown);
   Symbol* field = new VarSymbol(fieldName, qt);
 
   fn->iteratorInfo->iclass->fields.insertAtTail(new DefExpr(field));
