@@ -44,7 +44,7 @@ void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
                                                    int numExtraArgs,
                                                    Symbol* extraFormals[]);
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
-void       checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn);
+//void       checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn);
 FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
 
 void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);

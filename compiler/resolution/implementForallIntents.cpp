@@ -977,33 +977,6 @@ VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
 }
 
 //
-// Verify that 'origRet' is not used, and remove it from the tree.
-//
-void checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn) {
-  // parentFn and this assert are just sanity checking for the caller
-  INT_ASSERT(origRet->defPoint->parentSymbol == parentFn);
-
-  std::vector<SymExpr*> symExprs;
-  collectSymExprs(parentFn, symExprs);
-  for_vector(SymExpr, se, symExprs)
-    if (se->symbol() == origRet) {
-      // It may appear in a no-init assignment.
-      bool OK = false;
-      if (CallExpr* parent = toCallExpr(se->parentExpr))
-        if (parent->isPrimitive(PRIM_MOVE))
-          if (CallExpr* rhs = toCallExpr(parent->get(2)))
-            if (rhs->isPrimitive(PRIM_NO_INIT)) {
-              OK = true;
-              parent->remove();
-            }
-      INT_ASSERT(OK);
-    }
-
-  // If none are found, we can yank origRet.
-  origRet->defPoint->remove();
-}
-
-//
 // Set up anchors, if not already, so we can add reduction-related code
 // via refRef->insertBefore() within 'fn'.
 //
@@ -1360,7 +1333,6 @@ static void redirectToNewIOI(ForLoop* eflopiLoop) {
 static void propagateThroughYield(CallExpr* rcall,
                                   FnSymbol* parentFn,
                                   int numExtraArgs,
-                                  VarSymbol* retSym,
                                   Symbol* extraActuals[],
                                   Symbol* extraFormals[],
                                   Symbol* shadowVars[],
@@ -1482,8 +1454,19 @@ static void propagateThroughYield(CallExpr* rcall,
     buildTuple->insertAtTail(new SymExpr(tupleComponent));
   }
 
-  rcall->insertBefore("'move'(%S,%E)", retSym, buildTuple);
-  rcall->insertAtTail(new SymExpr(retSym));
+  VarSymbol* yield = newTemp("newYield");
+  yield->addFlag(FLAG_YVV);
+  // Also remove the original yield to avoid baseline failures
+  if (SymExpr* origRetSe = toSymExpr(origRetArg))
+    if (VarSymbol* v = toVarSymbol(origRetSe->symbol()))
+      if (v->hasFlag(FLAG_YVV))
+        v->defPoint->remove();
+
+  // needed? yield->addFlag(FLAG_NO_COPY);
+  rcall->insertBefore(new DefExpr(yield));
+  rcall->insertBefore(new CallExpr(PRIM_MOVE, yield, buildTuple));
+  rcall->insertAtTail(new SymExpr(yield));
+
   if (eflopiHelper)
     eflopiMap[eflopiCall] = eflopiHelper;
 }
@@ -1491,7 +1474,6 @@ static void propagateThroughYield(CallExpr* rcall,
 static void propagateRecursively(FnSymbol* parentFn,
                                  FnSymbol* currentFn,
                                  int numExtraArgs,
-                                 VarSymbol* retSym,
                                  Symbol* extraActuals[],
                                  Symbol* extraFormals[],
                                  Symbol* shadowVars[],
@@ -1515,7 +1497,7 @@ static void propagateRecursively(FnSymbol* parentFn,
 // * extraFormals[ix] is a parentOp - passed to task functions, extra treatment
 // * shadowVars[ix] is created - passed to yields, extra treatment
 //
-static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
+static void propagateExtraLeaderArgs(CallExpr* call,
                                      int numExtraArgs, Symbol* extraActuals[],
                                      bool reduceArgs[], bool nested)
 {
@@ -1593,7 +1575,7 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
     INT_ASSERT(!redRef1); // no need to clean them up
     addArgsToToLeaderCallForPromotionWrapper(fn, numExtraArgs, extraFormals);
   } else {
-    propagateRecursively(fn, fn, numExtraArgs, retSym,
+    propagateRecursively(fn, fn, numExtraArgs,
                          extraActuals, extraFormals, shadowVars, reduceArgs,
                          nested, redRef1, redRef2);
     cleanupRedRefs(redRef1, redRef2);
@@ -1604,7 +1586,6 @@ static void propagateExtraLeaderArgs(CallExpr* call, VarSymbol* retSym,
 static void propagateRecursively(FnSymbol* parentFn,
                                  FnSymbol* currentFn,
                                  int numExtraArgs,
-                                 VarSymbol* retSym,
                                  Symbol* extraActuals[],
                                  Symbol* extraFormals[],
                                  Symbol* shadowVars[],
@@ -1619,7 +1600,7 @@ static void propagateRecursively(FnSymbol* parentFn,
   for_vector(CallExpr, rcall, rCalls) {
     if (rcall->isPrimitive(PRIM_YIELD)) {
 
-      propagateThroughYield(rcall, parentFn, numExtraArgs, retSym,
+      propagateThroughYield(rcall, parentFn, numExtraArgs,
                             extraActuals, extraFormals,
                             shadowVars, reduceArgs,
                             nested, redRef1, redRef2);
@@ -1654,12 +1635,12 @@ static void propagateRecursively(FnSymbol* parentFn,
         }
       } else {
         // Propagate the extra args recursively into 'tfn'.
-        propagateExtraLeaderArgs(rcall, retSym, numExtraArgs,
+        propagateExtraLeaderArgs(rcall, numExtraArgs,
                                  extraFormals, reduceArgs, true);
       }
      } else {
       // !needsCapture(tfn) => descend into 'tfn' without argument intents.
-      propagateRecursively(parentFn, tfn, numExtraArgs, retSym,
+      propagateRecursively(parentFn, tfn, numExtraArgs,
                            extraActuals, extraFormals, shadowVars, reduceArgs,
                            nested, redRef1, redRef2);
      }
@@ -1698,17 +1679,6 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
   iterFn->instantiationPoint = getVisibilityBlock(call);
   call->baseExpr->replace(new SymExpr(iterFn));
 
-  // Setup the new return/yield symbol.
-  VarSymbol* retSym  = NULL;
-  Symbol* origRetSym = NULL;
-
-  if (!iterFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    retSym  = newTemp("ret"); // its type is to be inferred
-    origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
-    origRetSym->defPoint->insertBefore(new DefExpr(retSym));
-    origRetSym->name = "origRet";
-  }
-
   int numExtraArgs = origToLeaderCall->numActuals()-1;
   INT_ASSERT(numExtraArgs > 0); // we shouldn't be doing all this otherwise
   Expr* origArg = origToLeaderCall->get(1);
@@ -1722,12 +1692,8 @@ static void extendLeader(CallExpr* call, CallExpr* origToLeaderCall,
   }
   INT_ASSERT(!origArg->next); // we should have processed all args
 
-  propagateExtraLeaderArgs(call, retSym, numExtraArgs,
+  propagateExtraLeaderArgs(call, numExtraArgs,
                            extraActuals, reduceArgs, false);
-
-  if (origRetSym) {
-    checkAndRemoveOrigRetSym(origRetSym, iterFn);
-  }
 }
 
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall) {

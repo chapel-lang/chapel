@@ -71,6 +71,7 @@ static void        find_printModuleInit_stuff();
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
+static void        normalizeYields(FnSymbol* fn);
 
 static bool        isCallToConstructor(CallExpr* call);
 static void        normalizeCallToConstructor(CallExpr* call);
@@ -490,6 +491,8 @@ static void normalizeBase(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(symbol)) {
       if (fn->isNormalized() == false) {
         normalizeReturns(fn);
+        if (fn->isIterator())
+          normalizeYields(fn);
       }
     }
   }
@@ -890,7 +893,6 @@ static void normalizeReturns(FnSymbol* fn) {
   std::vector<CallExpr*> rets;
   std::vector<CallExpr*> calls;
   size_t                 numVoidReturns = 0;
-  size_t                 numYields      = 0;
   CallExpr*              theRet         = NULL;
   bool                   isIterator     = fn->isIterator();
 
@@ -905,16 +907,11 @@ static void normalizeReturns(FnSymbol* fn) {
       if (isVoidReturn(call) == true) {
         numVoidReturns++;
       }
-
-    } else if (call->isPrimitive(PRIM_YIELD)) {
-      rets.push_back(call);
-
-      numYields++;
     }
   }
 
   // Check if this function's returns are already normal.
-  if (rets.size() == numYields + 1 && theRet == fn->body->body.last()) {
+  if (rets.size() == 1 && theRet == fn->body->body.last()) {
     if (SymExpr* se = toSymExpr(theRet->get(1))) {
       if (fn->hasFlag(FLAG_CONSTRUCTOR)         == true ||
           fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true ||
@@ -928,7 +925,7 @@ static void normalizeReturns(FnSymbol* fn) {
   }
 
   // Add a void return if needed.
-  if (rets.size() == 0 && fn->retExprType == NULL) {
+  if (isIterator == false && rets.size() == 0 && fn->retExprType == NULL) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
     return;
   }
@@ -941,9 +938,27 @@ static void normalizeReturns(FnSymbol* fn) {
 
   fn->insertAtTail(new DefExpr(label));
 
+  // Check that iterators do not return 'void'
+  if (isIterator == true) {
+    if (fn->retExprType != NULL && fn->retTag != RET_REF) {
+      if (SymExpr* lastRTE = toSymExpr(fn->retExprType->body.tail)) {
+        if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
+          if (retSym->type == dtVoid) {
+            USR_FATAL_CONT(fn,
+                           "an iterator's return type cannot be 'void'; "
+                           "if specified, it must be the type of the "
+                           "expressions the iterator yields");
+          }
+        }
+      }
+    }
+  }
+
   // If a proc has a void return, do not return any values ever.
   // (Types are not resolved yet, so we judge by presence of "void returns"
   // i.e. returns with no expr. See also a related check in semanticChecks.)
+  // (Note iterators always need an RVV so resolution knows to resolve the
+  //  return/yield type)
   if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
@@ -965,21 +980,6 @@ static void normalizeReturns(FnSymbol* fn) {
       retval->addFlag(FLAG_MAYBE_TYPE);
     }
 
-    if (isIterator == true) {
-      if (fn->retExprType != NULL && fn->retTag != RET_REF) {
-        if (SymExpr* lastRTE = toSymExpr(fn->retExprType->body.tail)) {
-          if (TypeSymbol* retSym = toTypeSymbol(lastRTE->symbol())) {
-            if (retSym->type == dtVoid) {
-              USR_FATAL_CONT(fn,
-                             "an iterator's return type cannot be 'void'; "
-                             "if specified, it must be the type of the "
-                             "expressions the iterator yields");
-            }
-          }
-        }
-      }
-    }
-
     fn->insertAtHead(new DefExpr(retval));
     fn->insertAtTail(new CallExpr(PRIM_RETURN, retval));
   }
@@ -989,53 +989,67 @@ static void normalizeReturns(FnSymbol* fn) {
   for_vector(CallExpr, ret, rets) {
     SET_LINENO(ret);
 
-    if (isIterator == true) {
-      INT_ASSERT(retval != NULL);
+    if (isIterator == false && retval != NULL) {
+      insertRetMove(fn, retval, ret);
+    }
 
-      // Three cases:
-      // (1) yield expr; => mov _ret expr; yield _ret;
-      // (2) return; => goto end_label;
-      // (3) return expr; -> mov _ret expr; yield _ret; goto end_label;
-      // Notice how (3) is the composition of (1) and (2).
-      // MPF: but (3) isn't possible? error: returning a value in an iterator
-      if (isVoidReturn(ret) == false) { // Cases 1 and 3
-        insertRetMove(fn, retval, ret);
-        ret->insertBefore(new CallExpr(PRIM_YIELD, retval));
-      }
+    // replace with GOTO(label)
+    if (ret->next != label->defPoint) {
+      ret->replace(new GotoStmt(GOTO_RETURN, label));
 
-      if (ret->isPrimitive(PRIM_YIELD) == true) { // Case 1 only.
-        // it's a yield => no goto; need to remove the original node
-        ret->remove();
-      } else {    // Cases 2 and 3.
-        if (ret->next != label->defPoint) {
-          ret->replace(new GotoStmt(GOTO_RETURN, label));
-
-          labelIsUsed = true;
-        } else {
-          ret->remove();
-        }
-      }
-
-
-    // Not an iterator
+      labelIsUsed = true;
     } else {
-      if (retval != NULL) {
-        insertRetMove(fn, retval, ret);
-      }
-
-      // replace with GOTO(label)
-      if (ret->next != label->defPoint) {
-        ret->replace(new GotoStmt(GOTO_RETURN, label));
-
-        labelIsUsed = true;
-      } else {
-        ret->remove();
-      }
+      ret->remove();
     }
   }
 
   if (labelIsUsed == false) {
     label->defPoint->remove();
+  }
+}
+
+static void normalizeYields(FnSymbol* fn) {
+  INT_ASSERT(fn->isIterator());
+  SET_LINENO(fn);
+
+  std::vector<CallExpr*> yields;
+  std::vector<CallExpr*> calls;
+
+  collectMyCallExprs(fn, calls, fn);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      yields.push_back(call);
+    }
+  }
+
+  // For each yield statement, adjust it similarly to a return.
+  for_vector(CallExpr, yield, yields) {
+    SET_LINENO(yield);
+
+    // Create a new YVV variable
+    // MPF: I don't think YVV or RVV need to exist in the long term,
+    // but using YVV enables minor adjustment in most of the rest of
+    // the compiler.
+    VarSymbol* retval = newTemp("yret", fn->retType);
+    retval->addFlag(FLAG_YVV);
+
+    if (fn->retTag == RET_PARAM) {
+      retval->addFlag(FLAG_PARAM);
+    }
+
+    if (fn->retTag == RET_TYPE) {
+      retval->addFlag(FLAG_TYPE_VARIABLE);
+    }
+
+    if (fn->hasFlag(FLAG_MAYBE_TYPE)) {
+      retval->addFlag(FLAG_MAYBE_TYPE);
+    }
+
+    yield->insertBefore(new DefExpr(retval));
+    insertRetMove(fn, retval, yield);
+    yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
+    yield->remove();
   }
 }
 

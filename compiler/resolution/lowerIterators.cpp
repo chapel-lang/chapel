@@ -961,6 +961,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
           SET_LINENO(se);
           Symbol* newRet = newTemp("newRet", ret->type);
           newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
+          //newRet->addFlag(FLAG_YVV);
           block->insertAtHead(new DefExpr(newRet));
           se->setSymbol(newRet);
           retReplacementMap.put(block, newRet);
@@ -980,6 +981,10 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
 // will be included in 'asts' and handled when 'fn' is the enclosing
 // iterator.
 //
+// see commit 8d3b2c4065d6466dbaadab0ae0c8444e6645dae6
+// Now we're using a return temp per yield, but this change is still
+// apparently necessary. I think that lowerIterators isn't copying some
+// variables when it should be.
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
