@@ -306,7 +306,6 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   INT_ASSERT(yieldedType != NULL);
   INT_ASSERT(yieldedType != dtUnknown);
-  INT_ASSERT(yieldedType != dtVoid);
   INT_ASSERT(!fn->iteratorInfo);
 
   SET_LINENO(fn);
