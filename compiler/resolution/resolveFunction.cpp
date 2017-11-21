@@ -248,7 +248,7 @@ static FnSymbol* protoIteratorMethod(IteratorInfo* ii,
                                      Type*         retType);
 
 static void resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType;
+  Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
 
@@ -256,58 +256,52 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
     // Try resolving global type aliases
-    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       retType = resolveTypeAlias(se);
+    }
 
-    if (retType->symbol->hasFlag(FLAG_GENERIC)) {
+    if (retType->symbol->hasFlag(FLAG_GENERIC)    == true) {
       SET_LINENO(fn->retExprType->body.tail);
 
-      // Try resolving records/classes with default types
-      // e.g. range
       retType = resolveDefaultGenericTypeSymExpr(se);
     }
   }
 
-  fn->retType = retType;
-
   if (retType != dtUnknown) {
-    // Difficult to call e.g. _unref_type in build/normalize
-    // b/c of bugs in pulling out function symbols.
-    // So we make sure returned tuple types capture values here.
     if (retType->symbol->hasFlag(FLAG_TUPLE)   == true   &&
         doNotChangeTupleTypeRefLevel(fn, true) == false) {
       AggregateType* tupleType = toAggregateType(retType);
 
-      INT_ASSERT(tupleType);
-
-      retType = getReturnedTupleType(fn, tupleType);
-
+      retType     = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
 
-    } else if (fn->returnsRefOrConstRef()) {
+    } else if (fn->returnsRefOrConstRef() == true) {
       makeRefType(retType);
 
-      retType     = fn->retType->refType;
+      retType     = retType->refType;
+      fn->retType = retType;
+
+    } else {
       fn->retType = retType;
     }
 
     fn->retExprType->remove();
 
-    if (fn->isIterator() && !fn->iteratorInfo) {
-      // Note: protoIteratorClass changes fn->retType
-      // to the iterator record. The original return type
-      // is stored here in retType.
+    if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+      // Note: protoIteratorClass changes fn->retType to the iterator record.
+      // The original return type is stored here in retType.
       protoIteratorClass(fn);
     }
+
+  } else {
+    fn->retType = retType;
   }
 
   // Also update the return symbol type
-  Symbol* ret = fn->getReturnSymbol();
-
-  if (ret->type == dtUnknown) {
-    // uses the local variable saving the resolved declared return type
-    // since for iterators, fn->retType is the iterator record.
-    ret->type = retType;
+  if (Symbol* ret = fn->getReturnSymbol()) {
+    if (ret->type == dtUnknown) {
+      ret->type = retType;
+    }
   }
 }
 
@@ -321,8 +315,10 @@ static void protoIteratorClass(FnSymbol* fn) {
   fn->iteratorInfo->iterator = fn;
 
   const char* className = astr(fn->name);
-  if (fn->_this)
+
+  if (fn->_this != NULL) {
     className = astr(className, "_", fn->_this->type->symbol->cname);
+  }
 
   ii->iclass = new AggregateType(AGGREGATE_CLASS);
 
@@ -345,7 +341,7 @@ static void protoIteratorClass(FnSymbol* fn) {
   // POD or not POD.
   rts->addFlag(FLAG_NOT_POD);
 
-  if (fn->retTag == RET_REF) { // TODO -- handle RET_CONST_REF
+  if (fn->retTag == RET_REF) {
     rts->addFlag(FLAG_REF_ITERATOR_CLASS);
   }
 
@@ -399,8 +395,10 @@ static void protoIteratorClass(FnSymbol* fn) {
   // just a symbol of the iterator class type.  This may include _getIterator
   // and _getIteratorZip functions in the module code.
   ii->iclass->iteratorInfo = ii;
+
   normalize(ii->getIterator);
-  resolveFunction(ii->getIterator);  // No shortcuts.
+
+  resolveFunction(ii->getIterator);
 }
 
 static FnSymbol* protoIteratorMethod(IteratorInfo* ii,
@@ -988,7 +986,7 @@ Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType) {
 
   INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
 
-  if (fn->returnsRefOrConstRef()) {
+  if (fn->returnsRefOrConstRef() == true) {
     retval = computeTupleWithIntent(INTENT_REF, retType);
 
   } else {
