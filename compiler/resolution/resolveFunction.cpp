@@ -296,11 +296,83 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
   }
 }
 
+<<<<<<< HEAD
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+=======
+static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
+  INT_ASSERT(yieldedType != NULL);
+  INT_ASSERT(yieldedType != dtUnknown);
+  INT_ASSERT(yieldedType != dtVoid);
+  INT_ASSERT(!fn->iteratorInfo);
+
+  SET_LINENO(fn);
+
+  IteratorInfo* ii = new IteratorInfo();
+  fn->iteratorInfo = ii;
+  fn->iteratorInfo->iterator = fn;
+
+  const char* className = astr(fn->name);
+
+  if (fn->_this != NULL) {
+    className = astr(className, "_", fn->_this->type->symbol->cname);
+  }
+
+  ii->iclass = new AggregateType(AGGREGATE_CLASS);
+
+  TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
+
+  cts->addFlag(FLAG_ITERATOR_CLASS);
+  cts->addFlag(FLAG_POD);
+
+  ii->iclass->addRootType();
+
+  fn->defPoint->insertBefore(new DefExpr(cts));
+
+  ii->irecord = new AggregateType(AGGREGATE_RECORD);
+
+  TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
+
+  rts->addFlag(FLAG_ITERATOR_RECORD);
+
+  // TODO -- do a better job of deciding if an iterator record is
+  // POD or not POD.
+  rts->addFlag(FLAG_NOT_POD);
+
+  if (fn->retTag == RET_REF) {
+    rts->addFlag(FLAG_REF_ITERATOR_CLASS);
+  }
+
+  fn->defPoint->insertBefore(new DefExpr(rts));
+
+  ii->tag      = it_iterator;
+  ii->advance  = protoIteratorMethod(ii, "advance",  dtVoid);
+  ii->zip1     = protoIteratorMethod(ii, "zip1",     dtVoid);
+  ii->zip2     = protoIteratorMethod(ii, "zip2",     dtVoid);
+  ii->zip3     = protoIteratorMethod(ii, "zip3",     dtVoid);
+  ii->zip4     = protoIteratorMethod(ii, "zip4",     dtVoid);
+  ii->hasMore  = protoIteratorMethod(ii, "hasMore",  dtInt[INT_SIZE_DEFAULT]);
+  ii->getValue = protoIteratorMethod(ii, "getValue", yieldedType);
+  ii->init     = protoIteratorMethod(ii, "init",     dtVoid);
+  ii->incr     = protoIteratorMethod(ii, "incr",     dtVoid);
+
+  // Save the iterator info in the iterator record.
+  // The iterator info is still owned by the iterator function.
+  ii->irecord->iteratorInfo        = ii;
+  ii->irecord->scalarPromotionType = yieldedType;
+
+  ii->yieldedType = yieldedType;
+  ii->iteratorRetTag = fn->retTag;
+
+  fn->retType = ii->irecord;
+  Symbol* retSym = fn->getReturnSymbol();
+  INT_ASSERT(retSym);
+  retSym->type = ii->irecord;
+  fn->retTag  = RET_VALUE;
+>>>>>>> Fix scalarPromotionType = new yielded type for iterator classes
 
 void resolveFunction(FnSymbol* fn) {
   if (fn->isResolved() == false) {
@@ -526,7 +598,7 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
 
 static AggregateType* makeIteratorClass (FnSymbol* fn);
 
-static AggregateType* makeIteratorRecord(FnSymbol* fn);
+static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType);
 
 static const char*    iteratorClassName(FnSymbol* fn);
 
@@ -551,7 +623,7 @@ static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
   SET_LINENO(fn);
 
   AggregateType* iClass  = makeIteratorClass(fn);
-  AggregateType* iRecord = makeIteratorRecord(fn);
+  AggregateType* iRecord = makeIteratorRecord(fn, yieldedType);
   FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
   IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter,
                                             fn, yieldedType);
@@ -592,7 +664,7 @@ static AggregateType* makeIteratorClass(FnSymbol* fn) {
   return retval;
 }
 
-static AggregateType* makeIteratorRecord(FnSymbol* fn) {
+static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   AggregateType* retval    = new AggregateType(AGGREGATE_RECORD);
   const char*    className = iteratorClassName(fn);
   TypeSymbol*    sym       = new TypeSymbol(astr("_ir_", className), retval);
@@ -604,7 +676,7 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn) {
     sym->addFlag(FLAG_REF_ITERATOR_CLASS);
   }
 
-  retval->scalarPromotionType = fn->retType;
+  retval->scalarPromotionType = yieldedType;
 
   return retval;
 }
