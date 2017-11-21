@@ -281,6 +281,9 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //  * all inductionVariables()' DefExprs are moved to the original loop body
 
 /////////// fsIterYieldType ///////////
+static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
+                                     FnSymbol* origIterFn,
+                                     bool alreadyResolved);
 
 /*
 When we are dealing with a recursive parallel iterator, we call
@@ -294,7 +297,7 @@ Ex. standalone iter walkdirs() in FileSystem module, as tested by:
 
 Therefore we compute this extended yield type manually.
 */
-static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, Type* origYieldType) {
+static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymbol* origIterFn) {
   if (fs->numShadowVars() == 0) {
     // The iterator has not undergone extendLeader().
     // It still yields whatever the user wrote.
@@ -308,9 +311,14 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, Type* 
   // Otherwise, build the tuple mocking what iterFn yields, supposedly.
   CallExpr* constup = new CallExpr("_type_construct__tuple");
 
-  // Yield type must have been declared by user for recursive iterator.
-  INT_ASSERT(origYieldType && origYieldType != dtUnknown);
-  constup->insertAtTail(origYieldType->symbol);
+  // Yield type must have been declared by user for recursive iterator,
+  // and the function that declaration is attached to is origIterFn.
+  bool alreadyResolved = origIterFn->isResolved();
+  QualifiedType origQt = fsIterYieldType(fs, origIterFn, NULL, alreadyResolved);
+  Type* origYieldedType = origQt.type();
+
+  INT_ASSERT(origYieldedType && origYieldedType != dtUnknown);
+  constup->insertAtTail(origYieldedType->symbol);
 
   // The other tuple components are refs to shadow variables,
   // so their types come from respective outer variables.
@@ -360,7 +368,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, Type* 
 // This helper is ForallStmt-specific because of the assumptions it makes.
 //
 static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
-                                     Type* origYieldType,
+                                     FnSymbol* origIterFn,
                                      bool alreadyResolved)
 {
   if (iterFn->isIterator()) {
@@ -369,7 +377,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
     } else {
       // We are in the midst of resolving a recursive iterator.
       INT_ASSERT(alreadyResolved);
-      return buildIterYieldType(fs, iterFn, origYieldType);
+      return buildIterYieldType(fs, iterFn, origIterFn);
     }
   } else {
     // e.g. "proc these() return _value.these();"
@@ -377,7 +385,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
     INT_ASSERT(retType && retType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     FnSymbol* iterator = retType->iteratorInfo->iterator;
     INT_ASSERT(iterator->isIterator()); // no more recursion?
-    return fsIterYieldType(fs, iterator, origYieldType, alreadyResolved);
+    return fsIterYieldType(fs, iterator, origIterFn, alreadyResolved);
   }
 }
 
@@ -640,7 +648,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
 
 static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                              CallExpr* iterCall,
-                                             Type* origYieldedType,
+                                             FnSymbol* origIterator,
                                              bool gotSA)
 {
   // The par iterator probably has been extendLeader()-ed for forall intents.
@@ -651,7 +659,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
 
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter,
-                                        origYieldedType, alreadyResolved);
+                                        origIterator, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
 
   if (idxVar->id == breakOnResolveID)
@@ -810,10 +818,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
                findStandaloneOrLeader(pfs, iterCall);
   resolveCallAndCallee(iterCall, false);
 
-  FnSymbol* iter = iterCall->resolvedFunction();
-  bool alreadyResolved = iter->isResolved();
-  QualifiedType origQt = fsIterYieldType(pfs, iter, NULL, alreadyResolved);
-  Type* origYieldedType = origQt.type();
+  FnSymbol* origIterFn = iterCall->resolvedFunction();
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
@@ -821,7 +826,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     implementForallIntentsNew(pfs, iterCall);
 
-    resolveParallelIteratorAndIdxVar(pfs, iterCall, origYieldedType, gotSA);
+    resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
