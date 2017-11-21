@@ -844,7 +844,7 @@ static void insertDestructorCalls() {
 }
 
 // This routine inserts autoCopy calls ahead of yield statements as necessary,
-// so the calling routine "owns" the returned value.
+// so the calling routine "owns" the yielded value.
 // The copy is necessary when an iterator yields a variable (rather than an
 // expression temporary).
 //
