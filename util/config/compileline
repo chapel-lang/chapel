@@ -24,7 +24,7 @@ def myrun(cmd, arg=None):
     # (about which directory we are in)
     ret = ""
     output = utils.run_command(use_cmd)
-    lines = [line for line in output.splitlines()
+    lines = [line for line in output.splitlines(True)
                   if not line.startswith("make")]
     ret = ''.join(lines)
 
