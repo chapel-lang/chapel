@@ -24,10 +24,9 @@ def myrun(cmd, arg=None):
     # (about which directory we are in)
     ret = ""
     output = utils.run_command(use_cmd)
-    lines = output.splitlines(True)
-    for line in lines:
-        if not line.startswith("make"):
-            ret += line
+    lines = [line for line in output.splitlines()
+                  if not line.startswith("make")]
+    ret = ''.join(lines)
 
     return ret
 
