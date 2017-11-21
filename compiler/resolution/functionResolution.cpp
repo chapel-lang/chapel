@@ -747,7 +747,7 @@ static bool canParamCoerce(Type*   actualType,
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
-      // TODO: aren't these redundand with the last check?
+      // TODO: aren't these redundant with the last check?
       Type* enumIntType = etype->getIntegerType();
 
       if (enumIntType == formalType)
@@ -872,7 +872,7 @@ static bool canParamCoerce(Type*   actualType,
   if (is_real_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
-    // don't coerce bools to reals (per spec: "uninteded by programmer")
+    // don't coerce bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to maximum width real
     if ((is_int_type(actualType) || is_uint_type(actualType))
@@ -916,7 +916,7 @@ static bool canParamCoerce(Type*   actualType,
   if (is_complex_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
 
-    // don't coerce bools to reals (per spec: "uninteded by programmer")
+    // don't coerce bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to maximum width complex
     if ((is_int_type(actualType) || is_uint_type(actualType)) &&

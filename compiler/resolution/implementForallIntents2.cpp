@@ -202,7 +202,7 @@ public:
     return result;
   }
 
-  // constructor for the outermodst context
+  // constructor for the outermost context
   FIcontext(ForallStmt* fs, CallExpr* iterCall,
             FnSymbol* iterFn, VarSymbol* retSymbol) :
     forall(fs),
@@ -521,7 +521,7 @@ static void addArgsToToLeaderCallForPromotionWrapper(FIcontext& ctx) {
 }
 
 
-/////////// seting up for a reduce intent ///////////
+/////////// setting up for a reduce intent ///////////
 
 // As we extend the yield expression into a tuple with shadow variables,
 // we need to handle a reduce-intent variable specially by setting up
