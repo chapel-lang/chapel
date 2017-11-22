@@ -5078,13 +5078,6 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     call->insertBefore(new CallExpr(PRIM_MOVE, tmp,     rhs->remove()));
     call->insertAtTail(new CallExpr(PRIM_CAST, lhsType, tmp));
 
-  } else if (rhs->isPrimitive(PRIM_SIZEOF) == true) {
-    // Fix up arg to sizeof(), as we may not have known the type earlier
-    SymExpr* sizeSym  = toSymExpr(rhs->get(1));
-    Type*    sizeType = sizeSym->symbol()->typeInfo();
-
-    rhs->replace(new CallExpr(PRIM_SIZEOF, sizeType->symbol));
-
   } else if (rhs->isPrimitive(PRIM_CAST_TO_VOID_STAR) == true) {
     if (isReferenceType(rhs->get(1)->typeInfo())) {
       // Add a dereference as needed, as we did not have complete
