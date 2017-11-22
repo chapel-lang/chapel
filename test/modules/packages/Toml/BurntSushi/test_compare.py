@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
-
-from __future__ import print_function
 
 """
 Sanity check script to confirm that python's json module can successfully
 parse and compare json files in this test suite.
+
+Developer script (python3 only)
 """
 
 import compare
