@@ -63,6 +63,10 @@ static FnSymbol*  wrapDefaultedFormals(
                                FnSymbol*                fn,
                                CallInfo&                info,
                                std::vector<ArgSymbol*>& actualToFormal);
+static void addDefaultedActuals(FnSymbol *fn,
+                                CallInfo& info,
+                                std::vector<ArgSymbol*>& actualIdxToFormal);
+
 
 static void       reorderActuals(FnSymbol*                fn,
                                  CallInfo&                info,
@@ -96,7 +100,13 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   FnSymbol* retval     = fn;
 
   if (numActuals < fn->numFormals()) {
-    retval = wrapDefaultedFormals(retval, info, actualIdxToFormal);
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+      // TODO - remove this branch of the conditional once
+      // initializers have replaced the default constructor
+      retval = wrapDefaultedFormals(retval, info, actualIdxToFormal);
+    } else {
+      addDefaultedActuals(retval, info, actualIdxToFormal);
+    }
   }
 
   // Map actuals to formals by position
@@ -169,6 +179,160 @@ static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
 static void      insertWrappedCall(FnSymbol* fn,
                                    FnSymbol* wrapper,
                                    CallExpr* call);
+
+static Symbol* createDefaultedActual(FnSymbol*  fn,
+                                     ArgSymbol* formal,
+                                     CallExpr*  call,
+                                     BlockStmt* body,
+                                     SymbolMap& copyMap);
+
+static void addDefaultedActuals(FnSymbol *fn,
+                                CallInfo& info,
+                                std::vector<ArgSymbol*>& actualFormals) {
+
+  int numFormals = fn->numFormals();
+  std::vector<Symbol*> newActuals(numFormals);
+  std::vector<const char*> newActualNames(numFormals);
+  std::vector<int8_t> newActualDefaulted(numFormals);
+
+  // Gather the actuals into newActuals with NULLs where
+  // we need to fill in a default. This also happens
+  // to address the need to reorder the actuals.
+  int i = 0;
+  for_formals(formal, fn) {
+    Symbol* actualSym = NULL;
+    const char* actualName = NULL;
+    int j = 0;
+    for_vector(ArgSymbol, arg, actualFormals) {
+      if (arg == formal) {
+        actualSym = info.actuals.v[j];
+        actualName = info.actualNames.v[j];
+      }
+      j++;
+    }
+
+    newActuals[i] = actualSym;
+    newActualNames[i] = actualName;
+    newActualDefaulted[i] = (actualSym == NULL);
+
+    i++;
+  }
+
+  // Remove the actuals from the call
+  // (we'll add them back again in a moment)
+  for_actuals(actual, info.call) {
+    actual->remove();
+  }
+
+  // Create a copyMap to handle cases like
+  //   proc f(a, b=a)
+  // in which event, we can't refer to formal 'a' in the default value.
+  SymbolMap copyMap;
+
+  // Create a Block to store the default values
+  // We'll flatten this back out again in a minute.
+  BlockStmt* body = new BlockStmt();
+  info.call->getStmtExpr()->insertBefore(body);
+
+  // Fill in the NULLs in newActuals with the appropriate default argument.
+  i = 0;
+  for_formals(formal, fn) {
+    if (newActuals[i] == NULL) {
+      // Fill it in with a default argument.
+      newActuals[i] = createDefaultedActual(fn, formal, info.call, body, copyMap);
+    }
+    // TODO -- should this be adding a reference to the original actual?
+    copyMap.put(formal, newActuals[i]);
+    i++;
+  }
+
+  // Apply the map copyMap to the block storing defaults
+  update_symbols(body, &copyMap);
+
+  // Normalize and resolve the new code in the BlockStmt.
+  normalize(body);
+  resolveBlockStmt(body);
+
+  // resolveBlockStmt might remove DefExprs for params
+  // in that event, we need to update them here.
+  for (i = 0; i < numFormals; i++) {
+    if (newActualDefaulted[i])
+      if (Symbol* param = paramMap.get(newActuals[i]))
+        newActuals[i] = param;
+  }
+
+  // Add the actuals back to the call.
+  // Also update info.actuals and info.actualNames
+  info.actuals.clear();
+  info.actualNames.clear();
+  i = 0;
+  for_vector(Symbol, actual, newActuals) {
+    info.call->insertAtTail(new SymExpr(actual));
+    info.actuals.add(actual);
+    info.actualNames.add(newActualNames[i]);
+    i++;
+  }
+
+  // Flatten body
+  body->flattenAndRemove();
+
+  // update actualFormals[] for use in reorderActuals
+  // Since we addressed reordering above, this is always just
+  // the formals in order.
+  actualFormals.resize(numFormals);
+  i = 0;
+  for_formals(formal, fn) {
+    actualFormals[i] = formal;
+    i++;
+  }
+}
+
+static Symbol* createDefaultedActual(FnSymbol*  fn,
+                                     ArgSymbol* formal,
+                                     CallExpr*  call,
+                                     BlockStmt* body,
+                                     SymbolMap& copyMap) {
+
+  // TODO - can't we get the param formals out of paramMap?
+  // Or fn->substitutions?
+
+  IntentTag  intent = formal->intent;
+  VarSymbol* temp   = newTemp(astr("default_arg", formal->name));
+
+  if (formal->type   != dtTypeDefaultToken &&
+      formal->type   != dtMethodToken      &&
+      formal->intent == INTENT_BLANK) {
+    intent = blankIntentForType(formal->type);
+  }
+
+  if (intent != INTENT_INOUT && intent != INTENT_OUT) {
+    temp->addFlag(FLAG_MAYBE_PARAM);
+    temp->addFlag(FLAG_EXPR_TEMP);
+  }
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    temp->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  // TODO: do we need to add FLAG_INSERT_AUTO_DESTROY here?
+
+  body->insertAtTail(new DefExpr(temp));
+
+  if (defaultedFormalUsesDefaultForType(formal) == true) {
+    defaultedFormalApplyDefaultForType(formal, body, temp);
+
+  } else if (intent == INTENT_OUT) {
+    defaultedFormalApplyDefaultForType(formal, body, temp);
+
+  } else {
+    defaultedFormalApplyDefaultValue(fn, formal, intent, body, temp);
+  }
+
+  // Now return the expression to use as the defaulted argument
+  return temp;
+}
+
+
 
 static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
                                       CallInfo&                info,
