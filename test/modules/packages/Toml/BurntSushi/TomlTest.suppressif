@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# temporary: start_test does not yet support future per execopt
+
+echo 1
