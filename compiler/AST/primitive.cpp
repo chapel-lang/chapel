@@ -597,8 +597,18 @@ initPrimitive() {
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
+
+  // PRIM_TYPEOF an array returns a runtime type (containing its domain)
+  // For values without a runtime type component, it works the same as
+  // PRIM_STATIC_TYPEOF
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
+
+  // Return the compile-time component of a type (ignoring runtime types)
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+
+  // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
+  // a type only. Returns the scalar promotion type (i.e. the type of the
+  // elements that iterating over it would yield)
   prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
