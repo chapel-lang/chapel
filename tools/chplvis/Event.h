@@ -32,7 +32,7 @@
 
 // Order important, all before Ev_end are grouped together, after, inserted by time
 enum Event_kind {Ev_start, Ev_tag, Ev_pause, Ev_end, Ev_task, Ev_comm, Ev_fork,
-		 Ev_begin_task, Ev_end_task};
+                 Ev_begin_task, Ev_end_task};
 
 class Event {  // Base class for events 
 
