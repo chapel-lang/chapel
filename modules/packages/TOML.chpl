@@ -546,8 +546,21 @@ Used to recursively hold tables and respective values
       }
     }
 
-    /* Write a Table to channel f. f defaults to stdout */
+    /* Write a Table to channel f in TOML format */
     proc writeThis(f) {
+      writeTOML(f);
+    }
+
+    /* Write a Table to channel f in JSON format */
+    proc writeJSON(f) {
+      var flatDom: domain(string);
+      var flat: [flatDom] Toml;
+      this.flatten(flat);           // Flattens containing Toml
+      printValuesJSON(f, this);     // Prints key values in containing Toml
+    }
+
+    /* Write a Table to channel f in TOML format */
+    proc writeTOML(f) {
       var flatDom: domain(string);
       var flat: [flatDom] Toml;
       this.flatten(flat);       // Flattens containing Toml
@@ -589,10 +602,10 @@ Used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldInt {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldArr {
             var final: string;
@@ -607,26 +620,87 @@ Used to recursively hold tables and respective values
               }
             }
             final += ']';
-            f.writeln(final);
+            f.write(final);
           }
           when fieldReal {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldString {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldEmpty {
             halt("Keys have to have a value");
           }
           when fieldDate {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           otherwise {
             f.write("not yet supported");
           }
-          }
+        }
       }
       f.writeln();
+    }
+
+    pragma "no doc"
+    /* Send values from table to toString for writing  */
+    proc printValuesJSON(f: channel, v: Toml) {
+      const tabSpace = 4;
+      var indent = 0;
+      f.writef('{\n');
+      indent += tabSpace;
+      for (key, value, i) in zip(v.D, v.A, 1..v.D.size) {
+        select value.tag {
+          when fieldToml do continue; // Table
+          when fieldBool {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          when fieldInt {
+            f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, this.tomlType, toString(this));
+          }
+          when fieldArr {
+            f.writef('%s"%s": {\n', ' '*indent, key);
+            indent += tabSpace;
+            f.writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
+            f.writef('%s"value": [\n', ' '*indent);
+            indent += tabSpace;
+            var arrayElements: string;
+            for i in value.arr.domain {
+              ref k = value.arr[i];
+              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k.tomlType, toString(k));
+              if i != value.arr.domain.last {
+                f.writef(',');
+              }
+              f.writef('\n');
+            }
+            indent -= tabSpace;
+            f.writef('%s]\n', ' '*indent);
+            indent -= tabSpace;
+            f.writef('%s}\n', ' '*indent);
+          }
+          when fieldReal {
+            f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, this.tomlType, toString(this));
+          }
+          when fieldString {
+            f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, this.tomlType, toString(this));
+          }
+          when fieldEmpty {
+            halt("Keys have to have a value");
+          }
+          when fieldDate {
+            f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, this.tomlType, toString(this));
+          }
+          otherwise {
+            f.write("not yet supported");
+          }
+        }
+        if i != v.D.size {
+          f.writef(',');
+        }
+        f.writef('\n');
+      }
+      indent -= tabSpace;
+      f.writef('%s}\n', ' '*indent);
     }
 
     pragma "no doc"
@@ -656,9 +730,8 @@ Used to recursively hold tables and respective values
         otherwise {
           halt("Error in printing '", val, "'");
         }
-        }
+      }
     }
-
 
     /*
      For the user to write values of a node as follows:
@@ -667,6 +740,37 @@ Used to recursively hold tables and respective values
      proc toString() : string {
        return toString(this);
     }
+
+    /* Return Toml type as a string.
+
+       Valid types include:
+
+       - *empty*
+       - *string*
+       - *integer*
+       - *float*
+       - *boolean*
+       - *datetime*
+       - *array*
+       - *toml* (inline table)
+
+     */
+    proc tomlType: string {
+      select this.tag {
+        when fieldBool do return 'bool';
+        when fieldInt do return 'integer';
+        when fieldArr do return 'array';
+        when fieldReal do return 'float';
+        when fieldString do return 'string';
+        when fieldEmpty do return 'empty';
+        when fieldDate do return 'datetime';
+        when fieldToml do return 'toml';
+        otherwise {
+          halt("Unknown type: '", this.tag, "'");
+        }
+      }
+    }
+
 
     pragma "no doc"
     proc deinit() {
