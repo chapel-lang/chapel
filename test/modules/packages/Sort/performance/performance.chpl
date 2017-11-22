@@ -11,7 +11,7 @@ use Time;
 
 config const M: int = 6,                    // 2**M bytes
              correctness: bool = true,      // Disables output
-             sorts: string = 'qhims';       // Sorts to use (first letter)
+             sorts: string = 'qhimsr';      // Sorts to use (first letter)
 
 // Array properties
 config type T = int;                // Type of array
@@ -81,6 +81,18 @@ proc gatherTimings(const ref A) {
       writeln('insertionSort failed to sort data');
     else
       print('insertionSort (seconds): ', t.elapsed());
+    t.clear();
+  }
+  if sorts.find('r')
+  {
+    var B = A;
+    t.start();
+    binaryInsertionSort(B);
+    t.stop();
+    if !isSorted(B) then
+      writeln('binaryInsertionSort failed to sort data');
+    else
+      print('binaryInsertionSort (seconds): ', t.elapsed());
     t.clear();
   }
   if sorts.find('m')

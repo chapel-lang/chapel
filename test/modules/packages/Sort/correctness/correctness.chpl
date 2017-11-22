@@ -98,6 +98,14 @@ proc main() {
     for param i in 1..tests.size {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
+      binaryInsertionSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for binaryInsertionSort() function.\n');
+    }
+
+    for param i in 1..tests.size {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
       quickSort(arr, comparator=cmp);
       if !checkSort(arr, cmp) then
         writeln('  for quickSort() function.\n');
