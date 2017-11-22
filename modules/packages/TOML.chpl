@@ -662,6 +662,7 @@ Used to recursively hold tables and respective values
             f.write("not yet supported");
           }
         }
+        f.writeln();
       }
       f.writeln();
     }
