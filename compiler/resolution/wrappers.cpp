@@ -157,13 +157,13 @@ static void      formalIsDefaulted(FnSymbol*  fn,
 static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                                    FnSymbol*  wrapFn,
+                                                    BlockStmt* wrapFn,
                                                     VarSymbol* temp);
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
                                                   IntentTag  intent,
-                                                  FnSymbol*  wrapFn,
+                                                  BlockStmt* wrapFn,
                                                   VarSymbol* temp);
 
 static void      insertWrappedCall(FnSymbol* fn,
@@ -425,13 +425,13 @@ static void formalIsDefaulted(FnSymbol*  fn,
   wrapFn->insertAtTail(new DefExpr(temp));
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
-    defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
+    defaultedFormalApplyDefaultForType(formal, wrapFn->body, temp);
 
   } else if (intent == INTENT_OUT) {
-    defaultedFormalApplyDefaultForType(formal, wrapFn, temp);
+    defaultedFormalApplyDefaultForType(formal, wrapFn->body, temp);
 
   } else {
-    defaultedFormalApplyDefaultValue(fn, formal, intent, wrapFn, temp);
+    defaultedFormalApplyDefaultValue(fn, formal, intent, wrapFn->body, temp);
   }
 
   call->insertAtTail(temp);
@@ -476,20 +476,20 @@ static bool defaultedFormalUsesDefaultForType(ArgSymbol* formal) {
 }
 
 static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                               FnSymbol*  wrapFn,
+                                               BlockStmt* body,
                                                VarSymbol* temp) {
   if (formal->typeExpr != NULL) {
     BlockStmt* typeExpr = formal->typeExpr->copy();
     Expr*      lastExpr = NULL;
 
     for_alist(expr, typeExpr->body) {
-      wrapFn->insertAtTail(expr->remove());
+      body->insertAtTail(expr->remove());
     }
 
-    lastExpr = wrapFn->body->body.tail;
+    lastExpr = body->body.tail;
 
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
+      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, lastExpr->remove()));
 
     } else {
       //
@@ -520,7 +520,7 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
         initExpr = new CallExpr(PRIM_INIT, lastExpr->remove());
       }
 
-      wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, initExpr));
+      body->insertAtTail(new CallExpr(PRIM_MOVE, temp, initExpr));
     }
 
   } else {
@@ -530,23 +530,23 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
       expr = new CallExpr(PRIM_INIT, expr);
     }
 
-    wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
+    body->insertAtTail(new CallExpr(PRIM_MOVE, temp, expr));
   }
 }
 
 static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                              ArgSymbol* formal,
                                              IntentTag  intent,
-                                             FnSymbol*  wrapFn,
+                                             BlockStmt* body,
                                              VarSymbol* temp) {
   BlockStmt* defaultExpr = formal->defaultExpr->copy();
   Expr*      fromExpr    = NULL;
 
   for_alist(expr, defaultExpr->body) {
-    wrapFn->insertAtTail(expr->remove());
+    body->insertAtTail(expr->remove());
   }
 
-  fromExpr = wrapFn->body->body.tail->remove();
+  fromExpr = body->body.tail->remove();
 
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true &&
       fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
@@ -570,7 +570,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
     }
   }
 
-  wrapFn->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
+  body->insertAtTail(new CallExpr(PRIM_MOVE, temp, fromExpr));
 
   if (formal->intent == INTENT_INOUT) {
     INT_ASSERT(!temp->hasFlag(FLAG_EXPR_TEMP));
