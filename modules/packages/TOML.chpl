@@ -74,8 +74,10 @@ module TomlParser {
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
+
   /* Number of spaces in an indentation for JSON output */
-  config const tabSpace = 4;
+  pragma "no doc"
+  const tabSpace = 4;
 
   pragma "no doc"
   class Parser {
