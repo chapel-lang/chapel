@@ -63,8 +63,6 @@ proc parseToml(input: string) : Toml {
 }
 
 
-
-
 /*
 Parser module with the Toml class for the Chapel TOML library.
 */
@@ -557,6 +555,7 @@ Used to recursively hold tables and respective values
       var flat: [flatDom] Toml;
       this.flatten(flat);           // Flattens containing Toml
       printValuesJSON(f, this);     // Prints key values in containing Toml
+      printTablesJSON(flat, f);     // Prints tables in containing Toml
     }
 
     /* Write a Table to channel f in TOML format */
@@ -565,7 +564,7 @@ Used to recursively hold tables and respective values
       var flat: [flatDom] Toml;
       this.flatten(flat);       // Flattens containing Toml
       printValues(f, this);     // Prints key values in containing Toml
-      printHelp(flat, f);       // Prints tables in containing Toml
+      printTables(flat, f);       // Prints tables in containing Toml
     }
 
     pragma "no doc"
@@ -583,7 +582,7 @@ Used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printHelp(flat: [?d] Toml, f:channel) {
+    proc printTables(flat: [?d] Toml, f:channel) {
       if d.member('root') {
         f.writeln('[root]');
         printValues(f, flat['root']);
@@ -702,6 +701,21 @@ Used to recursively hold tables and respective values
       indent -= tabSpace;
       f.writef('%s}\n', ' '*indent);
     }
+
+
+    pragma "no doc"
+    proc printTablesJSON(flat: [?d] Toml, f:channel) {
+      if d.member('root') {
+        f.writeln('[root]');
+        printValues(f, flat['root']);
+        d.remove('root');
+      }
+      for k in d.sorted() {
+        f.writeln('[', k, ']');
+        printValues(f, flat[k]);
+      }
+    }
+
 
     pragma "no doc"
     /* Return String representation of a value in a node */

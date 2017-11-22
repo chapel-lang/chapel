@@ -15,31 +15,35 @@ def main():
     file2 = sys.argv[2]
 
     if not os.path.isfile(file1):
-        print(file1,' does not exist')
+        print(file1)
+        print('Unable to find good json file - this should not happen...')
         return 1
 
     if not os.path.isfile(file2):
-        print(file2,' does not exist')
+        print(file2)
+        print('Unable to find json file - test likely halted')
         return 1
 
     with open(file1, 'r') as f:
         try:
             json1 = json.load(f)
         except ValueError:
-            print('Unable to parse json file: ', file1)
+            print(file1)
+            print('Unable to parse good json file - this should not happen...')
             return 1
-
 
     with open(file2, 'r') as f:
         try:
             json2 = json.load(f)
         except ValueError:
-            print('Unable to parse json file: ', file2)
+            print(file2)
+            print('Unable to parse json file - test likely halted')
             return 1
 
     if json1 == json2:
         return 0
 
+    print(file1)
     json_diff(json1, json2)
     return 1
 

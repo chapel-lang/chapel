@@ -1,3 +1,0 @@
-key value:
-  {u'type': u'array', u'value': [{u'type': u'array', u'value': [{u'type': u'array', u'value': [{u'type': u'array', u'value': [{u'type': u'array', u'value': []}]}]}]}]}
-- {u'toml': u'type', u'value': [{u'type': u'array', u'value': u'[[[[]]]]'}]}
