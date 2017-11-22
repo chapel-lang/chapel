@@ -264,6 +264,8 @@ static bool isBadMove(CallExpr* ce) {
                (lhs->isRef() && rhs->isWideRef())) {
       // another wide-temporary convenience pattern
       ret = true;
+    } else if (isDerefMove(ce)) {
+      ret = true;
     }
   }
 
@@ -361,7 +363,6 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_ARRAY_GET) ||
                   ce->isPrimitive(PRIM_GET_MEMBER) ||
                   ce->isPrimitive(PRIM_DEREF) ||
-                  isDerefMove(ce) ||
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||

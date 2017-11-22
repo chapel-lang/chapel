@@ -388,7 +388,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   //
   // only scalar replace sym if:
   // - all of the uses are handled primitives
-  // - we access at least one member of 'sym. Otherwise there's no point
+  // - we access at least one member of sym. Otherwise there's no point
   //
   bool memberAccessed = false;
   for_uses(se, useMap, sym) {
