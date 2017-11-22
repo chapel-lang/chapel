@@ -12,3 +12,4 @@ cd $CHPL_HOME >& /dev/null
 git grep ' $' -- compiler ':!*bison-chapel.cpp' ':!*flex-chapel.cpp'
 git grep ' $' -- runtime
 git grep ' $' -- modules
+git grep ' $' -- tools
