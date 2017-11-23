@@ -658,6 +658,9 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn);
 
 static const char*    iteratorClassName(FnSymbol* fn);
 
+static FnSymbol*      makeGetIterator(AggregateType* iClass,
+                                      AggregateType* iRecord);
+
 static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
                                          const char*   name,
                                          Type*         retType);
@@ -665,20 +668,21 @@ static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
 static void protoIteratorClass(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  AggregateType* iClass  = makeIteratorClass(fn);
-  AggregateType* iRecord = makeIteratorRecord(fn);
-  IteratorInfo*  ii      = new IteratorInfo();
+  AggregateType* iClass      = makeIteratorClass(fn);
+  AggregateType* iRecord     = makeIteratorRecord(fn);
+  FnSymbol*      getIterator = makeGetIterator(iClass, iRecord);
+  IteratorInfo*  ii          = new IteratorInfo();
 
   iClass->iteratorInfo  = ii;
   iRecord->iteratorInfo = ii;
 
+  ii->tag         = it_iterator;
 
 
-  ii->tag      = it_iterator;
-
-  ii->iterator = fn;
-  ii->iclass   = iClass;
-  ii->irecord  = iRecord;
+  ii->iterator    = fn;
+  ii->iclass      = iClass;
+  ii->irecord     = iRecord;
+  ii->getIterator = getIterator;
 
   ii->advance  = makeIteratorMethod(ii, "advance",  dtVoid);
   ii->zip1     = makeIteratorMethod(ii, "zip1",     dtVoid);
@@ -692,36 +696,6 @@ static void protoIteratorClass(FnSymbol* fn) {
 
 
 
-
-
-  ii->getIterator = new FnSymbol("_getIterator");
-
-  ii->getIterator->addFlag(FLAG_AUTO_II);
-  ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = iClass;
-
-  ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
-                                                    "ir",
-                                                    ii->irecord));
-
-  VarSymbol* ret = newTemp("_ic_", iClass);
-
-  ii->getIterator->insertAtTail(new DefExpr(ret));
-
-  CallExpr* icAllocCall = callChplHereAlloc(ret->typeInfo());
-
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_MOVE, ret, icAllocCall));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_SETCID, ret));
-  ii->getIterator->insertAtTail(new CallExpr(PRIM_RETURN, ret));
-
-
-
-
-
-
-
-
-
   INT_ASSERT(fn->iteratorInfo == NULL);
 
   fn->iteratorInfo = ii;
@@ -732,12 +706,12 @@ static void protoIteratorClass(FnSymbol* fn) {
   // Insert these fields in to the tree
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
   fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
-  fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
+  fn->defPoint->insertBefore(new DefExpr(getIterator));
 
 
-  makeRefType(ii->irecord);
-  normalize(ii->getIterator);
-  resolveFunction(ii->getIterator);
+  makeRefType(iRecord);
+  normalize(getIterator);
+  resolveFunction(getIterator);
 }
 
 static AggregateType* makeIteratorClass(FnSymbol* fn) {
@@ -779,6 +753,27 @@ static const char* iteratorClassName(FnSymbol* fn) {
   } else {
     retval = astr(fn->name, "_", fn->_this->type->symbol->cname);
   }
+
+  return retval;
+}
+
+static FnSymbol* makeGetIterator(AggregateType* iClass,
+                                 AggregateType* iRecord) {
+  VarSymbol* ret         = newTemp("_ic_", iClass);
+  CallExpr*  icAllocCall = callChplHereAlloc(ret->typeInfo());
+  FnSymbol*  retval      = new FnSymbol("_getIterator");
+
+  retval->addFlag(FLAG_AUTO_II);
+  retval->addFlag(FLAG_INLINE);
+
+  retval->retType = iClass;
+
+  retval->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "ir", iRecord));
+
+  retval->insertAtTail(new DefExpr(ret));
+  retval->insertAtTail(new CallExpr(PRIM_MOVE,   ret, icAllocCall));
+  retval->insertAtTail(new CallExpr(PRIM_SETCID, ret));
+  retval->insertAtTail(new CallExpr(PRIM_RETURN, ret));
 
   return retval;
 }
