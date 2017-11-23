@@ -661,6 +661,11 @@ static const char*    iteratorClassName(FnSymbol* fn);
 static FnSymbol*      makeGetIterator(AggregateType* iClass,
                                       AggregateType* iRecord);
 
+static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
+                                       AggregateType* iRecord,
+                                       FnSymbol*      getIterator,
+                                       FnSymbol*      fn);
+
 static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
                                          const char*   name,
                                          Type*         retType);
@@ -668,50 +673,26 @@ static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
 static void protoIteratorClass(FnSymbol* fn) {
   SET_LINENO(fn);
 
-  AggregateType* iClass      = makeIteratorClass(fn);
-  AggregateType* iRecord     = makeIteratorRecord(fn);
-  FnSymbol*      getIterator = makeGetIterator(iClass, iRecord);
-  IteratorInfo*  ii          = new IteratorInfo();
+  AggregateType* iClass  = makeIteratorClass(fn);
+  AggregateType* iRecord = makeIteratorRecord(fn);
+  FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
+  IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter, fn);
 
   iClass->iteratorInfo  = ii;
   iRecord->iteratorInfo = ii;
+  fn->iteratorInfo      = ii;
 
-  ii->tag         = it_iterator;
+  fn->retType           = iRecord;
+  fn->retTag            = RET_VALUE;
 
-
-  ii->iterator    = fn;
-  ii->iclass      = iClass;
-  ii->irecord     = iRecord;
-  ii->getIterator = getIterator;
-
-  ii->advance  = makeIteratorMethod(ii, "advance",  dtVoid);
-  ii->zip1     = makeIteratorMethod(ii, "zip1",     dtVoid);
-  ii->zip2     = makeIteratorMethod(ii, "zip2",     dtVoid);
-  ii->zip3     = makeIteratorMethod(ii, "zip3",     dtVoid);
-  ii->zip4     = makeIteratorMethod(ii, "zip4",     dtVoid);
-  ii->hasMore  = makeIteratorMethod(ii, "hasMore",  dtInt[INT_SIZE_DEFAULT]);
-  ii->getValue = makeIteratorMethod(ii, "getValue", fn->retType);
-  ii->init     = makeIteratorMethod(ii, "init",     dtVoid);
-  ii->incr     = makeIteratorMethod(ii, "incr",     dtVoid);
-
-
-
-  INT_ASSERT(fn->iteratorInfo == NULL);
-
-  fn->iteratorInfo = ii;
-  fn->retType      = ii->irecord;
-  fn->retTag       = RET_VALUE;
-
-
-  // Insert these fields in to the tree
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
   fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
-  fn->defPoint->insertBefore(new DefExpr(getIterator));
-
+  fn->defPoint->insertBefore(new DefExpr(getIter));
 
   makeRefType(iRecord);
-  normalize(getIterator);
-  resolveFunction(getIterator);
+
+  normalize(getIter);
+  resolveFunction(getIter);
 }
 
 static AggregateType* makeIteratorClass(FnSymbol* fn) {
@@ -776,6 +757,33 @@ static FnSymbol* makeGetIterator(AggregateType* iClass,
   retval->insertAtTail(new CallExpr(PRIM_RETURN, ret));
 
   return retval;
+}
+
+static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
+                                       AggregateType* iRecord,
+                                       FnSymbol*      getIterator,
+                                       FnSymbol*      fn) {
+  Type*         defaultInt = dtInt[INT_SIZE_DEFAULT];
+  IteratorInfo* ii         = new IteratorInfo();
+
+  ii->tag         = it_iterator;
+
+  ii->iterator    = fn;
+  ii->iclass      = iClass;
+  ii->irecord     = iRecord;
+  ii->getIterator = getIterator;
+
+  ii->advance     = makeIteratorMethod(ii, "advance",  dtVoid);
+  ii->zip1        = makeIteratorMethod(ii, "zip1",     dtVoid);
+  ii->zip2        = makeIteratorMethod(ii, "zip2",     dtVoid);
+  ii->zip3        = makeIteratorMethod(ii, "zip3",     dtVoid);
+  ii->zip4        = makeIteratorMethod(ii, "zip4",     dtVoid);
+  ii->hasMore     = makeIteratorMethod(ii, "hasMore",  defaultInt);
+  ii->getValue    = makeIteratorMethod(ii, "getValue", fn->retType);
+  ii->init        = makeIteratorMethod(ii, "init",     dtVoid);
+  ii->incr        = makeIteratorMethod(ii, "incr",     dtVoid);
+
+  return ii;
 }
 
 static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
