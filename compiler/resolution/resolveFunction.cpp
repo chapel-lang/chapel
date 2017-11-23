@@ -652,58 +652,34 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
-                                    const char*   name,
-                                    Type*         retType);
+static AggregateType* makeIteratorClass (FnSymbol* fn);
+
+static AggregateType* makeIteratorRecord(FnSymbol* fn);
+
+static const char*    iteratorClassName(FnSymbol* fn);
+
+static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
+                                         const char*   name,
+                                         Type*         retType);
 
 static void protoIteratorClass(FnSymbol* fn) {
   SET_LINENO(fn);
 
+  AggregateType* iClass  = makeIteratorClass(fn);
+  AggregateType* iRecord = makeIteratorRecord(fn);
+  IteratorInfo*  ii      = new IteratorInfo();
 
-  IteratorInfo* ii = new IteratorInfo();
-  ii->iterator = fn;
-
-
-  const char* className = astr(fn->name);
-
-  if (fn->_this != NULL) {
-    className = astr(className, "_", fn->_this->type->symbol->cname);
-  }
-
-
-
-
-
-  ii->iclass = new AggregateType(AGGREGATE_CLASS);
-
-  TypeSymbol* cts = new TypeSymbol(astr("_ic_", className), ii->iclass);
-
-  cts->addFlag(FLAG_ITERATOR_CLASS);
-  cts->addFlag(FLAG_POD);
-
-  ii->iclass->addRootType();
-
-
-
-
-
-  ii->irecord = new AggregateType(AGGREGATE_RECORD);
-
-  TypeSymbol* rts = new TypeSymbol(astr("_ir_", className), ii->irecord);
-
-  rts->addFlag(FLAG_ITERATOR_RECORD);
-  rts->addFlag(FLAG_NOT_POD);
-
-  if (fn->retTag == RET_REF) {
-    rts->addFlag(FLAG_REF_ITERATOR_CLASS);
-  }
-
-
-
+  iClass->iteratorInfo  = ii;
+  iRecord->iteratorInfo = ii;
 
 
 
   ii->tag      = it_iterator;
+
+  ii->iterator = fn;
+  ii->iclass   = iClass;
+  ii->irecord  = iRecord;
+
   ii->advance  = makeIteratorMethod(ii, "advance",  dtVoid);
   ii->zip1     = makeIteratorMethod(ii, "zip1",     dtVoid);
   ii->zip2     = makeIteratorMethod(ii, "zip2",     dtVoid);
@@ -718,25 +694,17 @@ static void protoIteratorClass(FnSymbol* fn) {
 
 
 
-  ii->iclass->iteratorInfo         = ii;
-
-
-  ii->irecord->iteratorInfo        = ii;
-  ii->irecord->scalarPromotionType = fn->retType;
-
-
-
   ii->getIterator = new FnSymbol("_getIterator");
 
   ii->getIterator->addFlag(FLAG_AUTO_II);
   ii->getIterator->addFlag(FLAG_INLINE);
-  ii->getIterator->retType = ii->iclass;
+  ii->getIterator->retType = iClass;
 
   ii->getIterator->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                     "ir",
                                                     ii->irecord));
 
-  VarSymbol* ret = newTemp("_ic_", ii->iclass);
+  VarSymbol* ret = newTemp("_ic_", iClass);
 
   ii->getIterator->insertAtTail(new DefExpr(ret));
 
@@ -761,16 +729,58 @@ static void protoIteratorClass(FnSymbol* fn) {
   fn->retTag       = RET_VALUE;
 
 
-
   // Insert these fields in to the tree
-  fn->defPoint->insertBefore(new DefExpr(ii->iclass->symbol));
-  fn->defPoint->insertBefore(new DefExpr(ii->irecord->symbol));
+  fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
+  fn->defPoint->insertBefore(new DefExpr(iRecord->symbol));
   fn->defPoint->insertBefore(new DefExpr(ii->getIterator));
 
 
   makeRefType(ii->irecord);
   normalize(ii->getIterator);
   resolveFunction(ii->getIterator);
+}
+
+static AggregateType* makeIteratorClass(FnSymbol* fn) {
+  AggregateType* retval    = new AggregateType(AGGREGATE_CLASS);
+  const char*    className = iteratorClassName(fn);
+  TypeSymbol*    sym       = new TypeSymbol(astr("_ic_", className), retval);
+
+  sym->addFlag(FLAG_ITERATOR_CLASS);
+  sym->addFlag(FLAG_POD);
+
+  retval->addRootType();
+
+  return retval;
+}
+
+static AggregateType* makeIteratorRecord(FnSymbol* fn) {
+  AggregateType* retval    = new AggregateType(AGGREGATE_RECORD);
+  const char*    className = iteratorClassName(fn);
+  TypeSymbol*    sym       = new TypeSymbol(astr("_ir_", className), retval);
+
+  sym->addFlag(FLAG_ITERATOR_RECORD);
+  sym->addFlag(FLAG_NOT_POD);
+
+  if (fn->retTag == RET_REF) {
+    sym->addFlag(FLAG_REF_ITERATOR_CLASS);
+  }
+
+  retval->scalarPromotionType = fn->retType;
+
+  return retval;
+}
+
+static const char* iteratorClassName(FnSymbol* fn) {
+  const char* retval = NULL;
+
+  if (fn->_this == NULL) {
+    retval = astr(fn->name);
+
+  } else {
+    retval = astr(fn->name, "_", fn->_this->type->symbol->cname);
+  }
+
+  return retval;
 }
 
 static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
