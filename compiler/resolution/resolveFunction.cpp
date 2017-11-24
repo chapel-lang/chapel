@@ -307,68 +307,69 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveFunction(FnSymbol* fn) {
-  if (fn->isResolved() == true)
-    return;
+  if (fn->isResolved() == false) {
+    if (fn->id == breakOnResolveID) {
+      printf("breaking on resolve fn:\n");
+      print_view(fn);
+      gdbShouldBreakHere();
+    }
 
-  if (fn->id == breakOnResolveID) {
-    printf("breaking on resolve fn:\n");
-    print_view(fn);
-    gdbShouldBreakHere();
-  }
+    if (fn->hasFlag(FLAG_EXTERN) == true) {
+      fn->addFlag(FLAG_RESOLVED);
 
-  fn->addFlag(FLAG_RESOLVED);
-
-  if (fn->hasFlag(FLAG_EXTERN) == true) {
-    resolveBlockStmt(fn->body);
-    resolveReturnType(fn);
-    return;
-  }
-
-  markIfIterator(fn);
-
-  insertFormalTemps(fn);
-
-  resolveBlockStmt(fn->body);
-
-  if (tryFailure == true) {
-    fn->removeFlag(FLAG_RESOLVED);
-    return;
-  }
-
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-    if (AggregateType* ct = toAggregateType(fn->retType)) {
-
-      setScalarPromotionType(ct);
-
-      if (developer == false) {
-        fixTypeNames(ct);
-      }
+      resolveBlockStmt(fn->body);
+      resolveReturnType(fn);
 
     } else {
-      INT_FATAL(fn, "Constructor has no class type");
+      fn->addFlag(FLAG_RESOLVED);
+
+      markIfIterator(fn);
+
+      insertFormalTemps(fn);
+
+      resolveBlockStmt(fn->body);
+
+      if (tryFailure == true) {
+        fn->removeFlag(FLAG_RESOLVED);
+
+      } else {
+        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          if (AggregateType* ct = toAggregateType(fn->retType)) {
+
+            setScalarPromotionType(ct);
+
+            if (developer == false) {
+              fixTypeNames(ct);
+            }
+
+          } else {
+            INT_FATAL(fn, "Constructor has no class type");
+          }
+        }
+
+        insertUnrefForArrayReturn(fn);
+
+        resolveReturnType(fn);
+
+        insertAndResolveCasts(fn);
+
+        if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+          protoIteratorClass(fn);
+        }
+
+        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          resolveTypeConstructor(fn);
+        }
+
+        if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
+            fn->getReturnSymbol()              == gTrue) {
+          fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
+        }
+
+        ensureInMethodList(fn);
+      }
     }
   }
-
-  insertUnrefForArrayReturn(fn);
-
-  resolveReturnType(fn);
-
-  insertAndResolveCasts(fn);
-
-  if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
-    protoIteratorClass(fn);
-  }
-
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-    resolveTypeConstructor(fn);
-  }
-
-  if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
-      fn->getReturnSymbol()              == gTrue) {
-    fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
-  }
-
-  ensureInMethodList(fn);
 }
 
 /************************************* | **************************************
