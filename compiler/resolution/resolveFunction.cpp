@@ -46,8 +46,7 @@ static void resolveFormals(FnSymbol* fn);
 
 static void resolveSpecifiedReturnType(FnSymbol* fn);
 
-static bool isFollowerIterator(FnSymbol* fn);
-static bool isVecIterator(FnSymbol* fn);
+static void markIfIterator(FnSymbol* fn);
 
 static void setScalarPromotionType(AggregateType* at);
 static void fixTypeNames(AggregateType* at);
@@ -56,7 +55,7 @@ static void insertUnrefForArrayReturn(FnSymbol* fn);
 
 static void protoIteratorClass(FnSymbol* fn);
 
-static void instantiateDefaultConstructor(FnSymbol* fn);
+static void resolveTypeConstructor(FnSymbol* fn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -308,35 +307,96 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveFunction(FnSymbol* fn) {
-  if (fn->isResolved())
-    return;
+  if (fn->isResolved() == false) {
+    if (fn->id == breakOnResolveID) {
+      printf("breaking on resolve fn:\n");
+      print_view(fn);
+      gdbShouldBreakHere();
+    }
 
-  if (fn->id == breakOnResolveID) {
-    printf("breaking on resolve fn:\n");
-    print_view(fn);
-    gdbShouldBreakHere();
+    if (fn->hasFlag(FLAG_EXTERN) == true) {
+      fn->addFlag(FLAG_RESOLVED);
+
+      resolveBlockStmt(fn->body);
+      resolveReturnType(fn);
+
+    } else {
+      fn->addFlag(FLAG_RESOLVED);
+
+      markIfIterator(fn);
+
+      insertFormalTemps(fn);
+
+      resolveBlockStmt(fn->body);
+
+      if (tryFailure == true) {
+        fn->removeFlag(FLAG_RESOLVED);
+
+      } else {
+        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          if (AggregateType* ct = toAggregateType(fn->retType)) {
+
+            setScalarPromotionType(ct);
+
+            if (developer == false) {
+              fixTypeNames(ct);
+            }
+
+          } else {
+            INT_FATAL(fn, "Constructor has no class type");
+          }
+        }
+
+        insertUnrefForArrayReturn(fn);
+
+        resolveReturnType(fn);
+
+        insertAndResolveCasts(fn);
+
+        if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+          protoIteratorClass(fn);
+        }
+
+        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+          resolveTypeConstructor(fn);
+        }
+
+        if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
+            fn->getReturnSymbol()              == gTrue) {
+          fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
+        }
+
+        ensureInMethodList(fn);
+      }
+    }
   }
+}
 
-  fn->addFlag(FLAG_RESOLVED);
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  if (fn->hasFlag(FLAG_EXTERN)) {
-    resolveBlockStmt(fn->body);
-    resolveReturnType(fn);
-    return;
-  }
+static bool isFollowerIterator(FnSymbol* fn);
+static bool isVecIterator(FnSymbol* fn);
+static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 
+static void markIfIterator(FnSymbol* fn) {
   //
   // Mark serial loops that yield inside of follower, standalone, and
-  // explicitly vectorized iterators as order independent. By using a forall
-  // loop or a loop over a vectorized iterator, a user is asserting that the
-  // loop can be executed in any iteration order. Here we just mark the
-  // iterator's yielding loops as order independent as they are ones that will
-  // actually execute the body of the loop that invoked the iterator. Note that
-  // for nested loops with a single yield, only the inner most loop is marked.
+  // explicitly vectorized iterators as order independent. By using a
+  // forall loop or a loop over a vectorized iterator, a user is asserting
+  // that the loop can be executed in any iteration order.
+
+  // Here we just mark the iterator's yielding loops as order independent
+  // as they are ones that will actually execute the body of the loop that
+  // invoked the iterator. Note that for nested loops with a single yield,
+  // only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn)   ||
-      isStandaloneIterator(fn) ||
-      isVecIterator(fn)) {
+  if (isFollowerIterator(fn)   == true ||
+      isStandaloneIterator(fn) == true ||
+      isVecIterator(fn)        == true) {
     std::vector<CallExpr*> callExprs;
 
     collectCallExprs(fn->body, callExprs);
@@ -360,138 +420,7 @@ void resolveFunction(FnSymbol* fn) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
     stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
   }
-
-  insertFormalTemps(fn);
-
-  resolveBlockStmt(fn->body);
-
-  if (tryFailure) {
-    fn->removeFlag(FLAG_RESOLVED);
-    return;
-  }
-
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    AggregateType* ct = toAggregateType(fn->retType);
-
-    if (!ct) {
-      INT_FATAL(fn, "Constructor has no class type");
-    }
-
-    setScalarPromotionType(ct);
-
-    if (developer == false) {
-      fixTypeNames(ct);
-    }
-  }
-
-  insertUnrefForArrayReturn(fn);
-
-  resolveReturnType(fn);
-
-  //
-  // insert casts as necessary
-  //
-  insertAndResolveCasts(fn);
-
-  if (fn->isIterator() && !fn->iteratorInfo) {
-    protoIteratorClass(fn);
-  }
-
-  // Resolve base class type constructors as well.
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    forv_Vec(Type, parent, fn->retType->dispatchParents) {
-      AggregateType* pt = toAggregateType(parent);
-      if (pt                         != NULL     &&
-          pt                         != dtObject &&
-          pt->defaultTypeConstructor != NULL) {
-        resolveSignature(pt->defaultTypeConstructor);
-
-        if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
-          resolveFunction(pt->defaultTypeConstructor);
-        }
-      }
-    }
-
-    AggregateType* ct = toAggregateType(fn->retType);
-
-    if (ct) {
-      for_fields(field, ct) {
-        if (AggregateType* fct = toAggregateType(field->type)) {
-          if (fct->defaultTypeConstructor) {
-            resolveSignature(fct->defaultTypeConstructor);
-
-            if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
-              resolveFunction(fct->defaultTypeConstructor);
-            }
-          }
-        }
-      }
-    }
-
-    if (ct                   != NULL &&
-        ct->instantiatedFrom != NULL &&
-        (ct->initializerStyle          == DEFINES_INITIALIZER ||
-         ct->wantsDefaultInitializer() == true)) {
-      // Don't instantiate the default constructor for generic types that
-      // define initializers, they don't have one!
-
-    } else {
-      // This instantiates the default constructor
-      // for  the corresponding type constructor.
-      instantiateDefaultConstructor(fn);
-    }
-
-    //
-    // resolve destructor
-    //
-    if (ct                                  != NULL  &&
-        ct->hasDestructor()                 == false &&
-        ct->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(ct) == false) {
-      BlockStmt* block = new BlockStmt();
-      VarSymbol* tmp   = newTemp(ct);
-      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
-
-      // In case resolveCall drops other stuff into the tree ahead
-      // of the call, we wrap everything in a block for safe removal.
-
-      block->insertAtHead(call);
-
-      fn->insertAtHead(block);
-      fn->insertAtHead(new DefExpr(tmp));
-
-      resolveCallAndCallee(call);
-
-      ct->setDestructor(call->resolvedFunction());
-
-      block->remove();
-
-      tmp->defPoint->remove();
-    }
-  }
-
-  //
-  // mark privatized classes
-  //
-  if (fn->hasFlag(FLAG_PRIVATIZED_CLASS)) {
-    if (fn->getReturnSymbol() == gTrue) {
-      fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
-    }
-  }
-
-  //
-  // make sure methods are in the methods list
-  //
-  ensureInMethodList(fn);
 }
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 
 bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
@@ -797,16 +726,14 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
     fn->addFlag(FLAG_INLINE);
   }
 
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-
   fn->addFlag(FLAG_METHOD);
 
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
-
+  fn->_this   = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
   fn->retType = retType;
 
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
 
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
@@ -826,29 +753,81 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void instantiateDefaultConstructor(FnSymbol* fn) {
-  if (fn->instantiatedFrom && !fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
-    AggregateType* retAt = toAggregateType(fn->retType);
-    INT_ASSERT(retAt);
+static void      instantiateDefaultConstructor(FnSymbol* fn);
+static FnSymbol* instantiateBase(FnSymbol* fn);
 
-    INT_ASSERT(!retAt->defaultInitializer);
+static void resolveTypeConstructor(FnSymbol* fn) {
+  forv_Vec(Type, parent, fn->retType->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(parent)) {
 
-    FnSymbol* instantiatedFrom = fn->instantiatedFrom;
+      if (pt!= dtObject &&  pt->defaultTypeConstructor != NULL) {
+        resolveSignature(pt->defaultTypeConstructor);
 
-    while (instantiatedFrom->instantiatedFrom) {
-      instantiatedFrom = instantiatedFrom->instantiatedFrom;
+        if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
+          resolveFunction(pt->defaultTypeConstructor);
+        }
+      }
+    }
+  }
+
+  if (AggregateType* ct = toAggregateType(fn->retType)) {
+    for_fields(field, ct) {
+      if (AggregateType* fct = toAggregateType(field->type)) {
+        if (fct->defaultTypeConstructor != NULL) {
+          resolveSignature(fct->defaultTypeConstructor);
+
+          if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
+            resolveFunction(fct->defaultTypeConstructor);
+          }
+        }
+      }
     }
 
-    AggregateType* instanceRetAt = toAggregateType(instantiatedFrom->retType);
+    if (ct->instantiatedFrom == NULL) {
+      instantiateDefaultConstructor(fn);
 
-    INT_ASSERT(instanceRetAt);
+    } else if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+               ct->wantsDefaultInitializer() == false) {
+      instantiateDefaultConstructor(fn);
+    }
 
-    CallExpr* call = new CallExpr(instanceRetAt->defaultInitializer);
+    // resolve destructor
+    if (ct->hasDestructor()                 == false &&
+        ct->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(ct) == false) {
+      BlockStmt* block = new BlockStmt();
+      VarSymbol* tmp   = newTemp(ct);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-    // This should not be happening for iterators.
-    TypeSymbol* ts = instanceRetAt->symbol;
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
+      block->insertAtHead(call);
 
-    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
+      fn->insertAtHead(block);
+      fn->insertAtHead(new DefExpr(tmp));
+
+      resolveCallAndCallee(call);
+
+      ct->setDestructor(call->resolvedFunction());
+
+      block->remove();
+
+      tmp->defPoint->remove();
+    }
+
+  } else {
+    instantiateDefaultConstructor(fn);
+  }
+}
+
+static void instantiateDefaultConstructor(FnSymbol* fn) {
+  if (fn->instantiatedFrom            != NULL &&
+      fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    AggregateType* retAt       = toAggregateType(fn->retType);
+    FnSymbol*      base        = instantiateBase(fn);
+    AggregateType* baseRetAt   = toAggregateType(base->retType);
+    FnSymbol*      defaultInit = baseRetAt->defaultInitializer;
+    CallExpr*      call        = new CallExpr(defaultInit);
 
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
@@ -861,7 +840,7 @@ static void instantiateDefaultConstructor(FnSymbol* fn) {
       } else {
         Symbol* field = fn->retType->getField(formal->name);
 
-        if (instantiatedFrom->hasFlag(FLAG_TUPLE)) {
+        if (base->hasFlag(FLAG_TUPLE) == true) {
           call->insertAtTail(field);
         } else {
           call->insertAtTail(new NamedExpr(formal->name, new SymExpr(field)));
@@ -875,10 +854,18 @@ static void instantiateDefaultConstructor(FnSymbol* fn) {
 
     retAt->defaultInitializer = call->resolvedFunction();
 
-    INT_ASSERT(retAt->defaultInitializer);
-
     call->remove();
   }
+}
+
+static FnSymbol* instantiateBase(FnSymbol* fn) {
+  FnSymbol* retval = fn->instantiatedFrom;
+
+  while (retval->instantiatedFrom != NULL) {
+    retval = retval->instantiatedFrom;
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
