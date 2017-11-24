@@ -752,7 +752,8 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void instantiateDefaultConstructor(FnSymbol* fn);
+static void      instantiateDefaultConstructor(FnSymbol* fn);
+static FnSymbol* instantiateBase(FnSymbol* fn);
 
 static void resolveTypeConstructor(FnSymbol* fn) {
   forv_Vec(Type, parent, fn->retType->dispatchParents) {
@@ -819,27 +820,13 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 static void instantiateDefaultConstructor(FnSymbol* fn) {
-  if (fn->instantiatedFrom && !fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
-    AggregateType* retAt = toAggregateType(fn->retType);
-
-    INT_ASSERT(retAt->defaultInitializer == NULL);
-
-    FnSymbol* instantiatedFrom = fn->instantiatedFrom;
-
-    while (instantiatedFrom->instantiatedFrom) {
-      instantiatedFrom = instantiatedFrom->instantiatedFrom;
-    }
-
-    AggregateType* instanceRetAt = toAggregateType(instantiatedFrom->retType);
-
-    INT_ASSERT(instanceRetAt);
-
-    CallExpr* call = new CallExpr(instanceRetAt->defaultInitializer);
-
-    // This should not be happening for iterators.
-    TypeSymbol* ts = instanceRetAt->symbol;
-
-    INT_ASSERT(!ts->hasEitherFlag(FLAG_ITERATOR_RECORD, FLAG_ITERATOR_CLASS));
+  if (fn->instantiatedFrom            != NULL &&
+      fn->hasFlag(FLAG_PARTIAL_TUPLE) == false) {
+    AggregateType* retAt       = toAggregateType(fn->retType);
+    FnSymbol*      base        = instantiateBase(fn);
+    AggregateType* baseRetAt   = toAggregateType(base->retType);
+    FnSymbol*      defaultInit = baseRetAt->defaultInitializer;
+    CallExpr*      call        = new CallExpr(defaultInit);
 
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
@@ -852,7 +839,7 @@ static void instantiateDefaultConstructor(FnSymbol* fn) {
       } else {
         Symbol* field = fn->retType->getField(formal->name);
 
-        if (instantiatedFrom->hasFlag(FLAG_TUPLE)) {
+        if (base->hasFlag(FLAG_TUPLE) == true) {
           call->insertAtTail(field);
         } else {
           call->insertAtTail(new NamedExpr(formal->name, new SymExpr(field)));
@@ -866,10 +853,18 @@ static void instantiateDefaultConstructor(FnSymbol* fn) {
 
     retAt->defaultInitializer = call->resolvedFunction();
 
-    INT_ASSERT(retAt->defaultInitializer);
-
     call->remove();
   }
+}
+
+static FnSymbol* instantiateBase(FnSymbol* fn) {
+  FnSymbol* retval = fn->instantiatedFrom;
+
+  while (retval->instantiatedFrom != NULL) {
+    retval = retval->instantiatedFrom;
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
