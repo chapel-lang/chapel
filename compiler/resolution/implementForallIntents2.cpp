@@ -606,13 +606,9 @@ static Symbol* shadowVarForReduceIntent(FIcontext& ctx,
   VarSymbol* rsvar = new VarSymbol(intentArgName(ix, "reduceShadowVar"));
   rsvar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-  VarSymbol* stemp = newTemp("rsvTemp");
   ctx.anchor1->insertBefore(new DefExpr(rsvar));
-  ctx.anchor1->insertBefore(new DefExpr(stemp));
   ctx.anchor1->insertBefore("'move'(%S, identity(%S,%S))",
-                            stemp, gMethodToken, currOp);
-  ctx.anchor1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
-                            rsvar, stemp);
+                            rsvar, gMethodToken, currOp);
 
   // Wrap it up at the end.
   ctx.anchor2->insertBefore("accumulate(%S,%S,%S)",

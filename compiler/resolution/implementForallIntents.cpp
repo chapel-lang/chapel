@@ -1440,13 +1440,9 @@ static void propagateThroughYield(CallExpr* rcall,
           // within a param conditional on a not-taken branch.
           svar = new VarSymbol(intentArgName(ix, "shadowVarReduc"));
           svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
-          VarSymbol* stemp  = newTemp("svrTmp");
           redRef1->insertBefore(new DefExpr(svar));
-          redRef1->insertBefore(new DefExpr(stemp));
           redRef1->insertBefore("'move'(%S, identity(%S,%S))",
-                                stemp, gMethodToken, parentOp);
-          redRef1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
-                                svar, stemp);
+                                svar, gMethodToken, parentOp);
           redRef2->insertBefore("accumulate(%S,%S,%S)",
                                 gMethodToken, parentOp, svar);
           shadowVars[ix] = svar;
