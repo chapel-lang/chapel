@@ -57,8 +57,6 @@ static void protoIteratorClass(FnSymbol* fn);
 
 static void resolveTypeConstructor(FnSymbol* fn);
 
-static void instantiateDefaultConstructor(FnSymbol* fn);
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -357,27 +355,19 @@ void resolveFunction(FnSymbol* fn) {
 
   insertAndResolveCasts(fn);
 
-  if (fn->isIterator() && !fn->iteratorInfo) {
+  if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
     protoIteratorClass(fn);
   }
 
-  // Resolve base class type constructors as well.
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
     resolveTypeConstructor(fn);
   }
 
-  //
-  // mark privatized classes
-  //
-  if (fn->hasFlag(FLAG_PRIVATIZED_CLASS)) {
-    if (fn->getReturnSymbol() == gTrue) {
-      fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
-    }
+  if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
+      fn->getReturnSymbol()              == gTrue) {
+    fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
   }
 
-  //
-  // make sure methods are in the methods list
-  //
   ensureInMethodList(fn);
 }
 
@@ -762,6 +752,8 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
+static void instantiateDefaultConstructor(FnSymbol* fn);
+
 static void resolveTypeConstructor(FnSymbol* fn) {
   forv_Vec(Type, parent, fn->retType->dispatchParents) {
     if (AggregateType* pt = toAggregateType(parent)) {
@@ -776,12 +768,10 @@ static void resolveTypeConstructor(FnSymbol* fn) {
     }
   }
 
-  AggregateType* ct = toAggregateType(fn->retType);
-
-  if (ct) {
+  if (AggregateType* ct = toAggregateType(fn->retType)) {
     for_fields(field, ct) {
       if (AggregateType* fct = toAggregateType(field->type)) {
-        if (fct->defaultTypeConstructor) {
+        if (fct->defaultTypeConstructor != NULL) {
           resolveSignature(fct->defaultTypeConstructor);
 
           if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
@@ -790,62 +780,49 @@ static void resolveTypeConstructor(FnSymbol* fn) {
         }
       }
     }
-  }
 
-  if (ct                   != NULL &&
-      ct->instantiatedFrom != NULL &&
-      (ct->initializerStyle          == DEFINES_INITIALIZER ||
-       ct->wantsDefaultInitializer() == true)) {
-    // Don't instantiate the default constructor for generic types that
-    // define initializers, they don't have one!
+    if (ct->instantiatedFrom == NULL) {
+      instantiateDefaultConstructor(fn);
+
+    } else if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+               ct->wantsDefaultInitializer() == false) {
+      instantiateDefaultConstructor(fn);
+    }
+
+    // resolve destructor
+    if (ct->hasDestructor()                 == false &&
+        ct->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(ct) == false) {
+      BlockStmt* block = new BlockStmt();
+      VarSymbol* tmp   = newTemp(ct);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
+      block->insertAtHead(call);
+
+      fn->insertAtHead(block);
+      fn->insertAtHead(new DefExpr(tmp));
+
+      resolveCallAndCallee(call);
+
+      ct->setDestructor(call->resolvedFunction());
+
+      block->remove();
+
+      tmp->defPoint->remove();
+    }
 
   } else {
-    // This instantiates the default constructor
-    // for  the corresponding type constructor.
     instantiateDefaultConstructor(fn);
   }
-
-  //
-  // resolve destructor
-  //
-  if (ct                                  != NULL  &&
-      ct->hasDestructor()                 == false &&
-      ct->symbol->hasFlag(FLAG_REF)       == false &&
-      isTupleContainingOnlyReferences(ct) == false) {
-    BlockStmt* block = new BlockStmt();
-    VarSymbol* tmp   = newTemp(ct);
-    CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
-
-    // In case resolveCall drops other stuff into the tree ahead
-    // of the call, we wrap everything in a block for safe removal.
-
-    block->insertAtHead(call);
-
-    fn->insertAtHead(block);
-    fn->insertAtHead(new DefExpr(tmp));
-
-    resolveCallAndCallee(call);
-
-    ct->setDestructor(call->resolvedFunction());
-
-    block->remove();
-
-    tmp->defPoint->remove();
-  }
 }
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
 
 static void instantiateDefaultConstructor(FnSymbol* fn) {
   if (fn->instantiatedFrom && !fn->hasFlag(FLAG_PARTIAL_TUPLE)) {
     AggregateType* retAt = toAggregateType(fn->retType);
-    INT_ASSERT(retAt);
 
-    INT_ASSERT(!retAt->defaultInitializer);
+    INT_ASSERT(retAt->defaultInitializer == NULL);
 
     FnSymbol* instantiatedFrom = fn->instantiatedFrom;
 
