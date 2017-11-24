@@ -46,8 +46,7 @@ static void resolveFormals(FnSymbol* fn);
 
 static void resolveSpecifiedReturnType(FnSymbol* fn);
 
-static bool isFollowerIterator(FnSymbol* fn);
-static bool isVecIterator(FnSymbol* fn);
+static void markIfIterator(FnSymbol* fn);
 
 static void setScalarPromotionType(AggregateType* at);
 static void fixTypeNames(AggregateType* at);
@@ -308,7 +307,7 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveFunction(FnSymbol* fn) {
-  if (fn->isResolved())
+  if (fn->isResolved() == true)
     return;
 
   if (fn->id == breakOnResolveID) {
@@ -319,68 +318,34 @@ void resolveFunction(FnSymbol* fn) {
 
   fn->addFlag(FLAG_RESOLVED);
 
-  if (fn->hasFlag(FLAG_EXTERN)) {
+  if (fn->hasFlag(FLAG_EXTERN) == true) {
     resolveBlockStmt(fn->body);
     resolveReturnType(fn);
     return;
   }
 
-  //
-  // Mark serial loops that yield inside of follower, standalone, and
-  // explicitly vectorized iterators as order independent. By using a forall
-  // loop or a loop over a vectorized iterator, a user is asserting that the
-  // loop can be executed in any iteration order. Here we just mark the
-  // iterator's yielding loops as order independent as they are ones that will
-  // actually execute the body of the loop that invoked the iterator. Note that
-  // for nested loops with a single yield, only the inner most loop is marked.
-  //
-  if (isFollowerIterator(fn)   ||
-      isStandaloneIterator(fn) ||
-      isVecIterator(fn)) {
-    std::vector<CallExpr*> callExprs;
-
-    collectCallExprs(fn->body, callExprs);
-
-    for_vector(CallExpr, call, callExprs) {
-      if (call->isPrimitive(PRIM_YIELD)) {
-        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-          if (loop->isCoforallLoop() == false) {
-            loop->orderIndependentSet(true);
-          }
-        }
-      }
-    }
-  }
-
-  //
-  // Mark leader and standalone parallel iterators for inlining. Also stash a
-  // pristine copy of the iterator (required by forall intents)
-  //
-  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
-    fn->addFlag(FLAG_INLINE_ITERATOR);
-    stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
-  }
+  markIfIterator(fn);
 
   insertFormalTemps(fn);
 
   resolveBlockStmt(fn->body);
 
-  if (tryFailure) {
+  if (tryFailure == true) {
     fn->removeFlag(FLAG_RESOLVED);
     return;
   }
 
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-    AggregateType* ct = toAggregateType(fn->retType);
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+    if (AggregateType* ct = toAggregateType(fn->retType)) {
 
-    if (!ct) {
+      setScalarPromotionType(ct);
+
+      if (developer == false) {
+        fixTypeNames(ct);
+      }
+
+    } else {
       INT_FATAL(fn, "Constructor has no class type");
-    }
-
-    setScalarPromotionType(ct);
-
-    if (developer == false) {
-      fixTypeNames(ct);
     }
   }
 
@@ -388,9 +353,6 @@ void resolveFunction(FnSymbol* fn) {
 
   resolveReturnType(fn);
 
-  //
-  // insert casts as necessary
-  //
   insertAndResolveCasts(fn);
 
   if (fn->isIterator() && !fn->iteratorInfo) {
@@ -491,7 +453,49 @@ void resolveFunction(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static bool isFollowerIterator(FnSymbol* fn);
+static bool isVecIterator(FnSymbol* fn);
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
+
+static void markIfIterator(FnSymbol* fn) {
+  //
+  // Mark serial loops that yield inside of follower, standalone, and
+  // explicitly vectorized iterators as order independent. By using a
+  // forall loop or a loop over a vectorized iterator, a user is asserting
+  // that the loop can be executed in any iteration order.
+
+  // Here we just mark the iterator's yielding loops as order independent
+  // as they are ones that will actually execute the body of the loop that
+  // invoked the iterator. Note that for nested loops with a single yield,
+  // only the inner most loop is marked.
+  //
+  if (isFollowerIterator(fn)   == true ||
+      isStandaloneIterator(fn) == true ||
+      isVecIterator(fn)        == true) {
+    std::vector<CallExpr*> callExprs;
+
+    collectCallExprs(fn->body, callExprs);
+
+    for_vector(CallExpr, call, callExprs) {
+      if (call->isPrimitive(PRIM_YIELD)) {
+        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+          if (loop->isCoforallLoop() == false) {
+            loop->orderIndependentSet(true);
+          }
+        }
+      }
+    }
+  }
+
+  //
+  // Mark leader and standalone parallel iterators for inlining. Also stash a
+  // pristine copy of the iterator (required by forall intents)
+  //
+  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
+    fn->addFlag(FLAG_INLINE_ITERATOR);
+    stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
+  }
+}
 
 bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
@@ -797,16 +801,14 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
     fn->addFlag(FLAG_INLINE);
   }
 
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-
   fn->addFlag(FLAG_METHOD);
 
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
-
+  fn->_this   = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
   fn->retType = retType;
 
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
 
   ii->iterator->defPoint->insertBefore(new DefExpr(fn));
