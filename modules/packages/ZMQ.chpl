@@ -209,11 +209,11 @@ following sources demonstrate a :const:`PUSH`-:const:`PULL` socket pair between
 a Chapel server and a Python client using the
 `PyZMQ Python bindings for ZeroMQ <https://pyzmq.readthedocs.io/en/latest/>`_.
 
-.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/server.chpl
+.. literalinclude:: ../../../../test/library/packages/ZMQ/interop-py/server.chpl
    :language: chapel
    :lines: 10-
 
-.. literalinclude:: ../../../../test/modules/packages/ZMQ/interop-py/client.py
+.. literalinclude:: ../../../../test/library/packages/ZMQ/interop-py/client.py
    :language: python
 
 Tasking-Layer Interaction

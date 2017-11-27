@@ -7,7 +7,7 @@ source $CWD/common-mpicc.bash
 
 export CHPL_LAUNCHER=mpirun
 
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl modules/packages/mpi"
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl library/packages/MPI"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc"
 

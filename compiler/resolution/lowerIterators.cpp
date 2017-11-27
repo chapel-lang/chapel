@@ -1303,7 +1303,7 @@ expandIteratorInline(ForLoop* forLoop) {
     } else if (containsYield(forLoop)) {
       // Inlining a recursive iterator into a loop with a 'yield' pushes
       // that 'yield' into one of _rec_ functions, where it dangles. Ex.:
-      // test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+      // test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
       return false;
     } else {
       expandRecursiveIteratorInline(forLoop);

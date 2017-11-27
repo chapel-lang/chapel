@@ -7,4 +7,4 @@ the basic case linked against our GMP build results in the same problem, as
 demonstrated by this future.
 
 When this future has been resolved, please remove the valgrind skipif for
-test/modules/standard/gmp/ferguson/gmp_dist_array.chpl and this file.
+test/library/standard/gmp/ferguson/gmp_dist_array.chpl and this file.

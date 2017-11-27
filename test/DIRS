@@ -9,6 +9,7 @@ test/           -- regression tests
   execcflags/   -- tests of different executable flags
   flowanalysis/ -- tests of the low-level flow analaysis stuff
   functions/    -- tests of function calls
+  library       -- tests of standard and package modules
   lowlevelcg/   -- tests of the low-level code generation
   modules/      -- tests of using multiple modules
   parsing/      -- tests of parsing
