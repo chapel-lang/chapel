@@ -8,7 +8,7 @@ source $CWD/common-gasnet.bash
 
 export CHPL_COMM_SUBSTRATE=mpi
 
-export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl modules/packages/mpi"
+export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl library/packages/MPI"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="mpicc.gasnet"
 

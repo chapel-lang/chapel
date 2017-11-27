@@ -364,7 +364,7 @@ bool isDenormalizable(Symbol* sym,
         //safer/better/more general way of doing this check
         //
         //for reference test that caused this was:
-        //test/modules/standard/FileSystem/bharshbarg/filer
+        //test/library/standard/FileSystem/bharshbarg/filer
         //
         //The issue seemed to be yielding string from an iterator
         if(CallExpr* useParentCe = toCallExpr(usePar)) {

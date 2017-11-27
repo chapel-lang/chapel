@@ -301,7 +301,7 @@ anywhere, because it is the type of a tuple of the original return type
 plus one component per shadow variable.
 
 Ex. standalone iter walkdirs() in FileSystem module, as tested by:
-  test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+  test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
 
 Therefore we compute this extended yield type manually.
 */
@@ -617,7 +617,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
     parIdxCopy->addFlag(FLAG_INDEX_VAR);
 
     // If we add FLAG_INSERT_AUTO_DESTROY, 'filename' gets double-delete'd in:
-    //   test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+    //   test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
     //parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   } else {
