@@ -315,12 +315,20 @@ module ChapelBase {
   inline proc +(param a: uint(?w), param b: uint(w)) param return __primitive("+", a, b);
   inline proc +(param a: real(?w), param b: real(w)) param return __primitive("+", a, b);
   inline proc +(param a: imag(?w), param b: imag(w)) param return __primitive("+", a, b);
-
+  inline proc +(param a: complex(?w), param b: complex(w)) param return __primitive("+", a, b);
+  inline proc +(param a: real(?w), b: imag(w)) param return __primitive("+", a, b);
+  inline proc +(param a: imag(?w), b: real(w)) param return __primitive("+", a, b);
+  inline proc +(param a: real(?w), param b: complex(w*2)) param return __primitive("+", a, b);
+ 
   inline proc -(param a: int(?w), param b: int(w)) param return __primitive("-", a, b);
   inline proc -(param a: uint(?w), param b: uint(w)) param return __primitive("-", a, b);
   inline proc -(param a: real(?w), param b: real(w)) param return __primitive("-", a, b);
   inline proc -(param a: imag(?w), param b: imag(w)) param return __primitive("-", a, b);
-
+  inline proc -(param a: complex(?w), param b: complex(w)) param return __primitive("-", a, b);
+  inline proc +(param a: real(?w), param b: imag(w)) param return __primitive("-", a, b);
+  inline proc +(param a: imag(?w), param b: real(w)) param return __primitive("-", a, b);
+  inline proc +(param a: real(?w), param b: complex(w*2)) param return __primitive("-", a, b);
+ 
   //
   // * and / on primitive types
   //
