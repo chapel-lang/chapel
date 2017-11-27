@@ -273,6 +273,9 @@ static void addDefaultedActuals(FnSymbol *fn,
     i++;
   }
 
+  // Adjust AST location to be call site
+  reset_ast_loc(body, info.call);
+
   // Flatten body
   body->flattenAndRemove();
 
@@ -295,6 +298,8 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
 
   // TODO - can't we get the param formals out of paramMap?
   // Or fn->substitutions?
+
+  SET_LINENO(formal);
 
   IntentTag  intent = formal->intent;
   VarSymbol* temp   = newTemp(astr("default_arg", formal->name));
