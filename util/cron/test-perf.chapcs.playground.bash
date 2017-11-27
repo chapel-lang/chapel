@@ -22,11 +22,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of new bulk-transfer interface
+# Test performance of branch that enforces qualified references after inlining
 GITHUB_USER=benharsh
-GITHUB_BRANCH=bulk-transfer-interface
-SHORT_NAME=bulkTransfer
-START_DATE=11/08/17
+GITHUB_BRANCH=qual-rubicon-dev
+SHORT_NAME=qual-inline
+START_DATE=11/27/17
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
