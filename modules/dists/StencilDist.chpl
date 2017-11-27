@@ -376,7 +376,7 @@ class LocStencilArr {
   }
 }
 
-private proc makeZero(param rank : int, type idxType) {
+proc makeZero(param rank : int, type idxType) {
   var ret : rank*idxType;
   return ret;
 }
