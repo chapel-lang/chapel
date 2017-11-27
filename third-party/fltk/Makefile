@@ -30,8 +30,6 @@ $(FLTK_BUILD_DIR):
 	@echo Unpacking fltk-$(FLTK_VERSION)-source.tar.gz
 	@tar xzf fltk-$(FLTK_VERSION)-source.tar.gz
 	@mv fltk-$(FLTK_VERSION) $(FLTK_BUILD_DIR)
-	@echo Patching fltk-$(FLTK_VERSION)
-	cp fl_line_style.cxx $(FLTK_BUILD_DIR)/src
 
 clean:
 	if [ -d $(FLTK_BUILD_DIR) ] ; then \
