@@ -926,11 +926,14 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
 // todo: a constructor that also gives a type (and qualifier)?
 
-ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent, const char* name, Expr* spec):
+ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
+                                 const char* name,
+                                 Expr* outerVar,
+                                 Expr* spec):
   VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
   intent(iIntent),
   // For task-private variables, set 'outerVarRep' to NULL.
-  outerVarRep(new UnresolvedSymExpr(name)),
+  outerVarRep(outerVar),
   specBlock(NULL),
   reduceGlobalOp(NULL),
   pruneit(false)
@@ -966,10 +969,10 @@ void ShadowVarSymbol::verify() {
     INT_FATAL(this, "ShadowVarSymbol::type is NULL");
   verifyNotOnList(specBlock);
   if (!resolved) {
-    // Verify that this symbol is on a ForallStmt::intentVariables() list.
+    // Verify that this symbol is on a ForallStmt::shadowVariables() list.
     ForallStmt* pfs = toForallStmt(defPoint->parentExpr);
     INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->intentVariables()));
+    INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
   INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
   if (!iteratorsLowered && specBlock != NULL)
@@ -985,10 +988,10 @@ void ShadowVarSymbol::accept(AstVisitor* visitor) {
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
-  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name, NULL);
+  ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
+                                            COPY_INT(outerVarRep), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->outerVarRep = COPY_INT(outerVarRep);
   ss->specBlock   = COPY_INT(specBlock);
   ss->copyFlags(this);
   ss->cname = cname;
@@ -1042,6 +1045,9 @@ const char* ShadowVarSymbol::intentDescrString() const {
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
 }
+
+// in foralls.cpp: buildFromArgIntent(), buildFromReduceIntent()
+// in expr.h: outerVarSym()
 
 Expr* ShadowVarSymbol::reduceOpExpr() const {
   if (!specBlock)
@@ -1790,6 +1796,31 @@ FnSymbol::collapseBlocks() {
   CollapseBlocks visitor;
 
   body->accept(&visitor);
+}
+
+//
+// If 'this' has a single use as the callee of a CallExpr,
+// return that CallExpr. Otherwise return NULL.
+//
+CallExpr* FnSymbol::singleInvocation() const {
+  SymExpr* se = firstSymExpr();
+
+  if (se == NULL)
+    // no uses at all
+    return NULL;
+
+  if (se != lastSymExpr())
+    // more than one use
+    return NULL;
+
+  // Got exactly one use. Check how it is used.
+  if (CallExpr* parent = toCallExpr(se->parentExpr))
+    if (se == parent->baseExpr)
+      // yes, it is the callee
+      return parent;
+
+  // The use is not as the callee, ex. as a FCF.
+  return NULL;
 }
 
 

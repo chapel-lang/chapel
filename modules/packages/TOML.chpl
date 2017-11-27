@@ -63,8 +63,6 @@ proc parseToml(input: string) : Toml {
 }
 
 
-
-
 /*
 Parser module with the Toml class for the Chapel TOML library.
 */
@@ -75,7 +73,11 @@ module TomlParser {
 
 
   /* Prints a line by line output of parsing process */
-  config const debugTomlParser: bool = false;
+  config const debugTomlParser = false;
+
+  /* Number of spaces in an indentation for JSON output */
+  pragma "no doc"
+  const tabSpace = 4;
 
   pragma "no doc"
   class Parser {
@@ -101,29 +103,33 @@ module TomlParser {
       comment = compile("(\\#)"),
       comma = compile("(\\,)");
 
+    var debugCounter = 1;
 
     proc parseLoop() : Toml {
 
-      while(readLine(source)) {
-        var token = top(source);
+      if !source.isEmpty() {
+        while(readLine(source)) {
+          var token = top(source);
 
-        if token == '#' {
-          parseComment();
-        }
-        else if inBrackets.match(token) {
-          parseTable();
-        }
-        else if brackets.match(token) {
-          parseSubTbl();
-        }
-        else if kv.match(token) {
-          parseAssign();
-        }
-        else {
-          halt("Unexpected token ->", getToken(source));
-        }
-        if debugTomlParser {
-          debugPrint();
+          if token == '#' {
+            parseComment();
+          }
+          else if inBrackets.match(token) {
+            parseTable();
+          }
+          else if brackets.match(token) {
+            parseSubTbl();
+          }
+          else if kv.match(token) {
+            parseAssign();
+          }
+          else {
+            halt("Unexpected token ->", getToken(source));
+          }
+          if debugTomlParser {
+            debugCounter += 1;
+            debugPrint();
+          }
         }
       }
       return rootTable;
@@ -323,13 +329,12 @@ module TomlParser {
     }
 
     proc debugPrint() {
-      writeln();
-      writeln("========================= Debug Info  ==========================");
+      writeln(debugCounter, ':');
+      writeln(rootTable);
+      // Pointer to the line we are currently on
+      write('->');
       source.debug();
       writeln();
-      writeln(rootTable);
-      writeln();
-      writeln("================================================================");
     }
 
   }
@@ -545,14 +550,49 @@ Used to recursively hold tables and respective values
       }
     }
 
-    /* Write a Table to channel f. f defaults to stdout */
+    /* Write a Table to channel f in TOML format */
     proc writeThis(f) {
+      writeTOML(f);
+    }
+
+    /* Write a Table to channel f in TOML format */
+    proc writeTOML(f) {
       var flatDom: domain(string);
       var flat: [flatDom] Toml;
       this.flatten(flat);       // Flattens containing Toml
       printValues(f, this);     // Prints key values in containing Toml
-      printHelp(flat, f);       // Prints tables in containing Toml
+      printTables(flat, f);       // Prints tables in containing Toml
     }
+
+    /* Write a Table to channel f in JSON format */
+    proc writeJSON(f) {
+      var flatDom: domain(string);
+      var flat: [flatDom] Toml;
+      this.flatten(flat);           // Flattens containing Toml
+
+      var indent=0;
+
+      f.writeln('{');
+      indent += tabSpace;
+
+      // Prints key values in containing Toml
+      printValuesJSON(f, this, indent=indent);
+
+      if flatDom.member('root') {
+        printValuesJSON(f, flat['root'], indent=indent);
+        flatDom.remove('root');
+      }
+      for k in flatDom.sorted() {
+        f.writef('%s"%s": {\n', ' '*indent, k);
+        indent += tabSpace;
+        printValuesJSON(f, flat[k], indent=indent);
+        indent -= tabSpace;
+        f.writef('%s}\n', ' '*indent);
+      }
+      indent -= tabSpace;
+      f.writeln('}');
+    }
+
 
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
@@ -569,7 +609,7 @@ Used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printHelp(flat: [?d] Toml, f:channel) {
+    proc printTables(flat: [?d] Toml, f:channel) {
       if d.member('root') {
         f.writeln('[root]');
         printValues(f, flat['root']);
@@ -588,10 +628,10 @@ Used to recursively hold tables and respective values
         select value.tag {
           when fieldToml do continue; // Table
           when fieldBool {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldInt {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldArr {
             var final: string;
@@ -606,27 +646,84 @@ Used to recursively hold tables and respective values
               }
             }
             final += ']';
-            f.writeln(final);
+            f.write(final);
           }
           when fieldReal {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldString {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           when fieldEmpty {
             halt("Keys have to have a value");
           }
           when fieldDate {
-            f.writeln(key, ' = ', toString(value));
+            f.write(key, ' = ', toString(value));
           }
           otherwise {
             f.write("not yet supported");
           }
-          }
+        }
+        f.writeln();
       }
       f.writeln();
     }
+
+    pragma "no doc"
+    /* Send values from table to toString for writing  */
+    proc printValuesJSON(f: channel, v: Toml, in indent=0) {
+      for (key, value, i) in zip(v.D, v.A, 1..v.D.size) {
+        select value.tag {
+          when fieldToml do continue; // Table
+          when fieldBool {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          when fieldInt {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          when fieldArr {
+            f.writef('%s"%s": {\n', ' '*indent, key);
+            indent += tabSpace;
+            f.writef('%s"%s": "type",\n', ' '*indent, this.tomlType);
+            f.writef('%s"value": [\n', ' '*indent);
+            indent += tabSpace;
+            var arrayElements: string;
+            for i in value.arr.domain {
+              ref k = value.arr[i];
+              f.writef('%s{"type": "%s", "value": "%s"}', ' '*indent, k.tomlType, toString(k));
+              if i != value.arr.domain.last {
+                f.writef(',');
+              }
+              f.writef('\n');
+            }
+            indent -= tabSpace;
+            f.writef('%s]\n', ' '*indent);
+            indent -= tabSpace;
+            f.writef('%s}\n', ' '*indent);
+          }
+          when fieldReal {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          when fieldString {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          when fieldEmpty {
+            halt("Keys have to have a value");
+          }
+          when fieldDate {
+            f.writef('%s"%s": {"type": "%s", "value": "%s"}', ' '*indent, key, value.tomlType, toString(value));
+          }
+          otherwise {
+            f.write("not yet supported");
+          }
+        }
+        if i != v.D.size {
+          f.writef(',');
+        }
+        f.writef('\n');
+      }
+    }
+
 
     pragma "no doc"
     /* Return String representation of a value in a node */
@@ -653,11 +750,10 @@ Used to recursively hold tables and respective values
         when fieldEmpty do return ""; // empty
         when fieldDate do return val.dt.isoformat();
         otherwise {
-          halt("Error in printing '", val, "'");
+          halt("Error in printing '", val, "'", " with tag '", val.tag, "'");
         }
-        }
+      }
     }
-
 
     /*
      For the user to write values of a node as follows:
@@ -666,6 +762,37 @@ Used to recursively hold tables and respective values
      proc toString() : string {
        return toString(this);
     }
+
+    /* Return Toml type as a string.
+
+       Valid types include:
+
+       - *empty*
+       - *string*
+       - *integer*
+       - *float*
+       - *boolean*
+       - *datetime*
+       - *array*
+       - *toml* (inline table)
+
+     */
+    proc tomlType: string {
+      select this.tag {
+        when fieldBool do return 'bool';
+        when fieldInt do return 'integer';
+        when fieldArr do return 'array';
+        when fieldReal do return 'float';
+        when fieldString do return 'string';
+        when fieldEmpty do return 'empty';
+        when fieldDate do return 'datetime';
+        when fieldToml do return 'toml';
+        otherwise {
+          halt("Unknown type: '", this.tag, "'");
+        }
+      }
+    }
+
 
     pragma "no doc"
     proc deinit() {
@@ -683,6 +810,8 @@ pragma "no doc"
 module TomlReader {
 
  use Regexp;
+
+ config const debugTomlReader = false;
 
   /* Returns the next token in the current line without removing it */
   proc top(source) {
@@ -742,32 +871,41 @@ module TomlReader {
       for line in input.split('\n') {
         splitLine(line);
       }
-     currentLine = tokenlist[tokenD.first];
+      if !this.isEmpty() {
+        currentLine = tokenlist[tokenD.first];
+      }
+    }
+
+    proc isEmpty() {
+      return tokenlist.size == 0;
     }
 
     proc splitLine(line) {
       var linetokens: [1..0] string;
-      const doubleQuotes = '".*?\\[^\\]?"',
-         singleQuotes = "'.*?\\[^\\]?'",
-         bracketContents = "(\\[\\w+\\])",
-         brackets = "(\\[)|(\\])",
-         comments = "(\\#)",
-         commas = "(\\,)",
-         equals = "(\\=)",
-         curly = "(\\{)|(\\})";
+      const doubleQuotes = '(".*?")',           // ""
+            singleQuotes = "('.*?')",           // ''
+            bracketContents = "(\\[\\w+\\])",   // [_]
+            brackets = "(\\[)|(\\])",           // []
+            comments = "(\\#)",                 // #
+            commas = "(\\,)",                   // ,
+            equals = "(\\=)",                   // =
+            curly = "(\\{)|(\\})";              // {}
 
       const pattern = compile('|'.join(doubleQuotes,
-                                    singleQuotes,
-                                    bracketContents,
-                                    brackets,
-                                    comments,
-                                    commas,
-                                    curly,
-                                    equals));
+                                       singleQuotes,
+                                       bracketContents,
+                                       brackets,
+                                       comments,
+                                       commas,
+                                       curly,
+                                       equals));
 
       for token in pattern.split(line) {
         var strippedToken = token.strip();
         if strippedToken.length != 0  {
+          if debugTomlReader {
+            writeln('Tokenized: ', '(', strippedToken, ')');
+          }
           linetokens.push_back(strippedToken);}
       }
       if !linetokens.isEmpty() {
@@ -806,14 +944,15 @@ module TomlReader {
 
 
     proc debug() {
-      var lineCounter: int = 1;
       for line in tokenlist {
-        write("line: ",lineCounter);
-        for token in line {
-          write(" token: " + token);
+        if line.A.size != 0 {
+          for token in line {
+            if token.length != 0 {
+              write("(", token, ")");
+            }
+          }
+          writeln();
         }
-        lineCounter += 1;
-        writeln();
       }
     }
 

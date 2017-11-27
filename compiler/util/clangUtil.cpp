@@ -1490,7 +1490,7 @@ void runClang(const char* just_parse_filename) {
     clangCC = llvm_install + "clang";
     clangCXX = llvm_install + "clang++";
   } else {
-    USR_FATAL("Unspported CHPL_LLVM setting %s", CHPL_LLVM);
+    USR_FATAL("Unsupported CHPL_LLVM setting %s", CHPL_LLVM);
   }
 
   // read clang-sysroot-arguments

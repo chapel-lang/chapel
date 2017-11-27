@@ -1578,15 +1578,8 @@ module DefaultRectangular {
     return true;
   }
 
-  proc DefaultRectangularArr.dsiSupportsBulkTransfer() param return true;
-  proc DefaultRectangularArr.dsiSupportsBulkTransferInterface() param return true;
-
-  proc DefaultRectangularArr.doiCanBulkTransfer(viewDom) {
-    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransfer()");
-    if viewDom.stridable then
-      for param i in 1..rank do
-        if viewDom.dim(i).stride != 1 then return false;
-    if !isDataContiguous(viewDom._value) {
+  private proc _canDoSimpleTransfer(A, aView, B, bView) {
+    if !A.isDataContiguous(aView._value) || !B.isDataContiguous(bView._value) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("isDataContiguous return False");
       return false;
@@ -1594,32 +1587,47 @@ module DefaultRectangular {
     return true;
   }
 
-  proc DefaultRectangularArr.doiCanBulkTransferStride(viewDom) param {
-    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiCanBulkTransferStride()");
-    // A DefaultRectangular array is always regular, so bulk should be possible.
+  private proc _canDoComplexTransfer(A, aView, B, bView) {
+    return useBulkTransferStride;
+  }
+
+  proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
+
+  proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
+    return transferHelper(destClass, destDom, this, srcDom);
+  }
+
+  proc DefaultRectangularArr.doiBulkTransferFromKnown(destDom, srcClass:DefaultRectangularArr, srcDom) : bool {
+    return transferHelper(this, destDom, srcClass, srcDom);
+  }
+
+  private proc transferHelper(A, aView, B, bView) : bool {
+    if A.rank == B.rank &&
+       (aView.stridable == false && bView.stridable == false) &&
+       _canDoSimpleTransfer(A, aView, B, bView) {
+      if debugDefaultDistBulkTransfer then
+        chpl_debug_writeln("Performing simple DefaultRectangular transfer");
+
+      _simpleTransfer(A, aView, B, bView);
+    } else if _canDoComplexTransfer(A, aView, B, bView) {
+      if debugDefaultDistBulkTransfer then
+        chpl_debug_writeln("Performing complex DefaultRectangular transfer");
+
+      complexTransfer(A, aView, B, bView);
+    } else {
+      return false;
+    }
+
     return true;
   }
 
-  proc DefaultRectangularArr.doiUseBulkTransfer(B) {
-    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiUseBulkTransfer()");
+  private proc _simpleTransfer(A, aView, B, bView) {
+    param rank     = A.rank;
+    type idxType   = A.idxType;
+    type eltType   = A.eltType;
 
-    return this.rank == B.rank;
-  }
-
-  proc DefaultRectangularArr.doiUseBulkTransferStride(B) {
-    if debugDefaultDistBulkTransfer then chpl_debug_writeln("In DefaultRectangularArr.doiUseBulkTransferStride()");
-
-    return true;
-  }
-
-  proc DefaultRectangularArr.doiBulkTransfer(B, viewDom) {
-    var actual = chpl__getActualArray(B);
-    bulkTransferFrom(viewDom, actual, chpl__getViewDom(B));
-  }
-
-  proc DefaultRectangularArr.bulkTransferFrom(viewDom, B, bView) {
-    const Adims = viewDom.dims();
-    var Alo: rank*viewDom.idxType;
+    const Adims = aView.dims();
+    var Alo: rank*aView.idxType;
     for param i in 1..rank do
       Alo(i) = Adims(i).first;
 
@@ -1628,7 +1636,7 @@ module DefaultRectangular {
     for param i in 1..rank do
       Blo(i) = Bdims(i).first;
 
-    const len = viewDom.numIndices.safeCast(size_t);
+    const len = aView.numIndices.safeCast(size_t);
 
     if len == 0 then return;
 
@@ -1636,19 +1644,19 @@ module DefaultRectangular {
       pragma "no prototype"
       extern proc sizeof(type x): int;
       const elemSize =sizeof(B.eltType);
-      chpl_debug_writeln("In DefaultRectangularArr.doiBulkTransfer():",
+      chpl_debug_writeln("In DefaultRectangular._simpleTransfer():",
               " Alo=", Alo, ", Blo=", Blo,
               ", len=", len, ", elemSize=", elemSize);
     }
 
-    const Aidx = getDataIndex(Alo);
-    const Adata = _ddata_shift(eltType, this.theData, Aidx);
+    const Aidx = A.getDataIndex(Alo);
+    const Adata = _ddata_shift(eltType, A.theData, Aidx);
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(eltType, B.theData, Bidx);
-    doiBulkTransferHelper(B, Adata, Bdata, len);
+    _simpleTransferHelper(A, B, Adata, Bdata, len);
   }
 
-  proc DefaultRectangularArr.doiBulkTransferHelper(B, Adata, Bdata, len) {
+  private proc _simpleTransferHelper(A, B, Adata, Bdata, len) {
     if Adata == Bdata then return;
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
@@ -1660,7 +1668,7 @@ module DefaultRectangular {
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
-        chpl_debug_writeln("\tlocal put() to ", this.locale.id);
+        chpl_debug_writeln("\tlocal put() to ", A.locale.id);
       __primitive("chpl_comm_array_put", Bdata[0], Adata.locale.id, Adata[0], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
@@ -1674,12 +1682,11 @@ module DefaultRectangular {
     'Proposal for Extending the UPC Memory Copy Library Functions and
     Supporting Extensions to GASNet, Version 2.0. Author: Dan Bonachea'
 
-  A.doiBulkTransferStride(B) copies B-->A, where 'B' is another
-  DefaultRectangular _array record (or array-view to default-rectangular array)
+  This function transfers B into A, where A and B are both
+  DefaultRectangularArr classes.
 
-  `viewDom` is a DefaultRectangularDom class representing a view into the array
-  data for 'A'. If 'B' is an ArrayView, its own view-domain will be computed
-  within this function.
+  `aView` and `bView` represent the indices to be transferred to/from. They
+  might be different if this is a transfer involving an Array View.
 
   Assumes row-major ordering.
 
@@ -1690,70 +1697,95 @@ module DefaultRectangular {
 
   TODO: Pull simple runtime implementation up into module code
   */
-  proc DefaultRectangularArr.doiBulkTransferStride(B, viewDom) {
-    if debugDefaultDistBulkTransfer {
-      writeln();
-      writeln("In DefaultRectangularArr.doiBulkTransferStride");
-    }
-    var actual = chpl__getActualArray(B);
-    if (this.data.locale.id != here.id
-        && actual.data.locale.id != here.id) {
+  private proc complexTransfer(A, aView, B, bView) {
+    if (A.data.locale.id != here.id &&
+        B.data.locale.id != here.id) {
       if debugDefaultDistBulkTransfer {
-        chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", this.data.locale.id);
+        chpl_debug_writeln("BulkTransferStride: Both arrays on different locale, moving to locale of destination: LOCALE", A.data.locale.id);
       }
-      on this.data do stridedTransferFrom(viewDom, B);
+      on A.data do
+        complexTransferCore(A, aView, B, bView);
     } else {
-      stridedTransferFrom(viewDom, B);
+      complexTransferCore(A, aView, B, bView);
     }
   }
 
-  proc DefaultRectangularArr.stridedTransferFrom(LViewDom, B) {
-    const SizeDims   = B.domain.dims();
-    const LHS        = this;
-    const RHS        = chpl__getActualArray(B);
-    const RViewDom   = chpl__getViewDom(B);
-    param targetRank = B.rank;
+  // Compute the active dimensions of this assignment. For example, LeftDims
+  // could be (1..1, 1..10) and RightDims (1..10, 1..1). This indicates that
+  // a rank change occurred and that the inferredRank should be '1', the
+  // LeftActives = (2,), the RightActives = (1,)
+  private proc computeActiveDims(LeftDims, RightDims) {
+    param LeftRank  = LeftDims.size;
+    param RightRank = RightDims.size;
+    param minRank   = min(LeftRank, RightRank);
+
+    var inferredRank = 0;
+
+    // Tuple used instead of an array because returning an array would
+    // recursively invoke array assignment (and therefore bulk-transfer).
+    var LeftActives, RightActives : minRank * int;
+
+    var li = 1, ri = 1;
+    proc advance() {
+      // Advance to positions in each domain where the sizes are equal.
+      while LeftDims(li).size == 1 && LeftDims(li).size != RightDims(ri).size do li += 1;
+      while RightDims(ri).size == 1 && RightDims(ri).size != LeftDims(li).size do ri += 1;
+
+      assert(LeftDims(li).size == RightDims(ri).size);
+    }
+
+    do {
+      advance();
+      inferredRank += 1;
+
+      LeftActives(inferredRank)  = li;
+      RightActives(inferredRank) = ri;
+
+      li += 1;
+      ri += 1;
+    } while li <= LeftRank && ri <= RightRank;
+
+    return (LeftActives, RightActives, inferredRank);
+  }
+
+  private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
+    param minRank = min(LHS.rank, RHS.rank);
+    type  idxType = LHS.idxType;
 
     if debugDefaultDistBulkTransfer {
       writeln("Transferring views :", LViewDom, " <-- ", RViewDom);
-      writeln("Original domains   :", this.dom.dsiDims(), " <-- ", RHS.dom.dsiDims());
+      writeln("Original domains   :", LHS.dom.dsiDims(), " <-- ", RHS.dom.dsiDims());
     }
 
-    const LViewDims = LViewDom.dims();
-    const RViewDims  = RViewDom.dims();
+    const LeftDims  = LViewDom.dims();
+    const RightDims = RViewDom.dims();
 
-    // Build up the index tuples to calculate the offset for the first element
-    var LFirst : LHS.rank*idxType;
-    for param i in 1..LHS.rank do
-      LFirst(i) = if LViewDims(i).stride < 0 then LViewDims(i).last else LViewDims(i).first;
+    const (LeftActives, RightActives, inferredRank) = computeActiveDims(LeftDims, RightDims);
 
-    var RFirst : RHS.rank*idxType;
-    for param i in 1..RHS.rank do
-      RFirst(i) = if RViewDims(i).stride < 0 then RViewDims(i).last else RViewDims(i).first;
+    var DimSizes : [1..0] LeftDims(1).size.type;
+    for i in 1..inferredRank {
+      const dimIdx = LeftActives(i);
+      DimSizes.push_back(LeftDims(dimIdx).size);
+    }
+
+    if debugDefaultDistBulkTransfer {
+      writeln("inferredRank = ", inferredRank);
+    }
+    assert(inferredRank <= minRank, "complex DR transfer: computed rank greater than minimum rank!");
 
     // Compute a 'blk' tuple for the LHS and RHS based on their view-domains
-    var LBlk, RBlk : targetRank*idxType;
+    var LBlk, RBlk : minRank*idxType;
 
-    // The current index into the LHS or RHS
-    var li = LHS.rank, ri = RHS.rank;
+    {
+      // For each array, compute a valid 'blk' with 'inferredRank' values
+      // over the array's original data by skipping over rank-changed dims.
+      for idx in 1..inferredRank by -1 {
+        const li = LeftActives(idx);
+        LBlk(idx) = LHS.blk(li) * (LeftDims(li).stride / LHS.dom.dsiDim(li).stride):idxType;
 
-
-    // If the dimension is of size one, it may be representing a rank-change.
-    // If ``li`` or ``ri`` are greater than 'idx', there is at least one
-    // rank-changed dimension between li/ri and idx. In that case, walk
-    // backward until you either find a non-length-one dimension or li/ri ==
-    // idx.
-    for idx in 1..targetRank by -1 {
-      if LViewDims(li).size == 1 && li > idx {
-        while LViewDims(li).size == 1 && li > idx do li -= 1;
+        const ri = RightActives(idx);
+        RBlk(idx) = RHS.blk(ri) * (RightDims(ri).stride / RHS.dom.dsiDim(ri).stride):idxType;
       }
-      if RViewDims(ri).size == 1 && ri > idx {
-        while RViewDims(ri).size == 1 && ri > idx do ri -= 1;
-      }
-      LBlk(idx) = LHS.blk(li) * (LViewDims(li).stride / LHS.dom.dsiDim(li).stride):idxType;
-      RBlk(idx) = RHS.blk(ri) * (RViewDims(ri).stride / RHS.dom.dsiDim(ri).stride):idxType;
-      li -= 1;
-      ri -= 1;
     }
 
     if debugDefaultDistBulkTransfer {
@@ -1769,7 +1801,7 @@ module DefaultRectangular {
     // number after that represents the number of times we need to stride at
     // each level. It will ultimately be an array of size `stridelevels+1`.
     //
-    var countDom = {1..targetRank+1};
+    var countDom = {1..inferredRank+1};
     var count : [countDom] size_t;
     for c in count do c = 1; // serial to avoid task creation overhead
 
@@ -1778,7 +1810,7 @@ module DefaultRectangular {
     // from the values in the 'blk' tuple, though we may skip a dimension if
     // it can be aggregated. Will ultimately be of size `stridelevels`.
     //
-    var strideDom = {1..targetRank};
+    var strideDom = {1..inferredRank};
     var dstStride, srcStride : [strideDom] size_t;
 
     //
@@ -1790,11 +1822,11 @@ module DefaultRectangular {
     // original domain may have also been strided, like so:
     //   var A : [1..10 by 2, 1..20 by 4] int;
     //
-    if LBlk(targetRank) > 1 || RBlk(targetRank) > 1 {
-      stridelevels += 1;
-      count[stridelevels] = 1;
-      dstStride[stridelevels] = LBlk(targetRank).safeCast(size_t);
-      srcStride[stridelevels] = RBlk(targetRank).safeCast(size_t);
+    if LBlk(inferredRank) > 1 || RBlk(inferredRank) > 1 {
+      stridelevels           += 1;
+      count[stridelevels]     = 1;
+      dstStride[stridelevels] = LBlk(inferredRank).safeCast(size_t);
+      srcStride[stridelevels] = RBlk(inferredRank).safeCast(size_t);
     }
 
     //
@@ -1803,13 +1835,13 @@ module DefaultRectangular {
     // the next chunk of elements. If either array is unable to re-use its
     // stride, then we need a new stride value.
     //
-    for i in 2..targetRank by -1 {
+    for i in 2..inferredRank by -1 {
       // Each corresponding dimension in A and B should have the same length,
       // so it doesn't matter which we use here.
-      count[stridelevels+1] *= SizeDims(i).length.safeCast(size_t);
+      count[stridelevels+1] *= DimSizes(i).safeCast(size_t);
 
-      const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride)
-                     && canReuseStride(RBlk, i, stridelevels, count, srcStride);
+      const bothReuse = canReuseStride(LBlk, i, stridelevels, count, dstStride) &&
+                        canReuseStride(RBlk, i, stridelevels, count, srcStride);
 
       if !bothReuse {
         stridelevels += 1;
@@ -1817,23 +1849,33 @@ module DefaultRectangular {
         srcStride[stridelevels] = RBlk(i-1).safeCast(size_t);
       }
     }
-    count[stridelevels+1] *= SizeDims(1).length.safeCast(size_t);
+    count[stridelevels+1] *= DimSizes(1).safeCast(size_t);
 
-    assert(stridelevels <= targetRank, "BulkTransferStride: stride levels greater than rank.");
-    if stridelevels == 0 then assert(count[1] == LViewDom.numIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0.");
+    assert(stridelevels <= inferredRank, "BulkTransferStride: stride levels greater than rank.");
+    if stridelevels == 0 then assert(count[1] == LViewDom.numIndices, "BulkTransferStride: bulk-count incorrect for stride level of 0: ", count[1], " != ", LViewDom.numIndices);
 
-    countDom = {1..stridelevels+1};
+    countDom  = {1..stridelevels+1};
     strideDom = {1..stridelevels};
 
-    doiBulkTransferStrideComm(RHS, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
+    proc getFirstIdx(dims) {
+      var ret : dims.size * idxType;
+      for param i in 1..dims.size do
+        ret(i) = if dims(i).stride < 0 then dims(i).last else dims(i).first;
+      return ret;
+    }
+
+    // Build up the index tuples to calculate the offset for the first element
+    const LFirst = getFirstIdx(LeftDims);
+    const RFirst = getFirstIdx(RightDims);
+
+    complexTransferComm(LHS, RHS, stridelevels:int(32), dstStride, srcStride, count, LFirst, RFirst);
   }
 
   //
   // Invoke the primitives chpl_comm_get_strd/puts, depending on what locale we
   // are on vs. where the source and destination are.
-  // The logic mimics that in doiBulkTransfer().
   //
-  proc DefaultRectangularArr.doiBulkTransferStrideComm(B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
+  private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("BulkTransferStride with values:\n" +
                          "\tLocale        = " + stringify(here.id) + "\n" +
@@ -1843,9 +1885,8 @@ module DefaultRectangular {
                          "\tcount         = " + stringify(count));
     }
 
-    const A  = this;
-    const AO = A.getDataIndex(AFirst, getShifted=false);
-    const BO = B.getDataIndex(BFirst, getShifted=false);
+    const AO = A.getDataIndex(AFirst, getShifted = false);
+    const BO = B.getDataIndex(BFirst, getShifted = false);
 
     const dest = A.data;
     const src  = B.data;
@@ -1927,7 +1968,7 @@ module DefaultRectangular {
   size. However, it's still convenient to try and re-use the stride if
   possible.
   */
-  proc canReuseStride(blk, curDim: int, levels, count, stride)
+  private proc canReuseStride(blk, curDim: int, levels, count, stride)
   {
     // TODO: Do we need to return false if the previous dimension has only one
     // element? What if it only has one element in the original domain?

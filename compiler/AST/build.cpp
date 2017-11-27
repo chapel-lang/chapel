@@ -1514,20 +1514,17 @@ buildForallLoopStmt(Expr*      indices,
 }
 
 // Todo: replace with ForallIntents or similar.
-void addTaskIntent(CallExpr* ti, Expr* var, IntentTag intent, Expr* ri) {
-  if (ri) {
+void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
+  Expr* ovar = svar->outerVarRep;
+  if (Expr* ri = svar->reduceOpExpr()) {
     // This is a reduce intent. NB 'intent' is undefined.
     ti->insertAtTail(ri);
-    ti->insertAtTail(var);
+    ti->insertAtTail(ovar);
   } else {
-    ArgSymbol* tiMark = tiMarkForIntent(intent);
-    if (!tiMark) {
-      USR_FATAL_CONT(var, "%s is not supported in a 'with' clause",
-                           intentDescrString(intent));
-      tiMark = tiMarkForIntent(INTENT_IN); //dummy, so parser can continue
-    }
+    ArgSymbol* tiMark = tiMarkForForallIntent(svar->intent);
+    INT_ASSERT(tiMark != NULL);
     ti->insertAtTail(tiMark);
-    ti->insertAtTail(var);
+    ti->insertAtTail(ovar);
   }
 }
 
@@ -2354,7 +2351,8 @@ DefExpr* buildClassDefExpr(const char*  name,
 void setupTypeIntentArg(ArgSymbol* arg) {
   arg->intent = INTENT_BLANK;
   arg->addFlag(FLAG_TYPE_VARIABLE);
-  arg->type = dtAny;
+  if (arg->typeExpr == NULL)
+    arg->type = dtAny;
 }
 
 

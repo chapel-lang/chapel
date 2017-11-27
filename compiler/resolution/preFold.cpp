@@ -25,6 +25,7 @@
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -890,7 +891,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Expr*         lhs       = call->get(2)->remove();
     ForallStmt*   fs        = enclosingForallStmt(call);
     // rOpIdx was computed by reduceIntentIdx()
-    ShadowVarSymbol*   svar = fs->getForallIntent(rOpIdx);
+    ShadowVarSymbol*   svar = fs->getShadowVar(rOpIdx);
     Symbol*       globalOp  = toSymExpr(svar->reduceOpExpr())->symbol();
 
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));
@@ -932,6 +933,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
       call->insertAtTail(tmp);
     }
+  } else if (call->isPrimitive(PRIM_SIZEOF) == true) {
+    // Fix up arg to sizeof(), as we may not have known the type earlier
+    SymExpr* sizeSym  = toSymExpr(call->get(1));
+    Type*    sizeType = sizeSym->symbol()->typeInfo();
+
+    retval = new CallExpr(PRIM_SIZEOF, sizeType->symbol);
+    call->replace(retval);
+
   }
 
   return retval;
@@ -1465,7 +1474,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
     }
   }
 
-  resolveFormals(captured_fn);
+  resolveSignature(captured_fn);
+
   resolveFnForCall(captured_fn, call);
 
   //
@@ -1475,12 +1485,13 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   if (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)) {
     return new SymExpr(captured_fn);
   }
+
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
 
-  AggregateType *parent;
-  FnSymbol *thisParentMethod;
+  AggregateType* parent;
+  FnSymbol*      thisParentMethod;
 
   std::string parent_name = buildParentName(captured_fn->formals, true, captured_fn->retType);
 

@@ -51,6 +51,7 @@
 #include "ForLoop.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -195,7 +196,7 @@ static FnSymbol* wrapDefaultedFormals(FnSymbol*                fn,
   if (retval == NULL) {
     retval = buildWrapperForDefaultedFormals(fn, info, &defaults, &paramMap);
 
-    resolveFormals(retval);
+    resolveSignature(retval);
 
     addCache(defaultsCache, fn, retval, &defaults);
   }
@@ -1068,7 +1069,7 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
   if (retval == NULL) {
     retval = buildPromotionWrapper(fn, info, fastFollowerChecks, subs);
 
-    resolveFormals(retval);
+    resolveSignature(retval);
 
     addCache(promotionsCache, fn, retval, &subs);
   }

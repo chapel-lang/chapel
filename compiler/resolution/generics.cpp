@@ -25,6 +25,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -704,7 +705,7 @@ bool evaluateWhereClause(FnSymbol* fn) {
   if (fn->where) {
     whereStack.add(fn);
 
-    resolveFormals(fn);
+    resolveSignature(fn);
 
     resolveBlockStmt(fn->where);
 

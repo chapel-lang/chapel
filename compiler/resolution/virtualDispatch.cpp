@@ -50,6 +50,7 @@ static child type could end up calling something in the parent.
 #include "expr.h"
 #include "iterator.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "stmt.h"
 #include "symbol.h"
 
@@ -343,10 +344,10 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
 
         if (fn) {
-          resolveFormals(fn);
+          resolveSignature(fn);
 
           if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
-            resolveFns(fn);
+            resolveFunction(fn);
 
             if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
                 pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {

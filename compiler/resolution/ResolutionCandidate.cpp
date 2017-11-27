@@ -25,6 +25,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "resolution.h"
+#include "resolveFunction.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -126,7 +127,7 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
 
     INT_ASSERT(typeConstructorCall->isResolved());
 
-    resolveFns(typeConstructorCall->resolvedFunction());
+    resolveFunction(typeConstructorCall->resolvedFunction());
 
     fn->_this->type = typeConstructorCall->resolvedFunction()->retType;
 
@@ -628,7 +629,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
    * A derived generic type will use the type of its parent,
    * and expects this to be instantiated before it is.
    */
-  resolveFormals(fn);
+  resolveSignature(fn);
 
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {

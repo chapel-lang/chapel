@@ -102,20 +102,20 @@ proc masonRun(args) {
     for arg in args[2..] {
       if arg == '-h' || arg == '--help' {
         masonRunHelp();
-	exit();
+        exit();
       }
       else if arg == '--build' {
-	masonBuild(['mason', 'build']);
+        masonBuild(['mason', 'build']);
       }
       else if arg == '--show' {
-	show = true;
+        show = true;
       }
       else {
-	execopts.push_back(arg);
+        execopts.push_back(arg);
       }
-    }  
+    }
   }
-  // Find the Binary and execute 
+  // Find the Binary and execute
   if isDir('target') {
     var execs = ' '.join(execopts);
     var command = "target/debug/" + toRun + ' ' + execs;
@@ -144,7 +144,7 @@ proc masonClean() {
   runCommand('rm -rf target');
 }
 
- 
+
 proc masonDoc(args) {
   var toDoc = basename(getEnv('PWD'));
   var project = toDoc + '.chpl';

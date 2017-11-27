@@ -22,8 +22,9 @@
 
 #include "baseAST.h"
 #include "symbol.h"
-#include <vector>
+
 #include <map>
+#include <vector>
 
 class CallInfo;
 class ResolutionCandidate;
@@ -38,6 +39,8 @@ extern Vec<CallExpr*>                 callStack;
 extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
+
+extern Vec<FnSymbol*>                 resolvedFormals;
 
 extern Vec<BlockStmt*>                standardModuleSet;
 
@@ -79,10 +82,6 @@ bool       isInstantiation(Type* sub, Type* super);
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
-bool isLeaderIterator(FnSymbol* fn);
-
-bool isStandaloneIterator(FnSymbol* fn);
-
 bool isDispatchParent(Type* t, Type* pt);
 
 bool canCoerce(Type*     actualType,
@@ -109,20 +108,12 @@ FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
 
 // forall intents
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs,
-                                                  SymExpr*    origSE);
-
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
 void implementForallIntents1(DefExpr* defChplIter);
-
 void implementForallIntents2(CallExpr* call, CallExpr* origToLeaderCall);
-
-void implementForallIntents2wrapper(CallExpr* call,
-                                    CallExpr* origToLeaderCall);
-
+void implementForallIntents2wrapper(CallExpr* call, CallExpr* origToLeaderCall);
 void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall);
-
-void stashPristineCopyOfLeaderIter(FnSymbol* origLeader,
-                                   bool      ignoreIsResolved);
+void stashPristineCopyOfLeaderIter(FnSymbol* origLeader, bool ignoreIsResolved);
 
 // reduce intents
 void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2);
@@ -172,28 +163,31 @@ disambiguateForInit(CallInfo&                    info,
                     Vec<ResolutionCandidate*>&   candidates);
 
 // Regular resolve functions
-void      resolveFormals(FnSymbol* fn);
 void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
-void      resolveFns(FnSymbol* fn);
+
 void      resolveDefaultGenericType(CallExpr* call);
-void      resolveReturnType(FnSymbol* fn);
+Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
 FnSymbol* tryResolveCall(CallExpr* call);
 void      makeRefType(Type* type);
 
 // FnSymbol changes
-void insertFormalTemps(FnSymbol* fn);
-void insertAndResolveCasts(FnSymbol* fn);
-void ensureInMethodList(FnSymbol* fn);
+void      insertFormalTemps(FnSymbol* fn);
+void      insertAndResolveCasts(FnSymbol* fn);
+void      ensureInMethodList(FnSymbol* fn);
 
 
+bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 FnSymbol* getAutoCopy(Type* t);
 FnSymbol* getAutoDestroy(Type* t);
 FnSymbol* getUnalias(Type* t);
+
+Expr*     resolveExpr(Expr* expr);
+
 
 
 bool isPOD(Type* t);
@@ -205,7 +199,9 @@ void printResolutionErrorUnresolved(CallInfo&                  info,
 void printResolutionErrorAmbiguous (CallInfo&                  info,
                                     Vec<ResolutionCandidate*>& candidates);
 
-void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
+FnSymbol* resolveNormalCall(CallExpr* call, bool checkonly=false);
+
+void      resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn);
 
 void lvalueCheck(CallExpr* call);
 
@@ -226,7 +222,6 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
-
 
 extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
 

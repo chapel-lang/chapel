@@ -280,7 +280,7 @@ int DataModel::LoadData(const char * filename, bool fromArgv)
           curTag->locales[curNodeId].sysCpu += gp->sys_time() -
             curTag->locales[curNodeId].refSysCpu;
           curTag->locales[curNodeId].Cpu = curTag->locales[curNodeId].userCpu +
-             	                           curTag->locales[curNodeId].sysCpu;
+                                           curTag->locales[curNodeId].sysCpu;
           curTag->locales[curNodeId].clockTime += gp->clock_time() -
             curTag->locales[curNodeId].refTime;
           curTag->locales[curNodeId].refTime = 0;   // Reset for

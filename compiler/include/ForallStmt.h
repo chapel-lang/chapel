@@ -33,7 +33,7 @@ public:
   bool       zippered()       const; // was 'zip' keyword used?
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
-  AList&     intentVariables();      // DefExprs of LoopIntentVars
+  AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
 
   // when originating from a ForLoop
@@ -63,14 +63,14 @@ public:
   int   numIteratedExprs()         const;
   bool  isIteratedExpression(Expr* expr);
   int   reduceIntentIdx(Symbol* var);
-  int   numIntentVars()            const;
-  ShadowVarSymbol* getForallIntent(int index); //todo rename
+  int   numShadowVars()            const;
+  ShadowVarSymbol* getShadowVar(int index) const;
 
 private:
   bool           fZippered;
   AList          fIterVars;
   AList          fIterExprs;
-  AList          fIntentVars;  // may be empty
+  AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fFromForLoop; // see comment below
 
@@ -95,7 +95,7 @@ set membership is propagated through cloning, if applicable.
 inline bool   ForallStmt::zippered()       const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()   { return fIterVars;   }
 inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
-inline AList& ForallStmt::intentVariables()      { return fIntentVars; }
+inline AList& ForallStmt::shadowVariables()      { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
 inline bool ForallStmt::iterCallAlreadyTagged() const { return fFromForLoop; }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
@@ -104,16 +104,16 @@ inline bool ForallStmt::createdFromForLoop()    const { return fFromForLoop; }
 // conveniences
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
 inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
-inline int   ForallStmt::numIntentVars()     const { return fIntentVars.length;}
-inline ShadowVarSymbol* ForallStmt::getForallIntent(int index)
-  { return toShadowVarSymbol(toDefExpr(fIntentVars.get(index))->sym); }
+inline int   ForallStmt::numShadowVars()     const { return fShadowVars.length;}
+inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
+  { return toShadowVarSymbol(toDefExpr(fShadowVars.get(index))->sym); }
 
 #define for_shadow_var_defs(SVD,TEMP,FS)    \
-  for_alist(TEMP,(FS)->intentVariables())   \
+  for_alist(TEMP,(FS)->shadowVariables())   \
     if (DefExpr* SVD = toDefExpr(TEMP))
 
 #define for_shadow_vars(SV,TEMP,FS)                    \
-  for_alist(TEMP,(FS)->intentVariables())              \
+  for_alist(TEMP,(FS)->shadowVariables())              \
     if (DefExpr* SVD = toDefExpr(TEMP))                \
       if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
 

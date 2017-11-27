@@ -88,10 +88,6 @@ enum IntentTag {
 
 typedef std::bitset<NUM_FLAGS> FlagSet;
 
-// for task intents and forall intents
-ArgSymbol* tiMarkForIntent(IntentTag intent);
-ArgSymbol* tiMarkForTFIntent(int tfIntent);
-
 //
 // ForallIntentTag: a task- or forall-intent tag
 //
@@ -106,6 +102,10 @@ enum ForallIntentTag {
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
+
+// for task intents and forall intents
+ArgSymbol* tiMarkForIntent(IntentTag intent);
+ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent);
 
 /************************************* | **************************************
 *                                                                             *
@@ -384,7 +384,10 @@ public:
 
 class ShadowVarSymbol : public VarSymbol {
 public:
-  ShadowVarSymbol(ForallIntentTag iIntent, const char* iName, Expr* iSpec = NULL);
+  ShadowVarSymbol(ForallIntentTag iIntent,
+                  const char* iName,
+                  Expr* outerVar,
+                  Expr* iSpec = NULL);
 
   virtual void    verify();
   virtual void    accept(AstVisitor* visitor);
@@ -396,6 +399,9 @@ public:
 
   const char* intentDescrString() const;
   bool        isReduce()          const { return intent == TFI_REDUCE;  }
+
+  static ShadowVarSymbol* buildFromArgIntent(IntentTag intent, Expr* ovar);
+  static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
   // The corresponding outer var or NULL if not applicable.
   SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
@@ -557,8 +563,6 @@ public:
   void                       codegenPrototype();
   void                       codegenDef();
 
-  void                       printDef(FILE* outfile);
-
   void                       insertAtHead(Expr* ast);
   void                       insertAtHead(const char* format, ...);
 
@@ -585,6 +589,8 @@ public:
   ArgSymbol*                 getFormal(int i);
 
   void                       collapseBlocks();
+
+  CallExpr*                  singleInvocation()                          const;
 
   bool                       tagIfGeneric();
 
@@ -756,8 +762,8 @@ bool isOuterVarOfShadowVar(Expr* expr);
 // Parser support.
 class ForallIntents;
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri);
-void addForallIntent(CallExpr* fi,      Expr* var, IntentTag intent, Expr* ri);
-void addTaskIntent(CallExpr* ti,        Expr* var, IntentTag intent, Expr* ri);
+void addForallIntent(CallExpr* fi, ShadowVarSymbol* svar);
+void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar);
 
 extern bool localTempNames;
 

@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-// foralls.h, foralls.cpp - support for forall loops
+#include "foralls.h"
 
+#include "astutil.h"
+#include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "foralls.h"
+#include "ForLoop.h"
 #include "ForallStmt.h"
-#include "astutil.h"
+#include "iterator.h"
+#include "passes.h"
+#include "resolution.h"
+#include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "passes.h" // for normalized, resolved
-#include "AstVisitor.h"
-#include "ForLoop.h"
-#include "resolution.h"
-#include "iterator.h"
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
@@ -207,6 +207,22 @@ static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
   return TFI_DEFAULT; // dummy
 }
 
+ShadowVarSymbol* ShadowVarSymbol::buildFromArgIntent(IntentTag intent,
+                                                     Expr* ovar)
+{
+  ForallIntentTag  fi = argIntentToForallIntent(ovar, intent);
+  const char*    name = toUnresolvedSymExpr(ovar)->unresolved;
+  return new ShadowVarSymbol(fi, name, ovar);
+}
+
+ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
+                                                        Expr* riExpr)
+{
+  INT_ASSERT(riExpr != NULL);
+  const char* name = toUnresolvedSymExpr(ovar)->unresolved;
+  return new ShadowVarSymbol(TFI_REDUCE, name, ovar, riExpr);
+}
+
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
@@ -214,11 +230,8 @@ void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   fi->riSpecs.push_back(ri);
 }
 
-void addForallIntent(CallExpr* call, Expr* var, IntentTag intent, Expr* ri) {
-  ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
-  const char* name = toUnresolvedSymExpr(var)->unresolved;
-  ShadowVarSymbol* ss = new ShadowVarSymbol(tfi, name, ri);
-  call->insertAtTail(new DefExpr(ss));
+void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
+  call->insertAtTail(new DefExpr(svar));
 }
 
 //
@@ -250,7 +263,7 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //                             //
 /////////////////////////////////
 
-// resolveParallelIteratorAndForallIntents() resolves key parts of ForallStmt:
+// resolveForallHeader() resolves key parts of ForallStmt:
 //
 //  * find the target parallel iterator (standalone or leader) and resolve it
 //  * issue an error, if neither is found
@@ -276,11 +289,14 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
 //  * all inductionVariables()' DefExprs are moved to the original loop body
 
 /////////// fsIterYieldType ///////////
+static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
+                                     FnSymbol* origIterFn,
+                                     bool alreadyResolved);
 
 /*
 When we are dealing with a recursive parallel iterator, we call
 fsIterYieldType() while resolving it. At that time, IteratorInfo
-has not been created yet. Also the yield type is not yet avaiable
+has not been created yet. Also the yield type is not yet available
 anywhere, because it is the type of a tuple of the original return type
 plus one component per shadow variable.
 
@@ -289,8 +305,8 @@ Ex. standalone iter walkdirs() in FileSystem module, as tested by:
 
 Therefore we compute this extended yield type manually.
 */
-static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
-  if (fs->numIntentVars() == 0) {
+static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymbol* origIterFn) {
+  if (fs->numShadowVars() == 0) {
     // The iterator has not undergone extendLeader().
     // It still yields whatever the user wrote.
     // Its return symbol is still in tact.
@@ -303,12 +319,14 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
   // Otherwise, build the tuple mocking what iterFn yields, supposedly.
   CallExpr* constup = new CallExpr("_type_construct__tuple");
 
-  // The original return type is available: it must have been declared
-  // by the user, since the iterator is recursive.
-  Symbol* origRetSym = lookupForallIntentsOrigRetSym(iterFn);
-  INT_ASSERT(origRetSym != NULL);
-  INT_ASSERT(origRetSym->type != dtUnknown);
-  constup->insertAtTail(origRetSym->type->symbol);
+  // Yield type must have been declared by user for recursive iterator,
+  // and the function that declaration is attached to is origIterFn.
+  bool alreadyResolved = origIterFn->isResolved();
+  QualifiedType origQt = fsIterYieldType(fs, origIterFn, NULL, alreadyResolved);
+  Type* origYieldedType = origQt.type();
+
+  INT_ASSERT(origYieldedType && origYieldedType != dtUnknown);
+  constup->insertAtTail(origYieldedType->symbol);
 
   // The other tuple components are refs to shadow variables,
   // so their types come from respective outer variables.
@@ -358,6 +376,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn) {
 // This helper is ForallStmt-specific because of the assumptions it makes.
 //
 static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
+                                     FnSymbol* origIterFn,
                                      bool alreadyResolved)
 {
   if (iterFn->isIterator()) {
@@ -366,7 +385,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
     } else {
       // We are in the midst of resolving a recursive iterator.
       INT_ASSERT(alreadyResolved);
-      return buildIterYieldType(fs, iterFn);
+      return buildIterYieldType(fs, iterFn, origIterFn);
     }
   } else {
     // e.g. "proc these() return _value.these();"
@@ -374,7 +393,7 @@ static QualifiedType fsIterYieldType(ForallStmt* fs, FnSymbol* iterFn,
     INT_ASSERT(retType && retType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
     FnSymbol* iterator = retType->iteratorInfo->iterator;
     INT_ASSERT(iterator->isIterator()); // no more recursion?
-    return fsIterYieldType(fs, iterator, alreadyResolved);
+    return fsIterYieldType(fs, iterator, origIterFn, alreadyResolved);
   }
 }
 
@@ -637,16 +656,18 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
 
 static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                              CallExpr* iterCall,
+                                             FnSymbol* origIterator,
                                              bool gotSA)
 {
   // The par iterator probably has been extendLeader()-ed for forall intents.
   FnSymbol* parIter = iterCall->resolvedFunction();
   bool alreadyResolved = parIter->isResolved();
 
-  resolveFns(parIter);
+  resolveFunction(parIter);
 
   // Set QualifiedType of the index variable.
-  QualifiedType iType = fsIterYieldType(pfs, parIter, alreadyResolved);
+  QualifiedType iType = fsIterYieldType(pfs, parIter,
+                                        origIterator, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
 
   if (idxVar->id == breakOnResolveID)
@@ -785,7 +806,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 }
 
 // see also comments above
-CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* origSE)
+CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 {
   CallExpr* retval = NULL;
 
@@ -805,13 +826,15 @@ CallExpr* resolveParallelIteratorAndForallIntents(ForallStmt* pfs, SymExpr* orig
                findStandaloneOrLeader(pfs, iterCall);
   resolveCallAndCallee(iterCall, false);
 
+  FnSymbol* origIterFn = iterCall->resolvedFunction();
+
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
     addParIdxVarsAndRestruct(pfs, gotSA);
 
     implementForallIntentsNew(pfs, iterCall);
 
-    resolveParallelIteratorAndIdxVar(pfs, iterCall, gotSA);
+    resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -887,7 +910,9 @@ void lowerForallStmts() {
     PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
     PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 
-    currentAstLoc = fs->loopBody()->astloc; // can't do SET_LINENO
+   { // shadow the above SET_LINENO
+    SET_LINENO(fs->loopBody());
+
     ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
     PARBlock->insertAtTail(PARBody);
@@ -898,11 +923,12 @@ void lowerForallStmts() {
     while (Expr* def = fs->inductionVariables().tail)
       userBody->insertAtHead(def->remove());
 
-    while (Expr* ivdef = fs->intentVariables().tail)
-      fs->loopBody()->insertAtHead(ivdef->remove());
+    while (Expr* svdef = fs->shadowVariables().tail)
+      fs->loopBody()->insertAtHead(svdef->remove());
 
     userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
     fs->loopBody()->flattenAndRemove();    // into PARBody
+   }
   }
 }
