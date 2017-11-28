@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -52,7 +52,7 @@ How to use replicated variables
 
 .. code-block:: chapel
 
-    use UtilReplicatedVar;
+    use ReplicatedVar;
 
     // declare a replicated variable of the type 'MyType'
     var myRepVar: [rcDomain] MyType;
@@ -96,13 +96,9 @@ and/or sparse), make that array's domain associative over int.
 Declarations
 ----------------------------------------------
 */
-module UtilReplicatedVar {
+module ReplicatedVar {
 
 use ReplicatedDist;
-
-compilerWarning(
-  "Module 'UtilReplicatedVar' has been deprecated and demoted to the package 'ReplicatedVar'"
-);
 
 private const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,
@@ -271,4 +267,4 @@ proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
   writeln("\ncollected copies of myRepVar are:\n", collected);
 }
 
-} // module UtilReplicatedVar
+} // module ReplicatedVar
