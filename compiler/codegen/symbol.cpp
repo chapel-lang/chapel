@@ -954,7 +954,7 @@ void TypeSymbol::codegenMetadata() {
       isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     llvmTbaaTypeDescriptor =
-      info->mdHelper->createTBAAScalarTypeNode(cname, parent, 0);
+      info->mdHelper->createTBAAScalarTypeNode(cname, parent);
   } else if (ct && !isUnion(type) && !hasFlag(FLAG_STAR_TUPLE)) {
     // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
     llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
