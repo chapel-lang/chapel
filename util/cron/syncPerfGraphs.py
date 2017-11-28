@@ -28,21 +28,25 @@ def main():
         'sync the graphs to.')
     parser.add_argument('--logFile','-l', metavar='FILE', default=sys.stdout,
         type=argparse.FileType('w'), help='log file (default is stdout)')
+    parser.add_argument('--numRetries','-r',  metavar='N', default=5,
+        type=int, help='max number of retries for sync command')
+
     args = parser.parse_args()
 
     dirToSync = args.dirToSync
     destDir = args.destDir
     logFile = args.logFile
+    numRetries = args.numRetries
 
     with contextlib.closing(logFile):
-        sync = syncToDreamhost(dirToSync, destDir, logFile)
+        sync = syncToDreamhost(dirToSync, destDir, logFile, numRetries)
     exit(sync)
 
 # Send the performance graphs to dreamhost
 # Returns the status of the rsync command (0 on success)
 # or 124 (value that doesn't conflict with rsync exit codes) if the SUCCESS
 # file wasn't found in the directory that is being synced
-def syncToDreamhost(dirToSync, destDir, logFile):
+def syncToDreamhost(dirToSync, destDir, logFile, numRetries):
 
     logFile.write('Dreamhost sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
 
@@ -69,7 +73,16 @@ def syncToDreamhost(dirToSync, destDir, logFile):
     rsyncDest = '{0}:{1}'.format(webHost, perfDir)
     rsyncCommand = 'rsync -avz -e ssh {0} {1}'.format(dirToSync, rsyncDest)
     rsyncDesc = 'rsync perf graphs to dreamhost'
-    return executeCommand(rsyncCommand, rsyncDesc, logFile)
+    rsyncRet = 0
+    for _ in range(numRetries):
+        rsyncRet = executeCommand(rsyncCommand, rsyncDesc, logFile)
+        if rsyncRet == 0:
+            break
+        else:
+            delay = 30
+            logFile.write('Waiting {0} seconds before retrying sync...\n\n'.format(delay))
+            time.sleep(delay)
+    return rsyncRet
 
 
 # Helper function for execute a command and log results/progress
