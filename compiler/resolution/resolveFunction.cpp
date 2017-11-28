@@ -704,15 +704,12 @@ static void      instantiateDefaultConstructor(FnSymbol* fn);
 static FnSymbol* instantiateBase(FnSymbol* fn);
 
 static void resolveTypeConstructor(FnSymbol* fn) {
-  if (AggregateType* at = toAggregateType(fn->retType)) {
-    setScalarPromotionType(at);
+  AggregateType* at = toAggregateType(fn->retType);
 
-    if (developer == false) {
-      fixTypeNames(at);
-    }
+  setScalarPromotionType(at);
 
-  } else {
-    INT_FATAL(fn, "Constructor has no class type");
+  if (developer == false) {
+    fixTypeNames(at);
   }
 
   forv_Vec(Type, parent, fn->retType->dispatchParents) {
@@ -723,24 +720,22 @@ static void resolveTypeConstructor(FnSymbol* fn) {
     }
   }
 
-  if (AggregateType* at = toAggregateType(fn->retType)) {
-    for_fields(field, at) {
-      if (AggregateType* fct = toAggregateType(field->type)) {
-        resolveDefaultTypeConstructor(fct);
-      }
+  for_fields(field, at) {
+    if (AggregateType* fct = toAggregateType(field->type)) {
+      resolveDefaultTypeConstructor(fct);
     }
+  }
 
-    if (at->instantiatedFrom == NULL) {
-      instantiateDefaultConstructor(fn);
+  if (at->instantiatedFrom == NULL) {
+    instantiateDefaultConstructor(fn);
 
-    } else if (at->initializerStyle          != DEFINES_INITIALIZER &&
-               at->wantsDefaultInitializer() == false) {
-      instantiateDefaultConstructor(fn);
-    }
+  } else if (at->initializerStyle          != DEFINES_INITIALIZER &&
+             at->wantsDefaultInitializer() == false) {
+    instantiateDefaultConstructor(fn);
+  }
 
-    // resolve destructor
-    if (at->hasDestructor()                 == false &&
-        at->symbol->hasFlag(FLAG_REF)       == false &&
+  if (at->hasDestructor() == false) {
+    if (at->symbol->hasFlag(FLAG_REF)       == false &&
         isTupleContainingOnlyReferences(at) == false) {
       BlockStmt* block = new BlockStmt();
       VarSymbol* tmp   = newTemp(at);
@@ -761,9 +756,6 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 
       tmp->defPoint->remove();
     }
-
-  } else {
-    instantiateDefaultConstructor(fn);
   }
 }
 
