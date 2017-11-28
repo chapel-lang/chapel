@@ -699,6 +699,7 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 
 static void      setScalarPromotionType(AggregateType* at);
 static void      fixTypeNames(AggregateType* at);
+static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
 static FnSymbol* instantiateBase(FnSymbol* fn);
 
@@ -716,12 +717,8 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 
   forv_Vec(Type, parent, fn->retType->dispatchParents) {
     if (AggregateType* pt = toAggregateType(parent)) {
-      if (pt != dtObject &&  pt->defaultTypeConstructor != NULL) {
-        resolveSignature(pt->defaultTypeConstructor);
-
-        if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
-          resolveFunction(pt->defaultTypeConstructor);
-        }
+      if (pt != dtObject) {
+        resolveDefaultTypeConstructor(pt);
       }
     }
   }
@@ -729,13 +726,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
   if (AggregateType* at = toAggregateType(fn->retType)) {
     for_fields(field, at) {
       if (AggregateType* fct = toAggregateType(field->type)) {
-        if (fct->defaultTypeConstructor != NULL) {
-          resolveSignature(fct->defaultTypeConstructor);
-
-          if (resolvedFormals.set_in(fct->defaultTypeConstructor)) {
-            resolveFunction(fct->defaultTypeConstructor);
-          }
-        }
+        resolveDefaultTypeConstructor(fct);
       }
     }
 
@@ -800,6 +791,16 @@ static void fixTypeNames(AggregateType* at) {
 
   } else if (isRecordWrappedType(at) == true) {
     at->symbol->name = at->getField("_instance")->type->symbol->name;
+  }
+}
+
+static void resolveDefaultTypeConstructor(AggregateType* at) {
+  if (at->defaultTypeConstructor != NULL) {
+    resolveSignature(at->defaultTypeConstructor);
+
+    if (resolvedFormals.set_in(at->defaultTypeConstructor)) {
+      resolveFunction(at->defaultTypeConstructor);
+    }
   }
 }
 
