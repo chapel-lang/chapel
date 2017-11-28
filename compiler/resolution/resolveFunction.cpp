@@ -453,70 +453,64 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
 *                                                                             *
 * This supports the 'copy-out' rule for returning arrays.                     *
 *                                                                             *
+* BHARSH: Should this also check if fn->retTag != RET_TYPE?                   *
+*                                                                             *
 ************************************** | *************************************/
 
 static void insertUnrefForArrayReturn(FnSymbol* fn) {
-  Symbol* ret = fn->getReturnSymbol();
+  if (fn->hasFlag(FLAG_CONSTRUCTOR)            == false &&
+      fn->hasFlag(FLAG_NO_COPY_RETURN)         == false &&
+      fn->hasFlag(FLAG_UNALIAS_FN)             == false &&
+      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)   == false &&
+      fn->hasFlag(FLAG_INIT_COPY_FN)           == false &&
+      fn->hasFlag(FLAG_AUTO_COPY_FN)           == false &&
+      fn->hasFlag(FLAG_IF_EXPR_FN)             == false &&
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false) {
+    Symbol* ret = fn->getReturnSymbol();
 
-  // BHARSH: Should this also check if fn->retTag != RET_TYPE?
-  //
-  // Do nothing for these kinds of functions:
-  if (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-      fn->hasFlag(FLAG_NO_COPY_RETURN) ||
-      fn->hasFlag(FLAG_UNALIAS_FN) ||
-      fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
-      fn->hasFlag(FLAG_INIT_COPY_FN) ||
-      fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-      fn->hasFlag(FLAG_IF_EXPR_FN) ||
-      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY)) {
-    return;
-  }
+    for_SymbolSymExprs(se, ret) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isPrimitive(PRIM_MOVE) == true &&
+            call->get(1)                 == se) {
+          Type* rhsType = call->get(2)->typeInfo();
 
-  for_SymbolSymExprs(se, ret) {
-    if (CallExpr* call = toCallExpr(se->parentExpr)) {
-      if (call->isPrimitive(PRIM_MOVE) && se == call->get(1)) {
-        Type* rhsType = call->get(2)->typeInfo();
+          // TODO: Should we check if the RHS is a symbol with
+          // 'no auto destroy' on it? If it is, then we'd be copying
+          // the RHS and it would never be destroyed...
+          if (rhsType->symbol->hasFlag(FLAG_ARRAY) == true &&
+              isTypeExpr(call->get(2))             == false) {
+            Expr*      rhs       = call->get(2)->remove();
+            VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+            CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
+            CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+            FnSymbol*  unrefFn   = NULL;
 
-        // TODO: Should we check if the RHS is a symbol with 'no auto
-        // destroy' on it? If it is, then we'd be copying the RHS and it
-        // would never be destroyed...
-        if (rhsType->symbol->hasFlag(FLAG_ARRAY) == true &&
-            isTypeExpr(call->get(2))             == false) {
-          Expr*      origRHS = call->get(2)->remove();
-          VarSymbol* tmp     = newTemp(arrayUnrefName, rhsType);
+            // Used by callDestructors to catch assignment from
+            // a ref to 'tmp' when we know we don't want to copy.
+            tmp->addFlag(FLAG_NO_COPY);
 
-          // Used by callDestructors to catch assignment from a ref to
-          // 'tmp' when we know we don't want to copy.
-          tmp->addFlag(FLAG_NO_COPY);
+            call->insertBefore(new DefExpr(tmp));
+            call->insertBefore(initTmp);
 
-          call->insertBefore(new DefExpr(tmp));
+            call->insertAtTail(unrefCall);
 
-          CallExpr* init_unref_tmp = new CallExpr(PRIM_MOVE,
-                                                  tmp,
-                                                  origRHS->copy());
-          call->insertBefore(init_unref_tmp);
+            unrefFn = resolveNormalCall(unrefCall);
 
-          CallExpr* unrefCall = new CallExpr("chpl__unref", tmp);
+            resolveFunction(unrefFn);
 
-          call->insertAtTail(unrefCall);
+            // Relies on the ArrayView variant having
+            // the 'unref fn' flag in ChapelArray.
+            if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+              // If the function does not have this flag, this must
+              // be a non-view array. Remove the unref call.
+              unrefCall->replace(rhs->copy());
 
-          FnSymbol* unrefFn = resolveNormalCall(unrefCall);
+              tmp->defPoint->remove();
 
-          resolveFunction(unrefFn);
+              initTmp->remove();
 
-          // Relies on the ArrayView variant having the 'unref fn' flag in
-          // ChapelArray.
-          if (unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
-            // If the function does not have this flag, we must be dealing with
-            // a non-view array, so we can remove the useless unref call.
-            unrefCall->replace(origRHS->copy());
-
-            // Remove now-useless AST
-            tmp->defPoint->remove();
-
-            init_unref_tmp->remove();
-
-            INT_ASSERT(unrefCall->inTree() == false);
+              INT_ASSERT(unrefCall->inTree() == false);
+            }
           }
         }
       }
@@ -570,6 +564,7 @@ static void protoIteratorClass(FnSymbol* fn) {
   makeRefType(iRecord);
 
   normalize(getIter);
+
   resolveFunction(getIter);
 }
 
