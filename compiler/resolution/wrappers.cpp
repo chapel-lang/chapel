@@ -414,6 +414,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
         wrapper->insertFormalAtTail(newFormal);
         ret.usedFormals.push_back(std::make_pair(fnFormal, newFormal));
         copyMap.put(fnFormal, newFormal);
+
+        // Propagate a param value
+        if (Symbol* x = paramMap.get(fnFormal))
+          paramMap.put(newFormal, x);
+        // Propagate a type value
+        if (fnFormal->hasFlag(FLAG_TYPE_VARIABLE))
+          newFormal->addFlag(FLAG_TYPE_VARIABLE);
       }
     }
   }
