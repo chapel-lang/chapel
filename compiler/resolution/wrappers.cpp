@@ -1733,6 +1733,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo& info) {
     wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
   }
 
+  if (fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
+    wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+  }
+
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
 
   if (fn->throwsError())

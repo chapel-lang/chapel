@@ -1,3 +1,0 @@
-bug: function that doesn't return can be assigned to variable when promoted
-
-Issue #7866
