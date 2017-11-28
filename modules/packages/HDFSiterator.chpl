@@ -25,7 +25,7 @@
  */
 module HDFSiterator {
 
-use HDFS, UtilReplicatedVar, RecordParser;
+use HDFS, ReplicatedVar, RecordParser;
 
 /* Iterate through an HDFS file (available in the default configured
    HDFS server) and yield records matching a regular expression.
