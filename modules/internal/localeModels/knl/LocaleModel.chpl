@@ -177,7 +177,7 @@ module LocaleModel {
 
     proc chpl_id() return parent.chpl_id(); // top-level node id
     proc chpl_localeid() {
-      return chpl_buildLocaleID(parent.chpl_id(), sid);
+      return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
     proc chpl_name() return mlName;
 
@@ -238,7 +238,7 @@ module LocaleModel {
 
     proc chpl_id() return parent.chpl_id(); // top-level node id
     proc chpl_localeid() {
-      return chpl_buildLocaleID(parent.chpl_id(), sid);
+      return chpl_buildLocaleID(parent.chpl_id():chpl_nodeID_t, sid);
     }
     proc chpl_name() return ndName;
 
