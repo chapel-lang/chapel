@@ -18,6 +18,7 @@
  */
 
 #include "llvmDebug.h"
+#include "llvmVer.h"
 
 #include "alist.h"
 #include "clangUtil.h"

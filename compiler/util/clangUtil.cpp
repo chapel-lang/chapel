@@ -80,6 +80,7 @@
 #include "build.h"
 
 #include "llvmDebug.h"
+#include "llvmVer.h"
 
 typedef Type ChapelType;
 
