@@ -48,9 +48,6 @@ static void resolveSpecifiedReturnType(FnSymbol* fn);
 
 static void markIterator(FnSymbol* fn);
 
-static void setScalarPromotionType(AggregateType* at);
-static void fixTypeNames(AggregateType* at);
-
 static void insertUnrefForArrayReturn(FnSymbol* fn);
 
 static void protoIteratorClass(FnSymbol* fn);
@@ -331,20 +328,6 @@ void resolveFunction(FnSymbol* fn) {
       resolveBlockStmt(fn->body);
 
       if (tryFailure == false) {
-        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-          if (AggregateType* ct = toAggregateType(fn->retType)) {
-
-            setScalarPromotionType(ct);
-
-            if (developer == false) {
-              fixTypeNames(ct);
-            }
-
-          } else {
-            INT_FATAL(fn, "Constructor has no class type");
-          }
-        }
-
         insertUnrefForArrayReturn(fn);
 
         resolveReturnType(fn);
@@ -460,42 +443,6 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
 
   return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static void setScalarPromotionType(AggregateType* at) {
-  for_fields(field, at) {
-    if (strcmp(field->name, "_promotionType") == 0) {
-      at->scalarPromotionType = field->type;
-    }
-  }
-}
-
-static void fixTypeNames(AggregateType* at) {
-  const char defaultDomainName[] = "DefaultRectangularDom";
-
-  if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
-      isArrayClass(at)                     ==  true) {
-    const char* domainType = at->getField("dom")->type->symbol->name;
-    const char* eltType    = at->getField("eltType")->type->symbol->name;
-
-    at->symbol->name = astr("[", domainType, "] ", eltType);
-  }
-
-  if (at->instantiatedFrom                                          != NULL &&
-      strcmp(at->instantiatedFrom->symbol->name, defaultDomainName) == 0) {
-    at->symbol->name = astr("domain",
-                            at->symbol->name + strlen(defaultDomainName));
-  }
-
-  if (isRecordWrappedType(at) == true) {
-    at->symbol->name = at->getField("_instance")->type->symbol->name;
-  }
 }
 
 /************************************* | **************************************
@@ -755,14 +702,26 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
+static void      setScalarPromotionType(AggregateType* at);
+static void      fixTypeNames(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
 static FnSymbol* instantiateBase(FnSymbol* fn);
 
 static void resolveTypeConstructor(FnSymbol* fn) {
+  if (AggregateType* at = toAggregateType(fn->retType)) {
+    setScalarPromotionType(at);
+
+    if (developer == false) {
+      fixTypeNames(at);
+    }
+
+  } else {
+    INT_FATAL(fn, "Constructor has no class type");
+  }
+
   forv_Vec(Type, parent, fn->retType->dispatchParents) {
     if (AggregateType* pt = toAggregateType(parent)) {
-
-      if (pt!= dtObject &&  pt->defaultTypeConstructor != NULL) {
+      if (pt != dtObject &&  pt->defaultTypeConstructor != NULL) {
         resolveSignature(pt->defaultTypeConstructor);
 
         if (resolvedFormals.set_in(pt->defaultTypeConstructor)) {
@@ -772,8 +731,8 @@ static void resolveTypeConstructor(FnSymbol* fn) {
     }
   }
 
-  if (AggregateType* ct = toAggregateType(fn->retType)) {
-    for_fields(field, ct) {
+  if (AggregateType* at = toAggregateType(fn->retType)) {
+    for_fields(field, at) {
       if (AggregateType* fct = toAggregateType(field->type)) {
         if (fct->defaultTypeConstructor != NULL) {
           resolveSignature(fct->defaultTypeConstructor);
@@ -785,20 +744,20 @@ static void resolveTypeConstructor(FnSymbol* fn) {
       }
     }
 
-    if (ct->instantiatedFrom == NULL) {
+    if (at->instantiatedFrom == NULL) {
       instantiateDefaultConstructor(fn);
 
-    } else if (ct->initializerStyle          != DEFINES_INITIALIZER &&
-               ct->wantsDefaultInitializer() == false) {
+    } else if (at->initializerStyle          != DEFINES_INITIALIZER &&
+               at->wantsDefaultInitializer() == false) {
       instantiateDefaultConstructor(fn);
     }
 
     // resolve destructor
-    if (ct->hasDestructor()                 == false &&
-        ct->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(ct) == false) {
+    if (at->hasDestructor()                 == false &&
+        at->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(at) == false) {
       BlockStmt* block = new BlockStmt();
-      VarSymbol* tmp   = newTemp(ct);
+      VarSymbol* tmp   = newTemp(at);
       CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
       // In case resolveCall drops other stuff into the tree ahead
@@ -810,7 +769,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 
       resolveCallAndCallee(call);
 
-      ct->setDestructor(call->resolvedFunction());
+      at->setDestructor(call->resolvedFunction());
 
       block->remove();
 
@@ -819,6 +778,33 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 
   } else {
     instantiateDefaultConstructor(fn);
+  }
+}
+
+static void setScalarPromotionType(AggregateType* at) {
+  for_fields(field, at) {
+    if (strcmp(field->name, "_promotionType") == 0) {
+      at->scalarPromotionType = field->type;
+    }
+  }
+}
+
+static void fixTypeNames(AggregateType* at) {
+  const char*    domName = "DefaultRectangularDom";
+  AggregateType* from    = at->instantiatedFrom;
+
+  if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
+      isArrayClass(at)                     ==  true) {
+    const char* domainType = at->getField("dom")->type->symbol->name;
+    const char* eltType    = at->getField("eltType")->type->symbol->name;
+
+    at->symbol->name = astr("[", domainType, "] ", eltType);
+
+  } else if (from != NULL && strcmp(from->symbol->name, domName) == 0) {
+    at->symbol->name = astr("domain", at->symbol->name + strlen(domName));
+
+  } else if (isRecordWrappedType(at) == true) {
+    at->symbol->name = at->getField("_instance")->type->symbol->name;
   }
 }
 
@@ -1561,7 +1547,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 ************************************** | *************************************/
 
 void ensureInMethodList(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_METHOD) && fn->_this != NULL) {
+  if (fn->hasFlag(FLAG_METHOD) == true && fn->_this != NULL) {
     Type* thisType = fn->_this->type->getValType();
     bool  found    = false;
 
