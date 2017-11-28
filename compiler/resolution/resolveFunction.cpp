@@ -46,7 +46,7 @@ static void resolveFormals(FnSymbol* fn);
 
 static void resolveSpecifiedReturnType(FnSymbol* fn);
 
-static void markIfIterator(FnSymbol* fn);
+static void markIterator(FnSymbol* fn);
 
 static void setScalarPromotionType(AggregateType* at);
 static void fixTypeNames(AggregateType* at);
@@ -314,25 +314,23 @@ void resolveFunction(FnSymbol* fn) {
       gdbShouldBreakHere();
     }
 
-    if (fn->hasFlag(FLAG_EXTERN) == true) {
-      fn->addFlag(FLAG_RESOLVED);
+    fn->addFlag(FLAG_RESOLVED);
 
+    if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
+
       resolveReturnType(fn);
 
     } else {
-      fn->addFlag(FLAG_RESOLVED);
-
-      markIfIterator(fn);
+      if (fn->isIterator() == true) {
+        markIterator(fn);
+      }
 
       insertFormalTemps(fn);
 
       resolveBlockStmt(fn->body);
 
-      if (tryFailure == true) {
-        fn->removeFlag(FLAG_RESOLVED);
-
-      } else {
+      if (tryFailure == false) {
         if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
           if (AggregateType* ct = toAggregateType(fn->retType)) {
 
@@ -355,18 +353,21 @@ void resolveFunction(FnSymbol* fn) {
 
         if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
           protoIteratorClass(fn);
-        }
 
-        if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
           resolveTypeConstructor(fn);
-        }
 
-        if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
-            fn->getReturnSymbol()              == gTrue) {
+        } else if (fn->hasFlag(FLAG_PRIVATIZED_CLASS) == true &&
+                   fn->getReturnSymbol()              == gTrue) {
           fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
         }
 
-        ensureInMethodList(fn);
+        if (fn->hasFlag(FLAG_METHOD) == true && fn->_this != NULL) {
+          ensureInMethodList(fn);
+        }
+
+      } else {
+        fn->removeFlag(FLAG_RESOLVED);
       }
     }
   }
@@ -382,7 +383,7 @@ static bool isFollowerIterator(FnSymbol* fn);
 static bool isVecIterator(FnSymbol* fn);
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 
-static void markIfIterator(FnSymbol* fn) {
+static void markIterator(FnSymbol* fn) {
   //
   // Mark serial loops that yield inside of follower, standalone, and
   // explicitly vectorized iterators as order independent. By using a
@@ -402,7 +403,7 @@ static void markIfIterator(FnSymbol* fn) {
     collectCallExprs(fn->body, callExprs);
 
     for_vector(CallExpr, call, callExprs) {
-      if (call->isPrimitive(PRIM_YIELD)) {
+      if (call->isPrimitive(PRIM_YIELD) == true) {
         if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
           if (loop->isCoforallLoop() == false) {
             loop->orderIndependentSet(true);
@@ -413,12 +414,13 @@ static void markIfIterator(FnSymbol* fn) {
   }
 
   //
-  // Mark leader and standalone parallel iterators for inlining. Also stash a
-  // pristine copy of the iterator (required by forall intents)
+  // Mark leader and standalone parallel iterators for inlining.
+  // Also stash a pristine copy of the iterator (required by forall intents)
   //
-  if (isLeaderIterator(fn) || isStandaloneIterator(fn)) {
+  if (isLeaderIterator(fn)     == true ||
+      isStandaloneIterator(fn) == true) {
     fn->addFlag(FLAG_INLINE_ITERATOR);
-    stashPristineCopyOfLeaderIter(fn, /*ignore_isResolved:*/ true);
+    stashPristineCopyOfLeaderIter(fn, true);
   }
 }
 
