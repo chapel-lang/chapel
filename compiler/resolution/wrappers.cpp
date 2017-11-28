@@ -59,6 +59,9 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 
+#include <map>
+#include <utility>
+
 static FnSymbol*  wrapDefaultedFormals(
                                FnSymbol*                fn,
                                CallInfo&                info,
@@ -84,6 +87,14 @@ static FnSymbol*  promotionWrap(FnSymbol* fn,
 static FnSymbol*  buildEmptyWrapper(FnSymbol* fn, CallInfo& info);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
+
+typedef struct DefaultExprFnEntry_s {
+  FnSymbol* defaultExprFn;
+  std::vector<std::pair<ArgSymbol*,ArgSymbol*> > usedFormals;
+} DefaultExprFnEntry;
+
+typedef std::map<ArgSymbol*, DefaultExprFnEntry> formalToDefaultExprEntryMap;
+formalToDefaultExprEntryMap formalToDefaultExprEntry;
 
 /************************************* | **************************************
 *                                                                             *
@@ -290,15 +301,216 @@ static void addDefaultedActuals(FnSymbol *fn,
   }
 }
 
+static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
+                                                 ArgSymbol* formal) {
+
+  DefaultExprFnEntry ret;
+
+  SET_LINENO(formal);
+
+
+  // Set up the wrapper function
+  FnSymbol* wrapper = new FnSymbol(astr(fn->name, "_default_", formal->name));
+  ret.defaultExprFn = wrapper;
+
+  wrapper->addFlag(FLAG_WRAPPER);
+
+  wrapper->addFlag(FLAG_INVISIBLE_FN);
+
+  wrapper->addFlag(FLAG_INLINE);
+
+  wrapper->retTag = RET_VALUE;
+
+  if (fn->hasFlag(FLAG_METHOD)) {
+    wrapper->addFlag(FLAG_METHOD);
+  }
+
+  if (fn->hasFlag(FLAG_METHOD_PRIMARY)) {
+    wrapper->addFlag(FLAG_METHOD_PRIMARY);
+  }
+
+  wrapper->instantiationPoint = fn->instantiationPoint;
+
+  if (fn->hasFlag(FLAG_LAST_RESORT)) {
+    wrapper->addFlag(FLAG_LAST_RESORT);
+  }
+
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
+    wrapper->addFlag(FLAG_WAS_COMPILER_GENERATED);
+  }
+
+  wrapper->addFlag(FLAG_COMPILER_GENERATED);
+  wrapper->addFlag(FLAG_MAYBE_PARAM);
+  wrapper->addFlag(FLAG_MAYBE_TYPE);
+
+  if (fn->throwsError())
+    wrapper->throwsErrorInit();
+
+  if (formal->intent == INTENT_TYPE ||
+      formal->hasFlag(FLAG_TYPE_VARIABLE))
+    wrapper->retTag = RET_TYPE;
+
+  if (formal->intent == INTENT_PARAM)
+    wrapper->retTag = RET_PARAM;
+
+  SymbolMap copyMap;
+
+  // Set up the arguments
+  if (fn->hasFlag(FLAG_METHOD) && !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+    // Set up mt and this arguments
+    Symbol* thisArg = fn->_this;
+    ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisArg->type);
+    _this->addFlag(FLAG_ARG_THIS);
+    wrapper->insertFormalAtTail(mt);
+    wrapper->insertFormalAtTail(_this);
+    wrapper->_this = _this;
+    copyMap.put(thisArg, _this);
+  }
+
+  // Add any arguments that the expression depended upon
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(formal->defaultExpr, symExprs);
+
+  for_formals(fnFormal, fn) {
+    bool usedFormal = false;
+    for_vector(SymExpr, se, symExprs) {
+      if (se->symbol() == fnFormal) {
+        usedFormal = true;
+        break;
+      }
+    }
+
+    if (usedFormal) {
+      if (fnFormal != fn->_this) {
+        // _this handled separately
+        // add formal if it's not _this
+
+        // Always pass the formal by ref/const ref
+        IntentTag intent = INTENT_BLANK;
+        switch (fnFormal->intent) {
+          case INTENT_IN:
+          case INTENT_CONST:
+          case INTENT_CONST_IN:
+          case INTENT_CONST_REF:
+            intent = INTENT_CONST_REF;
+            break;
+          case INTENT_REF_MAYBE_CONST:
+          case INTENT_PARAM:
+          case INTENT_TYPE:
+          case INTENT_BLANK:
+            intent = fnFormal->intent;
+            break;
+          case INTENT_OUT:
+          case INTENT_INOUT:
+          case INTENT_REF:
+            intent = INTENT_REF;
+            break;
+          // intentionally no default
+        }
+
+        ArgSymbol* newFormal = NULL;
+        newFormal = new ArgSymbol(intent, fnFormal->name, fnFormal->type);
+        wrapper->insertFormalAtTail(newFormal);
+        ret.usedFormals.push_back(std::make_pair(fnFormal, newFormal));
+        copyMap.put(fnFormal, newFormal);
+      }
+    }
+  }
+
+  // Fill in the body of the function
+
+  // TODO: try removing temp since we normalize anyway
+  VarSymbol* temp   = newTemp(astr("temp"));
+  temp->addFlag(FLAG_RVV);
+
+  IntentTag  intent = formal->intent;
+  if (formal->type   != dtTypeDefaultToken &&
+      formal->type   != dtMethodToken      &&
+      formal->intent == INTENT_BLANK) {
+    intent = blankIntentForType(formal->type);
+  }
+
+  if (intent != INTENT_INOUT && intent != INTENT_OUT) {
+    temp->addFlag(FLAG_MAYBE_PARAM);
+    temp->addFlag(FLAG_EXPR_TEMP);
+  }
+
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    temp->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  wrapper->insertAtTail(new DefExpr(temp));
+
+  BlockStmt* block = new BlockStmt();
+  wrapper->insertAtTail(block);
+
+  if (defaultedFormalUsesDefaultForType(formal) == true) {
+    defaultedFormalApplyDefaultForType(formal, block, temp);
+
+  } else if (intent == INTENT_OUT) {
+    defaultedFormalApplyDefaultForType(formal, block, temp);
+
+  } else {
+    defaultedFormalApplyDefaultValue(fn, formal, intent, block, temp);
+  }
+
+  // Update references to previous arguments to use the
+  // default-expr-function formals
+  update_symbols(block, &copyMap);
+
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, temp));
+
+  // Add the function to the tree
+  fn->defPoint->insertAfter(new DefExpr(wrapper));
+
+  if (wrapper->id == 764774)
+    gdbShouldBreakHere();
+
+  normalize(block);
+  resolveBlockStmt(block);
+  block->flattenAndRemove();
+
+  // Now we know if 'temp' is a param or a type.
+  if (temp->hasFlag(FLAG_TYPE_VARIABLE))
+    wrapper->retTag = RET_TYPE;
+  else if (paramMap.get(temp))
+    wrapper->retTag = RET_PARAM;
+
+  // Finish resolving the function
+  resolveSignatureAndFunction(wrapper);
+
+  return ret;
+}
+
+
 static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      ArgSymbol* formal,
                                      CallExpr*  call,
                                      BlockStmt* body,
                                      SymbolMap& copyMap) {
 
+  // Find the function we are to call, and call it
+  DefaultExprFnEntry* entry = NULL;
+  formalToDefaultExprEntryMap::iterator it;
+
+  it = formalToDefaultExprEntry.find(formal);
+  if (it != formalToDefaultExprEntry.end()) {
+    // Use the existing entry
+    entry = &it->second;
+  } else {
+    // Add a new entry
+    entry = & formalToDefaultExprEntry.insert(
+                 std::make_pair(formal, buildDefaultedActualFn(fn, formal))
+               ).first->second;
+  }
+
+  INT_ASSERT(entry);
+
   // TODO - can't we get the param formals out of paramMap?
   // Or fn->substitutions?
 
+  // TODO - can this simplify to something more like insertWrappedCall?
   SET_LINENO(formal);
 
   IntentTag  intent = formal->intent;
@@ -323,15 +535,29 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
 
   body->insertAtTail(new DefExpr(temp));
 
-  if (defaultedFormalUsesDefaultForType(formal) == true) {
-    defaultedFormalApplyDefaultForType(formal, body, temp);
+  // Add a call to the defaulted formals fn passing in the
+  // appropriate actual values.
+  CallExpr* newCall = new CallExpr(entry->defaultExprFn);
 
-  } else if (intent == INTENT_OUT) {
-    defaultedFormalApplyDefaultForType(formal, body, temp);
-
-  } else {
-    defaultedFormalApplyDefaultValue(fn, formal, intent, body, temp);
+  // Add method token, this if needed
+  if (fn->hasFlag(FLAG_METHOD) && !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+    // Set up mt and _this arguments
+    newCall->insertAtTail(gMethodToken);
+    Symbol* usedFormal = fn->_this;
+    Symbol* mapTo = copyMap.get(usedFormal);
+    INT_ASSERT(mapTo); // Should have another actual!
+    newCall->insertAtTail(new SymExpr(mapTo));
   }
+
+  size_t nUsedFormals = entry->usedFormals.size();
+  for (size_t i = 0; i < nUsedFormals; i++) {
+    Symbol* usedFormal = entry->usedFormals[i].first;
+    Symbol* mapTo = copyMap.get(usedFormal);
+    INT_ASSERT(mapTo); // Should have another actual!
+    newCall->insertAtTail(new SymExpr(mapTo));
+  }
+
+  body->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(temp), newCall));
 
   // Now return the expression to use as the defaulted argument
   return temp;
