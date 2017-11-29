@@ -184,7 +184,7 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
     llvm::Type *id_type = id_type_g.type;
     llvm::GlobalVariable * gv = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(name, id_type));
-    gv->setInitializer(info->builder->getInt32(id));
+    gv->setInitializer(info->irBuilder->getInt32(id));
     gv->setConstant(true);
     info->lvt->addGlobalValue(name, gv, GEN_PTR, ! is_signed(CLASS_ID_TYPE));
 #endif
@@ -220,7 +220,7 @@ genGlobalInt(const char* cname, int value, bool isHeader) {
     llvm::GlobalVariable *globalInt = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(
           cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
-    globalInt->setInitializer(info->builder->getInt32(value));
+    globalInt->setInitializer(info->irBuilder->getInt32(value));
     globalInt->setConstant(true);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
 #endif
@@ -236,7 +236,7 @@ static void genGlobalInt32(const char *cname, int value) {
     llvm::GlobalVariable *globalInt =
         llvm::cast<llvm::GlobalVariable>(info->module->getOrInsertGlobal(
             cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
-    globalInt->setInitializer(info->builder->getInt32(value));
+    globalInt->setInitializer(info->irBuilder->getInt32(value));
     globalInt->setConstant(true);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false);
 #endif
@@ -550,7 +550,7 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 #ifdef HAVE_LLVM
       INT_ASSERT(funcPtrType.type);
       llvm::Function *func = getFunctionLLVM(fn->cname);
-      gen.val = info->builder->CreatePointerCast(func, funcPtrType.type);
+      gen.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
 #endif
     }
     ftable.push_back(gen);
@@ -713,7 +713,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 #ifdef HAVE_LLVM
               INT_ASSERT(funcPtrType.type);
               llvm::Function *func = getFunctionLLVM(vfn->cname);
-              fnAddress.val = info->builder->CreatePointerCast(func, funcPtrType.type);
+              fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
 #endif
             }
 
@@ -1251,7 +1251,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       INT_ASSERT(se);
 
       global_serializeTable.push_back(llvm::cast<llvm::Constant>(
-            info->builder->CreatePointerCast(
+            info->irBuilder->CreatePointerCast(
               info->lvt->getValue(se->symbol()->cname).val,
               global_serializeTableEntryType)));
     }
@@ -1729,15 +1729,15 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
     std::vector<llvm::Constant *> private_broadcastTable;
     private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->builder->CreatePointerCast(
+          info->irBuilder->CreatePointerCast(
             info->lvt->getValue("chpl_verbose_comm").val,
             private_broadcastTableEntryType)));
     private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->builder->CreatePointerCast(
+          info->irBuilder->CreatePointerCast(
             info->lvt->getValue("chpl_comm_diagnostics").val,
             private_broadcastTableEntryType)));
     private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-          info->builder->CreatePointerCast(
+          info->irBuilder->CreatePointerCast(
             info->lvt->getValue("chpl_verbose_mem").val,
             private_broadcastTableEntryType)));
 
@@ -1748,7 +1748,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         INT_ASSERT(se);
 
         private_broadcastTable.push_back(llvm::cast<llvm::Constant>(
-              info->builder->CreatePointerCast(
+              info->irBuilder->CreatePointerCast(
                 info->lvt->getValue(se->symbol()->cname).val,
                 private_broadcastTableEntryType)));
         // To preserve operand order, this should be insertAtTail.
@@ -1861,17 +1861,17 @@ codegen_config() {
     llvm::BasicBlock *createConfigBlock =
       llvm::BasicBlock::Create(info->module->getContext(),
                                "entry", createConfigFunc);
-    info->builder->SetInsertPoint(createConfigBlock);
+    info->irBuilder->SetInsertPoint(createConfigBlock);
 
     llvm::Function *initConfigFunc = getFunctionLLVM("initConfigVarTable");
-    info->builder->CreateCall(initConfigFunc, {} );
+    info->irBuilder->CreateCall(initConfigFunc, {} );
 
     llvm::Function *installConfigFunc = getFunctionLLVM("installConfigVar");
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
         std::vector<llvm::Value *> args (3);
-        args[0] = info->builder->CreateLoad(
+        args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
         Type* type = var->type;
@@ -1884,22 +1884,22 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        args[1] = info->builder->CreateLoad(
+        args[1] = info->irBuilder->CreateLoad(
             new_CStringSymbol(type->symbol->name)->codegen().val);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          args[2] = info->builder->CreateLoad(
+          args[2] = info->irBuilder->CreateLoad(
               new_CStringSymbol("Built-in")->codegen().val);
         }
         else {
-          args[2] =info->builder->CreateLoad(
+          args[2] =info->irBuilder->CreateLoad(
               new_CStringSymbol(var->getModule()->name)->codegen().val);
         }
 
-        info->builder->CreateCall(installConfigFunc, args);
+        info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
-    info->builder->CreateRetVoid();
+    info->irBuilder->CreateRetVoid();
     //llvm::verifyFunction(*createConfigFunc);
 #endif
   }
@@ -2263,7 +2263,7 @@ GenInfo::GenInfo()
              lineno(-1), filename(NULL)
 #ifdef HAVE_LLVM
              ,
-             lvt(NULL), module(NULL), builder(NULL),
+             lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
              loopStack(),
              llvmContext(),
              tbaaRootNode(NULL),

@@ -80,6 +80,7 @@
 #include "build.h"
 
 #include "llvmDebug.h"
+#include "llvmVer.h"
 
 typedef Type ChapelType;
 
@@ -1407,7 +1408,7 @@ void prepareCodegenLLVM()
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
     FM.setUnsafeAlgebra();
-    info->builder->setFastMathFlags(FM);
+    info->irBuilder->setFastMathFlags(FM);
   }
 
   checkAdjustedDataLayout();
@@ -1669,11 +1670,12 @@ void runClang(const char* just_parse_filename) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
 
-      // Create a new IRBuilder, and LayeredValueTable.
-      gGenInfo->builder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
+      // Create a new IRBuilder and MDBuilder
+      gGenInfo->irBuilder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
+      gGenInfo->mdBuilder = new llvm::MDBuilder(gGenInfo->module->getContext());
 
       // This seems to be needed, even though it is strange.
-      // (otherwise we segfault in info->builder->CreateGlobalString)
+      // (otherwise we segfault in info->irBuilder->CreateGlobalString)
 
       // Some IRBuilder methods, codegenning a string,
       // need a basic block in order to get to the module
@@ -1686,14 +1688,14 @@ void runClang(const char* just_parse_filename) {
                          "chplDummyFunction", info->module);
       llvm::BasicBlock *block =
         llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
-      info->builder->SetInsertPoint(block);
+      info->irBuilder->SetInsertPoint(block);
     }
     // read macros. May call IRBuilder methods to codegen a string,
     // so needs to happen after we set the insert point.
     readMacrosClang();
 
     if( ! parseOnly ) {
-      info->builder->CreateRetVoid();
+      info->irBuilder->CreateRetVoid();
     }
   }
 }
@@ -2310,7 +2312,7 @@ void setupForGlobalToWide(void) {
 
   llvm::BasicBlock* block =
      llvm::BasicBlock::Create(ginfo->module->getContext(), "entry", fn);
-  ginfo->builder->SetInsertPoint(block);
+  ginfo->irBuilder->SetInsertPoint(block);
 
   llvm::Constant* fns[] = {info->getFn, info->putFn,
                            info->getPutFn, info->memsetFn, NULL};
@@ -2323,12 +2325,12 @@ void setupForGlobalToWide(void) {
 
   for( int i = 0; fns[i]; i++ ) {
     llvm::Constant* f = fns[i];
-    llvm::Value* ptr = ginfo->builder->CreatePointerCast(f, retType);
+    llvm::Value* ptr = ginfo->irBuilder->CreatePointerCast(f, retType);
     llvm::Value* id = llvm::ConstantInt::get(argType, i);
-    llvm::Value* eq = ginfo->builder->CreateICmpEQ(arg, id);
-    ret = ginfo->builder->CreateSelect(eq, ptr, ret);
+    llvm::Value* eq = ginfo->irBuilder->CreateICmpEQ(arg, id);
+    ret = ginfo->irBuilder->CreateSelect(eq, ptr, ret);
   }
-  ginfo->builder->CreateRet(ret);
+  ginfo->irBuilder->CreateRet(ret);
 
   llvm::verifyFunction(*fn, &errs());
 

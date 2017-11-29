@@ -157,25 +157,25 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   return tempVar;
 }
 
-llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* builder, llvm::Type* type, const char* name)
+llvm::Value* createTempVarLLVM(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name)
 {
   // It's important to alloca at the front of the function in order
   // to avoid having an alloca in a loop which is a good way to achieve
   // stack overflow.
-  llvm::Function *func = builder->GetInsertBlock()->getParent();
+  llvm::Function *func = irBuilder->GetInsertBlock()->getParent();
   if(llvm::Instruction *i = func->getEntryBlock().getTerminator()) {
-    builder->SetInsertPoint(i);
+    irBuilder->SetInsertPoint(i);
   } else {
-    builder->SetInsertPoint(&func->getEntryBlock());
+    irBuilder->SetInsertPoint(&func->getEntryBlock());
   }
 
-  llvm::AllocaInst *tempVar = builder->CreateAlloca(type, 0, name);
-  builder->SetInsertPoint(&func->back());
+  llvm::AllocaInst *tempVar = irBuilder->CreateAlloca(type, 0, name);
+  irBuilder->SetInsertPoint(&func->back());
   return tempVar;
 }
 
 llvm::Value *convertValueToType(
-    llvm::IRBuilder<> *builder,
+    llvm::IRBuilder<> *irBuilder,
     const llvm::DataLayout& layout,
     llvm::Value *value,
     llvm::Type *newType,
@@ -193,50 +193,50 @@ llvm::Value *convertValueToType(
     if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
       // Sign extend if isSigned, but never sign extend single bits.
       if(isSigned && ! curType->isIntegerTy(1)) {
-        return builder->CreateSExtOrBitCast(value, newType);
+        return irBuilder->CreateSExtOrBitCast(value, newType);
       }
       else {
-        return builder->CreateZExtOrBitCast(value, newType);
+        return irBuilder->CreateZExtOrBitCast(value, newType);
       }
     }
     else {
-      return builder->CreateTruncOrBitCast(value, newType);
+      return irBuilder->CreateTruncOrBitCast(value, newType);
     }
   }
   
   //Floating point values
   if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
     if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
-      return builder->CreateFPExt(value, newType);
+      return irBuilder->CreateFPExt(value, newType);
     }
     else {
-      return builder->CreateFPTrunc(value, newType);
+      return irBuilder->CreateFPTrunc(value, newType);
     }
   }
 
   //Integer value to floating point value
   if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
     if(isSigned) {
-      return builder->CreateSIToFP(value, newType);
+      return irBuilder->CreateSIToFP(value, newType);
     }
     else {
-      return builder->CreateUIToFP(value, newType);
+      return irBuilder->CreateUIToFP(value, newType);
     }
   }
 
   //Floating point value to integer value
   if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
-    return builder->CreateFPToSI(value, newType);
+    return irBuilder->CreateFPToSI(value, newType);
   }
   
   //Integer to pointer
   if(newType->isPointerTy() && curType->isIntegerTy()) {
-    return builder->CreateIntToPtr(value, newType);
+    return irBuilder->CreateIntToPtr(value, newType);
   }
 
   //Pointer to integer
   if(newType->isIntegerTy() && curType->isPointerTy()) {
-    return builder->CreatePtrToInt(value, newType);
+    return irBuilder->CreatePtrToInt(value, newType);
   }
 
   //Pointers
@@ -245,7 +245,7 @@ llvm::Value *convertValueToType(
         curType->getPointerAddressSpace() ) {
       assert( 0 && "Can't convert pointer to different address space");
     }
-    return builder->CreatePointerCast(value, newType);
+    return irBuilder->CreatePointerCast(value, newType);
   }
 
   // Structure types. 
@@ -258,18 +258,18 @@ llvm::Value *convertValueToType(
       llvm::Value* tmp_alloc;
       if( layout.getTypeStoreSize(newType) >=
           layout.getTypeStoreSize(curType) )
-        tmp_alloc = createTempVarLLVM(builder, newType, "");
+        tmp_alloc = createTempVarLLVM(irBuilder, newType, "");
       else {
-        tmp_alloc = createTempVarLLVM(builder, curType, "");
+        tmp_alloc = createTempVarLLVM(irBuilder, curType, "");
       }
       // Now cast the allocation to both fromType and toType.
       llvm::Type* curPtrType = curType->getPointerTo();
       llvm::Type* newPtrType = newType->getPointerTo();
       // Now get cast pointers 
-      llvm::Value* tmp_cur = builder->CreatePointerCast(tmp_alloc, curPtrType);
-      llvm::Value* tmp_new = builder->CreatePointerCast(tmp_alloc, newPtrType);
-      builder->CreateStore(value, tmp_cur);
-      return builder->CreateLoad(tmp_new);
+      llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
+      llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
+      irBuilder->CreateStore(value, tmp_cur);
+      return irBuilder->CreateLoad(tmp_new);
     }
   }
 
@@ -313,7 +313,7 @@ Otherwise, both operands are converted to the unsigned integer type
 corresponding to the type of the operand with signed integer type.
 */
 PromotedPair convertValuesToLarger(
-    llvm::IRBuilder<> *builder,
+    llvm::IRBuilder<> *irBuilder,
     llvm::Value *value1,
     llvm::Value *value2,
     bool isSigned1,
@@ -330,9 +330,9 @@ PromotedPair convertValuesToLarger(
   if(type1->isFloatingPointTy() && type2->isFloatingPointTy()) {
     if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
       return PromotedPair(value1,
-                          builder->CreateFPExt(value2, type1), true);
+                          irBuilder->CreateFPExt(value2, type1), true);
     } else {
-      return PromotedPair(builder->CreateFPTrunc(value1, type2),
+      return PromotedPair(irBuilder->CreateFPTrunc(value1, type2),
                           value2, true);
     }
   }
@@ -341,20 +341,20 @@ PromotedPair convertValuesToLarger(
   if(type1->isFloatingPointTy() && type2->isIntegerTy()) {
     if(isSigned2) {
       return PromotedPair(value1,
-                          builder->CreateSIToFP(value2, type1), true);
+                          irBuilder->CreateSIToFP(value2, type1), true);
     } else {
       return PromotedPair(value1,
-                          builder->CreateUIToFP(value2, type1), true);
+                          irBuilder->CreateUIToFP(value2, type1), true);
     }
   }
 
   //Integer / Floating point values
   if(type2->isFloatingPointTy() && type1->isIntegerTy()) {
     if(isSigned1) {
-      return PromotedPair(builder->CreateSIToFP(value1, type2),
+      return PromotedPair(irBuilder->CreateSIToFP(value1, type2),
                           value2, true);
     } else {
-      return PromotedPair(builder->CreateUIToFP(value1, type2),
+      return PromotedPair(irBuilder->CreateUIToFP(value1, type2),
                           value2, true);
     }
   }
@@ -366,22 +366,22 @@ PromotedPair convertValuesToLarger(
       if(type1->getPrimitiveSizeInBits() > type2->getPrimitiveSizeInBits()) {
         if(isSigned2) {
           return PromotedPair(value1,
-                        builder->CreateSExtOrBitCast(value2, type1),
+                        irBuilder->CreateSExtOrBitCast(value2, type1),
                         true);
         } else {
           return PromotedPair(
                         value1,
-                        builder->CreateZExtOrBitCast(value2, type1),
+                        irBuilder->CreateZExtOrBitCast(value2, type1),
                         false);
         }
       } else {
         if(isSigned1) {
           return PromotedPair(
-                        builder->CreateSExtOrBitCast(value1, type2),
+                        irBuilder->CreateSExtOrBitCast(value1, type2),
                         value2, true);
         } else {
           return PromotedPair(
-                        builder->CreateZExtOrBitCast(value1, type2),
+                        irBuilder->CreateZExtOrBitCast(value1, type2),
                         value2, false);
         }
       }
@@ -393,13 +393,13 @@ PromotedPair convertValuesToLarger(
               type2->getPrimitiveSizeInBits()) {
         // value1 is unsigned and >= bits; value2 is signed
         return PromotedPair(value1,
-                            builder->CreateSExtOrBitCast(value2, type1),
+                            irBuilder->CreateSExtOrBitCast(value2, type1),
                             false);
       } else if( !isSigned2 &&
                      type1->getPrimitiveSizeInBits() <=
                      type2->getPrimitiveSizeInBits() ) {
         // value2 is unsigned and >= bits; value1 is signed
-        return PromotedPair(builder->CreateSExtOrBitCast(value1, type2),
+        return PromotedPair(irBuilder->CreateSExtOrBitCast(value1, type2),
                             value2, false);
       } else {
         // Otherwise, if the type of the operand with signed integer
@@ -412,13 +412,13 @@ PromotedPair convertValuesToLarger(
                type2->getPrimitiveSizeInBits()) {
           // value1 is signed, value2 is not
           return PromotedPair(value1,
-                        builder->CreateZExtOrBitCast(value2, type1),
+                        irBuilder->CreateZExtOrBitCast(value2, type1),
                         true);
         } else if( isSigned2 &&
                       type1->getPrimitiveSizeInBits() <=
                       type2->getPrimitiveSizeInBits() - 1) {
           return PromotedPair(
-                        builder->CreateZExtOrBitCast(value1, type2),
+                        irBuilder->CreateZExtOrBitCast(value1, type2),
                         value2, true);
         } else {
           // otherwise, both operands are converted to the unsigned
@@ -427,12 +427,12 @@ PromotedPair convertValuesToLarger(
           if( isSigned1 ) {
             // convert both to unsigned type1
             return PromotedPair(value1,
-                          builder->CreateZExtOrBitCast(value2, type1),
+                          irBuilder->CreateZExtOrBitCast(value2, type1),
                           false);
           } else {
             // convert both to unsigned type2
             return PromotedPair(
-                          builder->CreateZExtOrBitCast(value1, type2),
+                          irBuilder->CreateZExtOrBitCast(value1, type2),
                           value2, false);
           }
         }
@@ -457,8 +457,8 @@ PromotedPair convertValuesToLarger(
       castTy = type1;
     }
 
-    return PromotedPair(builder->CreatePointerCast(value1, castTy),
-                        builder->CreatePointerCast(value2, castTy),
+    return PromotedPair(irBuilder->CreatePointerCast(value1, castTy),
+                        irBuilder->CreatePointerCast(value2, castTy),
                         false);
   }
   

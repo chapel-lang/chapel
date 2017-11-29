@@ -287,7 +287,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // so we have to convert to a sequence of bytes
       // for LLVM (the C backend can just print it out).
       std::string newString = unescapeString(i->v_string, NULL);
-      ret = info->builder->CreateGlobalString(newString);
+      ret = info->irBuilder->CreateGlobalString(newString);
       break;
   }
 
@@ -468,7 +468,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     //   _ret:dtNil = nil
     if( typeInfo() == dtNil && 0 == strcmp(cname, "nil") ) {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->builder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
       voidPtr.chplType = dtNil;
       return voidPtr;
     }
@@ -507,10 +507,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->builder->getInt8PtrTy()));
+                  (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->builder->CreateConstInBoundsGEP2_32(
+              info->irBuilder->CreateConstInBoundsGEP2_32(
                 NULL, constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
@@ -527,7 +527,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->builder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
       voidPtr.chplType = typeInfo();
       return voidPtr;
     }
@@ -701,7 +701,7 @@ void VarSymbol::codegenDef() {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP2_32(
+                info->irBuilder->CreateConstInBoundsGEP2_32(
                   NULL, globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
@@ -715,7 +715,7 @@ void VarSymbol::codegenDef() {
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP1_32(
+                info->irBuilder->CreateConstInBoundsGEP1_32(
                   NULL, globalString, 0)));
         }
       } else {
@@ -733,7 +733,7 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          info->builder->CreateStore(
+          info->irBuilder->CreateStore(
               llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
@@ -905,12 +905,10 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    llvm::Metadata* Ops[1];
-    Ops[0] = llvm::MDString::get(ctx, "Chapel types");
-    info->tbaaRootNode = llvm::MDNode::get(ctx, Ops);
+    info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
   }
 
-  // Set the llvmTbaaNode to non-NULL so that we can
+  // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
   // avoid recursing.
   llvmTbaaTypeDescriptor = info->tbaaRootNode;
 
@@ -955,46 +953,15 @@ void TypeSymbol::codegenMetadata() {
       is_real_type(type) || is_imag_type(type) || is_enum_type(type) ||
       isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
-    // Now create tbaa metadata, one for const and one for not.
-    {
-      llvm::Metadata* Ops[2];
-      Ops[0] = llvm::MDString::get(ctx, cname);
-      Ops[1] = parent;
-      llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, Ops);
-    }
-    {
-      llvm::Metadata* Ops[3];
-      Ops[0] = llvmTbaaTypeDescriptor;
-      Ops[1] = llvmTbaaTypeDescriptor;
-      Ops[2] = llvm::ConstantAsMetadata::get(
-                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
-      llvmTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
-    }
-    {
-      llvm::Metadata* Ops[4];
-      Ops[0] = llvmTbaaTypeDescriptor;
-      Ops[1] = llvmTbaaTypeDescriptor;
-      Ops[2] = llvm::ConstantAsMetadata::get(
-                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0));
-      Ops[3] = llvm::ConstantAsMetadata::get(
-                   llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1));
-      llvmConstTbaaAccessTag = llvm::MDNode::get(ctx, Ops);
-    }
-  }
+    llvmTbaaTypeDescriptor =
+      info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
+  } else if (ct && !isUnion(type) && !hasFlag(FLAG_STAR_TUPLE)) {
+    // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
+    llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
+    llvm::SmallVector<llvm::Metadata*, 16> CopyOps;
+    llvm::SmallVector<llvm::Metadata*, 16> ConstCopyOps;
 
-  // Don't try to create tbaa.struct metadata for non-struct.
-  if( isUnion(type) ||
-      hasFlag(FLAG_STAR_TUPLE) ||
-      hasFlag(FLAG_REF) ||
-      hasFlag(FLAG_DATA_CLASS) ||
-      hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS) ) {
-    return;
-  }
-
-  if( ct ) {
-    // Now create the tbaa.struct metadata nodes.
-    llvm::SmallVector<llvm::Metadata*, 16> Ops;
-    llvm::SmallVector<llvm::Metadata*, 16> ConstOps;
+    TypeOps.push_back(llvm::MDString::get(ctx,cname));
 
     const char* struct_name = ct->classStructName(true);
     llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
@@ -1013,15 +980,32 @@ void TypeSymbol::codegenMetadata() {
       unsigned gep = ct->getMemberGEP(field->cname);
       llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-      Ops.push_back(llvm::ConstantAsMetadata::get(off));
-      Ops.push_back(llvm::ConstantAsMetadata::get(sz));
-      Ops.push_back(field->type->symbol->llvmTbaaAccessTag);
-      ConstOps.push_back(llvm::ConstantAsMetadata::get(off));
-      ConstOps.push_back(llvm::ConstantAsMetadata::get(sz));
-      ConstOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
+      TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+      TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
+      CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+      CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+      CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
+      ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+      ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+      ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
     }
-    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, Ops);
-    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstOps);
+    llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
+    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  }
+  if (llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+    // Create tbaa access tags, one for const and one for not.
+    // The createTBAAStructTagNode() method works for both scalars
+    // and aggregates, referencing the whole object.
+    llvmTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0);
+    llvmConstTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
   }
 #endif
 }
@@ -1153,7 +1137,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
     llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
-    fngen.val = info->builder->CreateBitCast(fnPtr.val, ptrToFnType);
+    fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
 #endif
   }
   return fngen;
@@ -1296,13 +1280,13 @@ void FnSymbol::codegenDef() {
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
-    info->builder->SetInsertPoint(block);
+    info->irBuilder->SetInsertPoint(block);
 
     info->lvt->addLayer();
 
     if(debug_info) {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
-      info->builder->SetCurrentDebugLocation(
+      info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
 

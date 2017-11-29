@@ -125,7 +125,7 @@ GenRet CForLoop::codegen()
   else
   {
 #ifdef HAVE_LLVM
-    llvm::Function*   func          = info->builder->GetInsertBlock()->getParent();
+    llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
 
     llvm::BasicBlock* blockStmtInit = NULL;
     llvm::BasicBlock* blockStmtBody = NULL;
@@ -152,10 +152,10 @@ GenRet CForLoop::codegen()
     func->getBasicBlockList().push_back(blockStmtInit);
 
     // Insert an explicit branch from the current block to the init block
-    info->builder->CreateBr(blockStmtInit);
+    info->irBuilder->CreateBr(blockStmtInit);
 
     // Now switch to the init block for code generation
-    info->builder->SetInsertPoint(blockStmtInit);
+    info->irBuilder->SetInsertPoint(blockStmtInit);
 
     // Code generate the init block.
     initBlock->body.codegen("");
@@ -166,17 +166,17 @@ GenRet CForLoop::codegen()
 
     // Normalize it to boolean
     if (condValue0->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-      condValue0 = info->builder->CreateICmpNE(condValue0,
+      condValue0 = info->irBuilder->CreateICmpNE(condValue0,
                                                llvm::ConstantInt::get(condValue0->getType(), 0),
                                                FNAME("condition"));
 
     // Create the conditional branch
-    info->builder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
+    info->irBuilder->CreateCondBr(condValue0, blockStmtBody, blockStmtEnd);
 
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
 
-    info->builder->SetInsertPoint(blockStmtBody);
+    info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
 
     llvm::MDNode* loopMetadata = nullptr;
@@ -199,19 +199,19 @@ GenRet CForLoop::codegen()
 
     // Normalize it to boolean
     if (condValue1->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
-      condValue1 = info->builder->CreateICmpNE(condValue1,
-                                               llvm::ConstantInt::get(condValue1->getType(), 0),
-                                               FNAME("condition"));
+      condValue1 = info->irBuilder->CreateICmpNE(condValue1,
+                                                 llvm::ConstantInt::get(condValue1->getType(), 0),
+                                                 FNAME("condition"));
 
     // Create the conditional branch
-    llvm::Instruction* endLoopBranch = info->builder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
+    llvm::Instruction* endLoopBranch = info->irBuilder->CreateCondBr(condValue1, blockStmtBody, blockStmtEnd);
 
     if(loopMetadata)
       addLoopMetadata(endLoopBranch, loopMetadata);
 
     func->getBasicBlockList().push_back(blockStmtEnd);
 
-    info->builder->SetInsertPoint(blockStmtEnd);
+    info->irBuilder->SetInsertPoint(blockStmtEnd);
 
     if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);
     if (blockStmtEnd ) INT_ASSERT(blockStmtEnd->getParent()  == func);

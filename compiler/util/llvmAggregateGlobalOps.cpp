@@ -570,7 +570,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   reorderAddressingMemopsUses(StartInst, LastLoadOrStore, DebugThis);
 
   Instruction* insertBefore = StartInst;
-  IRBuilder<> builder(insertBefore);
+  IRBuilder<> irBuilder(insertBefore);
 
   // Now that we have full information about ranges, loop over the ranges and
   // emit memcpy's for anything big enough to be worthwhile.
@@ -580,7 +580,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
     if (Range.TheStores.size() == 1) continue; // Don't bother if there's only one thing...
 
-    builder.SetInsertPoint(insertBefore);
+    irBuilder.SetInsertPoint(insertBefore);
 
     // Otherwise, we do want to transform this!  Create a new memcpy.
     // Get the starting pointer of the block.
@@ -607,7 +607,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                        Range.End-Range.Start, Alignment);
 
     // Cast the old base pointer to i8, but with the same address space.
-    //Value* StartPtrI8 = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    //Value* StartPtrI8 = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
 
     // If storing, do the stores we had into our alloca'd region.
     if( isStore ) {
@@ -630,23 +630,23 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
-        Value* i8Dst = builder.CreateInBoundsGEP(int8Ty,
-                                                 alloc,
-                                                 offsets);
+        Value* i8Dst = irBuilder.CreateInBoundsGEP(int8Ty,
+                                                   alloc,
+                                                   offsets);
 
         Type* origDstTy = oldStore->getPointerOperand()->getType();
         Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
-        Value* Dst = builder.CreatePointerCast(i8Dst, DstTy);
+        Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);
 
         StoreInst* newStore =
-          builder.CreateStore(oldStore->getValueOperand(), Dst);
+          irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
         newStore->setAlignment(oldStore->getAlignment());
         newStore->takeName(oldStore);
       }
     }
 
     // cast the pointer that was load/stored to i8 if necessary.
-    Value *globalPtr = builder.CreatePointerCast(StartPtr, globalInt8PtrTy);
+    Value *globalPtr = irBuilder.CreatePointerCast(StartPtr, globalInt8PtrTy);
 
     // Get a Constant* for the length.
     Constant* len = ConstantInt::get(sizeTy, Range.End-Range.Start, false);
@@ -680,7 +680,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // isvolatile
     args[4] = ConstantInt::get(Type::getInt1Ty(Context), 0, false);
 
-    Instruction* aMemCpy = builder.CreateCall(func, args);
+    Instruction* aMemCpy = irBuilder.CreateCall(func, args);
 
     /*
     DEBUG(dbgs() << "Replace ops:\n";
@@ -714,14 +714,14 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
         Value* offsets[] = {offsetC};
-        Value* i8Src = builder.CreateInBoundsGEP(int8Ty,
-                                                 alloc,
-                                                 offsets);
+        Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
+                                                   alloc,
+                                                   offsets);
         Type* origSrcTy = oldLoad->getPointerOperand()->getType();
         Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
-        Value* Src = builder.CreatePointerCast(i8Src, SrcTy);
+        Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
-        LoadInst* newLoad = builder.CreateLoad(Src);
+        LoadInst* newLoad = irBuilder.CreateLoad(Src);
         newLoad->setAlignment(oldLoad->getAlignment());
         oldLoad->replaceAllUsesWith(newLoad);
         newLoad->takeName(oldLoad);

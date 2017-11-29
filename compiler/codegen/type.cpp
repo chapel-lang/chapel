@@ -32,6 +32,7 @@
 #include "ipe.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
+#include "llvmVer.h"
 #include "misc.h"
 #include "passes.h"
 #include "stringutil.h"
