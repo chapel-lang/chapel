@@ -427,12 +427,28 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   // Fill in the body of the function
 
-  // We'll first normalize/resolve this block, so we
-  // can decide what the return intent for the function should be.
+  // Add a return value variable so the function is "normal"
+  // while we resolve a block containing the default-expr. We
+  // resolve the block before resolving the rest of the function
+  // so that we can set the return intent appropriately.
+  VarSymbol* rvv = newTemp("ret");
+  rvv->addFlag(FLAG_RVV);
+  rvv->addFlag(FLAG_MAYBE_PARAM);
+  rvv->addFlag(FLAG_MAYBE_TYPE);
+
+  wrapper->insertAtTail(new DefExpr(rvv));
+
+  // This is the block we'll resolve to compute the return intent
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
-  VarSymbol* temp   = newTemp(astr("ret"), formal->getValType());
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, rvv));
+
+  // We create a separate temp to store the result of the default
+  // argument expression so that we can query its type while setting
+  // up the return intent for the function. (The return value variable
+  // gets special treatment and would be harder to use in this way).
+  VarSymbol* temp   = newTemp("temp");
 
   IntentTag  formalIntent = formal->intent;
   if (formal->type   != dtTypeDefaultToken &&
@@ -444,18 +460,20 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if ((formalIntent & INTENT_FLAG_REF) != 0)
     temp->addFlag(FLAG_MAYBE_REF);
 
+  //temp->addFlag(FLAG_EXPR_TEMP);
+  temp->addFlag(FLAG_MAYBE_PARAM);
+  temp->addFlag(FLAG_MAYBE_TYPE);
+
+  /*
   temp->addFlag(FLAG_MAYBE_PARAM);
   //temp->addFlag(FLAG_EXPR_TEMP);
    if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     temp->addFlag(FLAG_TYPE_VARIABLE);
-  }
+  }*/
 
   IntentTag  intent = INTENT_BLANK;
 
   block->insertAtTail(new DefExpr(temp));
-
-  if (block->id == 760826)
-    gdbShouldBreakHere();
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
     defaultedFormalApplyDefaultForType(formal, block, temp);
@@ -474,22 +492,23 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // Add the function to the tree
   fn->defPoint->insertAfter(new DefExpr(wrapper));
 
-  temp->addFlag(FLAG_RVV);
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, temp));
-
-  if (wrapper->id == 760820)
-    gdbShouldBreakHere();
-
   normalize(block);
   resolveBlockStmt(block);
+
+  block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, temp));
   block->flattenAndRemove();
 
-
   // Now we know if 'temp' is a param or a type.
-  if (temp->hasFlag(FLAG_TYPE_VARIABLE))
+  if (temp->hasFlag(FLAG_TYPE_VARIABLE)) {
     wrapper->retTag = RET_TYPE;
-  else if (paramMap.get(temp))
+  } else if (paramMap.get(temp)) {
     wrapper->retTag = RET_PARAM;
+  } else if (temp->qualType().isRef()) {
+    if (temp->qualType().isConst())
+      wrapper->retTag = RET_CONST_REF;
+    else
+      wrapper->retTag = RET_REF;
+  }
 
   // Finish resolving the function
   resolveSignatureAndFunction(wrapper);
