@@ -83,8 +83,6 @@ void resolveSignature(FnSymbol* fn) {
       if (fn->retExprType != NULL) {
         resolveSpecifiedReturnType(fn);
       }
-
-      resolvedFormals.set_add(fn);
     }
   }
 }
@@ -788,11 +786,7 @@ static void fixTypeNames(AggregateType* at) {
 
 static void resolveDefaultTypeConstructor(AggregateType* at) {
   if (at->defaultTypeConstructor != NULL) {
-    resolveSignature(at->defaultTypeConstructor);
-
-    if (resolvedFormals.set_in(at->defaultTypeConstructor)) {
-      resolveFunction(at->defaultTypeConstructor);
-    }
+    resolveSignatureAndFunction(at->defaultTypeConstructor);
   }
 }
 
@@ -807,19 +801,18 @@ static void instantiateDefaultConstructor(FnSymbol* fn) {
 
     for_formals(formal, fn) {
       if (formal->type == dtMethodToken || formal == fn->_this) {
-        call->insertAtTail(formal);
+        call->insertAtTail(new SymExpr(formal));
 
-      } else if (paramMap.get(formal)) {
-        call->insertAtTail(new NamedExpr(formal->name,
-                                         new SymExpr(paramMap.get(formal))));
+      } else if (Symbol* param = paramMap.get(formal)) {
+        call->insertAtTail(new NamedExpr(formal->name, new SymExpr(param)));
 
       } else {
-        Symbol* field = fn->retType->getField(formal->name);
+        SymExpr* field = new SymExpr(fn->retType->getField(formal->name));
 
         if (base->hasFlag(FLAG_TUPLE) == true) {
           call->insertAtTail(field);
         } else {
-          call->insertAtTail(new NamedExpr(formal->name, new SymExpr(field)));
+          call->insertAtTail(new NamedExpr(formal->name, field));
         }
       }
     }
