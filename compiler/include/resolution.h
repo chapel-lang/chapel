@@ -40,8 +40,6 @@ extern bool                           tryFailure;
 
 extern Vec<CallExpr*>                 inits;
 
-extern Vec<FnSymbol*>                 resolvedFormals;
-
 extern Vec<BlockStmt*>                standardModuleSet;
 
 extern char                           arrayUnrefName[];

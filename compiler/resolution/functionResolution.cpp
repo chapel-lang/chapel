@@ -108,8 +108,6 @@ SymbolMap                          paramMap;
 Vec<CallExpr*>                     callStack;
 Vec<CallExpr*>                     inits;
 
-Vec<FnSymbol*>                     resolvedFormals;
-
 Vec<BlockStmt*>                    standardModuleSet;
 
 std::map<CallExpr*, CallExpr*>     eflopiMap;
@@ -6251,11 +6249,11 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 }
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
-  if (AggregateType* ct = toAggregateType(symExpr->typeInfo())) {
-    if (ct->defaultTypeConstructor                != NULL   &&
-        ct->symbol->hasFlag(FLAG_GENERIC)         == false  &&
-        ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
-        ct->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+  if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
+    if (at->defaultTypeConstructor                != NULL   &&
+        at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+        at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
       CallExpr* parent = toCallExpr(symExpr->parentExpr);
       Symbol*   sym    = symExpr->symbol();
 
@@ -6267,18 +6265,14 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
         // literals (resolution ordering issue, string literals are
         // encountered too early and we don't know enough to be able
         // to resolve them at that point)
-        if (ct != dtString ||
+        if (at != dtString ||
             (sym->isParameter()                    == false   &&
              sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
-          resolveSignature(ct->defaultTypeConstructor);
-
-          if (resolvedFormals.set_in(ct->defaultTypeConstructor)) {
-            if (hasPartialCopyData(ct->defaultTypeConstructor) == true) {
-              instantiateBody(ct->defaultTypeConstructor);
-            }
-
-            resolveFunction(ct->defaultTypeConstructor);
+          if (hasPartialCopyData(at->defaultTypeConstructor) == true) {
+            instantiateBody(at->defaultTypeConstructor);
           }
+
+          resolveSignatureAndFunction(at->defaultTypeConstructor);
         }
       }
     }
