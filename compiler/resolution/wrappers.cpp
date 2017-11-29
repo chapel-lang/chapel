@@ -551,6 +551,8 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   temp->addFlag(FLAG_EXPR_TEMP);
   temp->addFlag(FLAG_MAYBE_PARAM);
   temp->addFlag(FLAG_MAYBE_TYPE);
+  // Allow e.g. proc f(ref x=returnSomeValue())
+  temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   // TODO: do we need to add FLAG_INSERT_AUTO_DESTROY here?
 
