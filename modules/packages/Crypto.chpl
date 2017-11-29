@@ -713,6 +713,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
      Standard(AES) cipher is used more in practice. Since, Blowfish is unpatented and placed
      in the public domain, it receives a decent amount of attention from the community.
 
+     .. note::
+
+       Since the key in Blowfish can be of various sizes, use a :chpl:class:`KDF` routine
+       to generate a secure-key with the recommended byte-size as 16 bytes. Also, the
+       initialization vector in Blowfish cipher should strictly be 8 bytes long.
+
+
      The `Blowfish` class supports 4 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
 
      - ``cbc`` or `Cipher Block Chaining`
