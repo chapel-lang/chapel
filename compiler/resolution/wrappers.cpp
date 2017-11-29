@@ -356,7 +356,9 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   SymbolMap copyMap;
 
   // Set up the arguments
-  if (fn->hasFlag(FLAG_METHOD) && !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+  if (fn->hasFlag(FLAG_METHOD) &&
+      fn->_this != NULL &&
+      !fn->hasFlag(FLAG_CONSTRUCTOR)) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -563,7 +565,9 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   CallExpr* newCall = new CallExpr(entry->defaultExprFn);
 
   // Add method token, this if needed
-  if (fn->hasFlag(FLAG_METHOD) && !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+  if (fn->hasFlag(FLAG_METHOD) &&
+      fn->_this != NULL &&
+      !fn->hasFlag(FLAG_CONSTRUCTOR)) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
