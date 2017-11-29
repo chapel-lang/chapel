@@ -313,7 +313,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   FnSymbol* wrapper = new FnSymbol(astr(fn->name, "_default_", formal->name));
   ret.defaultExprFn = wrapper;
 
-  wrapper->addFlag(FLAG_WRAPPER);
+  //wrapper->addFlag(FLAG_WRAPPER);
 
   wrapper->addFlag(FLAG_INVISIBLE_FN);
 
@@ -427,30 +427,35 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   // Fill in the body of the function
 
-  // TODO: try removing temp since we normalize anyway
-  VarSymbol* temp   = newTemp(astr("temp"));
-  temp->addFlag(FLAG_RVV);
+  // We'll first normalize/resolve this block, so we
+  // can decide what the return intent for the function should be.
+  BlockStmt* block = new BlockStmt();
+  wrapper->insertAtTail(block);
 
-  IntentTag  intent = formal->intent;
+  VarSymbol* temp   = newTemp(astr("ret"), formal->getValType());
+
+  IntentTag  formalIntent = formal->intent;
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
       formal->intent == INTENT_BLANK) {
-    intent = blankIntentForType(formal->type);
+    formalIntent = blankIntentForType(formal->type);
   }
 
-  if (intent != INTENT_INOUT && intent != INTENT_OUT) {
-    temp->addFlag(FLAG_MAYBE_PARAM);
-    temp->addFlag(FLAG_EXPR_TEMP);
-  }
+  if ((formalIntent & INTENT_FLAG_REF) != 0)
+    temp->addFlag(FLAG_MAYBE_REF);
 
-  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+  temp->addFlag(FLAG_MAYBE_PARAM);
+  //temp->addFlag(FLAG_EXPR_TEMP);
+   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     temp->addFlag(FLAG_TYPE_VARIABLE);
   }
 
-  wrapper->insertAtTail(new DefExpr(temp));
+  IntentTag  intent = INTENT_BLANK;
 
-  BlockStmt* block = new BlockStmt();
-  wrapper->insertAtTail(block);
+  block->insertAtTail(new DefExpr(temp));
+
+  if (block->id == 760826)
+    gdbShouldBreakHere();
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
     defaultedFormalApplyDefaultForType(formal, block, temp);
@@ -466,17 +471,19 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // default-expr-function formals
   update_symbols(block, &copyMap);
 
-  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, temp));
-
   // Add the function to the tree
   fn->defPoint->insertAfter(new DefExpr(wrapper));
 
-  if (wrapper->id == 764774)
+  temp->addFlag(FLAG_RVV);
+  wrapper->insertAtTail(new CallExpr(PRIM_RETURN, temp));
+
+  if (wrapper->id == 760820)
     gdbShouldBreakHere();
 
   normalize(block);
   resolveBlockStmt(block);
   block->flattenAndRemove();
+
 
   // Now we know if 'temp' is a param or a type.
   if (temp->hasFlag(FLAG_TYPE_VARIABLE))
@@ -520,23 +527,11 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // TODO - can this simplify to something more like insertWrappedCall?
   SET_LINENO(formal);
 
-  IntentTag  intent = formal->intent;
-  VarSymbol* temp   = newTemp(astr("default_arg", formal->name));
+  VarSymbol* temp   = newTemp(astr("default_arg_", formal->name));
 
-  if (formal->type   != dtTypeDefaultToken &&
-      formal->type   != dtMethodToken      &&
-      formal->intent == INTENT_BLANK) {
-    intent = blankIntentForType(formal->type);
-  }
-
-  if (intent != INTENT_INOUT && intent != INTENT_OUT) {
-    temp->addFlag(FLAG_MAYBE_PARAM);
-    temp->addFlag(FLAG_EXPR_TEMP);
-  }
-
-  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-    temp->addFlag(FLAG_TYPE_VARIABLE);
-  }
+  temp->addFlag(FLAG_EXPR_TEMP);
+  temp->addFlag(FLAG_MAYBE_PARAM);
+  temp->addFlag(FLAG_MAYBE_TYPE);
 
   // TODO: do we need to add FLAG_INSERT_AUTO_DESTROY here?
 
@@ -564,7 +559,7 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
     newCall->insertAtTail(new SymExpr(mapTo));
   }
 
-  body->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(temp), newCall));
+  body->insertAtTail(new CallExpr(PRIM_MOVE, temp, newCall));
 
   // Now return the expression to use as the defaulted argument
   return temp;
