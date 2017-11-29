@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Find the --f argument
 for arg in $*; do
