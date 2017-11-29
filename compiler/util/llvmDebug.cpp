@@ -18,13 +18,13 @@
  */
 
 #include "llvmDebug.h"
-#include "llvmVer.h"
 
 #include "alist.h"
 #include "clangUtil.h"
 #include "codegen.h"
 #include "expr.h"
 #include "genret.h"
+#include "llvmVer.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"

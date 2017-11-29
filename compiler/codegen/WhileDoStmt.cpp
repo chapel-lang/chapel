@@ -73,7 +73,7 @@ GenRet WhileDoStmt::codegen()
   else
   {
 #ifdef HAVE_LLVM
-    llvm::Function*   func          = info->builder->GetInsertBlock()->getParent();
+    llvm::Function*   func          = info->irBuilder->GetInsertBlock()->getParent();
     llvm::BasicBlock* blockStmtBody = NULL;
     llvm::BasicBlock* blockStmtEnd  = NULL;
     llvm::BasicBlock* blockStmtCond = NULL;
@@ -87,28 +87,28 @@ GenRet WhileDoStmt::codegen()
     func->getBasicBlockList().push_back(blockStmtCond);
 
     // Insert an explicit branch from the current block to the loop start.
-    info->builder->CreateBr(blockStmtCond);
+    info->irBuilder->CreateBr(blockStmtCond);
 
     // Now switch to the condition for code generation
-    info->builder->SetInsertPoint(blockStmtCond);
+    info->irBuilder->SetInsertPoint(blockStmtCond);
 
     GenRet            condValueRet     = codegenValue(condExprGet());
     llvm::Value*      condValue        = condValueRet.val;
 
     if (condValue->getType() != llvm::Type::getInt1Ty(info->module->getContext()))
     {
-      condValue = info->builder->CreateICmpNE(condValue,
-                                              llvm::ConstantInt::get(condValue->getType(), 0),
-                                              FNAME("condition"));
+      condValue = info->irBuilder->CreateICmpNE(condValue,
+                                                llvm::ConstantInt::get(condValue->getType(), 0),
+                                                FNAME("condition"));
     }
 
     // Now we might go either to the Body or to the End.
-    info->builder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
+    info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
 
     // Now add the body.
     func->getBasicBlockList().push_back(blockStmtBody);
 
-    info->builder->SetInsertPoint(blockStmtBody);
+    info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
 
     body.codegen("");
@@ -116,13 +116,13 @@ GenRet WhileDoStmt::codegen()
     info->lvt->removeLayer();
 
     if (blockStmtCond)
-      info->builder->CreateBr(blockStmtCond);
+      info->irBuilder->CreateBr(blockStmtCond);
     else
-      info->builder->CreateBr(blockStmtEnd);
+      info->irBuilder->CreateBr(blockStmtEnd);
 
     func->getBasicBlockList().push_back(blockStmtEnd);
 
-    info->builder->SetInsertPoint(blockStmtEnd);
+    info->irBuilder->SetInsertPoint(blockStmtEnd);
 
     if (blockStmtCond) INT_ASSERT(blockStmtCond->getParent() == func);
     if (blockStmtBody) INT_ASSERT(blockStmtBody->getParent() == func);

@@ -287,7 +287,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // so we have to convert to a sequence of bytes
       // for LLVM (the C backend can just print it out).
       std::string newString = unescapeString(i->v_string, NULL);
-      ret = info->builder->CreateGlobalString(newString);
+      ret = info->irBuilder->CreateGlobalString(newString);
       break;
   }
 
@@ -468,7 +468,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
     //   _ret:dtNil = nil
     if( typeInfo() == dtNil && 0 == strcmp(cname, "nil") ) {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->builder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
       voidPtr.chplType = dtNil;
       return voidPtr;
     }
@@ -507,10 +507,10 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
-                  (name, info->builder->getInt8PtrTy()));
+                  (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->builder->CreateConstInBoundsGEP2_32(
+              info->irBuilder->CreateConstInBoundsGEP2_32(
                 NULL, constString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
@@ -527,7 +527,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       return ret;
     } else if (std::string(cname) == "NULL") {
       GenRet voidPtr;
-      voidPtr.val = llvm::Constant::getNullValue(info->builder->getInt8PtrTy());
+      voidPtr.val = llvm::Constant::getNullValue(info->irBuilder->getInt8PtrTy());
       voidPtr.chplType = typeInfo();
       return voidPtr;
     }
@@ -701,7 +701,7 @@ void VarSymbol::codegenDef() {
           llvm::GlobalVariable *globalString =
             llvm::cast<llvm::GlobalVariable>(constString);
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP2_32(
+                info->irBuilder->CreateConstInBoundsGEP2_32(
                   NULL, globalString, 0, 0)));
         } else {
           llvm::GlobalVariable *globalString =
@@ -715,7 +715,7 @@ void VarSymbol::codegenDef() {
           globalString->setInitializer(llvm::Constant::getNullValue(
                 llvm::IntegerType::getInt8Ty(info->module->getContext())));
           globalValue->setInitializer(llvm::cast<llvm::Constant>(
-                info->builder->CreateConstInBoundsGEP1_32(
+                info->irBuilder->CreateConstInBoundsGEP1_32(
                   NULL, globalString, 0)));
         }
       } else {
@@ -733,7 +733,7 @@ void VarSymbol::codegenDef() {
          ctype->symbol->hasFlag(FLAG_WIDE_REF) ||
          ctype->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if(isFnSymbol(defPoint->parentSymbol)) {
-          info->builder->CreateStore(
+          info->irBuilder->CreateStore(
               llvm::Constant::getNullValue(varType), varAlloca);
         }
       }
@@ -905,7 +905,7 @@ void TypeSymbol::codegenMetadata() {
   llvm::LLVMContext& ctx = info->module->getContext();
   // Create the TBAA root node if necessary.
   if( ! info->tbaaRootNode ) {
-    info->tbaaRootNode = info->mdHelper->createTBAARoot("Chapel types");
+    info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
   }
 
   // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
@@ -954,7 +954,7 @@ void TypeSymbol::codegenMetadata() {
       isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     llvmTbaaTypeDescriptor =
-      info->mdHelper->createTBAAScalarTypeNode(cname, parent);
+      info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
   } else if (ct && !isUnion(type) && !hasFlag(FLAG_STAR_TUPLE)) {
     // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
     llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
@@ -998,14 +998,14 @@ void TypeSymbol::codegenMetadata() {
     // The createTBAAStructTagNode() method works for both scalars
     // and aggregates, referencing the whole object.
     llvmTbaaAccessTag =
-      info->mdHelper->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                              llvmTbaaTypeDescriptor,
-                                              /*Offset=*/0);
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0);
     llvmConstTbaaAccessTag =
-      info->mdHelper->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                              llvmTbaaTypeDescriptor,
-                                              /*Offset=*/0,
-                                              /*IsConstant=*/true);
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
   }
 #endif
 }
@@ -1137,7 +1137,7 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
     // now cast to correct function type
     llvm::FunctionType* fnType = llvm::cast<llvm::FunctionType>(t.type);
     llvm::PointerType *ptrToFnType = llvm::PointerType::get(fnType, 0);
-    fngen.val = info->builder->CreateBitCast(fnPtr.val, ptrToFnType);
+    fngen.val = info->irBuilder->CreateBitCast(fnPtr.val, ptrToFnType);
 #endif
   }
   return fngen;
@@ -1280,13 +1280,13 @@ void FnSymbol::codegenDef() {
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
-    info->builder->SetInsertPoint(block);
+    info->irBuilder->SetInsertPoint(block);
 
     info->lvt->addLayer();
 
     if(debug_info) {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
-      info->builder->SetCurrentDebugLocation(
+      info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
 

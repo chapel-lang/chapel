@@ -686,8 +686,8 @@ namespace {
             Value* size = createSizeof(info, wLoadedTy);
             {
               // Convert size if necessary
-              IRBuilder<> builder(oldLoad);
-              size = builder.CreateZExtOrTrunc(size, sizeTy);
+              IRBuilder<> irBuilder(oldLoad);
+              size = irBuilder.CreateZExtOrTrunc(size, sizeTy);
             }
 
             Value* args[5];
@@ -765,8 +765,8 @@ namespace {
             Value* size = createSizeof(info, wStoredTy);
             {
               // Convert size if necessary
-              IRBuilder<> builder(oldStore);
-              size = builder.CreateZExtOrTrunc(size, sizeTy);
+              IRBuilder<> irBuilder(oldStore);
+              size = irBuilder.CreateZExtOrTrunc(size, sizeTy);
             }
 
             // Now put from the alloc'd area
@@ -911,8 +911,8 @@ namespace {
               Value* n = call->getArgOperand(2);
               {
                 // Convert n if necessary
-                IRBuilder<> builder(call);
-                n = builder.CreateZExtOrTrunc(n, sizeTy);
+                IRBuilder<> irBuilder(call);
+                n = irBuilder.CreateZExtOrTrunc(n, sizeTy);
               }
 
               dstSpace = gDst->getType()->getPointerAddressSpace();
@@ -973,8 +973,8 @@ namespace {
               Value* n = call->getArgOperand(2);
               {
                 // Convert n if necessary
-                IRBuilder<> builder(call);
-                n = builder.CreateZExtOrTrunc(n, sizeTy);
+                IRBuilder<> irBuilder(call);
+                n = irBuilder.CreateZExtOrTrunc(n, sizeTy);
               }
 
               Value* wDst = callGlobalToWideFn(gDst, call);
