@@ -734,15 +734,6 @@ std::string AggregateType::docsDirective() {
   return "";
 }
 
-void AggregateType::buildConstructors() {
-  if (defaultInitializer == NULL) {
-    SET_LINENO(this);
-
-    buildTypeConstructor();
-    buildConstructor();
-  }
-}
-
 void AggregateType::createOuterWhenRelevant() {
   SET_LINENO(this);
   Symbol* parSym = symbol->defPoint->parentSymbol;
@@ -768,21 +759,41 @@ void AggregateType::createOuterWhenRelevant() {
   }
 }
 
-// Create the (default) type constructor for this class.
-void AggregateType::buildTypeConstructor() {
-  // Do nothing if it is already built
-  if (defaultTypeConstructor != NULL)
-    return;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  // Create the type constructor function,
+void AggregateType::buildConstructors() {
+  if (defaultInitializer == NULL) {
+    SET_LINENO(this);
+
+    if (defaultTypeConstructor == NULL) {
+      buildTypeConstructor();
+    }
+
+    buildConstructor();
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Create the (default) type constructor for this class.                       *
+*                                                                             *
+************************************** | *************************************/
+
+void AggregateType::buildTypeConstructor() {
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", symbol->name));
 
-  fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
-  fn->cname = astr("_type_construct_", symbol->cname);
+  fn->cname   = astr("_type_construct_", symbol->cname);
+  fn->retType = this;
+  fn->retTag  = RET_TYPE;
 
+
+  fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  fn->retTag = RET_TYPE;
 
   if (symbol->hasFlag(FLAG_REF)   == true) {
     fn->addFlag(FLAG_REF);
@@ -795,26 +806,24 @@ void AggregateType::buildTypeConstructor() {
     gGenericTupleTypeCtor = fn;
   }
 
-  // and insert it into the class type.
-  defaultTypeConstructor = fn;
-
   symbol->defPoint->insertBefore(new DefExpr(fn));
 
-  // Create "this".
+
+
   fn->_this = new VarSymbol("this", this);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
   fn->insertAtTail(new DefExpr(fn->_this));
 
-  Vec<const char*> fieldNamesSet;
-  CallExpr*        superCall = NULL;
+
+
+
+  CallExpr* superCall = NULL;
 
   // Copy arguments from superclass type constructor
   // (supporting inheritance from generic classes)
   if (isClass() == true && dispatchParents.n > 0) {
-
-    if (AggregateType* parentTy = toAggregateType(dispatchParents.v[0])){
-
+    if (AggregateType* parentTy = toAggregateType(dispatchParents.v[0])) {
       // This class/record has a parent class/record
       if (parentTy->defaultTypeConstructor == NULL) {
         // If it doesn't yet have an type constructor, make one
@@ -852,6 +861,13 @@ void AggregateType::buildTypeConstructor() {
       }
     }
   }
+
+
+
+
+
+
+  Vec<const char*> fieldNamesSet;
 
   for_fields(tmp, this) {
     SET_LINENO(tmp);
@@ -949,21 +965,31 @@ void AggregateType::buildTypeConstructor() {
     }
   }
 
-  // Add return
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-
-  fn->retType = this;
-
   // Make implicit references to 'this' explicit.
   AggregateType::insertImplicitThis(fn, fieldNamesSet);
 
+
+
+
+
+  // Add return
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
+
   addToSymbolTable(fn);
+
+
+
+  defaultTypeConstructor = fn;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* For the given class type, this builds the compiler-generated constructor    *
+* which is also called by user-defined constructors to pre-initialize all     *
+* fields to their declared or type-specific initial values.                   *
+*                                                                             *
+************************************** | *************************************/
 
-// For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all
-// fields to their declared or type-specific initial values.
 void AggregateType::buildConstructor() {
   if (initializerStyle == DEFINES_INITIALIZER) {
     // Don't want to create the default constructor if we have seen
@@ -971,6 +997,7 @@ void AggregateType::buildConstructor() {
     // since we won't call the default constructor, and it mutates
     // information about the fields that we would rather stayed unmutated.
     return;
+
   } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
     // If neither a constructor nor an initializer has been defined for the
     // type, determine whether we should create a default constructor now or
