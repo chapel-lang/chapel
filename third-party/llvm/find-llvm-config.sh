@@ -15,6 +15,7 @@ then
 elif command_exists llvm-config
 then
   command -v llvm-config
+# If llvm-config is not found by now, search the Mac Homebrew directories.
 elif command_exists /usr/local/opt/llvm@$PREFERRED_VERSION/bin/llvm-config
 then
   command -v /usr/local/opt/llvm@$PREFERRED_VERSION/bin/llvm-config
