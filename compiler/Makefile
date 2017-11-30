@@ -131,6 +131,8 @@ CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
+CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
+
 $(BUILD_VERSION_FILE): FORCE
 	@({ test -x $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || \
@@ -142,7 +144,7 @@ $(CHPL_MAKE_HOME)/configured-prefix:
 $(CONFIGURED_PREFIX_FILE): $(CHPL_MAKE_HOME)/configured-prefix
 	echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE)
 
-$(CLANG_SETTINGS_FILE): FORCE
+$(CLANG_SETTINGS_FILE):
 	echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE)
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
