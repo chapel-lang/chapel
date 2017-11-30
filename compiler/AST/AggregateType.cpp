@@ -784,57 +784,51 @@ void AggregateType::buildConstructors() {
 ************************************** | *************************************/
 
 FnSymbol* AggregateType::buildTypeConstructor() {
-  FnSymbol* fn = new FnSymbol(astr("_type_construct_", symbol->name));
+  const char* name   = astr("_type_construct_", symbol->name);
+  const char* cName  = astr("_type_construct_", symbol->cname);
+  VarSymbol*  _this  = new VarSymbol("this", this);
+  FnSymbol*   retval = new FnSymbol(name);
 
-  fn->cname   = astr("_type_construct_", symbol->cname);
-  fn->retType = this;
-  fn->retTag  = RET_TYPE;
+  _this->addFlag(FLAG_ARG_THIS);
 
+  retval->cname   = cName;
+  retval->retTag  = RET_TYPE;
+  retval->retType = this;
+  retval->_this   = _this;
 
-  fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
+  retval->addFlag(FLAG_TYPE_CONSTRUCTOR);
+  retval->addFlag(FLAG_COMPILER_GENERATED);
+  retval->addFlag(FLAG_LAST_RESORT);
 
   if (symbol->hasFlag(FLAG_REF)   == true) {
-    fn->addFlag(FLAG_REF);
+    retval->addFlag(FLAG_REF);
   }
 
   if (symbol->hasFlag(FLAG_TUPLE) == true) {
-    fn->addFlag(FLAG_TUPLE);
-    fn->addFlag(FLAG_INLINE);
+    retval->addFlag(FLAG_TUPLE);
+    retval->addFlag(FLAG_INLINE);
 
-    gGenericTupleTypeCtor = fn;
+    gGenericTupleTypeCtor = retval;
   }
 
-  symbol->defPoint->insertBefore(new DefExpr(fn));
+  symbol->defPoint->insertBefore(new DefExpr(retval));
 
-
-
-  fn->_this = new VarSymbol("this", this);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-
-  fn->insertAtTail(new DefExpr(fn->_this));
-
-
-
-  CallExpr* superCall = NULL;
+  retval->insertAtTail(new DefExpr(_this));
 
   if (isClass() == true && dispatchParents.n > 0) {
-    superCall = typeConstrSuperCall(fn);
+    typeConstrSetFields(retval, typeConstrSuperCall(retval));
+
+  } else {
+    typeConstrSetFields(retval, NULL);
   }
 
-  typeConstrSetFields(fn, superCall);
+  retval->insertAtTail(new CallExpr(PRIM_RETURN, _this));
 
+  addToSymbolTable(retval);
 
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
+  defaultTypeConstructor = retval;
 
-  addToSymbolTable(fn);
-
-
-
-  defaultTypeConstructor = fn;
-
-  return fn;
+  return retval;
 }
 
 CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
