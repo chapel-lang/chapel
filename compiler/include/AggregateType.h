@@ -172,8 +172,13 @@ private:
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
   FnSymbol*                   buildTypeConstructor();
+
   CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+
   bool                        isFieldInThisClass(const char* name)       const;
+
+  void                        typeConstrSetFields(FnSymbol* fn,
+                                                  CallExpr* superCall)   const;
 
   void                        buildConstructor();
   bool                        needsConstructor();

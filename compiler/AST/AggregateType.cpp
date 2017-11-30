@@ -823,7 +823,63 @@ FnSymbol* AggregateType::buildTypeConstructor() {
     superCall = typeConstrSuperCall(fn);
   }
 
+  typeConstrSetFields(fn, superCall);
 
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
+
+  addToSymbolTable(fn);
+
+
+
+  defaultTypeConstructor = fn;
+
+  return fn;
+}
+
+CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
+  AggregateType* parent        = toAggregateType(dispatchParents.v[0]);
+  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
+  CallExpr*      retval        = NULL;
+
+  if (superTypeCtor == NULL) {
+    superTypeCtor = parent->buildTypeConstructor();
+  }
+
+  if (superTypeCtor->numFormals() > 0) {
+    retval = new CallExpr(parent->symbol->name);
+
+    for_formals(formal, superTypeCtor) {
+      ArgSymbol* arg = toArgSymbol(formal->copy());
+
+      if (isFieldInThisClass(arg->name) == false) {
+        arg->addFlag(FLAG_PARENT_FIELD);
+
+        fn->insertFormalAtTail(arg);
+
+        retval->insertAtTail(new SymExpr(arg));
+      }
+    }
+  }
+
+  return retval;
+}
+
+bool AggregateType::isFieldInThisClass(const char* name) const {
+  bool retval = false;
+
+  for_fields(sym, this) {
+    if (strcmp(sym->name, name) == 0) {
+      retval = true;
+      break;
+    }
+  }
+
+  return retval;
+}
+
+void AggregateType::typeConstrSetFields(FnSymbol* fn,
+                                        CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
 
   for_fields(tmp, this) {
@@ -924,62 +980,6 @@ FnSymbol* AggregateType::buildTypeConstructor() {
 
   // Make implicit references to 'this' explicit.
   AggregateType::insertImplicitThis(fn, fieldNamesSet);
-
-
-
-
-
-  // Add return
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-
-  addToSymbolTable(fn);
-
-
-
-  defaultTypeConstructor = fn;
-
-  return fn;
-}
-
-CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
-  AggregateType* parent        = toAggregateType(dispatchParents.v[0]);
-  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
-  CallExpr*      retval        = NULL;
-
-  if (superTypeCtor == NULL) {
-    superTypeCtor = parent->buildTypeConstructor();
-  }
-
-  if (superTypeCtor->numFormals() > 0) {
-    retval = new CallExpr(parent->symbol->name);
-
-    for_formals(formal, superTypeCtor) {
-      ArgSymbol* arg = toArgSymbol(formal->copy());
-
-      if (isFieldInThisClass(arg->name) == false) {
-        arg->addFlag(FLAG_PARENT_FIELD);
-
-        fn->insertFormalAtTail(arg);
-
-        retval->insertAtTail(new SymExpr(arg));
-      }
-    }
-  }
-
-  return retval;
-}
-
-bool AggregateType::isFieldInThisClass(const char* name) const {
-  bool retval = false;
-
-  for_fields(sym, this) {
-    if (strcmp(sym->name, name) == 0) {
-      retval = true;
-      break;
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
