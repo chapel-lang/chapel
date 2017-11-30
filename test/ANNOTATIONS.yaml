@@ -530,7 +530,7 @@ hpl.hpcc2012.ml-perf: &hpl-hpcc2012-base
   11/04/17:
     - Stop testing hpl.hpcc2012 (#7744)
 hpl.hpcc2012.ml-time:
-  <<: hpl-hpcc2012-base
+  <<: *hpl-hpcc2012-base
 
 init:
   05/03/16:
