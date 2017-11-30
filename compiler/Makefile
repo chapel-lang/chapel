@@ -131,6 +131,8 @@ CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
+CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
+
 $(BUILD_VERSION_FILE): FORCE
 	@({ test -x $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@) || \
