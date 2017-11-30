@@ -893,61 +893,50 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           typeConstrSetField(fn, field, call);
         }
 
-        continue;
-
       } else if (field == this->outer) {
+        Symbol*        _this     = fn->_this;
+        Symbol*        name      = new_CStringSymbol("outer");
         AggregateType* outerType = toAggregateType(outer->type);
+        Symbol*        _outer    = outerType->moveConstructorToOuter(fn);
 
-        outerType->moveConstructorToOuter(fn);
+        fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
-        fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                      fn->_this,
-                                      new_CStringSymbol("outer"),
-                                      fn->_outer));
+      } else if (strcmp(field->name, "_promotionType") == 0) {
+        Symbol*   _this     = fn->_this;
+        Symbol*   name      = new_CStringSymbol(field->name);
+        Expr*     exprType  = field->defPoint->exprType->remove();
+        CallExpr* call      = new CallExpr(PRIM_TYPE_INIT,  exprType);
+        CallExpr* setMember = new CallExpr(PRIM_SET_MEMBER, _this, name, call);
 
-        continue;
-      }
-
-
-      Expr* exprType = field->defPoint->exprType;
-      Expr* init     = field->defPoint->init;
-
-      if (strcmp(field->name, "_promotionType") == 0) {
-        fn->insertAtTail(
-             new BlockStmt(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol(field->name),
-                                        new CallExpr(PRIM_TYPE_INIT,
-                                                     exprType->remove())),
-                           BLOCK_TYPE));
+        fn->insertAtTail(new BlockStmt(setMember, BLOCK_TYPE));
 
       } else {
         fieldNamesSet.set_add(field->name);
 
-        if (field->isType() ||
-            field->hasFlag(FLAG_PARAM)         ||
-            (!exprType && !init)) {
+        if (field->isType()            == true ||
+            field->hasFlag(FLAG_PARAM) == true) {
           ArgSymbol* arg = insertGenericArg(fn, field);
 
-          if (field->hasFlag(FLAG_PARAM) == true || field->isType() == true) {
-            typeConstrSetField(fn, field, new SymExpr(arg));
+          typeConstrSetField(fn, field, new SymExpr(arg));
 
-          } else if (arg->type                 == dtAny &&
-                     symbol->hasFlag(FLAG_REF) == false) {
+        } else if (Expr* type = field->defPoint->exprType) {
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   type->copy());
+
+          typeConstrSetField(fn, field, call);
+
+        } else if (Expr* init = field->defPoint->init) {
+          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
+
+          typeConstrSetField(fn, field, call);
+
+        } else {
+          ArgSymbol* arg = insertGenericArg(fn, field);
+
+          if (symbol->hasFlag(FLAG_REF) == false) {
             CallExpr* call = new CallExpr(PRIM_TYPE_INIT, new SymExpr(arg));
 
             typeConstrSetField(fn, field, call);
           }
-
-        } else if (exprType != NULL) {
-          CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   exprType->copy());
-
-          typeConstrSetField(fn, field, call);
-
-        } else if (init     != NULL) {
-          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
-
-          typeConstrSetField(fn, field, call);
         }
       }
     }
