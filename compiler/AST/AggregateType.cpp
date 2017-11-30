@@ -734,15 +734,6 @@ std::string AggregateType::docsDirective() {
   return "";
 }
 
-void AggregateType::buildConstructors() {
-  if (defaultInitializer == NULL) {
-    SET_LINENO(this);
-
-    buildTypeConstructor();
-    buildConstructor();
-  }
-}
-
 void AggregateType::createOuterWhenRelevant() {
   SET_LINENO(this);
   Symbol* parSym = symbol->defPoint->parentSymbol;
@@ -768,202 +759,241 @@ void AggregateType::createOuterWhenRelevant() {
   }
 }
 
-// Create the (default) type constructor for this class.
-void AggregateType::buildTypeConstructor() {
-  // Do nothing if it is already built
-  if (defaultTypeConstructor != NULL)
-    return;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  // Create the type constructor function,
-  FnSymbol* fn = new FnSymbol(astr("_type_construct_", symbol->name));
+void AggregateType::buildConstructors() {
+  if (defaultInitializer == NULL) {
+    SET_LINENO(this);
 
-  fn->addFlag(FLAG_TYPE_CONSTRUCTOR);
-  fn->cname = astr("_type_construct_", symbol->cname);
+    if (defaultTypeConstructor == NULL) {
+      buildTypeConstructor();
+    }
 
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->retTag = RET_TYPE;
+    buildConstructor();
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Create the (default) type constructor for this class.                       *
+*                                                                             *
+************************************** | *************************************/
+
+FnSymbol* AggregateType::buildTypeConstructor() {
+  const char* name   = astr("_type_construct_", symbol->name);
+  const char* cName  = astr("_type_construct_", symbol->cname);
+  VarSymbol*  _this  = new VarSymbol("this", this);
+  FnSymbol*   retval = new FnSymbol(name);
+
+  _this->addFlag(FLAG_ARG_THIS);
+
+  retval->cname   = cName;
+  retval->retTag  = RET_TYPE;
+  retval->retType = this;
+  retval->_this   = _this;
+
+  retval->addFlag(FLAG_TYPE_CONSTRUCTOR);
+  retval->addFlag(FLAG_COMPILER_GENERATED);
+  retval->addFlag(FLAG_LAST_RESORT);
 
   if (symbol->hasFlag(FLAG_REF)   == true) {
-    fn->addFlag(FLAG_REF);
+    retval->addFlag(FLAG_REF);
   }
 
   if (symbol->hasFlag(FLAG_TUPLE) == true) {
-    fn->addFlag(FLAG_TUPLE);
-    fn->addFlag(FLAG_INLINE);
+    retval->addFlag(FLAG_TUPLE);
+    retval->addFlag(FLAG_INLINE);
 
-    gGenericTupleTypeCtor = fn;
+    gGenericTupleTypeCtor = retval;
   }
 
-  // and insert it into the class type.
-  defaultTypeConstructor = fn;
+  symbol->defPoint->insertBefore(new DefExpr(retval));
 
-  symbol->defPoint->insertBefore(new DefExpr(fn));
+  retval->insertAtTail(new DefExpr(_this));
 
-  // Create "this".
-  fn->_this = new VarSymbol("this", this);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-
-  fn->insertAtTail(new DefExpr(fn->_this));
-
-  Vec<const char*> fieldNamesSet;
-  CallExpr*        superCall = NULL;
-
-  // Copy arguments from superclass type constructor
-  // (supporting inheritance from generic classes)
   if (isClass() == true && dispatchParents.n > 0) {
+    typeConstrSetFields(retval, typeConstrSuperCall(retval));
 
-    if (AggregateType* parentTy = toAggregateType(dispatchParents.v[0])){
+  } else {
+    typeConstrSetFields(retval, NULL);
+  }
 
-      // This class/record has a parent class/record
-      if (parentTy->defaultTypeConstructor == NULL) {
-        // If it doesn't yet have an type constructor, make one
-        parentTy->buildTypeConstructor();
-      }
+  retval->insertAtTail(new CallExpr(PRIM_RETURN, _this));
 
-      FnSymbol* superTypeCtor = parentTy->defaultTypeConstructor;
+  addToSymbolTable(retval);
 
-      if (superTypeCtor->numFormals() > 0) {
-        superCall = new CallExpr(parentTy->symbol->name);
+  defaultTypeConstructor = retval;
 
-        // Now walk through arguments in super class type constructor
-        for_formals(formal, superTypeCtor) {
-          DefExpr*   superArg         = formal->defPoint->copy();
-          ArgSymbol* arg              = toArgSymbol(superArg->sym->copy());
-          bool       fieldInThisClass = false;
+  return retval;
+}
 
-          for_fields(sym, this) {
-            if (strcmp(sym->name, arg->name) == 0) {
-              fieldInThisClass = true;
-            }
-          }
+CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
+  AggregateType* parent        = toAggregateType(dispatchParents.v[0]);
+  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
+  CallExpr*      retval        = NULL;
 
-          // If the field is also present in the child, adjust the field
-          // name in the super. Otherwise it would not be possible to
-          // type construct the super.
-          if (fieldInThisClass == false) {
-            arg->addFlag(FLAG_PARENT_FIELD);
+  if (superTypeCtor == NULL) {
+    superTypeCtor = parent->buildTypeConstructor();
+  }
 
-            fn->insertFormalAtTail(arg);
+  if (superTypeCtor->numFormals() > 0) {
+    retval = new CallExpr(parent->symbol->name);
 
-            superCall->insertAtTail(new SymExpr(arg));
-          }
-        }
+    for_formals(formal, superTypeCtor) {
+      ArgSymbol* arg = toArgSymbol(formal->copy());
+
+      if (isFieldInThisClass(arg->name) == false) {
+        arg->addFlag(FLAG_PARENT_FIELD);
+
+        fn->insertFormalAtTail(arg);
+
+        retval->insertAtTail(new SymExpr(arg));
       }
     }
   }
+
+  return retval;
+}
+
+bool AggregateType::isFieldInThisClass(const char* name) const {
+  bool retval = false;
+
+  for_fields(sym, this) {
+    if (strcmp(sym->name, name) == 0) {
+      retval = true;
+      break;
+    }
+  }
+
+  return retval;
+}
+
+void AggregateType::typeConstrSetFields(FnSymbol* fn,
+                                        CallExpr* superCall) const {
+  Vec<const char*> fieldNamesSet;
 
   for_fields(tmp, this) {
     SET_LINENO(tmp);
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == true) {
-        // supporting inheritance from generic classes
         if (superCall != NULL) {
-          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
-          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
-                                           fn->_this,
-                                           new_CStringSymbol(field->name),
-                                           newInit);
-          fn->insertAtTail(newSet);
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT, superCall);
+
+          typeConstrSetField(fn, field, call);
         }
 
-        continue;
       } else if (field == this->outer) {
-        if (AggregateType* outerType = toAggregateType(outer->type)) {
-          outerType->moveConstructorToOuter(fn);
+        Symbol*        _this     = fn->_this;
+        Symbol*        name      = new_CStringSymbol("outer");
+        AggregateType* outerType = toAggregateType(outer->type);
+        Symbol*        _outer    = outerType->moveConstructorToOuter(fn);
 
-          fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol("outer"),
-                                        fn->_outer));
-        }
-        continue;
-      }
+        fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
+      } else if (strcmp(field->name, "_promotionType") == 0) {
+        Symbol*   _this     = fn->_this;
+        Symbol*   name      = new_CStringSymbol(field->name);
+        Expr*     exprType  = field->defPoint->exprType->remove();
+        CallExpr* call      = new CallExpr(PRIM_TYPE_INIT,  exprType);
+        CallExpr* setMember = new CallExpr(PRIM_SET_MEMBER, _this, name, call);
 
-      Expr* exprType = field->defPoint->exprType;
-      Expr* init     = field->defPoint->init;
-
-      if (strcmp(field->name, "_promotionType") == 0) {
-        fn->insertAtTail(
-             new BlockStmt(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol(field->name),
-                                        new CallExpr(PRIM_TYPE_INIT,
-                                                     exprType->remove())),
-                           BLOCK_TYPE));
+        fn->insertAtTail(new BlockStmt(setMember, BLOCK_TYPE));
 
       } else {
         fieldNamesSet.set_add(field->name);
 
-        //
-        // if formal is generic
-        //
-        if (field->isType() ||
-            field->hasFlag(FLAG_PARAM)         ||
-            (!exprType && !init)) {
+        if (field->isType()            == true ||
+            field->hasFlag(FLAG_PARAM) == true) {
+          ArgSymbol* arg = insertGenericArg(fn, field);
 
-          ArgSymbol* arg = AggregateType::createGenericArg(field);
+          typeConstrSetField(fn, field, new SymExpr(arg));
 
-          // Indicate which type constructor args are also for super class
-          // This helps us to call the superclass type constructor in
-          // resolution
-          if (field->hasFlag(FLAG_PARENT_FIELD) == true) {
-            arg->addFlag(FLAG_PARENT_FIELD);
+        } else if (Expr* type = field->defPoint->exprType) {
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   type->copy());
+
+          typeConstrSetField(fn, field, call);
+
+        } else if (Expr* init = field->defPoint->init) {
+          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
+
+          typeConstrSetField(fn, field, call);
+
+        } else {
+          ArgSymbol* arg = insertGenericArg(fn, field);
+
+          if (symbol->hasFlag(FLAG_REF) == false) {
+            CallExpr* call = new CallExpr(PRIM_TYPE_INIT, new SymExpr(arg));
+
+            typeConstrSetField(fn, field, call);
           }
-
-          fn->insertFormalAtTail(arg);
-
-          if (field->hasFlag(FLAG_PARAM) == true || field->isType() == true) {
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
-                                          arg));
-
-          } else if (arg->type                 == dtAny &&
-                     symbol->hasFlag(FLAG_REF) == false) {
-            // It would be nice to be able to remove this case.
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
-                                          new CallExpr(PRIM_TYPE_INIT, arg)));
-          }
-
-        } else if (exprType != NULL) {
-          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
-          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
-                                           fn->_this,
-                                           new_CStringSymbol(field->name),
-                                           newInit);
-          fn->insertAtTail(newSet);
-
-        } else if (init     != NULL) {
-          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol(field->name),
-                                        new CallExpr("chpl__initCopy",
-                                                     init->copy())));
         }
       }
     }
   }
 
-  // Add return
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, fn->_this));
-
-  fn->retType = this;
-
-  // Make implicit references to 'this' explicit.
-  AggregateType::insertImplicitThis(fn, fieldNamesSet);
-
-  addToSymbolTable(fn);
+  insertImplicitThis(fn, fieldNamesSet);
 }
 
+void AggregateType::typeConstrSetField(FnSymbol*  fn,
+                                       VarSymbol* field,
+                                       Expr*      expr) const {
+  Symbol* _this = fn->_this;
+  Symbol* name  = new_CStringSymbol(field->name);
 
-// For the given class type, this builds the compiler-generated constructor
-// which is also called by user-defined constructors to pre-initialize all
-// fields to their declared or type-specific initial values.
+  fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this, name, expr));
+}
+
+ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
+                                           VarSymbol* field) const {
+  Expr*      type = field->defPoint->exprType;
+  Expr*      init = field->defPoint->init;
+  ArgSymbol* arg  = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+
+  if (field->hasFlag(FLAG_PARENT_FIELD) == true) {
+    arg->addFlag(FLAG_PARENT_FIELD);
+  }
+
+  if (field->hasFlag(FLAG_PARAM) == true) {
+    arg->intent = INTENT_PARAM;
+
+  } else {
+    arg->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  if (type != NULL) {
+    arg->typeExpr    = new BlockStmt(type->copy(), BLOCK_TYPE);
+  }
+
+  if (init != NULL) {
+    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
+  }
+
+  if (type == NULL && arg->type == dtUnknown) {
+    if (field->isType() == false) {
+      arg->addFlag(FLAG_GENERIC);
+    }
+
+    arg->type = dtAny;
+  }
+
+  fn->insertFormalAtTail(arg);
+
+  return arg;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* For the given class type, this builds the compiler-generated constructor    *
+* which is also called by user-defined constructors to pre-initialize all     *
+* fields to their declared or type-specific initial values.                   *
+*                                                                             *
+************************************** | *************************************/
+
 void AggregateType::buildConstructor() {
   if (initializerStyle == DEFINES_INITIALIZER) {
     // Don't want to create the default constructor if we have seen
@@ -971,6 +1001,7 @@ void AggregateType::buildConstructor() {
     // since we won't call the default constructor, and it mutates
     // information about the fields that we would rather stayed unmutated.
     return;
+
   } else if (initializerStyle == DEFINES_NONE_USE_DEFAULT) {
     // If neither a constructor nor an initializer has been defined for the
     // type, determine whether we should create a default constructor now or
@@ -1674,45 +1705,8 @@ bool AggregateType::wantsDefaultInitializer() {
   return true;
 }
 
-ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-
-  // We take it as a param argument if it is marked as a param field.
-  if (field->hasFlag(FLAG_PARAM)) {
-    arg->intent = INTENT_PARAM;
-  } else {
-    // Both type arguments and arguments of unspecified type get this flag.
-    arg->addFlag(FLAG_TYPE_VARIABLE);
-  }
-
-  // Copy the field type if it exists.
-  Expr* exprType = field->defPoint->exprType;
-
-  if (exprType) {
-    arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
-  }
-
-  // Copy the initialization expression if it exists.
-  Expr* init = field->defPoint->init;
-
-  if (init) {
-    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
-  }
-
-  // Translate an unknown field type into an unspecified arg type.
-  if (exprType == NULL && arg->type == dtUnknown) {
-    if (field->isType() == false) {
-      arg->addFlag(FLAG_GENERIC);
-    }
-
-    arg->type = dtAny;
-  }
-
-  return arg;
-}
-
-/// Replace implicit references to 'this' in the body of this
-/// type constructor with explicit member reference (dot) expressions.
+// Replace implicit references to 'this' in the body of this
+// type constructor with explicit member reference (dot) expressions.
 void AggregateType::insertImplicitThis(FnSymbol*         fn,
                                        Vec<const char*>& fieldNamesSet) {
   std::vector<BaseAST*> asts;
@@ -1730,24 +1724,21 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
   }
 }
 
-void AggregateType:: moveConstructorToOuter(FnSymbol* fn) {
-  Expr* insertPoint = symbol->defPoint;
+ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
+  Expr*      insertPoint = symbol->defPoint;
+  ArgSymbol* _mt         = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
+  ArgSymbol* retval      = new ArgSymbol(INTENT_BLANK, "outer", this);
 
-  // Remove the DefPoint for this constructor, add it to the outer
-  // class's method list.
   methods.add(fn);
 
-  fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", this);
+  retval->addFlag(FLAG_GENERIC);
 
-  fn->_outer->addFlag(FLAG_GENERIC); // Arg expects a real object :-P.
+  fn->_outer = retval;
 
-  fn->insertFormalAtHead(new DefExpr(fn->_outer));
+  fn->insertFormalAtHead(new DefExpr(retval));
+  fn->insertFormalAtHead(new DefExpr(_mt));
 
-  fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
-                                                   "_mt",
-                                                   dtMethodToken)));
   fn->addFlag(FLAG_METHOD);
-
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {
@@ -1755,6 +1746,8 @@ void AggregateType:: moveConstructorToOuter(FnSymbol* fn) {
   }
 
   insertPoint->insertBefore(fn->defPoint->remove());
+
+  return retval;
 }
 
 /************************************* | **************************************

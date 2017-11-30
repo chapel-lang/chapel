@@ -170,10 +170,26 @@ private:
                                           std::set<AggregateType*>& seen);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
-  void                        buildTypeConstructor();
+
+  FnSymbol*                   buildTypeConstructor();
+
+  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+
+  bool                        isFieldInThisClass(const char* name)       const;
+
+  void                        typeConstrSetFields(FnSymbol* fn,
+                                                  CallExpr* superCall)   const;
+
+  void                        typeConstrSetField(FnSymbol*  fn,
+                                                 VarSymbol* field,
+                                                 Expr*      expr)        const;
+
+  ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
+                                               VarSymbol* field)         const;
+
   void                        buildConstructor();
   bool                        needsConstructor();
-  void                        moveConstructorToOuter(FnSymbol* fn);
+  ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
