@@ -1278,7 +1278,7 @@ static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
 static chpl_bool reacquire_comm_dom(int);
 static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
-static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*);
+static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*, chpl_bool);
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 static void      local_yield(void);
@@ -4325,7 +4325,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     PERFSTATS_INC(put_cnt);
     PERFSTATS_ADD(put_byte_cnt, tsz);
 
-    post_fma_and_wait(locale, &post_desc);
+    post_fma_and_wait(locale, &post_desc, true);
   }
 }
 
@@ -4659,7 +4659,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
     PERFSTATS_INC(get_cnt);
     PERFSTATS_ADD(get_byte_cnt, tsz);
 
-    post_fma_and_wait(locale, &post_desc);
+    post_fma_and_wait(locale, &post_desc, true);
   }
 }
 
@@ -5954,7 +5954,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   PERFSTATS_INC(amo_cnt);
 
-  post_fma_and_wait(locale, &post_desc);
+  post_fma_and_wait(locale, &post_desc, true);
 
   if (p_result != result) {
     memcpy(result, p_result, size);
@@ -6468,7 +6468,13 @@ void do_fork_post(c_nodeid_t locale,
     *cdi_p = cd_idx;
   if (rbi_p != NULL)
     *rbi_p = rbi;
-  post_fma_and_wait(locale, &post_desc);
+
+  // note: Do __NOT__ yield while waiting for the ack on a NB fork. We want to
+  // ensure any subsequent NB tasks are spawned before we yield the processor.
+  // For a case like `coforall loc in Locales do on loc do body()` this ensures
+  // we've forked all remote tasks before we give up this task to potentially
+  // work on the body for this locale.
+  post_fma_and_wait(locale, &post_desc, blocking);
 
   if (blocking) {
     PERFSTATS_INC(wait_rfork_cnt);
@@ -6757,7 +6763,7 @@ int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 
 
 static
-void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
+void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc, chpl_bool do_yield)
 {
   int cdi;
   atomic_bool post_done;
@@ -6773,7 +6779,9 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
   // we can find something else to do in the meantime.
   //
   do {
-    local_yield();
+    if (do_yield) {
+      local_yield();
+    }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
 
