@@ -274,6 +274,8 @@ all:
     - Fix LICM bug (#7371)
   10/21/17:
     - Reduce wide pointer overhead for sparse domains/arrays (#7627)
+  11/21/17:
+    - New bulk transfer interface (#7775)
 
 
 AllCompTime:
@@ -520,17 +522,15 @@ hpl_performance:
     - text: Improvements to inferConstRefs (#4904)
       config: 16 node XC
 
-hpl.hpcc2012.ml-perf:
+hpl.hpcc2012.ml-perf: &hpl-hpcc2012-base
   03/03/17:
     - Modified test as part of array views (#5338)
   06/19/17:
     - Remove locking from associative array accesses (#6244)
-
+  11/04/17:
+    - Stop testing hpl.hpcc2012 (#7744)
 hpl.hpcc2012.ml-time:
-  03/03/17:
-    - Modified test as part of array views (#5338)
-  06/19/17:
-    - Remove locking from associative array accesses (#6244)
+  <<: *hpl-hpcc2012-base
 
 init:
   05/03/16:
@@ -607,6 +607,8 @@ knucleotide:
     - Let parSafe revert to default in blc study version (#6475)
   06/19/17:
     - Remove locking from associative array accesses (#6244)
+  11/21/17:
+    - Clear associative array elements when created by dsiAdd (#7828)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -767,6 +769,8 @@ memleaksfull:
     - close additional graph 500 leaks (#7357)
   09/20/17:
     - close more test code leaks (#7406, #7399, #7395, #7364, and #7400)
+  11/15/17:
+    - Delete classes in some tests (#7791)
 
 meteor:
   12/18/13:
