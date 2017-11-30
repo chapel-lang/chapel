@@ -27,7 +27,5 @@ endif
 
 # Figure out which clang we are using
 # if LLVM_CONFIG is e.g. llvm-config-3.7, we should use clang-3.7
-LLVM_CONFIG_NAME=$(notdir $(LLVM_CONFIG))
-CLANG_CC=$(subst llvm-config,clang,$(LLVM_CONFIG_NAME))
-CLANG_CXX=$(subst llvm-config,clang++,$(LLVM_CONFIG_NAME))
-
+CLANG_CC=$(subst llvm-config,clang,$(LLVM_CONFIG))
+CLANG_CXX=$(subst llvm-config,clang++,$(LLVM_CONFIG))
