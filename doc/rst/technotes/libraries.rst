@@ -134,6 +134,9 @@ name of your C program):
 
    `$CHPL_HOME/util/config/compileline --compile` myprog.c -L. -lfoo `$CHPL_HOME/util/config/compileline --libraries`
 
+Note that ``compileline --compile-c++`` is also available. It requests a
+compilation command able to compile a C++ program.
+
 Chapel library files cannot be used from Chapel code.  The library files must
 include the chapel runtime and standard modules for use in a non-Chapel program
 and when the library is linked to a Chapel program this leads to multiple
