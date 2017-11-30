@@ -180,6 +180,10 @@ private:
   void                        typeConstrSetFields(FnSymbol* fn,
                                                   CallExpr* superCall)   const;
 
+  void                        typeConstrSetField(FnSymbol*  fn,
+                                                 VarSymbol* field,
+                                                 Expr*      expr)        const;
+
   void                        buildConstructor();
   bool                        needsConstructor();
   void                        moveConstructorToOuter(FnSymbol* fn);

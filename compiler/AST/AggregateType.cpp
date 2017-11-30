@@ -887,26 +887,24 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
     if (VarSymbol* field = toVarSymbol(tmp)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == true) {
-        // supporting inheritance from generic classes
         if (superCall != NULL) {
-          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, superCall);
-          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
-                                           fn->_this,
-                                           new_CStringSymbol(field->name),
-                                           newInit);
-          fn->insertAtTail(newSet);
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT, superCall);
+
+          typeConstrSetField(fn, field, call);
         }
 
         continue;
-      } else if (field == this->outer) {
-        if (AggregateType* outerType = toAggregateType(outer->type)) {
-          outerType->moveConstructorToOuter(fn);
 
-          fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol("outer"),
-                                        fn->_outer));
-        }
+      } else if (field == this->outer) {
+        AggregateType* outerType = toAggregateType(outer->type);
+
+        outerType->moveConstructorToOuter(fn);
+
+        fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER,
+                                      fn->_this,
+                                      new_CStringSymbol("outer"),
+                                      fn->_outer));
+
         continue;
       }
 
@@ -926,18 +924,12 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
       } else {
         fieldNamesSet.set_add(field->name);
 
-        //
-        // if formal is generic
-        //
         if (field->isType() ||
             field->hasFlag(FLAG_PARAM)         ||
             (!exprType && !init)) {
 
-          ArgSymbol* arg = AggregateType::createGenericArg(field);
+          ArgSymbol* arg = createGenericArg(field);
 
-          // Indicate which type constructor args are also for super class
-          // This helps us to call the superclass type constructor in
-          // resolution
           if (field->hasFlag(FLAG_PARENT_FIELD) == true) {
             arg->addFlag(FLAG_PARENT_FIELD);
           }
@@ -945,41 +937,39 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
           fn->insertFormalAtTail(arg);
 
           if (field->hasFlag(FLAG_PARAM) == true || field->isType() == true) {
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
-                                          arg));
+            typeConstrSetField(fn, field, new SymExpr(arg));
 
           } else if (arg->type                 == dtAny &&
                      symbol->hasFlag(FLAG_REF) == false) {
-            // It would be nice to be able to remove this case.
-            fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                          fn->_this,
-                                          new_CStringSymbol(field->name),
-                                          new CallExpr(PRIM_TYPE_INIT, arg)));
+            CallExpr* call = new CallExpr(PRIM_TYPE_INIT, new SymExpr(arg));
+
+            typeConstrSetField(fn, field, call);
           }
 
         } else if (exprType != NULL) {
-          CallExpr* newInit = new CallExpr(PRIM_TYPE_INIT, exprType->copy());
-          CallExpr* newSet  = new CallExpr(PRIM_SET_MEMBER,
-                                           fn->_this,
-                                           new_CStringSymbol(field->name),
-                                           newInit);
-          fn->insertAtTail(newSet);
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   exprType->copy());
+
+          typeConstrSetField(fn, field, call);
 
         } else if (init     != NULL) {
-          fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
-                                        fn->_this,
-                                        new_CStringSymbol(field->name),
-                                        new CallExpr("chpl__initCopy",
-                                                     init->copy())));
+          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
+
+          typeConstrSetField(fn, field, call);
         }
       }
     }
   }
 
-  // Make implicit references to 'this' explicit.
-  AggregateType::insertImplicitThis(fn, fieldNamesSet);
+  insertImplicitThis(fn, fieldNamesSet);
+}
+
+void AggregateType::typeConstrSetField(FnSymbol*  fn,
+                                       VarSymbol* field,
+                                       Expr*      expr) const {
+  Symbol* _this = fn->_this;
+  Symbol* name  = new_CStringSymbol(field->name);
+
+  fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this, name, expr));
 }
 
 /************************************* | **************************************
