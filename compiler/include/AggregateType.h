@@ -184,6 +184,9 @@ private:
                                                  VarSymbol* field,
                                                  Expr*      expr)        const;
 
+  ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
+                                               VarSymbol* field)         const;
+
   void                        buildConstructor();
   bool                        needsConstructor();
   void                        moveConstructorToOuter(FnSymbol* fn);

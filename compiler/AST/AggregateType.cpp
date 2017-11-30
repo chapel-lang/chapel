@@ -927,14 +927,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
         if (field->isType() ||
             field->hasFlag(FLAG_PARAM)         ||
             (!exprType && !init)) {
-
-          ArgSymbol* arg = createGenericArg(field);
-
-          if (field->hasFlag(FLAG_PARENT_FIELD) == true) {
-            arg->addFlag(FLAG_PARENT_FIELD);
-          }
-
-          fn->insertFormalAtTail(arg);
+          ArgSymbol* arg = insertGenericArg(fn, field);
 
           if (field->hasFlag(FLAG_PARAM) == true || field->isType() == true) {
             typeConstrSetField(fn, field, new SymExpr(arg));
@@ -970,6 +963,44 @@ void AggregateType::typeConstrSetField(FnSymbol*  fn,
   Symbol* name  = new_CStringSymbol(field->name);
 
   fn->insertAtTail(new CallExpr(PRIM_SET_MEMBER, _this, name, expr));
+}
+
+ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
+                                           VarSymbol* field) const {
+  Expr*      type = field->defPoint->exprType;
+  Expr*      init = field->defPoint->init;
+  ArgSymbol* arg  = new ArgSymbol(INTENT_BLANK, field->name, field->type);
+
+  if (field->hasFlag(FLAG_PARENT_FIELD) == true) {
+    arg->addFlag(FLAG_PARENT_FIELD);
+  }
+
+  if (field->hasFlag(FLAG_PARAM) == true) {
+    arg->intent = INTENT_PARAM;
+
+  } else {
+    arg->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  if (type != NULL) {
+    arg->typeExpr    = new BlockStmt(type->copy(), BLOCK_TYPE);
+  }
+
+  if (init != NULL) {
+    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
+  }
+
+  if (type == NULL && arg->type == dtUnknown) {
+    if (field->isType() == false) {
+      arg->addFlag(FLAG_GENERIC);
+    }
+
+    arg->type = dtAny;
+  }
+
+  fn->insertFormalAtTail(arg);
+
+  return arg;
 }
 
 /************************************* | **************************************
@@ -1691,45 +1722,8 @@ bool AggregateType::wantsDefaultInitializer() {
   return true;
 }
 
-ArgSymbol* AggregateType::createGenericArg(VarSymbol* field) {
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, field->name, field->type);
-
-  // We take it as a param argument if it is marked as a param field.
-  if (field->hasFlag(FLAG_PARAM)) {
-    arg->intent = INTENT_PARAM;
-  } else {
-    // Both type arguments and arguments of unspecified type get this flag.
-    arg->addFlag(FLAG_TYPE_VARIABLE);
-  }
-
-  // Copy the field type if it exists.
-  Expr* exprType = field->defPoint->exprType;
-
-  if (exprType) {
-    arg->typeExpr = new BlockStmt(exprType->copy(), BLOCK_TYPE);
-  }
-
-  // Copy the initialization expression if it exists.
-  Expr* init = field->defPoint->init;
-
-  if (init) {
-    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
-  }
-
-  // Translate an unknown field type into an unspecified arg type.
-  if (exprType == NULL && arg->type == dtUnknown) {
-    if (field->isType() == false) {
-      arg->addFlag(FLAG_GENERIC);
-    }
-
-    arg->type = dtAny;
-  }
-
-  return arg;
-}
-
-/// Replace implicit references to 'this' in the body of this
-/// type constructor with explicit member reference (dot) expressions.
+// Replace implicit references to 'this' in the body of this
+// type constructor with explicit member reference (dot) expressions.
 void AggregateType::insertImplicitThis(FnSymbol*         fn,
                                        Vec<const char*>& fieldNamesSet) {
   std::vector<BaseAST*> asts;
