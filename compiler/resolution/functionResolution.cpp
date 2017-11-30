@@ -164,6 +164,7 @@ static void reissueCompilerWarning(const char* str, int offset);
 static void resolveTupleAndExpand(CallExpr* call);
 static void resolveTupleExpand(CallExpr* call);
 static void resolveSetMember(CallExpr* call);
+static void resolveMaybeSyncSingleField(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveInitVar(CallExpr* call);
 static void resolveMove(CallExpr* call);
@@ -1959,6 +1960,10 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_SET_MEMBER:
       resolveSetMember(call);
+      break;
+
+    case PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD:
+      resolveMaybeSyncSingleField(call);
       break;
 
     case PRIM_INIT:
@@ -4531,6 +4536,369 @@ static void handleSetMemberTypeMismatch(Type*     t,
     }
   }
 }
+
+static bool isFieldAccessible(Expr* expr,
+                              AggregateType* at,
+                              DefExpr* currField);
+static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField);
+static DefExpr* toLocalField(AggregateType* at, const char* name);
+static DefExpr* toLocalField(AggregateType* at, SymExpr* expr);
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
+static DefExpr* toSuperField(AggregateType* at, SymExpr*  expr);
+static DefExpr* toSuperField(AggregateType* at, CallExpr* expr);
+static bool isFieldInitialized(const DefExpr* field, DefExpr* currField);
+static bool isFieldAccess(CallExpr* callExpr);
+
+/************************************* | **************************************
+*                                                                             *
+* Handles the initialization of fields in default initializers when the type  *
+* was not known at the generation of the default initializer and the field    *
+* no declared initial value.                                                  *
+*                                                                             *
+* If the field's type is now determined to be a sync or single, then we will  *
+* transform this call into just a PRIM_SET_MEMBER and resolve that.           *
+*                                                                             *
+* If this is not the case, then we will expand the call into the normal field *
+* initialization.                                                             *
+*                                                                             *
+************************************** | *************************************/
+static void resolveMaybeSyncSingleField(CallExpr* call) {
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
+  INT_ASSERT(call->argList.length == 3);
+  // PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD contains three args:
+  // fn->_this, the name of the field, and the value it is to be given
+
+  SymExpr* rhs = toSymExpr(call->get(3)); // the value/type to give the field
+
+  // Get the field name.
+  SymExpr* sym = toSymExpr(call->get(2));
+  if (!sym)
+    INT_FATAL(call, "bad initializer set field primitive");
+  VarSymbol* var = toVarSymbol(sym->symbol());
+  if (!var || !var->immediate)
+    INT_FATAL(call, "bad initializer set field primitive");
+  const char* name = var->immediate->v_string;
+
+  // Get the type
+  AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
+  if (!ct)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Symbol* fs = NULL;
+  int index = 1;
+  for_fields(field, ct) {
+    if (!strcmp(field->name, name)) {
+      fs = field; break;
+    }
+    index++;
+  }
+
+  if (!fs)
+    INT_FATAL(call, "bad initializer set field primitive");
+
+  Type* t = rhs->typeInfo();
+  // I think this never happens, so can be turned into an assert
+  if (t == dtUnknown)
+    INT_FATAL(call, "Unable to resolve field type");
+
+  if (isSyncType(t) || isSingleType(t)) {
+    // Sync and single fields should be initialized with just a PRIM_SET_MEMBER
+    // using the original initial expression.
+    call->primitive = primitives[PRIM_SET_MEMBER];
+    resolveSetMember(call);
+
+  } else {
+    // Create the precursor code that would have been inserted if we weren't so
+    // worried about syncs and singles
+    DefExpr*   fieldDef  = fs->defPoint;
+
+    VarSymbol* tmp       = newTemp("tmp", t->getValType());
+    DefExpr*   tmpDefn   = new DefExpr(tmp);
+
+    // Applies a type to TMP
+    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, fieldDef->exprType->copy());
+    CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
+
+    // Set the value for TMP
+    CallExpr*  tmpAssign = new CallExpr("=",       tmp,  rhs->remove());
+
+    call->primitive = primitives[PRIM_SET_MEMBER];
+    call->insertAtTail(new SymExpr(tmp));
+
+    // Needed bits for the next few calls
+    FnSymbol*      parentFn = toFnSymbol(call->parentSymbol);
+    INT_ASSERT(parentFn);
+    Symbol*        _this    = parentFn->_this;
+    AggregateType* at       = toAggregateType(_this->type);
+    INT_ASSERT(at);
+
+    if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
+      INT_ASSERT(false);
+    }
+
+    updateFieldsMember(tmpExpr, parentFn, fieldDef);
+
+    if (isFieldAccessible(rhs, at, fieldDef) == false) {
+      INT_ASSERT(false);
+    }
+
+    updateFieldsMember(rhs, parentFn, fieldDef);
+
+    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
+    resolveBlock->insertAtTail(tmpMove);
+    resolveBlock->insertAtTail(tmpAssign);
+    call->replace(resolveBlock);
+    resolveBlock->insertAtTail(call);
+
+    normalize(resolveBlock);
+    resolveBlockStmt(resolveBlock);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isFieldAccessible(Expr* expr,
+                              AggregateType* at,
+                              DefExpr* currField) {
+  bool retval = true;
+
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    Symbol* sym = symExpr->symbol();
+
+    if (sym->isImmediate() == true) {
+      retval = true;
+
+    } else if (DefExpr* field = toLocalField(at, symExpr)) {
+      if (isFieldInitialized(field, currField) == true) {
+        retval = true;
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(at, symExpr)) {
+      USR_FATAL(expr,
+                "Cannot access parent field '%s' during phase 1",
+                field->sym->name);
+
+    } else {
+      retval = true;
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    if (DefExpr* field = toLocalField(at, callExpr)) {
+      if (isFieldInitialized(field, currField) == true) {
+        retval = true;
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  field->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(at, callExpr)) {
+      USR_FATAL(expr,
+                "Cannot access parent field '%s' during phase 1",
+                field->sym->name);
+
+    } else {
+      for_actuals(actual, callExpr) {
+        if (isFieldAccessible(actual, at, currField) == false) {
+          retval = false;
+          break;
+        }
+      }
+    }
+
+  } else if (isNamedExpr(expr) == true) {
+    retval = true;
+
+  } else {
+    INT_ASSERT(false);
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
+  if (SymExpr* symExpr = toSymExpr(expr)) {
+    Symbol* sym = symExpr->symbol();
+    SymExpr* _this = new SymExpr(fn->_this);
+    AggregateType* _thisType = toAggregateType(_this->symbol()->type);
+    INT_ASSERT(_thisType);
+
+    if (DefExpr* fieldDef = toLocalField(_thisType, symExpr)) {
+      if (isFieldInitialized(fieldDef, currField) == true) {
+        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  fieldDef->sym->name);
+      }
+
+    } else if (DefExpr* field = toSuperField(_thisType, symExpr)) {
+      USR_FATAL(expr,
+                "Cannot access parent field '%s' during phase 1",
+                field->sym->name);
+    }
+
+  } else if (CallExpr* callExpr = toCallExpr(expr)) {
+    if (isFieldAccess(callExpr) == false) {
+      for_actuals(actual, callExpr) {
+        updateFieldsMember(actual, fn, currField);
+      }
+    }
+
+  } else if (isNamedExpr(expr) == true) {
+
+  } else if (isUnresolvedSymExpr(expr) == true) {
+
+  } else {
+    INT_ASSERT(false);
+  }
+}
+
+static DefExpr* toLocalField(AggregateType* at, const char* name) {
+  Expr*    currField = at->fields.head;
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+    VarSymbol* var     = toVarSymbol(defExpr->sym);
+
+    if (strcmp(var->name, name) == 0) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
+static DefExpr* toLocalField(AggregateType* at, SymExpr* expr) {
+  Expr*    currField = at->fields.head;
+  Symbol*  sym       = expr->symbol();
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr* defExpr = toDefExpr(currField);
+
+    if (sym == defExpr->sym) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
+static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
+  DefExpr* retval = NULL;
+
+  if (expr->isNamed(".") == true) {
+    SymExpr* base = toSymExpr(expr->get(1));
+    SymExpr* name = toSymExpr(expr->get(2));
+
+    if (base != NULL && name != NULL) {
+      VarSymbol* var = toVarSymbol(name->symbol());
+
+      // The base is <this> and the slot is a fieldName
+      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+          var                                    != NULL &&
+          var->immediate                         != NULL &&
+          var->immediate->const_kind             == CONST_KIND_STRING) {
+        retval = toLocalField(at, var->immediate->v_string);
+      }
+    }
+  }
+
+  return retval;
+}
+
+static DefExpr* toSuperField(AggregateType* at, SymExpr*  expr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, expr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static DefExpr* toSuperField(AggregateType* at, CallExpr* expr) {
+  forv_Vec(Type, t, at->dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = toLocalField(pt, expr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isFieldInitialized(const DefExpr* field, DefExpr* currField) {
+  const DefExpr* ptr    = currField;
+  bool           retval = true;
+
+  while (ptr != NULL && retval == true) {
+    if (ptr == field) {
+      retval = false;
+    } else {
+      ptr = toConstDefExpr(ptr->next);
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isFieldAccess(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->isNamed(".") == true) {
+    if (SymExpr* lhs = toSymExpr(callExpr->get(1))) {
+      if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
+        retval = arg->hasFlag(FLAG_ARG_THIS);
+      }
+    }
+  }
+
+  return retval;
+}
+
+
 
 /************************************* | **************************************
 *                                                                             *
