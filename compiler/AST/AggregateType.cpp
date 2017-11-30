@@ -1741,24 +1741,21 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
   }
 }
 
-void AggregateType:: moveConstructorToOuter(FnSymbol* fn) {
-  Expr* insertPoint = symbol->defPoint;
+ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
+  Expr*      insertPoint = symbol->defPoint;
+  ArgSymbol* _mt         = new ArgSymbol(INTENT_BLANK, "_mt",   dtMethodToken);
+  ArgSymbol* retval      = new ArgSymbol(INTENT_BLANK, "outer", this);
 
-  // Remove the DefPoint for this constructor, add it to the outer
-  // class's method list.
   methods.add(fn);
 
-  fn->_outer = new ArgSymbol(INTENT_BLANK, "outer", this);
+  retval->addFlag(FLAG_GENERIC);
 
-  fn->_outer->addFlag(FLAG_GENERIC); // Arg expects a real object :-P.
+  fn->_outer = retval;
 
-  fn->insertFormalAtHead(new DefExpr(fn->_outer));
+  fn->insertFormalAtHead(new DefExpr(retval));
+  fn->insertFormalAtHead(new DefExpr(_mt));
 
-  fn->insertFormalAtHead(new DefExpr(new ArgSymbol(INTENT_BLANK,
-                                                   "_mt",
-                                                   dtMethodToken)));
   fn->addFlag(FLAG_METHOD);
-
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {
@@ -1766,6 +1763,8 @@ void AggregateType:: moveConstructorToOuter(FnSymbol* fn) {
   }
 
   insertPoint->insertBefore(fn->defPoint->remove());
+
+  return retval;
 }
 
 /************************************* | **************************************

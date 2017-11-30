@@ -189,7 +189,7 @@ private:
 
   void                        buildConstructor();
   bool                        needsConstructor();
-  void                        moveConstructorToOuter(FnSymbol* fn);
+  ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
