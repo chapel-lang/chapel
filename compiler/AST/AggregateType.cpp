@@ -783,7 +783,7 @@ void AggregateType::buildConstructors() {
 *                                                                             *
 ************************************** | *************************************/
 
-void AggregateType::buildTypeConstructor() {
+FnSymbol* AggregateType::buildTypeConstructor() {
   FnSymbol* fn = new FnSymbol(astr("_type_construct_", symbol->name));
 
   fn->cname   = astr("_type_construct_", symbol->cname);
@@ -817,54 +817,11 @@ void AggregateType::buildTypeConstructor() {
 
 
 
-
   CallExpr* superCall = NULL;
 
-  // Copy arguments from superclass type constructor
-  // (supporting inheritance from generic classes)
   if (isClass() == true && dispatchParents.n > 0) {
-    if (AggregateType* parentTy = toAggregateType(dispatchParents.v[0])) {
-      // This class/record has a parent class/record
-      if (parentTy->defaultTypeConstructor == NULL) {
-        // If it doesn't yet have an type constructor, make one
-        parentTy->buildTypeConstructor();
-      }
-
-      FnSymbol* superTypeCtor = parentTy->defaultTypeConstructor;
-
-      if (superTypeCtor->numFormals() > 0) {
-        superCall = new CallExpr(parentTy->symbol->name);
-
-        // Now walk through arguments in super class type constructor
-        for_formals(formal, superTypeCtor) {
-          DefExpr*   superArg         = formal->defPoint->copy();
-          ArgSymbol* arg              = toArgSymbol(superArg->sym->copy());
-          bool       fieldInThisClass = false;
-
-          for_fields(sym, this) {
-            if (strcmp(sym->name, arg->name) == 0) {
-              fieldInThisClass = true;
-            }
-          }
-
-          // If the field is also present in the child, adjust the field
-          // name in the super. Otherwise it would not be possible to
-          // type construct the super.
-          if (fieldInThisClass == false) {
-            arg->addFlag(FLAG_PARENT_FIELD);
-
-            fn->insertFormalAtTail(arg);
-
-            superCall->insertAtTail(new SymExpr(arg));
-          }
-        }
-      }
-    }
+    superCall = typeConstrSuperCall(fn);
   }
-
-
-
-
 
 
   Vec<const char*> fieldNamesSet;
@@ -980,6 +937,43 @@ void AggregateType::buildTypeConstructor() {
 
 
   defaultTypeConstructor = fn;
+
+  return fn;
+}
+
+CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
+  AggregateType* parent        = toAggregateType(dispatchParents.v[0]);
+  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
+  CallExpr*      retval        = NULL;
+
+  if (superTypeCtor == NULL) {
+    superTypeCtor = parent->buildTypeConstructor();
+  }
+
+  if (superTypeCtor->numFormals() > 0) {
+    retval = new CallExpr(parent->symbol->name);
+
+    for_formals(formal, superTypeCtor) {
+      ArgSymbol* arg              = toArgSymbol(formal->copy());
+      bool       fieldInThisClass = false;
+
+      for_fields(sym, this) {
+        if (strcmp(sym->name, arg->name) == 0) {
+          fieldInThisClass = true;
+        }
+      }
+
+      if (fieldInThisClass == false) {
+        arg->addFlag(FLAG_PARENT_FIELD);
+
+        fn->insertFormalAtTail(arg);
+
+        retval->insertAtTail(new SymExpr(arg));
+      }
+    }
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************

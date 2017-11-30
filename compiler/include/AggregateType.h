@@ -170,7 +170,10 @@ private:
                                           std::set<AggregateType*>& seen);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
-  void                        buildTypeConstructor();
+
+  FnSymbol*                   buildTypeConstructor();
+  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+
   void                        buildConstructor();
   bool                        needsConstructor();
   void                        moveConstructorToOuter(FnSymbol* fn);
