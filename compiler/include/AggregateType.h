@@ -173,6 +173,7 @@ private:
 
   FnSymbol*                   buildTypeConstructor();
   CallExpr*                   typeConstrSuperCall(FnSymbol* fn)          const;
+  bool                        isFieldInThisClass(const char* name)       const;
 
   void                        buildConstructor();
   bool                        needsConstructor();

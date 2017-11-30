@@ -954,22 +954,28 @@ CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
     retval = new CallExpr(parent->symbol->name);
 
     for_formals(formal, superTypeCtor) {
-      ArgSymbol* arg              = toArgSymbol(formal->copy());
-      bool       fieldInThisClass = false;
+      ArgSymbol* arg = toArgSymbol(formal->copy());
 
-      for_fields(sym, this) {
-        if (strcmp(sym->name, arg->name) == 0) {
-          fieldInThisClass = true;
-        }
-      }
-
-      if (fieldInThisClass == false) {
+      if (isFieldInThisClass(arg->name) == false) {
         arg->addFlag(FLAG_PARENT_FIELD);
 
         fn->insertFormalAtTail(arg);
 
         retval->insertAtTail(new SymExpr(arg));
       }
+    }
+  }
+
+  return retval;
+}
+
+bool AggregateType::isFieldInThisClass(const char* name) const {
+  bool retval = false;
+
+  for_fields(sym, this) {
+    if (strcmp(sym->name, name) == 0) {
+      retval = true;
+      break;
     }
   }
 
