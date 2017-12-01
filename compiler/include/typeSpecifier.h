@@ -23,6 +23,17 @@
 class Expr;
 class Type;
 
-Type* typeForTypeSpecifier(Expr* expr);
+//
+// Convert a type specifier expression, 'expr' into a Type* if
+// possible; return NULL otherwise.
+//
+// fatalOK: This argument indicates whether it is reasonable for the
+// routine to issue a fatal error when the type expression is found
+// to be illegal (e.g., 'int(3)').  Calls early in the compiler
+// working on code that may later be folded out or found to be
+// unreachable should set this to 'false' to avoid issuing errors
+// prematurely.
+//
+Type* typeForTypeSpecifier(Expr* expr, bool fatalOK = true);
 
 #endif
