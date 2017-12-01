@@ -24,7 +24,7 @@
 
 static int typeSize(VarSymbol* var);
 
-Type* typeForTypeSpecifier(Expr* expr) {
+Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
   Type* retval = NULL;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
@@ -62,7 +62,9 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for bool", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call, "illegal size %d for bool", size);
+                      }
                       break;
                     }
 
@@ -88,7 +90,9 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for int", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call, "illegal size %d for int", size);
+                      }
                       break;
                     }
 
@@ -114,7 +118,9 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for uint", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call, "illegal size %d for uint", size);
+                      }
                       break;
                     }
 
@@ -132,7 +138,9 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for real", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call, "illegal size %d for real", size);
+                      }
                       break;
                     }
 
@@ -150,7 +158,9 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for imag", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call, "illegal size %d for imag", size);
+                      }
                       break;
                     }
 
@@ -168,7 +178,11 @@ Type* typeForTypeSpecifier(Expr* expr) {
                       break;
 
                     default:
-                      USR_FATAL_CONT(call, "illegal size %d for complex", size);
+                      if (fatalOK == true) {
+                        USR_FATAL_CONT(call,
+                                       "illegal size %d for complex",
+                                       size);
+                      }
                       break;
                     }
                   }
@@ -190,6 +204,7 @@ static int typeSize(VarSymbol* var) {
 
   if (NUM_KIND_INT == var->immediate->const_kind) {
     retval = var->immediate->int_value();
+
   } else {
     retval = var->immediate->uint_value();
   }

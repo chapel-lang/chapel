@@ -2036,7 +2036,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
 static void normVarTypeWoutInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
-  Type*   type     = typeForTypeSpecifier(typeExpr);
+  Type*   type     = typeForTypeSpecifier(typeExpr, false);
 
   // Noakes 2016/02/02
   // The code for resolving the type of an extern variable
@@ -2097,7 +2097,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
   Expr*   initExpr = defExpr->init->remove();
-  Type*   type     = typeForTypeSpecifier(typeExpr);
+  Type*   type     = typeForTypeSpecifier(typeExpr, false);
 
   // Note: the above line will not obtain a type if the typeExpr is a CallExpr
   // for a generic record or class, as that is a more complicated set of AST.

@@ -107,7 +107,7 @@ Expr* preFold(CallExpr* call) {
 
   } else if (SymExpr* symExpr = toSymExpr(baseExpr)) {
     // Primitive typeSpecifier -> SymExpr
-    if (Type* type = typeForTypeSpecifier(call)) {
+    if (Type* type = typeForTypeSpecifier(call, true)) {
       retval = new SymExpr(type->symbol);
 
       call->replace(retval);

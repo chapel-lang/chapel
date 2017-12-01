@@ -23,6 +23,22 @@
 class Expr;
 class Type;
 
-Type* typeForTypeSpecifier(Expr* expr);
+// This function attempts to determine the type for
+//   1) Primitive types (parameterized and default)
+//   2) Non-paramterized, i.e. non-generic, classes and records
+//
+// It is defined to return NULL for more general type specifiers.
+//
+// This function was initially defined for a simple use in preFold().
+// In that use case it generated FATAL errors for invalid primitives.
+//
+// It was exposed to allow it to be used in earlier passes
+// e.g. in limited situations within normalize.  In these
+// situations param-folding will not have occured and it
+// is necessary to supress any error messages and simply
+// return NULL.
+//
+
+Type* typeForTypeSpecifier(Expr* expr, bool fatalOK);
 
 #endif
