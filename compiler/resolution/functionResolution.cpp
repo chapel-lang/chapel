@@ -4541,11 +4541,6 @@ static bool isFieldAccessible(Expr* expr,
                               AggregateType* at,
                               DefExpr* currField);
 static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField);
-static DefExpr* toLocalField(AggregateType* at, const char* name);
-static DefExpr* toLocalField(AggregateType* at, SymExpr* expr);
-static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
-static DefExpr* toSuperField(AggregateType* at, SymExpr*  expr);
-static DefExpr* toSuperField(AggregateType* at, CallExpr* expr);
 static bool isFieldInitialized(const DefExpr* field, DefExpr* currField);
 static bool isFieldAccess(CallExpr* callExpr);
 
@@ -4675,7 +4670,7 @@ static bool isFieldAccessible(Expr* expr,
     if (sym->isImmediate() == true) {
       retval = true;
 
-    } else if (DefExpr* field = toLocalField(at, symExpr)) {
+    } else if (DefExpr* field = at->toLocalField(symExpr)) {
       if (isFieldInitialized(field, currField) == true) {
         retval = true;
       } else {
@@ -4684,7 +4679,7 @@ static bool isFieldAccessible(Expr* expr,
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = toSuperField(at, symExpr)) {
+    } else if (DefExpr* field = at->toSuperField(symExpr)) {
       USR_FATAL(expr,
                 "Cannot access parent field '%s' during phase 1",
                 field->sym->name);
@@ -4694,7 +4689,7 @@ static bool isFieldAccessible(Expr* expr,
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    if (DefExpr* field = toLocalField(at, callExpr)) {
+    if (DefExpr* field = at->toLocalField(callExpr)) {
       if (isFieldInitialized(field, currField) == true) {
         retval = true;
       } else {
@@ -4703,7 +4698,7 @@ static bool isFieldAccessible(Expr* expr,
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = toSuperField(at, callExpr)) {
+    } else if (DefExpr* field = at->toSuperField(callExpr)) {
       USR_FATAL(expr,
                 "Cannot access parent field '%s' during phase 1",
                 field->sym->name);
@@ -4740,7 +4735,7 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
     AggregateType* _thisType = toAggregateType(_this->symbol()->type);
     INT_ASSERT(_thisType);
 
-    if (DefExpr* fieldDef = toLocalField(_thisType, symExpr)) {
+    if (DefExpr* fieldDef = _thisType->toLocalField(symExpr)) {
       if (isFieldInitialized(fieldDef, currField) == true) {
         SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
 
@@ -4752,7 +4747,7 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
                   fieldDef->sym->name);
       }
 
-    } else if (DefExpr* field = toSuperField(_thisType, symExpr)) {
+    } else if (DefExpr* field = _thisType->toSuperField(symExpr)) {
       USR_FATAL(expr,
                 "Cannot access parent field '%s' during phase 1",
                 field->sym->name);
@@ -4772,89 +4767,6 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
   } else {
     INT_ASSERT(false);
   }
-}
-
-static DefExpr* toLocalField(AggregateType* at, const char* name) {
-  Expr*    currField = at->fields.head;
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr*   defExpr = toDefExpr(currField);
-    VarSymbol* var     = toVarSymbol(defExpr->sym);
-
-    if (strcmp(var->name, name) == 0) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
-}
-
-static DefExpr* toLocalField(AggregateType* at, SymExpr* expr) {
-  Expr*    currField = at->fields.head;
-  Symbol*  sym       = expr->symbol();
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr* defExpr = toDefExpr(currField);
-
-    if (sym == defExpr->sym) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
-}
-
-static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
-  DefExpr* retval = NULL;
-
-  if (expr->isNamed(".") == true) {
-    SymExpr* base = toSymExpr(expr->get(1));
-    SymExpr* name = toSymExpr(expr->get(2));
-
-    if (base != NULL && name != NULL) {
-      VarSymbol* var = toVarSymbol(name->symbol());
-
-      // The base is <this> and the slot is a fieldName
-      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
-          var                                    != NULL &&
-          var->immediate                         != NULL &&
-          var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = toLocalField(at, var->immediate->v_string);
-      }
-    }
-  }
-
-  return retval;
-}
-
-static DefExpr* toSuperField(AggregateType* at, SymExpr*  expr) {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, expr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-static DefExpr* toSuperField(AggregateType* at, CallExpr* expr) {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, expr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
 }
 
 /************************************* | **************************************
