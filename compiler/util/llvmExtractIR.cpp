@@ -35,14 +35,10 @@ using namespace llvm;
 
 void extractAndPrintFunctionLLVM(Function *func) {
 
-  // Simple implementation:
-  //func->print(stdOut);
-
-  // Complex implementation:
-
   Module* funcModule = func->getParent();
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function
+  // and using external declarations for everything else
   auto ownedM = CloneModule(funcModule, VMap,
                             [=](const GlobalValue *GV) { return GV == func; });
   Module& M = *ownedM.get();
@@ -55,14 +51,15 @@ void extractAndPrintFunctionLLVM(Function *func) {
     }
   }
 
+  // cleanup a-la llvm-extract
   legacy::PassManager Passes;
 
-  Passes.add(createGlobalDCEPass());             // Delete unreachable globals
-  Passes.add(createStripDeadDebugInfoPass());    // Remove dead debug info
-  Passes.add(createStripDeadPrototypesPass());   // Remove dead func decls
+  Passes.add(createGlobalDCEPass());           // Delete unreachable globals
+  Passes.add(createStripDeadDebugInfoPass());  // Remove dead debug info
+  Passes.add(createStripDeadPrototypesPass()); // Remove dead func decls
 
   std::error_code EC;
-  // could output to a file if we replace "-" with a filename
+  // note: could output to a file if we replace "-" with a filename
   tool_output_file Out("-", EC, sys::fs::F_None);
   if (EC) {    
     errs() << EC.message() << '\n';
@@ -70,17 +67,10 @@ void extractAndPrintFunctionLLVM(Function *func) {
   }
 
   Passes.add( createPrintModulePass(Out.os(), "", false));
-  // could add bit code this way:
+  // note: could output bit code this way:
   //Passes.add(createBitcodeWriterPass(Out.os(), true));
 
   Passes.run(M);
-
-  /*
-  std::vector<GlobalValue *> GVs;
-  GVs.push_back(func);
-
-  legacy::PassManager Extract;
-  Extract.add(createGVExtractionPass(GVs, DeleteFn));
-  Extract.run(*M); */
 }
+
 #endif // end HAVE_LLVM
