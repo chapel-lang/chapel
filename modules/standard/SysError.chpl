@@ -135,7 +135,7 @@ class SystemError : Error {
 
 */
 class BlockingIOError : SystemError {
-  proc init(details: string = "", err: syserr = EWOULDBLOCK) {
+  proc init(details: string = "", err: syserr = EWOULDBLOCK:syserr) {
     super.init(err, details);
   }
 }
@@ -147,7 +147,7 @@ class BlockingIOError : SystemError {
 
 */
 class ChildProcessError : SystemError {
-  proc init(details: string = "", err: syserr = ECHILD) {
+  proc init(details: string = "", err: syserr = ECHILD:syserr) {
     super.init(err, details);
   }
 }
@@ -168,7 +168,7 @@ class ConnectionError : SystemError { }
 
 */
 class BrokenPipeError : ConnectionError {
-  proc init(details: string = "", err: syserr = EPIPE) {
+  proc init(details: string = "", err: syserr = EPIPE:syserr) {
     super.init(err, details);
   }
 }
@@ -180,7 +180,7 @@ class BrokenPipeError : ConnectionError {
 
 */
 class ConnectionAbortedError : ConnectionError {
-  proc init(details: string = "", err: syserr = ECONNABORTED) {
+  proc init(details: string = "", err: syserr = ECONNABORTED:syserr) {
     super.init(err, details);
   }
 }
@@ -192,7 +192,7 @@ class ConnectionAbortedError : ConnectionError {
 
 */
 class ConnectionRefusedError : ConnectionError {
-  proc init(details: string = "", err: syserr = ECONNREFUSED) {
+  proc init(details: string = "", err: syserr = ECONNREFUSED:syserr) {
     super.init(err, details);
   }
 }
@@ -204,7 +204,7 @@ class ConnectionRefusedError : ConnectionError {
 
 */
 class ConnectionResetError : ConnectionError {
-  proc init(details: string = "", err: syserr = ECONNRESET) {
+  proc init(details: string = "", err: syserr = ECONNRESET:syserr) {
     super.init(err, details);
   }
 }
@@ -216,7 +216,7 @@ class ConnectionResetError : ConnectionError {
 
 */
 class FileExistsError : SystemError {
-  proc init(details: string = "", err: syserr = EEXIST) {
+  proc init(details: string = "", err: syserr = EEXIST:syserr) {
     super.init(err, details);
   }
 }
@@ -228,7 +228,7 @@ class FileExistsError : SystemError {
 
 */
 class FileNotFoundError : SystemError {
-  proc init(details: string = "", err: syserr = ENOENT) {
+  proc init(details: string = "", err: syserr = ENOENT:syserr) {
     super.init(err, details);
   }
 }
@@ -240,7 +240,7 @@ class FileNotFoundError : SystemError {
 
 */
 class InterruptedError : SystemError {
-  proc init(details: string = "", err: syserr = EINTR) {
+  proc init(details: string = "", err: syserr = EINTR:syserr) {
     super.init(err, details);
   }
 }
@@ -252,7 +252,7 @@ class InterruptedError : SystemError {
 
 */
 class IsADirectoryError : SystemError {
-  proc init(details: string = "", err: syserr = EISDIR) {
+  proc init(details: string = "", err: syserr = EISDIR:syserr) {
     super.init(err, details);
   }
 }
@@ -264,7 +264,7 @@ class IsADirectoryError : SystemError {
 
 */
 class NotADirectoryError : SystemError {
-  proc init(details: string = "", err: syserr = ENOTDIR) {
+  proc init(details: string = "", err: syserr = ENOTDIR:syserr) {
     super.init(err, details);
   }
 }
@@ -276,7 +276,7 @@ class NotADirectoryError : SystemError {
 
 */
 class PermissionError : SystemError {
-  proc init(details: string = "", err: syserr = EPERM) {
+  proc init(details: string = "", err: syserr = EPERM:syserr) {
     super.init(err, details);
   }
 }
@@ -288,7 +288,7 @@ class PermissionError : SystemError {
 
 */
 class ProcessLookupError : SystemError {
-  proc init(details: string = "", err: syserr = ESRCH) {
+  proc init(details: string = "", err: syserr = ESRCH:syserr) {
     super.init(err, details);
   }
 }
@@ -300,7 +300,7 @@ class ProcessLookupError : SystemError {
 
 */
 class TimeoutError : SystemError {
-  proc init(details: string = "", err: syserr = ETIMEDOUT) {
+  proc init(details: string = "", err: syserr = ETIMEDOUT:syserr) {
     super.init(err, details);
   }
 }
@@ -323,7 +323,7 @@ class IOError : SystemError { }
 
 */
 class EOFError : IOError {
-  proc init(details: string = "", err: syserr = EEOF) {
+  proc init(details: string = "", err: syserr = EEOF:syserr) {
     super.init(err, details);
   }
 }
@@ -335,7 +335,7 @@ class EOFError : IOError {
 
 */
 class UnexpectedEOFError : IOError {
-  proc init(details: string = "", err: syserr = ESHORT) {
+  proc init(details: string = "", err: syserr = ESHORT:syserr) {
     super.init(err, details);
   }
 }
@@ -347,7 +347,7 @@ class UnexpectedEOFError : IOError {
 
 */
 class BadFormatError : IOError {
-  proc init(details: string = "", err: syserr = EFORMAT) {
+  proc init(details: string = "", err: syserr = EFORMAT:syserr) {
     super.init(err, details);
   }
 }
