@@ -108,7 +108,7 @@ void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
     std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
               << " function after " << llvmStageNameFromLlvmStageNum(numStage)
-              << " optimization stage\n";
+              << " optimization stage\n" << std::flush;
     extractAndPrintFunctionLLVM(func);
   }
 }
