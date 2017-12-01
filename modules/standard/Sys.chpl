@@ -215,7 +215,7 @@ module Sys {
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
-    proc sys_sockaddr_t() {
+    proc init() {
       sys_init_sys_sockaddr_t(this);
     }
   }
