@@ -28,7 +28,7 @@ static bool isThisInit (Expr* stmt);
 static bool isStringLiteral(Expr* expr, const char* name);
 static bool isSymbolThis(Expr* expr);
 
-static bool isEquivalentSyncSingleExpr(DefExpr* field, Expr* initExpr);
+static bool mightBeSyncSingleExpr(DefExpr* field);
 
 static bool isAssignment(CallExpr* callExpr);
 static bool isSimpleAssignment(CallExpr* callExpr);
@@ -730,13 +730,21 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
              field->init == NULL &&
-             isEquivalentSyncSingleExpr(field, initExpr)) {
-    // Simplifies the initialization of sync fields in default initializers
-    // to avoid the deadlock when the sync field has no initial value and the
-    // caller relies on the default value for the corresponding argument.
+             mightBeSyncSingleExpr(field)) {
+    // The type of the field depends on something that hasn't been determined
+    // yet.  It is entirely possible that the type will end up as a sync or
+    // single and so we need to flag this field initialization for resolution to
+    // handle
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
-    CallExpr* fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, initExpr);
+    CallExpr* fieldSet = new CallExpr(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD,
+                                      _this, name, initExpr);
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+
+    updateFieldsMember(initExpr);
+
     insertBefore->insertBefore(fieldSet);
 
   } else {
@@ -887,7 +895,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
     if (sym->isImmediate() == true) {
       retval = true;
 
-    } else if (DefExpr* field = toLocalField(at, symExpr)) {
+    } else if (DefExpr* field = at->toLocalField(symExpr)) {
       if (isFieldInitialized(field) == true) {
         retval = true;
       } else {
@@ -896,7 +904,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = toSuperField(at, symExpr)) {
+    } else if (DefExpr* field = at->toSuperField(symExpr)) {
       if (isPhase2() == true) {
         retval = true;
       } else {
@@ -910,7 +918,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    if (DefExpr* field = toLocalField(at, callExpr)) {
+    if (DefExpr* field = at->toLocalField(callExpr)) {
       if (isFieldInitialized(field) == true) {
         retval = true;
       } else {
@@ -919,7 +927,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = toSuperField(at, callExpr)) {
+    } else if (DefExpr* field = at->toSuperField(callExpr)) {
       if (isPhase2() == true) {
         retval = true;
       } else {
@@ -1023,72 +1031,11 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
 ************************************** | *************************************/
 
 DefExpr* InitNormalize::toLocalField(SymExpr* expr) const {
-  return toLocalField(type(), expr);
+  return type()->toLocalField(expr);
 }
 
 DefExpr* InitNormalize::toLocalField(CallExpr* expr) const {
-  return toLocalField(type(), expr);
-}
-
-DefExpr* InitNormalize::toLocalField(AggregateType* at,
-                                     const char*    name) const {
-  Expr*    currField = at->fields.head;
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr*   defExpr = toDefExpr(currField);
-    VarSymbol* var     = toVarSymbol(defExpr->sym);
-
-    if (strcmp(var->name, name) == 0) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
-}
-
-DefExpr* InitNormalize::toLocalField(AggregateType* at, SymExpr* expr) const {
-  Expr*    currField = at->fields.head;
-  Symbol*  sym       = expr->symbol();
-  DefExpr* retval    = NULL;
-
-  while (currField != NULL && retval == NULL) {
-    DefExpr* defExpr = toDefExpr(currField);
-
-    if (sym == defExpr->sym) {
-      retval    = defExpr;
-    } else {
-      currField = currField->next;
-    }
-  }
-
-  return retval;
-}
-
-DefExpr* InitNormalize::toLocalField(AggregateType* at, CallExpr* expr) const {
-  DefExpr* retval = NULL;
-
-  if (expr->isNamed(".") == true) {
-    SymExpr* base = toSymExpr(expr->get(1));
-    SymExpr* name = toSymExpr(expr->get(2));
-
-    if (base != NULL && name != NULL) {
-      VarSymbol* var = toVarSymbol(name->symbol());
-
-      // The base is <this> and the slot is a fieldName
-      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
-
-          var                                    != NULL &&
-          var->immediate                         != NULL &&
-          var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = toLocalField(at, var->immediate->v_string);
-      }
-    }
-  }
-
-  return retval;
+  return type()->toLocalField(expr);
 }
 
 /************************************* | **************************************
@@ -1098,38 +1045,14 @@ DefExpr* InitNormalize::toLocalField(AggregateType* at, CallExpr* expr) const {
 ************************************** | *************************************/
 
 DefExpr* InitNormalize::toSuperField(SymExpr* expr) const {
-  return toSuperField(type(), expr);
+  return type()->toSuperField(expr);
 }
 
 DefExpr* InitNormalize::toSuperField(AggregateType* at,
                                      const char*    name) const {
   forv_Vec(Type, t, at->dispatchParents) {
     if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, name)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-DefExpr* InitNormalize::toSuperField(AggregateType* at, SymExpr*  expr) const {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, expr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-DefExpr* InitNormalize::toSuperField(AggregateType* at, CallExpr* expr) const {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalField(pt, expr)) {
+      if (DefExpr* field = pt->toLocalField(name)) {
         return field;
       }
     }
@@ -1456,7 +1379,7 @@ bool InitNormalize::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
   if (isAssignment(callExpr) == true) {
     retval = fieldUsedBeforeInitialized(callExpr->get(2));
 
-  } else if (DefExpr* field = toLocalField(type(), callExpr)) {
+  } else if (DefExpr* field = type()->toLocalField(callExpr)) {
     retval = isFieldInitialized(field) == true ? false : true;
 
   } else {
@@ -1622,51 +1545,31 @@ static const char* initName(CallExpr* expr) {
   return retval;
 }
 
-// Used to determine if we can simplify the initialization of a field in the
-// case where it is a sync/single, to allow default initializers with
-// sync/single fields that are not provided an initial value.
-static bool isEquivalentSyncSingleExpr(DefExpr* field, Expr* initExpr) {
+// The type of the field is not yet determined either due to being entirely a
+// type alias, or due to being a call to a function that returns a type.
+// Therefore, we must be cautious and marking this field initialization as
+// potentially a sync or single, so that when we know its type at resolution,
+// we can respond appropriately.
+static bool mightBeSyncSingleExpr(DefExpr* field) {
   bool retval = false;
 
-  CallExpr* fieldType = toCallExpr(field->exprType);
-  CallExpr* initType = NULL;
-
-  // Dive into the initExpr to get its type if it is just a simple access to one
-  // of the arguments
-  if (SymExpr* se = toSymExpr(initExpr)) {
-    if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
-      if (arg->typeExpr->body.length == 1) {
-        initType = toCallExpr(arg->typeExpr->body.head);
-      }
+  if (SymExpr* typeSym = toSymExpr(field->exprType)) {
+    if (typeSym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      retval = true;
     }
-  }
-
-  // The initExpr and the field were as we expect them to be if the field has
-  // the potential to be a sync/single and the init expr being used is
-  // sufficiently simple
-  if (fieldType != NULL && initType != NULL) {
-    // Both were to the sync type constructor
-    bool bothSyncs = fieldType->isNamed("_type_construct__syncvar") &&
-      initType->isNamed("_type_construct__syncvar");
-    // Alternatively, perform a similar operation if both were to the single
-    // type constructor
-    bool bothSingles = fieldType->isNamed("_type_construct__singlevar") &&
-      initType->isNamed("_type_construct__singlevar");
-    if (bothSyncs || bothSingles) {
-      SymExpr* ftFirst = toSymExpr(fieldType->get(1));
-      SymExpr* itFirst = toSymExpr(initType->get(1));
-      // Both passed the same argument to it
-      // LYDIA NOTE: won't work if one is using a type alias or a type
-      // function, or a specific size of primitives
-      if (ftFirst != NULL && itFirst != NULL &&
-          ftFirst->symbol() == itFirst->symbol()) {
-        retval = true;
-      }
+  } else if (CallExpr* typeCall = toCallExpr(field->exprType)) {
+    /*if (typeCall->isPrimitive(PRIM_QUERY_TYPE_FIELD)) { // might be necessary
+      retval = true;
+    } else */
+    if (typeCall->isPrimitive() == false) {
+      // The call is not a known primitive.  We have to assume that it is a type
+      // function being called, and type functions could return a sync or single
+      // type.
+      retval = true;
     }
   }
   return retval;
 }
-
 
 static bool isAssignment(CallExpr* callExpr) {
   bool retval = false;

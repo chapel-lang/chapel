@@ -37,6 +37,7 @@ enum PrimitiveTag {
 
   PRIM_INIT,
   PRIM_INIT_FIELD,
+  PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD,
   PRIM_INIT_VAR,
   PRIM_NO_INIT,
   PRIM_TYPE_INIT,       // Used in a context where only a type is needed.

@@ -102,6 +102,14 @@ public:
 
   int                         numFields()                                const;
 
+
+  DefExpr*                    toLocalField(const char* name)             const;
+  DefExpr*                    toLocalField(SymExpr*    expr)             const;
+  DefExpr*                    toLocalField(CallExpr*   expr)             const;
+
+  DefExpr*                    toSuperField(SymExpr*  expr);
+  DefExpr*                    toSuperField(CallExpr* expr);
+
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;

@@ -150,6 +150,90 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+DefExpr* AggregateType::toLocalField(const char*    name) const {
+  Expr*    currField = fields.head;
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr*   defExpr = toDefExpr(currField);
+    VarSymbol* var     = toVarSymbol(defExpr->sym);
+
+    if (strcmp(var->name, name) == 0) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
+DefExpr* AggregateType::toLocalField(SymExpr* expr) const {
+  Expr*    currField = fields.head;
+  Symbol*  sym       = expr->symbol();
+  DefExpr* retval    = NULL;
+
+  while (currField != NULL && retval == NULL) {
+    DefExpr* defExpr = toDefExpr(currField);
+
+    if (sym == defExpr->sym) {
+      retval    = defExpr;
+    } else {
+      currField = currField->next;
+    }
+  }
+
+  return retval;
+}
+
+DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
+  DefExpr* retval = NULL;
+
+  if (expr->isNamed(".") == true) {
+    SymExpr* base = toSymExpr(expr->get(1));
+    SymExpr* name = toSymExpr(expr->get(2));
+
+    if (base != NULL && name != NULL) {
+      VarSymbol* var = toVarSymbol(name->symbol());
+
+      // The base is <this> and the slot is a fieldName
+      if (base->symbol()->hasFlag(FLAG_ARG_THIS) == true &&
+
+          var                                    != NULL &&
+          var->immediate                         != NULL &&
+          var->immediate->const_kind             == CONST_KIND_STRING) {
+        retval = toLocalField(var->immediate->v_string);
+      }
+    }
+  }
+
+  return retval;
+}
+
+DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
+  forv_Vec(Type, t, dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = pt->toLocalField(expr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+DefExpr* AggregateType::toSuperField(CallExpr* expr) {
+  forv_Vec(Type, t, dispatchParents) {
+    if (AggregateType* pt = toAggregateType(t)) {
+      if (DefExpr* field = pt->toLocalField(expr)) {
+        return field;
+      }
+    }
+  }
+
+  return NULL;
+}
+
 bool AggregateType::isClass() const {
   return aggregateTag == AGGREGATE_CLASS;
 }

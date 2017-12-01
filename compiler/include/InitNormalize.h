@@ -152,15 +152,9 @@ private:
   DefExpr*        toLocalField(SymExpr*  expr)                           const;
   DefExpr*        toLocalField(CallExpr* expr)                           const;
 
-  DefExpr*        toLocalField(AggregateType* at, const char* name)      const;
-  DefExpr*        toLocalField(AggregateType* at, SymExpr*    expr)      const;
-  DefExpr*        toLocalField(AggregateType* at, CallExpr*   expr)      const;
-
   DefExpr*        toSuperField(SymExpr* expr)                            const;
 
   DefExpr*        toSuperField(AggregateType* at, const char* name)      const;
-  DefExpr*        toSuperField(AggregateType* at, SymExpr*    expr)      const;
-  DefExpr*        toSuperField(AggregateType* at, CallExpr*   expr)      const;
 
   void            transformSuperInit(Expr* initStmt);
 
