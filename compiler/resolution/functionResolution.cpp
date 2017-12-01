@@ -5917,6 +5917,7 @@ static void resolveCoerce(CallExpr* call) {
 ************************************** | *************************************/
 
 static Type* resolveGenericActual(SymExpr* se);
+static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
   return resolveGenericActual(se);
@@ -5938,61 +5939,53 @@ static void resolveGenericActuals(CallExpr* call) {
   }
 }
 
-//
-// finds the concrete type of a SymExpr when it refers
-// to a generic type. This can happen when the generic type
-// has a default concrete instantiation, e.g.
-//
-//   record R { type t = int; }
-//
-// Assumes that SET_LINENO has been called in the enclosing scope.
-//
-// Returns a concrete type. Replaces a SymExpr referring to
-// a generic type (which could be referring to a TypeSymbol
-// directly or to a VarSymbol with the flag FLAG_TYPE_VARIABLE).
-//
-// also handles some complicated extern vars like
-//   extern var x: c_ptr(c_int)
-// which do not work in the usual order of resolution.
-static Type* resolveGenericActual(SymExpr* te) {
+static Type* resolveGenericActual(SymExpr* se) {
+  Type* retval = se->typeInfo();
 
-  // te could refer to a type in two ways:
-  //  1. it could refer to a TypeSymbol directly
-  //  2. it could refer to a VarSymbol with FLAG_TYPE_VARIABLE
-  Type* teRefersToType = NULL;
+  if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
+    retval = resolveGenericActual(se, ts->type);
 
-  if (TypeSymbol* ts = toTypeSymbol(te->symbol()))
-    teRefersToType = ts->type;
-
-  if (VarSymbol* vs = toVarSymbol(te->symbol())) {
+  } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
     if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
-      teRefersToType = vs->typeInfo();
+      Type* origType = vs->typeInfo();
 
       // Fix for complicated extern vars like
-      // extern var x: c_ptr(c_int);
-      // This really just amounts to an adjustment to the order of resolution.
-      if( vs->hasFlag(FLAG_EXTERN) &&
-          vs->defPoint && vs->defPoint->init &&
-          vs->getValType() == dtUnknown ) {
-        vs->type = resolveTypeAlias(te);
+      //   extern var x: c_ptr(c_int);
+      if (vs->hasFlag(FLAG_EXTERN) == true &&
+          vs->defPoint             != NULL &&
+          vs->defPoint->init       != NULL &&
+          vs->getValType()         == dtUnknown ) {
+        vs->type = resolveTypeAlias(se);
       }
+
+      retval = resolveGenericActual(se, origType);
     }
   }
 
-  // Now, if te refers to a generic type, replace te with
-  // a concrete type.
-  if (AggregateType* ct = toAggregateType(teRefersToType)) {
-    if (ct->symbol->hasFlag(FLAG_GENERIC)) {
-      CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
-      te->replace(cc);
+  return retval;
+}
+
+static Type* resolveGenericActual(SymExpr* se, Type* type) {
+  Type* retval = se->typeInfo();
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
+      CallExpr*   cc    = new CallExpr(at->defaultTypeConstructor->name);
+      TypeSymbol* retTS = NULL;
+
+      se->replace(cc);
+
       resolveCall(cc);
-      TypeSymbol* retTS = cc->typeInfo()->symbol;
+
+      retTS = cc->typeInfo()->symbol;
+
       cc->replace(new SymExpr(retTS));
-      return retTS->type;
+
+      retval = retTS->type;
     }
   }
 
-  return te->typeInfo();
+  return retval;
 }
 
 /************************************* | **************************************
