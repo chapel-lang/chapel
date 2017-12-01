@@ -262,10 +262,10 @@ static void addDefaultsAndReorder(FnSymbol *fn,
     if (info) {
       int j = 0;
       for_vector(ArgSymbol, arg, actualFormals) {
-	if (arg == formal) {
-	  actualSym = info->actuals.v[j];
-	}
-	j++;
+        if (arg == formal) {
+          actualSym = info->actuals.v[j];
+        }
+        j++;
       }
     } else {
       int j = 0;
