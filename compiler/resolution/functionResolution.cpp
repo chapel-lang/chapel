@@ -171,6 +171,7 @@ static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
+static void resolveDefaultGenericType(CallExpr* call);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -1761,75 +1762,11 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
   return NULL;
 }
 
-
-//
-// finds the concrete type of a SymExpr when it refers
-// to a generic type. This can happen when the generic type
-// has a default concrete instantiation, e.g.
-//
-//   record R { type t = int; }
-//
-// Assumes that SET_LINENO has been called in the enclosing scope.
-//
-// Returns a concrete type. Replaces a SymExpr referring to
-// a generic type (which could be referring to a TypeSymbol
-// directly or to a VarSymbol with the flag FLAG_TYPE_VARIABLE).
-//
-// also handles some complicated extern vars like
-//   extern var x: c_ptr(c_int)
-// which do not work in the usual order of resolution.
-Type* resolveDefaultGenericTypeSymExpr(SymExpr* te) {
-
-  // te could refer to a type in two ways:
-  //  1. it could refer to a TypeSymbol directly
-  //  2. it could refer to a VarSymbol with FLAG_TYPE_VARIABLE
-  Type* teRefersToType = NULL;
-
-  if (TypeSymbol* ts = toTypeSymbol(te->symbol()))
-    teRefersToType = ts->type;
-
-  if (VarSymbol* vs = toVarSymbol(te->symbol())) {
-    if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
-      teRefersToType = vs->typeInfo();
-
-      // Fix for complicated extern vars like
-      // extern var x: c_ptr(c_int);
-      // This really just amounts to an adjustment to the order of resolution.
-      if( vs->hasFlag(FLAG_EXTERN) &&
-          vs->defPoint && vs->defPoint->init &&
-          vs->getValType() == dtUnknown ) {
-        vs->type = resolveTypeAlias(te);
-      }
-    }
-  }
-
-  // Now, if te refers to a generic type, replace te with
-  // a concrete type.
-  if (AggregateType* ct = toAggregateType(teRefersToType)) {
-    if (ct->symbol->hasFlag(FLAG_GENERIC)) {
-      CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
-      te->replace(cc);
-      resolveCall(cc);
-      TypeSymbol* retTS = cc->typeInfo()->symbol;
-      cc->replace(new SymExpr(retTS));
-      return retTS->type;
-    }
-  }
-
-  return te->typeInfo();
-}
-
-void
-resolveDefaultGenericType(CallExpr* call) {
-  SET_LINENO(call);
-  for_actuals(actual, call) {
-    if (NamedExpr* ne = toNamedExpr(actual))
-      actual = ne->actual;
-    if (SymExpr* te = toSymExpr(actual)) {
-      resolveDefaultGenericTypeSymExpr(te);
-    }
-  }
-}
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 // Collect methods with a particular name from a type and from
 // any type it's instantiated from.
@@ -5951,9 +5888,7 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void
-resolveCoerce(CallExpr* call) {
-
+static void resolveCoerce(CallExpr* call) {
   resolveDefaultGenericType(call);
 
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
@@ -5975,12 +5910,80 @@ resolveCoerce(CallExpr* call) {
   }
 }
 
-static CallExpr* toPrimToLeaderCall(Expr* expr) {
-  if (CallExpr* call = toCallExpr(expr))
-    if (call->isPrimitive(PRIM_TO_LEADER) ||
-        call->isPrimitive(PRIM_TO_STANDALONE))
-      return call;
-  return NULL;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveDefaultGenericType(CallExpr* call) {
+  SET_LINENO(call);
+
+  for_actuals(actual, call) {
+    if (NamedExpr* ne = toNamedExpr(actual))
+      actual = ne->actual;
+
+    if (SymExpr* te = toSymExpr(actual)) {
+      resolveDefaultGenericTypeSymExpr(te);
+    }
+  }
+}
+
+//
+// finds the concrete type of a SymExpr when it refers
+// to a generic type. This can happen when the generic type
+// has a default concrete instantiation, e.g.
+//
+//   record R { type t = int; }
+//
+// Assumes that SET_LINENO has been called in the enclosing scope.
+//
+// Returns a concrete type. Replaces a SymExpr referring to
+// a generic type (which could be referring to a TypeSymbol
+// directly or to a VarSymbol with the flag FLAG_TYPE_VARIABLE).
+//
+// also handles some complicated extern vars like
+//   extern var x: c_ptr(c_int)
+// which do not work in the usual order of resolution.
+Type* resolveDefaultGenericTypeSymExpr(SymExpr* te) {
+
+  // te could refer to a type in two ways:
+  //  1. it could refer to a TypeSymbol directly
+  //  2. it could refer to a VarSymbol with FLAG_TYPE_VARIABLE
+  Type* teRefersToType = NULL;
+
+  if (TypeSymbol* ts = toTypeSymbol(te->symbol()))
+    teRefersToType = ts->type;
+
+  if (VarSymbol* vs = toVarSymbol(te->symbol())) {
+    if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
+      teRefersToType = vs->typeInfo();
+
+      // Fix for complicated extern vars like
+      // extern var x: c_ptr(c_int);
+      // This really just amounts to an adjustment to the order of resolution.
+      if( vs->hasFlag(FLAG_EXTERN) &&
+          vs->defPoint && vs->defPoint->init &&
+          vs->getValType() == dtUnknown ) {
+        vs->type = resolveTypeAlias(te);
+      }
+    }
+  }
+
+  // Now, if te refers to a generic type, replace te with
+  // a concrete type.
+  if (AggregateType* ct = toAggregateType(teRefersToType)) {
+    if (ct->symbol->hasFlag(FLAG_GENERIC)) {
+      CallExpr* cc = new CallExpr(ct->defaultTypeConstructor->name);
+      te->replace(cc);
+      resolveCall(cc);
+      TypeSymbol* retTS = cc->typeInfo()->symbol;
+      cc->replace(new SymExpr(retTS));
+      return retTS->type;
+    }
+  }
+
+  return te->typeInfo();
 }
 
 /************************************* | **************************************
@@ -6199,6 +6202,8 @@ static ForallStmt* toForallForIteratedExpr(SymExpr* expr);
 
 static Expr*       resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr);
 
+static CallExpr*   toPrimToLeaderCall(Expr* expr);
+
 static Expr*       resolveExprResolveEachCall(ContextCallExpr* cc);
 
 static bool        contextTypesMatch(FnSymbol* valueFn,
@@ -6374,6 +6379,19 @@ static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
 
   } else {
     retval = foldTryCond(postFold(expr));
+  }
+
+  return retval;
+}
+
+static CallExpr* toPrimToLeaderCall(Expr* expr) {
+  CallExpr* retval = NULL;
+
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_TO_LEADER)     == true ||
+        call->isPrimitive(PRIM_TO_STANDALONE) == true) {
+      retval = call;
+    }
   }
 
   return retval;

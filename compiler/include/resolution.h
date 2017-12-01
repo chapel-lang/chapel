@@ -165,7 +165,6 @@ void      resolveBlockStmt(BlockStmt* blockStmt);
 void      resolveCall(CallExpr* call);
 void      resolveCallAndCallee(CallExpr* call, bool allowUnresolved = false);
 
-void      resolveDefaultGenericType(CallExpr* call);
 Type*     resolveDefaultGenericTypeSymExpr(SymExpr* se);
 Type*     resolveTypeAlias(SymExpr* se);
 
