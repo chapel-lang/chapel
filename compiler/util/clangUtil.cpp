@@ -49,7 +49,6 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/SubtargetFeature.h"
@@ -60,6 +59,10 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+// TODO - this will need to be conditional
+#include "rv/passes.h"
 
 #endif
 
@@ -1368,6 +1371,13 @@ void finishCodegenLLVM() {
   }
 }
 
+static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
+                             llvm::legacy::PassManagerBase &PM) {
+
+  rv::addOuterLoopVectorizer(PM);
+}
+
+
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
@@ -1404,6 +1414,14 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
   PMBuilder.PrepareForLTO = opts.PrepareForLTO;
   PMBuilder.RerollLoops = opts.RerollLoops;
+
+
+  // Enable Region Vectorizer aka Outer Loop Vectorizer
+  if (!fNoVectorize) {
+    // This in copied from 'registerRVPasses'
+    PMBuilder.addExtension(PassManagerBuilder::EP_VectorizerStart,
+                           registerRVPasses);
+  }
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
