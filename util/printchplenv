@@ -216,7 +216,7 @@ def printchplenv(contents, print_filters=['tidy'], print_format='pretty'):
 
         net_atomics = chpl_atomics.get('network')
         if 'tidy' in print_filters:
-            if comm != None:
+            if comm != 'none':
                 print_env('  CHPL_NETWORK_ATOMICS', net_atomics)
         else:
             print_env('  CHPL_NETWORK_ATOMICS', net_atomics)
@@ -334,41 +334,9 @@ def print_var(env_var, value, print_format=None):
         raise ValueError("Invalid format '{0}'".format(print_format))
 
 
-
-if __name__ == '__main__':
-    parser = optparse.OptionParser(
-        usage='usage: %prog [options]',
-        description = 'Print the current Chapel configuration. Arguments allow selectiion of'
-            'what gets printed [content], how it gets printed [format], and what gets'
-            'filtered [filter].')
-
-    #[shortcut]
-    parser.add_option('--all', action='append_const',dest='content', const=['compiler', 'runtime','launcher'], help='Shortcut for --compiler --runtime --launcher')
-
-    #[content]
-    parser.set_defaults(content=['runtime', 'launcher'])
-    parser.add_option('--compiler', action='append_const',dest='content', const='compiler', help='Select variables describing the configuration of the compiler')
-    parser.add_option('--runtime',  action='append_const',dest='content', const='runtime', help='Select variables describing the configuration of the runtime')
-    parser.add_option('--launcher', action='append_const',dest='content', const='launcher', help='Select variables describing the configuration of the compiler')
-    parser.add_option('--internal', action='append_const',dest='content', const='internal', help='Select additional variables used during builds')
-
-    #[filter]
-    parser.set_defaults(filter=['pretty'])
-    parser.add_option('--tidy', action='append_const', dest='filter', const='tidy', help='')
-    parser.add_option('--no-tidy', action='store_false', dest='tidy', help='')
-    parser.add_option('--anonymize',  action='append_const',dest='filter', const='anonymize', help='')
-    parser.add_option('--overrides', action='append_const',dest='filter', const='overrides', help='')
-
-    #[format]
-    parser.set_defaults(format='pretty')
-    parser.add_option('--pretty', action='store_const', dest='format', const='pretty', help='')
-    parser.add_option('--simple', action='store_const', dest='format', const='simple', help='')
-    parser.add_option('--make',   action='store_const', dest='format', const='make', help='')
-    parser.add_option('--path',   action='store_const', dest='format', const='path', help='')
-
-    """Hijack the help message"""
-    def print_help():
-        help_string = """Usage: printchplenv [options]
+"""Define the help message"""
+def print_help():
+    help_string = """Usage: printchplenv [options]
 
 Print the current Chapel configuration. Arguments allow selectiion of
 what gets printed [content], how it gets printed [format], and what gets
@@ -405,13 +373,54 @@ Options:
   --make       print variables in format: CHPL_MAKE_KEY=VALUE
   --path       print variables in format: VALUE1/VALUE2/...
 """
-        stdout.write(help_string)
+    stdout.write(help_string)
 
+
+"""Define argument to parse"""
+def parse_args():
+    parser = optparse.OptionParser(
+        usage='usage: %prog [options]',
+        description = 'Print the current Chapel configuration. Arguments allow selectiion of'
+            'what gets printed [content], how it gets printed [format], and what gets'
+            'filtered [filter].')
+
+    #[shortcut]
+    parser.add_option('--all', action='append_const',dest='content', const=['compiler', 'runtime','launcher'])
+
+    #[content]
+    parser.set_defaults(content=['runtime', 'launcher'])
+    parser.add_option('--compiler', action='append_const',dest='content', const='compiler')
+    parser.add_option('--runtime',  action='append_const',dest='content', const='runtime')
+    parser.add_option('--launcher', action='append_const',dest='content', const='launcher')
+    parser.add_option('--internal', action='append_const',dest='content', const='internal')
+
+    #[filter]
+    parser.set_defaults(filter=[])
+    parser.add_option('--tidy',      action='store_true',   dest='tidy')
+    parser.add_option('--no-tidy',   action='store_false',  dest='tidy')
+    parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
+    parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
+
+    #[format]
+    parser.set_defaults(format='pretty')
+    parser.add_option('--pretty', action='store_const', dest='format', const='pretty')
+    parser.add_option('--simple', action='store_const', dest='format', const='simple')
+    parser.add_option('--make',   action='store_const', dest='format', const='make')
+    parser.add_option('--path',   action='store_const', dest='format', const='path')
+
+    # Hijack the help message
     parser.print_help = print_help
 
-    (options, args) = parser.parse_args()
-    if options.tidy == False:
-        options.filter.remove('tidy')
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+
+    (options, args) = parse_args()
+
+    # Default [filter]
+    if not options.tidy == False:
+        options.filter.append('tidy')
 
     printchplenv(options.content, options.filter, options.format)
 
