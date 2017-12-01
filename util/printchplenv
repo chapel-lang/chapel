@@ -1,36 +1,109 @@
 #!/usr/bin/env python
-import optparse, os, subprocess, sys
-from sys import stdout
+import functools
+import optparse
+import os
+import subprocess
+from sys import stdout, path
 
 chplenv_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.abspath(chplenv_dir))
+path.insert(0, os.path.abspath(chplenv_dir))
 
 from chplenv import *
 
-def print_mode(mode='list', anonymize=False):
-    print_var.first_time = True
+SHORT_NAMES = {
+    'CHPL_ORIG_TARGET_COMPILER':  'x',
+    'CHPL_TARGET_ARCH'         :  'arch',
+    'CHPL_LOCALE_MODEL'        :  'loc',
+    'CHPL_COMM'                :  'comm',
+    'CHPL_TASKS'               :  'tasks',
+    'CHPL_LAUNCHER'            :  'launch',
+    'CHPL_TIMERS'              :  'tmr',
+    'CHPL_UNWIND'              :  'unwind',
+    'CHPL_HOST_MEM'            :  'hostmem',
+    'CHPL_TARGET_MEM'          :  'tgtmem',
+    'CHPL_MEM'                 :  'mem',
+    'CHPL_JEMALLOC'            :  'jemalloc',
+    'CHPL_MAKE'                :  'make',
+    'CHPL_ATOMICS'             :  'atomics',
+    'CHPL_GMP'                 :  'gmp',
+    'CHPL_HWLOC'               :  'hwloc',
+    'CHPL_REGEXP'              :  're',
+    'CHPL_LLVM'                :  'llvm',
+    'CHPL_AUX_FILESYS'         :  'fs',
+}
 
-    if mode == 'overrides':
-        for var in overrides.allvars():
-            if anonymize and var.startswith('CHPL_HOME='):
+CONTENT_ENVS = {
+        'compiler': ['CHPL_HOST_PLATFORM',
+                     'CHPL_HOST_COMPILER',
+                     'CHPL_LLVM'],
+        'runtime': ['CHPL_TARGET_PLATFORM',
+                    'CHPL_TARGET_COMPILER',
+                    'CHPL_TARGET_ARCH',
+                    'CHPL_LOCALE_MODEL',
+                    'CHPL_COMM',
+                    'CHPL_COMM_SUBSTRATE',
+                    'CHPL_GASNET_SEGMENT',
+                    'CHPL_TASKS',
+                    'CHPL_TIMERS',
+                    'CHPL_UNWIND',
+                    'CHPL_MEM',
+                    'CHPL_MAKE',
+                    'CHPL_JEMALLOC',
+                    'CHPL_ATOMICS',
+                    'CHPL_NETWORK_ATOMICS',
+                    'CHPL_GMP',
+                    'CHPL_HWLOC',
+                    'CHPL_REGEXP',
+                    'CHPL_AUX_FILESYS'],
+        'launcher': ['CHPL_LAUNCHER'], # TODO: More...
+        'internal': ['CHPL_JEMALLOC',
+                     'CHPL_HOST_MEM',
+                     'CHPL_ORIG_TARGET_COMPILER',
+                     'CHPL_RUNTIME_SUBDIR',
+                     'CHPL_LAUNCHER_SUBDIR',
+                     'CHPL_COMPILER_SUBDIR',
+                     'CHPL_GMP_UNIQ_CFG_PATH',
+                     'CHPL_HWLOC_UNIQ_CFG_PATH',
+                     'CHPL_JEMALLOC_UNIQ_CFG_PATH',
+                     'CHPL_LIBUNWIND_UNIQ_CFG_PATH',
+                     'CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
+                     'CHPL_QTHREAD_UNIQ_CFG_PATH',
+                     'CHPL_RE2_UNIQ_CFG_PATH',
+                     'CHPL_THIRD_PARTY_LINK_ARGS']
+        }
+
+def printchplenv(contents, print_filters=['tidy'], print_format='pretty'):
+
+    print_env = functools.partial(print_var, print_format=print_format)
+    #print_var.first_time = True
+
+    # It'd be cool if we could do this:
+    #envs = []
+
+    #for env in [CONTENT_ENVS[c] for c in contents]:
+    #    envs.extend(env)
+
+    #for env in envs:
+    #    print_env(env, 1)
+
+    """
+    [filter]
+    --[no-]tidy  (default) [don't] omit sub-variables irrelevant to the current
+                  configuration
+    --anonymize  avoid printing machine specific details such as host name and
+                 file paths
+    --overrides  only show variables that have been user supplied
+                 via environment or chplconfig
+    """
+
+    if 'overrides' in print_filters:
+        for (var, value) in overrides.items():
+            if 'anonymize' in print_filters and var == 'CHPL_HOME':
                 # don't print CHPL_HOME if --anonymize is set.
                 pass
             else:
-                stdout.write(var);
-                stdout.write('\n');
+                print_env(var, value)
         return
-
-    # `m` is a 'simplified' version of `mode` that merges some cases that can
-    # be treated the same by print_mode, but need to be dealt with separately
-    # in print_var
-    m = mode
-    if 'shell' in mode:
-        #cshell and shell are the same up until we print
-        m = 'shell'
-    elif mode == 'simple' or mode == 'debug':
-        # make and simple are almost the same barring a few cases and when they
-        # are printed
-        m = 'make'
 
     llvm_codegen = "CHPL_LLVM_CODEGEN" in os.environ
 
@@ -40,7 +113,7 @@ def print_mode(mode='list', anonymize=False):
     # This happens early because it modifies the environment and other
     # defaults might depend on this setting.
     orig_target_compiler = ""
-    if m != 'compiler' and m != 'launcher':
+    if 'internal' in contents:
       orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
       new_target_compiler = chpl_compiler.get('target')
       os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
@@ -53,154 +126,163 @@ def print_mode(mode='list', anonymize=False):
 
     chpl_home = chpl_home_utils.get_chpl_home()
 
-    if (m == 'list' or mode == 'debug') and not anonymize:
-        stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
-        print_var('CHPL_HOME', chpl_home, mode)
-        this_dir = os.path.realpath(os.path.dirname(__file__))
-        stdout.write("script location: {0}\n".format(this_dir))
-    elif chpl_home and m == 'shell':
-        print_var('CHPL_HOME', chpl_home, mode)
+    # Header & CHPL_HOME
+    # TODO: Should CHPL_HOME have a --home flag?
+    if 'anonymize' not in print_filters:
+        if print_format == 'pretty':
+            stdout.write("machine info: {0} {1} {2} {3} {4}\n".format(*os.uname()))
+            print_env('CHPL_HOME', chpl_home)
+            this_dir = os.path.realpath(os.path.dirname(__file__))
+            stdout.write("script location: {0}\n".format(this_dir))
+        elif chpl_home and print_format == 'simple':
+            print_env('CHPL_HOME', chpl_home)
 
-    if m != 'runtime' and m != 'list':
+    if 'compiler' in contents:
         host_platform = chpl_platform.get('host')
         host_compiler = chpl_compiler.get('host')
-        #host_arch = arch.get('host')
 
-        print_var('CHPL_HOST_PLATFORM', host_platform, mode)
-        print_var('CHPL_HOST_COMPILER', host_compiler, mode)
-        # print_var('CHPL_HOST_ARCH', host_arch, mode, 'arch')
+        print_env('CHPL_HOST_PLATFORM', host_platform)
+        print_env('CHPL_HOST_COMPILER', host_compiler)
 
-    if m != 'compiler' and m != 'launcher':
+    if 'runtime' in contents:
         target_platform = chpl_platform.get('target')
         target_compiler = chpl_compiler.get('target')
 
-        print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
-        print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
-        if mode == 'simple' or mode == 'make' or mode == 'debug':
-          print_var('CHPL_ORIG_TARGET_COMPILER', orig_target_compiler, mode, 'x', (' '))
+        print_env('CHPL_TARGET_PLATFORM', target_platform)
+        print_env('CHPL_TARGET_COMPILER', target_compiler)
 
-    get_module_lcd = ( chpl_home_utils.using_chapel_module() and
-                     (mode == 'runtime' or mode == 'make') )
-    if m != 'compiler' and m != 'launcher':
-        target_arch = chpl_arch.get('target', mode == 'make', get_module_lcd)
-        print_var('CHPL_TARGET_ARCH', target_arch, mode, 'arch')
+    if 'internal' in contents:
+        print_env('CHPL_ORIG_TARGET_COMPILER', orig_target_compiler)
 
-    if m != 'compiler':
+
+    # TODO - make this independent of print_format
+    get_module_lcd = (chpl_home_utils.using_chapel_module() and
+                     ('runtime' in contents or print_format == 'make') )
+    if 'runtime' in contents:
+        target_arch = chpl_arch.get('target', print_format == 'make', get_module_lcd)
+        print_env('CHPL_TARGET_ARCH', target_arch)
+
         locale_model = chpl_locale_model.get()
-        print_var('CHPL_LOCALE_MODEL', locale_model, mode, 'loc')
+        print_env('CHPL_LOCALE_MODEL', locale_model)
 
-    comm = chpl_comm.get()
-    print_var('CHPL_COMM', comm, mode, 'comm', ('runtime', 'launcher'))
-    if m == 'make' or (comm != 'none' and comm != 'ugni') or m == 'shell':
+        comm = chpl_comm.get()
+        print_env('CHPL_COMM', comm)
+
         comm_substrate = chpl_comm_substrate.get()
-        print_var('  CHPL_COMM_SUBSTRATE', comm_substrate, mode, filters=('runtime',))
-        if m == 'make' or comm == 'gasnet' or m == 'shell':
-            comm_segment = chpl_comm_segment.get()
-            print_var('  CHPL_GASNET_SEGMENT', comm_segment, mode, filters=('runtime',))
+        comm_segment = chpl_comm_segment.get()
+        if 'tidy' in print_filters:
+            if comm != 'none' and comm != 'ugni':
+                print_env('  CHPL_COMM_SUBSTRATE', comm_substrate)
+            if comm == 'gasnet':
+                print_env('  CHPL_GASNET_SEGMENT', comm_segment)
+        else:
+            print_env('  CHPL_COMM_SUBSTRATE', comm_substrate)
+            print_env('  CHPL_GASNET_SEGMENT', comm_segment)
 
-    tasks = chpl_tasks.get()
-    print_var('CHPL_TASKS', tasks, mode, 'tasks', ('runtime', 'launcher'))
+        tasks = chpl_tasks.get()
+        print_env('CHPL_TASKS', tasks)
 
-    launcher = chpl_launcher.get()
-    print_var('CHPL_LAUNCHER', launcher, mode, 'launch', ('launcher',))
+    if 'launcher' in contents:
+        launcher = chpl_launcher.get()
+        print_env('CHPL_LAUNCHER', launcher)
 
-    timers = chpl_timers.get()
-    print_var('CHPL_TIMERS', timers, mode, 'tmr', ('runtime', 'launcher'))
+    if 'runtime' in contents:
+        timers = chpl_timers.get()
+        print_env('CHPL_TIMERS', timers)
 
-    unwind = chpl_unwind.get()
-    print_var('CHPL_UNWIND', unwind, mode, 'unwind', ('runtime', 'launcher'))
+        unwind = chpl_unwind.get()
+        print_env('CHPL_UNWIND', unwind)
 
     target_mem = chpl_mem.get('target')
-    if mode == 'make':
+
+    if 'internal' in contents:
         host_mem = chpl_mem.get('host')
-        print_var('CHPL_HOST_MEM', host_mem, mode, 'hostmem', ('runtime', 'launcher'))
-        print_var('CHPL_TARGET_MEM', target_mem, mode, 'tgtmem', ('runtime', 'launcher'))
-    else:
-        print_var('CHPL_MEM', target_mem, mode, 'mem', ('runtime', 'launcher'))
+        print_env('CHPL_HOST_MEM', host_mem)
+        print_env('CHPL_TARGET_MEM', target_mem)
 
-    jemalloc = chpl_jemalloc.get()
-    if (target_mem == 'jemalloc' and not jemalloc == 'jemalloc') or m == 'make' or m == 'shell':
-        print_var('  CHPL_JEMALLOC', jemalloc, mode, 'jemalloc', ('runtime',))
+    if 'runtime' in contents:
+        print_env('CHPL_MEM', target_mem)
 
-    if m == 'list' or m == 'make' or m == 'shell':
+    if 'internal'in contents:
+        jemalloc = chpl_jemalloc.get()
+        print_env('  CHPL_JEMALLOC', jemalloc)
+
+    if 'runtime' in contents:
         make = chpl_make.get()
-        print_var('CHPL_MAKE', make, mode, 'make')
+        print_env('CHPL_MAKE', make)
 
-    atomics = chpl_atomics.get()
-    print_var('CHPL_ATOMICS', atomics, mode, 'atomics', ('runtime', 'launcher'))
-    if (mode != 'runtime' and mode != 'make' and mode != 'launcher') and comm != 'none' or mode == 'simple' or m == 'shell':
+        atomics = chpl_atomics.get()
+        print_env('CHPL_ATOMICS', atomics)
+
         net_atomics = chpl_atomics.get('network')
-        print_var('  CHPL_NETWORK_ATOMICS', net_atomics, mode, filters=('runtime', 'launcher'))
+        if 'tidy' in print_filters:
+            if comm != None:
+                print_env('  CHPL_NETWORK_ATOMICS', net_atomics)
+        else:
+            print_env('  CHPL_NETWORK_ATOMICS', net_atomics)
 
-    gmp = chpl_gmp.get()
-    print_var('CHPL_GMP', gmp, mode, 'gmp', ('runtime',))
+        gmp = chpl_gmp.get()
+        print_env('CHPL_GMP', gmp)
 
-    hwloc = chpl_hwloc.get()
-    print_var('CHPL_HWLOC', hwloc, mode, 'hwloc', ('runtime',))
+        hwloc = chpl_hwloc.get()
+        print_env('CHPL_HWLOC', hwloc)
 
-    regexp = chpl_regexp.get()
-    print_var('CHPL_REGEXP', regexp, mode, 're', ('runtime',))
+        regexp = chpl_regexp.get()
+        print_env('CHPL_REGEXP', regexp)
 
-    if mode != 'list':
+    if 'internal' in contents:
         enable_llvm = chpl_llvm.get()
-        print_var('CHPL_LLVM', enable_llvm, mode, 'llvm', ('compiler',))
+        print_env('CHPL_LLVM', enable_llvm)
 
-    aux_filesys = chpl_aux_filesys.get()
-    if mode == 'make' or mode == 'runtime':
+    if 'runtime' in contents:
+        aux_filesys = chpl_aux_filesys.get()
         tmp = aux_filesys.split(' ')
         tmp.sort()
         aux_filesys = "_".join(tmp)
-    print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
+        print_env('CHPL_AUX_FILESYS', aux_filesys)
 
-    # 'simple' needs these values but not those in the next conditional
-    if m == 'make':
+    # TODO: Find a way to support these with print_env
+    if 'internal' in contents:
         stdout.write('CHPL_MAKE_RUNTIME_SUBDIR=')
-        print_mode('runtime')
+        printchplenv(['runtime'], print_format='path')
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
-        print_mode('launcher')
+        printchplenv(['launcher'], print_format='path')
 
     # 'simple' does not need these values
-    if mode == 'make':
+    if 'internal' in contents:
         stdout.write('CHPL_MAKE_COMPILER_SUBDIR=')
-        print_mode('compiler')
+        printchplenv(['compiler'], print_format='path')
 
         link_args_3p = []
 
-        print_var('  CHPL_GMP_UNIQ_CFG_PATH',
-                  chpl_3p_gmp_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_GMP_UNIQ_CFG_PATH',
+                  chpl_3p_gmp_configs.get_uniq_cfg_path())
         link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(gmp))
 
-        print_var('  CHPL_HWLOC_UNIQ_CFG_PATH',
-                  chpl_3p_hwloc_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_HWLOC_UNIQ_CFG_PATH',
+                  chpl_3p_hwloc_configs.get_uniq_cfg_path())
         link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args(hwloc))
 
-        print_var('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
-                  chpl_3p_jemalloc_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_JEMALLOC_UNIQ_CFG_PATH',
+                  chpl_3p_jemalloc_configs.get_uniq_cfg_path())
         link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(jemalloc))
 
-        print_var('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
-                  chpl_3p_libunwind_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_LIBUNWIND_UNIQ_CFG_PATH',
+                  chpl_3p_libunwind_configs.get_uniq_cfg_path())
         link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(unwind))
 
-        print_var('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
-                  chpl_3p_massivethreads_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH',
+                  chpl_3p_massivethreads_configs.get_uniq_cfg_path())
         if tasks == 'massivethreads':
             link_args_3p.extend(chpl_3p_massivethreads_configs.get_link_args())
 
-        print_var('  CHPL_QTHREAD_UNIQ_CFG_PATH',
-                  chpl_3p_qthreads_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_QTHREAD_UNIQ_CFG_PATH',
+                  chpl_3p_qthreads_configs.get_uniq_cfg_path())
         if tasks == 'qthreads':
             link_args_3p.extend(chpl_3p_qthreads_configs.get_link_args())
 
-        print_var('  CHPL_RE2_UNIQ_CFG_PATH',
-                  chpl_3p_re2_configs.get_uniq_cfg_path(),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_RE2_UNIQ_CFG_PATH',
+                  chpl_3p_re2_configs.get_uniq_cfg_path())
         if regexp == 're2':
             link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
 
@@ -208,91 +290,128 @@ def print_mode(mode='list', anonymize=False):
         for arg in reversed(link_args_3p):
             if arg not in link_args_3p_dedup:
                 link_args_3p_dedup.append(arg)
-        print_var('  CHPL_THIRD_PARTY_LINK_ARGS',
-                  ' '.join(reversed(link_args_3p_dedup)),
-                  mode, filters=('runtime',))
+        print_env('  CHPL_THIRD_PARTY_LINK_ARGS',
+                  ' '.join(reversed(link_args_3p_dedup)))
 
-    elif m == 'compiler' or m == 'runtime' or m == 'launcher':
+    if print_format == 'path':
         stdout.write('\n')
 
 
 
-def print_var(env_var, value, mode, short_name='', filters=None):
-    if mode == 'list' or mode == 'debug':
-        user_set = overrides.get_environ(env_var.strip(), '')
+"""
+  [format]
+  --pretty     (default) print variables in format: CHPL_KEY: VALUE
+               indicating which options are set by environment variables (*)
+               and which are set by configuration files (+)
+  --simple     print variables in format: CHPL_KEY=VALUE
+               output is compatible with chplconfig format
+  --make       print variables in format: CHPL_MAKE_KEY=VALUE
+  --path       print variables in format: VALUE1/VALUE2/...
+"""
+def print_var(env_var, value, print_format=None):
+    env = env_var.strip()
+    if print_format == 'pretty':
+        user_set = overrides.get_environ(env, '')
         if user_set:
           user_set = ' *'
         else:
-          user_set = overrides.get_chplconfig(env_var.strip(), '')
+          user_set = overrides.get_chplconfig(env, '')
           if user_set:
             user_set = ' +'
         stdout.write("{1}: {2}{0}\n".format(user_set, env_var, value))
-    elif mode == 'make':
+    elif print_format == 'simple':
+        stdout.write("{0}={1}\n".format(env, value))
+    elif print_format == 'make':
         make_env_var = env_var.replace("CHPL_", "CHPL_MAKE_", 1).lstrip()
         stdout.write("{0}={1}\n".format(make_env_var, value))
-    elif mode == 'simple':
-        stdout.write("{0}={1}\n".format(env_var.strip(), value))
-    elif mode == 'compiler' or mode == 'runtime' or mode == 'launcher':
-        if not filters or mode in filters:
-            if not print_var.first_time:
-                stdout.write("/")
-            else:
-                print_var.first_time = False
-
-            if not short_name or value.startswith(short_name):
-                stdout.write(value)
-            else:
-                stdout.write("{0}-{1}".format(short_name, value))
-    elif mode == 'shell':
-        stdout.write("export {0}='{1}'\n".format(env_var.strip(), value))
-    elif mode == 'cshell':
-        stdout.write("setenv {0} '{1}'\n".format(env_var.strip(), value))
+    elif print_format == 'path':
+        if env in SHORT_NAMES.keys():
+            stdout.write("{0}-{1}".format(SHORT_NAMES[env], value))
+        else:
+            stdout.write("{0}/".format(value))
+        stdout.write("/")
     else:
-        raise ValueError("Invalid mode '{0}'".format(mode))
+        raise ValueError("Invalid format '{0}'".format(print_format))
 
-
-def _main():
-    parser = optparse.OptionParser(
-        usage='usage: %prog [--list|--make|--simple|--anonymize|--compiler|--runtime|--launcher|--sh|--csh|--debug]')
-
-    parser.add_option('--list', action='store_const', dest='mode', default='list',
-                      const='list',
-                      help="(default) print out a listing of the active environment indicating "
-                           "which options are set by environment variables (*)"
-                           " and which are set by configuration files (+)")
-    parser.add_option('--make', action='store_const', dest='mode', const='make',
-                      help="print out a listing of the environment that is "
-                           "used in the build process")
-    parser.add_option('--simple', action='store_const', dest='mode', const='simple',
-                      help="print out a listing of the environment that is "
-                           "meant to be used in the compiler -- "
-                           "output is compatible with chplconfig format.")
-    parser.add_option('--overrides', action='store_const', dest='mode', const='overrides',
-                      help="print out a listing of variables that have been "
-                           "user supplied via environment or chplconfig -- "
-                           "output is compatible with chplconfig format.")
-    parser.add_option('--anonymize', action='store_true', dest='anonymize', default=False,
-                      help="avoid printing machine specific details such as "
-                           "host name and file paths")
-    parser.add_option('--compiler', action='store_const', dest='mode', const='compiler',
-                      help="print out path component for compiler objects")
-    parser.add_option('--runtime', action='store_const', dest='mode', const='runtime',
-                      help="print out path component for runtime objects")
-    parser.add_option('--launcher', action='store_const', dest='mode', const='launcher',
-                      help="print out path component for launcher objects")
-    parser.add_option('--sh', action='store_const', dest='mode', const='shell',
-                      help="print out a sh/bash script to reproduce the environment")
-    parser.add_option('--csh', action='store_const', dest='mode', const='cshell',
-                      help="print out a csh/tcsh script to reproduce the environment")
-    parser.add_option('--debug', action='store_const', dest='mode', const='debug',
-                      help="print out a listing of the complete environment indicating "
-                           "which options are set by environment variables (*)"
-                           " and which are set by configuration files (+)")
-
-    (options, args) = parser.parse_args()
-
-    print_mode(options.mode, options.anonymize)
 
 
 if __name__ == '__main__':
-    _main()
+    parser = optparse.OptionParser(
+        usage='usage: %prog [options]',
+        description = 'Print the current Chapel configuration. Arguments allow selectiion of'
+            'what gets printed [content], how it gets printed [format], and what gets'
+            'filtered [filter].')
+
+    #[shortcut]
+    parser.add_option('--all', action='append_const',dest='content', const=['compiler', 'runtime','launcher'], help='Shortcut for --compiler --runtime --launcher')
+
+    #[content]
+    parser.set_defaults(content=['runtime', 'launcher'])
+    parser.add_option('--compiler', action='append_const',dest='content', const='compiler', help='Select variables describing the configuration of the compiler')
+    parser.add_option('--runtime',  action='append_const',dest='content', const='runtime', help='Select variables describing the configuration of the runtime')
+    parser.add_option('--launcher', action='append_const',dest='content', const='launcher', help='Select variables describing the configuration of the compiler')
+    parser.add_option('--internal', action='append_const',dest='content', const='internal', help='Select additional variables used during builds')
+
+    #[filter]
+    parser.set_defaults(filter=['pretty'])
+    parser.add_option('--tidy', action='append_const', dest='filter', const='tidy', help='')
+    parser.add_option('--no-tidy', action='store_false', dest='tidy', help='')
+    parser.add_option('--anonymize',  action='append_const',dest='filter', const='anonymize', help='')
+    parser.add_option('--overrides', action='append_const',dest='filter', const='overrides', help='')
+
+    #[format]
+    parser.set_defaults(format='pretty')
+    parser.add_option('--pretty', action='store_const', dest='format', const='pretty', help='')
+    parser.add_option('--simple', action='store_const', dest='format', const='simple', help='')
+    parser.add_option('--make',   action='store_const', dest='format', const='make', help='')
+    parser.add_option('--path',   action='store_const', dest='format', const='path', help='')
+
+    """Hijack the help message"""
+    def print_help():
+        help_string = """Usage: printchplenv [options]
+
+Print the current Chapel configuration. Arguments allow selectiion of
+what gets printed [content], how it gets printed [format], and what gets
+filtered [filter].
+
+The default [content] arguments are: --runtime --launcher
+
+Options:
+  -h, --help   show this help message and exit
+
+  [shortcut]
+  --all        shortcut for --compiler --runtime --launcher
+
+  [content]
+  --compiler    Select variables describing the configuration of the compiler
+  --runtime     Select variables describing the configuration of the runtime
+  --launcher    Select variables describing the configuration of the compiler
+  --internal    Select additional variables used during builds
+
+  [filter]
+  --[no-]tidy  (default) [don't] omit sub-variables irrelevant to the current
+                configuration
+  --anonymize  avoid printing machine specific details such as host name and
+               file paths
+  --overrides  only show variables that have been user supplied
+               via environment or chplconfig
+
+  [format]
+  --pretty     (default) print variables in format: CHPL_KEY: VALUE
+               indicating which options are set by environment variables (*)
+               and which are set by configuration files (+)
+  --simple     print variables in format: CHPL_KEY=VALUE
+               output is compatible with chplconfig format
+  --make       print variables in format: CHPL_MAKE_KEY=VALUE
+  --path       print variables in format: VALUE1/VALUE2/...
+"""
+        stdout.write(help_string)
+
+    parser.print_help = print_help
+
+    (options, args) = parser.parse_args()
+    if options.tidy == False:
+        options.filter.remove('tidy')
+
+    printchplenv(options.content, options.filter, options.format)
+
