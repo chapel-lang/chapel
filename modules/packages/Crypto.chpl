@@ -650,25 +650,27 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var plaintextData = plaintext.getBuffData();
     var plaintextLen = plaintext.getBuffSize();
 
-    var ciphertextLen = plaintextLen + 8; // block size length for blowfish
+    var ciphertextLen = plaintextLen + 8;
     var cipherDomain: domain(1) = {0..#ciphertextLen};
+    var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
-    var updateCipherLen: c_int;
 
     EVP_EncryptInit_ex(ctx,
                        cipher,
                        c_nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
+
     EVP_EncryptUpdate(ctx,
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
                       plaintextLen: c_int);
+
     EVP_EncryptFinal_ex(ctx,
                         c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
-                        c_ptrTo(updateCipherLen): c_ptr(c_int));
-    cipherDomain = {0..#(ciphertextLen + updateCipherLen)};
+                        c_ptrTo(updatedCipherLen): c_ptr(c_int));
+    cipherDomain = {0..#(ciphertextLen + updatedCipherLen)};
     return ciphertext;
   }
 
@@ -711,6 +713,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
      Standard(AES) cipher is used more in practice. Since, Blowfish is unpatented and placed
      in the public domain, it receives a decent amount of attention from the community.
 
+     .. note::
+
+       Since the key in Blowfish can be of various sizes, use a :chpl:class:`KDF` routine
+       to generate a secure-key with the recommended byte-size as 16 bytes. Also, the
+       initialization vector in Blowfish cipher should strictly be 8 bytes long.
+
+
      The `Blowfish` class supports 4 `chaining modes <https://en.wikipedia.org/wiki/Block_cipher_mode_of_operation>`_:
 
      - ``cbc`` or `Cipher Block Chaining`
@@ -745,22 +754,10 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         when "ecb"  do tmpCipher = EVP_bf_ecb();
         when "cfb"  do tmpCipher = EVP_bf_cfb();
         when "ofb"  do tmpCipher = EVP_bf_ofb();
-        otherwise do halt("The desired variant of Blowfish does not exist.");
+        otherwise do halt("The desired variant of Blowfish cipher does not exist.");
       }
       this.cipher = tmpCipher;
-      this.byteLen = 8;
       super.init();
-    }
-
-    /* This function returns the size in bytes of the key of the
-       Blowfish encryption algorithm. Returns the value `8`.
-
-       :return: Key length of Blowfish in bytes.
-       :rtype: `int`
-
-    */
-    proc getByteSize(): int {
-        return this.byteLen;
     }
 
     /* This is the 'Blowfish' encrypt routine that encrypts the user supplied message buffer
@@ -784,6 +781,15 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+      var ivLen = IV.getBuffSize();
+      var keyLen = key.getBuffSize();
+      if (ivLen != 8) {
+        halt("Blowfish cipher expects an IV of size 8 bytes.");
+      }
+
+      if (keyLen < 10) {
+        halt("Blowfish cipher expects a key of size greater than 10 bytes.");
+      }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
       return encryptedPlaintextBuff;

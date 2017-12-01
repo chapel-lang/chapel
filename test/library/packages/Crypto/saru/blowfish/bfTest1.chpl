@@ -6,8 +6,8 @@ proc main() {
   var msg = new CryptoBuffer("hello world");
 
   // static values assumed for testing purposes
-  var iv = new CryptoBuffer("iv");
-  var key = new CryptoBuffer("key");
+  var iv = new CryptoBuffer("12345678"); // should be exactly 8 bytes
+  var key = new CryptoBuffer("long keys are the best");
 
   writeln("MSG: ", msg.toHex());
 
