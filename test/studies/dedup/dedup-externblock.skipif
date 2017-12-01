@@ -1,2 +1,2 @@
 CHPL_TARGET_PLATFORM != linux64
-CHPL_LLVM != llvm
+CHPL_LLVM == none
