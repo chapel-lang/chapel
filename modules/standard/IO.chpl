@@ -1304,7 +1304,7 @@ proc =(ref ret:file, x:file) {
 /* Halt if a file is invalid */
 proc file.check() throws {
   if is_c_nil(_file_internal) then
-    throw new FileNotFoundError("Operation attempted on an invalid file");
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 }
 
 pragma "no doc"
@@ -1460,7 +1460,12 @@ a problem getting the path to the open file.
 proc file.tryGetPath() : string {
   var err:syserr = ENOERR;
   var ret:string;
-  ret = this.getPath(err);
+  try! {
+    ret = this.getPath(err);
+  } catch e: SystemError {
+    err = EBADF;
+  }
+
   if err then return "unknown";
   else return ret;
 }
@@ -1473,7 +1478,7 @@ Get the path to an open file. Halt if there is an error getting the path.
 proc file.path : string throws {
   var err:syserr = ENOERR;
   var ret:string;
-  ret = this.getPath(err);
+  ret = try this.getPath(err);
   if err then try ioerror(err, "in file.path");
   return ret;
 }
