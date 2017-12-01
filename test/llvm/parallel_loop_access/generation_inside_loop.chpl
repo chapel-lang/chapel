@@ -11,6 +11,7 @@ proc end_block() {}
 // - basic block at the end of the loop
 
 proc loop (A, B, n) {
+  //CHECK-LABEL: void @loop
   for i in vectorizeOnly(1..n) {
     // CHECK-LABEL: start_block
     start_block();
