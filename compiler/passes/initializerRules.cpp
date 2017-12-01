@@ -78,7 +78,7 @@ void preNormalizeFields(AggregateType* at) {
       Type* type = NULL;
 
       if (Expr* typeExpr = defExpr->exprType) {
-        type = typeForTypeSpecifier(typeExpr);
+        type = typeForTypeSpecifier(typeExpr, false);
 
         // var x, y : Foo
         //   =>
