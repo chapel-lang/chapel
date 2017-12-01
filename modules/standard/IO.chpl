@@ -1335,8 +1335,8 @@ proc file.unlock() {
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
 pragma "no doc"
-proc file._style:iostyle {
-  try! check();
+proc file._style:iostyle throws {
+  try check();
 
   var ret:iostyle;
   on this.home {
@@ -1373,8 +1373,8 @@ proc file._style:iostyle {
                is not provided and an error is encountered, this function
                will halt with an error message.
  */
-proc file.close(out error:syserr) {
-  try! check();
+proc file.close(out error:syserr) throws {
+  try check();
   on this.home {
     error = qio_file_close(_file_internal);
   }
@@ -1403,8 +1403,8 @@ This function will typically call the ``fsync`` system call.
             will halt with an error message.
 
  */
-proc file.fsync(out error:syserr) {
-  try! check();
+proc file.fsync(out error:syserr) throws {
+  try check();
   on this.home {
     error = qio_file_sync(_file_internal);
   }
@@ -1434,8 +1434,8 @@ to get the path to a file.
             will halt with an error message.
 
  */
-proc file.getPath(out error:syserr) : string {
-  try! check();
+proc file.getPath(out error:syserr) : string throws {
+  try check();
   var ret:string;
   on this.home {
     var tmp:c_string_copy;
@@ -2529,8 +2529,8 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
 // The return error code should be checked to avoid double-deletion errors.
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
-  try! check();
+proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) throws {
+  try check();
 
   var ret:channel(false, kind, locking);
   on this.home {
@@ -2555,8 +2555,8 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
                will halt with an error message.
    :returns: an object which yields strings read from the file
  */
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
-  try! check();
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
+  try check();
 
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
@@ -2629,8 +2629,8 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 // channel.
 // If the return error code is nonzero, the ref count will be 0 not 1.
 // The error code should be checked to avoid double-deletion errors.
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) {
-  try! check();
+proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) throws {
+  try check();
 
   var ret:channel(true, kind, locking);
   on this.home {
