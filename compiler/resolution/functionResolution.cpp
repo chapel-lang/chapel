@@ -171,7 +171,7 @@ static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
-static void resolveDefaultGenericType(CallExpr* call);
+static void resolveGenericActuals(CallExpr* call);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -1906,7 +1906,7 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT:
     case PRIM_NO_INIT:
     case PRIM_TYPE_INIT:
-      resolveDefaultGenericType(call);
+      resolveGenericActuals(call);
       break;
 
     case PRIM_INIT_FIELD:
@@ -1995,7 +1995,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
 
   temporaryInitializerFixup(call);
 
-  resolveDefaultGenericType(call);
+  resolveGenericActuals(call);
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
@@ -5758,7 +5758,7 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   temporaryInitializerFixup(call);
 
-  resolveDefaultGenericType(call);
+  resolveGenericActuals(call);
 
   resolveInitializer(call);
 
@@ -5889,7 +5889,7 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 ************************************** | *************************************/
 
 static void resolveCoerce(CallExpr* call) {
-  resolveDefaultGenericType(call);
+  resolveGenericActuals(call);
 
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
   Type* toType = call->get(2)->typeInfo();
@@ -5916,15 +5916,24 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveDefaultGenericType(CallExpr* call) {
+static Type* resolveGenericActual(SymExpr* se);
+
+Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
+  return resolveGenericActual(se);
+}
+
+static void resolveGenericActuals(CallExpr* call) {
   SET_LINENO(call);
 
   for_actuals(actual, call) {
-    if (NamedExpr* ne = toNamedExpr(actual))
-      actual = ne->actual;
+    Expr* safeActual = actual;
 
-    if (SymExpr* te = toSymExpr(actual)) {
-      resolveDefaultGenericTypeSymExpr(te);
+    if (NamedExpr* ne = toNamedExpr(safeActual)) {
+      safeActual = ne->actual;
+    }
+
+    if (SymExpr*   se = toSymExpr(safeActual))   {
+      resolveGenericActual(se);
     }
   }
 }
@@ -5945,7 +5954,7 @@ static void resolveDefaultGenericType(CallExpr* call) {
 // also handles some complicated extern vars like
 //   extern var x: c_ptr(c_int)
 // which do not work in the usual order of resolution.
-Type* resolveDefaultGenericTypeSymExpr(SymExpr* te) {
+static Type* resolveGenericActual(SymExpr* te) {
 
   // te could refer to a type in two ways:
   //  1. it could refer to a TypeSymbol directly
