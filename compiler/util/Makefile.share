@@ -21,6 +21,7 @@ UTIL_SRCS = \
 	files.cpp \
 	llvmAggregateGlobalOps.cpp \
 	llvmDumpIR.cpp \
+        llvmExtractIR.cpp \
 	llvmGlobalToWide.cpp \
 	llvmUtil.cpp \
 	llvmDebug.cpp \

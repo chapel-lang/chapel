@@ -39,6 +39,7 @@
 #include "iterator.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
+#include "llvmExtractIR.h"
 #include "llvmUtil.h"
 #include "misc.h"
 #include "optimizations.h"
@@ -107,10 +108,11 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
 #ifdef HAVE_LLVM
 void printLlvmIr(llvm::Function *func, llvmStageNum_t numStage) {
   if(func) {
-    llvm::raw_os_ostream stdOut(std::cout);
+    //llvm::raw_os_ostream stdOut(std::cout);
     std::cout << "; " << "LLVM IR representation of " << llvmPrintIrName
-              << " function after " << llvmStageNameFromLlvmStageNum(numStage) << " optimization stage";
-    func->print(stdOut);
+              << " function after " << llvmStageNameFromLlvmStageNum(numStage)
+              << " optimization stage\n";
+    extractAndPrintFunctionLLVM(func);
   }
 }
 #endif
