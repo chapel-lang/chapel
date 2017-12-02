@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
-# Test default configuration on full suite with compiler performance enabled on
+# Test llvm configuration on full suite with compiler performance enabled on
 # linux64 on an experimental VM
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
+source $CWD/common-llvm.bash
+unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-vm"
 
