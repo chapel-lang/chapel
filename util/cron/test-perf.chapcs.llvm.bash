@@ -6,7 +6,7 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
-source $CWD/common-llvm.bash llvm
+source $CWD/common-llvm.bash
 
 # common-llvm restricts us to extern/fergeson, we want all the perf tests
 unset CHPL_NIGHTLY_TEST_DIRS

@@ -5,7 +5,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash
-source $CWD/common-llvm.bash llvm
+source $CWD/common-llvm.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.llvm"
 

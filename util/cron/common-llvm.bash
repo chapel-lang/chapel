@@ -23,14 +23,7 @@ esac
 
 # setup environment based on CHPL_LLVM = "llvm" or "system"
 
-case "$CHPL_LLVM" in
-( system )
-    export CHPL_LLVM=system
-    log_info setting CHPL_LLVM=$CHPL_LLVM
-    ;;
-( llvm )
-    export CHPL_LLVM=llvm
-    log_info setting CHPL_LLVM=$CHPL_LLVM
+if test "$CHPL_LLVM" = llvm; then
 
     # Ensure that python 2.7 is at front of PATH. This is only done for
     # llvm configuration because the test systems are _very_ finicky about
@@ -56,8 +49,7 @@ case "$CHPL_LLVM" in
     else
         echo "[Warning: llvm may not build correctly with cmake: $(which cmake)]"
     fi
-    ;;
-esac
+fi
 
 # Run examples and test/extern/ferguson/.
 export CHPL_NIGHTLY_TEST_DIRS="extern/ferguson"

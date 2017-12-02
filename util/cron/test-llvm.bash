@@ -7,7 +7,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-source $CWD/common-llvm.bash llvm
+source $CWD/common-llvm.bash
 source $CWD/common-localnode-paratest.bash
 
 # common-llvm restricts us to extern/ferguson, but we want all the tests
