@@ -611,7 +611,7 @@ static Symbol* shadowVarForReduceIntent(FIcontext& ctx,
   ctx.anchor1->insertBefore(new DefExpr(stemp));
   ctx.anchor1->insertBefore("'move'(%S, identity(%S,%S))",
                             stemp, gMethodToken, currOp);
-  ctx.anchor1->insertBefore("'move'(%S, chpl__autoCopy(%S))",
+  ctx.anchor1->insertBefore("'init var'(%S,%S)",
                             rsvar, stemp);
 
   // Wrap it up at the end.
