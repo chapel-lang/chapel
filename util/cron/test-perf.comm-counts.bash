@@ -19,6 +19,6 @@ perf_args="-performance -numtrials 1 -startdate $START_DATE -perflabel cc-"
 #  The warning message causes the good-output v. test-output comparison to fail.
 
 #  -no-buildcheck skips the "make check"
-nightly_args=-no-buildcheck
+nightly_args="${nightly_args} -no-buildcheck"
 
 $CWD/nightly -cron ${nightly_args} ${perf_args}

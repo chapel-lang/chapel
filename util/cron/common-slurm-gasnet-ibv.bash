@@ -16,7 +16,7 @@ export CHPL_LAUNCHER_USE_SBATCH=1
 export CHPL_APP_LAUNCH_CMD=$CHPL_HOME/util/test/chpl_launchcmd.py
 
 unset CHPL_START_TEST_ARGS
-nightly_args=-no-buildcheck
+nightly_args="${nightly_args} -no-buildcheck"
 
 # host-specific
 export CHPL_TARGET_ARCH=native
