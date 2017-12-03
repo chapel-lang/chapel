@@ -7049,6 +7049,12 @@ static void resolveSupportForModuleDeinits() {
   resolveFunction(gAddModuleFn);
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -7067,6 +7073,12 @@ static void resolveExports() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveEnumTypes() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
@@ -7077,6 +7089,12 @@ static void resolveEnumTypes() {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void insertRuntimeTypeTemps() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -7433,105 +7451,97 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static Type* recordInitType(CallExpr* init);
+
 static void resolveRecordInitializers() {
-  //
-  // resolve PRIM_INITs for records
-  //
-  forv_Vec(CallExpr, init, inits)
-  {
-    // Ignore if dead.
-    if (!init->parentSymbol)
-      continue;
-
-    Type* type = init->get(1)->typeInfo();
-
-    // Don't resolve initializers for runtime types.
-    // These have to be resolved after runtime types are replaced by values in
-    // insertRuntimeInitTemps().
-    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-      continue;
-
-    // Extract the value type.
-    if (type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
-
-    // Resolve the AggregateType that has noinit used on it.
-    if (init->isPrimitive(PRIM_NO_INIT)) {
-      // Replaces noinit with a call to the defaultTypeConstructor,
-      // providing the param and type arguments necessary to allocate
-      // space for the instantiation of this (potentially) generic type.
-      // defaultTypeConstructor calls are already cleaned up at the end of
-      // function resolution, so the noinit cleanup would be redundant.
+  forv_Vec(CallExpr, init, inits) {
+    if (Type* type = recordInitType(init)) {
       SET_LINENO(init);
-      AggregateType* rec = toAggregateType(type);
-      INT_ASSERT(rec);
 
-      CallExpr* res = new CallExpr(rec->defaultTypeConstructor);
-      for_formals(formal, rec->defaultTypeConstructor) {
-        Vec<Symbol *> keys;
-        // Finds each named argument in the type constructor and inserts
-        // the substitution provided.
-        rec->substitutions.get_keys(keys);
-        // I don't think we can guarantee that the substitutions will be
-        // in the same order as the arguments for the defaultTypeConstructor.
-        // That would make this O(n) instead of potentially O(n*n)
-        forv_Vec(Symbol, key, keys) {
-          if (!strcmp(formal->name, key->name)) {
-            Symbol* formalVal = rec->substitutions.get(key);
-            res->insertAtTail(new NamedExpr(formal->name,
-                                            new SymExpr(formalVal)));
+      if (init->isPrimitive(PRIM_NO_INIT) == true) {
+        AggregateType* rec = toAggregateType(type);
+        FnSymbol*      fn  = rec->defaultTypeConstructor;
+        CallExpr*      res = new CallExpr(fn);
+
+        for_formals(formal, fn) {
+          Vec<Symbol*> keys;
+
+          rec->substitutions.get_keys(keys);
+
+          forv_Vec(Symbol, key, keys) {
+            if (strcmp(formal->name, key->name) == 0) {
+              Symbol*  formalVal  = rec->substitutions.get(key);
+              SymExpr* formalExpr = new SymExpr(formalVal);
+
+              res->insertAtTail(new NamedExpr(formal->name, formalExpr));
+            }
           }
         }
+
+        init->get(1)->replace(res);
+        resolveCall(res);
+
+        toCallExpr(init->parentExpr)->convertToNoop();
+
+      } else if (type->defaultValue != NULL) {
+        INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
+      } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION) == false) {
+        CallExpr* call = new CallExpr("_defaultOf", type->symbol);
+
+        init->replace(call);
+        resolveCallAndCallee(call);
+
+      } else {
+        Symbol*        tmp         = newTemp("_distribution_tmp_");
+
+        Symbol*        _instance   = type->getField("_instance");
+        AggregateType* instanceAt  = toAggregateType(_instance->type);
+        FnSymbol*      defaultInit = instanceAt->defaultInitializer;
+        CallExpr*      classCall   = new CallExpr(defaultInit);
+        CallExpr*      move        = new CallExpr(PRIM_MOVE, tmp, classCall);
+
+        CallExpr*      distCall    = new CallExpr("chpl__buildDistValue", tmp);
+
+        init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        init->getStmtExpr()->insertBefore(move);
+
+        resolveCallAndCallee(classCall);
+
+        resolveCall(move);
+
+        init->replace(distCall);
+        resolveCallAndCallee(distCall);
       }
-
-      init->get(1)->replace(res);
-
-      resolveCall(res);
-
-      toCallExpr(init->parentExpr)->convertToNoop();
-
-      // Now that we've resolved the type constructor and thus resolved the
-      // generic type of the variable we were assigning to, the outer move
-      // is no longer needed, so remove it and continue to the next init.
-      continue;
-    }
-
-    // This could be an assert...
-    if (type->defaultValue)
-      INT_FATAL(init, "PRIM_INIT should have been replaced already");
-
-    SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
-      // This initialization cannot be replaced by a _defaultOf function
-      // earlier in the compiler, there is not enough information to build a
-      // default function for it.  When we have the ability to call a
-      // constructor from a type alias, it can be moved directly into module
-      // code
-      Symbol* tmp = newTemp("_distribution_tmp_");
-      init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      AggregateType* instanceAt = toAggregateType(type->getField("_instance")->type);
-
-      CallExpr* classCall = new CallExpr(instanceAt->defaultInitializer);
-      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
-      init->getStmtExpr()->insertBefore(move);
-      resolveCallAndCallee(classCall);
-      resolveCall(move);
-      CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
-      init->replace(distCall);
-      resolveCallAndCallee(distCall);
-    } else {
-      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
-      init->replace(call);
-      // At this point in the compiler, we can resolve the _defaultOf function
-      // for the type, so do so.
-      resolveCallAndCallee(call);
     }
   }
 }
 
-//
-// Resolve other things we might want later
-//
+static Type* recordInitType(CallExpr* init) {
+  Type* retval = NULL;
+
+  if (init->parentSymbol != NULL) {
+    Type* type = init->get(1)->typeInfo();
+
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+      if (type->symbol->hasFlag(FLAG_REF) == false) {
+        retval = type;
+
+      } else {
+        retval = retval->getValType();
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveOther() {
   //
   // When compiling with --minimal-modules, gPrintModuleInitFn is not
