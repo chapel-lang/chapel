@@ -6976,51 +6976,64 @@ static void unmarkDefaultedGenerics() {
   }
 }
 
-// Resolve uses in postorder (removing back-links).
-// We have to resolve modules in dependency order,
-// so that the types of globals are ready when we need them.
-static void resolveUses(ModuleSymbol* mod)
-{
+/************************************* | **************************************
+*                                                                             *
+* Resolve uses in postorder (removing back-links).                            *
+*                                                                             *
+* We have to resolve modules in dependency order so that                      *
+* the types of globals are ready when we need them.                           *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveUses(ModuleSymbol* mod) {
   static Vec<ModuleSymbol*> initMods;
-  static int module_resolution_depth = 0;
+  static int                moduleResolutionDepth = 0;
 
-  // Test and set to break loops and prevent infinite recursion.
-  if (initMods.set_in(mod))
-    return;
-  initMods.set_add(mod);
+  if (initMods.set_in(mod) == NULL) {
+    initMods.set_add(mod);
 
-  ++module_resolution_depth;
+    ++moduleResolutionDepth;
 
-  // I use my parent implicitly.
-  if (ModuleSymbol* parent = mod->defPoint->getModule())
-    if (parent != theProgram && parent != rootModule)
-      resolveUses(parent);
+    if (ModuleSymbol* parent = mod->defPoint->getModule()) {
+      if (parent != theProgram && parent != rootModule) {
+        resolveUses(parent);
+      }
+    }
 
-  // Now, traverse my use statements, and call the initializer for each
-  // module I use.
-  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
-    resolveUses(usedMod);
+    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+      resolveUses(usedMod);
+    }
 
-  // Finally, myself.
-  if (fPrintModuleResolution) {
-    fprintf(stderr, "%2d Resolving module %30s ...",
-            module_resolution_depth, mod->name);
+    if (fPrintModuleResolution == true) {
+      fprintf(stderr,
+              "%2d Resolving module %30s ...",
+              moduleResolutionDepth,
+              mod->name);
+    }
+
+    resolveSignatureAndFunction(mod->initFn);
+
+    if (FnSymbol* defn = mod->deinitFn) {
+      resolveSignatureAndFunction(defn);
+    }
+
+    if (fPrintModuleResolution == true) {
+      AstCount visitor = AstCount();
+
+      mod->accept(&visitor);
+
+      fprintf(stderr, " %6d asts\n", visitor.total());
+    }
+
+    --moduleResolutionDepth;
   }
-
-  resolveSignatureAndFunction(mod->initFn);
-
-  if (FnSymbol* defn = mod->deinitFn) {
-    resolveSignatureAndFunction(defn);
-  }
-
-  if (fPrintModuleResolution) {
-    AstCount visitor = AstCount();
-    mod->accept(&visitor);
-    fprintf(stderr, " %6d asts\n", visitor.total());
-  }
-
-  --module_resolution_depth;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveSupportForModuleDeinits() {
   SET_LINENO(chpl_gen_main);
