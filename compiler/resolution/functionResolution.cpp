@@ -6943,40 +6943,35 @@ void resolve() {
   resolved = true;
 }
 
-static void unmarkDefaultedGenerics() {
-  //
-  // make it so that arguments with types that have default values for
-  // all generic arguments used those defaults
-  //
-  // FLAG_MARKED_GENERIC is used to identify places where the user inserted
-  // '?' (queries) to mark such a type as generic.
-  //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->inTree())
-      continue;
+/************************************* | **************************************
+*                                                                             *
+* Make it so that arguments with types that have default values               *
+* for all generic arguments used with those defaults                          *
+*                                                                             *
+* FLAG_MARKED_GENERIC is used to identify places where the user               *
+* inserted '?' (queries) to mark such a type as generic.                      *
+*                                                                             *
+************************************** | *************************************/
 
-    bool unmark = fn->hasFlag(FLAG_GENERIC);
-    for_formals(formal, fn) {
-      if (formal->type->hasGenericDefaults) {
-        if (!formal->hasFlag(FLAG_MARKED_GENERIC) &&
-            formal != fn->_this &&
-            !formal->hasFlag(FLAG_IS_MEME)) {
+static void unmarkDefaultedGenerics() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->inTree() == true) {
+      for_formals(formal, fn) {
+        if (formal                               != fn->_this &&
+            formal->type->hasGenericDefaults     == true      &&
+            formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
+            formal->hasFlag(FLAG_IS_MEME)        == false) {
           SET_LINENO(formal);
-          AggregateType* formalAt = toAggregateType(formal->type);
-          INT_ASSERT(formalAt);
-          formal->typeExpr = new BlockStmt(new CallExpr(formalAt->defaultTypeConstructor));
+
+          AggregateType* formalAt   = toAggregateType(formal->type);
+          FnSymbol*      typeConstr = formalAt->defaultTypeConstructor;
+
+          formal->type     = dtUnknown;
+          formal->typeExpr = new BlockStmt(new CallExpr(typeConstr));
+
           insert_help(formal->typeExpr, NULL, formal);
-          formal->type = dtUnknown;
-        } else {
-          unmark = false;
         }
-      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) || formal->intent == INTENT_PARAM) {
-        unmark = false;
       }
-    }
-    if (unmark) {
-      fn->removeFlag(FLAG_GENERIC);
-      INT_ASSERT(false);
     }
   }
 }
