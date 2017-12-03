@@ -8194,97 +8194,108 @@ static void removeUnusedFunctions() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool
-isUnusedClass(AggregateType *ct) {
-  // Special case for global types.
-  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
-    return false;
+static bool isUnusedClass(AggregateType* ct);
 
-  // Runtime types are assumed to be always used.
-  if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-    return false;
-
-  // Uses of iterator records get inserted in lowerIterators
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    return false;
-
-  // FALSE if iterator class's getIterator is used
-  // (this case may not be necessary)
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-      ct->iteratorInfo->getIterator->isResolved())
-    return false;
-
-  // FALSE if initializers are used
-  if (ct->defaultInitializer && ct->defaultInitializer->isResolved())
-    return false;
-
-  // FALSE if the type constructor is used.
-  if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
-    return false;
-
-  // FALSE if the type uses an initializer and that initializer was
-  // resolved
-  if (ct->initializerStyle != DEFINES_CONSTRUCTOR &&
-      ct->initializerResolved)
-    return false;
-
-  bool allChildrenUnused = true;
-  forv_Vec(Type, child, ct->dispatchChildren) {
-    AggregateType* childClass = toAggregateType(child);
-    INT_ASSERT(childClass);
-    if (!isUnusedClass(childClass)) {
-      allChildrenUnused = false;
-      break;
-    }
-  }
-  return allChildrenUnused;
-}
-
-// Remove unused types
 static void removeUnusedTypes() {
-
   // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint && type->defPoint->parentSymbol)
-    {
-      // Skip ref and runtime value types:
-      //  ref types are handled below;
-      //  runtime value types are assumed to be always used.
-      if (type->hasFlag(FLAG_REF))
-        continue;
-      if (type->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        continue;
-
-      if (AggregateType* ct = toAggregateType(type->type))
-        if (isUnusedClass(ct))
-          ct->symbol->defPoint->remove();
+    if (type->defPoint                         != NULL  &&
+        type->defPoint->parentSymbol           != NULL  &&
+        type->hasFlag(FLAG_REF)                == false &&
+        type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+      if (AggregateType* at = toAggregateType(type->type)) {
+        if (isUnusedClass(at) == true) {
+          at->symbol->defPoint->remove();
+        }
+      }
     }
   }
 
   // Remove unused ref types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint && type->defPoint->parentSymbol) {
-      if (type->hasFlag(FLAG_REF)) {
+    if (type->defPoint != NULL && type->defPoint->parentSymbol != NULL) {
+      if (type->hasFlag(FLAG_REF) == true) {
         // Get the value type of the ref type.
-        if (AggregateType* ct = toAggregateType(type->getValType())) {
-          if (isUnusedClass(ct)) {
+        if (AggregateType* at1 = toAggregateType(type->getValType())) {
+          if (isUnusedClass(at1) == true) {
             // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
         }
-        // If the default type constructor for this ref type is in the tree, it
-        // can be removed.
-        AggregateType* at = toAggregateType(type->type);
-        INT_ASSERT(at);
-        if (at->defaultTypeConstructor->defPoint->parentSymbol)
-          at->defaultTypeConstructor->defPoint->remove();
+
+        // If the default type constructor for this ref type is in the tree,
+        // it can be removed.
+        AggregateType* at2      = toAggregateType(type->type);
+        DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
+
+        if (defPoint->parentSymbol != NULL) {
+          defPoint->remove();
+        }
       }
     }
   }
 }
 
-// Remove module level variables if they are not defined or used
-// With the exception of variables that are defined in the rootModule
+static bool isUnusedClass(AggregateType* ct) {
+  bool retval = true;
+
+  // Special case for global types.
+  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) == true) {
+    retval = false;
+
+  // Runtime types are assumed to be always used.
+  } else if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+    retval = false;
+
+  // Uses of iterator records get inserted in lowerIterators
+  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)    == true) {
+    retval = false;
+
+  // FALSE if iterator class's getIterator is used
+  // (this case may not be necessary)
+  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)     == true &&
+             ct->iteratorInfo->getIterator->isResolved()  == true) {
+    retval = false;
+
+  // FALSE if initializers are used
+  } else if (ct->defaultInitializer                       != NULL &&
+             ct->defaultInitializer->isResolved()         == true) {
+    retval = false;
+
+  // FALSE if the type constructor is used.
+  } else if (ct->defaultTypeConstructor                   != NULL &&
+             ct->defaultTypeConstructor->isResolved()     == true) {
+    retval = false;
+
+  // FALSE if the type uses an initializer and that initializer was
+  // resolved
+  } else if (ct->initializerStyle    != DEFINES_CONSTRUCTOR &&
+             ct->initializerResolved == true) {
+    retval = false;
+
+  } else {
+    forv_Vec(Type, child, ct->dispatchChildren) {
+      AggregateType* childClass = toAggregateType(child);
+
+      INT_ASSERT(childClass);
+
+      if (isUnusedClass(childClass) == false) {
+        retval = false;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Remove module level variables if they are not defined or used               *
+* With the exception of variables that are defined in the rootModule          *
+*                                                                             *
+************************************** | *************************************/
+
 static void removeUnusedModuleVariables() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
@@ -8299,9 +8310,13 @@ static void removeUnusedModuleVariables() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-static void removeRandomPrimitive(CallExpr* call)
-{
+static void removeRandomPrimitive(CallExpr* call) {
   if (! call->primitive)
     // TODO: This is weird.
     // Calls which trigger this case appear as the init clause of a type
@@ -8414,8 +8429,8 @@ static void removeRandomPrimitive(CallExpr* call)
 }
 
 
-// Remove the method token, parameter and type arguments from
-// function signatures and corresponding calls.
+// Remove the method token, parameter and type arguments
+// from function signatures and corresponding calls.
 static void removeParamArgs()
 {
   compute_call_sites();
