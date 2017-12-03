@@ -219,15 +219,11 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
-//
-void resolveFnForCall(FnSymbol* fn, CallExpr* call)
-{
+void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   // If 'call' is already on the call stack, do not add it.
   // If this assertion fails, change it to 'if'.
   INT_ASSERT(callStack.n == 0 || call != callStack.v[callStack.n-1]);
@@ -5946,7 +5942,7 @@ static Type* resolveGenericActual(SymExpr* se) {
     retval = resolveGenericActual(se, ts->type);
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
-    if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Type* origType = vs->typeInfo();
 
       // Fix for complicated extern vars like
@@ -6217,6 +6213,8 @@ static void        contextTypeInfo(FnSymbol* fn);
 static void        resolveExprExpandGenerics(CallExpr* call);
 
 static void        resolveExprTypeConstructor(SymExpr* symExpr);
+
+static bool        isStringLiteral(Symbol* sym);
 
 static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
 
@@ -6538,7 +6536,6 @@ static void resolveExprExpandGenerics(CallExpr* call) {
               fn->_this->type = ct;
 
               superField      = ct->getField(1);
-
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
             }
           }
@@ -6550,33 +6547,40 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (at->defaultTypeConstructor                != NULL   &&
-        at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
-        at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
-        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-      CallExpr* parent = toCallExpr(symExpr->parentExpr);
-      Symbol*   sym    = symExpr->symbol();
+    if (FnSymbol* fn = at->defaultTypeConstructor) {
+      if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+          at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+          at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+        CallExpr* parent = toCallExpr(symExpr->parentExpr);
+        Symbol*   sym    = symExpr->symbol();
 
-      if (parent                               == NULL  ||
-          parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
-          sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+        if (parent                               == NULL  ||
+            parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
+            sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+          if (isStringLiteral(sym) == false) {
+            if (hasPartialCopyData(fn) == true) {
+              instantiateBody(fn);
+            }
 
-        // Don't try to resolve the defaultTypeConstructor for string
-        // literals (resolution ordering issue, string literals are
-        // encountered too early and we don't know enough to be able
-        // to resolve them at that point)
-        if (at != dtString ||
-            (sym->isParameter()                    == false   &&
-             sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
-          if (hasPartialCopyData(at->defaultTypeConstructor) == true) {
-            instantiateBody(at->defaultTypeConstructor);
+            resolveSignatureAndFunction(fn);
           }
-
-          resolveSignatureAndFunction(at->defaultTypeConstructor);
         }
       }
     }
   }
+}
+
+static bool isStringLiteral(Symbol* sym) {
+  bool retval = false;
+
+  if (sym->type == dtString) {
+    if (sym->isParameter()                    == true ||
+        sym->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
