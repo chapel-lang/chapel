@@ -219,15 +219,11 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// Invoke resolveFunction(fn) with 'call' on top of 'callStack'.
-//
-void resolveFnForCall(FnSymbol* fn, CallExpr* call)
-{
+void resolveFnForCall(FnSymbol* fn, CallExpr* call) {
   // If 'call' is already on the call stack, do not add it.
   // If this assertion fails, change it to 'if'.
   INT_ASSERT(callStack.n == 0 || call != callStack.v[callStack.n-1]);
@@ -5946,7 +5942,7 @@ static Type* resolveGenericActual(SymExpr* se) {
     retval = resolveGenericActual(se, ts->type);
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
-    if (vs->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       Type* origType = vs->typeInfo();
 
       // Fix for complicated extern vars like
@@ -6217,6 +6213,8 @@ static void        contextTypeInfo(FnSymbol* fn);
 static void        resolveExprExpandGenerics(CallExpr* call);
 
 static void        resolveExprTypeConstructor(SymExpr* symExpr);
+
+static bool        isStringLiteral(Symbol* sym);
 
 static Expr*       resolveExprHandleTryFailure(FnSymbol* fn);
 
@@ -6538,7 +6536,6 @@ static void resolveExprExpandGenerics(CallExpr* call) {
               fn->_this->type = ct;
 
               superField      = ct->getField(1);
-
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
             }
           }
@@ -6550,33 +6547,40 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (at->defaultTypeConstructor                != NULL   &&
-        at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
-        at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
-        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-      CallExpr* parent = toCallExpr(symExpr->parentExpr);
-      Symbol*   sym    = symExpr->symbol();
+    if (FnSymbol* fn = at->defaultTypeConstructor) {
+      if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
+          at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
+          at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+        CallExpr* parent = toCallExpr(symExpr->parentExpr);
+        Symbol*   sym    = symExpr->symbol();
 
-      if (parent                               == NULL  ||
-          parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
-          sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+        if (parent                               == NULL  ||
+            parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
+            sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
+          if (isStringLiteral(sym) == false) {
+            if (hasPartialCopyData(fn) == true) {
+              instantiateBody(fn);
+            }
 
-        // Don't try to resolve the defaultTypeConstructor for string
-        // literals (resolution ordering issue, string literals are
-        // encountered too early and we don't know enough to be able
-        // to resolve them at that point)
-        if (at != dtString ||
-            (sym->isParameter()                    == false   &&
-             sym->hasFlag(FLAG_INSTANTIATED_PARAM) == false))  {
-          if (hasPartialCopyData(at->defaultTypeConstructor) == true) {
-            instantiateBody(at->defaultTypeConstructor);
+            resolveSignatureAndFunction(fn);
           }
-
-          resolveSignatureAndFunction(at->defaultTypeConstructor);
         }
       }
     }
   }
+}
+
+static bool isStringLiteral(Symbol* sym) {
+  bool retval = false;
+
+  if (sym->type == dtString) {
+    if (sym->isParameter()                    == true ||
+        sym->hasFlag(FLAG_INSTANTIATED_PARAM) == true) {
+      retval = true;
+    }
+  }
+
+  return retval;
 }
 
 static Expr* resolveExprHandleTryFailure(FnSymbol* fn) {
@@ -6939,89 +6943,97 @@ void resolve() {
   resolved = true;
 }
 
-static void unmarkDefaultedGenerics() {
-  //
-  // make it so that arguments with types that have default values for
-  // all generic arguments used those defaults
-  //
-  // FLAG_MARKED_GENERIC is used to identify places where the user inserted
-  // '?' (queries) to mark such a type as generic.
-  //
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->inTree())
-      continue;
+/************************************* | **************************************
+*                                                                             *
+* Make it so that arguments with types that have default values               *
+* for all generic arguments used with those defaults                          *
+*                                                                             *
+* FLAG_MARKED_GENERIC is used to identify places where the user               *
+* inserted '?' (queries) to mark such a type as generic.                      *
+*                                                                             *
+************************************** | *************************************/
 
-    bool unmark = fn->hasFlag(FLAG_GENERIC);
-    for_formals(formal, fn) {
-      if (formal->type->hasGenericDefaults) {
-        if (!formal->hasFlag(FLAG_MARKED_GENERIC) &&
-            formal != fn->_this &&
-            !formal->hasFlag(FLAG_IS_MEME)) {
+static void unmarkDefaultedGenerics() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->inTree() == true) {
+      for_formals(formal, fn) {
+        if (formal                               != fn->_this &&
+            formal->type->hasGenericDefaults     == true      &&
+            formal->hasFlag(FLAG_MARKED_GENERIC) == false     &&
+            formal->hasFlag(FLAG_IS_MEME)        == false) {
           SET_LINENO(formal);
-          AggregateType* formalAt = toAggregateType(formal->type);
-          INT_ASSERT(formalAt);
-          formal->typeExpr = new BlockStmt(new CallExpr(formalAt->defaultTypeConstructor));
+
+          AggregateType* formalAt   = toAggregateType(formal->type);
+          FnSymbol*      typeConstr = formalAt->defaultTypeConstructor;
+
+          formal->type     = dtUnknown;
+          formal->typeExpr = new BlockStmt(new CallExpr(typeConstr));
+
           insert_help(formal->typeExpr, NULL, formal);
-          formal->type = dtUnknown;
-        } else {
-          unmark = false;
         }
-      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) || formal->intent == INTENT_PARAM) {
-        unmark = false;
       }
     }
-    if (unmark) {
-      fn->removeFlag(FLAG_GENERIC);
-      INT_ASSERT(false);
-    }
   }
 }
 
-// Resolve uses in postorder (removing back-links).
-// We have to resolve modules in dependency order,
-// so that the types of globals are ready when we need them.
-static void resolveUses(ModuleSymbol* mod)
-{
+/************************************* | **************************************
+*                                                                             *
+* Resolve uses in postorder (removing back-links).                            *
+*                                                                             *
+* We have to resolve modules in dependency order so that                      *
+* the types of globals are ready when we need them.                           *
+*                                                                             *
+************************************** | *************************************/
+
+static void resolveUses(ModuleSymbol* mod) {
   static Vec<ModuleSymbol*> initMods;
-  static int module_resolution_depth = 0;
+  static int                moduleResolutionDepth = 0;
 
-  // Test and set to break loops and prevent infinite recursion.
-  if (initMods.set_in(mod))
-    return;
-  initMods.set_add(mod);
+  if (initMods.set_in(mod) == NULL) {
+    initMods.set_add(mod);
 
-  ++module_resolution_depth;
+    ++moduleResolutionDepth;
 
-  // I use my parent implicitly.
-  if (ModuleSymbol* parent = mod->defPoint->getModule())
-    if (parent != theProgram && parent != rootModule)
-      resolveUses(parent);
+    if (ModuleSymbol* parent = mod->defPoint->getModule()) {
+      if (parent != theProgram && parent != rootModule) {
+        resolveUses(parent);
+      }
+    }
 
-  // Now, traverse my use statements, and call the initializer for each
-  // module I use.
-  forv_Vec(ModuleSymbol, usedMod, mod->modUseList)
-    resolveUses(usedMod);
+    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+      resolveUses(usedMod);
+    }
 
-  // Finally, myself.
-  if (fPrintModuleResolution) {
-    fprintf(stderr, "%2d Resolving module %30s ...",
-            module_resolution_depth, mod->name);
+    if (fPrintModuleResolution == true) {
+      fprintf(stderr,
+              "%2d Resolving module %30s ...",
+              moduleResolutionDepth,
+              mod->name);
+    }
+
+    resolveSignatureAndFunction(mod->initFn);
+
+    if (FnSymbol* defn = mod->deinitFn) {
+      resolveSignatureAndFunction(defn);
+    }
+
+    if (fPrintModuleResolution == true) {
+      AstCount visitor = AstCount();
+
+      mod->accept(&visitor);
+
+      fprintf(stderr, " %6d asts\n", visitor.total());
+    }
+
+    --moduleResolutionDepth;
   }
-
-  resolveSignatureAndFunction(mod->initFn);
-
-  if (FnSymbol* defn = mod->deinitFn) {
-    resolveSignatureAndFunction(defn);
-  }
-
-  if (fPrintModuleResolution) {
-    AstCount visitor = AstCount();
-    mod->accept(&visitor);
-    fprintf(stderr, " %6d asts\n", visitor.total());
-  }
-
-  --module_resolution_depth;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveSupportForModuleDeinits() {
   SET_LINENO(chpl_gen_main);
@@ -7036,6 +7048,12 @@ static void resolveSupportForModuleDeinits() {
 
   resolveFunction(gAddModuleFn);
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void resolveExports() {
   // We need to resolve any additional functions that will be exported.
@@ -7055,6 +7073,12 @@ static void resolveExports() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveEnumTypes() {
   // need to handle enumerated types better
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
@@ -7065,6 +7089,12 @@ static void resolveEnumTypes() {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void insertRuntimeTypeTemps() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -7421,105 +7451,97 @@ static bool isCompilerGenerated(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static Type* recordInitType(CallExpr* init);
+
 static void resolveRecordInitializers() {
-  //
-  // resolve PRIM_INITs for records
-  //
-  forv_Vec(CallExpr, init, inits)
-  {
-    // Ignore if dead.
-    if (!init->parentSymbol)
-      continue;
-
-    Type* type = init->get(1)->typeInfo();
-
-    // Don't resolve initializers for runtime types.
-    // These have to be resolved after runtime types are replaced by values in
-    // insertRuntimeInitTemps().
-    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-      continue;
-
-    // Extract the value type.
-    if (type->symbol->hasFlag(FLAG_REF))
-      type = type->getValType();
-
-    // Resolve the AggregateType that has noinit used on it.
-    if (init->isPrimitive(PRIM_NO_INIT)) {
-      // Replaces noinit with a call to the defaultTypeConstructor,
-      // providing the param and type arguments necessary to allocate
-      // space for the instantiation of this (potentially) generic type.
-      // defaultTypeConstructor calls are already cleaned up at the end of
-      // function resolution, so the noinit cleanup would be redundant.
+  forv_Vec(CallExpr, init, inits) {
+    if (Type* type = recordInitType(init)) {
       SET_LINENO(init);
-      AggregateType* rec = toAggregateType(type);
-      INT_ASSERT(rec);
 
-      CallExpr* res = new CallExpr(rec->defaultTypeConstructor);
-      for_formals(formal, rec->defaultTypeConstructor) {
-        Vec<Symbol *> keys;
-        // Finds each named argument in the type constructor and inserts
-        // the substitution provided.
-        rec->substitutions.get_keys(keys);
-        // I don't think we can guarantee that the substitutions will be
-        // in the same order as the arguments for the defaultTypeConstructor.
-        // That would make this O(n) instead of potentially O(n*n)
-        forv_Vec(Symbol, key, keys) {
-          if (!strcmp(formal->name, key->name)) {
-            Symbol* formalVal = rec->substitutions.get(key);
-            res->insertAtTail(new NamedExpr(formal->name,
-                                            new SymExpr(formalVal)));
+      if (init->isPrimitive(PRIM_NO_INIT) == true) {
+        AggregateType* rec = toAggregateType(type);
+        FnSymbol*      fn  = rec->defaultTypeConstructor;
+        CallExpr*      res = new CallExpr(fn);
+
+        for_formals(formal, fn) {
+          Vec<Symbol*> keys;
+
+          rec->substitutions.get_keys(keys);
+
+          forv_Vec(Symbol, key, keys) {
+            if (strcmp(formal->name, key->name) == 0) {
+              Symbol*  formalVal  = rec->substitutions.get(key);
+              SymExpr* formalExpr = new SymExpr(formalVal);
+
+              res->insertAtTail(new NamedExpr(formal->name, formalExpr));
+            }
           }
         }
+
+        init->get(1)->replace(res);
+        resolveCall(res);
+
+        toCallExpr(init->parentExpr)->convertToNoop();
+
+      } else if (type->defaultValue != NULL) {
+        INT_FATAL(init, "PRIM_INIT should have been replaced already");
+
+      } else if (type->symbol->hasFlag(FLAG_DISTRIBUTION) == false) {
+        CallExpr* call = new CallExpr("_defaultOf", type->symbol);
+
+        init->replace(call);
+        resolveCallAndCallee(call);
+
+      } else {
+        Symbol*        tmp         = newTemp("_distribution_tmp_");
+
+        Symbol*        _instance   = type->getField("_instance");
+        AggregateType* instanceAt  = toAggregateType(_instance->type);
+        FnSymbol*      defaultInit = instanceAt->defaultInitializer;
+        CallExpr*      classCall   = new CallExpr(defaultInit);
+        CallExpr*      move        = new CallExpr(PRIM_MOVE, tmp, classCall);
+
+        CallExpr*      distCall    = new CallExpr("chpl__buildDistValue", tmp);
+
+        init->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        init->getStmtExpr()->insertBefore(move);
+
+        resolveCallAndCallee(classCall);
+
+        resolveCall(move);
+
+        init->replace(distCall);
+        resolveCallAndCallee(distCall);
       }
-
-      init->get(1)->replace(res);
-
-      resolveCall(res);
-
-      toCallExpr(init->parentExpr)->convertToNoop();
-
-      // Now that we've resolved the type constructor and thus resolved the
-      // generic type of the variable we were assigning to, the outer move
-      // is no longer needed, so remove it and continue to the next init.
-      continue;
-    }
-
-    // This could be an assert...
-    if (type->defaultValue)
-      INT_FATAL(init, "PRIM_INIT should have been replaced already");
-
-    SET_LINENO(init);
-    if (type->symbol->hasFlag(FLAG_DISTRIBUTION)) {
-      // This initialization cannot be replaced by a _defaultOf function
-      // earlier in the compiler, there is not enough information to build a
-      // default function for it.  When we have the ability to call a
-      // constructor from a type alias, it can be moved directly into module
-      // code
-      Symbol* tmp = newTemp("_distribution_tmp_");
-      init->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      AggregateType* instanceAt = toAggregateType(type->getField("_instance")->type);
-
-      CallExpr* classCall = new CallExpr(instanceAt->defaultInitializer);
-      CallExpr* move = new CallExpr(PRIM_MOVE, tmp, classCall);
-      init->getStmtExpr()->insertBefore(move);
-      resolveCallAndCallee(classCall);
-      resolveCall(move);
-      CallExpr* distCall = new CallExpr("chpl__buildDistValue", tmp);
-      init->replace(distCall);
-      resolveCallAndCallee(distCall);
-    } else {
-      CallExpr* call = new CallExpr("_defaultOf", type->symbol);
-      init->replace(call);
-      // At this point in the compiler, we can resolve the _defaultOf function
-      // for the type, so do so.
-      resolveCallAndCallee(call);
     }
   }
 }
 
-//
-// Resolve other things we might want later
-//
+static Type* recordInitType(CallExpr* init) {
+  Type* retval = NULL;
+
+  if (init->parentSymbol != NULL) {
+    Type* type = init->get(1)->typeInfo();
+
+    if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+      if (type->symbol->hasFlag(FLAG_REF) == false) {
+        retval = type;
+
+      } else {
+        retval = retval->getValType();
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveOther() {
   //
   // When compiling with --minimal-modules, gPrintModuleInitFn is not
@@ -8108,158 +8130,172 @@ static void removeCopyFns(Type* t) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
-  // Generic well-known functions will no longer be
-  // well-known (since after resolution they can't be
-  // instantiated, and the generic fn is removed).
-  // So remove generic well-known functions from the list.
   clearGenericWellKnownFunctions();
 
-  // Concrete well-known functions need to be preserved,
-  // so track them in a set.
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
+
   for_vector(FnSymbol, fn, fns) {
-    // These should have just been removed
-    INT_ASSERT(!fn->hasFlag(FLAG_GENERIC));
+    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+
     concreteWellKnownFunctionsSet.insert(fn);
   }
 
-  // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // Do not remove concrete well-known functions
-    if (concreteWellKnownFunctionsSet.count(fn) > 0) continue;
+    if (concreteWellKnownFunctionsSet.count(fn) == 0) {
+      if (fn->defPoint               != NULL &&
+          fn->defPoint->parentSymbol != NULL &&
+          fn->defPoint->parentSymbol != stringLiteralModule) {
+        if (fn->isResolved() == false || fn->retTag == RET_PARAM) {
+          std::vector<DefExpr*> defExprs;
 
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+          collectDefExprs(fn, defExprs);
 
-      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
-        // Look for types defined within this unused function. If any
-        // types are defined, remove their autoCopy and autoDestroy
-        // functions. Also remove their reference types, and the reference
-        // type's defaultTypeConstructor, autoCopy and autoDestroy functions.
-        std::vector<DefExpr*> defExprs;
-        collectDefExprs(fn, defExprs);
-        forv_Vec(DefExpr, def, defExprs) {
-          if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
-            // Remove the autoCopy and autoDestroy functions for this type
-            removeCopyFns(typeSym->type);
+          forv_Vec(DefExpr, def, defExprs) {
+            if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
+              Type* refType = typeSym->type->refType;
 
-            AggregateType* refType = toAggregateType(typeSym->type->refType);
-            if (refType) {
-              // If the default type constructor for this ref type is in
-              // the tree, it should be removed.
-              if (refType->defaultTypeConstructor->defPoint->parentSymbol) {
-                refType->defaultTypeConstructor->defPoint->remove();
+              removeCopyFns(typeSym->type);
+
+              if (AggregateType* at = toAggregateType(refType)) {
+                DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
+
+                if (defPoint->parentSymbol != NULL) {
+                  defPoint->remove();
+                }
+
+                removeCopyFns(at);
+
+                at->symbol->defPoint->remove();
               }
-
-              // Remove autoCopy and autoDestroy functions for this refType
-              removeCopyFns(refType);
-
-              // Now remove the refType
-              refType->symbol->defPoint->remove();
             }
           }
+
+          clearDefaultInitFns(fn);
+
+          fn->defPoint->remove();
         }
-        clearDefaultInitFns(fn);
-        fn->defPoint->remove();
       }
     }
   }
 }
 
-static bool
-isUnusedClass(AggregateType *ct) {
-  // Special case for global types.
-  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL))
-    return false;
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-  // Runtime types are assumed to be always used.
-  if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-    return false;
+static bool isUnusedClass(AggregateType* ct);
 
-  // Uses of iterator records get inserted in lowerIterators
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    return false;
-
-  // FALSE if iterator class's getIterator is used
-  // (this case may not be necessary)
-  if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
-      ct->iteratorInfo->getIterator->isResolved())
-    return false;
-
-  // FALSE if initializers are used
-  if (ct->defaultInitializer && ct->defaultInitializer->isResolved())
-    return false;
-
-  // FALSE if the type constructor is used.
-  if (ct->defaultTypeConstructor && ct->defaultTypeConstructor->isResolved())
-    return false;
-
-  // FALSE if the type uses an initializer and that initializer was
-  // resolved
-  if (ct->initializerStyle != DEFINES_CONSTRUCTOR &&
-      ct->initializerResolved)
-    return false;
-
-  bool allChildrenUnused = true;
-  forv_Vec(Type, child, ct->dispatchChildren) {
-    AggregateType* childClass = toAggregateType(child);
-    INT_ASSERT(childClass);
-    if (!isUnusedClass(childClass)) {
-      allChildrenUnused = false;
-      break;
-    }
-  }
-  return allChildrenUnused;
-}
-
-// Remove unused types
 static void removeUnusedTypes() {
-
   // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint && type->defPoint->parentSymbol)
-    {
-      // Skip ref and runtime value types:
-      //  ref types are handled below;
-      //  runtime value types are assumed to be always used.
-      if (type->hasFlag(FLAG_REF))
-        continue;
-      if (type->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-        continue;
-
-      if (AggregateType* ct = toAggregateType(type->type))
-        if (isUnusedClass(ct))
-          ct->symbol->defPoint->remove();
+    if (type->defPoint                         != NULL  &&
+        type->defPoint->parentSymbol           != NULL  &&
+        type->hasFlag(FLAG_REF)                == false &&
+        type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+      if (AggregateType* at = toAggregateType(type->type)) {
+        if (isUnusedClass(at) == true) {
+          at->symbol->defPoint->remove();
+        }
+      }
     }
   }
 
   // Remove unused ref types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint && type->defPoint->parentSymbol) {
-      if (type->hasFlag(FLAG_REF)) {
+    if (type->defPoint != NULL && type->defPoint->parentSymbol != NULL) {
+      if (type->hasFlag(FLAG_REF) == true) {
         // Get the value type of the ref type.
-        if (AggregateType* ct = toAggregateType(type->getValType())) {
-          if (isUnusedClass(ct)) {
+        if (AggregateType* at1 = toAggregateType(type->getValType())) {
+          if (isUnusedClass(at1) == true) {
             // If the value type is unused, its ref type can also be removed.
             type->defPoint->remove();
           }
         }
-        // If the default type constructor for this ref type is in the tree, it
-        // can be removed.
-        AggregateType* at = toAggregateType(type->type);
-        INT_ASSERT(at);
-        if (at->defaultTypeConstructor->defPoint->parentSymbol)
-          at->defaultTypeConstructor->defPoint->remove();
+
+        // If the default type constructor for this ref type is in the tree,
+        // it can be removed.
+        AggregateType* at2      = toAggregateType(type->type);
+        DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
+
+        if (defPoint->parentSymbol != NULL) {
+          defPoint->remove();
+        }
       }
     }
   }
 }
 
-// Remove module level variables if they are not defined or used
-// With the exception of variables that are defined in the rootModule
+static bool isUnusedClass(AggregateType* ct) {
+  bool retval = true;
+
+  // Special case for global types.
+  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) == true) {
+    retval = false;
+
+  // Runtime types are assumed to be always used.
+  } else if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+    retval = false;
+
+  // Uses of iterator records get inserted in lowerIterators
+  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)    == true) {
+    retval = false;
+
+  // FALSE if iterator class's getIterator is used
+  // (this case may not be necessary)
+  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)     == true &&
+             ct->iteratorInfo->getIterator->isResolved()  == true) {
+    retval = false;
+
+  // FALSE if initializers are used
+  } else if (ct->defaultInitializer                       != NULL &&
+             ct->defaultInitializer->isResolved()         == true) {
+    retval = false;
+
+  // FALSE if the type constructor is used.
+  } else if (ct->defaultTypeConstructor                   != NULL &&
+             ct->defaultTypeConstructor->isResolved()     == true) {
+    retval = false;
+
+  // FALSE if the type uses an initializer and that initializer was
+  // resolved
+  } else if (ct->initializerStyle    != DEFINES_CONSTRUCTOR &&
+             ct->initializerResolved == true) {
+    retval = false;
+
+  } else {
+    forv_Vec(Type, child, ct->dispatchChildren) {
+      AggregateType* childClass = toAggregateType(child);
+
+      INT_ASSERT(childClass);
+
+      if (isUnusedClass(childClass) == false) {
+        retval = false;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Remove module level variables if they are not defined or used               *
+* With the exception of variables that are defined in the rootModule          *
+*                                                                             *
+************************************** | *************************************/
+
 static void removeUnusedModuleVariables() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
@@ -8274,9 +8310,13 @@ static void removeUnusedModuleVariables() {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
-static void removeRandomPrimitive(CallExpr* call)
-{
+static void removeRandomPrimitive(CallExpr* call) {
   if (! call->primitive)
     // TODO: This is weird.
     // Calls which trigger this case appear as the init clause of a type
@@ -8389,8 +8429,8 @@ static void removeRandomPrimitive(CallExpr* call)
 }
 
 
-// Remove the method token, parameter and type arguments from
-// function signatures and corresponding calls.
+// Remove the method token, parameter and type arguments
+// from function signatures and corresponding calls.
 static void removeParamArgs()
 {
   compute_call_sites();

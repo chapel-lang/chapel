@@ -90,18 +90,23 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
   }
 }
 
-static
-FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
-                            TypeSymbol* newTypeSymbol,
-                            ModuleSymbol* tupleModule,
-                            BlockStmt* instantiationPoint)
-{
-  AggregateType *newType = toAggregateType(newTypeSymbol->type);
+static FnSymbol*
+makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
+                  TypeSymbol*             newTypeSymbol,
+                  ModuleSymbol*           tupleModule,
+                  BlockStmt*              instantiationPoint) {
+  AggregateType* newType  = toAggregateType(newTypeSymbol->type);
+  FnSymbol*      typeCtor = new FnSymbol("_type_construct__tuple");
+
+  SymExpr*       symExpr  = new SymExpr(newTypeSymbol);
+  CallExpr*      ret      = new CallExpr(PRIM_RETURN, symExpr);
+
   INT_ASSERT(newType);
-  FnSymbol *typeCtor = new FnSymbol("_type_construct__tuple");
-  for(size_t i = 0; i < typeCtorArgs.size(); i++ ) {
+
+  for (size_t i = 0; i < typeCtorArgs.size(); i++) {
     typeCtor->insertFormalAtTail(typeCtorArgs[i]);
   }
+
   typeCtor->addFlag(FLAG_ALLOW_REF);
   typeCtor->addFlag(FLAG_COMPILER_GENERATED);
   typeCtor->addFlag(FLAG_LAST_RESORT);
@@ -110,15 +115,15 @@ FnSymbol* makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
   typeCtor->addFlag(FLAG_TYPE_CONSTRUCTOR);
   typeCtor->addFlag(FLAG_PARTIAL_TUPLE);
 
-  typeCtor->retTag = RET_TYPE;
-  typeCtor->retType = newType;
-  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-  typeCtor->insertAtTail(ret);
-  typeCtor->substitutions.copy(newType->substitutions);
+  typeCtor->retTag             = RET_TYPE;
+  typeCtor->retType            = newType;
   typeCtor->numPreTupleFormals = 1;
-
-  typeCtor->instantiatedFrom = gGenericTupleTypeCtor;
+  typeCtor->instantiatedFrom   = gGenericTupleTypeCtor;
   typeCtor->instantiationPoint = instantiationPoint;
+
+  typeCtor->insertAtTail(ret);
+
+  typeCtor->substitutions.copy(newType->substitutions);
 
   tupleModule->block->insertAtTail(new DefExpr(typeCtor));
 
@@ -570,9 +575,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void
-instantiate_tuple_cast(FnSymbol* fn, CallExpr* context)
-{
+static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
 
@@ -812,37 +815,32 @@ shouldChangeTupleType(Type* elementType)
 }
 
 
-static AggregateType*
-do_computeTupleWithIntent(bool valueOnly, IntentTag intent, AggregateType* at)
-{
+static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
+                                                IntentTag      intent,
+                                                AggregateType* at) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
-
-  bool allSame = true;
-
-  FnSymbol*  typeConstructor    = at->defaultTypeConstructor;
-  BlockStmt* instantiationPoint = typeConstructor->instantiationPoint;
-
   std::vector<TypeSymbol*> args;
-  int i = 0;
+  bool                     allSame            = true;
+  FnSymbol*                typeConstr         = at->defaultTypeConstructor;
+  BlockStmt*               instantiationPoint = typeConstr->instantiationPoint;
+  int                      i                  = 0;
+  AggregateType*           retval             = NULL;
 
   for_fields(field, at) {
     if (i != 0) { // skip size field
-      // Don't allow references generally.
       Type* useType = field->type->getValType();
 
-      // Not a reference, but wish to make it a reference for
-      // blank-intent-is-ref types.
-
-      if (useType->symbol->hasFlag(FLAG_TUPLE)) {
+      if (useType->symbol->hasFlag(FLAG_TUPLE) == true) {
         AggregateType* useAt = toAggregateType(useType);
+
         INT_ASSERT(useAt);
+
         useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
-      } else if (shouldChangeTupleType(useType)) {
-        if (valueOnly) {
-          // already OK since we did getValType() above
-        } else {
+
+      } else if (shouldChangeTupleType(useType) == true) {
+        if (valueOnly == false) {
           // If the tuple is passed with blank intent
           // *and* the concrete intent for the element type
           // of the tuple is a type where blank-intent-means-ref,
@@ -850,28 +848,35 @@ do_computeTupleWithIntent(bool valueOnly, IntentTag intent, AggregateType* at)
           // rather than a value field.
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
             IntentTag concrete = concreteIntent(intent, useType);
-            if ( (concrete & INTENT_FLAG_REF) ) {
+
+            if ((concrete & INTENT_FLAG_REF) != 0) {
               useType = useType->getRefType();
             }
           }
         }
       }
 
-      if (useType != field->type)
+      if (useType != field->type) {
         allSame = false;
+      }
 
       args.push_back(useType->symbol);
     }
+
     i++;
   }
 
 
-  if (allSame) {
-    return at;
+  if (allSame == true) {
+    retval = at;
+
   } else {
-    TupleInfo info = getTupleInfo(args, instantiationPoint, false /*noref*/);
-    return toAggregateType(info.typeSymbol->type);
+    TupleInfo info = getTupleInfo(args, instantiationPoint, false);
+
+    retval = toAggregateType(info.typeSymbol->type);
   }
+
+  return retval;
 }
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
@@ -933,98 +938,123 @@ fixupTupleFunctions(FnSymbol* fn,
   return false;
 }
 
-FnSymbol*
-createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call)
-{
-  if (fn->hasFlag(FLAG_TUPLE) || fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
+  FnSymbol* retval = NULL;
+
+  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
     std::vector<TypeSymbol*> args;
 
     int    i              = 0;
     size_t actualN        = 0;
-    bool   firstArgIsSize = fn->hasFlag(FLAG_TUPLE) ||
-                                              fn->hasFlag(FLAG_STAR_TUPLE);
+    bool   firstArgIsSize = fn->hasFlag(FLAG_TUPLE)     ||
+                            fn->hasFlag(FLAG_STAR_TUPLE);
     bool   noref          = fn->hasFlag(FLAG_DONT_ALLOW_REF);
 
-    bool   noChangeTypes  = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) ||
-                            fn->retTag == RET_TYPE;
+    bool   noChangeTypes  = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
+                            fn->retTag                         == RET_TYPE;
+
+    bool   returnWithNull = false;
 
     // This is a workaround for iterators use of build_tuple_always_allow_ref
-    if (FnSymbol* inFn = call->getFunction())
-      if (inFn->hasFlag(FLAG_ALLOW_REF))
+    if (FnSymbol* inFn = call->getFunction()) {
+      if (inFn->hasFlag(FLAG_ALLOW_REF) == true) {
         noChangeTypes = true;
+      }
+    }
 
     // Q. should this use subs in preference to call's arguments?
     for_actuals(actual, call) {
-      if (i == 0 && firstArgIsSize) {
+      if (i == 0 && firstArgIsSize == true) {
         // First argument is the tuple size
-        SymExpr* se = toSymExpr(actual);
-        VarSymbol* v = toVarSymbol(se->symbol());
+        SymExpr*   se = toSymExpr(actual);
+        VarSymbol* v  = toVarSymbol(se->symbol());
+
         if (v == NULL || v->immediate == NULL) {
-          // leads to an error later in resolution.
-          return NULL;
+          returnWithNull = true;
+          break;
+
+        } else {
+          actualN = v->immediate->int_value();
         }
 
-        actualN = v->immediate->int_value();
       } else {
         // Subsequent arguments are tuple types.
         Type* t = actual->typeInfo();
 
         // Args that have blank intent -> ref intent
         // should be captured as ref, but not in the type function.
-        if (shouldChangeTupleType(t->getValType()) && !noChangeTypes) {
+        if (shouldChangeTupleType(t->getValType()) ==  true &&
+            noChangeTypes                          == false) {
           if (SymExpr* se = toSymExpr(actual)) {
             if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
               IntentTag intent = concreteIntentForArg(arg);
-              if ( (intent & INTENT_FLAG_REF) )
+
+              if ((intent & INTENT_FLAG_REF) != 0) {
                 t = t->getRefType();
+              }
             }
           }
         }
+
         args.push_back(t->symbol);
       }
+
       i++;
     }
-    if (firstArgIsSize) {
-      if (fn->hasFlag(FLAG_STAR_TUPLE)) {
-        // Copy the first argument actualN times.
-        for(size_t j = 1; j < actualN; j++) {
-          args.push_back(args[0]);
+
+    if (returnWithNull == false) {
+      if (firstArgIsSize == true) {
+        if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+          // Copy the first argument actualN times.
+          for (size_t j = 1; j < actualN; j++) {
+            args.push_back(args[0]);
+          }
+        }
+
+        INT_ASSERT(actualN == 0 || actualN == args.size());
+
+        args.resize(actualN);
+      }
+
+      if (noref == true) {
+        for (size_t i = 0; i < args.size(); i++) {
+          args[i] = args[i]->getValType()->symbol;
         }
       }
 
-      INT_ASSERT(actualN == 0 || actualN == args.size());
-      args.resize(actualN);
-    }
+      BlockStmt* point = getVisibilityBlock(call);
+      TupleInfo info   = getTupleInfo(args, point, noref);
 
-    if (noref) {
-      for (size_t i = 0; i < args.size(); i++) {
-        args[i] = args[i]->getValType()->symbol;
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        AggregateType* at = toAggregateType(info.typeSymbol->type);
+
+        retval = at->defaultTypeConstructor;
+
+      } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+        AggregateType* at = toAggregateType(info.typeSymbol->type);
+
+        retval = at->defaultInitializer;
+
+      } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
+        if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+          retval = info.buildStarTupleType;
+        } else {
+          retval = info.buildTupleType;
+        }
+
+      } else {
+        INT_ASSERT(false); // all cases should be handled by now...
       }
     }
-
-    BlockStmt* point = getVisibilityBlock(call);
-    TupleInfo info   = getTupleInfo(args, point, noref);
-
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-      AggregateType* at = toAggregateType(info.typeSymbol->type);
-      INT_ASSERT(at);
-      return at->defaultTypeConstructor;
-    }
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-      AggregateType* at = toAggregateType(info.typeSymbol->type);
-      INT_ASSERT(at);
-      return at->defaultInitializer;
-    }
-    if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
-      // is it the star tuple function?
-      if (fn->hasFlag(FLAG_STAR_TUPLE))
-        return info.buildStarTupleType;
-      else
-        return info.buildTupleType;
-    }
-
-    INT_ASSERT(false); // all cases should be handled by now...
   }
-  return NULL;
+
+  return retval;
 }
 

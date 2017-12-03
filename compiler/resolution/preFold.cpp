@@ -1371,67 +1371,76 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 // determine field associated with query expression
 //
 static Symbol* determineQueriedField(CallExpr* call) {
-  AggregateType* ct = toAggregateType(call->get(1)->getValType());
-  INT_ASSERT(ct);
-  SymExpr* last = toSymExpr(call->get(call->numActuals()));
-  INT_ASSERT(last);
-  VarSymbol* var = toVarSymbol(last->symbol());
-  INT_ASSERT(var && var->immediate);
-  if (var->immediate->const_kind == CONST_KIND_STRING) {
-    // field queried by name
-    return ct->getField(var->immediate->v_string, false);
-  } else {
-    // field queried by position
-    int position = var->immediate->int_value();
-    Vec<ArgSymbol*> args;
+  AggregateType* at     = toAggregateType(call->get(1)->getValType());
+  SymExpr*       last   = toSymExpr(call->get(call->numActuals()));
+  VarSymbol*     var    = toVarSymbol(last->symbol());
+  Symbol*        retval = NULL;
 
-    FnSymbol* typeConstruct = ct->defaultTypeConstructor;
-    AggregateType* source   = ct->instantiatedFrom;
+  if (var->immediate->const_kind == CONST_KIND_STRING) {
+    retval = at->getField(var->immediate->v_string, false);
+
+  } else {
+    Vec<ArgSymbol*> args;
+    int             position      = var->immediate->int_value();
+    FnSymbol*       typeConstruct = at->defaultTypeConstructor;
+    AggregateType*  source        = at->instantiatedFrom;
+
     while (typeConstruct == NULL) {
-      INT_ASSERT(source != NULL);
       typeConstruct = source->defaultTypeConstructor;
-      source = source->instantiatedFrom;
+      source        = source->instantiatedFrom;
     }
 
     for_formals(arg, typeConstruct) {
       args.add(arg);
     }
+
     for (int i = 2; i < call->numActuals(); i++) {
-      SymExpr* actual = toSymExpr(call->get(i));
-      INT_ASSERT(actual);
-      VarSymbol* var = toVarSymbol(actual->symbol());
-      INT_ASSERT(var && var->immediate && var->immediate->const_kind == CONST_KIND_STRING);
+      SymExpr*   actual = toSymExpr(call->get(i));
+      VarSymbol* var    = toVarSymbol(actual->symbol());
+
+      INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
+
       for (int j = 0; j < args.n; j++) {
-        if (args.v[j] && !strcmp(args.v[j]->name, var->immediate->v_string))
+        if (args.v[j]                                         != NULL &&
+            strcmp(args.v[j]->name, var->immediate->v_string) ==    0) {
           args.v[j] = NULL;
+        }
       }
     }
+
     forv_Vec(ArgSymbol, arg, args) {
-      if (arg) {
-        if (position == 1)
-          return ct->getField(arg->name, false);
-        position--;
+      if (arg != NULL) {
+        if (position == 1) {
+          retval = at->getField(arg->name, false);
+          break;
+
+        } else {
+          position--;
+        }
       }
     }
   }
-  return NULL;
+
+  return retval;
 }
 
 
-//
 // returns true if the field was instantiated
-//
 static bool isInstantiatedField(Symbol* field) {
-  TypeSymbol* ts = toTypeSymbol(field->defPoint->parentSymbol);
-  INT_ASSERT(ts);
-  AggregateType* ct = toAggregateType(ts->type);
-  INT_ASSERT(ct);
-  for_formals(formal, ct->defaultTypeConstructor) {
-    if (!strcmp(field->name, formal->name))
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-        return true;
+  TypeSymbol*    ts     = toTypeSymbol(field->defPoint->parentSymbol);
+  AggregateType* at     = toAggregateType(ts->type);
+  bool           retval = false;
+
+  for_formals(formal, at->defaultTypeConstructor) {
+    if (strcmp(field->name, formal->name) == 0) {
+      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retval = true;
+        break;
+      }
+    }
   }
-  return false;
+
+  return retval;
 }
 
 /*
