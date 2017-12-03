@@ -8130,66 +8130,69 @@ static void removeCopyFns(Type* t) {
   }
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
-  // Generic well-known functions will no longer be
-  // well-known (since after resolution they can't be
-  // instantiated, and the generic fn is removed).
-  // So remove generic well-known functions from the list.
   clearGenericWellKnownFunctions();
 
-  // Concrete well-known functions need to be preserved,
-  // so track them in a set.
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
+
   for_vector(FnSymbol, fn, fns) {
-    // These should have just been removed
-    INT_ASSERT(!fn->hasFlag(FLAG_GENERIC));
+    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+
     concreteWellKnownFunctionsSet.insert(fn);
   }
 
-  // Remove unused functions
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // Do not remove concrete well-known functions
-    if (concreteWellKnownFunctionsSet.count(fn) > 0) continue;
+    if (concreteWellKnownFunctionsSet.count(fn) == 0) {
+      if (fn->defPoint               != NULL &&
+          fn->defPoint->parentSymbol != NULL &&
+          fn->defPoint->parentSymbol != stringLiteralModule) {
+        if (fn->isResolved() == false || fn->retTag == RET_PARAM) {
+          std::vector<DefExpr*> defExprs;
 
-    if (fn->defPoint && fn->defPoint->parentSymbol) {
-      if (fn->defPoint->parentSymbol == stringLiteralModule) continue;
+          collectDefExprs(fn, defExprs);
 
-      if (! fn->isResolved() || fn->retTag == RET_PARAM) {
-        // Look for types defined within this unused function. If any
-        // types are defined, remove their autoCopy and autoDestroy
-        // functions. Also remove their reference types, and the reference
-        // type's defaultTypeConstructor, autoCopy and autoDestroy functions.
-        std::vector<DefExpr*> defExprs;
-        collectDefExprs(fn, defExprs);
-        forv_Vec(DefExpr, def, defExprs) {
-          if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
-            // Remove the autoCopy and autoDestroy functions for this type
-            removeCopyFns(typeSym->type);
+          forv_Vec(DefExpr, def, defExprs) {
+            if (TypeSymbol* typeSym = toTypeSymbol(def->sym)) {
+              Type* refType = typeSym->type->refType;
 
-            AggregateType* refType = toAggregateType(typeSym->type->refType);
-            if (refType) {
-              // If the default type constructor for this ref type is in
-              // the tree, it should be removed.
-              if (refType->defaultTypeConstructor->defPoint->parentSymbol) {
-                refType->defaultTypeConstructor->defPoint->remove();
+              removeCopyFns(typeSym->type);
+
+              if (AggregateType* at = toAggregateType(refType)) {
+                DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
+
+                if (defPoint->parentSymbol != NULL) {
+                  defPoint->remove();
+                }
+
+                removeCopyFns(at);
+
+                at->symbol->defPoint->remove();
               }
-
-              // Remove autoCopy and autoDestroy functions for this refType
-              removeCopyFns(refType);
-
-              // Now remove the refType
-              refType->symbol->defPoint->remove();
             }
           }
+
+          clearDefaultInitFns(fn);
+
+          fn->defPoint->remove();
         }
-        clearDefaultInitFns(fn);
-        fn->defPoint->remove();
       }
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static bool
 isUnusedClass(AggregateType *ct) {
