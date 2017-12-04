@@ -221,7 +221,10 @@ module String {
 
     pragma "no doc"
     proc ref deinit() {
-      if owned && !this.isEmptyString() {
+      // Checking for size here isn't sufficient. A string may have been
+      // initialized from a c_string allocated from memory but beginning with
+      // a null-terminator.
+      if owned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
@@ -258,9 +261,7 @@ module String {
     pragma "no doc"
     proc ref reinitString(buf: bufferType, s_len: int, size: int,
                           needToCopy:bool = true) {
-      if this.isEmptyString() {
-        if (s_len == 0) || (buf == nil) then return; // nothing to do
-      }
+      if this.isEmptyString() && buf == nil then return;
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
       // allowed to (this.owned == true)
@@ -288,11 +289,19 @@ module String {
           this._size = size;
         }
       } else {
-        // s_len == 0 so the source string is empty
-        // free the old buffer
+        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
+        // need to free the old buffer if 'this' is owned.
         if this.owned && !this.isEmptyString() then chpl_here_free(this.buff);
-        this.buff = nil;
         this._size = 0;
+
+        // If we need to copy, we can just set 'buff' to nil. Otherwise the
+        // implication is that the string takes ownership of the given buffer,
+        // so we need to store it and free it later.
+        if needToCopy {
+          this.buff = nil;
+        } else {
+          this.buff = buf;
+        }
       }
 
       this.len = s_len;
