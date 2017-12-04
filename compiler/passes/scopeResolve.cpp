@@ -659,7 +659,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
     updateMethod(usymExpr);
 
 #ifdef HAVE_LLVM
-    if (tryCResolve(usymExpr->getModule(), name) == true) {
+    if (gExternBlockStmts.size() > 0 &&
+        tryCResolve(usymExpr->getModule(), name) == true) {
       // Try resolution again since the symbol should exist now
       resolveUnresolvedSymExpr(usymExpr);
     }
