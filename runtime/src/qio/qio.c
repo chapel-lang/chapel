@@ -1352,8 +1352,7 @@ qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
   const char* result;
   sprintf(pathbuf, "/proc/self/fd/%i", fd);
   err = qio_int_to_err(sys_readlink(pathbuf, &result));
-  // result is owned by sys_readlink, so has to be copied.
-  *string_out = qio_strdup(result);
+  *string_out = result;
   return err;
 #else
 #ifdef __APPLE__

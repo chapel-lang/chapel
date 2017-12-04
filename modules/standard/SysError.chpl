@@ -58,11 +58,11 @@ class SystemError : Error {
   */
   proc message() {
     var strerror_err: err_t = ENOERR;
-    var errstr:  c_string   = sys_strerror_syserr_str(err, strerror_err);
-    var err_msg: string     = errstr:string;
+    var errstr              = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg             = new string(errstr, owned=true, needToCopy=false);
 
     if !details.isEmptyString() then
-      err_msg = errstr:string + " (" + details + ")";
+      err_msg += " (" + details + ")";
 
     return err_msg;
   }
@@ -372,8 +372,7 @@ private extern proc sys_strerror_syserr_str(error:syserr, out err_in_strerror:er
 /* This function takes in a string and returns it in double-quotes,
    with internal double-quotes escaped with backslash.
    */
-pragma "no doc"
-proc quote_string(s:string, len:ssize_t) {
+private proc quote_string(s:string, len:ssize_t) {
   extern const QIO_STRING_FORMAT_CHPL: uint(8);
   extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
                                ptr: c_string, len:ssize_t,
@@ -389,8 +388,9 @@ proc quote_string(s:string, len:ssize_t) {
   // This doesn't handle the case where ret==NULL as did the previous
   // version in QIO, but I'm not sure how that was used.
 
-  if err then return qio_strdup("<error>");
-  return ret;
+  if err then return new string(qio_strdup("<error>"), owned=true, needToCopy=false);
+
+  return new string(ret, owned=true, needToCopy=false);
 }
 
 /* Halt with a useful message if there was an error. Do nothing if the error
@@ -418,7 +418,7 @@ proc ioerror(error:syserr, msg:string) throws
 proc ioerror(error:syserr, msg:string, path:string) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t): string;
+    const quotedpath = quote_string(path, path.length:ssize_t);
     var   details    = msg + " with path " + quotedpath;
     throw SystemError.fromSyserr(error, details);
   }
@@ -438,7 +438,7 @@ proc ioerror(error:syserr, msg:string, path:string) throws
 proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
 {
   if error {
-    const quotedpath = quote_string(path, path.length:ssize_t): string;
+    const quotedpath = quote_string(path, path.length:ssize_t);
     var   details    = msg + " with path " + quotedpath + " offset " + offset:string;
     throw SystemError.fromSyserr(error, details);
   }
@@ -460,7 +460,7 @@ proc ioerror(error:syserr, msg:string, path:string, offset:int(64)) throws
  */
 proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 {
-  const quotedpath = quote_string(path, path.length:ssize_t): string;
+  const quotedpath = quote_string(path, path.length:ssize_t);
   const details    = errstr + " " + msg + " with path " + quotedpath + " offset " + offset:string;
   throw SystemError.fromSyserr(EIO:syserr, details);
 }
@@ -473,10 +473,9 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
  */
 proc errorToString(error:syserr):string
 {
-  var errstr:c_string = "unknown"; // Why initialize this?
   var strerror_err:err_t = ENOERR;
-  errstr = sys_strerror_syserr_str(error, strerror_err);
-  return errstr;
+  const errstr = sys_strerror_syserr_str(error, strerror_err);
+  return new string(errstr, owned=true, needToCopy=false);
 }
 
 }
