@@ -9,6 +9,7 @@ proc end_loop3() {}
 
 //Check whether we generate different metadata number for loops
 proc loop (A, B, n) {
+  //CHECK-LABEL: void @loop
   for i in vectorizeOnly(1..n) {
     //CHECK-LABEL: start_loop1
     start_loop1();
