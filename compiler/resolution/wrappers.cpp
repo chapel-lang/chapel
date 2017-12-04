@@ -1493,12 +1493,14 @@ static void       buildFollowerIterator(PromotionInfo& promotion,
 static CondStmt*  selectFollower(ArgSymbol* fastFollower,
                                  Expr*      iterator,
                                  VarSymbol* followerIterator,
+                                 SymbolMap& followerMap,
                                  ArgSymbol* fiFnFollower);
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
                                   Expr*      indices,
                                   Expr*      iterator,
                                   VarSymbol* followerIterator,
+                                  SymbolMap& followerMap,
                                   CallExpr* wrapCall);
 
 static void initPromotionWrapper(PromotionInfo& promotion,
@@ -1803,6 +1805,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
                                   Expr*     indices,
                                   Expr*     iterator,
                                   CallExpr* wrapCall) {
+  SymbolMap  followerMap;
   FnSymbol*  fn         = promotion.fn;
   FnSymbol*  wrapFn     = promotion.wrapperFn;
 
@@ -1814,9 +1817,15 @@ static void buildFollowerIterator(PromotionInfo& promotion,
 
   VarSymbol* followerIterator = newTemp("p_followerIterator");
 
-  FnSymbol*  fiFn             = wrapFn->copy();
+  FnSymbol*  fiFn             = wrapFn->copy(&followerMap);
 
   iteratorFollowerMap.put(wrapFn, fiFn);
+
+  form_Map(SymbolMapElem, e, followerMap) {
+    if (Symbol* s = paramMap.get(e->key)) {
+      paramMap.put(e->value, s);
+    }
+  }
 
   INT_ASSERT(fiFn->hasFlag(FLAG_RESOLVED) == false);
 
@@ -1839,12 +1848,14 @@ static void buildFollowerIterator(PromotionInfo& promotion,
   fiFn->insertAtTail(selectFollower(fastFollower,
                                     iterator,
                                     followerIterator,
+                                    followerMap,
                                     fiFnFollower));
 
   fiFn->insertAtTail(followerForLoop(promotion,
                                      indices,
                                      iterator,
                                      followerIterator,
+                                     followerMap,
                                      wrapCall));
 
   theProgram->block->insertAtTail(new DefExpr(fiFn));
@@ -1859,6 +1870,7 @@ static void buildFollowerIterator(PromotionInfo& promotion,
 static CondStmt* selectFollower(ArgSymbol* fastFollower,
                                 Expr*      iterator,
                                 VarSymbol* followerIterator,
+                                SymbolMap& followerMap,
                                 ArgSymbol* fiFnFollower) {
   const char* name1 = NULL;
   CallExpr*   call1 = NULL;
@@ -1877,8 +1889,8 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
     name2 = "_toFollower";
   }
 
-  call1 = new CallExpr(name1, iterator->copy(), fiFnFollower);
-  call2 = new CallExpr(name2, iterator->copy(), fiFnFollower);
+  call1 = new CallExpr(name1, iterator->copy(&followerMap), fiFnFollower);
+  call2 = new CallExpr(name2, iterator->copy(&followerMap), fiFnFollower);
 
   move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
   move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
@@ -1890,6 +1902,7 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
                                   Expr*      indices,
                                   Expr*      iterator,
                                   VarSymbol* followerIterator,
+                                  SymbolMap& followerMap,
                                   CallExpr*  wrapCall) {
   VarSymbol* yieldTmp = newTemp("p_yield");
   BlockStmt* block    = new BlockStmt();
@@ -1898,7 +1911,7 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   block->insertAtTail(new DefExpr(yieldTmp));
 
-  CallExpr* wrapCallCopy = wrapCall->copy();
+  CallExpr* wrapCallCopy = wrapCall->copy(&followerMap);
   promotion.wrapCalls.push_back(wrapCallCopy);
 
   // Save the wrapCall to adjust it later
@@ -1906,7 +1919,7 @@ static BlockStmt* followerForLoop(PromotionInfo& promotion,
 
   block->insertAtTail(new CallExpr(PRIM_YIELD, yieldTmp));
 
-  return ForLoop::buildForLoop(indices->copy(),
+  return ForLoop::buildForLoop(indices->copy(&followerMap),
                                new SymExpr(followerIterator),
                                block,
                                false,
