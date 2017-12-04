@@ -117,7 +117,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
 
-  if (true) { // TODO fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
     // TODO - remove this branch of the conditional once
     // initializers have replaced the default constructor
 
