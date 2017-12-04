@@ -63,12 +63,13 @@ module LocaleModel {
     }
     proc chpl_name() return ndName;
 
-    proc NumaDomain() {
+    proc init() {
     }
 
-    proc NumaDomain(_sid, _parent) {
+    proc init(_sid, _parent) {
       sid = _sid;
       ndName = "ND"+sid;
+      super.init();
       parent = _parent;
     }
 
@@ -110,14 +111,14 @@ module LocaleModel {
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
-    proc LocaleModel() {
+    proc init() {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
       setup();
     }
 
-    proc LocaleModel(parent_loc : locale) {
+    proc init(parent_loc : locale) {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
@@ -214,7 +215,7 @@ module LocaleModel {
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     var myLocales: [myLocaleSpace] locale;
 
-    proc RootLocale() {
+    proc init() {
       parent = nil;
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
