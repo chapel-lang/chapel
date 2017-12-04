@@ -247,6 +247,31 @@ void findCandidatesInFunc(FnSymbol *fn, UseDefCastMap& udcMap,
   findCandidatesInFuncOnlySym(fn, symSet, udcMap, analysisData);
 }
 
+static bool isBadMove(CallExpr* ce) {
+  bool ret = false;
+
+  if (ce->isPrimitive(PRIM_MOVE)) {
+    Expr* lhs = ce->get(1);
+    Expr* rhs = ce->get(2);
+    if (lhs->typeInfo() != rhs->typeInfo()) {
+      // Possible for shorthand/convenience moves where codegen will transform
+      // it into something else. For example:
+      //   (move myWideClass myNarrowClass)
+      // will create a wide temporary for 'myNarrowClass' and assign it to
+      // 'myWideClass'.
+      ret = true;
+    } else if ((lhs->isWideRef() && rhs->isRef()) ||
+               (lhs->isRef() && rhs->isWideRef())) {
+      // another wide-temporary convenience pattern
+      ret = true;
+    } else if (isDerefMove(ce)) {
+      ret = true;
+    }
+  }
+
+  return ret;
+}
+
 bool isDenormalizable(Symbol* sym,
     SymExpr** useOut, Expr** defOut, Type** castTo,
     SafeExprAnalysis& analysisData) {
@@ -315,6 +340,7 @@ bool isDenormalizable(Symbol* sym,
           usePar = se->parentExpr;
           if(CallExpr* ce = toCallExpr(usePar)) {
             if( !(ce->isPrimitive(PRIM_ADDR_OF) ||
+                  ce->isPrimitive(PRIM_SET_REFERENCE) ||
                   // TODO: PRIM_SET_REFERENCE?
                   //
                   // TODO: BHARSH: I added PRIM_RETURN here after seeing a case
@@ -340,10 +366,8 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
-                  (ce->isPrimitive(PRIM_MOVE) &&
-                   ce->get(1)->typeInfo() !=
-                   ce->get(2)->typeInfo()) ||
-                   isFloatComparisonPrimitive(ce))) {
+                  isBadMove(ce) ||
+                  isFloatComparisonPrimitive(ce))) {
               use = se;
             }
           }

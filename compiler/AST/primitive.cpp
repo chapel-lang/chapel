@@ -293,7 +293,7 @@ static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
   INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
-  return QualifiedType(ct->getField("x1")->type, QUAL_VAL);
+  return ct->getField("x1")->qualType();
 }
 
 static QualifiedType
@@ -331,7 +331,15 @@ returnInfoGetMemberRef(CallExpr* call) {
     if (imm->const_kind == NUM_KIND_INT)
     {
       int64_t i = imm->int_value();
-      field = ct->getField(i);
+      if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)) {
+        // Handle a peculiar intra-pass state where we attempt to get the
+        // type of an iterator class field when what we really want is the
+        // type of the corresponding formal of the iterator function.
+        FnSymbol* fn = getTheIteratorFn(ct);
+        field = fn->getFormal(i);
+      } else {
+        field = ct->getField(i);
+      }
     }
     INT_ASSERT(field);
     retType = field->type->refType ? field->type->refType : field->type;

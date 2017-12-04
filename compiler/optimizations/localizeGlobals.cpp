@@ -68,7 +68,7 @@ void localizeGlobals() {
           SET_LINENO(se); // Set the se line number for output
           if (!local_global) {
             const char * newname = astr("local_", var->cname);
-            local_global = newTemp(newname, var->type);
+            local_global = newTemp(newname, var->qualType());
             fn->insertAtHead(new CallExpr(PRIM_MOVE, local_global, var));
             fn->insertAtHead(new DefExpr(local_global));
 

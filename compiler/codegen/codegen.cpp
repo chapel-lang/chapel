@@ -1976,6 +1976,38 @@ adjustArgSymbolTypesForIntent(void)
   }
 }
 
+static void convertToRefTypes() {
+#define updateSymbols(SymType) \
+  forv_Vec(SymType, sym, g##SymType##s) { \
+    QualifiedType q = sym->qualType(); \
+    Type* type      = q.type(); \
+    if (q.isRef() && !q.isRefType()) { \
+      type = getOrMakeRefTypeDuringCodegen(type); \
+    } else if (q.isWideRef() && !q.isWideRefType()) { \
+      type = getOrMakeRefTypeDuringCodegen(type); \
+      type = getOrMakeWideTypeDuringCodegen(type); \
+    } \
+    sym->type = type; \
+    if (type->symbol->hasFlag(FLAG_REF)) { \
+      sym->qual = QUAL_REF; \
+    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) { \
+      sym->qual = QUAL_WIDE_REF; \
+    } \
+  }
+
+  updateSymbols(VarSymbol);
+  updateSymbols(ArgSymbol);
+  updateSymbols(ShadowVarSymbol);
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->getReturnSymbol()) {
+      fn->retType = fn->getReturnSymbol()->type;
+    }
+  }
+
+#undef updateSymbols
+}
+
 extern bool printCppLineno;
 debug_data *debug_info=NULL;
 
@@ -2043,47 +2075,7 @@ void codegen(void) {
 
   adjustArgSymbolTypesForIntent();
 
-  forv_Vec(VarSymbol, sym, gVarSymbols) {
-    QualifiedType q = sym->qualType();
-    Type* type      = q.type();
-
-    if (q.isRef() && !q.isRefType()) {
-      type = getOrMakeRefTypeDuringCodegen(type);
-    } else if (q.isWideRef() && !q.isWideRefType()) {
-      type = getOrMakeRefTypeDuringCodegen(type);
-      type = getOrMakeWideTypeDuringCodegen(type);
-    }
-
-    sym->type = type;
-    if (type->symbol->hasFlag(FLAG_REF)) {
-      sym->qual = QUAL_REF;
-    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
-      sym->qual = QUAL_WIDE_REF;
-    }
-  }
-  forv_Vec(ArgSymbol, sym, gArgSymbols) {
-    QualifiedType q = sym->qualType();
-    Type* type      = q.type();
-
-    if (q.isRef() && !q.isRefType()) {
-      type = getOrMakeRefTypeDuringCodegen(type);
-    } else if (q.isWideRef() && !q.isWideRefType()) {
-      type = getOrMakeRefTypeDuringCodegen(type);
-      type = getOrMakeWideTypeDuringCodegen(type);
-    }
-
-    sym->type = type;
-    if (type->symbol->hasFlag(FLAG_REF)) {
-      sym->qual = QUAL_REF;
-    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
-      sym->qual = QUAL_WIDE_REF;
-    }
-  }
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->getReturnSymbol()) {
-      fn->retType = fn->getReturnSymbol()->type;
-    }
-  }
+  convertToRefTypes();
 
   // Wrap calls to chosen functions from c library
   if( llvmCodegen ) {

@@ -324,7 +324,7 @@ static bool typeCanBeWide(Symbol *sym) {
   // TODO: Special treatment of extern types may be removed in future
   // AMM work.
   bool bad = sym->hasFlag(FLAG_EXTERN) ||
-              ts->hasFlag(FLAG_NO_WIDE_CLASS);
+             (sym->isRefOrWideRef() == false && ts->hasFlag(FLAG_NO_WIDE_CLASS));
 
   if (!isFullyWide(sym) && !sym->isRefOrWideRef() && !canWidenRecord(ts) && isRecord(sym->type)) {
     bad = true;
@@ -851,7 +851,9 @@ static bool fieldCanBeWide(Symbol* field) {
 //
 static void widenSubAggregateTypes(BaseAST* cause, Type* parent) {
   for_fields(fi, toAggregateType(parent)) {
-    if (isRecord(fi->type) && canWidenRecord(fi) == false) {
+    if (fi->isRefOrWideRef() == false &&
+        isRecord(fi->type) &&
+        canWidenRecord(fi) == false) {
       widenSubAggregateTypes(cause, fi->type);
     } else {
       if (fieldCanBeWide(fi)) {
@@ -1172,7 +1174,20 @@ static void propagateVar(Symbol* sym) {
       }
       else if (call->isPrimitive(PRIM_RETURN)) {
         FnSymbol* fn = toFnSymbol(call->parentSymbol);
-        fn->retType = sym->type;
+        {
+          QualifiedType qt = sym->qualType();
+          Type* newRetType = qt.type();
+          if (qt.isRefOrWideRef() && isRefType(newRetType) == false) {
+            if (qt.isRef()) {
+              newRetType = newRetType->refType;
+            } else {
+              newRetType = wideRefMap.get(newRetType->refType);
+            }
+          }
+          // Functions don't support qualifiers for return types yet, so we
+          // need to encode wideness in the type.
+          fn->retType = newRetType;
+        }
         INT_ASSERT(fn);
 
         forv_Vec(CallExpr*, call, *fn->calledBy) {
@@ -1290,6 +1305,7 @@ static void propagateVar(Symbol* sym) {
 //
 static void propagateField(Symbol* sym) {
   debug(sym, "Propagating field\n");
+
 
   for_uses(use, useMap, sym) {
     bool isLocalField = sym->hasFlag(FLAG_LOCAL_FIELD) && isValidLocalFieldType(sym);
@@ -1479,7 +1495,8 @@ static void narrowWideClassesThroughCalls()
           SET_LINENO(call);
           stmt->insertBefore(new DefExpr(var));
 
-          if (narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
+          if (narrowType.isRefOrWideRef() == false &&
+              narrowType.type()->symbol->hasFlag(FLAG_EXTERN)) {
 
             // Insert a local check because we cannot reflect any changes
             // made to the class back to another locale
@@ -2055,6 +2072,8 @@ static void fixAST() {
         call->isPrimitive(PRIM_FTABLE_CALL)) {
       for_actuals(actual, call) {
         SymExpr* act = toSymExpr(actual);
+        if (isFullyWide(act)) continue;
+
         if (Type* wide = wideClassMap.get(act->typeInfo())) {
           insertWideTemp(QualifiedType(QUAL_VAL, wide), act);
         }
@@ -2085,9 +2104,7 @@ static void fixAST() {
           SymExpr* se = new SymExpr(narrowRef);
           act->replace(se);
 
-          Type* wide = wideRefMap.get(se->typeInfo()->getValType()->refType);
-          INT_ASSERT(wide);
-          insertWideTemp(QualifiedType(QUAL_WIDE_REF, wide), se);
+          insertWideTemp(QualifiedType(QUAL_WIDE_REF, se->typeInfo()), se);
         }
       }
     } else {
@@ -2179,7 +2196,7 @@ static void fixAST() {
             if (!isFullyWide(lhs) && (hasSomeWideness(rhs->typeInfo()) || rhs->isWideRef())) {
               SET_LINENO(lhs);
 
-              VarSymbol* tmp = newTemp(getTupleField(rhs)->type);
+              VarSymbol* tmp = newTemp(getTupleField(rhs)->qualType());
               DEBUG_PRINTF("Temp %d for get_svec_member_value\n", tmp->id);
               call->insertBefore(new DefExpr(tmp));
               call->insertAfter(new CallExpr(PRIM_MOVE, lhs->copy(), tmp));
@@ -2328,7 +2345,6 @@ static void createRetargTemps() {
           Symbol* act = toSymExpr(actual)->symbol();
           CallExpr* move = NULL;
           bool refNeedsReplacing = false;
-          if (act->id == 2284405) gdbShouldBreakHere();
           for_SymbolSymExprs(se, act) {
             if (CallExpr* parent = toCallExpr(se->parentExpr)) {
               if (parent->isPrimitive(PRIM_MOVE)) {
