@@ -19,7 +19,7 @@ if [ "${COMPILER}" != "pgi" ] ; then
 fi
 
 # Run the tests!
-nightly_args="-cron $(get_nightly_paratest_args)"
+nightly_args="${nightly_args} -cron $(get_nightly_paratest_args)"
 log_info "Calling nightly with args: ${nightly_args}"
 $CWD/nightly ${nightly_args}
 log_info "Finished running nightly."
