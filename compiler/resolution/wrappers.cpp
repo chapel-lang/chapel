@@ -533,29 +533,25 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   if ((formalIntent & INTENT_FLAG_REF) != 0)
     temp->addFlag(FLAG_MAYBE_REF);
 
-  //temp->addFlag(FLAG_EXPR_TEMP);
-  temp->addFlag(FLAG_MAYBE_PARAM);
-  temp->addFlag(FLAG_MAYBE_TYPE);
+  if (formalIntent != INTENT_INOUT && formalIntent != INTENT_OUT) {
+    temp->addFlag(FLAG_MAYBE_PARAM);
+    temp->addFlag(FLAG_EXPR_TEMP); // ? is this needed?
+  }
 
-  /*
-  temp->addFlag(FLAG_MAYBE_PARAM);
-  //temp->addFlag(FLAG_EXPR_TEMP);
-   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     temp->addFlag(FLAG_TYPE_VARIABLE);
-  }*/
-
-  IntentTag  intent = INTENT_BLANK;
+  }
 
   block->insertAtTail(new DefExpr(temp));
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
     defaultedFormalApplyDefaultForType(formal, block, temp);
 
-  } else if (intent == INTENT_OUT) {
+  } else if (formalIntent == INTENT_OUT) {
     defaultedFormalApplyDefaultForType(formal, block, temp);
 
   } else {
-    defaultedFormalApplyDefaultValue(fn, formal, intent, block, temp);
+    defaultedFormalApplyDefaultValue(fn, formal, formalIntent, block, temp);
   }
 
   // Update references to previous arguments to use the
