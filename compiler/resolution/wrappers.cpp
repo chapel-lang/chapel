@@ -441,6 +441,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   // Add any arguments that the expression depended upon
   std::vector<SymExpr*> symExprs;
+  // Including as type expressions (arrays might depend on domains)
+  if (formal->typeExpr) collectSymExprs(formal->typeExpr, symExprs);
   collectSymExprs(formal->defaultExpr, symExprs);
 
   for_formals(fnFormal, fn) {
