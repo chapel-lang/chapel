@@ -23,20 +23,12 @@ _chpl ()
       # The following lists were generated with the commands preceding them.
 
       # single letter options
-      # chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-      # sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;'
       local single="SINGLE_OPTS"
 
       # positive options + negative-only options
-      # chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-      # sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;\[no-\];;' |       \
-      # sed -e 's;-[A-Za-z],;   ;'
       local positive="POSITIVE_OPTS"
 
       # --no- versions of optionally negative options
-      # chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-      # sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep '\[no-\]' |             \
-      # tr -d '[' | tr -d ']' | sed -e 's;-[A-Za-z],;   ;'
       local negative="NEGATIVE_OPTS"
 
       COMPREPLY=( $( compgen -W '$single $positive $negative' -- $cur ))

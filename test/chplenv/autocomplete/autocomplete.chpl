@@ -1,4 +1,4 @@
-use Spawn, Sys;
+use Spawn;
 
 /* This test runs a script to generate a bash autocomplete script from
    the output of `chpl --help --devel`.  It diffs the generated script
@@ -8,10 +8,7 @@ use Spawn, Sys;
    script should be regenerated.
  */
 
-var homeC: c_string;
-sys_getenv("CHPL_HOME", homeC);
-
-var home = homeC: string;
+var home = CHPL_HOME;
 
 var genScript = home + "/util/devel/gen-chpl-bash-completion";
 var completeScript = home + "/util/chpl-completion.bash";
