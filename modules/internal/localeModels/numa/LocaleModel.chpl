@@ -69,8 +69,7 @@ module LocaleModel {
     proc init(_sid, _parent) {
       sid = _sid;
       ndName = "ND"+sid;
-      super.init();
-      parent = _parent;
+      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -122,7 +121,7 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      parent = parent_loc;
+      super.init(parent_loc);
       setup();
     }
 
@@ -216,7 +215,7 @@ module LocaleModel {
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      parent = nil;
+      super.init(nil);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;

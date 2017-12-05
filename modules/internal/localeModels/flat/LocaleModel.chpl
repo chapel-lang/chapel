@@ -75,7 +75,6 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      //parent = parent_loc;
       setup();
     }
 
@@ -163,7 +162,7 @@ module LocaleModel {
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      parent = nil;
+      super.init(nil);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;

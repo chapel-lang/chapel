@@ -215,8 +215,7 @@ module LocaleModel {
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
       mlName = kindstr+whichNuma;
-      super.init();
-      parent = _parent;
+      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -287,9 +286,7 @@ module LocaleModel {
       chpl_task_setSubloc(hbm_id);
       hbm = new MemoryLocale(hbm_id, this);
 
-      super.init();
-
-      parent = _parent;
+      super.init(_parent);
 
       chpl_task_setSubloc(origSubloc);
     }
@@ -465,7 +462,7 @@ module LocaleModel {
     var myLocales: [myLocaleSpace] locale;
 
     proc init() {
-      parent = nil;
+      super.init(nil);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
