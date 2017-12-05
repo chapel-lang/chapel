@@ -1301,10 +1301,19 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-/* Halt if a file is invalid */
+/* Throw an error if a file is invalid */
 proc file.check() throws {
   if is_c_nil(_file_internal) then
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+}
+
+/* Emit a syserr if a file is invalid */
+proc file.check(out error:syserr) {
+  try! {
+    check();
+  } catch e: SystemError {
+    error = e.err;
+  }
 }
 
 pragma "no doc"
@@ -1373,8 +1382,9 @@ proc file._style:iostyle throws {
                is not provided and an error is encountered, this function
                will halt with an error message.
  */
-proc file.close(out error:syserr) throws {
-  try check();
+proc file.close(out error:syserr) {
+  check(error);
+
   on this.home {
     error = qio_file_close(_file_internal);
   }
@@ -1403,8 +1413,9 @@ This function will typically call the ``fsync`` system call.
             will halt with an error message.
 
  */
-proc file.fsync(out error:syserr) throws {
-  try check();
+proc file.fsync(out error:syserr) {
+  check(error);
+
   on this.home {
     error = qio_file_sync(_file_internal);
   }
@@ -1434,9 +1445,10 @@ to get the path to a file.
             will halt with an error message.
 
  */
-proc file.getPath(out error:syserr) : string throws {
-  try check();
-  var ret:string;
+proc file.getPath(out error:syserr) : string {
+  check(error);
+
+  var ret: string;
   on this.home {
     var tmp:c_string_copy;
     var tmp2:c_string_copy;
@@ -1478,7 +1490,7 @@ Get the path to an open file. Halt if there is an error getting the path.
 proc file.path : string throws {
   var err:syserr = ENOERR;
   var ret:string;
-  ret = try this.getPath(err);
+  ret = this.getPath(err);
   if err then try ioerror(err, "in file.path");
   return ret;
 }
@@ -2534,8 +2546,8 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
 // The return error code should be checked to avoid double-deletion errors.
-proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) throws {
-  try check();
+proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
+  check(error);
 
   var ret:channel(false, kind, locking);
   on this.home {
@@ -2560,14 +2572,14 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
                will halt with an error message.
    :returns: an object which yields strings read from the file
  */
-proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
-  try check();
+proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
+  check(error);
 
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
-
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
+
   on this.home {
     var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
     ret = new ItemReader(string, kind, locking, ch);
@@ -2634,8 +2646,8 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 // channel.
 // If the return error code is nonzero, the ref count will be 0 not 1.
 // The error code should be checked to avoid double-deletion errors.
-proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) throws {
-  try check();
+proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) {
+  check(error);
 
   var ret:channel(true, kind, locking);
   on this.home {
@@ -2646,8 +2658,7 @@ proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 // documented in error= version
 pragma "no doc"
-proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) throws
-{
+proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) throws {
   var err:syserr = ENOERR;
   var ret = this.writer(err, kind, locking, start, end, hints, style);
 
