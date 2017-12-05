@@ -177,7 +177,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     else {
       if(type->astTag == E_PrimitiveType) {
         llvm::Type *PointeeTy = ty->getPointerElementType();
-        // handle string, c_string, c_string_copy, nil, opaque, c_void_ptr
+        // handle string, c_string, nil, opaque, c_void_ptr
         if(PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(

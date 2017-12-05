@@ -666,8 +666,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Type* type = call->get(1)->getValType();
 
     if (isAggregateType(type) == true      ||
-        type                  == dtStringC ||
-        type                  == dtStringCopy) {
+        type                  == dtStringC) {
 
       bool containsNotPOD = propagateNotPOD(type);
 

@@ -72,12 +72,11 @@ const pathSep = "/";
 
 pragma "no doc"
 proc realPath(out error: syserr, name: string): string {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
+  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
-  var res: c_string_copy;
+  var res: c_string;
   error = chpl_fs_realpath(name.localize().c_str(), res);
-  var len = res.length;
-  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  return new string(res, needToCopy=false);
 }
 
 /* Given a path `name`, attempts to determine the canonical path referenced.
@@ -102,9 +101,9 @@ proc realPath(name: string): string throws {
 
 pragma "no doc"
 proc file.realPath(out error: syserr): string {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
-  var res: c_string_copy;
+  var res: c_string;
 
   if (is_c_nil(_file_internal)) {
     // This file is referencing a null file.  We'll get a segfault if we
@@ -113,8 +112,7 @@ proc file.realPath(out error: syserr): string {
     return "";
   }
   error = chpl_fs_realpath_file(_file_internal, res);
-  var len = res.length;
-  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  return new string(res, needToCopy=false);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record

@@ -229,26 +229,14 @@ static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, in
   return chpl_good_alloc_size(minSize);
 }
 
-// free a c_string_copy, no error checking.
-// The argument type is explicitly c_string_copy, since only an "owned" string
+// free a c_string, no error checking.
+// The argument type is explicitly c_string, since only an "owned" string
 // should be freed.
 static inline
-void chpl_rt_free_c_string_copy(c_string_copy *s, int32_t lineno, int32_t filename)  {
+void chpl_rt_free_c_string(c_string *s, int32_t lineno, int32_t filename)  {
   assert(*s!=NULL);
   chpl_mem_free((void *) *s, lineno, filename);
   *s = NULL;
-}
-
-// free a c_string (deprecated)
-// This function is needed only because NewString.chpl uses the c_string type.
-// c_strings are "unowned" so should not be freed, but NewString.chpl was written
-// before this distinction was made.
-static inline
-void chpl_rt_free_c_string(c_string* s, int32_t lineno, int32_t filename)
-{
-  // As far as the C compiler is concerned c_string and c_string_copy are the
-  // same type, so no explicit cast is required.
-  chpl_rt_free_c_string_copy(s, lineno, filename);
 }
 
 void chpl_mem_layerInit(void);

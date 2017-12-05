@@ -965,13 +965,13 @@ private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
 private extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
-private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string_copy):syserr;
+private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
 pragma "no prototype" // FIXME
-private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string_copy):syserr;
+private extern proc qio_file_path_for_fp(fp:_file, ref path:c_string):syserr;
 pragma "no prototype" // FIXME
-private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string_copy):syserr;
+private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):syserr;
 pragma "no prototype" // FIXME
-private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string_copy, path_in:c_string):syserr;
+private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):syserr;
 
 // we don't use qio_channel_read_int/write_int since the code there is pretty
 // much a dispatch based on type and that fits better in Chapel. Doing it
@@ -1014,7 +1014,7 @@ private extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int,
 private extern proc qio_channel_read_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, ref ptr:imag(64)):syserr;
 private extern proc qio_channel_write_float64(threadsafe:c_int, byteorder:c_int, ch:qio_channel_ptr_t, x:imag(64)):syserr;
 
-private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
+private extern proc qio_channel_read_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, ref s:c_string, ref len:int(64), maxlen:ssize_t):syserr;
 private extern proc qio_channel_write_string(threadsafe:c_int, byteorder:c_int, str_style:int(64), ch:qio_channel_ptr_t, const s:c_string, len:ssize_t):syserr;
 
 private extern proc qio_channel_scan_int(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:size_t, issigned:c_int):syserr;
@@ -1038,17 +1038,14 @@ private extern proc qio_channel_print_complex(threadsafe:c_int, ch:qio_channel_p
 private extern proc qio_channel_read_char(threadsafe:c_int, ch:qio_channel_ptr_t, ref char:int(32)):syserr;
 
 private extern proc qio_nbytes_char(chr:int(32)):c_int;
-private extern proc qio_encode_to_string(chr:int(32)):c_string_copy;
+private extern proc qio_encode_to_string(chr:int(32)):c_string;
 private extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int, buf:c_string, buflen:ssize_t):syserr;
 
 private extern proc qio_channel_write_char(threadsafe:c_int, ch:qio_channel_ptr_t, char:int(32)):syserr;
 private extern proc qio_channel_skip_past_newline(threadsafe:c_int, ch:qio_channel_ptr_t, skipOnlyWs:c_int):syserr;
 private extern proc qio_channel_write_newline(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 
-// Note, the returned ptr argument behaves like an allocated c_string
-// (i.e. c_string_copy).  It should be freed by the caller, or stored and freed
-// later.
-private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string_copy, ref len:int(64), maxlen:ssize_t):syserr;
+private extern proc qio_channel_scan_string(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr:c_string, ref len:int(64), maxlen:ssize_t):syserr;
 private extern proc qio_channel_print_string(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:c_string, len:ssize_t):syserr;
 
 private extern proc qio_channel_scan_literal(threadsafe:c_int, ch:qio_channel_ptr_t, const match:c_string, len:ssize_t, skipwsbefore:c_int):syserr;
@@ -1457,13 +1454,13 @@ proc file.getPath(out error:syserr) : string {
   var ret: string = "unknown";
   if !error {
     on this.home {
-      var tmp:c_string_copy;
-      var tmp2:c_string_copy;
+      var tmp:c_string;
+      var tmp2:c_string;
       error = qio_file_path(_file_internal, tmp);
       if !error {
         error = qio_shortest_path(_file_internal, tmp2, tmp);
       }
-      chpl_free_c_string_copy(tmp);
+      qio_free_string(tmp);
       if !error {
         ret = new string(tmp2, needToCopy=false);
       }
@@ -1745,7 +1742,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   var err:syserr = ENOERR;
   var ret = openfd(fd, err, hints, style);
   if err {
-    var path_cs:c_string_copy;
+    var path_cs:c_string;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fd(fd, path_cs);
     var path = if e2 then "unknown"
@@ -1800,7 +1797,7 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
   var err:syserr = ENOERR;
   var ret = openfp(fp, err, hints, style);
   if err {
-    var path_cs:c_string_copy;
+    var path_cs:c_string;
     var e2:syserr = ENOERR;
     e2 = qio_file_path_for_fp(fp, path_cs);
     var path = if e2 then "unknown"
@@ -2014,7 +2011,7 @@ record ioChar {
 
 pragma "no doc"
 inline proc _cast(type t, x: ioChar) where t == string {
-  var csc: c_string_copy =  qio_encode_to_string(x.ch);
+  var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   return new string(csc, needToCopy=false);
 }
@@ -2738,7 +2735,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
   } else if t == string {
     // handle c_string and string
     var len:int(64);
-    var tx: c_string_copy;
+    var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
     return ret;
@@ -2863,7 +2860,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
   } else if t == string {
     // handle string
     var len:int(64);
-    var tx: c_string_copy;
+    var tx: c_string;
     var ret = qio_channel_read_string(false, byteorder,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
@@ -3418,8 +3415,7 @@ proc stringify(const args ...?k):string {
 
     for param i in 1..k {
       if args[i].type == string ||
-         args[i].type == c_string ||
-         args[i].type == c_string_copy {
+         args[i].type == c_string {
         str += args[i]:string;
       } else if isRangeType(args[i].type) ||
                 isPrimitiveType(args[i].type) {
@@ -3661,7 +3657,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
   error = ENOERR;
   on this.home {
     var lenread:int(64);
-    var tx:c_string_copy;
+    var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
     var uselen:ssize_t;
@@ -6795,7 +6791,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
   var s:string;
   if ! error {
     var gotlen:int(64);
-    var ts: c_string_copy;
+    var ts: c_string;
     error =
         qio_channel_read_string(false, iokind.native, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);

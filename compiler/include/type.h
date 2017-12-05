@@ -409,7 +409,6 @@ TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
-TYPE_EXTERN PrimitiveType*    dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 

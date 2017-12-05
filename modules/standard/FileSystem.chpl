@@ -544,19 +544,18 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
 
 pragma "no doc"
 proc locale.cwd(out error: syserr): string {
-  extern proc chpl_fs_cwd(ref working_dir:c_string_copy):syserr;
+  extern proc chpl_fs_cwd(ref working_dir:c_string):syserr;
 
   var ret:string;
   on this {
-    var tmp:c_string_copy;
-    // c_strings and c_string_copy's can't cross on statements.
+    var tmp:c_string;
+    // c_strings can't cross on statements.
     error = chpl_fs_cwd(tmp);
     if (error != ENOERR) {
       ret = "";
     } else {
       var tmp_len = tmp.length;
-      ret = new string(tmp:c_ptr(uint(8)), tmp_len, tmp_len+1,
-                       owned=true, needToCopy=false);
+      ret = new string(tmp, needToCopy=false);
     }
   }
   return ret;

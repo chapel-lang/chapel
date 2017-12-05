@@ -790,7 +790,6 @@ extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
-extern Symbol *gStringCopy;
 extern Symbol *gCVoidPtr;
 extern Symbol *gFile;
 extern Symbol *gOpaque;

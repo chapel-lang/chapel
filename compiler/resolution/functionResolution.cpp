@@ -676,10 +676,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtStringC && actualType == dtStringCopy) {
-    return true;
-  }
-
   if (formalType                                        == dtIteratorRecord &&
       actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
@@ -1091,12 +1087,6 @@ bool canCoerce(Type*     actualType,
                        formalType,
                        fn,
                        promotes);
-
-  if (formalType == dtString && actualType == dtStringCopy)
-    return true;
-
-  if (formalType == dtStringC && actualType == dtStringCopy)
-    return true;
 
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
       (formalType == dtCVoidPtr))
