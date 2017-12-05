@@ -1307,7 +1307,7 @@ proc file.check() throws {
     throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
 }
 
-/* Emit a syserr if a file is invalid */
+/* Return a syserr through out error if a file is invalid */
 proc file.check(out error:syserr) {
   try! {
     check();
