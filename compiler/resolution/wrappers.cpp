@@ -69,7 +69,8 @@ static FnSymbol*  wrapDefaultedFormals(
 static void addDefaultsAndReorder(FnSymbol *fn,
                                 CallExpr* call,
                                 CallInfo* info,
-                                std::vector<ArgSymbol*>& actualIdxToFormal);
+                                std::vector<ArgSymbol*>& actualIdxToFormal,
+                                bool resolveNewCode);
 static void addDefaultsAndReorder(FnSymbol *fn,
                                 CallInfo& info,
                                 std::vector<ArgSymbol*>& actualIdxToFormal);
@@ -248,7 +249,8 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
 static void addDefaultsAndReorder(FnSymbol *fn,
                                 CallExpr* call,
                                 CallInfo* info,
-                                std::vector<ArgSymbol*>& actualFormals) {
+                                std::vector<ArgSymbol*>& actualFormals,
+                                bool resolveNewCode) {
 
   int numFormals = fn->numFormals();
   std::vector<Symbol*> newActuals(numFormals);
@@ -320,7 +322,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
   // Normalize and resolve the new code in the BlockStmt.
   normalize(body);
-  resolveBlockStmt(body);
+  if (resolveNewCode) resolveBlockStmt(body);
 
   // resolveBlockStmt might remove DefExprs for params
   // in that event, we need to update them here.
@@ -347,7 +349,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
                                 std::vector<ArgSymbol*>& actualFormals) {
 
   // Handle both reordering and default arguments
-  addDefaultsAndReorder(fn, info.call, &info, actualFormals);
+  addDefaultsAndReorder(fn, info.call, &info, actualFormals, true);
 
   // Update the CallInfo actuals and actualNames fields
   info.actuals.clear();
@@ -2189,7 +2191,11 @@ static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
 
     // Update the calls
     for_vector(CallExpr, wrapCall, promotion.wrapCalls) {
-      addDefaultsAndReorder(promotion.fn, wrapCall, NULL, actualIdxToFormal);
+      addDefaultsAndReorder(promotion.fn, wrapCall, NULL,
+                            actualIdxToFormal,
+                            false /* don't resolve it yet
+                                     since other parts of the promotion
+                                     wrapper aren't resolved */);
     }
   }
 }
