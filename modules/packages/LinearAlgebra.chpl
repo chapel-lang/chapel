@@ -1148,11 +1148,11 @@ module Sparse {
     if !trans {
       if Adom.shape(2) != Xdom.shape(1) then
         halt("Mismatched shape in matrix-vector multiplication");
-      forall (i, x) in zip(Adom.dim(1), X) {
-        for j in Adom.dimIter(2, i) {
-          Y[i] += A[i, j] * x;
+        forall i in Adom.dim(1) {
+          for j in Adom.dimIter(2, i) {
+            Y[i] += A[i, j] * X[j];
+          }
         }
-      }
     } else {
       if Adom.shape(1) != Xdom.shape(1) then
         halt("Mismatched shape in matrix-vector multiplication");
