@@ -59,13 +59,14 @@ module LocaleModel {
     }
     proc chpl_name() return name;
 
-    proc CPULocale() {
+    proc init() {
     }
 
-    proc CPULocale(_sid, _parent) {
+    proc init(_sid, _parent) {
       sid = _sid;
+      name = _parent.chpl_name() + "-CPU" + sid;
+      super.init();
       parent = _parent;
-      name = parent.chpl_name() + "-CPU" + sid;
     }
 
     proc writeThis(f) {
@@ -95,9 +96,9 @@ module LocaleModel {
     }
     proc chpl_name() return name;
 
-    proc GPULocale() {
+    proc init() {
     }
-    proc ~GPULocale() {
+    proc deinit() {
      extern proc hsa_shutdown(): void ;
 
      // Comment out this until runtime support for HSA is added
@@ -106,10 +107,11 @@ module LocaleModel {
     }
 
 
-    proc GPULocale(_sid, _parent) {
+    proc init(_sid, _parent) {
       sid = _sid;
+      name = _parent.chpl_name() + "-GPU" + sid;
+      super.init();
       parent = _parent;
-      name = parent.chpl_name() + "-GPU" + sid;
     }
 
     proc writeThis(f) {
@@ -146,14 +148,14 @@ module LocaleModel {
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
     // and the node ID portion of any wide pointer referring to it.
-    proc LocaleModel() {
+    proc init() {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
       setup();
     }
 
-    proc LocaleModel(parent_loc : locale) {
+    proc init(parent_loc : locale) {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
@@ -241,7 +243,7 @@ module LocaleModel {
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     var myLocales: [myLocaleSpace] locale;
 
-    proc RootLocale() {
+    proc init() {
       parent = nil;
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;

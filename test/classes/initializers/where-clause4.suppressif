@@ -1,0 +1,6 @@
+# locale model results in bad init() candidates
+#
+# currently, we're generating locale-model-specific candidates, so
+# here, I'm hard-coding the .good file to 'flat' and suppress the
+# errors for other locale models
+CHPL_LOCALE_MODEL!=flat
