@@ -220,13 +220,15 @@ static void      formalIsDefaulted(FnSymbol*  fn,
 
 static bool      defaultedFormalUsesDefaultForType(ArgSymbol* formal);
 
+static bool      formalDefaultIsCall(ArgSymbol* formal);
+
 static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
                                                     BlockStmt* wrapFn,
                                                     VarSymbol* temp);
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
-                                                  IntentTag  intent,
+                                                  bool       addAddrOf,
                                                   BlockStmt* wrapFn,
                                                   VarSymbol* temp);
 
@@ -523,6 +525,23 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // gets special treatment and would be harder to use in this way).
   VarSymbol* temp   = newTemp("temp");
 
+  /* The following code is tricky. If it's adjusted, the following
+     tests are a good place to start:
+
+     test/functions/bradc/defaultVals/defaultArrCausesCopy.chpl
+     test/functions/bradc/defaultVals/defaultArrCausesCopy-reffn.chpl
+     test/functions/default-arguments/iterator-default-arguments.chpl
+     test/memory/figueroa/LeakedMemory6.chpl
+   */
+
+  /* If the default expression is a VarSymbol or an ArgSymbol,
+     return a reference to that VarSymbol/ArgSymbol.
+
+     If the default expression is a function call, return
+     the same type as the called function. Otherwise, we might
+     return a reference to stack memory.
+   */
+
   IntentTag  formalIntent = formal->intent;
   if (formal->type   != dtTypeDefaultToken &&
       formal->type   != dtMethodToken      &&
@@ -551,7 +570,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     defaultedFormalApplyDefaultForType(formal, block, temp);
 
   } else {
-    defaultedFormalApplyDefaultValue(fn, formal, formalIntent, block, temp);
+    // If the default expression is a call, don't use PRIM_ADDR_OF on it.
+    // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
+    bool addAddrOf = false;
+    if ((formalIntent & INTENT_FLAG_REF) != 0 && !formalDefaultIsCall(formal))
+      addAddrOf = true;
+
+    defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
   }
 
   // Update references to previous arguments to use the
@@ -921,7 +946,10 @@ static void formalIsDefaulted(FnSymbol*  fn,
     defaultedFormalApplyDefaultForType(formal, wrapFn->body, temp);
 
   } else {
-    defaultedFormalApplyDefaultValue(fn, formal, intent, wrapFn->body, temp);
+    bool addAddrOf = false;
+    if ((intent & INTENT_FLAG_REF) != 0)
+      addAddrOf = true;
+    defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, wrapFn->body, temp);
   }
 
   call->insertAtTail(temp);
@@ -959,6 +987,18 @@ static bool defaultedFormalUsesDefaultForType(ArgSymbol* formal) {
   if (formal->defaultExpr->body.length == 1) {
     if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
       retval = se->symbol() == gTypeDefaultToken;
+    }
+  }
+
+  return retval;
+}
+
+static bool formalDefaultIsCall(ArgSymbol* formal) {
+  bool retval = true;
+
+  if (formal->defaultExpr->body.length == 1) {
+    if (isSymExpr(formal->defaultExpr->body.tail)) {
+      retval = false;
     }
   }
 
@@ -1026,7 +1066,7 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
 
 static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                              ArgSymbol* formal,
-                                             IntentTag  intent,
+                                             bool addAddrOf,
                                              BlockStmt* body,
                                              VarSymbol* temp) {
   BlockStmt* defaultExpr = formal->defaultExpr->copy();
@@ -1055,7 +1095,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
     }
 
   } else {
-    if ((intent & INTENT_FLAG_REF) != 0) {
+    if (addAddrOf == true) {
       fromExpr = new CallExpr(PRIM_ADDR_OF, fromExpr);
     }
   }
