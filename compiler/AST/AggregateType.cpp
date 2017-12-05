@@ -1457,7 +1457,7 @@ void AggregateType::buildDefaultInitializer() {
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_METHOD_PRIMARY);
 
-      reset_ast_loc(def, symbol);
+      //reset_ast_loc(def, symbol);
 
       preNormalizeInitMethod(fn);
       normalize(fn);
