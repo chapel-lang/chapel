@@ -835,14 +835,37 @@ record ReverseComparator {
   var comparator;
 
   /*
-   Constructor - builds a comparator with a compare method that reverses the sort order of
-   the argument-provided comparator.
+   Initializer - builds a comparator with a compare method that
+   reverses the sort order of the default comparator.
+   */
+  proc init() {
+    this.comparator = defaultComparator;
+    super.init();
+  }
+
+  /*
+   Initializer - builds a comparator with a compare method that
+   reverses the sort order of the argument-provided comparator.
 
    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
       data is sorted.
 
    */
-  proc ReverseComparator(comparator:?rec=defaultComparator) {}
+  proc init(comparator) {
+    this.comparator = comparator;
+    super.init();
+  }
+
+  /*
+   Copy Initializer - builds a comparator that's a copy of
+   its argument.
+
+   :arg revcomp: :ref:`ReverseComparator <comparators>` to copy.
+   */
+  proc init(revcomp: ReverseComparator(?)) {
+    this.comparator = revcomp.comparator;
+    super.init();
+  }
 
   /*
    Reversed compare method defined based on ``comparator.key`` if defined,
