@@ -302,6 +302,8 @@ bool Phase::IsStartOfPass() const
 void Phase::ReportPass(unsigned long now) const
 {
   unsigned long phaseTime = now - mStartTime;
+  if (now < mStartTime)
+    phaseTime = 0;
 
   ReportTime(mName, phaseTime / 1e6);
 
