@@ -430,7 +430,9 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisArg->type);
-    _this->addFlag(FLAG_ARG_THIS);
+    // Make sure to set FLAG_THIS and also set it as a type variable
+    // for type methods.
+    _this->copyFlags(thisArg);
     wrapper->insertFormalAtTail(mt);
     wrapper->insertFormalAtTail(_this);
     wrapper->_this = _this;
