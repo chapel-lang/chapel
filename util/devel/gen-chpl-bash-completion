@@ -1,0 +1,19 @@
+#!/bin/bash
+
+template=$CHPL_HOME/util/devel/chpl-bash-completion-template
+
+single=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
+        sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
+        xargs echo`
+
+positive=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;\[no-\];;' |       \
+          sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+
+negative=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep '\[no-\]' |             \
+          tr -d '[' | tr -d ']' | sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+
+sed -e "s/SINGLE_OPTS/$single/"                                           \
+    -e "s/POSITIVE_OPTS/$positive/"                                       \
+    -e "s/NEGATIVE_OPTS/$negative/" $template
