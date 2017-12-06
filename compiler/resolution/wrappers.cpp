@@ -348,9 +348,14 @@ static void addDefaultsAndReorder(FnSymbol *fn,
         bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                  formal->intent == INTENT_PARAM;
 
+        // Use the value types to work around issues with string literals.
+        // Value types should be sufficient for the check needed here, though.
+        Type* actualValType = actual->getValType();
+        Type* formalValType = formal->getValType();
+
         bool promotes = false;
-        bool dispatches = canDispatch(actual->type, actual,
-                                      formal->type, fn,
+        bool dispatches = canDispatch(actualValType, actual,
+                                      formalValType, fn,
                                       &promotes, NULL, formalIsParam);
 
         if (actualIsTypeAlias != formalIsTypeAlias ||
