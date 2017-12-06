@@ -344,10 +344,8 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 static void collectMethods(FnSymbol*               pfn,
                            AggregateType*          ct,
                            std::vector<FnSymbol*>& methods) {
-  Vec<FnSymbol*>      tmp;
-  std::set<FnSymbol*> generics;
+  Vec<FnSymbol*> tmp;
 
-  // Gather the generic, concrete, instantiated methods
   for (AggregateType* fromType = ct;
        fromType != NULL;
        fromType = fromType->instantiatedFrom) {
@@ -359,19 +357,6 @@ static void collectMethods(FnSymbol*               pfn,
     }
   }
 
-  // Don't add instantiations of generics if we were already
-  // going to add the generic version. addToVirtualMaps will
-  // re-instantiate.
-
-  // So, gather a set of generic versions.
-  forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->hasFlag(FLAG_GENERIC) == true) {
-      generics.insert(cfn);
-    }
-  }
-
-  // Then, add anything not instantiated from something in
-  // the set.
   forv_Vec(FnSymbol, cfn, tmp) {
     if (cfn->instantiatedFrom == NULL) {
       methods.push_back(cfn);
