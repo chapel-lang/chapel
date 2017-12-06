@@ -132,6 +132,8 @@ public:
                               // default-initializer.
                               // It provides initial values for the
                               // fields in an aggregate type.
+
+  bool                        parentDefinesInitializer();
   bool                        wantsDefaultInitializer();
   void                        buildDefaultInitializer();
 
