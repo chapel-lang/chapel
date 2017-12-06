@@ -1183,6 +1183,17 @@ void AggregateType::buildConstructor() {
 
           // If it doesn't yet have an initializer, make one.
           at->buildConstructors();
+
+          // Error out if the parent type or one that it inherits from
+          // defines an initializer - we should not be creating a default
+          // constructor in that case, it won't know what to do with it.
+          if (at->initializerStyle == DEFINES_INITIALIZER ||
+              at->parentDefinesInitializer() == true) {
+            // at->defaultInitializer will still be NULL
+            USR_FATAL(this, "Cannot create default constructor on type '%s',"
+                      " which inherits from a type that defines an initializer",
+                      symbol->name);
+          }
         }
 
         // Get the parent constructor.
@@ -1759,6 +1770,19 @@ bool AggregateType::needsConstructor() {
     }
   }
   // Otherwise, we don't need a default constructor.
+  return false;
+}
+
+bool AggregateType::parentDefinesInitializer() {
+  if (dispatchParents.n > 0) {
+    if (AggregateType* pt = toAggregateType(dispatchParents.v[0])) {
+      if (pt->initializerStyle == DEFINES_INITIALIZER) {
+        return true;
+      } else {
+        return pt->parentDefinesInitializer();
+      }
+    }
+  }
   return false;
 }
 
