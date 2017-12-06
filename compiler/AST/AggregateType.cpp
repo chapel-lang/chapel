@@ -1420,6 +1420,7 @@ void AggregateType::buildConstructor() {
 void AggregateType::buildDefaultInitializer() {
   if (defaultInitializer                       == NULL ||
       strcmp(defaultInitializer->name, "init") !=    0) {
+    SET_LINENO(this);
     FnSymbol*  fn    = new FnSymbol("init");
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
@@ -1456,8 +1457,6 @@ void AggregateType::buildDefaultInitializer() {
 
       fn->addFlag(FLAG_METHOD);
       fn->addFlag(FLAG_METHOD_PRIMARY);
-
-      //reset_ast_loc(def, symbol);
 
       preNormalizeInitMethod(fn);
       normalize(fn);
