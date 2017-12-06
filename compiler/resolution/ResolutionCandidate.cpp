@@ -479,12 +479,25 @@ void ResolutionCandidate::computeSubstitutions() {
       // check for field with specified generic type
       //
       if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-          formal->type                        != dtAny &&
-          strcmp(formal->name, "outer")       != 0     &&
-          formal->hasFlag(FLAG_IS_MEME)       == false &&
-          (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-           fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
-        USR_FATAL(formal, "invalid generic type specification on class field");
+          formal->type                        != dtAny) {
+        if (strcmp(formal->name, "outer")       != 0     &&
+            formal->hasFlag(FLAG_IS_MEME)       == false &&
+            (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
+             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
+          USR_FATAL(formal,
+                    "invalid generic type specification on class field");
+
+        } else if (fn->hasFlag(FLAG_METHOD) == true &&
+                   strcmp(fn->name, "init") == 0 &&
+                   fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+                   !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
+                     formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
+          // This is a compiler generated initializer, so the argument with
+          // a generic type corresponds with a class field.
+          USR_FATAL(formal,
+                    "invalid generic type specification on class field");
+
+        }
       }
 
       if (formalIdxToActual[i] != NULL) {

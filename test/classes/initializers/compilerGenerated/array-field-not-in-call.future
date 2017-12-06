@@ -1,6 +1,0 @@
-bug: previous field representation in later domain field flawed
-
-For some reason, computeSubstitutions is trying to handle the domain field
-prior to determining the type for the previous 'n' field, even though n is not
-generic.  Perhaps something needs to be done about the field's type resolution
-earlier
