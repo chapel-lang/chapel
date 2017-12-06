@@ -74,6 +74,8 @@ static bool isSubType(Type* sub, Type* super);
 
 static void buildVirtualMaps();
 
+static void clearRootsAndChildren();
+
 static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
 
 static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
@@ -104,29 +106,7 @@ void resolveDynamicDispatches() {
   do {
     numTypes = gTypeSymbols.n;
 
-    {
-      Vec<Vec<FnSymbol*>*> values;
-
-      virtualChildrenMap.get_values(values);
-
-      forv_Vec(Vec<FnSymbol*>, value, values) {
-        delete value;
-      }
-    }
-
-    virtualChildrenMap.clear();
-
-    {
-      Vec<Vec<FnSymbol*>*> values;
-
-      virtualRootsMap.get_values(values);
-
-      forv_Vec(Vec<FnSymbol*>, value, values) {
-        delete value;
-      }
-    }
-
-    virtualRootsMap.clear();
+    clearRootsAndChildren();
 
     buildVirtualMaps();
 
@@ -239,6 +219,12 @@ void resolveDynamicDispatches() {
     }
   }
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void buildVirtualMaps() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -465,6 +451,31 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
     }
   }
 }
+
+static void clearRootsAndChildren() {
+  Vec<Vec<FnSymbol*>*> rootValues;
+  Vec<Vec<FnSymbol*>*> childValues;
+
+  virtualRootsMap.get_values(rootValues);
+  virtualChildrenMap.get_values(childValues);
+
+  forv_Vec(Vec<FnSymbol*>, value, rootValues)  {
+    delete value;
+  }
+
+  forv_Vec(Vec<FnSymbol*>, value, childValues) {
+    delete value;
+  }
+
+  virtualRootsMap.clear();
+  virtualChildrenMap.clear();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 //
 // add methods that possibly match pfn to vector,
