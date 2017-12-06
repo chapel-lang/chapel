@@ -605,33 +605,6 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
   return false;
 }
 
-// Checks that types match.
-// Note - does not currently check that instantiated params match.
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
-  if (fn->name != gn->name) {
-    return false;
-  }
-
-  if (fn->numFormals() != gn->numFormals()) {
-    return false;
-  }
-
-  for (int i = 3; i <= fn->numFormals(); i++) {
-    ArgSymbol* fa = fn->getFormal(i);
-    ArgSymbol* ga = gn->getFormal(i);
-
-    if (strcmp(fa->name, ga->name)) {
-      return false;
-    }
-
-    if (fa->type != ga->type) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
   if (fn->name != gn->name) {
     return false;

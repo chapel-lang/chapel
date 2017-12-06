@@ -29,26 +29,41 @@
 class CallInfo;
 class ResolutionCandidate;
 
-extern bool                           beforeLoweringForallStmts;
-extern int                            explainCallLine;
+struct Serializers {
+  FnSymbol* serializer;
+  FnSymbol* deserializer;
+  FnSymbol* broadcaster;
+  FnSymbol* destroyer;
+};
 
-extern SymbolMap                      paramMap;
 
-extern Vec<CallExpr*>                 callStack;
+extern bool                             beforeLoweringForallStmts;
 
-extern bool                           tryFailure;
+extern int                              explainCallLine;
 
-extern Vec<CallExpr*>                 inits;
+extern SymbolMap                        paramMap;
 
-extern Vec<BlockStmt*>                standardModuleSet;
+extern Vec<CallExpr*>                   callStack;
 
-extern char                           arrayUnrefName[];
+extern bool                             tryFailure;
 
-extern Map<Type*,     FnSymbol*>      autoDestroyMap;
-extern Map<FnSymbol*, FnSymbol*>      iteratorLeaderMap;
-extern Map<FnSymbol*, FnSymbol*>      iteratorFollowerMap;
+extern Vec<CallExpr*>                   inits;
 
-extern std::map<CallExpr*, CallExpr*> eflopiMap;
+extern Vec<BlockStmt*>                  standardModuleSet;
+
+extern char                             arrayUnrefName[];
+
+extern Map<Type*,     FnSymbol*>        autoDestroyMap;
+
+extern Map<FnSymbol*, FnSymbol*>        iteratorLeaderMap;
+
+extern Map<FnSymbol*, FnSymbol*>        iteratorFollowerMap;
+
+extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
+
+extern std::map<Type*,     Serializers> serializeMap;
+
+extern std::map<CallExpr*, CallExpr*>   eflopiMap;
 
 
 
@@ -204,6 +219,8 @@ void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
+bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
+
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 // tuples
@@ -219,16 +236,5 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
-
-extern Map<Type*,FnSymbol*> valueToRuntimeTypeMap; // convertValueToRuntimeType
-
-struct Serializers {
-  FnSymbol* serializer;
-  FnSymbol* deserializer;
-  FnSymbol* broadcaster;
-  FnSymbol* destroyer;
-};
-
-extern std::map<Type*, Serializers> serializeMap;
 
 #endif
