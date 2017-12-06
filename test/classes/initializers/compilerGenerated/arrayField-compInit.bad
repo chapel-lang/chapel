@@ -1,2 +1,11 @@
 arrayField-compInit.chpl:14: error: unresolved call '_new(type C, [BlockDom(1,int(64),false,DefaultDist)] real(64))'
 arrayField-compInit.chpl:3: note: candidates are: _new(type chpl_t, X: [domain(1,int(64),false)] real(64))
+$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note:                 _new(type chpl_t)
+$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note:                 _new(type chpl_t, parent_loc: locale)
+$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:159: note:                 _new(type chpl_t)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t, parent: locale)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:335: note:                 _new(type chpl_t)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t, parent_loc: locale)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:403: note:                 _new(type chpl_t)
