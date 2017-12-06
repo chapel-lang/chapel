@@ -109,15 +109,13 @@ void resolveDynamicDispatches() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isSubType(Type* sub, Type* super);
-
-static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
+static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct);
 
 static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
 
-static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         AggregateType*  at,
-                                         FnSymbol*       pfn);
+static void collectMethods(FnSymbol*               pfn,
+                           AggregateType*          ct,
+                           std::vector<FnSymbol*>& methods);
 
 static void collectInstantiatedAggregateTypes(
                                         std::vector<AggregateType*>& icts,
@@ -126,6 +124,8 @@ static void collectInstantiatedAggregateTypes(
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
+
+static bool isSubType(Type* sub, Type* super);
 
 // Returns true if the maps are "stable" i.e. set of types is unchanged
 static bool buildVirtualMaps() {
@@ -153,34 +153,29 @@ static bool buildVirtualMaps() {
   return (numTypes == gTypeSymbols.n) ? true : false;
 }
 
-// Add overrides of fn to virtual maps down the inheritance hierarchy
-static void addAllToVirtualMaps(FnSymbol* fn, AggregateType* pct) {
+// Add overrides of pfn to virtual maps down the inheritance hierarchy
+static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
 
-    if (ct->defaultTypeConstructor &&
-        (ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) ||
-         ct->defaultTypeConstructor->isResolved())) {
-      addToVirtualMaps(fn, ct);
+    if (ct->defaultTypeConstructor != NULL) {
+      if (ct->defaultTypeConstructor->isResolved()          == true ||
+          ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) == true) {
+        addToVirtualMaps(pfn, ct);
+      }
     }
 
-    // add overrides of method fn by children of ct to virtual maps
-    addAllToVirtualMaps(fn, ct);
+    // Recurse over this child's children
+    addAllToVirtualMaps(pfn, ct);
   }
 }
 
-// addToVirtualMaps itself goes through each method in ct and if
-// that method could override pfn, adds it to the virtual maps
 static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  // Collect methods from ct and ct->instantiatedFrom.
-  // Does not include generic instantiations - sometimes we
-  // have to make the instantiation here, so we always run
-  // through a code path that instantiates.
-  Vec<FnSymbol*> methods;
+  std::vector<FnSymbol*> methods;
 
-  collectMethodsForVirtualMaps(methods, ct, pfn);
+  collectMethods(pfn, ct, methods);
 
-  forv_Vec(FnSymbol, cfn, methods) {
+  for_vector(FnSymbol, cfn, methods) {
     if (cfn != NULL && cfn->instantiatedFrom == NULL) {
       std::vector<AggregateType*> types;
 
@@ -342,6 +337,45 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
           }
         }
       }
+    }
+  }
+}
+
+static void collectMethods(FnSymbol*               pfn,
+                           AggregateType*          ct,
+                           std::vector<FnSymbol*>& methods) {
+  Vec<FnSymbol*>      tmp;
+  std::set<FnSymbol*> generics;
+
+  // Gather the generic, concrete, instantiated methods
+  for (AggregateType* fromType = ct;
+       fromType != NULL;
+       fromType = fromType->instantiatedFrom) {
+
+    forv_Vec(FnSymbol, cfn, fromType->methods) {
+      if (cfn != NULL && possibleSignatureMatch(pfn, cfn) == true) {
+        tmp.add(cfn);
+      }
+    }
+  }
+
+  // Don't add instantiations of generics if we were already
+  // going to add the generic version. addToVirtualMaps will
+  // re-instantiate.
+
+  // So, gather a set of generic versions.
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->hasFlag(FLAG_GENERIC) == true) {
+      generics.insert(cfn);
+    }
+  }
+
+  // Then, add anything not instantiated from something in
+  // the set.
+  forv_Vec(FnSymbol, cfn, tmp) {
+    if (cfn->instantiatedFrom                 == NULL ||
+        generics.count(cfn->instantiatedFrom) ==    0) {
+      methods.push_back(cfn);
     }
   }
 }
@@ -536,49 +570,6 @@ static void printDispatchInfo() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-//
-// add methods that possibly match pfn to vector,
-// but does not add instantiated generics, since addToVirtualMaps
-// will instantiate again.
-static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         AggregateType*  ct,
-                                         FnSymbol*       pfn) {
-  Vec<FnSymbol*>      tmp;
-  std::set<FnSymbol*> generics;
-
-  // Gather the generic, concrete, instantiated methods
-  for (AggregateType* fromType = ct;
-       fromType != NULL;
-       fromType = fromType->instantiatedFrom) {
-
-    forv_Vec(FnSymbol, cfn, fromType->methods) {
-      if (cfn != NULL && possibleSignatureMatch(pfn, cfn) == true) {
-        tmp.add(cfn);
-      }
-    }
-  }
-
-  // Don't add instantiations of generics if we were already
-  // going to add the generic version. addToVirtualMaps will
-  // re-instantiate.
-
-  // So, gather a set of generic versions.
-  forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->hasFlag(FLAG_GENERIC) == true) {
-      generics.insert(cfn);
-    }
-  }
-
-  // Then, add anything not instantiated from something in
-  // the set.
-  forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->instantiatedFrom                 == NULL ||
-        generics.count(cfn->instantiatedFrom) ==    0) {
-      methods.add(cfn);
-    }
-  }
-}
 
 //
 // add to vector icts all types instantiated from ct
