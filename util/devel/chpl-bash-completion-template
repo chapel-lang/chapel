@@ -1,0 +1,64 @@
+# file: chpl-completion
+# chpl parameter completion
+
+# Tab autocompletion for chpl options and directories/.chpl files in bash
+# Source this file to enable this autocompletion.  To automatically enable
+# autocompletion, source this file from your .bashrc file.
+
+# This file was generated with the script:
+# $CHPL_HOME/util/devel/gen-chpl-bash-completion
+
+# This is modeled after the example at:
+# http://tldp.org/LDP/abs/html/tabexpansion.html
+# and Dennis's answer to this question:
+# https://superuser.com/questions/564716/bash-completion-for-filename-patterns-or-directories
+
+_chpl ()
+{
+  local cur
+  COMPREPLY=()
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*)
+      # The following lists were generated with the commands preceding them.
+
+      # single letter options
+      local single="SINGLE_OPTS"
+
+      # positive options + negative-only options
+      local positive="POSITIVE_OPTS"
+
+      # --no- versions of optionally negative options
+      local negative="NEGATIVE_OPTS"
+
+      COMPREPLY=( $( compgen -W '$single $positive $negative' -- $cur ))
+
+      if [ ${#COMPREPLY[@]} = 1 ]; then
+        # Add a space after a fully matching argument
+        COMPREPLY=$(printf %q%s "$COMPREPLY" ' ')
+      fi
+    ;;
+    *)
+      # Add a slash after a directory match and a space after a filename match
+      local IFS=$'\n'
+      local LASTCHAR=' '
+      COMPREPLY=( $( compgen -o plusdirs -f -X '!*.chpl' -- "${COMP_WORDS[COMP_CWORD]}" ) )
+
+      if [ ${#COMPREPLY[@]} = 1 ]; then
+        if [ -d "$COMPREPLY" ]; then
+          LASTCHAR='/'
+        fi
+        COMPREPLY=$(printf %q%s "$COMPREPLY" "$LASTCHAR")
+      else
+        for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
+          if [ -d "${COMPREPLY[$i]}" ]; then
+            COMPREPLY[$i]=${COMPREPLY[$i]}/
+          fi
+        done
+      fi
+    ;;
+  esac
+  return 0
+}
+
+complete -o nospace -F _chpl chpl
