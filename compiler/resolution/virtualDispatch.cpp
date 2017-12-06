@@ -64,8 +64,6 @@ Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
 
-static bool isSubType(Type* sub, Type* super);
-
 static bool buildVirtualMaps();
 
 static void clearRootsAndChildren();
@@ -74,23 +72,9 @@ static void buildVirtualMethodTable();
 
 static void buildVirtualMethodMap();
 
-static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
-
-static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
-
-static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
-                                         AggregateType*  at,
-                                         FnSymbol*       pfn);
-
-static void collectInstantiatedAggregateTypes(
-                                        std::vector<AggregateType*>& icts,
-                                        AggregateType*               at);
-
 static void filterVirtualChildren();
 
-static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
-
-static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
+static void printDispatchInfo();
 
 /************************************* | **************************************
 *                                                                             *
@@ -112,40 +96,8 @@ void resolveDynamicDispatches() {
 
   filterVirtualChildren();
 
-  if (fPrintDispatch) {
-    printf("Dynamic dispatch table:\n");
-    for (int i = 0; i < virtualMethodTable.n; i++) {
-      if (Type* t = virtualMethodTable.v[i].key) {
-        printf("  %s\n", toString(t));
-        for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-          FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
-          printf("    %s", toString(fn));
-          if (developer) {
-            int index = virtualMethodMap.get(fn);
-            printf(" index %i", index);
-            if ( fn->getFormal(2)->typeInfo() == t ) {
-              // print dispatch children if the function is
-              // the method in type t (and not, say, the version in
-              // some parent class e.g. object).
-              Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
-              if (childFns) {
-                printf(" %i children:\n", childFns->n);
-                for (int k = 0; k < childFns->n; k++) {
-                  FnSymbol* childFn = childFns->v[k];
-                  printf("      %s\n", toString(childFn));
-                }
-              }
-              if( childFns == NULL || childFns->n == 0 ) printf("\n");
-            } else {
-              printf(" inherited\n");
-            }
-          }
-          printf("\n");
-        }
-        if (developer)
-          printf("\n");
-      }
-    }
+  if (fPrintDispatch == true) {
+    printDispatchInfo();
   }
 
   inDynamicDispatchResolution = false;
@@ -156,6 +108,24 @@ void resolveDynamicDispatches() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static bool isSubType(Type* sub, Type* super);
+
+static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
+
+static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
+
+static void collectMethodsForVirtualMaps(Vec<FnSymbol*>& methods,
+                                         AggregateType*  at,
+                                         FnSymbol*       pfn);
+
+static void collectInstantiatedAggregateTypes(
+                                        std::vector<AggregateType*>& icts,
+                                        AggregateType*               at);
+
+static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
+
+static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 // Returns true if the maps are "stable" i.e. set of types is unchanged
 static bool buildVirtualMaps() {
@@ -500,6 +470,62 @@ static void buildVirtualMethodMap() {
     if (virtualMethodTable.v[i].key) {
       for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
         virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void printDispatchInfo() {
+  printf("Dynamic dispatch table:\n");
+
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (Type* t = virtualMethodTable.v[i].key) {
+      printf("  %s\n", toString(t));
+
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+
+        printf("    %s", toString(fn));
+
+        if (developer == true) {
+          int index = virtualMethodMap.get(fn);
+
+          printf(" index %i", index);
+
+          if (fn->getFormal(2)->typeInfo() == t) {
+            // print dispatch children if the function is the method in type t
+            // (and not, say, the version in some parent class e.g. object).
+            Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
+
+            if (childFns != NULL) {
+              printf(" %i children:\n", childFns->n);
+
+              for (int k = 0; k < childFns->n; k++) {
+                FnSymbol* childFn = childFns->v[k];
+
+                printf("      %s\n", toString(childFn));
+              }
+            }
+
+            if (childFns == NULL || childFns->n == 0) {
+              printf("\n");
+            }
+
+          } else {
+            printf(" inherited\n");
+          }
+        }
+        printf("\n");
+      }
+
+      if (developer == true) {
+        printf("\n");
       }
     }
   }
