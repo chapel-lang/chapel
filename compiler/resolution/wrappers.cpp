@@ -322,14 +322,45 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
   // Normalize and resolve the new code in the BlockStmt.
   normalize(body);
-  if (resolveNewCode) resolveBlockStmt(body);
+  if (resolveNewCode) {
+    // Resolve the new code
+    // This is important in the usual case where we are adding
+    // some calls before a call that is being resolved. The rest
+    // of resolution will assume that this new code is already
+    // resolved, since it is before what is currently being handled.
+    resolveBlockStmt(body);
 
-  // resolveBlockStmt might remove DefExprs for params
-  // in that event, we need to update them here.
-  for (i = 0; i < numFormals; i++) {
-    if (newActualDefaulted[i])
-      if (Symbol* param = paramMap.get(newActuals[i]))
-        newActuals[i] = param;
+    // resolveBlockStmt might remove DefExprs for params
+    // in that event, we need to update them here.
+    for (i = 0; i < numFormals; i++) {
+      if (newActualDefaulted[i])
+        if (Symbol* param = paramMap.get(newActuals[i]))
+          newActuals[i] = param;
+    }
+
+    // Check that newActuals are coercible to the formals
+    i = 0;
+    for_formals(formal, fn) {
+      if (newActualDefaulted[i]) {
+        Symbol* actual = newActuals[i];
+	bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+	bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+	bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+				 formal->intent == INTENT_PARAM;
+
+        bool promotes = false;
+        bool dispatches = canDispatch(actual->type, actual,
+				      formal->type, fn,
+				      &promotes, NULL, formalIsParam);
+
+	if (actualIsTypeAlias != formalIsTypeAlias ||
+            dispatches == false ||
+            promotes == true) {
+          USR_FATAL_CONT(formal, "Default expression not convertible to formal type");
+        }
+      }
+      i++;
+    }
   }
 
   // Add the actuals back to the call.
@@ -1478,11 +1509,9 @@ static void addArgCoercion(FnSymbol*  fn,
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* handle promoting e.g. foo(x:int) is called with an array of int             *
 *                                                                             *
 ************************************** | *************************************/
-
-// promotion
 
 namespace {
   struct PromotionInfo {
