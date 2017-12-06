@@ -38,7 +38,7 @@ bool  isStandaloneIterator(FnSymbol* fn);
 // If yieldType is not NULL, the type yielded by an iterator will
 // be stored in it.
 void  resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldType);
-void  resolveReturnType(FnSymbol* fn, Type** yieldType=0);
+void  resolveReturnType(FnSymbol* fn);
 
 Type* getReturnedTupleType(FnSymbol*      fn,
                            AggregateType* retType);

@@ -330,7 +330,7 @@ void resolveFunction(FnSymbol* fn) {
         insertUnrefForArrayReturn(fn);
 
         Type* yieldedType = NULL;
-        resolveReturnType(fn, &yieldedType);
+        resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
         insertAndResolveCasts(fn);
 
@@ -986,7 +986,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   }
 }
 
-void resolveReturnType(FnSymbol* fn, Type** yieldedType) {
+void resolveReturnType(FnSymbol* fn) {
   return resolveReturnTypeAndYieldedType(fn, NULL);
 }
 
