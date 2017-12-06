@@ -10,6 +10,12 @@ use Spawn;
 
 var home = CHPL_HOME;
 
+extern proc getenv(name: c_string): c_string;
+extern proc setenv(name: c_string, val: c_string, overwrite: c_int): c_int;
+
+var path = getenv("PATH"):string;
+setenv("PATH", (path + ":" + home + "/bin/" + CHPL_HOST_PLATFORM).c_str(), 1);
+
 var genScript = home + "/util/devel/gen-chpl-bash-completion";
 var completeScript = home + "/util/chpl-completion.bash";
 
@@ -22,3 +28,9 @@ for line in runScript.stdout.lines() {
 
 runScript.wait();
 diff.wait();
+
+if diff.exit_status != 0 {
+  writeln();
+  writeln("diff failed. You may need to run ", genScript,
+          " to regenerate ", completeScript);
+}
