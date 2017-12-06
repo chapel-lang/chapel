@@ -373,8 +373,7 @@ static void collectMethods(FnSymbol*               pfn,
   // Then, add anything not instantiated from something in
   // the set.
   forv_Vec(FnSymbol, cfn, tmp) {
-    if (cfn->instantiatedFrom                 == NULL ||
-        generics.count(cfn->instantiatedFrom) ==    0) {
+    if (cfn->instantiatedFrom == NULL) {
       methods.push_back(cfn);
     }
   }
