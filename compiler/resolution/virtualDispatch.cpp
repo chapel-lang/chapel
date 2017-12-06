@@ -72,7 +72,7 @@ static bool isSubType(Type* sub, Type* super);
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildVirtualMaps();
+static bool buildVirtualMaps();
 
 static void clearRootsAndChildren();
 
@@ -99,18 +99,12 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 void resolveDynamicDispatches() {
-  int numTypes = 0;
-
   inDynamicDispatchResolution = true;
 
-  do {
-    numTypes = gTypeSymbols.n;
-
+  // Repeat until maps are stable
+  while (buildVirtualMaps() == false) {
     clearRootsAndChildren();
-
-    buildVirtualMaps();
-
-  } while (numTypes != gTypeSymbols.n);
+  }
 
   for (int i = 0; i < virtualRootsMap.n; i++) {
     if (virtualRootsMap.v[i].key) {
@@ -226,37 +220,30 @@ void resolveDynamicDispatches() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildVirtualMaps() {
+// Returns true if the maps are "stable" i.e. set of types is unchanged
+static bool buildVirtualMaps() {
+  int numTypes = gTypeSymbols.n;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_WRAPPER))
-      // Only "true" functions are used to populate virtual maps.
-      continue;
+    if (fn->isResolved()            == true      &&
+        fn->numFormals()            >  1         &&
 
-    if (! fn->isResolved())
-      // Only functions that are actually used go into the virtual map.
-      continue;
+        fn->hasFlag(FLAG_WRAPPER)   == false     &&
+        fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
-    if (fn->hasFlag(FLAG_NO_PARENS))
-      // Parentheses-less functions are statically bound; that is, they are not
-      // dispatched through the virtual table.
-      continue;
+        fn->retTag                  != RET_PARAM &&
+        fn->retTag                  != RET_TYPE) {
+      ArgSymbol*     _mt   = fn->getFormal(1);
+      ArgSymbol*     _this = fn->getFormal(2);
+      AggregateType* at    = toAggregateType(_this->type);
 
-    if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE)
-      // Only run-time functions populate the virtual map.
-      continue;
-
-    if (fn->numFormals() > 1 && fn->getFormal(1)->type == dtMethodToken) {
-      // Only methods go in the virtual function table.
-      if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
-
-        if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
-          // MPF - note the check for generic seemed to originate
-          // in SVN revision 7103
-          addAllToVirtualMaps(fn, pt);
-        }
+      if (_mt->type == dtMethodToken && isNonGenericClass(at) == true) {
+        addAllToVirtualMaps(fn, at);
       }
     }
   }
+
+  return (numTypes == gTypeSymbols.n) ? true : false;
 }
 
 // Add overrides of fn to virtual maps down the inheritance hierarchy
