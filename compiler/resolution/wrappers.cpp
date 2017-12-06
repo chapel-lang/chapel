@@ -1107,12 +1107,10 @@ static FnSymbol* buildPromotionWrapper(FnSymbol*  fn,
                                        SymbolMap& subs) {
   SET_LINENO(info.call);
 
-  bool       fnIsExtern = fn->hasFlag(FLAG_EXTERN);
   BlockStmt* loop       = NULL;
   FnSymbol*  retval     = initPromotionWrapper(fn, info, subs);
 
-  if ((fnIsExtern == false && fn->getReturnSymbol() == gVoid) ||
-      (fnIsExtern == true  && fn->retType           == dtVoid)) {
+  if (fn->retType == dtVoid || fn->getReturnSymbol() == gVoid) {
     Expr*      indices  = getIndices (fn, subs, retval);
     Expr*      iterator = getIterator(fn, subs, retval);
     BlockStmt* block    = new BlockStmt(getCallToWrap(fn, subs, retval));
