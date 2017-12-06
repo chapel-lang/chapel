@@ -72,6 +72,8 @@ static void clearRootsAndChildren();
 
 static void buildVirtualMethodTable();
 
+static void buildVirtualMethodMap();
+
 static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
 
 static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
@@ -106,22 +108,9 @@ void resolveDynamicDispatches() {
 
   buildVirtualMethodTable();
 
-  for (int i = 0; i < virtualMethodTable.n; i++) {
-    if (virtualMethodTable.v[i].key) {
-      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
-      }
-    }
-  }
+  buildVirtualMethodMap();
 
-  // remove entries in virtualChildrenMap that are not in
-  // virtualMethodTable. When a parent has a generic method and
-  // a subclass has a specific one, the virtualChildrenMap might
-  // get multiple entries while the logic above with childSet
-  // ensures that the virtualMethodTable only has one entry.
   filterVirtualChildren();
-
-  inDynamicDispatchResolution = false;
 
   if (fPrintDispatch) {
     printf("Dynamic dispatch table:\n");
@@ -158,6 +147,8 @@ void resolveDynamicDispatches() {
       }
     }
   }
+
+  inDynamicDispatchResolution = false;
 }
 
 /************************************* | **************************************
@@ -495,6 +486,22 @@ static void addVirtualMethodTableEntry(Type*     type,
     fns->add(fn);
 
     virtualMethodTable.put(type, fns);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildVirtualMethodMap() {
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key) {
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
+      }
+    }
   }
 }
 
