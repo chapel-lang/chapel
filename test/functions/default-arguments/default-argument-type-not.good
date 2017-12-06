@@ -1,0 +1,1 @@
+default-argument-type-not.chpl:1: error: unable to initialize a type formal with a value
