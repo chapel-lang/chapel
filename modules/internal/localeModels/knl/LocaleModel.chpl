@@ -286,9 +286,9 @@ module LocaleModel {
       chpl_task_setSubloc(hbm_id);
       hbm = new MemoryLocale(hbm_id, this);
 
-      super.init(_parent);
-
       chpl_task_setSubloc(origSubloc);
+
+      super.init(_parent);
     }
 
     proc deinit() {
