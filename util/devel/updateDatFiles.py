@@ -22,12 +22,19 @@ def main():
             # replace `pass` with whatever .dat file manipulation you need
             pass
 
+# parse string as float if it's parse-able, returning 0.0 if it's not
+def maybe_float(val):
+    try:
+        return float(val)
+    except ValueError:
+        return 0.0
 
 # DatFile is an object to help manipulate (insert, remove, move, rename) keys
 # and/or data from .dat files
 class DatFile:
     def __init__ (self, dat_file):
         self.dat_file = dat_file
+        self.data = None
 
     # open the file and read in the data stripping empty lines
     def __enter__(self):
@@ -144,9 +151,30 @@ class DatFile:
             # `i+1` as _get_dates() doesn't include '#Date', but self.data does
             self.data.pop(i+1)
 
+    # replace values that are over some threshold (default 1 day in seconds)
+    # with the values from the previous day
+    def replace_values_over_threshold(self, threshold=(24*60*60)):
+        num_rows = len(self.data)
+        num_cols = len(self.data[0])
+
+        # Replace a bogus value with the previous day's value. Assumes row 1
+        # has good data and is not a comment
+        last_non_comment_row = 1
+        for r in range(2, num_rows):
+            if len(self.data[r]) != num_cols:
+                continue # skip comment lines
+            for c in range(1, num_cols):
+                if maybe_float(self.data[r][c]) > threshold:
+                    self.data[r][c] = self.data[last_non_comment_row][c]
+            last_non_comment_row = r
+
+
 # This exist just to test this from our testing system
 def test(f):
     with DatFile(f) as dat_file:
+        # Replace any bogus times
+        dat_file.replace_values_over_threshold()
+
         # Remove the data for all keys in an inclusive range
         dat_file.remove_data_in_range("01/11/16", "01/12/16")
 
