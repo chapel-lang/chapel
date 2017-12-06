@@ -130,6 +130,8 @@ implemented with a compare method:
   // This will output: -1, 2, 3, -4
   writeln(Array);
 
+.. _reverse-comparator:
+
 Reverse Comparator
 ~~~~~~~~~~~~~~~~~~
 
@@ -860,7 +862,7 @@ record ReverseComparator {
    Copy Initializer - builds a comparator that's a copy of
    its argument.
 
-   :arg revcomp: :ref:`ReverseComparator <comparators>` to copy.
+   :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
    */
   proc init(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
