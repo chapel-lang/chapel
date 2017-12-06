@@ -71,10 +71,10 @@ module LocaleModel {
     }
 
     proc init(parent_loc : locale) {
-      super.init(parent_loc);
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      super.init(parent_loc);
       setup();
     }
 
