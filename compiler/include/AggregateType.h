@@ -202,6 +202,8 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap);
+  void                        fieldToArgType(DefExpr* fieldDef,
+                                             ArgSymbol* arg);
   bool                        addSuperArgs(FnSymbol*                    fn,
                                            const std::set<const char*>& names);
 

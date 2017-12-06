@@ -1555,23 +1555,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           // and initialization from the field declaration.
           Expr* initVal = new SymExpr(gTypeDefaultToken);
 
-          BlockStmt* exprType = new BlockStmt(defPoint->exprType->copy(),
-                                              BLOCK_TYPE);
-
-          // If the type is simple, just set the argument's type directly.
-          // Otherwise, give it the block we just created.
-          if (exprType->body.length == 1) {
-            Type* type = exprType->body.only()->typeInfo();
-            if (type != dtUnknown && type != dtAny) {
-              arg->type = type;
-
-            } else {
-              arg->typeExpr = exprType;
-            }
-
-          } else {
-            arg->typeExpr = exprType;
-          }
+          fieldToArgType(defPoint, arg);
 
           if (arg->intent != INTENT_PARAM) {
             arg->defaultExpr = new BlockStmt(initVal);
@@ -1584,45 +1568,12 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         //
         } else if (defPoint->exprType != NULL && defPoint->init != NULL) {
           if (field->hasFlag(FLAG_PARAM)) {
-            BlockStmt* exprType = new BlockStmt(defPoint->exprType->copy(),
-                                                BLOCK_TYPE);
-
-            // If the type is simple, just set the argument's type directly.
-            // Otherwise, give it the block we just created.
-            if (exprType->body.length == 1) {
-              Type* type = exprType->body.only()->typeInfo();
-              if (type != dtUnknown && type != dtAny) {
-                arg->type = type;
-
-              } else {
-                arg->typeExpr = exprType;
-              }
-
-            } else {
-              arg->typeExpr = exprType;
-            }
-
+            fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
 
           } else {
-            BlockStmt* exprType = new BlockStmt(defPoint->exprType->copy(),
-                                                BLOCK_TYPE);
-
-            // If the type is simple, just set the argument's type directly.
-            // Otherwise, give it the block we just created.
-            if (exprType->body.length == 1) {
-              Type* type = exprType->body.only()->typeInfo();
-              if (type != dtUnknown && type != dtAny) {
-                arg->type = type;
-
-              } else {
-                arg->typeExpr = exprType;
-              }
-
-            } else {
-              arg->typeExpr = exprType;
-            }
+            fieldToArgType(defPoint, arg);
 
             CallExpr* def    = new CallExpr("_createFieldDefault",
                                             defPoint->exprType->copy(),
@@ -1641,6 +1592,25 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                       arg));
       }
     }
+  }
+}
+
+void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
+  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+
+  // If the type is simple, just set the argument's type directly.
+  // Otherwise, give it the block we just created.
+  if (exprType->body.length == 1) {
+    Type* type = exprType->body.only()->typeInfo();
+    if (type != dtUnknown && type != dtAny) {
+      arg->type = type;
+
+    } else {
+      arg->typeExpr = exprType;
+    }
+
+  } else {
+    arg->typeExpr = exprType;
   }
 }
 
