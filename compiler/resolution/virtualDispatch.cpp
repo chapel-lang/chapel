@@ -64,7 +64,17 @@ Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
 
-static bool isSubType(Type* sub, Type* super);
+static bool buildVirtualMaps();
+
+static void clearRootsAndChildren();
+
+static void buildVirtualMethodTable();
+
+static void buildVirtualMethodMap();
+
+static void filterVirtualChildren();
+
+static void printDispatchInfo();
 
 /************************************* | **************************************
 *                                                                             *
@@ -72,7 +82,34 @@ static bool isSubType(Type* sub, Type* super);
 *                                                                             *
 ************************************** | *************************************/
 
-static void buildVirtualMaps();
+void resolveDynamicDispatches() {
+  inDynamicDispatchResolution = true;
+
+  // Repeat until maps are stable
+  while (buildVirtualMaps() == false) {
+    clearRootsAndChildren();
+  }
+
+  buildVirtualMethodTable();
+
+  buildVirtualMethodMap();
+
+  filterVirtualChildren();
+
+  if (fPrintDispatch == true) {
+    printDispatchInfo();
+  }
+
+  inDynamicDispatchResolution = false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isSubType(Type* sub, Type* super);
 
 static void addAllToVirtualMaps(FnSymbol* fn,  AggregateType* pct);
 
@@ -86,191 +123,34 @@ static void collectInstantiatedAggregateTypes(
                                         std::vector<AggregateType*>& icts,
                                         AggregateType*               at);
 
-static void addVirtualMethodTableEntry(Type*     type,
-                                       FnSymbol* fn,
-                                       bool      exclusive);
-
-static void filterVirtualChildren();
-
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
-void resolveDynamicDispatches() {
-  int numTypes = 0;
+// Returns true if the maps are "stable" i.e. set of types is unchanged
+static bool buildVirtualMaps() {
+  int numTypes = gTypeSymbols.n;
 
-  inDynamicDispatchResolution = true;
-
-  do {
-    numTypes = gTypeSymbols.n;
-
-    {
-      Vec<Vec<FnSymbol*>*> values;
-
-      virtualChildrenMap.get_values(values);
-
-      forv_Vec(Vec<FnSymbol*>, value, values) {
-        delete value;
-      }
-    }
-
-    virtualChildrenMap.clear();
-
-    {
-      Vec<Vec<FnSymbol*>*> values;
-
-      virtualRootsMap.get_values(values);
-
-      forv_Vec(Vec<FnSymbol*>, value, values) {
-        delete value;
-      }
-    }
-
-    virtualRootsMap.clear();
-
-    buildVirtualMaps();
-
-  } while (numTypes != gTypeSymbols.n);
-
-  for (int i = 0; i < virtualRootsMap.n; i++) {
-    if (virtualRootsMap.v[i].key) {
-      for (int j = 0; j < virtualRootsMap.v[i].value->n; j++) {
-        FnSymbol* root = virtualRootsMap.v[i].value->v[j];
-
-        addVirtualMethodTableEntry(root->_this->type, root, true);
-      }
-    }
-  }
-
-  Vec<Type*> ctq;
-
-  ctq.add(dtObject);
-
-  forv_Vec(Type, ct, ctq) {
-    if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(ct)) {
-      forv_Vec(FnSymbol, pfn, *parentFns) {
-        // Each subtype can contribute only one function to the
-        // virtual method table.
-        Vec<Type*> childSet;
-
-        if (Vec<FnSymbol*>* childFns = virtualChildrenMap.get(pfn)) {
-          forv_Vec(FnSymbol, cfn, *childFns) {
-            forv_Vec(Type, pt, cfn->_this->type->dispatchParents) {
-              if (pt == ct) {
-                if (!childSet.set_in(cfn->_this->type)) {
-                  addVirtualMethodTableEntry(cfn->_this->type, cfn, false);
-
-                  childSet.set_add(cfn->_this->type);
-                }
-
-                break;
-              }
-            }
-          }
-        }
-
-        forv_Vec(Type, childType, ct->dispatchChildren) {
-          if (!childSet.set_in(childType)) {
-            addVirtualMethodTableEntry(childType, pfn, false);
-          }
-        }
-      }
-    }
-
-    forv_Vec(Type, child, ct->dispatchChildren) {
-      ctq.add(child);
-    }
-  }
-
-  // reverse the entries in the virtual method table
-  // populate the virtualMethodMap
-  for (int i = 0; i < virtualMethodTable.n; i++) {
-    if (virtualMethodTable.v[i].key) {
-      virtualMethodTable.v[i].value->reverse();
-
-      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
-      }
-    }
-  }
-
-  // remove entries in virtualChildrenMap that are not in
-  // virtualMethodTable. When a parent has a generic method and
-  // a subclass has a specific one, the virtualChildrenMap might
-  // get multiple entries while the logic above with childSet
-  // ensures that the virtualMethodTable only has one entry.
-  filterVirtualChildren();
-
-  inDynamicDispatchResolution = false;
-
-  if (fPrintDispatch) {
-    printf("Dynamic dispatch table:\n");
-    for (int i = 0; i < virtualMethodTable.n; i++) {
-      if (Type* t = virtualMethodTable.v[i].key) {
-        printf("  %s\n", toString(t));
-        for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
-          FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
-          printf("    %s", toString(fn));
-          if (developer) {
-            int index = virtualMethodMap.get(fn);
-            printf(" index %i", index);
-            if ( fn->getFormal(2)->typeInfo() == t ) {
-              // print dispatch children if the function is
-              // the method in type t (and not, say, the version in
-              // some parent class e.g. object).
-              Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
-              if (childFns) {
-                printf(" %i children:\n", childFns->n);
-                for (int k = 0; k < childFns->n; k++) {
-                  FnSymbol* childFn = childFns->v[k];
-                  printf("      %s\n", toString(childFn));
-                }
-              }
-              if( childFns == NULL || childFns->n == 0 ) printf("\n");
-            } else {
-              printf(" inherited\n");
-            }
-          }
-          printf("\n");
-        }
-        if (developer)
-          printf("\n");
-      }
-    }
-  }
-}
-
-static void buildVirtualMaps() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_WRAPPER))
-      // Only "true" functions are used to populate virtual maps.
-      continue;
+    if (fn->isResolved()            == true      &&
+        fn->numFormals()            >  1         &&
 
-    if (! fn->isResolved())
-      // Only functions that are actually used go into the virtual map.
-      continue;
+        fn->hasFlag(FLAG_WRAPPER)   == false     &&
+        fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
-    if (fn->hasFlag(FLAG_NO_PARENS))
-      // Parentheses-less functions are statically bound; that is, they are not
-      // dispatched through the virtual table.
-      continue;
+        fn->retTag                  != RET_PARAM &&
+        fn->retTag                  != RET_TYPE) {
+      ArgSymbol*     _mt   = fn->getFormal(1);
+      ArgSymbol*     _this = fn->getFormal(2);
+      AggregateType* at    = toAggregateType(_this->type);
 
-    if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE)
-      // Only run-time functions populate the virtual map.
-      continue;
-
-    if (fn->numFormals() > 1 && fn->getFormal(1)->type == dtMethodToken) {
-      // Only methods go in the virtual function table.
-      if (AggregateType* pt = toAggregateType(fn->getFormal(2)->type)) {
-
-        if (isClass(pt) && !pt->symbol->hasFlag(FLAG_GENERIC)) {
-          // MPF - note the check for generic seemed to originate
-          // in SVN revision 7103
-          addAllToVirtualMaps(fn, pt);
-        }
+      if (_mt->type == dtMethodToken && isNonGenericClass(at) == true) {
+        addAllToVirtualMaps(fn, at);
       }
     }
   }
+
+  return (numTypes == gTypeSymbols.n) ? true : false;
 }
 
 // Add overrides of fn to virtual maps down the inheritance hierarchy
@@ -466,6 +346,197 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   }
 }
 
+static void clearRootsAndChildren() {
+  Vec<Vec<FnSymbol*>*> rootValues;
+  Vec<Vec<FnSymbol*>*> childValues;
+
+  virtualRootsMap.get_values(rootValues);
+  virtualChildrenMap.get_values(childValues);
+
+  forv_Vec(Vec<FnSymbol*>, value, rootValues)  {
+    delete value;
+  }
+
+  forv_Vec(Vec<FnSymbol*>, value, childValues) {
+    delete value;
+  }
+
+  virtualRootsMap.clear();
+  virtualChildrenMap.clear();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void addVirtualMethodTableEntry(Type*     type,
+                                       FnSymbol* fn,
+                                       bool      exclusive);
+
+static void buildVirtualMethodTable() {
+  Vec<Type*> ctq;
+
+  ctq.add(dtObject);
+
+  for (int i = 0; i < virtualRootsMap.n; i++) {
+    if (virtualRootsMap.v[i].key != NULL) {
+      for (int j = 0; j < virtualRootsMap.v[i].value->n; j++) {
+        FnSymbol* root = virtualRootsMap.v[i].value->v[j];
+
+        addVirtualMethodTableEntry(root->_this->type, root, true);
+      }
+    }
+  }
+
+  forv_Vec(Type, ct, ctq) {
+    if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(ct)) {
+      forv_Vec(FnSymbol, pfn, *parentFns) {
+        Vec<Type*> childSet;
+
+        if (Vec<FnSymbol*>* childFns = virtualChildrenMap.get(pfn)) {
+          forv_Vec(FnSymbol, cfn, *childFns) {
+            forv_Vec(Type, pt, cfn->_this->type->dispatchParents) {
+              if (pt == ct) {
+                if (childSet.set_in(cfn->_this->type) == NULL) {
+                  addVirtualMethodTableEntry(cfn->_this->type, cfn, false);
+
+                  childSet.set_add(cfn->_this->type);
+                }
+
+                break;
+              }
+            }
+          }
+        }
+
+        forv_Vec(Type, childType, ct->dispatchChildren) {
+          if (childSet.set_in(childType) == NULL) {
+            addVirtualMethodTableEntry(childType, pfn, false);
+          }
+        }
+      }
+    }
+
+    forv_Vec(Type, child, ct->dispatchChildren) {
+      ctq.add(child);
+    }
+  }
+
+  // Reverse each value
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key != NULL) {
+      virtualMethodTable.v[i].value->reverse();
+    }
+  }
+}
+
+// If exclusive == true, check for fn already existing in the virtual method
+// table and do not add it a second time if it is already present.
+static void addVirtualMethodTableEntry(Type*     type,
+                                       FnSymbol* fn,
+                                       bool      exclusive) {
+  Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
+  bool            found = false;
+
+  if (fns == NULL) {
+    fns = new Vec<FnSymbol*>();
+
+  } else if (exclusive == true) {
+    forv_Vec(FnSymbol, f, *fns) {
+      if (f == fn) {
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (found == false) {
+    fns->add(fn);
+
+    virtualMethodTable.put(type, fns);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void buildVirtualMethodMap() {
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (virtualMethodTable.v[i].key) {
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        virtualMethodMap.put(virtualMethodTable.v[i].value->v[j], j);
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void printDispatchInfo() {
+  printf("Dynamic dispatch table:\n");
+
+  for (int i = 0; i < virtualMethodTable.n; i++) {
+    if (Type* t = virtualMethodTable.v[i].key) {
+      printf("  %s\n", toString(t));
+
+      for (int j = 0; j < virtualMethodTable.v[i].value->n; j++) {
+        FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+
+        printf("    %s", toString(fn));
+
+        if (developer == true) {
+          int index = virtualMethodMap.get(fn);
+
+          printf(" index %i", index);
+
+          if (fn->getFormal(2)->typeInfo() == t) {
+            // print dispatch children if the function is the method in type t
+            // (and not, say, the version in some parent class e.g. object).
+            Vec<FnSymbol*>* childFns = virtualChildrenMap.get(fn);
+
+            if (childFns != NULL) {
+              printf(" %i children:\n", childFns->n);
+
+              for (int k = 0; k < childFns->n; k++) {
+                FnSymbol* childFn = childFns->v[k];
+
+                printf("      %s\n", toString(childFn));
+              }
+            }
+
+            if (childFns == NULL || childFns->n == 0) {
+              printf("\n");
+            }
+
+          } else {
+            printf(" inherited\n");
+          }
+        }
+        printf("\n");
+      }
+
+      if (developer == true) {
+        printf("\n");
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 //
 // add methods that possibly match pfn to vector,
 // but does not add instantiated generics, since addToVirtualMaps
@@ -530,31 +601,6 @@ static void collectInstantiatedAggregateTypes(
     }
   }
 }
-
-// if exclusive=true, check for fn already existing in the virtual method
-// table and do not add it a second time if it is already present.
-static void addVirtualMethodTableEntry(Type*     type,
-                                       FnSymbol* fn,
-                                       bool      exclusive) {
-  Vec<FnSymbol*>* fns = virtualMethodTable.get(type);
-
-  if (fns == NULL) {
-    fns = new Vec<FnSymbol*>();
-  }
-
-  if (exclusive) {
-    forv_Vec(FnSymbol, f, *fns) {
-      if (f == fn) {
-        return;
-      }
-    }
-  }
-
-  fns->add(fn);
-
-  virtualMethodTable.put(type, fns);
-}
-
 
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
