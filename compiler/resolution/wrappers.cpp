@@ -343,17 +343,17 @@ static void addDefaultsAndReorder(FnSymbol *fn,
     for_formals(formal, fn) {
       if (newActualDefaulted[i]) {
         Symbol* actual = newActuals[i];
-	bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
-	bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
-	bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
-				 formal->intent == INTENT_PARAM;
+        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+        bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
+                                 formal->intent == INTENT_PARAM;
 
         bool promotes = false;
         bool dispatches = canDispatch(actual->type, actual,
-				      formal->type, fn,
-				      &promotes, NULL, formalIsParam);
+                                      formal->type, fn,
+                                      &promotes, NULL, formalIsParam);
 
-	if (actualIsTypeAlias != formalIsTypeAlias ||
+        if (actualIsTypeAlias != formalIsTypeAlias ||
             dispatches == false ||
             promotes == true) {
           USR_FATAL_CONT(formal, "Default expression not convertible to formal type");
