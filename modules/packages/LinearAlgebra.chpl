@@ -1148,6 +1148,7 @@ module Sparse {
     if !trans {
       if Adom.shape(2) != Xdom.shape(1) then
         halt("Mismatched shape in matrix-vector multiplication");
+        // TODO: Loop over non-zero rows only
         forall i in Adom.dim(1) {
           for j in Adom.dimIter(2, i) {
             Y[i] += A[i, j] * X[j];
