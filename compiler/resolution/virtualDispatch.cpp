@@ -342,11 +342,11 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
 }
 
 static void collectMethods(FnSymbol*               pfn,
-                           AggregateType*          ct,
+                           AggregateType*          pct,
                            std::vector<FnSymbol*>& methods) {
-  for (AggregateType* fromType = ct;
-       fromType != NULL;
-       fromType = fromType->instantiatedFrom) {
+  AggregateType* fromType = pct;
+
+  while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
       if (cfn->instantiatedFrom == NULL) {
         if (possibleSignatureMatch(pfn, cfn) == true) {
@@ -354,6 +354,8 @@ static void collectMethods(FnSymbol*               pfn,
         }
       }
     }
+
+    fromType = fromType->instantiatedFrom;
   }
 }
 
