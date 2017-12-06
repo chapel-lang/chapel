@@ -301,9 +301,10 @@ bool Phase::IsStartOfPass() const
 
 void Phase::ReportPass(unsigned long now) const
 {
-  unsigned long phaseTime = now - mStartTime;
-  if (now < mStartTime)
-    phaseTime = 0;
+  // clock-skew can cause now < startTime, just report 0 in that case
+  unsigned long phaseTime = 0;
+  if (now > mStartTime)
+    phaseTime = now - mStartTime;
 
   ReportTime(mName, phaseTime / 1e6);
 
