@@ -201,10 +201,10 @@ module LocaleModel {
       return parent.highBandwidthMemory();
     }
 
-    proc MemoryLocale() {
+    proc init() {
     }
 
-    proc MemoryLocale(_sid, _parent) {
+    proc init(_sid, _parent) {
       sid = _sid: chpl_sublocID_t;
       extern proc chpl_task_getNumSublocales(): int(32);
       const (whichNuma, kind) =
@@ -215,7 +215,7 @@ module LocaleModel {
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
       mlName = kindstr+whichNuma;
-      parent = _parent;
+      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -262,17 +262,15 @@ module LocaleModel {
       return hbm;
     }
 
-    proc NumaDomain() {
+    proc init() {
     }
 
-    proc NumaDomain(_sid, _parent) {
+    proc init(_sid, _parent) {
       extern proc chpl_task_getNumSublocales(): int(32);
       var numSublocales = chpl_task_getNumSublocales();
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
-      parent = _parent;
-
       ddr = new MemoryLocale(sid, this);
 
       var hbm_available = (hbw_check_available() == 0);
@@ -287,7 +285,10 @@ module LocaleModel {
       const origSubloc = chpl_task_getRequestedSubloc();
       chpl_task_setSubloc(hbm_id);
       hbm = new MemoryLocale(hbm_id, this);
+
       chpl_task_setSubloc(origSubloc);
+
+      super.init(_parent);
     }
 
     proc deinit() {
@@ -460,8 +461,8 @@ module LocaleModel {
     const myLocaleSpace: domain(1) = {0..numLocales-1};
     var myLocales: [myLocaleSpace] locale;
 
-    proc RootLocale() {
-      parent = nil;
+    proc init() {
+      super.init(nil);
       nPUsPhysAcc = 0;
       nPUsPhysAll = 0;
       nPUsLogAcc = 0;
