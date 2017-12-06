@@ -895,7 +895,7 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
     newline();
     fprintf(mFP, "RetType:  ");
     mOffset = mOffset + 10;
-    node->retType->symbol->accept(this);
+    writeType(node->retType, false);
     mOffset = mOffset - 10;
   }
 
