@@ -689,6 +689,15 @@ config const correctness = true;
   }
 
   {
+    var A = Matrix([1,1,0],
+                   [0,1,1]);
+    var Asps = CSRMatrix(A);
+    var v = Vector(1,2,3);
+    const Av = Vector(3, 5);
+    assertEqual(Asps.dot(v), Av);
+  }
+
+  {
     var A = eye(3,5);
     // Identity matrix (3x5)
     test_CSRdot(A);
@@ -744,6 +753,16 @@ config const correctness = true;
     var A2 = 2*A;
     assertEqual(Av, A2);
   }
+
+  {
+    var A = Matrix([1,1,0],
+                   [0,1,1]);
+    var Asps = CSRMatrix(A);
+    var v = Vector(2,3);
+    const Av = Vector(2, 5, 3);
+    assertEqual(v.dot(Asps), Av);
+  }
+
 
   /* dot - matrix-scalar */
   {
