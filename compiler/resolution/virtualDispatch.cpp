@@ -117,13 +117,15 @@ static void collectMethods(FnSymbol*               pfn,
                            AggregateType*          ct,
                            std::vector<FnSymbol*>& methods);
 
+static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
+
+static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
+
 static void collectInstantiatedAggregateTypes(
                                         std::vector<AggregateType*>& icts,
                                         AggregateType*               at);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
-
-static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 static bool isSubType(Type* sub, Type* super);
 
@@ -219,126 +221,7 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
         }
 
         if (fn) {
-          resolveSignature(fn);
-
-          if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
-            resolveFunction(fn);
-
-            if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-                pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              AggregateType* fnRetType  = toAggregateType(fn->retType);
-              IteratorInfo*  fnInfo     = fnRetType->iteratorInfo;
-              AggregateType* pfnRetType = toAggregateType(pfn->retType);
-              IteratorInfo*  pfnInfo    = pfnRetType->iteratorInfo;
-
-              if (!isSubType(fnInfo->getValue->retType,
-                             pfnInfo->getValue->retType)) {
-                USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                               pfnInfo->getValue->retType->symbol->name);
-
-                USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                               fnInfo->getValue->retType->symbol->name);
-                USR_STOP();
-
-              } else {
-                pfn->retType->dispatchChildren.add_exclusive(fn->retType);
-                fn->retType->dispatchParents.add_exclusive(pfn->retType);
-                Type* pic = pfnInfo->iclass;
-                Type* ic = fnInfo->iclass;
-                INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-
-                Type* thisType = fnInfo->iterator->_this->typeInfo();
-                Type* pthisType = pfnInfo->iterator->_this->typeInfo();
-                INT_ASSERT(thisType->dispatchParents.n == 1);
-                if (thisType->dispatchParents.only() == pthisType) {
-                  // Iterator classes are created as normal top-level classes
-                  // (inheriting from dtObject).  Here, we want to re-parent
-                  // ic with pic, so we need to remove and replace the
-                  // object base class.  We only want to make this change
-                  // if the class this iterator is defined in is a direct
-                  // subclass of the class the parent iterator is defined
-                  // in - e.g. a child, but not a grandchild.
-                  INT_ASSERT(ic->dispatchParents.n == 1);
-                  Type* parent = ic->dispatchParents.only();
-                  if (parent == dtObject)
-                  {
-                    int item = parent->dispatchChildren.index(ic);
-                    parent->dispatchChildren.remove(item);
-                    ic->dispatchParents.remove(0);
-                  }
-                  pic->dispatchChildren.add_exclusive(ic);
-                  ic->dispatchParents.add_exclusive(pic);
-                }
-              }
-
-            } else if (!isSubType(fn->retType, pfn->retType)) {
-              USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
-              USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
-              USR_STOP();
-
-            } else if (fn->throwsError() != pfn->throwsError()) {
-              USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
-              const char* pfnThrowing = NULL;
-              const char* fnThrowing = NULL;
-
-              if (pfn->throwsError()) {
-                pfnThrowing = "throwing";
-                fnThrowing = "non-throwing";
-              } else {
-                pfnThrowing = "non-throwing";
-                fnThrowing = "throwing";
-              }
-
-              USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
-              USR_FATAL_CONT(fn, "overridden by %s function '%s'",
-                             fnThrowing, toString(fn));
-              USR_STOP();
-
-            } else {
-
-              {
-                Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
-                if (!fns) fns = new Vec<FnSymbol*>();
-                fns->add(fn);
-                virtualChildrenMap.put(pfn, fns);
-                fn->addFlag(FLAG_VIRTUAL);
-                pfn->addFlag(FLAG_VIRTUAL);
-              }
-
-              {
-                Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
-                if (!fns) fns = new Vec<FnSymbol*>();
-                bool added = false;
-
-                //
-                // check if parent or child already exists in vector
-                //
-                for (int i = 0; i < fns->n; i++) {
-                  //
-                  // if parent already exists, do not add child to vector
-                  //
-                  if (isVirtualChild(pfn, fns->v[i])) {
-                    added = true;
-                    break;
-                  }
-
-                  //
-                  // if child already exists, replace with parent
-                  //
-                  if (isVirtualChild(fns->v[i], pfn)) {
-                    fns->v[i] = pfn;
-                    added = true;
-                    break;
-                  }
-                }
-
-                if (!added)
-                  fns->add(pfn);
-
-                virtualRootsMap.put(fn, fns);
-              }
-            }
-          }
+          resolveOverride(pfn, fn);
         }
       }
     }
@@ -360,6 +243,152 @@ static void collectMethods(FnSymbol*               pfn,
     }
 
     fromType = fromType->instantiatedFrom;
+  }
+}
+
+static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
+  bool retval = true;
+
+  if (fn->name != gn->name) {
+    retval = false;
+
+  } else if (fn->numFormals() != gn->numFormals()) {
+    retval = false;
+
+  } else {
+    for (int i = 3; i <= fn->numFormals() && retval == true; i++) {
+      ArgSymbol* fa = fn->getFormal(i);
+      ArgSymbol* ga = gn->getFormal(i);
+
+      if (strcmp(fa->name, ga->name) != 0) {
+        retval = false;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void resolveOverride(FnSymbol* pfn, FnSymbol* fn) {
+  resolveSignature(fn);
+
+  if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
+    resolveFunction(fn);
+
+    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
+        pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      AggregateType* fnRetType  = toAggregateType(fn->retType);
+      IteratorInfo*  fnInfo     = fnRetType->iteratorInfo;
+      AggregateType* pfnRetType = toAggregateType(pfn->retType);
+      IteratorInfo*  pfnInfo    = pfnRetType->iteratorInfo;
+
+      if (!isSubType(fnInfo->getValue->retType,
+                     pfnInfo->getValue->retType)) {
+        USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
+                       pfnInfo->getValue->retType->symbol->name);
+
+        USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
+                       fnInfo->getValue->retType->symbol->name);
+        USR_STOP();
+
+      } else {
+        pfn->retType->dispatchChildren.add_exclusive(fn->retType);
+        fn->retType->dispatchParents.add_exclusive(pfn->retType);
+        Type* pic = pfnInfo->iclass;
+        Type* ic = fnInfo->iclass;
+        INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
+
+        Type* thisType = fnInfo->iterator->_this->typeInfo();
+        Type* pthisType = pfnInfo->iterator->_this->typeInfo();
+        INT_ASSERT(thisType->dispatchParents.n == 1);
+        if (thisType->dispatchParents.only() == pthisType) {
+          // Iterator classes are created as normal top-level classes
+          // (inheriting from dtObject).  Here, we want to re-parent
+          // ic with pic, so we need to remove and replace the
+          // object base class.  We only want to make this change
+          // if the class this iterator is defined in is a direct
+          // subclass of the class the parent iterator is defined
+          // in - e.g. a child, but not a grandchild.
+          INT_ASSERT(ic->dispatchParents.n == 1);
+          Type* parent = ic->dispatchParents.only();
+          if (parent == dtObject)
+          {
+            int item = parent->dispatchChildren.index(ic);
+            parent->dispatchChildren.remove(item);
+            ic->dispatchParents.remove(0);
+          }
+          pic->dispatchChildren.add_exclusive(ic);
+          ic->dispatchParents.add_exclusive(pic);
+        }
+      }
+
+    } else if (!isSubType(fn->retType, pfn->retType)) {
+      USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
+      USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
+      USR_STOP();
+
+    } else if (fn->throwsError() != pfn->throwsError()) {
+      USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
+      const char* pfnThrowing = NULL;
+      const char* fnThrowing = NULL;
+
+      if (pfn->throwsError()) {
+        pfnThrowing = "throwing";
+        fnThrowing = "non-throwing";
+      } else {
+        pfnThrowing = "non-throwing";
+        fnThrowing = "throwing";
+      }
+
+      USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
+      USR_FATAL_CONT(fn, "overridden by %s function '%s'",
+                     fnThrowing, toString(fn));
+      USR_STOP();
+
+    } else {
+
+      {
+        Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
+        if (!fns) fns = new Vec<FnSymbol*>();
+        fns->add(fn);
+        virtualChildrenMap.put(pfn, fns);
+        fn->addFlag(FLAG_VIRTUAL);
+        pfn->addFlag(FLAG_VIRTUAL);
+      }
+
+      {
+        Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
+        if (!fns) fns = new Vec<FnSymbol*>();
+        bool added = false;
+
+        //
+        // check if parent or child already exists in vector
+        //
+        for (int i = 0; i < fns->n; i++) {
+          //
+          // if parent already exists, do not add child to vector
+          //
+          if (isVirtualChild(pfn, fns->v[i])) {
+            added = true;
+            break;
+          }
+
+          //
+          // if child already exists, replace with parent
+          //
+          if (isVirtualChild(fns->v[i], pfn)) {
+            fns->v[i] = pfn;
+            added = true;
+            break;
+          }
+        }
+
+        if (!added)
+          fns->add(pfn);
+
+        virtualRootsMap.put(fn, fns);
+      }
+    }
   }
 }
 
@@ -623,27 +652,6 @@ static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
   }
 
   return false;
-}
-
-static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
-  if (fn->name != gn->name) {
-    return false;
-  }
-
-  if (fn->numFormals() != gn->numFormals()) {
-    return false;
-  }
-
-  for (int i = 3; i <= fn->numFormals(); i++) {
-    ArgSymbol* fa = fn->getFormal(i);
-    ArgSymbol* ga = gn->getFormal(i);
-
-    if (strcmp(fa->name, ga->name)) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 /************************************* | **************************************
