@@ -1535,11 +1535,11 @@ void runClang(const char* just_parse_filename) {
     args.push_back(clang_opt);
 
   if (specializeCCode &&
-      CHPL_TARGET_ARCH != NULL &&
-      CHPL_TARGET_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_ARCH, "none")) {
+      CHPL_TARGET_ARCH_ARG != NULL &&
+      CHPL_TARGET_ARCH_ARG[0] != '\0' &&
+      0 != strcmp(CHPL_TARGET_ARCH_ARG, "none")) {
     std::string march = "-march=";
-    march += CHPL_TARGET_ARCH;
+    march += CHPL_TARGET_ARCH_ARG;
     args.push_back(march);
   }
 

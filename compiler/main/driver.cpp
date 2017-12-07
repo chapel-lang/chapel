@@ -67,6 +67,8 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
+const char* CHPL_RUNTIME_ARCH = NULL;
+const char* CHPL_TARGET_ARCH_ARG = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -1039,7 +1041,7 @@ static void printStuff(const char* argv0) {
     printf("CHPL_RUNTIME_INCL: %s\n", CHPL_RUNTIME_INCL);
     printf("CHPL_THIRD_PARTY: %s\n", CHPL_THIRD_PARTY);
     printf("\n");
-    snprintf(buf, FILENAME_MAX, "%s/util/printchplenv", CHPL_HOME);
+    snprintf(buf, FILENAME_MAX, "%s/util/printchplenv --all", CHPL_HOME);
     int status = mysystem(buf, "running printchplenv", false);
     clean_exit(status);
   }
@@ -1131,6 +1133,8 @@ static void setChapelEnvs() {
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
   CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
+  CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
+  CHPL_TARGET_ARCH_ARG = envMap["CHPL_TARGET_ARCH_ARG"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
@@ -1149,8 +1153,8 @@ static void setChapelEnvs() {
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
 
-  CHPL_RUNTIME_SUBDIR  = envMap["CHPL_MAKE_RUNTIME_SUBDIR"];
-  CHPL_LAUNCHER_SUBDIR = envMap["CHPL_MAKE_LAUNCHER_SUBDIR"];
+  CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
+  CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
