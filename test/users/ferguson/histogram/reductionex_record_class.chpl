@@ -30,7 +30,13 @@ record Test {
     }
 
     proc generate() {
-      return h;
+      const result = h;
+      h = nil; // giving up ownership - do not delete in deinit()
+      return result;
+    }
+
+    proc deinit() {
+      delete h;
     }
   }
 
@@ -50,3 +56,4 @@ var test   = new Test(16, 16000:uint(64), 0:uint(64));
 var counts = test.reduceit(array);
 
 writeln(counts);
+delete counts;
