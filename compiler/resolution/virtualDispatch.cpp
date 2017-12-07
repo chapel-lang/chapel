@@ -184,14 +184,13 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
   collectMethods(pfn, ct, methods);
 
   for_vector(FnSymbol, cfn, methods) {
-    if (cfn != NULL && cfn->instantiatedFrom == NULL) {
+    if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+      addToVirtualMaps(pfn, ct, cfn, ct);
+
+    } else {
       std::vector<AggregateType*> types;
 
-      if (ct->symbol->hasFlag(FLAG_GENERIC)) {
-        collectInstantiatedAggregateTypes(types, ct);
-      } else {
-        types.push_back(ct);
-      }
+      collectInstantiatedAggregateTypes(types, ct);
 
       forv_Vec(AggregateType, type, types) {
         addToVirtualMaps(pfn, ct, cfn, type);
@@ -206,9 +205,8 @@ static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* type) {
   SymbolMap subs;
 
-  if (ct->symbol->hasFlag(FLAG_GENERIC) ||
-      cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC)) {
-    // instantiateSignature handles subs from formal to a type
+  if (ct->symbol->hasFlag(FLAG_GENERIC)                      == true ||
+      cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
     subs.put(cfn->getFormal(2), type->symbol);
   }
 
@@ -217,7 +215,8 @@ static void addToVirtualMaps(FnSymbol*      pfn,
 
     if (arg->intent == INTENT_PARAM) {
       subs.put(arg, paramMap.get(pfn->getFormal(i)));
-    } else if (arg->type->symbol->hasFlag(FLAG_GENERIC)) {
+
+    } else if (arg->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       subs.put(arg, pfn->getFormal(i)->type->symbol);
     }
   }
