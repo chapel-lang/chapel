@@ -127,10 +127,6 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
 
-static void collectInstantiatedAggregateTypes(
-                                        std::vector<AggregateType*>& icts,
-                                        AggregateType*               at);
-
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
 static bool isSubType(Type* sub, Type* super);
@@ -179,6 +175,7 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 }
 
 static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
+  FnSymbol*              typeConstr = ct->defaultTypeConstructor;
   std::vector<FnSymbol*> methods;
 
   collectMethods(pfn, ct, methods);
@@ -188,12 +185,16 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
       addToVirtualMaps(pfn, ct, cfn, ct);
 
     } else {
-      std::vector<AggregateType*> types;
-
-      collectInstantiatedAggregateTypes(types, ct);
-
-      forv_Vec(AggregateType, type, types) {
-        addToVirtualMaps(pfn, ct, cfn, type);
+      forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+        if (AggregateType* at = toAggregateType(ts->type)) {
+          if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
+            if (typeConstrOther->instantiatedFrom == typeConstr) {
+              if (ts->hasFlag(FLAG_GENERIC) == false) {
+                addToVirtualMaps(pfn, ct, cfn, at);
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -594,28 +595,6 @@ static void printDispatchInfo() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-//
-// add to vector icts all types instantiated from ct
-//
-static void collectInstantiatedAggregateTypes(
-                                        std::vector<AggregateType*>& icts,
-                                        AggregateType*               at) {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (AggregateType* instanceT = toAggregateType(ts->type)) {
-
-      if (FnSymbol* fn = instanceT->defaultTypeConstructor) {
-        if (ts->hasFlag(FLAG_GENERIC) == false &&
-            fn->instantiatedFrom      == at->defaultTypeConstructor) {
-          icts.push_back(instanceT);
-
-          INT_ASSERT(isInstantiation(instanceT, at));
-          INT_ASSERT(instanceT->instantiatedFrom == at);
-        }
-      }
-    }
-  }
-}
 
 // removes entries in virtualChildrenMap that are not in virtualMethodTable.
 // such entries could not be called and should be dead-code eliminated.
