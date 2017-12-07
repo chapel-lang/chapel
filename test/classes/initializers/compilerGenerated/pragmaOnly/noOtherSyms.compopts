@@ -1,0 +1,3 @@
+ # noOtherSyms.good
+--force-initializers
+--no-force-initializers

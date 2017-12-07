@@ -1,0 +1,1 @@
+basic_check_record.chpl:2: error: cannot apply 'use default init' to symbol 'LotsOFields', not a class definition
