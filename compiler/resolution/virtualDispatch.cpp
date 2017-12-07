@@ -133,6 +133,12 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
 
 static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn);
 
+static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn);
+
+static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn);
+
+static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
+
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
 static bool isSubType(Type* sub, Type* super);
@@ -287,82 +293,55 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
   return retval;
 }
 
-static void resolveOverride(FnSymbol* pfn, FnSymbol* fn) {
-  resolveSignature(fn);
+static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
+  resolveSignature(cfn);
 
-  if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
-    resolveFunction(fn);
+  if (signatureMatch(pfn, cfn) == true && evaluateWhereClause(cfn) == true) {
+    resolveFunction(cfn);
 
-    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true &&
+    if (cfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true &&
         pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
-      overrideIterator(pfn, fn);
+      overrideIterator(pfn, cfn);
 
-    } else if (!isSubType(fn->retType, pfn->retType)) {
-      USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
-      USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
+    } else if (isSubType(cfn->retType, pfn->retType) == false) {
+      USR_FATAL_CONT(pfn,
+                     "conflicting return type specified for '%s: %s'",
+                     toString(pfn),
+                     pfn->retType->symbol->name);
+
+      USR_FATAL_CONT(cfn,
+                     "  overridden by '%s: %s'",
+                     toString(cfn),
+                     cfn->retType->symbol->name);
+
       USR_STOP();
 
-    } else if (fn->throwsError() != pfn->throwsError()) {
-      USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
+    } else if (cfn->throwsError() != pfn->throwsError()) {
       const char* pfnThrowing = NULL;
-      const char* fnThrowing = NULL;
+      const char* cfnThrowing = NULL;
 
       if (pfn->throwsError()) {
         pfnThrowing = "throwing";
-        fnThrowing = "non-throwing";
+        cfnThrowing = "non-throwing";
+
       } else {
         pfnThrowing = "non-throwing";
-        fnThrowing = "throwing";
+        cfnThrowing = "throwing";
       }
 
-      USR_FATAL_CONT(pfn, "%s function '%s'",pfnThrowing,toString(pfn));
-      USR_FATAL_CONT(fn, "overridden by %s function '%s'",
-                     fnThrowing, toString(fn));
+      USR_FATAL_CONT(cfn, "conflicting throws for '%s'", toString(cfn));
+
+      USR_FATAL_CONT(pfn, "%s function '%s'", pfnThrowing, toString(pfn));
+
+      USR_FATAL_CONT(cfn,
+                     "overridden by %s function '%s'",
+                     cfnThrowing,
+                     toString(cfn));
+
       USR_STOP();
 
     } else {
-
-      {
-        Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
-        if (!fns) fns = new Vec<FnSymbol*>();
-        fns->add(fn);
-        virtualChildrenMap.put(pfn, fns);
-        fn->addFlag(FLAG_VIRTUAL);
-        pfn->addFlag(FLAG_VIRTUAL);
-      }
-
-      {
-        Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
-        if (!fns) fns = new Vec<FnSymbol*>();
-        bool added = false;
-
-        //
-        // check if parent or child already exists in vector
-        //
-        for (int i = 0; i < fns->n; i++) {
-          //
-          // if parent already exists, do not add child to vector
-          //
-          if (isVirtualChild(pfn, fns->v[i])) {
-            added = true;
-            break;
-          }
-
-          //
-          // if child already exists, replace with parent
-          //
-          if (isVirtualChild(fns->v[i], pfn)) {
-            fns->v[i] = pfn;
-            added = true;
-            break;
-          }
-        }
-
-        if (!added)
-          fns->add(pfn);
-
-        virtualRootsMap.put(fn, fns);
-      }
+      virtualDispatchUpdate(pfn, cfn);
     }
   }
 }
@@ -416,8 +395,94 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
                    "  overridden by '%s: %s'",
                    toString(cfn),
                    cfnInfo->getValue->retType->symbol->name);
+
     USR_STOP();
   }
+}
+
+static bool isSubType(Type* sub, Type* super) {
+  bool retval = false;
+
+  if (sub == super) {
+    retval = true;
+
+  } else {
+    forv_Vec(Type, parent, sub->dispatchParents) {
+      if (isSubType(parent, super) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static void virtualDispatchUpdate(FnSymbol* pfn, FnSymbol* cfn) {
+  cfn->addFlag(FLAG_VIRTUAL);
+  pfn->addFlag(FLAG_VIRTUAL);
+
+  // There is the potential for a data dependency between these
+  virtualDispatchUpdateChildren(pfn, cfn);
+  virtualDispatchUpdateRoots(pfn, cfn);
+}
+
+static void virtualDispatchUpdateChildren(FnSymbol* pfn, FnSymbol* cfn) {
+  Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
+
+  if (fns == NULL) {
+    fns = new Vec<FnSymbol*>();
+  }
+
+  fns->add(cfn);
+
+  virtualChildrenMap.put(pfn, fns);
+}
+
+static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn) {
+  Vec<FnSymbol*>* fns = virtualRootsMap.get(cfn);
+
+  if (fns == NULL) {
+    fns = new Vec<FnSymbol*>();
+
+    fns->add(pfn);
+
+  } else {
+    bool added = false;
+
+    // check if parent or child already exists in vector
+    for (int i = 0; i < fns->n && added == false; i++) {
+      if (isVirtualChild(pfn, fns->v[i]) == true) {
+        added = true;
+
+      } else if (isVirtualChild(fns->v[i], pfn) == true) {
+        fns->v[i] = pfn;
+        added     = true;
+      }
+    }
+
+    if (added == false) {
+      fns->add(pfn);
+    }
+  }
+
+  virtualRootsMap.put(cfn, fns);
+}
+
+// return true if child overrides parent in dispatch table
+static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
+  bool retval = false;
+
+  if (Vec<FnSymbol*>* children = virtualChildrenMap.get(parent)) {
+    forv_Vec(FnSymbol*, candidateChild, *children) {
+      if (candidateChild == child) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 static void clearRootsAndChildren() {
@@ -645,21 +710,6 @@ static void filterVirtualChildren() {
   }
 }
 
-//
-// return true if child overrides parent in dispatch table
-//
-static bool isVirtualChild(FnSymbol* child, FnSymbol* parent) {
-  if (Vec<FnSymbol*>* children = virtualChildrenMap.get(parent)) {
-    forv_Vec(FnSymbol*, candidateChild, *children) {
-      if (candidateChild == child) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 /************************************* | **************************************
 *                                                                             *
 * At this point calls to class methods have been resolved to the most         *
@@ -728,24 +778,3 @@ static bool wasSuperDot(CallExpr* call) {
 
   return retval;
 }
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isSubType(Type* sub, Type* super) {
-  if (sub == super)
-    return true;
-
-  forv_Vec(Type, parent, sub->dispatchParents) {
-    if (isSubType(parent, super))
-      return true;
-  }
-
-  return false;
-}
-
-
-
