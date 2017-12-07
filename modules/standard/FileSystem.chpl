@@ -1351,25 +1351,12 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): syserr;
 
+  // If one of the files references a null file, exit early to avoid segfault.
+  file1.check(error);
+  file2.check(error);
+  if error then return false;
+
   var ret:c_int;
-  if (is_c_nil(file1._file_internal) || is_c_nil(file2._file_internal)) {
-    // Implementation note on program design tradeoffs:
-    // I could use file.check() here.  That would not rely on the understanding
-    // of file's internals.  However, it would cause this method to either
-    // return error messages or halt, depending on the error encountered.
-    // This check could be moved to the version w/o the err argument, but if
-    // someone called this function w/o going through that, we'd lose the
-    // check.  Also, we already must make use of the record internals to do the
-    // inner comparison (since the record is a chapel construct), so there's no
-    // additional harm.
-
-    // The file is referencing a null file.  We'll get a segfault if we
-    // continue.
-    error = EBADF;
-    return false; // This part isn't as important as the error.
-  }
-
-
   error = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
   return ret != 0;
 }

@@ -1385,8 +1385,10 @@ proc file._style:iostyle throws {
 proc file.close(out error:syserr) {
   check(error);
 
-  on this.home {
-    error = qio_file_close(_file_internal);
+  if !error {
+    on this.home {
+      error = qio_file_close(_file_internal);
+    }
   }
 }
 
@@ -1416,8 +1418,10 @@ This function will typically call the ``fsync`` system call.
 proc file.fsync(out error:syserr) {
   check(error);
 
-  on this.home {
-    error = qio_file_sync(_file_internal);
+  if !error {
+    on this.home {
+      error = qio_file_sync(_file_internal);
+    }
   }
 }
 
@@ -1448,17 +1452,20 @@ to get the path to a file.
 proc file.getPath(out error:syserr) : string {
   check(error);
 
-  var ret: string;
-  on this.home {
-    var tmp:c_string_copy;
-    var tmp2:c_string_copy;
-    error = qio_file_path(_file_internal, tmp);
-    if !error {
-      error = qio_shortest_path(_file_internal, tmp2, tmp);
+  var ret: string = "unknown";
+  if !error {
+    on this.home {
+      var tmp:c_string_copy;
+      var tmp2:c_string_copy;
+      error = qio_file_path(_file_internal, tmp);
+      if !error {
+        error = qio_shortest_path(_file_internal, tmp2, tmp);
+      }
+      chpl_free_c_string_copy(tmp);
+      if !error {
+        ret = new string(tmp2, needToCopy=false);
+      }
     }
-    chpl_free_c_string_copy(tmp);
-    ret = if error then "unknown"
-                   else new string(tmp2, needToCopy=false);
   }
   return ret;
 }
@@ -1471,12 +1478,7 @@ a problem getting the path to the open file.
 */
 proc file.tryGetPath() : string {
   var err:syserr = ENOERR;
-  var ret:string;
-  try! {
-    ret = this.getPath(err);
-  } catch e: SystemError {
-    err = EBADF;
-  }
+  var ret = this.getPath(err);
 
   if err then return "unknown";
   else return ret;
@@ -2416,7 +2418,14 @@ proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, pa
   if error then
     return new channel(writing=false, kind=kind, locking=locking);
 
-  var reader = fl.reader(error=error, kind, locking, start, end, hints, fl._style);
+  var fl_style: iostyle;
+  try! {
+    fl_style = fl._style;
+  } catch e: SystemError {
+    error = e.err;
+  }
+
+  var reader = fl.reader(error=error, kind, locking, start, end, hints, fl_style);
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
   // and not having any handles attached to it, it will close the underlying file for the channel.
@@ -2481,7 +2490,15 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
   var fl:file = open(error=error, path, iomode.cw, url=url);
   if error then
     return new channel(writing=true, kind=kind, locking=locking);
-  var writer = fl.writer(error=error, kind, locking, start, end, hints, fl._style);
+
+  var fl_style: iostyle;
+  try! {
+    fl_style = fl._style;
+  } catch e: SystemError {
+    error = e.err;
+  }
+
+  var writer = fl.writer(error=error, kind, locking, start, end, hints, fl_style);
   // Need to look at this some more and verify it:
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
