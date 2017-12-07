@@ -1723,6 +1723,10 @@ bool AggregateType::needsConstructor() {
   if (isRecord() || isUnion())
     return true;
 
+  // We don't want a default constructor if the type has been explicitly marked
+  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
+    return false;
+
   ModuleSymbol* mod = getModule();
 
   // For now, always generate a default constructor for types in the internal
@@ -1790,11 +1794,16 @@ bool AggregateType::parentDefinesInitializer() {
 // Some cases are temporarily false, while others are permanently so: we never
 // want to generate a default initializer for a type that has defined an
 // explicit initializer or constructor, and we don't want to generate a default
-// initializer if --force-initializers has not been thrown (currently).
+// initializer if --force-initializers has not been thrown (currently), unless
+// the pragma "use default init" has been applied
 //
 // Note that this method does not generate the opposite of needsConstructor -
 // when the type has defined an initializer both methods will return false.
 bool AggregateType::wantsDefaultInitializer() {
+  // We want a default initializer if the type has been explicitly marked
+  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
+    return true;
+
   // For now, no default initializers for library and internal types
   ModuleSymbol* mod = getModule();
   if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD)
@@ -2016,6 +2025,12 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
       USR_FATAL(fn,
                 "a%s cannot be declared without parentheses",
                 isCtor ? " constructor" : "n initializer");
+    }
+
+    if (ct->symbol->hasFlag(FLAG_USE_DEFAULT_INIT)) {
+      USR_FATAL_CONT(fn, "cannot apply 'use default init' to type '%s', it"
+                     " defines a%s here", ct->symbol->name,
+                     isCtor ? " constructor" : "n initializer");
     }
 
     if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
