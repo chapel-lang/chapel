@@ -184,19 +184,30 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 }
 
 static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  FnSymbol* typeConstr = ct->defaultTypeConstructor;
+  if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+    FnSymbol* typeConstr = ct->defaultTypeConstructor;
 
-  if (typeConstr->isResolved()          == true ||
-      typeConstr->hasFlag(FLAG_GENERIC) == true) {
-    std::vector<FnSymbol*> methods;
+    if (typeConstr->isResolved()          == true ||
+        typeConstr->hasFlag(FLAG_GENERIC) == true) {
+      std::vector<FnSymbol*> methods;
 
-    collectMethods(pfn, ct, methods);
+      collectMethods(pfn, ct, methods);
 
-    for_vector(FnSymbol, cfn, methods) {
-      if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+      for_vector(FnSymbol, cfn, methods) {
         addToVirtualMaps(pfn, ct, cfn, ct);
+      }
+    }
 
-      } else {
+  } else {
+    FnSymbol* typeConstr = ct->defaultTypeConstructor;
+
+    if (typeConstr->isResolved()          == true ||
+        typeConstr->hasFlag(FLAG_GENERIC) == true) {
+      std::vector<FnSymbol*> methods;
+
+      collectMethods(pfn, ct, methods);
+
+      for_vector(FnSymbol, cfn, methods) {
         forv_Vec(AggregateType, at, gAggregateTypes) {
           if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
             if (typeConstrOther->instantiatedFrom == typeConstr) {
