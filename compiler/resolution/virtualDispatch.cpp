@@ -206,22 +206,19 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
           }
         }
 
-        FnSymbol* fn = cfn;
+        if (subs.n == 0) {
+          resolveOverride(pfn, cfn);
 
-        if (subs.n) {
-          fn = instantiate(fn, subs);
-
-          if (fn) {
-            if (type->defaultTypeConstructor->instantiationPoint)
+        } else {
+          if (FnSymbol* fn = instantiate(cfn, subs)) {
+            if (type->defaultTypeConstructor->instantiationPoint) {
               fn->instantiationPoint = type->defaultTypeConstructor->instantiationPoint;
-            else
+            } else {
               fn->instantiationPoint = toBlockStmt(type->defaultTypeConstructor->defPoint->parentExpr);
-            INT_ASSERT(fn->instantiationPoint);
-          }
-        }
+            }
 
-        if (fn) {
-          resolveOverride(pfn, fn);
+            resolveOverride(pfn, fn);
+          }
         }
       }
     }
