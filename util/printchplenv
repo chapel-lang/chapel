@@ -196,13 +196,13 @@ def populate_values():
 """Return True if veriable is set by user through environment or chplconfig"""
 def user_set(env):
     env_set = overrides.get_environ(env, '')
-    config_set = overrides.get_chplconfig(env, '')
+    config_set = overrides.get_chplconfig(env.strip(), '')
     return (env_set or config_set)
 
 
 """Filter variables that are not user set"""
 def filter_overrides(chpl_env):
-    return user_set(x)
+    return user_set(chpl_env.name)
 
 
 """Filter variables irrelevant to configuration for --tidy flag"""
@@ -294,7 +294,7 @@ def printchplenv(contents, print_filters=['tidy'], print_format='pretty', recurs
             this_dir = os.path.realpath(os.path.dirname(__file__))
             ret.append("script location: {0}\n".format(this_dir))
         elif print_format == 'simple':
-            print_env('CHPL_HOME', ENV_VALS['CHPL_HOME'])
+            ret.append(print_env('CHPL_HOME', ENV_VALS['CHPL_HOME']))
 
     # Print environment variables and their values
     for env in envs:
