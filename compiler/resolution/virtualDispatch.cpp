@@ -111,7 +111,13 @@ void resolveDynamicDispatches() {
 
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct);
 
-static void addToVirtualMaps   (FnSymbol* pfn, AggregateType* ct);
+static void addToVirtualMaps(FnSymbol*      pfn,
+                             AggregateType* ct);
+
+static void addToVirtualMaps(FnSymbol*      pfn,
+                             AggregateType* ct,
+                             FnSymbol*      cfn,
+                             AggregateType* type);
 
 static void collectMethods(FnSymbol*               pfn,
                            AggregateType*          ct,
@@ -188,42 +194,49 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
       }
 
       forv_Vec(AggregateType, type, types) {
-        SymbolMap subs;
-
-        if (ct->symbol->hasFlag(FLAG_GENERIC) ||
-            cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC)) {
-          // instantiateSignature handles subs from formal to a type
-          subs.put(cfn->getFormal(2), type->symbol);
-        }
-
-        for (int i = 3; i <= cfn->numFormals(); i++) {
-          ArgSymbol* arg = cfn->getFormal(i);
-
-          if (arg->intent == INTENT_PARAM) {
-            subs.put(arg, paramMap.get(pfn->getFormal(i)));
-          } else if (arg->type->symbol->hasFlag(FLAG_GENERIC)) {
-            subs.put(arg, pfn->getFormal(i)->type->symbol);
-          }
-        }
-
-        if (subs.n == 0) {
-          resolveOverride(pfn, cfn);
-
-        } else {
-          if (FnSymbol* fn = instantiate(cfn, subs)) {
-            FnSymbol*  typeConstr         = type->defaultTypeConstructor;
-            BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
-
-            if (instantiationPoint == NULL) {
-              instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
-            }
-
-            fn->instantiationPoint = instantiationPoint;
-
-            resolveOverride(pfn, fn);
-          }
-        }
+        addToVirtualMaps(pfn, ct, cfn, type);
       }
+    }
+  }
+}
+
+static void addToVirtualMaps(FnSymbol*      pfn,
+                             AggregateType* ct,
+                             FnSymbol*      cfn,
+                             AggregateType* type) {
+  SymbolMap subs;
+
+  if (ct->symbol->hasFlag(FLAG_GENERIC) ||
+      cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC)) {
+    // instantiateSignature handles subs from formal to a type
+    subs.put(cfn->getFormal(2), type->symbol);
+  }
+
+  for (int i = 3; i <= cfn->numFormals(); i++) {
+    ArgSymbol* arg = cfn->getFormal(i);
+
+    if (arg->intent == INTENT_PARAM) {
+      subs.put(arg, paramMap.get(pfn->getFormal(i)));
+    } else if (arg->type->symbol->hasFlag(FLAG_GENERIC)) {
+      subs.put(arg, pfn->getFormal(i)->type->symbol);
+    }
+  }
+
+  if (subs.n == 0) {
+    resolveOverride(pfn, cfn);
+
+  } else {
+    if (FnSymbol* fn = instantiate(cfn, subs)) {
+      FnSymbol*  typeConstr         = type->defaultTypeConstructor;
+      BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
+
+      if (instantiationPoint == NULL) {
+        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
+      }
+
+      fn->instantiationPoint = instantiationPoint;
+
+      resolveOverride(pfn, fn);
     }
   }
 }
