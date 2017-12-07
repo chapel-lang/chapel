@@ -59,10 +59,13 @@ static child type could end up calling something in the parent.
 
 bool                            inDynamicDispatchResolution = false;
 
-Map<FnSymbol*, int>             virtualMethodMap;
-Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
-Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
 Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
+
+Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;
+
+Map<Type*,     Vec<FnSymbol*>*> virtualMethodTable;
+
+Map<FnSymbol*, int>             virtualMethodMap;
 
 static bool buildVirtualMaps();
 
@@ -109,7 +112,8 @@ void resolveDynamicDispatches() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct);
+static void addAllToVirtualMaps(FnSymbol*      pfn,
+                                AggregateType* pct);
 
 static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct);
@@ -163,10 +167,7 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
     AggregateType* ct = toAggregateType(t);
 
     if (ct->defaultTypeConstructor != NULL) {
-      if (ct->defaultTypeConstructor->isResolved()          == true ||
-          ct->defaultTypeConstructor->hasFlag(FLAG_GENERIC) == true) {
-        addToVirtualMaps(pfn, ct);
-      }
+      addToVirtualMaps(pfn, ct);
     }
 
     // Recurse over this child's children
@@ -175,21 +176,25 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 }
 
 static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  FnSymbol*              typeConstr = ct->defaultTypeConstructor;
-  std::vector<FnSymbol*> methods;
+  FnSymbol* typeConstr = ct->defaultTypeConstructor;
 
-  collectMethods(pfn, ct, methods);
+  if (typeConstr->isResolved()          == true ||
+      typeConstr->hasFlag(FLAG_GENERIC) == true) {
+    std::vector<FnSymbol*> methods;
 
-  for_vector(FnSymbol, cfn, methods) {
-    if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
-      addToVirtualMaps(pfn, ct, cfn, ct);
+    collectMethods(pfn, ct, methods);
 
-    } else {
-      forv_Vec(AggregateType, at, gAggregateTypes) {
-        if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
-          if (typeConstrOther->instantiatedFrom == typeConstr) {
-            if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-              addToVirtualMaps(pfn, ct, cfn, at);
+    for_vector(FnSymbol, cfn, methods) {
+      if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+        addToVirtualMaps(pfn, ct, cfn, ct);
+
+      } else {
+        forv_Vec(AggregateType, at, gAggregateTypes) {
+          if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
+            if (typeConstrOther->instantiatedFrom == typeConstr) {
+              if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
+                addToVirtualMaps(pfn, ct, cfn, at);
+              }
             }
           }
         }
