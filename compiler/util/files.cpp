@@ -636,7 +636,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
   {
     if(!useDefaultEnv(env->first)) {
-      chplmakeallvars += env->first + "=" + std::string(env->second) + " ";
+      chplmakeallvars += env->first + "='" + std::string(env->second) + "' ";
     }
   }
 
