@@ -131,6 +131,8 @@ static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn);
 
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn);
 
+static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn);
+
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
 static bool isSubType(Type* sub, Type* super);
@@ -291,52 +293,9 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* fn) {
   if (signatureMatch(pfn, fn) && evaluateWhereClause(fn)) {
     resolveFunction(fn);
 
-    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-        pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      AggregateType* fnRetType  = toAggregateType(fn->retType);
-      IteratorInfo*  fnInfo     = fnRetType->iteratorInfo;
-      AggregateType* pfnRetType = toAggregateType(pfn->retType);
-      IteratorInfo*  pfnInfo    = pfnRetType->iteratorInfo;
-
-      if (!isSubType(fnInfo->getValue->retType,
-                     pfnInfo->getValue->retType)) {
-        USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn),
-                       pfnInfo->getValue->retType->symbol->name);
-
-        USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn),
-                       fnInfo->getValue->retType->symbol->name);
-        USR_STOP();
-
-      } else {
-        pfn->retType->dispatchChildren.add_exclusive(fn->retType);
-        fn->retType->dispatchParents.add_exclusive(pfn->retType);
-        Type* pic = pfnInfo->iclass;
-        Type* ic = fnInfo->iclass;
-        INT_ASSERT(ic->symbol->hasFlag(FLAG_ITERATOR_CLASS));
-
-        Type* thisType = fnInfo->iterator->_this->typeInfo();
-        Type* pthisType = pfnInfo->iterator->_this->typeInfo();
-        INT_ASSERT(thisType->dispatchParents.n == 1);
-        if (thisType->dispatchParents.only() == pthisType) {
-          // Iterator classes are created as normal top-level classes
-          // (inheriting from dtObject).  Here, we want to re-parent
-          // ic with pic, so we need to remove and replace the
-          // object base class.  We only want to make this change
-          // if the class this iterator is defined in is a direct
-          // subclass of the class the parent iterator is defined
-          // in - e.g. a child, but not a grandchild.
-          INT_ASSERT(ic->dispatchParents.n == 1);
-          Type* parent = ic->dispatchParents.only();
-          if (parent == dtObject)
-          {
-            int item = parent->dispatchChildren.index(ic);
-            parent->dispatchChildren.remove(item);
-            ic->dispatchParents.remove(0);
-          }
-          pic->dispatchChildren.add_exclusive(ic);
-          ic->dispatchParents.add_exclusive(pic);
-        }
-      }
+    if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true &&
+        pfn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
+      overrideIterator(pfn, fn);
 
     } else if (!isSubType(fn->retType, pfn->retType)) {
       USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
@@ -405,6 +364,59 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* fn) {
         virtualRootsMap.put(fn, fns);
       }
     }
+  }
+}
+
+static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
+  AggregateType* pfnRetType = toAggregateType(pfn->retType);
+  IteratorInfo*  pfnInfo    = pfnRetType->iteratorInfo;
+  FnSymbol*      pfnValue   = pfnInfo->getValue;
+
+  AggregateType* cfnRetType = toAggregateType(cfn->retType);
+  IteratorInfo*  cfnInfo    = cfnRetType->iteratorInfo;
+  FnSymbol*      cfnValue   = cfnInfo->getValue;
+
+  if (isSubType(cfnValue->retType, pfnValue->retType) == true) {
+    Type* pic       = pfnInfo->iclass;
+    Type* cic       = cfnInfo->iclass;
+
+    Type* pthisType  = pfnInfo->iterator->_this->typeInfo();
+    Type* cthisType  = cfnInfo->iterator->_this->typeInfo();
+
+    pfn->retType->dispatchChildren.add_exclusive(cfn->retType);
+    cfn->retType->dispatchParents.add_exclusive(pfn->retType);
+
+    INT_ASSERT(cic->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true);
+    INT_ASSERT(cthisType->dispatchParents.n              == 1);
+
+    if (cthisType->dispatchParents.only() == pthisType) {
+      Type* parent = cic->dispatchParents.only();
+
+      INT_ASSERT(cic->dispatchParents.n == 1);
+
+      if (parent == dtObject) {
+        int item = parent->dispatchChildren.index(cic);
+
+        parent->dispatchChildren.remove(item);
+
+        cic->dispatchParents.remove(0);
+      }
+
+      pic->dispatchChildren.add_exclusive(cic);
+      cic->dispatchParents.add_exclusive(pic);
+    }
+
+  } else {
+    USR_FATAL_CONT(pfn,
+                   "conflicting return type specified for '%s: %s'",
+                   toString(pfn),
+                   pfnInfo->getValue->retType->symbol->name);
+
+    USR_FATAL_CONT(cfn,
+                   "  overridden by '%s: %s'",
+                   toString(cfn),
+                   cfnInfo->getValue->retType->symbol->name);
+    USR_STOP();
   }
 }
 
