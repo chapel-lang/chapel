@@ -1076,6 +1076,11 @@ bool useDefaultEnv(std::string key) {
     }
   }
 
+  // Always use default env for internal variables that could include spaces
+  if (key == "CHPL_THIRD_PARTY_LINK_ARGS") {
+    return true;
+  }
+
   return false;
 }
 
