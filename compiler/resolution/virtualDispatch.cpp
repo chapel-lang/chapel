@@ -268,13 +268,14 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
                   }
                   pic->dispatchChildren.add_exclusive(ic);
                   ic->dispatchParents.add_exclusive(pic);
-                  continue; // do not add to virtualChildrenMap; handle in _getIterator
                 }
               }
+
             } else if (!isSubType(fn->retType, pfn->retType)) {
               USR_FATAL_CONT(pfn, "conflicting return type specified for '%s: %s'", toString(pfn), pfn->retType->symbol->name);
               USR_FATAL_CONT(fn, "  overridden by '%s: %s'", toString(fn), fn->retType->symbol->name);
               USR_STOP();
+
             } else if (fn->throwsError() != pfn->throwsError()) {
               USR_FATAL_CONT(fn, "conflicting throws for '%s'", toString(fn));
               const char* pfnThrowing = NULL;
@@ -292,47 +293,50 @@ static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
               USR_FATAL_CONT(fn, "overridden by %s function '%s'",
                              fnThrowing, toString(fn));
               USR_STOP();
-            }
 
-            {
-              Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
-              if (!fns) fns = new Vec<FnSymbol*>();
-              fns->add(fn);
-              virtualChildrenMap.put(pfn, fns);
-              fn->addFlag(FLAG_VIRTUAL);
-              pfn->addFlag(FLAG_VIRTUAL);
-            }
-            {
-              Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
-              if (!fns) fns = new Vec<FnSymbol*>();
-              bool added = false;
+            } else {
 
-              //
-              // check if parent or child already exists in vector
-              //
-              for (int i = 0; i < fns->n; i++) {
-                //
-                // if parent already exists, do not add child to vector
-                //
-                if (isVirtualChild(pfn, fns->v[i])) {
-                  added = true;
-                  break;
-                }
+              {
+                Vec<FnSymbol*>* fns = virtualChildrenMap.get(pfn);
+                if (!fns) fns = new Vec<FnSymbol*>();
+                fns->add(fn);
+                virtualChildrenMap.put(pfn, fns);
+                fn->addFlag(FLAG_VIRTUAL);
+                pfn->addFlag(FLAG_VIRTUAL);
+              }
+
+              {
+                Vec<FnSymbol*>* fns = virtualRootsMap.get(fn);
+                if (!fns) fns = new Vec<FnSymbol*>();
+                bool added = false;
 
                 //
-                // if child already exists, replace with parent
+                // check if parent or child already exists in vector
                 //
-                if (isVirtualChild(fns->v[i], pfn)) {
+                for (int i = 0; i < fns->n; i++) {
+                  //
+                  // if parent already exists, do not add child to vector
+                  //
+                  if (isVirtualChild(pfn, fns->v[i])) {
+                    added = true;
+                    break;
+                  }
+
+                  //
+                  // if child already exists, replace with parent
+                  //
+                  if (isVirtualChild(fns->v[i], pfn)) {
                     fns->v[i] = pfn;
                     added = true;
                     break;
+                  }
                 }
+
+                if (!added)
+                  fns->add(pfn);
+
+                virtualRootsMap.put(fn, fns);
               }
-
-              if (!added)
-                fns->add(pfn);
-
-              virtualRootsMap.put(fn, fns);
             }
           }
         }
