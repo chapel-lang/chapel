@@ -1,0 +1,3 @@
+ # basic_check_record.good
+--force-initializers
+--no-force-initializers

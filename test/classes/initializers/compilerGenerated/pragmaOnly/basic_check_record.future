@@ -1,0 +1,5 @@
+unimplemented feature: support default initializers on records
+
+Currently, we're limiting default initializers to classes only until we have
+them under control for that case.  We definitely intend to allow them on records
+eventually, though.

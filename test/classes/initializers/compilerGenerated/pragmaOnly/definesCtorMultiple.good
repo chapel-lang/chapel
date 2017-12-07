@@ -1,0 +1,2 @@
+definesCtorMultiple.chpl:6: error: cannot apply 'use default init' to type 'Foo', it defines a constructor here
+definesCtorMultiple.chpl:10: error: cannot apply 'use default init' to type 'Foo', it defines a constructor here

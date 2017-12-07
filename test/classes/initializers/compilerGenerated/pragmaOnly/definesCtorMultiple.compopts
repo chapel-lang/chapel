@@ -1,0 +1,3 @@
+ # definesCtorMultiple.good
+--force-initializers
+--no-force-initializers
