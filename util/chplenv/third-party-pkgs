@@ -54,7 +54,7 @@ for dir in third_party_pkgs:
         f.close()
 
 printchplenv = chpl_home+'/util/printchplenv'
-chplenv=subprocess.Popen([printchplenv, '--simple'],
+chplenv=subprocess.Popen([printchplenv, '--simple', '--all', '--anonymize'],
                          stdout=subprocess.PIPE).communicate()[0].decode()
 
 pkgs=''

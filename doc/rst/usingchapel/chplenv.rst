@@ -713,6 +713,11 @@ Below is an example of a Chapel configuration file with comments:
     CHPL_GMP=system
 
 
+To confirm the configuration file is written correctly, you can run
+``printchplenv --overrides``, which will show a list of variables that are
+currently being overridden. Values followed by a
+``+`` have been overridden by the Chapel configuration file, whereas
+values followed by a ``*`` have been overridden by an environment variable.
 
 Generating Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -721,11 +726,10 @@ Generating Configuration Files
 To generate a configuration file, use ``printchplenv`` or
 ``./configure``.
 
-When using ``printchplenv``, run it with ``--simple`` or
-``--overrides`` to get a format compatible with Chapel configuration
-files.
+When using ``printchplenv``, run it with the ``--simple`` format flag to get a
+format compatible with Chapel configuration files.
 
-The ``printchplenv --overrides`` flag can be used to print the variables
+The ``--overrides`` filter flag can be used to print only the variables
 currently overridden by either environment variables or Chapel
 configuration file.
 
@@ -733,14 +737,14 @@ For example, to save the current overrides into a Chapel configuration file:
 
 .. code-block:: sh
 
-    printchplenv --overrides > ~/.chplconfig
+    printchplenv --all --simple --overrides > ~/.chplconfig
 
-The ``printchplenv --simple`` flag can be used to print all the variables
+The ``printchplenv --all --simple`` flag can be used to print all the variables
 of the current configuration. For example:
 
 .. code-block:: sh
 
-    printchplenv --simple > ~/.chplconfig
+    printchplenv --all --simple > ~/.chplconfig
 
 
 Alternatively, the ``./configure`` script will generate a ``chplconfig``

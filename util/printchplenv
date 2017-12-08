@@ -62,7 +62,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER'           , {'internal'} , ''),
     ChapelEnv('CHPL_TARGET_ARCH'                    , {'runtime'}  , 'arch'),
     # TODO: runtime?
-    ChapelEnv('CHPL_RUNTIME_ARCH'                   , {'internal'}  , ''), 
+    ChapelEnv('CHPL_RUNTIME_ARCH'                   , {'internal'}  , ''),
     ChapelEnv('CHPL_TARGET_ARCH_ARG'                , {'internal'}  , ''),
     ChapelEnv('CHPL_LOCALE_MODEL'                   , {'runtime', 'launcher'}  , 'loc'),
     ChapelEnv('CHPL_COMM'                           , {'runtime', 'launcher'}  , 'comm'),
@@ -225,20 +225,14 @@ def filter_path(chpl_env):
 """Return string to be printed for a given variable and print_format"""
 def print_var(env_var, value, print_format=None, shortname=None):
     env = env_var.strip()
-    env_set = overrides.get_environ(env, '')
-    config_set = overrides.get_chplconfig(env, '')
-    user_set = ''
-    if env_set:
-        user_set = ' *'
-    elif config_set:
-        user_set = ' +'
-
     if print_format == 'pretty':
-        if user_set:
+        user_set = ''
+
+        if overrides.get_environ(env, ''):
           user_set = ' *'
-        else:
-          if user_set:
-            user_set = ' +'
+        elif overrides.get_chplconfig(env, ''):
+          user_set = ' +'
+
         return "{1}: {2}{0}\n".format(user_set, env_var, value)
     elif print_format == 'simple':
         return "{0}={1}\n".format(env, value)

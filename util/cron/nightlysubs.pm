@@ -131,7 +131,7 @@ sub endMailChplenv {
     if (exists($ENV{"CHPL_HOME"})) {
         $ch = $ENV{"CHPL_HOME"};
     }
-    my $chplenv = `$ch/util/printchplenv --debug --anonymize`;
+    my $chplenv = `$ch/util/printchplenv --all --anonymize`;
 
     my $mystr =
         "===============================================================\n" .
