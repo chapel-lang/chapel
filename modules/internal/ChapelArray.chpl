@@ -1108,16 +1108,32 @@ module ChapelArray {
       compilerError("associative domains do not support .stridable");
     }
 
-    pragma "no doc"
-    inline proc these() {
-      return _value.these();
+    iter these() ref {
+      for i in _value.these() {
+        yield i;
+      }
+    }
+    iter these(param tag: iterKind) ref
+      where tag == iterKind.standalone &&
+            __primitive("method call resolves", _value, "these", tag=tag) {
+      for i in _value.these(tag) do
+        yield i;
+    }
+    iter these(param tag: iterKind)
+      where tag == iterKind.leader {
+      // If I use forall here, it says
+      //   error: user invocation of a parallel iterator should not supply tag
+      //   arguments -- they are added implicitly by the compiler
+      for followThis in _value.these(tag) do
+        yield followThis;
+    }
+    iter these(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      for i in _value.these(tag, followThis) do
+        yield i;
     }
 
-    pragma "no doc"
-    inline proc these(param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) &&
-        __primitive("method call resolves", _value, "these", tag=tag)
-      return _value.these(tag=tag);
+
 
     // see comments for the same method in _array
     //
