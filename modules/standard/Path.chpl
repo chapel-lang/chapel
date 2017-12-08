@@ -204,14 +204,10 @@ proc file.realPath(): string throws {
 
    var ret: string = "unknown";
    if !error {
-     writeln("passed check");
      var tmp: string;
      tmp = this.realPath(error);
-     //if !error then
-     if !error {
-       writeln("passed realPath");
+     if !error then
        ret = dirname(new string(tmp));
-     }
    }
    return ret;
  }
