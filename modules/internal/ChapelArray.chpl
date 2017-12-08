@@ -2303,16 +2303,27 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
 
-    pragma "no doc"
-    inline proc these() {
-      return _value.these();
+    iter these() ref {
+      for i in _value.these() {
+        yield i;
+      }
     }
-
-    pragma "no doc"
-    inline proc these(param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) &&
-        __primitive("method call resolves", _value, "these", tag=tag)
-      return _value.these(tag=tag);
+    iter these(param tag: iterKind) ref
+      where tag == iterKind.standalone &&
+            __primitive("method call resolves", _value, "these", tag=tag) {
+      for i in _value.these(tag) do
+        yield i;
+    }
+    iter these(param tag: iterKind)
+      where tag == iterKind.leader {
+      for followThis in _value.these(tag) do
+        yield followThis;
+    }
+    iter these(param tag: iterKind, followThis) ref
+      where tag == iterKind.follower {
+      for i in _value.these(tag, followThis) do
+        yield i;
+    }
 
     // 1/5/10: do we need this since it always returns domain.numIndices?
     /* Return the number of elements in the array */
