@@ -2567,8 +2567,10 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
   check(error);
 
   var ret:channel(false, kind, locking);
-  on this.home {
-    ret = new channel(false, kind, locking, this, error, hints, start, end, style);
+  if !error {
+    on this.home {
+      ret = new channel(false, kind, locking, this, error, hints, start, end, style);
+    }
   }
   return ret;
 }
@@ -2597,9 +2599,11 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, 
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
 
-  on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
-    ret = new ItemReader(string, kind, locking, ch);
+  if !error {
+    on this.home {
+      var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
+      ret = new ItemReader(string, kind, locking, ch);
+    }
   }
   return ret;
 }
@@ -2666,9 +2670,11 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) {
   check(error);
 
-  var ret:channel(true, kind, locking);
-  on this.home {
-    ret = new channel(true, kind, locking, this, error, hints, start, end, style);
+  if !error {
+    var ret:channel(true, kind, locking);
+    on this.home {
+      ret = new channel(true, kind, locking, this, error, hints, start, end, style);
+    }
   }
   return ret;
 }
