@@ -2310,11 +2310,14 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
 
+    pragma "reference to const when const this"
     iter these() ref {
       for i in _value.these() {
         yield i;
       }
     }
+
+    pragma "reference to const when const this"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
@@ -2326,6 +2329,7 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
+    pragma "reference to const when const this"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
 
