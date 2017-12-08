@@ -809,6 +809,8 @@ miniMD:
     - RVF reference fields with record-wrapped type (#4925)
   03/10/17:
     - Three way refpair (#5561)
+  12/05/17:
+    - Enforce qualified refs after inlining (#7906)
 
 miniMD.ml-time:
   09/14/17:
@@ -887,6 +889,8 @@ prk-stencil.ml-perf:
     - Optimize updateFluff (#6418)
   07/26/17:
     - Update PR 5296 (#6722)
+  12/02/17:
+    - Stop doing a task-yield while forking remote tasks under ugni (#7915)
 
 prk-stencil-time:
   05/11/17:
@@ -1071,6 +1075,8 @@ thread-ring:
       config: chap03
   03/21/17:
     - Limit the maximum size of qthreads memory pools to 65MB (#5748)
+  12/05/17:
+    - Enforce qualified refs after inlining (#7906)
 
 time_array_vs_ddata:
   05/31/14:
@@ -1123,6 +1129,8 @@ timeVectorArray:
     - Resolve timeVectorArray regressions (#7333)
   09/20/17:
     - Resolve push_back / pop_front regressions w/ inline (#7397)
+  12/05/17:
+    - Enforce qualified refs after inlining (#7906)
 
 views-forall-iter:
   10/12/17:
