@@ -1108,12 +1108,14 @@ module ChapelArray {
       compilerError("associative domains do not support .stridable");
     }
 
-    iter these() ref {
+    // if this is ref, a coforall over these doesn't copy the
+    // index variable appropriately (iterations are sharing the value)
+    iter these() /*ref*/ {
       for i in _value.these() {
         yield i;
       }
     }
-    iter these(param tag: iterKind) ref
+    iter these(param tag: iterKind) /*ref*/
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
       for i in _value.these(tag) do
@@ -1127,7 +1129,7 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
-    iter these(param tag: iterKind, followThis) ref
+    iter these(param tag: iterKind, followThis) /*ref*/
       where tag == iterKind.follower {
       for i in _value.these(tag, followThis) do
         yield i;
