@@ -5,7 +5,7 @@ use Cwd 'abs_path';
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
-my $env = `$ENV{CHPL_HOME}/util/printchplenv --all --simple`;
+my $env = `$ENV{CHPL_HOME}/util/printchplenv --all --simple --no-tidy`;
 my @lines = split(/\n/, $env);
 for my $line (@lines) {
   $line =~ s/export\s+//;

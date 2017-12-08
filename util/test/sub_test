@@ -257,7 +257,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
     if os.access(f, os.X_OK):
         try:
             # grab the chplenv so it can be stuffed into the subprocess env
-            env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple']
+            env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy']
             chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
             chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
             file_env = os.environ.copy()

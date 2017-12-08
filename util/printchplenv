@@ -55,46 +55,46 @@ ChapelEnv = namedtuple('ChapelEnv', ['name', 'content', 'shortname'])
 
 # Global ordered list that stores names, content-categorys, and shortnames
 CHPL_ENVS = [
-    ChapelEnv('CHPL_HOST_PLATFORM'                  , {'compiler'} , ''),
-    ChapelEnv('CHPL_HOST_COMPILER'                  , {'compiler'} , ''),
-    ChapelEnv('CHPL_TARGET_PLATFORM'                , {'runtime', 'launcher'}  , ''),
-    ChapelEnv('CHPL_TARGET_COMPILER'                , {'runtime', 'launcher'}  , ''),
-    ChapelEnv('CHPL_ORIG_TARGET_COMPILER'           , {'internal'} , ''),
-    ChapelEnv('CHPL_TARGET_ARCH'                    , {'runtime'}  , 'arch'),
+    ChapelEnv('CHPL_HOST_PLATFORM'                  , set(['compiler']) , ''),
+    ChapelEnv('CHPL_HOST_COMPILER'                  , set(['compiler']) , ''),
+    ChapelEnv('CHPL_TARGET_PLATFORM'                , set(['runtime', 'launcher'])  , ''),
+    ChapelEnv('CHPL_TARGET_COMPILER'                , set(['runtime', 'launcher'])  , ''),
+    ChapelEnv('CHPL_ORIG_TARGET_COMPILER'           , set(['internal']) , ''),
+    ChapelEnv('CHPL_TARGET_ARCH'                    , set(['runtime'])  , 'arch'),
     # TODO: runtime?
-    ChapelEnv('CHPL_RUNTIME_ARCH'                   , {'internal'}  , ''),
-    ChapelEnv('CHPL_TARGET_ARCH_ARG'                , {'internal'}  , ''),
-    ChapelEnv('CHPL_LOCALE_MODEL'                   , {'runtime', 'launcher'}  , 'loc'),
-    ChapelEnv('CHPL_COMM'                           , {'runtime', 'launcher'}  , 'comm'),
-    ChapelEnv('  CHPL_COMM_SUBSTRATE'               , {'runtime', 'launcher'}  , ''),
-    ChapelEnv('  CHPL_GASNET_SEGMENT'               , {'runtime', 'launcher'}  , ''),
-    ChapelEnv('CHPL_TASKS'                          , {'runtime', 'launcher'}  , 'tasks'),
-    ChapelEnv('CHPL_LAUNCHER'                       , {'launcher'} , 'launch'),
-    ChapelEnv('CHPL_TIMERS'                         , {'runtime', 'launcher'}  , 'tmr'),
-    ChapelEnv('CHPL_UNWIND'                         , {'runtime', 'launcher'}  , 'unwind'),
-    ChapelEnv('CHPL_HOST_MEM'                       , {'internal'} , 'hostmem'),
-    ChapelEnv('CHPL_TARGET_MEM'                     , {'internal'} , 'tgtmem'),
-    ChapelEnv('CHPL_MEM'                            , {'runtime', 'launcher'}  , 'mem'),
-    ChapelEnv('  CHPL_JEMALLOC'                     , {'internal'} , 'jemalloc'),
-    ChapelEnv('CHPL_MAKE'                           , {'runtime'}  , 'make'),
-    ChapelEnv('CHPL_ATOMICS'                        , {'runtime', 'launcher'}  , 'atomics'),
-    ChapelEnv('  CHPL_NETWORK_ATOMICS'              , {'runtime'}  , ''),
-    ChapelEnv('CHPL_GMP'                            , {'runtime'}  , 'gmp'),
-    ChapelEnv('CHPL_HWLOC'                          , {'runtime'}  , ''),
-    ChapelEnv('CHPL_REGEXP'                         , {'runtime'}  , ''),
-    ChapelEnv('CHPL_LLVM'                           , {'compiler'} , 'llvm'),
-    ChapelEnv('CHPL_AUX_FILESYS'                    , {'runtime'}  , 'fs'),
-    ChapelEnv('CHPL_RUNTIME_SUBDIR'                 , {'internal'} , ''),
-    ChapelEnv('CHPL_LAUNCHER_SUBDIR'                , {'internal'} , ''),
-    ChapelEnv('CHPL_COMPILER_SUBDIR'                , {'internal'} , ''),
-    ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH'            , {'internal'} , ''),
-    ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH'          , {'internal'} , ''),
-    ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH'       , {'internal'} , ''),
-    ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH'      , {'internal'} , ''),
-    ChapelEnv('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH' , {'internal'} , ''),
-    ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH'        , {'internal'} , ''),
-    ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH'            , {'internal'} , ''),
-    ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS'        , {'internal'} , ''),
+    ChapelEnv('CHPL_RUNTIME_ARCH'                   , set(['internal'])  , ''),
+    ChapelEnv('CHPL_TARGET_ARCH_ARG'                , set(['internal'])  , ''),
+    ChapelEnv('CHPL_LOCALE_MODEL'                   , set(['runtime', 'launcher'])  , 'loc'),
+    ChapelEnv('CHPL_COMM'                           , set(['runtime', 'launcher'])  , 'comm'),
+    ChapelEnv('  CHPL_COMM_SUBSTRATE'               , set(['runtime', 'launcher'])  , ''),
+    ChapelEnv('  CHPL_GASNET_SEGMENT'               , set(['runtime', 'launcher'])  , ''),
+    ChapelEnv('CHPL_TASKS'                          , set(['runtime', 'launcher'])  , 'tasks'),
+    ChapelEnv('CHPL_LAUNCHER'                       , set(['launcher']) , 'launch'),
+    ChapelEnv('CHPL_TIMERS'                         , set(['runtime', 'launcher'])  , 'tmr'),
+    ChapelEnv('CHPL_UNWIND'                         , set(['runtime', 'launcher'])  , 'unwind'),
+    ChapelEnv('CHPL_HOST_MEM'                       , set(['internal']) , 'hostmem'),
+    ChapelEnv('CHPL_TARGET_MEM'                     , set(['internal']) , 'tgtmem'),
+    ChapelEnv('CHPL_MEM'                            , set(['runtime', 'launcher'])  , 'mem'),
+    ChapelEnv('  CHPL_JEMALLOC'                     , set(['internal']) , 'jemalloc'),
+    ChapelEnv('CHPL_MAKE'                           , set(['runtime'])  , 'make'),
+    ChapelEnv('CHPL_ATOMICS'                        , set(['runtime', 'launcher'])  , 'atomics'),
+    ChapelEnv('  CHPL_NETWORK_ATOMICS'              , set(['runtime'])  , ''),
+    ChapelEnv('CHPL_GMP'                            , set(['runtime'])  , 'gmp'),
+    ChapelEnv('CHPL_HWLOC'                          , set(['runtime'])  , ''),
+    ChapelEnv('CHPL_REGEXP'                         , set(['runtime'])  , ''),
+    ChapelEnv('CHPL_LLVM'                           , set(['compiler']) , 'llvm'),
+    ChapelEnv('CHPL_AUX_FILESYS'                    , set(['runtime'])  , 'fs'),
+    ChapelEnv('CHPL_RUNTIME_SUBDIR'                 , set(['internal']) , ''),
+    ChapelEnv('CHPL_LAUNCHER_SUBDIR'                , set(['internal']) , ''),
+    ChapelEnv('CHPL_COMPILER_SUBDIR'                , set(['internal']) , ''),
+    ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH'            , set(['internal']) , ''),
+    ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH'          , set(['internal']) , ''),
+    ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH'       , set(['internal']) , ''),
+    ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH'      , set(['internal']) , ''),
+    ChapelEnv('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH' , set(['internal']) , ''),
+    ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH'        , set(['internal']) , ''),
+    ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH'            , set(['internal']) , ''),
+    ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS'        , set(['internal']) , ''),
 ]
 
 # Global map of environment variable names to values
@@ -155,9 +155,9 @@ def populate_values():
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
 
-    ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv({'runtime'}, print_format='path', recursive=True).rstrip('\n')
-    ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv({'launcher'}, print_format='path', recursive=True).rstrip('\n')
-    ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv({'compiler'}, print_format='path', recursive=True).rstrip('\n')
+    ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path', recursive=True).rstrip('\n')
+    ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path', recursive=True).rstrip('\n')
+    ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path', recursive=True).rstrip('\n')
 
     link_args_3p = []
 
