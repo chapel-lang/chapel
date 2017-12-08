@@ -1127,10 +1127,17 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
-    iter these(param tag: iterKind, followThis)
+    iter these(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
-      for i in _value.these(tag, followThis) do
-        yield i;
+
+      if __primitive("method call resolves", _value, "these",
+                     tag=tag, followThis, fast=fast) {
+        for i in _value.these(tag=tag, followThis, fast=fast) do
+          yield i;
+      } else {
+        for i in _value.these(tag, followThis) do
+          yield i;
+      }
     }
 
 
@@ -2319,10 +2326,17 @@ module ChapelArray {
       for followThis in _value.these(tag) do
         yield followThis;
     }
-    iter these(param tag: iterKind, followThis) ref
+    iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
-      for i in _value.these(tag, followThis) do
-        yield i;
+
+      if __primitive("method call resolves", _value, "these",
+                     tag=tag, followThis, fast=fast) {
+        for i in _value.these(tag=tag, followThis, fast=fast) do
+          yield i;
+      } else {
+        for i in _value.these(tag, followThis) do
+          yield i;
+      }
     }
 
     // 1/5/10: do we need this since it always returns domain.numIndices?
