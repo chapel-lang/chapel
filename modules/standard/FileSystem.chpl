@@ -1353,6 +1353,7 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
 
   // If one of the files references a null file, exit early to avoid segfault.
   file1.check(error);
+  if error then return false;
   file2.check(error);
   if error then return false;
 

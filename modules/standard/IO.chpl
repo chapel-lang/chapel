@@ -1309,11 +1309,13 @@ proc file.check() throws {
 
 /* Return a syserr through out error if a file is invalid */
 proc file.check(out error:syserr) {
+  var err: syserr = ENOERR;
   try! {
     check();
   } catch e: SystemError {
-    error = e.err;
+    err = e.err;
   }
+  error = err;
 }
 
 pragma "no doc"
