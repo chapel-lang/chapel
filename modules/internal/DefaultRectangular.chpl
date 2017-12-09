@@ -843,10 +843,15 @@ module DefaultRectangular {
     var RADLocks: [targetLocDom] atomicbool; // only accessed locally
                                              // force processor atomics
 
-    proc LocRADCache(type eltType, param rank: int, type idxType,
-                     param stridable: bool, newTargetLocDom: domain(rank)) {
+    proc init(type eltType, param rank: int, type idxType,
+              param stridable: bool, newTargetLocDom: domain(rank)) {
+      this.eltType = eltType;
+      this.rank = rank;
+      this.idxType = idxType;
+      this.stridable = stridable;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
+      super.init();
     }
 
     // These functions must always be called locally, because the lock
