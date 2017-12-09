@@ -3,13 +3,15 @@ use ExampleErrors;
 class MyError : Error {
   var msg:string = "";
   var x = 1;
-  proc MyError(x:int) {
+  proc init(x:int) {
     this.msg = x:string;
     this.x = x;
+    super.init();
   }
-  proc MyError(msg:string) {
+  proc init(msg:string) {
     this.msg = msg;
     this.x = 1;
+    super.init();
   }
 }
 
