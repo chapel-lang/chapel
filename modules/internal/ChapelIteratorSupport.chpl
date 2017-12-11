@@ -112,6 +112,7 @@ module ChapelIteratorSupport {
   }
 
   pragma "suppress lvalue error"
+  pragma "fn returns aliasing array"
   inline proc _getIterator(x) {
     return _getIterator(x.these());
   }
@@ -119,18 +120,22 @@ module ChapelIteratorSupport {
   inline proc _getIterator(ic: _iteratorClass)
     return ic;
 
+  pragma "fn returns aliasing array"
   proc _getIterator(type t) {
     return _getIterator(t.these());
   }
 
+  pragma "fn returns aliasing array"
   inline proc _getIteratorZip(x) {
     return _getIterator(x);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _getIteratorZip(type t) {
     return _getIterator(t);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _getIteratorZip(x: _tuple) {
     inline proc _getIteratorZipInternal(x: _tuple, param dim: int) {
       if dim == x.size then
@@ -144,6 +149,7 @@ module ChapelIteratorSupport {
       return _getIteratorZipInternal(x, 1);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _getIteratorZip(type t: _tuple) {
     inline proc _getIteratorZipInternal(type t: _tuple, param dim: int) {
       var x : t; //have to make an instance of the tuple to query the size
@@ -169,9 +175,11 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "fn returns aliasing array"
   inline proc _toLeader(iterator: _iteratorClass)
     return chpl__autoCopy(__primitive("to leader", iterator));
 
+  pragma "fn returns aliasing array"
   inline proc _toLeader(ir: _iteratorRecord) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var leader = _toLeader(ic);
@@ -180,19 +188,24 @@ module ChapelIteratorSupport {
   }
 
   pragma "suppress lvalue error"
+  pragma "fn returns aliasing array"
   inline proc _toLeader(x)
     return _toLeader(x.these());
 
+  pragma "fn returns aliasing array"
   inline proc _toLeaderZip(x)
     return _toLeader(x);
 
+  pragma "fn returns aliasing array"
   inline proc _toLeaderZip(x: _tuple)
     return _toLeader(x(1));
 
   pragma "no implicit copy"
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(iterator: _iteratorClass)
     return chpl__autoCopy(__primitive("to standalone", iterator));
 
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(ir: _iteratorRecord) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var standalone = _toStandalone(ic);
@@ -201,6 +214,7 @@ module ChapelIteratorSupport {
   }
 
   pragma "suppress lvalue error"
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(x) {
     return _toStandalone(x.these());
   }
@@ -215,10 +229,12 @@ module ChapelIteratorSupport {
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toLeader(iterator: _iteratorClass, args...)
     return chpl__autoCopy(__primitive("to leader", iterator, (...args)));
 
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toLeader(ir: _iteratorRecord, args...) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var leader = _toLeader(ic, (...args));
@@ -228,23 +244,28 @@ module ChapelIteratorSupport {
 
   pragma "suppress lvalue error"
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toLeader(x, args...)
     return _toLeader(x.these(), (...args));
 
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toLeaderZip(x, args...)
     return _toLeader(x, (...args));
 
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toLeaderZip(x: _tuple, args...)
     return _toLeader(x(1), (...args));
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(iterator: _iteratorClass, args...)
     return chpl__autoCopy(__primitive("to standalone", iterator, (...args)));
 
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(ir: _iteratorRecord, args...) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var standalone = _toStandalone(ic, (...args));
@@ -254,6 +275,7 @@ module ChapelIteratorSupport {
 
   pragma "suppress lvalue error"
   pragma "expand tuples with values"
+  pragma "fn returns aliasing array"
   inline proc _toStandalone(x, args...) {
     return _toStandalone(x.these(), (...args));
   }
@@ -332,9 +354,11 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "fn returns aliasing array"
   inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex));
 
+  pragma "fn returns aliasing array"
   inline proc _toFollower(ir: _iteratorRecord, leaderIndex) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var follower = _toFollower(ic, leaderIndex);
@@ -343,18 +367,22 @@ module ChapelIteratorSupport {
   }
 
   pragma "suppress lvalue error"
+  pragma "fn returns aliasing array"
   inline proc _toFollower(x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFollowerZip(x, leaderIndex) {
     return _toFollower(x, leaderIndex);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFollowerZip(x: _tuple, leaderIndex) {
     return _toFollowerZipInternal(x, leaderIndex, 1);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size then
       return (_toFollower(x(dim), leaderIndex),);
@@ -364,10 +392,12 @@ module ChapelIteratorSupport {
   }
 
   pragma "no implicit copy"
+  pragma "fn returns aliasing array"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
     return chpl__autoCopy(__primitive("to follower", iterator, leaderIndex, true));
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFastFollower(ir: _iteratorRecord, leaderIndex, fast: bool) {
     pragma "no copy" var ic = _getIterator(ir);
     pragma "no copy" var follower = _toFastFollower(ic, leaderIndex, fast=true);
@@ -375,6 +405,7 @@ module ChapelIteratorSupport {
     return follower;
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFastFollower(x, leaderIndex) {
     if chpl__staticFastFollowCheck(x) then
       return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
@@ -382,14 +413,17 @@ module ChapelIteratorSupport {
       return _toFollower(_getIterator(x), leaderIndex);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFastFollowerZip(x, leaderIndex) {
     return _toFastFollower(x, leaderIndex);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
     return _toFastFollowerZip(x, leaderIndex, 1);
   }
 
+  pragma "fn returns aliasing array"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
     if dim == x.size-1 then
       return (_toFastFollowerZip(x(dim), leaderIndex),

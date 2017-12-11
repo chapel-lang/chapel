@@ -477,7 +477,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           // TODO: Should we check if the RHS is a symbol with
           // 'no auto destroy' on it? If it is, then we'd be copying
           // the RHS and it would never be destroyed...
-          if (rhsType->symbol->hasFlag(FLAG_ARRAY) == true &&
+          if ((rhsType->symbol->hasFlag(FLAG_ARRAY) == true ||
+               rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) &&
               isTypeExpr(call->get(2))             == false) {
             Expr*      rhs       = call->get(2)->remove();
             VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);

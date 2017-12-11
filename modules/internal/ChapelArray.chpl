@@ -3953,6 +3953,16 @@ module ChapelArray {
     return ret;
   }
 
+  pragma "no copy return"
+  pragma "unref fn"
+  proc chpl__unref(ir: _iteratorRecord) {
+    pragma "no auto destroy"
+    pragma "no copy"
+    var toArray = chpl__initCopy(ir); // call iterator -> array copy fn
+    return toArray;
+  }
+
+
   // Intended to return whatever it gets without copying
   // Not marked with "unref fn" because this version shouldn't
   // actually remain in the AST - it's just added temporarily
