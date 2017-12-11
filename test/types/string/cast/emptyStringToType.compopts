@@ -2,4 +2,6 @@
 -st=int      # emptyStringToInt.good
 -st=uint     # emptyStringToUint.good
 -st=bool     # emptyStringToBool.good
+-st=imag     # emptyStringToImag.good
 -st=complex  # emptyStringToComplex.good
+-st=color    # emptyStringToEnum.good

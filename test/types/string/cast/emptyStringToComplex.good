@@ -1,1 +1,1 @@
-emptyStringToType.chpl:4: error: Empty string when converting from string to complex(128)
+emptyStringToType.chpl:6: error: Empty string when converting from string to complex(128)

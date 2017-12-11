@@ -1,1 +1,1 @@
-emptyStringToType.chpl:4: error: halt reached - Unexpected value when converting from string to bool: ''
+emptyStringToType.chpl:6: error: halt reached - Unexpected value when converting from string to bool: ''
