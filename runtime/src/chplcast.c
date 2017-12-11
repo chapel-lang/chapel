@@ -356,9 +356,14 @@ _define_string_to_type(uint, 64)
                                            int32_t filename) {         \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _##base##width val = c_string_to_##base##width##_precise(str,       \
-                                                             &invalid, \
-                                                             invalidStr); \
+    _##base##width val;                                                 \
+    if (!str) {                                                         \
+      invalid = 1;                                                      \
+    } else {                                                            \
+      val = c_string_to_##base##width##_precise(str,                    \
+                                                &invalid,               \
+                                                invalidStr);            \
+    }                                                                   \
     if (invalid) {                                                      \
       const char* message;                                              \
       if (invalid == 2) {                                               \
