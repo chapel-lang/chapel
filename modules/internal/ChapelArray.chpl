@@ -1108,16 +1108,38 @@ module ChapelArray {
       compilerError("associative domains do not support .stridable");
     }
 
-    pragma "no doc"
-    inline proc these() {
-      return _value.these();
+    iter these() {
+      for i in _value.these() {
+        yield i;
+      }
+    }
+    iter these(param tag: iterKind)
+      where tag == iterKind.standalone &&
+            __primitive("method call resolves", _value, "these", tag=tag) {
+      for i in _value.these(tag) do
+        yield i;
+    }
+    iter these(param tag: iterKind)
+      where tag == iterKind.leader {
+      // If I use forall here, it says
+      //   error: user invocation of a parallel iterator should not supply tag
+      //   arguments -- they are added implicitly by the compiler
+      for followThis in _value.these(tag) do
+        yield followThis;
+    }
+    iter these(param tag: iterKind, followThis, param fast: bool = false)
+      where tag == iterKind.follower {
+
+      if __primitive("method call resolves", _value, "these",
+                     tag=tag, followThis, fast=fast) {
+        for i in _value.these(tag=tag, followThis, fast=fast) do
+          yield i;
+      } else {
+        for i in _value.these(tag, followThis) do
+          yield i;
+      }
     }
 
-    pragma "no doc"
-    inline proc these(param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) &&
-        __primitive("method call resolves", _value, "these", tag=tag)
-      return _value.these(tag=tag);
 
     // see comments for the same method in _array
     //
@@ -2288,16 +2310,38 @@ module ChapelArray {
       return localSlice((...d.getIndices()));
     }
 
-    pragma "no doc"
-    inline proc these() {
-      return _value.these();
+    pragma "reference to const when const this"
+    iter these() ref {
+      for i in _value.these() {
+        yield i;
+      }
     }
 
-    pragma "no doc"
-    inline proc these(param tag) where
-        (tag == iterKind.leader || tag == iterKind.standalone) &&
-        __primitive("method call resolves", _value, "these", tag=tag)
-      return _value.these(tag=tag);
+    pragma "reference to const when const this"
+    iter these(param tag: iterKind) ref
+      where tag == iterKind.standalone &&
+            __primitive("method call resolves", _value, "these", tag=tag) {
+      for i in _value.these(tag) do
+        yield i;
+    }
+    iter these(param tag: iterKind)
+      where tag == iterKind.leader {
+      for followThis in _value.these(tag) do
+        yield followThis;
+    }
+    pragma "reference to const when const this"
+    iter these(param tag: iterKind, followThis, param fast: bool = false) ref
+      where tag == iterKind.follower {
+
+      if __primitive("method call resolves", _value, "these",
+                     tag=tag, followThis, fast=fast) {
+        for i in _value.these(tag=tag, followThis, fast=fast) do
+          yield i;
+      } else {
+        for i in _value.these(tag, followThis) do
+          yield i;
+      }
+    }
 
     // 1/5/10: do we need this since it always returns domain.numIndices?
     /* Return the number of elements in the array */

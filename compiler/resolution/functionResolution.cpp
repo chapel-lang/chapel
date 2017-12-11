@@ -5456,7 +5456,7 @@ static void moveSetFlagsAndCheckForConstAccess(Symbol*   lhsSym,
 
     moveSetFlagsForConstAccess(lhsSym, rhs, baseSym, false);
 
-  } else if (refConstWCT == true) {
+  } else if (refConstWCT == true && !resolvedFn->isIterator()) {
     Symbol* baseSym = getBaseSymForConstCheck(rhs);
 
     if (baseSym->isConstant()               == true ||
