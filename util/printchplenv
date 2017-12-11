@@ -76,7 +76,7 @@ def print_mode(mode='list', anonymize=False):
 
         print_var('CHPL_TARGET_PLATFORM', target_platform, mode)
         print_var('CHPL_TARGET_COMPILER', target_compiler, mode)
-        if mode == 'simple' or mode == 'make' or mode == 'debug':
+        if mode == 'simple' or mode == 'make':
           print_var('CHPL_ORIG_TARGET_COMPILER', orig_target_compiler, mode, 'x', (' '))
 
     get_module_lcd = ( chpl_home_utils.using_chapel_module() and
@@ -153,7 +153,7 @@ def print_mode(mode='list', anonymize=False):
     print_var('CHPL_AUX_FILESYS', aux_filesys, mode, 'fs', ('runtime',))
 
     # 'simple' needs these values but not those in the next conditional
-    if m == 'make':
+    if mode == 'make' or mode == 'simple':
         stdout.write('CHPL_MAKE_RUNTIME_SUBDIR=')
         print_mode('runtime')
         stdout.write('CHPL_MAKE_LAUNCHER_SUBDIR=')
