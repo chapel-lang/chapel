@@ -64,45 +64,45 @@ RUNTIME_LAUNCHER = set(['runtime', 'launcher'])
 
 # Global ordered list that stores names, content-categories, and shortnames
 CHPL_ENVS = [
-ChapelEnv('CHPL_HOST_PLATFORM', COMPILER),
-ChapelEnv('CHPL_HOST_COMPILER', COMPILER),
-ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME_LAUNCHER),
-ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME_LAUNCHER),
-ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
-ChapelEnv('CHPL_TARGET_ARCH', RUNTIME, 'arch'),
-ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
-ChapelEnv('CHPL_TARGET_ARCH_ARG', INTERNAL),
-ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME_LAUNCHER, 'loc'),
-ChapelEnv('CHPL_COMM', RUNTIME_LAUNCHER, 'comm'),
-ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME_LAUNCHER),
-ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME_LAUNCHER),
-ChapelEnv('CHPL_TASKS', RUNTIME_LAUNCHER, 'tasks'),
-ChapelEnv('CHPL_LAUNCHER', LAUNCHER, 'launch'),
-ChapelEnv('CHPL_TIMERS', RUNTIME_LAUNCHER, 'tmr'),
-ChapelEnv('CHPL_UNWIND', RUNTIME_LAUNCHER, 'unwind'),
-ChapelEnv('CHPL_HOST_MEM', INTERNAL, 'hostmem'),
-ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
-ChapelEnv('CHPL_MEM', RUNTIME_LAUNCHER, 'mem'),
-ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
-ChapelEnv('CHPL_MAKE', RUNTIME, 'make'),
-ChapelEnv('CHPL_ATOMICS', RUNTIME_LAUNCHER, 'atomics'),
-ChapelEnv('  CHPL_NETWORK_ATOMICS', RUNTIME),
-ChapelEnv('CHPL_GMP', RUNTIME, 'gmp'),
-ChapelEnv('CHPL_HWLOC', RUNTIME),
-ChapelEnv('CHPL_REGEXP', RUNTIME),
-ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),
-ChapelEnv('CHPL_AUX_FILESYS', RUNTIME, 'fs'),
-ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
-ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
-ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
-ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
-ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
-ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
+    ChapelEnv('CHPL_HOST_PLATFORM', COMPILER),
+    ChapelEnv('CHPL_HOST_COMPILER', COMPILER),
+    ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME_LAUNCHER),
+    ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME_LAUNCHER),
+    ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
+    ChapelEnv('CHPL_TARGET_ARCH', RUNTIME, 'arch'),
+    ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
+    ChapelEnv('CHPL_TARGET_BACKEND_ARCH', INTERNAL),
+    ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME_LAUNCHER, 'loc'),
+    ChapelEnv('CHPL_COMM', RUNTIME_LAUNCHER, 'comm'),
+    ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME_LAUNCHER),
+    ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME_LAUNCHER),
+    ChapelEnv('CHPL_TASKS', RUNTIME_LAUNCHER, 'tasks'),
+    ChapelEnv('CHPL_LAUNCHER', LAUNCHER, 'launch'),
+    ChapelEnv('CHPL_TIMERS', RUNTIME_LAUNCHER, 'tmr'),
+    ChapelEnv('CHPL_UNWIND', RUNTIME_LAUNCHER, 'unwind'),
+    ChapelEnv('CHPL_HOST_MEM', INTERNAL, 'hostmem'),
+    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
+    ChapelEnv('CHPL_MEM', RUNTIME_LAUNCHER, 'mem'),
+    ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
+    ChapelEnv('CHPL_MAKE', RUNTIME, 'make'),
+    ChapelEnv('CHPL_ATOMICS', RUNTIME_LAUNCHER, 'atomics'),
+    ChapelEnv('  CHPL_NETWORK_ATOMICS', RUNTIME),
+    ChapelEnv('CHPL_GMP', RUNTIME, 'gmp'),
+    ChapelEnv('CHPL_HWLOC', RUNTIME),
+    ChapelEnv('CHPL_REGEXP', RUNTIME),
+    ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),
+    ChapelEnv('CHPL_AUX_FILESYS', RUNTIME, 'fs'),
+    ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
+    ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
+    ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_MASSIVETHREADS_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
 ]
 
 # Global map of environment variable names to values
@@ -163,7 +163,7 @@ def compute_internal_values():
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
-    ENV_VALS['CHPL_TARGET_ARCH_ARG'] = chpl_arch.get('target',
+    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = chpl_arch.get('target',
             map_to_compiler=True)
 
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
@@ -343,16 +343,16 @@ def parse_args():
 
     #[content]
     parser.set_defaults(content=[])
-    parser.add_option('--compiler',    action='append_const',dest='content', const='compiler')
-    parser.add_option('--runtime',     action='append_const',dest='content', const='runtime')
-    parser.add_option('--launcher',    action='append_const',dest='content', const='launcher')
-    parser.add_option('--internal',    action='append_const',dest='content', const='internal')
+    parser.add_option('--compiler', action='append_const', dest='content', const='compiler')
+    parser.add_option('--runtime', action='append_const', dest='content', const='runtime')
+    parser.add_option('--launcher', action='append_const', dest='content', const='launcher')
+    parser.add_option('--internal', action='append_const', dest='content', const='internal')
 
     #[filter]
     parser.set_defaults(tidy=True)
     parser.set_defaults(filter=[])
-    parser.add_option('--tidy',      action='store_true',   dest='tidy')
-    parser.add_option('--no-tidy',   action='store_false',  dest='tidy')
+    parser.add_option('--tidy', action='store_true', dest='tidy')
+    parser.add_option('--no-tidy', action='store_false', dest='tidy')
     parser.add_option('--anonymize', action='append_const', dest='filter', const='anonymize')
     parser.add_option('--overrides', action='append_const', dest='filter', const='overrides')
 
