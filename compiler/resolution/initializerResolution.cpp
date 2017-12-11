@@ -99,10 +99,7 @@ static void resolveInitCall(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  if (info.isNotWellFormed(call) == true) {
-    info.haltNotWellFormed();
-
-  } else {
+  if (info.isWellFormed(call) == true) {
     Vec<FnSymbol*>            visibleFns;
     Vec<ResolutionCandidate*> candidates;
     ResolutionCandidate*      best        = NULL;
@@ -145,6 +142,9 @@ static void resolveInitCall(CallExpr* call) {
     forv_Vec(ResolutionCandidate*, candidate, candidates) {
       delete candidate;
     }
+
+  } else {
+    info.haltNotWellFormed();
   }
 }
 
@@ -320,24 +320,26 @@ static void makeActualsVector(const CallInfo&          info,
                               std::vector<ArgSymbol*>& actualIdxToFormal);
 
 static void makeRecordInitWrappers(CallExpr* call) {
-  CallInfo                info;
-  std::vector<ArgSymbol*> actualIdxToFormal;
-  FnSymbol*               wrap = NULL;
+  CallInfo info;
 
-  if (info.isNotWellFormed(call) == true) {
+  if (info.isWellFormed(call) == true) {
+    std::vector<ArgSymbol*> actualIdxToFormal;
+    FnSymbol*               wrap = NULL;
+
+    makeActualsVector(info, actualIdxToFormal);
+
+    wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
+                                 info,
+                                 actualIdxToFormal,
+                                 true);
+
+    call->baseExpr->replace(new SymExpr(wrap));
+
+    resolveFunction(wrap);
+
+  } else {
     info.haltNotWellFormed();
   }
-
-  makeActualsVector(info, actualIdxToFormal);
-
-  wrap = wrapAndCleanUpActuals(call->resolvedFunction(),
-                               info,
-                               actualIdxToFormal,
-                               true);
-
-  call->baseExpr->replace(new SymExpr(wrap));
-
-  resolveFunction(wrap);
 }
 
 // Modified version of computeActualFormalAlignment to only populate the
