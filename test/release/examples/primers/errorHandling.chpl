@@ -60,6 +60,7 @@ try {
   types, developers can also create their own hierarchies.
  */
 
+pragma "use default init"
 class EmptyFilenameError : Error { }
 
 proc checkFilename(f_name: string) throws {
