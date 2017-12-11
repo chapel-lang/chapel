@@ -46,14 +46,15 @@ module ChapelError {
     }
 
     pragma "no doc"
-    proc Error(_msg:string) {
+    proc init(_msg:string) {
       _next = nil;
       compilerError("Error constructor accepting a string is no longer available");
     }
 
     /* Construct an Error */
-    proc Error() {
+    proc init() {
       _next = nil;
+      super.init();
     }
 
     /* Override this method to provide an error message
@@ -77,6 +78,7 @@ module ChapelError {
      If a `nil` :class:`Error` is thrown, :class:`NilThrownError`
      will be thrown instead.
    */
+  pragma "use default init"
   class NilThrownError : Error {
     pragma "no doc"
     proc message() {
@@ -142,7 +144,7 @@ module ChapelError {
     var _head: Error = nil;
 
     pragma "no doc"
-    proc TaskErrors(ref group:chpl_TaskErrors) {
+    proc init(ref group:chpl_TaskErrors) {
       var cur:Error = group._head;
       group._head = nil;
       _head = nil;
@@ -188,13 +190,15 @@ module ChapelError {
     }
 
     /* Create a :class:`TaskErrors` containing only the passed error */
-    proc TaskErrors(err: Error) {
+    proc init(err: Error) {
       _head = err;
+      super.init();
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
-    proc TaskErrors() {
+    proc init() {
       _head = nil;
+      super.init();
     }
 
     /* Iterate over the errors contained in this :class:`TaskErrors`.

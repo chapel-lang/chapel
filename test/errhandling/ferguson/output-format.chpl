@@ -1,13 +1,13 @@
 class MyError : Error {
   var msg:string;
-  proc MyError(msg:string) {
+  proc init(msg:string) {
     this.msg = msg;
+    super.init();
   }
   proc message() {
     return "custom message";
   }
 }
-
 proc throwit() throws {
   var e = new MyError("test error");
   writeln(e);

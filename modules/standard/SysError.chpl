@@ -47,9 +47,10 @@ class SystemError : Error {
   var err:     syserr;
   var details: string;
 
-  proc SystemError(err: syserr, details: string = "") {
+  proc init(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
+    super.init();
   }
 
   /*
@@ -134,9 +135,8 @@ class SystemError : Error {
 
 */
 class BlockingIOError : SystemError {
-  proc BlockingIOError(details: string = "", err: syserr = EWOULDBLOCK) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EWOULDBLOCK) {
+    super.init(err, details);
   }
 }
 
@@ -147,9 +147,8 @@ class BlockingIOError : SystemError {
 
 */
 class ChildProcessError : SystemError {
-  proc ChildProcessError(details: string = "", err: syserr = ECHILD) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ECHILD) {
+    super.init(err, details);
   }
 }
 
@@ -159,6 +158,7 @@ class ChildProcessError : SystemError {
    base class for all system errors regarding connections.
 
 */
+pragma "use default init"
 class ConnectionError : SystemError { }
 
 /*
@@ -168,9 +168,8 @@ class ConnectionError : SystemError { }
 
 */
 class BrokenPipeError : ConnectionError {
-  proc BrokenPipeError(details: string = "", err: syserr = EPIPE) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EPIPE) {
+    super.init(err, details);
   }
 }
 
@@ -181,9 +180,8 @@ class BrokenPipeError : ConnectionError {
 
 */
 class ConnectionAbortedError : ConnectionError {
-  proc ConnectionAbortedError(details: string = "", err: syserr = ECONNABORTED) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ECONNABORTED) {
+    super.init(err, details);
   }
 }
 
@@ -194,9 +192,8 @@ class ConnectionAbortedError : ConnectionError {
 
 */
 class ConnectionRefusedError : ConnectionError {
-  proc ConnectionRefusedError(details: string = "", err: syserr = ECONNREFUSED) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ECONNREFUSED) {
+    super.init(err, details);
   }
 }
 
@@ -207,9 +204,8 @@ class ConnectionRefusedError : ConnectionError {
 
 */
 class ConnectionResetError : ConnectionError {
-  proc ConnectionResetError(details: string = "", err: syserr = ECONNRESET) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ECONNRESET) {
+    super.init(err, details);
   }
 }
 
@@ -220,9 +216,8 @@ class ConnectionResetError : ConnectionError {
 
 */
 class FileExistsError : SystemError {
-  proc FileExistsError(details: string = "", err: syserr = EEXIST) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EEXIST) {
+    super.init(err, details);
   }
 }
 
@@ -233,9 +228,8 @@ class FileExistsError : SystemError {
 
 */
 class FileNotFoundError : SystemError {
-  proc FileNotFoundError(details: string = "", err: syserr = ENOENT) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ENOENT) {
+    super.init(err, details);
   }
 }
 
@@ -246,9 +240,8 @@ class FileNotFoundError : SystemError {
 
 */
 class InterruptedError : SystemError {
-  proc InterruptedError(details: string = "", err: syserr = EINTR) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EINTR) {
+    super.init(err, details);
   }
 }
 
@@ -259,9 +252,8 @@ class InterruptedError : SystemError {
 
 */
 class IsADirectoryError : SystemError {
-  proc IsADirectoryError(details: string = "", err: syserr = EISDIR) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EISDIR) {
+    super.init(err, details);
   }
 }
 
@@ -272,9 +264,8 @@ class IsADirectoryError : SystemError {
 
 */
 class NotADirectoryError : SystemError {
-  proc NotADirectoryError(details: string = "", err: syserr = ENOTDIR) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ENOTDIR) {
+    super.init(err, details);
   }
 }
 
@@ -285,9 +276,8 @@ class NotADirectoryError : SystemError {
 
 */
 class PermissionError : SystemError {
-  proc PermissionError(details: string = "", err: syserr = EPERM) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EPERM) {
+    super.init(err, details);
   }
 }
 
@@ -298,9 +288,8 @@ class PermissionError : SystemError {
 
 */
 class ProcessLookupError : SystemError {
-  proc ProcessLookupError(details: string = "", err: syserr = ESRCH) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ESRCH) {
+    super.init(err, details);
   }
 }
 
@@ -311,9 +300,8 @@ class ProcessLookupError : SystemError {
 
 */
 class TimeoutError : SystemError {
-  proc TimeoutError(details: string = "", err: syserr = ETIMEDOUT) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ETIMEDOUT) {
+    super.init(err, details);
   }
 }
 
@@ -325,6 +313,7 @@ class TimeoutError : SystemError {
    used and emitted by the IO module.
 
 */
+pragma "use default init"
 class IOError : SystemError { }
 
 /*
@@ -334,9 +323,8 @@ class IOError : SystemError { }
 
 */
 class EOFError : IOError {
-  proc EOFError(details: string = "", err: syserr = EEOF) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EEOF) {
+    super.init(err, details);
   }
 }
 
@@ -347,9 +335,8 @@ class EOFError : IOError {
 
 */
 class UnexpectedEOFError : IOError {
-  proc UnexpectedEOFError(details: string = "", err: syserr = ESHORT) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = ESHORT) {
+    super.init(err, details);
   }
 }
 
@@ -360,9 +347,8 @@ class UnexpectedEOFError : IOError {
 
 */
 class BadFormatError : IOError {
-  proc BadFormatError(details: string = "", err: syserr = EFORMAT) {
-    this.details = details;
-    this.err     = err;
+  proc init(details: string = "", err: syserr = EFORMAT) {
+    super.init(err, details);
   }
 }
 

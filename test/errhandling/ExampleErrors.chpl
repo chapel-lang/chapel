@@ -3,6 +3,7 @@ proc throwAnError() throws {
 }
 
 
+pragma "use default init"
 class OtherError : Error { }
 
 proc throwOtherError() throws {
@@ -12,8 +13,9 @@ proc throwOtherError() throws {
 class StringError : Error {
   var msg: string;
 
-  proc StringError(msg:string) {
+  proc init(msg:string) {
     this.msg = msg;
+    super.init();
   }
 
   proc message() {
