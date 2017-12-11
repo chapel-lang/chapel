@@ -78,13 +78,15 @@ def get_exclusive_nodes():
 def get_num_non_exclusive_nodes():
     """
     Get the number of nodes available for testing on the chapel partition
-    (total - exclusive)
+    (online - exclusive)
     """
+    online_states = 'ALLOC,ALLOCATED,COMP,COMPLETING,IDLE,MIX,MIXED'
     sinfo_cmd = ['sinfo',
                  '--partition=chapel',
                  '--noheader',
                  '--responding',
-                 '--format="%D"']
+                 '--format="%D"',
+                 '--states={0}'.format(online_states)]
     sinfo_out = run_command_wrapper(sinfo_cmd)
     num_online_nodes = int(sinfo_out[0])
     num_non_exclusive_nodes = num_online_nodes - get_exclusive_nodes()[0]
