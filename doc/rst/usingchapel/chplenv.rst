@@ -714,7 +714,7 @@ Below is an example of a Chapel configuration file with comments:
 
 
 To confirm the configuration file is written correctly, you can run
-``printchplenv --overrides``, which will show a list of variables that are
+``printchplenv --all --overrides``, which will show a list of variables that are
 currently being overridden. Values followed by a
 ``+`` have been overridden by the Chapel configuration file, whereas
 values followed by a ``*`` have been overridden by an environment variable.
@@ -723,8 +723,8 @@ Generating Configuration Files
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-To generate a configuration file, use ``printchplenv`` or
-``./configure``.
+To generate a configuration file based on the current configuration, use
+``printchplenv`` or ``./configure``.
 
 When using ``printchplenv``, run it with the ``--simple`` format flag to get a
 format compatible with Chapel configuration files.
@@ -746,6 +746,8 @@ of the current configuration. For example:
 
     printchplenv --all --simple > ~/.chplconfig
 
+For more information on using ``printchplenv``, see the ``printchplenv -h``
+output.
 
 Alternatively, the ``./configure`` script will generate a ``chplconfig``
 file. See :ref:`readme-installing`.

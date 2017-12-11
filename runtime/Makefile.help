@@ -140,7 +140,7 @@ $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP) $(RUNTIME_LIST_INCLUDES
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
 	$(TAGS_COMMAND)
-	../util/printchplenv --all --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
+	../util/printchplenv --runtime --no-tidy --anonymize --simple > $(RUNTIME_CHPLCONFIG)
 
 
 $(RUNTIME_LIST_INCLUDESANDDEFINES): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)

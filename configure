@@ -144,13 +144,13 @@ fi
 # and then move it.
 # Note that the resulting chplconfig is expected to cover the same
 # material as any existing chplconfig.
-./util/printchplenv --simple --no-tidy --overrides --anonymize > configured-chplconfig
+./util/printchplenv --simple --overrides --anonymize > configured-chplconfig
 mv configured-chplconfig chplconfig
 
 echo
 echo "  Currently selected Chapel configuration:"
 echo
-./util/printchplenv --simple --no-tidy --anonymize
+./util/printchplenv --anonymize
 echo
 echo "  Selected installation options:"
 echo

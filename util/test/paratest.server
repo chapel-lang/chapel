@@ -754,11 +754,6 @@ sub main {
     for my $line (@lines) {
         $line =~ s/export\s+//;
         my ($key,$value) = split(/=/, $line, 2);
-        # Now remove the single quotes in the value.
-        if( $value =~ /^'.+'$/ ) {
-            $value =~ s/^'//;
-            $value =~ s/'$//;
-        }
         $chplenv .= "$key=$value ";
     }
     $chplenv="$chplenv$extra_env";
