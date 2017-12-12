@@ -1,2 +1,1 @@
-()
-()
+returnArg.chpl:6: error: no copy initializer defined for type 'Foo'
