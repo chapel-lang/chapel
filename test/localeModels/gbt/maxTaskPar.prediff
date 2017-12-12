@@ -40,7 +40,7 @@ case $target in
   linux*|cray-xc|cray-xe|cygwin*)
     case $locModel-$tasks in
       numa-qthreads)
-        ucp=$( $CHPL_HOME/util/printchplenv --make |
+        ucp=$( $CHPL_HOME/util/printchplenv --make --all --internal |
                grep HWLOC_UNIQ_CFG_PATH |
                cut -d= -f2 )
         hwld=$CHPL_HOME/third-party/hwloc/install/$ucp

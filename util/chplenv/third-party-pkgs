@@ -54,10 +54,10 @@ for dir in third_party_pkgs:
         f.close()
 
 printchplenv = chpl_home+'/util/printchplenv'
-chplenv=subprocess.Popen([printchplenv, '--simple'],
+chplenv=subprocess.Popen([printchplenv, '--simple', '--internal', '--runtime', '--anonymize', '--no-tidy'],
                          stdout=subprocess.PIPE).communicate()[0].decode()
 
-pkgs=''
+pkgs=set()
 for l in chplenv.split('\n'):
     # Consider only lines to that start with 'CHPL_'.
     if l.startswith('CHPL_'):
@@ -68,26 +68,25 @@ for l in chplenv.split('\n'):
         # Ignore CHPL_MEM (use CHPL_JEMALLOC)
         if not (var.endswith('_PLATFORM') or var == 'CHPL_MEM'):
             if third_party_pkgs.count(val)==1:
-                pkgs += val+' '
+                pkgs.add(val)
             elif val in pkg_aliases:
-                pkgs += pkg_aliases[val]+' '
+                pkgs.add(pkg_aliases[val])
 
-pkgs = pkgs.strip()
 # Filter dependencies into 2 list: compiler and runtime dependencies.
-comppkgs=''
-runpkgs=''
-for p in pkgs.split(' '):
+comppkgs=set()
+runpkgs=set()
+for p in pkgs:
   if os.path.isfile(third_party + "/" + p + "/COMPILERONLY"):
-    comppkgs += p+' '
+    comppkgs.add(p)
   else:
-    runpkgs += p+' '
+    runpkgs.add(p)
 
 if len(sys.argv) > 1 and sys.argv[1] == "--compiler":
   pkgs = comppkgs
 else:
   pkgs = runpkgs
 
-pkgs = pkgs.strip()
+pkgs_text = ' '.join(pkgs)
 
-print(pkgs)
+print(pkgs_text)
 

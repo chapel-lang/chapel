@@ -260,6 +260,27 @@ static BlockStmt* copyBody(CallExpr* call) {
 
       sym = tmp;
     }
+    if (formal->isRef() && !sym->isRef()) {
+      // When passing a value to a reference argument,
+      // create a reference temporary so that nothing in the
+      // inlined code changes meaning.
+
+      Expr*      stmt = call->getStmtExpr();
+      VarSymbol* tmp  = newTemp(astr("i_", formal->name),
+                                formal->type);
+      DefExpr*   def  = new DefExpr(tmp);
+      CallExpr*  move = NULL;
+
+      tmp->qual = QUAL_REF;
+      move      = new CallExpr(PRIM_MOVE,
+                               tmp,
+                               new CallExpr(PRIM_SET_REFERENCE, sym));
+
+      stmt->insertBefore(def);
+      stmt->insertBefore(move);
+
+      sym = tmp;
+    }
 
     map.put(formal, sym);
   }

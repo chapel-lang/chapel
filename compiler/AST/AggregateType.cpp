@@ -68,7 +68,6 @@ AggregateType::AggregateType(AggregateTag initTag) :
   gAggregateTypes.add(this);
 }
 
-
 AggregateType::~AggregateType() {
   // Delete references to this in iteratorInfo when destroyed.
   if (iteratorInfo) {
@@ -81,7 +80,6 @@ AggregateType::~AggregateType() {
     }
   }
 }
-
 
 AggregateType* AggregateType::copyInner(SymbolMap* map) {
   AggregateType* copy_type = new AggregateType(aggregateTag);
@@ -110,47 +108,105 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   return copy_type;
 }
 
+bool AggregateType::isClass() const {
+  return aggregateTag == AGGREGATE_CLASS;
+}
+
+bool AggregateType::isRecord() const {
+  return aggregateTag == AGGREGATE_RECORD;
+}
+
+bool AggregateType::isUnion() const {
+  return aggregateTag == AGGREGATE_UNION;
+}
+
+bool AggregateType::isGeneric() const {
+  return mIsGeneric;
+}
+
+void AggregateType::markAsGeneric() {
+  mIsGeneric = true;
+}
 
 void AggregateType::verify() {
   Type::verify();
 
   if (astTag != E_AggregateType) {
     INT_FATAL(this, "Bad AggregateType::astTag");
-  }
 
-  if (aggregateTag != AGGREGATE_CLASS &&
-      aggregateTag != AGGREGATE_RECORD &&
-      aggregateTag != AGGREGATE_UNION) {
+  } else if (aggregateTag != AGGREGATE_CLASS  &&
+             aggregateTag != AGGREGATE_RECORD &&
+             aggregateTag != AGGREGATE_UNION) {
     INT_FATAL(this, "Bad AggregateType::aggregateTag");
-  }
 
-  if (fields.parent != this || inherits.parent != this) {
+  } else if (fields.parent != this || inherits.parent != this) {
     INT_FATAL(this, "Bad AList::parent in AggregateType");
-  }
 
-  for_alist(expr, fields) {
-    if (expr->parentSymbol != symbol) {
-      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
+  } else {
+    for_alist(expr, fields) {
+      if (expr->parentSymbol != symbol) {
+        INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
+      }
     }
-  }
 
-  for_alist(expr, inherits) {
-    if (expr->parentSymbol != symbol) {
-      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
+    for_alist(expr, inherits) {
+      if (expr->parentSymbol != symbol) {
+        INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
+      }
     }
-  }
-  for_alist(expr, forwardingTo) {
-    if (expr->parentSymbol != symbol)
-      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
+
+    for_alist(expr, forwardingTo) {
+      if (expr->parentSymbol != symbol)
+        INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
+    }
   }
 }
-
 
 int AggregateType::numFields() const {
   return fields.length;
 }
 
-DefExpr* AggregateType::toLocalField(const char*    name) const {
+DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
+  DefExpr* retval = NULL;
+
+  if (isClass() == true) {
+    forv_Vec(Type, t, dispatchParents) {
+      // Noakes 20171211 :- Start to fix static type of dispatchParents[]
+      AggregateType* pt = toAggregateType(t);
+
+      INT_ASSERT(pt != NULL);
+
+      if (DefExpr* field = pt->toLocalField(expr)) {
+        retval = field;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+DefExpr* AggregateType::toSuperField(CallExpr* expr) {
+  DefExpr* retval = NULL;
+
+  if (isClass() == true) {
+    forv_Vec(Type, t, dispatchParents) {
+      // Noakes 20171211 :- Start to fix static type of dispatchParents[]
+      AggregateType* pt = toAggregateType(t);
+
+      INT_ASSERT(pt != NULL);
+
+      if (DefExpr* field = pt->toLocalField(expr)) {
+        retval = field;
+        break;
+      }
+    }
+  }
+
+  return retval;
+}
+
+DefExpr* AggregateType::toLocalField(const char* name) const {
   Expr*    currField = fields.head;
   DefExpr* retval    = NULL;
 
@@ -210,50 +266,6 @@ DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
   return retval;
 }
 
-DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
-  forv_Vec(Type, t, dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = pt->toLocalField(expr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-DefExpr* AggregateType::toSuperField(CallExpr* expr) {
-  forv_Vec(Type, t, dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = pt->toLocalField(expr)) {
-        return field;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-bool AggregateType::isClass() const {
-  return aggregateTag == AGGREGATE_CLASS;
-}
-
-bool AggregateType::isRecord() const {
-  return aggregateTag == AGGREGATE_RECORD;
-}
-
-bool AggregateType::isUnion() const {
-  return aggregateTag == AGGREGATE_UNION;
-}
-
-bool AggregateType::isGeneric() const {
-  return mIsGeneric;
-}
-
-void AggregateType::markAsGeneric() {
-  mIsGeneric = true;
-}
-
 void AggregateType::addDeclarations(Expr* expr) {
   if (DefExpr* defExpr = toDefExpr(expr)) {
     addDeclaration(defExpr);
@@ -262,14 +274,19 @@ void AggregateType::addDeclarations(Expr* expr) {
     for_alist(stmt, block->body) {
       addDeclarations(stmt);
     }
+
   } else if (ForwardingStmt* forwarding = toForwardingStmt(expr)) {
     // forwarding expr is a def expr for a function that we should handle.
     DefExpr* def = forwarding->toFnDef;
+
     // Handle the function defining what we forwarding to
     this->addDeclaration(def);
+
     // Add the ForwardingStmt to the AST
     forwarding->toFnDef = NULL;
+
     this->forwardingTo.insertAtTail(forwarding);
+
   } else {
     INT_FATAL(expr, "unexpected case");
   }
@@ -376,8 +393,8 @@ void AggregateType::accept(AstVisitor* visitor) {
   }
 }
 
-// Returns true if the type has generic fields, false otherwise.  If the index
-// of the first generic field has not previously been set, set it.
+// Returns true if the type has generic fields, false otherwise.
+// If the index of the first generic field has not previously been set, set it.
 bool AggregateType::setNextGenericField() {
   // Don't redo work
   if (genericField > 0)

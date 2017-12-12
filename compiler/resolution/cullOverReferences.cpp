@@ -1347,7 +1347,6 @@ void cullOverReferences() {
                        node.variable->id, node.fieldIndex);
                 
                 printf("for iterator %i\n", iterator->id);
-
                 */
 
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
@@ -1387,7 +1386,8 @@ void cullOverReferences() {
                   // and modifying the index variable should make us
                   // consider the array to be "set".
                   if (iteratorFn->isMethod() &&
-                      isArrayClass(iteratorFn->getFormal(1)->type))
+                      (isArrayClass(iteratorFn->getFormal(1)->type) ||
+                       iteratorFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
                       iteratorYieldsConstWhenConstThis = true;
 
                   // Note, if we wanted to use the return intent

@@ -448,13 +448,23 @@ static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
                                   Type* valType = NULL,
+                                  Type* baseType = NULL,
+                                  uint64_t offset = 0,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode )
-    tbaa = valType->symbol->llvmTbaaAccessTag;
+  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
+    if (baseType) {
+      tbaa = info->mdBuilder->createTBAAStructTagNode(
+               baseType->symbol->llvmTbaaTypeDescriptor,
+               valType->symbol->llvmTbaaTypeDescriptor,
+               offset);
+    } else {
+      tbaa = valType->symbol->llvmTbaaAccessTag;
+    }
+  }
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
 
   if(!info->loopStack.empty()) {
@@ -500,21 +510,31 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
   ptr.alreadyStored = true;
-  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.canBeMarkedAsConstAfterStore);
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.baseType, ptr.offset,
+                          ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* valType = NULL,
+                                Type* baseType = NULL,
+                                uint64_t offset = 0,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
-    else tbaa = valType->symbol->llvmTbaaAccessTag;
+    if (baseType) {
+      tbaa = info->mdBuilder->createTBAAStructTagNode(
+               baseType->symbol->llvmTbaaTypeDescriptor,
+               valType->symbol->llvmTbaaTypeDescriptor,
+               offset, isConst);
+    } else {
+      if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
+      else tbaa = valType->symbol->llvmTbaaAccessTag;
+    }
   }
 
   if(!info->loopStack.empty()) {
@@ -537,7 +557,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType);
+  return codegenLoadLLVM(ptr.val, valType, ptr.baseType, ptr.offset, isConst);
 }
 
 #endif
@@ -1039,8 +1059,18 @@ GenRet codegenFieldPtr(
       INT_ASSERT(ret.val);
     } else {
       // Normally, we just use a GEP.
+      int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-          NULL, baseValue, 0, cBaseType->getMemberGEP(c_field_name));
+          NULL, baseValue, 0, fieldno);
+      if (!isUnion(ct)) {
+        llvm::StructType *structBaseType =
+          llvm::dyn_cast<llvm::StructType>(baseValue->getType());
+        if (structBaseType) {
+          ret.baseType = castType ? castType : baseType;
+          ret.offset = info->module->getDataLayout().
+            getStructLayout(structBaseType)->getElementOffset(fieldno);
+        }
+      }
     }
 #endif
   }
@@ -4258,7 +4288,11 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GET_MEMBER: {
-    // base=get(1) field symbol=get(2)
+    // base=get(1), field symbol=get(2)
+
+    // Invalid AST to use PRIM_GET_MEMBER with a ref field
+    INT_ASSERT(!get(2)->isRef());
+
     ret = codegenFieldPtr(get(1), get(2));
 
     // Used to only do addrOf if
@@ -4282,7 +4316,12 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_SET_MEMBER: {
-    // base=get(1) field=get(2) value=get(3)
+    // base=get(1), field=get(2), value=get(3)
+
+    // if the field is a ref, and the value is a not ref, invalid AST
+    if (get(2)->isRef() && !get(3)->isRef())
+      INT_FATAL("Invalid PRIM_SET_MEMBER ref field with value");
+
     GenRet ptr = codegenFieldPtr(get(1), get(2));
     GenRet val = get(3);
 
@@ -5271,6 +5310,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_MEMBER: {
       /* Get a pointer to a member */
       SymExpr* se = toSymExpr(call->get(2));
+
+      // Invalid AST to use PRIM_GET_MEMBER with a ref field
+      INT_ASSERT(!call->get(2)->isRef());
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->get(1)->isWideRef()   ||

@@ -96,10 +96,14 @@ public:
   // one of the following is set when generating LLVM
   llvm::Value *val; // use val->getType() to obtain LLVM type
   llvm::Type *type; // set when generating a type only
+  Type *baseType; // surrounding structure, if this is a field
+  uint64_t offset; // byte offset of this field
 #else
   // Keeping same layout for non-LLVM builds
   void* val;
   void* type;
+  void* baseType;
+  uint64_t offset;
 #endif
 
   // Used to mark variables as const after they are stored
@@ -132,7 +136,7 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+  GenRet() : c(), val(NULL), type(NULL), baseType(NULL), offset(0), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);

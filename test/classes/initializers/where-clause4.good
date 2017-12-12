@@ -1,11 +1,3 @@
 where-clause4.chpl:12: error: unresolved call '_new(type Foo, 3.4)'
 where-clause4.chpl:2: note: candidates are: _new(type chpl_t, xVal)
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note:                 _new(type chpl_t, parent_loc: locale)
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:159: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t, parent: locale)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:335: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t, parent_loc: locale)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:403: note:                 _new(type chpl_t)
+(prediff deleted module lines)

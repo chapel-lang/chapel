@@ -6,7 +6,7 @@ if [[ $CHPL_HOST_PLATFORM == *cygwin* \
   # Can't do static/dynamic linking on these platforms
   #
   echo True
-elif $CHPL_HOME/util/printchplenv --make \
+elif $CHPL_HOME/util/printchplenv --make --all --internal \
      | grep CHPL_MAKE_THIRD_PARTY_LINK_ARGS \
      | grep -q -e '-lnuma' ; then
   #
