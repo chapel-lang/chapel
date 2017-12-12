@@ -898,7 +898,7 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
 
-  // Handle error case of trying to convert an empty string
+  // First, handle error case of trying to convert an empty string
   fn->insertAtTail(new CondStmt(new CallExpr(buildDotExpr(arg2,
                                                           "isEmptyString"),
                                              new CallExpr(PRIM_ACTUALS_LIST)),
@@ -907,7 +907,6 @@ static void build_enum_cast_function(EnumType* et) {
                                                                     et->symbol->name)))));
 
   CondStmt* cond = NULL;
-
   for_enums(constant, et) {
     cond = new CondStmt(
              new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
