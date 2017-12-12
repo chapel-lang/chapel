@@ -1,10 +1,2 @@
 typeAlias.chpl:14: error: unresolved call '_new(type Generic(string), "hello")'
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note: candidates are: _new(type chpl_t)
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:58: note:                 _new(type chpl_t, parent_loc: locale)
-$CHPL_HOME/modules/internal/localeModels/flat/LocaleModel.chpl:159: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:98: note:                 _new(type chpl_t, parent: locale)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:335: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t, parent_loc: locale)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:361: note:                 _new(type chpl_t)
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:403: note:                 _new(type chpl_t)
+(prediff deleted module lines)
