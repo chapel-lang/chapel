@@ -31,8 +31,8 @@ CallInfo::CallInfo() {
   name  = NULL;
 }
 
-bool CallInfo::isNotWellFormed(CallExpr* callExpr) {
-  bool retval = false;
+bool CallInfo::isWellFormed(CallExpr* callExpr) {
+  bool retval = true;
 
   call = callExpr;
 
@@ -61,7 +61,7 @@ bool CallInfo::isNotWellFormed(CallExpr* callExpr) {
     }
   }
 
-  for (int i = 1; i <= call->numActuals() && retval == false; i++) {
+  for (int i = 1; i <= call->numActuals() && retval == true; i++) {
     Expr* actual = call->get(i);
 
     if (NamedExpr* named = toNamedExpr(actual)) {
@@ -81,11 +81,16 @@ bool CallInfo::isNotWellFormed(CallExpr* callExpr) {
     Type*    t   = sym->type;
 
     if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      retval = true;
+      retval = false;
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true &&
-               sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
-      retval = true;
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
+      // The _this actual to an initializer may be generic
+      if (strcmp(name, "init") == 0 && i == 2) {
+        actuals.add(sym);
+
+      } else {
+        retval = false;
+      }
 
     } else {
       actuals.add(sym);
@@ -116,11 +121,9 @@ void CallInfo::haltNotWellFormed() const {
                 sym->name);
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
-        INT_FATAL(call,
-                  "the type of the actual argument '%s' is generic",
-                  sym->name);
-      }
+      INT_FATAL(call,
+                "the type of the actual argument '%s' is generic",
+                sym->name);
     }
   }
 }

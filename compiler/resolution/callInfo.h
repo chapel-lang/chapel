@@ -30,7 +30,7 @@ class CallInfo {
 public:
                    CallInfo();
 
-  bool             isNotWellFormed(CallExpr* call);
+  bool             isWellFormed(CallExpr* call);
 
   void             haltNotWellFormed()                                   const;
 
