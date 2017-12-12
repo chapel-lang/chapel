@@ -1,0 +1,1 @@
+emptyStringToType.chpl:6: error: Empty string when converting from string to uint(64)
