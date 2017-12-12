@@ -45,7 +45,10 @@ module StringCasts {
 
   proc _cast(type t, x: string) where isBoolType(t) {
     var str = x.strip();
-    if (str == "true") {
+    if str.isEmptyString() {
+      __primitive("chpl_error", c"Empty string when converting from string to bool");
+      return false;
+    } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
