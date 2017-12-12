@@ -27,8 +27,7 @@ MAKEFLAGS = --no-print-directory
 # for BSD Make.
 # Additionally BSD Make does not support firstword, subst, etc,
 # and so the following variable will be empty for BSD Make.
-MY_MAKE_VERSION_MAJOR := $(firstword $(subst ., ,$(MAKE_VERSION)))
-
+MY_MAKE_VERSION_MAJOR = $(firstword $(subst ., ,$(MAKE_VERSION)))
 
 # Declare an action to run by default that checks
 # for BSD Make. It does the check in a shell script because
@@ -42,9 +41,14 @@ default-action : FORCE
 	fi
 
 # This rule any other rule to Makefile.toplevel.
-# It only needs to function for GNU Make.
 % : FORCE
-	@$(MAKE) -f Makefile.toplevel $@; \
+	@if [ "$(MY_MAKE_VERSION_MAJOR)" = "" ] ; \
+	then \
+	  echo "Please use GNU make and not BSD make (try gmake)" ; \
+	else \
+	  $(MAKE) -f Makefile.toplevel $@; \
+	fi
+
 
 # Make sure these rules always run and don't try to make Makefile
 .PHONY: FORCE Makefile
