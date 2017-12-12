@@ -20,67 +20,105 @@ config param columns = 61;
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 record buf {
+  const bufSize : int;
+  var buf : [0..#bufSize] uint(8);
+  var cur, cap, numLeft : int;
   var chan : channel(writing=false, kind=iokind.native, locking=false);
-  var cap : int;
-  var dom : domain(1);
-  var data : [dom] uint(8);
-  var chunkSize : int;
-  var cursor : int;
-  var numRead : int;
 
-  proc init(fi, chunk:int) {
+  proc init(fi:file, bs:int) {
+    this.bufSize = bs;
+
+    super.init();
+
     chan = fi.reader(locking=false);
-    this.cap = fi.length();
-    dom = {1..cap};
-    cursor = 1;
-    chunkSize = chunk;
+    numLeft = fi.length();
   }
 
-  proc size return if numRead == 0 then 0 else cursor;
+  pragma "no copy return"
+  proc fill() {
+    if cur >= cap {
+      if numLeft > 0 {
+        cap = min(bufSize, numLeft);
+        chan.readBytes(c_ptrTo(buf), cap);
+        numLeft -= cap;
 
-  proc readUntil(term : uint(8)) {
-    assert(size <= cap);
-    if size == cap then return;
-    var found = false;
-    proc advance() {
-      if numRead == 0 then return false;
-      extern proc memchr(s:c_void_ptr, c : c_int, n : size_t) : c_void_ptr;
-      const dptr = c_pointer_return(data[cursor]);
-      const ret = memchr(dptr, term:c_int, (numRead-cursor+1):size_t);
-      if ret != c_nil {
-        const idx = cursor + (ret:int - dptr:int);
-        cursor = idx;
-        return true;
+        // ensure we return an empty slice if we run out of bytes
+        cur = 0;
+      } else {
+        cur = 0;
+        cap = 0;
       }
-      cursor = numRead;
-      return false;
     }
-    while advance() == false && numRead < cap {
-      const len = min(chunkSize, cap - numRead);
-      chan.readBytes(c_ptrTo(data[numRead+1..]), len);
-      numRead += len;
+    const low = if cap == 0 then 1 else cur;
+    return buf[low..max(0, cap-1)];
+  }
+
+  proc consume(n : int) {
+    cur = min(cur + n, cap);
+  }
+
+  proc _memchr(c : uint(8), arr : []) {
+    extern proc memchr(s:c_void_ptr, c : c_int, n : size_t) : c_void_ptr;
+    const ptr = c_ptrTo(arr);
+    const ret = memchr(ptr, c:c_int, arr.size:size_t);
+    if ret != c_nil {
+      const idx = arr.domain.first + ret:int - ptr:int;
+      return idx;
     }
+    return -1;
+  }
+
+  proc readUntil(term : uint(8), data : [] uint(8)) : int {
+    var read = 0;
+    while true {
+      var done = false, used = 0;
+      ref avail = fill();
+      if avail.size > 0 {
+        const idx = _memchr(term, avail);
+        if idx >= 0 {
+          data.push_back(avail[..idx]);
+          (done, used) = (true, avail[..idx].size);
+        } else {
+          data.push_back(avail);
+          (done, used) = (false, avail.size);
+        }
+      } else return 0;
+      consume(used);
+      read += used;
+      if done || used == 0 then return read;
+    }
+    return 0;
   }
 }
 
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  var b = new buf(openfd(0), readSize);
+  const stdin = openfd(0);
+  var input = new buf(stdin, readSize);
+  var data : [1..0] uint(8);
+  
+  // Use undocumented internals to fake a request for capacity
+  {
+    const r = 1..stdin.length();
+    data._value.dataAllocRange = r;
+    data._value.dsiReallocate((r,));
+    data._value.dsiPostReallocate();
+  }
 
   sync {     // wait for all process() tasks to complete before continuing
-    var numRead: int;
     while true {
-      var err : syserr;
-      b.readUntil(ascii("\n"));
-      const start = b.size+1;
-      b.readUntil(ascii(">"));
-      const last = b.size;
-      ref data = b.data;
+      input.readUntil(ascii("\n"), data);
+      const start = data.size + 1;
+      input.readUntil(ascii(">"), data);
+      const last = data.size;
 
       if data[last] == ascii(">") {
+        // '-2' to skip over '\n>'
         begin process(data, start, last-2);
       } else {
+        // Final section
+        // '-1' to skip over '\n'
         begin process(data, start, last-1);
         break;
       }
@@ -89,7 +127,7 @@ proc main(args: [] string) {
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(b.data);
+  stdoutBin.write(data);
 }
 
 proc process(data, in start, in end) {
