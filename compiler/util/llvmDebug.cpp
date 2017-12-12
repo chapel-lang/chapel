@@ -507,7 +507,9 @@ llvm::DIFile* debug_data::get_file(const char *fpath)
 llvm::DINamespace* debug_data::construct_module_scope(ModuleSymbol* modSym)
 {
   const char* fname = modSym->fname();
+#if HAVE_LLVM_VER < 50
   int line = modSym->linenum();
+#endif
   llvm::DIFile* file = get_file(fname);
   return this->dibuilder.createNameSpace(file, /* Scope */
                                          modSym->name, /* Name */

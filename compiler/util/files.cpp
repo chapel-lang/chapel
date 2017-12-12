@@ -182,11 +182,13 @@ static void ensureTmpDirExists() {
 }
 
 
+#if !defined(HAVE_LLVM) || HAVE_LLVM_VER < 50
 static
 void deleteDirSystem(const char* dirname) {
   const char* cmd = astr("rm -rf ", dirname);
   mysystem(cmd, astr("removing directory: ", dirname));
 }
+#endif
 
 #ifdef HAVE_LLVM
 static
