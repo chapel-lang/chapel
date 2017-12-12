@@ -310,7 +310,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 
-#define _define_string_to_type(base, width)                             \
+#define _define_string_to_int_type(base, width)                             \
   _type(base, width) c_string_to_##base##width##_t(c_string str, int lineno, \
                                                    int32_t filename) {   \
     int invalid;                                                        \
@@ -342,14 +342,14 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
     return val;                                                         \
   }
 
-_define_string_to_type(int, 8)
-_define_string_to_type(int, 16)
-_define_string_to_type(int, 32)
-_define_string_to_type(int, 64)
-_define_string_to_type(uint, 8)
-_define_string_to_type(uint, 16)
-_define_string_to_type(uint, 32)
-_define_string_to_type(uint, 64)
+_define_string_to_int_type(int, 8)
+_define_string_to_int_type(int, 16)
+_define_string_to_int_type(int, 32)
+_define_string_to_int_type(int, 64)
+_define_string_to_int_type(uint, 8)
+_define_string_to_int_type(uint, 16)
+_define_string_to_int_type(uint, 32)
+_define_string_to_int_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
   _##base##width c_string_to_##base##width(c_string str, int lineno,    \
