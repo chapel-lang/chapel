@@ -109,6 +109,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",
+       "Makefile.toplevel",
        "PERFORMANCE.md",
        "README.rst",
        "README.files",
