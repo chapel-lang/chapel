@@ -640,6 +640,8 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, shadowVariables(),     call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, taskInit(),            call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, taskDeinit(),          call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
     break;                                                                    \
   case E_ModuleSymbol:                                                  \

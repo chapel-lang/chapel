@@ -34,6 +34,8 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
+  fTaskInit(new BlockStmt()),
+  fTaskDeinit(new BlockStmt()),
   fLoopBody(body),
   fFromForLoop(false)
 {
@@ -53,19 +55,35 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
+  _this->fTaskInit = COPY_INT(fTaskInit);
+  _this->fTaskDeinit = COPY_INT(fTaskDeinit);
+
   return _this;
 }
 
-void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (oldAst == fLoopBody) {
-    if (!newAst)
-      fLoopBody = NULL;
-    else if (BlockStmt* newBlock = toBlockStmt(newAst))
-      fLoopBody = newBlock;
-    else
-      // It is caller responsibility to make newAst fit.
-      INT_ASSERT(false);
+// Return true if replacement occurred.
+static bool fsReplaceBlock(Expr* oldAst, Expr* newAst, BlockStmt*& field) {
+  if (oldAst != field)
+    return false;
 
+  if (newAst == NULL)
+    field = NULL;
+  else if (BlockStmt* newBlock = toBlockStmt(newAst))
+    field = newBlock;
+  else
+    // It is caller responsibility to make newAst fit.
+    INT_ASSERT(false);
+
+  return true;
+}
+
+void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (fsReplaceBlock(oldAst, newAst, fTaskInit)) {
+    // good
+  } else if (fsReplaceBlock(oldAst, newAst, fTaskDeinit)) {
+    // good
+  } else if (fsReplaceBlock(oldAst, newAst, fLoopBody)) {
+    // good
   } else {
     // We did not find oldAst in our ForallStmt.
     INT_ASSERT(false);
@@ -96,10 +114,17 @@ void ForallStmt::verify() {
 
   verifyList(fShadowVars, this);
   for_alist(expr, fShadowVars) {
-    DefExpr* svDef = toDefExpr(expr);
-    INT_ASSERT(svDef);
-    INT_ASSERT(isShadowVarSymbol(svDef->sym));
+   DefExpr* svDef = toDefExpr(expr);
+   INT_ASSERT(svDef);
+   INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
+
+  INT_ASSERT(fTaskInit);
+  INT_ASSERT(fTaskDeinit);
+  verifyNotOnList(fTaskInit);
+  verifyNotOnList(fTaskDeinit);
+  // Currently we do not use fTaskDeinit.
+  INT_ASSERT(fTaskDeinit->body.length == 0);
 
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
@@ -125,6 +150,10 @@ void ForallStmt::accept(AstVisitor* visitor) {
       expr->accept(visitor);
     for_alist(expr, shadowVariables())
       expr->accept(visitor);
+    if (BlockStmt* tInit = taskInit())
+      tInit->accept(visitor);
+    if (BlockStmt* tDenit = taskDeinit())
+      tDenit->accept(visitor);
     fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
@@ -159,10 +188,16 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     if (Expr* inv = fShadowVars.head)
       return inv;
     else
-      return fLoopBody->getFirstExpr();
+      return fTaskInit->getFirstExpr();
   }
 
   if (expr == fShadowVars.tail)
+    return fTaskInit->getFirstExpr();
+
+  if (expr == fTaskInit)
+    return fTaskDeinit->getFirstExpr();
+
+  if (expr == fTaskDeinit)
     return fLoopBody->getFirstExpr();
 
   return this;
@@ -227,6 +262,21 @@ BlockStmt* userLoop(const ForallStmt* fs) {
 /////////////////////////////////////////////////////////////////////////////
 // parser support: ForallStmt::build()
 /////////////////////////////////////////////////////////////////////////////
+
+static void fsTransferIntents(ForallStmt* fs, CallExpr* intents) {
+  if (intents == NULL)
+    return;  // nothing to do
+
+  while (Expr* src = intents->argList.head) {
+    DefExpr* svDef = toDefExpr(src->remove());
+    INT_ASSERT(svDef);
+    fs->shadowVariables().insertAtTail(svDef);
+    ShadowVarSymbol* svSym = toShadowVarSymbol(svDef->sym);
+    INT_ASSERT(svSym);
+    if (svSym->isTPV())
+      fs->taskInit()->insertAtTail(svSym->outerVarSym()->defPoint);
+  }
+}
 
 // Fill fs->iteratedExpressions(): if zippered, one element per "iterable",
 // i.e. per tuple component, otherwise a single element.
@@ -384,15 +434,7 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
 
   ForallStmt* fs = new ForallStmt(zippered, body);
 
-  // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
-  if (intents) {
-    while (Expr* src = intents->argList.head) {
-      DefExpr* svDef = toDefExpr(src->remove());
-      INT_ASSERT(svDef);
-      fs->shadowVariables().insertAtTail(svDef);
-    }
-  }
-
+  fsTransferIntents(fs, intents);
   fsDestructureIterables(fs, iterator);
   fsDestructureIndices(fs, indices);
   fsVerifyNumIterables(fs);

@@ -99,6 +99,7 @@ enum ForallIntentTag {
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
+  TFI_TASK_PRIVATE,
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
@@ -398,13 +399,17 @@ public:
   virtual bool    isConstValWillNotChange();
 
   const char* intentDescrString() const;
-  bool        isReduce()          const { return intent == TFI_REDUCE;  }
+  bool isReduce()  const { return intent == TFI_REDUCE; }
+  bool isTPV()     const { return intent == TFI_TASK_PRIVATE; }
+  bool needsExtraArgForIterCall()  const { return !isTPV(); }
 
   static ShadowVarSymbol* buildFromArgIntent(IntentTag intent, Expr* ovar);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
+  static ShadowVarSymbol* buildTaskPrivateVar(Expr* nameExp, Qualifier qual,
+                                              Expr* type, Expr* init);
 
   // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
+  SymExpr* outerVarSE()   const;
   Symbol*  outerVarSym()  const;
   // Returns the EXPR in "with (EXPR reduce x)".
   Expr*    reduceOpExpr() const;
@@ -416,7 +421,7 @@ public:
 
   // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
   // This would be just a SymExpr*, if not for checkIdInsideWithClause().
-  // See also: sv->outerVarSE() and sv->outerVarSym().
+  // See also: outerVarSE() and outerVarSym().
   Expr* outerVarRep;
 
   // For a reduce intent, the reduce expression.

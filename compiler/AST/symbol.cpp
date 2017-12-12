@@ -953,7 +953,7 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && !isReduce())
+  if (!iteratorsLowered && !isReduce() && (!resolved || !isTPV()))
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -1019,16 +1019,39 @@ bool ShadowVarSymbol::isConstant() const {
     case TFI_REF:
     case TFI_REDUCE:
       return false;
+    case TFI_TASK_PRIVATE:
+      return outerVarSym()->isConstant();
   }
   return false; // dummy
 }
 
 bool ShadowVarSymbol::isConstValWillNotChange() {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  INT_ASSERT(intent != TFI_DEFAULT && intent != TFI_CONST);
-  return intent == TFI_CONST_IN;
+  switch (intent) {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      INT_ASSERT(false);  // Caller responsibility.
+      return false;
+
+    case TFI_CONST_IN:
+      return true;
+
+    case TFI_CONST_REF:
+    case TFI_IN:
+    case TFI_REF:
+    case TFI_REDUCE:
+      return false;
+
+    case TFI_TASK_PRIVATE:
+      // We clear out outerVarRep mid-way in compilation.
+      if (Symbol* ovar = outerVarSym())
+        // BTW we may want to return true for 'const ref' TPVs
+        // when the referenced thing itself isConstValWillNotChange.
+        return ovar->isConstValWillNotChange();
+      else
+        // TODO return 'true' for 'const' TPVs.
+        return false;
+  }
+  return false; // dummy
 }
 
 // describes the intent (for use in an English sentence)
@@ -1041,6 +1064,7 @@ const char* ShadowVarSymbol::intentDescrString() const {
     case TFI_REF:       return "'ref' intent";
     case TFI_CONST_REF: return "'const ref' intent";
     case TFI_REDUCE:    return "'reduce' intent";
+    case TFI_TASK_PRIVATE: return "'task-private' intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
@@ -1064,7 +1088,7 @@ void ShadowVarSymbol::removeSupportingReferences() {
 
 bool isOuterVarOfShadowVar(Expr* expr) {
   if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
-    if (expr == ss->outerVarSE())
+    if (expr == ss->outerVarRep)
       return true;
   return false;
 }

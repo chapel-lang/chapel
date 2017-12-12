@@ -1,0 +1,1 @@
+error-1-ref-redvar.chpl:6: error: referencing a variable with a reduce intent (here, 'redvar') when declaring a task-private variable is currently not implemented

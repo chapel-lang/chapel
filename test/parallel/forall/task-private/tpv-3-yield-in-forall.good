@@ -1,0 +1,3 @@
+tpv-3-yield-in-forall.chpl:6: error: task-private variables are currently not implemented when the corresponding parallel iterator has a yield inside a forall or a parallel for loop
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:970: note: the yield in the parallel iterator is here
+$CHPL_HOME/modules/internal/DefaultRectangular.chpl:968: note: the enclosing loop is here
