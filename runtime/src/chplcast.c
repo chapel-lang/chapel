@@ -356,7 +356,7 @@ _define_string_to_int_type(uint, 64)
                                            int32_t filename) {         \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
-    _##base##width val;                                                 \
+    _##base##width val = 0.0;                                           \
     if (!str) {                                                         \
       invalid = 1;                                                      \
     } else {                                                            \
