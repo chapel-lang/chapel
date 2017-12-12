@@ -2,7 +2,7 @@
 
 export PRINTCHPLENV=$CHPL_HOME/util/printchplenv
 
-CHPL_OVERRIDES=$(${PRINTCHPLENV} --overrides | awk -F'=' '{print $1}')
+CHPL_OVERRIDES=$(${PRINTCHPLENV} --overrides --simple | awk -F'=' '{print $1}')
 
 for CHPL_VAR in ${CHPL_OVERRIDES}; do
     if [ ${CHPL_VAR} != "CHPL_HOME" ]; then

@@ -5,17 +5,12 @@ use Cwd 'abs_path';
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
-my $env = `$ENV{CHPL_HOME}/util/printchplenv --sh`;
+my $env = `$ENV{CHPL_HOME}/util/printchplenv --all --internal --simple --no-tidy`;
 my @lines = split(/\n/, $env);
 for my $line (@lines) {
   $line =~ s/export\s+//;
   my ($key,$value) = split(/=/, $line, 2);
   next if $key eq "CHPL_HOME";
-  # Now remove the single quotes in the value.
-  if( $value =~ /^'.+'$/ ) {
-    $value =~ s/^'//;
-    $value =~ s/'$//;
-  }
   $ENV{$key} = $value;
 }
 

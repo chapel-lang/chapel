@@ -205,12 +205,16 @@ def get_chplconfig(var, default=None):
     """ Check if variable has a default defined in a chplconfig file and return value """
     return chplconfig.get(var) or default
 
-
-def allvars():
-    """ Generate overrides currently set via environment/chplconfig """
+""" Generate env vars currently set via environment/chplconfig """
+def keys():
     for var in [v for v in chplvars if get(v)]:
-        varstring = '{0}={1}'.format(var, get(var))
-        yield varstring
+        yield var
+
+""" Generate (env var, value) pairs currently set via environment/chplconfig """
+def items():
+    for var in keys():
+        yield (var, get(var))
+
 
 
 def _main():

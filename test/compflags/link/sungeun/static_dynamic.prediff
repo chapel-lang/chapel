@@ -14,7 +14,7 @@ compopts=sys.argv[4].split()
 chpl_home=os.getenv('CHPL_HOME', '.');
 printchplenv = chpl_home+'/util/printchplenv'
 try:
-    p = subprocess.Popen([printchplenv,'--simple'],
+    p = subprocess.Popen([printchplenv,'--simple', '--all', '--no-tidy', '--anonymize'],
                          stdout=subprocess.PIPE);
 except:
     testFailed(logfilename, 'Prediff script: Error executing '+printchplenv);

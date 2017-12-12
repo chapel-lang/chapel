@@ -91,14 +91,14 @@ variable to include the directory where the new library file lives and the
 directory where the Chapel build lives.  The latter can be found by looking at
 the output of a ``$CHPL_HOME/util/printchplenv`` call and finding the
 appropriate directory under ``$CHPL_HOME/lib``; the directory name can be found
-by running ``$CHPL_HOME/util/printchplenv --runtime``.
+by running ``$CHPL_HOME/util/printchplenv --runtime --path``.
 
 .. code-block:: sh
 
    # Replace $PWD with the appropriate path to your library file if it isn't
    # in the current directory
    # Replace libDir with the directory we just found.
-   export LD_LIBRARY_PATH=$PWD:$CHPL_HOME/lib/`$CHPL_HOME/util/printchplenv --runtime`:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=$PWD:$CHPL_HOME/lib/`$CHPL_HOME/util/printchplenv --runtime --path`:$LD_LIBRARY_PATH
 
 
 When using a Chapel library from C, one must first initialize the Chapel runtime

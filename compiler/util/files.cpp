@@ -497,7 +497,7 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   }
 
   // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
-  command += std::string(CHPL_HOME) + "/util/printchplenv --simple 2> /dev/null";
+  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple 2> /dev/null";
 
   return runCommand(command);
 }
@@ -637,12 +637,16 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // Generate one variable containing all envMap information to pass to printchplenv
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env)
   {
-    if(!useDefaultEnv(env->first)) {
-      chplmakeallvars += env->first + "=" + std::string(env->second) + " ";
-    }
+    const std::string& key = env->first;
+    const char* oldPrefix = "CHPL_";
+    const char* newPrefix = "CHPL_MAKE_";
+    INT_ASSERT(key.substr(0, strlen(oldPrefix)) == oldPrefix);
+    std::string keySuffix = key.substr(strlen(oldPrefix), std::string::npos);
+    std::string chpl_make_key = newPrefix + keySuffix;
+    chplmakeallvars += chpl_make_key + "=" + std::string(env->second) + "|";
   }
 
-  fprintf(makefile.fptr, "\nCHPL_MAKE_ALL_VARS = %s\n", chplmakeallvars.c_str());
+  fprintf(makefile.fptr, "\nexport CHPL_MAKE_SETTINGS_NO_NEWLINES := %s\n", chplmakeallvars.c_str());
 
 
   // LLVM builds just use the makefile for the launcher and
