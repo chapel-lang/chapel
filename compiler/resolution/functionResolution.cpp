@@ -2026,15 +2026,14 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
 
-  } else if (info.isNotWellFormed(call) == true) {
-    if (checkOnly == false) {
-      info.haltNotWellFormed();
-
-    } else {
-      return NULL;
-    }
-  } else {
+  } else if (info.isWellFormed(call) == true) {
     retval = resolveNormalCall(info, checkOnly);
+
+  } else if (checkOnly == true) {
+    retval = NULL;
+
+  } else {
+    info.haltNotWellFormed();
   }
 
   return retval;
@@ -2228,26 +2227,26 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     if (valueCall != NULL && valueCall != call) {
       CallInfo tmpInfo;
 
-      if (tmpInfo.isNotWellFormed(valueCall) == true) {
+      if (tmpInfo.isWellFormed(valueCall) == true) {
+        wrapAndCleanUpActuals(bestValue, tmpInfo, false);
+
+      } else {
         if (checkOnly == false) {
           tmpInfo.haltNotWellFormed();
         }
-
-      } else {
-        wrapAndCleanUpActuals(bestValue, tmpInfo, false);
       }
     }
 
     if (constRefCall != NULL) {
       CallInfo tmpInfo;
 
-      if (tmpInfo.isNotWellFormed(constRefCall) == true) {
+      if (tmpInfo.isWellFormed(constRefCall) == true) {
+        wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
+
+      } else {
         if (checkOnly == false) {
           tmpInfo.haltNotWellFormed();
         }
-
-      } else {
-        wrapAndCleanUpActuals(bestConstRef, tmpInfo, false);
       }
     }
 
