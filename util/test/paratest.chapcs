@@ -56,14 +56,25 @@ def get_exclusive_nodes():
     # Grab the "SHARED;NODES;NODELIST;REQ_NODES" info for all jobs. For each
     # exclusive (SHARED=no) job, track the nodes allocated/requested or the
     # number of nodes requested if no specific nodes were allocated/requested.
+    # Also consider "draining" nodes as exclusively reserved since no other
+    # jobs will be able to run on them
     squeue_cmd = ['squeue',
                   '--partition=chapel',
                   '--noheader',
                   '--format="%h;%D;%N;%n"']
     squeue_out = run_command_wrapper(squeue_cmd)
+
+    sinfo_cmd = ['sinfo',
+                 '--partition=chapel',
+                 '--noheader',
+                 '--responding',
+                 '--format="no;%D;%N;%N"',
+                 '--states=DRAINING']
+    sinfo_out = run_command_wrapper(sinfo_cmd)
+
     num_exclusive_nodes = 0
     exclusive_hostnames = set()
-    for line in squeue_out:
+    for line in squeue_out + sinfo_out:
         shared, num_nodes, nodelist, req_nodes = line.split(';')
         if shared == 'no':
             nodes = nodelist or req_nodes
