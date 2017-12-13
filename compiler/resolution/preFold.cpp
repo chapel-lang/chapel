@@ -532,6 +532,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_IS_RECORD_TYPE) == true) {
+    AggregateType* at = toAggregateType(call->get(1)->typeInfo());
+
+    if (isRecord(at) == true) {
+      retval = new SymExpr(gTrue);
+
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_IS_UNION_TYPE)) {
     AggregateType* classType = toAggregateType(call->get(1)->typeInfo());
 
