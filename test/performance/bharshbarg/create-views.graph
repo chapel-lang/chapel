@@ -1,0 +1,5 @@
+perfkeys: Slice-1D:, Slice-2D:, RankChange-2D:, Reindex-1D:, Reindex-2D:
+repeat-files: create-views.dat
+graphkeys: Slice-1D, Slice-2D, RankChange-2D, Reindex-1D, Reindex-2D
+graphtitle: Array View Creation
+ylabel: Rate (Mviews/s)
