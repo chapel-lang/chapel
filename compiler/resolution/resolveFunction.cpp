@@ -1114,6 +1114,7 @@ void insertFormalTemps(FnSymbol* fn) {
 }
 
 // Returns true if the formal needs an internal temporary, false otherwise.
+// See also ArgSymbol::requiresCPtr
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
@@ -1132,7 +1133,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
       (backendRequiresCopyForIn(formal->type) ||
        fn->hasFlag(FLAG_INLINE) ||
        fn->hasFlag(FLAG_ITERATOR_FN)))
-     );
+    );
 }
 
 //
@@ -1141,7 +1142,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return isRecord(t)                     == true ||
+  return (isRecord(t) == true && !t->symbol->hasFlag(FLAG_RANGE)) ||
          isUnion(t)                      == true ||
          t->symbol->hasFlag(FLAG_ARRAY)  == true ||
          t->symbol->hasFlag(FLAG_DOMAIN) == true;

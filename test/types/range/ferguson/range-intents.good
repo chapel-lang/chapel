@@ -1,0 +1,11 @@
+1..10 means a copy was made; 1..20 means some sort of ref
+default 1..10
+const 1..10
+const in 1..10
+const ref 1..20
+ref 1..20
+begin 1..10
+begin in 1..10
+begin const in 1..10
+begin ref 1..20
+begin const ref 1..20

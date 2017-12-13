@@ -24,33 +24,36 @@
 bool intentsResolved = false;
 
 static IntentTag constIntentForType(Type* t) {
-  if (isSyncType(t)          ||
-      isSingleType(t)        ||
-      isRecordWrappedType(t) ||  // domain, array, or distribution
-      isRecord(t)) { // may eventually want to decide based on size
-    return INTENT_CONST_REF;
-  } else if (is_bool_type(t) ||
-             is_int_type(t) ||
-             is_uint_type(t) ||
-             is_real_type(t) ||
-             is_imag_type(t) ||
-             is_complex_type(t) ||
-             is_enum_type(t) ||
-             isClass(t) ||
-             isUnion(t) ||
-             isAtomicType(t) ||
-             t == dtOpaque ||
-             t == dtTaskID ||
-             t == dtFile ||
-             t == dtNil ||
-             t == dtStringC ||
-             t == dtCVoidPtr ||
-             t == dtCFnPtr ||
-             t == dtVoid ||
-             // TODO: t->symbol->hasFlag(FLAG_RANGE) ||
-             t->symbol->hasFlag(FLAG_EXTERN)) {
+  if (is_bool_type(t) ||
+      is_int_type(t) ||
+      is_uint_type(t) ||
+      is_real_type(t) ||
+      is_imag_type(t) ||
+      is_complex_type(t) ||
+      is_enum_type(t) ||
+      isClass(t) ||
+      isUnion(t) ||
+      isAtomicType(t) ||
+      t == dtOpaque ||
+      t == dtTaskID ||
+      t == dtFile ||
+      t == dtNil ||
+      t == dtStringC ||
+      t == dtCVoidPtr ||
+      t == dtCFnPtr ||
+      t == dtVoid ||
+      t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_EXTERN)) {
     return INTENT_CONST_IN;
+
+  } else if (isSyncType(t)          ||
+             isSingleType(t)        ||
+             isRecordWrappedType(t) ||  // domain, array, or distribution
+             isRecord(t)) { // may eventually want to decide based on size
+    return INTENT_CONST_REF;
+
   }
+
   INT_FATAL(t, "Unhandled type in constIntentForType()");
   return INTENT_CONST;
 }
@@ -79,10 +82,7 @@ bool isTupleContainingRefMaybeConst(Type* t)
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
 
-  if (/*isSyncType(t)                                  ||
-      isSingleType(t)                                ||
-        these should have FLAG_DEFAULT_INTENT_IS_REF) */
-      isAtomicType(t)                                ||
+  if (isAtomicType(t)                                ||
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
@@ -102,6 +102,7 @@ IntentTag blankIntentForType(Type* t) {
              t == dtCFnPtr                           ||
              isClass(t)                              ||
              isRecord(t)                             ||
+             // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
              t == dtTaskID                           ||
              t == dtFile                             ||
