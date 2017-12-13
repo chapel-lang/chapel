@@ -622,8 +622,6 @@ static AList castToError(Symbol* error, SymExpr* &castedError) {
 
   if (error->type == dtError) {
     castedError = new SymExpr(error);
-
-    ret.insertAtTail(castedError);
   } else {
     VarSymbol* castedErrorVar = newTemp("castedError", dtError);
     castedError = new SymExpr(castedErrorVar);
