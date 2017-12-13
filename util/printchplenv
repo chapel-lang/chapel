@@ -132,6 +132,12 @@ def compute_all_values():
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
+
+    # Use module's LCD architecture in case it was built before
+    # Internal, but this value is used in place of CHPL_TARGET_ARCH for --path
+    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
+            get_lcd=chpl_home_utils.using_chapel_module())
+
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
@@ -156,10 +162,6 @@ def compute_all_values():
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
     global ENV_VALS
-
-    # Use module's LCD architecture in case it was built before
-    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
-            get_lcd=chpl_home_utils.using_chapel_module())
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
@@ -317,7 +319,10 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     # Print environment variables and their values
     for env in envs:
-        ret.append(print_var(env.name, ENV_VALS[env.name], shortname=env.shortname))
+        value = ENV_VALS[env.name]
+        if env.name == 'CHPL_TARGET_ARCH' and print_format == 'path':
+            value = ENV_VALS['CHPL_RUNTIME_ARCH']
+        ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path
     if print_format == 'path':
