@@ -992,7 +992,17 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
     if (isFieldAccess(callExpr) == false) {
       if (UnresolvedSymExpr* callname =
           toUnresolvedSymExpr(callExpr->baseExpr)) {
-        callExpr->baseExpr = handleInsertedMethodCall(callname);
+        bool alreadyMethod = false;
+        if (callExpr->numActuals() > 0) {
+          SymExpr* firstArg = toSymExpr(callExpr->get(1));
+          if (firstArg && firstArg->symbol() == gMethodToken) {
+            alreadyMethod = true;
+          }
+        }
+
+        if (alreadyMethod == false) {
+          callExpr->baseExpr = handleInsertedMethodCall(callname);
+        }
       }
 
       for_actuals(actual, callExpr) {
