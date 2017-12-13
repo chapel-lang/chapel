@@ -259,7 +259,9 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   QualifiedType qual = formal->qualType();
   INT_ASSERT(formal);
 
-  bool passedByRef = formal->intent == INTENT_REF || qual.getQual() == QUAL_REF;
+  bool passedByRef = formal->intent == INTENT_REF ||
+                     qual.getQual() == QUAL_REF ||
+                     qual.getQual() == QUAL_CONST_REF;
   if (!passedByRef && isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
     return true;
   }
