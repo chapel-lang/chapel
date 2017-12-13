@@ -1,2 +1,0 @@
-# We only care about this test for performance
-CHPL_TEST_PERF != on
