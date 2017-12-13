@@ -76,8 +76,9 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
-          data.push_back(avail[..idx]);
-          (done, used) = (true, avail[..idx].size);
+          ref x = avail[..idx];
+          data.push_back(x);
+          (done, used) = (true, x.size);
         } else {
           data.push_back(avail);
           (done, used) = (false, avail.size);
