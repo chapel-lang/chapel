@@ -1,0 +1,6 @@
+bug: no way to create child class fields based on parent class generics
+
+This test demonstrates that a common pattern -- having a child class's
+fields depend on a parent class's generic fields (params, types) --
+doesn't work today due to an order of evaluation issue w.r.t. how
+initializers are defined.
