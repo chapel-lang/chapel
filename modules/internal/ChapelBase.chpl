@@ -1744,23 +1744,24 @@ module ChapelBase {
   proc isClassType(type t) param where t == _nilType return true;
   proc isClassType(type t) param return false;
 
-  proc isRecordType(type t) param where t: value {
-    // some non-record types are implemented via records - exclude those
-    if
-      isDmapType(t)   ||
-      isDomainType(t) ||
-      isArrayType(t)  ||
-      isRangeType(t)  ||
-      isTupleType(t)  ||
-      isSyncType(t)   ||
-      isSingleType(t) ||
-      isAtomicType(t)
-    then
+  proc isRecordType(type t) param {
+    if __primitive("is record type", t) == false then
       return false;
+
+    // some non-record types are implemented via records - exclude those
+    else if isDmapType(t)   ||
+            isDomainType(t) ||
+            isArrayType(t)  ||
+            isRangeType(t)  ||
+            isTupleType(t)  ||
+            isSyncType(t)   ||
+            isSingleType(t) ||
+            isAtomicType(t) then
+      return false;
+
     else
       return true;
   }
-  proc isRecordType(type t) param return false;
 
   proc isUnionType(type t) param return __primitive("is union type", t);
 
