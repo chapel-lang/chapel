@@ -396,9 +396,31 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
                   immediate->const_kind == NUM_KIND_IMAG)) {
         ret.c = cname; // in C, all floating point literals are (double)
       } else if (immediate->const_kind == NUM_KIND_COMPLEX) {
-        INT_ASSERT("Can't code generate a complex number here");
+
+        switch(immediate->num_index) {
+          case COMPLEX_SIZE_64: {
+            VarSymbol* r = new_RealSymbol(...);
+            VarSymbol* i = new_RealSymbol(...);
+            ret = codegenCallExpr("_chpl_complex64",
+                                 new SymExpr(r),
+                                 new SymExpr(i));
+            break;
+          }
+          case COMPLEX_SIZE_128: {
+            VarSymbol* r = new_RealSymbol(...);
+            VarSymbol* i = new_RealSymbol(...);
+            ret = codegenCallExpr("_chpl_complex128",
+                                 new SymExpr(r),
+                                 new SymExpr(i));
+            break;
+          }
+          default:
+            INT_ASSERT("unsupported complex floating point width");
+        }
+        ret.chplType = typeInfo();
+
       } else {
-        INT_ASSERT("Unexpected immediate type");
+        INT_FATAL("Unexpected immediate type");
       }
     } else {
       // not immediate

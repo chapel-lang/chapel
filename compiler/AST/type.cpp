@@ -874,6 +874,7 @@ bool isLegalParamType(Type* t) {
           is_uint_type(t) ||
           is_real_type(t) ||
           is_imag_type(t) ||
+          is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
           t == dtStringC ||
