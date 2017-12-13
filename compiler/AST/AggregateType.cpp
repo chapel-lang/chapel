@@ -2098,20 +2098,10 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
 }
 
 void AggregateType::addRootType() {
-  // make root records inherit from value
-  // make root classes inherit from object
-  if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
-    SET_LINENO(this);
+  if (isClass() == true) {
+    if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
+      SET_LINENO(this);
 
-    if (isRecord() == true) {
-      dispatchParents.add(dtValue);
-
-      // Assume that this addition is unique; report if not.
-      if (dtValue->dispatchChildren.add_exclusive(this) == false) {
-        INT_ASSERT(false);
-      }
-
-    } else if (isClass() == true) {
       VarSymbol* super = new VarSymbol("super", dtObject);
 
       dispatchParents.add(dtObject);
