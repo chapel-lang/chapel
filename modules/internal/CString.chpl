@@ -45,9 +45,6 @@ module CString {
   inline proc ==(s0: c_string, s1: c_string) {
     return __primitive("string_compare", s0, s1) == 0;
   }
-  inline proc ==(s0: c_string, s1: _nilType) {
-    return __primitive("string_compare", s0, c_nil:c_string) == 0;
-  }
 
 //  inline proc ==(s0: string, s1: c_string) {
 //    return __primitive("string_compare", s0.c_str(), s1) == 0;
