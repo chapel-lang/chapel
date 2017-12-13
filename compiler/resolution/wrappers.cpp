@@ -1846,6 +1846,9 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   BlockStmt*  loopBody   = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
   CallExpr*   toLeader   = NULL;
 
+  // Leader iterators always return by value
+  liFn->retTag = RET_VALUE;
+
   INT_ASSERT(liFn->hasFlag(FLAG_RESOLVED) == false);
 
   iteratorLeaderMap.put(wrapFn, liFn);
