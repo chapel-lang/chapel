@@ -554,7 +554,6 @@ proc locale.cwd(out error: syserr): string {
     if (error != ENOERR) {
       ret = "";
     } else {
-      var tmp_len = tmp.length;
       ret = new string(tmp, needToCopy=false);
     }
   }
