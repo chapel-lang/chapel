@@ -237,9 +237,12 @@ def filter_tidy(chpl_env):
     return True
 
 
-"""Filter CHPL_MAKE for --path (special case)"""
+"""Filter CHPL_MAKE and CHPL_NETWORK_ATOMICS for --path (special cases)"""
 def filter_path(chpl_env):
-    return chpl_env.name != 'CHPL_MAKE'
+    name = chpl_env.name.strip()
+    if name == 'CHPL_MAKE' or name == 'CHPL_NETWORK_ATOMICS':
+        return False
+    return True
 
 
 """Filter variables that are not selected in contents
