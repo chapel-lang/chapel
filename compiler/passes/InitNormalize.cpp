@@ -990,6 +990,11 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
     if (isFieldAccess(callExpr) == false) {
+      if (UnresolvedSymExpr* callname =
+          toUnresolvedSymExpr(callExpr->baseExpr)) {
+        callExpr->baseExpr = handleInsertedMethodCall(callname);
+      }
+
       for_actuals(actual, callExpr) {
         updateFieldsMember(actual);
       }
@@ -1022,6 +1027,39 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+* If the name matches that of a method on our type, we need to transform it   *
+* into something we'll recognize as a method call.                            *
+*                                                                             *
+* This is necessary so that later we can see the if and loop expr "method     *
+* calls" written for field initialization and let them work properly.         *
+*                                                                             *
+* NOTE: this works because we are calling it on an unresolved sym expr that   *
+* we got from the base of a CallExpr.  Should not be attempted on other       *
+* unresolved sym exprs, or on sym exprs.                                      *
+*                                                                             *
+************************************** | *************************************/
+
+Expr* InitNormalize::handleInsertedMethodCall(UnresolvedSymExpr* us) const {
+  AggregateType* at      = type();
+  bool           matches = false;
+  Expr*          retVal  = us;
+
+  forv_Vec(FnSymbol, fn, at->methods) {
+    if (strcmp(us->unresolved, fn->name) == 0) {
+      matches = true;
+      break;
+    }
+  }
+
+  if (matches) {
+    CallExpr* replacement = new CallExpr(astrSdot, mFn->_this);
+    replacement->insertAtTail(us);
+    retVal = replacement;
+  }
+  return retVal;
 }
 
 /************************************* | **************************************
