@@ -934,7 +934,8 @@ static ArgSymbol* newExtraFormal(FIcontext& ctx, FIinfo& fii, int ix,
     
     ArgSymbol*  eFormal = new ArgSymbol(efInt, eName, efType);
 
-    if (addFlagImm || eActual->hasFlag(FLAG_REF_TO_IMMUTABLE))
+    if (eFormal->isRef() &&
+        (addFlagImm || eActual->hasFlag(FLAG_REF_TO_IMMUTABLE)))
       eFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
 
     return eFormal;
