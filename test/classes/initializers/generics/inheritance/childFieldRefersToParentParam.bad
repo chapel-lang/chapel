@@ -1,0 +1,1 @@
+childFieldRefersToParentParam.chpl:11: error: Cannot access parent field 'rank' during phase 1

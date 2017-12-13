@@ -396,37 +396,45 @@ void AggregateType::accept(AstVisitor* visitor) {
 // Returns true if the type has generic fields, false otherwise.
 // If the index of the first generic field has not previously been set, set it.
 bool AggregateType::setNextGenericField() {
-  // Don't redo work
-  if (genericField > 0)
-    return true;
+  bool retval = true;
 
-  int idx = 1;
-  for_fields(field, this) {
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_PARAM) ||
-        (field->defPoint->init == NULL && field->defPoint->exprType == NULL
-         && field->type == dtUnknown)) {
-      // TODO: do something special if the type of the field is known but
-      // generic
-      genericField = idx;
-      break;
+  if (genericField == 0) {
+    int idx = 1;
+
+    for_fields(field, this) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true ||
+          field->hasFlag(FLAG_PARAM)         == true ||
+          (field->defPoint->init     == NULL &&
+           field->defPoint->exprType == NULL &&
+           field->type == dtUnknown)) {
+        genericField = idx;
+        break;
+
+      } else {
+        idx++;
+      }
     }
-    idx++;
+
+    if (isClass() == true) {
+      if (dispatchParents.v[0]                                != NULL &&
+          dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == true) {
+
+        if (AggregateType* parent = toAggregateType(dispatchParents.v[0])) {
+          if (parent->setNextGenericField() == false) {
+            INT_ASSERT(false);
+          }
+        }
+      }
+    }
+
+    if (genericField != 0) {
+      symbol->addFlag(FLAG_GENERIC);
+    } else {
+      retval = false;
+    }
   }
 
-  if (dispatchParents.v[0] != NULL &&
-      dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC)) {
-    AggregateType* parent = toAggregateType(dispatchParents.v[0]);
-    if (parent) {
-      bool parentVal = parent->setNextGenericField();
-      INT_ASSERT(parentVal);
-    }
-  }
-
-  if (genericField != 0) {
-    symbol->addFlag(FLAG_GENERIC);
-    return true;
-  } else
-    return false;
+  return retval;
 }
 
 // Returns an instantiation of this AggregateType at the given index.  If the
@@ -2098,20 +2106,10 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
 }
 
 void AggregateType::addRootType() {
-  // make root records inherit from value
-  // make root classes inherit from object
-  if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
-    SET_LINENO(this);
+  if (isClass() == true) {
+    if (inherits.length == 0 && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
+      SET_LINENO(this);
 
-    if (isRecord() == true) {
-      dispatchParents.add(dtValue);
-
-      // Assume that this addition is unique; report if not.
-      if (dtValue->dispatchChildren.add_exclusive(this) == false) {
-        INT_ASSERT(false);
-      }
-
-    } else if (isClass() == true) {
       VarSymbol* super = new VarSymbol("super", dtObject);
 
       dispatchParents.add(dtObject);

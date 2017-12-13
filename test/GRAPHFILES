@@ -82,6 +82,7 @@ performance/bharshbarg/forall-dom-range.graph
 performance/bharshbarg/arr-forall.graph
 performance/bharshbarg/views-forall-index.graph
 performance/bharshbarg/views-forall-iter.graph
+performance/bharshbarg/create-views.graph
 studies/prk/Stencil/prk-stencil-time.graph
 types/string/ferguson/temporary-copies.graph
 types/string/psahabu/perf/arguments.graph
