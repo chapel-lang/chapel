@@ -11,3 +11,5 @@ class D {
 
 var d = new D();
 d.foo();
+
+delete d;
