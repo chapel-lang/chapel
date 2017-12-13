@@ -246,59 +246,54 @@ static void filterInitCandidate(CallInfo&                  info,
 ************************************** | *************************************/
 
 static void resolveMatch(FnSymbol* fn) {
-  if (fn->isResolved() == true) {
-    return;
-  }
+  if (fn->isResolved() == false) {
+    if (fn->id == breakOnResolveID) {
+      printf("breaking on resolve fn:\n");
+      print_view(fn);
+      gdbShouldBreakHere();
+    }
 
-  if (fn->id == breakOnResolveID) {
-    printf("breaking on resolve fn:\n");
-    print_view(fn);
-    gdbShouldBreakHere();
-  }
+    fn->addFlag(FLAG_RESOLVED);
 
-  fn->addFlag(FLAG_RESOLVED);
+    insertFormalTemps(fn);
 
-  insertFormalTemps(fn);
+    bool wasGeneric = fn->_this->type->symbol->hasFlag(FLAG_GENERIC);
 
-  bool wasGeneric = fn->_this->type->symbol->hasFlag(FLAG_GENERIC);
+    if (wasGeneric == true) {
+      AggregateType* at  = toAggregateType(fn->_this->type);
+      bool           res = at->setNextGenericField();
 
-  if (wasGeneric) {
-    AggregateType* at  = toAggregateType(fn->_this->type);
-    INT_ASSERT(at);
+      if (at->isClass() == true) {
+        if (at->dispatchParents.v[0]                                == NULL ||
+            at->dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == false) {
+          INT_ASSERT(res);
+        }
+      }
+    }
 
-    bool           res = at->setNextGenericField();
-    if (at->dispatchParents.v[0] == NULL ||
-        at->dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == false) {
-      INT_ASSERT(res);
+    resolveBlockStmt(fn->body);
+
+    if (wasGeneric == true && isClass(fn->_this->type) == true) {
+      FnSymbol* classAlloc = buildClassAllocator(fn);
+
+      normalize(classAlloc);
+    }
+
+    if (tryFailure == false) {
+      resolveReturnType(fn);
+
+      toAggregateType(fn->_this->type)->initializerResolved = true;
+
+      // insert casts as necessary
+      insertAndResolveCasts(fn);
+
+      // make sure methods are in the methods list
+      ensureInMethodList(fn);
+
+    } else {
+      fn->removeFlag(FLAG_RESOLVED);
     }
   }
-
-  resolveBlockStmt(fn->body);
-
-  if (wasGeneric == true && isClass(fn->_this->type) == true) {
-    FnSymbol* classAlloc = buildClassAllocator(fn);
-
-    normalize(classAlloc);
-  }
-
-  if (tryFailure) {
-    fn->removeFlag(FLAG_RESOLVED);
-    return;
-  }
-
-  resolveReturnType(fn);
-
-  toAggregateType(fn->_this->type)->initializerResolved = true;
-
-  //
-  // insert casts as necessary
-  //
-  insertAndResolveCasts(fn);
-
-  //
-  // make sure methods are in the methods list
-  //
-  ensureInMethodList(fn);
 }
 
 /************************************* | **************************************
