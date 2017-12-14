@@ -347,7 +347,11 @@ static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
       useT = newParentTy;
     }
 
-    newCt->dispatchParents.add(useT);
+    AggregateType* at = toAggregateType(useT);
+
+    INT_ASSERT(at != NULL);
+
+    newCt->dispatchParents.add(at);
   }
 
   forv_Vec(Type, t, fn->retType->dispatchParents) {

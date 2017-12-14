@@ -511,8 +511,12 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   // been done outside of the AggregateType by
   // instantiateTypeForTypeConstructor.  Totally)
   forv_Vec(Type, pt, this->dispatchParents) {
-    newInstance->dispatchParents.add(pt);
-    bool inserted = pt->dispatchChildren.add_exclusive(newInstance);
+    AggregateType* at = toAggregateType(pt);
+    INT_ASSERT(at != NULL);
+
+    newInstance->dispatchParents.add(at);
+
+    bool inserted = at->dispatchChildren.add_exclusive(newInstance);
     INT_ASSERT(inserted);
   }
 

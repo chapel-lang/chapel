@@ -363,11 +363,16 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
     Type* pic       = pfnInfo->iclass;
     Type* cic       = cfnInfo->iclass;
 
-    Type* pthisType  = pfnInfo->iterator->_this->typeInfo();
-    Type* cthisType  = cfnInfo->iterator->_this->typeInfo();
+    Type* pthisType = pfnInfo->iterator->_this->typeInfo();
+    Type* cthisType = cfnInfo->iterator->_this->typeInfo();
 
     pfn->retType->dispatchChildren.add_exclusive(cfn->retType);
-    cfn->retType->dispatchParents.add_exclusive(pfn->retType);
+
+    AggregateType* atPfnRetType = toAggregateType(pfn->retType);
+
+    INT_ASSERT(atPfnRetType != NULL);
+
+    cfn->retType->dispatchParents.add_exclusive(atPfnRetType);
 
     INT_ASSERT(cic->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true);
     INT_ASSERT(cthisType->dispatchParents.n              == 1);
@@ -386,7 +391,12 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
       }
 
       pic->dispatchChildren.add_exclusive(cic);
-      cic->dispatchParents.add_exclusive(pic);
+
+      AggregateType* atPic = toAggregateType(pic);
+
+      INT_ASSERT(atPic != NULL);
+
+      cic->dispatchParents.add_exclusive(atPic);
     }
 
   } else {
