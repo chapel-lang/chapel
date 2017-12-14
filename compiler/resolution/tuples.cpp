@@ -379,8 +379,13 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     newType->instantiatedFrom = dtTuple;
 
     forv_Vec(Type, t, dtTuple->dispatchParents) {
-      newType->dispatchParents.add(t);
-      t->dispatchChildren.add_exclusive(newType);
+      AggregateType* at = toAggregateType(t);
+
+      INT_ASSERT(at != NULL);
+
+      newType->dispatchParents.add(at);
+
+      at->dispatchChildren.add_exclusive(newType);
     }
 
     // Decide whether or not we have a homogeneous/star tuple
