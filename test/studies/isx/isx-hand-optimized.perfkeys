@@ -11,5 +11,6 @@ bucket count =
 bucket offset =
 bucketize =
 exchange =
+exchange barrier =
 count keys =
 verify:Verification successful!
