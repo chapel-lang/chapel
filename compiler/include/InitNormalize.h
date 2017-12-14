@@ -144,7 +144,7 @@ private:
 
   bool            isFieldAccess(CallExpr* callExpr)                      const;
 
-  Expr*           handleInsertedMethodCall(UnresolvedSymExpr* us)        const;
+  void            handleInsertedMethodCall(CallExpr* call)               const;
 
   Expr*           fieldInitFromStmt(CallExpr* stmt, DefExpr* field)      const;
 
