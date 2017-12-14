@@ -1256,6 +1256,7 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
   doc                = NULL;
   retSymbol          = NULL;
   llvmDISubprogram   = NULL;
+  mIsNormalized      = false;
   _throwsError       = false;
 
   substitutions.clear();
@@ -1928,6 +1929,14 @@ int FnSymbol::hasGenericFormals() const {
   }
 
   return retval;
+}
+
+bool FnSymbol::isNormalized() const {
+  return mIsNormalized;
+}
+
+void FnSymbol::setNormalized(bool value) {
+  mIsNormalized = value;
 }
 
 bool FnSymbol::isResolved() const {

@@ -594,7 +594,11 @@ public:
 
   bool                       tagIfGeneric();
 
+  bool                       isNormalized()                              const;
+  void                       setNormalized(bool value);
+
   bool                       isResolved()                                const;
+
   bool                       isMethod()                                  const;
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
@@ -616,6 +620,7 @@ private:
 
   int                        hasGenericFormals()                         const;
 
+  bool                       mIsNormalized;
   bool                       _throwsError;
 };
 
