@@ -89,6 +89,7 @@ static uint64_t debug_flag = 0;
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
 #define DBGF_1_NODE    0x20000          // only produce debug for one node 
+#define DBGF_NODENAME  0x40000          // produce chpl_nodeID <-> nodename map
 
 static c_nodeid_t debug_nodeID = 0;
 
@@ -1364,6 +1365,15 @@ static void dbg_init(void)
       debug_file = f;
       setbuf(debug_file, NULL);
     }
+  }
+
+  {
+    char buf[100];
+
+    (void) gethostname(buf, sizeof(buf));
+    DBG_P_L(DBGF_NODENAME,
+            "chpl_nodeID %d is on hostname \"%.*s\"",
+            (int) chpl_nodeID, (int) sizeof(buf), buf);
   }
 
   const int evNode = (int) chpl_env_rt_get_int("COMM_UGNI_DEBUG_CORE_NODE", -1);
@@ -3174,7 +3184,9 @@ void chpl_comm_pre_task_exit(int all)
   //
   {
 #ifdef DEBUG
-    const int test = _DBG_DO(DBGF_MEMREG);
+    const int test = _DBG_DO(DBGF_MEMREG)
+                     || (chpl_nodeID == 0
+                         && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM", false);
     FILE* f = debug_file;
 #else
     const int test = (chpl_nodeID == 0
@@ -7091,12 +7103,14 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 
 #define _PSV_PRINT(psv)                                                 \
         do {                                                            \
-          size_t wc = snprintf(&buf[buf_cnt], sizeof(buf) - buf_cnt,    \
-                               "%s = %" PRIu64 "; ", # psv, ps->psv);   \
-          if (wc > sizeof(buf) - buf_cnt)                               \
-            buf_cnt = sizeof(buf);                                      \
-          else                                                          \
-            buf_cnt += wc;                                              \
+          if (ps->psv != 0) {                                           \
+            size_t wc = snprintf(&buf[buf_cnt], sizeof(buf) - buf_cnt,  \
+                                 "%s = %" PRIu64 "; ", # psv, ps->psv); \
+            if (wc > sizeof(buf) - buf_cnt)                             \
+              buf_cnt = sizeof(buf);                                    \
+            else                                                        \
+              buf_cnt += wc;                                            \
+          }                                                             \
         } while (0);
 
   buf_cnt = 0;
