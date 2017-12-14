@@ -154,7 +154,7 @@ namespace {
 // Static class helper functions
 static bool catchesNotExhaustive(TryStmt* tryStmt);
 static bool shouldEnforceStrict(CallExpr* node);
-static Expr* castToError(Symbol* errorExpr);
+static AList castToError(Symbol* error, SymExpr* &castedError);
 
 class ErrorHandlingVisitor : public AstVisitorTraverse {
 
@@ -299,12 +299,15 @@ void ErrorHandlingVisitor::lowerCatches(const TryInfo& info) {
 
     BlockStmt* deferDeleteBody = new BlockStmt();
     DeferStmt* deferDelete     = new DeferStmt(deferDeleteBody);
-    CallExpr*  deleteError     = new CallExpr(gChplDeleteError,
-                                              castToError(toDelete));
+
+    SymExpr*   castedError     = NULL;
+    AList      castError       = castToError(toDelete, castedError);
+    CallExpr*  deleteError     = new CallExpr(gChplDeleteError, castedError);
     AList      deleteCond      = errorCond(toDelete,
                                            new BlockStmt(deleteError));
 
-    deferDeleteBody->insertAtHead(deleteCond);
+    deferDeleteBody->insertAtHead(castError);
+    deferDeleteBody->insertAtTail(deleteCond);
     catchBody->insertAtHead(deferDelete);
   }
 
@@ -384,9 +387,11 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
     VarSymbol* fixedError  = newTemp("fixed_error", dtError);
-    CallExpr*  fixError    = new CallExpr(gChplFixThrownError,
-                                          castToError(thrownError));
+    SymExpr*   castedError = NULL;
+    AList      castError   = castToError(thrownError, castedError);
+    CallExpr*  fixError    = new CallExpr(gChplFixThrownError, castedError);
 
+    throwBlock->insertAtTail(castError);
     throwBlock->insertAtTail(new DefExpr(fixedError));
     throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
 
@@ -489,12 +494,11 @@ void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
-  Expr* castError = castToError(error);
-
-  AList ret;
+  SymExpr* castedError = NULL;
+  AList    ret         = castToError(error, castedError);
   // Using PRIM_ASSIGN instead of PRIM_MOVE here to work around
   // errors that come up in C compilation.
-  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castError));
+  ret.insertAtTail(new CallExpr(PRIM_ASSIGN, outError, castedError));
   ret.insertAtTail(new GotoStmt(GOTO_RETURN, epilogue));
 
   return ret;
@@ -515,10 +519,10 @@ GotoStmt* ErrorHandlingVisitor::gotoHandler() {
 AList ErrorHandlingVisitor::setOuterErrorAndGotoHandler(VarSymbol* error) {
 
   INT_ASSERT(!tryStack.empty());
-  Expr* castError = castToError(error);
-  TryInfo& outerTry = tryStack.top();
-  AList ret;
-  ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castError));
+  TryInfo& outerTry    = tryStack.top();
+  SymExpr* castedError = NULL;
+  AList    ret         = castToError(error, castedError);
+  ret.insertAtTail(new CallExpr(PRIM_MOVE, outerTry.errorVar, castedError));
   ret.insertAtTail(gotoHandler());
 
   return ret;
@@ -613,15 +617,21 @@ static bool shouldEnforceStrict(CallExpr* node) {
 }
 
 
-static Expr* castToError(Symbol* error) {
-  Expr* castError = NULL;
+static AList castToError(Symbol* error, SymExpr* &castedError) {
+  AList ret;
 
-  if (error->type == dtError)
-    castError = new SymExpr(error);
-  else
-    castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+  if (error->type == dtError) {
+    castedError = new SymExpr(error);
+  } else {
+    VarSymbol* castedErrorVar = newTemp("castedError", dtError);
+    castedError = new SymExpr(castedErrorVar);
 
-  return castError;
+    CallExpr* castError = new CallExpr(PRIM_CAST, dtError->symbol, error);
+    ret.insertAtTail(new DefExpr(castedErrorVar));
+    ret.insertAtTail(new CallExpr(PRIM_MOVE, castedErrorVar, castError));
+  }
+
+  return ret;
 }
 
 class ImplicitThrowsVisitor : public AstVisitorTraverse {

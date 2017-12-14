@@ -1,1 +1,3 @@
-closedWithoutOpen.chpl:3: error: halt reached - Operation attempted on an invalid file
+uncaught SystemError: Bad file descriptor (in file.close with path "unknown")
+  closedWithoutOpen.chpl:3: thrown here
+  closedWithoutOpen.chpl:3: uncaught here

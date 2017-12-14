@@ -1301,11 +1301,21 @@ proc =(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-/* Halt if a file is invalid */
-proc file.check() {
-  if(is_c_nil(_file_internal)) {
-    halt("Operation attempted on an invalid file");
+/* Throw an error if a file is invalid */
+proc file.check() throws {
+  if is_c_nil(_file_internal) then
+    throw SystemError.fromSyserr(EBADF, "Operation attempted on an invalid file");
+}
+
+/* Return a syserr through out error if a file is invalid */
+proc file.check(out error:syserr) {
+  var err: syserr = ENOERR;
+  try! {
+    check();
+  } catch e: SystemError {
+    err = e.err;
   }
+  error = err;
 }
 
 pragma "no doc"
@@ -1336,8 +1346,8 @@ proc file.unlock() {
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
 pragma "no doc"
-proc file._style:iostyle {
-  check();
+proc file._style:iostyle throws {
+  try check();
 
   var ret:iostyle;
   on this.home {
@@ -1375,9 +1385,12 @@ proc file._style:iostyle {
                will halt with an error message.
  */
 proc file.close(out error:syserr) {
-  check();
-  on this.home {
-    error = qio_file_close(_file_internal);
+  check(error);
+
+  if !error {
+    on this.home {
+      error = qio_file_close(_file_internal);
+    }
   }
 }
 
@@ -1405,9 +1418,12 @@ This function will typically call the ``fsync`` system call.
 
  */
 proc file.fsync(out error:syserr) {
-  check();
-  on this.home {
-    error = qio_file_sync(_file_internal);
+  check(error);
+
+  if !error {
+    on this.home {
+      error = qio_file_sync(_file_internal);
+    }
   }
 }
 
@@ -1436,18 +1452,22 @@ to get the path to a file.
 
  */
 proc file.getPath(out error:syserr) : string {
-  check();
-  var ret:string;
-  on this.home {
-    var tmp:c_string_copy;
-    var tmp2:c_string_copy;
-    error = qio_file_path(_file_internal, tmp);
-    if !error {
-      error = qio_shortest_path(_file_internal, tmp2, tmp);
+  check(error);
+
+  var ret: string = "unknown";
+  if !error {
+    on this.home {
+      var tmp:c_string_copy;
+      var tmp2:c_string_copy;
+      error = qio_file_path(_file_internal, tmp);
+      if !error {
+        error = qio_shortest_path(_file_internal, tmp2, tmp);
+      }
+      chpl_free_c_string_copy(tmp);
+      if !error {
+        ret = new string(tmp2, needToCopy=false);
+      }
     }
-    chpl_free_c_string_copy(tmp);
-    ret = if error then "unknown"
-                   else new string(tmp2, needToCopy=false);
   }
   return ret;
 }
@@ -1460,8 +1480,8 @@ a problem getting the path to the open file.
 */
 proc file.tryGetPath() : string {
   var err:syserr = ENOERR;
-  var ret:string;
-  ret = this.getPath(err);
+  var ret = this.getPath(err);
+
   if err then return "unknown";
   else return ret;
 }
@@ -2400,7 +2420,14 @@ proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, pa
   if error then
     return new channel(writing=false, kind=kind, locking=locking);
 
-  var reader = fl.reader(error=error, kind, locking, start, end, hints, fl._style);
+  var fl_style: iostyle;
+  try! {
+    fl_style = fl._style;
+  } catch e: SystemError {
+    error = e.err;
+  }
+
+  var reader = fl.reader(error=error, kind, locking, start, end, hints, fl_style);
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
   // and not having any handles attached to it, it will close the underlying file for the channel.
@@ -2465,7 +2492,15 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
   var fl:file = open(error=error, path, iomode.cw, url=url);
   if error then
     return new channel(writing=true, kind=kind, locking=locking);
-  var writer = fl.writer(error=error, kind, locking, start, end, hints, fl._style);
+
+  var fl_style: iostyle;
+  try! {
+    fl_style = fl._style;
+  } catch e: SystemError {
+    error = e.err;
+  }
+
+  var writer = fl.writer(error=error, kind, locking, start, end, hints, fl_style);
   // Need to look at this some more and verify it:
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
   // Then, when we leave this function, Chapel will view this file as leaving scope,
@@ -2531,11 +2566,13 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
 // if the error code is nonzero.
 // The return error code should be checked to avoid double-deletion errors.
 proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(false, kind, locking) {
-  check();
+  check(error);
 
   var ret:channel(false, kind, locking);
-  on this.home {
-    ret = new channel(false, kind, locking, this, error, hints, start, end, style);
+  if !error {
+    on this.home {
+      ret = new channel(false, kind, locking, this, error, hints, start, end, style);
+    }
   }
   return ret;
 }
@@ -2557,16 +2594,18 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
    :returns: an object which yields strings read from the file
  */
 proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) {
-  check();
+  check(error);
 
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
-
   param kind = iokind.dynamic;
   var ret:ItemReader(string, kind, locking);
-  on this.home {
-    var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
-    ret = new ItemReader(string, kind, locking, ch);
+
+  if !error {
+    on this.home {
+      var ch = new channel(false, kind, locking, this, error, hints, start, end, local_style);
+      ret = new ItemReader(string, kind, locking, ch);
+    }
   }
   return ret;
 }
@@ -2631,19 +2670,20 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
 // If the return error code is nonzero, the ref count will be 0 not 1.
 // The error code should be checked to avoid double-deletion errors.
 proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE, style:iostyle = this._style): channel(true,kind,locking) {
-  check();
+  check(error);
 
   var ret:channel(true, kind, locking);
-  on this.home {
-    ret = new channel(true, kind, locking, this, error, hints, start, end, style);
+  if !error {
+    on this.home {
+      ret = new channel(true, kind, locking, this, error, hints, start, end, style);
+    }
   }
   return ret;
 }
 
 // documented in error= version
 pragma "no doc"
-proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) throws
-{
+proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0, end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style): channel(true,kind,locking) throws {
   var err:syserr = ENOERR;
   var ret = this.writer(err, kind, locking, start, end, hints, style);
 

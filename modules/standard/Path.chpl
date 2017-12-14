@@ -200,12 +200,15 @@ proc file.realPath(): string throws {
  */
  pragma "no doc"
  proc file.getParentName(out error:syserr): string {
-   check();
-   var ret: string;
-   var tmp: string;
-   tmp = this.realPath(error);
-   ret = if error then "unknown"
-                  else dirname(new string(tmp));
+   check(error);
+
+   var ret: string = "unknown";
+   if !error {
+     var tmp: string;
+     tmp = this.realPath(error);
+     if !error then
+       ret = dirname(new string(tmp));
+   }
    return ret;
  }
 
