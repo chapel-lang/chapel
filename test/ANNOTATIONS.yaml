@@ -276,6 +276,9 @@ all:
     - Reduce wide pointer overhead for sparse domains/arrays (#7627)
   11/21/17:
     - New bulk transfer interface (#7775)
+  12/08/17:
+    - text: Machine upgraded to CLE6
+      config: 16 node XC
 
 
 AllCompTime:
