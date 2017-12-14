@@ -1030,39 +1030,37 @@ static void checkForErroneousInitCopies() {
  of being represented as ForLoop.
 
  */
-static void moveCoforallIndexVariableDestructionToTask(Symbol* actualSym,
-                                                       ArgSymbol* formal,
-                                                       FnSymbol* taskFn);
+static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn);
+
 static void adjustCoforallIndexVariables() {
+
+  std::set<ArgSymbol*> handledFormals;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
 
-      for_formals(formal, fn) {
-        if (formal->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
-            isUserDefinedRecord(formal->type)) {
+      // For coforall functions, find the actual and formal corresponding
+      // to the coforall index variable.
+      for_SymbolSymExprs(fnSe, fn) {
+        if (CallExpr* call = toCallExpr(fnSe->parentExpr)) {
+          if (call->baseExpr == fnSe) {
+            for_formals_actuals(formal, actualExpr, call) {
+              SymExpr* actualSe = toSymExpr(actualExpr);
+              INT_ASSERT(actualSe);
+              Symbol* actual = actualSe->symbol();
+              if (actual->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
+                  actual->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+                  isUserDefinedRecord(actual->type)) {
 
-          // This is a coforall function
-          // the coforall index variable is 'formal' in the task
-          // body.
+                // Remove FLAG_INSERT_AUTO_DESTROY so it will not
+                // be destroyed in the loop creating tasks.
+                actual->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
-          // Look at functions calling 'fn' to find the
-          // coforall index variable argument.
-          for_SymbolSymExprs(fnSe, fn) {
-            if (CallExpr* call = toCallExpr(fnSe->parentExpr)) {
-              if (call->baseExpr == fnSe) {
-
-                for_actuals(actual, call) {
-                  if (SymExpr* actualSe = toSymExpr(actual)) {
-                    Symbol* actualSym = actualSe->symbol();
-                    if (actualSym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-
-                      if (actualSym->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
-                        moveCoforallIndexVariableDestructionToTask(
-                            actualSym, formal, fn);
-                      }
-                    }
-                  }
+                // instead, add the destruction at the end of
+                // the coforall body / task function.
+                if (handledFormals.count(formal) == 0) {
+                  destroyFormalInTaskFn(formal, fn);
+                  handledFormals.insert(formal);
                 }
               }
             }
@@ -1072,26 +1070,15 @@ static void adjustCoforallIndexVariables() {
     }
   }
 }
-static void moveCoforallIndexVariableDestructionToTask(Symbol* actualSym,
-                                                       ArgSymbol* formal,
-                                                       FnSymbol* taskFn) {
-  SET_LINENO(actualSym);
+static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
+  SET_LINENO(formal);
 
-  // Remove FLAG_INSERT_AUTO_DESTROY so it will not
-  // be destroyed in the loop creating tasks.
-  actualSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  // instead, add the destruction at the end of
-  // the coforall body / task function.
   CallExpr* downEndCount = findDownEndCount(taskFn);
   INT_ASSERT(downEndCount);
-  FnSymbol* autoDestroyFn =
-    autoDestroyMap.get(formal->type);
+  FnSymbol* autoDestroyFn = autoDestroyMap.get(formal->type);
   INT_ASSERT(autoDestroyFn);
-  CallExpr* autoDestroyCall = new CallExpr(
-      autoDestroyFn,
-      formal);
-  downEndCount->insertBefore( autoDestroyCall);
+  CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, formal);
+  downEndCount->insertBefore(autoDestroyCall);
 }
 
 /************************************* | **************************************
