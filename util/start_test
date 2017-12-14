@@ -669,7 +669,7 @@ def set_up_environment():
     if args.performance or args.performance_description:
         args.performance = True
         args.gen_graphs = True
-        args.compopts += " --fast"
+        args.compopts = "--fast " + args.compopts
         # Force static linking except where that won't work:
         # - MacOS (darwin) targets
         # - large Cray systems (proxied by cray-prgenv compilers here)
@@ -680,7 +680,7 @@ def set_up_environment():
                  (chpl_compiler.get('target').startswith("cray-prgenv") and
                   os.getenv("CRAY_MEMKIND", "") != "") or
                  chpl_locale_model.get() != 'flat')):
-            args.compopts += " --static"
+            args.compopts = "--static " + args.compopts
 
     if args.performance_configs:
         args.gen_graph_opts += " --configs " + args.performance_configs
