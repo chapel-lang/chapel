@@ -232,10 +232,12 @@ llvm::DIType* debug_data::construct_type(Type *type)
       else if(type->astTag == E_AggregateType) {
         // dealing with classes
         AggregateType *this_class = (AggregateType *)type;
+
         llvm::SmallVector<llvm::Metadata *, 8> EltTys;
         llvm::DIType* derivedFrom = nullptr;
-        if( type->dispatchParents.length() > 0 )
-          derivedFrom = get_type(type->dispatchParents.first());
+
+        if( this_class->dispatchParents.length() > 0 )
+          derivedFrom = get_type(this_class->dispatchParents.first());
 
         // solve the data class: _ddata
         if(this_class->symbol->hasFlag(FLAG_DATA_CLASS)) {
@@ -328,10 +330,12 @@ llvm::DIType* debug_data::construct_type(Type *type)
 
   else if(ty->isStructTy() && type->astTag == E_AggregateType) {
     AggregateType *this_class = (AggregateType *)type;
+
     llvm::SmallVector<llvm::Metadata *, 8> EltTys;
     llvm::DIType* derivedFrom = nullptr;
-    if( type->dispatchParents.length() > 0 )
-      derivedFrom = get_type(type->dispatchParents.first());
+
+    if( this_class->dispatchParents.length() > 0 )
+      derivedFrom = get_type(this_class->dispatchParents.first());
 
     const llvm::StructLayout* slayout = NULL;
     llvm::StructType* struct_type = llvm::cast<llvm::StructType>(ty);

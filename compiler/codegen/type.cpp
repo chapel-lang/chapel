@@ -592,21 +592,28 @@ int AggregateType::getMemberGEP(const char *name) {
           return GEPIdx->second;
         }
 
-        forv_Vec(Type, parent, t->dispatchParents) {
-          if (parent)
-            next_p->set_add(parent);
+        if (AggregateType* at = toAggregateType(t)) {
+          forv_Vec(AggregateType, parent, at->dispatchParents) {
+            if (parent)
+              next_p->set_add(parent);
+          }
         }
       }
+
       Vec<Type*>* temp = next_p;
-      next_p = current_p;
+
+      next_p    = current_p;
       current_p = temp;
+
       next_p->clear();
     }
 
     const char *className = "<no name>";
+
     if (this->symbol) {
       className = this->symbol->name;
     }
+
     INT_FATAL(this, "no field '%s' in class '%s' in getField()",
               name, className);
   }
