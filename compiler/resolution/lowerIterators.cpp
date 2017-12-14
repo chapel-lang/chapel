@@ -140,8 +140,20 @@ static void nonLeaderParCheck()
 }
 
 static bool isVirtualIterator(Symbol* iterator) {
-  Vec<Type*> children = iterator->type->dispatchChildren;
-  return !((children.n == 0) || (children.n == 1 && children.v[0] == dtObject));
+  Vec<AggregateType*>* children = &(iterator->type->dispatchChildren);
+  bool                 retval   = false;
+
+  if (children->n == 0) {
+    retval = false;
+
+  } else if (children->n == 1 && children->v[0] == dtObject) {
+    retval = false;
+
+  } else {
+    retval = true;
+  }
+
+  return retval;
 }
 
 static void parallelIterVirtualCheck() {
