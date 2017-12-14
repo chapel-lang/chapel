@@ -13,9 +13,15 @@ pragma "init copy fn"
 proc chpl__initCopy(other : R) {
   pragma "no auto destroy"
   var ret : R;
+  writeln("copy/assign ", other.c);
   ret.c = new C(other.length);
   return ret;
 }
+
+proc =(ref dst:R, src:R) {
+  writeln("copy/assign ", src.c);
+}
+
 
 config const earlyReturn = false;
 
@@ -27,15 +33,15 @@ iter foo1() {
   yield r1;
 
   if earlyReturn {
-    // destroy state, r2
     writeln("early return");
+    // destroy state, r1, r2
     return;
   }
 
   yield r2;
 
-  // destroy state only
   writeln("return at end");
+  // destroy state, r1, r2
 }
 
 iter foo2() {
@@ -45,11 +51,13 @@ iter foo2() {
     yield new R(new C(i));
     if earlyReturn {
       writeln("early return");
+      // destroy state
       return;
     }
   }
 
   writeln("return at end");
+  // destroy state
 }
 
 proc makeR(i:int) {
@@ -63,11 +71,13 @@ iter foo3() {
     yield makeR(i);
     if earlyReturn {
       writeln("early return");
+      // destroy state
       return;
     }
   }
 
   writeln("return at end");
+  // destroy state
 }
 
 
@@ -80,11 +90,13 @@ iter foo4() {
     yield state;
     if earlyReturn {
       writeln("early return");
+      // destroy state
       return;
     }
   }
 
   writeln("return at end");
+  // destroy state
 }
 
 
