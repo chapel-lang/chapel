@@ -441,8 +441,15 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
         CallExpr* call = toCallExpr(se->parentExpr);
 
         if (call && call->isPrimitive(PRIM_ADDR_OF)) {
+
           // Convert (addr of var) to (. _ic field).
-          call->primitive = primitives[PRIM_GET_MEMBER];
+          // Note, GET_MEMBER is not valid on a ref field;
+          // in that event, GET_MEMBER_VALUE returns the ref.
+          if (field->isRef())
+            call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+          else
+            call->primitive = primitives[PRIM_GET_MEMBER];
+
           call->insertAtHead(ic);
           se->setSymbol(field);
         } else {
