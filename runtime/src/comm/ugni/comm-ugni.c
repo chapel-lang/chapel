@@ -1267,6 +1267,7 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
+static void      regMemBroadcast(void*, size_t);
 static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*, void*);
@@ -2882,61 +2883,81 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   register_mem_region(mr);
 
   //
-  // Update the copies of our memory regions on all nodes.  If the new
-  // entry doesn't extend our table then we just send the entry.  If it
-  // does, then we need to send both the new count and the new entry.
-  // And so we can do it with just one PUT, we also send everything in
-  // between.
+  // Update the copies of our memory regions on all nodes.  If this
+  // entry is within the already-known range of our table entries then
+  // send only this one.  Otherwise, send both all the entries beyond
+  // the already-known range and the new count.  In general this will
+  // include some new unregistered entries for which we have an address
+  // but no length or MDH.  But the presence of those won't create
+  // confusion because the remote nodes won't by trying to address
+  // within them yet anyway, and later when we do register them we may
+  // be able to send just the entries and not the count again.
   //
-  {
-    size_t off;
-    size_t size;
-    void* src_v[MAX_CHAINED_PUT_LEN];
-    int32_t node_v[MAX_CHAINED_PUT_LEN];
-    void* tgt_v[MAX_CHAINED_PUT_LEN];
-    size_t size_v[MAX_CHAINED_PUT_LEN];
-    mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
-    int ci;
+  if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemPostAlloc(): entry %d, bcast",
+            mr_i);
+    regMemBroadcast(mr, sizeof(*mr));
+  } else {
+    const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
-    if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
-      off = (char*) mr - (char*) &mem_regions;
-      size = sizeof(*mr);
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemPostAlloc(): entry %d, bcast %d-%d and cnt %d",
+            mr_i,
+            (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
+            (int) mem_regions.mreg_cnt);
+    regMemBroadcast(&mem_regions.mregs[mreg_cnt_public],
+                    (mem_regions.mreg_cnt - mreg_cnt_public) * sizeof(*mr));
+    regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
+  }
+
+  mem_regions_unlock();
+}
+
+
+static
+void regMemBroadcast(void* base_addr, size_t size)
+{
+  size_t off = (char*) base_addr - (char*) &mem_regions;
+  void* src_v[MAX_CHAINED_PUT_LEN];
+  int32_t node_v[MAX_CHAINED_PUT_LEN];
+  void* tgt_v[MAX_CHAINED_PUT_LEN];
+  size_t size_v[MAX_CHAINED_PUT_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
+  int ci;
+
+  ci = 0;
+  for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
+    if (ni == chpl_nodeID) {
+      //
+      // Update our own map in place.
+      //
+      memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
+             (char*) &mem_regions + off,
+             size);
     } else {
-      assert(mem_regions.mreg_cnt
-             > mem_regions_map[chpl_nodeID].mreg_cnt);
-      off = 0;
-      size = (char*) &mem_regions.mregs[mr_i + 1] - (char*) &mem_regions;
-    }
-
-    ci = 0;
-    for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
-      if (ci == MAX_CHAINED_PUT_LEN) {
+      //
+      // Update every other node's map remotely.
+      //
+      if (ci >= MAX_CHAINED_PUT_LEN) {
         do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
                         may_proxy_false);
         ci = 0;
       }
 
-      if (ni == chpl_nodeID) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
-               (char*) &mem_regions + off,
-               size);
-      } else {
-        src_v[ci] = (char*) &mem_regions + off;
-        node_v[ci] = ni;
-        tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
-        size_v[ci] = size;
-        remote_mr_v[ci] = &gnr_mreg_map[ni];
-        ci++;
-      }
-    }
-
-    if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
-                      may_proxy_false);
+      src_v[ci] = (char*) &mem_regions + off;
+      node_v[ci] = ni;
+      tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
+      size_v[ci] = size;
+      remote_mr_v[ci] = &gnr_mreg_map[ni];
+      ci++;
     }
   }
 
-  mem_regions_unlock();
+  if (ci > 0) {
+    do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                    may_proxy_false);
+  }
 }
 
 
@@ -2976,9 +2997,11 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
 
   mr->addr = 0;
   mr->len = 0;
+  mr->mdh = (gni_mem_handle_t) { 0 };
 
   //
-  // Adjust the memory region count downward, if necessary.
+  // Adjust the memory region count downward, if this was the last
+  // active region.
   //
   if (mr_i == mem_regions.mreg_cnt - 1) {
     int j;
@@ -2989,56 +3012,25 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   }
 
   //
-  // Update the copies of our memory regions on all nodes.  If the new
-  // entry doesn't shorten our table then we just send the entry.  If
-  // it does, we just send the new count.
+  // Update the copies of our memory regions on all nodes.  If removing
+  // this entry shortened our table then we just send the new count.
+  // Note that this may leave remnant (and misleading) non-0 values in
+  // table entries past the new end of the active area in remote nodes'
+  // copies of our region table.  This is okay as long as these entries
+  // always get overwitten if the table grows past them again, as is
+  // the case now.  If removing the entry didn't change the length of
+  // the table then we can just send the now-empty entry.
   //
-  {
-    size_t off;
-    size_t size;
-    void* src_v[MAX_CHAINED_PUT_LEN];
-    int32_t node_v[MAX_CHAINED_PUT_LEN];
-    void* tgt_v[MAX_CHAINED_PUT_LEN];
-    size_t size_v[MAX_CHAINED_PUT_LEN];
-    mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
-    int ci;
-
-    if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
-      off = (char*) mr - (char*) &mem_regions;
-      size = sizeof(*mr);
-    } else {
-      assert(mem_regions.mreg_cnt
-             < mem_regions_map[chpl_nodeID].mreg_cnt);
-      off = 0;
-      size = sizeof(mem_regions.mreg_cnt);
-    }
-
-    ci = 0;
-    for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
-      if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
-                        may_proxy_false);
-        ci = 0;
-      }
-
-      if (ni == chpl_nodeID) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
-               (char*) &mem_regions + off,
-               size);
-      } else {
-        src_v[ci] = (char*) &mem_regions + off;
-        node_v[ci] = ni;
-        tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
-        size_v[ci] = size;
-        remote_mr_v[ci] = &gnr_mreg_map[ni];
-        ci++;
-      }
-    }
-
-    if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
-                      may_proxy_false);
-    }
+  if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
+            mr_i, (int) mem_regions.mreg_cnt);
+    regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
+  } else {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemFree(): entry %d, bcast",
+            mr_i);
+    regMemBroadcast(mr, sizeof(*mr));
   }
 
   mem_regions_unlock();
@@ -6266,31 +6258,26 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   if (large) {
     //
     // The argument is too large to send directly in the request, so the
-    // target locale will have to get it from us.  We cannot return
-    // before it does so, because once we return we cannot guarantee the
-    // argument's continued existence.  If this is a blocking fork then
-    // we won't return until the whole thing is done, so the remote
-    // locale can get the argument directly from our incoming parameter
-    // and all is well.  But if this is a non-blocking fork we will
-    // return as soon as we initiate it.  In that case, we must make a
-    // copy of the argument and give the remote locale a pointer to
-    // retrieve that copy instead of the original.  The remote locale
-    // will free the copy with a remote fork_op_free back to our locale,
-    // as soon as it has retrieved the argument.
-
-    // If it's nonblocking, we need to copy the argument bundle to the
-    // heap since the caller can reuse that memory.
+    // target locale will have to GET it from us.  We must guarantee the
+    // argument continues to exist until the target has done so.  If
+    // this is a blocking executeOn then we won't return until the whole
+    // thing is done, so the remote locale can get the argument directly
+    // from our incoming parameter and all is well.  But if this is a
+    // non-blocking executeOn we will want to return as soon as we
+    // initiate it.  In that case, we must make a copy of the argument
+    // and give the remote locale a pointer to retrieve that copy
+    // instead of the original.  The remote locale will free the copy
+    // with a remote fork_op_free back to our locale.
     //
-    // If the arg passed to us isn't in the mapped region, we
-    // should also copy it now, but only if the heap is
-    // in registered memory (because with minimal registered, the heap
-    // isn't registered either).
-    // By copying it now, we save the target side the overhead of having
-    // to do an executeOn back to us to do a PUT to retrieve the large
-    // arg, since it not being in registered memory means they won't be able
+    // If the arg passed to us isn't in a registered region we should
+    // also copy it, but only if the copy will likely be in registered
+    // memory.  By copying it we save the target side the overhead of
+    // doing an executeOn back to us to PUT the large arg to themself,
+    // since if it's not in registered memory here they won't be able
     // to GET it directly.
+    //
     if (!blocking ||
-        (registered_heap_start != NULL && mreg_for_local_addr(arg) == NULL)) {
+        (get_hugepage_size() > 0 && mreg_for_local_addr(arg) == NULL)) {
       heapCopyLargeArg = true;
     }
 
