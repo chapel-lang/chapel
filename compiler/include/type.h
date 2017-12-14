@@ -105,8 +105,6 @@ public:
 
   SymbolMap              substitutions;
 
-  Vec<AggregateType*>    dispatchChildren;   // dispatch hierarchy
-
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
 

@@ -140,17 +140,20 @@ static void nonLeaderParCheck()
 }
 
 static bool isVirtualIterator(Symbol* iterator) {
-  Vec<AggregateType*>* children = &(iterator->type->dispatchChildren);
-  bool                 retval   = false;
+  bool retval = false;
 
-  if (children->n == 0) {
-    retval = false;
+  if (AggregateType* at = toAggregateType(iterator->type)) {
+    Vec<AggregateType*>* children = &(at->dispatchChildren);
 
-  } else if (children->n == 1 && children->v[0] == dtObject) {
-    retval = false;
+    if (children->n == 0) {
+      retval = false;
 
-  } else {
-    retval = true;
+    } else if (children->n == 1 && children->v[0] == dtObject) {
+      retval = false;
+
+    } else {
+      retval = true;
+    }
   }
 
   return retval;
@@ -1870,40 +1873,46 @@ isBoundedIterator(FnSymbol* fn) {
 }
 
 
-static void
-getIteratorChildren(Vec<Type*>& children, Type* type) {
-  forv_Vec(Type, child, type->dispatchChildren) {
-    if (child != dtObject) {
-      children.add_exclusive(child);
-      getIteratorChildren(children, child);
+static void getIteratorChildren(Vec<Type*>& children, Type* type) {
+  if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(Type, child, at->dispatchChildren) {
+      if (child != dtObject) {
+        children.add_exclusive(child);
+        getIteratorChildren(children, child);
+      }
     }
   }
 }
 
-#define ZIP1 1
-#define ZIP2 2
-#define ZIP3 3
-#define ZIP4 4
-#define HASMORE 5
+#define ZIP1     1
+#define ZIP2     2
+#define ZIP3     3
+#define ZIP4     4
+#define HASMORE  5
 #define GETVALUE 6
-#define INIT 7
-#define INCR 8
+#define INIT     7
+#define INCR     8
 
-static void
-buildIteratorCallInner(BlockStmt* block, Symbol* ret, int fnid, Symbol* iterator) {
+static void buildIteratorCallInner(BlockStmt* block,
+                                   Symbol*    ret,
+                                   int        fnid,
+                                   Symbol*    iterator) {
   IteratorInfo* ii = getTheIteratorFn(iterator)->iteratorInfo;
-  FnSymbol* fn = NULL;
+  FnSymbol*     fn = NULL;
+
   switch (fnid) {
-  case ZIP1: fn = ii->zip1; break;
-  case ZIP2: fn = ii->zip2; break;
-  case ZIP3: fn = ii->zip3; break;
-  case ZIP4: fn = ii->zip4; break;
-  case HASMORE: fn = ii->hasMore; break;
+  case ZIP1:     fn = ii->zip1;     break;
+  case ZIP2:     fn = ii->zip2;     break;
+  case ZIP3:     fn = ii->zip3;     break;
+  case ZIP4:     fn = ii->zip4;     break;
+  case HASMORE:  fn = ii->hasMore;  break;
   case GETVALUE: fn = ii->getValue; break;
-  case INIT: fn = ii->init; break;
-  case INCR: fn = ii->incr; break;
+  case INIT:     fn = ii->init;     break;
+  case INCR:     fn = ii->incr;     break;
   }
+
   CallExpr* call = new CallExpr(fn, iterator);
+
   if (ret) {
     if (fn->retType->getValType() == ret->type->getValType()) {
       INT_ASSERT(fn->retType == ret->type);

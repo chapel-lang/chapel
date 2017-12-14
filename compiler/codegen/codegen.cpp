@@ -280,44 +280,44 @@ struct compareSymbolFunctor {
 
 // Visit class types in depth-first preorder order.
 // Assigns class IDs to classes in that order.
-static void
-preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber)
-{
+static void preorderVisitClassesComputeIds(TypeSymbol* ts, int* nextNumber) {
   typedef std::set<TypeSymbol*, compareSymbolFunctor> children_set;
 
   children_set children;
 
-  if (ts == NULL)
-    return;
+  if (ts != NULL) {
+    AggregateType* at   = toAggregateType(ts->type);
+    int            myN1 = *nextNumber;
 
-  AggregateType* at = toAggregateType(ts->type);
-  INT_ASSERT(at != NULL);
+    INT_ASSERT(at != NULL);
 
-  // visit node
-  int myN1 = *nextNumber;
-  *nextNumber = *nextNumber + 1;
-  at->classId = myN1;
+    *nextNumber = *nextNumber + 1;
+    at->classId = myN1;
 
-  // visit children in order
-  forv_Vec(Type, child, ts->type->dispatchChildren) {
-    if (child)
-      children.insert(child->symbol);
-  }
-  for (children_set::iterator it = children.begin();
-       it != children.end();
-       ++it ) {
-    TypeSymbol* child = *it;
-    preorderVisitClassesComputeIds(child, nextNumber);
+    // visit children in order
+    forv_Vec(AggregateType, child, at->dispatchChildren) {
+      if (child != NULL) {
+        children.insert(child->symbol);
+      }
+    }
+
+    for (children_set::iterator it = children.begin();
+         it != children.end();
+         ++it ) {
+      TypeSymbol* child = *it;
+
+      preorderVisitClassesComputeIds(child, nextNumber);
+    }
   }
 }
 
 static int gMaxClassId = 1;
 
-static
-void assignClassIds()
-{
+static void assignClassIds() {
   int next = 1;
+
   preorderVisitClassesComputeIds(dtObject->symbol, &next);
+
   gMaxClassId = next - 1;
 }
 
@@ -325,39 +325,42 @@ void assignClassIds()
 // Computes a maximum ID of subclasses and stores that in n2.
 // Returns the maximum ID of a subclass.
 // This helps with Schubert numbering
-static
-int computeMaxSubclass(TypeSymbol* ts, std::vector<int> & n2)
-{
-  if (ts == NULL)
-    return 0;
+static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
+  int retval = 0;
 
-  AggregateType* at = toAggregateType(ts->type);
-  INT_ASSERT(at != NULL);
+  if (ts != NULL) {
+    AggregateType* at    = toAggregateType(ts->type);
+    int            myId  = at->classId;
+    int            maxN1 = myId;
 
-  int myId = at->classId;
-  int maxN1 = myId;
-  forv_Vec(Type, child, ts->type->dispatchChildren) {
-    if (child) {
-      int subMax = computeMaxSubclass(child->symbol, n2);
-      if (subMax > maxN1)
-        maxN1 = subMax;
+    forv_Vec(Type, child, at->dispatchChildren) {
+      if (child != NULL) {
+        int subMax = computeMaxSubclass(child->symbol, n2);
+
+        if (subMax > maxN1) {
+          maxN1 = subMax;
+        }
+      }
     }
+
+    if ((size_t) myId >= n2.size()) {
+      n2.resize(myId + 1);
+    }
+
+    // set n2 for node, which is max of this n1
+    // and child n1s.
+    n2[myId] = maxN1;
+    retval   = maxN1;
   }
 
-  if ((size_t) myId >= n2.size())
-    n2.resize(myId + 1);
-
-  // set n2 for node, which is max of this n1
-  // and child n1s.
-  n2[myId] = maxN1;
-
-  return maxN1;
+  return retval;
 }
 
 
-static void
-codegenGlobalConstArray(const char* name, const char* eltType, std::vector<GenRet> * vals, bool isHeader)
-{
+static void codegenGlobalConstArray(const char*          name,
+                                    const char*          eltType,
+                                    std::vector<GenRet>* vals,
+                                    bool                 isHeader) {
   GenInfo* info = gGenInfo;
 
   if(isHeader) {
@@ -1610,19 +1613,28 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   //
 
   Vec<TypeSymbol*> next, current;
+
   current.add(dtObject->symbol);
+
   while (current.n) {
     forv_Vec(TypeSymbol, ts, current) {
       ts->codegenDef();
-      forv_Vec(Type, child, ts->type->dispatchChildren) {
-        if (child)
-          next.set_add(child->symbol);
+
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        forv_Vec(AggregateType, child, at->dispatchChildren) {
+          if (child != NULL) {
+            next.set_add(child->symbol);
+          }
+        }
       }
     }
+
     current.clear();
     current.move(next);
     current.set_to_vec();
+
     qsort(current.v, current.n, sizeof(current.v[0]), compareSymbol2);
+
     next.clear();
   }
 

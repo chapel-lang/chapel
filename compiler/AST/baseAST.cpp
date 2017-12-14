@@ -227,11 +227,13 @@ void cleanAst() {
       }
     }
 
-    for(int i = 0; i < ts->type->dispatchChildren.n; i++) {
-      Type* type = ts->type->dispatchChildren.v[i];
-
-      if (type && !isAlive(type)) {
-        ts->type->dispatchChildren.v[i] = NULL;
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      for (int i = 0; i < at->dispatchChildren.n; i++) {
+        if (AggregateType* type = at->dispatchChildren.v[i]) {
+          if (isAlive(type) == false) {
+            at->dispatchChildren.v[i] = NULL;
+          }
+        }
       }
     }
   }

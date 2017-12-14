@@ -164,6 +164,7 @@ public:
   int                         classId;
 
   Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
+  Vec<AggregateType*>         dispatchChildren;   // dispatch hierarchy
 
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);

@@ -382,7 +382,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
     INT_ASSERT(atCthisType->dispatchParents.n              == 1);
 
     if (atCthisType->dispatchParents.only() == pthisType) {
-      Type* parent = cic->dispatchParents.only();
+      AggregateType* parent = cic->dispatchParents.only();
 
       INT_ASSERT(cic->dispatchParents.n == 1);
 
@@ -552,8 +552,8 @@ static void buildVirtualMethodTable() {
     }
   }
 
-  forv_Vec(Type, ct, ctq) {
-    if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(ct)) {
+  forv_Vec(Type, t, ctq) {
+    if (Vec<FnSymbol*>* parentFns = virtualMethodTable.get(t)) {
       forv_Vec(FnSymbol, pfn, *parentFns) {
         Vec<Type*> childSet;
 
@@ -561,7 +561,7 @@ static void buildVirtualMethodTable() {
           forv_Vec(FnSymbol, cfn, *childFns) {
             if (AggregateType* at = toAggregateType(cfn->_this->type)) {
               forv_Vec(AggregateType, pt, at->dispatchParents) {
-                if (pt == ct) {
+                if (pt == t) {
                   if (childSet.set_in(at) == NULL) {
                     addVirtualMethodTableEntry(at, cfn, false);
 
@@ -575,16 +575,20 @@ static void buildVirtualMethodTable() {
           }
         }
 
-        forv_Vec(Type, childType, ct->dispatchChildren) {
-          if (childSet.set_in(childType) == NULL) {
-            addVirtualMethodTableEntry(childType, pfn, false);
+        if (AggregateType* at = toAggregateType(t)) {
+          forv_Vec(AggregateType, childType, at->dispatchChildren) {
+            if (childSet.set_in(childType) == NULL) {
+              addVirtualMethodTableEntry(childType, pfn, false);
+            }
           }
         }
       }
     }
 
-    forv_Vec(Type, child, ct->dispatchChildren) {
-      ctq.add(child);
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, child, at->dispatchChildren) {
+        ctq.add(child);
+      }
     }
   }
 
