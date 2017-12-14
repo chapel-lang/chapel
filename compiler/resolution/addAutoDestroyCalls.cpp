@@ -422,12 +422,14 @@ static void gatherIgnoredVariablesForYield(
   INT_ASSERT(yieldedVar);
   QualifiedType t = yieldedVar->qualType();
 
-  if (isUserDefinedRecord(t.type()) && ! t.isRef() ) {
+  if (isUserDefinedRecord(t.type()) && ! t.isRef()) {
 
     SymExpr* foundSe = findSourceOfYield(yield);
     VarSymbol* var = toVarSymbol(foundSe->symbol());
 
-    if (var && var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW))
+    if (var &&
+        var->hasEitherFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW,
+                           FLAG_EXPR_TEMP))
       ignoredVariables.insert(var);
   }
 }

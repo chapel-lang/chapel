@@ -52,7 +52,26 @@ iter foo2() {
   writeln("return at end");
 }
 
+proc makeR(i:int) {
+  return new R(new C(i));
+}
+
 iter foo3() {
+  var state = new R(new C(0));
+
+  for i in 1..3 {
+    yield makeR(i);
+    if earlyReturn {
+      writeln("early return");
+      return;
+    }
+  }
+
+  writeln("return at end");
+}
+
+
+iter foo4() {
   var state = new R(new C(0));
 
   for i in 1..3 {
@@ -79,9 +98,15 @@ proc main() {
   for j in foo2() {
     writeln("in loop, got ", j);
   }
-  
+
   writeln("foo3");
   for j in foo3() {
     writeln("in loop, got ", j);
   }
+
+  writeln("foo4");
+  for j in foo4() {
+    writeln("in loop, got ", j);
+  }
+
 }

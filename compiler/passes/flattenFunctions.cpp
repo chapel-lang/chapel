@@ -258,6 +258,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_REF_TO_IMMUTABLE);
       if (sym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+          arg->addFlag(FLAG_COFORALL_INDEX_VAR);
 
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);

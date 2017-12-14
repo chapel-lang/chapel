@@ -920,7 +920,8 @@ static void insertYieldTemps()
       // must be added, it might make more sense to check for the
       // case in which no copy needs to be added (which is that
       // the yielded value came from a function call)
-      if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
+      if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+          !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
         // Add an auto-copy here.
         SET_LINENO(call);
         Type* type = foundSe->symbol()->getValType();
@@ -1010,6 +1011,80 @@ static void checkForErroneousInitCopies() {
   }
 }
 
+/*
+
+ A coforall index variable should transfer ownership of a
+ yielded record from the iterator's yielded value to the
+ task function.
+
+ However, normal record memory management strategies would
+ lead the coforall index variable to be destroyed in the loop
+ creating tasks.
+
+ This function moves the destruction of the coforall index
+ variable to the end of the task body (which is represented
+ as a coforall function).
+
+ It's likely that this issue would be clearer to implement in
+ the compiler if coforall loops had their own AST node instead
+ of being represented as ForLoop.
+
+ */
+static void adjustCoforallIndexVariables() {
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+
+      for_formals(formal, fn) {
+        if (formal->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
+            isUserDefinedRecord(formal->type)) {
+
+          // This is a coforall function
+          // the coforall index variable is 'formal' in the task
+          // body.
+
+          // Look at functions calling 'fn' to find the
+          // coforall index variable argument.
+          for_SymbolSymExprs(fnSe, fn) {
+            if (CallExpr* call = toCallExpr(fnSe->parentExpr)) {
+              if (call->baseExpr == fnSe) {
+
+                for_actuals(actual, call) {
+                  if (SymExpr* actualSe = toSymExpr(actual)) {
+                    Symbol* actualSym = actualSe->symbol();
+                    if (actualSym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+
+                      if (actualSym->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
+
+                        SET_LINENO(actual);
+
+                        // Remove FLAG_INSERT_AUTO_DESTROY so it will not
+                        // be destroyed in the loop creating tasks.
+                        actualSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
+                        // instead, add the destruction at the end of
+                        // the coforall body / task function.
+                        CallExpr* downEndCount = findDownEndCount(fn);
+                        INT_ASSERT(downEndCount);
+                        FnSymbol* autoDestroyFn =
+                          autoDestroyMap.get(formal->type);
+                        INT_ASSERT(autoDestroyFn);
+                        CallExpr* autoDestroyCall = new CallExpr(
+                            autoDestroyFn,
+                            formal);
+                        downEndCount->insertBefore( autoDestroyCall);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -1018,6 +1093,9 @@ static void checkForErroneousInitCopies() {
 ************************************** | *************************************/
 
 void callDestructors() {
+
+  adjustCoforallIndexVariables();
+
   fixupDestructors();
 
   insertDestructorCalls();

@@ -553,7 +553,7 @@ static CallExpr* helpFindDownEndCount(BlockStmt* block)
 }
 
 // Finds downEndCount CallExpr or returns NULL.
-static CallExpr* findDownEndCount(FnSymbol* fn)
+CallExpr* findDownEndCount(FnSymbol* fn)
 {
   return helpFindDownEndCount(fn->body);
 }
