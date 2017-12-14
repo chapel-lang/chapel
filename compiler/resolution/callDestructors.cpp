@@ -1030,6 +1030,9 @@ static void checkForErroneousInitCopies() {
  of being represented as ForLoop.
 
  */
+static void moveCoforallIndexVariableDestructionToTask(Symbol* actualSym,
+                                                       ArgSymbol* formal,
+                                                       FnSymbol* taskFn);
 static void adjustCoforallIndexVariables() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -1055,24 +1058,8 @@ static void adjustCoforallIndexVariables() {
                     if (actualSym->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
 
                       if (actualSym->hasFlag(FLAG_INSERT_AUTO_DESTROY)) {
-
-                        SET_LINENO(actual);
-
-                        // Remove FLAG_INSERT_AUTO_DESTROY so it will not
-                        // be destroyed in the loop creating tasks.
-                        actualSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
-
-                        // instead, add the destruction at the end of
-                        // the coforall body / task function.
-                        CallExpr* downEndCount = findDownEndCount(fn);
-                        INT_ASSERT(downEndCount);
-                        FnSymbol* autoDestroyFn =
-                          autoDestroyMap.get(formal->type);
-                        INT_ASSERT(autoDestroyFn);
-                        CallExpr* autoDestroyCall = new CallExpr(
-                            autoDestroyFn,
-                            formal);
-                        downEndCount->insertBefore( autoDestroyCall);
+                        moveCoforallIndexVariableDestructionToTask(
+                            actualSym, formal, fn);
                       }
                     }
                   }
@@ -1084,6 +1071,27 @@ static void adjustCoforallIndexVariables() {
       }
     }
   }
+}
+static void moveCoforallIndexVariableDestructionToTask(Symbol* actualSym,
+                                                       ArgSymbol* formal,
+                                                       FnSymbol* taskFn) {
+  SET_LINENO(actualSym);
+
+  // Remove FLAG_INSERT_AUTO_DESTROY so it will not
+  // be destroyed in the loop creating tasks.
+  actualSym->removeFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  // instead, add the destruction at the end of
+  // the coforall body / task function.
+  CallExpr* downEndCount = findDownEndCount(taskFn);
+  INT_ASSERT(downEndCount);
+  FnSymbol* autoDestroyFn =
+    autoDestroyMap.get(formal->type);
+  INT_ASSERT(autoDestroyFn);
+  CallExpr* autoDestroyCall = new CallExpr(
+      autoDestroyFn,
+      formal);
+  downEndCount->insertBefore( autoDestroyCall);
 }
 
 /************************************* | **************************************
