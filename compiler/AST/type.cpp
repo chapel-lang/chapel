@@ -1292,56 +1292,84 @@ bool isRefIterType(Type* t) {
   return false;
 }
 
-bool isSubClass(Type* type, Type* baseType)
-{
-  if (type == baseType)
-    return true;
+bool isSubClass(Type* type, Type* baseType) {
+  bool retval = false;
 
-  forv_Vec(Type, pt, type->dispatchParents)
-    if (isSubClass(pt, baseType))
-      return true;
+  if (type == baseType) {
+    retval = true;
 
-  return false;
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (isSubClass(pt, baseType) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 bool isDistClass(Type* type) {
-  if (type->symbol->hasFlag(FLAG_BASE_DIST))
-    return true;
+  bool retval = false;
 
-  forv_Vec(Type, pt, type->dispatchParents)
-    if (isDistClass(pt))
-      return true;
+  if (type->symbol->hasFlag(FLAG_BASE_DIST) == true) {
+    retval = true;
 
-  return false;
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (isDistClass(pt) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 bool isDomainClass(Type* type) {
-  if (type->symbol->hasFlag(FLAG_BASE_DOMAIN))
-    return true;
+  bool retval = false;
 
-  forv_Vec(Type, pt, type->dispatchParents)
-    if (isDomainClass(pt))
-      return true;
+  if (type->symbol->hasFlag(FLAG_BASE_DOMAIN) == true) {
+    retval = true;
 
-  return false;
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      if (isDomainClass(pt) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 bool isArrayClass(Type* type) {
-  if (type->symbol->hasFlag(FLAG_BASE_ARRAY))
-    return true;
+  bool retval = false;
 
-  forv_Vec(Type, t, type->dispatchParents)
-    if (isArrayClass(t))
-      return true;
+  if (type->symbol->hasFlag(FLAG_BASE_ARRAY) == true) {
+    retval = true;
 
-  return false;
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      if (isArrayClass(t) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 bool isString(Type* type) {
   bool retval = false;
 
-  if (AggregateType* aggr = toAggregateType(type))
+  if (AggregateType* aggr = toAggregateType(type)) {
     retval = strcmp(aggr->symbol->name, "string") == 0;
+  }
 
   return retval;
 }

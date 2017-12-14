@@ -710,11 +710,9 @@ static void resolveTypeConstructor(FnSymbol* fn) {
     fixTypeNames(at);
   }
 
-  forv_Vec(Type, parent, fn->retType->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(parent)) {
-      if (pt != dtObject) {
-        resolveDefaultTypeConstructor(pt);
-      }
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (pt != dtObject) {
+      resolveDefaultTypeConstructor(pt);
     }
   }
 

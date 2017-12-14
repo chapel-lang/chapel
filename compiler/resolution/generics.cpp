@@ -268,20 +268,22 @@ static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
                                                         CallExpr*      call,
                                                         AggregateType* ct) {
   Type*          newType     = ct->symbol->copy()->type;
-  Type*          oldParentTy = NULL;
-  Type*          newParentTy = NULL;
   AggregateType* newCt       = toAggregateType(newType);
+
+  AggregateType* oldParentTy = NULL;
+  AggregateType* newParentTy = NULL;
 
   // Get the right super type if we are using a super constructor.
   // This only matters for generic parent types.
   if (ct->dispatchParents.n > 0) {
-    if (AggregateType* parentTy = toAggregateType(ct->dispatchParents.v[0])) {
+    if (AggregateType* parentTy = ct->dispatchParents.v[0]) {
       if (parentTy->symbol->hasFlag(FLAG_GENERIC)) {
         // Set the type of super to be the instantiated parent with subs
         const char* parentName   = parentTy->symbol->name;
         const char* parentTyName = astr("_type_construct_", parentName);
         CallExpr*   parentTyCall = new CallExpr(parentTyName);
         DefExpr*    superDef     = NULL;
+        FnSymbol*   parentFn     = NULL;
 
         // Pass the special formals to the superclass type constructor.
         for_formals(arg, fn) {
@@ -300,8 +302,12 @@ static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
 
         resolveCallAndCallee(parentTyCall);
 
+        parentFn    = parentTyCall->resolvedFunction();
+
         oldParentTy = parentTy;
-        newParentTy = parentTyCall->resolvedFunction()->retType;
+        newParentTy = toAggregateType(parentFn->retType);
+
+        INT_ASSERT(newParentTy != NULL);
 
         parentTyCall->remove();
 
@@ -317,7 +323,7 @@ static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
           }
         }
 
-        if (superDef) {
+        if (superDef != NULL) {
           superDef->sym->type = newParentTy;
           INT_ASSERT(newCt->getField("super")->typeInfo() == newParentTy);
         }
@@ -340,36 +346,36 @@ static AggregateType* instantiateTypeForTypeConstructor(FnSymbol*      fn,
 
   // Add dispatch parents, but replace parent type with
   // instantiated parent type.
-  forv_Vec(Type, t, fn->retType->dispatchParents) {
-    Type* useT = t;
+  if (AggregateType* at = toAggregateType(fn->retType)) {
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      AggregateType* useT = t;
 
-    if (t == oldParentTy) {
-      useT = newParentTy;
+      if (t == oldParentTy) {
+        useT = newParentTy;
+      }
+
+      newCt->dispatchParents.add(useT);
     }
 
-    AggregateType* at = toAggregateType(useT);
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      AggregateType* useT = t;
 
-    INT_ASSERT(at != NULL);
+      if (t == oldParentTy) {
+        useT = newParentTy;
+      }
 
-    newCt->dispatchParents.add(at);
-  }
-
-  forv_Vec(Type, t, fn->retType->dispatchParents) {
-    Type* useT = t;
-
-    if (t == oldParentTy) {
-      useT = newParentTy;
+      if (useT->dispatchChildren.add_exclusive(newCt) == false) {
+        INT_ASSERT(false);
+      }
     }
-
-    INT_ASSERT(useT->dispatchChildren.add_exclusive(newCt));
   }
 
   if (newCt->dispatchChildren.n > 0) {
     INT_FATAL(fn, "generic type has subtypes");
-  }
 
-  if (AggregateType* at = toAggregateType(fn->retType)) {
+  } else if (AggregateType* at = toAggregateType(fn->retType)) {
     newCt->instantiatedFrom = at;
+
   } else {
     INT_ASSERT(false);
   }

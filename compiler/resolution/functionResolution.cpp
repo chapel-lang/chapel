@@ -622,15 +622,17 @@ isLegalConstRefActualArg(ArgSymbol* formal, Expr* actual) {
 Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   Type* retval = NULL;
 
-  forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (isInstantiation(parent, formalType) == true) {
-      retval = parent;
-      break;
+  if (AggregateType* at = toAggregateType(actualType)) {
+    forv_Vec(Type, parent, at->dispatchParents) {
+      if (isInstantiation(parent, formalType) == true) {
+        retval = parent;
+        break;
 
-    } else if (Type* t = getConcreteParentForGenericFormal(parent,
-                                                           formalType)) {
-      retval = t;
-      break;
+      } else if (Type* t = getConcreteParentForGenericFormal(parent,
+                                                             formalType)) {
+        retval = t;
+        break;
+      }
     }
   }
 
@@ -1125,13 +1127,13 @@ bool doCanDispatch(Type*     actualType,
                    bool*     promotes,
                    bool*     paramNarrows,
                    bool      paramCoerce) {
-  if (actualType == formalType) {
-    return true;
-  }
+  bool retval = false;
 
-  if (isGenericInstantiation(actualType, formalType, fn) == true) {
-    return true;
-  }
+  if (actualType == formalType) {
+    retval = true;
+
+  } else if (isGenericInstantiation(actualType, formalType, fn) == true) {
+    retval = true;
 
   // The following check against FLAG_REF ensures that 'nil' can't be
   // passed to a by-ref argument (for example, an atomic type).  I
@@ -1140,47 +1142,70 @@ bool doCanDispatch(Type*     actualType,
   // autocopy(x) and the autocopy(x: atomic int) (represented as
   // autocopy(x: ref(atomic int)) internally).
   //
-  if (actualType                            == dtNil  &&
-      isClass(formalType)                   == true   &&
-      formalType->symbol->hasFlag(FLAG_REF) == false) {
-    return true;
-  }
+  } else if (actualType                            == dtNil  &&
+             isClass(formalType)                   == true   &&
+             formalType->symbol->hasFlag(FLAG_REF) == false) {
+    retval = true;
 
-  if (actualType->refType == formalType &&
-      // This is a workaround for type problems with tuples
-      // in implement forall intents...
-      !(fn && fn->hasFlag(FLAG_BUILD_TUPLE) && fn->hasFlag(FLAG_ALLOW_REF))) {
-    return true;
-  }
+  } else if (actualType->refType == formalType &&
+             // This is a workaround for type problems with tuples
+             // in implement forall intents...
+             !(fn                            != NULL &&
+               fn->hasFlag(FLAG_BUILD_TUPLE) == true &&
+               fn->hasFlag(FLAG_ALLOW_REF)   == true)) {
+    retval = true;
 
-  if (paramCoerce == false &&
-      canCoerce(actualType, actualSym, formalType, fn, promotes, paramNarrows) == true) {
-    return true;
-  }
+  } else if (paramCoerce == false &&
+             canCoerce(actualType,
+                       actualSym,
+                       formalType,
+                       fn,
+                       promotes,
+                       paramNarrows) == true) {
+    retval = true;
 
-  if (paramCoerce == true  &&
-      canParamCoerce(actualType, actualSym, formalType, paramNarrows) == true) {
-    return true;
-  }
+  } else if (paramCoerce == true  &&
+             canParamCoerce(actualType,
+                            actualSym,
+                            formalType,
+                            paramNarrows) == true) {
+    retval = true;
 
-  forv_Vec(Type, parent, actualType->dispatchParents) {
-    if (parent                                              == formalType ||
-        doCanDispatch(parent, NULL, formalType, fn, promotes, paramNarrows, paramCoerce) == true) {
-      return true;
+  } else {
+    if (AggregateType* at = toAggregateType(actualType)) {
+      forv_Vec(AggregateType, parent, at->dispatchParents) {
+        if (parent == formalType ||
+            doCanDispatch(parent,
+                          NULL,
+                          formalType,
+                          fn,
+                          promotes,
+                          paramNarrows,
+                          paramCoerce) == true) {
+          retval = true;
+          break;
+        }
+      }
+    }
+
+    if (retval == false) {
+      if (fn                              != NULL        &&
+          fn->name                        != astrSequals &&
+          actualType->scalarPromotionType != NULL        &&
+          doCanDispatch(actualType->scalarPromotionType,
+                        NULL,
+                        formalType,
+                        fn,
+                        promotes,
+                        paramNarrows,
+                        false) == true) {
+        *promotes = true;
+        retval    = true;
+      }
     }
   }
 
-  if (fn                              != NULL        &&
-      fn->name                        != astrSequals &&
-      actualType->scalarPromotionType != NULL        &&
-      doCanDispatch(actualType->scalarPromotionType, NULL, formalType, fn,
-                    promotes, paramNarrows, false)) {
-
-    *promotes = true;
-    return true;
-  }
-
-  return false;
+  return retval;
 }
 
 bool canDispatch(Type*     actualType,
@@ -1190,20 +1215,25 @@ bool canDispatch(Type*     actualType,
                  bool*     promotes,
                  bool*     paramNarrows,
                  bool      paramCoerce) {
-  bool tmpPromotes = false;
+  bool tmpPromotes     = false;
   bool tmpParamNarrows = false;
-  bool ret = doCanDispatch(actualType, actualSym,
-                           formalType, fn,
-                           &tmpPromotes, &tmpParamNarrows,
-                           paramCoerce);
+  bool retval          = doCanDispatch(actualType,
+                                       actualSym,
+                                       formalType,
+                                       fn,
+                                       &tmpPromotes,
+                                       &tmpParamNarrows,
+                                       paramCoerce);
 
-  if (promotes)
+  if (promotes     != NULL) {
     *promotes = tmpPromotes;
+  }
 
-  if (paramNarrows)
+  if (paramNarrows != NULL) {
     *paramNarrows = tmpParamNarrows;
+  }
 
-  return ret;
+  return retval;
 }
 
 static bool isGenericInstantiation(Type*     actualType,
@@ -5530,10 +5560,12 @@ static void moveFinalize(CallExpr* call) {
 bool isDispatchParent(Type* t, Type* pt) {
   bool retval = false;
 
-  forv_Vec(Type, p, t->dispatchParents) {
-    if (p == pt || isDispatchParent(p, pt) == true) {
-      retval = true;
-      break;
+  if (AggregateType* at = toAggregateType(t)) {
+    forv_Vec(AggregateType, p, at->dispatchParents) {
+      if (p == pt || isDispatchParent(p, pt) == true) {
+        retval = true;
+        break;
+      }
     }
   }
 

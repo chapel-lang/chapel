@@ -802,33 +802,42 @@ static int computeNestedDepth(const char* name, Type* type) {
 // isMethodName returns true iff 'name' names a method of 'type'
 //
 static bool isMethodName(const char* name, Type* type) {
+  bool retval = false;
+
   if (strcmp(name, type->symbol->name) == 0) {
-    return false;
-  }
+    retval = false;
 
-  forv_Vec(Symbol, method, type->methods) {
-    if (method != NULL && strcmp(name, method->name) == 0) {
-      return true;
+  } else {
+    forv_Vec(Symbol, method, type->methods) {
+      if (method != NULL && strcmp(name, method->name) == 0) {
+        retval = true;
+        break;
+      }
     }
-  }
 
-  forv_Vec(Type, pt, type->dispatchParents) {
-    if (isMethodName(name, pt) == true) {
-      return true;
-    }
-  }
+    if (retval == false) {
+      if (AggregateType* at = toAggregateType(type)) {
+        Type* outerType = at->symbol->defPoint->parentSymbol->type;
 
-  if (AggregateType* ct = toAggregateType(type)) {
-    Type* outerType = ct->symbol->defPoint->parentSymbol->type;
+        forv_Vec(AggregateType, pt, at->dispatchParents) {
+          if (isMethodName(name, pt) == true) {
+            retval = true;
+            break;
+          }
+        }
 
-    if (AggregateType* outer = toAggregateType(outerType)) {
-      if (isMethodName(name, outer) == true) {
-        return true;
+        if (retval == false) {
+          if (AggregateType* outer = toAggregateType(outerType)) {
+            if (isMethodName(name, outer) == true) {
+              retval = true;
+            }
+          }
+        }
       }
     }
   }
 
-  return false;
+  return retval;
 }
 
 
@@ -837,23 +846,32 @@ static bool isMethodName(const char* name, Type* type) {
 // excluding methods of an outer type
 //
 static bool isMethodNameLocal(const char* name, Type* type) {
+  bool retval = false;
+
   if (strcmp(name, type->symbol->name) == 0) {
-    return false;
-  }
+    retval = false;
 
-  forv_Vec(Symbol, method, type->methods) {
-    if (method != NULL && strcmp(name, method->name) == 0) {
-      return true;
+  } else {
+    forv_Vec(Symbol, method, type->methods) {
+      if (method != NULL && strcmp(name, method->name) == 0) {
+        retval = true;
+        break;
+      }
+    }
+
+    if (retval == false) {
+      if (AggregateType* at = toAggregateType(type)) {
+        forv_Vec(AggregateType, pt, at->dispatchParents) {
+          if (isMethodName(name, pt) == true) {
+            retval = true;
+            break;
+          }
+        }
+      }
     }
   }
 
-  forv_Vec(Type, pt, type->dispatchParents) {
-    if (isMethodName(name, pt) == true) {
-      return true;
-    }
-  }
-
-  return false;
+  return retval;
 }
 
 
@@ -1511,36 +1529,44 @@ static bool methodMatched(BaseAST* scope, FnSymbol* method) {
 // This function uses the same methodology as isMethodName but returns the
 // symbol found instead of just a boolean
 static FnSymbol* getMethod(const char* name, Type* type) {
+  FnSymbol* retval = NULL;
+
   if (strcmp(name, type->symbol->name) == 0) {
-    return NULL;
-  }
+    retval = NULL;
 
-  // Looks for name in methods defined directly on this type
-  forv_Vec(FnSymbol, method, type->methods) {
-    if (method != NULL && strcmp(name, method->name) == 0) {
-      return method;
+  } else {
+    // Looks for name in methods defined directly on this type
+    forv_Vec(FnSymbol, method, type->methods) {
+      if (method != NULL && strcmp(name, method->name) == 0) {
+        retval = method;
+      }
     }
-  }
 
-  // Looks for name in methods defined on parent types
-  forv_Vec(Type, pt, type->dispatchParents) {
-    if (FnSymbol* sym = getMethod(name, pt)) {
-      return sym;
-    }
-  }
+    if (retval == NULL) {
+      if (AggregateType* at = toAggregateType(type)) {
+        Type* outerType = at->symbol->defPoint->parentSymbol->type;
 
-  // Looks for name in types wrapping this type definition
-  if (AggregateType* ct = toAggregateType(type)) {
-    Type *outerType = ct->symbol->defPoint->parentSymbol->type;
+        // Looks for name in methods defined on parent types
+        forv_Vec(AggregateType, pt, at->dispatchParents) {
+          if (FnSymbol* sym = getMethod(name, pt)) {
+            retval = sym;
+            break;
+          }
+        }
 
-    if (AggregateType* outer = toAggregateType(outerType)) {
-      if (FnSymbol* sym = getMethod(name, outer)) {
-        return sym;
+        // Looks for name in types wrapping this type definition
+        if (retval == NULL) {
+          if (AggregateType* outer = toAggregateType(outerType)) {
+            if (FnSymbol* sym = getMethod(name, outer)) {
+              retval = sym;
+            }
+          }
+        }
       }
     }
   }
 
-  return NULL;
+  return retval;
 }
 
 static void buildBreadthFirstModuleList(Vec<UseStmt*>* modules) {
