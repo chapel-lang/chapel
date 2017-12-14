@@ -1040,12 +1040,21 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
 // Is 'type' a Reduce/Scan Op?
 // similar to isArrayClass()
 bool isReduceOp(Type* type) {
-  if (type->symbol->hasFlag(FLAG_REDUCESCANOP))
-    return true;
-  forv_Vec(Type, t, type->dispatchParents)
-    if (isReduceOp(t))
-      return true;
-  return false;
+  bool retval = false;
+
+  if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
+    retval = true;
+
+  } else if (AggregateType* at = toAggregateType(type)) {
+    forv_Vec(AggregateType, t, at->dispatchParents) {
+      if (isReduceOp(t) == true) {
+        retval = true;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 //

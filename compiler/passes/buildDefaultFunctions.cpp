@@ -1541,16 +1541,21 @@ static void buildRecordQueryVarField(FnSymbol*  fn,
 ************************************** | *************************************/
 
 static bool inheritsFromError(Type* t) {
-  if (t == dtError)
-    return true;
+  bool retval = false;
 
-  bool ret = false;
+  if (t == dtError) {
+    retval = true;
 
-  forv_Vec(Type, parent, t->dispatchParents) {
-    ret = ret || inheritsFromError(parent);
+  } else if (AggregateType* at = toAggregateType(t)) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
+      if (inheritsFromError(parent) == true) {
+        retval = true;
+        break;
+      }
+    }
   }
 
-  return ret;
+  return retval;
 }
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {

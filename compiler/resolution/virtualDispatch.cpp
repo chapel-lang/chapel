@@ -360,25 +360,28 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
   FnSymbol*      cfnValue   = cfnInfo->getValue;
 
   if (isSubType(cfnValue->retType, pfnValue->retType) == true) {
-    Type* pic       = pfnInfo->iclass;
-    Type* cic       = cfnInfo->iclass;
+    AggregateType* pic          = pfnInfo->iclass;
+    AggregateType* cic          = cfnInfo->iclass;
 
-    Type* pthisType = pfnInfo->iterator->_this->typeInfo();
-    Type* cthisType = cfnInfo->iterator->_this->typeInfo();
+    Type*          pthisType    = pfnInfo->iterator->_this->typeInfo();
+    Type*          cthisType    = cfnInfo->iterator->_this->typeInfo();
 
     AggregateType* atPfnRetType = toAggregateType(pfn->retType);
     AggregateType* atCfnRetType = toAggregateType(cfn->retType);
 
+    AggregateType* atCthisType  = toAggregateType(cthisType);
+
     INT_ASSERT(atPfnRetType != NULL);
     INT_ASSERT(atCfnRetType != NULL);
+    INT_ASSERT(atCthisType  != NULL);
 
-    pfn->retType->dispatchChildren.add_exclusive(atCfnRetType);
-    cfn->retType->dispatchParents.add_exclusive(atPfnRetType);
+    atPfnRetType->dispatchChildren.add_exclusive(atCfnRetType);
+    atCfnRetType->dispatchParents.add_exclusive(atPfnRetType);
 
     INT_ASSERT(cic->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true);
-    INT_ASSERT(cthisType->dispatchParents.n              == 1);
+    INT_ASSERT(atCthisType->dispatchParents.n              == 1);
 
-    if (cthisType->dispatchParents.only() == pthisType) {
+    if (atCthisType->dispatchParents.only() == pthisType) {
       Type* parent = cic->dispatchParents.only();
 
       INT_ASSERT(cic->dispatchParents.n == 1);
@@ -426,8 +429,8 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else {
-    forv_Vec(Type, parent, sub->dispatchParents) {
+  } else if (AggregateType* atSub = toAggregateType(sub)) {
+    forv_Vec(AggregateType, parent, atSub->dispatchParents) {
       if (isSubType(parent, super) == true) {
         retval = true;
         break;
@@ -556,15 +559,17 @@ static void buildVirtualMethodTable() {
 
         if (Vec<FnSymbol*>* childFns = virtualChildrenMap.get(pfn)) {
           forv_Vec(FnSymbol, cfn, *childFns) {
-            forv_Vec(Type, pt, cfn->_this->type->dispatchParents) {
-              if (pt == ct) {
-                if (childSet.set_in(cfn->_this->type) == NULL) {
-                  addVirtualMethodTableEntry(cfn->_this->type, cfn, false);
+            if (AggregateType* at = toAggregateType(cfn->_this->type)) {
+              forv_Vec(AggregateType, pt, at->dispatchParents) {
+                if (pt == ct) {
+                  if (childSet.set_in(at) == NULL) {
+                    addVirtualMethodTableEntry(at, cfn, false);
 
-                  childSet.set_add(cfn->_this->type);
+                    childSet.set_add(at);
+                  }
+
+                  break;
                 }
-
-                break;
               }
             }
           }

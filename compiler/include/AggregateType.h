@@ -163,6 +163,8 @@ public:
   // isa checking. This is the value we store in chpl__cid_XYZ.
   int                         classId;
 
+  Vec<AggregateType*>         dispatchParents;    // dispatch hierarchy
+
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
   static void                 insertImplicitThis(

@@ -105,7 +105,6 @@ public:
 
   SymbolMap              substitutions;
 
-  Vec<AggregateType*>    dispatchParents;    // dispatch hierarchy
   Vec<AggregateType*>    dispatchChildren;   // dispatch hierarchy
 
   // Only used for LLVM.
