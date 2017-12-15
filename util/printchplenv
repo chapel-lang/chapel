@@ -36,7 +36,7 @@ Options:
                  output is compatible with chplconfig format
   --make        Print variables in format: CHPL_MAKE_KEY=VALUE
   --path        Print variables in format: VALUE1/VALUE2/...
-                 this flag always excludes CHPL_HOME and CHPL_MAKE
+                 always excludes CHPL_HOME, CHPL_NETWORK_ATOMICS, and CHPL_MAKE
 """
 
 from collections import namedtuple
@@ -84,7 +84,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
     ChapelEnv('CHPL_MEM', RUNTIME_LAUNCHER, 'mem'),
     ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
-    ChapelEnv('CHPL_MAKE', RUNTIME, 'make'),
+    ChapelEnv('CHPL_MAKE', COMPILER, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME_LAUNCHER, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', RUNTIME),
     ChapelEnv('CHPL_GMP', RUNTIME, 'gmp'),
@@ -237,7 +237,7 @@ def filter_tidy(chpl_env):
     return True
 
 
-"""Filter CHPL_MAKE and CHPL_NETWORK_ATOMICS for --path (special cases)"""
+"""Filter CHPL_NETWORK_ATOMICS for --path (special case)"""
 def filter_path(chpl_env):
     return chpl_env.name not in ['CHPL_MAKE', '  CHPL_NETWORK_ATOMICS']
 
