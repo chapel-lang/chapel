@@ -13,7 +13,7 @@ proc main() {
     var buf: [1..bufLen] buf_t;
     var idStr = chpl_task_idToString(c_ptrTo(buf), buf.size:size_t, id);
     writeln('task ID of ', what, ' is: ',
-            if idStr==_nullString then '<OVF>' else idStr:string);
+            if idStr==c_nil:c_string then '<OVF>' else idStr:string);
   }
 
   showMe('main()');

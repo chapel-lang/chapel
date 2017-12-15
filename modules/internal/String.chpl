@@ -1833,11 +1833,6 @@ module String {
     return __primitive("cast", t, cs);
   }
 
-  pragma "no doc"
-  inline proc _cast(type t, cs: c_string_copy) where t == bufferType {
-    return __primitive("cast", t, cs);
-  }
-
   // Cast from c_string to string
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {

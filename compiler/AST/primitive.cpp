@@ -57,11 +57,6 @@ returnInfoStringC(CallExpr* call) {
 }
 
 static QualifiedType
-returnInfoStringCopy(CallExpr* call) {
-  return QualifiedType(dtStringCopy, QUAL_VAL);
-}
-
-static QualifiedType
 returnInfoWideMake(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   if (t1->symbol->hasFlag(FLAG_REF))
@@ -656,13 +651,13 @@ initPrimitive() {
 
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringCopy, true, true);
+  prim_def("string_concat", returnInfoStringC, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
-  prim_def("string_index", returnInfoStringCopy, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
+  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  prim_def("string_select", returnInfoStringCopy, true, true);
+  prim_def("string_select", returnInfoStringC, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);
