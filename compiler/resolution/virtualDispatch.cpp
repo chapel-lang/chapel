@@ -160,7 +160,12 @@ static bool buildVirtualMaps() {
       ArgSymbol*     _this = fn->getFormal(2);
       AggregateType* at    = toAggregateType(_this->type);
 
+      AggregateType* at2   = fn->getReceiver();
+
       if (_mt->type == dtMethodToken && isNonGenericClass(at) == true) {
+        INT_ASSERT(at                    == at2);
+        INT_ASSERT(fn->isMethodOnClass() == true);
+
         addAllToVirtualMaps(fn, at);
       }
     }
