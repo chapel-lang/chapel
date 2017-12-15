@@ -1006,7 +1006,8 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   type->addFlag(FLAG_TYPE_VARIABLE);
 
-  fn->addFlag(FLAG_METHOD);
+  fn->setMethod(true);
+
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
@@ -1021,7 +1022,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   //   1) add a corresponding formal to the new type method
   //   2) add that formal to the call to "init"
   //
-  int count = 1;
+  int       count = 1;
   SymbolMap initArgToNewArgMap;
 
   for_formals(formal, initMethod) {

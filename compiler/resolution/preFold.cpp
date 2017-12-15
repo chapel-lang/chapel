@@ -1567,7 +1567,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   buildDefaultDestructor(ct);
 
-  FnSymbol *thisMethod = new FnSymbol("this");
+  FnSymbol*  thisMethod = new FnSymbol("this");
+  ArgSymbol* thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
 
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
 
@@ -1575,15 +1576,13 @@ static Expr* createFunctionAsValue(CallExpr *call) {
                                                "_mt",
                                                dtMethodToken));
 
-  thisMethod->addFlag(FLAG_METHOD);
-
-  ArgSymbol *thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
-
-  thisSymbol->addFlag(FLAG_ARG_THIS);
+  thisMethod->setMethod(true);
 
   thisMethod->insertFormalAtTail(thisSymbol);
 
   thisMethod->_this = thisSymbol;
+
+  thisSymbol->addFlag(FLAG_ARG_THIS);
 
   CallExpr* innerCall = new CallExpr(captured_fn);
   int       skip      = 2;
@@ -1910,15 +1909,19 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
     DefExpr* def = new DefExpr(rtGetter);
 
     parent->symbol->defPoint->insertBefore(def);
+
     normalize(rtGetter);
+
     parent->methods.add(rtGetter);
 
-    rtGetter->addFlag(FLAG_METHOD);
+    rtGetter->setMethod(true);
     rtGetter->addFlag(FLAG_METHOD_PRIMARY);
+
     rtGetter->cname = astr("chpl_get_",
                            parent->symbol->cname,
                            "_",
                            rtGetter->cname);
+
     rtGetter->addFlag(FLAG_NO_PARENS);
     rtGetter->_this = _this;
   }
@@ -1969,8 +1972,9 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
     normalize(atGetter);
     parent->methods.add(atGetter);
 
-    atGetter->addFlag(FLAG_METHOD);
+    atGetter->setMethod(true);
     atGetter->addFlag(FLAG_METHOD_PRIMARY);
+
     atGetter->cname = astr("chpl_get_",
                            parent->symbol->cname, "_",
                            atGetter->cname);
@@ -1981,19 +1985,22 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   FnSymbol* parent_method = new FnSymbol("this");
 
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                   "_mt",
                                                   dtMethodToken));
-  parent_method->addFlag(FLAG_METHOD);
+  parent_method->setMethod(true);
 
   ArgSymbol* thisParentSymbol = new ArgSymbol(INTENT_BLANK, "this", parent);
 
   thisParentSymbol->addFlag(FLAG_ARG_THIS);
 
   parent_method->insertFormalAtTail(thisParentSymbol);
+
   parent_method->_this = thisParentSymbol;
 
-  int i = 0, alength = arg_list.length;
+  int i       = 0;
+  int alength = arg_list.length;
 
   // We handle the arg list differently depending on if it's a list of
   // formal args or actual args

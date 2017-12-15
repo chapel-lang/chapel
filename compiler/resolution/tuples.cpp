@@ -289,11 +289,14 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 
   // Does "_this" even make sense in this situation?
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", newType);
+
   _this->addFlag(FLAG_ARG_THIS);
+
   dtor->_this = _this;
 
+  dtor->setMethod(true);
+
   dtor->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  dtor->addFlag(FLAG_METHOD);
   dtor->insertFormalAtTail(dtor->_this);
 
   dtor->addFlag(FLAG_COMPILER_GENERATED);
