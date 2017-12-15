@@ -259,6 +259,8 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   QualifiedType qual = formal->qualType();
   INT_ASSERT(formal);
 
+  // MPF: I suspect this check for FLAG_COFORALL_INDEX_VAR is no longer
+  // needed.
   bool passedByRef = formal->intent == INTENT_REF ||
                      qual.getQual() == QUAL_REF ||
                      qual.getQual() == QUAL_CONST_REF;
