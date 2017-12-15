@@ -465,7 +465,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
       fn->hasFlag(FLAG_INIT_COPY_FN)           == false &&
       fn->hasFlag(FLAG_AUTO_COPY_FN)           == false &&
       fn->hasFlag(FLAG_IF_EXPR_FN)             == false &&
-      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false) {
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false &&
+      fn->hasFlag(FLAG_FN_RETURNS_ITERATOR) == false) {
     Symbol* ret = fn->getReturnSymbol();
 
     for_SymbolSymExprs(se, ret) {
