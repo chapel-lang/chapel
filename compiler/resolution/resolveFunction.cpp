@@ -487,6 +487,11 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
             FnSymbol*  unrefFn   = NULL;
 
+            if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+              USR_WARN(call, "proc returns an iterator that will be "
+                             "immediately converted to an array");
+            }
+
             // Used by callDestructors to catch assignment from
             // a ref to 'tmp' when we know we don't want to copy.
             tmp->addFlag(FLAG_NO_COPY);
