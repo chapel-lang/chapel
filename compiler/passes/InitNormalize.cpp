@@ -1049,6 +1049,7 @@ void InitNormalize::handleInsertedMethodCall(CallExpr* call) const {
       AggregateType* at      = type();
       bool           matches = false;
 
+      // Note: doesn't handle inherited methods.
       forv_Vec(FnSymbol, fn, at->methods) {
         if (strcmp(us->unresolved, fn->name) == 0) {
           matches = true;
