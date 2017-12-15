@@ -986,6 +986,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   bool zippered)
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
+  lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
                                         iterKindTypename),
@@ -2172,6 +2173,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // data will hold the reduce-d expression as an argument
   // we'll store dataExpr in the call to the chpl__scan function.
