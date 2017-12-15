@@ -16,6 +16,6 @@ SHORT_NAME=clang
 START_DATE=09/10/16
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
-perf_args="${perf_args} -performance -numtrials 5 -startdate $START_DATE"
+perf_args="${perf_args} -performance -numtrials 1 -startdate $START_DATE"
 
 $CWD/nightly -cron ${nightly_args} ${perf_args}
