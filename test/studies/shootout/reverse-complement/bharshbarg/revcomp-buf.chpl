@@ -2,7 +2,7 @@
    http://benchmarksgame.alioth.debian.org/
 
    contributed by Ben Harshbarger
-   derived from the GNU C version by Jeremy Zerfas
+   derived from the Rust #2 version by Matt Brubeck
 */
 
 /*
