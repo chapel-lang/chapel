@@ -1869,10 +1869,11 @@ bool FnSymbol::tagIfGeneric() {
 int FnSymbol::hasGenericFormals() const {
   bool hasGenericFormal   = false;
   bool hasGenericDefaults =  true;
+  bool resolveInit        = false;
   int  retval             =     0;
 
-  bool resolveInit = false;
-  if (this->hasFlag(FLAG_METHOD) && _this) {
+
+  if (isMethod() == true && _this != NULL) {
     if (AggregateType* at = toAggregateType(_this->type)) {
       if (at->initializerStyle != DEFINES_CONSTRUCTOR  &&
           strcmp(name, "init") == 0) {

@@ -1705,7 +1705,7 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn, CallInfo& info) {
     wrapper->retTag = fn->retTag;
   }
 
-  if (fn->hasFlag(FLAG_METHOD)) {
+  if (fn->isMethod() == true) {
     wrapper->addFlag(FLAG_METHOD);
   }
 
