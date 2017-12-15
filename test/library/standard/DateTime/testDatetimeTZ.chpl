@@ -43,15 +43,16 @@ proc test_trivial() {
   assert(dt.minute == 5);
   assert(dt.second == 6);
   assert(dt.microsecond == 7);
-  assert(dt.tzinfo == nil);
+  assert(dt.tzinfo.borrow() == nil);
 }
 
 proc test_even_more_compare() {
   // Smallest possible after UTC adjustment.
-  var t1 = new datetime(1, 1, 1, tzinfo=new FixedOffset(1439, ""));
+  var t1 = new datetime(1, 1, 1,
+                        tzinfo=new Shared(new FixedOffset(1439, ""): TZInfo));
   // Largest possible after UTC adjustment.
   var t2 = new datetime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
-                           tzinfo=new FixedOffset(-1439, ""));
+                        tzinfo=new Shared(new FixedOffset(-1439, ""): TZInfo));
 
   // Make sure those compare correctly, and w/o overflow.
   assert(t1 < t2);
@@ -62,33 +63,39 @@ proc test_even_more_compare() {
   assert(t2 == t2);
 
   // Equal afer adjustment.
-  t1 = new datetime(1, 12, 31, 23, 59, tzinfo=new FixedOffset(1, ""));
-  t2 = new datetime(2, 1, 1, 3, 13, tzinfo=new FixedOffset(3*60+13+2, ""));
+  t1 = new datetime(1, 12, 31, 23, 59,
+                    tzinfo=new Shared(new FixedOffset(1, ""): TZInfo));
+  t2 = new datetime(2, 1, 1, 3, 13,
+                    tzinfo=new Shared(new FixedOffset(3*60+13+2, ""): TZInfo));
   assert(t1 == t2);
 
   // Change t1 not to subtract a minute, and t1 should be larger.
-  t1 = new datetime(1, 12, 31, 23, 59, tzinfo=new FixedOffset(0, ""));
+  t1 = new datetime(1, 12, 31, 23, 59,
+                    tzinfo=new Shared(new FixedOffset(0, ""): TZInfo));
   assert(t1 > t2);
 
   // Change t1 to subtract 2 minutes, and t1 should be smaller.
-  t1 = new datetime(1, 12, 31, 23, 59, tzinfo=new FixedOffset(2, ""));
+  t1 = new datetime(1, 12, 31, 23, 59,
+                    tzinfo=new Shared(new FixedOffset(2, ""): TZInfo));
   assert(t1 < t2);
 
   // Back to the original t1, but make seconds resolve it.
-  t1 = new datetime(1, 12, 31, 23, 59, tzinfo=new FixedOffset(1, ""),
-                           second=1);
+  t1 = new datetime(1, 12, 31, 23, 59,
+                    tzinfo=new Shared(new FixedOffset(1, ""): TZInfo),
+                    second=1);
   assert(t1 > t2);
 
   // Likewise, but make microseconds resolve it.
-  t1 = new datetime(1, 12, 31, 23, 59, tzinfo=new FixedOffset(1, ""),
-                     microsecond=1);
+  t1 = new datetime(1, 12, 31, 23, 59,
+                    tzinfo=new Shared(new FixedOffset(1, ""): TZInfo),
+                    microsecond=1);
   assert(t1 > t2);
 }
 
 proc test_zones() {
-  var est = new FixedOffset(-300, "EST");
-  var utc = new FixedOffset(0, "UTC");
-  var met = new FixedOffset(60, "MET");
+  var est = new Shared(new FixedOffset(-300, "EST"): TZInfo);
+  var utc = new Shared(new FixedOffset(0, "UTC"): TZInfo);
+  var met = new Shared(new FixedOffset(60, "MET"): TZInfo);
   var t1 = new datetime(2002, 3, 19,  7, 47, tzinfo=est);
   var t2 = new datetime(2002, 3, 19, 12, 47, tzinfo=utc);
   var t3 = new datetime(2002, 3, 19, 13, 47, tzinfo=met);
@@ -107,7 +114,7 @@ proc test_zones() {
 }
 
 proc test_combine() {
-  var met = new FixedOffset(60, "MET");
+  var met = new Shared(new FixedOffset(60, "MET"): TZInfo);
   var d = new date(2002, 3, 4);
   var tz = new time(18, 45, 3, 1234, tzinfo=met);
   var dt = datetime.combine(d, tz);
@@ -116,7 +123,7 @@ proc test_combine() {
 }
 
 proc test_extract() {
-  var met = new FixedOffset(60, "MET");
+  var met = new Shared(new FixedOffset(60, "MET"): TZInfo);
   var dt = new datetime(2002, 3, 4, 18, 45, 3, 1234, tzinfo=met);
   assert(dt.getdate() == new date(2002, 3, 4));
   assert(dt.gettime() == new time(18, 45, 3, 1234));
@@ -128,7 +135,7 @@ proc test_tz_aware_arithmetic() {
   var rng = makeRandomStream(eltType=int);
 
   var now = datetime.now();
-  var tz55 = new FixedOffset(-330, "west 5:30");
+  var tz55 = new Shared(new FixedOffset(-330, "west 5:30"): TZInfo);
   var timeaware = now.gettime().replace(tzinfo=tz55);
   var nowaware = datetime.combine(now.getdate(), timeaware);
   assert(nowaware.tzinfo == tz55);
@@ -155,7 +162,8 @@ proc test_tz_aware_arithmetic() {
   assert(nowawareplus - nowaware == delta);
 
   // Make up a random timezone.
-  var tzr = new FixedOffset(rng.getNext(-1439, 1439), "randomtimezone");
+  var tzr = new Shared(new FixedOffset(rng.getNext(-1439, 1439),
+                                       "randomtimezone"): TZInfo);
   // Attach it to nowawareplus.
   nowawareplus = nowawareplus.replace(tzinfo=tzr);
   assert(nowawareplus.tzinfo == tzr);
@@ -170,19 +178,21 @@ proc test_tz_aware_arithmetic() {
   assert(got == expected);
 
   // Try max possible difference.
-  var min = new datetime(1, 1, 1, tzinfo=new FixedOffset(1439, "min"));
+  var min = new datetime(1, 1, 1,
+                         tzinfo=new Shared(new FixedOffset(1439, "min"): TZInfo));
   var max = new datetime(MAXYEAR, 12, 31, 23, 59, 59, 999999,
-                      tzinfo=new FixedOffset(-1439, "max"));
+                      tzinfo=new Shared(new FixedOffset(-1439, "max"): TZInfo));
   var maxdiff = max - min;
   assert(maxdiff == datetime.max - datetime.min +
                     new timedelta(minutes=2*1439));
+  delete rng;
 }
 
 proc test_tzinfo_now() {
   // Ensure it doesn't require tzinfo (i.e., that this doesn't blow up).
   var base = datetime.now();
   // Try with and without naming the keyword.
-  var off42 = new FixedOffset(42, "42");
+  var off42 = new Shared(new FixedOffset(42, "42"): TZInfo);
   var another = datetime.now(off42);
   var again = datetime.now(tz=off42);
   assert(another.tzinfo == again.tzinfo);
@@ -191,8 +201,9 @@ proc test_tzinfo_now() {
   // We don't know which time zone we're in, and don't have a tzinfo
   // class to represent it, so seeing whether a tz argument actually
   // does a conversion is tricky.
-  var weirdtz = new FixedOffset(new timedelta(hours=15, minutes=58), "weirdtz", new timedelta(0));
-  var utc = new FixedOffset(0, "utc", 0);
+  var weirdtz = new Shared(new FixedOffset(new timedelta(hours=15, minutes=58),
+                                           "weirdtz", new timedelta(0)): TZInfo);
+  var utc = new Shared(new FixedOffset(0, "utc", 0): TZInfo);
   for 0..2 {
     var now = datetime.now(weirdtz);
     assert(now.tzinfo == weirdtz);
@@ -227,7 +238,7 @@ proc test_tzinfo_fromtimestamp() {
   // Ensure it doesn't require tzinfo (i.e., that this doesn't blow up).
   var base = datetime.fromtimestamp(ts);
   // Try with and without naming the keyword.
-  var off42 = new FixedOffset(42, "42");
+  var off42 = new Shared(new FixedOffset(42, "42"): TZInfo);
   var another = datetime.fromtimestamp(ts, off42);
   var again = datetime.fromtimestamp(ts, tz=off42);
   assert(another.tzinfo == again.tzinfo);
@@ -241,10 +252,10 @@ proc test_tzinfo_fromtimestamp() {
   // any idea here what time that actually is, we can only test that
   // relative changes match.
   var utcoffset = new timedelta(hours=-15, minutes=39); // arbitrary, but not zero
-  var tz = new FixedOffset(utcoffset, "tz", new timedelta());
+  var tz = new Shared(new FixedOffset(utcoffset, "tz", new timedelta()): TZInfo);
   var expected = utcdatetime + utcoffset;
   var got = datetime.fromtimestamp(timestamp, tz);
-  assert(expected == got.replace(tzinfo=nil));
+  assert(expected == got.replace(tzinfo=new Shared(nil:TZInfo)));
 }
 
 proc test_tzinfo_timetuple() {
@@ -261,7 +272,8 @@ proc test_tzinfo_timetuple() {
   }
 
   for (dstvalue, flag) in ((-33, 1), (33, 1), (0, 0)) {
-    var d = new datetime(1, 1, 1, 10, 20, 30, 40, tzinfo=new DST(dstvalue));
+    var d = new datetime(1, 1, 1, 10, 20, 30, 40,
+                         tzinfo=new Shared(new DST(dstvalue): TZInfo));
     var t = d.timetuple();
     assert(1 == t.tm_year);
     assert(1 == t.tm_mon);
@@ -275,8 +287,8 @@ proc test_tzinfo_timetuple() {
   }
 
   // dst() at the edge.
-  assert((new datetime(1,1,1, tzinfo=new DST(1439))).timetuple().tm_isdst == 1);
-  assert((new datetime(1,1,1, tzinfo=new DST(-1439))).timetuple().tm_isdst == 1);
+  assert((new datetime(1,1,1, tzinfo=new Shared(new DST(1439): TZInfo))).timetuple().tm_isdst == 1);
+  assert((new datetime(1,1,1, tzinfo=new Shared(new DST(-1439): TZInfo))).timetuple().tm_isdst == 1);
 }
 
 proc test_utctimetuple() {
@@ -304,7 +316,7 @@ proc test_utctimetuple() {
   // Ensure tm_isdst is 0 regardless of what dst() says:  DST is never
   // in effect for a UTC time.
   for dstvalue in (-33, 33, 0) {
-    var d = new datetime(1, 2, 3, 10, 20, 30, 40, tzinfo=new UOFS(-53, dstvalue));
+    var d = new datetime(1, 2, 3, 10, 20, 30, 40, tzinfo=new Shared(new UOFS(-53, dstvalue): TZInfo));
     var t = d.utctimetuple();
     assert(d.year == t.tm_year);
     assert(d.month == t.tm_mon);
@@ -320,7 +332,7 @@ proc test_utctimetuple() {
   // At the edges, UTC adjustment can normalize into years out-of-range
   // for a datetime object.  Ensure that a correct timetuple is
   // created anyway.
-  var tiny = new datetime(MINYEAR, 1, 1, 0, 0, 37, tzinfo=new UOFS(1439));
+  var tiny = new datetime(MINYEAR, 1, 1, 0, 0, 37, tzinfo=new Shared(new UOFS(1439): TZInfo));
   // That goes back 1 minute less than a full day.
   var t = tiny.utctimetuple();
   assert(t.tm_year == MINYEAR-1);
@@ -332,7 +344,7 @@ proc test_utctimetuple() {
   assert(t.tm_yday == 366);    // "year 0" is a leap year
   assert(t.tm_isdst == 0);
 
-  var huge = new datetime(MAXYEAR, 12, 31, 23, 59, 37, 999999, tzinfo=new UOFS(-1439));
+  var huge = new datetime(MAXYEAR, 12, 31, 23, 59, 37, 999999, tzinfo=new Shared(new UOFS(-1439): TZInfo));
   // That goes forward 1 minute less than a full day.
   t = huge.utctimetuple();
   assert(t.tm_year == MAXYEAR+1);
@@ -346,9 +358,9 @@ proc test_utctimetuple() {
 }
 
 proc test_tzinfo_isoformat() {
-  var zero = new FixedOffset(0, "+00:00");
-  var plus = new FixedOffset(220, "+03:40");
-  var minus = new FixedOffset(-231, "-03:51");
+  var zero = new Shared(new FixedOffset(0, "+00:00"): TZInfo);
+  var plus = new Shared(new FixedOffset(220, "+03:40"): TZInfo);
+  var minus = new Shared(new FixedOffset(-231, "-03:51"): TZInfo);
 
   var datestr = '0001-02-03';
   for ofs in (zero, plus, minus) {
@@ -367,8 +379,8 @@ proc test_tzinfo_isoformat() {
 }
 
 proc test_replace() {
-  var z100 = new FixedOffset(100, "+100");
-  var zm200 = new FixedOffset(new timedelta(minutes=-200), "-200");
+  var z100 = new Shared(new FixedOffset(100, "+100"): TZInfo);
+  var zm200 = new Shared(new FixedOffset(new timedelta(minutes=-200), "-200"): TZInfo);
   var args = (1, 2, 3, 4, 5, 6, 7);
   var base = new datetime((...args), z100);
   assert(base == base.replace(tzinfo=base.tzinfo));
@@ -412,8 +424,8 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=nil);
-  assert(base2.tzinfo == nil);
+  var base2 = base.replace(tzinfo=new Shared(nil: TZInfo));
+  assert(base2.tzinfo.borrow() == nil);
 
   // Ensure we can add one.
   var base3 = base2.replace(tzinfo=z100);
@@ -423,8 +435,8 @@ proc test_replace() {
 
 proc test_more_astimezone() {
   // The inherited test_astimezone covered some trivial and error cases.
-  var f44m = new FixedOffset(44, "44");
-  var fm5h = new FixedOffset(-(new timedelta(hours=5)), "m300");
+  var f44m = new Shared(new FixedOffset(44, "44"): TZInfo);
+  var fm5h = new Shared(new FixedOffset(-(new timedelta(hours=5)), "m300"): TZInfo);
 
   var dt = datetime.now(tz=f44m);
   assert(dt.tzinfo == f44m);
@@ -464,7 +476,7 @@ proc test_aware_subtract() {
     }
   }
 
-  var base = new datetime(8, 9, 10, 11, 12, 13, 14, tzinfo=new OperandDependentOffset());
+  var base = new datetime(8, 9, 10, 11, 12, 13, 14, tzinfo=new Shared(new OperandDependentOffset(): TZInfo));
   var d0 = base.replace(minute=3, tzinfo=base.tzinfo);
   var d1 = base.replace(minute=9, tzinfo=base.tzinfo);
   var d2 = base.replace(minute=11, tzinfo=base.tzinfo);
@@ -478,9 +490,9 @@ proc test_aware_subtract() {
   // OTOH, if the tzinfo members are distinct, utcoffsets aren't
   // ignored.
   base = new datetime(8, 9, 10, 11, 12, 13, 14);
-  d0 = base.replace(minute=3, tzinfo=new OperandDependentOffset());
-  d1 = base.replace(minute=9, tzinfo=new OperandDependentOffset());
-  d2 = base.replace(minute=11, tzinfo=new OperandDependentOffset());
+  d0 = base.replace(minute=3, tzinfo=new Shared(new OperandDependentOffset(): TZInfo));
+  d1 = base.replace(minute=9, tzinfo=new Shared(new OperandDependentOffset(): TZInfo));
+  d2 = base.replace(minute=11, tzinfo=new Shared(new OperandDependentOffset(): TZInfo));
   for x in (d0, d1, d2) {
     for y in (d0, d1, d2) {
       var got = x - y;
@@ -504,9 +516,9 @@ proc test_mixed_compare() {
   var t1 = new datetime(1, 2, 3, 4, 5, 6, 7);
   var t2 = new datetime(1, 2, 3, 4, 5, 6, 7);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=nil);
+  t2 = t2.replace(tzinfo=new Shared(nil: TZInfo));
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new FixedOffset(0, ""));
+  t2 = t2.replace(tzinfo=new Shared(new FixedOffset(0, ""): TZInfo));
 
   // In datetime w/ identical tzinfo objects, utcoffset is ignored.
   class Varies: TZInfo {
@@ -520,7 +532,7 @@ proc test_mixed_compare() {
     }
   }
 
-  var v = new Varies();
+  var v = new Shared(new Varies(): TZInfo);
   t1 = t2.replace(tzinfo=v);
   t2 = t2.replace(tzinfo=v);
   assert(t1.utcoffset() == new timedelta(minutes=23));
@@ -528,7 +540,7 @@ proc test_mixed_compare() {
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.
-  t2 = t2.replace(tzinfo=new Varies());
+  t2 = t2.replace(tzinfo=new Shared(new Varies(): TZInfo));
   assert(t1 < t2);  // t1's offset counter still going up
 }
 
