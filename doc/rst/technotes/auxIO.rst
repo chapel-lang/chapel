@@ -348,7 +348,7 @@ Chapel with (and use). For example if we wanted to enable :mod:`Curl` and
 
     ``CHPL_AUX_FILESYS="hdfs curl"``
 
-Assuming that you have correctly defined ``CHPL_AUXIO_INCLUDES`` and
+Assuming that you have correctly defined ``CHPL_AUXIO_INCLUDE`` and
 ``CHPL_AUXIO_LIBS`` as detailed above, and have the correct libraries
 installed.
 
