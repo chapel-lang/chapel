@@ -1964,9 +1964,16 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
-// This function is a method on an aggregate type
 bool FnSymbol::isMethod() const {
   return hasFlag(FLAG_METHOD);
+}
+
+void FnSymbol::setMethod(bool value) {
+  if (value == true) {
+    addFlag(FLAG_METHOD);
+  } else {
+    removeFlag(FLAG_METHOD);
+  }
 }
 
 // This function is a method on an aggregate type, defined within its

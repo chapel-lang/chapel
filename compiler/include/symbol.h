@@ -600,8 +600,11 @@ public:
   bool                       isResolved()                                const;
 
   bool                       isMethod()                                  const;
+  void                       setMethod(bool value);
+
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
+
   bool                       isIterator()                                const;
   bool                       returnsRefOrConstRef()                      const;
 
