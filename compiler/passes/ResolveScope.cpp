@@ -513,9 +513,15 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
             if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
-              if (sym->hasFlag(FLAG_METHOD) == false &&
-                  isRepeat(sym, symbols)    == false) {
-                symbols.push_back(sym);
+              if (isRepeat(sym, symbols) == false) {
+                if (FnSymbol* fn = toFnSymbol(sym)) {
+                  if (fn->isMethod() == false) {
+                    symbols.push_back(fn);
+                  }
+
+                } else {
+                  symbols.push_back(sym);
+                }
               }
             }
           }

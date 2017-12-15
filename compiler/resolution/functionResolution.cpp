@@ -3020,7 +3020,8 @@ static bool populateForwardingMethods(CallInfo& info) {
       //  (e.g. proc these() return _value.these(); )
       fn->removeFlag(FLAG_ITERATOR_FN);
 
-      fn->addFlag(FLAG_METHOD);
+      fn->setMethod(true);
+
       fn->addFlag(FLAG_INLINE);
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);

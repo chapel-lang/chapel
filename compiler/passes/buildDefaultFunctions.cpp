@@ -316,9 +316,11 @@ static void build_accessor(AggregateType* ct, Symbol* field,
   }
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->addFlag(FLAG_METHOD);
+
+  fn->setMethod(true);
 
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+
   if (typeMethod) {
     _this->addFlag(FLAG_TYPE_VARIABLE);
   }
@@ -398,10 +400,14 @@ static void build_accessor(AggregateType* ct, Symbol* field,
 
   ct->methods.add(fn);
 
-  fn->addFlag(FLAG_METHOD);
+  fn->setMethod(true);
+
   fn->addFlag(FLAG_METHOD_PRIMARY);
+
   fn->cname = astr("chpl_get_", ct->symbol->cname, "_", fn->cname);
+
   fn->addFlag(FLAG_NO_PARENS);
+
   fn->_this = _this;
 }
 
@@ -741,10 +747,13 @@ static void build_enum_size_function(EnumType* et) {
     return;
   // Build a function that returns the length of the enum specified
   FnSymbol* fn = new FnSymbol("size");
+
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_NO_PARENS);
-  fn->addFlag(FLAG_METHOD);
+
+  fn->setMethod(true);
+
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
 
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", dtAny);
@@ -1559,9 +1568,9 @@ static bool inheritsFromError(Type* t) {
 }
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
-  bool hasReadWriteThis = false;
-  bool hasReadThis = false;
-  bool hasWriteThis = false;
+  bool hasReadWriteThis         = false;
+  bool hasReadThis              = false;
+  bool hasWriteThis             = false;
   bool makeReadThisAndWriteThis = true;
 
   //
@@ -1593,73 +1602,106 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // We'll make a writeThis and a readThis if neither exist.
   // If only one exists, we leave just one (as some types
   // can be written but not read, for example).
-  if (hasWriteThis || hasReadThis)
+  if (hasWriteThis || hasReadThis) {
     makeReadThisAndWriteThis = false;
+  }
 
   // Make writeThis when appropriate
-  if ( makeReadThisAndWriteThis && ! hasWriteThis ) {
+  if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
     FnSymbol* fn = new FnSymbol("writeThis");
+
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_INLINE);
+
     fn->cname = astr("_auto_", ct->symbol->name, "_write");
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
+
     ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+
     fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+    fn->setMethod(true);
+
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
 
     fn->retType = dtVoid;
 
-    if( hasReadWriteThis ) {
+    if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+
       fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+
     } else {
-      fn->insertAtTail(new CallExpr("writeThisDefaultImpl", fileArg, fn->_this));
+      fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
+                                    fileArg,
+                                    fn->_this));
     }
 
     DefExpr* def = new DefExpr(fn);
+
     ct->symbol->defPoint->insertBefore(def);
-    fn->addFlag(FLAG_METHOD);
+
+    fn->setMethod(true);
     fn->addFlag(FLAG_METHOD_PRIMARY);
+
     reset_ast_loc(def, ct->symbol);
+
     normalize(fn);
+
     ct->methods.add(fn);
   }
 
   // Make readThis when appropriate
-  if ( makeReadThisAndWriteThis && ! hasReadThis ) {
+  if (makeReadThisAndWriteThis == true && hasReadThis == false) {
     FnSymbol* fn = new FnSymbol("readThis");
+
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_INLINE);
+
     fn->cname = astr("_auto_", ct->symbol->name, "_read");
+
     fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
     fn->_this->addFlag(FLAG_ARG_THIS);
+
     ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+
     fileArg->addFlag(FLAG_MARKED_GENERIC);
+
+    fn->setMethod(true);
+
     fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-    fn->addFlag(FLAG_METHOD);
     fn->insertFormalAtTail(fn->_this);
     fn->insertFormalAtTail(fileArg);
+
     fn->retType = dtVoid;
 
-    if( hasReadWriteThis ) {
+    if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+
       fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+
     } else {
-      fn->insertAtTail(new CallExpr("readThisDefaultImpl", fileArg, fn->_this));
+      fn->insertAtTail(new CallExpr("readThisDefaultImpl",
+                                    fileArg,
+                                    fn->_this));
     }
 
     DefExpr* def = new DefExpr(fn);
+
     ct->symbol->defPoint->insertBefore(def);
-    fn->addFlag(FLAG_METHOD);
+
+    fn->setMethod(true);
     fn->addFlag(FLAG_METHOD_PRIMARY);
+
     reset_ast_loc(def, ct->symbol);
+
     normalize(fn);
+
     ct->methods.add(fn);
   }
 }
@@ -1701,30 +1743,40 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("deinit", dtMethodToken, ct))
-    return;
+  if (function_exists("deinit", dtMethodToken, ct) == NULL) {
+    SET_LINENO(ct->symbol);
 
-  SET_LINENO(ct->symbol);
+    FnSymbol* fn = new FnSymbol("deinit");
 
-  FnSymbol* fn = new FnSymbol("deinit");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->addFlag(FLAG_DESTRUCTOR);
-  fn->addFlag(FLAG_INLINE);
+    fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
 
-  if (ct->symbol->hasFlag(FLAG_TUPLE))
-    gGenericTupleDestroy = fn;
+    fn->setMethod(true);
+    fn->addFlag(FLAG_METHOD_PRIMARY);
 
-  fn->cname = astr("chpl__auto_destroy_", ct->symbol->name);
-  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  fn->addFlag(FLAG_METHOD);
-  fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
-  fn->_this->addFlag(FLAG_ARG_THIS);
-  fn->insertFormalAtTail(fn->_this);
-  fn->retType = dtVoid;
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-  ct->symbol->defPoint->insertBefore(new DefExpr(fn));
-  fn->addFlag(FLAG_METHOD_PRIMARY);
-  ct->methods.add(fn);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_DESTRUCTOR);
+    fn->addFlag(FLAG_INLINE);
+
+    if (ct->symbol->hasFlag(FLAG_TUPLE) == true) {
+      gGenericTupleDestroy = fn;
+    }
+
+    fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+    fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
+    fn->_this->addFlag(FLAG_ARG_THIS);
+
+    fn->insertFormalAtTail(fn->_this);
+
+    fn->retType = dtVoid;
+
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+
+    ct->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+
+    ct->methods.add(fn);
+  }
 }
