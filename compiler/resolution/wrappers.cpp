@@ -106,8 +106,9 @@ formalToDefaultExprEntryMap formalToDefaultExprEntry;
 
 /************************************* | **************************************
 *                                                                             *
-* The argument actualIdxToFormals[] contains the actuals for the call but     *
-* shuffled, if necessary, to be in the same order as the formals.             *
+* The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
+* the corresponding formal argument.                                          *
+* (This mapping is nontrivial when named arguments are used)                  *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -297,7 +298,7 @@ static void addDefaultsAndReorder(FnSymbol *fn,
 
   // Create a copyMap to handle cases like
   //   proc f(a, b=a)
-  // in which event, we can't refer to formal 'a' in the default value.
+  // where a formal argument's default value refers to a previous formal
   SymbolMap copyMap;
 
   // Create a Block to store the default values
