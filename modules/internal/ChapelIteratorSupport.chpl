@@ -44,6 +44,7 @@ module ChapelIteratorSupport {
   //
   pragma "no doc"
   pragma "allow ref" // needs to to return tuples with refs
+  pragma "fn returns aliasing array"
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
@@ -51,6 +52,7 @@ module ChapelIteratorSupport {
 
   pragma "no doc"
   pragma "expand tuples with values"  // needs to return tuples with refs
+  pragma "fn returns aliasing array"
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
