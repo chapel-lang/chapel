@@ -277,7 +277,7 @@ module CString {
   inline proc chpl_free_c_string(ref cs: c_string) {
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(ref cs: c_string);
-    if (cs != c_nil) then chpl_rt_free_c_string(cs);
+    if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);
     // cs = c_nil;
   }
 

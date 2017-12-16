@@ -962,7 +962,6 @@ private extern proc qio_locales_for_region(fl:qio_file_ptr_t,
                                    ref num_locs_out:c_int):syserr;
 private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):syserr;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):syserr;
-private extern proc qio_free_string(arg:c_string);
 
 pragma "no prototype" // FIXME
 private extern proc qio_file_path_for_fd(fd:fd_t, ref path:c_string):syserr;
@@ -1460,7 +1459,7 @@ proc file.getPath(out error:syserr) : string {
       if !error {
         error = qio_shortest_path(_file_internal, tmp2, tmp);
       }
-      qio_free_string(tmp);
+      chpl_free_c_string(tmp);
       if !error {
         ret = new string(tmp2, needToCopy=false);
       }
@@ -4477,7 +4476,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     // We allocated memory in the runtime for this, so free it now
     if num_hosts != 0 {
       for i in 0..num_hosts-1 do
-        qio_free_string(locs[i]);
+        chpl_free_c_string(locs[i]);
       c_free(locs);
     }
 
