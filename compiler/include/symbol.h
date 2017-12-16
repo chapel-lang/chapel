@@ -586,7 +586,7 @@ public:
                                                  Type*   newRetType);
 
   int                        numFormals()                                const;
-  ArgSymbol*                 getFormal(int i);
+  ArgSymbol*                 getFormal(int i)                            const;
 
   void                       collapseBlocks();
 
@@ -600,10 +600,15 @@ public:
   bool                       isResolved()                                const;
 
   bool                       isMethod()                                  const;
+  bool                       isMethodOnClass()                           const;
+  bool                       isMethodOnRecord()                          const;
+
   void                       setMethod(bool value);
 
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
+
+  AggregateType*             getReceiver()                               const;
 
   bool                       isIterator()                                const;
   bool                       returnsRefOrConstRef()                      const;

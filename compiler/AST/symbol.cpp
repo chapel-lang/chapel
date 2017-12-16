@@ -1781,19 +1781,16 @@ FnSymbol::insertFormalAtTail(BaseAST* ast) {
 }
 
 
-int
-FnSymbol::numFormals() const {
+int FnSymbol::numFormals() const {
   return formals.length;
 }
 
 
-ArgSymbol*
-FnSymbol::getFormal(int i) {
+ArgSymbol* FnSymbol::getFormal(int i) const {
   return toArgSymbol(toDefExpr(formals.get(i))->sym);
 }
 
-void
-FnSymbol::collapseBlocks() {
+void FnSymbol::collapseBlocks() {
   CollapseBlocks visitor;
 
   body->accept(&visitor);
@@ -1965,8 +1962,45 @@ void FnSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+AggregateType* FnSymbol::getReceiver() const {
+  AggregateType* retval = NULL;
+
+  if (isMethod() == true && numFormals() >= 2) {
+    ArgSymbol* _mt   = getFormal(1);
+    ArgSymbol* _this = getFormal(2);
+
+    if (AggregateType* at = toAggregateType(_this->type)) {
+      if (_mt->type == dtMethodToken) {
+        retval = at;
+      }
+    }
+  }
+
+  return retval;
+}
+
 bool FnSymbol::isMethod() const {
   return hasFlag(FLAG_METHOD);
+}
+
+bool FnSymbol::isMethodOnClass() const {
+  bool retval = false;
+
+  if (AggregateType* at = getReceiver()) {
+    retval = at->isClass();
+  }
+
+  return retval;
+}
+
+bool FnSymbol::isMethodOnRecord() const {
+  bool retval = false;
+
+  if (AggregateType* at = getReceiver()) {
+    retval = at->isRecord();
+  }
+
+  return retval;
 }
 
 void FnSymbol::setMethod(bool value) {
@@ -1988,7 +2022,6 @@ bool FnSymbol::isPrimaryMethod() const {
 bool FnSymbol::isSecondaryMethod() const {
   return isMethod() && !isPrimaryMethod();
 }
-
 
 // This function or method is an iterator (as opposed to a procedure).
 bool FnSymbol::isIterator() const {

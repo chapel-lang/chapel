@@ -148,20 +148,17 @@ static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isResolved()            == true      &&
-        fn->numFormals()            >  1         &&
+    if (AggregateType* at = fn->getReceiver()) {
+      if (isNonGenericClass(at) == true) {
+        if (fn->isResolved()            == true      &&
 
-        fn->hasFlag(FLAG_WRAPPER)   == false     &&
-        fn->hasFlag(FLAG_NO_PARENS) == false     &&
+            fn->hasFlag(FLAG_WRAPPER)   == false     &&
+            fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
-        fn->retTag                  != RET_PARAM &&
-        fn->retTag                  != RET_TYPE) {
-      ArgSymbol*     _mt   = fn->getFormal(1);
-      ArgSymbol*     _this = fn->getFormal(2);
-      AggregateType* at    = toAggregateType(_this->type);
-
-      if (_mt->type == dtMethodToken && isNonGenericClass(at) == true) {
-        addAllToVirtualMaps(fn, at);
+            fn->retTag                  != RET_PARAM &&
+            fn->retTag                  != RET_TYPE) {
+          addAllToVirtualMaps(fn, at);
+        }
       }
     }
   }
