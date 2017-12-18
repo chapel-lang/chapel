@@ -991,12 +991,7 @@ void setupRedRefs(FnSymbol* fn, bool nested, Expr*& redRef1, Expr*& redRef2)
   // and at the end of 'fn' -> before 'redRef2'.
   redRef1 = new CallExpr("redRef1");
   redRef2 = new CallExpr("redRef2");
-  if (nested) {
-    fn->insertAtHead(redRef1);
-  } else {
-    // Be cute - add new stuff past the defs of 'ret' and 'origRet'.
-    fn->body->body.head->next->insertAfter(redRef1);
-  }
+  fn->insertAtHead(redRef1);
   fn->insertBeforeEpilogue(redRef2);
   if (nested) {
     // move redRef2 one up so it is just before _downEndCount()
