@@ -2402,6 +2402,8 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 
 static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 
+static void generateCopyInitErrorMsg();
+
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
   if (info.call == NULL) {
@@ -2505,11 +2507,29 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       generateMsg(info, visibleFns);
     }
 
+    generateCopyInitErrorMsg();
+
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
 
     USR_STOP();
+  }
+}
+
+static void generateCopyInitErrorMsg() {
+  for (int i = callStack.n-1; i >= 0; i--) {
+    FnSymbol* currFn = callStack.v[i]->getFunction();
+    if (currFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+        currFn->hasFlag(FLAG_INIT_COPY_FN)) {
+      Type* copied = currFn->getFormal(1)->type;
+      if (isNonGenericRecordWithInitializers(copied)) {
+        USR_PRINT(copied,
+                  "when validating copy initializer for type '%s'",
+                  copied->symbol->name);
+        return;
+      }
+    }
   }
 }
 
@@ -7348,13 +7368,11 @@ static void resolveAutoCopies() {
 static void resolveAutoCopyEtc(AggregateType* at) {
   SET_LINENO(at->symbol);
 
-  if (isNonGenericRecordWithInitializers(at) == false) {
-    // resolve autoCopy
-    if (hasAutoCopyForType(at) == false) {
-      FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
+  // resolve autoCopy
+  if (hasAutoCopyForType(at) == false) {
+    FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
 
-      autoCopyMap[at] = fn;
-    }
+    autoCopyMap[at] = fn;
   }
 
   // resolve autoDestroy
