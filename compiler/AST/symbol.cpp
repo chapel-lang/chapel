@@ -2847,10 +2847,8 @@ Immediate *getSymbolImmediate(Symbol* sym) {
     imm = var->immediate;
   }
   if (EnumSymbol* enumsym = toEnumSymbol(sym)) {
-    EnumType* et = toEnumType(enumsym->type);
-    // If the integer type is not yet known, the enum type
-    // hasn't been resolved.
-    INT_ASSERT(et->getIntegerType() != NULL);
+    // We used to assert et->getIntegerType() here,
+    // but that assert fires when printing out AST during debugging
     imm = enumsym->getImmediate();
   }
 

@@ -1,2 +1,1 @@
-defaultValArg.chpl:6: error: unresolved call 'foo(int(64))'
-defaultValArg.chpl:1: note: candidates are: foo(x$: syncint = 3)
+defaultValArg.chpl:1: error: Default expression not convertible to formal type

@@ -121,7 +121,7 @@ public:
   virtual QualifiedType qualType();
   virtual void       verify();
 
-  // New interfaces
+  // Note: copy may add copied Symbols to the supplied map
   virtual Symbol*    copy(SymbolMap* map      = NULL,
                           bool       internal = false)           = 0;
   virtual void       replaceChild(BaseAST* oldAst,

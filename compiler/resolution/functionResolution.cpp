@@ -4170,6 +4170,13 @@ void lvalueCheck(CallExpr* call) {
         return;
       }
 
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+          // Ignore lvalue errors default argument expressions
+          return;
+        }
+      }
+
       FnSymbol* calleeFn = call->resolvedFunction();
 
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
