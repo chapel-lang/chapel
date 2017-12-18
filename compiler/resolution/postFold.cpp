@@ -241,25 +241,31 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
-    if (isTypeExpr(call->get(1)) == true  ||
-        isTypeExpr(call->get(2)) == true)  {
-      Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
-      Type* rt = call->get(1)->getValType();
+    SymExpr* parentExpr = toSymExpr(call->get(1));
+    SymExpr* subExpr    = toSymExpr(call->get(2));
+    if (isTypeExpr(parentExpr) == true  ||
+        isTypeExpr(subExpr)    == true)  {
+      Type* st = subExpr->getValType();
+      Type* pt = parentExpr->getValType();
 
-      if (lt->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(rt)) {
-        AggregateType* ag = toAggregateType(lt);
-        lt = ag->getField("_instance")->type;
+      if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+        AggregateType* ag = toAggregateType(st);
+        st = ag->getField("_instance")->type;
       }
 
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
+      // Try to work around some resolution order issues
+      st = resolveTypeAlias(subExpr);
+      pt = resolveTypeAlias(parentExpr);
 
-          lt                                != dtAny     &&
-          rt                                != dtAny     &&
+      if (st                                != dtUnknown &&
+          pt                                != dtUnknown &&
 
-          lt->symbol->hasFlag(FLAG_GENERIC) == false) {
+          st                                != dtAny     &&
+          pt                                != dtAny     &&
 
-        if (isSubTypeOrInstantiation(lt, rt) == true) {
+          st->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+        if (isSubTypeOrInstantiation(st, pt) == true) {
           retval = new SymExpr(gTrue);
 
         } else {
