@@ -41,6 +41,7 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
     case TFI_REF:       return "ref";
     case TFI_CONST_REF: return "const ref";
     case TFI_REDUCE:    return "reduce";
+    case TFI_TASK_PRIVATE: return "task-private";
   }
   INT_ASSERT(false);
   return "";
@@ -223,6 +224,25 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
   return new ShadowVarSymbol(TFI_REDUCE, name, ovar, riExpr);
 }
 
+ShadowVarSymbol* ShadowVarSymbol::buildTaskPrivateVar(Expr* nameExp, Qualifier qual,
+                                                      Expr* type, Expr* init) {
+  const char* name = toUnresolvedSymExpr(nameExp)->unresolved;
+
+  // This is the variable that will go into the taskInit block
+  // and which our shadow variable (in the loop body) will reference.
+  // Its def gets the user-specified TVP type and/or init.
+  VarSymbol* tiVar = new VarSymbol(name);
+  new DefExpr(tiVar, init, type);   // reachable through defPoint
+  tiVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  // cf. shadow var's qual will be set during implementForallIntents1
+  tiVar->qual = qual;
+  if (QualifiedType::qualifierIsConst(qual)) tiVar->addFlag(FLAG_CONST);
+  if (QualifiedType::qualifierIsRef(qual))   tiVar->addFlag(FLAG_REF_VAR);
+
+  return new ShadowVarSymbol(TFI_TASK_PRIVATE, name, new SymExpr(tiVar), NULL);
+}
+
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
@@ -332,6 +352,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
   // so their types come from respective outer variables.
   for_shadow_vars(svar, temp, fs) {
     Symbol* ovar = NULL;
+    Type*   type = NULL;
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
@@ -340,6 +361,12 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
       case TFI_REF:
       case TFI_CONST_REF:
         ovar = svar->outerVarSym();
+        INT_ASSERT(ovar != NULL);
+        type = ovar->type;
+        break;
+
+      case TFI_TASK_PRIVATE:
+        type = svar->type;
         break;
 
       case TFI_REDUCE:
@@ -350,10 +377,9 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
         USR_STOP();
         break;
     }
-    INT_ASSERT(ovar != NULL);
-    INT_ASSERT(ovar->type != dtUnknown);
+    INT_ASSERT(type != dtUnknown);
 
-    constup->insertAtTail(ovar->type->getRefType()->symbol);
+    constup->insertAtTail(type->getRefType()->symbol);
   }
 
   int numComponents = constup->numActuals();
@@ -859,6 +885,15 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 //                           //
 ///////////////////////////////
 
+// For a TPV, its outerVarSym is defined in the taskInit() block.
+// Which is going away as part of the ForallStmt being lowered.
+// So, cleanup the reference to it.
+static void removeOuterVarOfTPV(Expr* svdef) {
+  ShadowVarSymbol* svsym = toShadowVarSymbol(toDefExpr(svdef)->sym);
+  if (svsym->isTPV())
+    svsym->outerVarRep = NULL;
+}
+
 // lowerForallStmts() removes each ForallStmt from AST,
 // replacing it with explicit loop(s) etc.
 // Currently this is done towards the end of resolution.
@@ -923,8 +958,10 @@ void lowerForallStmts() {
     while (Expr* def = fs->inductionVariables().tail)
       userBody->insertAtHead(def->remove());
 
-    while (Expr* svdef = fs->shadowVariables().tail)
+    while (Expr* svdef = fs->shadowVariables().tail) {
+      removeOuterVarOfTPV(svdef);
       fs->loopBody()->insertAtHead(svdef->remove());
+    }
 
     userBody->flattenAndRemove();          // into fs->loopBody()
     PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved

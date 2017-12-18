@@ -177,40 +177,9 @@ class QualifiedType {
 public:
 
   // Static methods for working with Qualifier
-  static bool qualifierIsConst(Qualifier q)
-  {
-    return (q == QUAL_CONST ||
-            q == QUAL_CONST_REF ||
-            q == QUAL_CONST_VAL ||
-            q == QUAL_CONST_NARROW_REF ||
-            q == QUAL_CONST_WIDE_REF);
-  }
-
-  static Qualifier qualifierToConst(Qualifier q)
-  {
-    switch (q) {
-      case QUAL_CONST:
-      case QUAL_CONST_REF:
-      case QUAL_CONST_NARROW_REF:
-      case QUAL_CONST_WIDE_REF:
-      case QUAL_CONST_VAL:
-      case QUAL_PARAM:
-        // already const
-        return q;
-      case QUAL_UNKNOWN:
-        return QUAL_CONST;
-      case QUAL_REF:
-        return QUAL_CONST_REF;
-      case QUAL_VAL:
-        return QUAL_CONST_VAL;
-      case QUAL_NARROW_REF:
-        return QUAL_CONST_NARROW_REF;
-      case QUAL_WIDE_REF:
-        return QUAL_CONST_WIDE_REF;
-      // no default: update as Qualifier is updated
-    }
-    return QUAL_UNKNOWN;
-  }
+  static bool qualifierIsConst(Qualifier q);
+  static bool qualifierIsRef(Qualifier q);
+  static Qualifier qualifierToConst(Qualifier q);
 
   // QualifiedType methods
 
@@ -288,6 +257,79 @@ private:
   Type*      _type;
   Qualifier  _qual;
 };
+
+inline bool QualifiedType::qualifierIsConst(Qualifier q)
+{
+  switch (q) {
+    case QUAL_CONST:
+    case QUAL_CONST_REF:
+    case QUAL_CONST_NARROW_REF:
+    case QUAL_CONST_WIDE_REF:
+    case QUAL_CONST_VAL:
+    case QUAL_PARAM:    // todo: should 'param' be a "const" ?
+      return true;
+
+
+    case QUAL_UNKNOWN:  // this really shouldn't be allowed
+    case QUAL_REF:
+    case QUAL_VAL:
+    case QUAL_NARROW_REF:
+    case QUAL_WIDE_REF:
+      return false;
+  }
+  return false;
+}
+
+inline bool QualifiedType::qualifierIsRef(Qualifier q)
+{
+  switch (q) {
+    case QUAL_UNKNOWN:
+      INT_ASSERT(false); // caller responsibility
+      return false;
+
+    case QUAL_CONST:
+    case QUAL_PARAM:
+    case QUAL_VAL:
+    case QUAL_CONST_VAL:
+      return false;
+
+    case QUAL_REF:
+    case QUAL_CONST_REF:
+    case QUAL_NARROW_REF:
+    case QUAL_WIDE_REF:
+    case QUAL_CONST_NARROW_REF:
+    case QUAL_CONST_WIDE_REF:
+      return true;
+  }
+  return false;
+}
+
+inline Qualifier QualifiedType::qualifierToConst(Qualifier q)
+{
+  switch (q) {
+    case QUAL_CONST:
+    case QUAL_CONST_REF:
+    case QUAL_CONST_NARROW_REF:
+    case QUAL_CONST_WIDE_REF:
+    case QUAL_CONST_VAL:
+    case QUAL_PARAM:
+      // already const
+      return q;
+    case QUAL_UNKNOWN:
+      return QUAL_CONST;
+    case QUAL_REF:
+      return QUAL_CONST_REF;
+    case QUAL_VAL:
+      return QUAL_CONST_VAL;
+    case QUAL_NARROW_REF:
+      return QUAL_CONST_NARROW_REF;
+    case QUAL_WIDE_REF:
+      return QUAL_CONST_WIDE_REF;
+    // no default: update as Qualifier is updated
+  }
+  return QUAL_UNKNOWN;
+}
+
 
 /************************************* | **************************************
 *                                                                             *

@@ -283,6 +283,61 @@ static void scopeResolve(BlockStmt*          block,
   scopeResolve(block->body,         scope);
 }
 
+static void scopeResolve(ForallStmt*         fs,
+                         const ResolveScope* parent)
+{
+  // a ForallStmt has 3 scopes: taskInit, loopBody, taskDeinit
+  // they are handled very similarly, exept:
+  //  * induction variables are visible only in loopBody
+  //  * taskDeinit scope is nested within taskInit
+
+  //// taskInit ////
+
+  BlockStmt*    tInitBlock = fs->taskInit();
+  ResolveScope* tInitScope = new ResolveScope(tInitBlock, parent);
+
+  //
+  // A reference to a TPV within initBlock will resolve to the shadow var's
+  // outerVarSym(). This is because initBlock has a DefExpr for outerVarSym,
+  // so if we extend tInitScope with the shadow variable itself, we will
+  // get "multiple definitions" in scopeResolve() below, Also, this choice
+  // enables def-before-use checking of TPVs in tInitBlock.
+  //
+  // Cf. currently all other shadow variables are available a priori.
+  //
+  for_shadow_vars(sv, temp1, fs)
+    if (!sv->isTPV())
+      tInitScope->extend(sv);
+
+  scopeResolve(tInitBlock->body, tInitScope);
+
+  //// bodyBlock ////
+
+  BlockStmt*    bodyBlock = fs->loopBody();
+  ResolveScope* bodyScope = new ResolveScope(bodyBlock, tInitScope);
+
+  for_alist(ivdef, fs->inductionVariables()) {
+    Symbol* sym = toDefExpr(ivdef)->sym;
+    // "chpl__tuple_blank" indicates the underscore placeholder for
+    // the induction variable. Do not add it. Because if there are two
+    // (legally) ex. "forall (_,_) in ...", we get an error.
+    if (strcmp(sym->name, "chpl__tuple_blank"))
+      bodyScope->extend(sym);
+  }
+
+  for_shadow_vars(sv, temp2, fs)
+    bodyScope->extend(sv);
+
+  scopeResolve(bodyBlock->body, bodyScope);
+
+  //// taskDeinit ////
+
+  BlockStmt*    tDeinitBlock = fs->taskDeinit();
+  ResolveScope* tDeinitScope = new ResolveScope(tDeinitBlock, tInitScope);
+
+  scopeResolve(tDeinitBlock->body, tDeinitScope);
+}
+
 static void scopeResolve(FnSymbol*           fn,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(fn, parent);
@@ -424,23 +479,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
       }
 
     } else if (ForallStmt* forallStmt = toForallStmt(stmt)) {
-      BlockStmt* fBody = forallStmt->loopBody();
-      // or, we could construct ResolveScope specifically for forallStmt
-      ResolveScope* bodyScope = new ResolveScope(fBody, scope);
-      // cf. scopeResolve(FnSymbol*,parent)
-      for_alist(ivdef, forallStmt->inductionVariables()) {
-        Symbol* sym = toDefExpr(ivdef)->sym;
-        // "chpl__tuple_blank" indicates the underscore placeholder for
-        // the induction variable. Do not add it. Because if there are two
-        // (legally) ex. "forall (_,_) in ...", we get an error.
-        if (strcmp(sym->name, "chpl__tuple_blank"))
-          bodyScope->extend(sym);
-      }
-      for_shadow_var_defs(svd, temp, forallStmt) {
-        bodyScope->extend(svd->sym);
-      }
-
-      scopeResolve(fBody->body, bodyScope);
+      scopeResolve(forallStmt, scope);
 
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
@@ -1714,14 +1753,21 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 BaseAST* getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
-    BlockStmt* block = toBlockStmt(expr->parentExpr);
+    Expr*     parent = expr->parentExpr;
+    BlockStmt* block = toBlockStmt(parent);
 
     // SCOPELESS and TYPE blocks do not define scopes
     if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
 
-    } else if (expr->parentExpr) {
-      return getScope(expr->parentExpr);
+    } else if (parent) {
+
+      // nesting for ForallStmt blocks
+      if (ForallStmt* fs = toForallStmt(parent))
+        if (expr == fs->taskDeinit())
+          return fs->taskInit();
+
+      return getScope(parent);
 
     } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
       return fn;

@@ -1634,6 +1634,9 @@ intent_expr:
 | reduce_scan_op_expr TREDUCE ident_expr  {
       $$ = ShadowVarSymbol::buildFromReduceIntent($3, $1);
     }
+| TVAR  ident_expr TASSIGN expr {
+      $$ = ShadowVarSymbol::buildTaskPrivateVar($2, QUAL_VAL, NULL, $4);
+    }
 ;
 
 io_expr:

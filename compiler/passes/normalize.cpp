@@ -596,8 +596,8 @@ static void checkUseBeforeDefs() {
               USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
             }
 
-          } else if (isShadowVarSymbol(sym)) {
-            // ShadowVarSymbols are always defined.
+          } else if (isShadowVarSymbol(sym) || isOuterVarOfShadowVar(se)) {
+            // ShadowVarSymbols and their outerVar exprs are always defined.
 
           } else if (isLcnSymbol(sym) == true) {
             if (sym->defPoint->parentExpr != rootModule->block) {

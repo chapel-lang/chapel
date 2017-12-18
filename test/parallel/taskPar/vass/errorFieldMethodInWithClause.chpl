@@ -13,7 +13,7 @@ proc something {}
 
 proc myClass.test {
   forall ITER with (in myField) do
-    something();
+    something;
   forall ITER with (in myProcc) do
     something;
   forall ITER with (ref ourProc, ref ourIter) do

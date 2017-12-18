@@ -102,7 +102,76 @@ IF THE YIELD IS INSIDE A FOR OVER A PARALLEL ITERATOR
     (preserving the semantics)
 
   * process the forall as above
+*/
 
+/* --- TASK-PRIVATE VARIABLES ---
+
+COMPILER REPRESENTATION
+
+* a ShadowVarSymbol
+ - handled similarly to other forall intents
+
+* a VarSymbol
+ - is defined and initialized in the task init block
+ - serves as the outerVarSym() for the ShadowVarSymbol
+
+* taskInit block
+ - for now, keeps only the defs and inits for the above VarSymbols
+ - could also contain user-specified task startup code
+
+* taskDeinit block
+ - always empty for now
+ - could contain user-specified task tear-down code
+
+* within taskInit and taskDeinit lexical scopes:
+ - a reference to a TPV refers to the above VarSymbol
+ - a reference to a non-TPV outer variable refers
+   to the corresponding ShadowVarSymbol
+ - cannot reference a loop induction variable
+
+* the loop body can access all variables declared in taskInit
+  (currently, only TPVs), plus shadow variables and inductionvariables
+
+* the lexical scope of taskDeinit is nested within taskInit
+
+Conceptually, a ShadowVarSymbol has been strictly a creature
+of the body of the forall loop. This change also allows it
+to be used in taskInit/taskDeinit blocks. ShadowVarSymbols
+for TPVs and non-TPVs are handled very similarly, see next.
+
+Recall that a key part of the existing implementation of forall intents
+is `extendLeaderNew()`. It extends the parallel iterator to propagate
+outer variables through its task-parallel and data-parallel constructs
+and yield them as part of a newly-created tuple. (We have been considering
+getting away from this approach.)
+
+This change keeps this implementation and extends it for TPVs.
+Namely:
+
+* Each task construct (lexically present in the parallel iterator)
+is extended to execute a clone of taskInit at the beginning
+and a clone of taskDeinit at the end.
+
+* Recall that for a given forall intent the yielded tuple
+contains the corresponding formal of the enclosing task construct.
+(There is a bit more for a reduce intent.)
+
+* For a TPV, there is no corresponding formal.
+This is because the TPV starts its lifetime inside the task construct.
+Instead, the role of the formal is played by the clone of
+the corresponding VarSymbol that is a part of the clone of taskInit
+that is executed at the beginning of the task construct (see above).
+
+When the parallel iterator contains a forall loop:
+
+* For each ShadowVarSymbol in the original forall loop,
+a corresponding new ShadowVarSymbol is added to shadowVariables()
+of the forall in the iterator.
+
+* New clones of taskInit and taskDeinit of the original forall loop
+are added to taskInit and taskDeinit blocks of the forall in the iterator.
+
+(This handling of foralls in parallel iterators is to be implemented.)
 */
 
 
@@ -125,7 +194,7 @@ public:
   // The variable to be passed as an actual
   // to the parallel iterator, task function,
   // or ForallStmt within the parallel iterator.
-  // NULL for a TPV (todo soon: always NULL in this case?)
+  // It is NULL for a TPV.
   Symbol* fiActual;
 
   // The corresponding formal or (for a TPV) local variable.
@@ -190,6 +259,11 @@ public:
   Expr*        anchor2orig;
   Expr*        anchor2prev;
 
+  // The local clones of taskDe/Init and the corresponding map.
+  BlockStmt*   taskInitClone;
+  BlockStmt*   taskDeinitClone;
+  SymbolMap*   taskCloneMap;
+
   // Information on each forall intent across this call.
   FIvec        fiInfos;
 
@@ -211,7 +285,8 @@ public:
     nested(false),
     retSym(retSymbol),
     anchorFn(curFn),
-    anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
+    anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0),
+    taskInitClone(0), taskDeinitClone(0), taskCloneMap(0)
   {
     fiInfos.resize(forall->numShadowVars());
   }
@@ -224,7 +299,8 @@ public:
     nested(true),
     retSym(parentCx.retSym),
     anchorFn(curFn),
-    anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
+    anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0),
+    taskInitClone(0), taskDeinitClone(0), taskCloneMap(0)
   {
     int numSVars = forall->numShadowVars();
     fiInfos.resize(numSVars);
@@ -435,6 +511,16 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
 
 /////////// assorted helpers ///////////
 
+// The number of the extra arguments that extendLeaderNew() will add
+// to the parallel iterator and its invoking CallExpr.
+static int countIterCallExtraArgs(ForallStmt* fs) {
+  int count = 0;
+  for_shadow_vars(sv, temp, fs)
+    if (sv->needsExtraArgForIterCall())
+      count++;
+  return count;
+} 
+
 static void checkNoYieldsIn(FnSymbol* fn) {
   std::vector<CallExpr*> calls;
   collectCallExprs(fn, calls);
@@ -509,6 +595,12 @@ static void cleanupAnchors(FIcontext& ctx) {
   // Do not remove() anchor2 - it may result from adjustInsertAnchor2(),
   // not the one we allocated originally.
   ctx.anchor2 = NULL;
+
+  if (ctx.taskCloneMap != NULL) {
+    delete ctx.taskCloneMap;
+    ctx.taskCloneMap = NULL;
+    // do this too? ctx.taskInitClone = ctx.taskDeinitClone = NULL;
+  }
 }
 
 static void addArgsToToLeaderCallForPromotionWrapper(FIcontext& ctx) {
@@ -520,6 +612,81 @@ static void addArgsToToLeaderCallForPromotionWrapper(FIcontext& ctx) {
   addArgsToToLeaderCallForPromotionWrapper(ctx.curFn, numSVars, fiFormalsTemp);
 }
 
+
+/////////// setting up for a task-private variable ///////////
+
+// Clone the taskInit/Deinit blocks.
+static void cloneTaskInitDeinit(FIcontext& ctx, bool expectNonEmpty) {
+  INT_ASSERT(ctx.taskCloneMap == NULL); // caller responsibility
+  // These shouldn't exist without the map.
+  INT_ASSERT(!ctx.taskInitClone && !ctx.taskDeinitClone);
+
+  bool gotEmptyI = ctx.forall->taskInit()->body.length == 0;
+  bool gotEmptyD = ctx.forall->taskDeinit()->body.length == 0;
+
+  if (gotEmptyI && gotEmptyD) {
+    INT_ASSERT(!expectNonEmpty);
+    // nothing to clone
+    return;
+  }
+
+  SymbolMap* map = new SymbolMap();
+  ctx.taskCloneMap = map;
+
+  if (!gotEmptyI)
+    ctx.taskInitClone = ctx.forall->taskInit()->copy(map, true);
+
+  if (!gotEmptyD)
+    ctx.taskDeinitClone = ctx.forall->taskDeinit()->copy(map, true);
+}
+
+// Set fii.fiFormal to the corresponding cloned variable.
+//
+// Note: we add the clones to the tree after all shadow variables
+// have been processed. This way TPV initialization runs last.
+//
+static void ensureCurrentTPVclone(FIcontext& ctx, FIinfo& fii) {
+  if (ctx.taskCloneMap == NULL)
+    cloneTaskInitDeinit(ctx, true);
+
+  fii.fiFormal = ctx.taskCloneMap->get(fii.svSymbol->outerVarSym());
+}
+
+// taskDe/Init blocks refer to non-TPV shadow variables.
+// need to replace those references to corresponding formals.
+static void addShadowVarsToTaskCloneMap(FIcontext& ctx) {
+  for (FIvec::iterator it = ctx.fiInfos.begin();
+       it != ctx.fiInfos.end(); it++)
+    if (!it->svSymbol->isTPV())
+      ctx.taskCloneMap->put(it->svSymbol, it->fiFormal);
+}
+
+// Add clones to the tree. Create them if appropriate.
+static void ensureTaskInitDeinitClonesAreInTree(FIcontext& ctx) {
+  if (ctx.taskCloneMap == NULL)
+    // Currently taskDe/Init are empty if no TPVs.
+    // This call is here in case this changes in the future.
+    cloneTaskInitDeinit(ctx, false);
+
+  BlockStmt* tInit = ctx.taskInitClone;
+  BlockStmt* tDeinit = ctx.taskDeinitClone;
+
+  if (tInit || tDeinit) {
+    setupAnchors(ctx);
+    addShadowVarsToTaskCloneMap(ctx);
+  }
+
+  if (tInit) {
+    update_symbols(tInit, ctx.taskCloneMap);
+    ctx.anchor1->insertBefore(tInit);
+    tInit->flattenAndRemove();
+  }
+  if (tDeinit) {
+    update_symbols(tDeinit, ctx.taskCloneMap);
+    ctx.anchor2->insertBefore(tDeinit);
+    tDeinit->flattenAndRemove();
+  }
+}
 
 /////////// setting up for a reduce intent ///////////
 
@@ -684,6 +851,9 @@ and yield those instead:
 Notice that 'x1_reduceShadowVar' is not needed in this case.
 It is still needed if there are yields outside foralls and task constructs.
 
+Also, add taskInit+taskDeinit from the original forall to
+the  taskInit+taskDeinit of this forall.
+
 If the forall is inside a task function
 ---------------------------------------
 
@@ -720,8 +890,8 @@ Need to handle these cases:
     forall ... with (x1_reduceParent reduce x1_reduceShadowVar) {
       // shadow var: x1_reduceShadowVar'
 
-      ... yield (555, addr-of(x1_reduceShadowVar'')); ...
-      ... yield (666, addr-of(x1_reduceShadowVar'')); ...
+      ... yield (555, addr-of(x1_reduceShadowVar')); ...
+      ... yield (666, addr-of(x1_reduceShadowVar')); ...
     }
 */
 
@@ -814,6 +984,22 @@ static void checkFor2ndEnclosingParallelLoop(FIcontext& ctx,
   USR_STOP();
 }
 
+// Currently task-private variables are not implemented when the parallel
+// iterator has a yield inside a forall or a parallel for loop.
+//
+static void checkForTaskInitDeinitWithEnclosingForall(FIcontext& ctx,
+                                      CallExpr* yieldCall, ForallStmt* efs) {
+  if (ctx.forall->taskInit()->body.empty() &&
+      ctx.forall->taskDeinit()->body.empty())
+    // No task-private variables, so no error to issue.
+    return;
+
+  USR_FATAL_CONT(ctx.forall, "task-private variables are currently not implemented when the corresponding parallel iterator has a yield inside a forall or a parallel for loop");
+  USR_PRINT(yieldCall, "the yield in the parallel iterator is here");
+  USR_PRINT(efs, "the enclosing loop is here");
+  USR_STOP();
+}
+
 
 /////////// extendYieldNew, simple case ///////////
 
@@ -823,6 +1009,9 @@ static void checkFor2ndEnclosingParallelLoop(FIcontext& ctx,
 static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
 {
   FIinfo& fii = ctx.fiInfos[ix];
+
+  if (fii.svSymbol->isTPV() && !fii.fiFormal)
+    ensureCurrentTPVclone(ctx, fii);
 
   switch (fii.svSymbol->intent) {
     case  TFI_DEFAULT:
@@ -836,6 +1025,7 @@ static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
     case TFI_CONST_IN:
     case TFI_REF:
     case TFI_CONST_REF:
+    case TFI_TASK_PRIVATE:
     {
       Symbol* component = fii.fiFormal;
       // When the type is dtUnknown, we still need to ensure yield by ref.
@@ -870,8 +1060,10 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
   VarSymbol* newOrigRet = localizeYieldForExtendLeader(origRetArg, yieldCall);
   CallExpr*  buildTuple = new CallExpr("_build_tuple_always_allow_ref",
                                        newOrigRet);
-  if (efs != NULL)
+  if (efs != NULL) {
     checkFor2ndEnclosingParallelLoop(ctx, yieldCall, efs);
+    checkForTaskInitDeinitWithEnclosingForall(ctx, yieldCall, efs);
+  }
 
   int numSVars = ctx.numShadowVars();
 
@@ -887,6 +1079,8 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
 
   yieldCall->insertBefore("'move'(%S,%E)", ctx.retSym, buildTuple);
   yieldCall->insertAtTail(new SymExpr(ctx.retSym));
+
+  ensureTaskInitDeinitClonesAreInTree(ctx);
 }
 
 
@@ -954,15 +1148,19 @@ static void propagateExtraLeaderArgsNew(FIcontext& ctx)
 
   for (int ix = 0; ix < numSVars; ix++)
   {
-    FIinfo&    fii     = ctx.fiInfos[ix];
-    Symbol*    eActual = fii.fiActual; // 'e' for "Extra"
-    ArgSymbol* eFormal = newExtraFormal(ctx, fii, ix, eActual);
-    fii.fiFormal       = eFormal;
+    FIinfo& fii = ctx.fiInfos[ix];
 
-    // Use named args to disambiguate from user's iterator formals, if any.
-    ctx.call->insertAtTail(new NamedExpr(eFormal->name,
-                                         new SymExpr(eActual)));
-    ctx.curFn->insertFormalAtTail(eFormal);
+    if (fii.svSymbol->needsExtraArgForIterCall())
+    {
+      Symbol*    eActual = fii.fiActual; // 'e' for "Extra"
+      ArgSymbol* eFormal = newExtraFormal(ctx, fii, ix, eActual);
+      fii.fiFormal       = eFormal;
+
+      // Use named args to disambiguate from user's iterator formals, if any.
+      ctx.call->insertAtTail(new NamedExpr(eFormal->name,
+                                           new SymExpr(eActual)));
+      ctx.curFn->insertFormalAtTail(eFormal);
+    }
   }
 
   if (ctx.inIterator() && ctx.curFn->hasFlag(FLAG_PROMOTION_WRAPPER))
@@ -1330,20 +1528,28 @@ static void extendLeaderNew(ForallStmt* fs,
   // inside a wrapper or iterator forwarder, so iterCall's actuals
   // are not necessarily the same as outerVarReps.
 
-  Expr* origArg = iterCall->get(iterCall->numActuals() - numSVars + 1);
+  int numExtraArgs = countIterCallExtraArgs(fs);
+  Expr* origArg = numExtraArgs == 0 ? NULL :
+    iterCall->get(iterCall->numActuals() - numExtraArgs + 1);
   int ix = 0;
 
   for_shadow_vars(svar, temp, fs) {
     FIinfo& fii = ctx.fiInfos[ix];
     fii.svSymbol = svar;
 
-    Expr*   nextArg = origArg->next;
-    SymExpr* origSE = toSymExpr(origArg->remove());
-    INT_ASSERT(origSE);
-    fii.fiActual = origSE->symbol();
-    // as noted above, fiActual may differ from svar->outerVarSym()
+    if (svar->needsExtraArgForIterCall())
+    {
+      Expr*   nextArg = origArg->next;
+      SymExpr* origSE = toSymExpr(origArg->remove());
+      INT_ASSERT(origSE);
+      fii.fiActual = origSE->symbol();
+      // as noted above, fiActual may differ from svar->outerVarSym()
 
-    origArg = nextArg;
+      origArg = nextArg;
+    }
+    else {
+      INT_ASSERT(fii.fiActual == NULL);
+    }
     ix++;
   }
 
@@ -1400,8 +1606,7 @@ static const char* newWrapperFormalName(int ix, Symbol* actual) {
 static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
                                         CallExpr* parCall)
 {
-  int numExtraArgs = fs->numShadowVars();
-  if (numExtraArgs == 0)
+  if (fs->numShadowVars() == 0)
     // leave as-is
     return;
 
@@ -1423,29 +1628,33 @@ static void implementForallIntents2NewWrap(ForallStmt* fs, FnSymbol* dest,
   //
   CallExpr* wCall = findForwardingCallAndUnresolve(wDest);
 
-  // Extend wDest with formals to match parCall's actuals.
-  SymExpr* curArgSE = toSymExpr(
-    parCall->get(parCall->numActuals() - numExtraArgs + 1));
-  int ix = 0;
+  int numExtraArgs = countIterCallExtraArgs(fs);
+  if (numExtraArgs > 0)
+  {
+    // Extend wDest with formals to match parCall's actuals.
+    SymExpr* curArgSE = toSymExpr(
+      parCall->get(parCall->numActuals() - numExtraArgs + 1));
+    int ix = 0;
 
-  do {
-    Symbol*    curArg    = curArgSE->symbol();
-    IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
-    const char* curName  = newWrapperFormalName(ix, curArg);
-    ArgSymbol* curFormal = new ArgSymbol(fIntent, curName, curArg->type);
+    do {
+      Symbol*    curArg    = curArgSE->symbol();
+      IntentTag  fIntent   = concreteIntent(INTENT_BLANK, curArg->type);
+      const char* curName  = newWrapperFormalName(ix, curArg);
+      ArgSymbol* curFormal = new ArgSymbol(fIntent, curName, curArg->type);
 
-    curFormal->qual = curArg->qual;
+      curFormal->qual = curArg->qual;
 
-    if (curFormal->isRef() &&
-        curArg->isConstValWillNotChange())
-      curFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
+      if (curFormal->isRef() &&
+          curArg->isConstValWillNotChange())
+        curFormal->addFlag(FLAG_REF_TO_IMMUTABLE);
 
-    wCall->insertAtTail(curFormal);
-    wDest->insertFormalAtTail(curFormal);
+      wCall->insertAtTail(curFormal);
+      wDest->insertFormalAtTail(curFormal);
 
-    curArgSE = toSymExpr(curArgSE->next);
-    ix++;
-  } while (curArgSE);
+      curArgSE = toSymExpr(curArgSE->next);
+      ix++;
+    } while (curArgSE);
+  }
 
   // Handle whatever wDest is wrapping or forwarding to.
   implementForallIntents2New(fs, wCall);
