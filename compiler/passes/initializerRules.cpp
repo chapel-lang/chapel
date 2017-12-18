@@ -681,6 +681,17 @@ static bool isMethodCall(CallExpr* callExpr) {
       if (SymExpr* lhs = toSymExpr(base->get(1))) {
         if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
           retval = arg->hasFlag(FLAG_ARG_THIS);
+
+          // Should only happen for the modifications I made earlier.
+          UnresolvedSymExpr* calledSe = toUnresolvedSymExpr(base->get(2));
+          if (calledSe) {
+            if (strstr(calledSe->unresolved, "_if_fn")       != 0 ||
+                strstr(calledSe->unresolved, "_parloopexpr") != 0) {
+              // Only mark it as a method call if it is not a compiler inserted
+              // loop or conditional expression function.
+              retval = false;
+            }
+          }
         }
       }
     }

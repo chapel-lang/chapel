@@ -1290,24 +1290,32 @@ static void applyGetterTransform(CallExpr* call) {
   if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
-    SymExpr* symExpr = toSymExpr(call->get(2));
+    if (SymExpr* symExpr = toSymExpr(call->get(2))) {
 
-    symExpr->remove();
+      symExpr->remove();
 
-    if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        const char* str = var->immediate->v_string;
+      if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
+        if (var->immediate->const_kind == CONST_KIND_STRING) {
+          const char* str = var->immediate->v_string;
 
-        call->baseExpr->replace(new UnresolvedSymExpr(str));
+          call->baseExpr->replace(new UnresolvedSymExpr(str));
 
+          call->insertAtHead(gMethodToken);
+
+        } else {
+          INT_FATAL(call, "unexpected case");
+        }
+
+      } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
+        call->baseExpr->replace(new SymExpr(type));
         call->insertAtHead(gMethodToken);
 
       } else {
         INT_FATAL(call, "unexpected case");
       }
 
-    } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
-      call->baseExpr->replace(new SymExpr(type));
+    } else if (UnresolvedSymExpr* symExpr = toUnresolvedSymExpr(call->get(2))) {
+      call->baseExpr->replace(symExpr->remove());
       call->insertAtHead(gMethodToken);
 
     } else {
