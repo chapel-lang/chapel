@@ -61,13 +61,14 @@ LAUNCHER = set(['launcher'])
 RUNTIME = set(['runtime'])
 INTERNAL = set(['internal'])
 RUNTIME_LAUNCHER = set(['runtime', 'launcher'])
+COMPILER_LAUNCHER = set(['compiler', 'launcher'])
 
 # Global ordered list that stores names, content-categories, and shortnames
 CHPL_ENVS = [
-    ChapelEnv('CHPL_HOST_PLATFORM', COMPILER),
-    ChapelEnv('CHPL_HOST_COMPILER', COMPILER),
-    ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME_LAUNCHER),
-    ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME_LAUNCHER),
+    ChapelEnv('CHPL_HOST_PLATFORM', COMPILER_LAUNCHER),
+    ChapelEnv('CHPL_HOST_COMPILER', COMPILER_LAUNCHER),
+    ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME),
+    ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME),
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME, 'arch'),
     ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
