@@ -1,0 +1,3 @@
+returnArg3.chpl:4: In initializer:
+returnArg3.chpl:5: error: type mismatch in assignment from Foo to int(64)
+returnArg3.chpl:1: note: when validating copy initializer for type 'Foo'
