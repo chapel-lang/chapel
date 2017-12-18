@@ -1,4 +1,0 @@
-bug: Conditional expressions in field types don't work with initializers
-
-In this test, the presence of the conditional expression in the field
-type position seems to cause compilation problems.
