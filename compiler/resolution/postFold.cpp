@@ -273,7 +273,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
         }
 
         call->replace(retval);
+      } else {
+        USR_FATAL(call, "Unable to perform subtype query: %s:%s", st->symbol->name, pt->symbol->name);
       }
+    } else {
+      USR_FATAL(call, "Subtype query requires a type");
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {
