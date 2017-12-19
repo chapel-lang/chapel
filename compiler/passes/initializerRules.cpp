@@ -681,6 +681,17 @@ static bool isMethodCall(CallExpr* callExpr) {
       if (SymExpr* lhs = toSymExpr(base->get(1))) {
         if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
           retval = arg->hasFlag(FLAG_ARG_THIS);
+
+          // Should only happen for the modifications I made earlier.
+          UnresolvedSymExpr* calledSe = toUnresolvedSymExpr(base->get(2));
+          if (calledSe) {
+            if (strstr(calledSe->unresolved, "_if_fn")       != 0 ||
+                strstr(calledSe->unresolved, "_parloopexpr") != 0) {
+              // Only mark it as a method call if it is not a compiler inserted
+              // loop or conditional expression function.
+              retval = false;
+            }
+          }
         }
       }
     }
@@ -1006,7 +1017,8 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   type->addFlag(FLAG_TYPE_VARIABLE);
 
-  fn->addFlag(FLAG_METHOD);
+  fn->setMethod(true);
+
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
@@ -1021,7 +1033,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   //   1) add a corresponding formal to the new type method
   //   2) add that formal to the call to "init"
   //
-  int count = 1;
+  int       count = 1;
   SymbolMap initArgToNewArgMap;
 
   for_formals(formal, initMethod) {

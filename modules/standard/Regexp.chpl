@@ -389,7 +389,7 @@ extern record qio_regexp_string_piece_t {
 private extern proc qio_regexp_string_piece_isnull(ref sp:qio_regexp_string_piece_t):bool;
 
 private extern proc qio_regexp_match(const ref re:qio_regexp_t, text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, submatch:_ddata(qio_regexp_string_piece_t), nsubmatch:int(64)):bool;
-private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string_copy, ref replaced_len:int(64)):int(64);
+private extern proc qio_regexp_replace(const ref re:qio_regexp_t, repl:c_string, repllen:int(64), text:c_string, textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_string, ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied
@@ -922,7 +922,7 @@ record regexp {
     else pos = 0;
     endpos = pos + text.length;
 
-    var replaced:c_string_copy;
+    var replaced:c_string;
     var nreplaced:int;
     var replaced_len:int(64);
     if t == stringPart {
@@ -1026,9 +1026,9 @@ pragma "no doc"
 inline proc _cast(type t, x: regexp) where t == string {
   var pattern: string;
   on x.home {
-    var cs: c_string_copy;
+    var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = cs:string;
+    pattern = new string(cs, needToCopy=false);
   }
   return pattern;
 }

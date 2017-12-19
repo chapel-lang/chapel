@@ -30,6 +30,7 @@ class FnSymbol;
 class ForallStmt;
 class LoopStmt;
 class SymExpr;
+class UnresolvedSymExpr;
 
 class InitNormalize {
 public:
@@ -143,6 +144,7 @@ private:
 
   bool            isFieldAccess(CallExpr* callExpr)                      const;
 
+  void            handleInsertedMethodCall(CallExpr* call)               const;
 
   Expr*           fieldInitFromStmt(CallExpr* stmt, DefExpr* field)      const;
 

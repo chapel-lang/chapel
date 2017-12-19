@@ -121,7 +121,7 @@ public:
   virtual QualifiedType qualType();
   virtual void       verify();
 
-  // New interfaces
+  // Note: copy may add copied Symbols to the supplied map
   virtual Symbol*    copy(SymbolMap* map      = NULL,
                           bool       internal = false)           = 0;
   virtual void       replaceChild(BaseAST* oldAst,
@@ -586,7 +586,7 @@ public:
                                                  Type*   newRetType);
 
   int                        numFormals()                                const;
-  ArgSymbol*                 getFormal(int i);
+  ArgSymbol*                 getFormal(int i)                            const;
 
   void                       collapseBlocks();
 
@@ -594,10 +594,22 @@ public:
 
   bool                       tagIfGeneric();
 
+  bool                       isNormalized()                              const;
+  void                       setNormalized(bool value);
+
   bool                       isResolved()                                const;
+
   bool                       isMethod()                                  const;
+  bool                       isMethodOnClass()                           const;
+  bool                       isMethodOnRecord()                          const;
+
+  void                       setMethod(bool value);
+
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
+
+  AggregateType*             getReceiver()                               const;
+
   bool                       isIterator()                                const;
   bool                       returnsRefOrConstRef()                      const;
 
@@ -616,6 +628,7 @@ private:
 
   int                        hasGenericFormals()                         const;
 
+  bool                       mIsNormalized;
   bool                       _throwsError;
 };
 
@@ -782,7 +795,6 @@ extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gVoid;
 extern Symbol *gStringC;
-extern Symbol *gStringCopy;
 extern Symbol *gCVoidPtr;
 extern Symbol *gFile;
 extern Symbol *gOpaque;

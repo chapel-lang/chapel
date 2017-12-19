@@ -2488,7 +2488,7 @@ buildFunctionSymbol(FnSymbol*   fn,
 
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
 
-    fn->addFlag(FLAG_METHOD);
+    fn->setMethod(true);
     fn->insertFormalAtHead(new DefExpr(mt));
   }
 

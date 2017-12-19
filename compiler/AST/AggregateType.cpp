@@ -356,7 +356,7 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
                                                        "_mt",
                                                        dtMethodToken)));
 
-      fn->addFlag(FLAG_METHOD);
+      fn->setMethod(true);
       fn->addFlag(FLAG_METHOD_PRIMARY);
     }
   }
@@ -1495,7 +1495,7 @@ void AggregateType::buildDefaultInitializer() {
 
       symbol->defPoint->insertBefore(def);
 
-      fn->addFlag(FLAG_METHOD);
+      fn->setMethod(true);
       fn->addFlag(FLAG_METHOD_PRIMARY);
 
       preNormalizeInitMethod(fn);
@@ -1900,7 +1900,7 @@ ArgSymbol* AggregateType::moveConstructorToOuter(FnSymbol* fn) {
   fn->insertFormalAtHead(new DefExpr(retval));
   fn->insertFormalAtHead(new DefExpr(_mt));
 
-  fn->addFlag(FLAG_METHOD);
+  fn->setMethod(true);
   fn->addFlag(FLAG_METHOD_PRIMARY);
 
   while (isTypeSymbol(insertPoint->parentSymbol) == true) {

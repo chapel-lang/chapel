@@ -990,6 +990,8 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
     if (isFieldAccess(callExpr) == false) {
+      handleInsertedMethodCall(callExpr);
+
       for_actuals(actual, callExpr) {
         updateFieldsMember(actual);
       }
@@ -1022,6 +1024,46 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+* If the call is to a method on our type, we need to transform it into        *
+*  something we'll recognize as a method call.                                *
+*                                                                             *
+* This is necessary so that later we can see the if and loop expr "method     *
+* calls" written for field initialization and let them work properly.         *
+*                                                                             *
+************************************** | *************************************/
+
+void InitNormalize::handleInsertedMethodCall(CallExpr* call) const {
+  if (UnresolvedSymExpr* us = toUnresolvedSymExpr(call->baseExpr)) {
+    bool alreadyMethod = false;
+    if (call->numActuals() > 0) {
+      SymExpr* firstArg = toSymExpr(call->get(1));
+      if (firstArg && firstArg->symbol() == gMethodToken) {
+        alreadyMethod = true;
+      }
+    }
+
+    if (alreadyMethod == false) {
+      AggregateType* at      = type();
+      bool           matches = false;
+
+      // Note: doesn't handle inherited methods.
+      forv_Vec(FnSymbol, fn, at->methods) {
+        if (strcmp(us->unresolved, fn->name) == 0) {
+          matches = true;
+          break;
+        }
+      }
+
+      if (matches) {
+        CallExpr* replacement = new CallExpr(astrSdot, mFn->_this);
+        replacement->insertAtTail(us);
+        call->baseExpr = replacement;
+      }
+    }
+  }
 }
 
 /************************************* | **************************************

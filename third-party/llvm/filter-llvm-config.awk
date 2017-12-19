@@ -1,5 +1,8 @@
 BEGIN { RS=" " }
+/^$/ { next }
 /^-DNDEBUG$/ { next }
+/^-fPIC$/ { next }
+/^-gsplit-dwarf$/ { next }
 /^-O[0-4s]?$/ { next }
 /^-pedantic$/ { next }
 /^-W.,/ { printf " %s",$0 }

@@ -42,78 +42,77 @@
 
 bool normalized = false;
 
-static void insertModuleInit();
-static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
-static void handleModuleDeinitFn(ModuleSymbol* mod);
-static void transformLogicalShortCircuit();
-static void handleReduceAssign();
+static void        insertModuleInit();
+static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
+static void        handleModuleDeinitFn(ModuleSymbol* mod);
+static void        transformLogicalShortCircuit();
+static void        handleReduceAssign();
 
-static void fixupArrayFormals(FnSymbol* fn);
+static void        fixupArrayFormals(FnSymbol* fn);
 
-static bool includesParameterizedPrimitive(FnSymbol* fn);
-static void replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
-static void fixupQueryFormals(FnSymbol* fn);
+static bool        includesParameterizedPrimitive(FnSymbol* fn);
+static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
+static void        fixupQueryFormals(FnSymbol* fn);
 
-static bool isConstructor(FnSymbol* fn);
-static bool isInitMethod (FnSymbol* fn);
+static bool        isConstructor(FnSymbol* fn);
+static bool        isInitMethod (FnSymbol* fn);
 
-static void updateConstructor(FnSymbol* fn);
-static void updateInitMethod (FnSymbol* fn);
+static void        updateConstructor(FnSymbol* fn);
+static void        updateInitMethod (FnSymbol* fn);
 
-static void normalizeTheProgram();
-static void checkUseBeforeDefs();
-static void moveGlobalDeclarationsToModuleScope();
-static void insertUseForExplicitModuleCalls(void);
+static void        checkUseBeforeDefs();
+static void        moveGlobalDeclarationsToModuleScope();
+static void        insertUseForExplicitModuleCalls(void);
 
-static void hack_resolve_types(ArgSymbol* arg);
+static void        hack_resolve_types(ArgSymbol* arg);
 
-static void find_printModuleInit_stuff();
+static void        find_printModuleInit_stuff();
 
-static void processSyntacticDistributions(CallExpr* call);
-static void normalize(BaseAST* base);
-static void normalizeReturns(FnSymbol* fn);
+static void        normalizeBase(BaseAST* base);
+static void        processSyntacticDistributions(CallExpr* call);
+static void        normalizeReturns(FnSymbol* fn);
 
-static bool isCallToConstructor(CallExpr* call);
-static void normalizeCallToConstructor(CallExpr* call);
+static bool        isCallToConstructor(CallExpr* call);
+static void        normalizeCallToConstructor(CallExpr* call);
 
-static bool isCallToTypeConstructor(CallExpr* call);
-static void normalizeCallToTypeConstructor(CallExpr* call);
+static bool        isCallToTypeConstructor(CallExpr* call);
+static void        normalizeCallToTypeConstructor(CallExpr* call);
 
-static void applyGetterTransform(CallExpr* call);
-static void insertCallTemps(CallExpr* call);
-static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
+static void        applyGetterTransform(CallExpr* call);
+static void        insertCallTemps(CallExpr* call);
+static void        insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
-static void normalizeTypeAlias(DefExpr* defExpr);
-static void normalizeConfigVariableDefinition(DefExpr* defExpr);
-static void normalizeVariableDefinition(DefExpr* defExpr);
+static void        normalizeTypeAlias(DefExpr* defExpr);
+static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
+static void        normalizeVariableDefinition(DefExpr* defExpr);
 
-static void normRefVar(DefExpr* defExpr);
+static void        normRefVar(DefExpr* defExpr);
 
-static void init_untyped_var(VarSymbol* var,
-                             Expr*      init,
-                             Expr*      insert,
-                             VarSymbol* constTemp);
+static void        init_untyped_var(VarSymbol* var,
+                                    Expr*      init,
+                                    Expr*      insert,
+                                    VarSymbol* constTemp);
 
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      insert,
-                           VarSymbol* constTemp);
+static void        init_typed_var(VarSymbol* var,
+                                  Expr*      type,
+                                  Expr*      insert,
+                                  VarSymbol* constTemp);
 
-static void init_typed_var(VarSymbol* var,
-                           Expr*      type,
-                           Expr*      init,
-                           Expr*      insert,
-                           VarSymbol* constTemp);
+static void        init_typed_var(VarSymbol* var,
+                                  Expr*      type,
+                                  Expr*      init,
+                                  Expr*      insert,
+                                  VarSymbol* constTemp);
 
-static void init_noinit_var(VarSymbol* var,
-                            Expr*      type,
-                            Expr*      init,
-                            Expr*      insert,
-                            VarSymbol* constTemp);
+static void        init_noinit_var(VarSymbol* var,
+                                   Expr*      type,
+                                   Expr*      init,
+                                   Expr*      insert,
+                                   VarSymbol* constTemp);
 
-static bool moduleHonorsNoinit(Symbol* var, Expr* init);
+static bool        moduleHonorsNoinit(Symbol* var, Expr* init);
 
-static void updateVariableAutoDestroy(DefExpr* defExpr);
+static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
@@ -160,7 +159,7 @@ void normalize() {
     }
   }
 
-  normalizeTheProgram();
+  normalizeBase(theProgram);
 
   normalized = true;
 
@@ -257,11 +256,14 @@ void normalize() {
 ************************************** | *************************************/
 
 void normalize(FnSymbol* fn) {
-  normalize((BaseAST*) fn);
+  if (fn->isNormalized() == false) {
+    normalizeBase(fn);
+    fn->setNormalized(true);
+  }
 }
 
 void normalize(Expr* expr) {
-  normalize((BaseAST*) expr);
+  normalizeBase(expr);
 }
 
 /************************************* | **************************************
@@ -455,13 +457,9 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void normalizeTheProgram() {
-  normalize(theProgram);
-}
-
 // the following function is called from multiple places,
 // e.g., after generating default or wrapper functions
-static void normalize(BaseAST* base) {
+static void normalizeBase(BaseAST* base) {
 
   //
   // Phase 0
@@ -490,7 +488,9 @@ static void normalize(BaseAST* base) {
 
   for_vector(Symbol, symbol, symbols) {
     if (FnSymbol* fn = toFnSymbol(symbol)) {
-      normalizeReturns(fn);
+      if (fn->isNormalized() == false) {
+        normalizeReturns(fn);
+      }
     }
   }
 
@@ -503,7 +503,8 @@ static void normalize(BaseAST* base) {
       DefExpr* defExpr = var->defPoint;
 
       if (FnSymbol* fn = toFnSymbol(defExpr->parentSymbol)) {
-        if (fn != stringLiteralModule->initFn) {
+        if (fn                 != stringLiteralModule->initFn &&
+            fn->isNormalized() == false) {
           Expr* type = defExpr->exprType;
           Expr* init = defExpr->init;
 
@@ -1289,24 +1290,32 @@ static void applyGetterTransform(CallExpr* call) {
   if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
-    SymExpr* symExpr = toSymExpr(call->get(2));
+    if (SymExpr* symExpr = toSymExpr(call->get(2))) {
 
-    symExpr->remove();
+      symExpr->remove();
 
-    if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        const char* str = var->immediate->v_string;
+      if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
+        if (var->immediate->const_kind == CONST_KIND_STRING) {
+          const char* str = var->immediate->v_string;
 
-        call->baseExpr->replace(new UnresolvedSymExpr(str));
+          call->baseExpr->replace(new UnresolvedSymExpr(str));
 
+          call->insertAtHead(gMethodToken);
+
+        } else {
+          INT_FATAL(call, "unexpected case");
+        }
+
+      } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
+        call->baseExpr->replace(new SymExpr(type));
         call->insertAtHead(gMethodToken);
 
       } else {
         INT_FATAL(call, "unexpected case");
       }
 
-    } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
-      call->baseExpr->replace(new SymExpr(type));
+    } else if (UnresolvedSymExpr* symExpr = toUnresolvedSymExpr(call->get(2))) {
+      call->baseExpr->replace(symExpr->remove());
       call->insertAtHead(gMethodToken);
 
     } else {

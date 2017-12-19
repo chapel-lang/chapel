@@ -676,10 +676,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtStringC && actualType == dtStringCopy) {
-    return true;
-  }
-
   if (formalType                                        == dtIteratorRecord &&
       actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
@@ -1091,12 +1087,6 @@ bool canCoerce(Type*     actualType,
                        formalType,
                        fn,
                        promotes);
-
-  if (formalType == dtString && actualType == dtStringCopy)
-    return true;
-
-  if (formalType == dtStringC && actualType == dtStringCopy)
-    return true;
 
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
       (formalType == dtCVoidPtr))
@@ -3020,7 +3010,8 @@ static bool populateForwardingMethods(CallInfo& info) {
       //  (e.g. proc these() return _value.these(); )
       fn->removeFlag(FLAG_ITERATOR_FN);
 
-      fn->addFlag(FLAG_METHOD);
+      fn->setMethod(true);
+
       fn->addFlag(FLAG_INLINE);
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -4177,6 +4168,13 @@ void lvalueCheck(CallExpr* call) {
       if (nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
         // we are asked to ignore errors here
         return;
+      }
+
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (se->symbol()->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+          // Ignore lvalue errors default argument expressions
+          return;
+        }
       }
 
       FnSymbol* calleeFn = call->resolvedFunction();
