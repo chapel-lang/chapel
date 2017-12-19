@@ -15,5 +15,5 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-vm"
 export CHPL_TEST_NOMAIL=1
 export CHPL_NIGHTLY_DEBUG_EMAIL=eronagha@cray.com
 
-nightly_args="${nightly_args} -compperformance (--llvm --fast)"
+nightly_args="${nightly_args} -compperformance (llvm-fast)"
 $CWD/nightly -cron ${nightly_args}
