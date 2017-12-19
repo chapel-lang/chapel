@@ -190,7 +190,8 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 static bool fnIsDefaultInit(FnSymbol* fn) {
   return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
          fn->hasFlag(FLAG_LAST_RESORT) &&
-         0 == strcmp(fn->name, "init");
+         (0 == strcmp(fn->name, "init") ||
+          0 == strcmp(fn->name, "_new"));
 }
 
 /************************************* | **************************************
