@@ -125,13 +125,15 @@ module BigInteger {
     pragma "no doc"
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
-    proc bigint() {
+    proc init() {
+      super.init();
       mpz_init(this.mpz);
 
       this.localeId = chpl_nodeID;
     }
 
-    proc bigint(const ref num: bigint) {
+    proc init(const ref num: bigint) {
+      super.init();
       if _local || num.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -145,19 +147,22 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc bigint(num: int) {
+    proc init(num: int) {
+      super.init();
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
 
       this.localeId = chpl_nodeID;
     }
 
-    proc bigint(num: uint) {
+    proc init(num: uint) {
+      super.init();
       mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
 
       this.localeId = chpl_nodeID;
     }
 
-    proc bigint(str: string, base: int = 0) {
+    proc init(str: string, base: int = 0) {
+      super.init();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -170,7 +175,8 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    proc bigint(str: string, base: int = 0, out error: syserr) {
+    proc init(str: string, base: int = 0, out error: syserr) {
+      super.init();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -364,6 +370,7 @@ module BigInteger {
     }
   }
 
+  /*
   pragma "init copy fn"
   pragma "no doc"
   proc chpl__initCopy(const ref bir: bigint) {
@@ -383,7 +390,9 @@ module BigInteger {
 
     return ret;
   }
+  */
 
+  /*
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
@@ -403,6 +412,7 @@ module BigInteger {
 
     return ret;
   }
+  */
 
   //
   // Cast operators
