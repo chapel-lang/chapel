@@ -7,6 +7,13 @@ static void expandYield(ExpandForForall* EV, CallExpr* yield) {} //vass
 static void expandTaskFnCall(ExpandForForall* EV, CallExpr* call, FnSymbol* taskFn) {} //vass
 static void expandForall(ExpandForForall* EV, ForallStmt* fs) {} //vass
 
+/* vass - need this?
+// same as intentArgName()
+static const char* shadowVarName(int ix, const char* base) {
+  return astr("_x", istr(ix+1), "_", base);
+}
+*/
+
 class ExpandForForall : public AstVisitorTraverse {
 public:
 
@@ -31,12 +38,52 @@ public:
   }
 };
 
+static void insertInitialization(Symbol* dest, Type* valType,
+                                 BaseAST* init, Expr* anchor)
+{
+  if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {
+    Symbol* initSym = toSymbol(init);
+    if (initSym == NULL) {
+      VarSymbol* actemp = new VarSymbol("actemp", valType);
+      anchor->insertBefore(new DefExpr(actemp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, actemp, init));
+      initSym = actemp;
+    }
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, dest,
+                           new CallExpr(autoCopyFn, initSym)));
+  } else {
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, dest, init));
+  }
+}
+
+static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
+                                 int ix, SymbolMap& map,
+                                 Expr* aInit, Expr* aFini)
+{
+/* VASS TODO
+
+  Symbol* parentOp = svar->outerVarSym();
+
+* add computation of reduceCurrOp and reduceShadowVar before aInit
+* add tear-down after aFini
+  // See ensureCurrentReduceOpForReduceIntent(), shadowVarForReduceIntent().
+  // Todo optimize: reuse 'parentOp' if we are outside task fns, foralls.
+
+For that, add fields to ShadowVarSymbol during resolution,
+fill them out, update as they are being cloned.
+
+* map.put(svar, reduceShadowVar)
+
+*/
+}
+
+
 ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
                                  BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
-/* vass - need these?
+/* vass - use these?
   // Place initialization and finalization code before these anchors.
   CallExpr* aInit = new CallExpr("anchorInit");
   CallExpr* aFini = new CallExpr("anchorFini");
@@ -51,7 +98,9 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
   // When cloning the loop body of 'fs', replace each shadow variable
   // with the variable given by 'map'.
   SymbolMap map;
+  int idx = 0; // vass - need this?
   for_shadow_vars(svar, temp1, fs) {
+    idx++;
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
@@ -68,9 +117,8 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
           aInit->insertBefore(new DefExpr(bodyvar));
 
           // Initialize it from the outer var.
-          FnSymbol* autoCopyFn = getAutoCopy(bodyvar->type); // NB val type
-          CallExpr* autoCopyCE = new CallExpr(autoCopyFn, svar->outerVarSym());
-          aInit->insertBefore(new CallExpr(PRIM_MOVE, bodyvar, autoCopyCE));
+          insertInitialization(bodyvar, bodyvar->type,
+                               svar->outerVarSym(), aInit);
 
           // Deinitialize it at the end.
           if (FnSymbol* autoDestroy = getAutoDestroy(bodyvar->type))
@@ -83,10 +131,12 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
       case TFI_REF:
       case TFI_CONST_REF:
         // Let us reference the outer variable directly, for simplicity.
+        // NB we are not concerned with const checking any more.
         map.put(svar, svar->outerVarSym());
         break;
 
       case TFI_REDUCE:
+        setupForReduceIntent(fs, svar, idx, map, aInit, aFini);
         break;
     }
   }
