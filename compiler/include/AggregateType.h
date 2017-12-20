@@ -76,7 +76,7 @@ public:
                                                     const char* baseOffset);
 
   // The following two methods are used for types which define initializers
-  bool                        setNextGenericField();
+  bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
   AggregateType*              getInstantiationParent(AggregateType* parentType);

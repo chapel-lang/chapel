@@ -395,7 +395,7 @@ void AggregateType::accept(AstVisitor* visitor) {
 
 // Returns true if the type has generic fields, false otherwise.
 // If the index of the first generic field has not previously been set, set it.
-bool AggregateType::setNextGenericField() {
+bool AggregateType::setFirstGenericField() {
   bool retval = true;
 
   if (genericField == 0) {
@@ -420,7 +420,7 @@ bool AggregateType::setNextGenericField() {
           dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == true) {
 
         if (AggregateType* parent = toAggregateType(dispatchParents.v[0])) {
-          if (parent->setNextGenericField() == false) {
+          if (parent->setFirstGenericField() == false) {
             INT_ASSERT(false);
           }
         }
@@ -592,28 +592,28 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 // those substitutions following the same mechanism used by the resolution of
 // initializers but extended to handling multiple updates at a time.
 AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
-                                                    FnSymbol* fn) {
-  INT_ASSERT(this->symbol->hasFlag(FLAG_GENERIC));
-  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR));
+                                                    FnSymbol*  fn) {
+  AggregateType* retval = this;
 
-  if (this->genericField == 0) {
-    setNextGenericField();
+  INT_ASSERT(symbol->hasFlag(FLAG_GENERIC)      == true);
+  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true);
+
+  if (genericField == 0) {
+    setFirstGenericField();
   }
-
-  AggregateType* instantiation = this;
 
   for_formals(formal, fn) {
     if (Symbol* val = subs.get(formal)) {
       // Assumes that the type constructor arguments will correspond directly
       // to the generic fields, and that they will gain substitutions in order.
       // Bad things will happen if this assumption is violated
-      instantiation = instantiation->getInstantiation(val,
-                                                      instantiation->genericField);
+      retval = retval->getInstantiation(val, retval->genericField);
     }
   }
-  instantiation->instantiatedFrom = this;
 
-  return instantiation;
+  retval->instantiatedFrom = this;
+
+  return retval;
 }
 
 bool AggregateType::isInstantiatedFrom(const AggregateType* base) const {

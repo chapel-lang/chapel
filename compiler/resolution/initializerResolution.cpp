@@ -261,7 +261,7 @@ static void resolveMatch(FnSymbol* fn) {
 
     if (wasGeneric == true) {
       AggregateType* at  = toAggregateType(fn->_this->type);
-      bool           res = at->setNextGenericField();
+      bool           res = at->setFirstGenericField();
 
       if (at->isClass() == true) {
         if (at->dispatchParents.v[0]                                == NULL ||
