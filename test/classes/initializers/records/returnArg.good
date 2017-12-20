@@ -1,2 +1,2 @@
-returnArg.chpl:6: In function 'quux':
-returnArg.chpl:6: error: copy-initialization invoked for a type that does not have a copy initializer
+()
+()

@@ -1,2 +1,1 @@
-checking-copies-bad.chpl:13: In function 'main':
-checking-copies-bad.chpl:15: error: No copy constructor for initializer
+(x = 10, y = true)
