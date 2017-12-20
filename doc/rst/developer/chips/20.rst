@@ -67,6 +67,7 @@ in the following program:
 So far so good; the program prints out:
 
 ::
+
   in LibraryX.setup()
   Global is 1
 
@@ -89,6 +90,7 @@ happens to create a function named ``setup`` in the process:
 Now when this program is run, it prints out:
 
 ::
+
   in Application2.setup
   Global is 0
 
@@ -133,6 +135,7 @@ argument.
 As expected this application prints:
 
 ::
+
   in LibraryX.setup()
   Global is 1
 
@@ -155,6 +158,7 @@ Now again suppose that the application developer happens to add a
 This one outputs:
 
 ::
+
   in Application4.setup
   Global is 0
 
@@ -218,6 +222,7 @@ The application makes use of LibraryXA:
 Now that program outputs
 
 ::
+
   In A.foo()
 
 as expected.
@@ -251,6 +256,7 @@ library, LibraryYA, which also uses GenericLibraryZ:
 Now that program outputs
 
 ::
+
   In A.foo()
   In A.foo()
 
@@ -313,6 +319,7 @@ The application uses both of these libraries:
 This program outputs
 
 ::
+
   in LibraryX.setup()
   Global is 1.0
 
@@ -348,6 +355,7 @@ The application maintainer updates the application to use LibraryY2:
 Oh dear!
 
 ::
+
   in LibraryY.setup
   Global is 0.0
 
@@ -392,6 +400,7 @@ In the application code, the developer extends Base and adds a method
 When this program is run, it prints out:
 
 ::
+
   In Application.Widget.run
 
 Now suppose that Company Z decides to update their library by adding a new
@@ -431,6 +440,7 @@ The application developer updates to the latest LibraryZ:
 It outputs 
 
 ::
+
   In Application.Widget.run
 
 which is what we want! Not all languages would have that output for this
@@ -517,6 +527,7 @@ and then the application is updated to use the new library:
   }
 
 ::
+
   starting LibraryZ.Base.setup!
   In Application.Widget.run
   completed LibraryZ.Base.setup!
@@ -573,6 +584,7 @@ Now the application might use that library like so:
 That outputs:
 
 ::
+
   starting LibraryZ.Base.setup!
   In Application.Widget.helpSetup
   completed LibraryZ.Base.setup!
@@ -625,6 +637,7 @@ might be surprised that their helpSetup is no longer being called in all of the 
   }
 
 ::
+
   starting LibraryZ.Base.setup!
   LibraryZ.Base Default int setup helper
   completed LibraryZ.Base.setup!
