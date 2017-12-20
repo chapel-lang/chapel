@@ -337,6 +337,11 @@ BaseAST* aid(int id) {
   return aidWithError(id, "aid");
 }
 
+BaseAST* aid(BaseAST* ast); //vass - to .h
+BaseAST* aid(BaseAST* ast) {
+  return ast;
+}
+
 
 void viewFlags(int id) {
   if (BaseAST* ast = aidWithError(id, "viewFlags"))
@@ -812,6 +817,49 @@ void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
   }
 }
 
+void vec_view(std::vector<Symbol*>* vec); //vass
+void vec_view(std::vector<Symbol*>& vec); //vass
+
+void vec_view(std::vector<Symbol*>* vec) {
+  vec_view(*vec);
+}
+
+void vec_view(std::vector<Symbol*>& vec) {
+  printf("vector<Symbol> %ld elm(s)\n", vec.size());
+  for (size_t i = 0; i < vec.size(); i++) {
+    Symbol* elm = vec[i];
+    if (elm)
+      printf("%3ld %8d  %s\n", i, elm->id, elm->name);
+    else
+      printf("%3ld <null>\n", i);
+  }
+}
+
+//
+// typesWithName: print all types with the given name
+//
+void typesWithName(const char* name); //vass
+void typesWithName(const char* name, Vec<TypeSymbol*,VEC_INTEGRAL_SIZE>& tyVec); //vass
+
+void typesWithName(const char* name) {
+  typesWithName(name, gTypeSymbols);
+}
+
+void typesWithName(const char* name, Vec<TypeSymbol*,VEC_INTEGRAL_SIZE>& tyVec) {
+  printf("typesWithName(\"%s\")\n", name);
+  int count = 0, countNonNull = 0;
+  forv_Vec(TypeSymbol, ty, tyVec) {
+    if (ty) {
+      countNonNull++;
+      if (!strcmp(ty->name, name)) {
+        count++;
+        printf("  sym %d  type %d  %s\n", ty->id, ty->type->id, debugLoc(ty));
+      }
+    }
+  }
+  printf("  %d type(s) of %d\n", count, countNonNull);
+}
+
 //
 // fnsWithName: print all FnSymbols with the given name
 //
@@ -880,6 +928,7 @@ void whocalls(int id) {
 
   int forAll = 0, forMatch = 0, forNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
+    // todo: does this really happen?
     if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP) && call->numActuals() >= 2) {
       forAll++;
       // check each step, just in case
