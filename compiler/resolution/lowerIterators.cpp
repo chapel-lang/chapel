@@ -325,12 +325,14 @@ static void computeRecursiveIteratorSet() {
 }
 
 
+/*vass
 // Remove supporting references in ShadowVarSymbols.
 // Otherwise flattenNestedFunction() will try to propagate them.
 static void clearUpRefsInShadowVars() {
   forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
     svar->removeSupportingReferences();
 }
+*/
 
 
 static bool containsYield(Expr* arg) {
@@ -2509,7 +2511,7 @@ void lowerIterators() {
     }
   }
 
-  lowerForallStmts();
+  lowerForallStmtsInline();
 
   // TODO: The AST is not valid between inlineIterators and
   // fixNumericalGetMemberPrims because of
