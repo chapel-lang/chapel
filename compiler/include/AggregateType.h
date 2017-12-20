@@ -137,6 +137,8 @@ public:
   bool                        wantsDefaultInitializer();
   void                        buildDefaultInitializer();
 
+  void                        buildCopyInitializer();
+
   AggregateType*              instantiatedFrom;
 
   InitializerStyle            initializerStyle;
