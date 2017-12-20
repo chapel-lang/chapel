@@ -484,26 +484,26 @@ SymExpr* findSourceOfYield(CallExpr* yield) {
   while (expr != NULL && needle != NULL) {
     if (CallExpr* move = toCallExpr(expr)) {
       if (move->isPrimitive(PRIM_MOVE) == true) {
-	SymExpr*   lhs    = toSymExpr(move->get(1));
-	VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
+        SymExpr*   lhs    = toSymExpr(move->get(1));
+        VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 
-	if (needle == lhsVar) {
-	  if (SymExpr* rhs = toSymExpr(move->get(2))) {
-	    VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
+        if (needle == lhsVar) {
+          if (SymExpr* rhs = toSymExpr(move->get(2))) {
+            VarSymbol* rhsVar = toVarSymbol(rhs->symbol());
 
-	    if (rhsVar) {
-	      needle = rhsVar;
+            if (rhsVar) {
+              needle = rhsVar;
 
-	      if (rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
+              if (rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY) ||
                   rhsVar->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
-		foundSe = rhs;
-		break;
+                foundSe = rhs;
+                break;
               }
-	    }
-	  } else {
-	    needle = NULL;
-	  }
-	}
+            }
+          } else {
+            needle = NULL;
+          }
+        }
       }
     }
 
