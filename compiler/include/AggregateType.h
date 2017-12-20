@@ -125,9 +125,9 @@ public:
 
   void                        addClassToHierarchy();
 
-  bool                        parentDefinesInitializer();
+  bool                        parentDefinesInitializer()                 const;
 
-  bool                        wantsDefaultInitializer();
+  bool                        wantsDefaultInitializer()                  const;
 
   void                        buildDefaultInitializer();
 

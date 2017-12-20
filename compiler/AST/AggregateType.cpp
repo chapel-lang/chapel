@@ -34,9 +34,8 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-AggregateType* dtObject            = NULL;
-
-AggregateType* dtString            = NULL;
+AggregateType* dtObject = NULL;
+AggregateType* dtString = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
@@ -1806,17 +1805,21 @@ bool AggregateType::needsConstructor() {
   return false;
 }
 
-bool AggregateType::parentDefinesInitializer() {
+
+bool AggregateType::parentDefinesInitializer() const {
+  bool retval = false;
+
   if (dispatchParents.n > 0) {
-    if (AggregateType* pt = toAggregateType(dispatchParents.v[0])) {
+    if (AggregateType* pt = dispatchParents.v[0]) {
       if (pt->initializerStyle == DEFINES_INITIALIZER) {
-        return true;
+        retval = true;
       } else {
-        return pt->parentDefinesInitializer();
+        retval = pt->parentDefinesInitializer();
       }
     }
   }
-  return false;
+
+  return retval;
 }
 
 // Returns true for the cases where we want to generate a default initializer.
@@ -1828,43 +1831,54 @@ bool AggregateType::parentDefinesInitializer() {
 //
 // Note that this method does not generate the opposite of needsConstructor -
 // when the type has defined an initializer both methods will return false.
-bool AggregateType::wantsDefaultInitializer() {
+bool AggregateType::wantsDefaultInitializer() const {
+  AggregateType* nonConstHole = (AggregateType*) this;
+  ModuleSymbol*  mod          = nonConstHole->getModule();
+  bool           retval       = true;
+
   // We want a default initializer if the type has been explicitly marked
-  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
-    return true;
+  if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT) == true) {
+    retval = true;
 
   // For now, no default initializers for library and internal types
-  ModuleSymbol* mod = getModule();
-  if (!mod || mod->modTag == MOD_INTERNAL || mod->modTag == MOD_STANDARD)
-    return false;
+  } else if (mod         == NULL         ||
+             mod->modTag == MOD_INTERNAL ||
+             mod->modTag == MOD_STANDARD) {
+    retval = false;
+
 
   // No default initializers if the --force-initializers flag is not used
-  if (!fUserDefaultInitializers)
-    return false;
+  } else if (fUserDefaultInitializers == false) {
+    retval = false;
 
-  // Only want a default initializer when no initializer or constructor is
-  // defined
-  if (initializerStyle != DEFINES_NONE_USE_DEFAULT)
-    return false;
+  // Only want a default initializer when no
+  // initializer or constructor is defined
+  } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
+    retval = false;
 
   // For now, no default initializers for records and unions
-  if (isRecord() || isUnion())
-    return false;
+  } else if (isRecord() == true) {
+    retval = false;
 
-  // No default initializer for types that have an initialize() method
-  forv_Vec(FnSymbol, method, methods) {
-    if (method && strcmp(method->name, "initialize") == 0) {
-      if (method->numFormals() == 2) {
-        return false;
+  } else if (isUnion()  == true) {
+    retval = false;
+
+  } else if (symbol->hasFlag(FLAG_REF) == true) {
+    retval = false;
+
+  } else {
+    // No default initializer for types that have an initialize() method
+    forv_Vec(FnSymbol, method, nonConstHole->methods) {
+      if (method != NULL && strcmp(method->name, "initialize") == 0) {
+        if (method->numFormals() == 2) {
+          retval = false;
+          break;
+        }
       }
     }
   }
 
-  // For now, no default initializers for ref
-  if (symbol->hasFlag(FLAG_REF))
-    return false;
-
-  return true;
+  return retval;
 }
 
 // Replace implicit references to 'this' in the body of this
