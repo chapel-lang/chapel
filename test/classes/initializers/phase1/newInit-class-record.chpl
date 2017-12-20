@@ -12,7 +12,7 @@ class Container {
 record Stored {
   var x: bool;
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: Stored {
     x = xVal;
 
     super.init();

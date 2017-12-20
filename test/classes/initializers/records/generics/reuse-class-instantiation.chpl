@@ -10,7 +10,7 @@ record Foo {
     super.init();
   }
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: Foo {
     t = xVal.type;
     x = xVal;
     super.init();
