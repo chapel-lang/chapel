@@ -1231,10 +1231,7 @@ getParentBlock(Expr* expr) {
       return block;
   }
   if (expr->parentSymbol) {
-    FnSymbol* parentFn = toFnSymbol(expr->parentSymbol);
-    if (parentFn && parentFn->instantiationPoint)
-      return parentFn->instantiationPoint;
-    else if (expr->parentSymbol->defPoint)
+    if (expr->parentSymbol->defPoint)
       return getParentBlock(expr->parentSymbol->defPoint);
   }
   return NULL;
