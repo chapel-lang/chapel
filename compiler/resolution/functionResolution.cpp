@@ -2524,16 +2524,14 @@ static void generateCopyInitErrorMsg() {
         currFn->hasFlag(FLAG_INIT_COPY_FN)) {
       Type* copied = currFn->getFormal(1)->type;
       if (isNonGenericRecordWithInitializers(copied)) {
-        FnSymbol* prevFn = callStack.v[i+1]->getFunction();
-        USR_PRINT(prevFn,
-                  "Function '%s' is being treated as a copy initializer for "
+        USR_PRINT(copied,
+                  "Function 'init' is being treated as a copy initializer for "
                   "type '%s', was that intended?",
-                  prevFn->name,
                   copied->symbol->name);
-        USR_PRINT(prevFn,
+        USR_PRINT(copied,
                   "If not, try explicitly declaring the type of the generic "
                   "argument,");
-        USR_PRINT(prevFn,
+        USR_PRINT(copied,
                   "or excluding '%s' as its type via a where clause",
                   copied->symbol->name);
         return;
