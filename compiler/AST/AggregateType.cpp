@@ -1741,7 +1741,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
 
 void AggregateType::buildCopyInitializer() {
   // Only build a copy initializer for a type that uses initializers
-  if (isNonGenericRecordWithInitializers(this) == false) {
+  if (isRecordWithInitializers(this) == false) {
     return;
   }
 
@@ -1755,6 +1755,7 @@ void AggregateType::buildCopyInitializer() {
   fn->_this = _this;
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_DEFAULT_COPY_INIT);
 
   _this->addFlag(FLAG_ARG_THIS);
 

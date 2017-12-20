@@ -4923,11 +4923,14 @@ static void resolveInitField(CallExpr* call) {
       call->insertAtTail(tmp);
 
     } else {
-      USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field '%s' of type %s",
-                toString(t),
-                fs->name,
-                toString(fs->type));
+      USR_FATAL_CONT(userCall(call),
+                     "cannot assign expression of type %s to field '%s' of "
+                     "type %s",
+                     toString(t),
+                     fs->name,
+                     toString(fs->type));
+      generateCopyInitErrorMsg();
+      USR_STOP();
     }
   }
 
