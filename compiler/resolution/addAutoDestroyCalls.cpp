@@ -465,7 +465,7 @@ bool isAutoDestroyedVariable(Symbol* sym) {
 }
 
 // For a yield of a variable, such as iter f() { var x=...; yield x; },
-// unline returning, the yield will result in a copy. This function helps
+// unlike returning, the yield will result in a copy. This function helps
 // to identify the source variable in such cases, even as there might be
 // various compiler temporaries in between. It returns the SymExpr referring
 // to the yielded variable that was used in the last PRIM_MOVE reading it.

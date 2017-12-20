@@ -225,17 +225,6 @@ static VarSymbol* variableToExclude(FnSymbol* fn, Expr* refStmt) {
   // TODO: migrate variableToExclude to addAutoDestroys
   // and the excluded set.
 
-  // TODO : handle localized yields
-  // These are not passed through the RVV but rather are just
-  // the result of yielding.
-
-  /*if (CallExpr* call = toCallExpr(refStmt)) {
-    if (call->isPrimitive(PRIM_YIELD) == true) {
-      SymExpr* se = toSymExpr(call->get(1));
-      retVar = toVarSymbol(se->symbol());
-    }
-  }*/
-
   if (retVar != NULL) {
     if (isUserDefinedRecord(retVar)    == true ||
         fn->hasFlag(FLAG_INIT_COPY_FN) == true) {

@@ -88,23 +88,6 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   CallExpr* ret = toCallExpr(fn->body->body.last());
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
 
-  // Yank a PRIM_MOVE/PRIM_ASSIGN setting a formal with FLAG_FN_RETARG
-  // Is this necessary now that we remove it in cullOverRef?
-  /*if (fn->hasFlag(FLAG_FN_RETARG)) {
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_RETARG)) {
-        std::vector<Expr*> toRemove;
-        for_SymbolSymExprs(se, formal) {
-          toRemove.push_back(se->getStmtExpr());
-        }
-        for_vector(Expr, e, toRemove) {
-          if (e->inTree())
-            e->remove();
-        }
-      }
-    }
-  }*/
-
   if (CallExpr* assign = toCallExpr(ret->prev))
     if (assign->isPrimitive(PRIM_MOVE) || assign->isPrimitive(PRIM_ASSIGN))
       if (SymExpr* se = toSymExpr(assign->get(1)))

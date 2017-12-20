@@ -4042,15 +4042,13 @@ module ChapelArray {
     var i  = 0;
     var size:size_t = 0;
     var data:_ddata(iteratorToArrayElementType(ir.type)) = nil;
-    //type eltType = iteratorToArrayElementType(ir.type);
-    //var data:_ddata(eltType) = nil;
 
     var callAgain: bool;
     var subloc = c_sublocid_none;
 
     for elt in ir {
 
-      // Future: the expring value optimization should remove this copy.
+      // Future: we should generally remove this copy.
       // Note though that in some cases it invokes this function
       // recursively - in that case it shouldn't be removed!
       pragma "no auto destroy"
