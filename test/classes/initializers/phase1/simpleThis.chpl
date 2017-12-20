@@ -3,7 +3,7 @@ record MyRecord {
   var y : int = 2;
 
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: MyRecord {
     x = xVal;
     y = 1 + this.x;
 
