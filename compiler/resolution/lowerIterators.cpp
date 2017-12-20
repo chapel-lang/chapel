@@ -2485,12 +2485,11 @@ static void removeUncalledIterators()
   }
 }
 
+#include "implementForallIntents3.cpp" // vass
 
 void lowerIterators() {
   nonLeaderParCheck();
   parallelIterVirtualCheck();
-
-  clearUpRefsInShadowVars();
 
   computeRecursiveIteratorSet();
 
@@ -2509,6 +2508,8 @@ void lowerIterators() {
 #endif
     }
   }
+
+  lowerForallStmts();
 
   // TODO: The AST is not valid between inlineIterators and
   // fixNumericalGetMemberPrims because of
