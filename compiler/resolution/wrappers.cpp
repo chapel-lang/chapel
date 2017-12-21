@@ -581,7 +581,6 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
      tests are a good place to start:
 
      test/functions/bradc/defaultVals/defaultArrCausesCopy.chpl
-     test/functions/bradc/defaultVals/defaultArrCausesCopy-reffn.chpl
      test/functions/default-arguments/iterator-default-arguments.chpl
      test/memory/figueroa/LeakedMemory6.chpl
    */
