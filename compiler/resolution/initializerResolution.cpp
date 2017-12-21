@@ -262,22 +262,31 @@ static void resolveInitializerMatch(FnSymbol* fn) {
       resolveInitializerBody(fn);
 
     } else {
-      bool res = at->setFirstGenericField();
+      if (at->isRecord() == true) {
+        at->setFirstGenericField();
 
-      if (at->isClass() == true) {
+        resolveInitializerBody(fn);
+
+      } else if (at->isClass() == true) {
         AggregateType* parent = at->dispatchParents.v[0];
 
         if (parent->isGeneric() == false) {
-          INT_ASSERT(res);
+          if (at->setFirstGenericField() == false) {
+            INT_ASSERT(false);
+          }
+
+        } else {
+          at->setFirstGenericField();
         }
-      }
 
-      resolveInitializerBody(fn);
+        resolveInitializerBody(fn);
 
-      if (at->isClass() == true) {
         FnSymbol* classAlloc = buildClassAllocator(fn);
 
         normalize(classAlloc);
+
+      } else {
+        INT_ASSERT(false);
       }
     }
   }
