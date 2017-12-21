@@ -261,8 +261,14 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_amo_cnt)                                             \
         MACRO(regMem_cnt)                                               \
         MACRO(deregMem_cnt)                                             \
+        MACRO(regMem_bCast_cnt)                                         \
+        MACRO(regMem_mutex_nsecs)                                       \
         MACRO(local_mreg_cnt)                                           \
+        MACRO(local_mreg_cmps)                                          \
+        MACRO(local_mreg_nsecs)                                         \
         MACRO(remote_mreg_cnt)                                          \
+        MACRO(remote_mreg_cmps)                                         \
+        MACRO(remote_mreg_nsecs)                                        \
         MACRO(sent_bytes)                                               \
         MACRO(rcvd_bytes)                                               \
         MACRO(acq_cd_cnt)                                               \
@@ -311,11 +317,38 @@ chpl_comm_pstats_t chpl_comm_pstats;
 
 #define PERFSTATS_ADD(cnt, val)  (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
 #define PERFSTATS_INC(cnt)       PERFSTATS_ADD(cnt, 1)
+
+#include <time.h>
+
+static struct timespec perfstats_timeBase;
+
+static inline uint64_t perfstats_timer_get(void)
+{
+  struct timespec _ts;
+  (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
+  return (uint64_t) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
+         + (uint64_t) _ts.tv_nsec;
+}
+
+#define PERFSTATS_TIMER_START(ts) uint64_t ts = perfstats_timer_get()
+
+#define PERFSTATS_TIMER_ELAPSED(ts) ((_PSV_C_TYPE) (perfstats_timer_get() - ts))
+
+static void perfstats_init(void)
+{
+  (void) clock_gettime(CLOCK_MONOTONIC, &perfstats_timeBase);
+}
+
+#define PERFSTATS_INIT() perfstats_init();
+
 #else
 #define PERFSTATS_ADD(cnt, val)
 #define PERFSTATS_INC(cnt)
 #define PERFSTATS_DO_EPHEMERAL(MACRO)
 #define PERFSTATS_DO_ALL(MACRO)
+#define PERFSTATS_TIMER_START(ts)
+#define PERFSTATS_TIMER_ELAPSED(ts)
+#define PERFSTATS_INIT()
 #endif
 
 
@@ -422,8 +455,10 @@ static __thread chpl_bool allow_task_yield = true;
 
 static inline
 void mem_regions_lock(void) {
+  PERFSTATS_TIMER_START(pstStart);
   if (pthread_mutex_lock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
+  PERFSTATS_ADD(regMem_mutex_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
   allow_task_yield = false;
 }
 
@@ -442,6 +477,8 @@ chpl_bool can_task_yield(void) {
 static chpl_bool can_register_memory = false;
 
 static uint32_t mreg_cnt_max;
+
+static atomic_int_least32_t mreg_free_cnt;
 
 static mem_region_table_t* mem_regions_map;
 static mem_region_table_t** mem_regions_map_addr_map;
@@ -1573,14 +1610,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
          <= sizeof(fork_t));
 
-  //
-  // Sanity check: the compiler preserves the order of the members of
-  // mem_region_table_t.  (Otherwise the code for broadcasting memory
-  // registration updates won't work.)
-  //
-  assert(offsetof(mem_region_table_t, mreg_cnt)
-         < offsetof(mem_region_table_t, mregs));
-
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -1603,6 +1632,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   }
 
   DBG_INIT();  // needs chpl_nodeID
+  PERFSTATS_INIT();
 
   {
     int app_size;
@@ -1641,6 +1671,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 #define _PSV_INIT(psv) atomic_init_uint_least64_t(&_PSV_VAR(psv), 0);
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
+
+  //
+  // These have to be initialized prior to the first regMemAlloc() call.
+  //
+  mem_regions.mreg_cnt = 0;
+  atomic_store_int_least32_t(&mreg_free_cnt, MAX_MEM_REGIONS);
 }
 
 
@@ -2142,6 +2178,7 @@ void register_memory(void)
       mem_regions.mregs[i].len = len;
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
+        (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
         if (mem_regions.mreg_cnt > mreg_cnt_max)
           mreg_cnt_max = mem_regions.mreg_cnt;
       }
@@ -2298,6 +2335,7 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
 
 
 static
+inline
 void register_mem_region(mem_region_t* mr)
 {
   uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
@@ -2315,6 +2353,7 @@ void register_mem_region(mem_region_t* mr)
 
 
 static
+inline
 void deregister_mem_region(mem_region_t* mr)
 {
   gni_return_t gni_rc;
@@ -2350,8 +2389,20 @@ static
 inline
 mem_region_t* mreg_for_local_addr(void* addr)
 {
+  static __thread mem_region_t* mr;
   PERFSTATS_INC(local_mreg_cnt);
-  return mreg_for_addr(addr, &mem_regions);
+  PERFSTATS_TIMER_START(pstStart);
+  if (mr == NULL
+      || (uint64_t) addr < mr->addr
+      || (uint64_t) addr >= mr->addr + mr->len) {
+    mr = mreg_for_addr(addr, &mem_regions);
+    PERFSTATS_ADD(local_mreg_cmps,
+                  ((mr == NULL)
+                   ? mem_regions.mreg_cnt
+                   : (mr - &mem_regions.mregs[0] + 1)));
+  }
+  PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  return mr;
 }
 
 
@@ -2359,8 +2410,26 @@ static
 inline
 mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
 {
+  static __thread mem_region_t** mrs;
+  mem_region_t* mr;
+  if (mrs == NULL) {
+    mrs = (mem_region_t**) chpl_mem_allocManyZero(chpl_numNodes, sizeof(mrs[0]),
+                                                  CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                  0, 0);
+  }
   PERFSTATS_INC(remote_mreg_cnt);
-  return mreg_for_addr(addr, &mem_regions_map[locale]);
+  PERFSTATS_TIMER_START(pstStart);
+  if ((mr = mrs[locale]) == NULL
+      || (uint64_t) addr < mr->addr
+      || (uint64_t) addr >= mr->addr + mr->len) {
+    mr = mrs[locale] = mreg_for_addr(addr, &mem_regions_map[locale]);
+    PERFSTATS_ADD(remote_mreg_cmps,
+                  ((mr == NULL)
+                   ? mem_regions_map[locale].mreg_cnt
+                   : (mr - &mem_regions_map[locale].mregs[0] + 1)));
+  }
+  PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  return mr;
 }
 
 
@@ -2786,6 +2855,7 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 void* chpl_comm_impl_regMemAlloc(size_t size)
 {
   int mr_i;
+  mem_region_t* mr;
   void* p;
 
   if (get_hugepage_size() == 0)
@@ -2793,61 +2863,64 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
 
   PERFSTATS_INC(regMem_cnt);
 
+  //
+  // Do we have room for another registered memory region?
+  //
+  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 0) {
+    atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
+
+    static atomic_int_least8_t spoke;
+    if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
+      chpl_warning("no more registered memory region table entries!", 0, 0);
+    }
+
+    DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);
+    return NULL;
+  }
+
+  //
+  // Try to get the memory.
+  //
+  p = get_huge_pages(ALIGN_UP(size, get_hugepage_size()), GHP_DEFAULT);
+  if (p == NULL) {
+    atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
+
+    DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): no hugepages", size);
+    return NULL;
+  }
+
   mem_regions_lock();
 
   //
-  // Do we have room for another registered memory table entry?
+  // Find an entry to use and fill it in.  There must be one available,
+  // because we didn't underflow the free-entry-count check above.
   //
   for (mr_i = 0;
        mr_i < MAX_MEM_REGIONS && mem_regions.mregs[mr_i].addr != 0;
        mr_i++)
     ;
 
-  p = NULL;
-  if (mr_i < MAX_MEM_REGIONS) {
-    mem_region_t* mr = &mem_regions.mregs[mr_i];
+  assert(mr_i < MAX_MEM_REGIONS);
 
-    p = get_huge_pages(ALIGN_UP(size, get_hugepage_size()), GHP_DEFAULT);
+  mr = &mem_regions.mregs[mr_i];
+  mr->addr = (uint64_t) (uintptr_t) p;
+  mr->len = 1;
 
-    //
-    // If we got the memory, reserve the memory region slot we found.
-    //
-    if (p == NULL) {
-      DBG_P_LP(DBGF_MEMREG,
-               "chpl_regMemAlloc(%#zx): no hugepages",
-               size);
-    } else {
-      mr->addr = (uint64_t) (intptr_t) p;
-      mr->len = 1;
-
-      //
-      // Adjust the region count, if necessary.
-      //
-      if (mr_i >= mem_regions.mreg_cnt) {
-        mem_regions.mreg_cnt = mr_i + 1;
-        if (mem_regions.mreg_cnt > mreg_cnt_max)
-          mreg_cnt_max = mem_regions.mreg_cnt;
-      }
-
-      DBG_P_LP(DBGF_MEMREG,
-               "chpl_regMemAlloc(%#" PRIx64 "): "
-               "mregs[%d] = %#" PRIx64 ", cnt %d",
-               size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
-    }
-  } else {
-    static int spoke = 0;
-
-    if (!spoke) {
-      chpl_warning("out of registered memory region table entries!", 0, 0);
-      spoke = 1;
-    }
-
-    DBG_P_LP(DBGF_MEMREG,
-             "chpl_regMemAlloc(%#zx): no free table entries",
-             size);
+  //
+  // Adjust the region count, if necessary.
+  //
+  if (mr_i >= mem_regions.mreg_cnt) {
+    mem_regions.mreg_cnt = mr_i + 1;
+    if (mem_regions.mreg_cnt > mreg_cnt_max)
+      mreg_cnt_max = mem_regions.mreg_cnt;
   }
 
   mem_regions_unlock();
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_regMemAlloc(%#" PRIx64 "): "
+           "mregs[%d] = %#" PRIx64 ", cnt %d",
+           size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
 
   return p;
 }
@@ -2868,11 +2941,13 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   //
   // Find the memory region table entry for this memory.
   //
-  mr = mreg_for_addr(p, &mem_regions);
-  if (mr == NULL)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
+  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+       mr_i >= 0 && mr->addr != (uint64_t) p;
+       mr_i--, mr--)
+    ;
 
-  mr_i = (int) (mr - &mem_regions.mregs[0]);
+  if (mr_i < 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
 
   //
   // Fill in the length, which we set to 1 earlier to avoid lookups
@@ -2883,14 +2958,14 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   //
   // If we're in early setup and can't register memory yet then we're
   // done.  This entry will get registered and broadcast along with
-  // the static entries, when we get to that.
+  // the static entries, when we get to that.  Otherwise, register it.
   //
   if (!can_register_memory)
     return;
 
-  mem_regions_lock();
-
   register_mem_region(mr);
+
+  mem_regions_lock();
 
   //
   // Update the copies of our memory regions on all nodes.  If this
@@ -2907,6 +2982,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_regMemPostAlloc(): entry %d, bcast",
             mr_i);
+    PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr, sizeof(*mr));
   } else {
     const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
@@ -2916,8 +2992,10 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
             mr_i,
             (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
             (int) mem_regions.mreg_cnt);
+    PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(&mem_regions.mregs[mreg_cnt_public],
                     (mem_regions.mreg_cnt - mreg_cnt_public) * sizeof(*mr));
+    PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
   }
 
@@ -2982,13 +3060,13 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   //
   // Is this memory in our table?
   //
-  mr = mreg_for_addr(p, &mem_regions);
-  if (mr == NULL
-      || mr->addr != (uint64_t) p
-      || mr->len != size)
-    return false;
+  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mr->len != size);
+       mr_i--, mr--)
+    ;
 
-  mr_i = (int) (mr - &mem_regions.mregs[0]);
+  if (mr_i < 0)
+    return false;
 
   PERFSTATS_INC(deregMem_cnt);
 
@@ -2997,13 +3075,16 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
            p, size, mr_i);
 
   //
-  // Deregister the memory and empty the entry in our table. Note that even
-  // with single-threading we can't compress the table, because other threads
-  // may be doing lookups in it and they aren't locked out.
+  // Deregister the memory and empty the entry in our table.  Note that
+  // even with single-threading we can't compress the table or do
+  // anything else that would move entries around, because other threads
+  // may be doing lookups in it and they aren't locked out.  Also, we
+  // have to finish broadcasting the update before we unlock, because as
+  // soon as we unlock, the entry could be reused.
   //
-  mem_regions_lock();
-
   deregister_mem_region(mr);
+
+  mem_regions_lock();
 
   mr->addr = 0;
   mr->len = 0;
@@ -3035,15 +3116,19 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
             mr_i, (int) mem_regions.mreg_cnt);
+    PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
   } else {
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_regMemFree(): entry %d, bcast",
             mr_i);
+    PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr, sizeof(*mr));
   }
 
   mem_regions_unlock();
+
+  atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
   free_huge_pages(p);
 
@@ -3186,7 +3271,8 @@ void chpl_comm_pre_task_exit(int all)
 #ifdef DEBUG
     const int test = _DBG_DO(DBGF_MEMREG)
                      || (chpl_nodeID == 0
-                         && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM", false);
+                         && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM",
+                                                 false));
     FILE* f = debug_file;
 #else
     const int test = (chpl_nodeID == 0
