@@ -73,6 +73,14 @@ row vector, vector-vector multiplication is always treated as an inner-product,
 as the function name implies.
 An outer product can be computed with the :proc:`outer` function.
 
+**Domain maps**
+
+All of the functions in this module only support
+``DefaultRectangular`` arrays (the default domain map), unless explicitly
+specified in the function's documentation. Other domain maps
+are supported through submodules, such ``LinearAlgebra.Sparse`` for the
+``CS`` layout.
+
 **Promotion flattening**
 
 Promotion flattening is an unintended consequence of Chapel's
