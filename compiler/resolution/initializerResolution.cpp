@@ -244,6 +244,8 @@ static void filterInitCandidate(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
+static bool resolveInitializerBody(FnSymbol* fn);
+
 static void resolveInitializerMatch(FnSymbol* fn) {
   if (fn->isResolved() == false) {
     AggregateType* at = toAggregateType(fn->_this->type);
@@ -272,29 +274,39 @@ static void resolveInitializerMatch(FnSymbol* fn) {
       }
     }
 
-    fn->addFlag(FLAG_RESOLVED);
-
-    resolveBlockStmt(fn->body);
+    resolveInitializerBody(fn);
 
     if (wasGeneric == true && isClass(at) == true) {
       FnSymbol* classAlloc = buildClassAllocator(fn);
 
       normalize(classAlloc);
     }
-
-    if (tryFailure == false) {
-      resolveReturnType(fn);
-
-      at->initializerResolved = true;
-
-      insertAndResolveCasts(fn);
-
-      ensureInMethodList(fn);
-
-    } else {
-      fn->removeFlag(FLAG_RESOLVED);
-    }
   }
+}
+
+static bool resolveInitializerBody(FnSymbol* fn) {
+  bool retval = false;
+
+  fn->addFlag(FLAG_RESOLVED);
+
+  resolveBlockStmt(fn->body);
+
+  if (tryFailure == false) {
+    resolveReturnType(fn);
+
+    toAggregateType(fn->_this->type)->initializerResolved = true;
+
+    insertAndResolveCasts(fn);
+
+    ensureInMethodList(fn);
+
+    retval = true;
+
+  } else {
+    fn->removeFlag(FLAG_RESOLVED);
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
