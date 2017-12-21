@@ -1,43 +1,80 @@
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 
-// some forwards
-class ExpandForForall;
-static void expandYield(ExpandForForall* EV, CallExpr* yield) {} //vass
-static void expandTaskFnCall(ExpandForForall* EV, CallExpr* call, FnSymbol* taskFn) {} //vass
-static void expandForall(ExpandForForall* EV, ForallStmt* fs) {} //vass
+/////////// misc helpers ///////////
 
-/* vass - need this?
-// same as intentArgName()
-static const char* shadowVarName(int ix, const char* base) {
-  return astr("_x", istr(ix+1), "_", base);
+// vass is this the right thing to do?
+static void copyMap(SymbolMap& dest, SymbolMap& src) {
+  dest.copy(src);
 }
-*/
 
-class ExpandForForall : public AstVisitorTraverse {
-public:
+// Cf. copyBody() for inlineFunctions().
+static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
+                             Expr* anchor)
+{
+  SET_LINENO(iterCall);
 
-  // 'ibody' is a clone that is replacing 'fs'.
-  ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                  BlockStmt* iwrap, BlockStmt* ibody);
+  SymbolMap  map;
 
-  virtual bool enterCallExpr(CallExpr* node) {
-    if (node->isPrimitive(PRIM_YIELD)) {
-      expandYield(this, node);
-    } else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
-      expandTaskFnCall(this, node, taskFn);
+  BlockStmt* retval = NULL;
+
+  for_formals_actuals(formal, actual, iterCall) {
+    Symbol* sym = toSymExpr(actual)->symbol();
+
+    // Replace an immediate actual with a temp var "just in case"
+    if (sym->isImmediate() == true) {
+      VarSymbol* tmp  = newTemp("inlineImm", sym->type);
+
+      actual->replace(new SymExpr(tmp));
+
+      anchor->insertBefore(new DefExpr(tmp));
+      anchor->insertBefore(new CallExpr(PRIM_MOVE, tmp, actual));
+
+      sym = tmp;
     }
-    // There shouldn't be anything interesting inside the call.
-    return false;
+    if (formal->isRef() && !sym->isRef()) {
+      // When passing a value to a reference argument,
+      // create a reference temporary so that nothing in the
+      // inlined code changes meaning.
+
+      VarSymbol* tmp  = newTemp(astr("i_", formal->name),
+                                formal->type);
+      DefExpr*   def  = new DefExpr(tmp);
+      CallExpr*  move = NULL;
+
+      tmp->qual = QUAL_REF;
+      move      = new CallExpr(PRIM_MOVE,
+                               tmp,
+                               new CallExpr(PRIM_SET_REFERENCE, sym));
+
+      anchor->insertBefore(def);
+      anchor->insertBefore(move);
+
+      sym = tmp;
+    }
+
+    map.put(formal, sym);
   }
 
-  virtual bool enterForallStmt(ForallStmt* node) {
-    expandForall(this, node);
-    // expandForall() takes care of descending into 'node'
-    return false;
-  }
-};
+  retval = iterFn->body->copy(&map);
 
+  if (preserveInlinedLineNumbers == false) {
+    reset_ast_loc(retval, iterCall);
+  }
+
+  return retval;
+}
+
+/* Do we want to make this available to all compiler code? MF says "It should:
+* check isUserDefinedRecord and possibly is POD
+* error if a user-defined record has no auto copy
+* use PRIM_MOVE for non-user defined records
+* use autoCopy if one is defined, even for if isUserDefinedRecord returned false"
+*/
+//
+// Initialize 'dest' from 'init', which can be either a symbol or an expr.
+// Insert the initialization code before 'anchor'.
+//
 static void insertInitialization(Symbol* dest, Type* valType,
                                  BaseAST* init, Expr* anchor)
 {
@@ -56,11 +93,72 @@ static void insertInitialization(Symbol* dest, Type* valType,
   }
 }
 
+/* vass - need this?
+// same as intentArgName()
+static const char* shadowVarName(int ix, const char* base) {
+  return astr("_x", istr(ix+1), "_", base);
+}
+*/
+
+
+/////////// some forwards ///////////
+
+class ExpandForForall;
+static void expandYield(ExpandForForall* EV,
+                        CallExpr* yield);
+static void expandTaskFnCall(ExpandForForall* EV,
+                             CallExpr* call, FnSymbol* taskFn) {} //vass
+static void expandForall(ExpandForForall* EV,
+                         ForallStmt* fs) {} //vass
+
+
+/////////// ExpandForForall visitor ///////////
+
+class ExpandForForall : public AstVisitorTraverse {
+public:
+  ForallStmt* const forall;
+  FnSymbol* const parIter;
+  SymbolMap svar2clonevar;
+
+  // 'ibody' is a clone that is replacing 'fs'.
+  ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
+                  BlockStmt* iwrap, BlockStmt* ibody);
+
+  virtual bool enterCallExpr(CallExpr* node) {
+    if (node->isPrimitive(PRIM_YIELD)) {
+      expandYield(this, node);
+    } else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
+      expandTaskFnCall(this, node, taskFn);
+    }
+    // There shouldn't be anything interesting inside the call.
+    // expandTaskFnCall() takes care of descending into 'taskFn'.
+    return false;
+  }
+
+  virtual bool enterForallStmt(ForallStmt* node) {
+    expandForall(this, node);
+    // expandForall() takes care of descending into 'node'
+    return false;
+  }
+};
+
+
+/////////// constructor ///////////
+
+// Adds code to init+deinit the local op and the reduction state.
+// Updates 'map' with svar -> reduction state var.
 static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
                                  int ix, SymbolMap& map,
                                  Expr* aInit, Expr* aFini)
 {
-/* VASS TODO
+  INT_FATAL("vass TODO");
+
+/*
+NEW INSIGHT: just put everything in taskInit/Deinit blocks
+at resolution, so all we need to do now is to clone those blocks.
+*/
+
+/* vass TODO
 
   Symbol* parentOp = svar->outerVarSym();
 
@@ -77,9 +175,11 @@ fill them out, update as they are being cloned.
 */
 }
 
-
 ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                                 BlockStmt* iwrap, BlockStmt* ibody)
+                                 BlockStmt* iwrap, BlockStmt* ibody) :
+  forall(fs),
+  parIter(parIterFn),
+  svar2clonevar()
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
@@ -97,8 +197,8 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
 
   // When cloning the loop body of 'fs', replace each shadow variable
   // with the variable given by 'map'.
-  SymbolMap map;
-  int idx = 0; // vass - need this?
+  SymbolMap& map = this->svar2clonevar;
+  int idx = 0;
   for_shadow_vars(svar, temp1, fs) {
     idx++;
     switch (svar->intent) {
@@ -132,6 +232,7 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
       case TFI_CONST_REF:
         // Let us reference the outer variable directly, for simplicity.
         // NB we are not concerned with const checking any more.
+        // vass todo this does not transfer across (outlined) task functions.
         map.put(svar, svar->outerVarSym());
         break;
 
@@ -142,6 +243,29 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
   }
 }
 
+
+/////////// expandYield ///////////
+
+// Replace 'yield' with a clone of the forall loop body.
+// Recurse into the cloned body.
+static void expandYield(ExpandForForall* EV, CallExpr* yieldCall) {
+  SymbolMap map;
+  copyMap(map, EV->svar2clonevar);
+
+  // Also need to map the index variable to the yield value.
+  
+  SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
+  INT_ASSERT(yieldSE != NULL); // need more work otherwise
+
+  // There should not be any zippering.
+  Symbol* idxVar = EV->forall->singleInductionVar();
+
+  map.put(idxVar, yieldSE->symbol());
+}
+
+
+/////////// main driver ///////////
+
 static void lowerForallStmtsInline() {
   forv_Vec(ForallStmt, fs, gForallStmts)
   {
@@ -150,7 +274,7 @@ static void lowerForallStmtsInline() {
     // If this fails, need to filter out those FSes.
     INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
 
-    // We have converted zippered, if any, to the follower loop.
+    // We have converted zippering, if any, to a follower loop.
     INT_ASSERT(fs->numIteratedExprs() == 1);
     CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
     
@@ -160,12 +284,17 @@ static void lowerForallStmtsInline() {
     // We don't know yet what to do with these.
     INT_ASSERT(!parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR));
 
-    // Clone the iterator body. See expandIteratorInline().
-    BlockStmt* ibody = parIterFn->body->copy();
     // Place to put pre- and post- code.
-    BlockStmt* iwrap = new BlockStmt(ibody);
+    CallExpr*  ianch = new CallExpr("anchor");
+    BlockStmt* iwrap = new BlockStmt(ianch);
+
+    // Clone the iterator body.
+    // Cf. expandIteratorInline() and inlineCall().
+    BlockStmt* ibody = copyBodyPI(parIterFn, parIterCall, ianch);
+    
     // Let us remove 'fs' later, for debugging convenience.
     fs->insertAfter(iwrap);
+    ianch->replace(ibody);
 
     ExpandForForall expandV(fs, parIterFn, iwrap ,ibody);
     ibody->accept(&expandV);
