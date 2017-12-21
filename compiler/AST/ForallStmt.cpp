@@ -172,6 +172,13 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 // helpers
 /////////////////////////////////////////////////////////////////////////////
 
+// Get the index variable. Ensure it is the only one.
+Symbol* ForallStmt::singleInductionVar() const {
+  INT_ASSERT(fIterVars.length == 1);
+  DefExpr* ivdef = toDefExpr(fIterVars.head);
+  return ivdef->sym;
+}
+
 // Is 'expr' an iterable-expression for 'this' ?
 bool ForallStmt::isIteratedExpression(Expr* expr) {
   return expr->list && expr->list == &fIterExprs;

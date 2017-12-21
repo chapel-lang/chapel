@@ -59,6 +59,7 @@ public:
   static ForallStmt* fromForLoop(ForLoop* forLoop);
 
   // helpers
+  Symbol* singleInductionVar()     const;
   Expr* firstIteratedExpr()        const;
   int   numIteratedExprs()         const;
   bool  isIteratedExpression(Expr* expr);
