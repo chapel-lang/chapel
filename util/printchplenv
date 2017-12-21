@@ -12,7 +12,7 @@ Options:
   -h, --help    Show this help message and exit
 
   [shortcut]
-  --all         Shortcut for --compiler --runtime --launcher
+  --all         Shortcut for --compiler --runtime --launcher, includes defaults
 
   [content]
   --compiler    Select variables describing the configuration of the compiler
@@ -84,9 +84,9 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
     ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
     ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
-    ChapelEnv('CHPL_MAKE', RUNTIME | DEFAULT, 'make'),
+    ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
-    ChapelEnv('  CHPL_NETWORK_ATOMICS', RUNTIME | DEFAULT),
+    ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', RUNTIME | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
@@ -237,11 +237,6 @@ def filter_tidy(chpl_env):
     return True
 
 
-"""Filter CHPL_MAKE and CHPL_NETWORK_ATOMICS for --path (special cases)"""
-def filter_path(chpl_env):
-    return chpl_env.name not in ['CHPL_MAKE', '  CHPL_NETWORK_ATOMICS']
-
-
 """Filter variables that are not selected in contents
 Requires a content argument via functools.partial
 """
@@ -288,10 +283,6 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     filter_content = partial(_filter_content, contents=contents)
 
     envs = filter(filter_content, CHPL_ENVS)
-
-    # --path (special case)
-    if print_format == 'path':
-        envs = filter(filter_path, envs)
 
     # --overrides
     if 'overrides' in print_filters:
