@@ -266,7 +266,7 @@ void Symbol::addFlag(Flag flag) {
 
 void Symbol::copyFlags(const Symbol* other) {
   flags |= other->flags;
-  qual = other->qual;
+  qual   = other->qual;
 }
 
 
@@ -1838,7 +1838,11 @@ bool FnSymbol::tagIfGeneric() {
     if (result > 0) {
       addFlag(FLAG_GENERIC);
 
-      if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
+      if (retType != dtUnknown && hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+        if (AggregateType* at = toAggregateType(retType)) {
+          at->markAsGeneric();
+        }
+
         retType->symbol->addFlag(FLAG_GENERIC);
 
         if (result == 2) {
@@ -2819,11 +2823,14 @@ immediate_type(Immediate *imm) {
   return NULL;
 }
 
-VarSymbol *new_ImmediateSymbol(Immediate *imm) {
-  VarSymbol *s = uniqueConstantsHash.get(imm);
+VarSymbol* new_ImmediateSymbol(Immediate *imm) {
+  VarSymbol* s = uniqueConstantsHash.get(imm);
+
   if (s)
     return s;
-  Type *t = immediate_type(imm);
+
+  Type* t = immediate_type(imm);
+
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), t);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -2840,15 +2847,14 @@ VarSymbol *new_ImmediateSymbol(Immediate *imm) {
   return s;
 }
 
-Immediate *getSymbolImmediate(Symbol* sym) {
+Immediate* getSymbolImmediate(Symbol* sym) {
   Immediate* imm = NULL;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
     imm = var->immediate;
   }
+
   if (EnumSymbol* enumsym = toEnumSymbol(sym)) {
-    // We used to assert et->getIntegerType() here,
-    // but that assert fires when printing out AST during debugging
     imm = enumsym->getImmediate();
   }
 
