@@ -5,13 +5,14 @@ class C {
 }
 
 class D : C {
-  param rank: int;
-  var ranges : rank*range(int, BoundedRangeType.bounded, false);
+  param rank   : int;
+  var   ranges : rank * range(int, BoundedRangeType.bounded, false);
 
-  // terrifyingly, making this an initializer mucks with virtual dispatch
   proc init(param rankVal: int) {
     rank = rankVal;
+
     super.init();
+
     for i in 1..rank do
       ranges(i) = 1..i;
   }
