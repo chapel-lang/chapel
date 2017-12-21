@@ -149,15 +149,17 @@ static bool buildVirtualMaps() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (AggregateType* at = fn->getReceiver()) {
-      if (isNonGenericClass(at) == true) {
-        if (fn->isResolved()            == true      &&
+      if (at->isClass() == true) {
+        if (at->isGeneric() == false) {
+          if (fn->isResolved()            == true      &&
 
-            fn->hasFlag(FLAG_WRAPPER)   == false     &&
-            fn->hasFlag(FLAG_NO_PARENS) == false     &&
+              fn->hasFlag(FLAG_WRAPPER)   == false     &&
+              fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
-            fn->retTag                  != RET_PARAM &&
-            fn->retTag                  != RET_TYPE) {
-          addAllToVirtualMaps(fn, at);
+              fn->retTag                  != RET_PARAM &&
+              fn->retTag                  != RET_TYPE) {
+            addAllToVirtualMaps(fn, at);
+          }
         }
       }
     }
@@ -168,15 +170,15 @@ static bool buildVirtualMaps() {
 
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
-  forv_Vec(Type, t, pct->dispatchChildren) {
-    AggregateType* ct = toAggregateType(t);
+  forv_Vec(AggregateType, ct, pct->dispatchChildren) {
+    if (ct->isGeneric() == false) {
+      if (ct->mayHaveInstances() == true) {
+        addToVirtualMaps(pfn, ct);
+      }
 
-    if (ct->mayHaveInstances() == true) {
-      addToVirtualMaps(pfn, ct);
+      // Recurse over this child's children
+      addAllToVirtualMaps(pfn, ct);
     }
-
-    // Recurse over this child's children
-    addAllToVirtualMaps(pfn, ct);
   }
 }
 
