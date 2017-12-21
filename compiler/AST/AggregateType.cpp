@@ -392,6 +392,19 @@ void AggregateType::accept(AstVisitor* visitor) {
   }
 }
 
+bool AggregateType::hasInitializers() const {
+  bool retval = false;
+
+  if (initializerStyle == DEFINES_INITIALIZER) {
+    retval = true;
+
+  } else {
+    retval = wantsDefaultInitializer();
+  }
+
+  return retval;
+}
+
 // For a record
 //     Return true if there are uses of new for this type
 //

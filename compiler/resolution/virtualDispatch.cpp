@@ -213,14 +213,16 @@ static void addToVirtualMaps(FnSymbol*      pfn,
   } else {
     FnSymbol* fn = instantiate(cfn, subs);
 
-    FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
-    BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
+    if (ct->hasInitializers() == false) {
+      FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
+      BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
 
-    if (instantiationPoint == NULL) {
-      instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
+      if (instantiationPoint == NULL) {
+        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
+      }
+
+      fn->instantiationPoint = instantiationPoint;
     }
-
-    fn->instantiationPoint = instantiationPoint;
 
     resolveOverride(pfn, fn);
   }
