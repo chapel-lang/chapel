@@ -117,8 +117,7 @@ static void addAllToVirtualMaps(FnSymbol*      pfn,
 
 static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
-                             FnSymbol*      cfn,
-                             AggregateType* type);
+                             FnSymbol*      cfn);
 
 static void collectMethods(FnSymbol*               pfn,
                            AggregateType*          ct,
@@ -175,7 +174,7 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
         collectMethods(pfn, ct, methods);
 
         for_vector(FnSymbol, cfn, methods) {
-          addToVirtualMaps(pfn, ct, cfn, ct);
+          addToVirtualMaps(pfn, ct, cfn);
         }
       }
 
@@ -187,12 +186,11 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 
 static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
-                             FnSymbol*      cfn,
-                             AggregateType* type) {
+                             FnSymbol*      cfn) {
   SymbolMap subs;
 
   if (cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    subs.put(cfn->getFormal(2), type->symbol);
+    subs.put(cfn->getFormal(2), ct->symbol);
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -211,7 +209,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
 
   } else {
     if (FnSymbol* fn = instantiate(cfn, subs)) {
-      FnSymbol*  typeConstr         = type->defaultTypeConstructor;
+      FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
       BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
 
       if (instantiationPoint == NULL) {
