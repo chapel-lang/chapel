@@ -187,20 +187,23 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
                              FnSymbol*      cfn) {
-  SymbolMap subs;
+  ArgSymbol*     _this   = cfn->getFormal(2);
+  AggregateType* _thisAt = toAggregateType(_this->type);
+  SymbolMap      subs;
 
-  if (cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    subs.put(cfn->getFormal(2), ct->symbol);
+  if (_thisAt->isGeneric() == true) {
+    subs.put(_this, ct->symbol);
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {
-    ArgSymbol* arg = cfn->getFormal(i);
+    ArgSymbol* carg = cfn->getFormal(i);
+    ArgSymbol* parg = pfn->getFormal(i);
 
-    if (arg->intent == INTENT_PARAM) {
-      subs.put(arg, paramMap.get(pfn->getFormal(i)));
+    if (carg->intent == INTENT_PARAM) {
+      subs.put(carg, paramMap.get(parg));
 
-    } else if (arg->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      subs.put(arg, pfn->getFormal(i)->type->symbol);
+    } else if (carg->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      subs.put(carg, parg->type->symbol);
     }
   }
 
@@ -208,18 +211,18 @@ static void addToVirtualMaps(FnSymbol*      pfn,
     resolveOverride(pfn, cfn);
 
   } else {
-    if (FnSymbol* fn = instantiate(cfn, subs)) {
-      FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
-      BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
+    FnSymbol* fn = instantiate(cfn, subs);
 
-      if (instantiationPoint == NULL) {
-        instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
-      }
+    FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
+    BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
 
-      fn->instantiationPoint = instantiationPoint;
-
-      resolveOverride(pfn, fn);
+    if (instantiationPoint == NULL) {
+      instantiationPoint = toBlockStmt(typeConstr->defPoint->parentExpr);
     }
+
+    fn->instantiationPoint = instantiationPoint;
+
+    resolveOverride(pfn, fn);
   }
 }
 
