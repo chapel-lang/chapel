@@ -116,9 +116,6 @@ static void addAllToVirtualMaps(FnSymbol*      pfn,
                                 AggregateType* pct);
 
 static void addToVirtualMaps(FnSymbol*      pfn,
-                             AggregateType* ct);
-
-static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
                              FnSymbol*      cfn,
                              AggregateType* type);
@@ -173,23 +170,17 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(AggregateType, ct, pct->dispatchChildren) {
     if (ct->isGeneric() == false) {
       if (ct->mayHaveInstances() == true) {
-        addToVirtualMaps(pfn, ct);
+        std::vector<FnSymbol*> methods;
+
+        collectMethods(pfn, ct, methods);
+
+        for_vector(FnSymbol, cfn, methods) {
+          addToVirtualMaps(pfn, ct, cfn, ct);
+        }
       }
 
       // Recurse over this child's children
       addAllToVirtualMaps(pfn, ct);
-    }
-  }
-}
-
-static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  if (ct->defaultTypeConstructor->isResolved() == true) {
-    std::vector<FnSymbol*> methods;
-
-    collectMethods(pfn, ct, methods);
-
-    for_vector(FnSymbol, cfn, methods) {
-      addToVirtualMaps(pfn, ct, cfn, ct);
     }
   }
 }
