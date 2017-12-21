@@ -3,11 +3,6 @@
 
 /////////// misc helpers ///////////
 
-// vass is this the right thing to do?
-static void copyMap(SymbolMap& dest, SymbolMap& src) {
-  dest.copy(src);
-}
-
 // Cf. copyBody() for inlineFunctions().
 static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
                              Expr* anchor)
@@ -107,7 +102,7 @@ class ExpandForForall;
 static void expandYield(ExpandForForall* EV,
                         CallExpr* yield);
 static void expandTaskFnCall(ExpandForForall* EV,
-                             CallExpr* call, FnSymbol* taskFn) {} //vass
+                             CallExpr* call, FnSymbol* taskFn);
 static void expandForall(ExpandForForall* EV,
                          ForallStmt* fs) {} //vass
 
@@ -119,10 +114,12 @@ public:
   ForallStmt* const forall;
   FnSymbol* const parIter;
   SymbolMap svar2clonevar;
+  TaskFnCopyMap& taskFnCopies;
 
   // 'ibody' is a clone that is replacing 'fs'.
-  ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                  BlockStmt* iwrap, BlockStmt* ibody);
+  ExpandForForall(ForallStmt* fs, FnSymbol* parIterArg,
+                  BlockStmt* iwrap, BlockStmt* ibody,
+                  TaskFnCopyMap& taskFnCopiesArg);
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -176,10 +173,12 @@ fill them out, update as they are being cloned.
 }
 
 ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                                 BlockStmt* iwrap, BlockStmt* ibody) :
+                                 BlockStmt* iwrap, BlockStmt* ibody,
+                                 TaskFnCopyMap& taskFnCopiesArg) :
   forall(fs),
   parIter(parIterFn),
-  svar2clonevar()
+  svar2clonevar(),
+  taskFnCopies(taskFnCopiesArg)
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
@@ -250,17 +249,30 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
 // Recurse into the cloned body.
 static void expandYield(ExpandForForall* EV, CallExpr* yieldCall) {
   SymbolMap map;
-  copyMap(map, EV->svar2clonevar);
+  map.copy(EV->svar2clonevar);  // vass is this the right thing to do?
 
   // Also need to map the index variable to the yield value.
-  
   SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
   INT_ASSERT(yieldSE != NULL); // need more work otherwise
-
   // There should not be any zippering.
   Symbol* idxVar = EV->forall->singleInductionVar();
-
   map.put(idxVar, yieldSE->symbol());
+
+  BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
+  yieldCall->replace(bodyClone);
+
+  // A yield stmt does not create any parallelism, so use the same visitor.
+  bodyClone->accept(EV);
+}
+
+
+/////////// expandTaskFnCall ///////////
+
+static void expandTaskFnCall(ExpandForForall* EV,
+                             CallExpr* call, FnSymbol* taskFn) {
+
+
+  VASS CONTINUE HERE;
 }
 
 
@@ -296,7 +308,8 @@ static void lowerForallStmtsInline() {
     fs->insertAfter(iwrap);
     ianch->replace(ibody);
 
-    ExpandForForall expandV(fs, parIterFn, iwrap ,ibody);
+    TaskFnCopyMap   taskFnCopies;
+    ExpandForForall expandV(fs, parIterFn, iwrap, ibody, taskFnCopies);
     ibody->accept(&expandV);
 
     fs->remove();
