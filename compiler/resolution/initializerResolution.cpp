@@ -43,7 +43,7 @@ static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
                                  Vec<ResolutionCandidate*>& candidates);
 
-static void resolveMatch(FnSymbol* fn);
+static void resolveInitializerMatch(FnSymbol* fn);
 
 static void makeRecordInitWrappers(CallExpr* call);
 
@@ -60,7 +60,7 @@ FnSymbol* resolveInitializer(CallExpr* call) {
 
   INT_ASSERT(call->isResolved());
 
-  resolveMatch(call->resolvedFunction());
+  resolveInitializerMatch(call->resolvedFunction());
 
   if (isGenericRecord(call->get(2)->typeInfo())) {
     NamedExpr* named   = toNamedExpr(call->get(2));
@@ -154,15 +154,14 @@ static void resolveInitCall(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void      doGatherInitCandidates(CallInfo&                  info,
-                                        Vec<FnSymbol*>&            visibleFns,
-                                        bool                       generated,
-                                        Vec<ResolutionCandidate*>& candidates);
+static void doGatherInitCandidates(CallInfo&                  info,
+                                   Vec<FnSymbol*>&            visibleFns,
+                                   bool                       generated,
+                                   Vec<ResolutionCandidate*>& candidates);
 
-static void      filterInitCandidate(CallInfo&                  info,
-                                     FnSymbol*                  fn,
-                                     Vec<ResolutionCandidate*>& candidates);
-
+static void filterInitCandidate(CallInfo&                  info,
+                                FnSymbol*                  fn,
+                                Vec<ResolutionCandidate*>& candidates);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -245,35 +244,39 @@ static void filterInitCandidate(CallInfo&                  info,
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveMatch(FnSymbol* fn) {
+static void resolveInitializerMatch(FnSymbol* fn) {
   if (fn->isResolved() == false) {
+    AggregateType* at = toAggregateType(fn->_this->type);
+
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn:\n");
       print_view(fn);
       gdbShouldBreakHere();
     }
 
-    fn->addFlag(FLAG_RESOLVED);
-
     insertFormalTemps(fn);
 
-    bool wasGeneric = fn->_this->type->symbol->hasFlag(FLAG_GENERIC);
+    bool wasGeneric = at->symbol->hasFlag(FLAG_GENERIC);
 
     if (wasGeneric == true) {
-      AggregateType* at  = toAggregateType(fn->_this->type);
-      bool           res = at->setFirstGenericField();
+      INT_ASSERT(at);
+
+      bool res = at->setFirstGenericField();
 
       if (at->isClass() == true) {
-        if (at->dispatchParents.v[0]                                == NULL ||
-            at->dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == false) {
+        AggregateType* parent = at->dispatchParents.v[0];
+
+        if (parent->symbol->hasFlag(FLAG_GENERIC) == false) {
           INT_ASSERT(res);
         }
       }
     }
 
+    fn->addFlag(FLAG_RESOLVED);
+
     resolveBlockStmt(fn->body);
 
-    if (wasGeneric == true && isClass(fn->_this->type) == true) {
+    if (wasGeneric == true && isClass(at) == true) {
       FnSymbol* classAlloc = buildClassAllocator(fn);
 
       normalize(classAlloc);
@@ -282,12 +285,10 @@ static void resolveMatch(FnSymbol* fn) {
     if (tryFailure == false) {
       resolveReturnType(fn);
 
-      toAggregateType(fn->_this->type)->initializerResolved = true;
+      at->initializerResolved = true;
 
-      // insert casts as necessary
       insertAndResolveCasts(fn);
 
-      // make sure methods are in the methods list
       ensureInMethodList(fn);
 
     } else {
