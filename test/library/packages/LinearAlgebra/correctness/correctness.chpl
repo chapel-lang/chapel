@@ -390,7 +390,7 @@ config const correctness = true;
                  eltType=real);
   var Mtrace = 15.0;
   var t = trace(M);
-  assertEqual(Mtrace, t);
+  assertEqual(Mtrace, t, "trace(M)");
 }
 
 /* diag */
@@ -671,13 +671,6 @@ config const correctness = true;
     assertEqual(AI, A, "dot(A, I)");
   }
 
-  {
-    var A = Matrix([0,1,0,3],[0,0,0,2],[1,0,0,0]);
-    var spsA = CSRMatrix(A);
-
-    const AAT = dot(A, A.T);
-    //const spsAAT =
-  }
 
   /* dot - matrix-vector */
   {
@@ -685,7 +678,7 @@ config const correctness = true;
     var v: [0..#3] real = 2;
     var Av = dot(A, v);
     var A2 = 2*A;
-    assertEqual(Av, A2);
+    assertEqual(Av, A2, 'A.dot(v)');
   }
 
   {
@@ -694,7 +687,7 @@ config const correctness = true;
     var Asps = CSRMatrix(A);
     var v = Vector(1,2,3);
     const Av = Vector(3, 5);
-    assertEqual(Asps.dot(v), Av);
+    assertEqual(Asps.dot(v), Av, 'Asps.dot(v)');
   }
 
   {
@@ -742,7 +735,7 @@ config const correctness = true;
     var v: [0..#3] real = 2;
     var Av = A.dot(v);
     var A2 = 2*A;
-    assertEqual(Av, A2);
+    assertEqual(Av, A2, 'A.dot(v)');
   }
 
   /* .dot - vector-matrix */
@@ -751,7 +744,7 @@ config const correctness = true;
     var v: [0..#3] real = 2;
     var Av = v.dot(A);
     var A2 = 2*A;
-    assertEqual(Av, A2);
+    assertEqual(Av, A2, 'v.dot(A)');
   }
 
   {
@@ -760,7 +753,7 @@ config const correctness = true;
     var Asps = CSRMatrix(A);
     var v = Vector(2,3);
     const Av = Vector(2, 5, 3);
-    assertEqual(v.dot(Asps), Av);
+    assertEqual(v.dot(Asps), Av, 'v.dot(Asps)');
   }
 
 
@@ -806,7 +799,7 @@ config const correctness = true;
 // Helpers
 //
 
-proc assertEqual(X, Y, msg="") {
+proc assertEqual(X, Y, msg) {
   if !correctness then writeln(msg);
   if X != Y {
     writeln("Test Failed: ", msg);
@@ -815,7 +808,7 @@ proc assertEqual(X, Y, msg="") {
 }
 
 
-proc assertEqual(X: [], Y: [], msg="") where isArrayValue(X) && isArrayValue(Y)
+proc assertEqual(X: [], Y: [], msg) where isArrayValue(X) && isArrayValue(Y)
 {
   if !correctness then writeln(msg);
   if X.shape != Y.shape {
@@ -845,7 +838,7 @@ proc _array.equals(that: _array) where Sparse.isCSArr(that) && Sparse.isCSArr(th
 }
 
 
-proc assertEqual(X: _tuple, Y: _tuple, msg="") {
+proc assertEqual(X: _tuple, Y: _tuple, msg) {
   if !correctness then writeln(msg);
   if X.size != Y.size {
     writeln("Test Failed: ", msg);
