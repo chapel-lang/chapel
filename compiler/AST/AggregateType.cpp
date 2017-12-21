@@ -392,6 +392,25 @@ void AggregateType::accept(AstVisitor* visitor) {
   }
 }
 
+// For a record
+//     Return true if there are uses of new for this type
+//
+// For a class
+//     Return true if there are uses of new or if instances
+//     will be allocated via inheritance
+bool AggregateType::mayHaveInstances() const {
+  bool retval = false;
+
+  if (defaultTypeConstructor != NULL) {
+    retval = defaultTypeConstructor->isResolved();
+
+  } else {
+    retval = initializerResolved;
+  }
+
+  return retval;
+}
+
 // Determine the index for the first generic field (if present).
 // Return true if a generic field was found.
 bool AggregateType::setFirstGenericField() {

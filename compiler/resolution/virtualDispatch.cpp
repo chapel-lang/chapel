@@ -171,7 +171,7 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(Type, t, pct->dispatchChildren) {
     AggregateType* ct = toAggregateType(t);
 
-    if (ct->defaultTypeConstructor != NULL) {
+    if (ct->mayHaveInstances() == true) {
       addToVirtualMaps(pfn, ct);
     }
 

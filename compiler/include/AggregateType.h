@@ -84,6 +84,8 @@ public:
 
   void                        addDeclarations(Expr* expr);
 
+  bool                        mayHaveInstances()                         const;
+
   void                        codegenDef();
 
   void                        codegenPrototype();
