@@ -1759,6 +1759,24 @@ void AggregateType::buildCopyInitializer() {
 
   _this->addFlag(FLAG_ARG_THIS);
 
+  // Detect if the type has at least one generic field, so we should mark the
+  // "other" arg as generic.
+  for_fields(fieldDefExpr, this) {
+    if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
+          strcmp(field->name, "outer")) {
+        if (field->hasFlag(FLAG_PARAM) ||
+            field->isType() == true    ||
+            (field->defPoint->init     == NULL &&
+             field->defPoint->exprType == NULL)) {
+
+          if (other->hasFlag(FLAG_MARKED_GENERIC) == false)
+            other->addFlag(FLAG_MARKED_GENERIC);
+        }
+      }
+    }
+  }
+
   fn->insertFormalAtTail(_mt);
   fn->insertFormalAtTail(_this);
   fn->insertFormalAtTail(other);
