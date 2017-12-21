@@ -392,11 +392,9 @@ void AggregateType::accept(AstVisitor* visitor) {
   }
 }
 
-// Returns true if the type has generic fields, false otherwise.
-// If the index of the first generic field has not previously been set, set it.
+// Determine the index for the first generic field (if present).
+// Return true if a generic field was found.
 bool AggregateType::setFirstGenericField() {
-  bool retval = true;
-
   if (genericField == 0) {
     int idx = 1;
 
@@ -405,8 +403,9 @@ bool AggregateType::setFirstGenericField() {
           field->hasFlag(FLAG_PARAM)         == true ||
           (field->defPoint->init     == NULL &&
            field->defPoint->exprType == NULL &&
-           field->type == dtUnknown)) {
+           field->type               == dtUnknown)) {
         genericField = idx;
+        symbol->addFlag(FLAG_GENERIC);
         break;
 
       } else {
@@ -415,34 +414,29 @@ bool AggregateType::setFirstGenericField() {
     }
 
     if (isClass() == true) {
-      if (dispatchParents.v[0]                                != NULL &&
-          dispatchParents.v[0]->symbol->hasFlag(FLAG_GENERIC) == true) {
+      AggregateType* parent = dispatchParents.v[0];
 
-        if (AggregateType* parent = toAggregateType(dispatchParents.v[0])) {
-          if (parent->setFirstGenericField() == false) {
-            INT_ASSERT(false);
-          }
-        }
+      if (parent->isGeneric() == true) {
+        parent->setFirstGenericField();
       }
-    }
-
-    if (genericField != 0) {
-      symbol->addFlag(FLAG_GENERIC);
-    } else {
-      retval = false;
     }
   }
 
-  return retval;
+  return (genericField != 0) ? true : false;
 }
 
-// Returns an instantiation of this AggregateType at the given index.  If the
-// index is earlier than this AggregateType's first unsubstituted generic field,
-// will just return itself.  Otherwise, this method will check the list of
-// instantiations for the first unsubstituted generic field to see if we have
-// previously made an instantiation for the provided argument and will return
-// that instantiation if we find one.  Otherwise, will create a new
-// instantiation with the given argument and will return that.
+// Returns an instantiation of this AggregateType at the given index.
+//
+// If the index is earlier than this AggregateType's first unsubstituted
+// generic field, will just return itself.
+
+// Otherwise, this method will check the list of instantiations for the
+// first unsubstituted generic field to see if we have previously made
+// an instantiation for the provided argument and will return that
+// instantiation if we find one.
+
+// Otherwise, will create a new instantiation with the given
+// argument and will return that.
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   // If the index of the field is prior to the index of the next generic field
   // then trivially return ourselves
@@ -857,8 +851,9 @@ void AggregateType::createOuterWhenRelevant() {
     if (outerType->initializerStyle == DEFINES_INITIALIZER ||
         initializerStyle            == DEFINES_INITIALIZER) {
       if (outerType->isGeneric() || isGeneric()) {
-        USR_FATAL(this, "initializers not supported on nested types when either"
-                  " type is generic");
+        USR_FATAL(this,
+                  "initializers not supported on nested types "
+                  "when either type is generic");
       }
     }
 
@@ -1218,8 +1213,9 @@ void AggregateType::buildConstructor() {
           if (at->initializerStyle == DEFINES_INITIALIZER ||
               at->parentDefinesInitializer() == true) {
             // at->defaultInitializer will still be NULL
-            USR_FATAL(this, "Cannot create default constructor on type '%s',"
-                      " which inherits from a type that defines an initializer",
+            USR_FATAL(this,
+                      "Cannot create default constructor on type '%s', which "
+                      "inherits from a type that defines an initializer",
                       symbol->name);
           }
         }
@@ -1678,7 +1674,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
           // First, ensure we have a default initializer for the parent
           if (parent->defaultInitializer == NULL) {
             // ... but only if it is valid to do so
-            if (parent->wantsDefaultInitializer()) {
+            if (parent->wantsDefaultInitializer() == true) {
               parent->buildDefaultInitializer();
             }
           }
@@ -1773,10 +1769,10 @@ bool AggregateType::needsConstructor() {
     // Defining a constructor means we need a default constructor
     return true;
   } else {
-    // The above two branches are only relevant in the recursive version of
-    // this call, as the outside call site for this function has already ensured
-    // that the type which is the entry point has defined neither an initializer
-    // nor a constructor.
+    // The above two branches are only relevant in the recursive version
+    // of this call, as the outside call site for this function has
+    // already ensured that the type which is the entry point has defined
+    // neither an initializer nor a constructor.
 
     // Classes that define an initialize() method need a default constructor
     forv_Vec(FnSymbol, method, methods) {
@@ -1805,7 +1801,6 @@ bool AggregateType::needsConstructor() {
   return false;
 }
 
-
 bool AggregateType::parentDefinesInitializer() const {
   bool retval = false;
 
@@ -1813,6 +1808,7 @@ bool AggregateType::parentDefinesInitializer() const {
     if (AggregateType* pt = dispatchParents.v[0]) {
       if (pt->initializerStyle == DEFINES_INITIALIZER) {
         retval = true;
+
       } else {
         retval = pt->parentDefinesInitializer();
       }
@@ -1845,7 +1841,6 @@ bool AggregateType::wantsDefaultInitializer() const {
              mod->modTag == MOD_INTERNAL ||
              mod->modTag == MOD_STANDARD) {
     retval = false;
-
 
   // No default initializers if the --force-initializers flag is not used
   } else if (fUserDefaultInitializers == false) {
