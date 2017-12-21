@@ -359,9 +359,15 @@ Oh dear!
   in LibraryY.setup
   Global is 0.0
 
-What's going wrong? Function disambiguation rules prefer a more specific match over a more visible one, so the call setup(x) that used to rely on a coercion from int to real now resolves to the function in the other library that doesn't require a coercion.
+What's going wrong? Function disambiguation rules prefer a more specific
+match, so the call setup(x) that used to rely on a coercion from int to
+real now resolves to the function in the other library that doesn't
+require a coercion. Note that in this case, the two candidate setup
+functions are equally visible.
 
-Solution: Can visibility take priority over specificity in resolution? Or could it be an error if these don't match? D's overload sets are an example.
+Solution: D's overload sets solve this problem by making it an error to
+combine overloads for a particular function name from different sources
+unless you opt-in.
 
 Unexpected Base Class Additions
 +++++++++++++++++++++++++++++++
@@ -659,23 +665,30 @@ Summary of Solutions
 * adjust the resolution cache to allow for different instantiations of
   the same generic function that is used in different scopes.
 * adjust the priority of a more specific match over a more visible match
+
   * could try simply making more visible be more important than more specific
   * could try something inspired by the D overload sets idea
+
 * Require an 'override' keyword to mark functions that should be
   overriding a base class method.
+
   * Consider allowing 'pure virtual' or non-overrideable methods
+
 * Consider adding some sort of error in the event that some overloads of
   a method are overridden but some are not.
 
 What is this overload sets idea?
- * an "overload sets" is a group of functions with the same name declared
-   in the same scope.
-   * perform overload resolution independently on each overload set
-   * no match in any overload set, then error
-   * match in one overload set, OK
-   * match in multiple overload sets, error
- * introduce a language mechanism to opt-in to merging overload sets. In
-   D, this is the 'alias' keyword.
+
+* an "overload sets" is a group of functions with the same name declared
+  in the same scope.
+
+  * perform overload resolution independently on each overload set
+  * no match in any overload set, then error
+  * match in one overload set, OK
+  * match in multiple overload sets, error
+
+* introduce a language mechanism to opt-in to merging overload sets. In
+  D, this is the 'alias' keyword.
 
 
 More About Generic Instantiations
@@ -858,6 +871,7 @@ Point-of-instantiation Proposal
 +++++++++++++++++++++++++++++++
 
 As we have seen above, point-of-instantiation is problematic because:
+
  * it can result in surprising behavior
  * it interferes with improvements to ``private``
 
