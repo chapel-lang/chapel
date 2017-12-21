@@ -281,9 +281,7 @@ static void resolveInitializerMatch(FnSymbol* fn) {
 
         resolveInitializerBody(fn);
 
-        FnSymbol* classAlloc = buildClassAllocator(fn);
-
-        normalize(classAlloc);
+        buildClassAllocator(fn);
 
       } else {
         INT_ASSERT(false);
