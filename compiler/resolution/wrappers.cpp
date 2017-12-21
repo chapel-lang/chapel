@@ -112,6 +112,8 @@ formalToDefaultExprEntryMap formalToDefaultExprEntry;
 *                                                                             *
 ************************************** | *************************************/
 
+static bool fnIsDefaultInit(FnSymbol* fn);
+
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
                                 std::vector<ArgSymbol*>  actualIdxToFormal,
@@ -119,9 +121,13 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
 
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
-    // TODO - remove this branch of the conditional once
-    // initializers have replaced the default constructor
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+      fnIsDefaultInit(fn)) {
+    // TODO:
+    //  * remove fnIsDefaultInit component of the conditional
+    //    once default init uses 'in' intent to move args to fields.
+    //  * remove this branch of the conditional once
+    //    initializers have replaced the default constructor
 
     if (numActuals < fn->numFormals()) {
       retval = wrapDefaultedFormals(retval, info, actualIdxToFormal);
@@ -179,6 +185,13 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   }
 
   return retval;
+}
+
+static bool fnIsDefaultInit(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+         fn->hasFlag(FLAG_LAST_RESORT) &&
+         (0 == strcmp(fn->name, "init") ||
+          0 == strcmp(fn->name, "_new"));
 }
 
 /************************************* | **************************************
@@ -568,7 +581,6 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
      tests are a good place to start:
 
      test/functions/bradc/defaultVals/defaultArrCausesCopy.chpl
-     test/functions/bradc/defaultVals/defaultArrCausesCopy-reffn.chpl
      test/functions/default-arguments/iterator-default-arguments.chpl
      test/memory/figueroa/LeakedMemory6.chpl
    */

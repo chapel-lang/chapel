@@ -60,6 +60,28 @@ public:
 
   virtual void                printDocs(std::ostream* file, unsigned int tabs);
 
+  bool                        isClass()                                  const;
+  bool                        isRecord()                                 const;
+  bool                        isUnion()                                  const;
+
+  bool                        isGeneric()                                const;
+  void                        markAsGeneric();
+
+  const char*                 classStructName(bool standalone);
+
+  int                         numFields()                                const;
+
+  Symbol*                     getField(int i)                            const;
+
+  Symbol*                     getField(const char* name,
+                                       bool        fatal = true)         const;
+
+  int                         getFieldPosition(const char* name,
+                                               bool        fatal = true);
+
+  // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
+  QualifiedType               getFieldType(Expr* e);
+
   void                        addDeclarations(Expr* expr);
 
   void                        codegenDef();
@@ -75,33 +97,16 @@ public:
                                                     bool        nested,
                                                     const char* baseOffset);
 
-  // The following two methods are used for types which define initializers
-  bool                        setNextGenericField();
+  bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
-  AggregateType*              getInstantiationParent(AggregateType* parentType);
+  AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
-                                                    FnSymbol* fn);
+                                                    FnSymbol*  fn);
 
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
-
-  const char*                 classStructName(bool standalone);
-
-  int                         getMemberGEP(const char* name);
-
-  int                         getFieldPosition(const char* name,
-                                               bool        fatal = true);
-
-  Symbol*                     getField(const char* name, bool fatal = true) const;
-  Symbol*                     getField(int i)                            const;
-
-  // e is as used in PRIM_GET_MEMBER/PRIM_GET_SVEC_MEMBER
-  QualifiedType               getFieldType(Expr* e);
-
-  int                         numFields()                                const;
-
 
   DefExpr*                    toLocalField(const char* name)             const;
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
@@ -110,32 +115,32 @@ public:
   DefExpr*                    toSuperField(SymExpr*  expr);
   DefExpr*                    toSuperField(CallExpr* expr);
 
-  bool                        isClass()                                  const;
-  bool                        isRecord()                                 const;
-  bool                        isUnion()                                  const;
-
-  bool                        isGeneric()                                const;
-  void                        markAsGeneric();
+  int                         getMemberGEP(const char* name);
 
   void                        createOuterWhenRelevant();
+
   void                        buildConstructors();
 
   void                        addRootType();
 
   void                        addClassToHierarchy();
 
+  bool                        parentDefinesInitializer()                 const;
+
+  bool                        wantsDefaultInitializer()                  const;
+
+  void                        buildDefaultInitializer();
+
+
+  //
+  // Public fields
+  //
+
   AggregateTag                aggregateTag;
 
   FnSymbol*                   defaultTypeConstructor;
-  FnSymbol*                   defaultInitializer;
-                              // This is the compiler-supplied
-                              // default-initializer.
-                              // It provides initial values for the
-                              // fields in an aggregate type.
 
-  bool                        parentDefinesInitializer();
-  bool                        wantsDefaultInitializer();
-  void                        buildDefaultInitializer();
+  FnSymbol*                   defaultInitializer;
 
   void                        buildCopyInitializer();
 
@@ -203,14 +208,18 @@ private:
                                                VarSymbol* field)         const;
 
   void                        buildConstructor();
+
   bool                        needsConstructor();
+
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap);
-  void                        fieldToArgType(DefExpr* fieldDef,
+
+  void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
+
   bool                        addSuperArgs(FnSymbol*                    fn,
                                            const std::set<const char*>& names);
 
