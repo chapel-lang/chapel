@@ -183,33 +183,13 @@ static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
 }
 
 static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
-    if (ct->defaultTypeConstructor->isResolved() == true) {
-      std::vector<FnSymbol*> methods;
-
-      collectMethods(pfn, ct, methods);
-
-      for_vector(FnSymbol, cfn, methods) {
-        addToVirtualMaps(pfn, ct, cfn, ct);
-      }
-    }
-
-  } else {
-    FnSymbol*              typeConstr = ct->defaultTypeConstructor;
+  if (ct->defaultTypeConstructor->isResolved() == true) {
     std::vector<FnSymbol*> methods;
 
     collectMethods(pfn, ct, methods);
 
     for_vector(FnSymbol, cfn, methods) {
-      forv_Vec(AggregateType, at, gAggregateTypes) {
-        if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
-          if (typeConstrOther->instantiatedFrom == typeConstr) {
-            if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-              addToVirtualMaps(pfn, ct, cfn, at);
-            }
-          }
-        }
-      }
+      addToVirtualMaps(pfn, ct, cfn, ct);
     }
   }
 }
@@ -220,8 +200,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* type) {
   SymbolMap subs;
 
-  if (ct->symbol->hasFlag(FLAG_GENERIC)                      == true ||
-      cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+  if (cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
     subs.put(cfn->getFormal(2), type->symbol);
   }
 
