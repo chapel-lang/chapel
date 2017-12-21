@@ -258,28 +258,27 @@ static void resolveInitializerMatch(FnSymbol* fn) {
 
     insertFormalTemps(fn);
 
-    bool wasGeneric = at->symbol->hasFlag(FLAG_GENERIC);
+    if (at->isGeneric() == false) {
+      resolveInitializerBody(fn);
 
-    if (wasGeneric == true) {
-      INT_ASSERT(at);
-
+    } else {
       bool res = at->setFirstGenericField();
 
       if (at->isClass() == true) {
         AggregateType* parent = at->dispatchParents.v[0];
 
-        if (parent->symbol->hasFlag(FLAG_GENERIC) == false) {
+        if (parent->isGeneric() == false) {
           INT_ASSERT(res);
         }
       }
-    }
 
-    resolveInitializerBody(fn);
+      resolveInitializerBody(fn);
 
-    if (wasGeneric == true && isClass(at) == true) {
-      FnSymbol* classAlloc = buildClassAllocator(fn);
+      if (at->isClass() == true) {
+        FnSymbol* classAlloc = buildClassAllocator(fn);
 
-      normalize(classAlloc);
+        normalize(classAlloc);
+      }
     }
   }
 }
