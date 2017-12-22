@@ -393,6 +393,18 @@ config const correctness = true;
   assertEqual(Mtrace, t);
 }
 
+/* Rectangular trace */
+{
+  var Mrect = Matrix([1,2,3,4],
+                 [4,5,6,7],
+                 [7,8,9,8],
+                 eltType=real);
+  var Mtrace = 15.0;
+  var t = trace(Mrect);
+  assertEqual(Mtrace, t, 'trace(Mrect)');
+}
+
+
 /* diag */
 {
   var M = Matrix([1,2,3],
@@ -477,6 +489,10 @@ config const correctness = true;
   var I = eye(3,3);
   assertTrue(isDiag(I), "isDiag(I)");
 
+  // rectangular
+  var Irect = eye(3,5);
+  assertTrue(isDiag(I), "isDiag(Irect)");
+
   var M = I;
   M[0,2] = 1;
   assertFalse(isDiag(M), "isDiag(M)");
@@ -491,6 +507,11 @@ config const correctness = true;
   assertTrue(isHermitian(H), "isHermitian(H)");
   H[0,1] += -2i;
   assertFalse(isHermitian(H), "isHermitian(H')");
+
+  // rectangular
+  var Hrect = Matrix(3, 4, eltType=complex);
+  assertFalse(isHermitian(Hrect), "isHermitian(Hrect)");
+
 }
 
 /* isSymmetric */
@@ -502,6 +523,9 @@ config const correctness = true;
   assertTrue(isSymmetric(S), "isSymmetric(S)");
   S[0, 1] += 2;
   assertFalse(isSymmetric(S), "isSymmetric(S')");
+  S[0, 1] -= 2;
+  S[1, 0] += 2;
+  assertFalse(isSymmetric(S), "isSymmetric(S'')");
 }
 
 
