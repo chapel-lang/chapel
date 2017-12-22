@@ -2402,6 +2402,8 @@ void resolveNormalCallCompilerWarningStuff(FnSymbol* resolvedFn) {
 
 static void generateMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 
+static void generateCopyInitErrorMsg();
+
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
   if (info.call == NULL) {
@@ -2505,11 +2507,36 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       generateMsg(info, visibleFns);
     }
 
+    generateCopyInitErrorMsg();
+
     if (developer == true) {
       USR_PRINT(call, "unresolved call had id %i", call->id);
     }
 
     USR_STOP();
+  }
+}
+
+static void generateCopyInitErrorMsg() {
+  for (int i = callStack.n-1; i >= 0; i--) {
+    FnSymbol* currFn = callStack.v[i]->getFunction();
+    if (currFn->hasFlag(FLAG_AUTO_COPY_FN) ||
+        currFn->hasFlag(FLAG_INIT_COPY_FN)) {
+      Type* copied = currFn->getFormal(1)->type;
+      if (isNonGenericRecordWithInitializers(copied)) {
+        USR_PRINT(copied,
+                  "Function 'init' is being treated as a copy initializer for "
+                  "type '%s', was that intended?",
+                  copied->symbol->name);
+        USR_PRINT(copied,
+                  "If not, try explicitly declaring the type of the generic "
+                  "argument,");
+        USR_PRINT(copied,
+                  "or excluding '%s' as its type via a where clause",
+                  copied->symbol->name);
+        return;
+      }
+    }
   }
 }
 
@@ -4903,11 +4930,14 @@ static void resolveInitField(CallExpr* call) {
       call->insertAtTail(tmp);
 
     } else {
-      USR_FATAL(userCall(call),
-                "cannot assign expression of type %s to field '%s' of type %s",
-                toString(t),
-                fs->name,
-                toString(fs->type));
+      USR_FATAL_CONT(userCall(call),
+                     "cannot assign expression of type %s to field '%s' of "
+                     "type %s",
+                     toString(t),
+                     fs->name,
+                     toString(fs->type));
+      generateCopyInitErrorMsg();
+      USR_STOP();
     }
   }
 
@@ -7348,13 +7378,11 @@ static void resolveAutoCopies() {
 static void resolveAutoCopyEtc(AggregateType* at) {
   SET_LINENO(at->symbol);
 
-  if (isNonGenericRecordWithInitializers(at) == false) {
-    // resolve autoCopy
-    if (hasAutoCopyForType(at) == false) {
-      FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
+  // resolve autoCopy
+  if (hasAutoCopyForType(at) == false) {
+    FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
 
-      autoCopyMap[at] = fn;
-    }
+    autoCopyMap[at] = fn;
   }
 
   // resolve autoDestroy

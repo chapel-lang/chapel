@@ -1,0 +1,5 @@
+bug: conditional expression broken with default copy initializer
+
+I suspect this issue is similar to why conditional expressions are still broken
+for default initializers, so I don't think it is worth holding up the copy
+initializer change.

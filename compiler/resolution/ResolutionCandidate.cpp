@@ -487,9 +487,10 @@ void ResolutionCandidate::computeSubstitutions() {
           USR_FATAL(formal,
                     "invalid generic type specification on class field");
 
-        } else if (fn->isMethod()                       == true &&
-                   strcmp(fn->name, "init")             == 0    &&
-                   fn->hasFlag(FLAG_COMPILER_GENERATED) == true &&
+        } else if (fn->isMethod()                       == true  &&
+                   strcmp(fn->name, "init")             == 0     &&
+                   fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
+                   fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
                    !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
                      formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
           // This is a compiler generated initializer, so the argument with

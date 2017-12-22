@@ -146,6 +146,8 @@ public:
 
   FnSymbol*                   defaultInitializer;
 
+  void                        buildCopyInitializer();
+
   AggregateType*              instantiatedFrom;
 
   InitializerStyle            initializerStyle;

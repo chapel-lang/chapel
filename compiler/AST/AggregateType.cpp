@@ -1766,6 +1766,93 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
   return retval;
 }
 
+void AggregateType::buildCopyInitializer() {
+  // Only build a copy initializer for a type that uses initializers
+  if (isRecordWithInitializers(this) == false) {
+    return;
+  }
+
+  SET_LINENO(this);
+  FnSymbol*  fn    = new FnSymbol("init");
+  ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+  ArgSymbol* other = new ArgSymbol(INTENT_BLANK, "other", this);
+
+  fn->cname = fn->name;
+  fn->_this = _this;
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_DEFAULT_COPY_INIT);
+
+  _this->addFlag(FLAG_ARG_THIS);
+
+  // Detect if the type has at least one generic field, so we should mark the
+  // "other" arg as generic.
+  for_fields(fieldDefExpr, this) {
+    if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
+          strcmp(field->name, "outer")) {
+        if (field->hasFlag(FLAG_PARAM) ||
+            field->isType() == true    ||
+            (field->defPoint->init     == NULL &&
+             field->defPoint->exprType == NULL)) {
+
+          if (other->hasFlag(FLAG_MARKED_GENERIC) == false)
+            other->addFlag(FLAG_MARKED_GENERIC);
+        }
+      }
+    }
+  }
+
+  fn->insertFormalAtTail(_mt);
+  fn->insertFormalAtTail(_this);
+  fn->insertFormalAtTail(other);
+
+  // Copy the fields from "other" into our fields
+  for_fields(fieldDefExpr, this) {
+    // TODO: outer (nested types), promotion type?
+    if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
+          strcmp(field->name, "outer")) {
+        const char* name     = field->name;
+
+        CallExpr* thisField  = new CallExpr(".",
+                                            fn->_this,
+                                            new_CStringSymbol(name));
+        CallExpr* otherField = new CallExpr(".",
+                                            other,
+                                            new_CStringSymbol(name));
+
+        fn->insertAtTail(new CallExpr("=", thisField, otherField));
+      }
+    }
+  }
+
+  // Create the super.init() call
+  // NOTE: if we ever implement record inheritance again, this will fail
+  CallExpr* superPortion = new CallExpr(".",
+                                        new SymExpr(fn->_this),
+                                        new_CStringSymbol("super"));
+
+  SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
+  CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+  CallExpr* superCall    = new CallExpr(base);
+
+  fn->insertAtTail(superCall);
+
+  DefExpr* def = new DefExpr(fn);
+
+  symbol->defPoint->insertBefore(def);
+
+  fn->setMethod(true);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+
+  preNormalizeInitMethod(fn);
+  normalize(fn);
+
+  methods.add(fn);
+}
+
 // Returns false if we should not generate a default constructor for this
 // AggregateType, true if we still require one.  The result of this function
 // will vary in most cases if --force-initializers is thrown: that flag tells
