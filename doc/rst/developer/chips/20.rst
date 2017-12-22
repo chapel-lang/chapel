@@ -162,7 +162,7 @@ This one outputs:
   in Application4.setup
   Global is 0
 
-Uh-oh! Once again Global is not initailized properly, and we can expect
+Uh-oh! Once again Global is not initialized properly, and we can expect
 the application author to file bug reports with LibraryX2.
 
 What's going wrong? Function disambiguation rules will choose ``proc
@@ -452,8 +452,8 @@ It outputs
 which is what we want! Not all languages would have that output for this
 example.
 
-New Method is Accidentally Overriden
-++++++++++++++++++++++++++++++++++++
+New Method is Accidentally Overridden
++++++++++++++++++++++++++++++++++++++
 
 .. code-block:: chapel
 
@@ -545,8 +545,8 @@ What's going wrong? A method that was expected not to be virtually dispatched wa
 
 Solutions: require an 'override' keyword to mark functions that should be overriding a base class method. In that event, ``Widget.run`` would not have an override when the library is updated and a compiler error would alert the user to the issue. It might also be reasonable to be able to mark functions as non-overrideable - but that one is probably harder to rely upon.
 
-Unexpected new Overload for an Overriden method
-+++++++++++++++++++++++++++++++++++++++++++++++
+Unexpected new Overload for an Overridden method
+++++++++++++++++++++++++++++++++++++++++++++++++
 
 Let's suppose now that LibraryZ expects classes extending Base to override a setup helper function:
 
@@ -745,7 +745,7 @@ from the same module:
     sort(A);
   }
 
-In that event, even though ``sort`` is generic, it might be suprising if
+In that event, even though ``sort`` is generic, it might be surprising if
 in some cases ``isSorted`` might resolve to something in the caller.
 
 getVisibleFns
