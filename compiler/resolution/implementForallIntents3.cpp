@@ -60,11 +60,13 @@ static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
   return retval;
 }
 
-/* Do we want to make this available to all compiler code? MF says "It should:
-* check isUserDefinedRecord and possibly is POD
-* error if a user-defined record has no auto copy
-* use PRIM_MOVE for non-user defined records
-* use autoCopy if one is defined, even for if isUserDefinedRecord returned false"
+/* Do we want to make this available to all compiler code?
+MF says "It should:
+ * check isUserDefinedRecord and possibly is POD
+ * error if a user-defined record has no auto copy
+ * use PRIM_MOVE for non-user defined records
+ * use autoCopy if one is defined, even for if isUserDefinedRecord returned false
+Todo: should it support the case of initializing a 'ref' variable?
 */
 //
 // Initialize 'dest' from 'init', which can be either a symbol or an expr.
@@ -73,6 +75,9 @@ static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
 static void insertInitialization(Symbol* dest, Type* valType,
                                  BaseAST* init, Expr* anchor)
 {
+  if (Expr* initExpr = toExpr(init))
+    INT_ASSERT(!initExpr->inTree()); // caller responsibility
+
   if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {
     Symbol* initSym = toSymbol(init);
     if (initSym == NULL) {
@@ -251,12 +256,32 @@ static void expandYield(ExpandForForall* EV, CallExpr* yieldCall) {
   SymbolMap map;
   map.copy(EV->svar2clonevar);  // vass is this the right thing to do?
 
-  // Also need to map the index variable to the yield value.
+  // Clone the index variable for use in the cloned body.
+  // There is only one idx var because all zippering has been lowered away.
+  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
+  INT_ASSERT(map.get(origIdxVar) == NULL); //vass remove at end
+  VarSymbol* cloneIdxVar =origIdxVar->copy(&map);
+  cloneIdxVar->qual = origIdxVar->qual;
+  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //vass remove at end
+  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
+
+  // Todo should insertInitialization() handle both cases?
+  Expr* yieldExpr = yieldCall->get(1)->remove();
+  if (cloneIdxVar->isRef())
+    yieldCall->insertBefore(new CallExpr(PRIM_SET_REFERENCE,
+                                         cloneIdxVar, yieldExpr));
+  else
+    insertInitialization(cloneIdxVar, cloneIdxVar->type, yieldExpr, yieldCall);
+
+/* vass remove me:
+Move the yielded value to a clone of the index variable.
+Also need to map the index variable to the yield value.
   SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
   INT_ASSERT(yieldSE != NULL); // need more work otherwise
   // There should not be any zippering.
-  Symbol* idxVar = EV->forall->singleInductionVar();
+
   map.put(idxVar, yieldSE->symbol());
+*/
 
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
   yieldCall->replace(bodyClone);

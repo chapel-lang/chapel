@@ -173,10 +173,12 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 /////////////////////////////////////////////////////////////////////////////
 
 // Get the index variable. Ensure it is the only one.
-Symbol* ForallStmt::singleInductionVar() const {
+VarSymbol* ForallStmt::singleInductionVar() const {
   INT_ASSERT(fIterVars.length == 1);
   DefExpr* ivdef = toDefExpr(fIterVars.head);
-  return ivdef->sym;
+  VarSymbol* ivsym = toVarSymbol(ivdef->sym);
+  INT_ASSERT(ivsym != NULL);
+  return ivsym;
 }
 
 // Is 'expr' an iterable-expression for 'this' ?
