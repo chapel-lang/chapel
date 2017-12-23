@@ -1182,7 +1182,7 @@ module Sparse {
 
       forall i in Adom.dim(1) with (+ reduce Y) {
         for j in Adom.dimIter(2, i) {
-          Y[j] = A[i, j] * X2[i];
+          Y[j] += A[i, j] * X2[i];
         }
       }
     }
