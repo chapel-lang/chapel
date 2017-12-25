@@ -38,6 +38,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
+#include "initializerRules.h"
 #include "iterator.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
@@ -5811,6 +5812,12 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
                                                SymExpr*       typeExpr) {
   SET_LINENO(call);
 
+  VarSymbol* new_temp = newTemp("new_temp", at);
+  DefExpr*   def      = new DefExpr(new_temp);
+  FnSymbol*  initFn   = NULL;
+
+  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
   typeExpr->replace(new UnresolvedSymExpr("init"));
 
   // Convert the PRIM_NEW to a normal call
@@ -5819,19 +5826,15 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   parent_insert_help(call, call->baseExpr);
 
-  VarSymbol* new_temp  = newTemp("new_temp", at);
-  DefExpr*   def       = new DefExpr(new_temp);
-
-  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
 
   } else {
     Expr* parent = call->parentExpr;
+
     parent->insertBefore(def);
 
-    if (isClass(at) == false) {
+    if (at->isClass() == false) {
       call->replace(new SymExpr(new_temp));
       parent->insertBefore(call);
     }
@@ -5845,26 +5848,29 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   resolveGenericActuals(call);
 
-  resolveInitializer(call);
+  initFn = resolveInitializer(call);
 
   // Because initializers determine the type they utilize based on the
-  // execution of Phase 1, if the type is generic we will need to update the
-  // type of the actual we are sending in for the this arg
-  if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
-    new_temp->type = call->resolvedFunction()->_this->type;
+  // execution of Phase 1, if the type is generic we will need to update
+  // the type of the actual we are sending in for the this arg
+  new_temp->type = call->resolvedFunction()->_this->type;
 
-    if (isClass(at) == true) {
-      // use the allocator instead of directly calling the init method
-      // Need to convert the call into the right format
-      call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-      call->get(1)->replace(new SymExpr(new_temp->type->symbol));
-      call->get(2)->remove();
-      // Need to resolve the allocator
+  if (at->isClass() == true) {
+    // use the allocator instead of directly calling the init method
+    // Need to convert the call into the right format
+    call->baseExpr->replace(new UnresolvedSymExpr("_new"));
+    call->get(1)->replace(new SymExpr(new_temp->type->symbol));
+    call->get(2)->remove();
+
+    // Need to resolve _new() even if it has not been built yet
+    if (tryResolveCall(call) == NULL) {
+      buildClassAllocator(initFn);
       resolveCall(call);
-      resolveFunction(call->resolvedFunction());
-
-      def->remove();
     }
+
+    resolveFunction(call->resolvedFunction());
+
+    def->remove();
   }
 }
 

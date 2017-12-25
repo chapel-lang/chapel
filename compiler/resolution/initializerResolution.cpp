@@ -64,17 +64,14 @@ FnSymbol* resolveInitializer(CallExpr* call) {
 
   if (isGenericRecord(call->get(2)->typeInfo())) {
     NamedExpr* named   = toNamedExpr(call->get(2));
-    INT_ASSERT(named);
-
     SymExpr*   namedSe = toSymExpr(named->actual);
-    INT_ASSERT(namedSe);
-
     Symbol*    sym     = namedSe->symbol();
 
     sym->type = call->resolvedFunction()->_this->type;
 
-    if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION))
+    if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
       sym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+    }
 
     makeRecordInitWrappers(call);
   }
@@ -258,34 +255,29 @@ static void resolveInitializerMatch(FnSymbol* fn) {
 
     insertFormalTemps(fn);
 
-    if (at->isGeneric() == false) {
+    if (at->isRecord() == true) {
+      at->setFirstGenericField();
+
       resolveInitializerBody(fn);
 
-    } else {
-      if (at->isRecord() == true) {
-        at->setFirstGenericField();
+    } else if (at->isClass() == true) {
+      AggregateType* parent = at->dispatchParents.v[0];
 
-        resolveInitializerBody(fn);
-
-      } else if (at->isClass() == true) {
-        AggregateType* parent = at->dispatchParents.v[0];
-
-        if (parent->isGeneric() == false) {
-          if (at->setFirstGenericField() == false) {
-            INT_ASSERT(false);
-          }
-
-        } else {
-          at->setFirstGenericField();
+      if (parent->isGeneric() == false) {
+        if (at->setFirstGenericField() == false) {
+          INT_ASSERT(false);
         }
 
-        resolveInitializerBody(fn);
-
-        buildClassAllocator(fn);
-
       } else {
-        INT_ASSERT(false);
+        at->setFirstGenericField();
       }
+
+      resolveInitializerBody(fn);
+
+      buildClassAllocator(fn);
+
+    } else {
+      INT_ASSERT(false);
     }
   }
 }
