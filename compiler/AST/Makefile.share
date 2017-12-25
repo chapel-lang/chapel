@@ -27,18 +27,19 @@ AST_SRCS =                                          \
            DeferStmt.cpp                            \
            dominator.cpp                            \
            expr.cpp                                 \
-           iterator.cpp                             \
            foralls.cpp                              \
            flags.cpp                                \
+           FnSymbol.cpp                             \
+           ForallStmt.cpp                           \
+           iterator.cpp                             \
            ModuleSymbol.cpp                         \
            PartialCopyData.cpp                      \
            primitive.cpp                            \
            stmt.cpp                                 \
            symbol.cpp                               \
            TryStmt.cpp                              \
-           UseStmt.cpp                              \
-           ForallStmt.cpp                           \
            type.cpp                                 \
+           UseStmt.cpp                              \
            view.cpp                                 \
            wellknown.cpp                            \
                                                     \
