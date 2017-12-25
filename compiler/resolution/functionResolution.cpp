@@ -38,6 +38,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "initializerResolution.h"
+#include "initializerRules.h"
 #include "iterator.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
@@ -5813,6 +5814,7 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   VarSymbol* new_temp = newTemp("new_temp", at);
   DefExpr*   def      = new DefExpr(new_temp);
+  FnSymbol*  initFn   = NULL;
 
   new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
@@ -5846,7 +5848,7 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   resolveGenericActuals(call);
 
-  resolveInitializer(call);
+  initFn = resolveInitializer(call);
 
   // Because initializers determine the type they utilize based on the
   // execution of Phase 1, if the type is generic we will need to update
@@ -5859,8 +5861,13 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
     call->baseExpr->replace(new UnresolvedSymExpr("_new"));
     call->get(1)->replace(new SymExpr(new_temp->type->symbol));
     call->get(2)->remove();
-    // Need to resolve the allocator
-    resolveCall(call);
+
+    // Need to resolve _new() even if it has not been built yet
+    if (tryResolveCall(call) == NULL) {
+      buildClassAllocator(initFn);
+      resolveCall(call);
+    }
+
     resolveFunction(call->resolvedFunction());
 
     def->remove();
