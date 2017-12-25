@@ -23,6 +23,7 @@ AST_SRCS =                                          \
            bb.cpp                                   \
            build.cpp                                \
            CatchStmt.cpp                            \
+           CallExpr.cpp                             \
            checkAST.cpp                             \
            DeferStmt.cpp                            \
            dominator.cpp                            \
