@@ -258,8 +258,8 @@ proc file.realPath(): string throws {
    // loop to iterate over all the paths
       for i in 2..n {
    
-     /*
-      Here we have taken one temporary variable named temp
+         /*
+           Here we have taken one temporary variable named temp
 	   which store the next path value each time in a loop 
 	   so that we can make comparison between result string 
 	   and the next upcoming path so that we can check the 
