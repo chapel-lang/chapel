@@ -280,22 +280,22 @@ proc file.realPath(): string throws {
 	       result = temp ;
 	 }
 	 
-	 /*
-    	 If path string comes for example
+	  /*
+    	    If path string comes for example
 	    joinPath("/foo/", "./baz")` which should yield `"/foo/./baz
 	    So, here this condition is checked and the joined path result
 	    is shown as result = result + "/" + temp
-	 */
+	  */
 	  
 	    else if result.endsWith('/') {
 	       result = result + temp ;
 	 }
 	 
-	 /*
+	  /*
 	    If the path string comes as joinPath("/foo" , "baz")
-		 which yield "/foo/baz" . Here this condition is checked
-		 and join path result is shown as result = result + temp ;
-	 */
+	    which yield "/foo/baz" . Here this condition is checked
+	    and join path result is shown as result = result + temp ;
+	  */
 	 
 	    else {
 	       result = result + "/" + temp ;
