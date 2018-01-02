@@ -26,5 +26,5 @@ writeln(joinPath("/foo/" , "./baz"));
 writeln(joinPath("/foo/" , "baz"));
 	 
 // writing example test for single string for function .	 
-writeln(joinPath("/foo/"));
+writeln(joinPath("/foo"));
 writeln(joinPath("/foo","koo","./ik","/baz","/kju"));
