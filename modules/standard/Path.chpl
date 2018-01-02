@@ -280,9 +280,9 @@ proc file.realPath(): string throws {
      and join path result is shown as result = result + temp ;
      */
      else {
-	  result = result + "/" + temp;
+     result = result + "/" + temp;
        }
      }
-    return result;	
+   return result;	
    }
 }
