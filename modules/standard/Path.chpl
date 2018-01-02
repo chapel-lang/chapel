@@ -248,17 +248,17 @@ proc file.realPath(): string throws {
     var result : string = paths(1); // result variable stores final answer
    // loop to iterate over all the paths
     for i in 2..n {
-    var temp : string = paths(i); 
-    if temp.startsWith('/') {
-    result = temp;
-    }  
-    else if result.endsWith('/') {
-    result = result + temp;
+      var temp : string = paths(i); 
+      if temp.startsWith('/') {
+      result = temp;
+      }  
+      else if result.endsWith('/') {
+      result = result + temp;
+      }
+      else {
+      result = result + "/" + temp;
+      }
     }
-    else {
-     result = result + "/" + temp;
-       }
-     }
    return result;
  }  
 }
