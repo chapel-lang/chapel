@@ -73,6 +73,14 @@ row vector, vector-vector multiplication is always treated as an inner-product,
 as the function name implies.
 An outer product can be computed with the :proc:`outer` function.
 
+**Domain maps**
+
+All of the functions in this module only support
+``DefaultRectangular`` arrays (the default domain map), unless explicitly
+specified in the function's documentation. Other domain maps
+are supported through submodules, such ``LinearAlgebra.Sparse`` for the
+``CS`` layout.
+
 **Promotion flattening**
 
 Promotion flattening is an unintended consequence of Chapel's
@@ -824,6 +832,8 @@ proc isDiag(A: [?D] ?eltType) {
     compilerError("Rank size is not 2");
 
   const zero = 0: eltType;
+
+  // Check if any element not along the diagonal is nonzero
   for (i, j) in D {
     if i != j && A[i, j] != zero then return false;
   }
@@ -835,6 +845,9 @@ proc isDiag(A: [?D] ?eltType) {
 proc isHermitian(A: [?D]) {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
+  if !isSquare(A) then
+    return false;
+
   for (i, j) in D {
     if i > j {
       if A[i, j] != conjg(A[j, i]) then return false;
@@ -848,6 +861,9 @@ proc isHermitian(A: [?D]) {
 proc isSymmetric(A: [?D]) : bool {
   if D.rank != 2 then
     compilerError("Rank size is not 2");
+  if !isSquare(A) then
+    return false;
+
   for (i, j) in D {
     if i > j {
       if A[i, j] != A[j, i] then return false;
@@ -897,15 +913,18 @@ proc isSquare(A: [?D]) {
 }
 
 
-/* Return the trace of square matrix ``A`` */
+/* Return the trace (sum of diagonal elements) of ``A`` */
 proc trace(A: [?D] ?eltType) {
   if D.rank != 2 then compilerError("Rank size not 2");
-  else
-    if !isSquare(A) then halt("Trace only supports square matrices");
-    var trace = 0: eltType;
-    forall (i, j) in zip(D.dim(1), D.dim(2)) with (+ reduce trace) do
-      trace += A[i, j];
-    return trace;
+
+  const (m, n) = A.shape;
+  const d = if m < n then 1 else 2;
+
+  var trace = 0: eltType;
+  forall i in D.dim(d) with (+ reduce trace) {
+    trace += A[i, i];
+  }
+  return trace;
 }
 
 //
@@ -1161,7 +1180,7 @@ module Sparse {
       // Ensure same domain indices
       ref X2 = X.reindex(Adom.dim(1));
 
-      forall i in Adom.dim(1) {
+      forall i in Adom.dim(1) with (+ reduce Y) {
         for j in Adom.dimIter(2, i) {
           Y[j] += A[i, j] * X2[i];
         }

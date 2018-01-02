@@ -1,7 +1,0 @@
-bug: initializers with default args not considered as copy initializers
-
-This test shows that if an initializer exists that can be called in
-the "copy initializer" context, but relies on default arguments, it is
-not considered.  It seems to me that this should work.  Otherwise, it
-requires the user to split the initializer into two versions, as shown
-in copyWithDefaultArgs-workaround.chpl

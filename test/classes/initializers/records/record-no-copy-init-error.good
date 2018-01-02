@@ -1,2 +1,6 @@
-record-no-copy-init-error.chpl:18: In function 'foo':
-record-no-copy-init-error.chpl:28: error: No copy constructor for initializer
+in R's default-init
+(x = 0)
+in R's default-init
+(x = 0)
+(x = 0)
+(x = 0)
