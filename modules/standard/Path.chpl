@@ -249,7 +249,7 @@ proc file.realPath(): string throws {
     result variable store the final answer
     It is initialized with the first path present so that
     during joining of two paths we can check the three
-    condition specified .	
+    condition specified.	
     */
     var result : string = paths(1) ;
    
@@ -268,10 +268,10 @@ proc file.realPath(): string throws {
     with '/' path for example we have joinPath("/foo/bar", "/baz") 
     which should yield "/baz" . Here we have checked the condition 
     if temp startsWith('/') then result get changed fully by
-    temp value . This is shown by result = temp	   
+    temp value.This is shown by result = temp	   
      */ 
     if temp.startsWith('/') {
-	 result = temp ;
+	 result = temp;
 	 } 
      /*
     If path string comes for example
@@ -280,7 +280,7 @@ proc file.realPath(): string throws {
     is shown as result = result + "/" + temp
      */  
     else if result.endsWith('/') {
-	  result = result + temp ;
+	  result = result + temp;
 	 }
      /*
      If the path string comes as joinPath("/foo" , "baz")
@@ -288,9 +288,9 @@ proc file.realPath(): string throws {
      and join path result is shown as result = result + temp ;
      */
      else {
-	   result = result + "/" + temp ;
+	   result = result + "/" + temp;
        }
      }
-      return result ;	
+      return result;	
    }
 }
