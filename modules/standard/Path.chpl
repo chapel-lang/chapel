@@ -250,13 +250,13 @@ proc file.realPath(): string throws {
     for i in 2..n {
       var temp : string = paths(i); 
       if temp.startsWith('/') {
-      result = temp;
+        result = temp;
       }  
       else if result.endsWith('/') {
-      result = result + temp;
+        result = result + temp;
       }
       else {
-      result = result + "/" + temp;
+        result = result + "/" + temp;
       }
     }
    return result;
