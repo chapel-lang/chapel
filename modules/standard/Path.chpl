@@ -244,63 +244,53 @@ proc file.realPath(): string throws {
             it, or all the paths provided if no absolute path is present
    :rtype: `string`
 */
-    proc joinPath(paths: string ...?n): string {
-
-   /*
+  proc joinPath(paths: string ...?n): string {
+    /*
     result variable store the final answer
     It is initialized with the first path present so that
     during joining of two paths we can check the three
     condition specified .	
-   */
-   
-   var result : string = paths(1) ;
+    */
+    var result : string = paths(1) ;
    
    // loop to iterate over all the paths
-      for i in 2..n {
-   
-         /*
-           Here we have taken one temporary variable named temp
-	   which store the next path value each time in a loop 
-	   so that we can make comparison between result string 
-	   and the next upcoming path so that we can check the 
-	   condition specified 
-	 */
-	 
-      var temp : string = paths(i) ;
-	 
-	 /*
-	   Here we have added condition that if the merging path starts
-	   with '/' path for example we have joinPath("/foo/bar", "/baz") 
-	   which should yield "/baz" . Here we have checked the condition 
-	   if temp startsWith('/') then result get changed fully by
-	   temp value . This is shown by result = temp	   
-	 */
-	 
-        if temp.startsWith('/') {
-	       result = temp ;
+    for i in 2..n {
+     /*
+    Here we have taken one temporary variable named temp
+    which store the next path value each time in a loop 
+    so that we can make comparison between result string 
+    and the next upcoming path so that we can check the 
+    condition specified 
+     */ 
+    var temp : string = paths(i) ; 
+     /*
+    Here we have added condition that if the merging path starts
+    with '/' path for example we have joinPath("/foo/bar", "/baz") 
+    which should yield "/baz" . Here we have checked the condition 
+    if temp startsWith('/') then result get changed fully by
+    temp value . This is shown by result = temp	   
+     */ 
+    if temp.startsWith('/') {
+	 result = temp ;
+	 } 
+     /*
+    If path string comes for example
+    joinPath("/foo/", "./baz")` which should yield `"/foo/./baz
+    So, here this condition is checked and the joined path result
+    is shown as result = result + "/" + temp
+     */  
+    else if result.endsWith('/') {
+	  result = result + temp ;
 	 }
-	 
-	  /*
-    	    If path string comes for example
-	    joinPath("/foo/", "./baz")` which should yield `"/foo/./baz
-	    So, here this condition is checked and the joined path result
-	    is shown as result = result + "/" + temp
-	  */
-	  
-	    else if result.endsWith('/') {
-	       result = result + temp ;
-	 }
-	 
-	  /*
-	    If the path string comes as joinPath("/foo" , "baz")
-	    which yield "/foo/baz" . Here this condition is checked
-	    and join path result is shown as result = result + temp ;
-	  */
-	 
-	    else {
-	       result = result + "/" + temp ;
-	  }
+     /*
+     If the path string comes as joinPath("/foo" , "baz")
+     which yield "/foo/baz" . Here this condition is checked
+     and join path result is shown as result = result + temp ;
+     */
+     else {
+	   result = result + "/" + temp ;
        }
+     }
       return result ;	
-    }
+   }
 }
