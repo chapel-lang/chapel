@@ -34,6 +34,7 @@ record buf {
     numLeft = fi.length();
   }
 
+  // Returns (by ref-ish) a slice of the buffer starting at 'low'
   pragma "no copy return"
   proc fill() {
     if cur >= cap {
@@ -76,6 +77,8 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
+          // Character found, bulk-append characters up to and including 'idx'
+          // to the 'data' array.
           data.push_back(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
@@ -98,7 +101,9 @@ proc main(args: [] string) {
   var input = new buf(stdin, readSize);
   var data : [1..0] uint(8);
   
-  // Use undocumented internals to fake a request for capacity
+  // Use undocumented internals to fake a request for capacity.
+  // Sets up 'data' to have an underlying capacity equal to the size of the
+  // input file.
   {
     const r = 1..stdin.length();
     data._value.dataAllocRange = r;
