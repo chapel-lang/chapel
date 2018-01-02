@@ -1,0 +1,9 @@
+/baz
+/foo/./baz
+/foo/./baz
+/foo/baz
+/baz
+/foo/./baz
+/foo/baz
+/foo
+/kju
