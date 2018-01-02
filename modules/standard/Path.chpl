@@ -259,12 +259,11 @@ proc file.realPath(): string throws {
     var temp : string = paths(i) ; 
      /*
     Here we have added condition that if the merging path starts
-    with '/' path for example we have `joinPath("/foo/bar", "/baz")` 
-    which should yield `"/baz"`	   
+    with '/' path for example we have `joinPath("/foo/bar", "/baz")` 	   
      */ 
     if temp.startsWith('/') {
     result = temp;
-	 } 
+    } 
      /*
     If path string comes for example
     joinPath("/foo/", "./baz")` which should yield `"/foo/./baz
@@ -273,7 +272,7 @@ proc file.realPath(): string throws {
      */  
     else if result.endsWith('/') {
     result = result + temp;
-	 }
+    }
      /*
      If the path string comes as joinPath("/foo" , "baz")
      which yield "/foo/baz" . Here this condition is checked
@@ -283,6 +282,6 @@ proc file.realPath(): string throws {
      result = result + "/" + temp;
        }
      }
-     return result;	
+      return result;	
    }
 }
