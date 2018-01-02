@@ -3441,6 +3441,51 @@ error:
   return err;
 }
 
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte)
+{
+  qioerr err=0;
+
+  if( threadsafe ) {
+    err = qio_lock(&ch->lock);
+    if( err ) {
+      return err;
+    }
+  }
+
+  // Is there room in our fast path buffer?
+  while (err==0) {
+    if( qio_space_in_ptr_diff(1, ch->cached_end, ch->cached_cur) ) {
+      size_t len = qio_ptr_diff(ch->cached_end, ch->cached_cur);
+      void* found = memchr(ch->cached_cur, byte, len);
+      if (found != NULL) {
+        ssize_t off = qio_ptr_diff(found, ch->cached_cur);
+        off += 1;
+        ch->cached_cur = qio_ptr_add(ch->cached_cur, off);
+        break;
+      } else {
+        // We checked the data in the buffer, advance to the next section.
+        ch->cached_cur = ch->cached_end;
+      }
+    } else {
+      // There's not enough data in the buffer, apparently. Try it the slow way.
+      ssize_t amt_read;
+      uint8_t tmp;
+      err = _qio_slow_read(ch, &tmp, 1, &amt_read);
+      if( err == 0 ) {
+        if (tmp == byte) break;
+        if (amt_read != 1) err = QIO_ESHORT;
+      }
+    }
+  }
+
+  if( threadsafe ) {
+    qio_unlock(&ch->lock);
+  }
+
+  return err;
+}
+
+
 qioerr qio_channel_mark_maybe_flush_bits(const int threadsafe, qio_channel_t* ch, int flushbits)
 {
   qioerr err;
@@ -3598,6 +3643,10 @@ qioerr qio_channel_advance_unlocked(qio_channel_t* ch, int64_t nbytes)
     // _qio_buffered_behind calls _qio_buffered_setup_cached
     if( use_buffered ) {
       err = _qio_buffered_behind(ch, false);
+    }
+  } else {
+    if( use_buffered ) {
+      _qio_buffered_setup_cached(ch);
     }
   }
   return err;

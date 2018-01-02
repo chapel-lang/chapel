@@ -931,6 +931,8 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):syserr;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int):syserr;
+
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
@@ -2248,6 +2250,27 @@ proc channel.advance(amount:int(64)) throws {
     this.unlock();
   }
 }
+
+// TODO: this advances to just after the requested byte, or returns EEOF
+proc channel.advancePastByte(byte:c_int, ref error:syserr) {
+  on this.home {
+    try! this.lock();
+    error = qio_channel_advance_past_byte(false, _channel_internal, byte);
+    this.unlock();
+  }
+}
+
+// documented with the error= version
+pragma "no doc"
+proc channel.advancePastByte(byte:c_int) throws {
+  on this.home {
+    try! this.lock();
+    var err = qio_channel_advance_past_byte(false, _channel_internal, byte);
+    if err then try this._ch_ioerror(err, "in advanceToByte");
+    this.unlock();
+  }
+}
+
 
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably
