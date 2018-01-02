@@ -248,32 +248,14 @@ proc file.realPath(): string throws {
     var result : string = paths(1); // result variable stores final answer
    // loop to iterate over all the paths
     for i in 2..n {
-     /*
-    Here we have taken one temporary variable named temp
-    which store the next path value each time in a loop 
-    so that we can make comparison between result string 
-    and the next upcoming path so that we can check the 
-    condition specified 
-     */ 
     var temp : string = paths(i); 
     if temp.startsWith('/') {
     result = temp;
-    } 
-     /*
-    If path string comes for example
-    joinPath("/foo/", "./baz")` which should yield `"/foo/./baz
-    So, here this condition is checked and the joined path result
-    is shown as result = result + "/" + temp
-     */  
+    }  
     else if result.endsWith('/') {
     result = result + temp;
     }
-     /*
-     If the path string comes as joinPath("/foo" , "baz")
-     which yield "/foo/baz" . Here this condition is checked
-     and join path result is shown as result = result + temp ;
-     */
-     else {
+    else {
      result = result + "/" + temp;
        }
      }
