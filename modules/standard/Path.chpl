@@ -245,10 +245,7 @@ proc file.realPath(): string throws {
    :rtype: `string`
 */
   proc joinPath(paths: string ...?n): string {
-    /*
-    result variable store the final answer	
-    */
-    var result : string = paths(1);
+    var result : string = paths(1); // result variable stores final answer
    
    // loop to iterate over all the paths
     for i in 2..n {
@@ -263,10 +260,10 @@ proc file.realPath(): string throws {
      /*
     Here we have added condition that if the merging path starts
     with '/' path for example we have joinPath("/foo/bar", "/baz") 
-    which should yield "/baz".	   
+    which should yield `"/baz"`.	   
      */ 
     if temp.startsWith('/') {
-	 result = temp;
+    result = temp;
 	 } 
      /*
     If path string comes for example
@@ -275,7 +272,7 @@ proc file.realPath(): string throws {
     is shown as result = result + "/" + temp
      */  
     else if result.endsWith('/') {
-	  result = result + temp;
+    result = result + temp;
 	 }
      /*
      If the path string comes as joinPath("/foo" , "baz")
@@ -286,6 +283,6 @@ proc file.realPath(): string throws {
 	  result = result + "/" + temp;
        }
      }
-     return result;	
+    return result;	
    }
 }
