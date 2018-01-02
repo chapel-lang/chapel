@@ -246,12 +246,9 @@ proc file.realPath(): string throws {
 */
   proc joinPath(paths: string ...?n): string {
     /*
-    result variable store the final answer
-    It is initialized with the first path present so that
-    during joining of two paths we can check the three
-    condition specified.	
+    result variable store the final answer	
     */
-    var result : string = paths(1) ;
+    var result : string = paths(1);
    
    // loop to iterate over all the paths
     for i in 2..n {
@@ -266,9 +263,7 @@ proc file.realPath(): string throws {
      /*
     Here we have added condition that if the merging path starts
     with '/' path for example we have joinPath("/foo/bar", "/baz") 
-    which should yield "/baz" . Here we have checked the condition 
-    if temp startsWith('/') then result get changed fully by
-    temp value.This is shown by result = temp	   
+    which should yield "/baz".	   
      */ 
     if temp.startsWith('/') {
 	 result = temp;
@@ -288,9 +283,9 @@ proc file.realPath(): string throws {
      and join path result is shown as result = result + temp ;
      */
      else {
-	   result = result + "/" + temp;
+	  result = result + "/" + temp;
        }
      }
-      return result;	
+     return result;	
    }
 }
