@@ -256,8 +256,6 @@ proc file.realPath(): string throws {
     condition specified 
      */ 
     var temp : string = paths(i); 
-   // Here we have added condition that when the merging path starts
-   // with forward slash. 	    
     if temp.startsWith('/') {
     result = temp;
     } 
@@ -279,7 +277,6 @@ proc file.realPath(): string throws {
      result = result + "/" + temp;
        }
      }
-   return result;	
-  }
-  
+   return result;
+ }  
 }
