@@ -246,7 +246,6 @@ proc file.realPath(): string throws {
 */
   proc joinPath(paths: string ...?n): string {
     var result : string = paths(1); // result variable stores final answer
-   
    // loop to iterate over all the paths
     for i in 2..n {
      /*
@@ -256,11 +255,9 @@ proc file.realPath(): string throws {
     and the next upcoming path so that we can check the 
     condition specified 
      */ 
-    var temp : string = paths(i) ; 
-     /*
-    Here we have added condition that when the merging path starts
-    with forward slash. 	   
-     */ 
+    var temp : string = paths(i); 
+   // Here we have added condition that when the merging path starts
+   // with forward slash. 	    
     if temp.startsWith('/') {
     result = temp;
     } 
@@ -282,7 +279,7 @@ proc file.realPath(): string throws {
      result = result + "/" + temp;
        }
      }
-     
-  return result;	
-}
+   return result;	
+  }
+  
 }
