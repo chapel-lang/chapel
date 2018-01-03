@@ -370,50 +370,6 @@ module BigInteger {
     }
   }
 
-  /*
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(const ref bir: bigint) {
-    var ret : bigint;
-
-    if _local {
-      mpz_set(ret.mpz, bir.mpz);
-
-    } else if bir.localeId == chpl_nodeID {
-      mpz_set(ret.mpz, bir.mpz);
-
-    } else {
-      var mpz_struct = bir.mpzStruct();
-
-      chpl_gmp_get_mpz(ret.mpz, bir.localeId, mpz_struct);
-    }
-
-    return ret;
-  }
-  */
-
-  /*
-  pragma "donor fn"
-  pragma "auto copy fn"
-  pragma "no doc"
-  proc chpl__autoCopy(const ref bir: bigint) {
-    var ret : bigint;
-
-    if _local {
-      mpz_set(ret.mpz, bir.mpz);
-
-    } else if bir.localeId == chpl_nodeID {
-      mpz_set(ret.mpz, bir.mpz);
-
-    } else {
-      ret.mpz      = bir.mpz;
-      ret.localeId = bir.localeId;
-    }
-
-    return ret;
-  }
-  */
-
   //
   // Cast operators
   //
