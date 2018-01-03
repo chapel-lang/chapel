@@ -1,4 +1,4 @@
-parentheseslessConstErrorField.chpl:7: internal error: CALnnnn chpl Version mmmm
+parentheseslessConstErrorField.chpl:7: internal error: CALnnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
