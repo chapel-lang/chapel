@@ -1650,7 +1650,7 @@ module ChapelArray {
        return translate(offTup);
      }
 
-     /* Return true if the array has no elements */
+     /* Return true if the domain has no elements */
      proc isEmpty(): bool {
        return this.size == 0;
      }
