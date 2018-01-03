@@ -1090,7 +1090,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc stridable param where isSparseDom(this) {
-      compilerError("sparse domains do not currently support .stridable");
+      return _value.parentDom.stridable;
     }
 
     pragma "no doc"
