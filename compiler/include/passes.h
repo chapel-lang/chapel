@@ -102,7 +102,7 @@ void buildFarScopeEnumFunctions(EnumType* et);
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
 void replaceVarUses(Expr* topAst, SymbolMap& vars);
-void pruneThisArg(Symbol* parent, SymbolMap& uses);
+void pruneOuterVars(Symbol* parent, SymbolMap& uses);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();

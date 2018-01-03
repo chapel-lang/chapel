@@ -235,7 +235,8 @@ void CallExpr::verify() {
           INT_FATAL(this, "The module token must be the 1st argument.");
         }
 
-      } else if (sym == gMethodToken) {
+      } else if (sym->type == dtMethodToken) {
+        INT_ASSERT(sym == gMethodToken); // current state of affairs
         if (fieldIndex != methodTokenIndex) {
           INT_FATAL(this, "The method token is in the wrong slot.");
         }

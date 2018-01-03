@@ -404,19 +404,23 @@ static bool isCorrespCoforallIndex(FnSymbol* fn, Symbol* sym)
 //  addVarsToFormals() + replaceVarUsesWithFormals() ->
 //    addVarsToFormalsActuals() + replaceVarUses()
 
-// Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
-// This is a modification of isOuterVar() from flattenFunctions.cpp.
 //
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn) {
-  Symbol* symParent = sym->defPoint->parentSymbol;
-  if (symParent == fn                  || // no need to search
-      sym->isParameter()               || // includes isImmediate()
-      sym->hasFlag(FLAG_TEMP)          || // exclude these
+// Should we consider this symbol as possibly an outer variable
+// w.r.t. 'fn'?
+//
+// This is similar to the tests in findOuterVarsNew()
+// in implementForallIntents*.cpp
+//
+static bool considerAsOuterVar(Symbol* sym, FnSymbol* fn) {
+  if (sym->defPoint->parentSymbol == fn         || // defined in 'fn'
+      sym->isParameter()                        || // includes isImmediate()
+      sym->hasFlag(FLAG_INSTANTIATED_PARAM)     || // a param, too (during resolution)
+      sym->hasFlag(FLAG_TEMP)                   || // a temp
 
       // Consts need no special semantics for begin/cobegin/coforall/on.
       // Implementation-wise, it is uniform with consts in nested functions.
       sym->hasFlag(FLAG_CONST)         ||
+
 
       // NB 'type' formals do not have INTENT_TYPE
       sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
@@ -424,7 +428,24 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
     // these are either not variables or not defined outside of 'fn'
     return false;
   }
+
+  if (isCorrespCoforallIndex(fn, sym))
+    // we do not want these either
+    return false;
+
+  // otherwise, yes, consider it
+  return true;
+}
+
+
+// Is 'sym' a non-const variable (including formals) defined outside of 'fn'?
+// This is a modification of isOuterVar() from flattenFunctions.cpp.
+//
+static bool
+isOuterVar(Symbol* sym, FnSymbol* fn) {
+  Symbol* symParent = sym->defPoint->parentSymbol;
   Symbol* parent = fn->defPoint->parentSymbol;
+
   while (true) {
     if (!isFnSymbol(parent) && !isModuleSymbol(parent))
       return false;
@@ -445,19 +466,16 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
-  std::vector<BaseAST*> asts;
+  std::vector<SymExpr*> SEs;
+  collectSymExprs(fn, SEs);
 
-  collect_asts(fn, asts);
-
-  for_vector(BaseAST, ast, asts) {
-    if (SymExpr* symExpr = toSymExpr(ast)) {
+  for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
       if (isLcnSymbol(sym)) {
-        if (!isCorrespCoforallIndex(fn, sym) && isOuterVar(sym, fn))
+        if (considerAsOuterVar(sym, fn) && isOuterVar(sym, fn))
           uses.put(sym, markUnspecified);
       }
-    }
   }
 }
 
@@ -502,7 +520,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
 // That includes the implicit 'this' in the constructor - see
 // the commit message for r21602. So we exclude those from consideration.
 // While there, we prune other things for forall intents.
-void pruneThisArg(Symbol* parent, SymbolMap& uses) {
+void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
   form_Map(SymbolMapElem, e, uses) {
       Symbol* sym = e->key;
       if (e->value != markPruned) {
@@ -891,7 +909,7 @@ void createTaskFunctions(void) {
           findOuterVars(fn, uses);
 
           markOuterVarsWithIntents(block->byrefVars, uses);
-          pruneThisArg(call->parentSymbol, uses);
+          pruneOuterVars(call->parentSymbol, uses);
 
           if (block->byrefVars != NULL)
             block->byrefVars->remove();
