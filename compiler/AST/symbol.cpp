@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -535,6 +535,7 @@ VarSymbol*
 VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
+  newVarSymbol->qual = qual;
   newVarSymbol->cname = cname;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
