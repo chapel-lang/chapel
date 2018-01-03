@@ -164,7 +164,7 @@ static void print_user_internal_error() {
 
   get_version(version);
 
-  fprintf(stderr, "chpl Version %s", version);
+  fprintf(stderr, "chpl version %s", version);
 }
 
 

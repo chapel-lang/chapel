@@ -1,6 +1,6 @@
 declaredInClass-initializer.chpl:21: In initializer:
 declaredInClass-initializer.chpl:21: error: can't omit initialization of field "classTag", no type or default value provided
-declaredInClass-initializer.chpl:21: internal error: MIS0558 chpl Version 1.16.0 pre-release (830a53f)
+declaredInClass-initializer.chpl:21: internal error: MIS0558 chpl version 1.16.0 pre-release (830a53f)
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/standard/Types.chpl:nnnn: internal error: TYPnnnn chpl Version mmmm
+$CHPL_HOME/modules/standard/Types.chpl:nnnn: internal error: TYPnnnn chpl version mmmm
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

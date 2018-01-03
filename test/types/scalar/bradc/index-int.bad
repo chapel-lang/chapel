@@ -1,4 +1,4 @@
-index-int.chpl:1: internal error: TYP0104 chpl Version 1.11.0.e5a07fc
+index-int.chpl:1: internal error: TYP0104 chpl version 1.11.0.e5a07fc
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

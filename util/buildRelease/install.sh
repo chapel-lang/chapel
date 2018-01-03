@@ -104,8 +104,8 @@ esac
 # Gather the version number for the Chapel binary.
 export CHPL_HOST_PLATFORM=`"$CHPL_HOME"/util/chplenv/chpl_platform.py host`
 VERS=`$CHPL_HOME/bin/$CHPL_HOST_PLATFORM/chpl --version`
-# Remove the "chpl Version " part
-VERS=${VERS#chpl Version }
+# Remove the "chpl version " part
+VERS=${VERS#chpl version }
 # Replace the periods with spaces.
 VERS=${VERS//./ }
 VERS_ARRAY=($VERS)
