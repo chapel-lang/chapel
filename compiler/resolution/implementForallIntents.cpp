@@ -658,7 +658,7 @@ static void getOuterVars(BlockStmt* body, SymbolMap& uses)
   // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
   findOuterVars(body, uses);
   markOuterVarsWithIntents(body->forallIntents, uses);
-  pruneThisArg(body->parentSymbol, uses);
+  pruneOuterVars(body->parentSymbol, uses);
 }
 
 static void verifyOuterVars(BlockStmt* body2,
