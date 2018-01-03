@@ -13,7 +13,9 @@ record OtherRecord {
 record Foo {
   var a: bool;
 
-  proc init(genericArg) {
+  // We must explicitly exclude this initializer from consideration for copy
+  // initializers
+  proc init(genericArg) where (!genericArg: Foo) {
     genericArg.someMethod();
     a = true;
     super.init();

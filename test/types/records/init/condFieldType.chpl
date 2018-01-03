@@ -2,7 +2,7 @@ record R {
   param stridable: bool = false;
   var str: if stridable then int else void;
 
-  proc init(param stridable) {
+  proc init(param stridable) where !stridable: R {
     this.stridable = stridable;
     super.init();
     if stridable then
