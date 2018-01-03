@@ -535,6 +535,7 @@ VarSymbol*
 VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
+  newVarSymbol->qual = qual;
   newVarSymbol->cname = cname;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
