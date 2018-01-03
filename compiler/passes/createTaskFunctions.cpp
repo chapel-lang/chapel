@@ -415,12 +415,8 @@ static bool considerAsOuterVar(Symbol* sym, FnSymbol* fn) {
   if (sym->defPoint->parentSymbol == fn         || // defined in 'fn'
       sym->isParameter()                        || // includes isImmediate()
       sym->hasFlag(FLAG_INSTANTIATED_PARAM)     || // a param, too (during resolution)
+      sym->defPoint->parentSymbol == rootModule || // a system symbol
       sym->hasFlag(FLAG_TEMP)                   || // a temp
-
-      // Consts need no special semantics for begin/cobegin/coforall/on.
-      // Implementation-wise, it is uniform with consts in nested functions.
-      sym->hasFlag(FLAG_CONST)         ||
-
 
       // NB 'type' formals do not have INTENT_TYPE
       sym->hasFlag(FLAG_TYPE_VARIABLE)     // 'type' aliases or formals
