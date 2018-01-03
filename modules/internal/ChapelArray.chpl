@@ -1088,7 +1088,7 @@ module ChapelArray {
       return _value.stridable;
     }
 
-    /* Return true if this sparse domain's parent is stridable */
+    pragma "no doc"
     proc stridable param where isSparseDom(this) {
       return _value.parentDom.stridable;
     }
