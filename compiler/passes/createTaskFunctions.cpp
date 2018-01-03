@@ -522,6 +522,23 @@ void pruneOuterVars(Symbol* parent, SymbolMap& uses) {
       if (e->value != markPruned) {
         if (sym->hasFlag(FLAG_ARG_THIS))
           e->value = markPruned;
+        else if (e->value != tiMarkIn        &&
+                 sym->hasFlag(FLAG_CONST)    &&
+                 !sym->hasFlag(FLAG_REF_VAR) &&
+                 isGlobal(sym))
+          // Do not handle global constants, unless they are passed by 'in'.
+          // (We rely on the fact that 'in' intent must be specified
+          // explicitly, it cannot be the default intent.)
+          // That way the original broadcast variable will be accessed.
+          // Without this exclusion, those variables may be serialized
+          // to remote locales, causing extra comm. Ex. see this test:
+          //  optimizations/remoteValueForwarding/serialization/domains.chpl
+          //
+          // Note that this does not prevent handling of global 'const ref'
+          // variables. For robust treatment that takes into consideration
+          // the type of the variable and its concrete intent, handling of
+          // task intents should be done during resolution.
+          e->value = markPruned;
       }
   }
 }
