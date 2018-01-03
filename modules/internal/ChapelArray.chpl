@@ -1084,13 +1084,8 @@ module ChapelArray {
     }
 
     /* Return true if this is a stridable domain */
-    proc stridable param where isRectangularDom(this) {
+    proc stridable param where isRectangularDom(this) || isSparseDom(this) {
       return _value.stridable;
-    }
-
-    pragma "no doc"
-    proc stridable param where isSparseDom(this) {
-      compilerError("sparse domains do not currently support .stridable");
     }
 
     pragma "no doc"
