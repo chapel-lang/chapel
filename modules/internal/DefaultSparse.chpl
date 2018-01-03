@@ -41,10 +41,6 @@ module DefaultSparse {
       this.parentDom = parentDom;
     }
 
-    proc stridable param {
-      return this.parentDom.stridable;
-    }
-
     proc dsiBuildArray(type eltType)
       return new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                   dom=this);
