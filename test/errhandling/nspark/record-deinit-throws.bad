@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:1184: internal error: CAL1302 chpl Version 1.16.0 pre-release (1ff89ab)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:1184: internal error: CAL1302 chpl version 1.16.0 pre-release (1ff89ab)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

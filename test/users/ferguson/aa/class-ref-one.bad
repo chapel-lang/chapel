@@ -1,5 +1,5 @@
 class-ref-one.chpl:25: In function 'doit':
-class-ref-one.chpl:32: internal error: CHEnnnn chpl Version mmmm
+class-ref-one.chpl:32: internal error: CHEnnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
