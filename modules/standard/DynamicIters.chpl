@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -111,12 +111,13 @@ where tag == iterKind.leader
       writeln("Dynamic Iterator: serial execution because there is not enough work");
     yield (remain,);
   } else {
-    var moreWork : bool =true;
+    var moreWork : atomic bool;
+    moreWork.write(true);
     var curIndex : atomic remain.low.type;
     curIndex.write(remain.low);
 
-    coforall tid in 0..#nTasks with (ref remain, ref moreWork, ref curIndex) do {
-      while moreWork do {
+    coforall tid in 0..#nTasks with (const in remain) {
+      while moreWork.read() {
         // There is local work in remain
         const low = curIndex.fetchAdd(chunkSize);
         var high = low + chunkSize-1;
@@ -125,7 +126,7 @@ where tag == iterKind.leader
           break;
         } else if high > remain.high {
           high = remain.high;
-          moreWork = false;
+          moreWork.write(false);
         }
 
         const current:rType = remain(low .. high);
@@ -288,12 +289,13 @@ where tag == iterKind.leader
   }
 
   else {
-    var undone=true;
+    var undone : atomic bool;
+    undone.write(true);
     const factor=nTasks;
     var lock : vlock;
 
     coforall tid in 0..#nTasks with (ref remain, ref undone, ref lock) do {
-      while undone do {
+      while undone.read() do {
         // There is local work in remain(tid)
         const current:rType=adaptSplit(remain, factor, undone, lock);
         if current.length !=0 then {
@@ -501,14 +503,14 @@ where tag == iterKind.leader
     const factor:int=2;
 
     const factorSteal:int=2;
-    var moreWork:bool=true; // A global var to control the termination
-
+    var moreWork : atomic bool; // A global var to control the termination
+    moreWork.write(true);
 
     // Variables to put a barrier to ensure the initial range is computed on each Thread
     var barrier : atomic int;
 
     // Start the parallel work
-    coforall tid in 0..#nTasks with (ref localWork, ref moreLocalWork, ref moreWork, ref r) do {
+    coforall tid in 0..#nTasks with (const in r) {
 
       // Step 1: Initial range per Thread/Task
 
@@ -546,7 +548,7 @@ where tag == iterKind.leader
       var victim=(tid+1) % nTasks;
       var stealFailed:bool=false;
 
-      while moreWork do {
+      while moreWork.read() do {
         if debugDynamicIters then
           writeln("Entering at Stealing phase in tid ", tid," with victim ", victim, " using method of Stealing ", methodStealing);
 
@@ -588,7 +590,7 @@ where tag == iterKind.leader
         }
         // Check if there is no more work
         if nVisitedVictims >= nTasks-1 then
-          moreWork=false; // Signal that there is no more work in any victim
+          moreWork.write(false); // Signal that there is no more work in any victim
         else {  // There can be still work in other victim
           victim=(victim+1) % nTasks; // New victim to steal
           if methodStealing==Method.RoundRobin && victim==tid then
@@ -709,7 +711,7 @@ private proc defaultNumTasks(nTasks:int)
   return dnTasks;
 }
 
-private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:bool, ref lock : vlock, splitTail:bool=false)
+private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, ref lock : vlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
   type lenType=rangeToSplit.length.type;
@@ -722,7 +724,8 @@ private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft:b
     size=max(totLen/splitFactor, profThreshold);
   else {
     size=totLen;
-    itLeft=false;}
+    if isAtomic(itLeft) then itLeft.write(false); else itLeft=false;
+  }
   const direction = if splitTail then -1 else 1;
   const firstRange:rType=rangeToSplit#(direction*size);
   rangeToSplit=rangeToSplit#(direction*(size-totLen));

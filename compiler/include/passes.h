@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -102,7 +102,7 @@ void buildFarScopeEnumFunctions(EnumType* et);
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
 void replaceVarUses(Expr* topAst, SymbolMap& vars);
-void pruneThisArg(Symbol* parent, SymbolMap& uses);
+void pruneOuterVars(Symbol* parent, SymbolMap& uses);
 
 // deadCodeElimination.cpp
 void deadBlockElimination();
