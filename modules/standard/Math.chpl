@@ -1057,6 +1057,66 @@ module Math {
     return truncf(x);
   }
 
+
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  extern proc j0(x: real(64)): real(64);
+
+  inline proc j0(x : real(32)): real(32) {
+  /* Returns the Bessel function of the first kind of order `0` of `x`. */
+    extern proc j0f(x: real(32)): real(32);
+    return j0f(x);
+  }
+
+
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  extern proc j1(x: real(64)): real(64);
+
+  inline proc j1(x : real(32)): real(32) {
+  /* Returns the Bessel function of the first kind of order `1` of `x`. */
+    extern proc j1f(x: real(32)): real(32);
+    return j1f(x);
+  }
+
+
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  extern proc jn(n: int, x: real(64)): real(64);
+
+  inline proc jn(n: int, x : real(32)): real(32) {
+  /* Returns the Bessel function of the first kind of order `n` of `x`. */
+    extern proc jnf(n: int, x: real(32)): real(32);
+    return jnf(n, x);
+  }
+
+
+  /* Returns the Bessel function of the second kind of order `0` of `x`. */
+  extern proc y0(x: real(64)): real(64);
+
+  inline proc y0(x : real(32)): real(32) {
+  /* Returns the Bessel function of the second kind of order `0` of `x`. */
+    extern proc y0f(x: real(32)): real(32);
+    return y0f(x);
+  }
+
+
+  /* Returns the Bessel function of the second kind of order `1` of `x`. */
+  extern proc y1(x: real(64)): real(64);
+
+  inline proc y1(x : real(32)): real(32) {
+  /* Returns the Bessel function of the second kind of order `1` of `x`. */
+    extern proc y1f(x: real(32)): real(32);
+    return y1f(x);
+  }
+
+
+  /* Returns the Bessel function of the second kind of order `n` of `x`. */
+  extern proc yn(n: int, x: real(64)): real(64);
+
+  inline proc yn(n: int, x : real(32)): real(32) {
+  /* Returns the Bessel function of the second kind of order `n` of `x`. */
+    extern proc ynf(n: int, x: real(32)): real(32);
+    return ynf(n, x);
+  }
+
 } // end of module Math
 
 // TODO: Consolidate overloaded signatures, to simplify the documentation.
