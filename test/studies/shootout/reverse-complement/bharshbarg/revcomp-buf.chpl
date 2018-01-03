@@ -40,7 +40,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap);
+        chan.readBytes(c_ptrTo(buf), cap:ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
@@ -63,7 +63,7 @@ record buf {
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:size_t);
     if ret != c_nil {
-      const idx = arr.domain.first + ret:int - ptr:int;
+      const idx = arr.domain.first + ret:c_intptr - ptr:c_intptr;
       return idx;
     }
     return -1;
