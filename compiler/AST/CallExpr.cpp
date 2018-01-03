@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -235,7 +235,8 @@ void CallExpr::verify() {
           INT_FATAL(this, "The module token must be the 1st argument.");
         }
 
-      } else if (sym == gMethodToken) {
+      } else if (sym->type == dtMethodToken) {
+        INT_ASSERT(sym == gMethodToken); // current state of affairs
         if (fieldIndex != methodTokenIndex) {
           INT_FATAL(this, "The method token is in the wrong slot.");
         }
