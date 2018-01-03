@@ -1,5 +1,5 @@
 initAtomicsViaWrite.chpl:5: In initializer:
-initAtomicsViaWrite.chpl:6: internal error: CAL0123 chpl Version 1.17.0 pre-release (5a84825)
+initAtomicsViaWrite.chpl:6: internal error: CAL0123 chpl version 1.17.0 pre-release (5a84825)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

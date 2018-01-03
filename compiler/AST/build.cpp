@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -2488,7 +2488,7 @@ buildFunctionSymbol(FnSymbol*   fn,
 
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
 
-    fn->addFlag(FLAG_METHOD);
+    fn->setMethod(true);
     fn->insertFormalAtHead(new DefExpr(mt));
   }
 

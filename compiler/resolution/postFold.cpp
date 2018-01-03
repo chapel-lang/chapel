@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -241,25 +241,31 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
-    if (isTypeExpr(call->get(1)) == true  ||
-        isTypeExpr(call->get(2)) == true)  {
-      Type* lt = call->get(2)->getValType(); // a:t cast is cast(t,a)
-      Type* rt = call->get(1)->getValType();
+    SymExpr* parentExpr = toSymExpr(call->get(1));
+    SymExpr* subExpr    = toSymExpr(call->get(2));
+    if (isTypeExpr(parentExpr) == true  ||
+        isTypeExpr(subExpr)    == true)  {
+      Type* st = subExpr->getValType();
+      Type* pt = parentExpr->getValType();
 
-      if (lt->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(rt)) {
-        AggregateType* ag = toAggregateType(lt);
-        lt = ag->getField("_instance")->type;
+      if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
+        AggregateType* ag = toAggregateType(st);
+        st = ag->getField("_instance")->type;
+      } else {
+        // Try to work around some resolution order issues
+        st = resolveTypeAlias(subExpr);
+        pt = resolveTypeAlias(parentExpr);
       }
 
-      if (lt                                != dtUnknown &&
-          rt                                != dtUnknown &&
+      if (st                                != dtUnknown &&
+          pt                                != dtUnknown &&
 
-          lt                                != dtAny     &&
-          rt                                != dtAny     &&
+          st                                != dtAny     &&
+          pt                                != dtAny     &&
 
-          lt->symbol->hasFlag(FLAG_GENERIC) == false) {
+          st->symbol->hasFlag(FLAG_GENERIC) == false) {
 
-        if (isSubTypeOrInstantiation(lt, rt) == true) {
+        if (isSubTypeOrInstantiation(st, pt) == true) {
           retval = new SymExpr(gTrue);
 
         } else {
@@ -267,7 +273,11 @@ static Expr* postFoldPrimop(CallExpr* call) {
         }
 
         call->replace(retval);
+      } else {
+        USR_FATAL(call, "Unable to perform subtype query: %s:%s", st->symbol->name, pt->symbol->name);
       }
+    } else {
+      USR_FATAL(call, "Subtype query requires a type");
     }
 
   } else if (call->isPrimitive(PRIM_CAST) == true) {

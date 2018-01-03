@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -150,7 +150,8 @@ module SharedObject {
       this.p = src.p;
       this.pn = src.pn;
 
-      this.pn.retain();
+      if this.pn != nil then
+        this.pn.retain();
     }
 
     /*
@@ -231,7 +232,8 @@ module SharedObject {
    */
   proc =(ref lhs:Shared, rhs: Shared) {
     // retain-release
-    rhs.pn.retain();
+    if rhs.pn != nil then
+      rhs.pn.retain();
     lhs.clear();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;

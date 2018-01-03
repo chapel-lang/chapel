@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -390,8 +390,8 @@ _define_string_to_real_type(complex, 64)
 _define_string_to_real_type(complex, 128)
 
 
-c_string_copy
-integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
+c_string
+integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned)
 {
   char buffer[256];
   const char* format = "";
@@ -399,7 +399,7 @@ integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned)
   switch (SIGNED * isSigned + size)
   {
    default:
-    chpl_error("Unexpected case in integral_to_c_string_copy", -1, 0);
+    chpl_error("Unexpected case in integral_to_c_string", -1, 0);
     break;
 
    case UNSIGNED + 1: format = "%" PRIu8;  break;
@@ -432,9 +432,9 @@ static char* ensureDecimal(char* buffer) {
 #define POSINFSTRING "inf"
 
 // Note: This function is thread-safe, since the stack-allocated buffer is
-// private to the thread, and each returned c_string_copy is a unique object.
-c_string_copy
-real_to_c_string_copy(_real64 x, chpl_bool isImag)
+// private to the thread, and each returned c_string is a unique object.
+c_string
+real_to_c_string(_real64 x, chpl_bool isImag)
 {
   if (isnan(x)) {
     return string_copy(NANSTRING, 0, 0);

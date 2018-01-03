@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,54 +22,23 @@
 //
 // In terms of how they are used, c_strings are a "close to the metal"
 // representation, being in essence the common NUL-terminated C string.
-//
-// C string copies
-// extern type c_string_copy is also a built-in primitive type.
-// It is the same as a c_string, but in its case represents "owned" data.
-// Low-level routines that allocate string data off the heap and return a deep
-// copy (including string_copy, string_concat, string_index and string_select)
-// have the return type of c_string_copy to denote that ownership.
-//
-// The difference is ignored by the C compiler, but Chapel treats them as
-// different types.  This difference allows us to have two versions of
-// toString: one makes a copy of its c_string argument, the other simply
-// pointer-copies its c_string_copy argument.  Both effectively return an
-// "owned" C string, which is how the internal chpl_string type is currently
-// interpreted.  (The new record-based string implementation has different
-// rules, but still makes use of the distinction between unowned c_strings and
-// owned c_string_copies.
 module CString {
   use ChapelStandard;
 
   // The following method is called by the compiler to determine the default
   // value of a given type.
-  inline proc _defaultOf(type t) param where t: c_string return c"";
-  inline proc _defaultOf(type t) where t == c_string_copy return _nullString;
+  inline proc _defaultOf(type t) where t: c_string return c_nil:c_string;
 
   //inline proc c_string.c_str() return this;
 
-  // We can't use the catch-all initCopy or autoCopy because of the
-  // transformation of c_strings into string for generic parameters
-  // TODO: cant specify return type or else we run into a bug were we do an
-  //       assignment out of these functions, causing access to uninitialized
-  //       memory for c_string_copy
   pragma "init copy fn"
   inline proc chpl__initCopy(x: c_string) : c_string {
-    return x;
-  }
-  pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
 
   pragma "donor fn"
   pragma "auto copy fn"
   inline proc chpl__autoCopy(x: c_string) : c_string {
-    return x;
-  }
-  pragma "donor fn"
-  pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string_copy) : c_string_copy {
     return x;
   }
 
@@ -118,7 +87,7 @@ module CString {
   }
 
   // let us set c_strings to NULL
-  inline proc =(ref a:c_string, b:_nilType) { a = _nullString; }
+  inline proc =(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
@@ -126,40 +95,9 @@ module CString {
     __primitive("=", a, b.c_str());
   }
 
-  // Create a fresh copy of the RHS string, first releasing the LHS.
-  inline proc =(ref a: c_string_copy, b: c_string) {
-    chpl_free_c_string_copy(a);
-    var c = __primitive("string_copy", b);
-    __primitive("=", a, c);
-  }
-  // Assume ownership of data brought by the RHS, first releasing the LHS.
-  inline proc =(ref a: c_string_copy, b: c_string_copy) {
-    chpl_free_c_string_copy(a);
-    __primitive("=", a, b);
-  }
-
-  // A c_string_copy can always be used as a c_string.
-  inline proc _cast(type t, x: c_string_copy) where t == c_string {
-    return __primitive("cast", t, x);
-  }
-
   extern proc chpl_bool_to_c_string(x:bool) : c_string;
   inline proc _cast(type t, x: bool(?w)) where t == c_string {
     return chpl_bool_to_c_string(x:bool);
-  }
-  inline proc _cast(type t, x: bool(?w)) where t == c_string_copy {
-    return __primitive("string_copy", chpl_bool_to_c_string(x:bool));
-  }
-
-  inline proc _cast(type t, x:enumerated) where t == c_string_copy {
-    // Use the compiler-generated enum to c_string conversion.
-    var cs = _cast(c_string, x);
-    return __primitive("string_copy", cs);
-  }
-
-  inline proc _cast(type t, x:integral) where t == c_string_copy {
-    extern proc integral_to_c_string_copy(x:int(64), size:size_t, isSigned: bool) : c_string_copy ;
-    return integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
   }
 
   //
@@ -259,24 +197,24 @@ module CString {
   //
   // casts from complex
   //
-  inline proc _cast(type t, x: complex(?w)) where t == c_string_copy {
+  inline proc _cast(type t, x: complex(?w)) where t == c_string {
     if isnan(x.re) || isnan(x.im) then
       return __primitive("string_copy", "nan");
-    var re = (x.re):c_string_copy;
-    var im: c_string_copy;
+    var re = (x.re):c_string;
+    var im: c_string;
     var op: c_string;
     if x.im < 0 {
-      im = (-x.im):c_string_copy;
+      im = (-x.im):c_string;
       op = " - ";
     } else if im == "-0.0" {
-      im = "0.0":c_string_copy;
+      im = "0.0":c_string;
       op = " - ";
     } else {
-      im = (x.im):c_string_copy;
+      im = (x.im):c_string;
       op = " + ";
     }
     // TODO: Add versions of the concatenation operator that consume their
-    // c_string_copy arg or args.
+    // c_string arg or args.
     const ts0 = re + op;
     chpl_free_c_string(re);
     const ts1 = ts0 + im;
@@ -286,54 +224,24 @@ module CString {
     chpl_free_c_string(ts1);
     return ret;
   }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:complex(?w)) where t == c_string
-    return _cast(c_string_copy, x);
 
-  extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy ;
+  extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
   //
   // casts from real
   //
-  inline proc _cast(type t, x:real(?w)) where t == c_string_copy {
-    return real_to_c_string_copy(x:real(64), false);
+  inline proc _cast(type t, x:real(?w)) where t == c_string {
+    return real_to_c_string(x:real(64), false);
   }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:real(?w)) where t == c_string
-    return _cast(c_string_copy, x);
 
   //
   // casts from imag
   //
-  inline proc _cast(type t, x:imag(?w)) where t == c_string_copy {
+  inline proc _cast(type t, x:imag(?w)) where t == c_string {
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See ChapelBase:965.
     var r = __primitive("cast", real(64), x);
-    return real_to_c_string_copy(r, true);
+    return real_to_c_string(r, true);
   }
-  // TODO: This is only in place to support test code in types/string/sungeun.
-  // Nor user nor module code should use this cast, because it strips ownership
-  // from the c_string_copy returned by the above cast without first arranging
-  // for its disposal.
-  inline proc _cast(type t, x:imag(?w)) where t == c_string
-    return _cast(c_string_copy, x);
-
-  /*
-  inline proc +(a:c_string, b:c_string_copy) {
-    return __primitive("string_concat", a, b);
-  }
-  inline proc +(a:c_string_copy, b:c_string_copy) {
-    return __primitive("string_concat", a, b);
-  }
-  inline proc +(a:c_string_copy, b:c_string) {
-    return __primitive("string_concat", a, b);
-  }
-  */
 
   //
   // primitive c_string functions and methods
@@ -366,27 +274,19 @@ module CString {
   extern proc string_index_of(haystack:c_string, needle:c_string):int;
 
   // Use with care.  Not for the weak.
-  inline proc chpl_free_c_string_copy(ref cs: c_string_copy) {
+  inline proc chpl_free_c_string(ref cs: c_string) {
     pragma "insert line file info"
-    extern proc chpl_rt_free_c_string(ref cs: c_string_copy);
-    if (cs != _nullString) then chpl_rt_free_c_string(cs);
-    // cs = _nullString;
+    extern proc chpl_rt_free_c_string(ref cs: c_string);
+    if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);
+    // cs = c_nil;
   }
 
   proc c_string.writeThis(x) {
     compilerError("Cannot write a c_string, cast to a string first.");
   }
-  // The c_string_copy version is required, since apparently coercions are not
-  // applied to "this".
-  proc c_string_copy.writeThis(x) {
-    compilerError("Cannot write a c_string_copy, cast to a string first.");
-  }
 
   proc c_string.readThis(x) {
     compilerError("Cannot read a c_string, use string.");
-  }
-  proc c_string_copy.readThis(x) {
-    compilerError("Cannot read a c_string_copy, use string.");
   }
 
 }

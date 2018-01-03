@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -289,11 +289,14 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 
   // Does "_this" even make sense in this situation?
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", newType);
+
   _this->addFlag(FLAG_ARG_THIS);
+
   dtor->_this = _this;
 
+  dtor->setMethod(true);
+
   dtor->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
-  dtor->addFlag(FLAG_METHOD);
   dtor->insertFormalAtTail(dtor->_this);
 
   dtor->addFlag(FLAG_COMPILER_GENERATED);

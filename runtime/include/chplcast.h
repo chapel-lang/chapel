@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -67,18 +67,9 @@ _complex128 c_string_to_complex128(c_string str, int lineno, int32_t filename);
 
 
 /* every other primitive type to string */
-c_string_copy integral_to_c_string_copy(int64_t x, uint32_t size, chpl_bool isSigned);
-c_string_copy real_to_c_string_copy(_real64 x, chpl_bool isImag);
+c_string integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned);
+c_string real_to_c_string(_real64 x, chpl_bool isImag);
 
-// Since Chapel's type system treats c_string and c_string_copy as distinct
-// types, we could rely on the Chapel compiler doing the right thing if these
-// routines are used as externs in module code.
-// TODO: Currently, they are called directly in codegen.  This is dangerous
-// because the C compiler treats the two types identically.
-// However, the distinction between c_string and c_string_copy should be
-// respected, so we can free dynamically-allocated C strings and avoid freeing
-// statically-allocated ones.  The easiest approach is probably to call these
-// (and other type##_to_c_string functions) from module code.
 // TODO: Can we use the pattern above, to reduce the number of interfaces required?
 static inline
 c_string chpl_bool_to_c_string(chpl_bool x) {

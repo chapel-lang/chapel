@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -3855,7 +3855,7 @@ qioerr _qio_channel_read_char_slow_unlocked(qio_channel_t* restrict ch, int32_t*
   return err;
 }
 
-c_string_copy qio_encode_to_string(int32_t chr)
+c_string qio_encode_to_string(int32_t chr)
 {
   int nbytes;
   char* buf;

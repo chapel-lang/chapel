@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,10 +62,10 @@ module StringCasts {
   //
   proc _cast(type t, x: integral) where t == string {
     //TODO: switch to using qio's writef somehow
-    extern proc integral_to_c_string_copy(x:int(64), size:uint(32), isSigned: bool) : c_string_copy;
-    extern proc strlen(const str: c_string_copy) : size_t;
+    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool) : c_string;
+    extern proc strlen(const str: c_string) : size_t;
 
-    var csc = integral_to_c_string_copy(x:int(64), numBytes(x.type), isIntType(x.type));
+    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type));
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
@@ -118,10 +118,10 @@ module StringCasts {
   // real & imag
   //
   inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
-    extern proc real_to_c_string_copy(x:real(64), isImag: bool) : c_string_copy;
-    extern proc strlen(const str: c_string_copy) : size_t;
+    extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
+    extern proc strlen(const str: c_string) : size_t;
 
-    var csc = real_to_c_string_copy(x:real(64), isImag);
+    var csc = real_to_c_string(x:real(64), isImag);
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));

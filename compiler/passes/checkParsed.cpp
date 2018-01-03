@@ -1,15 +1,15 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -171,27 +171,30 @@ static void checkExplicitDeinitCalls(CallExpr* call) {
   }
 }
 
-
 static void checkPrivateDecls(DefExpr* def) {
-  if (def->sym->hasFlag(FLAG_PRIVATE)) {
+  if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
-    if (def->parentSymbol) {
-      if (toFnSymbol(def->parentSymbol)) {
-        // The parent symbol of this definition is a FnSymbol.  Private
-        // symbols at the function scope are meaningless because there is no
-        // way for anything outside the function to access its locals, so warn
-        // the user.
+    if (def->parentSymbol != NULL) {
+      if (isFnSymbol(def->parentSymbol) == true) {
+        // The parent symbol of this definition is a FnSymbol.
+        // Private symbols at the function scope are meaningless
+        // because there is no way for anything outside the function
+        // to access ts locals, so warn the user.
         USR_WARN(def,
-                 "Private declarations within function bodies are meaningless");
-        // Don't want to waste time treating this symbol as if it could be
-        // accessed from an outer scope, so remove the flag.
+                 "Private declarations within function bodies "
+                 "are meaningless");
+
         def->sym->removeFlag(FLAG_PRIVATE);
-      } else if (ModuleSymbol *mod = toModuleSymbol(def->parentSymbol)) {
+
+      } else if (ModuleSymbol* mod = toModuleSymbol(def->parentSymbol)) {
+        FnSymbol* fn = toFnSymbol(def->sym);
+
         // The parent symbol is a module symbol.  Could still be invalid.
-        if (def->sym->hasFlag(FLAG_METHOD)) {
-          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
-          // Private secondary methods require further discussion before they
-          // are implemented.
+        if (fn != NULL && fn->isMethod() == true) {
+          USR_FATAL_CONT(def,
+                         "Can't apply private to the fields or methods of "
+                         "a class or record yet");
+
         } else if (mod->block != def->parentExpr) {
           if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
             // Scopeless blocks are used to define multiple symbols, for
@@ -201,23 +204,30 @@ static void checkPrivateDecls(DefExpr* def) {
               // block.  Private symbols at this scope are meaningless, so warn
               // the user.
               USR_WARN(def,
-                       "Private declarations within nested blocks are meaningless");
+                       "Private declarations within nested blocks "
+                       "are meaningless");
+
               def->sym->removeFlag(FLAG_PRIVATE);
             }
+
           } else {
             // There are many situations which could lead to this else branch.
             // Most of them will not reach here due to being banned at parse
             // time.  However, those that aren't excluded by syntax errors will
             // be caught here.
-            USR_WARN(def, "Private declarations are meaningless outside of module level declarations");
+            USR_WARN(def,
+                     "Private declarations are meaningless outside "
+                     "of module level declarations");
+
             def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
-      } else if (TypeSymbol *t = toTypeSymbol(def->parentSymbol)) {
-        if (toAggregateType(t->type)) {
-          USR_FATAL_CONT(def, "Can't apply private to the fields or methods of a class or record yet");
-          // Private fields and methods require further discussion before they
-          // are implemented.
+
+      } else if (TypeSymbol* t = toTypeSymbol(def->parentSymbol)) {
+        if (isAggregateType(t->type) == true) {
+          USR_FATAL_CONT(def,
+                         "Can't apply private to the fields or methods "
+                         "of a class or record yet");
         }
       }
     }
@@ -267,7 +277,7 @@ checkFunction(FnSymbol* fn) {
   if (!strcmp(fn->name, "these") && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
-  if (fn->thisTag != INTENT_BLANK && !fn->hasFlag(FLAG_METHOD)) {
+  if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
     USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
   }
 

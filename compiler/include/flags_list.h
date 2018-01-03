@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -98,6 +98,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The defau
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref if modified", "The default intent for this type is ref if modified const ref otherwise")
 
 symbolFlag( FLAG_DEFAULT_CONSTRUCTOR , npr, "default constructor" , ncm )
+symbolFlag( FLAG_DEFAULT_COPY_INIT, npr, "default copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )

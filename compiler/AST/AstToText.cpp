@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,12 +67,14 @@ void AstToText::appendName(FnSymbol* fn)
     mText += "top-level module statements for ";
     mText += (fn->name + 11);
   }
+
   else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR))
   {
     INT_ASSERT(strncmp(fn->name, "_type_construct_", 16) == 0);
 
     mText += (fn->name + 16);
   }
+
   else if (fn->hasFlag(FLAG_CONSTRUCTOR))
   {
     INT_ASSERT(strncmp(fn->name, "_construct_",      11) == 0);
@@ -80,7 +82,8 @@ void AstToText::appendName(FnSymbol* fn)
     mText += (fn->name + 11);
     // todo: should this also include ".init" ?
   }
-  else if (fn->hasFlag(FLAG_METHOD))
+
+  else if (fn->isMethod() == true)
   {
     appendThisIntent(fn);
 
@@ -96,8 +99,11 @@ void AstToText::appendName(FnSymbol* fn)
 
     mText += fnName;
   }
+
   else
+  {
     mText += fn->name;
+  }
 }
 
 void AstToText::appendThisIntent(FnSymbol* fn)

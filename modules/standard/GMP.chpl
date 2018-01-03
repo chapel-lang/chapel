@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1087,7 +1087,7 @@ module GMP {
   extern proc chpl_gmp_mpz_print(const ref x: mpz_t);
 
   /* Get an mpz_t as a string */
-  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string_copy;
+  extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
 
   class GMPRandom {
     var state: gmp_randstate_t;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1830,11 +1830,6 @@ module String {
 
   pragma "no doc"
   inline proc _cast(type t, cs: c_string) where t == bufferType {
-    return __primitive("cast", t, cs);
-  }
-
-  pragma "no doc"
-  inline proc _cast(type t, cs: c_string_copy) where t == bufferType {
     return __primitive("cast", t, cs);
   }
 

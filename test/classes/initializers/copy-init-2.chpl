@@ -24,7 +24,7 @@ record MyRecord {
 proc main() {
   writeln('main            DefaultInit  rec100');
 
-  var rec100 : MyRecord;
+  var rec100 : MyRecord; // works with compiler generated copy initializers
 
   fnCall(rec100);
 

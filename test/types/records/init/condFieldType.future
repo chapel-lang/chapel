@@ -1,4 +1,5 @@
-bug: Conditional expressions in field types don't work with initializers
+bug: conditional expression broken with default copy initializer
 
-In this test, the presence of the conditional expression in the field
-type position seems to cause compilation problems.
+I suspect this issue is similar to why conditional expressions are still broken
+for default initializers, so I don't think it is worth holding up the copy
+initializer change.

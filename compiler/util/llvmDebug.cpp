@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -177,7 +177,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     else {
       if(type->astTag == E_PrimitiveType) {
         llvm::Type *PointeeTy = ty->getPointerElementType();
-        // handle string, c_string, c_string_copy, nil, opaque, c_void_ptr
+        // handle string, c_string, nil, opaque, c_void_ptr
         if(PointeeTy->isIntegerTy()) {
           llvm::DIType* pteIntDIType; //create the DI-pointeeType
           pteIntDIType = this->dibuilder.createBasicType(

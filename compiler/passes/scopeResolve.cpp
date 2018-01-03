@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -622,7 +622,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
       updateMethod(usymExpr, sym, symExpr);
 
     // sjd: stopgap to avoid shadowing variables or functions by methods
-    } else if (fn->hasFlag(FLAG_METHOD) == true) {
+    } else if (fn->isMethod() == true) {
       updateMethod(usymExpr);
 
     // handle function call without parentheses
@@ -1447,13 +1447,13 @@ static Symbol* inSymbolTable(const char* name, BaseAST* ast) {
 
   if (ResolveScope* scope = ResolveScope::getScopeFor(ast)) {
     if (Symbol* sym = scope->lookupNameLocally(name)) {
-      if (sym->hasFlag(FLAG_METHOD) == false) {
-        retval = sym;
-
-      } else if (FnSymbol* fn = toFnSymbol(sym)) {
-        if (methodMatched(ast, fn) == true) {
+      if (FnSymbol* fn = toFnSymbol(sym)) {
+        if (fn->isMethod() == false || methodMatched(ast, fn) == true) {
           retval = sym;
         }
+
+      } else {
+        retval = sym;
       }
     }
   }

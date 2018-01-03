@@ -236,6 +236,20 @@ class ``GlobalDomain``
   ``dsiNewRectangularDom()`` to the index set of the corresponding Chapel
   domain value.
 
+.. method:: proc GlobalDomain.dsiAssignDomain(rhs: domain, lhsPrivate:bool): void
+
+  Set one domain to another. The receiver is the domain being set.
+  The rhs could be any domain, but this function should raise a
+  compilation error if the types do not match sufficiently.
+
+  In some cases when this method is called, the LHS can't be shared
+  or have any arrays declared over it. In that case, ``lhsPrivate=true``
+  is passed.
+
+  Note that the method ``chpl_assignDomainWithGetSetIndices`` can be called 
+  to use ``dsiReallocate``/``getIndices``/``dsiSetIndices``/
+  ``dsiPostReallocate`` to accomplish the assignment.
+
 .. method:: iter GlobalDomain.these()
 
   The serial iterator over the indices of this domain.
