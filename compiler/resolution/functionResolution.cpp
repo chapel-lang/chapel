@@ -5028,7 +5028,7 @@ static bool hasCopyConstructor(AggregateType* ct) {
       ArgSymbol* _other = fn->getFormal(3);
 
       if ((_this->type == ct || _this->type == ct->refType) &&
-          (_other->type == ct || _other->type == ct->refType)) {
+          _other->type == ct) {
         retval = true;
         break;
       }
