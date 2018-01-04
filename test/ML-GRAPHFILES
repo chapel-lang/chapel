@@ -100,3 +100,4 @@ studies/prk/Stencil/prk-stencil.ml-time.graph
 studies/nbody/md.ml-time.graph
 reductions/vass/reductions-perf.ml-time.graph
 parallel/taskCompare/elliot/taskSpawn.ml-time.graph
+performance/elliot/no-op.ml-time.graph
