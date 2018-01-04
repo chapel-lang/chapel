@@ -457,10 +457,12 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (baseType) {
-      tbaa = info->mdBuilder->createTBAAStructTagNode(
-               baseType->symbol->llvmTbaaTypeDescriptor,
-               valType->symbol->llvmTbaaTypeDescriptor,
-               offset);
+      if (valType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+        tbaa = info->mdBuilder->createTBAAStructTagNode(
+                 baseType->symbol->llvmTbaaTypeDescriptor,
+                 valType->symbol->llvmTbaaTypeDescriptor,
+                 offset);
+      }
     } else {
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
@@ -527,10 +529,12 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (baseType) {
-      tbaa = info->mdBuilder->createTBAAStructTagNode(
-               baseType->symbol->llvmTbaaTypeDescriptor,
-               valType->symbol->llvmTbaaTypeDescriptor,
-               offset, isConst);
+      if (valType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+        tbaa = info->mdBuilder->createTBAAStructTagNode(
+                 baseType->symbol->llvmTbaaTypeDescriptor,
+                 valType->symbol->llvmTbaaTypeDescriptor,
+                 offset, isConst);
+      }
     } else {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
       else tbaa = valType->symbol->llvmTbaaAccessTag;
@@ -1049,8 +1053,8 @@ GenRet codegenFieldPtr(
 
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
-      ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-          NULL, baseValue, 0, cBaseType->getMemberGEP("_u"));
+      ret.val = info->irBuilder->CreateStructGEP(
+          NULL, baseValue, cBaseType->getMemberGEP("_u"));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1060,15 +1064,20 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
-      ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-          NULL, baseValue, 0, fieldno);
+      ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
       if (!isUnion(ct)) {
-        llvm::StructType *structBaseType =
-          llvm::dyn_cast<llvm::StructType>(baseValue->getType());
-        if (structBaseType) {
-          ret.baseType = castType ? castType : baseType;
-          ret.offset = info->module->getDataLayout().
-            getStructLayout(structBaseType)->getElementOffset(fieldno);
+	llvm::PointerType *pBase =
+	  llvm::dyn_cast<llvm::PointerType>(baseValue->getType());
+	Type *surroundingStruct =
+	  (castType ? castType : baseType)->getValType();
+	if (isRecord(surroundingStruct) && pBase && surroundingStruct != dtNil) {
+          llvm::StructType *structBaseType =
+            llvm::dyn_cast<llvm::StructType>(pBase->getElementType());
+          if (structBaseType) {
+            ret.baseType = surroundingStruct;
+            ret.offset = info->module->getDataLayout().
+              getStructLayout(structBaseType)->getElementOffset(fieldno);
+          }
         }
       }
     }

@@ -954,6 +954,18 @@ void TypeSymbol::codegenMetadata() {
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
+    // Create tbaa access tags, one for const and one for not.
+    // The createTBAAStructTagNode() method is misnamed.  Here we
+    // use it for scalars.
+    llvmTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0);
+    llvmConstTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
   } else if (ct && !isUnion(type) && !hasFlag(FLAG_STAR_TUPLE)) {
     // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
     llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
@@ -976,8 +988,11 @@ void TypeSymbol::codegenMetadata() {
         fieldType = info->lvt->getType(fct->classStructName(true));
       }
       INT_ASSERT(fieldType);
-      unsigned gep = ct->getMemberGEP(field->cname);
-      llvm::Constant* off = llvm::ConstantExpr::getOffsetOf(struct_type, gep);
+      unsigned fieldno = ct->getMemberGEP(field->cname);
+      uint64_t byte_offset = info->module->getDataLayout().
+	getStructLayout(struct_type)->getElementOffset(fieldno);
+      llvm::Constant* off =
+	llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
       TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
       TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
@@ -991,20 +1006,6 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
     llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
-  }
-  if (llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-    // Create tbaa access tags, one for const and one for not.
-    // The createTBAAStructTagNode() method works for both scalars
-    // and aggregates, referencing the whole object.
-    llvmTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0);
-    llvmConstTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0,
-                                               /*IsConstant=*/true);
   }
 #endif
 }
