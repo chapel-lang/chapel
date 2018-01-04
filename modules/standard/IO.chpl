@@ -1968,6 +1968,20 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   super.init();
 }
 
+pragma "no doc"
+proc channel.init(x: channel) {
+  this.writing = x.writing;
+  this.kind = x.kind;
+  this.locking = x.locking;
+  this.home = x.home;
+  this._channel_internal = x._channel_internal;
+  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  super.init();
+  on x.home {
+    qio_channel_retain(x._channel_internal);
+  }
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer
