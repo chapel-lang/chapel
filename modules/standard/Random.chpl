@@ -556,7 +556,7 @@ module Random {
 
 
       /*
-        Constructs a new stream of random numbers using the specified seed
+        Creates a new stream of random numbers using the specified seed
         and parallel safety.
 
         :arg eltType: The element type to be generated.
@@ -571,10 +571,14 @@ module Random {
         :type parSafe: `bool`
 
       */
-      proc RandomStream(type eltType,
-                        seed: int(64) = SeedGenerator.currentTime,
-                        param parSafe: bool = true) {
+      proc init(type eltType,
+                seed: int(64) = SeedGenerator.currentTime,
+                param parSafe: bool = true) {
+        this.eltType = eltType;
         this.seed = seed;
+        // TODO: This can't be right:
+        //        this.parSafe = parSafe;
+        super.init();
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
@@ -2032,7 +2036,7 @@ module Random {
 
 
       /*
-        Constructs a new stream of random numbers using the specified seed
+        Creates a new stream of random numbers using the specified seed
         and parallel safety.
 
         .. note::
@@ -2052,9 +2056,10 @@ module Random {
         :type parSafe: `bool`
 
       */
-      proc NPBRandomStream(type eltType,
-                           seed: int(64) = SeedGenerator.oddCurrentTime,
-                           param parSafe: bool = true) {
+      proc init(type eltType,
+                seed: int(64) = SeedGenerator.oddCurrentTime,
+                param parSafe: bool = true) {
+        this.eltType = eltType;
 
         // The mod operation is written in these steps in order
         // to work around an apparent PGI compiler bug.
@@ -2069,6 +2074,9 @@ module Random {
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
+        // TODO: This can't be right:
+        //        this.parSafe = parSafe;
+        super.init();
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
           halt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
