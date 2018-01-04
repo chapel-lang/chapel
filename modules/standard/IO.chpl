@@ -1945,16 +1945,6 @@ record channel {
   var _readWriteThisFromLocale:locale;
 }
 
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: channel) {
-  on x.home {
-    qio_channel_retain(x._channel_internal);
-  }
-  return x;
-}
-
 pragma "no doc"
 proc =(ref ret:channel, x:channel) {
   // retain -- release
@@ -1971,7 +1961,19 @@ proc =(ref ret:channel, x:channel) {
 }
 
 pragma "no doc"
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
+}
+
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
