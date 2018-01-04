@@ -108,14 +108,23 @@ void maybe_set_jemalloc_lg_chunk(void) {
   // lg_chunk is specified as the base-2 log of the expansion chunk size
   hps_log2 = lrint(log2((double) hps));
 
-  // Now, set the jemalloc environment variable
+  //
+  // Now, set the jemalloc environment variable.  We also must include
+  // the "purge:" setting we specify at jemalloc configuration time,
+  // because the env var overrides config-time settings.
+  //
   if ((ev = getenv(jemalloc_conf_ev_name())) == NULL) {
-    snprintf(buf, sizeof(buf), "lg_chunk:%d", hps_log2);
+    const char* fmt = "purge:decay,lg_chunk:%d";
+    if (snprintf(buf, sizeof(buf), fmt, hps_log2) >= sizeof(buf)) {
+      chpl_internal_error("setting jemalloc conf env var would truncate");
+    }
   } else {
     // Override any user-specified lg_chunk.  Smaller or larger, it
     // would break our logic either way.
-    if (snprintf(buf, sizeof(buf), "%s,lg_chunk:%d", ev, hps_log2)
-        >= sizeof(buf)) {
+    const char* fmt = ((strstr(ev, "purge:") == NULL)
+                       ? "%s,purge:decay,lg_chunk:%d"
+                       : "%s,lg_chunk:%d");
+    if (snprintf(buf, sizeof(buf), fmt, ev, hps_log2) >= sizeof(buf)) {
       chpl_internal_error("setting jemalloc conf env var would truncate");
     }
   }
