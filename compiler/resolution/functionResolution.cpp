@@ -5680,6 +5680,20 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   return retval;
 }
 
+// There are three cases
+//
+//     1) new(typeExpr(_mt, this), actual1,  actual2, ...)    method
+//     2) new(typeExpr, actual1,  actual2, ...)               common
+//     3) new(module=, moduleName, typeExpr, actual1, ...)    module-scoped
+//
+// These become
+//
+//     1) "_construct_typeExpr"(_mt, this)(actual1, actual2, ...)
+//     2) "_construct_typeExpr"(actual1, actual2, ...)
+//     3) "_construct_typeExpr"(module=, moduleName, actual1, actual2, ...)
+//
+// respectively
+
 static void resolveNewHandleConstructor(CallExpr* call) {
   SET_LINENO(call);
 
@@ -5689,20 +5703,24 @@ static void resolveNewHandleConstructor(CallExpr* call) {
   if (FnSymbol* atInit = at->defaultInitializer) {
     Expr* baseExpr = NULL;
 
-    typeExpr->replace(new UnresolvedSymExpr(atInit->name));
+    if (isCallExpr(call->get(1)) == true) {
+      typeExpr->replace(new UnresolvedSymExpr(atInit->name));
 
-    // Convert the PRIM_NEW to a normal call
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      baseExpr = (se->symbol() == gModuleToken) ? call->get(3) : call->get(1);
+      baseExpr = call->get(1)->remove();
+
+    } else if (typeExpr == call->get(1) || typeExpr == call->get(3)) {
+      typeExpr->remove();
+
+      baseExpr = new UnresolvedSymExpr(atInit->name);
 
     } else {
-      baseExpr = call->get(1);
+      INT_ASSERT(false);
     }
 
+    // Convert the PRIM_NEW to the required call expr and resolve it
     call->primitive = NULL;
-    call->baseExpr  = baseExpr->remove();
-
-    parent_insert_help(call, call->baseExpr);
+    call->baseExpr  = baseExpr;
+    parent_insert_help(call, baseExpr);
 
     resolveExpr(call);
 
