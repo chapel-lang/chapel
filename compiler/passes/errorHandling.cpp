@@ -750,6 +750,7 @@ public:
   virtual bool enterTryStmt  (TryStmt*   node);
   virtual void exitTryStmt   (TryStmt*   node);
   virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterDeferStmt(DeferStmt* node);
 
 private:
   int  tryDepth;
@@ -878,6 +879,15 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+bool ErrorCheckingVisitor::enterDeferStmt(DeferStmt* node) {
+  if (canBlockStmtThrow(node->body())) {
+    USR_FATAL_CONT(node, "error handling in defer blocks must be complete");
+    // TODO print reasons for incompleteness
+  }
+
+  return true;
+}
+
 } /* end anon namespace */
 
 
@@ -978,6 +988,10 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
 
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
+  if (strcmp(fn->name, "deinit") == 0) {
+    if (fn->throwsError())
+      USR_FATAL_CONT(fn, "deinit is not permitted to throw");
+  }
 
   error_checking_mode_t mode = computeErrorCheckingMode(fn);
   INT_ASSERT(mode != ERROR_MODE_UNKNOWN);

@@ -1,0 +1,4 @@
+defer-no-throw.chpl:3: In function 'deferThrow':
+defer-no-throw.chpl:4: error: error handling in defer blocks must be complete
+defer-no-throw.chpl:9: In function 'deferTry':
+defer-no-throw.chpl:10: error: error handling in defer blocks must be complete
