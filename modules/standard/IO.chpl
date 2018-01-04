@@ -1968,8 +1968,29 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   super.init();
 }
 
+//
+// Note that this is effectively the initializer that the compiler
+// would typically provide and that, by providing the next initializer
+// below, we have to write it out manually...  A good case for having
+// a means to "opt-in" to including the compiler-provided initializer?
+//
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
+                  home: locale, _channel_internal:qio_channel_ptr_t,
+                  _readWriteThisFromLocale: locale) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  this.home = home;
+  this._channel_internal = _channel_internal;
+  this._readWriteThisFromLocale = _readWriteThisFromLocale;
+  super.init();
+}
+
 pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+  // Note that once issue #7960 is resolved, the following could become a
+  // call to this.init(writing, kind, locking)...
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
