@@ -102,15 +102,12 @@ static const char* shadowVarName(int ix, const char* base) {
 */
 
 
-/////////// some forwards ///////////
+/////////// forwards ///////////
 
 class ExpandVisitor;
-static void expandYield(ExpandVisitor* EV,
-                        CallExpr* yield);
-static void expandTaskFnCall(ExpandVisitor* EV,
-                             CallExpr* call, FnSymbol* taskFn);
-static void expandForall(ExpandVisitor* EV,
-                         ForallStmt* fs) {} //vass
+static void expandYield( ExpandVisitor* EV, CallExpr* yield);
+static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
+static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
 
 
 /////////// ExpandVisitor visitor ///////////
@@ -131,11 +128,12 @@ public:
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
       expandYield(this, node);
-    } else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
-      expandTaskFnCall(this, node, taskFn);
+    }
+    else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
+      expandTaskFn(this, node, taskFn);
     }
     // There shouldn't be anything interesting inside the call.
-    // expandTaskFnCall() takes care of descending into 'taskFn'.
+    // expandTaskFn() takes care of descending into 'taskFn'.
     return false;
   }
 
@@ -241,11 +239,16 @@ Also need to map the index variable to the yield value.
   bodyClone->accept(EV);
 }
 
+/////////// expandForall ///////////
 
-/////////// expandTaskFnCall ///////////
+static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
+{
+}
 
-static void expandTaskFnCall(ExpandVisitor* EV,
-                             CallExpr* call, FnSymbol* taskFn)
+
+/////////// expandTaskFn ///////////
+
+static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 {
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
   bool expandClone = false;
