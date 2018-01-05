@@ -105,11 +105,11 @@ static const char* shadowVarName(int ix, const char* base) {
 /////////// some forwards ///////////
 
 class ExpandForForall;
-static void expandYield(ExpandForForall* EV,
+static void expandYield(ExpandForForall& EV,
                         CallExpr* yield);
-static void expandTaskFnCall(ExpandForForall* EV,
+static void expandTaskFnCall(ExpandForForall& EV,
                              CallExpr* call, FnSymbol* taskFn);
-static void expandForall(ExpandForForall* EV,
+static void expandForall(ExpandForForall& EV,
                          ForallStmt* fs) {} //vass
 
 
@@ -130,9 +130,9 @@ public:
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
-      expandYield(this, node);
+      expandYield(*this, node);
     } else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
-      expandTaskFnCall(this, node, taskFn);
+      expandTaskFnCall(*this, node, taskFn);
     }
     // There shouldn't be anything interesting inside the call.
     // expandTaskFnCall() takes care of descending into 'taskFn'.
@@ -140,7 +140,7 @@ public:
   }
 
   virtual bool enterForallStmt(ForallStmt* node) {
-    expandForall(this, node);
+    expandForall(*this, node);
     // expandForall() takes care of descending into 'node'
     return false;
   }
@@ -202,15 +202,15 @@ ExpandForForall::ExpandForForall(ExpandForForall& parentEV,
 
 // Replace 'yield' with a clone of the forall loop body.
 // Recurse into the cloned body.
-static void expandYield(ExpandForForall* EV, CallExpr* yieldCall)
+static void expandYield(ExpandForForall& EV, CallExpr* yieldCall)
 {
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
-  map.copy(EV->svar2clonevar);  // vass is this the right way to copy a map?
+  map.copy(EV.svar2clonevar);  // vass is this the right way to copy a map?
 
   // Clone the index variable for use in the cloned body.
   // There is only one idx var because all zippering has been lowered away.
-  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
+  VarSymbol* origIdxVar = EV.forall->singleInductionVar();
   INT_ASSERT(map.get(origIdxVar) == NULL); //vass remove at end
   VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
   INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //vass remove at end
@@ -234,21 +234,20 @@ Also need to map the index variable to the yield value.
   map.put(idxVar, yieldSE->symbol());
 */
 
-  BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
+  BlockStmt* bodyClone = EV.forall->loopBody()->copy(&map);
   yieldCall->replace(bodyClone);
 
   // A yield stmt does not create any parallelism, so use the same visitor.
-  bodyClone->accept(EV);
+  bodyClone->accept(&EV);
 }
 
 
 /////////// expandTaskFnCall ///////////
 
-static void expandTaskFnCall(ExpandForForall* EV,
+static void expandTaskFnCall(ExpandForForall& EV,
                              CallExpr* call, FnSymbol* taskFn)
 {
-#if 1 //vass
-  FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
+  FnSymbol* cloneTaskFn = EV.taskFnCopies.get(taskFn);
   bool expandClone = false;
 
   if (cloneTaskFn == NULL) {
@@ -260,7 +259,7 @@ static void expandTaskFnCall(ExpandForForall* EV,
     INT_ASSERT(isGlobal(taskFn));
 
     cloneTaskFn = taskFn->copy();
-    EV->taskFnCopies.put(taskFn, cloneTaskFn);
+    EV.taskFnCopies.put(taskFn, cloneTaskFn);
 
     if (!preserveInlinedLineNumbers)
       reset_ast_loc(cloneTaskFn, call);
@@ -280,7 +279,7 @@ static void expandTaskFnCall(ExpandForForall* EV,
 
   int numOrigActuals = call->numActuals();
   int idx = 0;
-  for_shadow_vars(svar, temp1, EV->forall) {
+  for_shadow_vars(svar, temp1, EV.forall) {
     idx++;
     Symbol* eActual = svar->outerVarSym();
     call->insertAtTail(eActual);
@@ -299,8 +298,6 @@ static void expandTaskFnCall(ExpandForForall* EV,
         INT_ASSERT(eActual->isConstValWillNotChange() ||
                    eActual->hasFlag(FLAG_REF_TO_IMMUTABLE));
     }
-    VASS CONTINUE HERE;
-  
   }
 
   if (expandClone) {
@@ -311,7 +308,6 @@ static void expandTaskFnCall(ExpandForForall* EV,
   }
 
   // todo: addDummyErrorArgumentToCall() ?
-#endif
 }
 
 
