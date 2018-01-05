@@ -274,20 +274,20 @@ proc file.realPath(): string throws {
 
   proc isAbsPath(name: string): bool {
      if name.isEmptyString() {
-	    return false;
-	 }
+	 return false;
+     }
      const len: int = name.length;
      var str: string = name[1];
      if (str == '/' || str == '\\') {
         return true;
-    }
-	 else if str.isAlpha() {
+     }
+     else if str.isAlpha() {
     // Possible device root
        if len > 2 && name[2] == ':' {
          var strp: string = name[3];
          if (strp == '/' || strp == '\\') {
             return true;
-		 }  
+         }  
       }
      }
     return false;
