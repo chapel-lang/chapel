@@ -540,6 +540,11 @@ module Random {
       type eltType;
 
       /*
+        The seed value for the PRNG.
+      */
+      const seed: int(64);
+
+      /*
         Indicates whether or not the PCGRandomStream needs to be
         parallel-safe by default.  If multiple tasks interact with it in
         an uncoordinated fashion, this must be set to `true`.  If it will
@@ -548,12 +553,6 @@ module Random {
         to ensuring mutual exclusion.
       */
       param parSafe: bool = true;
-
-      /*
-        The seed value for the PRNG.
-      */
-      const seed: int(64);
-
 
       /*
         Creates a new stream of random numbers using the specified seed
@@ -576,8 +575,7 @@ module Random {
                 param parSafe: bool = true) {
         this.eltType = eltType;
         this.seed = seed;
-        // TODO: This can't be right:
-        //        this.parSafe = parSafe;
+        this.parSafe = parSafe;
         super.init();
         for param i in 1..numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i);
@@ -2019,6 +2017,12 @@ module Random {
       type eltType = real(64);
 
       /*
+        The seed value for the PRNG.  It must be an odd integer in the
+        interval [1, 2**46).
+      */
+      const seed: int(64);
+
+      /*
         Indicates whether or not the NPBRandomStream needs to be
         parallel-safe by default.  If multiple tasks interact with it in
         an uncoordinated fashion, this must be set to `true`.  If it will
@@ -2027,12 +2031,6 @@ module Random {
         to ensuring mutual exclusion.
       */
       param parSafe: bool = true;
-
-      /*
-        The seed value for the PRNG.  It must be an odd integer in the
-        interval [1, 2**46).
-      */
-      const seed: int(64);
 
 
       /*
@@ -2056,7 +2054,7 @@ module Random {
         :type parSafe: `bool`
 
       */
-      proc init(type eltType,
+      proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
         this.eltType = eltType;
@@ -2074,8 +2072,7 @@ module Random {
         // Adjust seed to be between 0 and 2**46.
         mod = useed & two_46_mask;
         this.seed = mod:int(64);
-        // TODO: This can't be right:
-        //        this.parSafe = parSafe;
+        this.parSafe = parSafe;
         super.init();
 
         if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
