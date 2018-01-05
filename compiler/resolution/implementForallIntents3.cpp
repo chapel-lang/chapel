@@ -104,29 +104,29 @@ static const char* shadowVarName(int ix, const char* base) {
 
 /////////// some forwards ///////////
 
-class ExpandForForall;
-static void expandYield(ExpandForForall* EV,
+class ExpandVisitor;
+static void expandYield(ExpandVisitor* EV,
                         CallExpr* yield);
-static void expandTaskFnCall(ExpandForForall* EV,
+static void expandTaskFnCall(ExpandVisitor* EV,
                              CallExpr* call, FnSymbol* taskFn);
-static void expandForall(ExpandForForall* EV,
+static void expandForall(ExpandVisitor* EV,
                          ForallStmt* fs) {} //vass
 
 
-/////////// ExpandForForall visitor ///////////
+/////////// ExpandVisitor visitor ///////////
 
-class ExpandForForall : public AstVisitorTraverse {
+class ExpandVisitor : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
   FnSymbol* const parIter; // vass needed?
   SymbolMap& svar2clonevar;
   TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
 
-  ExpandForForall(ForallStmt* fs, FnSymbol* parIterArg,
-                  SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
+  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
+                SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
 
-  ExpandForForall(ExpandForForall* parentEV,
-                  SymbolMap& map);
+  ExpandVisitor(ExpandVisitor* parentEV,
+                SymbolMap& map);
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -179,8 +179,8 @@ fill them out, update as they are being cloned.
 */
 }
 
-ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                                 SymbolMap& map, TaskFnCopyMap& taskFnCps) :
+ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
+                             SymbolMap& map, TaskFnCopyMap& taskFnCps) :
   forall(fs),
   parIter(parIterFn),
   svar2clonevar(map),
@@ -188,8 +188,8 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
 {
 }
 
-ExpandForForall::ExpandForForall(ExpandForForall* parentEV,
-                                 SymbolMap& map) :
+ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
+                             SymbolMap& map) :
   forall(parentEV->forall),
   parIter(parentEV->parIter),
   svar2clonevar(map),
@@ -202,7 +202,7 @@ ExpandForForall::ExpandForForall(ExpandForForall* parentEV,
 
 // Replace 'yield' with a clone of the forall loop body.
 // Recurse into the cloned body.
-static void expandYield(ExpandForForall* EV, CallExpr* yieldCall)
+static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
@@ -244,7 +244,7 @@ Also need to map the index variable to the yield value.
 
 /////////// expandTaskFnCall ///////////
 
-static void expandTaskFnCall(ExpandForForall* EV,
+static void expandTaskFnCall(ExpandVisitor* EV,
                              CallExpr* call, FnSymbol* taskFn)
 {
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
@@ -301,7 +301,7 @@ static void expandTaskFnCall(ExpandForForall* EV,
   }
 
   if (expandClone) {
-    ExpandForForall taskFnV(EV, map);
+    ExpandVisitor taskFnV(EV, map);
     cloneTaskFn->body->accept(&taskFnV);
 
     flattenNestedFunction(cloneTaskFn);
@@ -314,11 +314,11 @@ static void expandTaskFnCall(ExpandForForall* EV,
 /////////// main driver / outermost visitor ///////////
 
 // vass cf
-// ExpandForForall outerVis(fs, parIterFn, iwrap, ibody, map, taskFnCopies);
+// ExpandVisitor outerVis(fs, parIterFn, iwrap, ibody, map, taskFnCopies);
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
-static void setupOuterMap(ExpandForForall* outerVis,
+static void setupOuterMap(ExpandVisitor* outerVis,
                           BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
@@ -415,7 +415,7 @@ static void lowerForallStmtsInline() {
 
     TaskFnCopyMap   taskFnCopies;
     SymbolMap       map;
-    ExpandForForall outerVis(fs, parIterFn, map, taskFnCopies);
+    ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
     setupOuterMap(&outerVis, iwrap, ibody);
     ibody->accept(&outerVis);
 
