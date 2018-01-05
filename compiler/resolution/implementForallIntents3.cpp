@@ -2,6 +2,67 @@
 #include "ForallStmt.h"
 #include "implementForallIntents.h"
 
+/////////// forwards ///////////
+
+class ExpandVisitor;
+static void expandYield( ExpandVisitor* EV, CallExpr* yield);
+static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
+static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
+
+
+/////////// ExpandVisitor visitor ///////////
+
+class ExpandVisitor : public AstVisitorTraverse {
+public:
+  ForallStmt* const forall;
+  FnSymbol* const parIter; // vass needed?
+  SymbolMap& svar2clonevar;
+  TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
+
+  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
+                SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
+
+  ExpandVisitor(ExpandVisitor* parentEV,
+                SymbolMap& map);
+
+  virtual bool enterCallExpr(CallExpr* node) {
+    if (node->isPrimitive(PRIM_YIELD)) {
+      expandYield(this, node);
+    }
+    else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
+      expandTaskFn(this, node, taskFn);
+    }
+    // There shouldn't be anything interesting inside the call.
+    // expandTaskFn() takes care of descending into 'taskFn'.
+    return false;
+  }
+
+  virtual bool enterForallStmt(ForallStmt* node) {
+    expandForall(this, node);
+    // expandForall() takes care of descending into 'node'
+    return false;
+  }
+};
+
+ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
+                             SymbolMap& map, TaskFnCopyMap& taskFnCps) :
+  forall(fs),
+  parIter(parIterFn),
+  svar2clonevar(map),
+  taskFnCopies(taskFnCps)
+{
+}
+
+ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
+                             SymbolMap& map) :
+  forall(parentEV->forall),
+  parIter(parentEV->parIter),
+  svar2clonevar(map),
+  taskFnCopies(parentEV->taskFnCopies)
+{
+}
+
+
 /////////// misc helpers ///////////
 
 // Cf. copyBody() for inlineFunctions().
@@ -102,100 +163,6 @@ static const char* shadowVarName(int ix, const char* base) {
 */
 
 
-/////////// forwards ///////////
-
-class ExpandVisitor;
-static void expandYield( ExpandVisitor* EV, CallExpr* yield);
-static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
-static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
-
-
-/////////// ExpandVisitor visitor ///////////
-
-class ExpandVisitor : public AstVisitorTraverse {
-public:
-  ForallStmt* const forall;
-  FnSymbol* const parIter; // vass needed?
-  SymbolMap& svar2clonevar;
-  TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
-
-  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
-                SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
-
-  ExpandVisitor(ExpandVisitor* parentEV,
-                SymbolMap& map);
-
-  virtual bool enterCallExpr(CallExpr* node) {
-    if (node->isPrimitive(PRIM_YIELD)) {
-      expandYield(this, node);
-    }
-    else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
-      expandTaskFn(this, node, taskFn);
-    }
-    // There shouldn't be anything interesting inside the call.
-    // expandTaskFn() takes care of descending into 'taskFn'.
-    return false;
-  }
-
-  virtual bool enterForallStmt(ForallStmt* node) {
-    expandForall(this, node);
-    // expandForall() takes care of descending into 'node'
-    return false;
-  }
-};
-
-
-/////////// constructor ///////////
-
-// Adds code to init+deinit the local op and the reduction state.
-// Updates 'map' with svar -> reduction state var.
-static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
-                                 int ix, SymbolMap& map,
-                                 Expr* aInit, Expr* aFini)
-{
-  INT_FATAL("vass TODO");
-
-/*
-NEW INSIGHT: just put everything in taskInit/Deinit blocks
-at resolution, so all we need to do now is to clone those blocks.
-*/
-
-/* vass TODO
-
-  Symbol* parentOp = svar->outerVarSym();
-
-* add computation of reduceCurrOp and reduceShadowVar before aInit
-* add tear-down after aFini
-  // See ensureCurrentReduceOpForReduceIntent(), shadowVarForReduceIntent().
-  // Todo optimize: reuse 'parentOp' if we are outside task fns, foralls.
-
-For that, add fields to ShadowVarSymbol during resolution,
-fill them out, update as they are being cloned.
-
-* map.put(svar, reduceShadowVar)
-
-*/
-}
-
-ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
-                             SymbolMap& map, TaskFnCopyMap& taskFnCps) :
-  forall(fs),
-  parIter(parIterFn),
-  svar2clonevar(map),
-  taskFnCopies(taskFnCps)
-{
-}
-
-ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
-                             SymbolMap& map) :
-  forall(parentEV->forall),
-  parIter(parentEV->parIter),
-  svar2clonevar(map),
-  taskFnCopies(parentEV->taskFnCopies)
-{
-}
-
-
 /////////// expandYield ///////////
 
 // Replace 'yield' with a clone of the forall loop body.
@@ -237,12 +204,6 @@ Also need to map the index variable to the yield value.
 
   // A yield stmt does not create any parallelism, so use the same visitor.
   bodyClone->accept(EV);
-}
-
-/////////// expandForall ///////////
-
-static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
-{
 }
 
 
@@ -313,11 +274,51 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   // todo: addDummyErrorArgumentToCall() ?
 }
 
+/////////// expandForall ///////////
 
-/////////// main driver / outermost visitor ///////////
+static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
+{
+  if (ForallStmt* efs = enclosingForallStmt(EV->forall))
+    // If there are enclosing forall loop(s),
+    // we need to handle their intents as well. Currently we don't.
+    // Todo: it is OK for a FS to be in task startup/teardown code.
+    INT_ASSERT(false);
 
-// vass cf
-// ExpandVisitor outerVis(fs, parIterFn, iwrap, ibody, map, taskFnCopies);
+  
+}
+
+
+/////////// outermost visitor ///////////
+
+// Adds code to init+deinit the local op and the reduction state.
+// Updates 'map' with svar -> reduction state var.
+static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
+                                 int ix, SymbolMap& map,
+                                 Expr* aInit, Expr* aFini)
+{
+  INT_FATAL("vass TODO");
+
+/*
+NEW INSIGHT: just put everything in taskInit/Deinit blocks
+at resolution, so all we need to do now is to clone those blocks.
+*/
+
+/* vass TODO
+
+  Symbol* parentOp = svar->outerVarSym();
+
+* add computation of reduceCurrOp and reduceShadowVar before aInit
+* add tear-down after aFini
+  // See ensureCurrentReduceOpForReduceIntent(), shadowVarForReduceIntent().
+  // Todo optimize: reuse 'parentOp' if we are outside task fns, foralls.
+
+For that, add fields to ShadowVarSymbol during resolution,
+fill them out, update as they are being cloned.
+
+* map.put(svar, reduceShadowVar)
+
+*/
+}
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
@@ -386,12 +387,16 @@ static void setupOuterMap(ExpandVisitor* outerVis,
   }
 }
 
+
+/////////// main driver ///////////
+
 static void lowerForallStmtsInline() {
   forv_Vec(ForallStmt, fs, gForallStmts)
   {
     if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //vass
 
     // If this fails, need to filter out those FSes.
+    // We lower and remove each FS from the tree *after* we see it here.
     INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
 
     // We have converted zippering, if any, to a follower loop.
