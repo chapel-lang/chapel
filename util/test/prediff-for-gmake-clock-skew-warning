@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# When remote-mounted NFS file system is used as a workspace for chapel testing,
+# it is not unusual to see lines like these in the chpl compiler output:
+#
+# gmake: Warning: File `.../something' has modification time 0.01 s in the future
+# gmake: warning:  Clock skew detected.  Your build may be incomplete.
+
+# This removes such lines.
+
+outfile=$2
+temp=$outfile.temp
+
+grep < $outfile > $temp -Ev '^g?make(|\[[0-9]+\]): *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$'
+
+mv $temp $outfile
