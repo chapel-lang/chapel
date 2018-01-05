@@ -927,6 +927,25 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
+proc kroneckerProduct(A: [?ADom] ?eltType, B: [?BDom] eltType) {
+  if ADom.rank != 2 || BDom.rank != 2 then compilerError("Rank size not 2");
+  const (rowA, colA) = A.shape;
+  const (rowB, colB) = B.shape;
+  var C = Matrix(rowA*rowB, colA * colB);
+  for i in 0..rowA-1 {
+    for j in 0..colA-1 {
+      var stR = i*rowB;
+      var stC = j*colB;
+      for k in 0..rowB-1 {
+        for l in 0..colB-1 {
+          C[stR+k, stC+l] = A[i, j]*B[k, l];
+        }
+      }
+    }
+  }
+  return C;
+}
+
 //
 // Type helpers
 //
