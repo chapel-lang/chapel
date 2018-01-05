@@ -1,5 +1,6 @@
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
+#include "implementForallIntents.h"
 
 /////////// misc helpers ///////////
 
@@ -117,14 +118,15 @@ static void expandForall(ExpandForForall* EV,
 class ExpandForForall : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
-  FnSymbol* const parIter;
-  SymbolMap svar2clonevar;
-  TaskFnCopyMap& taskFnCopies;
+  FnSymbol* const parIter; // vass needed?
+  SymbolMap& svar2clonevar;
+  TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
 
-  // 'ibody' is a clone that is replacing 'fs'.
   ExpandForForall(ForallStmt* fs, FnSymbol* parIterArg,
-                  BlockStmt* iwrap, BlockStmt* ibody,
-                  TaskFnCopyMap& taskFnCopiesArg);
+                  SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
+
+  ExpandForForall(ExpandForForall& parentEV,
+                  SymbolMap& map);
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -178,12 +180,150 @@ fill them out, update as they are being cloned.
 }
 
 ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
-                                 BlockStmt* iwrap, BlockStmt* ibody,
-                                 TaskFnCopyMap& taskFnCopiesArg) :
+                                 SymbolMap& map, TaskFnCopyMap& taskFnCps) :
   forall(fs),
   parIter(parIterFn),
-  svar2clonevar(),
-  taskFnCopies(taskFnCopiesArg)
+  svar2clonevar(map),
+  taskFnCopies(taskFnCps)
+{
+}
+
+ExpandForForall::ExpandForForall(ExpandForForall& parentEV,
+                                 SymbolMap& map) :
+  forall(parentEV.forall),
+  parIter(parentEV.parIter),
+  svar2clonevar(map),
+  taskFnCopies(parentEV.taskFnCopies)
+{
+}
+
+
+/////////// expandYield ///////////
+
+// Replace 'yield' with a clone of the forall loop body.
+// Recurse into the cloned body.
+static void expandYield(ExpandForForall* EV, CallExpr* yieldCall)
+{
+  // This is svar2clonevar plus a clone of the induction variable.
+  SymbolMap map;
+  map.copy(EV->svar2clonevar);  // vass is this the right way to copy a map?
+
+  // Clone the index variable for use in the cloned body.
+  // There is only one idx var because all zippering has been lowered away.
+  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
+  INT_ASSERT(map.get(origIdxVar) == NULL); //vass remove at end
+  VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
+  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //vass remove at end
+  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
+
+  // Todo should insertInitialization() handle both cases?
+  Expr* yieldExpr = yieldCall->get(1)->remove();
+  if (cloneIdxVar->isRef())
+    yieldCall->insertBefore(new CallExpr(PRIM_SET_REFERENCE,
+                                         cloneIdxVar, yieldExpr));
+  else
+    insertInitialization(cloneIdxVar, cloneIdxVar->type, yieldExpr, yieldCall);
+
+/* vass remove me:
+Move the yielded value to a clone of the index variable.
+Also need to map the index variable to the yield value.
+  SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
+  INT_ASSERT(yieldSE != NULL); // need more work otherwise
+  // There should not be any zippering.
+
+  map.put(idxVar, yieldSE->symbol());
+*/
+
+  BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
+  yieldCall->replace(bodyClone);
+
+  // A yield stmt does not create any parallelism, so use the same visitor.
+  bodyClone->accept(EV);
+}
+
+
+/////////// expandTaskFnCall ///////////
+
+static void expandTaskFnCall(ExpandForForall* EV,
+                             CallExpr* call, FnSymbol* taskFn)
+{
+#if 1 //vass
+  FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
+  bool expandClone = false;
+
+  if (cloneTaskFn == NULL) {
+    // Follow the cloning steps in expandBodyForIteratorInline().
+
+    // This holds because we flatten everything right away.
+    // We need it so that we can place the def of 'fcopy' anywhere
+    // while preserving correct scoping of its SymExprs.
+    INT_ASSERT(isGlobal(taskFn));
+
+    cloneTaskFn = taskFn->copy();
+    EV->taskFnCopies.put(taskFn, cloneTaskFn);
+
+    if (!preserveInlinedLineNumbers)
+      reset_ast_loc(cloneTaskFn, call);
+
+    // Note that 'fcopy' will likely get a copy of 'body',
+    // so we need to preserve correct scoping of its SymExprs.
+    call->insertBefore(new DefExpr(cloneTaskFn));
+
+    // We will need to process the clone.
+    expandClone = true;
+  }
+
+  call->baseExpr->replace(new SymExpr(cloneTaskFn));
+
+  // These are the variables in effect within the cloned taskFn, if expandClone.
+  SymbolMap map;
+
+  int numOrigActuals = call->numActuals();
+  int idx = 0;
+  for_shadow_vars(svar, temp1, EV->forall) {
+    idx++;
+    Symbol* eActual = svar->outerVarSym();
+    call->insertAtTail(eActual);
+
+    if (expandClone) {
+      // vass todo handle reduce intent
+      ArgSymbol* eFormal = newExtraFormal(svar, idx, eActual,
+                                          false/*vass-nested*/);
+      cloneTaskFn->insertFormalAtTail(eFormal);
+      map.put(svar, eFormal);
+    }
+    else {
+      ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+idx);
+      if (eFormal->hasFlag(FLAG_REF_TO_IMMUTABLE))
+        // Ensure this flag is correct for all calls. See newExtraFormal().
+        INT_ASSERT(eActual->isConstValWillNotChange() ||
+                   eActual->hasFlag(FLAG_REF_TO_IMMUTABLE));
+    }
+    VASS CONTINUE HERE;
+  
+  }
+
+  if (expandClone) {
+    ExpandForForall taskFnV(EV, map);
+    cloneTaskFn->body->accept(&taskFnV);
+
+    flattenNestedFunction(cloneTaskFn);
+  }
+
+  // todo: addDummyErrorArgumentToCall() ?
+#endif
+}
+
+
+/////////// main driver ///////////
+
+// vass cf
+// ExpandForForall outerVis(fs, parIterFn, iwrap, ibody, map, taskFnCopies);
+
+// 'ibody' is a clone of the parallel iterator body
+// We are replacing the ForallStmt with this clone.
+static void setupOuterMap(ExpandForForall& outerVis,
+                          BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
@@ -201,9 +341,9 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
 
   // When cloning the loop body of 'fs', replace each shadow variable
   // with the variable given by 'map'.
-  SymbolMap& map = this->svar2clonevar;
+  SymbolMap& map = outerVis.svar2clonevar;
   int idx = 0;
-  for_shadow_vars(svar, temp1, fs) {
+  for_shadow_vars(svar, temp1, outerVis.forall) {
     idx++;
     switch (svar->intent) {
       case TFI_DEFAULT:
@@ -241,67 +381,11 @@ ExpandForForall::ExpandForForall(ForallStmt* fs, FnSymbol* parIterFn,
         break;
 
       case TFI_REDUCE:
-        setupForReduceIntent(fs, svar, idx, map, aInit, aFini);
+        setupForReduceIntent(outerVis.forall, svar, idx, map, aInit, aFini);
         break;
     }
   }
 }
-
-
-/////////// expandYield ///////////
-
-// Replace 'yield' with a clone of the forall loop body.
-// Recurse into the cloned body.
-static void expandYield(ExpandForForall* EV, CallExpr* yieldCall) {
-  SymbolMap map;
-  map.copy(EV->svar2clonevar);  // vass is this the right thing to do?
-
-  // Clone the index variable for use in the cloned body.
-  // There is only one idx var because all zippering has been lowered away.
-  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
-  INT_ASSERT(map.get(origIdxVar) == NULL); //vass remove at end
-  VarSymbol* cloneIdxVar =origIdxVar->copy(&map);
-  cloneIdxVar->qual = origIdxVar->qual;
-  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //vass remove at end
-  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
-
-  // Todo should insertInitialization() handle both cases?
-  Expr* yieldExpr = yieldCall->get(1)->remove();
-  if (cloneIdxVar->isRef())
-    yieldCall->insertBefore(new CallExpr(PRIM_SET_REFERENCE,
-                                         cloneIdxVar, yieldExpr));
-  else
-    insertInitialization(cloneIdxVar, cloneIdxVar->type, yieldExpr, yieldCall);
-
-/* vass remove me:
-Move the yielded value to a clone of the index variable.
-Also need to map the index variable to the yield value.
-  SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
-  INT_ASSERT(yieldSE != NULL); // need more work otherwise
-  // There should not be any zippering.
-
-  map.put(idxVar, yieldSE->symbol());
-*/
-
-  BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
-  yieldCall->replace(bodyClone);
-
-  // A yield stmt does not create any parallelism, so use the same visitor.
-  bodyClone->accept(EV);
-}
-
-
-/////////// expandTaskFnCall ///////////
-
-static void expandTaskFnCall(ExpandForForall* EV,
-                             CallExpr* call, FnSymbol* taskFn) {
-
-
-  VASS CONTINUE HERE;
-}
-
-
-/////////// main driver ///////////
 
 static void lowerForallStmtsInline() {
   forv_Vec(ForallStmt, fs, gForallStmts)
@@ -334,8 +418,10 @@ static void lowerForallStmtsInline() {
     ianch->replace(ibody);
 
     TaskFnCopyMap   taskFnCopies;
-    ExpandForForall expandV(fs, parIterFn, iwrap, ibody, taskFnCopies);
-    ibody->accept(&expandV);
+    SymbolMap       map;
+    ExpandForForall outerVis(fs, parIterFn, map, taskFnCopies);
+    setupOuterMap(outerVis, iwrap, ibody);
+    ibody->accept(&outerVis);
 
     fs->remove();
     // We could also do {iwrap,ibody}->flattenAndRemove().

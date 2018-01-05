@@ -892,15 +892,15 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
 
 /////////// propagateExtraLeaderArgsNew ///////////
 
-static ArgSymbol* newExtraFormal(FIcontext& ctx, FIinfo& fii, int ix,
-                                 Symbol* eActual)
+ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix, Symbol* eActual,
+                          bool nested)
 {
-    bool     isReduce = fii.svSymbol->isReduce();
+    bool     isReduce = svar->isReduce();
     const char* eName;
 
     if      (isReduce)
       eName = intentArgName(ix, "reduceParent");
-    else if (ctx.nested)
+    else if (nested)
       eName = eActual->name;   // name was uniquified at the outer level
     else if (!strcmp(eActual->name, "_tuple_expand_tmp_"))
       eName = intentArgName(ix, "tet");
@@ -909,7 +909,7 @@ static ArgSymbol* newExtraFormal(FIcontext& ctx, FIinfo& fii, int ix,
 
     Type* efType    = eActual->type;
     IntentTag efInt = isReduce ? INTENT_CONST_IN :
-      concreteIntent(argIntentForForallIntent(fii.svSymbol->intent), efType);
+      concreteIntent(argIntentForForallIntent(svar->intent), efType);
     bool addFlagImm = false;
 
     if (efInt & INTENT_FLAG_REF) {
@@ -956,7 +956,7 @@ static void propagateExtraLeaderArgsNew(FIcontext& ctx)
   {
     FIinfo&    fii     = ctx.fiInfos[ix];
     Symbol*    eActual = fii.fiActual; // 'e' for "Extra"
-    ArgSymbol* eFormal = newExtraFormal(ctx, fii, ix, eActual);
+    ArgSymbol* eFormal = newExtraFormal(fii.svSymbol, ix, eActual, ctx.nested);
     fii.fiFormal       = eFormal;
 
     // Use named args to disambiguate from user's iterator formals, if any.
