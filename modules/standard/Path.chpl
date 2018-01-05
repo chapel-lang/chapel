@@ -274,7 +274,7 @@ proc file.realPath(): string throws {
 
   proc isAbsPath(name: string): bool {
      if name.isEmptyString() {
-	 return false;
+	return false;
      }
      const len: int = name.length;
      var str: string = name[1];
