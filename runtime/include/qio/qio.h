@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -72,11 +72,6 @@ typedef uint32_t qio_hint_t;
 #ifndef FTYPE_CURL
 #define FTYPE_CURL 3
 #endif
-
-// So that we can free c_strings from Chapel
-// This is temporary for now, one Sung's 'string_free' function goes in, this
-// and the use of it in IO.chpl can go away.
-#define qio_free_string(str) qio_free((char*)str)
 
 // The qio lock must be re-entrant in order to handle
 // e.g. qio_printf, which has will lock the lock, then

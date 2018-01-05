@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +30,7 @@ class FnSymbol;
 class ForallStmt;
 class LoopStmt;
 class SymExpr;
+class UnresolvedSymExpr;
 
 class InitNormalize {
 public:
@@ -143,6 +144,7 @@ private:
 
   bool            isFieldAccess(CallExpr* callExpr)                      const;
 
+  void            handleInsertedMethodCall(CallExpr* call)               const;
 
   Expr*           fieldInitFromStmt(CallExpr* stmt, DefExpr* field)      const;
 

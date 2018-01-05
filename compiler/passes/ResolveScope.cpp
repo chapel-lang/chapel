@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -228,9 +228,6 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtComplex[COMPLEX_SIZE_64]->symbol);
   extend(dtComplex[COMPLEX_SIZE_128]->symbol);
-
-  extend(dtStringCopy->symbol);
-  extend(gStringCopy);
 
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
@@ -513,9 +510,15 @@ Symbol* ResolveScope::lookupWithUses(UnresolvedSymExpr* usymExpr) const {
 
           if (ResolveScope* next = getScopeFor(scopeToUse)) {
             if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
-              if (sym->hasFlag(FLAG_METHOD) == false &&
-                  isRepeat(sym, symbols)    == false) {
-                symbols.push_back(sym);
+              if (isRepeat(sym, symbols) == false) {
+                if (FnSymbol* fn = toFnSymbol(sym)) {
+                  if (fn->isMethod() == false) {
+                    symbols.push_back(fn);
+                  }
+
+                } else {
+                  symbols.push_back(sym);
+                }
               }
             }
           }

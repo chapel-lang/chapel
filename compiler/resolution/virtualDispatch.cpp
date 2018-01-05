@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,12 +116,8 @@ static void addAllToVirtualMaps(FnSymbol*      pfn,
                                 AggregateType* pct);
 
 static void addToVirtualMaps(FnSymbol*      pfn,
-                             AggregateType* ct);
-
-static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
-                             FnSymbol*      cfn,
-                             AggregateType* type);
+                             FnSymbol*      cfn);
 
 static void collectMethods(FnSymbol*               pfn,
                            AggregateType*          ct,
@@ -148,20 +144,19 @@ static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isResolved()            == true      &&
-        fn->numFormals()            >  1         &&
+    if (AggregateType* at = fn->getReceiver()) {
+      if (at->isClass() == true) {
+        if (at->isGeneric() == false) {
+          if (fn->isResolved()            == true      &&
 
-        fn->hasFlag(FLAG_WRAPPER)   == false     &&
-        fn->hasFlag(FLAG_NO_PARENS) == false     &&
+              fn->hasFlag(FLAG_WRAPPER)   == false     &&
+              fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
-        fn->retTag                  != RET_PARAM &&
-        fn->retTag                  != RET_TYPE) {
-      ArgSymbol*     _mt   = fn->getFormal(1);
-      ArgSymbol*     _this = fn->getFormal(2);
-      AggregateType* at    = toAggregateType(_this->type);
-
-      if (_mt->type == dtMethodToken && isNonGenericClass(at) == true) {
-        addAllToVirtualMaps(fn, at);
+              fn->retTag                  != RET_PARAM &&
+              fn->retTag                  != RET_TYPE) {
+            addAllToVirtualMaps(fn, at);
+          }
+        }
       }
     }
   }
@@ -171,69 +166,44 @@ static bool buildVirtualMaps() {
 
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
-  forv_Vec(Type, t, pct->dispatchChildren) {
-    AggregateType* ct = toAggregateType(t);
+  forv_Vec(AggregateType, ct, pct->dispatchChildren) {
+    if (ct->isGeneric() == false) {
+      if (ct->mayHaveInstances() == true) {
+        std::vector<FnSymbol*> methods;
 
-    if (ct->defaultTypeConstructor != NULL) {
-      addToVirtualMaps(pfn, ct);
-    }
+        collectMethods(pfn, ct, methods);
 
-    // Recurse over this child's children
-    addAllToVirtualMaps(pfn, ct);
-  }
-}
-
-static void addToVirtualMaps(FnSymbol* pfn, AggregateType* ct) {
-  if (ct->symbol->hasFlag(FLAG_GENERIC) == false) {
-    if (ct->defaultTypeConstructor->isResolved() == true) {
-      std::vector<FnSymbol*> methods;
-
-      collectMethods(pfn, ct, methods);
-
-      for_vector(FnSymbol, cfn, methods) {
-        addToVirtualMaps(pfn, ct, cfn, ct);
-      }
-    }
-
-  } else {
-    FnSymbol*              typeConstr = ct->defaultTypeConstructor;
-    std::vector<FnSymbol*> methods;
-
-    collectMethods(pfn, ct, methods);
-
-    for_vector(FnSymbol, cfn, methods) {
-      forv_Vec(AggregateType, at, gAggregateTypes) {
-        if (FnSymbol* typeConstrOther = at->defaultTypeConstructor) {
-          if (typeConstrOther->instantiatedFrom == typeConstr) {
-            if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-              addToVirtualMaps(pfn, ct, cfn, at);
-            }
-          }
+        for_vector(FnSymbol, cfn, methods) {
+          addToVirtualMaps(pfn, ct, cfn);
         }
       }
+
+      // Recurse over this child's children
+      addAllToVirtualMaps(pfn, ct);
     }
   }
 }
 
 static void addToVirtualMaps(FnSymbol*      pfn,
                              AggregateType* ct,
-                             FnSymbol*      cfn,
-                             AggregateType* type) {
-  SymbolMap subs;
+                             FnSymbol*      cfn) {
+  ArgSymbol*     _this   = cfn->getFormal(2);
+  AggregateType* _thisAt = toAggregateType(_this->type);
+  SymbolMap      subs;
 
-  if (ct->symbol->hasFlag(FLAG_GENERIC)                      == true ||
-      cfn->getFormal(2)->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-    subs.put(cfn->getFormal(2), type->symbol);
+  if (_thisAt->isGeneric() == true) {
+    subs.put(_this, ct->symbol);
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {
-    ArgSymbol* arg = cfn->getFormal(i);
+    ArgSymbol* carg = cfn->getFormal(i);
+    ArgSymbol* parg = pfn->getFormal(i);
 
-    if (arg->intent == INTENT_PARAM) {
-      subs.put(arg, paramMap.get(pfn->getFormal(i)));
+    if (carg->intent == INTENT_PARAM) {
+      subs.put(carg, paramMap.get(parg));
 
-    } else if (arg->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      subs.put(arg, pfn->getFormal(i)->type->symbol);
+    } else if (carg->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      subs.put(carg, parg->type->symbol);
     }
   }
 
@@ -241,8 +211,10 @@ static void addToVirtualMaps(FnSymbol*      pfn,
     resolveOverride(pfn, cfn);
 
   } else {
-    if (FnSymbol* fn = instantiate(cfn, subs)) {
-      FnSymbol*  typeConstr         = type->defaultTypeConstructor;
+    FnSymbol* fn = instantiate(cfn, subs);
+
+    if (ct->hasInitializers() == false) {
+      FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
       BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
 
       if (instantiationPoint == NULL) {
@@ -250,9 +222,9 @@ static void addToVirtualMaps(FnSymbol*      pfn,
       }
 
       fn->instantiationPoint = instantiationPoint;
-
-      resolveOverride(pfn, fn);
     }
+
+    resolveOverride(pfn, fn);
   }
 }
 

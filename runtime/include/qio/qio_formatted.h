@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -579,7 +579,7 @@ qioerr qio_encode_char_buf(char* dst, int32_t chr)
 
 // Returns NULL if it's an illegal character OR we're out of memory; otherwise,
 // a newly-allocated ASCIIZ string containing the result.
-c_string_copy qio_encode_to_string(int32_t chr);
+c_string qio_encode_to_string(int32_t chr);
 
 static inline
 qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const char* buf, ssize_t buflen)

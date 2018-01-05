@@ -1,4 +1,4 @@
-const_ref_arg_default_value.chpl:5: internal error: EXP1951 chpl Version 1.14.0.bdf3a72
+const_ref_arg_default_value.chpl:5: internal error: EXP1951 chpl version 1.14.0.bdf3a72
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

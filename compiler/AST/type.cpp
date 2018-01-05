@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -852,15 +852,6 @@ void initPrimitiveTypes() {
   INIT_PRIM_COMPLEX( "complex(64)", 64);
   INIT_PRIM_COMPLEX( "complex", 128);       // default size
 
-  dtStringCopy = createPrimitiveType( "c_string_copy", "c_string_copy" );
-  dtStringCopy->defaultValue = gOpaque;
-  dtStringCopy->symbol->addFlag(FLAG_NO_CODEGEN);
-
-  CREATE_DEFAULT_SYMBOL(dtStringCopy, gStringCopy, "_nullString");
-  gStringCopy->cname = "NULL";
-  gStringCopy->addFlag(FLAG_EXTERN);
-
-  // Like c_string_copy but unowned.
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
   dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );

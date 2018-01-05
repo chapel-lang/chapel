@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import os
+
+print(os.getenv('CHPL_TEST_PERF') == 'on' and
+      os.getenv('CHPL_TARGET_COMPILER') == 'cray-prgenv-gnu')

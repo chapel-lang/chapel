@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,7 +25,7 @@ class Type;
 
 // This function attempts to determine the type for
 //   1) Primitive types (parameterized and default)
-//   2) Non-paramterized, i.e. non-generic, classes and records
+//   2) Non-parameterized, i.e. non-generic, classes and records
 //
 // It is defined to return NULL for more general type specifiers.
 //
@@ -34,8 +34,8 @@ class Type;
 //
 // It was exposed to allow it to be used in earlier passes
 // e.g. in limited situations within normalize.  In these
-// situations param-folding will not have occured and it
-// is necessary to supress any error messages and simply
+// situations param-folding will not have occurred and it
+// is necessary to suppress any error messages and simply
 // return NULL.
 //
 

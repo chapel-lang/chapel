@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -409,7 +409,6 @@ TYPE_EXTERN PrimitiveType*    dtSyncVarAuxFields;
 TYPE_EXTERN PrimitiveType*    dtSingleVarAuxFields;
 
 TYPE_EXTERN PrimitiveType*    dtStringC; // the type of a C string (unowned)
-TYPE_EXTERN PrimitiveType*    dtStringCopy; // the type of a C string (owned)
 TYPE_EXTERN PrimitiveType*    dtCVoidPtr; // the type of a C void* (unowned)
 TYPE_EXTERN PrimitiveType*    dtCFnPtr;   // a C function pointer (unowned)
 

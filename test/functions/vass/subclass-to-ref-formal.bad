@@ -1,4 +1,4 @@
-subclass-to-ref-formal.chpl:14: internal error: CHEnnnn chpl Version mmmm
+subclass-to-ref-formal.chpl:14: internal error: CHEnnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

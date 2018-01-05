@@ -3,7 +3,7 @@ record Foo {
   type t;
   var x;
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: Foo {
     t = xVal.type;
     x = xVal;
     super.init();

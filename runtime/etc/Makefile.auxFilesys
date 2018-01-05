@@ -1,4 +1,4 @@
-# Copyright 2004-2017 Cray Inc.
+# Copyright 2004-2018 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ endif
 
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))
 	GEN_LFLAGS += \
-		$(CHPL_AUXIO_INCLUDES) \
+		$(CHPL_AUXIO_INCLUDE) \
 		$(CHPL_AUXIO_LIBS)
 	LIBS += -DSYS_HAS_LLAPI -llustreapi
 endif 

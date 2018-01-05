@@ -71,9 +71,6 @@ generateCompopts() {
             "CHPL_MEM")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_MAKE")
-                compopts="$compopts --$flag=$value"
-                ;;
             "CHPL_ATOMICS")
                 compopts="$compopts --$flag=$value"
                 ;;

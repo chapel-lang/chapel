@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -343,7 +343,7 @@ void resolveFunction(FnSymbol* fn) {
           fn->getFormal(1)->type->symbol->addFlag(FLAG_PRIVATIZED_CLASS);
         }
 
-        if (fn->hasFlag(FLAG_METHOD) == true && fn->_this != NULL) {
+        if (fn->isMethod() == true && fn->_this != NULL) {
           ensureInMethodList(fn);
         }
 
@@ -668,7 +668,7 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
     fn->addFlag(FLAG_INLINE);
   }
 
-  fn->addFlag(FLAG_METHOD);
+  fn->setMethod(true);
 
   fn->_this   = new ArgSymbol(INTENT_BLANK, "this", ii->iclass);
   fn->_this->addFlag(FLAG_ARG_THIS);
@@ -1526,7 +1526,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 ************************************** | *************************************/
 
 void ensureInMethodList(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_METHOD) == true && fn->_this != NULL) {
+  if (fn->isMethod() == true && fn->_this != NULL) {
     Type* thisType = fn->_this->type->getValType();
     bool  found    = false;
 

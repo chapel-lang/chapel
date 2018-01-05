@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,6 @@ static IntentTag constIntentForType(Type* t) {
              t == dtFile ||
              t == dtNil ||
              t == dtStringC ||
-             t == dtStringCopy ||
              t == dtCVoidPtr ||
              t == dtCFnPtr ||
              t == dtVoid ||
@@ -99,7 +98,6 @@ IntentTag blankIntentForType(Type* t) {
              is_complex_type(t)                      ||
              is_enum_type(t)                         ||
              t == dtStringC                          ||
-             t == dtStringCopy                       ||
              t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||

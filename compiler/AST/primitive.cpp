@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,11 +54,6 @@ returnInfoString(CallExpr* call) {
 static QualifiedType
 returnInfoStringC(CallExpr* call) {
   return QualifiedType(dtStringC, QUAL_VAL);
-}
-
-static QualifiedType
-returnInfoStringCopy(CallExpr* call) {
-  return QualifiedType(dtStringCopy, QUAL_VAL);
 }
 
 static QualifiedType
@@ -537,24 +532,10 @@ initPrimitive() {
   prim_def(PRIM_GETCID, "getcid", returnInfoInt32, false, true);
   prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true, true);
   prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false, true);
-
-  // PRIM_GET_MEMBER(_VALUE): aggregate, field
-  // if the field is a ref:
-  //   GET_MEMBER is invalid AST
-  //   GET_MEMBER_VALUE returns the reference
-  // if the field is not a ref
-  //   GET_MEMBER returns a reference to the field
-  //   GET_MEMBER_VALUE returns the field value
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
-
-  // PRIM_SET_MEMBER: base, field, value
-  // if the field is a ref, and the value is a ref, sets the ptr.
-  // if the field is a ref, and the value is a not ref, invalid AST
-  // if the field is not ref, and the value is a ref, derefs value first
-  // if neither are references, sets the field
+  // base, field, value
   prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
-
   prim_def(PRIM_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
@@ -670,13 +651,13 @@ initPrimitive() {
 
   prim_def("string_compare", returnInfoDefaultInt, true);
   prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringCopy, true, true);
+  prim_def("string_concat", returnInfoStringC, true, true);
   prim_def("string_length", returnInfoDefaultInt);
   prim_def("ascii", returnInfoUInt8);
-  prim_def("string_index", returnInfoStringCopy, true, true);
-  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringCopy, false, true);
+  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  prim_def("string_select", returnInfoStringCopy, true, true);
+  prim_def("string_select", returnInfoStringC, true, true);
   prim_def("sleep", returnInfoVoid, true);
   prim_def("real2int", returnInfoDefaultInt);
   prim_def("object2int", returnInfoDefaultInt);

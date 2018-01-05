@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,12 +72,11 @@ const pathSep = "/";
 
 pragma "no doc"
 proc realPath(out error: syserr, name: string): string {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string_copy): syserr;
+  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
-  var res: c_string_copy;
+  var res: c_string;
   error = chpl_fs_realpath(name.localize().c_str(), res);
-  var len = res.length;
-  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  return new string(res, needToCopy=false);
 }
 
 /* Given a path `name`, attempts to determine the canonical path referenced.
@@ -102,9 +101,9 @@ proc realPath(name: string): string throws {
 
 pragma "no doc"
 proc file.realPath(out error: syserr): string {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string_copy): syserr;
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
-  var res: c_string_copy;
+  var res: c_string;
 
   if (is_c_nil(_file_internal)) {
     // This file is referencing a null file.  We'll get a segfault if we
@@ -113,8 +112,7 @@ proc file.realPath(out error: syserr): string {
     return "";
   }
   error = chpl_fs_realpath_file(_file_internal, res);
-  var len = res.length;
-  return new string(res:c_ptr(uint(8)), len, len+1, owned=true, needToCopy=false);
+  return new string(res, needToCopy=false);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record
@@ -227,5 +225,40 @@ proc file.realPath(): string throws {
    if err != ENOERR then try ioerror(err, "in file.getParentName");
    return ret;
  }
+ 
+/* Join and return one or more paths, putting precedent on the last absolute
+   path seen.  Return value is the concatenation of the paths with one
+   directory separator following each non-empty argument except the last.
+   Examples:
 
+   `joinPath("/foo/bar", "/baz")` will yield `"/baz"`
+
+   `joinPath("/foo", "./baz")` will yield `"/foo/./baz"`
+
+   `joinPath("/foo/", "", "./baz")` will also yield `"/foo/./baz"`
+
+   :arg paths: Any number of paths
+   :type paths: `string`
+
+   :return: The concatenation of the last absolute path with everything following
+            it, or all the paths provided if no absolute path is present
+   :rtype: `string`
+*/
+  proc joinPath(paths: string ...?n): string {
+    var result : string = paths(1); // result variable stores final answer
+   // loop to iterate over all the paths
+    for i in 2..n {
+      var temp : string = paths(i); 
+      if temp.startsWith('/') {
+        result = temp;
+      }  
+      else if result.endsWith('/') {
+        result = result + temp;
+      }
+      else {
+        result = result + "/" + temp;
+      }
+    }
+   return result;
+ }  
 }

@@ -1,4 +1,3 @@
 arg.chpl:3: In function 'foo':
 arg.chpl:7: error: illegal lvalue in assignment
-arg.chpl:13: error: unresolved call 'foo(void)'
-arg.chpl:3: note: candidates are: foo(a: int(64) = noinit)
+arg.chpl:3: error: Default expression not convertible to formal type

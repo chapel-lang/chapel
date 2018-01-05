@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -487,9 +487,10 @@ void ResolutionCandidate::computeSubstitutions() {
           USR_FATAL(formal,
                     "invalid generic type specification on class field");
 
-        } else if (fn->hasFlag(FLAG_METHOD) == true &&
-                   strcmp(fn->name, "init") == 0 &&
-                   fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        } else if (fn->isMethod()                       == true  &&
+                   strcmp(fn->name, "init")             == 0     &&
+                   fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
+                   fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
                    !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
                      formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
           // This is a compiler generated initializer, so the argument with
