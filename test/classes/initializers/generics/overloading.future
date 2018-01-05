@@ -1,5 +1,0 @@
-bug: initializer presence impacts virtual method dispatch
-
-If I change the initializer into a constructor, we find the correct version of
-the method being called.  I suspect our normalization is impacting it, but I am
-not certain.  Next step is to see if non-generic types are also impacted.

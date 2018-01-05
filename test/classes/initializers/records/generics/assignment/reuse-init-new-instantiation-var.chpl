@@ -4,7 +4,7 @@
 record Foo {
   var x;
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: Foo {
     x = xVal;
     super.init();
   }

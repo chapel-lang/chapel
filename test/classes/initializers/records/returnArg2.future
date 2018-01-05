@@ -1,5 +1,0 @@
-bug: internal error when returning record argument from function
-#7939
-
-The record defines an initializer.  We would like the copy initializer
-to be sufficient for this test to work

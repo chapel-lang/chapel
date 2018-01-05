@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1663,7 +1663,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     }
   } else {
     if (path == "") then
-      try! ioerror(ENOENT:syserr, "in open: Both path and url were path");
+      try! ioerror(ENOENT:syserr, "in open: Both path and url were blank");
     /* TODO: The above two lines breaks the function's original invariant of not
        generating errors within itself.  It is better style to remove these
        lines.  Doing so should still work, but we can't be certain until we

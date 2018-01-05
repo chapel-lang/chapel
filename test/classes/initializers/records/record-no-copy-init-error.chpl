@@ -12,7 +12,7 @@ proc makeR() {
 
 proc returnRef(const ref x) {
   const ref xx = x; // work around for existing issue
-  return xx; // error here
+  return xx; // error here if no copy initializer generated
 }
 
 proc foo() {

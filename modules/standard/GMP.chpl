@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1092,16 +1092,16 @@ module GMP {
   class GMPRandom {
     var state: gmp_randstate_t;
 
-    proc GMPRandom() {
+    proc init() {
       gmp_randinit_default(this.state);
     }
 
     // Creates a Mersenne Twister (probably same as init_default)
-    proc GMPRandom(twister: bool) {
+    proc init(twister: bool) {
       gmp_randinit_mt(this.state);
     }
 
-    proc GMPRandom(a: bigint, c: uint, m2exp: uint) {
+    proc init(a: bigint, c: uint, m2exp: uint) {
       // Rely on bigint assignment operator to obtain a local copy
       var a_ = a;
 
@@ -1111,11 +1111,11 @@ module GMP {
                            m2exp.safeCast(c_ulong));
     }
 
-    proc GMPRandom(size: uint) {
+    proc init(size: uint) {
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
-    proc GMPRandom(a: GMPRandom) {
+    proc init(a: GMPRandom) {
       if a.locale == here {
         gmp_randinit_set(this.state, a.state);
       } else {

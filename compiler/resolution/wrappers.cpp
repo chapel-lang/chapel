@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -581,7 +581,6 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
      tests are a good place to start:
 
      test/functions/bradc/defaultVals/defaultArrCausesCopy.chpl
-     test/functions/bradc/defaultVals/defaultArrCausesCopy-reffn.chpl
      test/functions/default-arguments/iterator-default-arguments.chpl
      test/memory/figueroa/LeakedMemory6.chpl
    */

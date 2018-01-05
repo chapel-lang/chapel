@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -334,8 +334,7 @@ static void preNormalizeInit(FnSymbol* fn) {
   // If this is a non-generic class then create a type method
   // to wrap this initializer
   if (isClass(at) == true && at->isGeneric() == false) {
-    FnSymbol* _newFn = buildClassAllocator(fn);
-    normalize(_newFn);
+    buildClassAllocator(fn);
 
     fn->addFlag(FLAG_INLINE);
   }
@@ -1072,9 +1071,10 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   body->insertAtTail(new CallExpr(PRIM_RETURN, newInstance));
 
-
   // Insert the definition in to the tree
   at->symbol->defPoint->insertBefore(new DefExpr(fn));
+
+  normalize(fn);
 
   return fn;
 }

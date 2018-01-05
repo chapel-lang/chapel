@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,18 +75,15 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  std::vector<BaseAST*> asts;
+  std::vector<SymExpr*> SEs;
+  collectSymExprs(fn, SEs);
 
-  collect_asts(fn, asts);
-
-  for_vector(BaseAST, ast, asts) {
-    if (SymExpr* symExpr = toSymExpr(ast)) {
+  for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
       if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
         uses->put(sym,gNil);
       }
-    }
   }
 }
 

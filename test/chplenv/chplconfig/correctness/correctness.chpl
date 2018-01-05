@@ -17,7 +17,6 @@ writeln("CHPL_LAUNCHER: none +");
 writeln("CHPL_TIMERS: generic +");
 writeln("CHPL_UNWIND: none +");
 writeln("CHPL_MEM: jemalloc +");
-writeln("CHPL_MAKE: make +");
 writeln("CHPL_ATOMICS: intrinsics +");
 writeln("CHPL_GMP: none +");
 writeln("CHPL_HWLOC: hwloc +");
