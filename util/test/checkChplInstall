@@ -179,7 +179,7 @@ fi
 
     # no errors on stdout/stderr?
     # first, apply "prediff"-like filter to remove gmake "clock skew detected" warnings, if any
-TEST_COMP_OUT=$( grep < ${TMP_TEST_DIR}/chpl.out -Ev '^g?make(|\[[0-9]+\]): *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$' 2>&1 )
+TEST_COMP_OUT=$( grep < ${TMP_TEST_DIR}/chpl.out -Ev '^g?make(\[[0-9]+\])?: *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$' 2>&1 )
 
 if [ -n "${TEST_COMP_OUT}" ]; then
     log_error "Test job compiled with output - Chapel is not installed correctly"
