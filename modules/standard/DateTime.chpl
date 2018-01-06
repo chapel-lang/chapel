@@ -244,6 +244,10 @@ module DateTime {
 
   /* constructors/factories for date values */
 
+  pragma "no doc"
+  proc date.init() {
+  }
+
   /* Construct a new `date` value from a `year`, `month`, and `day`. All
      three arguments are required and must be in valid ranges.  The
      valid ranges are:
@@ -254,7 +258,7 @@ module DateTime {
 
      1 <= `day` <= the number of days in the given month and year
   */
-  proc date.date(year, month, day) {
+  proc date.init(year, month, day) {
     if year < MINYEAR-1 || year > MAXYEAR+1 then
       halt("year is out of the valid range");
     if month < 1 || month > 12 then
@@ -265,6 +269,7 @@ module DateTime {
     this.chpl_year = year;
     this.chpl_month = month;
     this.chpl_day = day;
+    super.init();
   }
 
   /* A `date` object representing the current day */
@@ -522,7 +527,7 @@ module DateTime {
   /* Construct a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
-  proc time.time(hour=0, minute=0, second=0, microsecond=0,
+  proc time.init(hour=0, minute=0, second=0, microsecond=0,
                  tzinfo: TZInfo=nil) {
     if hour < 0 || hour >= 24 then
       halt("hour out of range");
@@ -537,6 +542,7 @@ module DateTime {
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
     this.chpl_tzinfo = tzinfo;
+    super.init();
   }
 
   pragma "no doc"
@@ -844,15 +850,20 @@ module DateTime {
 
   /* Constructors/factories for datetime values */
 
+  pragma "no doc"
+  proc datetime.init() {
+  }
+
   /* Construct a new `datetime` value from the given `year`, `month`, `day`,
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
-  proc datetime.datetime(year, month, day,
-                hour=0, minute=0, second=0, microsecond=0,
-                tzinfo: TZInfo=nil) {
+  proc datetime.init(year, month, day,
+                     hour=0, minute=0, second=0, microsecond=0,
+                     tzinfo: TZInfo=nil) {
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
+    super.init();
   }
 
   /* Return a `datetime` value representing the current time and date */
@@ -1405,8 +1416,8 @@ module DateTime {
      default to 0. Since only `days`, `seconds` and `microseconds` are
      stored, the other arguments are converted to days, seconds
      and microseconds. */
-  proc timedelta.timedelta(days=0, seconds=0, microseconds=0,
-                           milliseconds=0, minutes=0, hours=0, weeks=0) {
+  proc timedelta.init(days=0, seconds=0, microseconds=0,
+                      milliseconds=0, minutes=0, hours=0, weeks=0) {
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1439,11 +1450,12 @@ module DateTime {
 
     if this.days > 999999999 then
       halt("Overflow: days > 999999999");
+    super.init();
   }
 
   /* Create a `timedelta` from a given number of seconds */
-  proc timedelta.timedelta(timestamp: real) {
-    return new timedelta(seconds = timestamp: int, microseconds=((timestamp - timestamp: int)*1000000): int);
+  proc timedelta.init(timestamp: real) {
+    this.init(seconds = timestamp: int, microseconds=((timestamp - timestamp: int)*1000000): int);
   }
 
 
