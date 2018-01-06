@@ -18,6 +18,7 @@ public:
   FnSymbol* const parIter; // vass needed?
   SymbolMap& svar2clonevar;
   TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
+  bool breakOnYield; // vass for debugging
 
   ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
                 SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
@@ -169,6 +170,8 @@ static const char* shadowVarName(int ix, const char* base) {
 // Recurse into the cloned body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
+  if (EV->breakOnYield) gdbShouldBreakHere(); 
+
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
   map.copy(EV->svar2clonevar);  // vass is this the right way to copy a map?
@@ -203,7 +206,10 @@ Also need to map the index variable to the yield value.
   yieldCall->replace(bodyClone);
 
   // A yield stmt does not create any parallelism, so use the same visitor.
+  bool breakOnYieldPrev = EV->breakOnYield;
+  EV->breakOnYield = true;
   bodyClone->accept(EV);
+  EV->breakOnYield = breakOnYieldPrev;
 }
 
 
@@ -276,14 +282,16 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
 /////////// expandForall ///////////
 
+// Todo implement this when the startup/teardown feature comes in.
+static bool inTaskStartupTeardownCode(ForallStmt* fs) { return false; }
+
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
   if (ForallStmt* efs = enclosingForallStmt(EV->forall))
     // If there are enclosing forall loop(s),
     // we need to handle their intents as well. Currently we don't.
-    // Todo: it is OK for a FS to be in task startup/teardown code.
-    INT_ASSERT(false);
-
+    // It is OK for a FS to be in task startup/teardown code.
+    INT_ASSERT(inTaskStartupTeardownCode(efs));
   
 }
 
@@ -430,4 +438,7 @@ static void lowerForallStmtsInline() {
     fs->remove();
     // We could also do {iwrap,ibody}->flattenAndRemove().
   }
+
+  //vass todo remove parallel iterators themselves
+  // now that we have inlined them.
 }
