@@ -2523,5 +2523,6 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
   checkForNonIterator(parCall);
 
   if (fs->numShadowVars() > 0)
+  if (fs->li())
    implementForallIntents2New(fs, parCall);
 }

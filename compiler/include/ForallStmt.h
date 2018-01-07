@@ -67,6 +67,10 @@ public:
   int   numShadowVars()            const;
   ShadowVarSymbol* getShadowVar(int index) const;
 
+  // vass this is temporary; we really want all ForallStmts handled this way
+  // "li" = "lower during lowerIterators"
+  bool li() { return getModule()->modTag == MOD_USER; }
+
 private:
   bool           fZippered;
   AList          fIterVars;

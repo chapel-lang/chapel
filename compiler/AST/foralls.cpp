@@ -869,6 +869,7 @@ void lowerForallStmts() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
+    if (fs->li()) continue;
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();
