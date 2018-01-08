@@ -450,6 +450,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   Type* valType = NULL,
                                   Type* baseType = NULL,
                                   uint64_t offset = 0,
+                                  llvm::MDNode* fieldTypeDescriptor = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
@@ -457,11 +458,10 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (baseType) {
-      if (valType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+      if (fieldTypeDescriptor && fieldTypeDescriptor != info->tbaaRootNode) {
         tbaa = info->mdBuilder->createTBAAStructTagNode(
                  baseType->symbol->llvmTbaaTypeDescriptor,
-                 valType->symbol->llvmTbaaTypeDescriptor,
-                 offset);
+                 fieldTypeDescriptor, offset);
       }
     } else {
       tbaa = valType->symbol->llvmTbaaAccessTag;
@@ -513,6 +513,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
   ptr.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.baseType, ptr.offset,
+                          ptr.fieldTypeDescriptor,
                           ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -522,6 +523,7 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* valType = NULL,
                                 Type* baseType = NULL,
                                 uint64_t offset = 0,
+                                llvm::MDNode* fieldTypeDescriptor = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
@@ -529,11 +531,10 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (baseType) {
-      if (valType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+      if (fieldTypeDescriptor && fieldTypeDescriptor != info->tbaaRootNode) {
         tbaa = info->mdBuilder->createTBAAStructTagNode(
                  baseType->symbol->llvmTbaaTypeDescriptor,
-                 valType->symbol->llvmTbaaTypeDescriptor,
-                 offset, isConst);
+                 fieldTypeDescriptor, offset, isConst);
       }
     } else {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
@@ -561,7 +562,8 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.baseType, ptr.offset, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.baseType, ptr.offset,
+			 ptr.fieldTypeDescriptor, isConst);
 }
 
 #endif
@@ -1066,17 +1068,18 @@ GenRet codegenFieldPtr(
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
       if (!isUnion(ct)) {
-	llvm::PointerType *pBase =
-	  llvm::dyn_cast<llvm::PointerType>(baseValue->getType());
-	Type *surroundingStruct =
-	  (castType ? castType : baseType)->getValType();
-	if (isRecord(surroundingStruct) && pBase && surroundingStruct != dtNil) {
+        llvm::PointerType *pBase =
+          llvm::dyn_cast<llvm::PointerType>(baseValue->getType());
+        Type *surroundingStruct =
+          (castType ? castType : baseType)->getValType();
+        if (/*tmp*/isRecord(surroundingStruct) && pBase && surroundingStruct != dtNil) {
           llvm::StructType *structBaseType =
             llvm::dyn_cast<llvm::StructType>(pBase->getElementType());
           if (structBaseType) {
             ret.baseType = surroundingStruct;
             ret.offset = info->module->getDataLayout().
               getStructLayout(structBaseType)->getElementOffset(fieldno);
+	    ret.fieldTypeDescriptor = ret.chplType->symbol->llvmTbaaTypeDescriptor;
           }
         }
       }

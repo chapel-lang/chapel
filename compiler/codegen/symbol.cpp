@@ -990,9 +990,9 @@ void TypeSymbol::codegenMetadata() {
       INT_ASSERT(fieldType);
       unsigned fieldno = ct->getMemberGEP(field->cname);
       uint64_t byte_offset = info->module->getDataLayout().
-	getStructLayout(struct_type)->getElementOffset(fieldno);
+        getStructLayout(struct_type)->getElementOffset(fieldno);
       llvm::Constant* off =
-	llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
+        llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
       TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
       TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
