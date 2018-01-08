@@ -1063,21 +1063,17 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if (!isUnion(ct)) {
-        llvm::PointerType *pBase =
-          llvm::dyn_cast<llvm::PointerType>(baseValue->getType());
-        Type *surroundingStruct =
-          (castType ? castType : baseType)->getValType();
-        if (/*tmp*/isRecord(surroundingStruct) && pBase && surroundingStruct != dtNil) {
-          llvm::StructType *structBaseType =
-            llvm::dyn_cast<llvm::StructType>(pBase->getElementType());
-          if (structBaseType) {
-            ret.surroundingStruct = surroundingStruct;
-            ret.fieldOffset = info->module->getDataLayout().
-              getStructLayout(structBaseType)->getElementOffset(fieldno);
-            ret.fieldTbaaTypeDescriptor =
-              ret.chplType->symbol->llvmTbaaTypeDescriptor;
-          }
+      if (isRecord(ct)) {
+        llvm::PointerType *pBase;
+        llvm::StructType *structBaseType;
+        if ((pBase = llvm::dyn_cast<llvm::PointerType>(baseValue->getType())) &&
+            (structBaseType =
+             llvm::dyn_cast<llvm::StructType>(pBase->getElementType()))) {
+          ret.surroundingStruct = ct;
+          ret.fieldOffset = info->module->getDataLayout().
+            getStructLayout(structBaseType)->getElementOffset(fieldno);
+          ret.fieldTbaaTypeDescriptor =
+            ret.chplType->symbol->llvmTbaaTypeDescriptor;
         }
       }
     }
