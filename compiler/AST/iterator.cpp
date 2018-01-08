@@ -233,11 +233,12 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   BlockStmt* block = toBlockStmt(stmt);
   BlockStmt* loop  = (block != 0 && block->isLoopStmt()) ? block : 0;
 
+  bool makeRef = false;
+
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
     // type of the corresponding temp to a reference type.
-    INT_ASSERT(tmp->type->getRefType());
-    tmp->type = tmp->type->getRefType();
+    makeRef = true;
   }
   if (call && call->isResolved()) {
     // If se is an argument to a function that takes in
@@ -247,9 +248,17 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     INT_ASSERT(arg);
     if (!isReferenceType(tmp->type) &&
         (arg->intent & INTENT_FLAG_REF)) {
-      INT_ASSERT(tmp->type->getRefType());
-      tmp->type = tmp->type->getRefType();
+      makeRef = true;
     }
+  }
+  if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+    if (arg->intent & INTENT_FLAG_REF)
+      makeRef = true;
+  }
+
+  if (makeRef) {
+    INT_ASSERT(tmp->type->getRefType());
+    tmp->type = tmp->type->getRefType();
   }
 
   // OK, insert the declaration.
