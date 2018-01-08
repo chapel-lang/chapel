@@ -97,9 +97,9 @@ public:
   // one of the following is set when generating LLVM
   llvm::Value *val; // use val->getType() to obtain LLVM type
   llvm::Type *type; // set when generating a type only
-  Type *baseType; // surrounding structure, if this is a field
-  uint64_t offset; // byte offset of this field
-  llvm::MDNode *fieldTypeDescriptor; // TBAA type descriptor of this field
+  Type *surroundingStruct; // surrounding structure, if this is a field
+  uint64_t fieldOffset; // byte offset of this field within struct
+  llvm::MDNode *fieldTbaaTypeDescriptor;
 #else
   // Keeping same layout for non-LLVM builds
   void* val;
@@ -139,7 +139,7 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), baseType(NULL), offset(0), fieldTypeDescriptor(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+  GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL), fieldOffset(0), fieldTbaaTypeDescriptor(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);

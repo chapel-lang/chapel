@@ -448,21 +448,19 @@ static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
                                   Type* valType = NULL,
-                                  Type* baseType = NULL,
-                                  uint64_t offset = 0,
-                                  llvm::MDNode* fieldTypeDescriptor = NULL,
+                                  Type* surroundingStruct = NULL,
+                                  uint64_t fieldOffset = 0,
+                                  llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (baseType) {
-      if (fieldTypeDescriptor && fieldTypeDescriptor != info->tbaaRootNode) {
-        tbaa = info->mdBuilder->createTBAAStructTagNode(
-                 baseType->symbol->llvmTbaaTypeDescriptor,
-                 fieldTypeDescriptor, offset);
-      }
+    if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
+      tbaa = info->mdBuilder->createTBAAStructTagNode(
+               surroundingStruct->symbol->llvmTbaaTypeDescriptor,
+               fieldTbaaTypeDescriptor, fieldOffset);
     } else {
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
@@ -512,8 +510,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
   ptr.alreadyStored = true;
-  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.baseType, ptr.offset,
-                          ptr.fieldTypeDescriptor,
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
+                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
                           ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -521,21 +519,19 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* valType = NULL,
-                                Type* baseType = NULL,
-                                uint64_t offset = 0,
-                                llvm::MDNode* fieldTypeDescriptor = NULL,
+                                Type* surroundingStruct = NULL,
+                                uint64_t fieldOffset = 0,
+                                llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (baseType) {
-      if (fieldTypeDescriptor && fieldTypeDescriptor != info->tbaaRootNode) {
-        tbaa = info->mdBuilder->createTBAAStructTagNode(
-                 baseType->symbol->llvmTbaaTypeDescriptor,
-                 fieldTypeDescriptor, offset, isConst);
-      }
+    if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
+      tbaa = info->mdBuilder->createTBAAStructTagNode(
+               surroundingStruct->symbol->llvmTbaaTypeDescriptor,
+               fieldTbaaTypeDescriptor, fieldOffset, isConst);
     } else {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
       else tbaa = valType->symbol->llvmTbaaAccessTag;
@@ -562,8 +558,8 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.baseType, ptr.offset,
-			 ptr.fieldTypeDescriptor, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.surroundingStruct,
+                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor, isConst);
 }
 
 #endif
@@ -1076,10 +1072,11 @@ GenRet codegenFieldPtr(
           llvm::StructType *structBaseType =
             llvm::dyn_cast<llvm::StructType>(pBase->getElementType());
           if (structBaseType) {
-            ret.baseType = surroundingStruct;
-            ret.offset = info->module->getDataLayout().
+            ret.surroundingStruct = surroundingStruct;
+            ret.fieldOffset = info->module->getDataLayout().
               getStructLayout(structBaseType)->getElementOffset(fieldno);
-	    ret.fieldTypeDescriptor = ret.chplType->symbol->llvmTbaaTypeDescriptor;
+            ret.fieldTbaaTypeDescriptor =
+              ret.chplType->symbol->llvmTbaaTypeDescriptor;
           }
         }
       }
