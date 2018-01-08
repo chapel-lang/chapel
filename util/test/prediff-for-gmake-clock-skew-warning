@@ -23,6 +23,21 @@
 outfile=$2
 temp=$outfile.temp
 
+# check the outfile for null characters
+# if found, then outfile is binary, the grep filter will not work, so DO NOT run the filter
+
+  # tr removes null chars, if any
+LC_ALL=C tr -d '\000' < $outfile > $temp
+  # did the outfile contain any null chars?
+LC_ALL=C diff -q $outfile $temp
+if [ $? != 0 ]; then
+    # yes: the outfile is binary, do not run the filter
+    rm -f $temp
+    exit 0
+fi
+
+# filter out gmake "clock skew detected" warnings (if any) from the outfile, with grep
+
 grep < $outfile > $temp -Ev '^g?make(\[[0-9]+\])?: *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$'
 
 mv $temp $outfile
