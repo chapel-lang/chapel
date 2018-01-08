@@ -9,7 +9,8 @@
 
 use DynamicIters;
 
-config const n = 200,             // image size in pixels (n x n)
+config const size = 200; // this is just an artifact of directory PERFEXECOPTS
+config const n = size,            // image size in pixels (n x n)
              limit = 4.0,         // per-pixel convergence limit
              chunkSize = 1;       // dynamic iterator's chunk size
 
