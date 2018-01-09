@@ -418,6 +418,7 @@ static void lowerForallStmtsInline() {
     INT_ASSERT(!parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR));
 
     // Place to put pre- and post- code.
+    SET_LINENO(fs); // vass what should it be?
     CallExpr*  ianch = new CallExpr("anchor");
     BlockStmt* iwrap = new BlockStmt(ianch);
 

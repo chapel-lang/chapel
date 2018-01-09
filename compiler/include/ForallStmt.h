@@ -69,7 +69,8 @@ public:
 
   // vass this is temporary; we really want all ForallStmts handled this way
   // "li" = "lower during lowerIterators"
-  bool li() { return getModule()->modTag == MOD_USER; }
+  bool yesLI() const { return ((ForallStmt*)this)->getModule()->modTag == MOD_USER; }
+  bool noLI() const { return !yesLI(); }
 
 private:
   bool           fZippered;

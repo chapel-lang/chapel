@@ -2485,12 +2485,15 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
 
   if (fs->numShadowVars() == 0)
   {
+   if (fs->noLI())
     addParIdxCopy(fs);
   }
   else
   {
+   if (fs->noLI()) {
     addActualsToParCallNew(fs, parCall);
     detupleLeadIdxNew(fs, fs->numShadowVars());
+   }
     if (needToReplace)
       replaceVarUsesNew(forallBody1, outer2shadow);
   }
@@ -2523,6 +2526,6 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
   checkForNonIterator(parCall);
 
   if (fs->numShadowVars() > 0)
-  if (fs->li())
+  if (fs->noLI())
    implementForallIntents2New(fs, parCall);
 }

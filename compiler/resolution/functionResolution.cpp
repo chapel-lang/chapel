@@ -7725,6 +7725,10 @@ static void insertReturnTemps() {
 
           Expr* parent = contextCallOrCall->parentExpr;
 
+          if (ForallStmt* pfs = toForallStmt(parent))
+            if (pfs->isIteratedExpression(contextCallOrCall))
+              continue; // not really a top-level expression
+
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
             VarSymbol* tmp = newTemp("_return_tmp_", fn->retType);

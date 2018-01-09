@@ -668,7 +668,14 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   // Set QualifiedType of the index variable.
   QualifiedType iType = fsIterYieldType(pfs, parIter,
                                         origIterator, alreadyResolved);
-  VarSymbol* idxVar = parIdxVar(pfs);
+  VarSymbol* idxVar = NULL;
+  if (pfs->yesLI()) {
+    // The case with >1 idx vars / leader+follower is to be implemented.
+    DefExpr* idxDef = toDefExpr(pfs->inductionVariables().only());
+    idxVar = toVarSymbol(idxDef->sym);
+  } else {
+    idxVar = parIdxVar(pfs);
+  }
 
   if (idxVar->id == breakOnResolveID)
     gdbShouldBreakHere();
@@ -830,6 +837,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
+   if (pfs->noLI())
     addParIdxVarsAndRestruct(pfs, gotSA);
 
     implementForallIntentsNew(pfs, iterCall);
@@ -869,7 +877,8 @@ void lowerForallStmts() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
-    if (fs->li()) continue;
+    if (fs->yesLI())
+      continue;
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();

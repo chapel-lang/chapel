@@ -114,7 +114,8 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->forallIntents);
 
   // Currently ForallStmt are gone during resolve().
-  INT_ASSERT(!resolved);
+  // The ones that are yesLI() are lowered away during lowerIterators().
+  INT_ASSERT((yesLI() && !iteratorsLowered) || !resolved);
 }
 
 void ForallStmt::accept(AstVisitor* visitor) {
@@ -228,6 +229,10 @@ VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
 
 // ditto
 BlockStmt* userLoop(const ForallStmt* fs) {
+  // inTree() is workaround for calls to userLoop in lowerForallStmts()
+  // after 'fs' has been removed from the tree. It should not
+  // be needed after we eliminate lowerForallStmts() altogether.
+  if (((ForallStmt*)fs)->inTree() && fs->yesLI()) return fs->loopBody();
   BlockStmt* ul = toBlockStmt(fs->loopBody()->body.tail);
   INT_ASSERT(ul);
   return ul;
