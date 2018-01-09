@@ -927,17 +927,20 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
-proc kroneckerProduct(A: [?ADom] ?eltType, B: [?BDom] eltType) {
+/* Return the Kronecker Product of matrix ``A`` and matrix ``B``.
+   If the size of A is ``x * y`` and of B is ``a * b`` then size of the resulting
+   matrix will be ``(x * a) * (y * b)`` */
+proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   if ADom.rank != 2 || BDom.rank != 2 then compilerError("Rank size not 2");
   const (rowA, colA) = A.shape;
   const (rowB, colB) = B.shape;
-  var C = Matrix(rowA*rowB, colA * colB);
-  for i in 0..rowA-1 {
-    for j in 0..colA-1 {
+  var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
+  forall i in 0..#rowA {
+    forall j in 0..#colA {
       var stR = i*rowB;
       var stC = j*colB;
-      for k in 0..rowB-1 {
-        for l in 0..colB-1 {
+      forall k in 0..rowB-1 {
+        forall l in 0..colB-1 {
           C[stR+k, stC+l] = A[i, j]*B[k, l];
         }
       }
