@@ -262,8 +262,8 @@ proc file.realPath(): string throws {
    return result;
  }
  
-/* Determines whether the path specified is an absolute path and returns
-   that information
+/* Determines whether the path specified is an absolute path in Unix
+   environment and returns error if it is not in Unix environment
 
    :arg name: the path to be checked.
    :type name: `string`
@@ -273,23 +273,19 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-     if name.isEmptyString() {
-       return false;
+     if (CHPL_TARGET_PLATFORM == 'linux64' || CHPL_TARGET_PLATFORM == 'linux32') {
+        if name.isEmptyString() {
+           return false;
+        }
+        const len: int = name.length;
+        var str: string = name[1];
+        if (str == '/' || str == '\\') {
+          return true;
+        }
+        else 
+          return false;
      }
-     const len: int = name.length;
-     var str: string = name[1];
-     if (str == '/' || str == '\\') {
-        return true;
-     }
-     else if str.isAlpha() {
-    // Possible device root
-       if len > 2 && name[2] == ':' {
-         var strp: string = name[3];
-         if (strp == '/' || strp == '\\') {
-            return true;
-         }  
-      }
-     }
-    return false;
+     else
+     writeln("Error : Target platform should have Unix like environment");
   } 
 }
