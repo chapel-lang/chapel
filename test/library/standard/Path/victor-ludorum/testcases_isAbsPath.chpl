@@ -11,7 +11,5 @@
    writeln(isAbsPath("//server"));
 	 
    writeln(isAbsPath("\\server"));
-	 
-   writeln(isAbsPath("C:\\foo\\.."));
-	 	 
+	 	 	 
    writeln(isAbsPath("."));
