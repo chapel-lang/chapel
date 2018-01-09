@@ -414,13 +414,16 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 
         } else {
           // Update ic.value.
-          SymExpr* upd = new SymExpr(ySym);
-          pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
-          if (ySym->defPoint->parentSymbol == fn) {
-            // Need to convert 'upd' itself, too.
-            Symbol* field = local2field.get(se->symbol());
-            INT_ASSERT(field && field != valField);
-            replaceLocalWithFieldTemp(upd, ic, field, false, true, asts);
+          // Unless it's yielding something of type dtVoid.
+          if (ySym->type != dtVoid) {
+            SymExpr* upd = new SymExpr(ySym);
+            pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
+            if (ySym->defPoint->parentSymbol == fn) {
+              // Need to convert 'upd' itself, too.
+              Symbol* field = local2field.get(se->symbol());
+              INT_ASSERT(field && field != valField);
+              replaceLocalWithFieldTemp(upd, ic, field, false, true, asts);
+            }
           }
         }
       } else if (useSet.set_in(se) || defSet.set_in(se)) {
