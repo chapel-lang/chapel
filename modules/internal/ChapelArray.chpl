@@ -4094,20 +4094,41 @@ module ChapelArray {
       __primitive("array_alloc", data, size, subloc, c_nil, data);
 
 
-    // Now construct a DefaultRectangular array using the data
-    pragma "insert auto destroy"
-    var D = { 1 .. #i };
+    if data != nil {
+      // Now construct a DefaultRectangular array using the data
+      pragma "insert auto destroy"
+      var D = { 1 .. #i };
 
-    var A = D.buildArrayWith(data[0].type, data, size:int);
+      var A = D.buildArrayWith(data[0].type, data, size:int);
 
-    // Normally, the sub-arrays share a domain with the
-    // parent, but that's not the case for the arrays created
-    // by this routine. Instead, each sub-array owns its own domain.
-    // That allows them to have different runtime sizes.
-    chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
-    A._value._decEltRefCounts = false;
+      // Normally, the sub-arrays share a domain with the
+      // parent, but that's not the case for the arrays created
+      // by this routine. Instead, each sub-array owns its own domain.
+      // That allows them to have different runtime sizes.
+      chpl_decRefCountsForDomainsInArrayEltTypes(A._value, data[0].type);
+      A._value._decEltRefCounts = false;
+      return A;
 
-    return A;
+    } else {
+      // Construct an empty array that has a reasonable eltType
+      pragma "insert auto destroy"
+      var D = { 1 .. 0 };
+
+      // Create space for 1 element as a placeholder.
+      __primitive("array_alloc", data, 1, subloc, c_ptrTo(callAgain), c_nil);
+      if callAgain then
+        __primitive("array_alloc", data, 1, subloc, c_nil, data);
+
+      // TODO: this use of data[0].type will result in nil pointer
+      // dereferences in the event that we're converting a iterator
+      // returning arrays of arrays but that returned no elements.
+      // We need to be able to construct the runtime portion of the type
+      // in that event.
+      var A = D.buildArrayWith(data[0].type, data, size:int);
+
+      return A;
+
+    }
   }
 
   /* ================================================
