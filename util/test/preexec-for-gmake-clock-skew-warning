@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This script is for the use with 'start_test' as the system-wide prediff, when
+# This script is for the use with 'start_test' as the system-wide preexec, when
 # network time-sync problems (or similar) cause file modification times to look
 # wrong to gmake.
 
@@ -12,12 +12,12 @@
 # gmake: Warning: File `.../something' has modification time 0.01 s in the future
 # gmake: warning:  Clock skew detected.  Your build may be incomplete.
 
-# This prediff file removes such lines, so that they will not generate false test
+# This preexec file removes such lines, so that they will not generate false test
 # errors in start_test.
 
-# To use this prediff file with start_test (assuming bash):
+# To use this preexec file with start_test (assuming bash):
 #
-# export CHPL_SYSTEM_PREDIFF=$CHPL_HOME/util/test/prediff-for-gmake-clock-skew-warning
+# export CHPL_SYSTEM_PREEXEC=$CHPL_HOME/util/test/preexec-for-gmake-clock-skew-warning
 # start_test ...
 
 outfile=$2
