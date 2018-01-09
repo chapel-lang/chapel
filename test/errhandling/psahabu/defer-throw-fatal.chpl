@@ -1,5 +1,7 @@
 use SysError;
 
+config const i = 0;
+
 proc deferThrow() throws {
   defer {
     throw new Error();
@@ -34,7 +36,11 @@ proc deferTryBang() {
   }
 }
 
-deferThrow();
-deferTry();
-deferTryComplete();
-deferTryBang();
+if i == 0 then
+  deferThrow();
+if i == 1 then
+  deferTry();
+if i == 2 then
+  deferTryComplete();
+if i == 3 then
+  deferTryBang();
