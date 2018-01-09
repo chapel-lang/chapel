@@ -22,11 +22,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of branch that disables gcc's predictive-commoning optimization
-GITHUB_USER=ronawho
-GITHUB_BRANCH=no-predictive-commoning
-SHORT_NAME=no-predictive-commoning
-START_DATE=12/14/17
+# Test performance of branch that removes FLAG_INSERT_AUTO_COPY
+GITHUB_USER=mppf
+GITHUB_BRANCH=removeInsertAutoCopyTemps
+SHORT_NAME=removeInsertAutoCopyTemps
+START_DATE=01/09/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
