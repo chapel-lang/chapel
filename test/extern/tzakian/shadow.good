@@ -1,2 +1,3 @@
-error: ambiguous call 'foo(1)' [functionResolution.cpp:1815]
-
+In ExternFoo, foo(1) returns 2
+In LocalFoo, foo(1) returns 3
+With both visible, foo(1) returns 3

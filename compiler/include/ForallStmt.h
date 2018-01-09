@@ -35,6 +35,7 @@ public:
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
+  LabelSymbol* continueLabel();      // create it if not already
 
   // when originating from a ForLoop
   bool       createdFromForLoop()    const;  // is converted from a for-loop
@@ -81,6 +82,9 @@ private:
   bool           fFromForLoop; // see comment below
 
   ForallStmt(bool zippered, BlockStmt* body);
+
+public:
+  LabelSymbol*   fContinueLabel;  // update_symbols() needs this
 };
 
 /* fFromForLoop and its accessors

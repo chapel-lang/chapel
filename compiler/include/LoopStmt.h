@@ -29,6 +29,8 @@ public:
 
   static LoopStmt*       findEnclosingLoop(Expr* expr, const char* name);
 
+  static Stmt*           findEnclosingLoopOrForall(Expr* expr);
+
 public:
   virtual bool           isLoopStmt()                                    const;
 
