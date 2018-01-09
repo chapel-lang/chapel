@@ -1,7 +1,3 @@
-<!--
-This file must be in the parent directory of the html files in order to be
-#included by php.
--->
 
 <style>
 #versionButton {
@@ -104,6 +100,7 @@ if (pagePath == "") {
 }
 function dropSetup() {
   var button = document.getElementById("versionButton");
+  // Uses unicode down-pointing triangle
   button.innerHTML = chplTitle + " &#9660;";
 
   // Choose button color
