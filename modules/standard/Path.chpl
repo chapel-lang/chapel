@@ -273,13 +273,13 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-     if (CHPL_TARGET_PLATFORM == 'linux64' || CHPL_TARGET_PLATFORM == 'linux32') {
+     if (CHPL_TARGET_PLATFORM == 'linux64' || CHPL_TARGET_PLATFORM == 'linux32' || CHPL_TARGET_PLATFORM == 'darwin') {
         if name.isEmptyString() {
            return false;
         }
         const len: int = name.length;
         var str: string = name[1];
-        if (str == '/' || str == '\\') {
+        if (str == '/') {
           return true;
         }
         else 
