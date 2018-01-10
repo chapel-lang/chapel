@@ -952,15 +952,64 @@ void TypeSymbol::codegenMetadata() {
   // Integers, reals, bools, enums, references, wide pointers
   // count as one thing. Records, strings, complexes should not
   // get simple TBAA (they can get struct tbaa).
-  if( is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
-      is_real_type(type) || is_imag_type(type) || is_enum_type(type) ||
-      hasFlag(FLAG_EXTERN) || hasFlag(FLAG_STAR_TUPLE) ||
-      isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
-      hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
+  if (isUnion(type)) {
+    llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
+  } else if (is_complex_type(type)) {
+    INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
+	       type == dtComplex[COMPLEX_SIZE_128]);
+
+    TypeSymbol *re, *im;
+    uint64_t fieldSize;
+    if (type == dtComplex[COMPLEX_SIZE_64]) {
+      re = dtReal[FLOAT_SIZE_32]->symbol;
+      im = dtImag[FLOAT_SIZE_32]->symbol;
+      fieldSize = 4;
+    } else {
+      re = dtReal[FLOAT_SIZE_64]->symbol;
+      im = dtImag[FLOAT_SIZE_64]->symbol;
+      fieldSize = 8;
+    }
+    re->codegenMetadata();
+    im->codegenMetadata();
+
+    llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+    llvm::ConstantAsMetadata *zero =
+      info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty, 0));
+    llvm::ConstantAsMetadata *fsz =
+      info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty,
+							     fieldSize));
+
+    llvm::Metadata *TypeOps[5];
+    TypeOps[0] = llvm::MDString::get(ctx,cname);
+    TypeOps[1] = re->llvmTbaaTypeDescriptor;
+    TypeOps[2] = zero;  // offset
+    TypeOps[3] = im->llvmTbaaTypeDescriptor;
+    TypeOps[4] = fsz;   // offset
+    llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+
+    llvm::Metadata *CopyOps[6];
+    CopyOps[0] = zero;  // offset
+    CopyOps[1] = fsz;   // size
+    CopyOps[2] = re->llvmTbaaAccessTag;
+    CopyOps[3] = fsz;   // offset
+    CopyOps[4] = fsz;   // size
+    CopyOps[5] = im->llvmTbaaAccessTag;
+    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
+
+    llvm::Metadata *ConstCopyOps[6];
+    ConstCopyOps[0] = zero;  // offset
+    ConstCopyOps[1] = fsz;   // size
+    ConstCopyOps[2] = re->llvmConstTbaaAccessTag;
+    ConstCopyOps[3] = fsz;   // offset
+    ConstCopyOps[4] = fsz;   // size
+    ConstCopyOps[5] = im->llvmConstTbaaAccessTag;
+    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  } else if (isPrimitiveScalar(type) || is_enum_type(type) ||
+	     hasFlag(FLAG_EXTERN) || hasFlag(FLAG_STAR_TUPLE) ||
+	     isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
+	     hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
-  } else if (isUnion(type)) {
-    llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
   } else if (isRecord(type)) {
     // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
     llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
