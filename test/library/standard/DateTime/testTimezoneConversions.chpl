@@ -39,12 +39,12 @@ class USTimeZone: TZInfo {
   }
 
   proc dst(dt: datetime) {
-    if dt.tzinfo == nil {
+    if dt.tzinfo.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
       return ZERO;
     }
-    assert(dt.tzinfo == this);
+    assert(dt.tzinfo.borrow() == this);
 
     // Find first Sunday in April.
     var start = first_sunday_on_or_after(DSTSTART.replace(year=dt.year, tzinfo=DSTSTART.tzinfo));
@@ -56,7 +56,7 @@ class USTimeZone: TZInfo {
 
     // Can't compare naive to aware objects, so strip the timezone from
     // dt first.
-    if start <= dt.replace(tzinfo=nil) && dt.replace(tzinfo=nil) < end {
+    if start <= dt.replace(tzinfo=new Shared(nil: TZInfo)) && dt.replace(tzinfo=new Shared(nil:TZInfo)) < end {
       return HOUR;
     } else {
       return ZERO;
@@ -114,12 +114,12 @@ proc first_sunday_on_or_after(in dt) {
   return dt;
 }
 
-var Eastern  = new USTimeZone(-5, "Eastern",  "EST", "EDT");
-var Central  = new USTimeZone(-6, "Central",  "CST", "CDT");
-var Mountain = new USTimeZone(-7, "Mountain", "MST", "MDT");
-var Pacific  = new USTimeZone(-8, "Pacific",  "PST", "PDT");
-var utc_real = new FixedOffset(0, "UTC", 0);
-var utc_fake = new FixedOffset(-12*60, "UTCfake", 0);
+var Eastern  = new Shared(new USTimeZone(-5, "Eastern",  "EST", "EDT"): TZInfo);
+var Central  = new Shared(new USTimeZone(-6, "Central",  "CST", "CDT"): TZInfo);
+var Mountain = new Shared(new USTimeZone(-7, "Mountain", "MST", "MDT"): TZInfo);
+var Pacific  = new Shared(new USTimeZone(-8, "Pacific",  "PST", "PDT"): TZInfo);
+var utc_real = new Shared(new FixedOffset(0, "UTC", 0): TZInfo);
+var utc_fake = new Shared(new FixedOffset(-12*60, "UTCfake", 0): TZInfo);
 
 // DST switch times for 2002
 var dston = new datetime(2002, 4, 7, 2);
@@ -247,7 +247,7 @@ proc test_easy() {
 proc test_tricky() {
   // 22:00 on day before daylight starts.
   var fourback = dston - new timedelta(hours=4);
-  var ninewest = new FixedOffset(-9*60, "-0900", 0);
+  var ninewest = new Shared(new FixedOffset(-9*60, "-0900", 0): TZInfo);
   fourback = fourback.replace(tzinfo=ninewest);
   // 22:00-0900 is 7:00 UTC == 2:00 EST == 3:00 DST.  Since it's "after
   // 2", we should get the 3 spelling.
@@ -257,7 +257,7 @@ proc test_tricky() {
   // local clock jumps from 1 to 3).  The point here is to make sure we
   // get the 3 spelling.
   var expected = dston.replace(hour=3, tzinfo=dston.tzinfo);
-  var got = fourback.astimezone(Eastern).replace(tzinfo=nil);
+  var got = fourback.astimezone(Eastern).replace(tzinfo=new Shared(nil: TZInfo));
   assert(expected == got);
 
   // Similar, but map to 6:00 UTC == 1:00 EST == 2:00 DST.  In that
@@ -267,7 +267,7 @@ proc test_tricky() {
   // and adding -4-0 == -4 gives the 2:00 spelling.  We want the 1:00 EST
   // spelling.
   expected = dston.replace(hour=1, tzinfo=dston.tzinfo);
-  got = sixutc.astimezone(Eastern).replace(tzinfo=nil);
+  got = sixutc.astimezone(Eastern).replace(tzinfo=new Shared(nil: TZInfo));
   assert(expected == got);
 
   // Now on the day DST ends, we want "repeat an hour" behavior.
@@ -279,9 +279,9 @@ proc test_tricky() {
     for tz in (Eastern, Pacific) {
       var first_std_hour = dstoff - new timedelta(hours=2); // 23:MM
       // Convert that to UTC.
-      first_std_hour -= tz.utcoffset(new datetime(1,1,1));
+      first_std_hour -= tz.borrow().utcoffset(new datetime(1,1,1));
       // Adjust for possibly fake UTC.
-      var asutc = first_std_hour + utc.utcoffset(new datetime(1,1,1));
+      var asutc = first_std_hour + utc.borrow().utcoffset(new datetime(1,1,1));
       // First UTC hour to convert; this is 4:00 when utc=utc_real &
       // tz=Eastern.
       var asutcbase = asutc.replace(tzinfo=utc);
@@ -291,7 +291,7 @@ proc test_tricky() {
           expected = expectedbase.replace(minute=minute, tzinfo=expectedbase.tzinfo);
           asutc = asutcbase.replace(minute=minute, tzinfo=asutcbase.tzinfo);
           var astz = asutc.astimezone(tz);
-          assert(astz.replace(tzinfo=nil) == expected);
+          assert(astz.replace(tzinfo=new Shared(nil: TZInfo)) == expected);
         }
         asutcbase += HOUR;
       }
@@ -312,7 +312,8 @@ proc test_fromutc() {
     }
   }
 
-  var FEastern  = new FauxUSTimeZone(new timedelta(hours=-5), "FEastern",  "FEST", "FEDT");
+  var FEastern  = new Shared(new FauxUSTimeZone(new timedelta(hours=-5), "FEastern",  "FEST", "FEDT"): TZInfo);
+  var FEasternRef = FEastern.borrow(): USTimeZone;
 
   //  UTC  4:MM  5:MM  6:MM  7:MM  8:MM  9:MM
   //  EST 23:MM  0:MM  1:MM  2:MM  3:MM  4:MM
@@ -329,7 +330,7 @@ proc test_fromutc() {
     var got = Eastern.fromutc(start);
     assert(expected == got);
 
-    expected = fstart + FEastern.stdoffset;
+    expected = fstart + FEasternRef.stdoffset;
     got = FEastern.fromutc(fstart);
     assert(expected == got);
 
@@ -349,7 +350,7 @@ proc test_fromutc() {
     var got = Eastern.fromutc(start);
     assert(expected == got);
 
-    expected = fstart + FEastern.stdoffset;
+    expected = fstart + FEasternRef.stdoffset;
     got = FEastern.fromutc(fstart);
     assert(expected == got);
 
