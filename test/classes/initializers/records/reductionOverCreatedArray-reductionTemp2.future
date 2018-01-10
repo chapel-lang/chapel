@@ -6,5 +6,4 @@ call.  If the reduction result is saved into a temporary first, we still
 encounter the bug.  However, if we save the created array into a temporary, the
 program will always execute correctly.
 
-This version covers returning the result of the reduction directly when the
-array is created in the same expression.
+This version covers saving the reduction result into a temporary.
