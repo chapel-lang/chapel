@@ -902,9 +902,12 @@ void TypeSymbol::codegenMetadata() {
 
   GenInfo* info = gGenInfo;
   llvm::LLVMContext& ctx = info->module->getContext();
-  // Create the TBAA root node if necessary.
+  // Create the TBAA root node and unions node if necessary.
   if( ! info->tbaaRootNode ) {
     info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
+    info->tbaaUnionsNode =
+      info->mdBuilder->createTBAAScalarTypeNode("all unions",
+                                                info->tbaaRootNode);
   }
 
   // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
@@ -925,10 +928,10 @@ void TypeSymbol::codegenMetadata() {
     }
   }
 
-  llvm::MDNode* parent = info->tbaaRootNode;
+  llvm::MDNode* parent = info->tbaaUnionsNode;
   if( superType ) {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
-    INT_ASSERT( parent );
+    INT_ASSERT(parent && parent != info->tbaaRootNode);
   }
 
   // Ref and _ddata are really the same, and can conceivably
@@ -937,6 +940,7 @@ void TypeSymbol::codegenMetadata() {
     Type* eltType = getDataClassType(this)->typeInfo();
     Type* refType = getOrMakeRefTypeDuringCodegen(eltType);
     refType->symbol->codegenMetadata();
+    INT_ASSERT(refType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode);
     this->llvmTbaaTypeDescriptor = refType->symbol->llvmTbaaTypeDescriptor;
     this->llvmTbaaAccessTag = refType->symbol->llvmTbaaAccessTag;
     this->llvmConstTbaaAccessTag = refType->symbol->llvmConstTbaaAccessTag;
@@ -950,23 +954,14 @@ void TypeSymbol::codegenMetadata() {
   // get simple TBAA (they can get struct tbaa).
   if( is_bool_type(type) || is_int_type(type) || is_uint_type(type) ||
       is_real_type(type) || is_imag_type(type) || is_enum_type(type) ||
+      hasFlag(FLAG_EXTERN) || hasFlag(FLAG_STAR_TUPLE) ||
       isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
       hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS) ) {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
-    // Create tbaa access tags, one for const and one for not.
-    // The createTBAAStructTagNode() method is misnamed.  Here we
-    // use it for scalars.
-    llvmTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0);
-    llvmConstTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0,
-                                               /*IsConstant=*/true);
-  } else if (ct && !isUnion(type) && !hasFlag(FLAG_STAR_TUPLE)) {
+  } else if (isUnion(type)) {
+    llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
+  } else if (isRecord(type)) {
     // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
     llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
     llvm::SmallVector<llvm::Metadata*, 16> CopyOps;
@@ -994,6 +989,8 @@ void TypeSymbol::codegenMetadata() {
       llvm::Constant* off =
         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
+      INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
+                 info->tbaaRootNode);
       TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
       TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
       CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
@@ -1006,6 +1003,21 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
     llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  }
+
+  if (llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+    // Create tbaa access tags, one for const and one for not.
+    // The createTBAAStructTagNode() method works for both scalars
+    // and aggregates, referencing the whole object.
+    llvmTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0);
+    llvmConstTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
   }
 #endif
 }

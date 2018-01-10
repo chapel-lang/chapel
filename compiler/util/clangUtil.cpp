@@ -1295,13 +1295,11 @@ static void setupModule()
   //   m->addModuleFlag(llvm::Module::Error, "Chapel Version", unsigned);
 
   // Also setup some basic TBAA metadata nodes.
-  llvm::LLVMContext& cx = info->module->getContext();
-  // Create the TBAA root node
-  {
-    llvm::Metadata* Ops[1];
-    Ops[0] = llvm::MDString::get(cx, "Chapel types");
-    info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
-  }
+  info->mdBuilder = new llvm::MDBuilder(info->module->getContext());
+  // Create the TBAA root node and unions node
+  info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
+  info->tbaaUnionsNode =
+    info->mdBuilder->createTBAAScalarTypeNode("all unions", info->tbaaRootNode);
 }
 
 void finishCodegenLLVM() {
@@ -1670,9 +1668,8 @@ void runClang(const char* just_parse_filename) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
 
-      // Create a new IRBuilder and MDBuilder
+      // Create a new IRBuilder
       gGenInfo->irBuilder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
-      gGenInfo->mdBuilder = new llvm::MDBuilder(gGenInfo->module->getContext());
 
       // This seems to be needed, even though it is strange.
       // (otherwise we segfault in info->irBuilder->CreateGlobalString)

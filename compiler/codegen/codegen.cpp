@@ -2271,6 +2271,7 @@ GenInfo::GenInfo()
              loopStack(),
              llvmContext(),
              tbaaRootNode(NULL),
+             tbaaUnionsNode(NULL),
              globalToWideInfo(),
              FPM_postgen(NULL),
              clangInfo(NULL)
