@@ -936,11 +936,11 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const (rowB, colB) = B.shape;
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
   forall i in 0..#rowA {
-    forall j in 0..#colA {
+    for j in 0..#colA {
       var stR = i*rowB;
       var stC = j*colB;
-      forall k in 0..rowB-1 {
-        forall l in 0..colB-1 {
+      for k in 0..rowB-1 {
+        for l in 0..colB-1 {
           C[stR+k, stC+l] = A[i, j]*B[k, l];
         }
       }
