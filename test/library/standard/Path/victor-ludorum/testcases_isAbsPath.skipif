@@ -1,0 +1,1 @@
+CHPL_HOST_PLATFORM == linux32 , CHPL_HOST_PLATFORM == linux64 and CHPL_HOST_PLATFORM == darwin
