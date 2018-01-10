@@ -5,110 +5,110 @@ minus...
 minusEquals conformance check... 
 false
 minusEquals... 
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}
+0.0 0.0 0.0}
 plus... 
 plusEquals conformance check... 
-{aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
 0.980939 0.0895016 0.957544
 0.491363 0.967409 0.94783
-0.939291 0.161449 0.115637, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.939291 0.161449 0.115637}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}
+0.0 0.0 0.0}
 plusEquals... 
 plusEquals... (C = A - B, but C = C + B != A)
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}
+0.0 0.0 0.0}
 uminus... 
 uminus... (-A + A != zeros)
 arrayLeftDivide conformance check... nonconformance not raised
 arrayLeftDivide conformance check... 
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
 1.0 1.0 1.0
 1.0 1.0 1.0
-1.0 1.0 1.0, m = 4, n = 3}
+1.0 1.0 1.0}
 arrayLeftDivide... 
 arrayLeftDivide... (M.\M != ones)
 arrayLeftDivideEquals conformance check... nonconformance not raised
 arrayLeftDivideEquals conformance check... 
-{aDom = {1..4, 1..3}, A = nan nan nan
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = nan nan nan
 nan nan nan
 nan nan nan
-nan nan nan, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+nan nan nan}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
 1.0 1.0 1.0
 1.0 1.0 1.0
-1.0 1.0 1.0, m = 4, n = 3}
+1.0 1.0 1.0}
 arrayLeftDivideEquals... 
 arrayLeftDivideEquals... (M.\M != ones)
 arrayRightDivide conformance check... nonconformance not raised
 arrayRightDivide conformance check... 
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
 1.0 1.0 1.0
 1.0 1.0 1.0
-1.0 1.0 1.0, m = 4, n = 3}
+1.0 1.0 1.0}
 arrayRightDivide... 
 arrayRightDivide... (M./M != ones)
 arrayRightDivideEquals conformance check... nonconformance not raised
 arrayRightDivideEquals conformance check... 
-{aDom = {1..4, 1..3}, A = nan nan nan
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = nan nan nan
 nan nan nan
 nan nan nan
-nan nan nan, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
+nan nan nan}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 1.0 1.0
 1.0 1.0 1.0
 1.0 1.0 1.0
-1.0 1.0 1.0, m = 4, n = 3}
+1.0 1.0 1.0}
 arrayRightDivideEquals... 
 arrayRightDivideEquals... (M./M != ones)
 arrayTimes conformance check... nonconformance not raised
 arrayTimes conformance check... 
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}
+0.0 0.0 0.0}
 arrayTimes... 
 arrayTimes... (A = R, C = A.*B, but C./B != A)
 arrayTimesEquals conformance check... nonconformance not raised
 arrayTimesEquals conformance check... 
-{aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.0 0.0 0.0
 0.0 0.0 0.0
 0.0 0.0 0.0
-0.0 0.0 0.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
+0.0 0.0 0.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 0.272759 0.192422 0.39718
 0.980939 0.0895016 0.957544
 0.491363 0.967409 0.94783
-0.939291 0.161449 0.115637, m = 4, n = 3}
+0.939291 0.161449 0.115637}
 arrayTimesEquals... 
 arrayTimesEquals... (A = R, A = A.*B, but A./B != R)
 
 Testing linear algebra methods...
 
 transpose...
-{aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
+{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
 4.0 5.0 6.0
 7.0 8.0 9.0
-10.0 11.0 12.0, m = 4, n = 3}{aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
+10.0 11.0 12.0}{m = 4, n = 3, aDom = {1..4, 1..3}, A = 1.0 2.0 3.0
 4.0 5.0 6.0
 7.0 8.0 9.0
-10.0 11.0 12.0, m = 4, n = 3}
+10.0 11.0 12.0}
 transpose...
 norm1...
 normInf()...
