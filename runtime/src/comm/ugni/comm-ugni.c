@@ -410,21 +410,21 @@ static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread chpl_bool allow_task_yield = true;
 
 static inline
-void mem_regions_lock() {
+void mem_regions_lock(void) {
   if (pthread_mutex_lock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
   allow_task_yield = false;
 }
 
 static inline
-void mem_regions_unlock() {
+void mem_regions_unlock(void) {
   if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot release mem region lock");
   allow_task_yield = true;
 }
 
 static inline
-chpl_bool can_task_yield() {
+chpl_bool can_task_yield(void) {
   return allow_task_yield;
 }
 
