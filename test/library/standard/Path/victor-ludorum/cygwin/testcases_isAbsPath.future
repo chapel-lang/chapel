@@ -1,27 +1,10 @@
-   // Test file for isAbsPath() function for cygwin
-   // environment .
-   // Presently this function do not work in
-   // cygwin environment . So, these are testcases
-   // for testing this function when it will get implemented
-   // for cygwin environment also .
-   // Issue - #6010
+Test file for isAbsPath() function for cygwin environment .
+ 
+Presently this function do not work in
+cygwin environment . So, these are testcases
+for testing this function when it will get implemented
+for cygwin environment also .
+ 
+Issue - #6010 ( isAbsPath() function )
    
-   use Path;
-
-   writeln(isAbsPath("/foo/bar"));
-
-   writeln(isAbsPath("./baz"));
-	 
-   writeln(isAbsPath("/baz/.."));
-	 
-   writeln(isAbsPath("baz/"));
-	 
-   writeln(isAbsPath("//server"));
-	 
-   writeln(isAbsPath("\\server"));
-   
-   writeln(isAbsPath("C:/foo/.."));
-   
-   writeln(isAbsPath("C:\\foo\\.."));
-	 	 	 
-   writeln(isAbsPath("."));
+ 
