@@ -13,5 +13,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         pass
     end_time = timer()
-    sys.stderr.write("real {0:0.4}\n\n\n".format(end_time - start_time))
+    sys.stdout.write("real {0:0.4}\n\n\n".format(end_time - start_time))
     sys.exit(return_code)
