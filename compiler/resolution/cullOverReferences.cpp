@@ -25,6 +25,7 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "loopDetails.h"
+#include "lifetime.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -1210,6 +1211,8 @@ void cullOverReferences() {
   // here for ArgSymbols.
 
   lateConstCheck(reasonNotConst);
+
+  checkLifetimes();
 }
 
 // Handle certain degenerate cases, such as when a
