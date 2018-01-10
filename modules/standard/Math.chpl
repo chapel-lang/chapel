@@ -1059,62 +1059,68 @@ module Math {
 
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  extern proc j0(x: real(64)): real(64);
+  extern "j0f" proc j0(x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  inline proc j0(x : real(32)): real(32) {
-    extern proc j0f(x: real(32)): real(32);
-    return j0f(x);
+  inline proc j0(x : real(64)): real(64) {
+    extern proc j0(x: real(64)): real(64);
+    return j0(x);
   }
 
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  extern proc j1(x: real(64)): real(64);
+  extern "j1f" proc j1(x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  inline proc j1(x : real(32)): real(32) {
-    extern proc j1f(x: real(32)): real(32);
-    return j1f(x);
+  inline proc j1(x : real(64)): real(64) {
+    extern proc j1(x: real(64)): real(64);
+    return j1(x);
   }
 
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
-  extern proc jn(n: c_int, x: real(64)): real(64);
+  extern "jnf" proc jn(n: int, x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
-  inline proc jn(n: c_int, x : real(32)): real(32) {
-    extern proc jnf(n: c_int, x: real(32)): real(32);
-    return jnf(n, x);
+  inline proc jn(n: int, x : real(64)): real(64) {
+    extern proc jnf(n: c_int, x: real(64)): real(64);
+    return jnf(n: c_int, x);
   }
 
 
   /* Returns the Bessel function of the second kind of order `0` of `x`. */
-  extern proc y0(x: real(64)): real(64);
+  extern "y0f" proc y0(x: real(32)): real(32);
 
   /* Returns the Bessel function of the second kind of order `0` of `x`. */
-  inline proc y0(x : real(32)): real(32) {
-    extern proc y0f(x: real(32)): real(32);
-    return y0f(x);
+  inline proc y0(x : real(64)): real(64) {
+    if x < 0 then
+      halt("Input value for Bessel function of second kind must be greater than 0");
+    extern proc y0(x: real(64)): real(64);
+    return y0(x);
   }
 
 
   /* Returns the Bessel function of the second kind of order `1` of `x`. */
-  extern proc y1(x: real(64)): real(64);
+  extern "y1f" proc y1(x: real(32)): real(32);
 
   /* Returns the Bessel function of the second kind of order `1` of `x`. */
-  inline proc y1(x : real(32)): real(32) {
-    extern proc y1f(x: real(32)): real(32);
-    return y1f(x);
+  inline proc y1(x : real(64)): real(64) {
+    if x < 0 then
+      halt("Input value for Bessel function of second kind must be greater than 0");
+    extern proc y1(x: real(64)): real(64);
+    return y1(x);
   }
 
 
   /* Returns the Bessel function of the second kind of order `n` of `x`. */
-  extern proc yn(n: c_int, x: real(64)): real(64);
+  extern proc yn(n: int, x: real(32)): real(32);
 
   /* Returns the Bessel function of the second kind of order `n` of `x`. */
-  inline proc yn(n: c_int, x : real(32)): real(32) {
-    extern proc ynf(n: c_int, x: real(32)): real(32);
-    return ynf(n, x);
+  inline proc yn(n: int, x : real(64)): real(64) {
+    if x < 0 then
+      halt("Input value for Bessel function of second kind must be greater than 0");
+    extern proc yn(n: c_int, x: real(64)): real(64);
+    return yn(n: c_int, x);
   }
 
 } // end of module Math
