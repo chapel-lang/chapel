@@ -1061,8 +1061,8 @@ module Math {
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   extern proc j0(x: real(64)): real(64);
 
-  inline proc j0(x : real(32)): real(32) {
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
+  inline proc j0(x : real(32)): real(32) {
     extern proc j0f(x: real(32)): real(32);
     return j0f(x);
   }
@@ -1071,8 +1071,8 @@ module Math {
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
   extern proc j1(x: real(64)): real(64);
 
-  inline proc j1(x : real(32)): real(32) {
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
+  inline proc j1(x : real(32)): real(32) {
     extern proc j1f(x: real(32)): real(32);
     return j1f(x);
   }
@@ -1081,8 +1081,8 @@ module Math {
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   extern proc jn(n: int, x: real(64)): real(64);
 
-  inline proc jn(n: int, x : real(32)): real(32) {
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
+  inline proc jn(n: int, x : real(32)): real(32) {
     extern proc jnf(n: int, x: real(32)): real(32);
     return jnf(n, x);
   }
@@ -1091,8 +1091,8 @@ module Math {
   /* Returns the Bessel function of the second kind of order `0` of `x`. */
   extern proc y0(x: real(64)): real(64);
 
-  inline proc y0(x : real(32)): real(32) {
   /* Returns the Bessel function of the second kind of order `0` of `x`. */
+  inline proc y0(x : real(32)): real(32) {
     extern proc y0f(x: real(32)): real(32);
     return y0f(x);
   }
@@ -1101,8 +1101,8 @@ module Math {
   /* Returns the Bessel function of the second kind of order `1` of `x`. */
   extern proc y1(x: real(64)): real(64);
 
-  inline proc y1(x : real(32)): real(32) {
   /* Returns the Bessel function of the second kind of order `1` of `x`. */
+  inline proc y1(x : real(32)): real(32) {
     extern proc y1f(x: real(32)): real(32);
     return y1f(x);
   }
@@ -1111,8 +1111,8 @@ module Math {
   /* Returns the Bessel function of the second kind of order `n` of `x`. */
   extern proc yn(n: int, x: real(64)): real(64);
 
-  inline proc yn(n: int, x : real(32)): real(32) {
   /* Returns the Bessel function of the second kind of order `n` of `x`. */
+  inline proc yn(n: int, x : real(32)): real(32) {
     extern proc ynf(n: int, x: real(32)): real(32);
     return ynf(n, x);
   }
