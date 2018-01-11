@@ -19,16 +19,89 @@
 
 #include "chplrt.h"
 #include "chpl-privatization.h"
+#include "chpl-atomics.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 
-static int64_t chpl_capPrivateObjects = 0;
-static chpl_sync_aux_t privatizationSync;
+#define CHPL_PRIVATIZATION_BLOCK_SIZE 1024
 
-void** chpl_privateObjects = NULL;
+static chpl_sync_aux_t writeLock;
+
+
+// Each block is an array of privatized objects
+typedef void ** chpl_priv_block_t;
+
+// Each instance is a variable array of blocks
+typedef struct {
+  chpl_priv_block_t * blocks;
+  size_t len;
+} chpl_priv_instance_t;
+
+// Manage 2 instances to switch between
+chpl_priv_instance_t chpl_priv_instances[2];
+
+// Reader Count for both instances. (MUST BE ATOMIC)
+atomic_uint_least32_t reader_count[2];
+
+// Determines current instance. (MUST BE ATOMIC)
+atomic_int_least8_t currentInstanceIdx;
+
+chpl_priv_block_t chpl_priv_block_create() {
+  return chpl_mem_allocManyZero(CHPL_PRIVATIZATION_BLOCK_SIZE, sizeof(void *),
+                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+}
+
+static int acquireRead() {
+  int instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
+  atomic_fetch_add_uint_least32_t(&reader_count[instIdx], 1);
+
+  // Check if instance changed between calls.
+  if (instIdx != atomic_load_int_least8_t(&currentInstanceIdx)) {
+    atomic_fetch_sub_uint_least32_t(&reader_count[instIdx], 1);
+    
+    // Slow-path
+    while (true) {
+      instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
+      atomic_fetch_add_uint_least32_t(&reader_count[instIdx], 1);      
+
+      if (instIdx == atomic_load_int_least8_t(&currentInstanceIdx)) {
+        break;
+      }
+
+      atomic_fetch_sub_uint_least32_t(&reader_count[instIdx], 1);
+    }
+  }
+  return instIdx;
+}
+
+static int getCurrentInstanceIdx() {
+  return atomic_load_int_least8_t(&currentInstanceIdx);
+}
+
+static void releaseRead(int rcIdx) {
+  atomic_fetch_sub_uint_least32_t(&reader_count[rcIdx], 1);
+}
+
+static void acquireWrite() {
+  chpl_sync_lock(&writeLock);
+}
+
+static void releaseWrite() {
+  chpl_sync_unlock(&writeLock);
+}
 
 void chpl_privatization_init(void) {
-    chpl_sync_initAux(&privatizationSync);
+    chpl_sync_initAux(&writeLock);
+    
+    // Init reader counts
+    reader_count[0] = 0;
+    reader_count[1] = 0;
+
+    // Initialize first instance with a single block.
+    chpl_priv_instances[0].blocks = chpl_mem_allocManyZero(1, sizeof(chpl_priv_block_t),
+                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+    chpl_priv_instances[0].blocks[0] = chpl_priv_block_create();
+    chpl_priv_instances[0].len = 1;
 }
 
 static inline int64_t max(int64_t a, int64_t b) {
@@ -40,50 +113,84 @@ static inline int64_t max(int64_t a, int64_t b) {
 // then pid 2, so it has to ensure that the privatized array has at least pid+1
 // elements. Be __very__ careful if you have to update it.
 void chpl_newPrivatizedClass(void* v, int64_t pid) {
-  chpl_sync_lock(&privatizationSync);
+  int blockIdx = pid / CHPL_PRIVATIZATION_BLOCK_SIZE;
+  while (true) {
+    int rcIdx = acquireRead();
 
-  // initialize array to a default size
-  if (chpl_privateObjects == NULL) {
-    chpl_capPrivateObjects = 2*max(pid, 4);
-    chpl_privateObjects =
-        chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
-                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
-  } else {
-    // if we're out of space, double (or more) the array size
-    if (pid >= chpl_capPrivateObjects) {
-      void** tmp;
-      int64_t oldCap;
+    // If slot is not allocated yet...
+    if (blockIdx >= chpl_priv_instances[rcIdx].len) {
+      // Become writer...
+      releaseRead(rcIdx);
+      acquireWrite();
 
-      oldCap = chpl_capPrivateObjects;
-      chpl_capPrivateObjects = 2*max(pid, oldCap);
+      // Check amount of blocks needing allocation...
+      int instIdx = getCurrentInstanceIdx();
+      int deltaBlocks = blockIdx - chpl_priv_instances[instIdx].len;
+      
+      // Another writer has resized for us...
+      if (deltaBlocks <= 0) {
+        releaseWrite();
+        continue;
+      }
 
-      tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
+      // Switch instances
+      int newInstIdx = !getCurrentInstanceIdx();
+      // Free old memory
+      chpl_mem_free(chpl_priv_instances[newInstIdx].blocks, 0, 0);
+      // Allocate new space
+      chpl_priv_block_t *newBlocks = chpl_mem_allocManyZero(blockIdx + 1, sizeof(*newBlocks),
                                    CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
-      chpl_memcpy((void*)tmp, (void*)chpl_privateObjects, (oldCap)*sizeof(void*));
-      chpl_privateObjects = tmp;
-      // purposely leak old copies of chpl_privateObject to avoid the need to
-      // lock chpl_getPrivatizedClass; TODO: fix with lock free data structure
+      // Move old data to new space
+      chpl_memcpy((void *) newBlocks, (void *) chpl_priv_instances[instIdx].blocks, 
+                                   chpl_priv_instances[instIdx].len * sizeof(void*));
+      // Fill rest of new space
+      for (int i = chpl_priv_instances[instIdx].len; i <= blockIdx; i++) {
+        newBlocks[i] = chpl_priv_block_create();
+      }
+      // Set new data and instance
+      chpl_priv_instances[newInstIdx].blocks = newBlocks;
+      chpl_priv_instances[newInstIdx].len = blockIdx;
+      atomic_store_int_least8_t(&currentInstanceIdx, newInstIdx);
+
+      // Wait for readers to finish with old.
+      while (atomic_load_uint_least32_t(&reader_count[instIdx]) > 0) {
+        chpl_task_yield();
+      }
+
+      // Delete old instance data...
+      chpl_mem_free(chpl_priv_instances[instIdx].blocks, 0, 0);
+      releaseWrite();
+    } else {
+      int idx = pid % CHPL_PRIVATIZATION_BLOCK_SIZE;
+      chpl_priv_instances[rcIdx].blocks[blockIdx][idx] = v;
+      releaseRead(rcIdx);
+      return;
     }
   }
-  chpl_privateObjects[pid] = v;
+}
 
-  chpl_sync_unlock(&privatizationSync);
+void* chpl_getPrivatizedClass(int64_t i) {
+  void *ret = NULL;
+  int rcIdx = acquireRead();
+  int blockIdx = i / CHPL_PRIVATIZATION_BLOCK_SIZE;
+  int idx = i % CHPL_PRIVATIZATION_BLOCK_SIZE;
+  ret = chpl_priv_instances[rcIdx].blocks[blockIdx][idx];
+  releaseRead(rcIdx);
+  return ret;
 }
 
 void chpl_clearPrivatizedClass(int64_t i) {
-  chpl_sync_lock(&privatizationSync);
-  chpl_privateObjects[i] = NULL;
-  chpl_sync_unlock(&privatizationSync);
+  int rcIdx = acquireRead();
+  int blockIdx = i / CHPL_PRIVATIZATION_BLOCK_SIZE;
+  int idx = i % CHPL_PRIVATIZATION_BLOCK_SIZE;
+  chpl_priv_instances[rcIdx].blocks[blockIdx][idx] = NULL;
+  releaseRead(rcIdx);
 }
 
 // Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
-  int64_t ret = 0;
-  chpl_sync_lock(&privatizationSync);
-  for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
-    if (chpl_privateObjects[i])
-      ret++;
-  }
-  chpl_sync_unlock(&privatizationSync);
+  int rcIdx = acquireRead();
+  int64_t ret = chpl_priv_instances[rcIdx].len * CHPL_PRIVATIZATION_BLOCK_SIZE;
+  releaseRead(rcIdx);
   return ret;
 }
