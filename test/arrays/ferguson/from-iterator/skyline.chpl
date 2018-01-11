@@ -1,3 +1,6 @@
+// Test a skyline array / jagged array created
+// from a for expression.
+
 config const n = 2;
 var r = 1..n;
 

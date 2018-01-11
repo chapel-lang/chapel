@@ -612,12 +612,14 @@ initPrimitive() {
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
 
-  // PRIM_TYPEOF an array returns a runtime type (containing its domain)
+  // PRIM_TYPEOF of an array returns a runtime type (containing its domain)
   // For values without a runtime type component, it works the same as
   // PRIM_STATIC_TYPEOF
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
 
   // Return the compile-time component of a type (ignoring runtime types)
+  // For an array, returns the compile-time type only.
+  // (there might be uninitialized memory if the run-time type is used).
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of

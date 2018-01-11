@@ -88,6 +88,8 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   CallExpr* ret = toCallExpr(fn->body->body.last());
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
 
+  // Since iterator returns might have been already translated to
+  // assignments to a return argument, remove those assignments.
   if (CallExpr* assign = toCallExpr(ret->prev))
     if (assign->isPrimitive(PRIM_MOVE) || assign->isPrimitive(PRIM_ASSIGN))
       if (SymExpr* se = toSymExpr(assign->get(1)))
