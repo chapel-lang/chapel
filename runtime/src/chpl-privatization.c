@@ -125,7 +125,7 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
 
       // Check amount of blocks needing allocation...
       int instIdx = getCurrentInstanceIdx();
-      int deltaBlocks = blockIdx - chpl_priv_instances[instIdx].len;
+      int deltaBlocks = (blockIdx + 1) - chpl_priv_instances[instIdx].len;
       
       // Another writer has resized for us...
       if (deltaBlocks <= 0) {
@@ -135,8 +135,6 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
 
       // Switch instances
       int newInstIdx = !getCurrentInstanceIdx();
-      // Free old memory
-      chpl_mem_free(chpl_priv_instances[newInstIdx].blocks, 0, 0);
       // Allocate new space
       chpl_priv_block_t *newBlocks = chpl_mem_allocManyZero(blockIdx + 1, sizeof(*newBlocks),
                                    CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
@@ -149,11 +147,12 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       }
       // Set new data and instance
       chpl_priv_instances[newInstIdx].blocks = newBlocks;
-      chpl_priv_instances[newInstIdx].len = blockIdx;
+      chpl_priv_instances[newInstIdx].len = blockIdx + 1;
       atomic_store_int_least8_t(&currentInstanceIdx, newInstIdx);
 
       // Wait for readers to finish with old.
-      while (atomic_load_uint_least32_t(&reader_count[instIdx]) > 0) {
+      int readers = 0;
+      while ((readers = atomic_load_uint_least32_t(&reader_count[instIdx])) > 0) {
         chpl_task_yield();
       }
 
@@ -194,3 +193,4 @@ int64_t chpl_numPrivatizedClasses(void) {
   releaseRead(rcIdx);
   return ret;
 }
+ 
