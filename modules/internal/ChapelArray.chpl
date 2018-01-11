@@ -4055,9 +4055,6 @@ module ChapelArray {
       pragma "no copy"
       var eltCopy = chpl__initCopy(elt);
 
-      pragma "insert auto destroy"
-      type eltType = eltCopy.type;
-
       if i >= size {
         // Allocate a new buffer and then copy.
         var oldSize = size;
@@ -4089,12 +4086,13 @@ module ChapelArray {
       i += 1;
     }
 
-    // let the comm layer adjust array allocation
-    if callAgain then
-      __primitive("array_alloc", data, size, subloc, c_nil, data);
-
 
     if data != nil {
+
+      // let the comm layer adjust array allocation
+      if callAgain then
+        __primitive("array_alloc", data, size, subloc, c_nil, data);
+
       // Now construct a DefaultRectangular array using the data
       pragma "insert auto destroy"
       var D = { 1 .. #i };
