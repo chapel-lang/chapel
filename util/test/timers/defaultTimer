@@ -3,4 +3,4 @@
 # simple low precision timer that is just a wrapper for calling time -p on a
 # program. Precision is limited to the precision of time -p
 
-time -p $@
+{ time -p $@ ; } 2>&1

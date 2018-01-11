@@ -662,7 +662,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
 
   current_p->set_add(this);
 
-  int fieldPos = 0;
+  int fieldPos = 1;
 
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
