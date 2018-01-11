@@ -923,8 +923,10 @@ void TypeSymbol::codegenMetadata() {
       AggregateType* fct = toAggregateType(field->type);
       if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
         superType = field->type;
+        field->type->symbol->codegenMetadata();
+      } else if (!isClass(type)) {
+        field->type->symbol->codegenMetadata();
       }
-      field->type->symbol->codegenMetadata();
     }
   }
 
@@ -956,7 +958,7 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
   } else if (is_complex_type(type)) {
     INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
-	       type == dtComplex[COMPLEX_SIZE_128]);
+               type == dtComplex[COMPLEX_SIZE_128]);
 
     TypeSymbol *re, *im;
     uint64_t fieldSize;
@@ -977,7 +979,7 @@ void TypeSymbol::codegenMetadata() {
       info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty, 0));
     llvm::ConstantAsMetadata *fsz =
       info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty,
-							     fieldSize));
+                                                             fieldSize));
 
     llvm::Metadata *TypeOps[5];
     TypeOps[0] = llvm::MDString::get(ctx,cname);
@@ -1004,10 +1006,9 @@ void TypeSymbol::codegenMetadata() {
     ConstCopyOps[4] = fsz;   // size
     ConstCopyOps[5] = im->llvmConstTbaaAccessTag;
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
-  } else if (isPrimitiveScalar(type) || is_enum_type(type) ||
-	     hasFlag(FLAG_EXTERN) || hasFlag(FLAG_STAR_TUPLE) ||
-	     isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
-	     hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
+  } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
+             isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
+             hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
   } else if (isRecord(type)) {
@@ -1038,6 +1039,8 @@ void TypeSymbol::codegenMetadata() {
       llvm::Constant* off =
         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
+      if (field->type->symbol->llvmTbaaTypeDescriptor == info->tbaaRootNode)
+        gdbShouldBreakHere();
       INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
                  info->tbaaRootNode);
       TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
