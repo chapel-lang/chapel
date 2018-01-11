@@ -1,1 +1,5 @@
-CHPL_HOST_PLATFORM == linux32 , CHPL_HOST_PLATFORM == linux64 and CHPL_HOST_PLATFORM == darwin
+# It is supportable in 'Unix' and
+# 'darwin' type environment.
+CHPL_HOST_PLATFORM == linux32
+CHPL_HOST_PLATFORM == linux64
+CHPL_HOST_PLATFORM == darwin
