@@ -61,14 +61,9 @@ module SharedObject {
     var count: atomic int;
 
     // count should be initialized to 1 in default initializer.
-    // Pretty much any strategy can do that.
-    // There is the wrinkle that initializing an atomic
-    // currently happens with a.write(1). We could presumably
-    // support = for initialing atomics, however.
-    proc ReferenceCount() {
-      //count = 1;      // this should work
-      //super.init();
-      count.write(1); // how you'd write it now
+    proc init() {
+      count.write(1);
+      super.init();
     }
 
     proc retain() {
@@ -104,9 +99,11 @@ module SharedObject {
     /*
        Default-initialize a :record:`Shared`.
      */
-    proc Shared(type t) {
+    proc init(type t) {
+      this.t = t;
       this.p = nil;
       this.pn = nil;
+      super.init();
     }
 
     /*
@@ -117,7 +114,8 @@ module SharedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc Shared(p, type t=p.type) {
+    proc init(p, type t=p.type) {
+      this.t = t;
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -133,7 +131,7 @@ module SharedObject {
       this.p = p;
       this.pn = rc;
 
-      //super.init();
+      super.init();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the
@@ -146,9 +144,11 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc Shared(src:Shared, type t=src.t) {
+    proc init(src:Shared, type t=src.t) {
+      this.t = t;
       this.p = src.p;
       this.pn = src.pn;
+      super.init();
 
       if this.pn != nil then
         this.pn.retain();
