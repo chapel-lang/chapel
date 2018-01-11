@@ -1,0 +1,6 @@
+bug: copy initializer not seen with local 'use'
+
+Something about the local 'use' of the 'DateTime' module here causes
+its copy initializer not to be seen as intuitively expected.  Moving
+the 'use' out to module scope makes this code compile and run without
+problems.  That seems wrong.
