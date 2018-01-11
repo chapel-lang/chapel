@@ -52,8 +52,11 @@ proc bar(type t) where t:R {
 proc bar(type t) where t:Parent {
   writeln("Parent");
 }
-proc bar(type t) where t:GenericParent {
+proc bar(type t) where (t:GenericParent && !t:GenericChild(int)) {
   writeln("GenericParent");
+}
+proc bar(type t) where t:GenericChild(int) {
+  writeln("GenericChild(int)");
 }
 proc bar(type t) where (t:object && !t:Parent && !t:GenericParent) {
   writeln("object");
@@ -69,6 +72,7 @@ bar(Child);
 bar(MyClass);
 bar(GenericParent(int));
 bar(GenericChild(int));
+bar(GenericChild(real));
 writeln();
 
 proc test1() where GenericParent(int):GenericChild { writeln("BAD"); }

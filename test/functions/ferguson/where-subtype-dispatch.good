@@ -10,6 +10,7 @@ Parent
 Parent
 object
 GenericParent
+GenericChild(int)
 GenericParent
 
 test1
