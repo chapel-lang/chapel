@@ -940,6 +940,7 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
 
 static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> symExprs)
 {
+  /*
   //
   // localize return symbols
   //
@@ -968,7 +969,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
         }
       }
     }
-  }
+  }*/
 }
 
 
@@ -988,13 +989,13 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
 //
 // TODO: revisit and remove this
 static void localizeIteratorReturnSymbols() {
-  forv_Vec(FnSymbol, iterFn, gFnSymbols) {
+/*  forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
       std::vector<SymExpr*> symExprs;
       collectSymExprs(iterFn, symExprs);
       localizeReturnSymbols(iterFn, symExprs);
     }
-  }
+  }*/
 }
 
 // processIteratorYields is a separate pass, called before flattenFunctions.
