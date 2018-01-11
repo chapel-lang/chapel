@@ -1,6 +1,6 @@
 use Sort;
 
-const n = 5;
+config const n = 5;
 
 var a: atomic int;
 
