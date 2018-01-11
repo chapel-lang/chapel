@@ -313,8 +313,8 @@ proc test_fromutc() {
       return dt + stdoffset;
     }
 
-    proc init(delta, str1, str2, str3) {
-      super.init(delta, str1, str2, str3);
+    proc init(hours, reprname, stdname, dstname) {
+      super.init(hours, reprname, stdname, dstname);
     }
   }
 
