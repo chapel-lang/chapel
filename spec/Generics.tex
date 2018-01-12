@@ -74,10 +74,7 @@ accepting type arguments that only apply to a specific group of types.
 Suppose that we'd like to define a function that accepts a type argument
 and returns 1 represented in that type.
 \begin{chapel}
-proc getOne(type t:real) {
-  return 1.0;
-}
-proc getOne(type t:integral) {
+proc getOne(type t:numeric) {
   return 1:t;
 }
 \end{chapel}
