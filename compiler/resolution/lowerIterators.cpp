@@ -985,6 +985,8 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
 // Now we're using a return temp per yield, but this change is still
 // apparently necessary. I think that lowerIterators isn't copying some
 // variables when it should be.
+//
+// TODO: revisit and remove this
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {

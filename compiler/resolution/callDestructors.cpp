@@ -905,6 +905,7 @@ static void insertYieldTemps()
     // and it's returned by value (not by reference)
     // and the yielded value is not an expression temporary
     //  (e.g. for yield someCall(), the result of someCall() doesn't need copy)
+    // then we need to copy initialize into the yielded value.
     if (isUserDefinedRecord(yieldedSym->getValType()) &&
         iteratorRetTag == RET_VALUE) {
 
