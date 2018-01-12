@@ -366,8 +366,10 @@ A record field is accessed the same way as a class field
 rvalue, the value of that field is returned.  When it is used as
 an lvalue, the value of the record field is updated.
 
-Member access expressions that access parameter fields
-produce a parameter.
+Accessing a parameter or type field returns a parameter or type,
+respectively. Also, parameter and type fields can be accessed from
+an instantiated record type in addition to from a record value.
+
 
 \subsection{Field Getter Methods}
 \label{Field_Getter_Methods}

@@ -440,8 +440,9 @@ is generic over the type that is bound to that alias.
 % aliases; type aliases that are not bound to a type.  If a class or
 % record contains an unspecified type alias, the aliased type must be
 % specified whenever the type is used.
-Such a type alias is accessed as if it were a field;
-similar to a parameter field, it cannot be assigned
+Such a type alias is accessed as if it were a field from either a class
+or record instance or from the instantiated class or record type itself.
+Similar to a parameter field, it cannot be assigned
 except in its declaration.
 
 The type alias becomes an argument with intent \chpl{type} to
@@ -499,6 +500,9 @@ the type of the object that it is a field of.
 
 If a class or record defines a parameter field, the class or record
 is generic over the value that is bound to that field.
+The field can be accessed from a class or record instance or from the
+instantiated class or record type itself.
+
 % A parameter defined in a class or record is accessed as if it were a
 % field.  This access returns a parameter.  
 The parameter becomes an argument with intent \chpl{param} to the
