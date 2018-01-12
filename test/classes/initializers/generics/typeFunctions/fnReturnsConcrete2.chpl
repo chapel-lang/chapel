@@ -12,6 +12,7 @@ proc getType(type t) type {
   return C(t);
 }
 
-var myC = new (getType(int))(int);
+var myC: getType(int);
+myC = new (getType(int))(int);
 writeln(myC);
 delete myC;
