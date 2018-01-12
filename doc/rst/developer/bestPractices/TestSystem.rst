@@ -110,8 +110,8 @@ The test system can be exercised by invoking:
 This is assuming ``$CHPL_HOME/util/`` is in the user's `$PATH`, which is
 taken care of when sourcing ``$CHPL_HOME/util/setchplenv.bash``.
 
-This will cause the compiler to compile hi.chpl then execute the
-resulting binary.  The concatenation of the compiler and executable
+This will cause the compiler to compile hi.chpl then start_test will execute 
+the resulting binary.  The concatenation of the compiler and executable
 output will then be compared against the ``.good`` file.  A transcript of
 the test system's actions is printed to the console and also stored in
 ``$CHPL_HOME/test/Logs/`` by default.
