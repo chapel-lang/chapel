@@ -1,1 +1,2 @@
 CHPL_TEST_VGRND_EXE!=on
+CHPL_GMP == none

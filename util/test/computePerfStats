@@ -267,11 +267,13 @@ def cleanup():
     print("output was: ")
     # if test output was too long, only print first and last 1000 characters
     if len(test_output_raw) > 2000: 
+        print("(first 1000 followed by last 1000)")
         head = test_output_raw[:1000].strip()
         tail = test_output_raw[-1000:].strip()
         head = ''.join(x if x in string.printable else "~" for x in head)
         tail = ''.join(x if x in string.printable else "~" for x in tail)
         print(head)
+        print(" <truncated> ")
         print(tail)
     else:
         out = test_output_raw.strip()
