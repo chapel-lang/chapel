@@ -2798,18 +2798,13 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     //  a cast to i8 (in address space 0).
     llvm::CallInst* CI = info->irBuilder->CreateCall(func, llArgs);
 
-    llvm::MDNode* tbaaTag = NULL;
     llvm::MDNode* tbaaStructTag = NULL;
     if( pointedToType ) {
-      tbaaTag = pointedToType->symbol->llvmTbaaAccessTag;
       tbaaStructTag = pointedToType->symbol->llvmTbaaStructCopyNode;
     }
-    // For structures, ONLY set the tbaa.struct metadata, since
-    // generally speaking simple tbaa tags don't make sense for structs.
+    // LLVM's memcpy only supports tbaa.struct metadata, not scalar tbaa.
     if( tbaaStructTag )
       CI->setMetadata(llvm::LLVMContext::MD_tbaa_struct, tbaaStructTag);
-    else if( tbaaTag )
-      CI->setMetadata(llvm::LLVMContext::MD_tbaa, tbaaTag);
 #endif
   }
 }

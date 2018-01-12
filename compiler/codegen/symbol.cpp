@@ -1039,8 +1039,6 @@ void TypeSymbol::codegenMetadata() {
       llvm::Constant* off =
         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
       llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-      if (field->type->symbol->llvmTbaaTypeDescriptor == info->tbaaRootNode)
-        gdbShouldBreakHere();
       INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
                  info->tbaaRootNode);
       TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
