@@ -51,7 +51,18 @@ chpl_priv_block_t chpl_priv_block_create() {
                            CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
 }
 
-static int acquireRead() {
+static int acquireRead(void);
+static void releaseRead(int rcIdx);
+static void acquireWrite(void);
+static void releaseWrite(void);
+static int getCurrentInstanceIdx(void);
+
+
+static int getCurrentInstanceIdx(void) {
+  return atomic_load_int_least8_t(&currentInstanceIdx);
+}
+
+static int acquireRead(void) {
   int instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
   atomic_fetch_add_uint_least32_t(&reader_count[instIdx], 1);
 
@@ -74,19 +85,18 @@ static int acquireRead() {
   return instIdx;
 }
 
-static int getCurrentInstanceIdx() {
-  return atomic_load_int_least8_t(&currentInstanceIdx);
-}
-
 static void releaseRead(int rcIdx) {
   atomic_fetch_sub_uint_least32_t(&reader_count[rcIdx], 1);
 }
 
-static void acquireWrite() {
+
+
+static void acquireWrite(void) {
   chpl_sync_lock(&writeLock);
 }
 
-static void releaseWrite() {
+
+static void releaseWrite(void) {
   chpl_sync_unlock(&writeLock);
 }
 
