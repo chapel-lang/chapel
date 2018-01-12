@@ -1030,7 +1030,7 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
   // Otherwise, we'll get confused by yields in inner functions.
   if (DefExpr* def = toDefExpr(ast)) {
     if (FnSymbol* innerFn = toFnSymbol(def->sym)) {
-      if (!innerFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL))
+      if (!isTaskFun(innerFn))
         return;
     }
   }
