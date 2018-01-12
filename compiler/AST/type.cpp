@@ -1408,6 +1408,9 @@ bool isString(Type* type) {
 // MPF    2017/08/03
 // This function now includes iterator records
 //
+// TODO: rename this to isMemoryManagedRecord or something along
+//       those lines, since it now applies to some compiler-internal records.
+//
 bool isUserDefinedRecord(Type* type) {
   bool retval = false;
 
