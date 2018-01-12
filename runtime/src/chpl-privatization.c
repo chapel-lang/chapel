@@ -46,17 +46,17 @@ atomic_uint_least32_t reader_count[2];
 // Determines current instance. (MUST BE ATOMIC)
 atomic_int_least8_t currentInstanceIdx;
 
-chpl_priv_block_t chpl_priv_block_create() {
-  return chpl_mem_allocManyZero(CHPL_PRIVATIZATION_BLOCK_SIZE, sizeof(void *),
-                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
-}
-
 static int acquireRead(void);
 static void releaseRead(int rcIdx);
 static void acquireWrite(void);
 static void releaseWrite(void);
 static int getCurrentInstanceIdx(void);
+static chpl_priv_block_t chpl_priv_block_create(void);
 
+static chpl_priv_block_t chpl_priv_block_create(void) {
+  return chpl_mem_allocManyZero(CHPL_PRIVATIZATION_BLOCK_SIZE, sizeof(void *),
+                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+}
 
 static int getCurrentInstanceIdx(void) {
   return atomic_load_int_least8_t(&currentInstanceIdx);
