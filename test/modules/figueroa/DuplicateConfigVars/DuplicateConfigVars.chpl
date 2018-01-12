@@ -7,14 +7,14 @@ proc main () {
     halt ("arraySize must be even!");
   // Each point consists of two coordinates.
   const numberOfPoints = arraySize/2;
-  var r = Random (),
+  var r = new Random (),
       rArray: [1..arraySize] real;
   ref x = rArray[1..numberOfPoints],
       y = rArray[numberOfPoints+1 ..];
   // Fill rArray with random numbers between 0 and 1.
   rArray = r.RandomNumber(arraySize);
   // Count how many points fall within the unit circle.
-  var count = + reduce x**2 + y**2 <= 1.0;
+  var count = + reduce (x**2 + y**2 <= 1.0);
   if arraySize <= 30 then
     writeln ("Generated points:\n", rArray);
   writeln ("Number of points: ", numberOfPoints);
