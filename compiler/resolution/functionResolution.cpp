@@ -7408,6 +7408,38 @@ static void resolveAutoCopyEtc(AggregateType* at) {
     autoCopyMap[at] = fn;
   }
 
+  // resolve destructor
+  if (at->hasDestructor() == false) {
+    if (at->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(at) == false &&
+        // autoDestroy for iterator record filled in callDestructors
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      // Create a block statement and add it where type fns go
+      BlockStmt* block = new BlockStmt();
+
+      Expr* where = getInsertPointForTypeFunction(at);
+      if (BlockStmt* stmt = toBlockStmt(where))
+        stmt->insertAtHead(block);
+      else
+        where->insertBefore(block);
+
+      // Create a call to deinit and put it in the block
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
+      VarSymbol* tmp   = newTemp(at);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(call);
+
+      resolveCallAndCallee(call);
+
+      at->setDestructor(call->resolvedFunction());
+
+      block->remove();
+    }
+  }
+
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
