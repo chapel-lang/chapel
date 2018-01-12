@@ -5877,7 +5877,9 @@ static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
                    "instantiation %s",
                    at->symbol->name);
     USR_PRINT(initFn,
-              "Best initializer match was defined here");
+              "Best initializer match was defined here, and generated"
+              " instantiation %s",
+              call->resolvedFunction()->_this->type->symbol->name);
     USR_STOP();
   }
 
