@@ -1223,7 +1223,7 @@ module GMP {
   }
 
   if CHPL_GMP == "none" {
-    compilerError("GMP support not compiled in");
+    compilerError("Cannot use GMP with CHPL_GMP=none");
   }
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.
