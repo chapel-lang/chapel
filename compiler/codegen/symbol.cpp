@@ -955,8 +955,24 @@ void TypeSymbol::codegenMetadata() {
   // count as one thing. Records, strings, complexes should not
   // get simple TBAA (they can get struct tbaa).
   if (isUnion(type)) {
+    // This is necessary due to the design of LLVM TBAA metadata.
+    // The preferred situation would be to allow each union to have
+    // multiple parents, corresponding to its members.  The way TBAA
+    // metadata is designed, this can only be achieved with a struct
+    // type descriptor.  However, struct type descriptors do not
+    // support multiple members at the same offset, so that doesn't work.
+    // The only other way to handle unions correctly, given the limitations
+    // of LLVM's TBAA metadata design, is to make all unions ancestors
+    // of everything, as we do here.  Clang does this as well.
+    //
+    // This means we don't get any help with alias disambiguation on
+    // unions.  We still need to supply a TBAA type descriptor for them,
+    // though, in case they appear as a member of a class or record.
     llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
   } else if (is_complex_type(type)) {
+    // At present, complex types are not records, so we have to
+    // build their struct type descriptors and tbaa.struct access tags
+    // manually, using knowledge of the contents of complex types.
     INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
                type == dtComplex[COMPLEX_SIZE_128]);
 

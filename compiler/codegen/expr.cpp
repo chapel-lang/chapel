@@ -1063,7 +1063,7 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if (isRecord(ct)) {
+      if (isRecord(ct) || is_complex_type(ct)) {
         llvm::PointerType *pBase;
         llvm::StructType *structBaseType;
         if ((pBase = llvm::dyn_cast<llvm::PointerType>(baseValue->getType())) &&
@@ -2803,6 +2803,9 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
       tbaaStructTag = pointedToType->symbol->llvmTbaaStructCopyNode;
     }
     // LLVM's memcpy only supports tbaa.struct metadata, not scalar tbaa.
+    // The reason is that LLVM is only looking for holes in structs here,
+    // not aliasing.  Clang also puts only tbaa.struct on memcpy calls.
+    // Adding scalar tbaa metadata here causes incorrect code to be generated.
     if( tbaaStructTag )
       CI->setMetadata(llvm::LLVMContext::MD_tbaa_struct, tbaaStructTag);
 #endif
