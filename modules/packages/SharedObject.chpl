@@ -114,8 +114,8 @@ module SharedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc init(p, type t=p.type) {
-      this.t = t;
+    proc init(p) {
+      this.t = p.type;
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -144,8 +144,8 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init(src:Shared, type t=src.t) {
-      this.t = t;
+    proc init(src:Shared) {
+      this.t = src.t;
       this.p = src.p;
       this.pn = src.pn;
       super.init();
