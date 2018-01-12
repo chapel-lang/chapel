@@ -1012,32 +1012,30 @@ static void normalizeYields(FnSymbol* fn) {
   INT_ASSERT(fn->isIterator());
   SET_LINENO(fn);
 
-  std::vector<CallExpr*> yields;
   std::vector<CallExpr*> calls;
 
   collectMyCallExprs(fn, calls, fn);
 
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_YIELD)) {
-      yields.push_back(call);
+
+      CallExpr* yield = call;
+
+      // For each yield statement, adjust it similarly to a return.
+      SET_LINENO(yield);
+
+      // Create a new YVV variable
+      // MPF: I don't think YVV or RVV need to exist in the long term,
+      // but using YVV enables minor adjustment in most of the rest of
+      // the compiler.
+      VarSymbol* retval = newTemp("yret", fn->retType);
+      retval->addFlag(FLAG_YVV);
+
+      yield->insertBefore(new DefExpr(retval));
+      insertRetMove(fn, retval, yield);
+      yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
+      yield->remove();
     }
-  }
-
-  // For each yield statement, adjust it similarly to a return.
-  for_vector(CallExpr, yield, yields) {
-    SET_LINENO(yield);
-
-    // Create a new YVV variable
-    // MPF: I don't think YVV or RVV need to exist in the long term,
-    // but using YVV enables minor adjustment in most of the rest of
-    // the compiler.
-    VarSymbol* retval = newTemp("yret", fn->retType);
-    retval->addFlag(FLAG_YVV);
-
-    yield->insertBefore(new DefExpr(retval));
-    insertRetMove(fn, retval, yield);
-    yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
-    yield->remove();
   }
 }
 
