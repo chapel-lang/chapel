@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/standard/DateTime.chpl:942: In function 'getdate':
+$CHPL_HOME/modules/standard/DateTime.chpl:943: error: copy-initialization invoked for a type that does not have a copy initializer
