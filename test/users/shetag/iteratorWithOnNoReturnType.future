@@ -1,7 +1,0 @@
-bug: yield type inference errors for iterator containing on
-
-The iteratorWithOn.chpl test shows the case where the return type is
-specified, which gives the error about yielding within an 'on' as
-expected. But this test fails earlier than that because the yield
-statement within the 'on' is not traversed when inferring the yield type
-for the iterator.
