@@ -5810,7 +5810,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 // Similar to resolveNewHandleGenericInitializer, except we have been
 // provided an instantiation instead of the generic version.  We should
 // ensure that we can resolve the call as if it were generic, and then
-// double check that the type we were given
+// double check that the type we were given matches the provided type.
 static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
                                                     AggregateType* at,
                                                     SymExpr*       typeExpr) {
