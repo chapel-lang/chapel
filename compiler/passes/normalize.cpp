@@ -1034,18 +1034,6 @@ static void normalizeYields(FnSymbol* fn) {
     VarSymbol* retval = newTemp("yret", fn->retType);
     retval->addFlag(FLAG_YVV);
 
-    if (fn->retTag == RET_PARAM) {
-      retval->addFlag(FLAG_PARAM);
-    }
-
-    if (fn->retTag == RET_TYPE) {
-      retval->addFlag(FLAG_TYPE_VARIABLE);
-    }
-
-    if (fn->hasFlag(FLAG_MAYBE_TYPE)) {
-      retval->addFlag(FLAG_MAYBE_TYPE);
-    }
-
     yield->insertBefore(new DefExpr(retval));
     insertRetMove(fn, retval, yield);
     yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
