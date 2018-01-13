@@ -1,5 +1,4 @@
 # It is supportable in 'Unix' and
 # 'darwin' type environment.
-CHPL_HOST_PLATFORM == linux32
-CHPL_HOST_PLATFORM == linux64
-CHPL_HOST_PLATFORM == darwin
+CHPL_HOST_PLATFORM == cygwin32
+CHPL_HOST_PLATFORM == cygwin64
