@@ -1643,6 +1643,12 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     forv_Vec(TypeSymbol, typeSymbol, types) {
       typeSymbol->codegenMetadata();
     }
+    // The aggregate internals of classes must wait until all other
+    // annotations are defined, because there might be cycles.
+    //forv_Vec(TypeSymbol, typeSymbol, types) {
+    //  if (isClass(typeSymbol->type))
+    //    typeSymbol->codegenAggMetadata();
+    //}
   }
 
   genComment("Function Prototypes");

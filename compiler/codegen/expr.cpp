@@ -459,7 +459,7 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
       tbaa = info->mdBuilder->createTBAAStructTagNode(
-               surroundingStruct->symbol->llvmTbaaTypeDescriptor,
+               surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset);
     } else {
       tbaa = valType->symbol->llvmTbaaAccessTag;
@@ -530,7 +530,7 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
     if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
       tbaa = info->mdBuilder->createTBAAStructTagNode(
-               surroundingStruct->symbol->llvmTbaaTypeDescriptor,
+               surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset, isConst);
     } else {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
@@ -1063,7 +1063,7 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if (isRecord(ct) || is_complex_type(ct)) {
+      if (/*isClass(ct) ||*/ isRecord(ct) /*|| is_complex_type(ct)*/) {
         llvm::PointerType *pBase;
         llvm::StructType *structBaseType;
         if ((pBase = llvm::dyn_cast<llvm::PointerType>(baseValue->getType())) &&

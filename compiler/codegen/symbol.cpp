@@ -1003,7 +1003,7 @@ void TypeSymbol::codegenMetadata() {
     TypeOps[2] = zero;  // offset
     TypeOps[3] = im->llvmTbaaTypeDescriptor;
     TypeOps[4] = fsz;   // offset
-    llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+    llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
 
     llvm::Metadata *CopyOps[6];
     CopyOps[0] = zero;  // offset
@@ -1022,55 +1022,35 @@ void TypeSymbol::codegenMetadata() {
     ConstCopyOps[4] = fsz;   // size
     ConstCopyOps[5] = im->llvmConstTbaaAccessTag;
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+
+    llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
              isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
              hasEitherFlag(FLAG_DATA_CLASS,FLAG_WIDE_CLASS)) {
+    if (is_imag_type(type)) {
+      // At present, imaginary often aliases with real,
+      // so make real the parent of imaginary.
+      INT_ASSERT(type == dtImag[FLOAT_SIZE_32] ||
+                 type == dtImag[FLOAT_SIZE_64]);
+      TypeSymbol *re;
+      if (type == dtImag[FLOAT_SIZE_32]) {
+        re = dtReal[FLOAT_SIZE_32]->symbol;
+      } else {
+        re = dtReal[FLOAT_SIZE_64]->symbol;
+      }
+      re->codegenMetadata();
+      parent = re->llvmTbaaTypeDescriptor;
+    }
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
   } else if (isRecord(type)) {
-    // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
-    llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
-    llvm::SmallVector<llvm::Metadata*, 16> CopyOps;
-    llvm::SmallVector<llvm::Metadata*, 16> ConstCopyOps;
-
-    TypeOps.push_back(llvm::MDString::get(ctx,cname));
-
-    const char* struct_name = ct->classStructName(true);
-    llvm::Type* struct_type_ty = info->lvt->getType(struct_name);
-    llvm::StructType* struct_type = NULL;
-    INT_ASSERT(struct_type_ty);
-    struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
-    INT_ASSERT(struct_type);
-
-    for_fields(field, ct) {
-      llvm::Type* fieldType = field->type->symbol->codegen().type;
-      AggregateType* fct = toAggregateType(field->type);
-      if(fct && field->hasFlag(FLAG_SUPER_CLASS)) {
-        fieldType = info->lvt->getType(fct->classStructName(true));
-      }
-      INT_ASSERT(fieldType);
-      unsigned fieldno = ct->getMemberGEP(field->cname);
-      uint64_t byte_offset = info->module->getDataLayout().
-        getStructLayout(struct_type)->getElementOffset(fieldno);
-      llvm::Constant* off =
-        llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
-      llvm::Constant* sz = llvm::ConstantExpr::getSizeOf(fieldType);
-      INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
-                 info->tbaaRootNode);
-      TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
-      TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
-      CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
-      CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-      CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
-      ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
-      ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-      ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
-    }
-    llvmTbaaTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
-    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
-    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+    codegenAggMetadata();
+    llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   }
-
+  if (!llvmTbaaTypeDescriptor || llvmTbaaTypeDescriptor == info->tbaaRootNode)
+    gdbShouldBreakHere();
+  INT_ASSERT(llvmTbaaTypeDescriptor &&
+             llvmTbaaTypeDescriptor != info->tbaaRootNode);
   if (llvmTbaaTypeDescriptor != info->tbaaRootNode) {
     // Create tbaa access tags, one for const and one for not.
     // The createTBAAStructTagNode() method works for both scalars
@@ -1085,6 +1065,57 @@ void TypeSymbol::codegenMetadata() {
                                                /*Offset=*/0,
                                                /*IsConstant=*/true);
   }
+#endif
+}
+
+void TypeSymbol::codegenAggMetadata() {
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  llvm::LLVMContext& ctx = info->module->getContext();
+  AggregateType *ct = toAggregateType(type);
+  INT_ASSERT(ct);
+
+  // Create the TBAA struct type descriptors and tbaa.struct metadata nodes.
+  llvm::SmallVector<llvm::Metadata*, 16> TypeOps;
+  llvm::SmallVector<llvm::Metadata*, 16> CopyOps;
+  llvm::SmallVector<llvm::Metadata*, 16> ConstCopyOps;
+
+  TypeOps.push_back(llvm::MDString::get(ctx,cname));
+
+  const char *struct_name = ct->classStructName(true);
+  llvm::Type *struct_type_ty = info->lvt->getType(struct_name);
+  llvm::StructType *struct_type = NULL;
+  INT_ASSERT(struct_type_ty);
+  struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
+  INT_ASSERT(struct_type);
+
+  for_fields(field, ct) {
+    llvm::Type *fieldType = field->type->symbol->codegen().type;
+    AggregateType *fct = toAggregateType(field->type);
+    if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
+      fieldType = info->lvt->getType(fct->classStructName(true));
+    }
+    INT_ASSERT(fieldType);
+    unsigned fieldno = ct->getMemberGEP(field->cname);
+    uint64_t byte_offset = info->module->getDataLayout().
+      getStructLayout(struct_type)->getElementOffset(fieldno);
+    llvm::Constant *off =
+      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
+    llvm::Constant *sz = llvm::ConstantExpr::getSizeOf(fieldType);
+    INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
+               info->tbaaRootNode);
+    TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+    TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
+    CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+    CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+    CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
+    ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+    ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+    ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
+  }
+  llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+  llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
+  llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
 #endif
 }
 
