@@ -273,7 +273,9 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-     if (CHPL_TARGET_PLATFORM == 'linux64' || CHPL_TARGET_PLATFORM == 'linux32' || CHPL_TARGET_PLATFORM == 'darwin') {
+     if (CHPL_TARGET_PLATFORM == 'linux64' ||
+         CHPL_TARGET_PLATFORM == 'linux32' || 
+         CHPL_TARGET_PLATFORM == 'darwin') {
         if name.isEmptyString() {
            return false;
         }
