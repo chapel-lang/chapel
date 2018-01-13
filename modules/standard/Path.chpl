@@ -288,6 +288,6 @@ proc file.realPath(): string throws {
           return false;
      }
      else
-       compileError("Target platform should have Unix like environment");
+       compilerError("Target platform should have Unix like environment");
   } 
 }
