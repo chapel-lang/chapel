@@ -22,11 +22,12 @@
 #include "chpl-atomics.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include <pthread.h>
 
 #define CHPL_PRIVATIZATION_BLOCK_SIZE 1024
-#define CHPL_PRIVATIZATION_READ_COUNTERS 64
 
 static chpl_sync_aux_t writeLock;
+static pthread_key_t reader_tls;
 
 
 // Each block is an array of privatized objects
@@ -38,22 +39,22 @@ typedef struct {
   size_t len;
 } chpl_priv_instance_t;
 
-// Assumes 64-bit cache-line
-typedef struct {
-  atomic_uintptr_t count;
-  uintptr_t padding[7];
-} chpl_priv_read_count_t;
+
+typedef struct tls_node {
+  volatile bool in_use;
+  uint8_t status;
+  struct tls_node *next;
+} tls_node_t;
+
+// Thread-Local Storage; must acquire lock to resize
+tls_node_t *tls_list;
 
 // Manage 2 instances to switch between
 chpl_priv_instance_t chpl_priv_instances[2];
 
-// Reader Count for both instances. (MUST BE ATOMIC)
-chpl_priv_read_count_t reader_count[2 * CHPL_PRIVATIZATION_READ_COUNTERS];
-
 // Determines current instance. (MUST BE ATOMIC)
 atomic_int_least8_t currentInstanceIdx;
 
-static int getTLSIdx(int);
 static int acquireRead(void);
 static void releaseRead(int rcIdx);
 static void acquireWrite(void);
@@ -66,42 +67,53 @@ static chpl_priv_block_t chpl_priv_block_create(void) {
                            CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
 }
 
-static int getTLSIdx(int instIdx) {
-  return (CHPL_PRIVATIZATION_READ_COUNTERS * instIdx) + (chpl_task_getId() % CHPL_PRIVATIZATION_READ_COUNTERS);
-}
-
 static int getCurrentInstanceIdx(void) {
   return atomic_load_int_least8_t(&currentInstanceIdx);
 }
 
-static int acquireRead(void) {
-  int instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
-  int rcIdx = getTLSIdx(instIdx);
-  atomic_fetch_add_uintptr_t(&reader_count[rcIdx].count, 1);
-
-  // Check if instance changed between calls.
-  if (instIdx != atomic_load_int_least8_t(&currentInstanceIdx)) {
-    atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
+// Initializes TLS; should only need to be called once.
+static void init_tls(void) {
+  for (tls_node_t *curr = tls_list; curr != NULL; curr = curr->next) {
+    if (curr->in_use || __sync_bool_compare_and_swap(&curr->in_use, false, true)) 
+      continue;
     
-    // Slow-path
-    while (true) {
-      instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
-      rcIdx = getTLSIdx(instIdx);
-      atomic_fetch_add_uintptr_t(&reader_count[rcIdx].count, 1);      
-
-      if (instIdx == atomic_load_int_least8_t(&currentInstanceIdx)) {
-        break;
-      }
-
-      atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
-    }
+    pthread_setspecific(reader_tls, curr);    
+    return;
   }
+  
+  tls_node_t *node = chpl_calloc(1, sizeof(*node));
+  node->status = -1;
+
+  // Append to head of list
+  tls_node_t *old_head;
+  do {
+    old_head = tls_list;
+    node->next = old_head;
+  } while (!__sync_bool_compare_and_swap(&tls_list, old_head, node));
+  
+  pthread_setspecific(reader_tls, node);
+}
+
+static int acquireRead(void) {
+  // Get status from TLS
+  tls_node_t *node = pthread_getspecific(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = pthread_getspecific(reader_tls);
+  }
+
+  int instIdx;
+  do {
+    instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
+    node->status = instIdx;
+  } while (instIdx != atomic_load_int_least8_t(&currentInstanceIdx));
+
   return instIdx;
 }
 
 static void releaseRead(int instIdx) {
-  int rcIdx = getTLSIdx(instIdx);
-  atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
+  tls_node_t *node = pthread_getspecific(reader_tls);
+  node->status = -1;
 }
 
 
@@ -116,6 +128,7 @@ static void releaseWrite(void) {
 
 void chpl_privatization_init(void) {
     chpl_sync_initAux(&writeLock);
+    pthread_key_create(&reader_tls, NULL);
 
     // Initialize first instance with a single block.
     chpl_priv_instances[0].blocks = chpl_mem_allocManyZero(1, sizeof(chpl_priv_block_t),
@@ -170,10 +183,9 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       chpl_priv_instances[newInstIdx].len = blockIdx + 1;
       atomic_store_int_least8_t(&currentInstanceIdx, newInstIdx);
 
-      // Wait for readers to finish with old.
-      int idx = CHPL_PRIVATIZATION_READ_COUNTERS * instIdx;
-      for (int i = 0; i < CHPL_PRIVATIZATION_READ_COUNTERS; i++) {
-        while (atomic_load_uintptr_t(&reader_count[idx + i].count) > 0) {
+      // Wait for readers to finish if they are using the old instance.
+      for (tls_node_t *curr = tls_list; curr != NULL; curr = curr->next) {
+        while (curr->status == instIdx) {
           chpl_task_yield();
         }
       }
