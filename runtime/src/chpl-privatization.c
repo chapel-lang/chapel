@@ -24,6 +24,7 @@
 #include "chpl-tasks.h"
 
 #define CHPL_PRIVATIZATION_BLOCK_SIZE 1024
+#define CHPL_PRIVATIZATION_READ_COUNTERS 64
 
 static chpl_sync_aux_t writeLock;
 
@@ -37,15 +38,22 @@ typedef struct {
   size_t len;
 } chpl_priv_instance_t;
 
+// Assumes 64-bit cache-line
+typedef struct {
+  atomic_uintptr_t count;
+  uintptr_t padding[7];
+} chpl_priv_read_count_t;
+
 // Manage 2 instances to switch between
 chpl_priv_instance_t chpl_priv_instances[2];
 
 // Reader Count for both instances. (MUST BE ATOMIC)
-atomic_uint_least32_t reader_count[2];
+chpl_priv_read_count_t reader_count[2 * CHPL_PRIVATIZATION_READ_COUNTERS];
 
 // Determines current instance. (MUST BE ATOMIC)
 atomic_int_least8_t currentInstanceIdx;
 
+static int getTLSIdx(int);
 static int acquireRead(void);
 static void releaseRead(int rcIdx);
 static void acquireWrite(void);
@@ -58,37 +66,43 @@ static chpl_priv_block_t chpl_priv_block_create(void) {
                            CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
 }
 
+static int getTLSIdx(int instIdx) {
+  return (CHPL_PRIVATIZATION_READ_COUNTERS * instIdx) + (chpl_task_getId() % CHPL_PRIVATIZATION_READ_COUNTERS);
+}
+
 static int getCurrentInstanceIdx(void) {
   return atomic_load_int_least8_t(&currentInstanceIdx);
 }
 
 static int acquireRead(void) {
   int instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
-  atomic_fetch_add_uint_least32_t(&reader_count[instIdx], 1);
+  int rcIdx = getTLSIdx(instIdx);
+  atomic_fetch_add_uintptr_t(&reader_count[rcIdx].count, 1);
 
   // Check if instance changed between calls.
   if (instIdx != atomic_load_int_least8_t(&currentInstanceIdx)) {
-    atomic_fetch_sub_uint_least32_t(&reader_count[instIdx], 1);
+    atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
     
     // Slow-path
     while (true) {
       instIdx = atomic_load_int_least8_t(&currentInstanceIdx);
-      atomic_fetch_add_uint_least32_t(&reader_count[instIdx], 1);      
+      rcIdx = getTLSIdx(instIdx);
+      atomic_fetch_add_uintptr_t(&reader_count[rcIdx].count, 1);      
 
       if (instIdx == atomic_load_int_least8_t(&currentInstanceIdx)) {
         break;
       }
 
-      atomic_fetch_sub_uint_least32_t(&reader_count[instIdx], 1);
+      atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
     }
   }
   return instIdx;
 }
 
-static void releaseRead(int rcIdx) {
-  atomic_fetch_sub_uint_least32_t(&reader_count[rcIdx], 1);
+static void releaseRead(int instIdx) {
+  int rcIdx = getTLSIdx(instIdx);
+  atomic_fetch_sub_uintptr_t(&reader_count[rcIdx].count, 1);
 }
-
 
 
 static void acquireWrite(void) {
@@ -102,10 +116,6 @@ static void releaseWrite(void) {
 
 void chpl_privatization_init(void) {
     chpl_sync_initAux(&writeLock);
-    
-    // Init reader counts
-    reader_count[0] = 0;
-    reader_count[1] = 0;
 
     // Initialize first instance with a single block.
     chpl_priv_instances[0].blocks = chpl_mem_allocManyZero(1, sizeof(chpl_priv_block_t),
@@ -161,11 +171,13 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       atomic_store_int_least8_t(&currentInstanceIdx, newInstIdx);
 
       // Wait for readers to finish with old.
-      int readers = 0;
-      while ((readers = atomic_load_uint_least32_t(&reader_count[instIdx])) > 0) {
-        chpl_task_yield();
+      int idx = CHPL_PRIVATIZATION_READ_COUNTERS * instIdx;
+      for (int i = 0; i < CHPL_PRIVATIZATION_READ_COUNTERS; i++) {
+        while (atomic_load_uintptr_t(&reader_count[idx + i].count) > 0) {
+          chpl_task_yield();
+        }
       }
-
+      
       // Delete old instance data...
       chpl_mem_free(chpl_priv_instances[instIdx].blocks, 0, 0);
       releaseWrite();
