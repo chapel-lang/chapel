@@ -1064,17 +1064,12 @@ GenRet codegenFieldPtr(
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
       if (/*isClass(ct) ||*/ isRecord(ct) /*|| is_complex_type(ct)*/) {
-        llvm::PointerType *pBase;
-        llvm::StructType *structBaseType;
-        if ((pBase = llvm::dyn_cast<llvm::PointerType>(baseValue->getType())) &&
-            (structBaseType =
-             llvm::dyn_cast<llvm::StructType>(pBase->getElementType()))) {
-          ret.surroundingStruct = ct;
-          ret.fieldOffset = info->module->getDataLayout().
-            getStructLayout(structBaseType)->getElementOffset(fieldno);
-          ret.fieldTbaaTypeDescriptor =
-            ret.chplType->symbol->llvmTbaaTypeDescriptor;
-        }
+        ret.surroundingStruct = ct;
+        ret.fieldOffset = info->module->getDataLayout().
+          getStructLayout(llvm::cast<llvm::StructType>(ct->symbol->llvmType))->
+          getElementOffset(fieldno);
+        ret.fieldTbaaTypeDescriptor =
+          ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
     }
 #endif

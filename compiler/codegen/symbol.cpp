@@ -1089,12 +1089,7 @@ void TypeSymbol::codegenAggMetadata() {
   struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
   INT_ASSERT(struct_type);
 
-  if (isClass(type)) {
-    // Distinguish the class content from the class pointer.
-    TypeOps.push_back(llvm::MDString::get(ctx, std::string(cname) + " fields"));
-  } else {
-    TypeOps.push_back(llvm::MDString::get(ctx, cname));
-  }
+  TypeOps.push_back(llvm::MDString::get(ctx, struct_name));
 
   for_fields(field, ct) {
     llvm::Type *fieldType = field->type->symbol->codegen().type;
