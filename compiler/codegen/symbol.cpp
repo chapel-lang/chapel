@@ -1080,14 +1080,21 @@ void TypeSymbol::codegenAggMetadata() {
   llvm::SmallVector<llvm::Metadata*, 16> CopyOps;
   llvm::SmallVector<llvm::Metadata*, 16> ConstCopyOps;
 
-  TypeOps.push_back(llvm::MDString::get(ctx,cname));
-
   const char *struct_name = ct->classStructName(true);
   llvm::Type *struct_type_ty = info->lvt->getType(struct_name);
+  if (isClass(type) && !struct_type_ty)
+    return;
   llvm::StructType *struct_type = NULL;
   INT_ASSERT(struct_type_ty);
   struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
   INT_ASSERT(struct_type);
+
+  if (isClass(type)) {
+    // Distinguish the class content from the class pointer.
+    TypeOps.push_back(llvm::MDString::get(ctx, std::string(cname) + " fields"));
+  } else {
+    TypeOps.push_back(llvm::MDString::get(ctx, cname));
+  }
 
   for_fields(field, ct) {
     llvm::Type *fieldType = field->type->symbol->codegen().type;
