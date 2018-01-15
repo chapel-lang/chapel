@@ -47,6 +47,8 @@ static void resolveInitializerMatch(FnSymbol* fn);
 
 static void makeRecordInitWrappers(CallExpr* call);
 
+static void resolvePromotionType(FnSymbol* initFn);
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -75,6 +77,8 @@ FnSymbol* resolveInitializer(CallExpr* call) {
 
     makeRecordInitWrappers(call);
   }
+
+  resolvePromotionType(call->resolvedFunction());
 
   callStack.pop();
 
@@ -442,5 +446,44 @@ static void makeActualsVector(const CallInfo&          info,
 
     j++;
   }
+}
+
+//
+// Attempts to set the scalarPromotionType of the type being initialized.
+//
+// TODO: Find a way to resolve this information such that promtion can be used
+// within an initializer.
+//
+static void resolvePromotionType(FnSymbol* initFn) {
+  AggregateType* at = toAggregateType(initFn->_this->getValType());
+
+  //
+  // The 'chpl__promotionType' method is assumed to be a method that takes zero
+  // arguments and returns a type. If we cannot resolve the call then we will
+  // not set the scalarPromotionType
+  //
+
+  VarSymbol* temp     = newTemp(at);
+  CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
+
+  chpl_gen_main->body->insertAtTail(new DefExpr(temp));
+  chpl_gen_main->body->insertAtTail(promoCall);
+
+  FnSymbol* promoFn = tryResolveCall(promoCall);
+
+  if (promoFn != NULL) {
+    resolveFunction(promoFn);
+
+    INT_ASSERT(promoFn->retType != dtUnknown);
+    INT_ASSERT(promoFn->retTag  == RET_TYPE);
+
+    INT_ASSERT(at->scalarPromotionType == NULL ||
+               at->scalarPromotionType == promoFn->retType);
+
+    at->scalarPromotionType = promoFn->retType;
+  }
+
+  promoCall->remove();
+  temp->defPoint->remove();
 }
 
