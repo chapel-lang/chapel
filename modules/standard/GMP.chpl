@@ -1222,9 +1222,9 @@ module GMP {
     }
   }
 
-  /* FUTURE -- GMP numbers with record semantics,
-      expression and operator overloads.
-  */
+  if CHPL_GMP == "none" {
+    compilerError("Cannot use GMP with CHPL_GMP=none");
+  }
 
   // calls mp_set_memory_functions to use chpl_malloc, etc.
   chpl_gmp_init();

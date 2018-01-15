@@ -1,0 +1,6 @@
+error message: Using a mod with a compilerError() reports the wrong line number
+#8191
+
+`use modWithCompilerError;` where the module contains a top level
+compilerError() will report a line number in modWithCompilerError instead of
+the current module
