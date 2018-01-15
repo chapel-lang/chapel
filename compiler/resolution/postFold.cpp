@@ -640,13 +640,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     ==  true  &&
         lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
         requiresImplicitDestroy(rhs)        ==  true) {
-
-      if (isUserDefinedRecord(lhsSym->type) == false) {
-        lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
-        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      } else {
-        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      }
+      lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||

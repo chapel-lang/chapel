@@ -168,6 +168,18 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoScalarPromotionType(CallExpr* call) {
+  QualifiedType tmp = call->get(1)->qualType();
+  Type* type = tmp.type()->getValType();
+
+  if (type->scalarPromotionType)
+    type = type->scalarPromotionType;
+
+  return QualifiedType(type, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoCast(CallExpr* call) {
   Type* t1 = call->get(1)->typeInfo();
   Type* t2 = call->get(2)->typeInfo();
@@ -262,22 +274,31 @@ returnInfoArrayIndex(CallExpr* call) {
 static QualifiedType
 returnInfoGetMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-  if (ct->symbol->hasFlag(FLAG_REF))
-    ct = toAggregateType(ct->getValType());
   if (!ct)
     INT_FATAL(call, "bad member primitive");
+  if (ct->symbol->hasFlag(FLAG_REF))
+    ct = toAggregateType(ct->getValType());
   SymExpr* sym = toSymExpr(call->get(2));
   if (!sym)
     INT_FATAL(call, "bad member primitive");
   VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var)
     INT_FATAL(call, "bad member primitive");
-  if (var->immediate) {
-    const char* name = var->immediate->v_string;
-    for_fields(field, ct) {
-      if (!strcmp(field->name, name))
-        return field->qualType();
+  if (Immediate* imm = var->immediate) {
+    Symbol* field = NULL;
+    if (imm->const_kind == CONST_KIND_STRING)
+    {
+      const char* name = var->immediate->v_string;
+      field = ct->getField(name);
     }
+    if (imm->const_kind == NUM_KIND_INT)
+    {
+      int64_t i = imm->int_value();
+      field = ct->getField(i);
+    }
+    INT_ASSERT(field);
+
+    return field->qualType();
   } else
     return sym->qualType();
   INT_FATAL(call, "bad member primitive");
@@ -532,10 +553,24 @@ initPrimitive() {
   prim_def(PRIM_GETCID, "getcid", returnInfoInt32, false, true);
   prim_def(PRIM_SET_UNION_ID, "set_union_id", returnInfoVoid, true, true);
   prim_def(PRIM_GET_UNION_ID, "get_union_id", returnInfoDefaultInt, false, true);
+
+  // PRIM_GET_MEMBER(_VALUE): aggregate, field
+  // if the field is a ref:
+  //   GET_MEMBER is invalid AST
+  //   GET_MEMBER_VALUE returns the reference
+  // if the field is not a ref
+  //   GET_MEMBER returns a reference to the field
+  //   GET_MEMBER_VALUE returns the field value
   prim_def(PRIM_GET_MEMBER, ".", returnInfoGetMemberRef);
   prim_def(PRIM_GET_MEMBER_VALUE, ".v", returnInfoGetMember, false, true);
-  // base, field, value
+
+  // PRIM_SET_MEMBER: base, field, value
+  // if the field is a ref, and the value is a ref, sets the ptr.
+  // if the field is a ref, and the value is a not ref, invalid AST
+  // if the field is not ref, and the value is a ref, derefs value first
+  // if neither are references, sets the field
   prim_def(PRIM_SET_MEMBER, ".=", returnInfoVoid, true, true);
+
   prim_def(PRIM_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
@@ -576,7 +611,21 @@ initPrimitive() {
   // PRIM_CAST arguments are (type to cast to, value to cast)
   prim_def(PRIM_CAST, "cast", returnInfoCast, false, true);
   prim_def(PRIM_DYNAMIC_CAST, "dynamic_cast", returnInfoCast, false, true);
+
+  // PRIM_TYPEOF of an array returns a runtime type (containing its domain)
+  // For values without a runtime type component, it works the same as
+  // PRIM_STATIC_TYPEOF
   prim_def(PRIM_TYPEOF, "typeof", returnInfoFirstDeref);
+
+  // Return the compile-time component of a type (ignoring runtime types)
+  // For an array, returns the compile-time type only.
+  // (there might be uninitialized memory if the run-time type is used).
+  prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+
+  // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
+  // a type only. Returns the scalar promotion type (i.e. the type of the
+  // elements that iterating over it would yield)
+  prim_def(PRIM_SCALAR_PROMOTION_TYPE, "scalar promotion type", returnInfoScalarPromotionType);
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
   prim_def(PRIM_TUPLE_AND_EXPAND, "and_expand_tuple", returnInfoVoid);

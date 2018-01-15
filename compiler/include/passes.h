@@ -120,6 +120,7 @@ void normalize(Expr* expr);
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
+CallExpr* findDownEndCount(FnSymbol* fn);
 
 // type.cpp
 void initForTaskIntents();

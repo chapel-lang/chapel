@@ -4288,7 +4288,11 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_GET_MEMBER: {
-    // base=get(1) field symbol=get(2)
+    // base=get(1), field symbol=get(2)
+
+    // Invalid AST to use PRIM_GET_MEMBER with a ref field
+    INT_ASSERT(!get(2)->isRef());
+
     ret = codegenFieldPtr(get(1), get(2));
 
     // Used to only do addrOf if
@@ -4312,7 +4316,12 @@ GenRet CallExpr::codegenPrimitive() {
   }
 
   case PRIM_SET_MEMBER: {
-    // base=get(1) field=get(2) value=get(3)
+    // base=get(1), field=get(2), value=get(3)
+
+    // if the field is a ref, and the value is a not ref, invalid AST
+    if (get(2)->isRef() && !get(3)->isRef())
+      INT_FATAL("Invalid PRIM_SET_MEMBER ref field with value");
+
     GenRet ptr = codegenFieldPtr(get(1), get(2));
     GenRet val = get(3);
 
@@ -5301,6 +5310,9 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_MEMBER: {
       /* Get a pointer to a member */
       SymExpr* se = toSymExpr(call->get(2));
+
+      // Invalid AST to use PRIM_GET_MEMBER with a ref field
+      INT_ASSERT(!call->get(2)->isRef());
 
       if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
           call->get(1)->isWideRef()   ||
