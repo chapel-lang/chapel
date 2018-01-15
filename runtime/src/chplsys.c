@@ -467,7 +467,7 @@ uint64_t chpl_sys_availMemoryBytes(void) {
     chpl_internal_error("could not run vm_stat in chpl_sys_availMemoryBytes");
 
   while( fgets(buffer, sizeof(buffer), f) ) {
-    if (strstr(buffer, "pages free" /* or pages freed */)) {
+    if (strstr(buffer, "pages free\n")) {
       if (1 == sscanf(buffer, "%lu", &pagesFree))
         foundPagesFree = 1;
     }
