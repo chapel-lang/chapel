@@ -100,9 +100,10 @@ Configuration File
 ~~~~~~~~~~~~~~~~~~
 
 Configuration values can also be passed to a Chapel program through a
-configuration file, specified by the execution time ``-f`` option. The format
-is described in the example below.
-
+configuration file, specified by the execution time ``-f`` option.
+Configuration files can contain a whitespace- or newline-delimited list of
+keys and values separated by an assignment operator ``=``. Comments begin
+with the ``#`` character. The examples below demonstrate this format.
 
 Consider the following program:
 
@@ -179,7 +180,7 @@ Setting the Number of Locales
 
 For multi-locale Chapel executions, the number of locales on which to
 execute a program is specified on the executable's command-line.  This
-can be set either using the -nl flag, or by assigning to the built-in
+can be set either using the ``-nl`` flag, or by assigning to the built-in
 numLocales configuration constant using the normal mechanisms.  So, to
 execute on four locales, one could use:
 
