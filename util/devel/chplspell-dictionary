@@ -2539,6 +2539,7 @@ seealso
 toctree
 versionadded
 versionchanged
+whitespaces
 
 FILETYPE: man pages; .1
 aqdocs
@@ -2841,6 +2842,7 @@ swhole
 
 FILEID: 55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5
 fhello
+fprogram
 smessage
 
 FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
