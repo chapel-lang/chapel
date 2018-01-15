@@ -56,7 +56,7 @@ static void init_tls(void) {
   do {
     old_head = tls_list;
     node->next = old_head;
-  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t) &tls_list, (uintptr_t) old_head, (uintptr_t) node));
+  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls_list, (uintptr_t) old_head, (uintptr_t) node));
   
   CHPL_TLS_SET(reader_tls, node);
 }
