@@ -439,6 +439,11 @@ static void * myth_chpl_wrap(void * a_) {
   chpl_taskID_t id = arg->id;
   chpl_bool is_executeOn = arg->is_executeOn;
 
+  extern void chpl_privatization_incr(void);
+  extern void chpl_privatization_decr(void);
+
+  // Increment # of tasks
+  chpl_privatization_incr(); 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                          fid,
                          filename,
@@ -452,6 +457,8 @@ static void * myth_chpl_wrap(void * a_) {
                          lineno,
                          id,
                          is_executeOn);
+
+  chpl_privatization_decr();
   return 0;
 }
 

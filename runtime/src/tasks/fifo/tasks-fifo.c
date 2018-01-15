@@ -667,6 +667,11 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     if (blockreport)
       initializeLockReportForThread();
 
+    extern void chpl_privatization_incr(void);
+    extern void chpl_privatization_decr(void);
+
+    // Increment # of tasks
+    chpl_privatization_incr(); 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
@@ -676,12 +681,14 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 
     (*task_to_run_fun)(&child_ptask->bundle);
 
+    // Decrement # of tasks
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
                            child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
+    chpl_privatization_decr();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
@@ -1210,6 +1217,11 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
+    extern void chpl_privatization_incr(void);
+    extern void chpl_privatization_decr(void);
+
+    // Increment # of tasks
+    chpl_privatization_incr(); 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,
@@ -1219,12 +1231,14 @@ thread_begin(void* ptask_void) {
 
     (ptask->bundle.requested_fn)(&ptask->bundle);
 
+    // Decrement # of tasks
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,
                            ptask->bundle.lineno,
                            ptask->bundle.id,
                            ptask->bundle.is_executeOn);
+    chpl_privatization_decr();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
