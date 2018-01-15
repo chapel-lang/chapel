@@ -18,15 +18,13 @@
  */
 
 #include "chplrt.h"
+#include "chpl-thread-local-storage.h"
 #include "chpl-privatization.h"
 #include "chpl-atomics.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include <pthread.h>
 
-#define CHPL_PRIVATIZATION_INIT_SIZE 1024
-
-static pthread_key_t reader_tls;
 static chpl_sync_aux_t privatizationSync;
 static volatile uint64_t global_epoch = 0;
 
@@ -42,7 +40,8 @@ struct tls_node {
 };
 
 // List of thread-local states.
-struct tls_node *tls_list;
+static struct tls_node *tls_list;
+static CHPL_TLS_DECL(struct tls_node *, reader_tls);
 
 // Initializes TLS; should only need to be called once.
 static void init_tls(void);
@@ -55,15 +54,15 @@ static void init_tls(void) {
   do {
     old_head = tls_list;
     node->next = old_head;
-  } while (!__sync_bool_compare_and_swap(&tls_list, old_head, node));
+  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t) &tls_list, (uintptr_t) old_head, (uintptr_t) node));
   
-  pthread_setspecific(reader_tls, node);
+  CHPL_TLS_SET(reader_tls, node);
 }
 
 void chpl_privatization_init(void) {
     chpl_sync_initAux(&privatizationSync);
-    pthread_key_create(&reader_tls, NULL);
-
+    CHPL_TLS_INIT(reader_tls);
+    
     // Initialize...
     chpl_capPrivateObjects = 1024;
     chpl_privateObjects =
@@ -74,9 +73,10 @@ void chpl_privatization_init(void) {
 // Called when we are sure we no longer have access to 'chpl_privatizedObjects'
 void chpl_privatization_checkpoint(void);
 void chpl_privatization_checkpoint(void) {
-  struct tls_node *node = pthread_getspecific(reader_tls);
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
   if (node == NULL) {
-    return;
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
   }
 
   /* Observe the current epoch. */
@@ -94,6 +94,7 @@ static inline int64_t max(int64_t a, int64_t b) {
 // then pid 2, so it has to ensure that the privatized array has at least pid+1
 // elements. Be __very__ careful if you have to update it.
 void chpl_newPrivatizedClass(void* v, int64_t pid) {
+  chpl_privatization_checkpoint();
   chpl_sync_lock(&privatizationSync);
 
   // if we're out of space, double (or more) the array size
@@ -119,7 +120,7 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
       }
     }
 
-    chpl_free(old);
+    chpl_mem_free(old, 0, 0);
   }
 
   chpl_privateObjects[pid] = v;
@@ -128,6 +129,7 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
 }
 
 void chpl_clearPrivatizedClass(int64_t i) {
+  chpl_privatization_checkpoint();
   chpl_sync_lock(&privatizationSync);
   chpl_privateObjects[i] = NULL;
   chpl_sync_unlock(&privatizationSync);
@@ -136,6 +138,7 @@ void chpl_clearPrivatizedClass(int64_t i) {
 // Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
   int64_t ret = 0;
+  chpl_privatization_checkpoint();
   chpl_sync_lock(&privatizationSync);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
     if (chpl_privateObjects[i])
