@@ -471,9 +471,10 @@ module ZMQ {
     var ctx: c_void_ptr;
     var home: locale;
 
-    proc ContextClass() {
-      this.home = here;
+    proc init() {
       this.ctx = zmq_ctx_new();
+      this.home = here;
+      super.init();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
         halt("Error in ContextClass(): %s\n", errmsg);
@@ -503,7 +504,7 @@ module ZMQ {
     /*
       Create a ZMQ context.
      */
-    proc Context() {
+    proc init() {
       acquire(new ContextClass());
     }
 
@@ -572,9 +573,10 @@ module ZMQ {
     var socket: c_void_ptr;
     var home: locale;
 
-    proc SocketClass(ctx: Context, sockType: int) {
-      this.home = here;
+    proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
+      this.home = here;
+      super.init();
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
         halt("Error in SocketClass(): %s\n", errmsg);
@@ -605,13 +607,14 @@ module ZMQ {
     var context: Context;
 
     pragma "no doc"
-    proc Socket() {
+    proc init() {
       compilerError("Cannot create Socket directly; try Context.socket()");
     }
 
     pragma "no doc"
-    proc Socket(ctx: Context, sockType: int) {
+    proc init(ctx: Context, sockType: int) {
       context = ctx;
+      super.init();
       on ctx.classRef.home do
         acquire(new SocketClass(ctx, sockType));
     }
