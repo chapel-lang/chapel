@@ -1063,7 +1063,7 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if ((/*isClass(ct) ||*/ isRecord(ct)) &&
+      if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
         llvm::Type *ty = baseValue->getType();
