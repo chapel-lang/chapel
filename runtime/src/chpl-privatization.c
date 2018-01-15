@@ -45,6 +45,7 @@ struct tls_node {
 struct tls_node *tls_list;
 
 // Initializes TLS; should only need to be called once.
+static void init_tls(void);
 static void init_tls(void) {  
   struct tls_node *node = chpl_calloc(1, sizeof(*node));
   node->epoch = global_epoch;
@@ -71,6 +72,7 @@ void chpl_privatization_init(void) {
 }
 
 // Called when we are sure we no longer have access to 'chpl_privatizedObjects'
+void chpl_privatization_checkpoint(void);
 void chpl_privatization_checkpoint(void) {
   struct tls_node *node = pthread_getspecific(reader_tls);
   if (node == NULL) {
