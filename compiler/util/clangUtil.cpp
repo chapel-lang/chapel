@@ -1296,10 +1296,44 @@ static void setupModule()
 
   // Also setup some basic TBAA metadata nodes.
   info->mdBuilder = new llvm::MDBuilder(info->module->getContext());
-  // Create the TBAA root node and unions node
+  // Create the TBAA root node and unions node.
   info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
   info->tbaaUnionsNode =
     info->mdBuilder->createTBAAScalarTypeNode("all unions", info->tbaaRootNode);
+  // Initialize TBAA metadata for special C pointers.
+  dtCVoidPtr->symbol->llvmTbaaTypeDescriptor =
+    info->mdBuilder->createTBAAScalarTypeNode("C void ptr",
+                                              info->tbaaUnionsNode);
+  dtCVoidPtr->symbol->llvmTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0);
+  dtCVoidPtr->symbol->llvmConstTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0,
+      /*IsConstant=*/true);
+  dtStringC->symbol->llvmTbaaTypeDescriptor =
+    dtCVoidPtr->symbol->llvmTbaaTypeDescriptor;
+  dtStringC->symbol->llvmTbaaAccessTag = dtCVoidPtr->symbol->llvmTbaaAccessTag;
+  dtStringC->symbol->llvmConstTbaaAccessTag =
+    dtCVoidPtr->symbol->llvmConstTbaaAccessTag;
+  dtCFnPtr->symbol->llvmTbaaTypeDescriptor =
+    info->mdBuilder->createTBAAScalarTypeNode(
+      "C fn ptr", dtCVoidPtr->symbol->llvmTbaaTypeDescriptor);
+  dtCFnPtr->symbol->llvmTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0);
+  dtCFnPtr->symbol->llvmConstTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0,
+      /*IsConstant=*/true);
 }
 
 void finishCodegenLLVM() {

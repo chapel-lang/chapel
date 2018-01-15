@@ -49,6 +49,7 @@
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
+#include "wellknown.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -897,18 +898,13 @@ void TypeSymbol::codegenDef() {
 
 void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
-  // Don't do anything if we've already visited this type.
-  if( llvmTbaaTypeDescriptor ) return;
+  // Don't do anything if we've already visited this type,
+  // or the type is void so we don't need metadata.
+  if (llvmTbaaTypeDescriptor || type == dtVoid) return;
 
   GenInfo* info = gGenInfo;
   llvm::LLVMContext& ctx = info->module->getContext();
-  // Create the TBAA root node and unions node if necessary.
-  if( ! info->tbaaRootNode ) {
-    info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
-    info->tbaaUnionsNode =
-      info->mdBuilder->createTBAAScalarTypeNode("all unions",
-                                                info->tbaaRootNode);
-  }
+  INT_ASSERT(info->tbaaRootNode);
 
   // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
   // avoid recursing.
@@ -933,8 +929,14 @@ void TypeSymbol::codegenMetadata() {
   llvm::MDNode* parent = info->tbaaUnionsNode;
   if( superType ) {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
-    INT_ASSERT(parent && parent != info->tbaaRootNode);
+  } else {
+    llvm::Type *ty = llvmType ? llvmType : this->codegen().type;
+    INT_ASSERT(ty);
+    if (llvm::isa<llvm::PointerType>(ty)) {
+      parent = dtCVoidPtr->symbol->llvmTbaaTypeDescriptor;
+    }
   }
+  INT_ASSERT(parent && parent != info->tbaaRootNode);
 
   // Ref and _ddata are really the same, and can conceivably
   // alias, so we normalize _ddata to be ref for the purposes of TBAA.
@@ -1044,8 +1046,17 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
   } else if (isRecord(type)) {
-    codegenAggMetadata();
-    llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
+    if (ct == dtLocaleID) {
+      // Report this as if it were a scalar type because it is a runtime type.
+      // Change this if the locale ID can contain other than 32-bit integers.
+      Type *parentType = dtInt[INT_SIZE_32];
+      parent = parentType->symbol->llvmTbaaTypeDescriptor;
+      llvmTbaaTypeDescriptor =
+        info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
+    } else {
+      codegenAggMetadata();
+      llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
+    }
   }
   if (!llvmTbaaTypeDescriptor || llvmTbaaTypeDescriptor == info->tbaaRootNode)
     gdbShouldBreakHere();
@@ -1088,36 +1099,74 @@ void TypeSymbol::codegenAggMetadata() {
   INT_ASSERT(struct_type_ty);
   struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
   INT_ASSERT(struct_type);
+  llvm::DataLayout dl = info->module->getDataLayout();
 
   TypeOps.push_back(llvm::MDString::get(ctx, struct_name));
 
-  for_fields(field, ct) {
-    llvm::Type *fieldType = field->type->symbol->codegen().type;
-    AggregateType *fct = toAggregateType(field->type);
-    if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
-      fieldType = info->lvt->getType(fct->classStructName(true));
-    }
-    INT_ASSERT(fieldType);
-    unsigned fieldno = ct->getMemberGEP(field->cname);
-    uint64_t byte_offset = info->module->getDataLayout().
-      getStructLayout(struct_type)->getElementOffset(fieldno);
-    llvm::Constant *off =
-      llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), byte_offset);
-    llvm::Constant *sz = llvm::ConstantExpr::getSizeOf(fieldType);
-    INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor !=
+  llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+  if (ct == dtObject) {
+    // Special case because we never create object's actual field within
+    // the Chapel IR.  Change this if defineObjectClass() changes.
+    //
+    llvm::Type *fieldType = CLASS_ID_TYPE->symbol->codegen().type;
+    INT_ASSERT(CLASS_ID_TYPE->symbol->llvmTbaaTypeDescriptor &&
+               CLASS_ID_TYPE->symbol->llvmTbaaTypeDescriptor !=
                info->tbaaRootNode);
-    TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+    llvm::Constant *off = llvm::ConstantInt::get(int64Ty, 0);
+    TypeOps.push_back(CLASS_ID_TYPE->symbol->llvmTbaaTypeDescriptor);
     TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
+
+    llvm::Constant *sz =
+      llvm::ConstantInt::get(int64Ty, dl.getTypeStoreSize(fieldType));
     CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
     CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-    CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
+    CopyOps.push_back(CLASS_ID_TYPE->symbol->llvmTbaaAccessTag);
     ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
     ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-    ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
+    ConstCopyOps.push_back(CLASS_ID_TYPE->symbol->llvmConstTbaaAccessTag);
+  } else {
+    for_fields(field, ct) {
+      if (field->type == dtVoid)
+        continue;
+
+      llvm::Type *fieldType = NULL;
+      AggregateType *fct = toAggregateType(field->type);
+      if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
+        fieldType = info->lvt->getType(fct->classStructName(true));
+      } else {
+        fieldType = field->type->symbol->codegen().type;
+      }
+      INT_ASSERT(fieldType);
+      uint64_t store_size = dl.getTypeStoreSize(fieldType);
+      if (store_size > 0) {
+        unsigned fieldno = ct->getMemberGEP(field->cname);
+        uint64_t byte_offset =
+          dl.getStructLayout(struct_type)->getElementOffset(fieldno);
+        llvm::Constant *off = llvm::ConstantInt::get(int64Ty, byte_offset);
+        if (!field->type->symbol->llvmTbaaTypeDescriptor ||
+            field->type->symbol->llvmTbaaTypeDescriptor == info->tbaaRootNode)
+          gdbShouldBreakHere();
+        INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor &&
+                   field->type->symbol->llvmTbaaTypeDescriptor !=
+                   info->tbaaRootNode);
+        TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+        TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
+
+        llvm::Constant *sz = llvm::ConstantInt::get(int64Ty, store_size);
+        CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+        CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+        CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
+        ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
+        ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
+        ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
+      }
+    }
   }
-  llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
-  llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
-  llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  if (TypeOps.size() > 0) {
+    llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
+    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  }
 #endif
 }
 

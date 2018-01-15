@@ -114,8 +114,6 @@ static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
-#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -457,7 +455,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
+    if (surroundingStruct) {
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset);
@@ -528,7 +527,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (surroundingStruct && fieldTbaaTypeDescriptor != info->tbaaRootNode) {
+    if (surroundingStruct) {
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset, isConst);
@@ -1043,7 +1043,7 @@ GenRet codegenFieldPtr(
       INT_ASSERT(baseValue);
     }
 
-    AggregateType *cBaseType = toAggregateType(baseType);
+    AggregateType *cBaseType = castType ? toAggregateType(castType) : ct;
 
     // We need the LLVM type of the field we're getting
     INT_ASSERT(ret.chplType);
@@ -1063,10 +1063,22 @@ GenRet codegenFieldPtr(
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
       ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
-      if (/*isClass(ct) ||*/ isRecord(ct) /*|| is_complex_type(ct)*/) {
-        ret.surroundingStruct = ct;
+      if ((/*isClass(ct) ||*/ isRecord(ct)) &&
+          cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
+          ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+        llvm::Type *ty = baseValue->getType();
+        if (!llvm::isa<llvm::PointerType>(ty)) {
+          gdbShouldBreakHere();
+          INT_ASSERT(0);
+        }
+        ty = llvm::cast<llvm::PointerType>(ty)->getElementType();
+        if (!llvm::isa<llvm::StructType>(ty)) {
+          gdbShouldBreakHere();
+          INT_ASSERT(0);
+        }
+        ret.surroundingStruct = cBaseType;
         ret.fieldOffset = info->module->getDataLayout().
-          getStructLayout(llvm::cast<llvm::StructType>(ct->symbol->llvmType))->
+          getStructLayout(llvm::cast<llvm::StructType>(ty))->
           getElementOffset(fieldno);
         ret.fieldTbaaTypeDescriptor =
           ret.chplType->symbol->llvmTbaaTypeDescriptor;
