@@ -2,7 +2,7 @@ record Foo {
   type t;
   var x;
 
-  proc init(xVal) {
+  proc init(xVal) where !xVal: Foo {
     this.init(xVal.type, xVal);
   }
 
