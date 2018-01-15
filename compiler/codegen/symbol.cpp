@@ -1061,7 +1061,8 @@ void TypeSymbol::codegenMetadata() {
         info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
     } else {
       codegenAggMetadata();
-      llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
+      if (llvmTbaaAggTypeDescriptor)
+        llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
     }
   }
   INT_ASSERT(llvmTbaaTypeDescriptor &&

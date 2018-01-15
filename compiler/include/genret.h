@@ -104,9 +104,9 @@ public:
   // Keeping same layout for non-LLVM builds
   void* val;
   void* type;
-  void* baseType;
-  uint64_t offset;
-  void* fieldTypeDescriptor;
+  void* surroundingStruct;
+  uint64_t fieldOffset;
+  void* fieldTbaaTypeDescriptor;
 #endif
 
   // Used to mark variables as const after they are stored
