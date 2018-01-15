@@ -930,9 +930,15 @@ void TypeSymbol::codegenMetadata() {
   if( superType ) {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
   } else {
-    llvm::Type *ty = llvmType ? llvmType : this->codegen().type;
-    INT_ASSERT(ty);
-    if (llvm::isa<llvm::PointerType>(ty)) {
+    llvm::Type *ty = NULL;
+    if (llvmType) {
+      ty = llvmType;
+    } else if (hasFlag(FLAG_EXTERN)) {
+      ty = info->lvt->getType(cname);
+    } else {
+      ty = this->codegen().type;
+    }
+    if (ty && llvm::isa<llvm::PointerType>(ty)) {
       parent = dtCVoidPtr->symbol->llvmTbaaTypeDescriptor;
     }
   }
@@ -1058,24 +1064,20 @@ void TypeSymbol::codegenMetadata() {
       llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
     }
   }
-  if (!llvmTbaaTypeDescriptor || llvmTbaaTypeDescriptor == info->tbaaRootNode)
-    gdbShouldBreakHere();
   INT_ASSERT(llvmTbaaTypeDescriptor &&
              llvmTbaaTypeDescriptor != info->tbaaRootNode);
-  if (llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-    // Create tbaa access tags, one for const and one for not.
-    // The createTBAAStructTagNode() method works for both scalars
-    // and aggregates, referencing the whole object.
-    llvmTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0);
-    llvmConstTbaaAccessTag =
-      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                               llvmTbaaTypeDescriptor,
-                                               /*Offset=*/0,
-                                               /*IsConstant=*/true);
-  }
+  // Create tbaa access tags, one for const and one for not.
+  // The createTBAAStructTagNode() method works for both scalars
+  // and aggregates, referencing the whole object.
+  llvmTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                             llvmTbaaTypeDescriptor,
+                                             /*Offset=*/0);
+  llvmConstTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                             llvmTbaaTypeDescriptor,
+                                             /*Offset=*/0,
+                                             /*IsConstant=*/true);
 #endif
 }
 
@@ -1133,6 +1135,8 @@ void TypeSymbol::codegenAggMetadata() {
       AggregateType *fct = toAggregateType(field->type);
       if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
         fieldType = info->lvt->getType(fct->classStructName(true));
+      } else if (field->type->symbol->hasFlag(FLAG_EXTERN)) {
+        fieldType = info->lvt->getType(field->type->symbol->cname);
       } else {
         fieldType = field->type->symbol->codegen().type;
       }
@@ -1143,9 +1147,6 @@ void TypeSymbol::codegenAggMetadata() {
         uint64_t byte_offset =
           dl.getStructLayout(struct_type)->getElementOffset(fieldno);
         llvm::Constant *off = llvm::ConstantInt::get(int64Ty, byte_offset);
-        if (!field->type->symbol->llvmTbaaTypeDescriptor ||
-            field->type->symbol->llvmTbaaTypeDescriptor == info->tbaaRootNode)
-          gdbShouldBreakHere();
         INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor &&
                    field->type->symbol->llvmTbaaTypeDescriptor !=
                    info->tbaaRootNode);

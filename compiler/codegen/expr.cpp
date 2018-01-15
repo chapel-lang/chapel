@@ -1066,20 +1066,12 @@ GenRet codegenFieldPtr(
       if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-        llvm::Type *ty = baseValue->getType();
-        if (!llvm::isa<llvm::PointerType>(ty)) {
-          gdbShouldBreakHere();
-          INT_ASSERT(0);
-        }
-        ty = llvm::cast<llvm::PointerType>(ty)->getElementType();
-        if (!llvm::isa<llvm::StructType>(ty)) {
-          gdbShouldBreakHere();
-          INT_ASSERT(0);
-        }
+        llvm::StructType *structType = llvm::cast<llvm::StructType>
+          (llvm::cast<llvm::PointerType>
+           (baseValue->getType())->getElementType());
         ret.surroundingStruct = cBaseType;
         ret.fieldOffset = info->module->getDataLayout().
-          getStructLayout(llvm::cast<llvm::StructType>(ty))->
-          getElementOffset(fieldno);
+          getStructLayout(structType)->getElementOffset(fieldno);
         ret.fieldTbaaTypeDescriptor =
           ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
