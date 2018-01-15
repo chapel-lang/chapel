@@ -212,7 +212,9 @@ proc test_combine() {
 proc test_replace() {
   var args = (1, 2, 3, 4, 5, 6, 7);
   var base = new datetime((...args));
-  assert(base == base.replace(tzinfo=nil));
+  var nilTZ = new Shared(nil: TZInfo);
+
+  assert(base == base.replace(tzinfo=nilTZ));
 
   var i = 1;
   for (name, newval) in (("year", 2),
@@ -226,20 +228,21 @@ proc test_replace() {
     var got: datetime;
     newargs[i] = newval;
     var expected = new datetime((...newargs));
+
     if name == "year" then
-      got = base.replace(year = newval, tzinfo=nil);
+      got = base.replace(year = newval, tzinfo=nilTZ);
     else if name == "month" then
-      got = base.replace(month = newval, tzinfo=nil);
+      got = base.replace(month = newval, tzinfo=nilTZ);
     else if name == "day" then
-      got = base.replace(day = newval, tzinfo=nil);
+      got = base.replace(day = newval, tzinfo=nilTZ);
     else if name == "hour" then
-      got = base.replace(hour = newval, tzinfo=nil);
+      got = base.replace(hour = newval, tzinfo=nilTZ);
     else if name == "minute" then
-      got = base.replace(minute = newval, tzinfo=nil);
+      got = base.replace(minute = newval, tzinfo=nilTZ);
     else if name == "second" then
-      got = base.replace(second = newval, tzinfo=nil);
+      got = base.replace(second = newval, tzinfo=nilTZ);
     else if name == "microsecond" then
-      got = base.replace(microsecond = newval, tzinfo=nil);
+      got = base.replace(microsecond = newval, tzinfo=nilTZ);
 
     assert(expected == got);
     i += 1;

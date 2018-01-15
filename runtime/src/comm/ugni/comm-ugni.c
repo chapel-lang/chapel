@@ -393,7 +393,42 @@ typedef struct {
 } mem_region_table_t;
 
 static mem_region_table_t mem_regions;
+
+
+//
+// Used to serialize access to critical sections in the dynamic registration
+// allocation/registration/free routines. In addition to using a pthread_mutex,
+// we also have to prevent multiple tasks from running on the same pthread.
+// This allows us to get away with a simple pthread_mutex (vs chapel sync var,
+// or mutex+try-lock) and more importantly ensures that an entire allocation
+// can be completed before yielding, since some tasking layers don't support
+// yielding for some allocations. For example, qthreads doesn't support
+// yielding while grabbing memory to initialize task stacks.
+//
+
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
+static __thread chpl_bool allow_task_yield = true;
+
+static inline
+void mem_regions_lock(void) {
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
+  allow_task_yield = false;
+}
+
+static inline
+void mem_regions_unlock(void) {
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot release mem region lock");
+  allow_task_yield = true;
+}
+
+static inline
+chpl_bool can_task_yield(void) {
+  return allow_task_yield;
+}
+
+
 
 #ifdef DEBUG
 static uint32_t mreg_cnt_max;
@@ -2689,12 +2724,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
 
   PERFSTATS_INC(regMem_cnt);
 
-  //
-  // Memory region table adjustments, both here and on other nodes,
-  // need to be single-threaded.
-  //
-  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemAlloc(): cannot lock");
+  mem_regions_lock();
 
   //
   // Do we have room for another registered memory table entry?
@@ -2750,8 +2780,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
              size);
   }
 
-  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemAlloc(): cannot unlock");
+  mem_regions_unlock();
 
   return p;
 }
@@ -2778,12 +2807,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 
   mr_i = (int) (mr - &mem_regions.mregs[0]);
 
-  //
-  // Memory region table adjustments, both here and on other nodes,
-  // need to be single-threaded.
-  //
-  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): cannot lock");
+  mem_regions_lock();
 
   //
   // Finish filling the table entry and register the memory.
@@ -2843,8 +2867,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     }
   }
 
-  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): cannot unlock");
+  mem_regions_unlock();
 }
 
 
@@ -2874,14 +2897,11 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
            p, size, mr_i);
 
   //
-  // Deregister the memory and empty the entry in our table.  The
-  // table adjustments, both here and on other nodes, need to be
-  // single-threaded.  Note that even with single-threading we can't
-  // compress the table, because other threads may be doing lookups
-  // in it and they aren't locked out.
+  // Deregister the memory and empty the entry in our table. Note that even
+  // with single-threading we can't compress the table, because other threads
+  // may be doing lookups in it and they aren't locked out.
   //
-  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemFree(): cannot lock");
+  mem_regions_lock();
 
   deregister_mem_region(mr);
 
@@ -2948,8 +2968,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     }
   }
 
-  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemFree(): cannot unlock");
+  mem_regions_unlock();
 
   free_huge_pages(p);
 
@@ -6872,7 +6891,10 @@ void local_yield(void)
     // Without a comm domain, just yield.
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
-    chpl_task_yield();
+    if (can_task_yield()) 
+      chpl_task_yield();
+    else
+      sched_yield();
   }
   else {
     //

@@ -39,6 +39,7 @@ must be passed to the function at the call site.  A copy of the
 function is instantiated for each unique type that is passed to this
 function at a call site.  The formal argument has the semantics of a
 type alias.
+
 \begin{chapelexample}{build2tuple.chpl}
 The following code defines a function that takes two types at the call
 site and returns a 2-tuple where the types of the components of the
@@ -64,6 +65,35 @@ writeln(t2);
 (1, hello)
 \end{chapeloutput}
 \end{chapelexample}
+
+A formal type argument can include a formal type (a colon followed by a
+type). This pattern is sometimes useful to create generic functions
+accepting type arguments that only apply to a specific group of types.
+
+\begin{chapelexample}{typeColonArgument.chpl}
+Suppose that we'd like to define a function that accepts a type argument
+and returns 1 represented in that type.
+\begin{chapel}
+proc getOne(type t:numeric) {
+  return 1:t;
+}
+\end{chapel}
+Now calls to this function will resolve to the appropriate version based
+upon the argument type supplied.
+\begin{chapel}
+var anInt8 = getOne(int(8));
+var aReal = getOne(real);
+\end{chapel}
+\begin{chapelpost}
+writeln(anInt8.type:string, " ", anInt8);
+writeln(aReal.type:string, " ", aReal);
+\end{chapelpost}
+\begin{chapeloutput}
+int(8) 1
+real(64) 1.0
+\end{chapeloutput}
+\end{chapelexample}
+
 
 \subsection{Formal Parameter Arguments}
 \label{Formal_Parameter_Arguments}
@@ -108,11 +138,12 @@ each unique actual type.
 \begin{chapelexample}{fillTuple2.chpl}
 The example from the previous section can be extended to be generic on
 a parameter as well as the actual argument that is passed to it by
-omitting the type of the formal argument \chpl{x}.  The following code
+omitting the type of the formal argument \chpl{x}.  Additionally
+the parameter argument can allow any type be passed. The following code
 defines a function that returns a homogeneous tuple of size \chpl{p}
 where each component in the tuple is initialized to \chpl{x}:
 \begin{chapel}
-proc fillTuple(param p: int, x) {
+proc fillTuple(param p, x) {
   var result: p*x.type;
   for param i in 1..p do
     result(i) = x;
@@ -440,8 +471,9 @@ is generic over the type that is bound to that alias.
 % aliases; type aliases that are not bound to a type.  If a class or
 % record contains an unspecified type alias, the aliased type must be
 % specified whenever the type is used.
-Such a type alias is accessed as if it were a field;
-similar to a parameter field, it cannot be assigned
+Such a type alias is accessed as if it were a field from either a class
+or record instance or from the instantiated class or record type itself.
+Similar to a parameter field, it cannot be assigned
 except in its declaration.
 
 The type alias becomes an argument with intent \chpl{type} to
@@ -499,6 +531,9 @@ the type of the object that it is a field of.
 
 If a class or record defines a parameter field, the class or record
 is generic over the value that is bound to that field.
+The field can be accessed from a class or record instance or from the
+instantiated class or record type itself.
+
 % A parameter defined in a class or record is accessed as if it were a
 % field.  This access returns a parameter.  
 The parameter becomes an argument with intent \chpl{param} to the

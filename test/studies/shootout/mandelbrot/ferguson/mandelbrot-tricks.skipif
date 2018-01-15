@@ -1,0 +1,2 @@
+# Image is slightly different on a 32-bit platform.
+CHPL_TARGET_PLATFORM <= 32

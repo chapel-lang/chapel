@@ -1,0 +1,5 @@
+forall-continue-errors.chpl:6: In function 'test':
+forall-continue-errors.chpl:13: error: 'break' is not allowed in forall loops
+forall-continue-errors.chpl:9: note: the enclosing forall loop is here
+forall-continue-errors.chpl:26: error: 'break' is not allowed in forall loops
+forall-continue-errors.chpl:20: note: the enclosing forall loop is here

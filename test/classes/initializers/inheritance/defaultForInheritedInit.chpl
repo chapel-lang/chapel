@@ -1,0 +1,19 @@
+class C {
+  var x: int;
+  var y: string;
+  var z: real;
+
+  proc init(x: int, y: string, z: real) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    super.init();
+  }
+}
+
+class D : C {
+}
+
+var myD = new D(3, "hi", 4.6);
+writeln(myD);
+delete myD;

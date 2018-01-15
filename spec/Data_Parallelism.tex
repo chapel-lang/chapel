@@ -364,6 +364,46 @@ writeln(A);
 Whole array operations are a form of promotion as applied to operators
 rather than functions.
 
+When a call is promoted and that call relied upon default
+arguments~(\rsec{Default_Values}), the default argument expression can
+be evaluated many times. For example:
+
+\begin{chapelexample}{promotes-default.chpl}
+\begin{chapel}
+  var counter: atomic int;
+
+  proc nextCounterValue():int {
+    var i = counter.fetchAdd(1);
+    return i;
+  }
+
+  proc assignCounter(ref x:int, counter=nextCounterValue()) {
+    x = counter;
+  }
+\end{chapel}
+
+Here the function assignCounter has a default argument
+providing the next value from an atomic counter as the value to set.
+
+\begin{chapel}
+  var A: [1..5] int;
+  assignCounter(A);
+\end{chapel}
+
+The assignCounter call uses both the default argument for counter as well
+as promotion. When these features are combined, the default argument
+will be evaluated once per promoted element. As a result, after this
+command, A will contain the elements 0 1 2 3 4 in some order.
+
+\begin{chapelnoprint}
+writeln(A.sorted());
+\end{chapelnoprint}
+\begin{chapeloutput}
+0 1 2 3 4
+\end{chapeloutput}
+\end{chapelexample}
+
+
 
 \subsection{Zipper Promotion}
 \label{Zipper_Promotion}

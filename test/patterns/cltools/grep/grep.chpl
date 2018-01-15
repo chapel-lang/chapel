@@ -40,7 +40,9 @@ proc fileGrep(toFind: string, fname: string) throws {
     toRead = open(fname, iomode.r);
   }
   var r = toRead.reader();
-  defer r.close();  // close file
+  defer {
+    try! r.close();  // close file
+  }
 
   // Use regex library to compile into searchable regex
   var regEx = compile(toFind);
