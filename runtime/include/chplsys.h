@@ -26,8 +26,8 @@
 
 size_t chpl_getSysPageSize(void);
 size_t chpl_getHeapPageSize(void); // note: only works after mem layer inited
-uint64_t chpl_bytesPerLocale(void);
-size_t chpl_bytesAvailOnThisLocale(void);
+uint64_t chpl_sys_physicalMemoryBytes(void);
+uint64_t chpl_sys_availMemoryBytes(void);
 int chpl_getNumPhysicalCpus(chpl_bool accessible_only);
 int chpl_getNumLogicalCpus(chpl_bool accessible_only);
 
