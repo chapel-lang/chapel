@@ -800,11 +800,18 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
+    extern void chpl_privatization_incr(void);
+    extern void chpl_privatization_decr(void);
+
+    // Increment # of tasks
+    chpl_privatization_incr(); 
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
+    // Decrement # of tasks
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
+    chpl_privatization_decr();
 
     return 0;
 }

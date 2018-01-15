@@ -36,6 +36,8 @@ static int64_t chpl_capPrivateObjects = 0;
 // strategy used in certain RCU implementations.  
 struct tls_node {
   volatile uint64_t epoch;
+  volatile uint64_t nTasks;
+  volatile uint64_t nWriters;
   struct tls_node *next;
 };
 
@@ -80,9 +82,31 @@ void chpl_privatization_checkpoint(void) {
   }
 
   /* Observe the current epoch. */
-  atomic_thread_fence(memory_order_release);
   node->epoch = global_epoch;
-  atomic_thread_fence(memory_order_acquire);
+}
+
+void chpl_privatization_incr(void); 
+void chpl_privatization_incr(void) {
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
+  }
+
+  // Notify that we are now in-use.
+  node->nTasks++;
+}
+
+void chpl_privatization_decr(void); 
+void chpl_privatization_decr(void) {
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
+  }
+
+  // Notify that we have one less task
+  node->nTasks--;
 }
 
 static inline int64_t max(int64_t a, int64_t b) {
@@ -94,9 +118,14 @@ static inline int64_t max(int64_t a, int64_t b) {
 // then pid 2, so it has to ensure that the privatized array has at least pid+1
 // elements. Be __very__ careful if you have to update it.
 void chpl_newPrivatizedClass(void* v, int64_t pid) {
-  chpl_privatization_checkpoint();
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
+  }
+  node->nWriters++;
+  
   chpl_sync_lock(&privatizationSync);
-
   // if we're out of space, double (or more) the array size
   if (pid >= chpl_capPrivateObjects) {
     void** tmp;
@@ -115,7 +144,8 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
     full_memory_barrier();
     global_epoch = global_epoch + 1;
     for (struct tls_node *node = tls_list; node != NULL; node = node->next) {
-      while (node->epoch != global_epoch) {
+      // Wait for threads which have tasks that are not writers
+      while (node->nTasks > node->nWriters && node->epoch != global_epoch) {
         chpl_task_yield();
       }
     }
@@ -126,25 +156,42 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
   chpl_privateObjects[pid] = v;
 
   chpl_sync_unlock(&privatizationSync);
+  node->nWriters--;
 }
 
 void chpl_clearPrivatizedClass(int64_t i) {
-  chpl_privatization_checkpoint();
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
+  }
+  node->nWriters++;
+
   chpl_sync_lock(&privatizationSync);
   chpl_privateObjects[i] = NULL;
   chpl_sync_unlock(&privatizationSync);
+
+  node->nWriters--;
 }
 
 // Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
+  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+  if (node == NULL) {
+    init_tls();
+    node = CHPL_TLS_GET(reader_tls);
+  }
+  node->nWriters++;
+
   int64_t ret = 0;
-  chpl_privatization_checkpoint();
   chpl_sync_lock(&privatizationSync);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
     if (chpl_privateObjects[i])
       ret++;
   }
   chpl_sync_unlock(&privatizationSync);
+
+  node->nWriters--;
   return ret;
 }
  
