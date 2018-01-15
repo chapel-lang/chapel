@@ -45,21 +45,25 @@ public:
   }
 };
 
+// constructor for the outer level
 ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
                              SymbolMap& map, TaskFnCopyMap& taskFnCps) :
   forall(fs),
   parIter(parIterFn),
   svar2clonevar(map),
-  taskFnCopies(taskFnCps)
+  taskFnCopies(taskFnCps),
+  breakOnYield(false)
 {
 }
 
+// constructor for a nested situation
 ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
                              SymbolMap& map) :
   forall(parentEV->forall),
   parIter(parentEV->parIter),
   svar2clonevar(map),
-  taskFnCopies(parentEV->taskFnCopies)
+  taskFnCopies(parentEV->taskFnCopies),
+  breakOnYield(false)
 {
 }
 
@@ -67,8 +71,9 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
 /////////// misc helpers ///////////
 
 // Cf. copyBody() for inlineFunctions().
-static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
-                             Expr* anchor)
+// 'anchor' is the AST that the new body will replace.
+static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
+                                  Expr* anchor)
 {
   SET_LINENO(iterCall);
 
@@ -120,6 +125,11 @@ static BlockStmt* copyBodyPI(FnSymbol* iterFn, CallExpr* iterCall,
     reset_ast_loc(retval, iterCall);
   }
 
+  // Remove the return statement.
+  CallExpr* retexpr = toCallExpr(retval->body.tail);
+  INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
+  retexpr->remove();
+
   return retval;
 }
 
@@ -141,6 +151,7 @@ static void insertInitialization(Symbol* dest, Type* valType,
   if (Expr* initExpr = toExpr(init))
     INT_ASSERT(!initExpr->inTree()); // caller responsibility
 
+  // vass todo: getAutoCopy() fails if valType does not have it
   if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {
     Symbol* initSym = toSymbol(init);
     if (initSym == NULL) {
@@ -156,13 +167,6 @@ static void insertInitialization(Symbol* dest, Type* valType,
   }
 }
 
-/* vass - need this?
-// same as intentArgName()
-static const char* shadowVarName(int ix, const char* base) {
-  return astr("_x", istr(ix+1), "_", base);
-}
-*/
-
 
 /////////// expandYield ///////////
 
@@ -174,25 +178,31 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
-  map.copy(EV->svar2clonevar);  // vass is this the right way to copy a map?
+  map.copy(EV->svar2clonevar);
 
   // Clone the index variable for use in the cloned body.
   // There is only one idx var because all zippering has been lowered away.
   VarSymbol* origIdxVar = EV->forall->singleInductionVar();
-  INT_ASSERT(map.get(origIdxVar) == NULL); //vass remove at end
+  INT_ASSERT(map.get(origIdxVar) == NULL); //wass remove at end
   VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
-  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //vass remove at end
+  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //wass remove at end
+  // wass confirming: this does not affect EV->svar2clonevar
   yieldCall->insertBefore(new DefExpr(cloneIdxVar));
 
   // Todo should insertInitialization() handle both cases?
   Expr* yieldExpr = yieldCall->get(1)->remove();
+#if 1 //wass
+  // vass with MF's 8073, this should be just a move, right?
+    yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
+#else
   if (cloneIdxVar->isRef())
     yieldCall->insertBefore(new CallExpr(PRIM_SET_REFERENCE,
                                          cloneIdxVar, yieldExpr));
   else
     insertInitialization(cloneIdxVar, cloneIdxVar->type, yieldExpr, yieldCall);
+#endif
 
-/* vass remove me:
+/* wass remove me:
 Move the yielded value to a clone of the index variable.
 Also need to map the index variable to the yield value.
   SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
@@ -271,8 +281,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   }
 
   if (expandClone) {
-    ExpandVisitor taskFnV(EV, map);
-    cloneTaskFn->body->accept(&taskFnV);
+    ExpandVisitor taskFnVis(EV, map);
+    cloneTaskFn->body->accept(&taskFnVis);
 
     flattenNestedFunction(cloneTaskFn);
   }
@@ -401,13 +411,13 @@ static void setupOuterMap(ExpandVisitor* outerVis,
 static void lowerForallStmtsInline() {
   forv_Vec(ForallStmt, fs, gForallStmts)
   {
-    if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //vass
+    if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
 
     // If this fails, need to filter out those FSes.
     // We lower and remove each FS from the tree *after* we see it here.
     INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
 
-    // We have converted zippering, if any, to a follower loop.
+    // We convert zippering, if any, to a follower loop during resolution.
     INT_ASSERT(fs->numIteratedExprs() == 1);
     CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
     
@@ -424,7 +434,7 @@ static void lowerForallStmtsInline() {
 
     // Clone the iterator body.
     // Cf. expandIteratorInline() and inlineCall().
-    BlockStmt* ibody = copyBodyPI(parIterFn, parIterCall, ianch);
+    BlockStmt* ibody = copyParIterBody(parIterFn, parIterCall, ianch);
     
     // Let us remove 'fs' later, for debugging convenience.
     fs->insertAfter(iwrap);
