@@ -783,6 +783,8 @@ char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
 }
 
 void chpl_task_yield(void) {
+  extern void chpl_privatization_checkpoint(void);
+  chpl_privatization_checkpoint();
   chpl_thread_yield();
 }
 
