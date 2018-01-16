@@ -768,8 +768,11 @@ static void set_max_segsize() {
 
   // Use 90% of the available memory as the maximum segment size,
   // heuristically
-  if ((size = chpl_bytesAvailOnThisLocale()) != 0) {
-    set_max_segsize_env_var((size_t) (0.9 * size));
+  if ((size = chpl_sys_availMemoryBytes()) != 0) {
+    size_t dst_size = 0.9 * size;
+    if (dst_size < 1000 || dst_size > chpl_sys_physicalMemoryBytes())
+      chpl_internal_error("Overflow/underflow determining max segment size");
+    set_max_segsize_env_var(dst_size);
     return;
   }
 
