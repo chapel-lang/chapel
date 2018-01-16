@@ -12,7 +12,7 @@ GenericParent
 
 bar
 int
-any type
+integral
 any type
 R
 Parent
