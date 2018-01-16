@@ -1062,7 +1062,7 @@ module Math {
   extern "j0f" proc j0(x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
-  inline proc j0(x : real(64)): real(64) {
+  inline proc j0(x: real(64)): real(64) {
     extern proc j0(x: real(64)): real(64);
     return j0(x);
   }
@@ -1072,7 +1072,7 @@ module Math {
   extern "j1f" proc j1(x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `1` of `x`. */
-  inline proc j1(x : real(64)): real(64) {
+  inline proc j1(x: real(64)): real(64) {
     extern proc j1(x: real(64)): real(64);
     return j1(x);
   }
@@ -1082,45 +1082,69 @@ module Math {
   extern "jnf" proc jn(n: int, x: real(32)): real(32);
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
-  inline proc jn(n: int, x : real(64)): real(64) {
-    extern proc jnf(n: c_int, x: real(64)): real(64);
-    return jnf(n: c_int, x);
+  inline proc jn(n: int, x: real(64)): real(64) {
+    extern proc jn(n: c_int, x: real(64)): real(64);
+    return jn(n.safeCast(c_int), x);
   }
 
 
-  /* Returns the Bessel function of the second kind of order `0` of `x`. */
-  extern "y0f" proc y0(x: real(32)): real(32);
+  /* Returns the Bessel function of the second kind of order `0` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  extern "y0f" proc y0(x: real(32), boundChecking = true): real(32);
 
-  /* Returns the Bessel function of the second kind of order `0` of `x`. */
-  inline proc y0(x : real(64)): real(64) {
-    if x < 0 then
-      halt("Input value for Bessel function of second kind must be greater than 0");
+  /* Returns the Bessel function of the second kind of order `0` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  inline proc y0(x: real(64), boundChecking = true): real(64) {
+    if boundChecking {
+      if x < 0 then
+        halt("Input value for Bessel function of second kind must be greater than 0");
+    }
     extern proc y0(x: real(64)): real(64);
     return y0(x);
   }
 
 
-  /* Returns the Bessel function of the second kind of order `1` of `x`. */
-  extern "y1f" proc y1(x: real(32)): real(32);
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  extern "y1f" proc y1(x: real(32), boundChecking = true): real(32);
 
-  /* Returns the Bessel function of the second kind of order `1` of `x`. */
-  inline proc y1(x : real(64)): real(64) {
-    if x < 0 then
-      halt("Input value for Bessel function of second kind must be greater than 0");
+  /* Returns the Bessel function of the second kind of order `1` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  inline proc y1(x: real(64), boundChecking = true): real(64) {
+    if boundChecking {
+      if x < 0 then
+        halt("Input value for Bessel function of second kind must be greater than 0");
+    }
     extern proc y1(x: real(64)): real(64);
     return y1(x);
   }
 
 
-  /* Returns the Bessel function of the second kind of order `n` of `x`. */
-  extern proc yn(n: int, x: real(32)): real(32);
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  extern "y1f" proc yn(n: int, x: real(32), boundChecking = true): real(32);
 
-  /* Returns the Bessel function of the second kind of order `n` of `x`. */
-  inline proc yn(n: int, x : real(64)): real(64) {
-    if x < 0 then
-      halt("Input value for Bessel function of second kind must be greater than 0");
+  /* Returns the Bessel function of the second kind of order `n` of `x`,
+     if and only if the value of `x` is greater than 0, if 
+     `boundChecking` is `true` then for `x < 0` there will be an error,
+     otherwise an `NaN` value will be returned*/
+  inline proc yn(n: int, x: real(64), boundChecking = true): real(64) {
+    if boundChecking {
+      if x < 0 then
+        halt("Input value for Bessel function of second kind must be greater than 0");
+    }
     extern proc yn(n: c_int, x: real(64)): real(64);
-    return yn(n: c_int, x);
+    return yn(n.safeCast(c_int), x);
   }
 
 } // end of module Math
