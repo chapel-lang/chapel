@@ -1295,13 +1295,45 @@ static void setupModule()
   //   m->addModuleFlag(llvm::Module::Error, "Chapel Version", unsigned);
 
   // Also setup some basic TBAA metadata nodes.
-  llvm::LLVMContext& cx = info->module->getContext();
-  // Create the TBAA root node
-  {
-    llvm::Metadata* Ops[1];
-    Ops[0] = llvm::MDString::get(cx, "Chapel types");
-    info->tbaaRootNode = llvm::MDNode::get(cx, Ops);
-  }
+  info->mdBuilder = new llvm::MDBuilder(info->module->getContext());
+  // Create the TBAA root node and unions node.
+  info->tbaaRootNode = info->mdBuilder->createTBAARoot("Chapel types");
+  info->tbaaUnionsNode =
+    info->mdBuilder->createTBAAScalarTypeNode("all unions", info->tbaaRootNode);
+  // Initialize TBAA metadata for special C pointers.
+  dtCVoidPtr->symbol->llvmTbaaTypeDescriptor =
+    info->mdBuilder->createTBAAScalarTypeNode("C void ptr",
+                                              info->tbaaUnionsNode);
+  dtCVoidPtr->symbol->llvmTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0);
+  dtCVoidPtr->symbol->llvmConstTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCVoidPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0,
+      /*IsConstant=*/true);
+  dtStringC->symbol->llvmTbaaTypeDescriptor =
+    dtCVoidPtr->symbol->llvmTbaaTypeDescriptor;
+  dtStringC->symbol->llvmTbaaAccessTag = dtCVoidPtr->symbol->llvmTbaaAccessTag;
+  dtStringC->symbol->llvmConstTbaaAccessTag =
+    dtCVoidPtr->symbol->llvmConstTbaaAccessTag;
+  dtCFnPtr->symbol->llvmTbaaTypeDescriptor =
+    info->mdBuilder->createTBAAScalarTypeNode(
+      "C fn ptr", dtCVoidPtr->symbol->llvmTbaaTypeDescriptor);
+  dtCFnPtr->symbol->llvmTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0);
+  dtCFnPtr->symbol->llvmConstTbaaAccessTag =
+    info->mdBuilder->createTBAAStructTagNode(
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      dtCFnPtr->symbol->llvmTbaaTypeDescriptor,
+      /*Offset=*/0,
+      /*IsConstant=*/true);
 }
 
 void finishCodegenLLVM() {
@@ -1670,9 +1702,8 @@ void runClang(const char* just_parse_filename) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
 
-      // Create a new IRBuilder and MDBuilder
+      // Create a new IRBuilder
       gGenInfo->irBuilder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
-      gGenInfo->mdBuilder = new llvm::MDBuilder(gGenInfo->module->getContext());
 
       // This seems to be needed, even though it is strange.
       // (otherwise we segfault in info->irBuilder->CreateGlobalString)

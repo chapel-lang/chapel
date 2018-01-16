@@ -1,0 +1,2 @@
+--memLeaks --earlyReturn=false  # no-leak-yield-record.good
+--memLeaks --earlyReturn=true   # no-leak-yield-record.early.good

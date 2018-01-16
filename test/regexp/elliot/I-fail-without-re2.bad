@@ -1,1 +1,1 @@
-I-fail-without-re2.chpl:6: error: Regular expression support not compiled in
+I-fail-without-re2.chpl:6: error: Cannot use Regexp with CHPL_REGEXP=none

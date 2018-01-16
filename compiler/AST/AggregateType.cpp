@@ -2273,6 +2273,11 @@ DefExpr* defineObjectClass() {
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
   //
+  // Because we never create the actual field, we have a special case
+  //  for it in TypeSymbol::codegenAggMetadata().  Remember to change
+  //  that special case if we ever change the contents of object or
+  //  if we start creating the field.
+  //
   DefExpr* retval = buildClassDefExpr("object",
                                       NULL,
                                       AGGREGATE_CLASS,

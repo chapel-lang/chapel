@@ -1,0 +1,6 @@
+error message: accidental call to superclass initializer
+
+It seems to me that calls to 'new subclass(...)' (like 'new D' in this
+example) shouldn't resolve to superclass initializers, yet that's what
+seems to be happening here, resulting in a type mismatch, presumably
+in some internal code generated from new expressions.

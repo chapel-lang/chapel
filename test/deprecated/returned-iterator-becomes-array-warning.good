@@ -1,0 +1,6 @@
+returned-iterator-becomes-array-warning.chpl:7: In function 'returnMyIter':
+returned-iterator-becomes-array-warning.chpl:8: warning: proc returns an iterator that will be immediately converted to an array
+returned-iterator-becomes-array-warning.chpl:16: In function 'addEm':
+returned-iterator-becomes-array-warning.chpl:17: warning: proc returns an iterator that will be immediately converted to an array
+1 2 3 4 5 6 7 8 9 10
+0 0 0 0 0 0 0 0 0 0
