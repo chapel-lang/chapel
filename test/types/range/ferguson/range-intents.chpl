@@ -37,6 +37,20 @@ proc test_ref( ref arg ) {
 global = 1..10;
 test_ref(global);
 
+proc range.test_this() {
+  global = 1..20;
+  writeln("this ", this);
+}
+global = 1..10;
+global.test_this();
+
+proc const range.test_const_this() {
+  global = 1..20;
+  writeln("const this ", this);
+}
+global = 1..10;
+global.test_const_this();
+
 proc test_begin(const ref loc) {
   sync {
     begin with (ref global) {

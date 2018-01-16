@@ -4,6 +4,8 @@ const 1..10
 const in 1..10
 const ref 1..20
 ref 1..20
+this 1..20
+const this 1..20
 begin 1..10
 begin in 1..10
 begin const in 1..10
