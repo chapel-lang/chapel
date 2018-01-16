@@ -903,7 +903,6 @@ void TypeSymbol::codegenMetadata() {
   if (llvmTbaaTypeDescriptor || type == dtVoid) return;
 
   GenInfo* info = gGenInfo;
-  llvm::LLVMContext& ctx = info->module->getContext();
   INT_ASSERT(info->tbaaRootNode);
 
   // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
@@ -962,7 +961,7 @@ void TypeSymbol::codegenMetadata() {
   // Integers, reals, bools, enums, references, wide pointers
   // count as one thing. Records, strings, complexes should not
   // get simple TBAA (they can get struct tbaa).
-  if (isUnion(type)) {
+  if (isUnion(type) || (isRecord(type) && ct->numFields() == 0)) {
     // This is necessary due to the design of LLVM TBAA metadata.
     // The preferred situation would be to allow each union to have
     // multiple parents, corresponding to its members.  The way TBAA
@@ -976,61 +975,14 @@ void TypeSymbol::codegenMetadata() {
     // This means we don't get any help with alias disambiguation on
     // unions.  We still need to supply a TBAA type descriptor for them,
     // though, in case they appear as a member of a class or record.
+    //
+    // Records that have no Chapel IR fields, but may have LLVM IR fields,
+    // are treated as unions because we don't know what Chapel type the
+    // LLVM fields are referring to.  (There is no backward mapping.)
     llvmTbaaTypeDescriptor = info->tbaaUnionsNode;
   } else if (is_complex_type(type)) {
-    // At present, complex types are not records, so we have to
-    // build their struct type descriptors and tbaa.struct access tags
-    // manually, using knowledge of the contents of complex types.
-    INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
-               type == dtComplex[COMPLEX_SIZE_128]);
-
-    TypeSymbol *re, *im;
-    uint64_t fieldSize;
-    if (type == dtComplex[COMPLEX_SIZE_64]) {
-      re = dtReal[FLOAT_SIZE_32]->symbol;
-      im = dtImag[FLOAT_SIZE_32]->symbol;
-      fieldSize = 4;
-    } else {
-      re = dtReal[FLOAT_SIZE_64]->symbol;
-      im = dtImag[FLOAT_SIZE_64]->symbol;
-      fieldSize = 8;
-    }
-    re->codegenMetadata();
-    im->codegenMetadata();
-
-    llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
-    llvm::ConstantAsMetadata *zero =
-      info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty, 0));
-    llvm::ConstantAsMetadata *fsz =
-      info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty,
-                                                             fieldSize));
-
-    llvm::Metadata *TypeOps[5];
-    TypeOps[0] = llvm::MDString::get(ctx,cname);
-    TypeOps[1] = re->llvmTbaaTypeDescriptor;
-    TypeOps[2] = zero;  // offset
-    TypeOps[3] = im->llvmTbaaTypeDescriptor;
-    TypeOps[4] = fsz;   // offset
-    llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
-
-    llvm::Metadata *CopyOps[6];
-    CopyOps[0] = zero;  // offset
-    CopyOps[1] = fsz;   // size
-    CopyOps[2] = re->llvmTbaaAccessTag;
-    CopyOps[3] = fsz;   // offset
-    CopyOps[4] = fsz;   // size
-    CopyOps[5] = im->llvmTbaaAccessTag;
-    llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
-
-    llvm::Metadata *ConstCopyOps[6];
-    ConstCopyOps[0] = zero;  // offset
-    ConstCopyOps[1] = fsz;   // size
-    ConstCopyOps[2] = re->llvmConstTbaaAccessTag;
-    ConstCopyOps[3] = fsz;   // offset
-    ConstCopyOps[4] = fsz;   // size
-    ConstCopyOps[5] = im->llvmConstTbaaAccessTag;
-    llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
-
+    codegenCplxMetadata();
+    INT_ASSERT(llvmTbaaAggTypeDescriptor);
     llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   } else if (!ct || hasFlag(FLAG_STAR_TUPLE) ||
              isClass(type) || hasEitherFlag(FLAG_REF,FLAG_WIDE_REF) ||
@@ -1052,33 +1004,83 @@ void TypeSymbol::codegenMetadata() {
     llvmTbaaTypeDescriptor =
       info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
   } else if (isRecord(type)) {
-    if (ct == dtLocaleID) {
-      // Report this as if it were a scalar type because it is a runtime type.
-      // Change this if the locale ID can contain other than 32-bit integers.
-      Type *parentType = dtInt[INT_SIZE_32];
-      parent = parentType->symbol->llvmTbaaTypeDescriptor;
-      llvmTbaaTypeDescriptor =
-        info->mdBuilder->createTBAAScalarTypeNode(cname, parent);
-    } else {
-      codegenAggMetadata();
-      if (llvmTbaaAggTypeDescriptor)
-        llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
-    }
+    codegenAggMetadata();
+    if (llvmTbaaAggTypeDescriptor)
+      llvmTbaaTypeDescriptor = llvmTbaaAggTypeDescriptor;
   }
-  INT_ASSERT(llvmTbaaTypeDescriptor &&
-             llvmTbaaTypeDescriptor != info->tbaaRootNode);
-  // Create tbaa access tags, one for const and one for not.
-  // The createTBAAStructTagNode() method works for both scalars
-  // and aggregates, referencing the whole object.
-  llvmTbaaAccessTag =
-    info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                             llvmTbaaTypeDescriptor,
-                                             /*Offset=*/0);
-  llvmConstTbaaAccessTag =
-    info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
-                                             llvmTbaaTypeDescriptor,
-                                             /*Offset=*/0,
-                                             /*IsConstant=*/true);
+  if (llvmTbaaTypeDescriptor && llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+    // Create tbaa access tags, one for const and one for not.
+    // The createTBAAStructTagNode() method works for both scalars
+    // and aggregates, referencing the whole object.
+    llvmTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0);
+    llvmConstTbaaAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaTypeDescriptor,
+                                               llvmTbaaTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
+  }
+#endif
+}
+
+void TypeSymbol::codegenCplxMetadata() {
+#ifdef HAVE_LLVM
+  // At present, complex types are not records, so we have to
+  // build their struct type descriptors and tbaa.struct access tags
+  // manually, using knowledge of the contents of complex types.
+  GenInfo* info = gGenInfo;
+  llvm::LLVMContext& ctx = info->module->getContext();
+  const llvm::DataLayout& dl = info->module->getDataLayout();
+
+  INT_ASSERT(type == dtComplex[COMPLEX_SIZE_64] ||
+             type == dtComplex[COMPLEX_SIZE_128]);
+
+  TypeSymbol *re, *im;
+  if (type == dtComplex[COMPLEX_SIZE_64]) {
+    re = dtReal[FLOAT_SIZE_32]->symbol;
+    im = dtImag[FLOAT_SIZE_32]->symbol;
+  } else {
+    re = dtReal[FLOAT_SIZE_64]->symbol;
+    im = dtImag[FLOAT_SIZE_64]->symbol;
+  }
+  re->codegenMetadata();
+  im->codegenMetadata();
+
+  uint64_t fieldSize = dl.getTypeStoreSize(re->llvmType);
+  llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+  llvm::ConstantAsMetadata *zero =
+    info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty, 0));
+  llvm::ConstantAsMetadata *fsz =
+    info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty,
+                                                             fieldSize));
+
+  llvm::Metadata *TypeOps[5];
+  TypeOps[0] = llvm::MDString::get(ctx,cname);
+  TypeOps[1] = re->llvmTbaaTypeDescriptor;
+  TypeOps[2] = zero;  // offset
+  TypeOps[3] = im->llvmTbaaTypeDescriptor;
+  TypeOps[4] = fsz;   // offset
+  llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
+
+  llvm::Metadata *CopyOps[6];
+  CopyOps[0] = zero;  // offset
+  CopyOps[1] = fsz;   // size
+  CopyOps[2] = re->llvmTbaaAccessTag;
+  CopyOps[3] = fsz;   // offset
+  CopyOps[4] = fsz;   // size
+  CopyOps[5] = im->llvmTbaaAccessTag;
+  llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
+
+  llvm::Metadata *ConstCopyOps[6];
+  ConstCopyOps[0] = zero;  // offset
+  ConstCopyOps[1] = fsz;   // size
+  ConstCopyOps[2] = re->llvmConstTbaaAccessTag;
+  ConstCopyOps[3] = fsz;   // offset
+  ConstCopyOps[4] = fsz;   // size
+  ConstCopyOps[5] = im->llvmConstTbaaAccessTag;
+  llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
 #endif
 }
 
@@ -1086,6 +1088,7 @@ void TypeSymbol::codegenAggMetadata() {
 #ifdef HAVE_LLVM
   GenInfo* info = gGenInfo;
   llvm::LLVMContext& ctx = info->module->getContext();
+  const llvm::DataLayout& dl = info->module->getDataLayout();
   AggregateType *ct = toAggregateType(type);
   INT_ASSERT(ct);
 
@@ -1102,7 +1105,6 @@ void TypeSymbol::codegenAggMetadata() {
   INT_ASSERT(struct_type_ty);
   struct_type = llvm::dyn_cast<llvm::StructType>(struct_type_ty);
   INT_ASSERT(struct_type);
-  llvm::DataLayout dl = info->module->getDataLayout();
 
   TypeOps.push_back(llvm::MDString::get(ctx, struct_name));
 
@@ -1164,7 +1166,7 @@ void TypeSymbol::codegenAggMetadata() {
       }
     }
   }
-  if (TypeOps.size() > 0) {
+  if (CopyOps.size() > 0) {
     llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
     llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);

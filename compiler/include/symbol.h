@@ -466,6 +466,8 @@ class TypeSymbol : public Symbol {
   // This function is used to code generate the LLVM TBAA metadata
   // after all of the types have been defined.
   void codegenMetadata();
+  // TBAA metadata for complex types
+  void codegenCplxMetadata();
   // TBAA metadata for aggregates
   void codegenAggMetadata();
 
