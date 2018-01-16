@@ -1390,9 +1390,10 @@ static IntentTag getIntent(ArgSymbol* formal) {
   IntentTag retval = formal->intent;
 
   if (retval == INTENT_BLANK || retval == INTENT_CONST) {
-    if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+    // Why did we previously exclude iterator records?
+    //if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
       retval = concreteIntentForArg(formal);
-    }
+    //}
   }
 
   return retval;
@@ -1850,6 +1851,9 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   BlockStmt*  loop       = NULL;
   BlockStmt*  loopBody   = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
   CallExpr*   toLeader   = NULL;
+
+  // Leader iterators always return by value
+  liFn->retTag = RET_VALUE;
 
   INT_ASSERT(liFn->hasFlag(FLAG_RESOLVED) == false);
 

@@ -237,4 +237,6 @@ bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);
 
+SymExpr* findSourceOfYield(CallExpr* yield);
+
 #endif

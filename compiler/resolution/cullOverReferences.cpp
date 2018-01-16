@@ -1983,7 +1983,6 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
       if (requiresImplicitDestroy(useCall)) {
         if (isUserDefinedRecord(useFn->retType) == false) {
-          tmp->addFlag(FLAG_INSERT_AUTO_COPY);
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else {
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
