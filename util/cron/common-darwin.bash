@@ -9,3 +9,7 @@ export CHPL_UTIL_SMTP_HOST=relaya
 #             known to be needed on a Macbook when connected over VPN
 export GASNET_MASTERIP=127.0.0.1
 export GASNET_WORKERIP=127.0.0.0
+
+# We run darwin testing heavily oversubscribed, so limit the number of Chapel
+# executables that run concurrently to avoid timeouts.
+export CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes
