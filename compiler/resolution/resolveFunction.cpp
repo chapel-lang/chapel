@@ -980,7 +980,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     fn->retType = retType;
 
     if (retType->symbol->hasFlag(FLAG_GENERIC)) {
-      USR_FATAL(fn, "returning a generic type is not supported");
+      USR_FATAL_CONT(fn, "returning a generic type is not supported");
     }
 
   } else {
