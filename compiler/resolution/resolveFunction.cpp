@@ -937,6 +937,10 @@ void resolveReturnType(FnSymbol* fn) {
     }
 
     fn->retType = retType;
+
+    if (retType->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL(fn, "returning a generic type is not supported");
+    }
   }
 
 }
