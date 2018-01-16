@@ -178,8 +178,59 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
   return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
 
+//vass reorganize
+#include "ForallStmt.h"
+static bool isForallIterableCallee(SymExpr* se) {
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+    if (se == call->baseExpr)
+      if (ForallStmt* pfs = toForallStmt(call->parentExpr))
+        if (pfs->isIteratedExpression(call))
+          return true;
+  return false;
+}
+
+// wass:  isTransformableParallelIterator()
+/*
+If the only uses of the parallel iterator are as the iterable expression
+in ForallStmts, it will be inlined.
+Its return value, which is an iterator record, is irrelevant.
+The return-by-ref transformation adds clutter, so skip it in this case.
+
+Otherwise, there should not be any uses as the iterable expression,
+because the iterable expression does not get transformed correspondingly
+and there will be an actuals-formals mismatch.
+*/
+static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
+  bool inForallStmt = false;
+  bool otherUse     = false;
+
+  for_SymbolSymExprs(use, fn) {
+    if (isForallIterableCallee(use))
+      inForallStmt = true;
+    else
+      otherUse = true;
+  }
+
+  if (inForallStmt && otherUse)
+    // To support this case, we could clone 'fn' and call it
+    // in "inForallStmt" cases. The other uses would continue
+    // calling the original. That way things would work by applying
+    // the return-by-ref transformation to one and not the other.
+    // For now, this case is not handled.
+    INT_FATAL(fn, "mixed uses are not handled");
+
+  // vass - I expect this during the yesLI+noLI situation.
+  INT_ASSERT(otherUse ==
+             (fn->getModule()->modTag != MOD_USER));
+
+  // Transform only if we got non-ForallStmt uses.
+  return otherUse ? false : true;
+}  
+
 bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 {
+extern int breakOnResolveID; //wass
+if (fn->id == breakOnResolveID) gdbShouldBreakHere(); //wass
   bool retval = false;
 
   if (AggregateType* type = toAggregateType(fn->retType))
@@ -215,6 +266,10 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
     if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
       retval = true;
   }
+
+  if (retval && fn->hasFlag(FLAG_INLINE_ITERATOR) &&
+      doNotTransformTheParallelIterator(fn))
+    retval = false;
 
   return retval;
 }
@@ -507,6 +562,8 @@ void ReturnByRef::transform()
   for (size_t i = 0; i < mCalls.size(); i++)
   {
     CallExpr* call   = mCalls[i];
+extern int breakOnResolveID; //wass
+if (call->id == breakOnResolveID) gdbShouldBreakHere(); //wass
     Expr*     parent = call->parentExpr;
 
     if (CallExpr* parentCall = toCallExpr(parent))

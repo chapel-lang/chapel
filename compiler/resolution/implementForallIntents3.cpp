@@ -183,7 +183,7 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
 {
   // There is only one idx var because all zippering has been lowered away.
   VarSymbol* origIdxVar = EV->forall->singleInductionVar();
-  INT_ASSERT(map.get(origIdxVar) == NULL); //wass remove at end
+  INT_ASSERT(origIdxVar && map.get(origIdxVar) == NULL); //wass remove at end
 
   // copy() also performs map.put(origIdxVar, cloneIdxVar).
   VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
@@ -203,7 +203,8 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
          EV->forall->id);
   if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
 
-  // 
+  // Todo: update EV->svar2clonevar in-place, then reset to NULL.
+  // To avoid map creation+destruction.
 
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
@@ -436,14 +437,17 @@ static void setupOuterMap(ExpandVisitor* outerVis,
 /////////// main driver ///////////
 
 //wass
-static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis) {
-  printf("{ lowerOneForallStmt fs=%d  %s", fs->id, debugLoc(fs));
-  if (parentVis) printf("   parentVis=%d\n", parentVis->forall->id);
-  else           printf("   no parentVis\n");
+static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
+                     const char* msg, bool showParent) {
+  printf("%s lowerOneForallStmt fs=%d  %s", msg, fs->id, debugLoc(fs));
+  if (showParent) {
+    if (parentVis) printf("   parentVis=%d", parentVis->forall->id);
+    else           printf("   parentVis-");
+  }
 }
 
 static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
-  showLOFS(fs, parentVis);
+  showLOFS(fs, parentVis, "{", true);
   if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
 
   // If this fails, need to filter out those FSes.
@@ -478,6 +482,7 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
   setupOuterMap(&outerVis, iwrap, ibody);
+  map.put(fs->singleInductionVar(), NULL);
   outerVis.parentVis = parentVis;
   ibody->accept(&outerVis);
 
@@ -485,9 +490,7 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   // We could also do {iwrap,ibody}->flattenAndRemove().
 
 //wass
-  printf("} lowerOneForallStmt fs=%d  %s", fs->id, debugLoc(fs));
-  if (parentVis) printf("   parentVis=%d\n", parentVis->forall->id);
-  else           printf("   no parentVis\n");
+  showLOFS(fs, parentVis, "}", false);
 }
 
 ///////////
