@@ -1,0 +1,9 @@
+l3.chpl:12: In function 'bad_two_args':
+l3.chpl:13: error: Scoped variable cannot be returned
+l3.chpl:12: note: consider scope of x
+l3.chpl:17: In function 'bad_record_arg':
+l3.chpl:18: error: Scoped variable cannot be returned
+l3.chpl:17: note: consider scope of _formal_tmp_arg
+l3.chpl:27: In function 'bad_return_return_record_arg':
+l3.chpl:29: error: Scoped variable cannot be returned
+l3.chpl:28: note: consider scope of aa

@@ -571,6 +571,8 @@ static bool fits_in_uint(int width, Immediate* imm) {
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   Symbol* calledFn = formal->defPoint->parentSymbol;
+  if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
+    return true;
   if (SymExpr* se = toSymExpr(actual))
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
         ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
@@ -4148,6 +4150,9 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 ************************************** | *************************************/
 
 void lvalueCheck(CallExpr* call) {
+  if (call->id == 1131582)
+    gdbShouldBreakHere();
+
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
@@ -4165,7 +4170,7 @@ void lvalueCheck(CallExpr* call) {
      case INTENT_CONST_IN:
       // generally, not checking them here
       // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
-      if (formal->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+      if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
         if (!isLegalLvalueActualArg(formal, actual))
           errorMsg = true;
       break;
@@ -4173,7 +4178,8 @@ void lvalueCheck(CallExpr* call) {
      case INTENT_INOUT:
      case INTENT_OUT:
      case INTENT_REF:
-      if (!isLegalLvalueActualArg(formal, actual))
+      if (!formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
+        if (!isLegalLvalueActualArg(formal, actual))
         errorMsg = true;
       break;
 

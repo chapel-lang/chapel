@@ -1597,6 +1597,9 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
           }
         }
 
+        if (error && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
+          error = false;
+
         // TODO: check tuple const-ness:
         //   make analysis above more complete
         //   work with toSymExpr(actual)->symbol()->fieldQualifiers
