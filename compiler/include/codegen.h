@@ -100,6 +100,7 @@ struct GenInfo {
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;
+  llvm::MDNode* tbaaUnionsNode;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate

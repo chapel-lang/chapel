@@ -505,6 +505,7 @@ GenRet codegenImmediate(Immediate* i);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 #define is_arithmetic_type(t)                        \
         (is_int_type(t)        ||                    \

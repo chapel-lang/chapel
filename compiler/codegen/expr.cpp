@@ -114,8 +114,6 @@ static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
 
-#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
-
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *
@@ -448,19 +446,20 @@ static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
                                   Type* valType = NULL,
-                                  Type* baseType = NULL,
-                                  uint64_t offset = 0,
+                                  Type* surroundingStruct = NULL,
+                                  uint64_t fieldOffset = 0,
+                                  llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (baseType) {
+    if (surroundingStruct) {
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
-               baseType->symbol->llvmTbaaTypeDescriptor,
-               valType->symbol->llvmTbaaTypeDescriptor,
-               offset);
+               surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
+               fieldTbaaTypeDescriptor, fieldOffset);
     } else {
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
@@ -510,7 +509,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
   ptr.alreadyStored = true;
-  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.baseType, ptr.offset,
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
+                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
                           ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
@@ -518,19 +518,20 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 Type* valType = NULL,
-                                Type* baseType = NULL,
-                                uint64_t offset = 0,
+                                Type* surroundingStruct = NULL,
+                                uint64_t fieldOffset = 0,
+                                llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
   if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
-    if (baseType) {
+    if (surroundingStruct) {
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
-               baseType->symbol->llvmTbaaTypeDescriptor,
-               valType->symbol->llvmTbaaTypeDescriptor,
-               offset, isConst);
+               surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
+               fieldTbaaTypeDescriptor, fieldOffset, isConst);
     } else {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
       else tbaa = valType->symbol->llvmTbaaAccessTag;
@@ -557,7 +558,8 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
     else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, valType, ptr.baseType, ptr.offset, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.surroundingStruct,
+                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor, isConst);
 }
 
 #endif
@@ -1041,7 +1043,7 @@ GenRet codegenFieldPtr(
       INT_ASSERT(baseValue);
     }
 
-    AggregateType *cBaseType = toAggregateType(baseType);
+    AggregateType *cBaseType = castType ? toAggregateType(castType) : ct;
 
     // We need the LLVM type of the field we're getting
     INT_ASSERT(ret.chplType);
@@ -1049,8 +1051,8 @@ GenRet codegenFieldPtr(
 
     if( isUnion(ct) && !special ) {
       // Get a pointer to the union data then cast it to the right type
-      ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-          NULL, baseValue, 0, cBaseType->getMemberGEP("_u"));
+      ret.val = info->irBuilder->CreateStructGEP(
+          NULL, baseValue, cBaseType->getMemberGEP("_u"));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1060,16 +1062,18 @@ GenRet codegenFieldPtr(
     } else {
       // Normally, we just use a GEP.
       int fieldno = cBaseType->getMemberGEP(c_field_name);
-      ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
-          NULL, baseValue, 0, fieldno);
-      if (!isUnion(ct)) {
-        llvm::StructType *structBaseType =
-          llvm::dyn_cast<llvm::StructType>(baseValue->getType());
-        if (structBaseType) {
-          ret.baseType = castType ? castType : baseType;
-          ret.offset = info->module->getDataLayout().
-            getStructLayout(structBaseType)->getElementOffset(fieldno);
-        }
+      ret.val = info->irBuilder->CreateStructGEP(NULL, baseValue, fieldno);
+      if ((isClass(ct) || isRecord(ct)) &&
+          cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
+          ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
+        llvm::StructType *structType = llvm::cast<llvm::StructType>
+          (llvm::cast<llvm::PointerType>
+           (baseValue->getType())->getElementType());
+        ret.surroundingStruct = cBaseType;
+        ret.fieldOffset = info->module->getDataLayout().
+          getStructLayout(structType)->getElementOffset(fieldno);
+        ret.fieldTbaaTypeDescriptor =
+          ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
     }
 #endif
@@ -2793,18 +2797,16 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
     //  a cast to i8 (in address space 0).
     llvm::CallInst* CI = info->irBuilder->CreateCall(func, llArgs);
 
-    llvm::MDNode* tbaaTag = NULL;
     llvm::MDNode* tbaaStructTag = NULL;
     if( pointedToType ) {
-      tbaaTag = pointedToType->symbol->llvmTbaaAccessTag;
       tbaaStructTag = pointedToType->symbol->llvmTbaaStructCopyNode;
     }
-    // For structures, ONLY set the tbaa.struct metadata, since
-    // generally speaking simple tbaa tags don't make sense for structs.
+    // LLVM's memcpy only supports tbaa.struct metadata, not scalar tbaa.
+    // The reason is that LLVM is only looking for holes in structs here,
+    // not aliasing.  Clang also puts only tbaa.struct on memcpy calls.
+    // Adding scalar tbaa metadata here causes incorrect code to be generated.
     if( tbaaStructTag )
       CI->setMetadata(llvm::LLVMContext::MD_tbaa_struct, tbaaStructTag);
-    else if( tbaaTag )
-      CI->setMetadata(llvm::LLVMContext::MD_tbaa, tbaaTag);
 #endif
   }
 }
