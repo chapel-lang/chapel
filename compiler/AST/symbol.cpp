@@ -504,6 +504,19 @@ VarSymbol::VarSymbol(const char *init_name,
   }
 }
 
+VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
+  LcnSymbol(E_VarSymbol, init_name, qType.type()),
+  immediate(NULL),
+  doc(NULL),
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
+{
+  gVarSymbols.add(this);
+
+  this->qual = qType.getQual();
+}
+
 VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
   LcnSymbol(astTag, initName, initType),
   immediate(NULL),
@@ -796,7 +809,7 @@ static void isConstValWillNotChangeHelp(IntentTag intent,
   }
 
   return; // dummy
-}  
+}
 
 bool ArgSymbol::isConstValWillNotChange() {
   if (hasFlag(FLAG_REF_TO_IMMUTABLE))
@@ -1051,6 +1064,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmType(NULL),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)

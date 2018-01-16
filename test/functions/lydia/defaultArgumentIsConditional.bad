@@ -1,0 +1,2 @@
+defaultArgumentIsConditional.chpl:1: In function 'someFunc':
+defaultArgumentIsConditional.chpl:2: error: unresolved call '_if_fn126()'

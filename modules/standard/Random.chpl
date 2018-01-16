@@ -805,6 +805,7 @@ module Random {
          :return: an iterable expression yielding random `resultType` values
 
        */
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=eltType) {
         if parSafe then
           PCGRandomStreamPrivate_lock$ = true;
@@ -818,6 +819,7 @@ module Random {
 
       // Forward the leader iterator as well.
       pragma "no doc"
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=real, param tag)
         where tag == iterKind.leader
       {
@@ -2197,6 +2199,7 @@ module Random {
          :return: an iterable expression yielding random `resultType` values
 
        */
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=real) {
         if parSafe then
           NPBRandomStreamPrivate_lock$ = true;
@@ -2210,6 +2213,7 @@ module Random {
 
       // Forward the leader iterator as well.
       pragma "no doc"
+      pragma "fn returns iterator"
       proc iterate(D: domain, type resultType=real, param tag)
         where tag == iterKind.leader
       {

@@ -1,2 +1,0 @@
-typeAlias.chpl:14: error: unresolved call '_new(type Generic(string), "hello")'
-(prediff deleted module lines)

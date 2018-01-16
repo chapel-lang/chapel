@@ -44,7 +44,6 @@ void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
                                                    int numExtraArgs,
                                                    Symbol* extraFormals[]);
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
-void       checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn);
 FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
 ArgSymbol* newExtraFormal(ShadowVarSymbol* svar, int ix, Symbol* eActual,
                           bool nested);

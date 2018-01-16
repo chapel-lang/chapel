@@ -112,11 +112,11 @@ enum MemUnits {Bytes, KB, MB, GB};
   :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  extern proc chpl_bytesPerLocale(): uint(64);
+  extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 
   var bytesInLocale: uint(64);
 
-  on this do bytesInLocale = chpl_bytesPerLocale();
+  on this do bytesInLocale = chpl_sys_physicalMemoryBytes();
 
   var retVal: retType;
   select (unit) {

@@ -1640,8 +1640,23 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
   if(!info->cfile) {
     // Codegen any type annotations that are necessary.
+    // Start with primitive types in case they are referenced by
+    // records or classes.
+    forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
+      if (typeSymbol->defPoint->parentExpr == rootModule->block &&
+          isPrimitiveType(typeSymbol->type) &&
+          typeSymbol->llvmType) {
+        typeSymbol->codegenMetadata();
+      }
+    }
     forv_Vec(TypeSymbol, typeSymbol, types) {
       typeSymbol->codegenMetadata();
+    }
+    // Aggregate annotations for class objects must wait until all other
+    // type annotations are defined, because there might be cycles.
+    forv_Vec(TypeSymbol, typeSymbol, types) {
+      if (isClass(typeSymbol->type))
+        typeSymbol->codegenAggMetadata();
     }
   }
 
@@ -2273,6 +2288,7 @@ GenInfo::GenInfo()
              loopStack(),
              llvmContext(),
              tbaaRootNode(NULL),
+             tbaaUnionsNode(NULL),
              globalToWideInfo(),
              FPM_postgen(NULL),
              clangInfo(NULL)

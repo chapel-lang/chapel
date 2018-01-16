@@ -411,7 +411,7 @@ pragma "no doc"
 proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
 
   if CHPL_REGEXP == "none" {
-    compilerError("Regular expression support not compiled in");
+    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
   }
 
   var err: syserr;

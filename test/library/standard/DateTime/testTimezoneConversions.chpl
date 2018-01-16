@@ -16,11 +16,12 @@ class USTimeZone: TZInfo {
   var reprname: string;
   var stdname: string;
   var dstname: string;
-  proc USTimeZone(hours, reprname, stdname, dstname) {
+  proc init(hours, reprname, stdname, dstname) {
     this.stdoffset = new timedelta(hours=hours);
     this.reprname = reprname;
     this.stdname = stdname;
     this.dstname = dstname;
+    super.init();
   }
 
   proc __repr__() {
@@ -78,10 +79,11 @@ class FixedOffset: TZInfo {
   var offset: timedelta;
   var name: string;
   var dstoffset: timedelta;
-  proc FixedOffset(offset: int, name, dstoffset:int=42) {
+  proc init(offset: int, name, dstoffset:int=42) {
     this.offset = new timedelta(minutes=offset);
     this.name = name;
     this.dstoffset = new timedelta(minutes=dstoffset);
+    super.init();
   }
 
   proc utcoffset(dt: datetime) {
@@ -310,9 +312,13 @@ proc test_fromutc() {
     proc fromutc(dt: datetime) {
       return dt + stdoffset;
     }
+
+    proc init(hours, reprname, stdname, dstname) {
+      super.init(hours, reprname, stdname, dstname);
+    }
   }
 
-  var FEastern  = new Shared(new FauxUSTimeZone(new timedelta(hours=-5), "FEastern",  "FEST", "FEDT"): TZInfo);
+  var FEastern  = new Shared(new FauxUSTimeZone(-5, "FEastern",  "FEST", "FEDT"): TZInfo);
   var FEasternRef = FEastern.borrow(): USTimeZone;
 
   //  UTC  4:MM  5:MM  6:MM  7:MM  8:MM  9:MM

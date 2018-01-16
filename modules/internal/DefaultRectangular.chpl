@@ -597,6 +597,19 @@ module DefaultRectangular {
                                       stridable=stridable, dom=this);
     }
 
+    proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
+
+      var allocRange:range(idxType) = (ranges(1).low)..#allocSize;
+      return new DefaultRectangularArr(eltType=eltType,
+                                       rank=rank,
+                                       idxType=idxType,
+                                       stridable=stridable,
+                                       dom=this,
+                                       data=data,
+                                       dataAllocRange=allocRange);
+    }
+
+
     proc dsiLocalSlice(ranges) {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
@@ -882,11 +895,12 @@ module DefaultRectangular {
     var factoredOffs: idxType;
 
     pragma "local field"
-    var data : _ddata(eltType);
+    var data : _ddata(eltType) = nil;
 
     pragma "local field"
     var shiftedData : _ddata(eltType);
 
+    // note: used by pychapel
     var noinit_data: bool = false;
 
     // 'dataAllocRange' is used by the array-vector operations (e.g. push_back,
@@ -1047,13 +1061,16 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
-      if !localeModelHasSublocales {
-        data = _ddata_allocate(eltType, size);
-      } else {
-        data = _ddata_allocate(eltType, size,
-                               subloc = (if here.getChildCount() > 1
-                                         then c_sublocid_all
-                                         else c_sublocid_none));
+      // Allow DR array construction to pass in existing data
+      if data == nil {
+        if !localeModelHasSublocales {
+          data = _ddata_allocate(eltType, size);
+        } else {
+          data = _ddata_allocate(eltType, size,
+                                 subloc = (if here.getChildCount() > 1
+                                           then c_sublocid_all
+                                           else c_sublocid_none));
+        }
       }
 
       initShiftedData();

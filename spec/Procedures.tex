@@ -335,7 +335,10 @@ assignment operator and a default expression to the declaration of the
 formal argument.  If the actual argument is omitted from the function
 call, the default expression is evaluated when the function call is
 made and the evaluated result is passed to the formal argument as if
-it were passed from the call site.
+it were passed from the call site. Note though that the default value
+is evaluated in the same scope as the called function. Default value
+expressions can refer to previous formal arguments or to variables
+that are visible to the scope of the function definition.
 
 \begin{chapelexample}{default-values.chpl}
 The code
