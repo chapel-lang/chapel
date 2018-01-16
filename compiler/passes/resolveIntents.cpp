@@ -43,7 +43,8 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
-      t->symbol->hasFlag(FLAG_EXTERN)) {
+      // MPF: This rule seems odd to me
+      (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
 
   } else if (isSyncType(t)          ||
