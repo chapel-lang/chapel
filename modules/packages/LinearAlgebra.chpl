@@ -932,18 +932,23 @@ proc trace(A: [?D] ?eltType) {
    matrix will be ``(x * a) * (y * b)`` */
 proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   if ADom.rank != 2 || BDom.rank != 2 then compilerError("Rank size not 2");
+
   const (rowA, colA) = A.shape;
   const (rowB, colB) = B.shape;
+
+  const AzDom = {0..#rowA, 0..#colA},
+        BzDom = {0..#rowB, 0..#colB};
+
+  ref Az = A.reindex(AzDom),
+      Bz = B.reindex(BzDom);
+
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
-  forall i in 0..#rowA {
-    for j in 0..#colA {
-      var stR = i*rowB;
-      var stC = j*colB;
-      for k in 0..rowB-1 {
-        for l in 0..colB-1 {
-          C[stR+k, stC+l] = A[i, j]*B[k, l];
-        }
-      }
+
+  forall (i, j) in AzDom {
+    const stR = i*rowB,
+          stC = j*colB;
+    for (k, l) in BzDom {
+      C[stR+k, stC+l] = Az[i, j]*Bz[k, l];
     }
   }
   return C;
