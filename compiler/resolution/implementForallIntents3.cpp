@@ -1,6 +1,7 @@
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 #include "implementForallIntents.h"
+#include "view.h" //wass
 
 /////////// forwards ///////////
 
@@ -8,6 +9,7 @@ class ExpandVisitor;
 static void expandYield( ExpandVisitor* EV, CallExpr* yield);
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
+static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis = NULL);
 
 
 /////////// ExpandVisitor visitor ///////////
@@ -15,10 +17,11 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
 class ExpandVisitor : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
-  FnSymbol* const parIter; // vass needed?
+  FnSymbol* const parIter; // wass needed?
   SymbolMap& svar2clonevar;
   TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
-  bool breakOnYield; // vass for debugging
+  ExpandVisitor* parentVis;
+  bool breakOnYield; // wass for debugging
 
   ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
                 SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
@@ -52,6 +55,7 @@ ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
   parIter(parIterFn),
   svar2clonevar(map),
   taskFnCopies(taskFnCps),
+  parentVis(NULL),
   breakOnYield(false)
 {
 }
@@ -63,6 +67,7 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
   parIter(parentEV->parIter),
   svar2clonevar(map),
   taskFnCopies(parentEV->taskFnCopies),
+  parentVis(NULL),
   breakOnYield(false)
 {
 }
@@ -170,56 +175,68 @@ static void insertInitialization(Symbol* dest, Type* valType,
 
 /////////// expandYield ///////////
 
+// Clone and return the index variable for use in the cloned body.
+// Wass after the body is simplified, can inline it back into expandYield.
+//
+static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
+                                   SymbolMap& map)
+{
+  // There is only one idx var because all zippering has been lowered away.
+  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
+  INT_ASSERT(map.get(origIdxVar) == NULL); //wass remove at end
+
+  // copy() also performs map.put(origIdxVar, cloneIdxVar).
+  VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
+  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //wass remove at end
+  // wass confirming: this does not affect EV->svar2clonevar
+
+  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
+
+  return cloneIdxVar;
+}
+
 // Replace 'yield' with a clone of the forall loop body.
-// Recurse into the cloned body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
-  if (EV->breakOnYield) gdbShouldBreakHere(); 
+//wass
+  printf("    expandYield %d %s   fs=%d\n", yieldCall->id, debugLoc(yieldCall),
+         EV->forall->id);
+  if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
+
+  // 
 
   // This is svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
   map.copy(EV->svar2clonevar);
 
-  // Clone the index variable for use in the cloned body.
-  // There is only one idx var because all zippering has been lowered away.
-  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
-  INT_ASSERT(map.get(origIdxVar) == NULL); //wass remove at end
-  VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
-  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //wass remove at end
-  // wass confirming: this does not affect EV->svar2clonevar
-  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
+  // Adds (original idxVar -> cloneIdxVar) to 'map':
+  VarSymbol* cloneIdxVar = setupCloneIdxVar(EV, yieldCall, map);
 
-  // Todo should insertInitialization() handle both cases?
   Expr* yieldExpr = yieldCall->get(1)->remove();
-#if 1 //wass
-  // vass with MF's 8073, this should be just a move, right?
-    yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
-#else
-  if (cloneIdxVar->isRef())
-    yieldCall->insertBefore(new CallExpr(PRIM_SET_REFERENCE,
-                                         cloneIdxVar, yieldExpr));
-  else
-    insertInitialization(cloneIdxVar, cloneIdxVar->type, yieldExpr, yieldCall);
-#endif
-
-/* wass remove me:
-Move the yielded value to a clone of the index variable.
-Also need to map the index variable to the yield value.
-  SymExpr* yieldSE = toSymExpr(yieldCall->get(1));
-  INT_ASSERT(yieldSE != NULL); // need more work otherwise
-  // There should not be any zippering.
-
-  map.put(idxVar, yieldSE->symbol());
-*/
+  yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
 
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
   yieldCall->replace(bodyClone);
 
-  // A yield stmt does not create any parallelism, so use the same visitor.
-  bool breakOnYieldPrev = EV->breakOnYield;
-  EV->breakOnYield = true;
-  bodyClone->accept(EV);
-  EV->breakOnYield = breakOnYieldPrev;
+#if 1 //wass
+  // Note that we are not descending into 'bodyClone'.  The only thing
+  // that needs to be done there is to lower its ForallStmts, if any.
+  // That will be done when lowerForallStmtsInline() gets to them.
+  // They are guaranteed to come later because we just created them
+  // when doing loopBody->copy().
+#else
+// Recurse into the cloned body.
+  if (ExpandVisitor* parentVis = EV->parentVis) {
+    //vass update mappings
+    bodyClone->accept(parentVis);
+  } else {
+    // A yield stmt does not create any parallelism, so use the same visitor.
+    bool breakOnYieldPrev = EV->breakOnYield;
+    EV->breakOnYield = true;
+    bodyClone->accept(EV);
+    EV->breakOnYield = breakOnYieldPrev;
+  }
+#endif
 }
 
 
@@ -282,6 +299,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
   if (expandClone) {
     ExpandVisitor taskFnVis(EV, map);
+    taskFnVis.parentVis = EV->parentVis;
     cloneTaskFn->body->accept(&taskFnVis);
 
     flattenNestedFunction(cloneTaskFn);
@@ -295,6 +313,13 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 // Todo implement this when the startup/teardown feature comes in.
 static bool inTaskStartupTeardownCode(ForallStmt* fs) { return false; }
 
+/*
+Upon a forall within an iterator, we need:
+ - extend its intents
+ - extend its startup/teardown blocks
+ - add the mapping for EV's variables to the newly-created shadow variables
+ - figure out how to expand its yield
+*/
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
   if (ForallStmt* efs = enclosingForallStmt(EV->forall))
@@ -302,7 +327,9 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
     // we need to handle their intents as well. Currently we don't.
     // It is OK for a FS to be in task startup/teardown code.
     INT_ASSERT(inTaskStartupTeardownCode(efs));
-  
+
+  gdbShouldBreakHere(); //vass
+  lowerOneForallStmt(fs, EV);
 }
 
 
@@ -408,46 +435,67 @@ static void setupOuterMap(ExpandVisitor* outerVis,
 
 /////////// main driver ///////////
 
+//wass
+static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis) {
+  printf("{ lowerOneForallStmt fs=%d  %s", fs->id, debugLoc(fs));
+  if (parentVis) printf("   parentVis=%d\n", parentVis->forall->id);
+  else           printf("   no parentVis\n");
+}
+
+static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
+  showLOFS(fs, parentVis);
+  if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
+
+  // If this fails, need to filter out those FSes.
+  // We lower and remove each FS from the tree *after* we see it here.
+  // Except when the iterator being inlined itself has a FS.
+  INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
+
+  // We convert zippering, if any, to a follower loop during resolution.
+  INT_ASSERT(fs->numIteratedExprs() == 1);
+  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
+
+  FnSymbol* parIterFn = parIterCall->resolvedFunction();
+  // Make sure it is a parallel iterator.
+  INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
+  // We don't know yet what to do with these.
+  INT_ASSERT(!parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR));
+
+  // Place to put pre- and post- code.
+  SET_LINENO(fs); // wass what should it be?
+  CallExpr*  ianch = new CallExpr("anchor");
+  BlockStmt* iwrap = new BlockStmt(ianch);
+
+  // Clone the iterator body.
+  // Cf. expandIteratorInline() and inlineCall().
+  BlockStmt* ibody = copyParIterBody(parIterFn, parIterCall, ianch);
+
+  // Let us remove 'fs' later, for debugging convenience.
+  fs->insertAfter(iwrap);
+  ianch->replace(ibody);
+
+  TaskFnCopyMap   taskFnCopies;
+  SymbolMap       map;
+  ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
+  setupOuterMap(&outerVis, iwrap, ibody);
+  outerVis.parentVis = parentVis;
+  ibody->accept(&outerVis);
+
+  fs->remove();
+  // We could also do {iwrap,ibody}->flattenAndRemove().
+
+//wass
+  printf("} lowerOneForallStmt fs=%d  %s", fs->id, debugLoc(fs));
+  if (parentVis) printf("   parentVis=%d\n", parentVis->forall->id);
+  else           printf("   no parentVis\n");
+}
+
+///////////
+
 static void lowerForallStmtsInline() {
   forv_Vec(ForallStmt, fs, gForallStmts)
   {
-    if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
-
-    // If this fails, need to filter out those FSes.
-    // We lower and remove each FS from the tree *after* we see it here.
-    INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
-
-    // We convert zippering, if any, to a follower loop during resolution.
-    INT_ASSERT(fs->numIteratedExprs() == 1);
-    CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
-    
-    FnSymbol* parIterFn = parIterCall->resolvedFunction();
-    // Make sure it is a parallel iterator.
-    INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
-    // We don't know yet what to do with these.
-    INT_ASSERT(!parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR));
-
-    // Place to put pre- and post- code.
-    SET_LINENO(fs); // vass what should it be?
-    CallExpr*  ianch = new CallExpr("anchor");
-    BlockStmt* iwrap = new BlockStmt(ianch);
-
-    // Clone the iterator body.
-    // Cf. expandIteratorInline() and inlineCall().
-    BlockStmt* ibody = copyParIterBody(parIterFn, parIterCall, ianch);
-    
-    // Let us remove 'fs' later, for debugging convenience.
-    fs->insertAfter(iwrap);
-    ianch->replace(ibody);
-
-    TaskFnCopyMap   taskFnCopies;
-    SymbolMap       map;
-    ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
-    setupOuterMap(&outerVis, iwrap, ibody);
-    ibody->accept(&outerVis);
-
-    fs->remove();
-    // We could also do {iwrap,ibody}->flattenAndRemove().
+    lowerOneForallStmt(fs);
   }
 
   //vass todo remove parallel iterators themselves
