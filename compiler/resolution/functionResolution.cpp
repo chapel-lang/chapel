@@ -3043,6 +3043,7 @@ static bool populateForwardingMethods(CallInfo& info) {
       fn->addFlag(FLAG_INLINE);
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
+      fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
       // see below, after arguments added, for adjustment to FLAG_GENERIC
 
