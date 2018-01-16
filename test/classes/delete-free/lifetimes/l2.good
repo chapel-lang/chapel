@@ -1,0 +1,14 @@
+l2.chpl:38: In function 'bad1':
+l2.chpl:41: error: Scoped variable would outlive the value it is set to
+l2.chpl:39: note: consider scope of r
+l2.chpl:46: In function 'bad2':
+l2.chpl:51: error: Scoped variable would outlive the value it is set to
+l2.chpl:49: note: consider scope of r
+l2.chpl:58: In function 'bad3':
+l2.chpl:62: error: Scoped variable would outlive the value it is set to
+l2.chpl:59: note: consider scope of group
+l2.chpl:63: error: Scoped variable would outlive the value it is set to
+l2.chpl:59: note: consider scope of group
+l2.chpl:69: In function 'bad10':
+l2.chpl:75: error: Scoped variable cannot be returned
+l2.chpl:73: note: consider scope of r
