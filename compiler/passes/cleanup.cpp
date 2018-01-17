@@ -133,7 +133,7 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 
     ct->addDeclarations(def);
 
-  } else if (ArgSymbol* arg = toArgSymbol(def->parentSymbol)) {
+  } else if (isArgSymbol(def->parentSymbol)) {
     if (fn->hasFlag(FLAG_IF_EXPR_FN)) {
       USR_FATAL_CONT(fn,
                      "cannot use if expressions in an argument list currently");
