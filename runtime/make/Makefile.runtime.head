@@ -46,6 +46,13 @@ LAUNCHER_INCLS = \
         -I$(RUNTIME_ROOT)/include/comm \
         -I$(RUNTIME_ROOT)/include
 
+ifneq ($(MAKE_LAUNCHER),1)
+  ifeq ($(CHPL_MAKE_TARGET_MEM),jemalloc)
+    LAUNCHER_CFLAGS += -DCHPL_TARGET_MEM_JEMALLOC
+    LAUNCHER_INCLS += -I$(RUNTIME_ROOT)/include/mem/$(CHPL_MAKE_TARGET_MEM)
+  endif
+endif
+
 # Get runtime headers and required -D flags.
 # sets RUNTIME_INCLUDE_ROOT RUNTIME_CFLAGS RUNTIME_INCLS
 include $(RUNTIME_ROOT)/make/Makefile.runtime.include
