@@ -242,25 +242,11 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   BlockStmt* bodyClone = EV->forall->loopBody()->copy(&map);
   yieldCall->replace(bodyClone);
 
-#if 1 //wass
   // Note that we are not descending into 'bodyClone'.  The only thing
   // that needs to be done there is to lower its ForallStmts, if any.
   // That will be done when lowerForallStmtsInline() gets to them.
   // They are guaranteed to come later because we just created them
   // when doing loopBody->copy().
-#else
-// Recurse into the cloned body.
-  if (ExpandVisitor* parentVis = EV->parentVis) {
-    //vass update mappings
-    bodyClone->accept(parentVis);
-  } else {
-    // A yield stmt does not create any parallelism, so use the same visitor.
-    bool breakOnYieldPrev = EV->breakOnYield;
-    EV->breakOnYield = true;
-    bodyClone->accept(EV);
-    EV->breakOnYield = breakOnYieldPrev;
-  }
-#endif
 }
 
 
@@ -334,11 +320,6 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
 /////////// expandForall ///////////
 
-#if 0 //wass
-// Todo implement this when the startup/teardown feature comes in.
-static bool inTaskStartupTeardownCode(ForallStmt* fs) { return false; }
-#endif
-
 /*
 Upon a forall within an iterator, we need:
  - extend its intents with new svars
@@ -357,17 +338,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
   gdbShouldBreakHere();//wass
   fs->loopBody()->accept(EV);
-  
-#if 0 //wass - this is not the right way
-  if (ForallStmt* efs = enclosingForallStmt(EV->forall))
-    // If there are enclosing forall loop(s),
-    // we need to handle their intents as well. Currently we don't.
-    // It is OK for a FS to be in task startup/teardown code.
-    INT_ASSERT(inTaskStartupTeardownCode(efs));
 
-  gdbShouldBreakHere(); //vass
-  lowerOneForallStmt(fs, EV);
-#endif
   showLOFS(fs, EV, " } expandForall", false);
 }
 
