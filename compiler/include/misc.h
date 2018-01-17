@@ -25,6 +25,12 @@
 
 #define exit(x) dont_use_exit_use_clean_exit_instead
 
+#if defined(__GNUC__) && __GNUC__ >= 3
+#define chpl_noreturn __attribute__((__noreturn__))
+#else
+#define chpl_noreturn
+#endif
+
 // INT_FATAL(ast, format, ...)
 //   where ast         == BaseAST* or NULL
 //         format, ... == normal printf stuff
@@ -79,7 +85,7 @@ void        printCallStack(bool force, bool shortModule, FILE* out);
 void        startCatchingSignals();
 void        stopCatchingSignals();
 
-void        clean_exit(int status);
+void        clean_exit(int status) chpl_noreturn;
 
 void        printCallStack();
 void        printCallStackCalls();

@@ -244,7 +244,7 @@ static void computeHeapPageSizeByGuessing(size_t page_size_in)
   // in the heap.
   heapPageSize = page_size_in;
 
-  chpl_comm_get_registered_heap(&heap_start, &heap_size);
+  chpl_comm_regMemHeapInfo(&heap_start, &heap_size);
 
   if (heap_start != NULL && heap_size != 0) {
 
@@ -358,22 +358,32 @@ size_t chpl_getHeapPageSize(void) {
 }
 
 
-uint64_t chpl_bytesPerLocale(void) {
+// This function returns the amount of physical memory the
+// system reports there is. This amount of memory is not generally
+// allocatable, since there has to be space for the kernel. This routine
+// makes no attempt to account for kernel space.
+uint64_t chpl_sys_physicalMemoryBytes(void) {
 #ifdef NO_BYTES_PER_LOCALE
   chpl_internal_error("sorry- bytesPerLocale not supported on this platform");
   return 0;
 #elif defined __APPLE__
   uint64_t membytes;
   size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0)) 
+  if (sysctlbyname("hw.memsize", &membytes, &len, NULL, 0))
     chpl_internal_error("query of physical memory failed");
   return membytes;
 #elif defined _AIX
   return _system_configuration.physmem;
+#elif defined __FreeBSD__
+  uint64_t membytes;
+  size_t len = sizeof(membytes);
+  if (sysctlbyname("hw.physmem", &membytes, &len, NULL, 0))
+    chpl_internal_error("query of physical memory failed");
+  return membytes;
 #elif defined __NetBSD__
   uint64_t membytes;
   size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0))
+  if (sysctlbyname("hw.physmem64", &membytes, &len, NULL, 0))
     chpl_internal_error("query of physical memory failed");
   return membytes;
 #elif defined __CYGWIN__
@@ -389,6 +399,8 @@ uint64_t chpl_bytesPerLocale(void) {
   //
 #else
   long int numPages, pageSize;
+  // This code runs for linux, but probably works for FreeBSD/NetBSD.
+  //
   numPages = sysconf(_SC_PHYS_PAGES);
   if (numPages < 0)
     chpl_internal_error("query of physical memory failed");
@@ -399,23 +411,82 @@ uint64_t chpl_bytesPerLocale(void) {
 #endif
 }
 
+// Should return in some sense "currently available user memory"
+// This should return one of:
+//  * the amount of memory that can be allocated without causing swapping
+//  * the amount of memory that is currently unnused (i.e. free)
+uint64_t chpl_sys_availMemoryBytes(void) {
+#if defined(__APPLE__)
 
-size_t chpl_bytesAvailOnThisLocale(void) {
-#if defined __APPLE__
-  int membytes;
-  size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.usermem", &membytes, &len, NULL, 0)) 
-    chpl_internal_error("query of physical memory failed");
-  return (size_t) membytes;
-#elif defined __NetBSD__
-  int64_t membytes;
-  size_t len = sizeof(membytes);
-  if (sysctlbyname("hw.usermem64", &membytes, &len, NULL, 0))
-    chpl_internal_error("query of hw.usermem64 failed");
-  return (size_t) membytes;
+  // On Mac OS X, we could get this value by calling host_statistics64
+  // but that's not really documented.
+  //
+  // So, we run vm_stat, which calls host_statistics, but
+  // which hopefully has a more stable interface.
+  //
+  // We used to use sysctlbyname("hw.usermem", &membytes, &len, NULL, 0)
+  // but that led to nonsense values being returned on some systems, anyway.
+
+  uint64_t pageSize = chpl_getSysPageSize();
+  FILE* f = popen("vm_stat", "r");
+  char buffer[256];
+  unsigned long pagesFree = 0;
+  int foundPagesFree = 0;
+
+  if (!f)
+    chpl_internal_error("could not run vm_stat in chpl_sys_availMemoryBytes");
+
+  while( fgets(buffer, sizeof(buffer), f) ) {
+    if (1 == sscanf(buffer, "Pages free: %lu", &pagesFree)) {
+      foundPagesFree = 1;
+    }
+  }
+
+  pclose(f);
+
+  if (!foundPagesFree)
+    chpl_internal_error("could not find Pages free vm_stat output "
+                        "in chpl_sys_availMemoryBytes");
+
+  return pageSize * pagesFree;
+
+#elif defined(__NetBSD__) || defined(__FreeBSD__)
+  // This used to run
+  //   sysctlbyname("hw.usermem64", &membytes, &len, NULL, 0)
+  // which returns the amount of non-kernel memory.
+  // It now gathers the amount of free memory to be more consistent
+  // with the Linux version.
+
+  uint64_t pageSize = chpl_getSysPageSize();
+  FILE* f = popen("vmstat -s", "r");
+  char buffer[256];
+  unsigned long pagesFree = 0;
+  int foundPagesFree = 0;
+
+  if (!f)
+    chpl_internal_error("could not run vm_stat in chpl_sys_availMemoryBytes");
+
+  while( fgets(buffer, sizeof(buffer), f) ) {
+    if (strstr(buffer, "pages free\n")) {
+      if (1 == sscanf(buffer, "%lu", &pagesFree))
+        foundPagesFree = 1;
+    }
+  }
+
+  pclose(f);
+
+  if (!foundPagesFree)
+    chpl_internal_error("could not find pages free vm_stat output "
+                        "in chpl_sys_availMemoryBytes");
+
+  return pageSize * pagesFree;
+
 #elif defined(__linux__)
   struct sysinfo s;
 
+  // MPF: I think this should return MemAvailable not MemFree
+  // on linux, because the page cache might be full of memory we can
+  // discard.
   if (sysinfo(&s) != 0)
     chpl_internal_error("sysinfo() failed");
   return (size_t) s.freeram;

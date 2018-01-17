@@ -3043,6 +3043,7 @@ static bool populateForwardingMethods(CallInfo& info) {
       fn->addFlag(FLAG_INLINE);
       fn->addFlag(FLAG_FORWARDING_FN);
       fn->addFlag(FLAG_COMPILER_GENERATED);
+      fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
       // see below, after arguments added, for adjustment to FLAG_GENERIC
 
@@ -5624,6 +5625,10 @@ static void     resolveNewHandleNonGenericInitializer(CallExpr*      call,
                                                       AggregateType* at,
                                                       SymExpr*       typeExpr);
 
+static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
+                                                    AggregateType* at,
+                                                    SymExpr*       typeExpr);
+
 static void     resolveNewHandleGenericInitializer(CallExpr*      call,
                                                    AggregateType* at,
                                                    SymExpr*       typeExpr);
@@ -5640,7 +5645,12 @@ static void resolveNew(CallExpr* call) {
           resolveNewHandleConstructor(call);
 
         } else if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-          resolveNewHandleNonGenericInitializer(call, at, typeExpr);
+          if (at->instantiatedFrom != NULL) {
+            resolveNewHandleInstantiatedGenericInit(call, at, typeExpr);
+
+          } else {
+            resolveNewHandleNonGenericInitializer(call, at, typeExpr);
+          }
 
         } else {
           resolveNewHandleGenericInitializer(call, at, typeExpr);
@@ -5795,6 +5805,101 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
     call->insertAtHead(new SymExpr(gMethodToken));
 
     resolveExpr(call);
+  }
+}
+
+// Similar to resolveNewHandleGenericInitializer, except we have been
+// provided an instantiation instead of the generic version.  We should
+// ensure that we can resolve the call as if it were generic, and then
+// double check that the type we were given matches the provided type.
+static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
+                                                    AggregateType* at,
+                                                    SymExpr*       typeExpr) {
+  SET_LINENO(call);
+
+  AggregateType* genericSrc = at->instantiatedFrom;
+  while (genericSrc->instantiatedFrom != NULL) {
+    // Go back until we are at the base generic type.
+    genericSrc = genericSrc->instantiatedFrom;
+  }
+
+  INT_ASSERT(genericSrc->symbol->hasFlag(FLAG_GENERIC));
+
+  // Resolve the _new call as if we were provided a fully generic type.
+  VarSymbol* new_temp = newTemp("new_temp", genericSrc);
+  DefExpr*   def      = new DefExpr(new_temp);
+  FnSymbol*  initFn   = NULL;
+
+  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+  typeExpr->replace(new UnresolvedSymExpr("init"));
+
+  // Convert the PRIM_NEW to a normal call
+  call->primitive = NULL;
+  call->baseExpr  = call->get(1)->remove();
+
+  parent_insert_help(call, call->baseExpr);
+
+  if (isBlockStmt(call->parentExpr) == true) {
+    call->insertBefore(def);
+
+  } else {
+    Expr* parent = call->parentExpr;
+
+    parent->insertBefore(def);
+
+    if (at->isClass() == false) {
+      call->replace(new SymExpr(new_temp));
+      parent->insertBefore(call);
+    }
+  }
+
+  // Invoking an instance method
+  call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
+  call->insertAtHead(new SymExpr(gMethodToken));
+
+  temporaryInitializerFixup(call);
+
+  resolveGenericActuals(call);
+
+  initFn = resolveInitializer(call);
+
+  // We've resolved the initializer.  Verify that the type we got
+  // back was the type we were originally looking for
+
+  // TODO: What about coercion?
+  if (call->resolvedFunction()->_this->type == at) {
+    new_temp->type = at;
+
+  } else {
+    // If it isn't, error
+    USR_FATAL_CONT(call,
+                   "Best initializer match doesn't work for generic "
+                   "instantiation %s",
+                   at->symbol->name);
+    USR_PRINT(initFn,
+              "Best initializer match was defined here, and generated"
+              " instantiation %s",
+              call->resolvedFunction()->_this->type->symbol->name);
+    USR_STOP();
+  }
+
+  if (at->isClass() == true) {
+    // use the allocator instead of directly calling the init method
+    // Need to convert the call into the right format
+    call->baseExpr->replace(new UnresolvedSymExpr("_new"));
+    call->get(1)->replace(new SymExpr(new_temp->type->symbol));
+    call->get(2)->remove();
+
+    // Need to resolve _new() even if it has not been built yet
+    if (tryResolveCall(call) == NULL) {
+      buildClassAllocator(initFn);
+      resolveCall(call);
+    }
+
+    resolveFunction(call->resolvedFunction());
+
+    def->remove();
   }
 }
 
@@ -7408,6 +7513,38 @@ static void resolveAutoCopyEtc(AggregateType* at) {
     autoCopyMap[at] = fn;
   }
 
+  // resolve destructor
+  if (at->hasDestructor() == false) {
+    if (at->symbol->hasFlag(FLAG_REF)       == false &&
+        isTupleContainingOnlyReferences(at) == false &&
+        // autoDestroy for iterator record filled in callDestructors
+        at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+      // Create a block statement and add it where type fns go
+      BlockStmt* block = new BlockStmt();
+
+      Expr* where = getInsertPointForTypeFunction(at);
+      if (BlockStmt* stmt = toBlockStmt(where))
+        stmt->insertAtHead(block);
+      else
+        where->insertBefore(block);
+
+      // Create a call to deinit and put it in the block
+      // In case resolveCall drops other stuff into the tree ahead
+      // of the call, we wrap everything in a block for safe removal.
+      VarSymbol* tmp   = newTemp(at);
+      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+      block->insertAtTail(new DefExpr(tmp));
+      block->insertAtTail(call);
+
+      resolveCallAndCallee(call);
+
+      at->setDestructor(call->resolvedFunction());
+
+      block->remove();
+    }
+  }
+
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
@@ -7438,8 +7575,8 @@ static const char* autoCopyFnForType(AggregateType* at) {
   const char* retval = "chpl__autoCopy";
 
   if (isUserDefinedRecord(at)                == true  &&
-
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
+      at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false &&
       isRecordWrappedType(at)                == false &&
       isSyncType(at)                         == false &&
       isSingleType(at)                       == false &&

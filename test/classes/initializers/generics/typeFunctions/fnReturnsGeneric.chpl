@@ -14,3 +14,4 @@ proc getType() type {
 
 var myC = new (getType())(int);
 writeln(myC);
+delete myC;

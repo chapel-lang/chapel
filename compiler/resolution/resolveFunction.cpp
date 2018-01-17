@@ -50,9 +50,10 @@ static void markIterator(FnSymbol* fn);
 
 static void insertUnrefForArrayReturn(FnSymbol* fn);
 
-static void protoIteratorClass(FnSymbol* fn);
+static void protoIteratorClass(FnSymbol* fn, Type* yieldedType);
 
 static void resolveTypeConstructor(FnSymbol* fn);
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -280,7 +281,7 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
     if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
       // The original return type is stored here in retType.
-      protoIteratorClass(fn);
+      protoIteratorClass(fn, retType);
     }
 
   } else {
@@ -328,12 +329,13 @@ void resolveFunction(FnSymbol* fn) {
       if (tryFailure == false) {
         insertUnrefForArrayReturn(fn);
 
-        resolveReturnType(fn);
+        Type* yieldedType = NULL;
+        resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
         insertAndResolveCasts(fn);
 
         if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
-          protoIteratorClass(fn);
+          protoIteratorClass(fn, yieldedType);
 
         } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
           resolveTypeConstructor(fn);
@@ -463,7 +465,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
       fn->hasFlag(FLAG_INIT_COPY_FN)           == false &&
       fn->hasFlag(FLAG_AUTO_COPY_FN)           == false &&
       fn->hasFlag(FLAG_IF_EXPR_FN)             == false &&
-      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false) {
+      fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) == false &&
+      fn->hasFlag(FLAG_FN_RETURNS_ITERATOR) == false) {
     Symbol* ret = fn->getReturnSymbol();
 
     for_SymbolSymExprs(se, ret) {
@@ -475,13 +478,22 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           // TODO: Should we check if the RHS is a symbol with
           // 'no auto destroy' on it? If it is, then we'd be copying
           // the RHS and it would never be destroyed...
-          if (rhsType->symbol->hasFlag(FLAG_ARRAY) == true &&
+          if ((rhsType->symbol->hasFlag(FLAG_ARRAY) == true ||
+               rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) &&
               isTypeExpr(call->get(2))             == false) {
             Expr*      rhs       = call->get(2)->remove();
             VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
             CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
             CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
             FnSymbol*  unrefFn   = NULL;
+
+            if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+              // This warning can go away after 1.17 if it gets annoying.
+              // In the meantime, it helps to identify cases that have
+              // different behavior between 1.16 and 1.17.
+              USR_WARN(call, "proc returns an iterator that will be "
+                             "immediately converted to an array");
+            }
 
             // Used by callDestructors to catch assignment from
             // a ref to 'tmp' when we know we don't want to copy.
@@ -524,7 +536,7 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
 
 static AggregateType* makeIteratorClass (FnSymbol* fn);
 
-static AggregateType* makeIteratorRecord(FnSymbol* fn);
+static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType);
 
 static const char*    iteratorClassName(FnSymbol* fn);
 
@@ -534,25 +546,35 @@ static FnSymbol*      makeGetIterator(AggregateType* iClass,
 static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
                                        AggregateType* iRecord,
                                        FnSymbol*      getIterator,
-                                       FnSymbol*      fn);
+                                       FnSymbol*      fn,
+                                       Type*          yieldedType);
 
 static FnSymbol*      makeIteratorMethod(IteratorInfo* ii,
                                          const char*   name,
                                          Type*         retType);
 
-static void protoIteratorClass(FnSymbol* fn) {
+static void protoIteratorClass(FnSymbol* fn, Type* yieldedType) {
+  INT_ASSERT(yieldedType != NULL);
+  INT_ASSERT(yieldedType != dtUnknown);
+
   SET_LINENO(fn);
 
   AggregateType* iClass  = makeIteratorClass(fn);
-  AggregateType* iRecord = makeIteratorRecord(fn);
+  AggregateType* iRecord = makeIteratorRecord(fn, yieldedType);
   FnSymbol*      getIter = makeGetIterator(iClass, iRecord);
-  IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter, fn);
+  IteratorInfo*  ii      = makeIteratorInfo(iClass, iRecord, getIter,
+                                            fn, yieldedType);
 
   iClass->iteratorInfo  = ii;
   iRecord->iteratorInfo = ii;
   fn->iteratorInfo      = ii;
 
   fn->retType           = iRecord;
+  // Also adjust the type of the return symbol
+  Symbol* retSym = fn->getReturnSymbol();
+  INT_ASSERT(retSym);
+  retSym->type = iRecord;
+
   fn->retTag            = RET_VALUE;
 
   fn->defPoint->insertBefore(new DefExpr(iClass->symbol));
@@ -579,7 +601,7 @@ static AggregateType* makeIteratorClass(FnSymbol* fn) {
   return retval;
 }
 
-static AggregateType* makeIteratorRecord(FnSymbol* fn) {
+static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   AggregateType* retval    = new AggregateType(AGGREGATE_RECORD);
   const char*    className = iteratorClassName(fn);
   TypeSymbol*    sym       = new TypeSymbol(astr("_ir_", className), retval);
@@ -591,7 +613,7 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn) {
     sym->addFlag(FLAG_REF_ITERATOR_CLASS);
   }
 
-  retval->scalarPromotionType = fn->retType;
+  retval->scalarPromotionType = yieldedType;
 
   return retval;
 }
@@ -633,7 +655,8 @@ static FnSymbol* makeGetIterator(AggregateType* iClass,
 static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
                                        AggregateType* iRecord,
                                        FnSymbol*      getIterator,
-                                       FnSymbol*      fn) {
+                                       FnSymbol*      fn,
+                                       Type*          yieldedType) {
   Type*         defaultInt = dtInt[INT_SIZE_DEFAULT];
   IteratorInfo* ii         = new IteratorInfo();
 
@@ -650,9 +673,12 @@ static IteratorInfo*  makeIteratorInfo(AggregateType* iClass,
   ii->zip3        = makeIteratorMethod(ii, "zip3",     dtVoid);
   ii->zip4        = makeIteratorMethod(ii, "zip4",     dtVoid);
   ii->hasMore     = makeIteratorMethod(ii, "hasMore",  defaultInt);
-  ii->getValue    = makeIteratorMethod(ii, "getValue", fn->retType);
+  ii->getValue    = makeIteratorMethod(ii, "getValue", yieldedType);
   ii->init        = makeIteratorMethod(ii, "init",     dtVoid);
   ii->incr        = makeIteratorMethod(ii, "incr",     dtVoid);
+
+  ii->yieldedType = yieldedType;
+  ii->iteratorRetTag = fn->retTag;
 
   return ii;
 }
@@ -844,17 +870,31 @@ static FnSymbol* instantiateBase(FnSymbol* fn) {
 static void computeReturnTypeParamVectors(BaseAST*      ast,
                                           Symbol*       retSymbol,
                                           Vec<Type*>&   retTypes,
-                                          Vec<Symbol*>& retParams);
+                                          Vec<Symbol*>& retSymbols);
 
-void resolveReturnType(FnSymbol* fn) {
+// Resolves an inferred return type.
+// resolveSpecifiedReturnType handles the case that the type is
+// specified explicitly. That one is called from resolveFormals.
+void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
+
+  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
-  if (retType == dtUnknown) {
-    Vec<Type*>   retTypes;
-    Vec<Symbol*> retParams;
+  if (isIterator == true) {
+    // For iterators, the return symbol / return type is void
+    // or the iterator record. Here we want to compute the yielded
+    // type.
+    ret = NULL;
+    retType = dtUnknown;
+  }
 
-    computeReturnTypeParamVectors(fn, ret, retTypes, retParams);
+  Vec<Type*>   retTypes;
+  Vec<Symbol*> retSymbols;
+
+  if (retType == dtUnknown) {
+
+    computeReturnTypeParamVectors(fn, ret, retTypes, retSymbols);
 
     if (retTypes.n == 1) {
       retType = retTypes.head();
@@ -889,7 +929,7 @@ void resolveReturnType(FnSymbol* fn) {
             bool requireScalarPromotion = false;
 
             if (canDispatch(retTypes.v[j],
-                            retParams.v[j],
+                            retSymbols.v[j],
                             retTypes.v[i],
                             fn,
                             &requireScalarPromotion) == false) {
@@ -914,6 +954,7 @@ void resolveReturnType(FnSymbol* fn) {
         retType = dtVoid;
       }
     }
+
   }
 
   // For tuples, generally do not allow a tuple to contain a reference
@@ -929,35 +970,73 @@ void resolveReturnType(FnSymbol* fn) {
     retType = getReturnedTupleType(fn, tupleType);
   }
 
-  ret->type = retType;
+  if (isIterator == false) {
+    ret->type = retType;
 
-  if (!fn->iteratorInfo) {
     if (retType == dtUnknown) {
       USR_FATAL(fn, "unable to resolve return type");
     }
 
     fn->retType = retType;
-  }
 
+    if (retType->symbol->hasFlag(FLAG_GENERIC) &&
+        fn->retTag == RET_TYPE) {
+      USR_FATAL_CONT(fn, "returning a generic type variable is not supported");
+    }
+
+  } else {
+
+    // Update the yielded type argument if it was requested
+    if (yieldedType != NULL)
+      *yieldedType = retType;
+
+    // Update the types of the yielded symbols if they have FLAG_YVV
+    if (isIterator) {
+      forv_Vec(Symbol, yieldedSym, retSymbols) {
+        if (yieldedSym->hasFlag(FLAG_YVV))
+          yieldedSym->type = retType;
+      }
+    }
+  }
 }
+
+void resolveReturnType(FnSymbol* fn) {
+  return resolveReturnTypeAndYieldedType(fn, NULL);
+}
+
 
 static void computeReturnTypeParamVectors(BaseAST*      ast,
                                           Symbol*       retSymbol,
                                           Vec<Type*>&   retTypes,
-                                          Vec<Symbol*>& retParams) {
+                                          Vec<Symbol*>& retSymbols) {
   if (CallExpr* call = toCallExpr(ast)) {
-    if (call->isPrimitive(PRIM_MOVE)) {
+    Expr* returnedExpr = NULL;
+    if (retSymbol != NULL && call->isPrimitive(PRIM_MOVE)) {
       if (SymExpr* sym = toSymExpr(call->get(1))) {
-        if (sym->symbol() == retSymbol) {
-          if (SymExpr* sym = toSymExpr(call->get(2))) {
-            retParams.add(sym->symbol());
-          } else {
-            retParams.add(NULL);
-          }
-
-          retTypes.add(call->get(2)->typeInfo());
-        }
+        if (sym->symbol() == retSymbol)
+          returnedExpr = call->get(2);
       }
+    } else if(retSymbol == NULL && call->isPrimitive(PRIM_YIELD)) {
+      returnedExpr = call->get(1);
+    }
+
+    if (returnedExpr != NULL) {
+      if (SymExpr* se = toSymExpr(returnedExpr)) {
+        retSymbols.add(se->symbol());
+      } else {
+        retSymbols.add(NULL);
+      }
+
+      retTypes.add(returnedExpr->typeInfo());
+    }
+  }
+
+  // Only go in to nested functions if they are task functions.
+  // Otherwise, we'll get confused by yields in inner functions.
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (FnSymbol* innerFn = toFnSymbol(def->sym)) {
+      if (!isTaskFun(innerFn))
+        return;
     }
   }
 
@@ -965,7 +1044,7 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
                     computeReturnTypeParamVectors,
                     retSymbol,
                     retTypes,
-                    retParams);
+                    retSymbols);
 }
 
 /************************************* | **************************************

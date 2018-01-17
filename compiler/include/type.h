@@ -101,6 +101,7 @@ public:
   // Used only in PrimitiveType; replace with flag?
   bool                   isInternalType;
 
+  // TODO: can this move to AggregateType?
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;
@@ -283,6 +284,12 @@ public:
   }
 
   const char* qualStr() const;
+
+  // If isRef() is true, returns a QualifiedType with
+  // a ref type (i.e. with FLAG_REF). This is useful for
+  // working with parts of the compiler that havn't fully
+  // transferred to QualifiedType.
+  QualifiedType refToRefType() const;
 
 private:
   Type*      _type;
@@ -498,6 +505,7 @@ GenRet codegenImmediate(Immediate* i);
 #define UNION_ID_TYPE dtInt[INT_SIZE_64]
 #define SIZE_TYPE dtInt[INT_SIZE_64]
 #define NODE_ID_TYPE dtInt[INT_SIZE_32]
+#define LOCALE_ID_TYPE dtLocaleID->typeInfo()
 
 #define is_arithmetic_type(t)                        \
         (is_int_type(t)        ||                    \

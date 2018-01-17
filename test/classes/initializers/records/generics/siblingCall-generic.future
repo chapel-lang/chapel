@@ -1,6 +1,0 @@
-bug: generic records can't use this.init()
-#7960
-
-Looks to be possibly related to not transforming the AST appropriately, so
-we try to resolve against this.init() and then look at the arguments, rather
-than this.init(args).

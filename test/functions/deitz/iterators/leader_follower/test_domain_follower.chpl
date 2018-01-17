@@ -1,5 +1,7 @@
 proc bar(i: int) return {1..3};
 
+// This promoted assignment creates an array of domains
+// [ {1..3}, {1..3}, {1..3} ]
 var A = bar(1..3);
 
 iter foo() {
