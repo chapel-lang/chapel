@@ -118,9 +118,10 @@ module Buffers {
 
   // bytes methods.
   /* Construct an empty bytes object */
-  proc bytes.bytes() {
-    this._bytes_internal = QBYTES_PTR_NULL;
+  proc bytes.init() {
     this.home = here;
+    this._bytes_internal = QBYTES_PTR_NULL;
+    super.init();
   }
   /*
 
@@ -140,18 +141,35 @@ module Buffers {
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
    */
-  proc bytes.bytes(len:int(64), out error:syserr) {
+  proc bytes.init(len:int(64), out error:syserr) {
+    this.home = here;
+    super.init();
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
-    this.home = here;
   }
   pragma "no doc"
-  proc bytes.bytes(len:int(64)) {
-    var error:syserr = ENOERR;
-    error = qbytes_create_calloc(this._bytes_internal, len);
+  proc bytes.init(len:int(64)) {
+    this.home = here;
+    super.init();
+    var error:syserr = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes constructor");
     // The buffer is retained internally on construction, but only on success.
-    this.home = here;
+  }
+
+
+  pragma "no doc"
+  proc bytes.init(x: bytes) {
+    if x.home == here {
+      this.home = here;
+      this._bytes_internal = x._bytes_internal;
+      super.init();
+      qbytes_release(x._bytes_internal);
+    } else {
+      this.home = here;
+      // The initial ref count is 1, so no need to call qbytes_retain here.
+      this._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
+      super.init();
+    }
   }
 
 
@@ -169,23 +187,6 @@ module Buffers {
     var ret = create_iobuf(err);
     if err then try ioerror(err, "in create_iobuf");
     return ret;
-  }
-
-
-  // TODO -- shouldn't have to write this this way!
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(x: bytes) {
-    if x.home == here {
-      qbytes_retain(x._bytes_internal);
-      return x;
-    } else {
-      var ret:bytes;
-      ret.home = here;
-      // The initial ref count is 1, so no need to call qbytes_retain here.
-      ret._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
-      return ret;
-    }
   }
 
   pragma "no doc"
@@ -260,9 +261,10 @@ module Buffers {
 
   /* Create a :record:`buffer_iterator` that points nowhere */
   pragma "no doc"
-  proc buffer_iterator.buffer_iterator() {
+  proc buffer_iterator.init() {
     this.home = here;
     this._bufit_internal = qbuffer_iter_null();
+    super.init();
   }
 
   /* A region within a buffer (indicated by two :record:`buffer_iterator` s ) */
@@ -306,16 +308,65 @@ module Buffers {
      :arg error: (optional) capture an error that was encountered instead of
                   halting on error
    */
-  proc buffer.buffer(out error:syserr) {
+  proc buffer.init(out error:syserr) {
     this.home = here;
+    super.init();
     error = qbuffer_create(this._buf_internal);
   }
   pragma "no doc"
-  proc buffer.buffer() throws {
+  proc buffer.init() /*throws*/ {
     var error:syserr = ENOERR;
     this.home = here;
+    super.init();
     error = qbuffer_create(this._buf_internal);
-    if error then try ioerror(error, "in buffer constructor");
+    if error then try! ioerror(error, "in buffer constructor");
+  }
+  pragma "no doc"
+  proc buffer.init(x: buffer) {
+    if x.home == here {
+      this.home = here;
+      this._buf_internal = x._buf_internal;
+      super.init();
+      qbuffer_release(x._buf_internal);
+    } else {
+      var error: syserr = ENOERR;
+      this.init(error);
+      if error then halt("Got error on buffer_create");
+      var start_offset:int(64);
+      var end_offset:int(64);
+
+      on x.home {
+        start_offset = qbuffer_start_offset(x._buf_internal);
+        end_offset = qbuffer_end_offset(x._buf_internal);
+      }
+
+      var allocErr:syserr = ENOERR;
+      var b = new bytes(end_offset - start_offset, error=allocErr);
+      if allocErr then
+        try! ioerror(allocErr, "could not allocate bytes in buffer copy");
+
+      var len = qbytes_len(b._bytes_internal);
+      var ptr = qbytes_data(b._bytes_internal);
+
+      // Now create a local buffer with the right data
+      // in it starting at the right position.
+      qbuffer_reposition(this._buf_internal, start_offset);
+
+      var there_uid = here.id;
+
+      on x.home {
+        var err:syserr = ENOERR;
+        err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
+                              qbuffer_begin(x._buf_internal),
+                              qbuffer_end(x._buf_internal));
+        if err then try! ioerror(err, "put failed in buffer copy");
+      }
+
+      var appendErr:syserr = ENOERR;
+      this.append(b, error=appendErr);
+      if appendErr then
+        try! ioerror(appendErr, "append failed in buffer copy");
+    }
   }
   /*
      defaultOf appears to be unnecessary since the initializer
@@ -369,54 +420,6 @@ module Buffers {
     ret = this.flatten(range,error);
     if error then try ioerror(error, "in buffer.flatten");
     return ret;
-  }
-
-  // TODO -- shouldn't have to write this this way!
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(x: buffer) {
-    if x.home == here {
-      qbuffer_retain(x._buf_internal);
-      return x;
-    } else {
-      var ret:buffer;
-      var start_offset:int(64);
-      var end_offset:int(64);
-
-      on x.home {
-        start_offset = qbuffer_start_offset(x._buf_internal);
-        end_offset = qbuffer_end_offset(x._buf_internal);
-      }
-
-      var allocErr:syserr = ENOERR;
-      var b = new bytes(end_offset - start_offset, error=allocErr);
-      if allocErr then
-        try! ioerror(allocErr, "could not allocate bytes in buffer copy");
-
-      var len = qbytes_len(b._bytes_internal);
-      var ptr = qbytes_data(b._bytes_internal);
-
-      // Now create a local buffer with the right data
-      // in it starting at the right position.
-      qbuffer_reposition(ret._buf_internal, start_offset);
-
-      var there_uid = here.id;
-
-      on x.home {
-        var err:syserr = ENOERR;
-        err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
-                              qbuffer_begin(x._buf_internal),
-                              qbuffer_end(x._buf_internal));
-        if err then try! ioerror(err, "put failed in buffer copy");
-      }
-
-      var appendErr:syserr = ENOERR;
-      ret.append(b, error=appendErr);
-      if appendErr then
-        try! ioerror(appendErr, "append failed in buffer copy");
-
-      return ret;
-    }
   }
 
   pragma "no doc"
@@ -772,5 +775,5 @@ module Buffers {
     if err then try ioerror(err, "in buffer.copyin");
     return ret;
   }
-}
+  }
 
