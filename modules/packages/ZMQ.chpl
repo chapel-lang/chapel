@@ -259,13 +259,11 @@ References
 */
 module ZMQ {
 
-  // TODOs:
-  //  use error handling instead of halting on an error
-
   require "zmq.h", "-lzmq";
 
   use Reflection;
   use ExplicitRefCount;
+  use SysError;
 
   private extern proc chpl_macro_int_errno():c_int;
   private inline proc errno return chpl_macro_int_errno():c_int;
@@ -758,7 +756,7 @@ module ZMQ {
 
     // send, strings
     pragma "no doc"
-    proc send(data: string, flags: int = 0) {
+    proc send(data: string, flags: int = 0) throws {
       on classRef.home {
         // Deep-copy the string to the current locale and release ownership
         // because the ZeroMQ library will take ownership of the underlying
@@ -774,8 +772,7 @@ module ZMQ {
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
                                    copy.length:size_t, c_ptrTo(free_helper),
                                    c_nil)) {
-          var errmsg = zmq_strerror(errno):string;
-          try! halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+          try throw_socket_error("Error in Socket.send(%s): %s\n");
         }
 
         // Send the message
@@ -784,8 +781,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            var errmsg = zmq_strerror(errno):string;
-            try! halt("Error in Socket.send(%s): %s\n".format(string:string, errmsg));
+            try throw_socket_error("Error in Socket.send(%s): %s\n");
           }
         }
       }
@@ -793,7 +789,7 @@ module ZMQ {
 
     // send, numeric types
     pragma "no doc"
-    proc send(data: ?T, flags: int = 0) where isNumericType(T) {
+    proc send(data: ?T, flags: int = 0) throws where isNumericType(T) {
       on classRef.home {
         var copy = data;
         while (-1 == zmq_send(classRef.socket, c_ptrTo(copy):c_void_ptr,
@@ -802,8 +798,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            var errmsg = zmq_strerror(errno):string;
-            try! halt("Error in Socket.send(%s): %s\n".format(T:string, errmsg));
+            try throw_socket_error("Error in Socket.send(%s): %s\n");
           }
         }
       }
@@ -811,20 +806,25 @@ module ZMQ {
 
     // send, enumerated types
     pragma "no doc"
-    proc send(data: ?T, flags: int = 0) where isEnumType(T) {
-      send(data:int, flags);
+    proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
+      try send(data:int, flags);
     }
 
     // send, records (of other supported things)
     pragma "no doc"
-    proc send(data: ?T, flags: int = 0) where (isRecordType(T) &&
-                                               (!isString(T))) {
+    proc send(data: ?T, flags: int = 0) throws where (isRecordType(T) &&
+                                                     (!isString(T))) {
       on classRef.home {
         var copy = data;
         param N = numFields(T);
-        for param i in 1..(N-1) do
-          send(getField(copy,i), ZMQ_SNDMORE | flags);
-        send(getField(copy,N), flags);
+        try {
+          for param i in 1..(N-1) do
+            send(getField(copy,i), ZMQ_SNDMORE | flags);
+        } catch e: TaskErrors {
+          throw e;
+        }
+
+        try send(getField(copy,N), flags);
       }
     }
 
@@ -847,14 +847,13 @@ module ZMQ {
 
     // recv, strings
     pragma "no doc"
-    proc recv(type T, flags: int = 0) where isString(T) {
+    proc recv(type T, flags: int = 0) throws where isString(T) {
       var ret: T;
       on classRef.home {
         // Initialize an empty ZeroMQ message
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
-          var errmsg = zmq_strerror(errno):string;
-          try! halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+          try throw_socket_error("Error in Socket.recv(%s): %s\n");
         }
 
         // Receive the message
@@ -863,8 +862,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            var errmsg = zmq_strerror(errno):string;
-            try! halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+            try throw_socket_error("Error in Socket.recv(%s): %s\n");
           }
         }
 
@@ -875,8 +873,7 @@ module ZMQ {
                              length=len, size=len+1,
                              owned=true, needToCopy=true);
         if (0 != zmq_msg_close(msg)) {
-          var errmsg = zmq_strerror(errno):string;
-          try! halt("Error in Socket.recv(%s): %s\n".format(string:string, errmsg));
+          try throw_socket_error("Error in Socket.recv(%s): %s\n");
         }
 
         // Return the string to the calling locale
@@ -887,7 +884,7 @@ module ZMQ {
 
     // recv, numeric types
     pragma "no doc"
-    proc recv(type T, flags: int = 0) where isNumericType(T) {
+    proc recv(type T, flags: int = 0) throws where isNumericType(T) {
       var ret: T;
       on classRef.home {
         var data: T;
@@ -897,8 +894,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            var errmsg = zmq_strerror(errno):string;
-            try! halt("Error in Socket.recv(%s): %s\n".format(T:string, errmsg));
+            try throw_socket_error("Error in Socket.recv(%s): %s\n");
           }
         }
         ret = data;
@@ -908,23 +904,35 @@ module ZMQ {
 
     // recv, enumerated types
     pragma "no doc"
-    proc recv(type T, flags: int = 0) where isEnumType(T) {
-      return recv(int, flags):T;
+    proc recv(type T, flags: int = 0) throws  where isEnumType(T) {
+      return try recv(int, flags):T;
     }
 
     // recv, records (of other supported things)
     pragma "no doc"
-    proc recv(type T, flags: int = 0) where (isRecordType(T) && (!isString(T))) {
+    proc recv(type T, flags: int = 0) throws where (isRecordType(T) &&
+                                                   (!isString(T))) {
       var ret: T;
       on classRef.home {
         var data: T;
-        for param i in 1..numFields(T) do
-          getFieldRef(data,i) = recv(getField(data,i).type);
+        try {
+          for param i in 1..numFields(T) do
+            getFieldRef(data,i) = recv(getField(data,i).type);
+        } catch e: TaskErrors {
+          throw e;
+        }
         ret = data;
       }
       return ret;
     }
 
+    pragma "no doc"
+    proc throw_socket_error(fmtstr: string) throws {
+      var _errno: c_int = errno;
+      var errmsg_zmq    = zmq_strerror(_errno):string;
+      var errmsg_str    = fmtstr.format(string:string, errmsg_zmq);
+      throw SystemError.fromSyserr(_errno:syserr, errmsg_str);
+    }
   } // record Socket
 
   pragma "no doc"
