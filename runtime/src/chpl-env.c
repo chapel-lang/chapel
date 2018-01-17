@@ -75,7 +75,7 @@ int64_t chpl_env_str_to_int(const char* evVal, int64_t dflt) {
 
 
 size_t chpl_env_str_to_size(const char* evVal, size_t dflt) {
-  int64_t val;
+  size_t val;
   int scnCnt;
   char units;
 
