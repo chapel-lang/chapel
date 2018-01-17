@@ -64,6 +64,7 @@
 static int  processIdentifier(yyscan_t scanner);
 static int  processToken(yyscan_t scanner, int t);
 static int  processStringLiteral(yyscan_t scanner, const char* q, int type);
+static int  processMultilineStringLiteral(yyscan_t scanner, const char* q);
 
 static int  processExtern(yyscan_t scanner);
 static int  processExternCode(yyscan_t scanner);
@@ -268,11 +269,12 @@ zip              return processToken(yyscanner, TZIP);
 {floatLiteral}i  return processToken(yyscanner, IMAGLITERAL);
 
 {ident}          return processIdentifier(yyscanner);
+"\"\"\""         return processMultilineStringLiteral(yyscanner, "\"");
+"'''"            return processMultilineStringLiteral(yyscanner, "'");
 "\""             return processStringLiteral(yyscanner, "\"", STRINGLITERAL);
 "\'"             return processStringLiteral(yyscanner, "\'", STRINGLITERAL);
 "c\""            return processStringLiteral(yyscanner, "\"", CSTRINGLITERAL);
 "c\'"            return processStringLiteral(yyscanner, "\'", CSTRINGLITERAL);
-
 "//"             return processSingleLineComment(yyscanner);
 "/*"             return processBlockComment(yyscanner);
 
@@ -391,6 +393,8 @@ static int processToken(yyscan_t scanner, int t) {
 ************************************* | ************************************/
 
 static const char* eatStringLiteral(yyscan_t scanner, const char* startChar);
+static const char* eatMultilineStringLiteral(yyscan_t scanner,
+                                             const char* startChar);
 
 static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   const char* yyText = yyget_text(scanner);
@@ -407,6 +411,21 @@ static int processStringLiteral(yyscan_t scanner, const char* q, int type) {
   }
 
   return type;
+}
+
+static int processMultilineStringLiteral(yyscan_t scanner, const char* q) {
+  const char* yyText = yyget_text(scanner);
+  YYSTYPE* yyLval = yyget_lval(scanner);
+  yyLval->pch = eatMultilineStringLiteral(scanner, q);
+
+  countToken(q, yyLval->pch, q);
+
+  if (captureTokens) {
+    captureString.append(yyText);
+    captureString.append(yyLval->pch);
+    captureString.append(yyText);
+  }
+  return STRINGLITERAL;
 }
 
 static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
@@ -467,6 +486,63 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
   return astr(stringBuffer);
 }
+
+static const char* eatMultilineStringLiteral(yyscan_t scanner,
+                                             const char* startChar) {
+  YYLTYPE*   yyLloc  = yyget_lloc(scanner);
+  const char startCh = *startChar;
+  int startChCount = 0;
+  int        c       = 0;
+
+  newString();
+
+  while (((c = getNextYYChar(scanner)) != startCh || startChCount < 2) && c != 0) {
+    if (c == startCh) {
+      startChCount++;
+    } else {
+      startChCount = 0;
+    }
+
+    if (c == '\"') {
+      // escape double quotes
+      addCharEscape('\\');
+      addCharEscape('"');
+    } else if (c == '?') {
+      // backslash escape ? to avoid C trigraphs
+      addCharEscape('\\');
+      addCharEscape('?');
+    } else if (c == '\n') {
+      // translate newline into two characters "\n"
+      addCharEscape('\\');
+      addCharEscape('n');
+    } else if (c == '\t') {
+      // translate tab into two characters "\t"
+      addCharEscape('\\');
+      addCharEscape('t');
+    } else if (c == '\\') {
+      // translate backslash into an escaped double-backslash
+      addCharEscape('\\');
+      addCharEscape('\\');
+    } else {
+      addCharEscape(c);
+    }
+  } /* eat up string */
+
+  if (c == 0) {
+    ParserContext context(scanner);
+
+    yyerror(yyLloc, &context, "EOF in string");
+  }
+  // Remove two escaped quotes from the end of the string that are
+  // actually part of the string closing token.  If this is a single
+  // quoted string that will be two characters, but if it is a double
+  // quoted string it will be four because of extra escape characters
+  int removeChars = (startCh == '\'') ? 2 : 4;
+  std::string sub = stringBuffer.substr(0, stringBuffer.length()-removeChars);
+
+  return astr(sub);
+}
+
 
 /************************************ | *************************************
 *                                                                           *
