@@ -41,11 +41,15 @@
    * A value containining indirections cannot be set to a
      value with a longer lifetime
    * A scope value cannot be reachable after its lifetime ends
+
+   * Lifetime inference assigns the minimum lifetime assigned
+     to a scope variable as its lifetime.
  */
 
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForFnId = 0;
 const bool defaultToCheckingLifetimes = false;
+const bool debugOutputOnError = false;
 
 namespace {
 
@@ -54,6 +58,7 @@ namespace {
     //   - the type of the symbol (is it a ref/ptr at all?)
     //   - where it is defined
     Symbol* fromSymbolReachability;
+    Expr* relevantExpr;
     bool infinite;
     bool returnScope;
   };
@@ -86,7 +91,7 @@ namespace {
 
 static bool isLocalVariable(FnSymbol* fn, Symbol* sym);
 static bool isSubjectToLifetimeAnalysis(Symbol* sym);
-static bool shouldPropagateLifetimeTo(Symbol* sym);
+static bool shouldPropagateLifetimeTo(FnSymbol* inFn, Symbol* sym);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
@@ -95,6 +100,7 @@ static Lifetime reachabilityLifetimeForSymbol(Symbol* sym);
 static Lifetime infiniteLifetime();
 static bool debuggingLifetimesForFn(FnSymbol* fn);
 static void printLifetimeState(LifetimeState* state);
+static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 
 void checkLifetimes(void) {
@@ -174,6 +180,19 @@ void printLifetimeState(LifetimeState* state)
   }
 }
 
+static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
+  if (debugOutputOnError) {
+    printf("Stopping due to debugOutputOnError\n");
+    printf("Function is:\n");
+    nprint_view(e->getFunction());
+    printf("Expr is:\n");
+    nprint_view(e);
+    printf("Lifetime state is:\n");
+    printLifetimeState(state);
+    USR_STOP();
+  }
+}
+
 Lifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
   if (lifetimes.count(sym) > 0)
     return lifetimes[sym];
@@ -185,7 +204,7 @@ Lifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
 Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   Lifetime minLifetime = infiniteLifetime();
 
-  FnSymbol* calledFn = call->resolvedFunction();
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
   if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
     return infiniteLifetime();
 
@@ -195,7 +214,8 @@ Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
     Symbol* actualSym = actualSe->symbol();
 
     if (isSubjectToLifetimeAnalysis(actualSym) ||
-        isLocalVariable(call->getFunction(), actualSym)) {
+        (isLocalVariable(call->getFunction(), actualSym) &&
+         isSubjectToLifetimeAnalysis(formal))) {
       Lifetime actualLifetime = lifetimeForSymbol(actualSym);
 
       if (formal->hasFlag(FLAG_RETURN_SCOPE))
@@ -237,11 +257,20 @@ Lifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
 
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
-  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+
+  if (call->id == 185748)
+    gdbShouldBreakHere();
+
+  bool isAssign = calledFn && 0 == strcmp("=", calledFn->name);
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN) ||
+      isAssign) {
+
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
 
-    if (shouldPropagateLifetimeTo(lhs)) {
+    if (shouldPropagateLifetimeTo(call->getFunction(), lhs)) {
 
       // Consider the RHS and handle the cases
       Expr* rhsExpr = call->get(2);
@@ -249,7 +278,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       Lifetime lt = lifetimes->lifetimeForSymbol(lhs);
 
       if (rhsCallExpr) {
-        if (rhsCallExpr->resolvedFunction()) {
+        if (rhsCallExpr->resolvedOrVirtualFunction()) {
           lt = lifetimes->lifetimeForCallReturn(rhsCallExpr);
         } else {
           // Includes propagating refs across PRIM_ADDR_OF/PRIM_SET_REFERENCE
@@ -265,7 +294,15 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      lifetimes->lifetimes[lhs] = lt;
+      if (lifetimes->lifetimes.count(lhs) == 0) {
+        lt.relevantExpr = call;
+        lifetimes->lifetimes[lhs] = lt;
+      } else {
+        lt.relevantExpr = call;
+        if (isLifetimeShorter(lt, lifetimes->lifetimes[lhs])) {
+          lifetimes->lifetimes[lhs] = lt;
+        }
+      }
     }
   }
 
@@ -274,7 +311,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
-  FnSymbol* calledFn = call->resolvedFunction();
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
 
   bool isAssign = calledFn && 0 == strcmp("=", calledFn->name);
   if (call->isPrimitive(PRIM_MOVE) ||
@@ -296,7 +333,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           rhsLt = lifetimes->lifetimeForSymbol(rhs);
 
       } else if (CallExpr* subCall = toCallExpr(call->get(2))) {
-        if (subCall->resolvedFunction())
+        if (subCall->resolvedOrVirtualFunction())
           rhsLt = lifetimes->lifetimeForCallReturn(subCall);
       }
 
@@ -307,11 +344,13 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             USR_FATAL_CONT(call, "Scoped variable cannot be returned");
             Symbol* from = rhsLt.fromSymbolReachability;
             USR_PRINT(from, "consider scope of %s", from->name);
+            handleDebugOutputOnError(call, lifetimes);
           }
           if (calledFn &&
               calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
               rhsLt.returnScope) {
             USR_FATAL_CONT(call, "Return scope variable cannot be returned in function returning infinite lifetime");
+            handleDebugOutputOnError(call, lifetimes);
           }
         }
       } else {
@@ -323,6 +362,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                          "Scoped variable would outlive the value it is set to");
           Symbol* from = rhsLt.fromSymbolReachability;
           USR_PRINT(from, "consider scope of %s", from->name);
+          handleDebugOutputOnError(call, lifetimes);
         }
       }
     }
@@ -341,7 +381,14 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     Lifetime reachability = reachabilityLifetimeForSymbol(key);
     if (isLifetimeShorter(value, reachability)) {
-      USR_FATAL_CONT(key, "Scoped variable reachable after its lifetime ends");
+      Expr* at = key->defPoint;
+      if (value.relevantExpr)
+        at = value.relevantExpr;
+      USR_FATAL_CONT(at, "Scoped variable %s reachable after lifetime ends",
+                     key->name);
+      Symbol* from = value.fromSymbolReachability;
+      USR_PRINT(from, "consider scope of %s", from->name);
+      handleDebugOutputOnError(key->defPoint, lifetimes);
     }
   }
 }
@@ -376,15 +423,23 @@ static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
   return true;
 }
 
-static bool shouldPropagateLifetimeTo(Symbol* sym) {
+static bool shouldPropagateLifetimeTo(FnSymbol* inFn, Symbol* sym) {
 
   if (!isSubjectToLifetimeAnalysis(sym))
     return false;
 
-  Symbol* parentSymbol = sym->defPoint->parentSymbol;
-  if (parentSymbol->hasFlag(FLAG_UNSAFE))
+  if (!isLocalVariable(inFn, sym))
     return false;
-  else if (parentSymbol->hasFlag(FLAG_SAFE))
+
+//  if (!sym->hasFlag(FLAG_TEMP))
+//    return false;
+
+  //Symbol* parentSymbol = sym->defPoint->parentSymbol;
+  // unsafe fns not lifetime analyzed
+  //if (parentSymbol->hasFlag(FLAG_UNSAFE))
+  //  return false;
+  //else
+  /*if (parentSymbol->hasFlag(FLAG_SAFE))
     return true;
   else if (sym->hasFlag(FLAG_SAFE))
     return true;
@@ -392,6 +447,8 @@ static bool shouldPropagateLifetimeTo(Symbol* sym) {
     return true;
   else
     return defaultToCheckingLifetimes;
+   */
+  return true;
 }
 
 /*
@@ -465,6 +522,7 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
 static Lifetime reachabilityLifetimeForSymbol(Symbol* sym) {
   Lifetime lt;
   lt.fromSymbolReachability = sym;
+  lt.relevantExpr = NULL;
   lt.infinite = symbolHasInfiniteLifetime(sym);
   //lt.returnScope = sym->hasFlag(FLAG_RETURN_SCOPE);
   // FLAG_SCOPE should probably inhibit the following behavior
@@ -476,6 +534,7 @@ static Lifetime reachabilityLifetimeForSymbol(Symbol* sym) {
 static Lifetime infiniteLifetime() {
   Lifetime lt;
   lt.fromSymbolReachability = NULL;
+  lt.relevantExpr = NULL;
   lt.infinite = true;
   lt.returnScope = false;
   return lt;
@@ -545,4 +604,56 @@ returning nil -- fixed (was just an AST pattern issue)
 
 method that returns something with infinite lifetime (e.g. always returning nil)
    - locale.here returns chpl_localeID_to_locale(here_id)
+
+Linked list destruction, linked list on bare pointers
+  e.g. chpl_deinitModules
+  e.g. TaskErrors.init
+
+  var next = start;
+  while next {
+    const curr = prev;
+    prev = curr.next
+    delete curr;
+  }
+
+  Problem is that 'curr' is inner scope as compared to 'next'.
+
+  var first:MyClass;
+  for e in something.iterateClasses() {
+    first = e;
+  }
+
+
+This is a problem in D too
+// compile with dmd -c -dip1000
+int g1 = 1;
+int g2 = 2;
+void test1() @safe {
+
+  scope int*[2] array;
+  array[0] = &g1;
+  array[1] = &g2;
+
+  scope int* first = null;
+  for (int i = 0; i < 2; i++) {
+    auto cur = array[i];
+    if (first == null) {
+      first = cur;
+    }
+  }
+}
+void test2() @safe {
+
+  int[2] array;
+  array[0] = 1;
+  array[1] = 2;
+
+  scope int* first = null;
+  for (int i = 0; i < 2; i++) {
+    auto cur = &array[i];
+    if (first == null) {
+      first = cur;
+    }
+  }
+}
  */
