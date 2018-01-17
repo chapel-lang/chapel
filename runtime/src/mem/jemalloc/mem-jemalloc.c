@@ -397,7 +397,7 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  if (heap.base != NULL) {
+  if (have_fixed_comm_layer_heap) {
     // ignore errors, we're exiting anyways
     (void) pthread_mutex_destroy(&heap.alloc_lock);
   }
