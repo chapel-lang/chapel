@@ -22,6 +22,7 @@ public:
   TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
   ExpandVisitor* parentVis;
   bool breakOnYield; // wass for debugging
+  // wass may want to stash forall->singleInductionVar() in a field
 
   ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
                 SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
@@ -74,6 +75,31 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
 
 
 /////////// misc helpers ///////////
+
+//wass
+static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
+                     const char* msg, bool showParent) {
+  printf("%s  %d", msg, fs->id);
+  if (showParent) {
+    printf("  %s", debugLoc(fs));
+    if (parentVis) printf("   parentVis %d", parentVis->forall->id);
+    else           printf("   -parentVis");
+  }
+  printf("\n");
+}
+
+// Remove the return statement and the def of 'ret'.
+static void removeParIterReturn(BlockStmt* cloneBody) {
+  CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
+  INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
+  Symbol* retsym = toSymExpr(retexpr->get(1))->symbol();
+  INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+  
+  retexpr->remove();
+  retsym->defPoint->remove();
+  // There should not be any references left to 'ret'.
+  INT_ASSERT(retsym->firstSymExpr() == NULL);
+}
 
 // Cf. copyBody() for inlineFunctions().
 // 'anchor' is the AST that the new body will replace.
@@ -130,10 +156,7 @@ static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
     reset_ast_loc(retval, iterCall);
   }
 
-  // Remove the return statement.
-  CallExpr* retexpr = toCallExpr(retval->body.tail);
-  INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
-  retexpr->remove();
+  removeParIterReturn(retval);
 
   return retval;
 }
@@ -199,7 +222,7 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
 //wass
-  printf("    expandYield %d %s   fs=%d\n", yieldCall->id, debugLoc(yieldCall),
+  printf("    expandYield %d %s   fs %d\n", yieldCall->id, debugLoc(yieldCall),
          EV->forall->id);
   if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
 
@@ -311,18 +334,31 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
 /////////// expandForall ///////////
 
+#if 0 //wass
 // Todo implement this when the startup/teardown feature comes in.
 static bool inTaskStartupTeardownCode(ForallStmt* fs) { return false; }
+#endif
 
 /*
 Upon a forall within an iterator, we need:
- - extend its intents
+ - extend its intents with new svars
  - extend its startup/teardown blocks
- - add the mapping for EV's variables to the newly-created shadow variables
- - figure out how to expand its yield
+ - create new EV
+ - in the new EV, map FS's svars to the newly-created svars
+ - recurse into the forall body with the new EV to handle yields etc
 */
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
+  showLOFS(fs, EV, " { expandForall", true);
+  INT_ASSERT(EV->forall->numShadowVars() == 0); // otherwise need to implement
+  SymbolMap       map;
+  ExpandVisitor   forallVis(EV, map);
+  map.put(EV->forall->singleInductionVar(), NULL);
+
+  gdbShouldBreakHere();//wass
+  fs->loopBody()->accept(EV);
+  
+#if 0 //wass - this is not the right way
   if (ForallStmt* efs = enclosingForallStmt(EV->forall))
     // If there are enclosing forall loop(s),
     // we need to handle their intents as well. Currently we don't.
@@ -331,6 +367,8 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
   gdbShouldBreakHere(); //vass
   lowerOneForallStmt(fs, EV);
+#endif
+  showLOFS(fs, EV, " } expandForall", false);
 }
 
 
@@ -436,18 +474,9 @@ static void setupOuterMap(ExpandVisitor* outerVis,
 
 /////////// main driver ///////////
 
-//wass
-static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
-                     const char* msg, bool showParent) {
-  printf("%s lowerOneForallStmt fs=%d  %s", msg, fs->id, debugLoc(fs));
-  if (showParent) {
-    if (parentVis) printf("   parentVis=%d", parentVis->forall->id);
-    else           printf("   parentVis-");
-  }
-}
-
+// wass - need 'parentVis' ?
 static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
-  showLOFS(fs, parentVis, "{", true);
+  showLOFS(fs, parentVis, "{ lonfs", true);
   if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
 
   // If this fails, need to filter out those FSes.
@@ -490,7 +519,7 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   // We could also do {iwrap,ibody}->flattenAndRemove().
 
 //wass
-  showLOFS(fs, parentVis, "}", false);
+  showLOFS(fs, parentVis, "} lonfs", false);
 }
 
 ///////////
@@ -503,4 +532,6 @@ static void lowerForallStmtsInline() {
 
   //vass todo remove parallel iterators themselves
   // now that we have inlined them.
+
+  gdbShouldBreakHere(); //vass
 }
