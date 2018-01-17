@@ -30,6 +30,10 @@ record MyCollection {
     else
       return b.get();
   }
+  iter these(): MyClass {
+    yield a.get();
+    yield b.get();
+  }
   pragma "safe"
   proc returnsNil() {
     return nil:MyClass;
@@ -81,6 +85,48 @@ proc bad10() : MyClass {
 }
 
 pragma "safe"
+proc bad21() {
+  var outer:MyClass = nil;
+  {
+    var r:R;
+    r.c.retain(new MyClass(1));
+    outer = r.get();
+    // r.c deleted here
+  }
+  writeln(outer);
+}
+
+pragma "safe"
+proc bad22() {
+  var outer:MyClass = new MyClass(1);
+  {
+    var r:R;
+    r.c.retain(new MyClass(1));
+    delete outer;
+    outer = r.get();
+    // r.c deleted here
+  }
+  writeln(outer);
+}
+
+pragma "safe"
+proc bad23() {
+  var outer:MyClass;
+  {
+    var r:R;
+    r.c.retain(new MyClass(1));
+    outer = r.get();
+    // r.c deleted here
+  }
+  writeln(outer);
+  outer = new MyClass(1);
+  delete outer;
+}
+
+
+
+
+pragma "safe"
 proc ok1() {
   global = new MyClass(10);
   var a:MyClass = global; // OK: lifetime global > lifetime a
@@ -109,6 +155,21 @@ proc ok3() {
   x = r.get();
 }
 
+pragma "safe"
+proc ok4() {
+  var group:MyCollection;
+  group.a.c.retain(new MyClass(1));
+  group.b.c.retain(new MyClass(2));
+
+  var first:MyClass = nil;
+
+  for i in 1..2 {
+    var cur = group[i];
+    if first == nil then
+      first = cur;
+  }
+}
+
 proc test() {
   bad1();
   bad2();
@@ -119,9 +180,14 @@ proc test() {
     writeln(tmp);
   }
 
+  bad21();
+  bad22();
+  bad23();
+
   ok1();
   ok2();
   ok3();
+  ok4();
 }
 
 test();

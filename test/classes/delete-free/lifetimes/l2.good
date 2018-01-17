@@ -1,14 +1,23 @@
-l2.chpl:42: In function 'bad1':
-l2.chpl:45: error: Scoped variable would outlive the value it is set to
-l2.chpl:43: note: consider scope of r
-l2.chpl:50: In function 'bad2':
-l2.chpl:55: error: Scoped variable would outlive the value it is set to
-l2.chpl:53: note: consider scope of r
-l2.chpl:62: In function 'bad3':
-l2.chpl:66: error: Scoped variable would outlive the value it is set to
-l2.chpl:63: note: consider scope of group
-l2.chpl:67: error: Scoped variable would outlive the value it is set to
-l2.chpl:63: note: consider scope of group
-l2.chpl:73: In function 'bad10':
-l2.chpl:79: error: Scoped variable cannot be returned
-l2.chpl:77: note: consider scope of r
+l2.chpl:46: In function 'bad1':
+l2.chpl:49: error: Scoped variable would outlive the value it is set to
+l2.chpl:47: note: consider scope of r
+l2.chpl:54: In function 'bad2':
+l2.chpl:59: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:57: note: consider scope of r
+l2.chpl:66: In function 'bad3':
+l2.chpl:70: error: Scoped variable would outlive the value it is set to
+l2.chpl:67: note: consider scope of group
+l2.chpl:71: error: Scoped variable would outlive the value it is set to
+l2.chpl:67: note: consider scope of group
+l2.chpl:77: In function 'bad10':
+l2.chpl:83: error: Scoped variable cannot be returned
+l2.chpl:81: note: consider scope of r
+l2.chpl:88: In function 'bad21':
+l2.chpl:93: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:91: note: consider scope of r
+l2.chpl:100: In function 'bad22':
+l2.chpl:106: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:103: note: consider scope of r
+l2.chpl:113: In function 'bad23':
+l2.chpl:118: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:116: note: consider scope of r
