@@ -43,7 +43,9 @@
    * A scope value cannot be reachable after its lifetime ends
  */
 
-//#define DEBUG
+const char* debugLifetimesForFn = "";
+const int debugLifetimesForFnId = 0;
+const bool defaultToCheckingLifetimes = false;
 
 namespace {
 
@@ -63,6 +65,7 @@ namespace {
     SymbolToLifetimeMap lifetimes;
     Lifetime lifetimeForSymbol(Symbol* sym);
     Lifetime lifetimeForCallReturn(CallExpr* call);
+    Lifetime lifetimeForPrimitiveReturn(CallExpr* call);
   };
 
   class InferLifetimesVisitor : public AstVisitorTraverse {
@@ -72,7 +75,7 @@ namespace {
       virtual bool enterCallExpr (CallExpr* call);
   };
   class EmitLifetimeErrorsVisitor : public AstVisitorTraverse {
-   
+
     public:
       LifetimeState* lifetimes;
       virtual bool enterCallExpr (CallExpr* call);
@@ -81,6 +84,8 @@ namespace {
 
 } /* end anon namespace */
 
+static bool isLocalVariable(FnSymbol* fn, Symbol* sym);
+static bool isSubjectToLifetimeAnalysis(Symbol* sym);
 static bool shouldPropagateLifetimeTo(Symbol* sym);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
@@ -88,19 +93,22 @@ static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
 static bool isLifetimeShorter(Lifetime a, Lifetime b);
 static Lifetime reachabilityLifetimeForSymbol(Symbol* sym);
 static Lifetime infiniteLifetime();
-#ifdef DEBUG
+static bool debuggingLifetimesForFn(FnSymbol* fn);
 static void printLifetimeState(LifetimeState* state);
-#endif
+static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 
 void checkLifetimes(void) {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
-    if (fn->hasFlag(FLAG_SAFE)) {
-#ifdef DEBUG
-      printf("Visiting function %s id %i\n", fn->name, fn->id);
-      nprint_view(fn);
-#endif
+    if (shouldCheckLifetimesInFn(fn)) {
+      bool debugging = debuggingLifetimesForFn(fn);
+
+      if (debugging) {
+        printf("Visiting function %s id %i\n", fn->name, fn->id);
+        nprint_view(fn);
+        gdbShouldBreakHere();
+      }
 
       LifetimeState state;
 
@@ -108,10 +116,10 @@ void checkLifetimes(void) {
       InferLifetimesVisitor infer;
       infer.lifetimes = &state;
       fn->accept(&infer);
- 
-#ifdef DEBUG
-      printLifetimeState(&state);
-#endif
+
+      if (debugging) {
+        printLifetimeState(&state);
+      }
 
       // Emit errors
       EmitLifetimeErrorsVisitor emit;
@@ -122,16 +130,39 @@ void checkLifetimes(void) {
   }
 }
 
-#ifdef DEBUG
+static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_UNSAFE))
+    return false;
+  if (fn->hasFlag(FLAG_SAFE))
+    return true;
+
+  ModuleSymbol* inMod = fn->getModule();
+  if (inMod->hasFlag(FLAG_UNSAFE))
+    return false;
+  if (inMod->hasFlag(FLAG_SAFE))
+    return true;
+
+  return defaultToCheckingLifetimes;
+}
+
+static bool debuggingLifetimesForFn(FnSymbol* fn)
+{
+  if (!fn) return false;
+  if (fn->id == debugLifetimesForFnId) return true;
+  if (0 == strcmp(debugLifetimesForFn, fn->name)) return true;
+  return false;
+}
+
 void printLifetimeState(LifetimeState* state)
 {
+  printf("Lifetime state:\n");
   for (SymbolToLifetimeMap::iterator it = state->lifetimes.begin();
        it != state->lifetimes.end();
        ++it) {
     Symbol* key = it->first;
     Lifetime value = it->second;
 
-    printf("Symbol %s[%i] has lifetime ", key->name, key->id); 
+    printf("Symbol %s[%i] has lifetime ", key->name, key->id);
     if (value.infinite)
       printf("infinite ");
     if (value.returnScope)
@@ -142,32 +173,37 @@ void printLifetimeState(LifetimeState* state)
     printf("\n");
   }
 }
-#endif
 
 Lifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
   if (lifetimes.count(sym) > 0)
     return lifetimes[sym];
-  
+
   // Otherwise, create a basic lifetime for this variable.
   return reachabilityLifetimeForSymbol(sym);
 }
 
 Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
-
   Lifetime minLifetime = infiniteLifetime();
+
+  FnSymbol* calledFn = call->resolvedFunction();
+  if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
+    return infiniteLifetime();
 
   for_formals_actuals(formal, actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
     INT_ASSERT(actualSe);
     Symbol* actualSym = actualSe->symbol();
 
-    Lifetime actualLifetime = lifetimeForSymbol(actualSym);
+    if (isSubjectToLifetimeAnalysis(actualSym) ||
+        isLocalVariable(call->getFunction(), actualSym)) {
+      Lifetime actualLifetime = lifetimeForSymbol(actualSym);
 
-    if (formal->hasFlag(FLAG_RETURN_SCOPE))
-      return actualLifetime;
+      if (formal->hasFlag(FLAG_RETURN_SCOPE))
+        return actualLifetime;
 
-    if (isLifetimeShorter(actualLifetime, minLifetime)) {
-      minLifetime = actualLifetime;
+      if (isLifetimeShorter(actualLifetime, minLifetime)) {
+        minLifetime = actualLifetime;
+      }
     }
   }
 
@@ -176,6 +212,28 @@ Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   return minLifetime;
 }
 
+Lifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
+  Lifetime minLifetime = infiniteLifetime();
+
+  for_actuals(actual, call) {
+    SymExpr* actualSe = toSymExpr(actual);
+    INT_ASSERT(actualSe);
+    Symbol* actualSym = actualSe->symbol();
+
+    if (isSubjectToLifetimeAnalysis(actualSym) ||
+        isLocalVariable(call->getFunction(), actualSym)) {
+      Lifetime actualLifetime = lifetimeForSymbol(actualSym);
+
+      if (isLifetimeShorter(actualLifetime, minLifetime)) {
+        minLifetime = actualLifetime;
+      }
+    }
+  }
+
+  // If no argument was marked with FLAG_RETURN_SCOPE,
+  // just assume it's the minimum of the passed lifetimes.
+  return minLifetime;
+}
 
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
@@ -191,17 +249,11 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       Lifetime lt = lifetimes->lifetimeForSymbol(lhs);
 
       if (rhsCallExpr) {
-        if (rhsCallExpr->isPrimitive(PRIM_ADDR_OF) ||
-            rhsCallExpr->isPrimitive(PRIM_SET_REFERENCE)) {
-          // Propagate lifetime for refs across assignment
-          SymExpr* se = toSymExpr(rhsCallExpr->get(1));
-          INT_ASSERT(se);
-          lt = lifetimes->lifetimeForSymbol(se->symbol());
-        } else if (rhsCallExpr->resolvedFunction()) {
+        if (rhsCallExpr->resolvedFunction()) {
           lt = lifetimes->lifetimeForCallReturn(rhsCallExpr);
         } else {
-          // TODO: lots of other primitives
-          INT_ASSERT(0);
+          // Includes propagating refs across PRIM_ADDR_OF/PRIM_SET_REFERENCE
+          lt = lifetimes->lifetimeForPrimitiveReturn(rhsCallExpr);
         }
       } else {
         SymExpr* se = toSymExpr(rhsExpr);
@@ -228,32 +280,50 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN) ||
       isAssign) {
-    
+
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
     Lifetime lhsLt = lifetimes->lifetimeForSymbol(lhs);
 
-    // Raise errors for returning a scoped/lifetime'd variable
-    if (lhs->hasFlag(FLAG_RVV)) {
-      if (!lhsLt.infinite && !lhsLt.returnScope) {
-        USR_FATAL_CONT(call, "Scoped variable cannot be returned");
-        Symbol* from = lhsLt.fromSymbolReachability;
-        USR_PRINT(from, "consider scope of %s", from->name);
-      }
-    }
-    
-    if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
-      Symbol* rhs = rhsSe->symbol();
-      Lifetime rhsLt = lifetimes->lifetimeForSymbol(rhs);
+    if (isSubjectToLifetimeAnalysis(lhs)) {
 
-      // Raise errors for init/assigning from a value with shorter lifetime
-      // I.e. insist RHS lifetime is longer than LHS lifetime.
-      // I.e. error if RHS lifetime is shorter than LHS lifetime.
-      if (isLifetimeShorter(rhsLt, lhsLt)) {
-        USR_FATAL_CONT(call,
-                       "Scoped variable would outlive the value it is set to");
-        Symbol* from = rhsLt.fromSymbolReachability;
-        USR_PRINT(from, "consider scope of %s", from->name);
+      // If we can't make sense of the RHS, assume it's infinite lifetime
+      Lifetime rhsLt = infiniteLifetime();
+
+      if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+        Symbol* rhs = rhsSe->symbol();
+        if (isSubjectToLifetimeAnalysis(rhs))
+          rhsLt = lifetimes->lifetimeForSymbol(rhs);
+
+      } else if (CallExpr* subCall = toCallExpr(call->get(2))) {
+        if (subCall->resolvedFunction())
+          rhsLt = lifetimes->lifetimeForCallReturn(subCall);
+      }
+
+      // Raise errors for returning a scoped/lifetime'd variable
+      if (lhs->hasFlag(FLAG_RVV)) {
+        if (!rhsLt.infinite) {
+          if (!rhsLt.returnScope) {
+            USR_FATAL_CONT(call, "Scoped variable cannot be returned");
+            Symbol* from = rhsLt.fromSymbolReachability;
+            USR_PRINT(from, "consider scope of %s", from->name);
+          }
+          if (calledFn &&
+              calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
+              rhsLt.returnScope) {
+            USR_FATAL_CONT(call, "Return scope variable cannot be returned in function returning infinite lifetime");
+          }
+        }
+      } else {
+        // Raise errors for init/assigning from a value with shorter lifetime
+        // I.e. insist RHS lifetime is longer than LHS lifetime.
+        // I.e. error if RHS lifetime is shorter than LHS lifetime.
+        if (isLifetimeShorter(rhsLt, lhsLt)) {
+          USR_FATAL_CONT(call,
+                         "Scoped variable would outlive the value it is set to");
+          Symbol* from = rhsLt.fromSymbolReachability;
+          USR_PRINT(from, "consider scope of %s", from->name);
+        }
       }
     }
   }
@@ -271,34 +341,57 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     Lifetime reachability = reachabilityLifetimeForSymbol(key);
     if (isLifetimeShorter(value, reachability)) {
-      USR_FATAL_CONT(key, "Scoped variable reachable after its lifetime ends"); 
+      USR_FATAL_CONT(key, "Scoped variable reachable after its lifetime ends");
     }
   }
+}
+
+/* Is the sym argument a local variable in fn?
+ */
+static bool isLocalVariable(FnSymbol* fn, Symbol* sym) {
+  bool isValueArg = isArgSymbol(sym) && !sym->isRef();
+  bool isLocal = isVarSymbol(sym) || isValueArg;
+
+  return sym->defPoint->getFunction() == fn && isLocal;
 }
 
 /* Is the variable subject to lifetime analysis?
      - "borrowed" class instance
      - ref
  */
-static bool shouldPropagateLifetimeTo(Symbol* sym) {
+static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
   // It needs to be a ref or a pointer type
   bool refOrPtr = isClass(sym->type) || sym->isRef();
   bool argOrVar = isArgSymbol(sym) || isVarSymbol(sym);
 
-  if (refOrPtr && argOrVar) {
-    Symbol* parentSymbol = sym->defPoint->parentSymbol;
-    if (sym->hasFlag(FLAG_UNSAFE) || parentSymbol->hasFlag(FLAG_UNSAFE))
-      return false;
-    else if (sym->hasFlag(FLAG_SAFE) || parentSymbol->hasFlag(FLAG_SAFE))
-      return true;
-    else if (sym->hasFlag(FLAG_SCOPE))
-      return true;
-    else
-      // Default: leave it off for now.
-      return false;
-  }
+  if (!(refOrPtr && argOrVar))
+    return false;
 
-  return false;
+  if (sym->type->symbol->hasFlag(FLAG_C_PTR_CLASS))
+    return false;
+
+  if (sym->hasFlag(FLAG_UNSAFE))
+    return false;
+
+  return true;
+}
+
+static bool shouldPropagateLifetimeTo(Symbol* sym) {
+
+  if (!isSubjectToLifetimeAnalysis(sym))
+    return false;
+
+  Symbol* parentSymbol = sym->defPoint->parentSymbol;
+  if (parentSymbol->hasFlag(FLAG_UNSAFE))
+    return false;
+  else if (parentSymbol->hasFlag(FLAG_SAFE))
+    return true;
+  else if (sym->hasFlag(FLAG_SAFE))
+    return true;
+  else if (sym->hasFlag(FLAG_SCOPE))
+    return true;
+  else
+    return defaultToCheckingLifetimes;
 }
 
 /*
@@ -360,7 +453,7 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
     BlockStmt* aBlock = getDefBlock(aSym);
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
-      // TODO: check the order of the declarations 
+      // TODO: check the order of the declarations
     } else {
       return isBlockWithinBlock(aBlock, bBlock);
     }
@@ -439,4 +532,17 @@ static Lifetime infiniteLifetime() {
       ArrayOfOwned[i] = OtherOwned;
        -> would mean no borrows allowed to other elements,
           because ArrayOfOwned[i] assumed to invalidate all of the array?
+ */
+
+ /*
+
+Challenging cases for this analysis:
+
+String.chpl copyRemoteBuffer - allocates and returns something
+   (should be returning a new Owned)
+
+returning nil -- fixed (was just an AST pattern issue)
+
+method that returns something with infinite lifetime (e.g. always returning nil)
+   - locale.here returns chpl_localeID_to_locale(here_id)
  */
