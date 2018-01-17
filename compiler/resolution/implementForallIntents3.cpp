@@ -179,8 +179,8 @@ static void insertInitialization(Symbol* dest, Type* valType,
   if (Expr* initExpr = toExpr(init))
     INT_ASSERT(!initExpr->inTree()); // caller responsibility
 
-  // vass todo: getAutoCopy() fails if valType does not have it
-  if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {
+  if (hasAutoCopyForType(valType)) {
+    FnSymbol* autoCopyFn = getAutoCopyForType(valType);
     Symbol* initSym = toSymbol(init);
     if (initSym == NULL) {
       VarSymbol* actemp = new VarSymbol("actemp", valType);
@@ -288,7 +288,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   int idx = 0;
   for_shadow_vars(svar, temp1, EV->forall) {
     idx++;
-    Symbol* eActual = svar->outerVarSym();
+    Symbol* eActual = EV->svar2clonevar.get(svar);
     call->insertAtTail(eActual);
 
     if (expandClone) {
@@ -320,24 +320,26 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
 /////////// expandForall ///////////
 
-/*
-Upon a forall within an iterator, we need:
- - extend its intents with new svars
- - extend its startup/teardown blocks
- - create new EV
- - in the new EV, map FS's svars to the newly-created svars
- - recurse into the forall body with the new EV to handle yields etc
-*/
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
   showLOFS(fs, EV, " { expandForall", true);
-  INT_ASSERT(EV->forall->numShadowVars() == 0); // otherwise need to implement
+
+  ForallStmt*     pfs = EV->forall;
   SymbolMap       map;
   ExpandVisitor   forallVis(EV, map);
+
+  for_shadow_vars(svar, temp, pfs) {
+    ShadowVarSymbol* newSV = svar->copy(&map);
+    newSV->outerVarSE()->setSymbol(EV->svar2clonevar.get(svar));
+    fs->shadowVariables().insertAtTail(new DefExpr(newSV));
+
+    // do we need to copy smth else in this case? also need more initialization
+    INT_ASSERT(newSV->intent != TFI_REDUCE);
+  }
+
   map.put(EV->forall->singleInductionVar(), NULL);
 
-  gdbShouldBreakHere();//wass
-  fs->loopBody()->accept(EV);
+  fs->loopBody()->accept(&forallVis);
 
   showLOFS(fs, EV, " } expandForall", false);
 }
