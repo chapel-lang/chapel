@@ -507,4 +507,6 @@ static void lowerForallStmtsInline() {
   // now that we have inlined them.
 
   gdbShouldBreakHere(); //vass
+
+  clearUpRefsInShadowVars();
 }
