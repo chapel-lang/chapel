@@ -42,14 +42,15 @@
 #define USE_JE_CHUNK_HOOKS
 #endif
 
+enum heap_type {FIXED, DYNAMIC, NONE};
+
 static struct shared_heap {
+  enum heap_type type;
   void* base;
   size_t size;
   size_t cur_offset;
   pthread_mutex_t alloc_lock;
 } heap;
-
-static chpl_bool have_fixed_comm_layer_heap;
 
 
 // compute aligned index into our shared heap, alignment must be a power of 2
@@ -78,7 +79,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
   void* cur_chunk_base = NULL;
 
-  if (have_fixed_comm_layer_heap) {
+  if (heap.type == FIXED) {
     //
     // Get more space out of the fixed heap.
     //
@@ -114,7 +115,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
-  } else {
+  } else if (heap.type == DYNAMIC) {
     //
     // Get a dynamic extension chunk.
     //
@@ -141,6 +142,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     heap.base = cur_chunk_base;
     heap.size = size;
     heap.cur_offset = 0;
+  } else {
+    chpl_internal_error("Invalid heap.type in chunk_alloc");
   }
 
   // jemalloc 4.5.0 man: "Zeroing is mandatory if *zero is true upon entry."
@@ -374,8 +377,8 @@ void chpl_mem_layerInit(void) {
   //
   //   jemalloc 4.5.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
-  have_fixed_comm_layer_heap = (heap_base != NULL);
-  if (have_fixed_comm_layer_heap) {
+  if (heap_base != NULL) {
+    heap.type = FIXED;
     heap.base = heap_base;
     heap.size = heap_size;
     heap.cur_offset = 0;
@@ -383,11 +386,12 @@ void chpl_mem_layerInit(void) {
       chpl_internal_error("cannot init chunk_alloc lock");
     }
     initializeSharedHeap();
+  } else if (chpl_comm_regMemAllocThreshold() < SIZE_MAX) {
+    heap.type = DYNAMIC;
+    initializeSharedHeap();
   } else {
-    if (chpl_comm_regMemAllocThreshold() < SIZE_MAX)
-      initializeSharedHeap();
-
     void* p;
+    heap.type = NONE;
     if ((p = CHPL_JE_MALLOC(1)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
@@ -397,7 +401,7 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  if (have_fixed_comm_layer_heap) {
+  if (heap.type == FIXED) {
     // ignore errors, we're exiting anyways
     (void) pthread_mutex_destroy(&heap.alloc_lock);
   }
