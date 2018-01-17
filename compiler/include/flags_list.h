@@ -286,6 +286,7 @@ symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" 
 symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 symbolFlag( FLAG_RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function" )
 symbolFlag( FLAG_FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can return an iterator instead of promoting it to an array")
+symbolFlag( FLAG_RETURNS_INFINITE_LIFETIME, ypr, "fn returns infinite lifetime", "function returns a pointer with infinite lifetime for lifetime analysis" )
 symbolFlag( FLAG_RETURN_SCOPE, ypr, "return scope", "indicates scope for return value")
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )

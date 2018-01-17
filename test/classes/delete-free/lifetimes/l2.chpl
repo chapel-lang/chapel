@@ -30,6 +30,10 @@ record MyCollection {
     else
       return b.get();
   }
+  pragma "safe"
+  proc returnsNil() {
+    return nil:MyClass;
+  }
 }
 
 var global:MyClass;
@@ -89,10 +93,23 @@ proc ok1() {
 
 pragma "safe"
 proc ok2() {
+  var group:MyCollection;
+  group.a.c.retain(new MyClass(1));
+  group.b.c.retain(new MyClass(2));
+  var x = group.returnsNil();
+}
+
+pragma "safe"
+proc ok3() {
+  var x:MyClass = nil;
+
+  var r:R;
+  r.c.retain(new MyClass(1));
+ 
+  x = r.get();
 }
 
 proc test() {
-  ok1();
   bad1();
   bad2();
   bad3();
@@ -101,6 +118,10 @@ proc test() {
     var tmp = bad10();
     writeln(tmp);
   }
+
+  ok1();
+  ok2();
+  ok3();
 }
 
 test();
