@@ -318,7 +318,7 @@ module Buffers {
     this.home = here;
     super.init();
     error = qbuffer_create(this._buf_internal);
-    // TODO: really want the following to by `try` once we can throw from
+    // TODO: really want the following to be `try` once we can throw from
     // initializers
     if error then try! ioerror(error, "in buffer constructor");
   }
