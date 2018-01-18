@@ -633,7 +633,7 @@ CHPL_LLVM
         .. code-block:: sh
 
             # Ubuntu 16.04
-            apt-get install llvm-4.0-dev llvm-4.0 clang-4.0 libclang-4.0-dev libedit-dev
+            apt-get install llvm-4.0-dev llvm-4.0 llvm-4.0-tools clang-4.0 libclang-4.0-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
