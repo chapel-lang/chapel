@@ -1,1 +1,1 @@
-defaultArgumentIsConditional.chpl:6: error: cannot use if expressions in an argument list currently
+defaultArgumentIsConditional.chpl:6: error: cannot currently use an if expression as the default value for an argument when the argument's type is inferred

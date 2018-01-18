@@ -133,15 +133,19 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 
     ct->addDeclarations(def);
 
-  } else if (isArgSymbol(def->parentSymbol)) {
-    if (fn->hasFlag(FLAG_IF_EXPR_FN)) {
+  } else if (ArgSymbol* arg = toArgSymbol(def->parentSymbol)) {
+    if (fn->hasFlag(FLAG_IF_EXPR_FN) && arg->typeExpr == NULL) {
       USR_FATAL_CONT(fn,
-                     "cannot use if expressions in an argument list currently");
+                     "cannot currently use an if expression as the default "
+                     "value for an argument when the argument's type is "
+                     "inferred");
 
     } else {
-      INT_FATAL(fn,
-                "compiler nested function in argument list won't work, argument"
-                " lists don't define a scope to search for functions");
+      Expr* stmt = def->getStmtExpr();
+
+      def->replace(new UnresolvedSymExpr(fn->name));
+
+      stmt->insertBefore(def);
     }
 
   } else {
