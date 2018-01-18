@@ -929,7 +929,7 @@ void chpl_comm_rollcall(void) {
            chpl_numNodes, chpl_nodeName());
 }
 
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) 
              + (char*)seginfo_table[chpl_nodeID].addr;
