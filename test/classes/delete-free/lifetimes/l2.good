@@ -1,13 +1,13 @@
 l2.chpl:46: In function 'bad1':
-l2.chpl:49: error: Scoped variable would outlive the value it is set to
+l2.chpl:49: error: Scoped variable global would outlive the value it is set to
 l2.chpl:47: note: consider scope of r
 l2.chpl:54: In function 'bad2':
 l2.chpl:59: error: Scoped variable outer reachable after lifetime ends
 l2.chpl:57: note: consider scope of r
 l2.chpl:66: In function 'bad3':
-l2.chpl:70: error: Scoped variable would outlive the value it is set to
+l2.chpl:70: error: Scoped variable global would outlive the value it is set to
 l2.chpl:67: note: consider scope of group
-l2.chpl:71: error: Scoped variable would outlive the value it is set to
+l2.chpl:71: error: Scoped variable global would outlive the value it is set to
 l2.chpl:67: note: consider scope of group
 l2.chpl:77: In function 'bad10':
 l2.chpl:83: error: Scoped variable cannot be returned
