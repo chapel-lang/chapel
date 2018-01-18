@@ -48,8 +48,8 @@
  */
 
 const char* debugLifetimesForFn = "";
-const int debugLifetimesForFnId = 0;
-const bool defaultToCheckingLifetimes = false;
+const int debugLifetimesForId = 0;
+const bool defaultToCheckingLifetimes = true;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -169,7 +169,7 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
 static bool debuggingLifetimesForFn(FnSymbol* fn)
 {
   if (!fn) return false;
-  if (fn->id == debugLifetimesForFnId) return true;
+  if (fn->id == debugLifetimesForId) return true;
   if (0 == strcmp(debugLifetimesForFn, fn->name)) return true;
   return false;
 }
@@ -215,7 +215,7 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
 bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, Lifetime lt) {
   bool changed = false;
 
-  int breakOnId = 0;
+  int breakOnId = debugLifetimesForId;
 
   if (lifetimes.count(sym) == 0) {
     if (sym->id == breakOnId)
@@ -319,7 +319,6 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       Expr* rhsExpr = call->get(2);
       CallExpr* rhsCallExpr = toCallExpr(rhsExpr);
       Lifetime lt = infiniteLifetime();
-      //lifetimes->lifetimeForSymbol(lhs);
 
       if (rhsCallExpr) {
         if (rhsCallExpr->resolvedOrVirtualFunction()) {
@@ -450,11 +449,20 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           }
         }
       } else {
+        // For the purposes of this check, lhsLt should be no more
+        // than the reachability lifetime for that symbol.
+        Lifetime lhsReachability = reachabilityLifetimeForSymbol(lhs);
+        if (isLifetimeShorter(lhsReachability, lhsLt))
+          lhsLt = lhsReachability;
+
         // Raise errors for init/assigning from a value with shorter lifetime
         // I.e. insist RHS lifetime is longer than LHS lifetime.
         // I.e. error if RHS lifetime is shorter than LHS lifetime.
         if (isLifetimeShorter(rhsLt, lhsLt)) {
-          USR_FATAL_CONT(call, "Scoped variable %s would outlive the value it is set to", lhs->name);
+          if (lhs && !lhs->hasFlag(FLAG_TEMP))
+            USR_FATAL_CONT(call, "Scoped variable %s would outlive the value it is set to", lhs->name);
+          else
+            USR_FATAL_CONT(call, "Scoped variable would outlive the value it is set to");
           Symbol* from = rhsLt.fromSymbolReachability;
           USR_PRINT(from, "consider scope of %s", from->name);
           handleDebugOutputOnError(call, lifetimes);
@@ -479,8 +487,11 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
       Expr* at = key->defPoint;
       if (value.relevantExpr)
         at = value.relevantExpr;
-      USR_FATAL_CONT(at, "Scoped variable %s reachable after lifetime ends",
-                     key->name);
+      if (!key->hasFlag(FLAG_TEMP))
+        USR_FATAL_CONT(at, "Scoped variable %s reachable after lifetime ends", key->name);
+      else
+        USR_FATAL_CONT(at, "Scoped variable reachable after lifetime ends");
+
       Symbol* from = value.fromSymbolReachability;
       USR_PRINT(from, "consider scope of %s", from->name);
       handleDebugOutputOnError(key->defPoint, lifetimes);

@@ -1,5 +1,0 @@
-l4.chpl:44: In function 'ok5':
-l4.chpl:52: error: Scoped variable would outlive the value it is set to
-l4.chpl:51: note: consider scope of _indexOfInterest
-l4.chpl:53: error: Scoped variable first reachable after lifetime ends
-l4.chpl:51: note: consider scope of _indexOfInterest
