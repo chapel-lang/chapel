@@ -1,4 +1,4 @@
-# Copyright 2004-2017 Cray Inc.
+# Copyright 2004-2018 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -18,16 +18,19 @@
 COMM_LAUNCHER_SRCS = \
         comm-ugni-launch.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 COMM_SRCS = \
         comm-ugni.c \
         comm-ugni-mem.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 SVN_SRCS = \
         comm-ugni.c \
         comm-ugni-launch.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 SRCS = $(SVN_SRCS)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -504,6 +504,19 @@ VarSymbol::VarSymbol(const char *init_name,
   }
 }
 
+VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
+  LcnSymbol(E_VarSymbol, init_name, qType.type()),
+  immediate(NULL),
+  doc(NULL),
+  isField(false),
+  llvmDIGlobalVariable(NULL),
+  llvmDIVariable(NULL)
+{
+  gVarSymbols.add(this);
+
+  this->qual = qType.getQual();
+}
+
 VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
   LcnSymbol(astTag, initName, initType),
   immediate(NULL),
@@ -535,6 +548,7 @@ VarSymbol*
 VarSymbol::copyInner(SymbolMap* map) {
   VarSymbol* newVarSymbol = new VarSymbol(name, type);
   newVarSymbol->copyFlags(this);
+  newVarSymbol->qual = qual;
   newVarSymbol->cname = cname;
   INT_ASSERT(!newVarSymbol->immediate);
   return newVarSymbol;
@@ -795,7 +809,7 @@ static void isConstValWillNotChangeHelp(IntentTag intent,
   }
 
   return; // dummy
-}  
+}
 
 bool ArgSymbol::isConstValWillNotChange() {
   if (hasFlag(FLAG_REF_TO_IMMUTABLE))
@@ -1050,6 +1064,7 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmType(NULL),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
+    llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
     doc(NULL)

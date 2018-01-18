@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -259,7 +259,11 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
   QualifiedType qual = formal->qualType();
   INT_ASSERT(formal);
 
-  bool passedByRef = formal->intent == INTENT_REF || qual.getQual() == QUAL_REF;
+  // MPF: I suspect this check for FLAG_COFORALL_INDEX_VAR is no longer
+  // needed.
+  bool passedByRef = formal->intent == INTENT_REF ||
+                     qual.getQual() == QUAL_REF ||
+                     qual.getQual() == QUAL_CONST_REF;
   if (!passedByRef && isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
     return true;
   }
@@ -551,7 +555,7 @@ static CallExpr* helpFindDownEndCount(BlockStmt* block)
 }
 
 // Finds downEndCount CallExpr or returns NULL.
-static CallExpr* findDownEndCount(FnSymbol* fn)
+CallExpr* findDownEndCount(FnSymbol* fn)
 {
   return helpFindDownEndCount(fn->body);
 }

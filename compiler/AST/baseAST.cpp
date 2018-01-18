@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -647,6 +647,11 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
         ls->continueLabelSet(y);
       }
     }
+
+  } else if (ForallStmt* forall = toForallStmt(ast)) {
+    if (forall->fContinueLabel)
+      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
+          forall->fContinueLabel = y;
 
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);

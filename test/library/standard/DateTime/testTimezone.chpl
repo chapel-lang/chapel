@@ -1,4 +1,4 @@
-use DateTime;
+use DateTime, SharedObject;
 
 class FixedOffset: TZInfo {
   var offset: timedelta;
@@ -34,13 +34,13 @@ proc test_empty() {
   assert(t.minute == 0);
   assert(t.second == 0);
   assert(t.microsecond == 0);
-  assert(t.tzinfo == nil);
+  assert(t.tzinfo.borrow() == nil);
 }
 
 proc test_zones() {
-  var est = new FixedOffset(-300, "EST", 1);
-  var utc = new FixedOffset(0, "UTC", -2);
-  var met = new FixedOffset(60, "MET", 3);
+  var est = new Shared(new FixedOffset(-300, "EST", 1): TZInfo);
+  var utc = new Shared(new FixedOffset(0, "UTC", -2): TZInfo);
+  var met = new Shared(new FixedOffset(60, "MET", 3): TZInfo);
   var t1 = new time( 7, 47, tzinfo=est);
   var t2 = new time(12, 47, tzinfo=utc);
   var t3 = new time(13, 47, tzinfo=met);
@@ -50,7 +50,7 @@ proc test_zones() {
   assert(t1.tzinfo == est);
   assert(t2.tzinfo == utc);
   assert(t3.tzinfo == met);
-  assert(t4.tzinfo == nil);
+  assert(t4.tzinfo.borrow() == nil);
   assert(t5.tzinfo == utc);
 
   assert(t1.utcoffset() == new timedelta(minutes=-300));
@@ -95,8 +95,8 @@ proc test_zones() {
 }
 
 proc test_replace() {
-  var z100 = new FixedOffset(100, "+100");
-  var zm200 = new FixedOffset(new timedelta(minutes=-200), "-200");
+  var z100 = new Shared(new FixedOffset(100, "+100"): TZInfo);
+  var zm200 = new Shared(new FixedOffset(new timedelta(minutes=-200), "-200"): TZInfo);
   var args = (1, 2, 3, 4);
   var base = new time((...args), z100);
   assert(base == base.replace(tzinfo=base.tzinfo));
@@ -132,8 +132,8 @@ proc test_replace() {
 
   // Ensure we can get rid of a tzinfo.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=nil);
-  assert(base2.tzinfo == nil);
+  var base2 = base.replace(tzinfo=new Shared(nil: TZInfo));
+  assert(base2.tzinfo.borrow() == nil);
   assert(base2.tzname() == "");
 
   // Ensure we can add one.
@@ -146,9 +146,9 @@ proc test_mixed_compare() {
   var t1 = new time(1, 2, 3);
   var t2 = new time(1, 2, 3);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=nil);
+  t2 = t2.replace(tzinfo=new Shared(nil: TZInfo));
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new FixedOffset(0, ""));
+  t2 = t2.replace(tzinfo=new Shared(new FixedOffset(0, ""): TZInfo));
 
   // In time w/ identical tzinfo objects, utcoffset is ignored.
   class Varies: TZInfo {
@@ -169,7 +169,7 @@ proc test_mixed_compare() {
     }
   }
 
-  var v = new Varies();
+  var v = new Shared(new Varies(): TZInfo);
   t1 = t2.replace(tzinfo=v);
   t2 = t2.replace(tzinfo=v);
   assert(t1.utcoffset() == new timedelta(minutes=23));
@@ -177,7 +177,7 @@ proc test_mixed_compare() {
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.
-  t2 = t2.replace(tzinfo=new Varies());
+  t2 = t2.replace(tzinfo=new Shared(new Varies(): TZInfo));
   assert(t1 < t2);  // t1's offset counter still going up
 }
 

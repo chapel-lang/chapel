@@ -279,6 +279,8 @@ all:
   12/08/17:
     - text: Machine upgraded to CLE6
       config: 16 node XC
+  12/12/17:
+    - (no-local) QualifiedType ref improvements (#7990)
 
 
 AllCompTime:
@@ -764,6 +766,8 @@ memleaksfull:
     - close more test code leaks (#7406, #7399, #7395, #7364, and #7400)
   11/15/17:
     - Delete classes in some tests (#7791)
+  12/19/17:
+    - Rewrite default argument handling (#7858)
 
 meteor:
   12/18/13:

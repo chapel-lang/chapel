@@ -591,7 +591,11 @@ The identifier in the field access expression indicates which field is accessed.
 A field can
 be modified via an assignment statement where the left-hand side of
 the assignment is a field access expression.
-Accessing a parameter field returns a parameter.
+
+Accessing a parameter or type field returns a parameter or type,
+respectively. In addition to being available for access with a class
+instance receiver, parameter and type fields can be accessed from the
+instantiated class type itself.
 
 \begin{chapelexample}{useActor1.chpl}
 Given a variable \chpl{anActor} of type \chpl{Actor} as defined above,

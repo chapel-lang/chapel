@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -61,8 +61,14 @@ checkResolved() {
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
       IteratorInfo* ii = toAggregateType(fn->retType)->iteratorInfo;
-      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn)
+      if (ii && ii->iterator && ii->iterator->defPoint->parentSymbol == fn) {
+        // This error isn't really possible in regular code anymore,
+        // since you have to have FLAG_FN_RETURNS_ITERATOR / that pragma
+        // to generate it. (Otherwise the iterator expression is turned
+        // into an array in the process of being returned).
+        // If we remove FLAG_FN_RETURNS_ITERATOR, we should remove this error.
         USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
+      }
     }
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
       USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1663,7 +1663,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     }
   } else {
     if (path == "") then
-      try! ioerror(ENOENT:syserr, "in open: Both path and url were path");
+      try! ioerror(ENOENT:syserr, "in open: Both path and url were blank");
     /* TODO: The above two lines breaks the function's original invariant of not
        generating errors within itself.  It is better style to remove these
        lines.  Doing so should still work, but we can't be certain until we
@@ -1945,16 +1945,6 @@ record channel {
   var _readWriteThisFromLocale:locale;
 }
 
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: channel) {
-  on x.home {
-    qio_channel_retain(x._channel_internal);
-  }
-  return x;
-}
-
 pragma "no doc"
 proc =(ref ret:channel, x:channel) {
   // retain -- release
@@ -1971,7 +1961,54 @@ proc =(ref ret:channel, x:channel) {
 }
 
 pragma "no doc"
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
+}
+
+pragma "no doc"
+proc channel.init(x: channel) {
+  this.writing = x.writing;
+  this.kind = x.kind;
+  this.locking = x.locking;
+  this.home = x.home;
+  this._channel_internal = x._channel_internal;
+  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  super.init();
+  on x.home {
+    qio_channel_retain(x._channel_internal);
+  }
+}
+
+//
+// Note that this is effectively the initializer that the compiler
+// would typically provide and that, by providing the next initializer
+// below, we have to write it out manually...  A good case for having
+// a means to "opt-in" to including the compiler-provided initializer?
+//
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
+                  home: locale, _channel_internal:qio_channel_ptr_t,
+                  _readWriteThisFromLocale: locale) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  this.home = home;
+  this._channel_internal = _channel_internal;
+  this._readWriteThisFromLocale = _readWriteThisFromLocale;
+  super.init();
+}
+
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+  // Note that once issue #7960 is resolved, the following could become a
+  // call to this.init(writing, kind, locking)...
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {

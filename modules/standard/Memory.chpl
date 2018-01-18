@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -112,11 +112,11 @@ enum MemUnits {Bytes, KB, MB, GB};
   :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  extern proc chpl_bytesPerLocale(): uint(64);
+  extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 
   var bytesInLocale: uint(64);
 
-  on this do bytesInLocale = chpl_bytesPerLocale();
+  on this do bytesInLocale = chpl_sys_physicalMemoryBytes();
 
   var retVal: retType;
   select (unit) {

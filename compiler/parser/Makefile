@@ -1,4 +1,4 @@
-# Copyright 2004-2017 Cray Inc.
+# Copyright 2004-2018 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,7 @@ endif
 # Don't create rules for bison-chapel.cpp or flex-chapel.cpp since we don't
 # want them to be rebuilt automatically. (This is because of the bison version
 # 2.5 requirement)
-parser: FORCE
+parser: FORCE flex_version_check
 	@rm -f bison-chapel.output bison-chapel.cpp flex-chapel.cpp
 	@rm -f ../include/bison-chapel.h ../include/flex-chapel.h
 	bison chapel.ypp
@@ -54,6 +54,16 @@ parser: FORCE
 	fi;
 	flex chapel.lex
 
+# Require that the flex version is at least 2.6.0
+flex_version_check:
+	@if python -c "import sys;                                        \
+                       from distutils.version import LooseVersion as LV;  \
+                       sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
+                   `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
+                   "2.6.0";                                               \
+		then echo "PROBLEM: flex version must be at least 2.6.0"; \
+		exit 1;                                                   \
+	fi
 
 #
 # standard footer

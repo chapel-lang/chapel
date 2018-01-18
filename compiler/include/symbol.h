@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -260,6 +260,7 @@ public:
 
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
+  VarSymbol(const char* init_name, QualifiedType qType);
   virtual ~VarSymbol();
 
   void verify();
@@ -430,11 +431,12 @@ class TypeSymbol : public Symbol {
   // and cache it if it has.
 #ifdef HAVE_LLVM
   llvm::Type* llvmType;
-  llvm::MDNode* llvmTbaaTypeDescriptor;
-  llvm::MDNode* llvmTbaaAccessTag;
-  llvm::MDNode* llvmConstTbaaAccessTag;
-  llvm::MDNode* llvmTbaaStructCopyNode;
-  llvm::MDNode* llvmConstTbaaStructCopyNode;
+  llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
+  llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
+  llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
+  llvm::MDNode* llvmTbaaAggTypeDescriptor;    // aggregate type descriptor
+  llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
+  llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
 #else
   // Keep same layout so toggling HAVE_LLVM
@@ -443,6 +445,7 @@ class TypeSymbol : public Symbol {
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
+  void* llvmTbaaAggTypeDescriptor;
   void* llvmTbaaStructCopyNode;
   void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
@@ -464,6 +467,10 @@ class TypeSymbol : public Symbol {
   // This function is used to code generate the LLVM TBAA metadata
   // after all of the types have been defined.
   void codegenMetadata();
+  // TBAA metadata for complex types
+  void codegenCplxMetadata();
+  // TBAA metadata for aggregates
+  void codegenAggMetadata();
 
   const char* doc;
 

@@ -1,4 +1,4 @@
-# Copyright 2004-2017 Cray Inc.
+# Copyright 2004-2018 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -17,6 +17,7 @@
 
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
+	chpl-env.c \
 	chpl-linefile-support.c \
 	chpl-string-support.c \
 	chplcast.c \
@@ -31,7 +32,6 @@ COMMON_NOGEN_SRCS = \
 	chpl-cache.c \
 	chpl-comm.c \
         chpl-comm-callbacks.c \
-	chpl-env.c \
 	chpl-init.c \
 	chplexit.c \
 	chpl-file-utils.c \

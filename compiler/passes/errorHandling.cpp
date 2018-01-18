@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -161,12 +161,14 @@ class ErrorHandlingVisitor : public AstVisitorTraverse {
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt (TryStmt*   node);
-  virtual void exitTryStmt  (TryStmt*   node);
-  virtual void exitCatchStmt(CatchStmt* node);
-  virtual bool enterCallExpr(CallExpr*  node);
-  virtual bool enterForLoop (ForLoop*   node);
-  virtual void exitForLoop  (ForLoop*   node);
+  virtual bool enterTryStmt  (TryStmt*   node);
+  virtual void exitTryStmt   (TryStmt*   node);
+  virtual void exitCatchStmt (CatchStmt* node);
+  virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterForLoop  (ForLoop*   node);
+  virtual void exitForLoop   (ForLoop*   node);
+  virtual bool enterDeferStmt(DeferStmt* node);
+  virtual void exitDeferStmt (DeferStmt* node);
 
 private:
   struct TryInfo {
@@ -179,6 +181,7 @@ private:
 
   std::stack<TryInfo> tryStack;
   std::stack<TryInfo> catchesStack;
+  int                 deferDepth;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
 
@@ -196,8 +199,9 @@ private:
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
                                            LabelSymbol* _epilogue) {
-  outError = _outError;
-  epilogue = _epilogue;
+  deferDepth = 0;
+  outError   = _outError;
+  epilogue   = _epilogue;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -357,7 +361,7 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
         insert->insertBefore(new DefExpr(errorVar));
         insert->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
 
-        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG)
+        if (outError != NULL && node->tryTag != TRY_TAG_IN_TRYBANG && deferDepth == 0)
           errorPolicy->insertAtTail(setOutGotoEpilogue(errorVar));
         else
           errorPolicy->insertAtTail(haltExpr(errorVar, false));
@@ -491,6 +495,17 @@ void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
   info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
 }
 
+bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
+  deferDepth++;
+
+  return true;
+}
+
+void ErrorHandlingVisitor::exitDeferStmt(DeferStmt* node) {
+  deferDepth--;
+}
+
+
 // Sets the fn out variable with the given error, then goes to the fn epilogue.
 AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
@@ -503,8 +518,6 @@ AList ErrorHandlingVisitor::setOutGotoEpilogue(VarSymbol* error) {
 
   return ret;
 }
-
-
 
 GotoStmt* ErrorHandlingVisitor::gotoHandler() {
 
@@ -747,9 +760,10 @@ public:
   ErrorCheckingVisitor(bool inThrowingFn, error_checking_mode_t inMode,
                        implicitThrowsReasons_t* reasons);
 
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
+  virtual bool enterTryStmt (TryStmt*   node);
+  virtual void exitTryStmt  (TryStmt*   node);
+  virtual bool enterCallExpr(CallExpr*  node);
+  virtual void exitDeferStmt(DeferStmt* node);
 
 private:
   int  tryDepth;
@@ -878,6 +892,17 @@ bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
+  if (mode == ERROR_MODE_FATAL) {
+
+    // OK, no checking needed
+
+  } else if (canBlockStmtThrow(node->body())) {
+    USR_FATAL_CONT(node, "error handling in defer blocks must be complete");
+    printReason(node, reasons);
+  }
+}
+
 } /* end anon namespace */
 
 
@@ -978,6 +1003,10 @@ static error_checking_mode_t computeErrorCheckingMode(FnSymbol* fn)
 
 static void checkErrorHandling(FnSymbol* fn, implicitThrowsReasons_t* reasons)
 {
+  if (strcmp(fn->name, "deinit") == 0) {
+    if (fn->throwsError())
+      USR_FATAL_CONT(fn, "deinit is not permitted to throw");
+  }
 
   error_checking_mode_t mode = computeErrorCheckingMode(fn);
   INT_ASSERT(mode != ERROR_MODE_UNKNOWN);

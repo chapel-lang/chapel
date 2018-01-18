@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -116,7 +116,9 @@ module Futures {
     var value: retType;
     var state: atomic bool;
 
-    proc FutureClass(type retType) {
+    proc init(type retType) {
+      this.retType = retType;
+      super.init();
       refcnt.write(0);
       state.clear();
     }
@@ -142,7 +144,9 @@ module Futures {
     var classRef: FutureClass(retType) = nil;
 
     pragma "no doc"
-    proc Future(type retType) {
+    proc init(type retType) {
+      this.retType = retType;
+      super.init();
       acquire(new FutureClass(retType));
     }
 

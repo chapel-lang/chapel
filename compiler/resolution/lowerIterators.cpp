@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -537,7 +537,8 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
                                          SymExpr* se) {
   int count = 1;
   for_formals(formal, iterator) {
-    if (se->symbol() == formal) {
+    if (formal->hasFlag(FLAG_RETARG) == false &&
+        se->symbol() == formal) {
       // count is used to get the nth field out of the iterator class;
       // it is replaced by the field once the iterator class is created
       Expr* stmt = se->getStmtExpr();
@@ -545,10 +546,18 @@ replaceIteratorFormalsWithIteratorFields(FnSymbol* iterator, Symbol* ic,
       // Error variable arguments should have already been handled.
       INT_ASSERT(! (formal->defPoint->parentSymbol != se->parentSymbol &&
                      formal->hasFlag(FLAG_ERROR_VARIABLE)));
-      // TODO -- this should use/respect ArgSymbol's Qualifier
-      VarSymbol* tmp = newTemp(formal->name, formal->type);
+
+      QualifiedType qt = formal->qualType();
+      // Workaround: use a ref type here
+      // In the future, the Qualifier should be sufficient
+      qt = qt.refToRefType();
+
+      VarSymbol* tmp = newTemp(formal->name, qt);
 
       stmt->insertBefore(new DefExpr(tmp));
+
+      // fixNumericalGetMemberPrims changes some of these
+      // to PRIM_GET_MEMBER_VALUE
       stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, ic, new_IntSymbol(count))));
       se->setSymbol(tmp);
     }
@@ -952,6 +961,7 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
           SET_LINENO(se);
           Symbol* newRet = newTemp("newRet", ret->type);
           newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
+          //newRet->addFlag(FLAG_YVV);
           block->insertAtHead(new DefExpr(newRet));
           se->setSymbol(newRet);
           retReplacementMap.put(block, newRet);
@@ -971,6 +981,12 @@ static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> sy
 // will be included in 'asts' and handled when 'fn' is the enclosing
 // iterator.
 //
+// see commit 8d3b2c4065d6466dbaadab0ae0c8444e6645dae6
+// Now we're using a return temp per yield, but this change is still
+// apparently necessary. I think that lowerIterators isn't copying some
+// variables when it should be.
+//
+// TODO: revisit and remove this
 static void localizeIteratorReturnSymbols() {
   forv_Vec(FnSymbol, iterFn, gFnSymbols) {
     if (iterFn->inTree() && iterFn->isIterator()) {
@@ -2222,6 +2238,9 @@ static void cleanupLeaderFollowerIteratorCalls()
   //
   // cleanup leader and follower iterator calls
   //
+  // Fixes uses of formals outside of their function.
+  // Such formals were temporarily added (e.g. in preFold for PRIM_TO_FOLLOWER)
+  //
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->parentSymbol) {
       if (FnSymbol* fn = call->resolvedFunction()) {
@@ -2239,18 +2258,19 @@ static void cleanupLeaderFollowerIteratorCalls()
             int i = 2; // first field is super
             for_actuals(actual, call) {
               SymExpr* se = toSymExpr(actual);
-              if (isArgSymbol(se->symbol()) && call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
+              if (isArgSymbol(se->symbol()) &&
+                  call->parentSymbol != se->symbol()->defPoint->parentSymbol) {
                 Symbol* field = toAggregateType(iteratorType)->getField(i);
                 VarSymbol* tmp = NULL;
                 SET_LINENO(call);
-                if (field->type == se->symbol()->type) {
-                  tmp = newTemp(field->name, field->type);
-                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
-                } else if (field->type->refType == se->symbol()->type) {
+                if (field->type->refType == se->symbol()->type) {
                   tmp = newTemp(field->name, field->type->refType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
                   call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, iterator, field)));
+                } else {
+                  tmp = newTemp(field->name, field->qualType());
+                  call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+                  call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, iterator, field)));
                 }
                 actual->replace(new SymExpr(tmp));
                 i++;
@@ -2268,7 +2288,9 @@ static void handlePolymorphicIterators()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Find iterator functions that are not in the AST tree.
-    if (fn->defPoint->parentSymbol && fn->iteratorInfo) {
+    if (fn->defPoint->parentSymbol &&
+        fn->iteratorInfo &&
+        !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
       // Assert that the getIterator() function *is* in the tree.
       FnSymbol* getIterator = fn->iteratorInfo->getIterator;
       INT_ASSERT(getIterator->defPoint->parentSymbol);
@@ -2331,29 +2353,34 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (hasAutoCopyForType(field->type)) {
+
+    Symbol* fieldValue = newTemp(field->name, field->qualType());
+    block->insertAtTail(new DefExpr(fieldValue));
+
+    // Read the field
+    block->insertAtTail(new CallExpr(PRIM_MOVE, fieldValue, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+
+    // Now auto-copy it if appropriate
+    Symbol* copyResult = fieldValue;
+    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
       FnSymbol* autoCopy = getAutoCopyForType(field->type);
-      Symbol* tmp1 = newTemp(field->name, field->type);
-      Symbol* tmp2 = newTemp(autoCopy->retType);
-      Symbol* refTmp = NULL;
-      block->insertAtTail(new DefExpr(tmp1));
-      block->insertAtTail(new DefExpr(tmp2));
-      if (isReferenceType(autoCopy->getFormal(1)->type)) {
-        refTmp = newTemp(autoCopy->getFormal(1)->type);
-        block->insertAtTail(new DefExpr(refTmp));
+      Symbol* valueToCopy = fieldValue;
+      Type* copyArgType = autoCopy->getFormal(1)->type;
+      // If the copy function is expecting a reference type that is
+      // a reference to the value we have, do a PRIM_ADDR_OF to pass it.
+      if (isReferenceType(copyArgType) &&
+          copyArgType->getValType() == fieldValue->type) {
+        valueToCopy = newTemp(copyArgType);
+        block->insertAtTail(new DefExpr(valueToCopy));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, valueToCopy, new CallExpr(PRIM_ADDR_OF, fieldValue)));
       }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp1, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      if (refTmp) {
-        block->insertAtTail(new CallExpr(PRIM_MOVE, refTmp, new CallExpr(PRIM_ADDR_OF, tmp1)));
-      }
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp2, new CallExpr(autoCopy, refTmp?refTmp:tmp1)));
-      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp2));
-    } else {
-      Symbol* tmp = newTemp(field->name, field->type);
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, tmp));
+      copyResult = newTemp(autoCopy->retType);
+      block->insertAtTail(new DefExpr(copyResult));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult, new CallExpr(autoCopy, valueToCopy)));
     }
+
+    // Now set the field
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, ret, field, copyResult));
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, ret));
   fn->body->replace(block);
@@ -2367,11 +2394,13 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
-      Symbol* tmp = newTemp(field->name, field->type);
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
-      block->insertAtTail(new CallExpr(autoDestroy, tmp));
+    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+      if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
+        Symbol* tmp = newTemp(field->name, field->type);
+        block->insertAtTail(new DefExpr(tmp));
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field)));
+        block->insertAtTail(new CallExpr(autoDestroy, tmp));
+      }
     }
   }
   block->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));

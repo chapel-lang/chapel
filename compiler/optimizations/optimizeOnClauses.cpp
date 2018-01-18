@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -259,6 +259,8 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_LOGICAL_FOLDER:
   case PRIM_TYPEOF:
+  case PRIM_STATIC_TYPEOF:
+  case PRIM_SCALAR_PROMOTION_TYPE:
   case PRIM_TYPE_TO_STRING:
   case PRIM_ENUM_MIN_BITS:
   case PRIM_ENUM_IS_SIGNED:

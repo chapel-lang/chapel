@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -225,5 +225,69 @@ proc file.realPath(): string throws {
    if err != ENOERR then try ioerror(err, "in file.getParentName");
    return ret;
  }
+ 
+/* Join and return one or more paths, putting precedent on the last absolute
+   path seen.  Return value is the concatenation of the paths with one
+   directory separator following each non-empty argument except the last.
+   Examples:
 
+   `joinPath("/foo/bar", "/baz")` will yield `"/baz"`
+
+   `joinPath("/foo", "./baz")` will yield `"/foo/./baz"`
+
+   `joinPath("/foo/", "", "./baz")` will also yield `"/foo/./baz"`
+
+   :arg paths: Any number of paths
+   :type paths: `string`
+
+   :return: The concatenation of the last absolute path with everything following
+            it, or all the paths provided if no absolute path is present
+   :rtype: `string`
+*/
+  proc joinPath(paths: string ...?n): string {
+    var result : string = paths(1); // result variable stores final answer
+   // loop to iterate over all the paths
+    for i in 2..n {
+      var temp : string = paths(i); 
+      if temp.startsWith('/') {
+        result = temp;
+      }  
+      else if result.endsWith('/') {
+        result = result + temp;
+      }
+      else {
+        result = result + "/" + temp;
+      }
+    }
+   return result;
+ }
+ 
+/* Determines whether the path specified is an absolute path in Unix
+   environment and returns error if it is not in Unix environment
+
+   :arg name: the path to be checked.
+   :type name: `string`
+
+   :return: `true` if `name` is an absolute path, `false` otherwise
+   :rtype: `bool`
+*/
+
+  proc isAbsPath(name: string): bool {
+     if (CHPL_TARGET_PLATFORM == 'linux64' ||
+         CHPL_TARGET_PLATFORM == 'linux32' || 
+         CHPL_TARGET_PLATFORM == 'darwin') {
+        if name.isEmptyString() {
+           return false;
+        }
+        const len: int = name.length;
+        var str: string = name[1];
+        if (str == '/') {
+          return true;
+        }
+        else 
+          return false;
+     }
+     else
+       compilerError("Target platform should have Unix like environment");
+  } 
 }

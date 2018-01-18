@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -254,11 +254,13 @@ module DistributedBag {
     }
 
     pragma "no doc"
+    pragma "fn returns iterator"
     inline proc these() {
       return _value.these();
     }
 
     pragma "no doc"
+    pragma "fn returns iterator"
     inline proc these(param tag) where (tag == iterKind.leader || tag == iterKind.standalone)
       && __primitive("method call resolves", _value, "these", tag=tag){
       return _value.these(tag=tag);

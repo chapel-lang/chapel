@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,31 +54,51 @@ static void makeRecordInitWrappers(CallExpr* call);
 ************************************** | *************************************/
 
 FnSymbol* resolveInitializer(CallExpr* call) {
+  FnSymbol* retval = NULL;
+
   callStack.add(call);
 
   resolveInitCall(call);
 
-  INT_ASSERT(call->isResolved());
+  // call->isResolved() is sometimes false on this.init() calls for generic
+  // records, as it might be a partial call that needs to get adjusted in order
+  // to resolve
+  if (call->isResolved()) {
 
-  resolveInitializerMatch(call->resolvedFunction());
+    resolveInitializerMatch(call->resolvedFunction());
 
-  if (isGenericRecord(call->get(2)->typeInfo())) {
-    NamedExpr* named   = toNamedExpr(call->get(2));
-    SymExpr*   namedSe = toSymExpr(named->actual);
-    Symbol*    sym     = namedSe->symbol();
+    if (isGenericRecord(call->get(2)->typeInfo())) {
+      SymExpr* namedSe = NULL;
 
-    sym->type = call->resolvedFunction()->_this->type;
+      // There are two cases for generic records
+      if (NamedExpr* named = toNamedExpr(call->get(2))) {
+        // Case 1) this is the outermost init call
+        // This means that the second argument to the call will be named
+        namedSe = toSymExpr(named->actual);
 
-    if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
-      sym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+      } else if (isSymExpr(call->get(2))) {
+        // Case 2) this is a this.init() call in the initializer.
+        // This means that the second argument to the call will not be named.
+        namedSe = toSymExpr(call->get(2));
+      }
+
+      Symbol* sym = namedSe->symbol();
+
+      sym->type = call->resolvedFunction()->_this->type;
+
+      if (sym->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
+        sym->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+      }
+
+      makeRecordInitWrappers(call);
     }
 
-    makeRecordInitWrappers(call);
+    retval = call->resolvedFunction();
   }
 
   callStack.pop();
 
-  return call->resolvedFunction();
+  return retval;
 }
 
 /************************************* | **************************************

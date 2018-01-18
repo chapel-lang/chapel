@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -856,6 +856,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
       }
     }
+
+  } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||
+             call->isPrimitive(PRIM_SCALAR_PROMOTION_TYPE)) {
+
+    // Replace the type query call with a SymExpr of the type symbol
+    // call->typeInfo() will request the type from the primitive
+    Type* type = call->typeInfo();
+    retval = new SymExpr(type->symbol);
+    call->replace(retval);
 
   } else if (call->isPrimitive(PRIM_QUERY)) {
     Symbol* field = determineQueriedField(call);

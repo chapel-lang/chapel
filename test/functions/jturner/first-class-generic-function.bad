@@ -1,5 +1,5 @@
 first-class-generic-function.chpl:72: In function 'scalar_outer_product_cholesky':
-first-class-generic-function.chpl:90: internal error: CAL0066 chpl Version 1.13.0.c914f67
+first-class-generic-function.chpl:90: internal error: CAL0066 chpl version 1.13.0.c914f67
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 

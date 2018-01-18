@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,9 +78,9 @@ module Barriers {
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    proc Barrier(numTasks: int,
-                 barrierType: BarrierType = BarrierType.Atomic,
-                 reusable: bool = (barrierType == BarrierType.Atomic)) {
+    proc init(numTasks: int,
+              barrierType: BarrierType = BarrierType.Atomic,
+              reusable: bool = (barrierType == BarrierType.Atomic)) {
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
@@ -101,6 +101,14 @@ module Barriers {
         }
       }
       owned = true;
+    }
+
+    /* copy initializer */
+    pragma "no doc"
+    proc init(b: Barrier) {
+      this.bar = b.bar;
+      this.owned = false;
+      super.init();
     }
 
     pragma "no doc"
@@ -208,7 +216,9 @@ module Barriers {
 
        :arg n: The number of tasks involved in this barrier
      */
-    proc aBarrier(n: int, param reusable: bool) {
+    proc init(n: int, param reusable: bool) {
+      this.reusable = reusable;
+      super.init();
       reset(n);
     }
 
@@ -293,8 +303,9 @@ module Barriers {
 
        :arg n: The number of tasks that will be involved in the barrier.
      */
-    proc sBarrier(n: int) {
+    proc init(n: int) {
       count = n;
+      super.init();
     }
 
     proc reset(nTasks: int) {
@@ -352,14 +363,5 @@ module Barriers {
     lhs.owned = false;
   }
 
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(b: Barrier) {
-    pragma "no auto destroy"
-    var ret: Barrier;
-    ret.bar = b.bar;
-    ret.owned = false;
-    return ret;
-  }
 }
 

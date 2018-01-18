@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,7 @@ chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi) {
     // Init is parallel-safe because all stores are of the same values.
     //
     if (!track_all_mds_set) {
-      track_all_mds = chpl_get_rt_env_bool("MEMTRACK_ALL_MDS", false);
+      track_all_mds = chpl_env_rt_get_bool("MEMTRACK_ALL_MDS", false);
       track_all_mds_set = true;
     }
 

@@ -162,19 +162,26 @@ COMP_FLAGS="--cc-warnings"
 
 # Compile test job into temporary directory
 log_info "Compiling \$CHPL_HOME/${REL_TEST_DIR}/${TEST_JOB}.chpl"
-TEST_COMP_OUT=$( ${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} 2>&1 )
+${CHPL_BIN} ${TEST_DIR}/${TEST_JOB}.chpl ${COMP_FLAGS} -o ${TMP_TEST_DIR}/${TEST_JOB} > ${TMP_TEST_DIR}/chpl.out 2>&1
 COMPILE_STATUS=$?
 
-# Check that compile was successful
+# Check that chpl compile was successful
 log_debug "Compilation exit status was ${COMPILE_STATUS}"
 
+    # exit status 0?
 if [ ${COMPILE_STATUS} -ne 0 ]; then
     log_error "Test job failed to compile - Chapel is not installed correctly"
     log_error "Compilation output:"
-    echo "${TEST_COMP_OUT}"
+    cat ${TMP_TEST_DIR}/chpl.out
     log_debug "Exit \"make check\" script with status code 1"
     exit 1
-elif [ -n "${TEST_COMP_OUT}" ]; then
+fi
+
+    # no errors on stdout/stderr?
+    # first, apply "prediff"-like filter to remove gmake "clock skew detected" warnings, if any
+TEST_COMP_OUT=$( grep < ${TMP_TEST_DIR}/chpl.out -Ev '^g?make(\[[0-9]+\])?: *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$' 2>&1 )
+
+if [ -n "${TEST_COMP_OUT}" ]; then
     log_error "Test job compiled with output - Chapel is not installed correctly"
     log_error "Compilation output:"
     echo "${TEST_COMP_OUT}"

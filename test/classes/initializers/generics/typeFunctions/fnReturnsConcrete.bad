@@ -1,2 +1,0 @@
-fnReturnsConcrete.chpl:15: error: unresolved call '_new(type C(int(64)))'
-(prediff deleted module lines)

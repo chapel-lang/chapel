@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -87,16 +87,25 @@ removeRetSymbolAndUses(FnSymbol* fn) {
   // follows getReturnSymbol()
   CallExpr* ret = toCallExpr(fn->body->body.last());
   INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
-  SymExpr* rse = toSymExpr(ret->get(1));
-  INT_ASSERT(rse);
-  Symbol*  rsym = rse->symbol();
+
+  // Since iterator returns might have been already translated to
+  // assignments to a return argument, remove those assignments.
+  if (CallExpr* assign = toCallExpr(ret->prev))
+    if (assign->isPrimitive(PRIM_MOVE) || assign->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* se = toSymExpr(assign->get(1)))
+        if (se->symbol()->hasFlag(FLAG_RETARG))
+          assign->remove();
 
   // Yank the return statement.
   ret->remove();
 
   // We cannot remove rsym's definition, because rsym
   // may also be referenced in an autoDestroy call.
-  return rsym->type;
+
+  INT_ASSERT(fn->iteratorInfo != NULL);
+  Type* yieldedType = fn->iteratorInfo->yieldedType;
+
+  return yieldedType;
 }
 
 //
@@ -226,11 +235,12 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
   BlockStmt* block = toBlockStmt(stmt);
   BlockStmt* loop  = (block != 0 && block->isLoopStmt()) ? block : 0;
 
+  bool makeRef = false;
+
   if (call && call->isPrimitive(PRIM_GET_MEMBER)) {
     // Get member returns the address of the member, so we convert the
     // type of the corresponding temp to a reference type.
-    INT_ASSERT(tmp->type->getRefType());
-    tmp->type = tmp->type->getRefType();
+    makeRef = true;
   }
   if (call && call->isResolved()) {
     // If se is an argument to a function that takes in
@@ -240,9 +250,17 @@ static void replaceLocalWithFieldTemp(SymExpr*       se,
     INT_ASSERT(arg);
     if (!isReferenceType(tmp->type) &&
         (arg->intent & INTENT_FLAG_REF)) {
-      INT_ASSERT(tmp->type->getRefType());
-      tmp->type = tmp->type->getRefType();
+      makeRef = true;
     }
+  }
+  if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
+    if (arg->intent & INTENT_FLAG_REF)
+      makeRef = true;
+  }
+
+  if (makeRef) {
+    INT_ASSERT(tmp->type->getRefType());
+    tmp->type = tmp->type->getRefType();
   }
 
   // OK, insert the declaration.
@@ -398,13 +416,16 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
 
         } else {
           // Update ic.value.
-          SymExpr* upd = new SymExpr(ySym);
-          pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
-          if (ySym->defPoint->parentSymbol == fn) {
-            // Need to convert 'upd' itself, too.
-            Symbol* field = local2field.get(se->symbol());
-            INT_ASSERT(field && field != valField);
-            replaceLocalWithFieldTemp(upd, ic, field, false, true, asts);
+          // Unless it's yielding something of type dtVoid.
+          if (ySym->type != dtVoid) {
+            SymExpr* upd = new SymExpr(ySym);
+            pc->insertBefore(new CallExpr(PRIM_SET_MEMBER, ic, valField, upd));
+            if (ySym->defPoint->parentSymbol == fn) {
+              // Need to convert 'upd' itself, too.
+              Symbol* field = local2field.get(se->symbol());
+              INT_ASSERT(field && field != valField);
+              replaceLocalWithFieldTemp(upd, ic, field, false, true, asts);
+            }
           }
         }
       } else if (useSet.set_in(se) || defSet.set_in(se)) {
@@ -417,8 +438,15 @@ replaceLocalsWithFields(FnSymbol* fn,           // the iterator function
         CallExpr* call = toCallExpr(se->parentExpr);
 
         if (call && call->isPrimitive(PRIM_ADDR_OF)) {
+
           // Convert (addr of var) to (. _ic field).
-          call->primitive = primitives[PRIM_GET_MEMBER];
+          // Note, GET_MEMBER is not valid on a ref field;
+          // in that event, GET_MEMBER_VALUE returns the ref.
+          if (field->isRef())
+            call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+          else
+            call->primitive = primitives[PRIM_GET_MEMBER];
+
           call->insertAtHead(ic);
           se->setSymbol(field);
         } else {
@@ -1195,7 +1223,8 @@ rebuildIterator(IteratorInfo* ii,
   fn->defPoint->remove();
 
   // Now the iterator creates and returns a copy of the iterator record.
-  fn->retType = ii->irecord;
+  if (!fn->hasFlag(FLAG_FN_RETARG))
+    fn->retType = ii->irecord;
 
   Symbol* iterator = newTemp("_ir", ii->irecord);
 
@@ -1228,7 +1257,17 @@ rebuildIterator(IteratorInfo* ii,
   }
 
   // Return the filled-in iterator record.
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+  if (fn->hasFlag(FLAG_FN_RETARG)) {
+    ArgSymbol* retArg = NULL;
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_RETARG))
+        retArg = formal;
+    }
+    fn->insertAtTail(new CallExpr(PRIM_ASSIGN, retArg, iterator));
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  } else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, iterator));
+  }
 
   ii->getValue->defPoint->insertAfter(new DefExpr(fn));
 
@@ -1256,7 +1295,8 @@ rebuildGetIterator(IteratorInfo* ii) {
   for_fields(field, ii->irecord) {
     // Load the record field into a temp,
     // and then use that to set the corresponding class field.
-    VarSymbol* fieldReadTmp  = newTemp(field->type);
+    VarSymbol* fieldReadTmp  = newTemp(field->qualType());
+
     CallExpr*  fieldRead     = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, field);
 
     getIterator->insertBeforeEpilogue(new DefExpr(fieldReadTmp));
@@ -1336,17 +1376,20 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
     ? "value"
     : astr("F", istr(i++), "_", local->name);
 
-  if (local) {
-    type = local->type;
-    // The return value is automatically dereferenced (I guess).
-    if (local == fn->_this && type->symbol->hasFlag(FLAG_REF) &&
-        // TODO -- why is this dereferencing done ever?
-        !isRecordWrappedType(type->getValType()))
-      type = type->getValType();
-  }
-
   // Add a field to the class
-  Symbol* field = new VarSymbol(fieldName, type);
+
+  // Propagate the Qualifier (e.g. field is ref if local is ref)
+  // This is especially important if local is an ArgSymbol
+  QualifiedType qt(QUAL_VAL, type);
+  if (local)
+    qt = local->qualType();
+  // Workaround: use a ref type here
+  // In the future, the Qualifier should be sufficient
+  qt = qt.refToRefType();
+
+  INT_ASSERT(qt.type() != dtUnknown);
+  Symbol* field = new VarSymbol(fieldName, qt);
+
   fn->iteratorInfo->iclass->fields.insertAtTail(new DefExpr(field));
 
   return field;
@@ -1392,7 +1435,8 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 
     // Only (live) arguments are added to the record.
     if (isArgSymbol(local)) {
-      Symbol* rfield = new VarSymbol(field->name, field->type);
+      VarSymbol* rfield = new VarSymbol(field->name, field->type);
+      rfield->qual = field->qual;
       local2rfield.put(local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
 
@@ -1451,7 +1495,8 @@ void lowerIterator(FnSymbol* fn) {
 
   // Add all formals to the set of local symbols.
   for_formals(formal, fn)
-    locals.add(formal);
+    if (!formal->hasFlag(FLAG_RETARG))
+      locals.add(formal);
 
   collectYieldSymbols(fn, asts, yldSymSet, &oneLocalYS);
 

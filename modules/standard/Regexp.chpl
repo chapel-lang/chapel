@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -411,7 +411,7 @@ pragma "no doc"
 proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
 
   if CHPL_REGEXP == "none" {
-    compilerError("Regular expression support not compiled in");
+    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
   }
 
   var err: syserr;

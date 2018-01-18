@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -931,6 +931,7 @@ CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // See comment in buildForallLoopExpr()
   ArgSymbol* iteratorExprArg = new ArgSymbol(INTENT_BLANK, "iterExpr", dtAny);
@@ -985,6 +986,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   bool zippered)
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
+  lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
                                         iterKindTypename),
@@ -1081,6 +1083,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // MPF: We'll add the iteratorExpr to the call, so we need an
   // argument to accept it in the new function. This way,
@@ -2170,6 +2173,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // data will hold the reduce-d expression as an argument
   // we'll store dataExpr in the call to the chpl__scan function.

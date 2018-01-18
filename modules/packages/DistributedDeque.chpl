@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -234,11 +234,13 @@ module DistributedDeque {
     }
 
     pragma "no doc"
+    pragma "fn returns iterator"
     inline proc these(param order : Ordering = Ordering.NONE) {
       return _value.these(order);
     }
 
     pragma "no doc"
+    pragma "fn returns iterator"
     inline proc these(param order : Ordering = Ordering.NONE, param tag) where
         (tag == iterKind.leader || tag == iterKind.standalone)
         && __primitive("method call resolves", _value, "these", tag=tag) {

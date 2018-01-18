@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -476,10 +476,13 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   SymbolMap copyMap;
 
+  bool isConstructorOrInit = fn->hasFlag(FLAG_CONSTRUCTOR) ||
+                             0 == strcmp(fn->name, "init");
+
   // Set up the arguments
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+      !isConstructorOrInit) {
     // Set up mt and this arguments
     Symbol* thisArg = fn->_this;
     ArgSymbol* mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
@@ -707,10 +710,13 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   // appropriate actual values.
   CallExpr* newCall = new CallExpr(entry->defaultExprFn);
 
+  bool isConstructorOrInit = fn->hasFlag(FLAG_CONSTRUCTOR) ||
+                             0 == strcmp(fn->name, "init");
+
   // Add method token, this if needed
   if (fn->hasFlag(FLAG_METHOD) &&
       fn->_this != NULL &&
-      !fn->hasFlag(FLAG_CONSTRUCTOR)) {
+      !isConstructorOrInit) {
     // Set up mt and _this arguments
     newCall->insertAtTail(gMethodToken);
     Symbol* usedFormal = fn->_this;
@@ -1384,9 +1390,10 @@ static IntentTag getIntent(ArgSymbol* formal) {
   IntentTag retval = formal->intent;
 
   if (retval == INTENT_BLANK || retval == INTENT_CONST) {
-    if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
+    // Why did we previously exclude iterator records?
+    //if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
       retval = concreteIntentForArg(formal);
-    }
+    //}
   }
 
   return retval;
@@ -1844,6 +1851,9 @@ static void buildLeaderIterator(FnSymbol* wrapFn,
   BlockStmt*  loop       = NULL;
   BlockStmt*  loopBody   = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
   CallExpr*   toLeader   = NULL;
+
+  // Leader iterators always return by value
+  liFn->retTag = RET_VALUE;
 
   INT_ASSERT(liFn->hasFlag(FLAG_RESOLVED) == false);
 

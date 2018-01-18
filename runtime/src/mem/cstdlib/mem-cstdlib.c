@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -34,7 +34,7 @@ void chpl_mem_layerInit(void) {
   void* start;
   size_t size;
 
-  chpl_comm_get_registered_heap(&start, &size);
+  chpl_comm_regMemHeapInfo(&start, &size);
   if (start || size) {
     chpl_error("Your CHPL_MEM setting doesn't support the registered heap "
                "required by your CHPL_COMM setting. You'll need to change one "

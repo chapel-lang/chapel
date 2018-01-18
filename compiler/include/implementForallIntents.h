@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,6 @@ void      addArgsToToLeaderCallForPromotionWrapper(FnSymbol* fn,
                                                    int numExtraArgs,
                                                    Symbol* extraFormals[]);
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref);
-void       checkAndRemoveOrigRetSym(Symbol* origRet, FnSymbol* parentFn);
 FnSymbol*  copyLeaderFn(FnSymbol* origFn, bool ignore_isResolved);
 
 void implementForallIntents2New(ForallStmt* fs, CallExpr* parCall);

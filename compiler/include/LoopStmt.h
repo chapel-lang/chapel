@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,8 @@ public:
   static LoopStmt*       findEnclosingLoop(Expr* expr);
 
   static LoopStmt*       findEnclosingLoop(Expr* expr, const char* name);
+
+  static Stmt*           findEnclosingLoopOrForall(Expr* expr);
 
 public:
   virtual bool           isLoopStmt()                                    const;

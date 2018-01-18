@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #include "astutil.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "optimizations.h"
 #include "stmt.h"
 #include "LoopStmt.h"
@@ -34,6 +35,7 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
   std::vector<BaseAST*> asts;
   std::set<BaseAST*> labels;
   std::set<LoopStmt*> loops;
+  std::vector<ForallStmt*> foralls;
   collect_asts(fn, asts);
   for_vector(BaseAST, ast, asts) {
     if (GotoStmt* gotoStmt = toGotoStmt(ast)) {
@@ -46,6 +48,8 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
         labels.insert(label->symbol());
     } else if (LoopStmt* loop = toLoopStmt(ast)) {
       loops.insert(loop);
+    } else if (ForallStmt* forall = toForallStmt(ast)) {
+      foralls.push_back(forall);
     }
   }
 
@@ -68,5 +72,10 @@ void removeUnnecessaryGotos(FnSymbol* fn, bool removeEpilogueLabel) {
     if (continueLabel && isAlive(continueLabel) == false) {
       loop->continueLabelSet(NULL);
     }
+  }
+
+  for_vector(ForallStmt, forall, foralls) {
+    if (forall->fContinueLabel && !isAlive(forall->fContinueLabel))
+      forall->fContinueLabel = NULL;
   }
 }

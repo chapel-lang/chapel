@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -137,6 +137,7 @@ symbolFlag( FLAG_DELAY_GENERIC_EXPANSION, npr, "delay instantiation", "generics 
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, npr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
+symbolFlag( FLAG_YVV, npr, "YVV", "variable is a yield value variable" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
 symbolFlag( FLAG_IF_EXPR_FN , npr, "if-expr function" , ncm )
 symbolFlag( FLAG_IMPLICIT_ALIAS_FIELD , npr, "implicit alias field" , ncm )
@@ -150,7 +151,6 @@ symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "an _indexOfInterest or chpl__followId
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINE_ITERATOR , npr, "inline iterator" , "iterators that are always inlined, e.g., leaders" )
-symbolFlag( FLAG_INSERT_AUTO_COPY , npr, "insert auto copy" , ncm )
 symbolFlag( FLAG_INSERT_AUTO_DESTROY , ypr, "insert auto destroy" , ncm )
 symbolFlag( FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW , npr, "insert auto destroy for explicit new" , ncm )
 symbolFlag( FLAG_INSERT_LINE_FILE_INFO , ypr, "insert line file info" , ncm )
@@ -283,6 +283,7 @@ symbolFlag( FLAG_REMOVABLE_AUTO_DESTROY , ypr, "removable auto destroy" , ncm )
 symbolFlag( FLAG_RESOLVED , npr, "resolved" , "this function has been resolved" )
 symbolFlag( FLAG_RETARG, npr, "symbol is a _retArg", ncm )
 symbolFlag( FLAG_RETURNS_ALIASING_ARRAY, ypr, "fn returns aliasing array", "array alias/slice/reindex/rank change function" )
+symbolFlag( FLAG_FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can return an iterator instead of promoting it to an array")
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )
@@ -297,6 +298,7 @@ symbolFlag( FLAG_SUPER_TEMP, npr, "temporary of super field", ncm)
 symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not report an lvalue error if it occurs in a function with this flag" )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
+symbolFlag( FLAG_TASK_FN_FROM_ITERATOR_FN , npr, "task fn from iterator fn" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_REF_TEMP , npr, "ref temp" , "compiler-inserted reference temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -100,6 +100,7 @@ struct GenInfo {
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;
+  llvm::MDNode* tbaaUnionsNode;
 
   // Information used to generate code with fLLVMWideOpt. Instead of
   // generating wide pointers with puts and gets, we generate

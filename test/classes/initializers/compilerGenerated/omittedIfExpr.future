@@ -1,0 +1,6 @@
+bug: conditional expressions not supported in fields due to default initializers
+
+Currently, default initializers get generated improperly when one or more fields
+are given an initial value that is a conditional expression.  I thought I had a
+path that would solve this issue quickly, but it turns out to be more involved,
+so save this test as a future for the moment.

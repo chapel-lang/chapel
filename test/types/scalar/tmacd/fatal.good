@@ -1,2 +1,1 @@
-chpl fatal.chpl
-internal error: FUN5596 chpl Version 1.9.0.620405d
+fatal.chpl:5: error: unresolved call 'int(64)(real(64))'

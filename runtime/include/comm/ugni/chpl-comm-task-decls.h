@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,7 @@ typedef struct {
 typedef struct {
   chpl_fn_int_t fid;
   int caller;
-  void* done; // where to indicate completion on caller
+  void* rf_done; // where to indicate completion on caller
 } chpl_comm_bundleData_t;
 
 //

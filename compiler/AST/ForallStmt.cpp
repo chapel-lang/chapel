@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,8 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
   fLoopBody(body),
-  fFromForLoop(false)
+  fFromForLoop(false),
+  fContinueLabel(NULL)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
@@ -222,6 +223,19 @@ BlockStmt* userLoop(const ForallStmt* fs) {
   BlockStmt* ul = toBlockStmt(fs->loopBody()->body.tail);
   INT_ASSERT(ul);
   return ul;
+}
+
+LabelSymbol* ForallStmt::continueLabel() {
+  if (fContinueLabel == NULL) {
+    // We are extra-cautious here, to guard against the potential
+    // that we have added code that must execute at the end of fLoopBody.
+    // If this presents hardship, we can switch to always creating
+    // fContinueLabel, right when the ForallStmt is created.
+    INT_ASSERT(!normalized);
+    fContinueLabel = new LabelSymbol("_continueLabel");
+    fLoopBody->insertAtTail(new DefExpr(fContinueLabel));
+  }
+  return fContinueLabel;
 }
 
 /////////////////////////////////////////////////////////////////////////////

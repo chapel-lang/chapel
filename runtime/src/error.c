@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -99,7 +99,7 @@ static void chpl_stack_unwind(void){
 #endif
 
   // Check if we need to print the stack trace (default = yes)
-  if(! chpl_get_rt_env_bool("UNWIND", true)) {
+  if(! chpl_env_rt_get_bool("UNWIND", true)) {
     return;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -165,14 +165,14 @@ proc hypot(a, b:real) {
 
 class CholeskyDecomposition {
 
+   /* Row and column dimension (square matrix). */
+   var n:int;
+
    pragma "no doc"
    var lDom = {0..1,0..1};
 
    /* Array for internal storage of decomposition. internal array storage. */
    var L : [lDom] real;
-
-   /* Row and column dimension (square matrix). */
-   var n:int;
 
    /* Symmetric and positive definite flag.
    */
@@ -182,7 +182,7 @@ class CholeskyDecomposition {
        Structure to access L and isspd flag.
        Arg a Square, symmetric matrix.
    */
-   proc CholeskyDecomposition (Arg:Matrix) {
+   proc init (Arg:Matrix) {
 
 
      // Initialize.
@@ -191,6 +191,9 @@ class CholeskyDecomposition {
       lDom = {1..n, 1..n};
       //L = new double[n,n];
       isspd = (Arg.getColumnDimension() == n);
+
+      super.init();
+
       // Main loop.
       //for (int j = 0; j < n; j++) {
       for j in 1..n {
@@ -1163,14 +1166,15 @@ class EigenvalueDecomposition {
        Structure to access D and V.
    */
 
-   proc EigenvalueDecomposition (Arg:Matrix) {
+   proc init (Arg:Matrix) {
       var A = Arg.getArray();
       n = Arg.getColumnDimension();
-      vDom = {1..n,1..n};
+      issymmetric = true;
       dDom = {1..n};
       eDom = {1..n};
+      vDom = {1..n,1..n};
+      super.init();
 
-      issymmetric = true;
       var j = 1;
       while( (j < n) & issymmetric ) {
          var i = 1;
@@ -1270,17 +1274,17 @@ class EigenvalueDecomposition {
 
 class LUDecomposition {
 
-   /* Array for internal storage of decomposition.
-   */
-   var luDom = {1..1, 1..1};
-   var LU : [luDom] real;
-
    /* Row and column dimensions, and pivot sign.
    column dimension.
    row dimension.
    pivot sign.
    */
    var m, n, pivsign : int;
+
+   /* Array for internal storage of decomposition.
+   */
+   var luDom = {1..1, 1..1};
+   var LU : [luDom] real;
 
    /* Internal storage of pivot vector.
    pivot vector.
@@ -1293,21 +1297,20 @@ class LUDecomposition {
    A Rectangular matrix
    */
 
-   proc LUDecomposition (A:Matrix) {
+   proc init (A:Matrix) {
    // Use a "left-looking", dot-product, Crout/Doolittle algorithm.
 
       m = A.getRowDimension();
       n = A.getColumnDimension();
+      pivsign = 1;
+
       luDom = {1..m,1..n};
       LU = A.getArrayCopy();
 
-      pivDom = 1..m;
+      pivDom = {1..m};
+      piv = pivDom;
+      super.init();
 
-      for i in 1..m {
-         piv[i] = i;
-      }
-
-      pivsign = 1;
       var lurowiDom = {1..n};
       var LUrowi : [lurowiDom] real;
 
@@ -1536,26 +1539,27 @@ version 5 August 1998
 
 class Matrix { 
 
-   /* Array for internal storage of elements.
-   */
-   var aDom = {1..1, 1..1};
-   var A : [aDom] real;
-
    /* Row and column dimensions.
      row dimension.
         column dimension.
    */
    var m, n : int;
 
+   /* Array for internal storage of elements.
+   */
+   var aDom = {1..1, 1..1};
+   var A : [aDom] real;
+
    /* Construct an m-by-n matrix of zeros. 
         m    Number of rows.
         n    Number of columns.
    */
 
-   proc Matrix (m:int, n: int) {
+   proc init (m:int, n: int) {
       this.m = m;
       this.n = n;
       aDom = {1..m, 1..n};
+      super.init();
    }
 
    /* Construct an m-by-n constant matrix.
@@ -1564,20 +1568,19 @@ class Matrix {
         s    Fill the matrix with this scalar value.
    */
 
-   proc Matrix (m:int, n:int, s:real) {
+   proc init (m:int, n:int, s:real) {
       this.m = m;
       this.n = n;
       aDom = {1..m, 1..n};
-      for (i,j) in {1..m, 1..n} {
-         A[i,j] = s;
-      }
+      A = s;
+      super.init();
    }
 
    /* Construct a matrix from a 2-D array.
         A    Two-dimensional array of doubles.
    */
 
-   proc Matrix (A:[?aDom] real) {
+   proc init (A:[?aDom] real) {
       if aDom.rank == 1 {
          m = aDom.high;
          n = 1;
@@ -1588,6 +1591,7 @@ class Matrix {
       }
 
       this.aDom = {1..m, 1..n};
+      super.init();
 
       for i in 1..m {
          if (this.aDom.high(2) != n) {
@@ -1609,11 +1613,12 @@ class Matrix {
         n    Number of columns.
    */
 
-   proc Matrix (A:[?aDom] real, m:int, n:int) where aDom.rank == 2 {
-      this.aDom = {1..m, 1..n};
-      this.A = A(this.aDom);
+   proc init (A:[?aDom] real, m:int, n:int) where aDom.rank == 2 {
       this.m = m;
       this.n = n;
+      this.aDom = {1..m, 1..n};
+      this.A = A(this.aDom);
+      super.init();
    }
 
    /* Construct a matrix from a one-dimensional packed array
@@ -1621,13 +1626,14 @@ class Matrix {
         m    Number of rows.
    */
 
-   proc Matrix (vals:[?valsDom] real, m:int) where valsDom.rank == 1 {
+   proc init (vals:[?valsDom] real, m:int) where valsDom.rank == 1 {
       this.m = m;
       n = if(m != 0) then vals.domain.high/m else 0;
+      aDom = {1..m, 1..n};
+      super.init();
       if (m*n != vals.domain.high) {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
-      aDom = {1..m, 1..n};
       var revDom = {1..n, 1..m};
       for (ij, val) in zip(revDom, vals) { A(ij(2), ij(1)) = val; }
    }
@@ -2283,16 +2289,16 @@ proc random (m, n:int) {
 
 class QRDecomposition {
 
-   /* Array for internal storage of decomposition.
-   */
-   var qrDom = {1..1,1..1};
-   var QR : [qrDom] real;
-
    /* Row and column dimensions.
    column dimension.
    row dimension.
    */
    var m, n:int;
+
+   /* Array for internal storage of decomposition.
+   */
+   var qrDom = {1..1,1..1};
+   var QR : [qrDom] real;
 
    /* Array for internal storage of diagonal of R.
    */
@@ -2304,7 +2310,7 @@ class QRDecomposition {
    A    Rectangular matrix
    */
 
-   proc QRDecomposition (A:Matrix) {
+   proc init (A:Matrix) {
       // Initialize.
       m = A.getRowDimension();
       n = A.getColumnDimension();
@@ -2312,6 +2318,7 @@ class QRDecomposition {
       qrDom = {1..m, 1..n}; 
       QR = A.getArrayCopy();
       rdiagDom = {1..n};
+      super.init();
 
       // Main loop.
       for k in rdiagDom {
@@ -2500,6 +2507,17 @@ class QRDecomposition {
 
 class SingularValueDecomposition {
 
+   /* Row and column dimensions.
+   row dimension.
+   column dimension.
+   */
+   var m, n : int;
+
+   /* Array for internal storage of singular values.
+   */
+   var sDom = {1..1};
+   var s : [sDom] real;
+
    /* Arrays for internal storage of U and V.
    internal storage of U.
    internal storage of V.
@@ -2510,23 +2528,12 @@ class SingularValueDecomposition {
    var U : [uDom] real;
    var V : [vDom] real;
 
-   /* Array for internal storage of singular values.
-   */
-   var sDom = {1..1};
-   var s : [sDom] real;
-
-   /* Row and column dimensions.
-   row dimension.
-   column dimension.
-   */
-   var m, n : int;
-
    /* Construct the singular value decomposition
        Structure to access U, S and V.
    Arg    Rectangular matrix
    */
 
-   proc SingularValueDecomposition (Arg:Matrix) {
+   proc init (Arg:Matrix) {
 
       // Derived from LINPACK code.
       // Initialize.
@@ -2548,12 +2555,13 @@ class SingularValueDecomposition {
       var nu = min(m,n);
 
       sDom = {1..min(m+1,n)};
-      ref S = s.reindex({0..min(m+1,n)-1}); // chapel aliases saved the day!
-
       uDom = {1..m, 1..nu};
-      ref UU = U[uDom].reindex({0..m-1,0..nu-1});
-
       vDom = {1..n, 1..n};
+
+      super.init();
+
+      ref S = s.reindex({0..min(m+1,n)-1}); // chapel aliases saved the day!
+      ref UU = U[uDom].reindex({0..m-1,0..nu-1});
       ref VV = V[vDom].reindex({0..n-1, 0..n-1});
 
       var e : [0..n-1] real;

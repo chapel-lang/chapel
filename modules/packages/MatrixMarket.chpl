@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -92,10 +92,12 @@ module MatrixMarket {
       var headers_written:bool;
       var last_rowno:int;
 
-      proc MMWriter(type eltype, const fname:string) {
+      proc init(type eltype, const fname:string) {
+         this.eltype = eltype;
          fd = open(fname, iomode.cw, iokind.native);
          fout = fd.writer(start=0);
          headers_written=false;
+         super.init();
       }
 
       proc write_headers(nrows, ncols, nnz=-1) {
@@ -194,9 +196,10 @@ class MMReader {
    var fin:channel(false, iokind.dynamic, true);
    var finfo:MMInfo;
 
-   proc MMReader(const fname:string) {
+   proc init(const fname:string) {
       fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
       fin = fd.reader(start=0, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+      super.init();
    }
 
    proc read_header() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,7 @@
 
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
+#include "symbol.h"
 #include "vec.h"
 
 class BaseAST;
@@ -51,6 +52,9 @@ public:
   FnSymbol*      getValue;
   FnSymbol*      init;
   FnSymbol*      incr;
+
+  Type*          yieldedType;
+  RetTag         iteratorRetTag;
 };
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);

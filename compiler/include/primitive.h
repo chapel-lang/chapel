@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -128,6 +128,8 @@ enum PrimitiveTag {
   PRIM_CAST,
   PRIM_DYNAMIC_CAST,
   PRIM_TYPEOF,
+  PRIM_STATIC_TYPEOF,
+  PRIM_SCALAR_PROMOTION_TYPE,
   PRIM_USED_MODULES_LIST,       // used modules in BlockStmt::modUses
   PRIM_TUPLE_EXPAND,
   PRIM_TUPLE_AND_EXPAND,

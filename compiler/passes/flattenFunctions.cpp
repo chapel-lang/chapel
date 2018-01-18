@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 
 static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions);
 
 void flattenFunctions() {
   Vec<FnSymbol*> nestedFunctions;
@@ -37,8 +38,10 @@ void flattenFunctions() {
     }
   }
 
+  markTaskFunctionsInIterators(nestedFunctions);
   flattenNestedFunctions(nestedFunctions);
 }
+
 
 void flattenNestedFunction(FnSymbol* nestedFunction) {
   if (isFnSymbol(nestedFunction->defPoint->parentSymbol)) {
@@ -49,6 +52,28 @@ void flattenNestedFunction(FnSymbol* nestedFunction) {
     flattenNestedFunctions(nestedFunctions);
   }
 }
+
+static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
+
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
+    FnSymbol* curFn = fn;
+    while (curFn && isTaskFun(curFn)) {
+      curFn = toFnSymbol(curFn->defPoint->parentSymbol);
+    }
+    // Now curFn is NULL or the first not-a-task function
+    if (curFn && curFn->isIterator()) {
+      // Mark all of the inner task functions
+      IteratorInfo* ii = curFn->iteratorInfo;
+      curFn = fn;
+      while (curFn && isTaskFun(curFn)) {
+        curFn->addFlag(FLAG_TASK_FN_FROM_ITERATOR_FN);
+        curFn->iteratorInfo = ii;
+        curFn = toFnSymbol(curFn->defPoint->parentSymbol);
+      }
+    }
+  }
+}
+
 
 //
 // returns true if the symbol is defined in an outer function to fn
@@ -75,18 +100,15 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
 //
 static void
 findOuterVars(FnSymbol* fn, SymbolMap* uses) {
-  std::vector<BaseAST*> asts;
+  std::vector<SymExpr*> SEs;
+  collectSymExprs(fn, SEs);
 
-  collect_asts(fn, asts);
-
-  for_vector(BaseAST, ast, asts) {
-    if (SymExpr* symExpr = toSymExpr(ast)) {
+  for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
       if (isLcnSymbol(sym) && isOuterVar(sym, fn)) {
         uses->put(sym,gNil);
       }
-    }
   }
 }
 
@@ -234,6 +256,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_REF_TO_IMMUTABLE);
       if (sym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
+          arg->addFlag(FLAG_COFORALL_INDEX_VAR);
 
       fn->insertFormalAtTail(new DefExpr(arg));
       vars->put(sym, arg);
@@ -321,17 +345,20 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
         // This is only a performance issue.
         INT_ASSERT(!sym->hasFlag(FLAG_SHOULD_NOT_PASS_BY_REF));
         /* NOTE: See note above in addVarsToFormals() */
-        VarSymbol* tmp = newTemp(sym->type->getValType()->refType);
-        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));
-        call->insertAtTail(tmp);
+        if (sym->isRef())
+          call->insertAtTail(sym);
+        else {
+          VarSymbol* tmp = newTemp(sym->type->getValType()->refType);
+          call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+          call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_ADDR_OF, sym)));
+          call->insertAtTail(tmp);
+        }
       } else {
         call->insertAtTail(sym);
       }
     }
   }
 }
-
 
 static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();

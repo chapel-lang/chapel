@@ -1,0 +1,4 @@
+--i=0 # defer-throw-fatal.0.good
+--i=1 # defer-throw-fatal.1.good
+--i=2 # defer-throw-fatal.2.good
+--i=3 # defer-throw-fatal.3.good

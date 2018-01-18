@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -129,11 +129,6 @@ void chpl_comm_post_task_init(void) { }
 
 void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
-}
-
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
-  *start_p = NULL;
-  *size_p  = 0;
 }
 
 void chpl_comm_broadcast_global_vars(int numGlobals) { }

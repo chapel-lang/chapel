@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -175,9 +175,6 @@ public:
   // Calling a function nested in the iterator?
   bool         nested;
 
-  // The iterator's return symbol.
-  VarSymbol*   retSym;
-
   // Where to add task startup/teardown code. It is usually 'curFn'.
   // However, when descending into a task function that does not create
   // a user-level task (and so does not affect the intents),
@@ -204,12 +201,11 @@ public:
 
   // constructor for the outermost context
   FIcontext(ForallStmt* fs, CallExpr* iterCall,
-            FnSymbol* iterFn, VarSymbol* retSymbol) :
+            FnSymbol* iterFn) :
     forall(fs),
     call(iterCall),
     curFn(iterFn),
     nested(false),
-    retSym(retSymbol),
     anchorFn(curFn),
     anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
   {
@@ -222,7 +218,6 @@ public:
     call(taskCall),
     curFn(taskFn),
     nested(true),
-    retSym(parentCx.retSym),
     anchorFn(curFn),
     anchor1(0), anchor2(0), anchor2orig(0), anchor2prev(0)
   {
@@ -885,8 +880,18 @@ static void extendYieldNew(FIcontext& ctx, CallExpr* yieldCall,
     buildTuple->insertAtTail(new SymExpr(tupComponent));
   }
 
-  yieldCall->insertBefore("'move'(%S,%E)", ctx.retSym, buildTuple);
-  yieldCall->insertAtTail(new SymExpr(ctx.retSym));
+  VarSymbol* yield = newTemp("newYield");
+  yield->addFlag(FLAG_YVV);
+  // Also remove the original yield to avoid baseline failures
+  if (SymExpr* origRetSe = toSymExpr(origRetArg))
+    if (VarSymbol* v = toVarSymbol(origRetSe->symbol()))
+      if (v->hasFlag(FLAG_YVV))
+        v->defPoint->remove();
+
+  // needed? yield->addFlag(FLAG_NO_COPY);
+  yieldCall->insertBefore(new DefExpr(yield));
+  yieldCall->insertBefore(new CallExpr(PRIM_MOVE, yield, buildTuple));
+  yieldCall->insertAtTail(new SymExpr(yield));
 }
 
 
@@ -1305,19 +1310,8 @@ static void extendLeaderNew(ForallStmt* fs,
   iterFn->instantiationPoint = getVisibilityBlock(iterCall);
   iterCall->baseExpr->replace(new SymExpr(iterFn));
 
-  // Setup the new return/yield symbol.
-  VarSymbol* retSym  = NULL;
-  Symbol* origRetSym = NULL;
-
-  if (!iterFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    retSym  = newTemp("ret"); // its type is to be inferred
-    origRetSym = iterFn->replaceReturnSymbol(retSym, /*newRetType*/NULL);
-    origRetSym->defPoint->insertBefore(new DefExpr(retSym));
-    origRetSym->name = "origRet";
-  }
-
   // Data for the call from the ForallStmt to the parallel iterator.
-  FIcontext ctx(fs, iterCall, iterFn, retSym);
+  FIcontext ctx(fs, iterCall, iterFn);
 
   // Initialize it corresponding to the shadow vars from 'fs'.
   // Remove the corresponding actuals from 'iterCall'
@@ -1351,10 +1345,6 @@ static void extendLeaderNew(ForallStmt* fs,
   INT_ASSERT(ix == numSVars);  // ... and all SVars
 
   propagateExtraLeaderArgsNew(ctx);
-
-  if (origRetSym) {
-    checkAndRemoveOrigRetSym(origRetSym, iterFn);
-  }
 }
 
 

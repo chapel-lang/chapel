@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2017 Cray Inc.
+ * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1983,7 +1983,6 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
 
       if (requiresImplicitDestroy(useCall)) {
         if (isUserDefinedRecord(useFn->retType) == false) {
-          tmp->addFlag(FLAG_INSERT_AUTO_COPY);
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         } else {
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
