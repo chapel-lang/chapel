@@ -42,7 +42,10 @@
 #define USE_JE_CHUNK_HOOKS
 #endif
 
+enum heap_type {FIXED, DYNAMIC, NONE};
+
 static struct shared_heap {
+  enum heap_type type;
   void* base;
   size_t size;
   size_t cur_offset;
@@ -70,46 +73,82 @@ static inline void* alignHelper(void* base_ptr, size_t offset, size_t alignment)
 
 
 // Our chunk replacement hook for allocations (Essentially a replacement for
-// mmap/sbrk.) Grab memory out of the shared heap and give it to jemalloc.
+// mmap/sbrk.) Grab memory out of the fixed shared heap or get an extension
+// chunk, and give it to jemalloc.
 static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero, bool *commit, unsigned arena_ind) {
 
   void* cur_chunk_base = NULL;
-  size_t cur_heap_size;
 
-  // this function can be called concurrently and it looks like jemalloc
-  // doesn't call it inside a lock, so we need to protect it ourselves
-  pthread_mutex_lock(&heap.alloc_lock);
+  if (heap.type == FIXED) {
+    //
+    // Get more space out of the fixed heap.
+    //
+    size_t cur_heap_size;
 
-  // compute our current aligned pointer into the shared heap
-  //
-  //   jemalloc 4.5.0 man: "The alignment parameter is always a power of two at
-  //   least as large as the chunk size."
-  cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
+    // this function can be called concurrently and it looks like jemalloc
+    // doesn't call it inside a lock, so we need to protect it ourselves
+    pthread_mutex_lock(&heap.alloc_lock);
 
-  // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
-  // chunk on success or NULL on error"
-  if (chunk && chunk != cur_chunk_base) {
+    // compute our current aligned pointer into the shared heap
+    //
+    //   jemalloc 4.5.0 man: "The alignment parameter is always a power of two
+    //   at least as large as the chunk size."
+    cur_chunk_base = alignHelper(heap.base, heap.cur_offset, alignment);
+
+    // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
+    // chunk on success or NULL on error"
+    if (chunk && chunk != cur_chunk_base) {
+      pthread_mutex_unlock(&heap.alloc_lock);
+      return NULL;
+    }
+
+    cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap.base;
+
+    // If there's not enough space on the heap for this allocation, return NULL
+    if (size > heap.size - cur_heap_size) {
+      pthread_mutex_unlock(&heap.alloc_lock);
+      return NULL;
+    }
+
+    // Update the current pointer, now that we've past any early returns.
+    heap.cur_offset = cur_heap_size + size;
+
+    // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
-    return NULL;
+  } else if (heap.type == DYNAMIC) {
+    //
+    // Get a dynamic extension chunk.
+    //
+    cur_chunk_base = chpl_comm_regMemAlloc(size);
+
+    if (cur_chunk_base == NULL) {
+      return NULL;
+    }
+
+    //
+    // Localize the new memory via first-touch, by storing to each page.
+    // This will give the memory affinity to the NUMA domain (if any)
+    // we were running on when we allocated it.  It also commits the
+    // memory, in the jemalloc sense.
+    //
+    const size_t heap_page_size = chpl_comm_regMemHeapPageSize();
+    for (int i = 0; i < size; i += heap_page_size) {
+      ((char*) cur_chunk_base)[i] = 0;
+    }
+
+    chpl_comm_regMemPostAlloc(cur_chunk_base, size);
+
+    // Support useUpMemNotInHeap by hiding the fixed/dynamic distinction
+    heap.base = cur_chunk_base;
+    heap.size = size;
+    heap.cur_offset = 0;
+  } else {
+    chpl_internal_error("Invalid heap.type in chunk_alloc");
   }
-
-  cur_heap_size = (uintptr_t)cur_chunk_base - (uintptr_t)heap.base;
-
-  // If there's not enough space on the heap for this allocation, return NULL
-  if (size > heap.size - cur_heap_size) {
-    pthread_mutex_unlock(&heap.alloc_lock);
-    return NULL;
-  }
-
-  // Update the current pointer, now that we've past any early returns.
-  heap.cur_offset = cur_heap_size + size;
-
-  // now that cur_heap_offset is updated, we can unlock
-  pthread_mutex_unlock(&heap.alloc_lock);
 
   // jemalloc 4.5.0 man: "Zeroing is mandatory if *zero is true upon entry."
   if (*zero) {
-     memset(cur_chunk_base, 0, size);
+    memset(cur_chunk_base, 0, size);
   }
 
   // Commit is not relevant for linux/darwin, but jemalloc wants us to set it
@@ -326,18 +365,20 @@ void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
 
-  chpl_comm_get_registered_heap(&heap_base, &heap_size);
+  chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
   if (heap_base != NULL && heap_size == 0) {
     chpl_internal_error("if heap address is specified, size must be also");
   }
 
-  // If we have a shared heap, initialize our shared heap. This will take care
-  // of initializing jemalloc. If we're not using a shared heap, do a first
-  // allocation to allow jemalloc to set up:
+  // If we have a fixed shared heap, initialize it. This will take care
+  // of initializing jemalloc. Otherwise, do a first allocation to allow
+  // jemalloc to set up. Note that if we have a dynamic shared heap this
+  // will initialize that including adding the first chunk to it.
   //
   //   jemalloc 4.5.0 man: "Once, when the first call is made to one of the
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
+    heap.type = FIXED;
     heap.base = heap_base;
     heap.size = heap_size;
     heap.cur_offset = 0;
@@ -345,8 +386,12 @@ void chpl_mem_layerInit(void) {
       chpl_internal_error("cannot init chunk_alloc lock");
     }
     initializeSharedHeap();
+  } else if (chpl_comm_regMemAllocThreshold() < SIZE_MAX) {
+    heap.type = DYNAMIC;
+    initializeSharedHeap();
   } else {
     void* p;
+    heap.type = NONE;
     if ((p = CHPL_JE_MALLOC(1)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
@@ -356,7 +401,7 @@ void chpl_mem_layerInit(void) {
 
 
 void chpl_mem_layerExit(void) {
-  if (heap.base != NULL) {
+  if (heap.type == FIXED) {
     // ignore errors, we're exiting anyways
     (void) pthread_mutex_destroy(&heap.alloc_lock);
   }

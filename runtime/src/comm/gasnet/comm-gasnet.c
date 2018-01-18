@@ -754,7 +754,7 @@ static void set_max_segsize_env_var(size_t size) {
 static void set_max_segsize() {
   size_t size;
 
-  if ((size = chpl_comm_getenvMaxHeapSize()) != 0) {
+  if ((size = (size_t) chpl_comm_getenvMaxHeapSize()) != 0) {
     set_max_segsize_env_var(size);
     return;
   }
@@ -767,16 +767,16 @@ static void set_max_segsize() {
   }
 
   // Use 90% of the available memory as the maximum segment size,
-  // heuristically
-  if ((size = chpl_sys_availMemoryBytes()) != 0) {
+  // heuristically.  But if that's less than the 2g GASNet default
+  // segment size, just let GASNet choose the segment size.
+  if ((size = (size_t) chpl_sys_availMemoryBytes()) != 0) {
     size_t dst_size = 0.9 * size;
-    if (dst_size < 1000 || dst_size > chpl_sys_physicalMemoryBytes())
-      chpl_internal_error("Overflow/underflow determining max segment size");
-    set_max_segsize_env_var(dst_size);
-    return;
+    if (dst_size >= (1UL << 31)) {
+      if (dst_size > (size_t) chpl_sys_physicalMemoryBytes())
+        chpl_internal_error("Overflow/underflow determining max segment size");
+      set_max_segsize_env_var(dst_size);
+    }
   }
-
-  chpl_internal_error("Could not determine maximum segment size");
 #endif
 }
 
@@ -929,7 +929,7 @@ void chpl_comm_rollcall(void) {
            chpl_numNodes, chpl_nodeName());
 }
 
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
 #if defined(GASNET_SEGMENT_FAST) || defined(GASNET_SEGMENT_LARGE)
   *start_p = chpl_numGlobalsOnHeap * sizeof(wide_ptr_t) 
              + (char*)seginfo_table[chpl_nodeID].addr;

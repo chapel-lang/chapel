@@ -397,6 +397,7 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 // BHARSH TODO: Split this function into more easily-digestible pieces
 // BHARSH TODO: capture the assumptions made here in documentation
 //
+static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
@@ -422,6 +423,19 @@ static void insertSerialization(FnSymbol*  fn,
   }
   arg->type = dataType;
 
+  // If argDestroyCall is set, we'll move the destroy
+  // call from the task function to the call sites.
+  CallExpr* argDestroyCall = findDestroyCallForArg(arg);
+
+  // Current compiler always moves the auto-destroy
+  // for a coforall index variable into the task function
+  // These asserts just remind us to check this code if that changes.
+  if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR) &&
+      getAutoDestroy(arg->getValType()))
+    INT_ASSERT(argDestroyCall);
+  else
+    INT_ASSERT(!argDestroyCall);
+
   // Update each callsite to invoke the serializer
   forv_Vec(CallExpr, call, *fn->calledBy) {
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
@@ -437,6 +451,14 @@ static void insertSerialization(FnSymbol*  fn,
       call->insertBefore(new CallExpr(serializeFn, actual->copy(), data));
     } else {
       call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actual->copy())));
+    }
+
+    // Old argument not passed so we can't destroy the original
+    // value in the task function anymore; destroy it just after
+    // the serialize call.
+    if (argDestroyCall && !needsRuntimeType) {
+      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
+      call->insertBefore(new CallExpr(destroyFn, actual->copy()));
     }
 
     actual->replace(new SymExpr(data));
@@ -456,6 +478,17 @@ static void insertSerialization(FnSymbol*  fn,
     oldArg = new ArgSymbol(oldIntent, astr(arg->cname, "_old"), oldArgType);
     oldArg->addFlag(FLAG_NO_RVF);
     fn->insertFormalAtTail(oldArg);
+  }
+
+  // Remove the old auto-destroy call from the task fn.
+  // If we passed oldArg, destroy that instead.
+  if (argDestroyCall) {
+    if (needsRuntimeType) {
+      SET_LINENO(argDestroyCall);
+      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
+      argDestroyCall->insertBefore(new CallExpr(destroyFn, oldArg));
+    }
+    argDestroyCall->remove();
   }
 
   // Replace all uses of 'arg' with a local reference to a deserialized
@@ -509,6 +542,27 @@ static void insertSerialization(FnSymbol*  fn,
   if (deserializeDestroyFn != NULL) {
     lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
   }
+}
+
+static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {
+  // Scroll backwards looking for an auto-destroy call for arg
+  // in the function defining arg.
+
+  FnSymbol* fn = arg->getFunction();
+  for (Expr* stmt = fn->body->body.tail;
+       stmt != NULL;
+       stmt = stmt->prev) {
+
+    // Look for a CallExpr to auto destroy fn with argument arg
+    if (CallExpr* call = toCallExpr(stmt))
+      if (FnSymbol* calledFn = call->resolvedFunction())
+        if (calledFn->hasFlag(FLAG_AUTO_DESTROY_FN))
+          if (SymExpr* se = toSymExpr(call->get(1)))
+            if (se->symbol() == arg)
+              return call;
+  }
+
+  return NULL;
 }
 
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,

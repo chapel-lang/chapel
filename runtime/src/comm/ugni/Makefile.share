@@ -18,16 +18,19 @@
 COMM_LAUNCHER_SRCS = \
         comm-ugni-launch.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 COMM_SRCS = \
         comm-ugni.c \
         comm-ugni-mem.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 SVN_SRCS = \
         comm-ugni.c \
         comm-ugni-launch.c \
         comm-ugni-locales.c \
+        comm-ugni-heap-pages.c \
 
 SRCS = $(SVN_SRCS)
 

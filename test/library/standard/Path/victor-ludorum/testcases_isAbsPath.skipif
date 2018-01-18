@@ -1,0 +1,4 @@
+# It is supportable in 'Unix' and
+# 'darwin' type environment.
+CHPL_HOST_PLATFORM == cygwin32
+CHPL_HOST_PLATFORM == cygwin64
