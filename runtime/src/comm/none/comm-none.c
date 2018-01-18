@@ -131,11 +131,6 @@ void chpl_comm_rollcall(void) {
   chpl_msg(2, "executing on a single node\n");
 }
 
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p) {
-  *start_p = NULL;
-  *size_p  = 0;
-}
-
 void chpl_comm_broadcast_global_vars(int numGlobals) { }
 
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) { }

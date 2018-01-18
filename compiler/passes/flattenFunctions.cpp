@@ -57,8 +57,7 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
     FnSymbol* curFn = fn;
-    while (curFn &&
-           curFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
+    while (curFn && isTaskFun(curFn)) {
       curFn = toFnSymbol(curFn->defPoint->parentSymbol);
     }
     // Now curFn is NULL or the first not-a-task function
@@ -66,8 +65,7 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
       // Mark all of the inner task functions
       IteratorInfo* ii = curFn->iteratorInfo;
       curFn = fn;
-      while (curFn &&
-             curFn->hasEitherFlag(FLAG_BEGIN, FLAG_COBEGIN_OR_COFORALL)) {
+      while (curFn && isTaskFun(curFn)) {
         curFn->addFlag(FLAG_TASK_FN_FROM_ITERATOR_FN);
         curFn->iteratorInfo = ii;
         curFn = toFnSymbol(curFn->defPoint->parentSymbol);

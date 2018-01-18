@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -45,12 +46,14 @@
 #include "chpl-comm.h"
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-atomics.h"
 #include "chplcast.h"
 #include "chpl-linefile-support.h"
+#include "comm-ugni-heap-pages.h"
 #include "comm-ugni-mem.h"
 #include "config.h"
 #include "error.h"
@@ -86,6 +89,7 @@ static uint64_t debug_flag = 0;
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
 #define DBGF_1_NODE    0x20000          // only produce debug for one node 
+#define DBGF_NODENAME  0x40000          // produce chpl_nodeID <-> nodename map
 
 static c_nodeid_t debug_nodeID = 0;
 
@@ -100,7 +104,8 @@ static chpl_bool debug_exiting = false;
                            || chpl_nodeID == debug_nodeID)
 
 #define DBG_INIT()  dbg_init()
-#define DBG_INIT_OUTPUT_FILE()  dbg_init_output_file()
+
+static pthread_t proc_thread_id;
 
 static __thread uint32_t thread_idx      = ~(uint32_t) 0;
 static atomic_uint_least32_t next_thread_idx;
@@ -127,12 +132,12 @@ static atomic_uint_least32_t next_thread_idx;
         _DBG_P(_DBG_DO(flg), " (%d): " f, chpl_nodeID, ## __VA_ARGS__)
 #define DBG_P_LP(flg, f, ...)                                           \
         _DBG_P(_DBG_DO(flg),                                            \
-               " (%d/%" PRId64 "/%d): " f,                              \
+               " (%d/%s/%d): " f,                                       \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
                (int) thread_idx, ## __VA_ARGS__)
 #define DBG_P_LPS(flg, f, li, cdi, rbi, seq, ...)                       \
         _DBG_P(_DBG_DO(flg),                                            \
-               " (%d/%" PRId64 "/%d) %d/%d/%d <%" PRIu64 ">: " f,       \
+               " (%d/%s/%d) %d/%d/%d <%" PRIu64 ">: " f,                \
                chpl_nodeID, task_id(cd != NULL && cd->firmly_bound),    \
                (int) thread_idx,                                        \
                (int) li, cdi, rbi, seq, ## __VA_ARGS__)
@@ -141,6 +146,7 @@ static atomic_uint_least32_t next_thread_idx;
         do {                                                            \
           DBG_P_LP(1, "%s:%d: internal error: %s",                      \
                    __FILE__, (int) __LINE__, msg);                      \
+          fflush(debug_file);                                           \
           abort();                                                      \
         } while (0)
 
@@ -169,20 +175,23 @@ static atomic_uint_least32_t next_thread_idx;
           CHPL_INTERNAL_ERROR(msg);                                     \
         } while (0)
 
-static int64_t task_id(int);
-static int64_t task_id(int firmly_bound)
+static const char* task_id(int);
+static const char* task_id(int firmly_bound)
 {
-  if (firmly_bound)
-    return -(int64_t) 1;
+  if (pthread_self() == proc_thread_id)
+    return "PROC";
   if (debug_exiting)
-    return -(int64_t) 2;
-  return (int64_t) chpl_task_getId();
+    return "EXIT";
+  if (firmly_bound)
+    return "POLL";
+  static __thread char buf[20];
+  snprintf(buf, sizeof(buf), "%" PRId64, (int64_t) chpl_task_getId());
+  return buf;
 }
 #else
 #undef DEBUG_STATS
 
 #define DBG_INIT()
-#define DBG_INIT_OUTPUT_FILE()
 
 #define DBG_P(flg, f, ...)
 #define DBG_P_L(flg, f, ...)
@@ -252,6 +261,14 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_amo_cnt)                                             \
         MACRO(regMem_cnt)                                               \
         MACRO(deregMem_cnt)                                             \
+        MACRO(regMem_bCast_cnt)                                         \
+        MACRO(regMem_mutex_nsecs)                                       \
+        MACRO(local_mreg_cnt)                                           \
+        MACRO(local_mreg_cmps)                                          \
+        MACRO(local_mreg_nsecs)                                         \
+        MACRO(remote_mreg_cnt)                                          \
+        MACRO(remote_mreg_cmps)                                         \
+        MACRO(remote_mreg_nsecs)                                        \
         MACRO(sent_bytes)                                               \
         MACRO(rcvd_bytes)                                               \
         MACRO(acq_cd_cnt)                                               \
@@ -300,11 +317,38 @@ chpl_comm_pstats_t chpl_comm_pstats;
 
 #define PERFSTATS_ADD(cnt, val)  (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
 #define PERFSTATS_INC(cnt)       PERFSTATS_ADD(cnt, 1)
+
+#include <time.h>
+
+static struct timespec perfstats_timeBase;
+
+static inline uint64_t perfstats_timer_get(void)
+{
+  struct timespec _ts;
+  (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
+  return (uint64_t) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
+         + (uint64_t) _ts.tv_nsec;
+}
+
+#define PERFSTATS_TIMER_START(ts) uint64_t ts = perfstats_timer_get()
+
+#define PERFSTATS_TIMER_ELAPSED(ts) ((_PSV_C_TYPE) (perfstats_timer_get() - ts))
+
+static void perfstats_init(void)
+{
+  (void) clock_gettime(CLOCK_MONOTONIC, &perfstats_timeBase);
+}
+
+#define PERFSTATS_INIT() perfstats_init();
+
 #else
 #define PERFSTATS_ADD(cnt, val)
 #define PERFSTATS_INC(cnt)
 #define PERFSTATS_DO_EPHEMERAL(MACRO)
 #define PERFSTATS_DO_ALL(MACRO)
+#define PERFSTATS_TIMER_START(ts)
+#define PERFSTATS_TIMER_ELAPSED(ts)
+#define PERFSTATS_INIT()
 #endif
 
 
@@ -360,16 +404,18 @@ static gni_nic_device_t nic_type;
 // There are four regions we definitely want to register.  These are the
 // static data, the part of the heap right after the static data, the
 // main heap (probably on hugepages), and the stack.  We don't actually
-// have to register all regions.  We really only need the static data
-// and main heap to be registered.  The logic can handle transfers to
-// and from other areas by bouncing them through a buffer in the main
-// heap.
+// have to register all regions.  We really only need a minimum set of
+// internal data to be registered.  The logic can handle transfers to
+// and from other areas by bouncing them through buffers in registered
+// memory.
 //
-static int    registered_heap_info_set;
+static int registered_heap_info_set;
+static pthread_once_t registered_heap_once_flag = PTHREAD_ONCE_INIT;
 static size_t registered_heap_size;
 static void*  registered_heap_start;
 
-static int    using_hugepages;
+static int hugepage_info_set;
+static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
 
 //
@@ -379,7 +425,7 @@ static size_t hugepage_size;
 // And finally, mem_regions_map_addr_map contains the mem_regions_map
 // pointers on each node.
 //
-#define MAX_MEM_REGIONS 1000
+#define MAX_MEM_REGIONS 1024
 
 typedef struct {
   uint64_t         addr;
@@ -394,7 +440,6 @@ typedef struct {
 
 static mem_region_table_t mem_regions;
 
-
 //
 // Used to serialize access to critical sections in the dynamic registration
 // allocation/registration/free routines. In addition to using a pthread_mutex,
@@ -405,14 +450,15 @@ static mem_region_table_t mem_regions;
 // yielding for some allocations. For example, qthreads doesn't support
 // yielding while grabbing memory to initialize task stacks.
 //
-
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread chpl_bool allow_task_yield = true;
 
 static inline
 void mem_regions_lock(void) {
+  PERFSTATS_TIMER_START(pstStart);
   if (pthread_mutex_lock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
+  PERFSTATS_ADD(regMem_mutex_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
   allow_task_yield = false;
 }
 
@@ -428,22 +474,23 @@ chpl_bool can_task_yield(void) {
   return allow_task_yield;
 }
 
+static chpl_bool can_register_memory = false;
 
-
-#ifdef DEBUG
 static uint32_t mreg_cnt_max;
-#endif
+
+static atomic_int_least32_t mreg_free_cnt;
 
 static mem_region_table_t* mem_regions_map;
 static mem_region_table_t** mem_regions_map_addr_map;
 
 //
 // This is the memory region for the guaranteed NIC-registered memory
-// in which remote fork descriptors, their is-free flags, and the
-// temporary bounce buffers live.  It saves a little bit of time not
-// to have to look it up.
+// in which the memory region map, remote fork descriptors and their
+// is-free flags, and temporary bounce buffers live.  It saves time
+// not to have to look it up.
 //
 static mem_region_t* gnr_mreg;
+static mem_region_t* gnr_mreg_map;
 
 //
 // Declarations common to memory pools.
@@ -1230,8 +1277,8 @@ static chpl_bool comm_diags_disabled_temporarily = false;
 // argument to do_remote_put() and ..._get().
 //
 typedef enum {
-  may_proxy_false,
-  may_proxy_true
+  may_proxy_false = false,
+  may_proxy_true = true
 } drpg_may_proxy_t;
 
 
@@ -1244,6 +1291,7 @@ static void      gni_setup_per_comm_dom(int);
 static void      gni_init(gni_nic_handle_t*, int);
 static uint8_t   GNIT_Ptag(void);
 static uint32_t  GNIT_Cookie(void);
+static void      mem_regions_map_pre_init(void);
 static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
 static void      register_mem_region(mem_region_t*);
@@ -1253,6 +1301,11 @@ static mem_region_t* mreg_for_local_addr(void*);
 static mem_region_t* mreg_for_remote_addr(void*, c_nodeid_t);
 static void      polling_task(void*);
 static void      set_up_for_polling(void);
+static void      ensure_registered_heap_info_set(void);
+static void      make_registered_heap(void);
+static size_t    get_hugepage_size(void);
+static void      set_hugepage_info(void);
+static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*, void*);
@@ -1286,9 +1339,9 @@ static fork_amo_data_t* amo_res_alloc(void);
 static void      amo_res_free(fork_amo_data_t*);
 static void      consume_all_outstanding_cq_events(int);
 static void      do_remote_put(void*, c_nodeid_t, void*, size_t,
-                               drpg_may_proxy_t);
+                               mem_region_t*, drpg_may_proxy_t);
 static void      do_remote_put_V(int, void**, c_nodeid_t*, void**, size_t*,
-                                 drpg_may_proxy_t);
+                                 mem_region_t**, drpg_may_proxy_t);
 static void      do_remote_get(void*, c_nodeid_t, void*, size_t,
                                drpg_may_proxy_t);
 static void      do_nic_get(void*, c_nodeid_t, mem_region_t*,
@@ -1306,8 +1359,8 @@ static void      fork_put(void*, c_nodeid_t, void*, size_t);
 static void      fork_get(void*, c_nodeid_t, void*, size_t);
 static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
-static void      do_fork_post(c_nodeid_t, rf_done_t**,
-                              uint64_t, fork_base_info_t*, int*, int*);
+static void      do_fork_post(c_nodeid_t, chpl_bool,
+                              uint64_t, fork_base_info_t* const, int*, int*);
 static void      acquire_comm_dom(void);
 static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
@@ -1327,38 +1380,18 @@ static void dbg_init(void);
 static void dbg_init(void)
 {
   const char* ev;
-  uint64_t flg;
 
   atomic_init_uint_least32_t(&next_thread_idx, 0);
+  proc_thread_id = pthread_self();
+
+  debug_flag = (uint64_t) chpl_env_rt_get_int("COMM_UGNI_DEBUG", 0);
+  if (debug_flag != 0) {
+    debug_nodeID = (int) chpl_env_rt_get_int("COMM_UGNI_DEBUG_NODE", -1);
+    if (debug_nodeID >= 0)
+      debug_flag |= DBGF_1_NODE;
+  }
+
   debug_file = stderr;
-
-  if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG", NULL)) != NULL
-      && sscanf(ev, "%" SCNi64, &flg) == 1) {
-    debug_flag = flg;
-
-    if ((ev = chpl_get_rt_env("COMM_UGNI_DEBUG_NODE", NULL)) != NULL) {
-      int nodeID;
-      if (sscanf(ev, "%i", &nodeID) == 1) {
-        debug_nodeID = nodeID;
-        debug_flag |= DBGF_1_NODE;
-      }
-    }
-  }
-
-  if ((ev =  chpl_get_rt_env("COMM_UGNI_DEBUG_STATS", NULL)) != NULL
-      && sscanf(ev, "%" SCNi64, &flg) == 1) {
-    debug_stats_flag = flg;
-  }
-
-  if ((ev = chpl_get_rt_env("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL
-      && sscanf(ev, "%d", &FORK_REQ_BUFS_PER_CD) != 1)
-    CHPL_INTERNAL_ERROR("bad FORK_REQ_BUFS_PER_CD env var value");
-}
-
-
-static void dbg_init_output_file(void);
-static void dbg_init_output_file(void)
-{
   if (_DBG_DO(DBGF_IN_FILE)) {
     char fname[100];
     FILE* f;
@@ -1369,6 +1402,34 @@ static void dbg_init_output_file(void)
       debug_file = f;
       setbuf(debug_file, NULL);
     }
+  }
+
+  {
+    char buf[100];
+
+    (void) gethostname(buf, sizeof(buf));
+    DBG_P_L(DBGF_NODENAME,
+            "chpl_nodeID %d is on hostname \"%.*s\"",
+            (int) chpl_nodeID, (int) sizeof(buf), buf);
+  }
+
+  const int evNode = (int) chpl_env_rt_get_int("COMM_UGNI_DEBUG_CORE_NODE", -1);
+  if (evNode >= 0) {
+    if ((int) chpl_nodeID != evNode) {
+      struct rlimit rl;
+      rl.rlim_cur = 0;
+      rl.rlim_max = RLIM_SAVED_MAX;
+      if (setrlimit(RLIMIT_CORE, &rl) != 0)
+        CHPL_INTERNAL_ERROR("setrlimit(RLIMIT_CORE)");
+      printf("%d: core limit set to 0\n", (int) chpl_nodeID);
+      fflush(stdout);
+    }
+  }
+
+  debug_stats_flag = chpl_env_rt_get_int("COMM_UGNI_DEBUG_STATS", 0);
+
+  if ((ev = chpl_env_rt_get("COMM_UGNI_FORK_REQ_BUFS_PER_CD", NULL)) != NULL) {
+    FORK_REQ_BUFS_PER_CD = chpl_env_str_to_int(ev, 1);
   }
 }
 
@@ -1549,18 +1610,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
          <= sizeof(fork_t));
 
-  //
-  // Sanity check: the compiler preserves the order of the members of
-  // mem_region_table_t.  (Otherwise the code for broadcasting memory
-  // registration updates won't work.)
-  //
-  assert(offsetof(mem_region_table_t, mreg_cnt)
-         < offsetof(mem_region_table_t, mregs));
-
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
-
-  DBG_INIT();
 
   {
     PMI_BOOL initialized;
@@ -1580,7 +1631,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
     chpl_nodeID = (int32_t) rank;
   }
 
-  DBG_INIT_OUTPUT_FILE();  // needs chpl_nodeID
+  DBG_INIT();  // needs chpl_nodeID
+  PERFSTATS_INIT();
 
   {
     int app_size;
@@ -1602,9 +1654,29 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
       CHPL_INTERNAL_ERROR("unexpected GNI device type");
   }
 
+  //
+  // Supporting data for node-level barriers depends on the number of
+  // nodes and our specific node ID.
+  //
+  bar_min_child = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
+  if (bar_min_child >= chpl_numNodes)
+    bar_num_children = 0;
+  else {
+    bar_num_children = BAR_TREE_NUM_CHILDREN;
+    if (bar_min_child + bar_num_children >= chpl_numNodes)
+      bar_num_children = chpl_numNodes - bar_min_child;
+  }
+  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
+
 #define _PSV_INIT(psv) atomic_init_uint_least64_t(&_PSV_VAR(psv), 0);
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
+
+  //
+  // These have to be initialized prior to the first regMemAlloc() call.
+  //
+  mem_regions.mreg_cnt = 0;
+  atomic_store_int_least32_t(&mreg_free_cnt, MAX_MEM_REGIONS);
 }
 
 
@@ -1652,11 +1724,13 @@ void chpl_comm_post_task_init(void)
   // do this by gathering (locale, nic_addr) pairs and then scattering
   // the nic_addr values into the map, which is indexed by locale.
   //
+  // While we're at it, also share the barrier info struct addresses
+  // around the job.
+  //
   {
     uint32_t nic_addr;
 
     nic_addr = gni_get_nic_address(0);
-    // chpl_comm_mem_reg no: not communicated
     nic_addr_map =
         (uint32_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(nic_addr_map[0]),
                                        CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -1664,22 +1738,29 @@ void chpl_comm_post_task_init(void)
 
     {
       typedef struct {
-        c_nodeid_t locale;
-        uint32_t gather_val;
+        c_nodeid_t nodeID;
+        uint32_t nic_addr;
+        barrier_info_t* bar_info;
       } gdata_t;
 
-      gdata_t  my_gdata = { chpl_nodeID, nic_addr };
+      gdata_t  my_gdata = { chpl_nodeID, nic_addr, &bar_info };
       gdata_t* gdata;
 
-      // chpl_comm_mem_reg no: not communicated
       gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
                                             0, 0);
       if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
         CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
 
-      for (int i = 0; i < chpl_numNodes; i++)
-        nic_addr_map[gdata[i].locale] = gdata[i].gather_val;
+      for (int i = 0; i < chpl_numNodes; i++) {
+        nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
+
+        if (gdata[i].nodeID >= bar_min_child
+            && gdata[i].nodeID < bar_min_child + bar_num_children)
+          child_bar_info[gdata[i].nodeID - bar_min_child] = gdata[i].bar_info;
+        else if (chpl_nodeID != 0 && gdata[i].nodeID == bar_parent)
+          parent_bar_info = gdata[i].bar_info;
+      }
 
       chpl_mem_free(gdata, 0, 0);
     }
@@ -1693,6 +1774,7 @@ void chpl_comm_post_task_init(void)
   // computing how much NIC-registered memory we need.  Tell the
   // registered-memory module how much we need and then allocate it.
   //
+  mem_regions_map_pre_init();
   get_buf_pre_init();
   rf_done_pre_init();
   amo_res_pre_init();
@@ -1721,65 +1803,6 @@ void chpl_comm_post_task_init(void)
   // Register memory.
   //
   register_memory();
-
-  //
-  // Share the per-locale memory descriptors around the job.  These are
-  // the ones we will use for the remote sides of GETs and PUTs.  While
-  // we're at it, also share the barrier info struct addresses around
-  // the job.
-  //
-  mem_regions_map =
-    (mem_region_table_t*) chpl_mem_allocMany(chpl_numNodes,
-                                             sizeof(mem_regions_map[0]),
-                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                             0, 0);
-  mem_regions_map_addr_map =
-    (mem_region_table_t**)
-      chpl_mem_allocMany(chpl_numNodes,
-                         sizeof(mem_regions_map_addr_map[0]),
-                         CHPL_RT_MD_COMM_PER_LOC_INFO,
-                         0, 0);
-  bar_min_child = BAR_TREE_NUM_CHILDREN * chpl_nodeID + 1;
-  if (bar_min_child >= chpl_numNodes)
-    bar_num_children = 0;
-  else {
-    bar_num_children = BAR_TREE_NUM_CHILDREN;
-    if (bar_min_child + bar_num_children >= chpl_numNodes)
-      bar_num_children = chpl_numNodes - bar_min_child;
-  }
-  bar_parent = (chpl_nodeID - 1) / BAR_TREE_NUM_CHILDREN;
-
-  {
-    typedef struct {
-      c_nodeid_t locale;
-      mem_region_table_t mem_regions;
-      mem_region_table_t* mem_regions_map;
-      barrier_info_t* bar_info;
-    } gdata_t;
-
-    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map, &bar_info };
-    gdata_t* gdata;
-
-    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                          0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
-
-    for (int i = 0; i < chpl_numNodes; i++) {
-      mem_regions_map[gdata[i].locale] = gdata[i].mem_regions;
-      mem_regions_map_addr_map[gdata[i].locale] = gdata[i].mem_regions_map;
-
-      if (gdata[i].locale >= bar_min_child
-          && gdata[i].locale < bar_min_child + bar_num_children)
-        child_bar_info[gdata[i].locale - bar_min_child] =
-          gdata[i].bar_info;
-      else if (chpl_nodeID != 0 && gdata[i].locale == bar_parent)
-        parent_bar_info = gdata[i].bar_info;
-    }
-
-    chpl_mem_free(gdata, 0, 0);
-  }
 
   //
   // Start the polling task.
@@ -1965,7 +1988,6 @@ void gni_setup_per_comm_dom(int cdi)
   // Create GNI EndPoints (EPs) for the nodes, and bind them to their
   // nodes.  This can be replaced by an EP-Pool for better scalability.
   //
-  // chpl_comm_mem_reg no: not communicated
   cd->remote_eps =
     (gni_ep_handle_t*) chpl_mem_allocMany(chpl_numNodes,
                                           sizeof(cd->remote_eps[0]),
@@ -2077,6 +2099,13 @@ uint32_t GNIT_Cookie(void)
 
 
 static
+void mem_regions_map_pre_init(void)
+{
+  chpl_comm_mem_reg_add_request(chpl_numNodes * sizeof(mem_regions_map[0]));
+}
+
+
+static
 void register_memory(void)
 {
   uint64_t  addr;
@@ -2106,8 +2135,6 @@ void register_memory(void)
   // NIC-registered segment.
   //
   chpl_comm_mem_reg_tell(&mem_reg_addr, &mem_reg_size);
-
-  mem_regions.mreg_cnt = 0;
 
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
@@ -2151,10 +2178,9 @@ void register_memory(void)
       mem_regions.mregs[i].len = len;
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
-#ifdef DEBUG
+        (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
         if (mem_regions.mreg_cnt > mreg_cnt_max)
           mreg_cnt_max = mem_regions.mreg_cnt;
-#endif
       }
     }
   }
@@ -2190,6 +2216,55 @@ void register_memory(void)
     if (gnr_mreg == NULL)
       CHPL_INTERNAL_ERROR("cannot find gnr_mreg");
   }
+
+  //
+  // Share the per-locale memory descriptors around the job.
+  //
+
+  // Must be directly communicable without proxy.
+  mem_regions_map = (mem_region_table_t*)
+                    chpl_comm_mem_reg_allocMany(chpl_numNodes,
+                                                sizeof(mem_regions_map[0]),
+                                                CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                0, 0);
+  mem_regions_map_addr_map =
+    (mem_region_table_t**)
+      chpl_mem_allocMany(chpl_numNodes,
+                         sizeof(mem_regions_map_addr_map[0]),
+                         CHPL_RT_MD_COMM_PER_LOC_INFO,
+                         0, 0);
+  gnr_mreg_map = (mem_region_t*)
+                   chpl_mem_allocMany(chpl_numNodes, sizeof(gnr_mreg_map[0]),
+                                      CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+
+  {
+    typedef struct {
+      c_nodeid_t nodeID;
+      mem_region_table_t mem_regions;
+      mem_region_table_t* mem_regions_map;
+      mem_region_t gnr_mreg;
+    } gdata_t;
+
+    gdata_t my_gdata = { chpl_nodeID, mem_regions, mem_regions_map, *gnr_mreg };
+    gdata_t* gdata;
+
+    gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
+                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                          0, 0);
+    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
+      CHPL_INTERNAL_ERROR("PMI_Allgather(sdata/heap/etc. memory maps) failed");
+
+    for (int i = 0; i < chpl_numNodes; i++) {
+      mem_regions_map[gdata[i].nodeID] = gdata[i].mem_regions;
+      mem_regions_map_addr_map[gdata[i].nodeID] = gdata[i].mem_regions_map;
+      gnr_mreg_map[gdata[i].nodeID] = gdata[i].gnr_mreg;
+    }
+
+    chpl_mem_free(gdata, 0, 0);
+  }
+
+  can_register_memory = true;
+  atomic_thread_fence(memory_order_release);
 }
 
 
@@ -2260,13 +2335,14 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
 
 
 static
+inline
 void register_mem_region(mem_region_t* mr)
 {
   uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
   gni_return_t gni_rc;
 
   DBG_P_L(DBGF_MEMREG,
-          "GNI_MemRegister[%d](%" PRIx64 ", %" PRIx64 ")",
+          "GNI_MemRegister[%d](%#" PRIx64 ", %#" PRIx64 ")",
           (int) (mr - &mem_regions.mregs[0]), mr->addr, mr->len);
   if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mr->len,
                                 NULL, flags, -1, &mr->mdh))
@@ -2277,6 +2353,7 @@ void register_mem_region(mem_region_t* mr)
 
 
 static
+inline
 void deregister_mem_region(mem_region_t* mr)
 {
   gni_return_t gni_rc;
@@ -2312,7 +2389,20 @@ static
 inline
 mem_region_t* mreg_for_local_addr(void* addr)
 {
-  return mreg_for_addr(addr, &mem_regions);
+  static __thread mem_region_t* mr;
+  PERFSTATS_INC(local_mreg_cnt);
+  PERFSTATS_TIMER_START(pstStart);
+  if (mr == NULL
+      || (uint64_t) addr < mr->addr
+      || (uint64_t) addr >= mr->addr + mr->len) {
+    mr = mreg_for_addr(addr, &mem_regions);
+    PERFSTATS_ADD(local_mreg_cmps,
+                  ((mr == NULL)
+                   ? mem_regions.mreg_cnt
+                   : (mr - &mem_regions.mregs[0] + 1)));
+  }
+  PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  return mr;
 }
 
 
@@ -2320,7 +2410,26 @@ static
 inline
 mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
 {
-  return mreg_for_addr(addr, &mem_regions_map[locale]);
+  static __thread mem_region_t** mrs;
+  mem_region_t* mr;
+  if (mrs == NULL) {
+    mrs = (mem_region_t**) chpl_mem_allocManyZero(chpl_numNodes, sizeof(mrs[0]),
+                                                  CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                  0, 0);
+  }
+  PERFSTATS_INC(remote_mreg_cnt);
+  PERFSTATS_TIMER_START(pstStart);
+  if ((mr = mrs[locale]) == NULL
+      || (uint64_t) addr < mr->addr
+      || (uint64_t) addr >= mr->addr + mr->len) {
+    mr = mrs[locale] = mreg_for_addr(addr, &mem_regions_map[locale]);
+    PERFSTATS_ADD(remote_mreg_cmps,
+                  ((mr == NULL)
+                   ? mem_regions_map[locale].mreg_cnt
+                   : (mr - &mem_regions_map[locale].mregs[0] + 1)));
+  }
+  PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  return mr;
 }
 
 
@@ -2378,14 +2487,12 @@ void set_up_for_polling(void)
   //
   {
     typedef struct {
-      c_nodeid_t locale;
-      uint32_t gather_val;
+      uint32_t comm_dom_cnt;
     } gdata_t;
 
-    gdata_t  my_gdata = { chpl_nodeID, comm_dom_cnt };
+    gdata_t  my_gdata = { comm_dom_cnt };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata =
       (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -2393,10 +2500,10 @@ void set_up_for_polling(void)
     if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
       CHPL_INTERNAL_ERROR("PMI_Allgather(comm_dom_cnt) failed");
 
-    comm_dom_cnt_max = gdata[0].gather_val;
+    comm_dom_cnt_max = gdata[0].comm_dom_cnt;
     for (i = 1; i < chpl_numNodes; i++) {
-      if (gdata[i].gather_val > comm_dom_cnt_max)
-        comm_dom_cnt_max = gdata[i].gather_val;
+      if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
+        comm_dom_cnt_max = gdata[i].comm_dom_cnt;
     }
 
     chpl_mem_free(gdata, 0, 0);
@@ -2406,18 +2513,20 @@ void set_up_for_polling(void)
   // Make the fork request and acknowledgement space, and communicate
   // the location of that space across the locales.
   //
+
+  // Must be directly communicable without proxy.
   fork_reqs =
     (fork_t*) chpl_comm_mem_reg_allocMany(FORK_REQ_BUFS_PER_LOCALE,
                                           sizeof(fork_reqs[0]),
                                           CHPL_RT_MD_COMM_FRK_RCV_INFO,
                                           0, 0);
 
-  // chpl_comm_mem_reg no: not communicated
   fork_reqs_map =
     (fork_t**) chpl_mem_allocMany(chpl_numNodes, sizeof(fork_reqs_map[0]),
                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
                                   0, 0);
 
+  // Must be directly communicable without proxy.
   fork_reqs_free =
     (chpl_bool32*) chpl_comm_mem_reg_allocMany(FORK_REQ_BUFS_PER_LOCALE,
                                                sizeof(fork_reqs_free[0]),
@@ -2426,7 +2535,6 @@ void set_up_for_polling(void)
   for (uint32_t i = 0; i < FORK_REQ_BUFS_PER_LOCALE; i++)
     fork_reqs_free[i] = true;
 
-  // chpl_comm_mem_reg no: not communicated
   fork_reqs_free_map =
     (chpl_bool32**) chpl_mem_allocMany(chpl_numNodes,
                                        sizeof(fork_reqs_free_map[0]),
@@ -2435,16 +2543,15 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      c_nodeid_t   locale;
-      fork_t*      gather_fork_reqs;
-      chpl_bool32* gather_fork_reqs_free;
+      c_nodeid_t   nodeID;
+      fork_t*      fork_reqs;
+      chpl_bool32* fork_reqs_free;
     } gdata_t;
 
     gdata_t  my_gdata = { chpl_nodeID,
                           fork_reqs, (chpl_bool32*) fork_reqs_free };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
@@ -2452,8 +2559,8 @@ void set_up_for_polling(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(fork_reqs_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++) {
-      fork_reqs_map[gdata[i].locale]      = gdata[i].gather_fork_reqs;
-      fork_reqs_free_map[gdata[i].locale] = gdata[i].gather_fork_reqs_free;
+      fork_reqs_map[gdata[i].nodeID]      = gdata[i].fork_reqs;
+      fork_reqs_free_map[gdata[i].nodeID] = gdata[i].fork_reqs_free;
     }
 
     chpl_mem_free(gdata, 0, 0);
@@ -2478,7 +2585,7 @@ void set_up_for_polling(void)
     uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
 
     DBG_P_L(DBGF_MEMREG,
-            "RemFork space: GNI_MemRegister(%" PRIx64 ", %" PRIx64")",
+            "RemFork space: GNI_MemRegister(%#" PRIx64 ", %#" PRIx64")",
             addr, len);
     if ((gni_rc = GNI_MemRegister(cd->nih, addr, len, rf_cqh,
                                   flags, -1, &rf_mdh))
@@ -2490,7 +2597,6 @@ void set_up_for_polling(void)
   // Share the per-locale fork request memory descriptors around the
   // job.
   //
-  // chpl_comm_mem_reg no: not communicated
   rf_mdh_map =
     (gni_mem_handle_t*) chpl_mem_allocMany(chpl_numNodes,
                                            sizeof(rf_mdh_map[0]),
@@ -2499,14 +2605,13 @@ void set_up_for_polling(void)
 
   {
     typedef struct {
-      c_nodeid_t       locale;
-      gni_mem_handle_t gather_val;
+      c_nodeid_t       nodeID;
+      gni_mem_handle_t rf_mdh;
     } gdata_t;
 
     gdata_t  my_gdata = { chpl_nodeID, rf_mdh };
     gdata_t* gdata;
 
-    // chpl_comm_mem_reg no: not communicated
     gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                           CHPL_RT_MD_COMM_PER_LOC_INFO,
                                           0, 0);
@@ -2514,7 +2619,7 @@ void set_up_for_polling(void)
       CHPL_INTERNAL_ERROR("PMI_Allgather(rf_mdh_map) failed");
 
     for (i = 0; i < chpl_numNodes; i++)
-      rf_mdh_map[gdata[i].locale] = gdata[i].gather_val;
+      rf_mdh_map[gdata[i].nodeID] = gdata[i].rf_mdh;
 
     chpl_mem_free(gdata, 0, 0);
   }
@@ -2542,164 +2647,196 @@ void chpl_comm_rollcall(void)
 }
 
 
-static void make_shared_heap(void)
+static
+void ensure_registered_heap_info_set(void)
 {
-  assert(!registered_heap_info_set);
+  if (!registered_heap_info_set
+      && pthread_once(&registered_heap_once_flag, make_registered_heap) != 0) {
+    CHPL_INTERNAL_ERROR("pthread_once(&registered_heap_once_flag) failed");
+  }
+}
 
-  if (chpl_numNodes == 1) {
-    using_hugepages = false;
-    registered_heap_start = NULL;
+
+static
+void make_registered_heap(void)
+{
+  size_t page_size = get_hugepage_size();
+  size_t size_from_env;
+
+  if (page_size == 0
+      || getenv("HUGETLB_MORECORE") == NULL
+      || (size_from_env = chpl_comm_getenvMaxHeapSize()) == 0) {
     registered_heap_size  = 0;
+    registered_heap_start = NULL;
     registered_heap_info_set = 1;
+    atomic_thread_fence(memory_order_release);
     return;
   }
 
-  using_hugepages = (getenv("HUGETLB_MORECORE") == NULL) ? false : true;
-  if (using_hugepages) {
-    //
-    // If the heap is supposed to be on hugepages, acquire that space
-    // now.
-    //
-    const size_t page_size = hugepage_size = gethugepagesize();
-    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-    const size_t nic_max_mem = nic_max_pages * page_size;
-    size_t nic_allowed_mem;
-    size_t max_heap_size;
-    size_t size;
-    size_t decrement;
-    void*  start;
+  //
+  // The heap is supposed to be of fixed size and on hugepages.  Set
+  // it up.  (If it's to be dynamically extensible, that's handled
+  // separately through chpl_comm_regMem*().)
+  //
+  const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
+  const size_t nic_max_mem = nic_max_pages * page_size;
+  size_t nic_allowed_mem;
+  size_t max_heap_size;
+  size_t size;
+  size_t decrement;
+  void*  start;
 
-    //
-    // Considering the data size we'll register, compute the maximum
-    // heap size that will allow all registrations to fit in the NIC
-    // TLB.  Except on Gemini only, aim for only 95% of what will fit
-    // because there we'll get an error if we go over.
-    //
-    if (nic_type == GNI_DEVICE_GEMINI)
-      nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  //
+  // Considering the data size we'll register, compute the maximum
+  // heap size that will allow all registrations to fit in the NIC
+  // TLB.  Except on Gemini only, aim for only 95% of what will fit
+  // because there we'll get an error if we go over.
+  //
+  if (nic_type == GNI_DEVICE_GEMINI)
+    nic_allowed_mem = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
+  else
+    nic_allowed_mem = nic_max_mem;
+
+  {
+    uint64_t  addr;
+    uint64_t  len;
+    size_t    data_size;
+
+    data_size = 0;
+    while (get_next_rw_memory_range(&addr, &len, NULL, 0))
+      data_size += ALIGN_UP(len, page_size);
+
+    if (data_size >= nic_allowed_mem)
+      max_heap_size = 0;
     else
-      nic_allowed_mem = nic_max_mem;
+      max_heap_size = nic_allowed_mem - data_size;
+  }
 
-    {
-      uint64_t  addr;
-      uint64_t  len;
-      size_t    data_size;
-
-      data_size = 0;
-      while (get_next_rw_memory_range(&addr, &len, NULL, 0))
-        data_size += ALIGN_UP(len, page_size);
-
-      if (data_size >= nic_allowed_mem)
-        max_heap_size = 0;
-      else
-        max_heap_size = nic_allowed_mem - data_size;
-    }
-
-    if ((size = chpl_comm_getenvMaxHeapSize()) > 0) {
-      //
-      // The user specified a size.  Go with that, but issue a warning
-      // from node 0 if we can't fit all the registrations in the NIC
-      // TLB.  On Gemini only, reduce the heap size until we can fit in
-      // the NIC TLB, because otherwise we'll get GNI_RC_ERROR_RESOURCE
-      // when we try to register memory.
-      //
-      if (size > max_heap_size) {
-        if (chpl_nodeID == 0) {
-          char nmmBuf[20];
-          char psBuf[20];
-          char hsBuf[20];
-          char msg[200];
+  //
+  // Go with the user-specified size, but issue a warning from node 0
+  // if we can't fit all the registrations in the NIC TLB.  On Gemini
+  // only, reduce the heap size until we can fit in the NIC TLB, since
+  // otherwise we'll get GNI_RC_ERROR_RESOURCE when we try to register
+  // memory.
+  //
+  if ((size = size_from_env) > max_heap_size) {
+    if (chpl_nodeID == 0) {
+      char nmmBuf[20];
+      char psBuf[20];
+      char hsBuf[20];
+      char msg[200];
 
 #define P_GMK_BASE(b, f, v, t)                                          \
-          ((v >= ((t) (1UL << 30)))                                     \
-           ? snprintf(b, sizeof(b), "%" f "G", v / ((t) (1UL << 30)))   \
-           : (v >= ((t) (1UL << 20)))                                   \
-           ? snprintf(b, sizeof(b), "%" f "M", v / ((t) (1UL << 20)))   \
-           : snprintf(b, sizeof(b), "%" f "K", v / ((t) (1UL << 10))))
+        ((v >= ((t) (1UL << 30)))                                       \
+         ? snprintf(b, sizeof(b), "%" f "G", v / ((t) (1UL << 30)))     \
+         : (v >= ((t) (1UL << 20)))                                     \
+         ? snprintf(b, sizeof(b), "%" f "M", v / ((t) (1UL << 20)))     \
+         : snprintf(b, sizeof(b), "%" f "K", v / ((t) (1UL << 10))))
 #define P_ZI_GMK(b, v) P_GMK_BASE(b, "zd", v, size_t)
 #define P_D_GMK(b, v)  P_GMK_BASE(b, ".1f", v, double)
 
-          P_ZI_GMK(nmmBuf, nic_max_mem);
-          P_ZI_GMK(psBuf, page_size);
+      P_ZI_GMK(nmmBuf, nic_max_mem);
+      P_ZI_GMK(psBuf, page_size);
 
-          if (nic_type == GNI_DEVICE_GEMINI) {
-            P_D_GMK(hsBuf, max_heap_size);
-            (void) snprintf(msg, sizeof(msg),
-                            "Gemini TLB can cover %s with %s pages; heap "
-                            "reduced to %s to fit",
-                            nmmBuf, psBuf, hsBuf);
-          } else {
-            P_ZI_GMK(hsBuf, size);
-            (void) snprintf(msg, sizeof(msg),
-                            "Aries TLB cache can cover %s with %s pages; "
-                            "with %s heap,\n"
-                            "         cache refills may reduce performance",
-                            nmmBuf, psBuf, hsBuf);
-          }
+      if (nic_type == GNI_DEVICE_GEMINI) {
+        P_D_GMK(hsBuf, max_heap_size);
+        (void) snprintf(msg, sizeof(msg),
+                        "Gemini TLB can cover %s with %s pages; heap "
+                        "reduced to %s to fit",
+                        nmmBuf, psBuf, hsBuf);
+      } else {
+        P_ZI_GMK(hsBuf, size);
+        (void) snprintf(msg, sizeof(msg),
+                        "Aries TLB cache can cover %s with %s pages; "
+                        "with %s heap,\n"
+                        "         cache refills may reduce performance",
+                        nmmBuf, psBuf, hsBuf);
+      }
 
-          chpl_warning(msg, 0, 0);
+      chpl_warning(msg, 0, 0);
 
 #undef P_D_GMK
 #undef P_ZI_GMK
 #undef P_GMK_BASE
-        }
-
-        if (nic_type == GNI_DEVICE_GEMINI)
-          size = max_heap_size;
-      }
-    }
-    else {
-      //
-      // The user didn't specify a size.  Start with 16GB or the most
-      // we can fit, whichever is less.
-      //
-      size = (size_t) 16 << 30;
-      if (size > max_heap_size)
-        size = max_heap_size;
     }
 
-    //
-    // Work our way down from the starting size in (roughly) 5% steps
-    // until we can actually get that much from the system.
-    //
-    size = ALIGN_DN(size, page_size);
-    if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size)
-      decrement = page_size;
-
-    size += decrement;
-    do {
-      size -= decrement;
-
-      start = get_huge_pages(size, GHP_DEFAULT);
-
-      DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES get_huge_pages(%#zx) returned %p",
-              size, start);
-    } while (start == NULL && size > decrement);
-
-    if (start == NULL)
-      chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
-
-    DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
-             start, size);
-
-    registered_heap_size  = size;
-    registered_heap_start = start;
-  }
-  else {
-    registered_heap_size  = 0;
-    registered_heap_start = NULL;
+    if (nic_type == GNI_DEVICE_GEMINI)
+      size = max_heap_size;
   }
 
+  //
+  // Work our way down from the starting size in (roughly) 5% steps
+  // until we can actually get that much from the system.
+  //
+  size = ALIGN_DN(size, page_size);
+  if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+    decrement = page_size;
+  }
+
+  size += decrement;
+  do {
+    size -= decrement;
+
+    start = get_huge_pages(size, GHP_DEFAULT);
+
+    DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES get_huge_pages(%#zx) returned %p",
+            size, start);
+  } while (start == NULL && size > decrement);
+
+  if (start == NULL)
+    chpl_error("cannot initialize heap: cannot get hugepage space", 0, 0);
+
+  DBG_P_LP(DBGF_HUGEPAGES, "HUGEPAGES allocated heap start=%p size=%#zx\n",
+           start, size);
+
+  registered_heap_size  = size;
+  registered_heap_start = start;
   registered_heap_info_set = 1;
+  atomic_thread_fence(memory_order_release);
 }
 
 
-void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
+static
+size_t get_hugepage_size(void)
 {
-  if (!registered_heap_info_set)
-    make_shared_heap();
+  if (!hugepage_info_set
+      && pthread_once(&hugepage_once_flag, set_hugepage_info) != 0) {
+    CHPL_INTERNAL_ERROR("pthread_once(&hugepage_once_flag) failed");
+  }
 
-  assert(registered_heap_info_set);
+  return hugepage_size;
+}
+
+
+static
+void set_hugepage_info(void)
+{
+  if (chpl_numNodes > 1
+      && getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL) {
+    hugepage_size = gethugepagesize();
+  }
+
+  hugepage_info_set = 1;
+  atomic_thread_fence(memory_order_release);
+
+  DBG_P_L(DBGF_HUGEPAGES,
+          "setting hugepage info: use hugepages %s, sz %#zx",
+          (hugepage_size > 0) ? "YES" : "NO", hugepage_size);
+}
+
+
+size_t chpl_comm_impl_regMemHeapPageSize(void)
+{
+  size_t sz;
+  if ((sz = get_hugepage_size()) > 0)
+    return sz;
+  return chpl_getSysPageSize();
+}
+
+
+void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p)
+{
+  ensure_registered_heap_info_set();
   *start_p = registered_heap_start;
   *size_p  = registered_heap_size;
 }
@@ -2708,8 +2845,9 @@ void chpl_comm_get_registered_heap(void** start_p, size_t* size_p)
 inline
 size_t chpl_comm_impl_regMemAllocThreshold(void)
 {
-  if (using_hugepages)
-    return 2 * hugepage_size;
+  size_t sz;
+  if ((sz = get_hugepage_size()) > 0)
+    return sz;
   return SIZE_MAX;
 }
 
@@ -2717,70 +2855,72 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 void* chpl_comm_impl_regMemAlloc(size_t size)
 {
   int mr_i;
+  mem_region_t* mr;
   void* p;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (get_hugepage_size() == 0)
     return NULL;
 
   PERFSTATS_INC(regMem_cnt);
 
+  //
+  // Do we have room for another registered memory region?
+  //
+  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 0) {
+    atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
+
+    static atomic_int_least8_t spoke;
+    if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
+      chpl_warning("no more registered memory region table entries!", 0, 0);
+    }
+
+    DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);
+    return NULL;
+  }
+
+  //
+  // Try to get the memory.
+  //
+  p = get_huge_pages(ALIGN_UP(size, get_hugepage_size()), GHP_DEFAULT);
+  if (p == NULL) {
+    atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
+
+    DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): no hugepages", size);
+    return NULL;
+  }
+
   mem_regions_lock();
 
   //
-  // Do we have room for another registered memory table entry?
+  // Find an entry to use and fill it in.  There must be one available,
+  // because we didn't underflow the free-entry-count check above.
   //
   for (mr_i = 0;
        mr_i < MAX_MEM_REGIONS && mem_regions.mregs[mr_i].addr != 0;
        mr_i++)
     ;
 
-  p = NULL;
-  if (mr_i < MAX_MEM_REGIONS) {
-    mem_region_t* mr = &mem_regions.mregs[mr_i];
+  assert(mr_i < MAX_MEM_REGIONS);
 
-    p = get_huge_pages(ALIGN_UP(size, hugepage_size), GHP_DEFAULT);
+  mr = &mem_regions.mregs[mr_i];
+  mr->addr = (uint64_t) (uintptr_t) p;
+  mr->len = 1;
 
-    //
-    // If we got the memory, reserve the memory region slot we found.
-    //
-    if (p == NULL) {
-      DBG_P_LP(DBGF_MEMREG,
-               "chpl_regMemAlloc(%#zx): no hugepages",
-               size);
-    } else {
-      mr->addr = (uint64_t) (intptr_t) p;
-      mr->len = 1;
-
-      //
-      // Adjust the region count, if necessary.
-      //
-      if (mr_i >= mem_regions.mreg_cnt) {
-        mem_regions.mreg_cnt = mr_i + 1;
-#ifdef DEBUG
-        if (mem_regions.mreg_cnt > mreg_cnt_max)
-          mreg_cnt_max = mem_regions.mreg_cnt;
-#endif
-      }
-
-      DBG_P_LP(DBGF_MEMREG,
-               "chpl_regMemAlloc(%" PRIx64 "): "
-               "mregs[%d] = %" PRIx64 ", cnt %d",
-               size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
-    }
-  } else {
-    static int spoke = 0;
-
-    if (!spoke) {
-      chpl_warning("out of registered memory region table entries!", 0, 0);
-      spoke = 1;
-    }
-
-    DBG_P_LP(DBGF_MEMREG,
-             "chpl_regMemAlloc(%#zx): no free table entries",
-             size);
+  //
+  // Adjust the region count, if necessary.
+  //
+  if (mr_i >= mem_regions.mreg_cnt) {
+    mem_regions.mreg_cnt = mr_i + 1;
+    if (mem_regions.mreg_cnt > mreg_cnt_max)
+      mreg_cnt_max = mem_regions.mreg_cnt;
   }
 
   mem_regions_unlock();
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_regMemAlloc(%#" PRIx64 "): "
+           "mregs[%d] = %#" PRIx64 ", cnt %d",
+           size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
 
   return p;
 }
@@ -2791,80 +2931,70 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (get_hugepage_size() == 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemPostAlloc(%p, %" PRIx64 ")",
+           "chpl_comm_regMemPostAlloc(%p, %#" PRIx64 ")",
            p, size);
 
   //
   // Find the memory region table entry for this memory.
   //
-  mr = mreg_for_addr(p, &mem_regions);
-  if (mr == NULL)
+  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+       mr_i >= 0 && mr->addr != (uint64_t) p;
+       mr_i--, mr--)
+    ;
+
+  if (mr_i < 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
 
-  mr_i = (int) (mr - &mem_regions.mregs[0]);
+  //
+  // Fill in the length, which we set to 1 earlier to avoid lookups
+  // for transfers from matching this entry.
+  //
+  mr->len = (uint64_t) size;
+
+  //
+  // If we're in early setup and can't register memory yet then we're
+  // done.  This entry will get registered and broadcast along with
+  // the static entries, when we get to that.  Otherwise, register it.
+  //
+  if (!can_register_memory)
+    return;
+
+  register_mem_region(mr);
 
   mem_regions_lock();
 
   //
-  // Finish filling the table entry and register the memory.
+  // Update the copies of our memory regions on all nodes.  If this
+  // entry is within the already-known range of our table entries then
+  // send only this one.  Otherwise, send both all the entries beyond
+  // the already-known range and the new count.  In general this will
+  // include some new unregistered entries for which we have an address
+  // but no length or MDH.  But the presence of those won't create
+  // confusion because the remote nodes won't by trying to address
+  // within them yet anyway, and later when we do register them we may
+  // be able to send just the entries and not the count again.
   //
-  mr->len = (uint64_t) size;
+  if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemPostAlloc(): entry %d, bcast",
+            mr_i);
+    PERFSTATS_INC(regMem_bCast_cnt);
+    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
+  } else {
+    const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
-  register_mem_region(mr);
-
-  //
-  // Update the copies of our memory regions on all nodes.  If the new
-  // entry doesn't extend our table then we just send the entry.  If it
-  // does, then we need to send both the new count and the new entry.
-  // And so we can do it with just one PUT, we also send everything in
-  // between.
-  //
-  {
-    size_t off;
-    size_t size;
-    void* src_v[MAX_CHAINED_PUT_LEN];
-    int32_t node_v[MAX_CHAINED_PUT_LEN];
-    void* tgt_v[MAX_CHAINED_PUT_LEN];
-    size_t size_v[MAX_CHAINED_PUT_LEN];
-    int ci;
-
-    if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
-      off = (char*) mr - (char*) &mem_regions;
-      size = sizeof(*mr);
-    } else {
-      assert(mem_regions.mreg_cnt
-             > mem_regions_map[chpl_nodeID].mreg_cnt);
-      off = 0;
-      size = (char*) &mem_regions.mregs[mr_i + 1] - (char*) &mem_regions;
-    }
-
-    ci = 0;
-    for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
-      if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
-        ci = 0;
-      }
-
-      if (ni == chpl_nodeID) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
-               (char*) &mem_regions + off,
-               size);
-      } else {
-        src_v[ci] = (char*) &mem_regions + off;
-        node_v[ci] = ni;
-        tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
-        size_v[ci] = size;
-        ci++;
-      }
-    }
-
-    if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
-    }
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemPostAlloc(): entry %d, bcast %d-%d and cnt %d",
+            mr_i,
+            (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
+            (int) mem_regions.mreg_cnt);
+    PERFSTATS_INC(regMem_bCast_cnt);
+    regMemBroadcast(mreg_cnt_public, mem_regions.mreg_cnt - mreg_cnt_public,
+                    true /*send_mreg_cnt*/);
   }
 
   mem_regions_unlock();
@@ -2876,40 +3006,45 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-  if (!using_hugepages || size < chpl_comm_impl_regMemAllocThreshold())
+  if (get_hugepage_size() == 0)
     return false;
 
   //
   // Is this memory in our table?
   //
-  mr = mreg_for_addr(p, &mem_regions);
-  if (mr == NULL
-      || mr->addr != (uint64_t) p
-      || mr->len != size)
-    return false;
+  for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mr->len != size);
+       mr_i--, mr--)
+    ;
 
-  mr_i = (int) (mr - &mem_regions.mregs[0]);
+  if (mr_i < 0)
+    return false;
 
   PERFSTATS_INC(deregMem_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemFree(%p, %" PRIx64 "): [%d]",
+           "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
            p, size, mr_i);
 
   //
-  // Deregister the memory and empty the entry in our table. Note that even
-  // with single-threading we can't compress the table, because other threads
-  // may be doing lookups in it and they aren't locked out.
+  // Deregister the memory and empty the entry in our table.  Note that
+  // even with single-threading we can't compress the table or do
+  // anything else that would move entries around, because other threads
+  // may be doing lookups in it and they aren't locked out.  Also, we
+  // have to finish broadcasting the update before we unlock, because as
+  // soon as we unlock, the entry could be reused.
   //
-  mem_regions_lock();
-
   deregister_mem_region(mr);
+
+  mem_regions_lock();
 
   mr->addr = 0;
   mr->len = 0;
+  mr->mdh = (gni_mem_handle_t) { 0 };
 
   //
-  // Adjust the memory region count downward, if necessary.
+  // Adjust the memory region count downward, if this was the last
+  // active region.
   //
   if (mr_i == mem_regions.mreg_cnt - 1) {
     int j;
@@ -2920,59 +3055,102 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   }
 
   //
-  // Update the copies of our memory regions on all nodes.  If the new
-  // entry doesn't shorten our table then we just send the entry.  If
-  // it does, we just send the new count.
+  // Update the copies of our memory regions on all nodes.  If removing
+  // this entry shortened our table then we just send the new count.
+  // Note that this may leave remnant (and misleading) non-0 values in
+  // table entries past the new end of the active area in remote nodes'
+  // copies of our region table.  This is okay as long as these entries
+  // always get overwitten if the table grows past them again, as is
+  // the case now.  If removing the entry didn't change the length of
+  // the table then we can just send the now-empty entry.
   //
-  {
-    size_t off;
-    size_t size;
-    void* src_v[MAX_CHAINED_PUT_LEN];
-    int32_t node_v[MAX_CHAINED_PUT_LEN];
-    void* tgt_v[MAX_CHAINED_PUT_LEN];
-    size_t size_v[MAX_CHAINED_PUT_LEN];
-    int ci;
-
-    if (mem_regions.mreg_cnt == mem_regions_map[chpl_nodeID].mreg_cnt) {
-      off = (char*) mr - (char*) &mem_regions;
-      size = sizeof(*mr);
-    } else {
-      assert(mem_regions.mreg_cnt
-             < mem_regions_map[chpl_nodeID].mreg_cnt);
-      off = 0;
-      size = sizeof(mem_regions.mreg_cnt);
-    }
-
-    ci = 0;
-    for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
-      if (ci == MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
-        ci = 0;
-      }
-
-      if (ni == chpl_nodeID) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
-               (char*) &mem_regions + off,
-               size);
-      } else {
-        src_v[ci] = (char*) &mem_regions + off;
-        node_v[ci] = ni;
-        tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
-        size_v[ci] = size;
-        ci++;
-      }
-    }
-
-    if (ci > 0) {
-      do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, true);
-    }
+  if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
+            mr_i, (int) mem_regions.mreg_cnt);
+    PERFSTATS_INC(regMem_bCast_cnt);
+    regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
+  } else {
+    DBG_P_L(DBGF_MEMREG_BCAST,
+            "chpl_comm_regMemFree(): entry %d, bcast",
+            mr_i);
+    PERFSTATS_INC(regMem_bCast_cnt);
+    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
   }
 
   mem_regions_unlock();
 
+  atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
+
   free_huge_pages(p);
 
   return true;
+}
+
+
+static inline
+void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
+{
+  void* src_v[MAX_CHAINED_PUT_LEN];
+  int32_t node_v[MAX_CHAINED_PUT_LEN];
+  void* tgt_v[MAX_CHAINED_PUT_LEN];
+  size_t size_v[MAX_CHAINED_PUT_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
+  const int vi_limit = (mr_cnt > 0 && send_mreg_cnt)
+                       ? (MAX_CHAINED_PUT_LEN - 1)  // using 2 V elems per node
+                       : MAX_CHAINED_PUT_LEN;       // using 1 V elems per node
+  int vi;
+
+  vi = 0;
+  for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
+    if (ni == chpl_nodeID) {
+      //
+      // Update our own map in place.
+      //
+      if (mr_cnt > 0) {
+        memcpy((char*) &mem_regions_map_addr_map[ni][ni].mregs[mr_i],
+               (char*) &mem_regions.mregs[mr_i],
+               mr_cnt * sizeof(mem_region_t));
+      }
+
+      if (send_mreg_cnt) {
+        mem_regions_map_addr_map[ni][ni].mreg_cnt = mem_regions.mreg_cnt;
+      }
+    } else {
+      //
+      // Update every other node's map remotely.
+      //
+      if (vi >= vi_limit) {
+        do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                        may_proxy_false);
+        vi = 0;
+      }
+
+      if (mr_cnt > 0) {
+        src_v[vi] = (char*) &mem_regions.mregs[mr_i];
+        node_v[vi] = ni;
+        tgt_v[vi] = (char*)
+                    &mem_regions_map_addr_map[ni][chpl_nodeID].mregs[mr_i];
+        size_v[vi] = mr_cnt * sizeof(mem_region_t);
+        remote_mr_v[vi] = &gnr_mreg_map[ni];
+        vi++;
+      }
+
+      if (send_mreg_cnt) {
+        src_v[vi] = (char*) &mem_regions.mreg_cnt;
+        node_v[vi] = ni;
+        tgt_v[vi] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID].mreg_cnt;
+        size_v[vi] = sizeof(mem_regions.mreg_cnt);
+        remote_mr_v[vi] = &gnr_mreg_map[ni];
+        vi++;
+      }
+    }
+  }
+
+  if (vi > 0) {
+    do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                    may_proxy_false);
+  }
 }
 
 
@@ -3007,7 +3185,7 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
     if (i != chpl_nodeID) {
       do_remote_put(chpl_private_broadcast_table[id], i,
                     chpl_private_broadcast_table[id], size,
-                    may_proxy_true);
+                    NULL, may_proxy_true);
     }
   }
 }
@@ -3054,7 +3232,7 @@ void chpl_comm_barrier(const char *msg)
     DBG_P_LP(DBGF_BARRIER, "BAR notify parent %d", (int) bar_parent);
     do_remote_put(&bar_flag, bar_parent,
                   (void*) &parent_bar_info->child_notify[child_in_parent],
-                  sizeof(bar_flag), may_proxy_true);
+                  sizeof(bar_flag), NULL, may_proxy_true);
 
     //
     // Wait for our parent locale to release us from the barrier.
@@ -3081,7 +3259,7 @@ void chpl_comm_barrier(const char *msg)
     static uint32_t release_flag = 1;
     do_remote_put(&release_flag, bar_min_child + i,
                   (void*) &child_bar_info[i]->parent_release,
-                  sizeof(release_flag), may_proxy_true);
+                  sizeof(release_flag), NULL, may_proxy_true);
   }
 }
 
@@ -3103,9 +3281,28 @@ void chpl_comm_pre_task_exit(int all)
     }
   }
 
-  DBG_P_L(DBGF_MEMREG,
-          "registered memory regions high water mark: %d",
-          (int) mreg_cnt_max);
+  //
+  // It's handy to be able to print the registered memory regions
+  // high water mark whether set up for debug info or not.
+  //
+  {
+#ifdef DEBUG
+    const int test = _DBG_DO(DBGF_MEMREG)
+                     || (chpl_nodeID == 0
+                         && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM",
+                                                 false));
+    FILE* f = debug_file;
+#else
+    const int test = (chpl_nodeID == 0
+                      && chpl_env_rt_get_bool("COMM_UGNI_MEMREG_HWM", false));
+    FILE* f = stdout;
+#endif
+
+    if (test) {
+      fprintf(f, "ugni comm: reg mem regions high water mark %d\n",
+              (int) mreg_cnt_max);
+    }
+  }
 
   for (uint32_t i = 0; i < comm_dom_cnt; i++) {
     DBGSTAT_P_L(DBGSF_ANY, "cd[%d] acqs:               %12" PRIu64, i,
@@ -3238,7 +3435,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
         // these are saved in the comm portion of the on_bundle.
         on_bundle->comm.fid = f_c->fid;
         on_bundle->comm.caller = f_c->b.caller;
-        on_bundle->comm.done = f_c->b.rf_done;
+        on_bundle->comm.rf_done = f_c->b.rf_done;
 
         chpl_task_startMovedTask(f_c->fid,
                                  fn,
@@ -3286,7 +3483,7 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
       fork_xfer_info_t f_x = f->x;
 
       release_req_buf(req_li, req_cdi, req_rbi);
-      do_remote_put(f_x.src, req_li, f_x.tgt, f_x.size, may_proxy_false);
+      do_remote_put(f_x.src, req_li, f_x.tgt, f_x.size, NULL, may_proxy_false);
       indicate_done(&f_x.b);
     }
     break;
@@ -3346,7 +3543,7 @@ void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
   // free that argument ourselves.
   //
 
-  indicate_done2(f->comm.caller, (rf_done_t*) f->comm.done);
+  indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
   
 static
@@ -3640,7 +3837,8 @@ void fork_amo_wrapper(fork_amo_info_t* f_a)
 
   res_size = do_amo_on_cpu(f_a->cmd, &res, f_a->obj, &f_a->opnd1, &f_a->opnd2);
   if (f_a->res != NULL) {
-    do_remote_put(&res, f_a->b.caller, f_a->res, res_size, may_proxy_false);
+    do_remote_put(&res, f_a->b.caller, f_a->res, res_size, NULL,
+                  may_proxy_false);
   }
 
   indicate_done(&f_a->b);
@@ -3652,7 +3850,7 @@ void release_req_buf(uint32_t li, int cdi, int rbi)
 {
   static chpl_bool32 free_flag = true;
   do_remote_put(&free_flag, li, RECV_SIDE_FORK_REQ_FREE_ADDR(li, cdi, rbi),
-                sizeof(free_flag), may_proxy_false);
+                sizeof(free_flag), &gnr_mreg_map[li], may_proxy_false);
 }
 
 
@@ -3661,7 +3859,8 @@ inline
 void indicate_done2(int caller, rf_done_t *ack)
 {
   static rf_done_t done = 1;
-  do_remote_put(&done, caller, ack, sizeof(done), may_proxy_false);
+  do_remote_put(&done, caller, ack, sizeof(done), &gnr_mreg_map[caller],
+                may_proxy_false);
 }
 
 
@@ -3835,6 +4034,7 @@ void rf_done_init(void)
                  "may lead to hangs",
                  0, 0);
 
+  // Must be directly communicable without proxy.
   rf_done_pool = (rf_done_pool_t (*)[RF_DONE_NUM_PER_POOL])
                  chpl_comm_mem_reg_allocMany(RF_DONE_NUM_POOLS,
                                              sizeof(rf_done_pool[0]),
@@ -3940,6 +4140,7 @@ void get_buf_N_init(int size, int nPools, int nPerPool, int64_t **gbp,
 {
   const int pElemSize = size / sizeof(**gbp);
 
+  // Must be directly communicable without proxy.
   *gbp = (int64_t*)
          chpl_comm_mem_reg_allocMany(nPools * nPerPool * pElemSize,
                                      sizeof(**gbp),
@@ -4102,6 +4303,7 @@ void amo_res_init(void)
 {
   int i, j;
 
+  // Must be directly communicable without proxy.
   amo_res_pool = (fork_amo_data_t (*)[AMO_RES_NUM_PER_POOL])
                  chpl_comm_mem_reg_allocMany(AMO_RES_NUM_POOLS,
                                              sizeof(amo_res_pool[0]),
@@ -4226,15 +4428,15 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_diagnostics && !comm_diags_disabled_temporarily)
     (void) atomic_fetch_add_uint_least64_t(&comm_diagnostics.put, 1);
 
-  do_remote_put(addr, locale, raddr, size, may_proxy_true);
+  do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
 }
 
 
 static
 void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
-                   size_t size, drpg_may_proxy_t may_proxy)
+                   size_t size, mem_region_t* remote_mr,
+                   drpg_may_proxy_t may_proxy)
 {
-  mem_region_t*         remote_mr;
   gni_post_descriptor_t post_desc;
 
   DBG_P_LP(DBGF_GETPUT, "DoRemPut %p -> %d:%p (%#zx), proxy %c",
@@ -4250,7 +4452,9 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   // also need the source address here to be registered, because GETs
   // must have registered source addresses.
   //
-  remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+  if (remote_mr == NULL)
+    remote_mr = mreg_for_remote_addr(tgt_addr, locale);
+
   if (remote_mr == NULL) {
     mem_region_t* local_mr;
 
@@ -4350,9 +4554,9 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 
 
 static
-void do_remote_put_V(int v_len,
-                     void** src_addr_v, c_nodeid_t* locale_v, void** tgt_addr_v,
-                     size_t* size_v, drpg_may_proxy_t may_proxy)
+void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
+                     void** tgt_addr_v, size_t* size_v,
+                     mem_region_t** remote_mr_v, drpg_may_proxy_t may_proxy)
 {
   mem_region_t* remote_mr;
   gni_post_descriptor_t pd;
@@ -4367,7 +4571,7 @@ void do_remote_put_V(int v_len,
   //
   while (v_len > MAX_CHAINED_PUT_LEN) {
     do_remote_put_V(MAX_CHAINED_PUT_LEN, src_addr_v, locale_v, tgt_addr_v,
-                    size_v, may_proxy);
+                    size_v, remote_mr_v, may_proxy);
     v_len -= MAX_CHAINED_PUT_LEN;
     src_addr_v += MAX_CHAINED_PUT_LEN;
     locale_v += MAX_CHAINED_PUT_LEN;
@@ -4379,15 +4583,22 @@ void do_remote_put_V(int v_len,
     return;
 
   //
-  // Do all these PUTs in one chained transaction.  Except: defer to
-  // the scalar PUT routine for any that refer to unregistered memory
-  // on the remote side.
+  // Do all these PUTs in one chained transaction.  Except: if we can
+  // proxy these PUTs then defer to the scalar PUT routine for any that
+  // refer to unregistered memory on the remote side.
   //
   for (int vi = 0, ci = -1; vi < v_len; vi++) {
-    remote_mr = mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi]);
+    remote_mr = ((remote_mr_v == NULL)
+                 ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
+                 : remote_mr_v[vi]);
     if (remote_mr == NULL) {
-      do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
-                    may_proxy);
+      if (may_proxy) {
+        do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
+                      NULL, may_proxy);
+      } else {
+        CHPL_INTERNAL_ERROR("do_remote_put_V(): "
+                            "remote address is not NIC-registered");
+      }
       continue;
     }
 
@@ -4862,9 +5073,7 @@ void  chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
       total=total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    // chpl_comm_mem_reg no: not communicated
     srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    // chpl_comm_mem_reg no: not communicated
     dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
@@ -5019,9 +5228,7 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
       total=total*cnt[i+1];
 
     //displacement from the dstaddr and srcaddr start points
-    // chpl_comm_mem_reg no: not communicated
     srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
-    // chpl_comm_mem_reg no: not communicated
     dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
 
     for (j=0; j<total; j++) {
@@ -5469,7 +5676,8 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                        GNI_FMA_ATOMIC_FAX, &res);                       \
           }                                                             \
           else {                                                        \
-            do_remote_put(val, loc, obj, sizeof(_t), may_proxy_false);  \
+            do_remote_put(val, loc, obj, sizeof(_t), NULL,              \
+                          may_proxy_false);                             \
           }                                                             \
         }
 
@@ -6041,12 +6249,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-    assert(0); // locale model code should prevent this...
-
-    chpl_ftable_call(fid, arg);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
@@ -6074,20 +6277,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on_nb(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-
-    assert(0); // locale model code should prevent this...
-
-    // No copy of the argument is necessary for a local fork
-    // since the tasking layer will do whatever it takes
-    // to copy the argument to chpl_task_startMovedTask.
-
-    chpl_task_startMovedTask(fid, chpl_ftable[fid],
-                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
-                             subloc,
-                             chpl_nullTaskID);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
@@ -6116,11 +6306,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
            "IFACE chpl_comm_execute_on_fast(%d:%d, ftable[%d](%p, %zd))",
            (int) locale, (int) subloc, (int) fid, arg, arg_size);
 
-  if (locale == chpl_nodeID) {
-    assert(0); // locale model code should prevent this...
-    chpl_ftable_call(fid, arg);
-    return;
-  }
+  assert(locale != chpl_nodeID); // locale model code should prevent this ...
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
@@ -6163,7 +6349,6 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   chpl_bool do_fast_fork = fast && !large;
   chpl_comm_on_bundle_t *large_arg = NULL;
   fork_base_info_t *req = NULL;
-  rf_done_t **blockhere = NULL;
   fork_t f;
 
 
@@ -6189,31 +6374,26 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   if (large) {
     //
     // The argument is too large to send directly in the request, so the
-    // target locale will have to get it from us.  We cannot return
-    // before it does so, because once we return we cannot guarantee the
-    // argument's continued existence.  If this is a blocking fork then
-    // we won't return until the whole thing is done, so the remote
-    // locale can get the argument directly from our incoming parameter
-    // and all is well.  But if this is a non-blocking fork we will
-    // return as soon as we initiate it.  In that case, we must make a
-    // copy of the argument and give the remote locale a pointer to
-    // retrieve that copy instead of the original.  The remote locale
-    // will free the copy with a remote fork_op_free back to our locale,
-    // as soon as it has retrieved the argument.
-
-    // If it's nonblocking, we need to copy the argument bundle to the
-    // heap since the caller can reuse that memory.
+    // target locale will have to GET it from us.  We must guarantee the
+    // argument continues to exist until the target has done so.  If
+    // this is a blocking executeOn then we won't return until the whole
+    // thing is done, so the remote locale can get the argument directly
+    // from our incoming parameter and all is well.  But if this is a
+    // non-blocking executeOn we will want to return as soon as we
+    // initiate it.  In that case, we must make a copy of the argument
+    // and give the remote locale a pointer to retrieve that copy
+    // instead of the original.  The remote locale will free the copy
+    // with a remote fork_op_free back to our locale.
     //
-    // If the arg passed to us isn't in the mapped region, we
-    // should also copy it now, but only if the heap is
-    // in registered memory (because with minimal registered, the heap
-    // isn't registered either).
-    // By copying it now, we save the target side the overhead of having
-    // to do an executeOn back to us to do a PUT to retrieve the large
-    // arg, since it not being in registered memory means they won't be able
+    // If the arg passed to us isn't in a registered region we should
+    // also copy it, but only if the copy will likely be in registered
+    // memory.  By copying it we save the target side the overhead of
+    // doing an executeOn back to us to PUT the large arg to themself,
+    // since if it's not in registered memory here they won't be able
     // to GET it directly.
+    //
     if (!blocking ||
-        (registered_heap_start != NULL && mreg_for_local_addr(arg) == NULL)) {
+        (get_hugepage_size() > 0 && mreg_for_local_addr(arg) == NULL)) {
       heapCopyLargeArg = true;
     }
 
@@ -6249,11 +6429,6 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
     f.lc.arg_size = arg_size;
     f_size = sizeof(fork_large_call_info_t);
   }
-  
-  if (blocking) {
-    // do_fork_post will set ack and wait on it
-    blockhere = &f_sc->b.rf_done;
-  }
 
   req = &f_sc->b;
 
@@ -6270,7 +6445,7 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
   //
   // Send the request to the target.
   //
-  do_fork_post(locale, blockhere, f_size, req, &cdi, &rbi);
+  do_fork_post(locale, blocking, f_size, req, &cdi, &rbi);
   
   //
   // For fast forks, we free the remote fork request buffer on this
@@ -6315,7 +6490,7 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
   // has arrived here.
   //
   PERFSTATS_INC(fork_put_cnt);
-  do_fork_post(locale, & req.b.rf_done, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6345,7 +6520,7 @@ void fork_get(void* addr, c_nodeid_t locale, void* raddr, size_t size)
   // has arrived.
   //
   PERFSTATS_INC(fork_get_cnt);
-  do_fork_post(locale, & req.b.rf_done, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6368,7 +6543,7 @@ void fork_free(c_nodeid_t locale, void* p)
   // Send the request to the target.
   //
   PERFSTATS_INC(fork_free_cnt);
-  do_fork_post(locale, NULL, sizeof(req), &req.b, NULL, NULL);
+  do_fork_post(locale, false /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 
@@ -6399,57 +6574,32 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   // Send the request to the target.
   //
   PERFSTATS_INC(fork_amo_cnt);
-  do_fork_post(locale, &p_rf_req->a.b.rf_done,
-               sizeof(p_rf_req->a), &p_rf_req->b, NULL, NULL);
+  do_fork_post(locale, true /*blocking*/,
+               sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
 }
 
 
 static
 void do_fork_post(c_nodeid_t locale,
-                  rf_done_t** rf_done_slot,
-                  uint64_t f_size, fork_base_info_t* p_rf_req,
+                  chpl_bool blocking,
+                  uint64_t f_size, fork_base_info_t* const p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
-  rf_done_t             rf_done;
-  rf_done_t*            rf_done_addr;
   gni_post_descriptor_t post_desc;
   int                   rbi;
   gni_return_t          gni_rc;
-  chpl_bool blocking =  (rf_done_slot != NULL);
 
   if (blocking) {
     //
-    // If our completion flag in our activation record isn't in mapped
-    // memory, the remote locale will not be able to PUT directly back
-    // to it.  Instead they will have to do a remote fork back to us
-    // to do a fork_op_get, whereupon we'll end up right back here and
-    // do the same thing again.  Ultimately we'll either recurse this
-    // way until we run out of something (memory, say) or hang because
-    // our tasking layer cannot run any more tasks.  So instead of
-    // doing that, allocate a completion flag from the heap, make sure
-    // it's mapped, and give the target locale that instead of the one
-    // on our stack.
+    // Our completion flag has to be in registered memory so the
+    // remote locale can PUT directly back here to it.
     //
-    // This can happen if task stacks aren't in the registered heap.
-    //
-    mem_region_t* rf_done_mr;
-
-    rf_done_addr = &rf_done;
-    rf_done_mr = mreg_for_local_addr(rf_done_addr);
-    if (rf_done_mr == NULL) {
-      rf_done_addr = rf_done_alloc();
-      rf_done_mr = gnr_mreg;
-      if (rf_done_mr == NULL)
-        CHPL_INTERNAL_ERROR("do_fork_post(): "
-                            "rf_done_addr is not NIC-registered");
-    }
-
-    *rf_done_addr = 0;
+    p_rf_req->rf_done = rf_done_alloc();
+    *p_rf_req->rf_done = 0;
     atomic_thread_fence(memory_order_release);
-    *rf_done_slot = rf_done_addr;
   }
   else
-    rf_done_addr = NULL;
+    p_rf_req->rf_done = NULL;
 
   //
   // Fill in the POST descriptor.
@@ -6497,13 +6647,12 @@ void do_fork_post(c_nodeid_t locale,
 
   if (blocking) {
     PERFSTATS_INC(wait_rfork_cnt);
-    while (! *(volatile rf_done_t*) rf_done_addr) {
+    while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
       local_yield();
     }
 
-    if (rf_done_addr != &rf_done)
-      rf_done_free(rf_done_addr);
+    rf_done_free(p_rf_req->rf_done);
   }
 }
 
@@ -7058,12 +7207,14 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 
 #define _PSV_PRINT(psv)                                                 \
         do {                                                            \
-          size_t wc = snprintf(&buf[buf_cnt], sizeof(buf) - buf_cnt,    \
-                               "%s = %" PRIu64 "; ", # psv, ps->psv);   \
-          if (wc > sizeof(buf) - buf_cnt)                               \
-            buf_cnt = sizeof(buf);                                      \
-          else                                                          \
-            buf_cnt += wc;                                              \
+          if (ps->psv != 0) {                                           \
+            size_t wc = snprintf(&buf[buf_cnt], sizeof(buf) - buf_cnt,  \
+                                 "%s = %" PRIu64 "; ", # psv, ps->psv); \
+            if (wc > sizeof(buf) - buf_cnt)                             \
+              buf_cnt = sizeof(buf);                                    \
+            else                                                        \
+              buf_cnt += wc;                                            \
+          }                                                             \
         } while (0);
 
   buf_cnt = 0;
