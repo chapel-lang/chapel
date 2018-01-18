@@ -259,9 +259,6 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
 
-  if (call->id == 185748)
-    gdbShouldBreakHere();
-
   bool isAssign = calledFn && 0 == strcmp("=", calledFn->name);
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN) ||
