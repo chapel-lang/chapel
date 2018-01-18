@@ -159,13 +159,12 @@ module Buffers {
 
   pragma "no doc"
   proc bytes.init(x: bytes) {
+    this.home = here;
     if x.home == here {
-      this.home = here;
       this._bytes_internal = x._bytes_internal;
       super.init();
-      qbytes_release(x._bytes_internal);
+      qbytes_retain(x._bytes_internal);
     } else {
-      this.home = here;
       // The initial ref count is 1, so no need to call qbytes_retain here.
       this._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
       super.init();
@@ -319,6 +318,8 @@ module Buffers {
     this.home = here;
     super.init();
     error = qbuffer_create(this._buf_internal);
+    // TODO: really want the following to by `try` once we can throw from
+    // initializers
     if error then try! ioerror(error, "in buffer constructor");
   }
   pragma "no doc"
@@ -327,11 +328,11 @@ module Buffers {
       this.home = here;
       this._buf_internal = x._buf_internal;
       super.init();
-      qbuffer_release(x._buf_internal);
+      qbuffer_retain(x._buf_internal);
     } else {
       var error: syserr = ENOERR;
       this.init(error);
-      if error then halt("Got error on buffer_create");
+      if error then halt("Got an error when initializing a new buffer.");
       var start_offset:int(64);
       var end_offset:int(64);
 
@@ -775,5 +776,4 @@ module Buffers {
     if err then try ioerror(err, "in buffer.copyin");
     return ret;
   }
-  }
-
+}
