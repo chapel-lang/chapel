@@ -10,7 +10,7 @@ proc foo(type t: R(real)) {
   writeln("real R");
 }
 
-proc foo(type t: R) {
+proc foo(type t: R(int)) {
   writeln("int R");
 }
 
