@@ -273,9 +273,7 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-     if (CHPL_TARGET_PLATFORM == 'linux64' ||
-         CHPL_TARGET_PLATFORM == 'linux32' || 
-         CHPL_TARGET_PLATFORM == 'darwin') {
+    if (isUnixEnv()) {
         if name.isEmptyString() {
            return false;
         }
@@ -286,8 +284,27 @@ proc file.realPath(): string throws {
         }
         else 
           return false;
-     }
-     else
-       compilerError("Target platform should have Unix like environment");
-  } 
+    } else {
+      compilerError("Target platform should have Unix like environment");
+    }
+  }
+
+  /* Helper to determine if we are in a Unix environment.  Not sure yet how
+     useful this will be to other functions, but I didn't want to write that
+     big conditional in the function itself */
+  private proc isUnixEnv() param {
+    if (CHPL_TARGET_PLATFORM == "linux64" ||
+        CHPL_TARGET_PLATFORM == "linux32" ||
+        CHPL_TARGET_PLATFORM == "darwin" ||
+        CHPL_TARGET_PLATFORM == "netbsd64" ||
+        CHPL_TARGET_PLATFORM == "netbsd32" ||
+        CHPL_TARGET_PLATFORM == "cray-xk" ||
+        CHPL_TARGET_PLATFORM == "cray-xe" ||
+        CHPL_TARGET_PLATFORM == "cray-xc" ||
+        CHPL_TARGET_PLATFORM == "cray-cs") {
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
