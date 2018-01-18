@@ -26,6 +26,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -68,6 +69,7 @@ namespace {
 
   struct LifetimeState {
     SymbolToLifetimeMap lifetimes;
+    bool setLifetimeForSymbolToMin(Symbol* sym, Lifetime lt);
     Lifetime lifetimeForSymbol(Symbol* sym);
     Lifetime lifetimeForCallReturn(CallExpr* call);
     Lifetime lifetimeForPrimitiveReturn(CallExpr* call);
@@ -77,7 +79,9 @@ namespace {
 
     public:
       LifetimeState* lifetimes;
-      virtual bool enterCallExpr (CallExpr* call);
+      bool changed;
+      virtual bool enterCallExpr(CallExpr* call);
+      virtual bool enterForLoop(ForLoop* forLoop);
   };
   class EmitLifetimeErrorsVisitor : public AstVisitorTraverse {
 
@@ -121,7 +125,15 @@ void checkLifetimes(void) {
       // Infer lifetimes
       InferLifetimesVisitor infer;
       infer.lifetimes = &state;
-      fn->accept(&infer);
+      // Find minimum lifetime for all variables
+      // Uses repeated iteration in order to avoid problems
+      // such as where a lifetime for a temporary is incorrectly inferred
+      // to be infinite, because only settings of a variable have
+      // been infinite so far.
+      do {
+        infer.changed = false;
+        fn->accept(&infer);
+      } while (infer.changed == true);
 
       if (debugging) {
         printLifetimeState(&state);
@@ -141,12 +153,15 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return false;
   if (fn->hasFlag(FLAG_SAFE))
     return true;
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+    return false;
 
   ModuleSymbol* inMod = fn->getModule();
   if (inMod->hasFlag(FLAG_UNSAFE))
     return false;
   if (inMod->hasFlag(FLAG_SAFE))
     return true;
+
 
   return defaultToCheckingLifetimes;
 }
@@ -193,9 +208,39 @@ static void handleDebugOutputOnError(Expr* e, LifetimeState* state) {
   }
 }
 
+// Sets lifetime for symbol sym to be lt if it's not in the table yet,
+// or the minimum of the previous value and lt if it is.
+//
+// Returns true if the state was changed.
+bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, Lifetime lt) {
+  bool changed = false;
+
+  int breakOnId = 0;
+
+  if (lifetimes.count(sym) == 0) {
+    if (sym->id == breakOnId)
+      gdbShouldBreakHere();
+    lifetimes[sym] = lt;
+    changed = true;
+  } else {
+    if (isLifetimeShorter(lt, lifetimes[sym])) {
+      if (sym->id == breakOnId)
+        gdbShouldBreakHere();
+      lifetimes[sym] = lt;
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
 Lifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
   if (lifetimes.count(sym) > 0)
     return lifetimes[sym];
+
+  // If it has type nil, it has infinite lifetime
+  if (sym->type == dtNil)
+    return infiniteLifetime();
 
   // Otherwise, create a basic lifetime for this variable.
   return reachabilityLifetimeForSymbol(sym);
@@ -255,6 +300,7 @@ Lifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
   return minLifetime;
 }
 
+
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
@@ -272,7 +318,8 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       // Consider the RHS and handle the cases
       Expr* rhsExpr = call->get(2);
       CallExpr* rhsCallExpr = toCallExpr(rhsExpr);
-      Lifetime lt = lifetimes->lifetimeForSymbol(lhs);
+      Lifetime lt = infiniteLifetime();
+      //lifetimes->lifetimeForSymbol(lhs);
 
       if (rhsCallExpr) {
         if (rhsCallExpr->resolvedOrVirtualFunction()) {
@@ -291,20 +338,60 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      if (lifetimes->lifetimes.count(lhs) == 0) {
-        lt.relevantExpr = call;
-        lifetimes->lifetimes[lhs] = lt;
-      } else {
-        lt.relevantExpr = call;
-        if (isLifetimeShorter(lt, lifetimes->lifetimes[lhs])) {
-          lifetimes->lifetimes[lhs] = lt;
-        }
-      }
+      lt.relevantExpr = call;
+      changed |= lifetimes->setLifetimeForSymbolToMin(lhs, lt);
     }
   }
 
   return false;
 }
+
+bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
+  // Gather the loop details to understand the
+  // correspondence between what was iterated over
+  // and the index variables.
+
+  bool isForall = false;
+  IteratorDetails leaderDetails;
+  ForLoop* followerForLoop = NULL;
+  std::vector<IteratorDetails> detailsVector;
+
+  gatherLoopDetails(forLoop, isForall, leaderDetails,
+                    followerForLoop, detailsVector);
+
+  for (size_t i = 0; i < detailsVector.size(); i++) {
+    Expr* iterable = detailsVector[i].iterable;
+    Symbol* index = detailsVector[i].index;
+    SymExpr* iterableSe = toSymExpr(iterable);
+
+    INT_ASSERT(iterable);
+    INT_ASSERT(index);
+
+    // Also check if we are iterating using these() method
+    // ex. functions/ferguson/ref-pair/const-error-iterated*
+    if (!iterableSe)
+      if (CallExpr* iterableCall = toCallExpr(iterable))
+        if (iterableCall->isNamed("these"))
+          iterableSe = toSymExpr(iterableCall->get(1));
+
+    // Gather lifetime for iterable
+    Lifetime iterableLifetime = infiniteLifetime();
+    if (iterableSe) {
+      iterableLifetime = lifetimes->lifetimeForSymbol(iterableSe->symbol());
+    } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
+      iterableLifetime = lifetimes->lifetimeForCallReturn(iterableCall);
+    } else {
+      INT_FATAL("Error finding iterable");
+    }
+
+    // Set lifetime of iteration variable to lifetime of the iterable (expr).
+    iterableLifetime.relevantExpr = forLoop;
+    changed |= lifetimes->setLifetimeForSymbolToMin(index, iterableLifetime);
+  }
+
+  return true;
+}
+
 
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
@@ -324,10 +411,12 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       // If we can't make sense of the RHS, assume it's infinite lifetime
       Lifetime rhsLt = infiniteLifetime();
 
+      Symbol* rhsSym = NULL;
+
       if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
-        Symbol* rhs = rhsSe->symbol();
-        if (isSubjectToLifetimeAnalysis(rhs))
-          rhsLt = lifetimes->lifetimeForSymbol(rhs);
+        rhsSym = rhsSe->symbol();
+        if (isSubjectToLifetimeAnalysis(rhsSym))
+          rhsLt = lifetimes->lifetimeForSymbol(rhsSym);
 
       } else if (CallExpr* subCall = toCallExpr(call->get(2))) {
         if (subCall->resolvedOrVirtualFunction())
@@ -338,7 +427,12 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       if (lhs->hasFlag(FLAG_RVV)) {
         if (!rhsLt.infinite) {
           if (!rhsLt.returnScope) {
-            USR_FATAL_CONT(call, "Scoped variable cannot be returned");
+            if (rhsSym && !rhsSym->hasFlag(FLAG_TEMP))
+              USR_FATAL_CONT(call, "Scoped variable %s cannot be returned",
+                             rhsSym->name);
+            else
+              USR_FATAL_CONT(call, "Scoped variable cannot be returned");
+
             Symbol* from = rhsLt.fromSymbolReachability;
             USR_PRINT(from, "consider scope of %s", from->name);
             handleDebugOutputOnError(call, lifetimes);
@@ -346,7 +440,12 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           if (calledFn &&
               calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
               rhsLt.returnScope) {
-            USR_FATAL_CONT(call, "Return scope variable cannot be returned in function returning infinite lifetime");
+            if (rhsSym && !rhsSym->hasFlag(FLAG_TEMP))
+              USR_FATAL_CONT(call, "Return scope variable %s cannot be returned in function returning infinite lifetime",
+                  rhsSym->name);
+            else
+              USR_FATAL_CONT(call, "Return scope variable cannot be returned in function returning infinite lifetime");
+
             handleDebugOutputOnError(call, lifetimes);
           }
         }
@@ -355,8 +454,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         // I.e. insist RHS lifetime is longer than LHS lifetime.
         // I.e. error if RHS lifetime is shorter than LHS lifetime.
         if (isLifetimeShorter(rhsLt, lhsLt)) {
-          USR_FATAL_CONT(call,
-                         "Scoped variable would outlive the value it is set to");
+          USR_FATAL_CONT(call, "Scoped variable %s would outlive the value it is set to", lhs->name);
           Symbol* from = rhsLt.fromSymbolReachability;
           USR_PRINT(from, "consider scope of %s", from->name);
           handleDebugOutputOnError(call, lifetimes);
@@ -404,17 +502,25 @@ static bool isLocalVariable(FnSymbol* fn, Symbol* sym) {
      - ref
  */
 static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
-  // It needs to be a ref or a pointer type
-  bool refOrPtr = isClass(sym->type) || sym->isRef();
   bool argOrVar = isArgSymbol(sym) || isVarSymbol(sym);
 
-  if (!(refOrPtr && argOrVar))
+  if (!argOrVar)
+    return false;
+
+  // It needs to be a ref or a pointer type
+  // or an iterator record
+  if (!(isClass(sym->type) ||
+        sym->isRef() ||
+        sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)))
     return false;
 
   if (sym->type->symbol->hasFlag(FLAG_C_PTR_CLASS))
     return false;
 
   if (sym->hasFlag(FLAG_UNSAFE))
+    return false;
+
+  if (sym->hasFlag(FLAG_INDEX_OF_INTEREST))
     return false;
 
   return true;
@@ -426,6 +532,10 @@ static bool shouldPropagateLifetimeTo(FnSymbol* inFn, Symbol* sym) {
     return false;
 
   if (!isLocalVariable(inFn, sym))
+    return false;
+
+  // Lifetime for index variables is set by infer's for loop visitor
+  if (sym->hasFlag(FLAG_INDEX_VAR))
     return false;
 
 //  if (!sym->hasFlag(FLAG_TEMP))
@@ -653,4 +763,32 @@ void test2() @safe {
     }
   }
 }
+
+These cases seem to be handled by a strategy of inferring the lifetime
+  of each variable to be a minimum of what it is set to & explicitly
+  checking that reachability < lifetime.
+
+
+ChapelError:241 proc message
+
+first = nil;
+while ... {
+  if first == nil then
+     first = e;
+}
+
+This is something the compiler translates to
+first = nil;
+while ... {
+  if first:object == nil then
+     first = e;
+}
+
+
+Problem here is that first might be inferred to have infinite lifetime,
+and then at the time the assignment is run, infinite lifetime
+will be returned for the cast to object,and then problems ensue.
+
+Resolve that by putting the minimum-lifetime-finding in a loop while changed.
+
  */
