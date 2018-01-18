@@ -1,0 +1,3 @@
+parent-child-coerce-class.chpl:18: error: ambiguous call '_new(type Child, Derived)'
+parent-child-coerce-class.chpl:4: note: candidates are: _new(type chpl_t, x: Derived)
+parent-child-coerce-class.chpl:11: note:                 _new(type chpl_t, x: Base)
