@@ -146,12 +146,14 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init(src:Shared(?)) {
-      if src.pn != nil then
-        src.pn.retain();
       this.t = src.t;
       this.p = src.p;
       this.pn = src.pn;
+
       super.init();
+
+      if this.pn != nil then
+        this.pn.retain();
     }
 
     /*
