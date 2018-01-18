@@ -26,6 +26,7 @@
 #include "iterator.h"
 #include "loopDetails.h"
 #include "lifetime.h"
+#include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
