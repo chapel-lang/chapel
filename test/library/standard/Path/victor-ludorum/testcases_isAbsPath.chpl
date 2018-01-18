@@ -28,5 +28,4 @@
      absPath = absPath.strip();
      sub.wait();
      return absPath;
-     sub.wait();
    }
