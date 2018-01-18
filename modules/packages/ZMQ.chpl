@@ -904,7 +904,7 @@ module ZMQ {
 
     // recv, enumerated types
     pragma "no doc"
-    proc recv(type T, flags: int = 0) throws  where isEnumType(T) {
+    proc recv(type T, flags: int = 0) throws where isEnumType(T) {
       return try recv(int, flags):T;
     }
 
