@@ -273,9 +273,8 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-     if (CHPL_TARGET_PLATFORM == 'linux64' ||
-         CHPL_TARGET_PLATFORM == 'linux32' || 
-         CHPL_TARGET_PLATFORM == 'darwin') {
+    if (CHPL_TARGET_PLATFORM != "cygwin64" &&
+        CHPL_TARGET_PLATFORM != "cygwin32") {
         if name.isEmptyString() {
            return false;
         }
@@ -286,8 +285,8 @@ proc file.realPath(): string throws {
         }
         else 
           return false;
-     }
-     else
-       compilerError("Target platform should have Unix like environment");
-  } 
+    } else {
+      compilerError("Target platform should have Unix like environment");
+    }
+  }
 }
