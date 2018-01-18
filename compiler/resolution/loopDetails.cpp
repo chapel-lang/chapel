@@ -201,8 +201,6 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
   }
 }
 
-// TODO -- move this and related code to ForLoop.cpp
-
 /* Gather important information about a loop.
 
 leaderDetails is only relevant for leader/follower iterators
