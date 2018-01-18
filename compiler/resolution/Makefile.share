@@ -28,6 +28,7 @@ RESOLUTION_SRCS =                                              \
                   generics.cpp                                 \
                   functionResolution.cpp                       \
                   initializerResolution.cpp                    \
+                  loopDetails.cpp                              \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \
