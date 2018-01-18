@@ -62,8 +62,9 @@ module SharedObject {
 
     // count should be initialized to 1 in default initializer.
     proc init() {
-      count.write(1);
+      // Want this:      count = 1;
       super.init();
+      count.write(1);
     }
 
     proc retain() {
@@ -144,14 +145,13 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init(src:Shared) {
+    proc init(src:Shared(?)) {
+      if src.pn != nil then
+        src.pn.retain();
       this.t = src.t;
       this.p = src.p;
       this.pn = src.pn;
       super.init();
-
-      if this.pn != nil then
-        this.pn.retain();
     }
 
     /*
@@ -212,17 +212,6 @@ module SharedObject {
     // copy-init should call retain
   }
 
-
-  // initCopy is here as a workaround for problems
-  // with generic initializers.
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(src: Shared) {
-    // This pragma may be unnecessary.
-    //pragma "no auto destroy"
-    var ret = new Shared(src);
-    return ret;
-  }
 
   /*
      Assign one :record:`Shared` to another.
