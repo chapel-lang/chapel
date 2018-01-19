@@ -4,5 +4,5 @@ proc someFunc(param arg1:bool = false,
 }
 
 proc main() {
-  writeln(someFunc());
+  someFunc();
 }
