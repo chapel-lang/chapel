@@ -671,6 +671,11 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              NULL,
                              formalIsParam) == false) {
         return false;
+      } else if (strcmp(fn->name,"init") == 0 &&
+                 formal->hasFlag(FLAG_ARG_THIS) &&
+                 formal->getValType() != actual->getValType()) {
+        // Do not allow dispatch for 'this' formal with initializers
+        return false;
       }
     }
   }
