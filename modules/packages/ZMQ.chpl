@@ -772,7 +772,7 @@ module ZMQ {
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
                                    copy.length:size_t, c_ptrTo(free_helper),
                                    c_nil)) {
-          try throw_socket_error("Error in Socket.send(%s): %s\n");
+          try throw_socket_error(errno, "send");
         }
 
         // Send the message
@@ -781,7 +781,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            try throw_socket_error("Error in Socket.send(%s): %s\n");
+            try throw_socket_error(errno, "send");
           }
         }
       }
@@ -798,7 +798,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            try throw_socket_error("Error in Socket.send(%s): %s\n");
+            try throw_socket_error(errno, "send");
           }
         }
       }
@@ -817,12 +817,8 @@ module ZMQ {
       on classRef.home {
         var copy = data;
         param N = numFields(T);
-        try {
-          for param i in 1..(N-1) do
-            send(getField(copy,i), ZMQ_SNDMORE | flags);
-        } catch e: TaskErrors {
-          throw e;
-        }
+        for param i in 1..(N-1) do
+          try send(getField(copy,i), ZMQ_SNDMORE | flags);
 
         try send(getField(copy,N), flags);
       }
@@ -853,7 +849,7 @@ module ZMQ {
         // Initialize an empty ZeroMQ message
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
-          try throw_socket_error("Error in Socket.recv(%s): %s\n");
+          try throw_socket_error(errno, "recv");
         }
 
         // Receive the message
@@ -862,7 +858,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            try throw_socket_error("Error in Socket.recv(%s): %s\n");
+            try throw_socket_error(errno, "recv");
           }
         }
 
@@ -873,7 +869,7 @@ module ZMQ {
                              length=len, size=len+1,
                              owned=true, needToCopy=true);
         if (0 != zmq_msg_close(msg)) {
-          try throw_socket_error("Error in Socket.recv(%s): %s\n");
+          try throw_socket_error(errno, "recv");
         }
 
         // Return the string to the calling locale
@@ -894,7 +890,7 @@ module ZMQ {
           if errno == EAGAIN then
             chpl_task_yield();
           else {
-            try throw_socket_error("Error in Socket.recv(%s): %s\n");
+            try throw_socket_error(errno, "recv");
           }
         }
         ret = data;
@@ -915,23 +911,20 @@ module ZMQ {
       var ret: T;
       on classRef.home {
         var data: T;
-        try {
-          for param i in 1..numFields(T) do
-            getFieldRef(data,i) = recv(getField(data,i).type);
-        } catch e: TaskErrors {
-          throw e;
-        }
+        for param i in 1..numFields(T) do
+          getFieldRef(data,i) = try recv(getField(data,i).type);
         ret = data;
       }
       return ret;
     }
 
     pragma "no doc"
-    proc throw_socket_error(fmtstr: string) throws {
-      var _errno: c_int = errno;
-      var errmsg_zmq    = zmq_strerror(_errno):string;
-      var errmsg_str    = fmtstr.format(string:string, errmsg_zmq);
-      throw SystemError.fromSyserr(_errno:syserr, errmsg_str);
+    proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
+      var errmsg_zmq = zmq_strerror(socket_errno):string;
+      var errmsg_fmt = "Error in Socket.%s(%s): %s\n";
+      var errmsg_str = errmsg_fmt.format(err_fn, string:string, errmsg_zmq);
+
+      throw SystemError.fromSyserr(socket_errno:syserr, errmsg_str);
     }
   } // record Socket
 
