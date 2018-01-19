@@ -16,11 +16,6 @@ This document discusses problems the Chapel language currently has when a
 library might unintentionally change behavior based upon changes in other
 libraries or in code using that library.
 
-Outline
--------
-
-TODO outline
-
 Function Hijacking
 ------------------
 
