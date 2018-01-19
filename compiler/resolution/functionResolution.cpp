@@ -143,7 +143,7 @@ static CapturedValueMap            capturedValues;
 //#
 //# Static Function Declarations
 //#
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure=true);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
@@ -1874,8 +1874,8 @@ bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
-static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool errorOnFailure);
+static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call, bool errorOnFailure);
 
 static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
@@ -1894,37 +1894,46 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure) {
   FnSymbol*      retval = NULL;
 
   Expr* where = getInsertPointForTypeFunction(type);
   if (BlockStmt* stmt = toBlockStmt(where))
-    retval = resolveUninsertedCall(stmt, call);
+    retval = resolveUninsertedCall(stmt, call, errorOnFailure);
   else
-    retval = resolveUninsertedCall(where, call);
+    retval = resolveUninsertedCall(where, call, errorOnFailure);
 
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool
+    errorOnFailure) {
   BlockStmt* block = new BlockStmt(call);
 
-  insert->insertAtHead(block);
+  insert->insertAtHead(block); // Tail?
 
-  resolveCall(call);
+  if (errorOnFailure)
+    resolveCall(call);
+  else
+    tryResolveCall(call);
 
+  call->remove();
   block->remove();
 
   return call->resolvedFunction();
 }
 
-static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorOnFailure) {
   BlockStmt* block = new BlockStmt(call);
 
   insert->insertBefore(block);
 
-  resolveCall(call);
+  if (errorOnFailure)
+    resolveCall(call);
+  else
+    tryResolveCall(call);
 
+  call->remove();
   block->remove();
 
   return call->resolvedFunction();
@@ -7261,7 +7270,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
   CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
 
-  resolveUninsertedCall(chpl_gen_main->body, addModule);
+  resolveUninsertedCall(chpl_gen_main->body, addModule, /*err on fail*/ true);
 
   gAddModuleFn = addModule->resolvedFunction();
 
