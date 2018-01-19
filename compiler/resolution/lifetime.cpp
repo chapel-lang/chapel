@@ -57,7 +57,7 @@
 
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
-const bool defaultToCheckingLifetimes = false;
+const bool defaultToCheckingLifetimes = true;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -300,6 +300,26 @@ Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
 
 Lifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
   Lifetime minLifetime = infiniteLifetime();
+
+  if (call->isPrimitive(PRIM_GET_MEMBER) ||
+      call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE)) {
+    // Lifetime of a field is the lifetime of the aggregate
+    SymExpr* actualSe = toSymExpr(call->get(1));
+    INT_ASSERT(actualSe);
+    Symbol* actualSym = actualSe->symbol();
+
+    if (isSubjectToLifetimeAnalysis(actualSym) ||
+        isLocalVariable(call->getFunction(), actualSym)) {
+      Lifetime actualLifetime = lifetimeForSymbol(actualSym);
+      if (isLifetimeShorter(actualLifetime, minLifetime)) {
+        minLifetime = actualLifetime;
+      }
+    }
+
+    return minLifetime;
+  }
 
   for_actuals(actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
@@ -559,12 +579,26 @@ static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
-  if (sym->type->symbol->hasFlag(FLAG_C_PTR_CLASS))
+  // in, out arguments don't determine the lifetime of a returned variable.
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    if ((arg->originalIntent & INTENT_FLAG_IN) ||
+        (arg->originalIntent & INTENT_FLAG_OUT))
+      return false;
+
+  // low-level ddata type not subject to analysis
+  if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS))
     return false;
 
+  // Types for C compatability are assumed to have infinite lifetime.
+  if (sym->type->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
+      sym->type->symbol->hasFlag(FLAG_EXTERN))
+    return false;
+
+  // Symbols marked "unsafe" are not subject to analysis.
   if (sym->hasFlag(FLAG_UNSAFE))
     return false;
 
+  // this is a workaround for non-optimal AST for iteration
   if (sym->hasFlag(FLAG_INDEX_OF_INTEREST))
     return false;
 
@@ -615,8 +649,8 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   // (we assume that a user supplied = function handles lifetimes in a
   //  reasonable manner)
   if (calledFn && 0 == strcmp("=", calledFn->name)) {
-    if (isClass(call->get(1)->getValType()) &&
-        isClass(call->get(2)->getValType()))
+    if (isClassOrNil(call->get(1)->getValType()) &&
+        isClassOrNil(call->get(2)->getValType()))
       return true;
     if (calledFn->hasFlag(FLAG_COMPILER_GENERATED))
       return true;
@@ -857,5 +891,12 @@ and then at the time the assignment is run, infinite lifetime
 will be returned for the cast to object,and then problems ensue.
 
 Resolve that by putting the minimum-lifetime-finding in a loop while changed.
+
+
+Returning a tuple of class instances e.g. BaseDom.remove().
+
+resolved by fixing inference for var x:MyClass = nil;
+
+openfd error resolved by fixing out intent
 
  */
