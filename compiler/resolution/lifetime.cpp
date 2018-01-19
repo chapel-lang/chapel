@@ -899,4 +899,12 @@ resolved by fixing inference for var x:MyClass = nil;
 
 openfd error resolved by fixing out intent
 
+
+test/release/examples/hello4-datapar-dist.chpl error -
+range is passed to chpl__buildDomainExpr, sets the lifetime
+of the result to the lifetime of the range, but the
+result is ultimately stored in a global variable.
+
+ - fix: lifetime of _domain/etc instance variables is not managed, instance
+   "unsafe"
  */
