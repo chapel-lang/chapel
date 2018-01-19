@@ -273,20 +273,15 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-    if (CHPL_TARGET_PLATFORM != "cygwin64" &&
-        CHPL_TARGET_PLATFORM != "cygwin32") {
-        if name.isEmptyString() {
-           return false;
-        }
-        const len: int = name.length;
-        var str: string = name[1];
-        if (str == '/') {
-          return true;
-        }
-        else 
-          return false;
+    if name.isEmptyString() {
+      return false;
+    }
+    const len: int = name.length;
+    var str: string = name[1];
+    if (str == '/') {
+      return true;
     } else {
-      compilerError("Target platform should have Unix like environment");
+      return false;
     }
   }
 }
