@@ -168,13 +168,14 @@ MF says "It should:
  * use PRIM_MOVE for non-user defined records
  * use autoCopy if one is defined, even for if isUserDefinedRecord returned false
 Todo: should it support the case of initializing a 'ref' variable?
+Todo: what if 'valType' is a ref type, ex. for RI accumulation state?
 */
 //
 // Initialize 'dest' from 'init', which can be either a symbol or an expr.
 // Insert the initialization code before 'anchor'.
 //
-static void insertInitialization(Symbol* dest, Type* valType,
-                                 BaseAST* init, Expr* anchor)
+static void insertCopyInitialization(Symbol* dest, Type* valType,
+                                     BaseAST* init, Expr* anchor)
 {
   if (Expr* initExpr = toExpr(init))
     INT_ASSERT(!initExpr->inTree()); // caller responsibility
@@ -193,6 +194,15 @@ static void insertInitialization(Symbol* dest, Type* valType,
   } else {
     anchor->insertBefore(new CallExpr(PRIM_MOVE, dest, init));
   }
+}
+
+//
+// Insert deinit() if needed, after 'anchor'.
+//
+static void insertDeinitialization(Symbol* dest, Type* valType, Expr* anchor)
+{
+  if (FnSymbol* autoDestroy = getAutoDestroy(valType))
+    anchor->insertAfter(new CallExpr(autoDestroy, dest));
 }
 
 
@@ -346,6 +356,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
 /////////// outermost visitor ///////////
 
+#if 0 //wass
 // Adds code to init+deinit the local op and the reduction state.
 // Updates 'map' with svar -> reduction state var.
 static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
@@ -375,15 +386,16 @@ fill them out, update as they are being cloned.
 
 */
 }
+#endif //wass
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
-static void setupOuterMap(ExpandVisitor* outerVis,
+static void setupTopLevel(ExpandVisitor* outerVis,
                           BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
-/* vass - use these?
+/* wass - use these?
   // Place initialization and finalization code before these anchors.
   CallExpr* aInit = new CallExpr("anchorInit");
   CallExpr* aFini = new CallExpr("anchorFini");
@@ -398,9 +410,9 @@ static void setupOuterMap(ExpandVisitor* outerVis,
   // When cloning the loop body of 'fs', replace each shadow variable
   // with the variable given by 'map'.
   SymbolMap& map = outerVis->svar2clonevar;
-  int idx = 0;
+  int ix = 0;
   for_shadow_vars(svar, temp1, outerVis->forall) {
-    idx++;
+    ix++;
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
@@ -417,12 +429,11 @@ static void setupOuterMap(ExpandVisitor* outerVis,
           aInit->insertBefore(new DefExpr(bodyvar));
 
           // Initialize it from the outer var.
-          insertInitialization(bodyvar, bodyvar->type,
-                               svar->outerVarSym(), aInit);
+          insertCopyInitialization(bodyvar, bodyvar->type,
+                                   svar->outerVarSym(), aInit);
 
           // Deinitialize it at the end.
-          if (FnSymbol* autoDestroy = getAutoDestroy(bodyvar->type))
-            aFini->insertAfter(new CallExpr(autoDestroy, bodyvar));
+          insertDeinitialization(bodyvar, bodyvar->type, aFini);
 
           map.put(svar, bodyvar);
         }
@@ -432,18 +443,48 @@ static void setupOuterMap(ExpandVisitor* outerVis,
       case TFI_CONST_REF:
         // Let us reference the outer variable directly, for simplicity.
         // NB we are not concerned with const checking any more.
-        // vass todo this does not transfer across (outlined) task functions.
         map.put(svar, svar->outerVarSym());
         break;
 
-      case TFI_REDUCE:
-        setupForReduceIntent(outerVis->forall, svar, idx, map, aInit, aFini);
+      case TFI_REDUCE_OP:   // reduction operator
+        // Use the global op directly.
+        map.put(svar, svar->outerVarSym());
         break;
-      case TFI_REDUCE_OP:
-        INT_ASSERT(false); // VASS IMPLEMENT ME
+
+      case TFI_REDUCE:      // accumulation state
+        {
+          ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
+          Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
+          VarSymbol*  acState  = new VarSymbol(
+                                       intentArgName(ix, "reduceShadowVar"),
+                                       svar->type);
+          aInit->insertBefore(new DefExpr(acState));
+
+          // acState.init(globalOp.identity);  (paren-less function)
+          // VASS TODO stash away the FnSymbol for identity at resolution.
+          VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
+          aInit->insertBefore(new DefExpr(stemp));
+          aInit->insertBefore("'move'(%S, identity(%S,%S))",
+                              stemp, gMethodToken, globalOp);
+          // What if this is a ref type?
+          insertCopyInitialization(acState, acState->type, stemp, aInit);
+
+          // globalOp.accumulate(acState); acState.deinit();
+          insertDeinitialization(acState, acState->type, aFini);
+          aFini->insertAfter("accumulate(%S,%S,%S)",
+                             gMethodToken, globalOp, acState);
+
+          map.put(svar, acState);
+
+          //wass was: setupForReduceIntent(outerVis->forall, svar, ix, map, aInit, aFini);
+        }
         break;
     }
   }
+
+  // Execute startup/teardown blocks.
+  aInit->insertBefore(outerVis->forall->taskStartup()->copy(&map));
+  aFini->insertAfter(outerVis->forall->taskTeardown()->copy(&map));
 }
 
 
@@ -485,7 +526,7 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   TaskFnCopyMap   taskFnCopies;
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
-  setupOuterMap(&outerVis, iwrap, ibody);
+  setupTopLevel(&outerVis, iwrap, ibody);
   map.put(fs->singleInductionVar(), NULL);  // reserve a slot
   outerVis.parentVis = parentVis;
   ibody->accept(&outerVis);
