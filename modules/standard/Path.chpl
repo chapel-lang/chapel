@@ -262,8 +262,10 @@ proc file.realPath(): string throws {
    return result;
  }
  
-/* Determines whether the path specified is an absolute path in Unix
-   environment and returns error if it is not in Unix environment
+/* Determines whether the path specified is an absolute path.
+
+   Note: this is currently only implemented in a Unix environment.  It will not
+   behave correctly in a non-Unix environment.
 
    :arg name: the path to be checked.
    :type name: `string`
