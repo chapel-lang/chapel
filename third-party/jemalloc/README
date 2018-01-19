@@ -33,3 +33,8 @@ Note that these instructions are for a simple API compatible updates. If the
 jemalloc API changes, or the references to the man page in the runtime shim are
 no longer accurate, more care should be taken to see what changes have been
 made and if we need to change anything on our end.
+
+In particular, if the base name of the jemalloc configuration environment
+variable changes from "MALLOC_CONF" to something else, please update the
+reference to that variable in runtime/src/comm/ugni/comm-ugni-launch.c to
+the new name.

@@ -17,6 +17,7 @@
 
 COMMON_LAUNCHER_SRCS = \
 	arg.c \
+	chpl-env.c \
 	chpl-linefile-support.c \
 	chpl-string-support.c \
 	chplcast.c \
@@ -31,7 +32,6 @@ COMMON_NOGEN_SRCS = \
 	chpl-cache.c \
 	chpl-comm.c \
         chpl-comm-callbacks.c \
-	chpl-env.c \
 	chpl-init.c \
 	chplexit.c \
 	chpl-file-utils.c \

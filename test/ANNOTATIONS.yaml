@@ -281,6 +281,11 @@ all:
       config: 16 node XC
   12/12/17:
     - (no-local) QualifiedType ref improvements (#7990)
+  01/16/18:
+    - rework iterator memory management (#8073)
+  01/17/18:
+    - text: support dynamically extendable heap w/ ugni (#7700)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -553,6 +558,8 @@ isx.ml-time: &isx-ml-base
     - Switched to PCG random number generator (#3764)
   12/22/16:
     - Increased isx problem size (internal #279)
+  01/12/18:
+    - Avoid task yielding during ugni memory registration (#8162)
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
