@@ -16,6 +16,11 @@ This document discusses problems the Chapel language currently has when a
 library might unintentionally change behavior based upon changes in other
 libraries or in code using that library.
 
+Outline
+-------
+
+TODO outline
+
 Function Hijacking
 ------------------
 
@@ -176,6 +181,42 @@ Solution: override sets or similar idea; see below.
 
 Generics do not even need to be present for this problem to appear, as
 a later example shows.
+
+getVisibleFns
++++++++++++++
+
+Let's understand a little bit more about how visible functions are
+gathered within the compiler, as it is related to the above two problems. Consider the following program:
+
+.. code-block:: chapel
+
+  module M1 {
+    private proc helper(x:int) {
+      writeln("Hello World");
+    }
+    proc print_hello_world(x) {
+      helper(x);
+    }
+  }
+  module Main {
+    use M1;
+    proc main() {
+      print_hello_world(1);
+    }
+  }
+
+When finding what functions are visible for the call to ``helper`` in
+``print_hello_world``, ``getVisibleFns`` looks at the blocks in this order:
+
+ * print_hello_world
+ * Main
+ * standard modules
+ * M1
+
+This order might present problems for ``private use``. However, since the
+precedence of these functions will be determined later in disambiguation, the
+visible functions could consider the point of instantiation *after* considering
+the parent scope of the generic.
 
 
 Duplicate Instantiations in Different Scopes
@@ -368,6 +409,67 @@ functions are equally visible.
 Solution: D's overload sets solve this problem by making it an error to
 combine overloads for a particular function name from different sources
 unless you opt-in.
+
+Scoping of Generic Instantiations
++++++++++++++++++++++++++++++++++
+
+Let's take a break from talking about specific problems to understand the
+*point-of-instantiation* rule a little bit better.
+
+Consider a program that uses the ``Sort`` module. One would like to be able
+to provide a sorting function that can be called. For example:
+
+.. code-block:: chapel
+
+  module Sort {
+
+    proc sort(A) {
+       ... A[i] < B[i] ...
+    }
+  }
+
+  module Test {
+    use Sort;
+    record MyType { ... }
+    proc < (a:MyType, b:MyType) { ... }
+    var A:[1..100] MyType;
+    ...
+    sort(A); // programmer intends it to call < declared above
+  }
+ 
+However, neither the ``<`` function or the type ``MyType`` are visible to
+the definition point of ``proc sort`` as these are declared in ``Test``.
+(It wouldn't make sense to expect the ``Sort`` module to ``use Test``
+since that would prevent it from being an independent library.
+In order to enable patterns like this, the generic
+instantiation process uses a *point of instantiation* rule in which the generic
+instantiation of ``sort`` can use symbols available only at the call site. That
+enables the ``<`` function to be found and resolved.
+
+At the same time, a generic function might want to use helper functions
+from the same module:
+
+.. code-block:: chapel
+
+  module Sort {
+
+    proc isSorted(A) {
+      ...
+    }
+    proc sort(A) {
+       ... isSorted(A) ...
+    }
+  }
+
+  module Test {
+    use Sort;
+    // what if Test declared a proc isSorted?
+    sort(A);
+  }
+
+In that event, even though ``sort`` is generic, it might be surprising if
+in some cases ``isSorted`` might resolve to something in the caller.
+
 
 Unexpected Base Class Additions
 +++++++++++++++++++++++++++++++
@@ -693,98 +795,6 @@ What is this overload sets idea?
 
 More About Generic Instantiations
 ---------------------------------
-
-Scoping of Generic Instantiations
-+++++++++++++++++++++++++++++++++
-
-Consider a program that uses the ``Sort`` module. One would like to be able
-to provide a sorting function that can be called. For example:
-
-.. code-block:: chapel
-
-  module Sort {
-
-    proc sort(A) {
-       ... A[i] < B[i] ...
-    }
-  }
-
-  module Test {
-    use Sort;
-    record MyType { ... }
-    proc < (a:MyType, b:MyType) { ... }
-    var A:[1..100] MyType;
-    ...
-    sort(A); // programmer intends it to call < declared above
-  }
- 
-However, neither the ``<`` function or the type ``MyType`` are visible to
-the definition point of ``proc sort`` as these are declared in ``Test``.
-(It wouldn't make sense to expect the ``Sort`` module to ``use Test``
-since that would prevent it from being an independent library.
-In order to enable patterns like this, the generic
-instantiation process uses a *point of instantiation* rule in which the generic
-instantiation of ``sort`` can use symbols available only at the call site. That
-enables the ``<`` function to be found and resolved.
-
-At the same time, a generic function might want to use helper functions
-from the same module:
-
-.. code-block:: chapel
-
-  module Sort {
-
-    proc isSorted(A) {
-      ...
-    }
-    proc sort(A) {
-       ... isSorted(A) ...
-    }
-  }
-
-  module Test {
-    use Sort;
-    // what if Test declared a proc isSorted?
-    sort(A);
-  }
-
-In that event, even though ``sort`` is generic, it might be surprising if
-in some cases ``isSorted`` might resolve to something in the caller.
-
-getVisibleFns
-+++++++++++++
-
-Consider the following program:
-
-.. code-block:: chapel
-
-  module M1 {
-    private proc helper(x:int) {
-      writeln("Hello World");
-    }
-    proc print_hello_world(x) {
-      helper(x);
-    }
-  }
-  module Main {
-    use M1;
-    proc main() {
-      print_hello_world(1);
-    }
-  }
-
-When finding what functions are visible for the call to ``helper`` in
-``print_hello_world``, ``getVisibleFns`` looks at the blocks in this order:
-
- * print_hello_world
- * Main
- * standard modules
- * M1
-
-This order might present problems for ``private use``. However, since the
-precedence of these functions will be determined later in disambiguation, the
-visible functions could consider the point of instantiation *after* considering
-the parent scope of the generic.
 
 Why does public/private interact with point-of-instantiation?
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
