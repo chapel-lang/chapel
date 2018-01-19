@@ -319,6 +319,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   if (expandClone) {
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
+
+    // Traverse recursively.
     cloneTaskFn->body->accept(&taskFnVis);
 
     flattenNestedFunction(cloneTaskFn);
@@ -333,21 +335,54 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
   showLOFS(fs, EV, " { expandForall", true);
 
-  ForallStmt*     pfs = EV->forall;
+  ForallStmt*     pfs  = EV->forall;
+  SymbolMap&      iMap = EV->svar2clonevar;
   SymbolMap       map;
   ExpandVisitor   forallVis(EV, map);
 
   for_shadow_vars(svar, temp, pfs) {
+    SET_LINENO(svar);
+    // copy() also performs map.put(svar, newSV)
     ShadowVarSymbol* newSV = svar->copy(&map);
-    newSV->outerVarSE()->setSymbol(EV->svar2clonevar.get(svar));
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
 
-    // do we need to copy smth else in this case? also need more initialization
-    INT_ASSERT(newSV->intent != TFI_REDUCE);
+    Symbol* newOuterVar = NULL;
+    switch (svar->intent) {
+      case TFI_DEFAULT:
+      case TFI_CONST:
+        INT_ASSERT(false);   // don't give me an abstract intent
+        break;
+
+      case TFI_IN:
+      case TFI_CONST_IN:
+      case TFI_REF:
+      case TFI_CONST_REF:
+      case TFI_REDUCE_OP:
+        newOuterVar = iMap.get(svar);
+        break;
+
+      case TFI_REDUCE:
+        newOuterVar = map.get(svar->outerVarSym());
+        break;
+    }
+    newSV->outerVarSE()->setSymbol(newOuterVar);
   }
 
-  map.put(EV->forall->singleInductionVar(), NULL);
+  map.put(pfs->singleInductionVar(), NULL); // reserve a slot
 
+  // Append the startup block. Prepend the teardown block.
+  // This makes pfs's actions "nested" within fs's actions,
+  // analogously to fs->shadowVariables().insertAtTail() above.
+
+  BlockStmt* sbClone = pfs->taskStartup()->copy(&map);
+  fs->taskStartup()->insertAtTail(sbClone);
+  sbClone->flattenAndRemove();
+
+  BlockStmt* tdClone = pfs->taskTeardown()->copy(&map);
+  fs->taskTeardown()->insertAtHead(tdClone);
+  tdClone->flattenAndRemove();
+
+  // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
 
   showLOFS(fs, EV, " } expandForall", false);
@@ -390,8 +425,8 @@ fill them out, update as they are being cloned.
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
-static void setupTopLevel(ExpandVisitor* outerVis,
-                          BlockStmt* iwrap, BlockStmt* ibody)
+static void expandTopLevel(ExpandVisitor* outerVis,
+                           BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
 
@@ -526,9 +561,11 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   TaskFnCopyMap   taskFnCopies;
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
-  setupTopLevel(&outerVis, iwrap, ibody);
+  expandTopLevel(&outerVis, iwrap, ibody);
   map.put(fs->singleInductionVar(), NULL);  // reserve a slot
   outerVis.parentVis = parentVis;
+
+  // Traverse recursively.
   ibody->accept(&outerVis);
 
   fs->remove();
