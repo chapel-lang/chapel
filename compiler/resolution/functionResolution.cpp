@@ -218,6 +218,8 @@ static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
+static FnSymbol* findCopyInit(AggregateType* ct);
+
 /************************************* | **************************************
 *                                                                             *
 * Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
@@ -394,20 +396,17 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
       // it up completely...
       instantiateBody(newFn);
 
-      Symbol* thisTmp = newTemp(ct);
-      DefExpr* def = new DefExpr(thisTmp);
-      newFn->insertBeforeEpilogue(def);
-      CallExpr* initCall = new CallExpr("init", gMethodToken, thisTmp, arg);
-      def->insertAfter(initCall);
-
-      FnSymbol* initFn = tryResolveCall(initCall);
+      FnSymbol* initFn = findCopyInit(ct);
 
       if (initFn == NULL) {
         // No copy-initializer could be found
-        def->remove();
-        initCall->remove();
         newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       } else {
+        Symbol* thisTmp = newTemp(ct);
+        DefExpr* def = new DefExpr(thisTmp);
+        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        newFn->insertBeforeEpilogue(def);
+        def->insertAfter(initCall);
         // Replace the other setting of the return-value-variable
         // with what we have now...
 
@@ -4977,7 +4976,6 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasCopyInit(AggregateType* ct, Expr* scope);
 
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
@@ -5008,7 +5006,7 @@ static void resolveInitVar(CallExpr* call) {
 
       resolveMove(call);
 
-    } else if (hasCopyInit(ct, call) == true) {
+    } else if (findCopyInit(ct) != NULL) {
       dst->type = src->type;
 
       call->setUnresolvedFunction("init");
@@ -5037,19 +5035,11 @@ static void resolveInitVar(CallExpr* call) {
 // where tmpAt is a temp of type at.
 //
 // This resolution will be attempted at just before scope in the AST.
-static bool hasCopyInit(AggregateType* at, Expr* scope) {
-
-  BlockStmt* block = new BlockStmt();
+static FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  block->insertAtTail(call);
-  scope->insertBefore(block);
-
-  FnSymbol* resolvedFn = tryResolveCall(call);
-
-  block->remove();
-
-  return resolvedFn != NULL;
+  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
+  return copyInit;
 }
 
 /************************************* | **************************************
