@@ -718,8 +718,11 @@ to provide a sorting function that can be called. For example:
     sort(A); // programmer intends it to call < declared above
   }
  
-However, the ``<`` function declared in Test is not visible to the definition
-point of ``proc sort``. In order to enable patterns like this, the generic
+However, neither the ``<`` function or the type ``MyType`` are visible to
+the definition point of ``proc sort`` as these are declared in ``Test``.
+(It wouldn't make sense to expect the ``Sort`` module to ``use Test``
+since that would prevent it from being an independent library.
+In order to enable patterns like this, the generic
 instantiation process uses a *point of instantiation* rule in which the generic
 instantiation of ``sort`` can use symbols available only at the call site. That
 enables the ``<`` function to be found and resolved.
