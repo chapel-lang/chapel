@@ -1,0 +1,3 @@
+l7.chpl:19: In function 'test':
+l7.chpl:22: error: Scoped variable globalR would outlive the value it is set to
+l7.chpl:20: note: consider scope of c
