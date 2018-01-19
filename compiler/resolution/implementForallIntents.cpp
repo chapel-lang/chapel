@@ -2553,13 +2553,15 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
 
   checkForNonIterator(parCall);
 
+ if (fs->noLI()) {
   if (fs->numShadowVars() > 0)
- {
-  if (fs->noLI())
    implementForallIntents2New(fs, parCall);
- }
   else
    // Need to handle these if non-empty even when there are no shadow vars.
    INT_ASSERT(fs->taskStartup()->body.empty() &&
               fs->taskTeardown()->body.empty());
+ } else {
+void implementForallIntents3(ForallStmt* fs, CallExpr* parCall); //wass
+   implementForallIntents3(fs, parCall);
+ }
 }

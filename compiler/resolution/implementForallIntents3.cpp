@@ -3,6 +3,26 @@
 #include "implementForallIntents.h"
 #include "view.h" //wass
 
+/////////// implementForallIntents3 ///////////
+
+/*
+Set up shadow variables and task startup/teardown blocks during resolution.
+* Create TFI_REDUCE_OP shadow variables.
+* Populate task and top startup/teardown blocks.
+* Resolve all the operations and the types of the shadow variables.
+
+Note that this is done during resolveForallHeader,
+i.e. before resolving the forall loop body.
+*/
+
+// wass better name?
+void implementForallIntents3(ForallStmt* fs, CallExpr* parCall); //wass to header
+void implementForallIntents3(ForallStmt* fs, CallExpr* parCall) {
+
+
+}
+
+
 /////////// forwards ///////////
 
 class ExpandVisitor;
@@ -299,9 +319,9 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
   int numOrigActuals = call->numActuals();
   int ix = 0;
-  int ixEArg = 0;
+//wass  int ixEArg = 0;
   for_shadow_vars(svar, temp1, EV->forall) {
-    VASS CONTINUE HERE: tend to reduce intent, add to task begin/end;
+    // VASS CONTINUE HERE: tend to reduce intent, add to task begin/end;
     // NB need anchors to keep the right order, incl. wrt SB/TB.
     ix++;
     Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
