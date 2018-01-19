@@ -45,11 +45,19 @@
 
    * Lifetime inference assigns the minimum lifetime assigned
      to a scope variable as its lifetime.
+
+   * records are subject to lifetime checking if they contain
+     fields that are subject to lifetime checking.
+
+   * Assumption: = operator overloads for records or classes
+     handle lifetimes as if by-value. But note, ownership
+     operations with Shared or Owned records count as "by value"
+     here.
  */
 
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
-const bool defaultToCheckingLifetimes = true;
+const bool defaultToCheckingLifetimes = false;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -96,6 +104,7 @@ namespace {
 static bool isLocalVariable(FnSymbol* fn, Symbol* sym);
 static bool isSubjectToLifetimeAnalysis(Symbol* sym);
 static bool shouldPropagateLifetimeTo(FnSymbol* inFn, Symbol* sym);
+static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
 static BlockStmt* getDefBlock(Symbol* sym);
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b);
@@ -253,6 +262,18 @@ Lifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   if (calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
     return infiniteLifetime();
 
+  // Constructors and "_new" calls
+  // return infinite lifetime. Why?
+  //  * the result of 'new' is currently user-managed
+  //  * ref fields are not supported in classes
+  //    so records can't capture a ref argument
+  if (isClass(call->typeInfo()) &&
+      (calledFn->hasFlag(FLAG_CONSTRUCTOR) ||
+      0 == strcmp("_new", calledFn->name))) {
+    return infiniteLifetime();
+  }
+
+  // cannot use the lifetime of their arguments.
   for_formals_actuals(formal, actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
     INT_ASSERT(actualSe);
@@ -303,12 +324,10 @@ Lifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
 
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
-  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+  if (call->id == debugLifetimesForId)
+    gdbShouldBreakHere();
 
-  bool isAssign = calledFn && 0 == strcmp("=", calledFn->name);
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN) ||
-      isAssign) {
+  if (isAnalyzedMoveOrAssignment(call)) {
 
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
@@ -396,10 +415,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
 
-  bool isAssign = calledFn && 0 == strcmp("=", calledFn->name);
-  if (call->isPrimitive(PRIM_MOVE) ||
-      call->isPrimitive(PRIM_ASSIGN) ||
-      isAssign) {
+  if (isAnalyzedMoveOrAssignment(call)) {
 
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
@@ -518,11 +534,29 @@ static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
   if (!argOrVar)
     return false;
 
-  // It needs to be a ref or a pointer type
-  // or an iterator record
+  bool isRecordContainingFieldsSubjectToAnalysis = false;
+  if (isRecord(sym->type)) {
+    AggregateType* at = toAggregateType(sym->type);
+    for_fields(field, at) {
+      if (isSubjectToLifetimeAnalysis(field)) {
+	isRecordContainingFieldsSubjectToAnalysis = true;
+	break;
+      }
+    }
+  }
+
+  // this is a workaround for non-optimal AST for iteration
+  if (sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    isRecordContainingFieldsSubjectToAnalysis = true;
+
+  // It needs to be:
+  //  - a pointer type
+  //  - a ref
+  //  - a record containing refs/class pointers
+  //    (or an iterator record)
   if (!(isClass(sym->type) ||
         sym->isRef() ||
-        sym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)))
+        isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
   if (sym->type->symbol->hasFlag(FLAG_C_PTR_CLASS))
@@ -567,6 +601,28 @@ static bool shouldPropagateLifetimeTo(FnSymbol* inFn, Symbol* sym) {
     return defaultToCheckingLifetimes;
    */
   return true;
+}
+
+static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
+
+  if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+    return true;
+
+  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+
+  // Only consider function calls to "=" for lifetime propagation
+  //
+  // (we assume that a user supplied = function handles lifetimes in a
+  //  reasonable manner)
+  if (calledFn && 0 == strcmp("=", calledFn->name)) {
+    if (isClass(call->get(1)->getValType()) &&
+        isClass(call->get(2)->getValType()))
+      return true;
+    if (calledFn->hasFlag(FLAG_COMPILER_GENERATED))
+      return true;
+  }
+
+  return false;
 }
 
 /*

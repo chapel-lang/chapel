@@ -1,3 +1,6 @@
+pragma "safe"
+module l2 {
+
 use OwnedObject;
 
 class MyClass {
@@ -12,7 +15,6 @@ record R {
     //c = tmp;
     //c.retain(new MyClass(data));
   }
-  pragma "safe"
   proc get(): MyClass {
     return c.borrow();
   }
@@ -23,7 +25,6 @@ record MyCollection {
   var b: R;
   proc init() {
   }
-  pragma "safe"
   proc this(i:int): MyClass {
     if i == 1 then
       return a.get();
@@ -34,7 +35,6 @@ record MyCollection {
     yield a.get();
     yield b.get();
   }
-  pragma "safe"
   proc returnsNil() {
     return nil:MyClass;
   }
@@ -42,7 +42,6 @@ record MyCollection {
 
 var global:MyClass;
 
-pragma "safe"
 proc bad1() {
   var r:R;
   r.c.retain(new MyClass(1));
@@ -50,7 +49,6 @@ proc bad1() {
   // r.c deleted here
 }
 
-pragma "safe"
 proc bad2() {
   var outer:MyClass;
   {
@@ -62,7 +60,6 @@ proc bad2() {
   writeln(outer);
 }
 
-pragma "safe"
 proc bad3() {
   var group:MyCollection;
   group.a.c.retain(new MyClass(1));
@@ -73,7 +70,6 @@ proc bad3() {
 }
 
 
-pragma "safe"
 proc bad10() : MyClass {
   //var r = new R(1);
   //var tmp = new Owned(new MyClass(1));
@@ -84,7 +80,6 @@ proc bad10() : MyClass {
   // r.c deleted here
 }
 
-pragma "safe"
 proc bad21() {
   var outer:MyClass = nil;
   {
@@ -96,7 +91,6 @@ proc bad21() {
   writeln(outer);
 }
 
-pragma "safe"
 proc bad22() {
   var outer:MyClass = new MyClass(1);
   {
@@ -109,7 +103,6 @@ proc bad22() {
   writeln(outer);
 }
 
-pragma "safe"
 proc bad23() {
   var outer:MyClass;
   {
@@ -124,9 +117,6 @@ proc bad23() {
 }
 
 
-
-
-pragma "safe"
 proc ok1() {
   global = new MyClass(10);
   var a:MyClass = global; // OK: lifetime global > lifetime a
@@ -137,7 +127,6 @@ proc ok1() {
   delete global;
 }
 
-pragma "safe"
 proc ok2() {
   var group:MyCollection;
   group.a.c.retain(new MyClass(1));
@@ -145,7 +134,6 @@ proc ok2() {
   var x = group.returnsNil();
 }
 
-pragma "safe"
 proc ok3() {
   var x:MyClass = nil;
 
@@ -155,7 +143,6 @@ proc ok3() {
   x = r.get();
 }
 
-pragma "safe"
 proc ok4() {
   var group:MyCollection;
   group.a.c.retain(new MyClass(1));
@@ -191,3 +178,5 @@ proc test() {
 }
 
 test();
+
+}
