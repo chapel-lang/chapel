@@ -1,33 +1,29 @@
 pragma "safe"
+module l1 {
+
 proc identity(ref x:int) ref return x;
 
-pragma "safe"
 proc bad() ref {
   var x:int;
   return identity(x);
 }
 
-pragma "safe"
 proc badder(inout x:int) ref {
   return identity(x);
 }
 
 record R {
   var x:int;
-  pragma "safe"
   proc get() ref { return x; }
 }
 
-pragma "safe"
 proc baddest() ref {
   var r:R;
   return r.get();
 }
 
-pragma "safe"
 proc nested_bad() ref {
   var x: int;
-  pragma "safe"
   proc inner() ref {
     return x;
   }
@@ -35,7 +31,6 @@ proc nested_bad() ref {
 }
 
 var global = 1;
-pragma "safe"
 proc ok1() ref {
   return global;
 }
@@ -57,7 +52,6 @@ proc ok4() {
   return identity(x);
 }
 
-pragma "safe"
 proc test() {
   ref a = bad();
   var tmpInt = 1;
@@ -72,3 +66,5 @@ proc test() {
 }
 
 test();
+
+}

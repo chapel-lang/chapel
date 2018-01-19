@@ -90,6 +90,7 @@ module SharedObject {
     type t;              // contained type (class type)
 
     pragma "no doc"
+    pragma "unsafe"
     var p:t;             // contained pointer (class type)
 
     forwarding p;

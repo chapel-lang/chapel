@@ -1,3 +1,6 @@
+pragma "safe"
+module l4 {
+
 use OwnedObject;
 
 class MyClass {
@@ -12,7 +15,6 @@ record R {
     //c = tmp;
     //c.retain(new MyClass(data));
   }
-  pragma "safe"
   proc get(): MyClass {
     return c.borrow();
   }
@@ -23,7 +25,6 @@ record MyCollection {
   var b: R;
   proc init() {
   }
-  pragma "safe"
   proc this(i:int): MyClass {
     if i == 1 then
       return a.get();
@@ -34,13 +35,11 @@ record MyCollection {
     yield a.get();
     yield b.get();
   }
-  pragma "safe"
   proc returnsNil() {
     return nil:MyClass;
   }
 }
 
-pragma "safe"
 proc ok5() {
   var group:MyCollection;
   group.a.c.retain(new MyClass(1));
@@ -61,3 +60,5 @@ proc test() {
 }
 
 test();
+
+}
