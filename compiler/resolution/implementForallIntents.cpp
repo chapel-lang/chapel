@@ -1922,6 +1922,7 @@ static bool isOuterVarNew(Symbol* sym, BlockStmt* block) {
   return false; // dummy
 }
 
+// Is 'sym' an index variable of 'fs' ?
 static bool isFsIndexVar(ForallStmt* fs, Symbol* sym)
 {
   if (!sym->hasFlag(FLAG_INDEX_VAR))
@@ -2133,9 +2134,12 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 static void getOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
                             BlockStmt* body)
 {
-  if (fs->needToHandleOuterVars())
+  if (fs->needToHandleOuterVars()) {
     // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
+    findOuterVarsNew(fs, outer2shadow, fs->taskStartup());
     findOuterVarsNew(fs, outer2shadow, body);
+    findOuterVarsNew(fs, outer2shadow, fs->taskTeardown());
+  }
 
   for_shadow_vars(sv, temp, fs)
     if (sv->isReduce())
@@ -2177,9 +2181,9 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
   // todo: prune right away, get rid of 'numShadowVars'
 
   for_shadow_vars(svar, temp, fs) {
+    Symbol* ovar = svar->outerVarSym();
     if (svar->isReduce())
     {
-      Symbol* ovar = svar->outerVarSym();
       if (ovar && ovar->hasFlag(FLAG_CONST))
         USR_FATAL_CONT(fs,
           "reduce intent is applied to a 'const' variable %s", ovar->name);
@@ -2189,9 +2193,23 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
       svar->qual = QUAL_REF;
       svar->type = dtUnknown;
     }
+/* wass TPV todo
+    else if (svar->isTPV())
+    {
+      IntentTag tiIntent = INTENT_BLANK;
+      switch (ovar->qual) {  // qual is set during parsing
+        case QUAL_VAL:        tiIntent = INTENT_IN;         break;
+        case QUAL_CONST_VAL:  tiIntent = INTENT_CONST_IN;   break;
+        case QUAL_REF:        tiIntent = INTENT_REF;        break;
+        case QUAL_CONST_REF:  tiIntent = INTENT_CONST_REF;  break;
+        // parser uses only the above
+        default:              INT_ASSERT(false);            break;
+      }
+      setShadowVarFlagsNew(ovar, svar, tiIntent);
+    }
+*/
     else
     {
-      Symbol* ovar = svar->outerVarSym();
       svar->type = ovar->type->getRefType();
       resolveSVarIntent(svar);
 
@@ -2302,6 +2320,38 @@ static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
 
   if (numToReplace > 0)
     needToReplace = true;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+// Referencing reduce-intent variables within startup/teardown blocks is currently
+// not implemented because they are not resolved yet by the time
+// these blocks are resolved. Issue an error if this happens.
+
+static void checkRefsToReduceSVars(ForallStmt* fs) {
+  bool gotReduceVars = false;
+  for_shadow_vars(sv, temp1, fs)
+    if (sv->isReduce())
+      { gotReduceVars = true; break; }
+
+  if (!gotReduceVars)
+    // nothing to do
+    return;
+  
+  std::vector<SymExpr*> SEs;
+  collectSymExprs(fs->taskStartup(), SEs);
+  collectSymExprs(fs->taskTeardown(), SEs);
+  AList* mySVars = &fs->shadowVariables();
+
+  for_vector(SymExpr, se, SEs)
+    if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol()))
+      if (svar->isReduce())
+        if (svar->defPoint->list == mySVars)
+          USR_FATAL_CONT(se, "referencing a variable with a reduce intent"
+                         " (here, '%s')"
+                         " when declaring a task-private variable"
+                         " is currently not implemented", svar->name);
+  USR_STOP();
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2463,7 +2513,13 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
    }
     if (needToReplace)
       replaceVarUsesNew(forallBody1, outer2shadow);
+      replaceVarUsesNew(fs->taskStartup(), outer2shadow);
+      replaceVarUsesNew(fs->taskTeardown(), outer2shadow);
   }
+
+  checkRefsToReduceSVars(fs);  
+  resolveBlockStmt(fs->taskStartup());
+  resolveBlockStmt(fs->taskTeardown());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2493,6 +2549,12 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
   checkForNonIterator(parCall);
 
   if (fs->numShadowVars() > 0)
+ {
   if (fs->noLI())
    implementForallIntents2New(fs, parCall);
+ }
+  else
+   // Need to handle these if non-empty even when there are no shadow vars.
+   INT_ASSERT(fs->taskStartup()->body.empty() &&
+              fs->taskTeardown()->body.empty());
 }

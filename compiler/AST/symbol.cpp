@@ -1049,7 +1049,7 @@ void ShadowVarSymbol::removeSupportingReferences() {
 
 bool isOuterVarOfShadowVar(Expr* expr) {
   if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
-    if (expr == ss->outerVarSE())
+    if (expr == ss->outerVarRep)
       return true;
   return false;
 }

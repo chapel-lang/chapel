@@ -679,6 +679,9 @@ and yield those instead:
 Notice that 'x1_reduceShadowVar' is not needed in this case.
 It is still needed if there are yields outside foralls and task constructs.
 
+Also, add taskStartup+taskTeardown from the original forall to
+the  taskStartup+taskTeardown of this forall.
+
 If the forall is inside a task function
 ---------------------------------------
 
@@ -715,8 +718,8 @@ Need to handle these cases:
     forall ... with (x1_reduceParent reduce x1_reduceShadowVar) {
       // shadow var: x1_reduceShadowVar'
 
-      ... yield (555, addr-of(x1_reduceShadowVar'')); ...
-      ... yield (666, addr-of(x1_reduceShadowVar'')); ...
+      ... yield (555, addr-of(x1_reduceShadowVar')); ...
+      ... yield (666, addr-of(x1_reduceShadowVar')); ...
     }
 */
 

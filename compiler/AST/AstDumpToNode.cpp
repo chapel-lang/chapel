@@ -410,6 +410,10 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("shadowVariables:     ", node->shadowVariables());
 
   newline();
+  writeField("taskStartup:   ", 12, node->taskStartup());
+  newline();
+  writeField("taskTeardown: ", 12, node->taskTeardown());
+  newline();
   writeField("loopBody: ", 10, node->loopBody());
 
   mOffset = mOffset - 2;

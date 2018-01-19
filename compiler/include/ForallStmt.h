@@ -37,6 +37,9 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already
 
+  BlockStmt* taskStartup()       const; // task startup code
+  BlockStmt* taskTeardown()     const; // task tear-down code
+
   // when originating from a ForLoop
   bool       createdFromForLoop()    const;  // is converted from a for-loop
   bool       iterCallAlreadyTagged() const;  // already has 'tag' actual
@@ -78,6 +81,8 @@ private:
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
+  BlockStmt*     fTaskStartup;    // always present
+  BlockStmt*     fTaskTeardown;  // always present
   BlockStmt*     fLoopBody;    // always present
   bool           fFromForLoop; // see comment below
 
@@ -106,6 +111,8 @@ inline bool   ForallStmt::zippered()       const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()   { return fIterVars;   }
 inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
 inline AList& ForallStmt::shadowVariables()      { return fShadowVars; }
+inline BlockStmt* ForallStmt::taskStartup()  const { return fTaskStartup;  }
+inline BlockStmt* ForallStmt::taskTeardown() const { return fTaskTeardown; }
 inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
 inline bool ForallStmt::iterCallAlreadyTagged() const { return fFromForLoop; }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }

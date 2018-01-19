@@ -34,6 +34,8 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
+  fTaskStartup(new BlockStmt()),
+  fTaskTeardown(new BlockStmt()),
   fLoopBody(body),
   fFromForLoop(false),
   fContinueLabel(NULL)
@@ -54,19 +56,35 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
+  _this->fTaskStartup = COPY_INT(fTaskStartup);
+  _this->fTaskTeardown = COPY_INT(fTaskTeardown);
+
   return _this;
 }
 
-void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (oldAst == fLoopBody) {
-    if (!newAst)
-      fLoopBody = NULL;
-    else if (BlockStmt* newBlock = toBlockStmt(newAst))
-      fLoopBody = newBlock;
-    else
-      // It is caller responsibility to make newAst fit.
-      INT_ASSERT(false);
+// Return true if replacement occurred.
+static bool fsReplaceBlock(Expr* oldAst, Expr* newAst, BlockStmt*& field) {
+  if (oldAst != field)
+    return false;
 
+  if (newAst == NULL)
+    field = NULL;
+  else if (BlockStmt* newBlock = toBlockStmt(newAst))
+    field = newBlock;
+  else
+    // It is caller responsibility to make newAst fit.
+    INT_ASSERT(false);
+
+  return true;
+}
+
+void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
+  if (fsReplaceBlock(oldAst, newAst, fTaskStartup)) {
+    // good
+  } else if (fsReplaceBlock(oldAst, newAst, fTaskTeardown)) {
+    // good
+  } else if (fsReplaceBlock(oldAst, newAst, fLoopBody)) {
+    // good
   } else {
     // We did not find oldAst in our ForallStmt.
     INT_ASSERT(false);
@@ -102,6 +120,13 @@ void ForallStmt::verify() {
     INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
 
+  INT_ASSERT(fTaskStartup);
+  INT_ASSERT(fTaskTeardown);
+  verifyNotOnList(fTaskStartup);
+  verifyNotOnList(fTaskTeardown);
+  // Currently we do not use fTaskTeardown.
+  INT_ASSERT(fTaskTeardown->body.length == 0);
+
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
   verifyNotOnList(fLoopBody);
@@ -127,6 +152,10 @@ void ForallStmt::accept(AstVisitor* visitor) {
       expr->accept(visitor);
     for_alist(expr, shadowVariables())
       expr->accept(visitor);
+    if (BlockStmt* tStartup = taskStartup())
+      tStartup->accept(visitor);
+    if (BlockStmt* tTeardown = taskTeardown())
+      tTeardown->accept(visitor);
     fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
@@ -161,10 +190,16 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     if (Expr* inv = fShadowVars.head)
       return inv;
     else
-      return fLoopBody->getFirstExpr();
+      return fTaskStartup->getFirstExpr();
   }
 
   if (expr == fShadowVars.tail)
+    return fTaskStartup->getFirstExpr();
+
+  if (expr == fTaskStartup)
+    return fTaskTeardown->getFirstExpr();
+
+  if (expr == fTaskTeardown)
     return fLoopBody->getFirstExpr();
 
   return this;
