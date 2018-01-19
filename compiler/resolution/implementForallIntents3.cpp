@@ -237,7 +237,8 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   // Todo: update EV->svar2clonevar in-place, then reset to NULL,
   // to avoid map creation+destruction cost.
 
-  // This will be svar2clonevar plus a clone of the induction variable.
+  // This will be svar2clonevar (the incoming "current map")
+  // plus a clone of the induction variable.
   SymbolMap map;
   map.copy(EV->svar2clonevar);
 
@@ -287,28 +288,34 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
     // We will need to process the clone.
     expandClone = true;
   }
+  else {
+    INT_ASSERT(false); // do we ever hit the cache?
+  }
 
   call->baseExpr->replace(new SymExpr(cloneTaskFn));
 
-  // These are the variables in effect within the cloned taskFn, if expandClone.
-  SymbolMap map;
+  SymbolMap& iMap = EV->svar2clonevar;  // incoming "current map"
+  SymbolMap  map;                       // "current map" for cloneTaskFn body
 
   int numOrigActuals = call->numActuals();
-  int idx = 0;
+  int ix = 0;
+  int ixEArg = 0;
   for_shadow_vars(svar, temp1, EV->forall) {
-    idx++;
-    Symbol* eActual = EV->svar2clonevar.get(svar);
+    VASS CONTINUE HERE: tend to reduce intent, add to task begin/end;
+    // NB need anchors to keep the right order, incl. wrt SB/TB.
+    ix++;
+    Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
     call->insertAtTail(eActual);
 
     if (expandClone) {
       // vass todo handle reduce intent
-      ArgSymbol* eFormal = newExtraFormal(svar, idx, eActual,
+      ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
                                           false/*vass-nested*/);
       cloneTaskFn->insertFormalAtTail(eFormal);
       map.put(svar, eFormal);
     }
     else {
-      ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+idx);
+      ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+ix);
       if (eFormal->hasFlag(FLAG_REF_TO_IMMUTABLE))
         // Ensure this flag is correct for all calls. See newExtraFormal().
         INT_ASSERT(eActual->isConstValWillNotChange() ||
@@ -317,6 +324,10 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   }
 
   if (expandClone) {
+    // NB need anchors if we treat RI vars explicitly above
+    cloneTaskFn->insertAtHead(EV->forall->taskStartup()->copy(&map));
+    cloneTaskFn->insertAtTail(EV->forall->taskTeardown()->copy(&map));
+
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
 
@@ -336,8 +347,8 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   showLOFS(fs, EV, " { expandForall", true);
 
   ForallStmt*     pfs  = EV->forall;
-  SymbolMap&      iMap = EV->svar2clonevar;
-  SymbolMap       map;
+  SymbolMap&      iMap = EV->svar2clonevar; // incoming "current map"
+  SymbolMap       map;                      // "current map" for fs body
   ExpandVisitor   forallVis(EV, map);
 
   for_shadow_vars(svar, temp, pfs) {
@@ -373,7 +384,11 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   // Append the startup block. Prepend the teardown block.
   // This makes pfs's actions "nested" within fs's actions,
   // analogously to fs->shadowVariables().insertAtTail() above.
+  //
+  fs->taskStartup()->insertAtTail(pfs->taskStartup()->copy(&map));
+  fs->taskTeardown()->insertAtHead(pfs->taskTeardown()->copy(&map));
 
+#if 0 //wass - more efficient
   BlockStmt* sbClone = pfs->taskStartup()->copy(&map);
   fs->taskStartup()->insertAtTail(sbClone);
   sbClone->flattenAndRemove();
@@ -381,6 +396,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   BlockStmt* tdClone = pfs->taskTeardown()->copy(&map);
   fs->taskTeardown()->insertAtHead(tdClone);
   tdClone->flattenAndRemove();
+#endif
 
   // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
@@ -390,38 +406,6 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
 
 /////////// outermost visitor ///////////
-
-#if 0 //wass
-// Adds code to init+deinit the local op and the reduction state.
-// Updates 'map' with svar -> reduction state var.
-static void setupForReduceIntent(ForallStmt* fs, ShadowVarSymbol* svar,
-                                 int ix, SymbolMap& map,
-                                 Expr* aInit, Expr* aFini)
-{
-  INT_FATAL("vass TODO");
-
-/*
-NEW INSIGHT: just put everything in taskInit/Deinit blocks
-at resolution, so all we need to do now is to clone those blocks.
-*/
-
-/* vass TODO
-
-  Symbol* parentOp = svar->outerVarSym();
-
-* add computation of reduceCurrOp and reduceShadowVar before aInit
-* add tear-down after aFini
-  // See ensureCurrentReduceOpForReduceIntent(), shadowVarForReduceIntent().
-  // Todo optimize: reuse 'parentOp' if we are outside task fns, foralls.
-
-For that, add fields to ShadowVarSymbol during resolution,
-fill them out, update as they are being cloned.
-
-* map.put(svar, reduceShadowVar)
-
-*/
-}
-#endif //wass
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
@@ -442,8 +426,7 @@ static void expandTopLevel(ExpandVisitor* outerVis,
   Expr* aInit = ibody;
   Expr* aFini = ibody;
 
-  // When cloning the loop body of 'fs', replace each shadow variable
-  // with the variable given by 'map'.
+  // The initial "current map".
   SymbolMap& map = outerVis->svar2clonevar;
   int ix = 0;
   for_shadow_vars(svar, temp1, outerVis->forall) {
