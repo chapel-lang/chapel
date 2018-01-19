@@ -454,13 +454,13 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
+  if( USE_TBAA && valType ) {
     if (surroundingStruct) {
       INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset);
-    } else {
+    } else if (!valType->symbol->llvmTbaaStructCopyNode) {
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
@@ -526,13 +526,13 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
-  if( USE_TBAA && valType && !valType->symbol->llvmTbaaStructCopyNode ) {
+  if( USE_TBAA && valType ) {
     if (surroundingStruct) {
       INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset, isConst);
-    } else {
+    } else if (!valType->symbol->llvmTbaaStructCopyNode) {
       if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
       else tbaa = valType->symbol->llvmTbaaAccessTag;
     }
