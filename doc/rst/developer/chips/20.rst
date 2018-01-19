@@ -105,7 +105,8 @@ What's going wrong? The isMoreVisible rule in function resolution uses
 point-of-instantiation to determine visibility.
 
 Solution: remove point-of-instantiation from consideration in
-determination of more visible function in disambiguation.
+determination of more visible function in disambiguation. A branch
+exploring this idea passes testing.
 
 Hijacking a Generic Fn Called in a Generic
 ++++++++++++++++++++++++++++++++++++++++++
@@ -310,7 +311,7 @@ instantiation is used any time that generic function is supplied with the same
 generic arguments (types and params). Within the compiler, this is implemented
 with a cache of generic instantiations. The arbitrary point of instantiation
 recipe does not allow for different scopes where a generic functions is called
-to instantiate differently, which is what the example is trying to do.  
+to instantiate differently, which is what the example is trying to do.
 
 Solution: Can generic instantiation consider the implied functions that will be
 required to resolve the generic function & where those functions are drawn
@@ -436,11 +437,11 @@ to provide a sorting function that can be called. For example:
     ...
     sort(A); // programmer intends it to call < declared above
   }
- 
+
 However, neither the ``<`` function or the type ``MyType`` are visible to
 the definition point of ``proc sort`` as these are declared in ``Test``.
 (It wouldn't make sense to expect the ``Sort`` module to ``use Test``
-since that would prevent it from being an independent library.
+since that would prevent it from being an independent library.)
 In order to enable patterns like this, the generic
 instantiation process uses a *point of instantiation* rule in which the generic
 instantiation of ``sort`` can use symbols available only at the call site. That
@@ -468,12 +469,14 @@ from the same module:
   }
 
 In that event, even though ``sort`` is generic, it might be surprising if
-in some cases ``isSorted`` might resolve to something in the caller.
+in some cases ``isSorted`` might resolve to something in the caller. This
+problem was explored in some of the above examples, including Hijacking a
+Concrete Fn Called in a Generic.
 
 Solution: While the compiler has the ability to find types and functions
-through the point of instantiation rule, it would be much easier to
-reason about the program if they used other means. In particular, the
-preferred answer should be:
+through the point of instantiation rule, it is much easier to
+reason about programs that use other means. In particular,
+the preferred answer should be:
 
    * use an implements clause (as described in CHIP 2)
    * use a first-class function or function object argument
@@ -492,7 +495,7 @@ A new company on the scene, Company Z, likes to make object-oriented class libra
 
 In the application code, the developer extends Base and adds a method
 ``run`` that is used by the application:
- 
+
 .. code-block:: chapel
 
   module Application7 {
@@ -552,7 +555,7 @@ The application developer updates to the latest LibraryZ:
     }
   }
 
-It outputs 
+It outputs
 
 ::
 
@@ -564,6 +567,8 @@ example.
 New Method is Accidentally Overridden
 +++++++++++++++++++++++++++++++++++++
 
+Let's consider another example where Company Z offers a class library.
+
 .. code-block:: chapel
 
   module LibraryZ3 {
@@ -573,6 +578,8 @@ New Method is Accidentally Overridden
       }
     }
   }
+
+The application developer creates a class inheriting from Base:
 
 .. code-block:: chapel
 
@@ -640,6 +647,8 @@ and then the application is updated to use the new library:
       delete instance;
     }
   }
+
+The update results in the following output:
 
 ::
 
@@ -718,7 +727,7 @@ Now suppose that the designer of LibraryZ realizes that they can make the librar
         helpSetup(1); // may call derived class
 
 	// calls helpSetup(1.0) elsewhere...
-  
+
         writeln("completed LibraryZ.Base.setup!");
       }
       proc helpSetup(x:real) {
@@ -771,6 +780,15 @@ Summary of Solutions
 
 * remove point-of-instantiation from consideration in determination of
   more visible function in disambiguation.
+* consider changing the traversal order of getVisibleFns to visit the
+  point-of-instantiation block after considering the parent scope of a
+  generic
+* prefer other means instead of the point-of-instantiation rule for
+  making types and functions available inside of a generic function:
+
+  * use an implements clause (as described in CHIP 2)
+  * use a first-class function or function object argument
+
 * adjust the resolution cache to allow for different instantiations of
   the same generic function that is used in different scopes.
 * adjust the priority of a more specific match over a more visible match
@@ -800,11 +818,8 @@ What is this overload sets idea?
   D, this is the 'alias' keyword.
 
 
-More About Generic Instantiations
----------------------------------
-
 Why does public/private interact with point-of-instantiation?
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-------------------------------------------------------------
 
 .. code-block:: chapel
 
@@ -887,8 +902,8 @@ is best to specify that dependency explicitly as part of ``foo`` s declaration,
 either via an interface requirement (see CHIP 2) or by taking the function it
 relies upon in as a function object or a first-class function argument.
 
-Point-of-instantiation Proposal
-+++++++++++++++++++++++++++++++
+More About Point-of-instantiation Proposal
+------------------------------------------
 
 As we have seen above, point-of-instantiation is problematic because:
 
@@ -921,21 +936,3 @@ instantiation.
 The caching strategy for generic instantiations would need to be improved
 to take into account scoping in any case where the generic function
 relied on the point-of-instantiation rule.
-
-Under this proposal, the existing caching strategy for generic
-instantiations is sufficient, because it's not possible to have more than
-one function.
-
-Potential Alternatives
-++++++++++++++++++++++
-
-Once CHIP 2 is implemented, we could move to always using
-point-of-definition and using ``implements`` to pass around function
-requirements.
-
-If first-class functions support gets re-implemented, generic functions
-which today rely on point-of-instantiation would be able to explicitly
-take in the functions they rely on that aren't necessarily visible at their
-definition point.  In that situation, we could also move to always using
-point-of-definition.
-
