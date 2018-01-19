@@ -41,6 +41,7 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
     case TFI_REF:       return "ref";
     case TFI_CONST_REF: return "const ref";
     case TFI_REDUCE:    return "reduce";
+    case TFI_REDUCE_OP: return "reduceOp";
   }
   INT_ASSERT(false);
   return "";
@@ -342,7 +343,8 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
         ovar = svar->outerVarSym();
         break;
 
-      case TFI_REDUCE:
+      case TFI_REDUCE:     // _OP probably gets here first
+      case TFI_REDUCE_OP:
         // ... except for reduce intents - they are TODO.
         USR_FATAL_CONT(svar, "Reduce intents are currently not implemented"
           " for forall- or for-loops over recursive parallel iterators");

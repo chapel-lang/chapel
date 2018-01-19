@@ -9,7 +9,7 @@ class ExpandVisitor;
 static void expandYield( ExpandVisitor* EV, CallExpr* yield);
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
-static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis = NULL);
+static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis = NULL); //wass need this?
 
 
 /////////// ExpandVisitor visitor ///////////
@@ -213,8 +213,6 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
   INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //wass remove at end
   // wass confirming: this does not affect EV->svar2clonevar
 
-  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
-
   return cloneIdxVar;
 }
 
@@ -226,15 +224,16 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
          EV->forall->id);
   if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
 
-  // Todo: update EV->svar2clonevar in-place, then reset to NULL.
-  // To avoid map creation+destruction.
+  // Todo: update EV->svar2clonevar in-place, then reset to NULL,
+  // to avoid map creation+destruction cost.
 
-  // This is svar2clonevar plus a clone of the induction variable.
+  // This will be svar2clonevar plus a clone of the induction variable.
   SymbolMap map;
   map.copy(EV->svar2clonevar);
 
-  // Adds (original idxVar -> cloneIdxVar) to 'map':
+  // This adds (original idxVar -> cloneIdxVar) to 'map'.
   VarSymbol* cloneIdxVar = setupCloneIdxVar(EV, yieldCall, map);
+  yieldCall->insertBefore(new DefExpr(cloneIdxVar));
 
   Expr* yieldExpr = yieldCall->get(1)->remove();
   yieldCall->insertBefore(new CallExpr(PRIM_MOVE, cloneIdxVar, yieldExpr));
@@ -440,6 +439,9 @@ static void setupOuterMap(ExpandVisitor* outerVis,
       case TFI_REDUCE:
         setupForReduceIntent(outerVis->forall, svar, idx, map, aInit, aFini);
         break;
+      case TFI_REDUCE_OP:
+        INT_ASSERT(false); // VASS IMPLEMENT ME
+        break;
     }
   }
 }
@@ -484,7 +486,7 @@ static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
   setupOuterMap(&outerVis, iwrap, ibody);
-  map.put(fs->singleInductionVar(), NULL);
+  map.put(fs->singleInductionVar(), NULL);  // reserve a slot
   outerVis.parentVis = parentVis;
   ibody->accept(&outerVis);
 

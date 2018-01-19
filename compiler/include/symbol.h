@@ -86,6 +86,7 @@ enum ForallIntentTag {
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
+  TFI_REDUCE_OP,  // addd by compiler
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);

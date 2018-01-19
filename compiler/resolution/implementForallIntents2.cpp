@@ -823,13 +823,14 @@ static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
   FIinfo& fii = ctx.fiInfos[ix];
 
   switch (fii.svSymbol->intent) {
-    case  TFI_DEFAULT:
+    case TFI_DEFAULT:
+    case TFI_CONST:
+    case TFI_REDUCE_OP:  // should not happen
     {
       INT_ASSERT(false); // it is better to have a concrete intent here
       return NULL;
     }
 
-    case TFI_CONST:
     case TFI_IN:
     case TFI_CONST_IN:
     case TFI_REF:

@@ -999,6 +999,7 @@ bool ShadowVarSymbol::isConstant() const {
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
+    case TFI_REDUCE_OP:
       return true;
     case TFI_IN:
     case TFI_REF:
@@ -1026,6 +1027,7 @@ const char* ShadowVarSymbol::intentDescrString() const {
     case TFI_REF:       return "'ref' intent";
     case TFI_CONST_REF: return "'const ref' intent";
     case TFI_REDUCE:    return "'reduce' intent";
+    case TFI_REDUCE_OP: return "reduceOp intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy

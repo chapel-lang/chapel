@@ -1128,6 +1128,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
 
       case TFI_IN:
       case TFI_REDUCE:
+      case TFI_REDUCE_OP:
         // May result in data races or incorrect behavior
         // if we don't handle multiple enclosing foralls.
         USR_FATAL_CONT(yieldCall, "a parallel iterator with a yield nested in two or more enclosing forall statements is not currently implemented in the presence of an 'in' or 'reduce' intent.");
@@ -1849,6 +1850,7 @@ IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
     case TFI_REF:       return INTENT_REF;
     case TFI_CONST_REF: return INTENT_CONST_REF;
     case TFI_REDUCE:
+    case TFI_REDUCE_OP:
       INT_ASSERT(false);    // don't know what to return
       return INTENT_BLANK;  // dummy
   }
@@ -1888,6 +1890,7 @@ static void resolveSVarIntent(ShadowVarSymbol* svar) {
     case TFI_REF:
     case TFI_CONST_REF:
     case TFI_REDUCE:
+    case TFI_REDUCE_OP:
       // nothing to do
       break;
   }
@@ -2403,6 +2406,8 @@ static void addActualsToParCallNew(ForallStmt* fs, CallExpr* parCall)
         // These should not appear here because all intents must be concrete
         // by now. An abstract intent would not let us distinguish between
         // by-ref and by-val, which we need for adjustments done above.
+      case TFI_REDUCE_OP:
+        // We have not created svars with this intent yet.
         INT_ASSERT(false);
         break;
     }
