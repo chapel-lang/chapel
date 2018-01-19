@@ -1880,13 +1880,20 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
-  if (at == NULL || at->defaultInitializer == NULL) {
+  if (at == NULL) {
+    // Not an AggregateType
     retval = chpl_gen_main->body;
-
-  } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = point;
-
+  } else if (at->defaultInitializer &&
+             at->defaultInitializer->instantiationPoint) {
+    // Here for historical reasons
+    retval = at->defaultInitializer->instantiationPoint;
+  } else if (at->defaultTypeConstructor &&
+             at->defaultTypeConstructor->instantiationPoint) {
+    // This case can apply to generic types with initializers
+    retval = at->defaultTypeConstructor->instantiationPoint;
   } else {
+    // This case applies to non-generic AggregateTypes and
+    // possibly to generic AggregateTypes with default fields.
     retval = at->symbol->defPoint;
   }
 
