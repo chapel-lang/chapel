@@ -470,6 +470,13 @@ from the same module:
 In that event, even though ``sort`` is generic, it might be surprising if
 in some cases ``isSorted`` might resolve to something in the caller.
 
+Solution: While the compiler has the ability to find types and functions
+through the point of instantiation rule, it would be much easier to
+reason about the program if they used other means. In particular, the
+preferred answer should be:
+
+   * use an implements clause (as described in CHIP 2)
+   * use a first-class function or function object argument
 
 Unexpected Base Class Additions
 +++++++++++++++++++++++++++++++
