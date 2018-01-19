@@ -16,6 +16,8 @@ module Bar {
     y = b;
     z = c;
   }
+  proc deinit() {
+  }
 
   proc getter() {
     // compiler inserts a chpl__initCopy, which is flagged as erroneous because
