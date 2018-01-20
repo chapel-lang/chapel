@@ -656,6 +656,13 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
       if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
 
+      } else if (formalIsTypeAlias &&
+                 !isDispatchParent(actual->getValType(),
+                                   formal->getValType()) &&
+                 actual->getValType() != formal->getValType()) {
+        // coercions should not be allowed for type variables
+        return false;
+
       } else if (canDispatch(actual->type,
                              actual,
                              formal->type,

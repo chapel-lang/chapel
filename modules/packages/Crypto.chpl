@@ -190,10 +190,10 @@ module Crypto {
        :rtype: `[] string`
 
     */
-    proc toHex() {
+    proc toHex() throws {
       var buffHex: [this.buffDomain] string;
       for i in this.buffDomain do {
-        try! buffHex[i] = "%02xu".format(this.buff[i]);
+        buffHex[i] = try "%02xu".format(this.buff[i]);
       }
       return buffHex;
     }
@@ -204,10 +204,10 @@ module Crypto {
        :rtype: `string`
 
     */
-    proc toHexString() {
+    proc toHexString() throws {
       var buffHexString: string;
       for i in this.buffDomain do {
-        try! buffHexString += "%02xu".format(this.buff[i]);
+        buffHexString += try "%02xu".format(this.buff[i]);
       }
       return buffHexString;
     }

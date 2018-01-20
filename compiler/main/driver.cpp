@@ -997,7 +997,7 @@ static void printStuff(const char* argv0) {
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    fprintf(stdout, "%s Version %s\n", sArgState.program_name, compileVersion);
+    fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
 
     fPrintCopyright  = true;
     printedSomething = true;

@@ -84,7 +84,7 @@ set patch=`cat compiler/main/version_num.h | grep UPDATE_VERSION | cut -f3 -d' '
 set expected_version_string="$major.$minor.$patch"
 
 # Test chpl --version for expected string version.
-set version_string = `chpl --version | grep 'Version' | cut -d' ' -f 3`
+set version_string = `chpl --version | grep 'version' | cut -d' ' -f 3`
 set versionstatus = $status
 if ($versionstatus != 0) then
     echo "ERROR: execution of chpl --version failed"
