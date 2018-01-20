@@ -5,9 +5,23 @@
 
 /////////// implementForallIntents3 ///////////
 
-static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
-  gdbShouldBreakHere(); //wass
+static BlockStmt* ropStartBlock(ShadowVarSymbol* ROP)
+{ return toBlockStmt(ROP->specBlock->body.head); }
+static BlockStmt* ropEndBlock(ShadowVarSymbol* ROP)
+{ return toBlockStmt(ROP->specBlock->body.head->next); }
+static BlockStmt* asStartBlock(ShadowVarSymbol* AS)
+{ return toBlockStmt(AS->specBlock->body.head->next); }
+static BlockStmt* asEndBlock(ShadowVarSymbol* AS)
+{ return toBlockStmt(AS->specBlock->body.head->next->next); }
+static ShadowVarSymbol* as2rop(ShadowVarSymbol* AS) {
+  SymExpr* ropSE = toSymExpr(AS->specBlock->body.head);
+  ShadowVarSymbol* result = toShadowVarSymbol(ropSE->symbol());
+  INT_ASSERT(result->intent == TFI_REDUCE_OP);
+  return result;
+}
 
+static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS)
+{
   // Create ROP.
 
   SymExpr* globalOpSE = toSymExpr(AS->reduceOpExpr()->remove());
@@ -39,10 +53,15 @@ static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
 
   ROP->specBlock->insertAtTail(ropStart);
   ROP->specBlock->insertAtTail(ropEnd);
-
-  AS->specBlock->insertAtTail(new SymExpr(ROP));
   AS->specBlock->insertAtTail(asStart);
   AS->specBlock->insertAtTail(asEnd);
+  AS->specBlock->insertAtHead(new SymExpr(ROP));
+
+  INT_ASSERT(ropStartBlock(ROP) == ropStart);
+  INT_ASSERT(ropEndBlock(ROP) == ropEnd);
+  INT_ASSERT(asStartBlock(AS) == asStart);
+  INT_ASSERT(asEndBlock(AS) == asEnd);
+  INT_ASSERT(as2rop(AS) == ROP);
 
   // vass TODO how to relate it to where it is used?
   VarSymbol* parentOp = new VarSymbol(astr("pOp_", AS->name), globalOp->type);
@@ -415,7 +434,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 
   int numOrigActuals = call->numActuals();
   int ix = 0;
-//wass  int ixEArg = 0;
+
   for_shadow_vars(svar, temp1, EV->forall) {
     // VASS CONTINUE HERE: tend to reduce intent, add to task begin/end;
     // NB need anchors to keep the right order, incl. wrt SB/TB.
@@ -544,9 +563,7 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
   // The initial "current map".
   SymbolMap& map = outerVis->svar2clonevar;
-  int ix = 0;
   for_shadow_vars(svar, temp1, outerVis->forall) {
-    ix++;
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
@@ -587,12 +604,22 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
       case TFI_REDUCE:      // accumulation state
         {
-          ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
-          Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
           VarSymbol*  acState  = new VarSymbol(
-                                       intentArgName(ix, "reduceShadowVar"),
+                                       astr("topAccState_", svar->name),
                                        svar->type);
           aInit->insertBefore(new DefExpr(acState));
+          insertDeinitialization(acState, acState->type, aFini);
+
+          map.put(svar, acState);
+
+          aInit->insertBefore(asStartBlock(svar)->copy(&map));
+          aFini->insertAfter(asEndBlock(svar)->copy(&map));
+
+          gdbShouldBreakHere(); //wass
+
+#if 0 //wass - was:
+          ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
+          Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
 
           // acState.init(globalOp.identity);  (paren-less function)
           // VASS TODO stash away the FnSymbol for identity at resolution.
@@ -604,13 +631,9 @@ static void expandTopLevel(ExpandVisitor* outerVis,
           insertCopyInitialization(acState, acState->type, stemp, aInit);
 
           // globalOp.accumulate(acState); acState.deinit();
-          insertDeinitialization(acState, acState->type, aFini);
           aFini->insertAfter("accumulate(%S,%S,%S)",
                              gMethodToken, globalOp, acState);
-
-          map.put(svar, acState);
-
-          //wass was: setupForReduceIntent(outerVis->forall, svar, ix, map, aInit, aFini);
+#endif
         }
         break;
     }
