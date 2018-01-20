@@ -195,3 +195,16 @@ int64_t chpl_numPrivatizedClasses(void) {
   return ret;
 }
  
+// Clean up all resources for memory checkers.
+void chpl_privatization_exit(void) {
+  // Clean thread-local storage
+  while (tls_list) {
+    struct tls_node *node = tls_list;
+    tls_list = tls_list->next;
+    chpl_mem_free(node, 0, 0);
+  }
+
+  // Destroy last instance
+  chpl_mem_free(chpl_privateObjects, 0, 0);
+  chpl_privateObjects = NULL;
+}

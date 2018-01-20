@@ -38,5 +38,7 @@ void chpl_clearPrivatizedClass(int64_t);
 
 int64_t chpl_numPrivatizedClasses(void);
 
+void chpl_privatization_exit(void);
+
 #endif // LAUNCHER
 #endif // _chpl_privatization_h_
