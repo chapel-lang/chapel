@@ -961,7 +961,7 @@ void ShadowVarSymbol::verify() {
   }
   INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
   if (!iteratorsLowered && specBlock != NULL)
-    INT_ASSERT(isReduce());
+    INT_ASSERT(isReduce() || intent == TFI_REDUCE_OP);
 }
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {

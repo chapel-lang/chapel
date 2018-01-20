@@ -18,10 +18,11 @@ static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
   ShadowVarSymbol* ROP = new ShadowVarSymbol(TFI_REDUCE_OP,
                                              astr("rOp_", AS->name),
                                              globalOpSE);
-  ROP->specBlock = new BlockStmt();
   // It always points to the same reduction op class instance.
   ROP->addFlag(FLAG_CONST);
   ROP->qual = QUAL_CONST_VAL;
+  ROP->type = globalOp->type;
+  ROP->specBlock = new BlockStmt();
   // It goes on the shadow variable list right before AS.
   AS->defPoint->insertBefore(new DefExpr(ROP));
 
@@ -35,6 +36,13 @@ static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
   BlockStmt* ropEnd   = new BlockStmt(); //  "
   BlockStmt* asStart  = new BlockStmt();
   BlockStmt* asEnd    = new BlockStmt();
+
+  ROP->specBlock->insertAtTail(ropStart);
+  ROP->specBlock->insertAtTail(ropEnd);
+
+  AS->specBlock->insertAtTail(new SymExpr(ROP));
+  AS->specBlock->insertAtTail(asStart);
+  AS->specBlock->insertAtTail(asEnd);
 
   // vass TODO how to relate it to where it is used?
   VarSymbol* parentOp = new VarSymbol(astr("pOp_", AS->name), globalOp->type);
@@ -54,21 +62,14 @@ static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
 
   asEnd->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, ROP, AS);
 
-  // Store the above pieces.
+  // Resolve. This determines the type of AS.
+  // Cf. the type of ROP is copied from globalOp.
 
-  ROP->specBlock->insertAtTail(ropStart);
-  ROP->specBlock->insertAtTail(ropEnd);
+  INT_ASSERT(AS->type == dtUnknown && ROP->type != dtUnknown);
 
-  AS->specBlock->insertAtTail(new SymExpr(ROP));
-  AS->specBlock->insertAtTail(asStart);
-  AS->specBlock->insertAtTail(asEnd);
-
-  // Resolve. This determines the types of ROP and AS
-  // that are initially unknown.
-
-  INT_ASSERT(AS->type == dtUnknown && ROP->type == dtUnknown);
-  
-  resolveBlockStmt(ropStart);     INT_ASSERT(ROP->type != dtUnknown);
+  // If the result of parentOp.clone() is incompatible wtih parentOp's type,
+  // resolving ropStart will report an error.
+  resolveBlockStmt(ropStart);     INT_ASSERT(ROP->type == globalOp->type);
   resolveBlockStmt(ropEnd);
   resolveBlockStmt(asStart);      INT_ASSERT(AS->type != dtUnknown);
   resolveBlockStmt(asEnd);
