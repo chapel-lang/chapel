@@ -5,7 +5,77 @@
 
 /////////// implementForallIntents3 ///////////
 
+static void fleshOutReduceSvarPair(ForallStmt* fs, ShadowVarSymbol* AS) {
+  gdbShouldBreakHere(); //wass
+
+  // Create ROP.
+
+  SymExpr* globalOpSE = toSymExpr(AS->reduceOpExpr()->remove());
+  Symbol*  globalOp   = globalOpSE->symbol();
+  // Handling of the case of a type should have happened earlier.
+  INT_ASSERT(!globalOp->hasFlag(FLAG_TYPE_VARIABLE));
+
+  ShadowVarSymbol* ROP = new ShadowVarSymbol(TFI_REDUCE_OP,
+                                             astr("rOp_", AS->name),
+                                             globalOpSE);
+  ROP->specBlock = new BlockStmt();
+  // It always points to the same reduction op class instance.
+  ROP->addFlag(FLAG_CONST);
+  ROP->qual = QUAL_CONST_VAL;
+  // It goes on the shadow variable list right before AS.
+  AS->defPoint->insertBefore(new DefExpr(ROP));
+
+  // What should happen at task startup/teardown.
+  //
+  // Except DefExprs and deinit() calls will be added during lowering -
+  // for uniformity and because at the moment we do not know the types.
+  // I might want to use FLAG_NO_AUTO_DESTROY.
+
+  BlockStmt* ropStart = new BlockStmt(); // does not apply at top level
+  BlockStmt* ropEnd   = new BlockStmt(); //  "
+  BlockStmt* asStart  = new BlockStmt();
+  BlockStmt* asEnd    = new BlockStmt();
+
+  // vass TODO how to relate it to where it is used?
+  VarSymbol* parentOp = new VarSymbol(astr("pOp_", AS->name), globalOp->type);
+
+  ropStart->insertAtTail(new DefExpr(parentOp)); // vass ???
+  ropStart->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
+                         ROP, gMethodToken, parentOp);
+
+  ropEnd->insertAtTail("chpl__reduceCombine(%S,%S)", parentOp, ROP);
+  ropEnd->insertAtTail("chpl__cleanupLocalOp(%S,%S)", parentOp, ROP);
+
+  VarSymbol* stemp = newTemp("rsvTemp");
+
+  asStart->insertAtTail(new DefExpr(stemp));
+  asStart->insertAtTail("'move'(%S, identity(%S,%S))", stemp,gMethodToken,ROP);
+  asStart->insertAtTail("'init var'(%S,%S)", AS, stemp);
+
+  asEnd->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, ROP, AS);
+
+  // Store the above pieces.
+
+  ROP->specBlock->insertAtTail(ropStart);
+  ROP->specBlock->insertAtTail(ropEnd);
+
+  AS->specBlock->insertAtTail(new SymExpr(ROP));
+  AS->specBlock->insertAtTail(asStart);
+  AS->specBlock->insertAtTail(asEnd);
+
+  // Resolve. This determines the types of ROP and AS
+  // that are initially unknown.
+
+  INT_ASSERT(AS->type == dtUnknown && ROP->type == dtUnknown);
+  
+  resolveBlockStmt(ropStart);     INT_ASSERT(ROP->type != dtUnknown);
+  resolveBlockStmt(ropEnd);
+  resolveBlockStmt(asStart);      INT_ASSERT(AS->type != dtUnknown);
+  resolveBlockStmt(asEnd);
+}
+
 /*
+wass update this comment
 Set up shadow variables and task startup/teardown blocks during resolution.
 * Create TFI_REDUCE_OP shadow variables.
 * Populate task and top startup/teardown blocks.
@@ -15,10 +85,35 @@ Note that this is done during resolveForallHeader,
 i.e. before resolving the forall loop body.
 */
 
-// wass better name?
+// wass better name? need parCall?
+// Creates TFI_REDUCE_OP svars. Resolves TFI_REDUCE and TFI_REDUCE_OP svar types.
+// Invoked from resolveForallHeader().
 void implementForallIntents3(ForallStmt* fs, CallExpr* parCall); //wass to header
 void implementForallIntents3(ForallStmt* fs, CallExpr* parCall) {
+  for_shadow_vars(svar, temp, fs) {
+    switch (svar->intent) {
+      case TFI_DEFAULT:
+      case TFI_CONST:
+        INT_ASSERT(false);   // don't give me an abstract intent
+        break;
 
+      case TFI_IN:
+      case TFI_CONST_IN:
+      case TFI_REF:
+      case TFI_CONST_REF:
+        // nothing to do
+        break;
+
+      case TFI_REDUCE:
+        fleshOutReduceSvarPair(fs, svar);
+        break;
+
+      case TFI_REDUCE_OP:
+        // We place such svar earlier in the list - it should not come up here.
+        INT_ASSERT(false);
+        break;
+    }
+  }
 
 }
 
