@@ -5,6 +5,78 @@
 
 /////////// implementForallIntents3 ///////////
 
+static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
+  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
+  ShadowVarSymbol* RR = toShadowVarSymbol(rpDef->sym);
+  INT_ASSERT(RR->intent == TFI_REDUCE_OP);
+  return RR;
+}
+
+static void insertInitialization(BlockStmt* destBlock,
+                                 Symbol* destVar, Symbol* srcVar) {
+  destBlock->insertAtTail("'init var'(%S,%S)", destVar, srcVar);
+}
+static void insertInitialization(BlockStmt* destBlock,
+                                 Symbol* destVar, Expr* srcExpr) {
+  VarSymbol* initTemp = new VarSymbol("initTemp");
+  destBlock->insertAtTail(new DefExpr(initTemp));
+  destBlock->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, srcExpr));
+  insertInitialization(destBlock, destVar, initTemp);
+}
+static void insertDeinitialization(BlockStmt* destBlock,
+                                   Symbol* destVar) {
+  if (FnSymbol* autoDestroy = getAutoDestroy(destVar->type))
+    destBlock->insertAtTail(new CallExpr(autoDestroy, dest));
+}
+
+static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
+                       BlockStmt* IB, BlockStmt* DB) {
+  insertInitialization(IB, SI, gI);
+  resolveBlockStmt(IB);
+
+  insertDeinitialization(DB, SI);
+  // no need to resolve the deinit
+}
+
+static void setupForREF(ForallStmt* fs, ShadowVarSymbol* SR, Symbol* gR,
+                        BlockStmt* IB, BlockStmt* DB) {
+}  // nothing for a REF intent
+
+static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
+                         BlockStmt* IB, BlockStmt* DB) {
+  IB->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
+                   RP, gMethodToken, gOp);
+  resolveBlockStmt(IB);
+
+  DB->insertAtTail("chpl__reduceCombine(%S,%S)", gOp, RP);
+  DB->insertAtTail("chpl__cleanupLocalOp(%S,%S)", gOp, RP); // deletes RP
+  resolveBlockStmt(DB);
+}
+
+static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
+                         BlockStmt* IB, BlockStmt* DB) {
+  ShadowVarSymbol* RP = getRPfromAS(AS);
+  insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
+  resolveBlockStmt(IB);
+
+  DB->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, RP, AS);
+  resolveBlockStmt(DB);
+  insertDeinitialization(DB, AS);
+  // no need to resolve the deinit
+}
+
+// This should be static. Making it extern because it is unused.
+void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
+                        BlockStmt* IB, BlockStmt* DB);
+void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
+                        BlockStmt* IB, BlockStmt* DB) {
+  // IB already comes from PV's declaration in the with-clause.
+  resolveBlockStmt(IB);
+
+  insertDeinitialization(DB, PV);
+  // no need to resolve the deinit
+}
+
 static BlockStmt* ropStartBlock(ShadowVarSymbol* ROP)
 { return toBlockStmt(ROP->specBlock->body.head); }
 static BlockStmt* ropEndBlock(ShadowVarSymbol* ROP)
