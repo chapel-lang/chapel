@@ -304,6 +304,8 @@ static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
   return retval;
 }
 
+//wass need this?
+
 /* Do we want to make this available to all compiler code?
 MF says "It should:
  * check isUserDefinedRecord and possibly is POD
@@ -346,6 +348,69 @@ static void insertDeinitialization(Symbol* dest, Type* valType, Expr* anchor)
 {
   if (FnSymbol* autoDestroy = getAutoDestroy(valType))
     anchor->insertAfter(new CallExpr(autoDestroy, dest));
+}
+
+
+/////////// standardized svar actions ///////////
+
+static VarSymbol* createVarSI(SymbolMap& map, ShadowVarSymbol* SI) {
+  VASS TODO;
+          bool isconst = svar->intent == TFI_CONST_IN;
+          VarSymbol* bodyvar = new VarSymbol(svar->name);
+          bodyvar->type = svar->type->getValType();
+          bodyvar->qual = isconst ? QUAL_CONST_VAL : QUAL_VAL;
+          aInit->insertBefore(new DefExpr(bodyvar));
+
+          // Initialize it from the outer var.
+          insertCopyInitialization(bodyvar, bodyvar->type,
+                                   svar->outerVarSym(), aInit);
+
+          // Deinitialize it at the end.
+          insertDeinitialization(bodyvar, bodyvar->type, aFini);
+}
+
+static VarSymbol* createVarRP(SymbolMap& map, ShadowVarSymbol* RP) {
+  VASS TODO;
+}
+
+static VarSymbol* createVarAS(SymbolMap& map, ShadowVarSymbol* AS) {
+{
+  VASS TODO;
+
+  VarSymbol*  acState  = new VarSymbol(
+                               astr("AC_", svar->name),
+                               svar->type);
+
+
+
+
+  aInit->insertBefore(new DefExpr(acState));
+  insertDeinitialization(acState, acState->type, aFini);
+
+  map.put(svar, acState);
+
+  aInit->insertBefore(svar->initBlock()->copy(&map));
+  aFini->insertAfter(svar->deinitBlock()->copy(&map));
+
+  gdbShouldBreakHere(); //wass
+
+#if 0 //wass - was:
+  ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
+  Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
+
+  // acState.init(globalOp.identity);  (paren-less function)
+  // VASS TODO stash away the FnSymbol for identity at resolution.
+  VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
+  aInit->insertBefore(new DefExpr(stemp));
+  aInit->insertBefore("'move'(%S, identity(%S,%S))",
+                      stemp, gMethodToken, globalOp);
+  // What if this is a ref type?
+  insertCopyInitialization(acState, acState->type, stemp, aInit);
+
+  // globalOp.accumulate(acState); acState.deinit();
+  aFini->insertAfter("accumulate(%S,%S,%S)",
+                     gMethodToken, globalOp, acState);
+#endif
 }
 
 
@@ -405,6 +470,42 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 
 /////////// expandTaskFn ///////////
 
+static void expandShadowVarTaskFn(ShadowVarSymbol* svar, SymbolMap& map, int ix) {
+  switch (svar->intent)
+  {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      INT_ASSERT(false);   // no abstract intents please
+      break;
+
+    case TFI_IN:
+    case TFI_CONST_IN:
+      addArgAndMap(map, expandClone, ix, svar);
+      // init happens implicitly due to argument passing
+      addCloneOfDB(map, svar);
+      break;
+
+    case TFI_REF:
+    case TFI_CONST_REF:
+      addArgAndMap(map, expandClone, ix, svar);
+      // no init/deinit
+      break;
+
+    case TFI_REDUCE_OP:
+      addArgAndMap(map, expandClone, svar, ix, svar->getOuterVarSym());
+      addDefAndMap(map, createVarRP(svar));
+      addCloneOfIB(map, svar);
+      addCloneOfDB(map, svar);
+      break;
+
+    case TFI_REDUCE:      // accumulation state
+      addDefAndMap(map, createVarAS(svar));
+      addCloneOfIB(map, svar);
+      addCloneOfDB(map, svar);
+      break;
+  }
+}
+
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
 {
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
@@ -443,15 +544,16 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   int numOrigActuals = call->numActuals();
   int ix = 0;
 
-  for_shadow_vars(svar, temp1, EV->forall) {
-    // VASS CONTINUE HERE: tend to reduce intent, add to task begin/end;
-    // NB need anchors to keep the right order, incl. wrt SB/TB.
+  for_shadow_vars(svar, temp, EV->forall) {
     ix++;
+    expandShadowVarTaskFn(svar, map, ix);
+
+    VASS move to addArgAndMap();
     Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
     call->insertAtTail(eActual);
 
     if (expandClone) {
-      // vass todo handle reduce intent
+      VASS move to addArgAndMap();
       ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
                                           false/*vass-nested*/);
       cloneTaskFn->insertFormalAtTail(eFormal);
@@ -498,32 +600,14 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
     SET_LINENO(svar);
     // copy() also performs map.put(svar, newSV)
     ShadowVarSymbol* newSV = svar->copy(&map);
+    if (SymExpr* ovar = newSV->outerVarSE())
+      ovar->setSymbol(iMap.get(svar));
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
-
-    Symbol* newOuterVar = NULL;
-    switch (svar->intent) {
-      case TFI_DEFAULT:
-      case TFI_CONST:
-        INT_ASSERT(false);   // don't give me an abstract intent
-        break;
-
-      case TFI_IN:
-      case TFI_CONST_IN:
-      case TFI_REF:
-      case TFI_CONST_REF:
-      case TFI_REDUCE_OP:
-        newOuterVar = iMap.get(svar);
-        break;
-
-      case TFI_REDUCE:
-        newOuterVar = map.get(svar->outerVarSym());
-        break;
-    }
-    newSV->outerVarSE()->setSymbol(newOuterVar);
   }
 
   map.put(pfs->singleInductionVar(), NULL); // reserve a slot
 
+#if 0 //wass - will replace with svars
   // Append the startup block. Prepend the teardown block.
   // This makes pfs's actions "nested" within fs's actions,
   // analogously to fs->shadowVariables().insertAtTail() above.
@@ -540,6 +624,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   fs->taskTeardown()->insertAtHead(tdClone);
   tdClone->flattenAndRemove();
 #endif
+#endif
 
   // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
@@ -550,64 +635,40 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
 /////////// outermost visitor ///////////
 
-static VarSymbol* eCreateVarIn(SymbolMap& map, ShadowVarSymbol* SI) {
-  VASS TODO;
-          bool isconst = svar->intent == TFI_CONST_IN;
-          VarSymbol* bodyvar = new VarSymbol(svar->name);
-          bodyvar->type = svar->type->getValType();
-          bodyvar->qual = isconst ? QUAL_CONST_VAL : QUAL_VAL;
-          aInit->insertBefore(new DefExpr(bodyvar));
+static void expandShadowVarTopLevel(ShadowVarSymbol* svar, SymbolMap& map) {
+  switch (svar->intent)
+  {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      INT_ASSERT(false);   // no abstract intents please
+      break;
 
-          // Initialize it from the outer var.
-          insertCopyInitialization(bodyvar, bodyvar->type,
-                                   svar->outerVarSym(), aInit);
+    case TFI_IN:
+    case TFI_CONST_IN:
+      addDefAndMap(map, createVarSI(svar));
+      addCloneOfIB(map, svar);
+      addCloneOfDB(map, svar);
+      break;
 
-          // Deinitialize it at the end.
-          insertDeinitialization(bodyvar, bodyvar->type, aFini);
-}
+    case TFI_REF:
+    case TFI_CONST_REF:
+      // Let us reference the outer variable directly, for simplicity.
+      // NB we are not concerned with const checking any more.
+      map.put(svar, svar->outerVarSym());
+      // no code to add
+      break;
 
-static VarSymbol* eCreateVarRP(SymbolMap& map, ShadowVarSymbol* RP) {
-  VASS TODO;
-}
+    case TFI_REDUCE_OP:
+      // Let us use the global op directly.
+      map.put(svar, svar->outerVarSym());
+      break;
 
-static VarSymbol* eCreateVarAS(SymbolMap& map, ShadowVarSymbol* AS) {
-{
-  VASS TODO;
-
-  VarSymbol*  acState  = new VarSymbol(
-                               astr("AC_", svar->name),
-                               svar->type);
-
-
-
-
-  aInit->insertBefore(new DefExpr(acState));
-  insertDeinitialization(acState, acState->type, aFini);
-
-  map.put(svar, acState);
-
-  aInit->insertBefore(svar->initBlock()->copy(&map));
-  aFini->insertAfter(svar->deinitBlock()->copy(&map));
-
-  gdbShouldBreakHere(); //wass
-
-#if 0 //wass - was:
-  ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
-  Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
-
-  // acState.init(globalOp.identity);  (paren-less function)
-  // VASS TODO stash away the FnSymbol for identity at resolution.
-  VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
-  aInit->insertBefore(new DefExpr(stemp));
-  aInit->insertBefore("'move'(%S, identity(%S,%S))",
-                      stemp, gMethodToken, globalOp);
-  // What if this is a ref type?
-  insertCopyInitialization(acState, acState->type, stemp, aInit);
-
-  // globalOp.accumulate(acState); acState.deinit();
-  aFini->insertAfter("accumulate(%S,%S,%S)",
-                     gMethodToken, globalOp, acState);
-#endif
+    case TFI_REDUCE:
+      addDefAndMap(map, createVarAS(svar));
+      addCloneOfIB(map, svar);
+      addCloneOfDB(map, svar);
+      break;
+  }
 }
 
 // 'ibody' is a clone of the parallel iterator body
@@ -623,45 +684,15 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
   // The initial "current map".
   SymbolMap& map = outerVis->svar2clonevar;
-  for_shadow_vars(svar, temp1, outerVis->forall) {
-    switch (svar->intent)
-    {
-      case TFI_DEFAULT:
-      case TFI_CONST:
-        INT_ASSERT(false);   // no abstract intents please
-        break;
 
-      case TFI_IN:
-      case TFI_CONST_IN:
-        addDefAndMap(map, eCreateVarIN(svar));
-        addCloneOfIB(map, svar);
-        addCloneOfDB(map, svar);
-        break;
+  for_shadow_vars(svar, temp, outerVis->forall)
+    expandShadowVarTopLevel(svar, map);
 
-      case TFI_REF:
-      case TFI_CONST_REF:
-        // Let us reference the outer variable directly, for simplicity.
-        // NB we are not concerned with const checking any more.
-        map.put(svar, svar->outerVarSym());
-        // no code to add
-        break;
-
-      case TFI_REDUCE_OP:
-        // Let us use the global op directly.
-        map.put(svar, svar->outerVarSym());
-        break;
-
-      case TFI_REDUCE:      // accumulation state
-        addDefAndMap(map, eCreateVarAS(svar));
-        addCloneOfIB(map, svar);
-        addCloneOfDB(map, svar);
-        break;
-    }
-  }
-
+#if 0 // wass replace with intents
   // Execute startup/teardown blocks.
   aInit->insertBefore(outerVis->forall->taskStartup()->copy(&map));
   aFini->insertAfter(outerVis->forall->taskTeardown()->copy(&map));
+#endif
 }
 
 
