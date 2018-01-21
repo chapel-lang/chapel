@@ -42,7 +42,12 @@ endif
 # CXX11_STD will be blank for compilers that default to C++11,
 # or it will use e.g. gnu++11 or c++11 if not.
 # Note that RE2 itself sometimes throws -std=c++11, but this is
-# not done for some compilers that Chapel supports.
+# not done for some compilers that Chapel supports. Cygwin
+# requires -std=gnu++11, but re2 will only throw that for CMake
+# builds, not make builds that we use, so we throw it ourselves.
+ifneq (,$(findstring cygwin, $(CHPL_MAKE_TARGET_PLATFORM)))
+CXX11_STD=-std=gnu++11
+endif
 CHPL_RE2_CXXFLAGS += $(CXXFLAGS) $(CXX11_STD)
 
 default: all
