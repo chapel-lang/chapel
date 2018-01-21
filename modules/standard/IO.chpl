@@ -2761,7 +2761,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     for i in chpl_enumerate(t) {
-      var str = i:string;
+      var str = '"' + i:string + '"';
       var slen:ssize_t = str.length.safeCast(ssize_t);
       err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
@@ -2804,7 +2804,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
     var s = x:string;
-    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
+    return qio_channel_print_string(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
