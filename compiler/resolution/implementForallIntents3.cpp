@@ -550,37 +550,8 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
 /////////// outermost visitor ///////////
 
-// 'ibody' is a clone of the parallel iterator body
-// We are replacing the ForallStmt with this clone.
-static void expandTopLevel(ExpandVisitor* outerVis,
-                           BlockStmt* iwrap, BlockStmt* ibody)
-{
-  INT_ASSERT(ibody->inTree()); //fyi
-
-/* wass - use these?
-  // Place initialization and finalization code before these anchors.
-  CallExpr* aInit = new CallExpr("anchorInit");
-  CallExpr* aFini = new CallExpr("anchorFini");
-  iwrap->insertAtHead(aInit);
-  iwrap->insertAtTail(aFini);
-*/
-
-  // Place initialization code before aInit, finalization code after aFini.
-  Expr* aInit = ibody;
-  Expr* aFini = ibody;
-
-  // The initial "current map".
-  SymbolMap& map = outerVis->svar2clonevar;
-  for_shadow_vars(svar, temp1, outerVis->forall) {
-    switch (svar->intent) {
-      case TFI_DEFAULT:
-      case TFI_CONST:
-        INT_ASSERT(false);   // don't give me an abstract intent
-        break;
-
-      case TFI_IN:
-      case TFI_CONST_IN:
-        {
+static VarSymbol* eCreateVarIn(SymbolMap& map, ShadowVarSymbol* SI) {
+  VASS TODO;
           bool isconst = svar->intent == TFI_CONST_IN;
           VarSymbol* bodyvar = new VarSymbol(svar->name);
           bodyvar->type = svar->type->getValType();
@@ -593,9 +564,78 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
           // Deinitialize it at the end.
           insertDeinitialization(bodyvar, bodyvar->type, aFini);
+}
 
-          map.put(svar, bodyvar);
-        }
+static VarSymbol* eCreateVarRP(SymbolMap& map, ShadowVarSymbol* RP) {
+  VASS TODO;
+}
+
+static VarSymbol* eCreateVarAS(SymbolMap& map, ShadowVarSymbol* AS) {
+{
+  VASS TODO;
+
+  VarSymbol*  acState  = new VarSymbol(
+                               astr("AC_", svar->name),
+                               svar->type);
+
+
+
+
+  aInit->insertBefore(new DefExpr(acState));
+  insertDeinitialization(acState, acState->type, aFini);
+
+  map.put(svar, acState);
+
+  aInit->insertBefore(svar->initBlock()->copy(&map));
+  aFini->insertAfter(svar->deinitBlock()->copy(&map));
+
+  gdbShouldBreakHere(); //wass
+
+#if 0 //wass - was:
+  ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
+  Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
+
+  // acState.init(globalOp.identity);  (paren-less function)
+  // VASS TODO stash away the FnSymbol for identity at resolution.
+  VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
+  aInit->insertBefore(new DefExpr(stemp));
+  aInit->insertBefore("'move'(%S, identity(%S,%S))",
+                      stemp, gMethodToken, globalOp);
+  // What if this is a ref type?
+  insertCopyInitialization(acState, acState->type, stemp, aInit);
+
+  // globalOp.accumulate(acState); acState.deinit();
+  aFini->insertAfter("accumulate(%S,%S,%S)",
+                     gMethodToken, globalOp, acState);
+#endif
+}
+
+// 'ibody' is a clone of the parallel iterator body
+// We are replacing the ForallStmt with this clone.
+static void expandTopLevel(ExpandVisitor* outerVis,
+                           BlockStmt* iwrap, BlockStmt* ibody)
+{
+  INT_ASSERT(ibody->inTree()); //fyi
+
+  // Place initialization code before ibody, finalization code after ibody.
+  Expr* aInit = ibody;
+  Expr* aFini = ibody;
+
+  // The initial "current map".
+  SymbolMap& map = outerVis->svar2clonevar;
+  for_shadow_vars(svar, temp1, outerVis->forall) {
+    switch (svar->intent)
+    {
+      case TFI_DEFAULT:
+      case TFI_CONST:
+        INT_ASSERT(false);   // no abstract intents please
+        break;
+
+      case TFI_IN:
+      case TFI_CONST_IN:
+        addDefAndMap(map, eCreateVarIN(svar));
+        addCloneOfIB(map, svar);
+        addCloneOfDB(map, svar);
         break;
 
       case TFI_REF:
@@ -603,46 +643,18 @@ static void expandTopLevel(ExpandVisitor* outerVis,
         // Let us reference the outer variable directly, for simplicity.
         // NB we are not concerned with const checking any more.
         map.put(svar, svar->outerVarSym());
+        // no code to add
         break;
 
-      case TFI_REDUCE_OP:   // reduction operator
-        // Use the global op directly.
+      case TFI_REDUCE_OP:
+        // Let us use the global op directly.
         map.put(svar, svar->outerVarSym());
         break;
 
       case TFI_REDUCE:      // accumulation state
-        {
-          VarSymbol*  acState  = new VarSymbol(
-                                       astr("topAccState_", svar->name),
-                                       svar->type);
-          aInit->insertBefore(new DefExpr(acState));
-          insertDeinitialization(acState, acState->type, aFini);
-
-          map.put(svar, acState);
-
-          aInit->insertBefore(svar->initBlock()->copy(&map));
-          aFini->insertAfter(svar->deinitBlock()->copy(&map));
-
-          gdbShouldBreakHere(); //wass
-
-#if 0 //wass - was:
-          ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
-          Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
-
-          // acState.init(globalOp.identity);  (paren-less function)
-          // VASS TODO stash away the FnSymbol for identity at resolution.
-          VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
-          aInit->insertBefore(new DefExpr(stemp));
-          aInit->insertBefore("'move'(%S, identity(%S,%S))",
-                              stemp, gMethodToken, globalOp);
-          // What if this is a ref type?
-          insertCopyInitialization(acState, acState->type, stemp, aInit);
-
-          // globalOp.accumulate(acState); acState.deinit();
-          aFini->insertAfter("accumulate(%S,%S,%S)",
-                             gMethodToken, globalOp, acState);
-#endif
-        }
+        addDefAndMap(map, eCreateVarAS(svar));
+        addCloneOfIB(map, svar);
+        addCloneOfDB(map, svar);
         break;
     }
   }
