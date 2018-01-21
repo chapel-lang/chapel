@@ -3,7 +3,11 @@
 #include "implementForallIntents.h"
 #include "view.h" //wass
 
-/////////// lowerForallIntentsAtResolution ///////////
+// vass TODO move to ShadowVarSymbol and implement
+static BlockStmt* initBlock(ShadowVarSymbol* sv) { return NULL; }
+static BlockStmt* deinitBlock(ShadowVarSymbol* sv) { return NULL; }
+
+/////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
 static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
   DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
@@ -11,6 +15,31 @@ static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
   INT_ASSERT(RR->intent == TFI_REDUCE_OP);
   return RR;
 }
+
+static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
+{
+  SymExpr* gOpSE = toSymExpr(AS->reduceOpExpr()->remove());
+  Symbol*  gOp   = gOpSE->symbol();
+  // Handling of the case of gOp being a type should have happened earlier.
+  INT_ASSERT(!gOp->hasFlag(FLAG_TYPE_VARIABLE));
+
+  ShadowVarSymbol* RP = new ShadowVarSymbol(TFI_REDUCE_OP,
+                                            astr("RP_", AS->name), gOpSE);
+
+  // It always points to the same reduction op class instance.
+  RP->addFlag(FLAG_CONST);
+  RP->qual = QUAL_CONST_VAL;
+  RP->type = gOp->type;
+
+  // It goes on the shadow variable list right before AS.
+  AS->defPoint->insertBefore(new DefExpr(RP));
+  INT_ASSERT(getRPfromAS(AS) == RP);  // ensure getRPfromAS() works
+
+  return RP;
+}
+
+
+/////////// lowerForallIntentsAtResolution : setup IB, DB ///////////
 
 static void insertInitialization(BlockStmt* destBlock,
                                  Symbol* destVar, Symbol* srcVar) {
@@ -26,7 +55,7 @@ static void insertInitialization(BlockStmt* destBlock,
 static void insertDeinitialization(BlockStmt* destBlock,
                                    Symbol* destVar) {
   if (FnSymbol* autoDestroy = getAutoDestroy(destVar->type))
-    destBlock->insertAtTail(new CallExpr(autoDestroy, dest));
+    destBlock->insertAtTail(new CallExpr(autoDestroy, destVar));
 }
 
 static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
@@ -78,6 +107,8 @@ void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
 }
 
 
+/////////// lowerForallIntentsAtResolution ///////////
+
 /*
 wass update this comment
 Set up shadow variables and task startup/teardown blocks during resolution.
@@ -91,33 +122,32 @@ i.e. before resolving the forall loop body.
 
 // Creates TFI_REDUCE_OP svars. Resolves TFI_REDUCE and TFI_REDUCE_OP svar types.
 // Invoked from resolveForallHeader().
-void lowerForallIntentsAtResolution(ForallStmt* fs, CallExpr* parCall); //wass to header; need parCall?
-void lowerForallIntentsAtResolution(ForallStmt* fs, CallExpr* parCall) {
-  for_shadow_vars(svar, temp, fs) {
-    switch (svar->intent) {
-      case TFI_DEFAULT:
-      case TFI_CONST:
-        INT_ASSERT(false);   // don't give me an abstract intent
-        break;
-
+void lowerForallIntentsAtResolution(ForallStmt* fs); //wass to header
+void lowerForallIntentsAtResolution(ForallStmt* fs) {
+  for_shadow_vars(svar, temp, fs)
+  {
+    Symbol* ovar = svar->outerVarSym();
+    BlockStmt* IB = initBlock(svar);
+    BlockStmt* DB = deinitBlock(svar);
+    
+    switch (svar->intent)
+    {
+      case TFI_DEFAULT:    // no abstract intents please
+      case TFI_CONST:      INT_ASSERT(false);                     break;
       case TFI_IN:
-      case TFI_CONST_IN:
+      case TFI_CONST_IN:   setupForIN(fs, svar, ovar, IB, DB);    break;
       case TFI_REF:
-      case TFI_CONST_REF:
-        // nothing to do
-        break;
-
-      case TFI_REDUCE:
-        fleshOutReduceSvarPair(fs, svar);
-        break;
-
-      case TFI_REDUCE_OP:
-        // We place such svar earlier in the list - it should not come up here.
-        INT_ASSERT(false);
-        break;
+      case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);   break;
+      case TFI_REDUCE: {
+                           ShadowVarSymbol* RP = createRPforAS(fs, svar);
+                           setupForR_OP(fs, RP, RP->outerVarSym(),
+                                        initBlock(RP), deinitBlock(RP));
+                           setupForR_AS(fs, svar, ovar, IB, DB);  break;
+      }
+      // We place such svar earlier in the list - it should not come up here.
+      case TFI_REDUCE_OP:  INT_ASSERT(false);                     break;
     }
   }
-
 }
 
 
@@ -127,7 +157,6 @@ class ExpandVisitor;
 static void expandYield( ExpandVisitor* EV, CallExpr* yield);
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn);
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
-static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis = NULL); //wass need this?
 
 
 /////////// ExpandVisitor visitor ///////////
@@ -595,8 +624,8 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
           map.put(svar, acState);
 
-          aInit->insertBefore(asStartBlock(svar)->copy(&map));
-          aFini->insertAfter(asEndBlock(svar)->copy(&map));
+          aInit->insertBefore(initBlock(svar)->copy(&map));
+          aFini->insertAfter(deinitBlock(svar)->copy(&map));
 
           gdbShouldBreakHere(); //wass
 
@@ -631,7 +660,8 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 /////////// main driver ///////////
 
 // wass - need 'parentVis' ?
-static void lowerOneForallStmt(ForallStmt* fs, ExpandVisitor* parentVis) {
+static void lowerOneForallStmt(ForallStmt* fs) {
+  ExpandVisitor* parentVis = NULL; //wass - dummy
   showLOFS(fs, parentVis, "{ lonfs", true);
   if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
 

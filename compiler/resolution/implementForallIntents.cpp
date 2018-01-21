@@ -2561,7 +2561,7 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
    INT_ASSERT(fs->taskStartup()->body.empty() &&
               fs->taskTeardown()->body.empty());
  } else {
-void implementForallIntents3(ForallStmt* fs, CallExpr* parCall); //wass
-   implementForallIntents3(fs, parCall);
+   void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
+   lowerForallIntentsAtResolution(fs);
  }
 }
