@@ -1,4 +1,4 @@
-.TH "hwlocality_membinding" 3 "Wed Sep 6 2017" "Version 1.11.8" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_membinding" 3 "Thu Jan 18 2018" "Version 1.11.9" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -13,7 +13,7 @@ hwlocality_membinding
 .RI "enum \fBhwloc_membind_policy_t\fP { \fBHWLOC_MEMBIND_DEFAULT\fP, \fBHWLOC_MEMBIND_FIRSTTOUCH\fP, \fBHWLOC_MEMBIND_BIND\fP, \fBHWLOC_MEMBIND_INTERLEAVE\fP, \fBHWLOC_MEMBIND_REPLICATE\fP, \fBHWLOC_MEMBIND_NEXTTOUCH\fP, \fBHWLOC_MEMBIND_MIXED\fP }"
 .br
 .ti -1c
-.RI "enum \fBhwloc_membind_flags_t\fP { \fBHWLOC_MEMBIND_PROCESS\fP, \fBHWLOC_MEMBIND_THREAD\fP, \fBHWLOC_MEMBIND_STRICT\fP, \fBHWLOC_MEMBIND_MIGRATE\fP, \fBHWLOC_MEMBIND_NOCPUBIND\fP, \fBHWLOC_MEMBIND_BYNODESET\fP = (1<<5) }"
+.RI "enum \fBhwloc_membind_flags_t\fP { \fBHWLOC_MEMBIND_PROCESS\fP, \fBHWLOC_MEMBIND_THREAD\fP, \fBHWLOC_MEMBIND_STRICT\fP, \fBHWLOC_MEMBIND_MIGRATE\fP, \fBHWLOC_MEMBIND_NOCPUBIND\fP, \fBHWLOC_MEMBIND_BYNODESET\fP }"
 .br
 .in -1c
 .SS "Functions"
@@ -286,11 +286,9 @@ If pages spread to multiple nodes, it is not specified whether they spread equit
 .PP
 The operating system may move memory pages from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
 .PP
-If \fBHWLOC_MEMBIND_BYNODESET\fP is specified, set is considered a nodeset\&. Otherwise it's a cpuset\&.
+If \fBHWLOC_MEMBIND_BYNODESET\fP is specified in \fCflags\fP, set is considered a nodeset\&. Otherwise it's a cpuset\&.
 .PP
-If \fClen\fP is 0, \fCset\fP is emptied\&.
-.PP
-Flags are currently unused\&. 
+If \fClen\fP is 0, \fCset\fP is emptied\&. 
 .SS "int hwloc_get_membind (\fBhwloc_topology_t\fP topology, \fBhwloc_bitmap_t\fP set, \fBhwloc_membind_policy_t\fP * policy, int flags)"
 
 .PP

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -18,7 +18,10 @@
 int
 hwloc_get_type_depth (struct hwloc_topology *topology, hwloc_obj_type_t type)
 {
-  return topology->type_depth[type];
+  if ((int)type < HWLOC_OBJ_SYSTEM || (int)type >= HWLOC_OBJ_TYPE_MAX)
+    return HWLOC_TYPE_DEPTH_UNKNOWN;
+  else
+    return topology->type_depth[type];
 }
 
 hwloc_obj_type_t
@@ -226,7 +229,18 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
    */
 
   /* types without depthattr */
-  if (!hwloc_strncasecmp(string, "system", 2)) {
+
+  /* osdev first to avoid conflicts coproc/core etc */
+  if (!hwloc_strncasecmp(string, "os", 2)
+	     || !hwloc_strncasecmp(string, "bloc", 4)
+	     || !hwloc_strncasecmp(string, "net", 3)
+	     || !hwloc_strncasecmp(string, "openfab", 7)
+	     || !hwloc_strncasecmp(string, "dma", 3)
+	     || !hwloc_strncasecmp(string, "gpu", 3)
+	     || !hwloc_strncasecmp(string, "copro", 5)
+	     || !hwloc_strncasecmp(string, "co-pro", 6)) {
+    type = HWLOC_OBJ_OS_DEVICE;
+  } else if (!hwloc_strncasecmp(string, "system", 2)) {
     type = HWLOC_OBJ_SYSTEM;
   } else if (!hwloc_strncasecmp(string, "machine", 2)) {
     type = HWLOC_OBJ_MACHINE;
@@ -248,15 +262,6 @@ hwloc_obj_type_sscanf(const char *string, hwloc_obj_type_t *typep, int *depthatt
     type = HWLOC_OBJ_BRIDGE;
   } else if (!hwloc_strncasecmp(string, "pci", 3)) {
     type = HWLOC_OBJ_PCI_DEVICE;
-  } else if (!hwloc_strncasecmp(string, "os", 2)
-	     || !hwloc_strncasecmp(string, "bloc", 4)
-	     || !hwloc_strncasecmp(string, "net", 3)
-	     || !hwloc_strncasecmp(string, "openfab", 7)
-	     || !hwloc_strncasecmp(string, "dma", 3)
-	     || !hwloc_strncasecmp(string, "gpu", 3)
-	     || !hwloc_strncasecmp(string, "copro", 5)
-	     || !hwloc_strncasecmp(string, "co-pro", 6)) {
-    type = HWLOC_OBJ_OS_DEVICE;
 
   /* types with depthattr */
   } else if (!hwloc_strncasecmp(string, "cache", 2)) {
@@ -545,10 +550,10 @@ hwloc_obj_attr_snprintf(char * __hwloc_restrict string, size_t size, hwloc_obj_t
       res = hwloc_snprintf(tmp, tmplen, "%slocal=%lu%s%stotal=%lu%s",
 			   prefix,
 			   (unsigned long) hwloc_memory_size_printf_value(obj->memory.local_memory, verbose),
-			   hwloc_memory_size_printf_unit(obj->memory.total_memory, verbose),
+			   hwloc_memory_size_printf_unit(obj->memory.local_memory, verbose),
 			   separator,
 			   (unsigned long) hwloc_memory_size_printf_value(obj->memory.total_memory, verbose),
-			   hwloc_memory_size_printf_unit(obj->memory.local_memory, verbose));
+			   hwloc_memory_size_printf_unit(obj->memory.total_memory, verbose));
     else if (obj->memory.total_memory)
       res = hwloc_snprintf(tmp, tmplen, "%stotal=%lu%s",
 			   prefix,

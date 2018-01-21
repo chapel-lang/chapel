@@ -1,7 +1,7 @@
 /*
  * Copyright © 2009 CNRS
  * Copyright © 2009-2010 inria.  All rights reserved.
- * Copyright © 2009 Université Bordeaux
+ * Copyright © 2009, 2017 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
  */
@@ -36,7 +36,7 @@ int main(void)
   hwlocset = hwloc_bitmap_dup(hwloc_topology_get_complete_cpuset(topology));
   hwloc_cpuset_to_glibc_sched_affinity(topology, hwlocset, &schedset, sizeof(schedset));
 #ifdef HWLOC_HAVE_OLD_SCHED_SETAFFINITY
-  err = sched_setaffinity(0, sizeof(schedset));
+  err = sched_setaffinity(0, &schedset);
 #else
   err = sched_setaffinity(0, sizeof(schedset), &schedset);
 #endif
@@ -44,7 +44,7 @@ int main(void)
   hwloc_bitmap_free(hwlocset);
 
 #ifdef HWLOC_HAVE_OLD_SCHED_SETAFFINITY
-  err = sched_getaffinity(0, sizeof(schedset));
+  err = sched_getaffinity(0, &schedset);
 #else
   err = sched_getaffinity(0, sizeof(schedset), &schedset);
 #endif
@@ -64,7 +64,7 @@ int main(void)
   hwlocset = hwloc_bitmap_dup(obj->cpuset);
   hwloc_cpuset_to_glibc_sched_affinity(topology, hwlocset, &schedset, sizeof(schedset));
 #ifdef HWLOC_HAVE_OLD_SCHED_SETAFFINITY
-  err = sched_setaffinity(0, sizeof(schedset));
+  err = sched_setaffinity(0, &schedset);
 #else
   err = sched_setaffinity(0, sizeof(schedset), &schedset);
 #endif
@@ -72,7 +72,7 @@ int main(void)
   hwloc_bitmap_free(hwlocset);
 
 #ifdef HWLOC_HAVE_OLD_SCHED_SETAFFINITY
-  err = sched_getaffinity(0, sizeof(schedset));
+  err = sched_getaffinity(0, &schedset);
 #else
   err = sched_getaffinity(0, sizeof(schedset), &schedset);
 #endif

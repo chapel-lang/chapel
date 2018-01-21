@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2017 Inria.  All rights reserved.
  * Copyright © 2009, 2012 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -241,7 +241,7 @@ int main(void)
   assert(!hwloc_bitmap_isfull(set));
   assert(hwloc_bitmap_weight(set) == 1);
   assert(hwloc_bitmap_first(set) == 1999);
-  assert(hwloc_bitmap_first(set) == 1999);
+  assert(hwloc_bitmap_last(set) == 1999);
   /* empty */
   hwloc_bitmap_clr(set, 1999);
   assert(hwloc_bitmap_iszero(set));

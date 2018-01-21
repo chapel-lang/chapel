@@ -62,6 +62,7 @@ int hwloc_look_hardwired_fujitsu_k(struct hwloc_topology *topology)
   hwloc_obj_add_info(obj, "CPUModel", "SPARC64 VIIIfx");
   hwloc_insert_object_by_cpuset(topology, obj);
 
+  topology->support.discovery->pu = 1;
   hwloc_setup_pu_level(topology, 8);
 
   return 0;
@@ -121,6 +122,7 @@ int hwloc_look_hardwired_fujitsu_fx10(struct hwloc_topology *topology)
   hwloc_obj_add_info(obj, "CPUModel", "SPARC64 IXfx");
   hwloc_insert_object_by_cpuset(topology, obj);
 
+  topology->support.discovery->pu = 1;
   hwloc_setup_pu_level(topology, 16);
 
   return 0;
@@ -191,6 +193,7 @@ int hwloc_look_hardwired_fujitsu_fx100(struct hwloc_topology *topology)
   hwloc_obj_add_info(obj, "CPUModel", "SPARC64 XIfx");
   hwloc_insert_object_by_cpuset(topology, obj);
 
+  topology->support.discovery->pu = 1;
   hwloc_setup_pu_level(topology, 34);
 
   return 0;
