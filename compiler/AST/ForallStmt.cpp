@@ -62,33 +62,15 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   return _this;
 }
 
-// Return true if replacement occurred.
-static bool fsReplaceBlock(Expr* oldAst, Expr* newAst, BlockStmt*& field) {
-  if (oldAst != field)
-    return false;
-
-  if (newAst == NULL)
-    field = NULL;
-  else if (BlockStmt* newBlock = toBlockStmt(newAst))
-    field = newBlock;
-  else
-    // It is caller responsibility to make newAst fit.
-    INT_ASSERT(false);
-
-  return true;
-}
-
 void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (fsReplaceBlock(oldAst, newAst, fTaskStartup)) {
-    // good
-  } else if (fsReplaceBlock(oldAst, newAst, fTaskTeardown)) {
-    // good
-  } else if (fsReplaceBlock(oldAst, newAst, fLoopBody)) {
-    // good
-  } else {
-    // We did not find oldAst in our ForallStmt.
+  if (oldAst == fTaskStartup)
+    fTaskStartup = toBlockStmt(newAst);
+  else if (oldAst == fTaskTeardown)
+    fTaskTeardown = toBlockStmt(newAst);
+  else if (oldAst == fLoopBody)
+    fLoopBody = toBlockStmt(newAst);
+  else
     INT_ASSERT(false);
-  }
 }
 
 // Todo: are these checks done elsewhere?
