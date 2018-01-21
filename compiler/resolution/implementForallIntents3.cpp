@@ -569,9 +569,11 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
   }
 
   if (expandClone) {
+#if 0 //wass replace with intents
     // NB need anchors if we treat RI vars explicitly above
     cloneTaskFn->insertAtHead(EV->forall->taskStartup()->copy(&map));
     cloneTaskFn->insertAtTail(EV->forall->taskTeardown()->copy(&map));
+#endif
 
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
