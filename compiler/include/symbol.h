@@ -397,6 +397,10 @@ public:
   Symbol*  outerVarSym()  const;
   // Returns the EXPR in "with (EXPR reduce x)".
   Expr*    reduceOpExpr() const;
+
+  BlockStmt* initBlock()   const { return svInitBlock; }
+  BlockStmt* deinitBlock() const { return svDeinitBlock; } 
+
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();
 
@@ -412,6 +416,10 @@ public:
   // For a task-private variable, the initialization expression.
   // Either way, wrapped in a block.  Otherwise it is NULL.
   BlockStmt* specBlock;
+
+  // Corresponding actions to be performed at task startup and teardown.
+  BlockStmt* svInitBlock;      // always present
+  BlockStmt* svDeinitBlock;    //  "
 
   // A reduction class instance aka "Operator".
   Symbol* reduceGlobalOp;

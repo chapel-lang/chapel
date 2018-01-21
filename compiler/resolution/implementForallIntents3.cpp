@@ -3,10 +3,6 @@
 #include "implementForallIntents.h"
 #include "view.h" //wass
 
-// vass TODO move to ShadowVarSymbol and implement
-static BlockStmt* initBlock(ShadowVarSymbol* sv) { return NULL; }
-static BlockStmt* deinitBlock(ShadowVarSymbol* sv) { return NULL; }
-
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
 static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
@@ -127,8 +123,8 @@ void lowerForallIntentsAtResolution(ForallStmt* fs) {
   for_shadow_vars(svar, temp, fs)
   {
     Symbol* ovar = svar->outerVarSym();
-    BlockStmt* IB = initBlock(svar);
-    BlockStmt* DB = deinitBlock(svar);
+    BlockStmt* IB = svar->initBlock();
+    BlockStmt* DB = svar->deinitBlock();
     
     switch (svar->intent)
     {
@@ -141,7 +137,7 @@ void lowerForallIntentsAtResolution(ForallStmt* fs) {
       case TFI_REDUCE: {
                            ShadowVarSymbol* RP = createRPforAS(fs, svar);
                            setupForR_OP(fs, RP, RP->outerVarSym(),
-                                        initBlock(RP), deinitBlock(RP));
+                                        RP->initBlock(), RP->deinitBlock());
                            setupForR_AS(fs, svar, ovar, IB, DB);  break;
       }
       // We place such svar earlier in the list - it should not come up here.
@@ -624,8 +620,8 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
           map.put(svar, acState);
 
-          aInit->insertBefore(initBlock(svar)->copy(&map));
-          aFini->insertAfter(deinitBlock(svar)->copy(&map));
+          aInit->insertBefore(svar->initBlock()->copy(&map));
+          aFini->insertAfter(svar->deinitBlock()->copy(&map));
 
           gdbShouldBreakHere(); //wass
 

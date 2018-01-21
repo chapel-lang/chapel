@@ -920,6 +920,8 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   // For task-private variables, set 'outerVarRep' to NULL.
   outerVarRep(outerVar),
   specBlock(NULL),
+  svInitBlock(new BlockStmt()),
+  svDeinitBlock(new BlockStmt()),
   reduceGlobalOp(NULL),
   pruneit(false)
 {
@@ -988,6 +990,10 @@ void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
     outerVarRep = toSymExpr(newAst);
   else if (oldAst == specBlock)
     specBlock = toBlockStmt(newAst);
+  else if (oldAst == svInitBlock)
+    svInitBlock = toBlockStmt(newAst);
+  else if (oldAst == svDeinitBlock)
+    svDeinitBlock = toBlockStmt(newAst);
   else
     INT_FATAL(this, "Unexpected case in ShadowVarSymbol::replaceChild");
 }

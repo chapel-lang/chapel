@@ -37,6 +37,7 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already
 
+  // wass - get rid of these in favor of SU/TD intents
   BlockStmt* taskStartup()       const; // task startup code
   BlockStmt* taskTeardown()     const; // task tear-down code
 
