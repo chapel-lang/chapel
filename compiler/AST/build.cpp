@@ -1324,6 +1324,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   VarSymbol* saIdx     = newTemp("chpl__saIdx");
   VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
 
+  iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_MAYBE_REF);
   iterRec->addFlag(FLAG_EXPR_TEMP);
@@ -1427,6 +1428,7 @@ buildForallLoopStmt(Expr*      indices,
   BlockStmt* followBlock     = NULL;
 
   iterRec->addFlag(FLAG_EXPR_TEMP);
+  iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_CHPL__ITER);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
