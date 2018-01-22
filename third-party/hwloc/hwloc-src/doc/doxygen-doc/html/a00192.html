@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -145,7 +145,7 @@ Functions</h2></td></tr>
 
 <p>Get the hwloc OS device object corresponding to CUDA device <code>cudevice</code>. </p>
 <p>Return the hwloc OS device object that describes the given CUDA device <code>cudevice</code>. Return NULL if there is none.</p>
-<p>Topology <code>topology</code> and device <code>cudevice</code> must match the local machine. I/O devices detection and the NVML component must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00192.html#gaec41c6b4dc3361156beb7dea2a74f5a3" title="Get the CPU set of logical processors that are physically close to device cudevice. ">hwloc_cuda_get_device_cpuset()</a>.</p>
+<p>Topology <code>topology</code> and device <code>cudevice</code> must match the local machine. I/O devices detection and the CUDA component must be enabled in the topology. If not, the locality of the object may still be found using <a class="el" href="a00192.html#gaec41c6b4dc3361156beb7dea2a74f5a3" title="Get the CPU set of logical processors that are physically close to device cudevice. ">hwloc_cuda_get_device_cpuset()</a>.</p>
 <dl class="section note"><dt>Note</dt><dd>The corresponding hwloc PCI device may be found by looking at the result parent pointer. </dd></dl>
 
 </div>

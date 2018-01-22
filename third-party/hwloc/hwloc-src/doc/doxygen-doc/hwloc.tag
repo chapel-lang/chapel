@@ -3804,6 +3804,9 @@
     <name>termsanddefs</name>
     <title>Terms and Definitions</title>
     <filename>a00321</filename>
+    <docanchor file="a00321" title="Objects">termsanddefs_objects</docanchor>
+    <docanchor file="a00321" title="Indexes and Sets">termsanddefs_indexes</docanchor>
+    <docanchor file="a00321" title="Hierarchy, Tree and Levels">termsanddefs_tree</docanchor>
   </compound>
   <compound kind="page">
     <name>tools</name>

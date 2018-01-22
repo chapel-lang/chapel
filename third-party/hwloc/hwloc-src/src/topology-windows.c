@@ -998,6 +998,8 @@ hwloc_look_windows(struct hwloc_backend *backend)
       free(procInfoTotal);
   }
 
+  topology->support.discovery->pu = 1;
+
   if (groups_pu_set) {
     /* the system supports multiple Groups.
      * PU indexes may be discontiguous, especially if Groups contain less than 64 procs.

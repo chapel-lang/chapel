@@ -8,6 +8,8 @@
 
 #include <hwloc.h>
 
+#define HWLOC_OBJ_TYPE_NONE (hwloc_obj_type_t)-1
+
 #include <stdio.h>
 #include <assert.h>
 
@@ -55,6 +57,20 @@ int main(void)
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_OS_DEVICE) == HWLOC_TYPE_DEPTH_OS_DEVICE);
 
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_MISC) == HWLOC_TYPE_DEPTH_UNKNOWN);
+
+  assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_BRIDGE) == HWLOC_OBJ_BRIDGE);
+  assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_PCI_DEVICE) == HWLOC_OBJ_PCI_DEVICE);
+  assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_OS_DEVICE) == HWLOC_OBJ_OS_DEVICE);
+
+  assert(hwloc_get_type_depth(topology, 123) == HWLOC_TYPE_DEPTH_UNKNOWN);
+  assert(hwloc_get_type_depth(topology, -14) == HWLOC_TYPE_DEPTH_UNKNOWN);
+
+  assert(hwloc_get_depth_type(topology, 123) == HWLOC_OBJ_TYPE_NONE);
+  assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_UNKNOWN) == HWLOC_OBJ_TYPE_NONE); /* -1 */
+  assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_MULTIPLE) == HWLOC_OBJ_TYPE_NONE); /* -2 */
+  /* special level depth are from -3 to -7 */
+  assert(hwloc_get_depth_type(topology, -8) == HWLOC_OBJ_TYPE_NONE);
+  assert(hwloc_get_depth_type(topology, -134) == HWLOC_OBJ_TYPE_NONE);
 
   hwloc_topology_destroy(topology);
 

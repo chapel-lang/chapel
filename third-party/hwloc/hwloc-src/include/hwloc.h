@@ -85,7 +85,7 @@ extern "C" {
  * Users may check for available features at build time using this number
  * (see \ref faq_upgrade).
  */
-#define HWLOC_API_VERSION 0x00010b00
+#define HWLOC_API_VERSION 0x00010b06
 
 /** \brief Indicate at runtime which hwloc API version was used at build time.
  *
@@ -188,12 +188,18 @@ typedef enum {
 			  * coherency.
 			  */
   HWLOC_OBJ_NUMANODE,	/**< \brief NUMA node.
-			  * A set of processors around memory which the
-			  * processors can directly access.
+			  * An object that contains memory that is directly
+			  * and byte-accessible to the host processors.
+			  * It is usually close to some cores (the corresponding objects
+			  * are descendants of the NUMA node object in the hwloc tree).
+			  *
+			  * There is always at one such object in the topology
+			  * even if the machine is not NUMA.
 			  */
-  HWLOC_OBJ_PACKAGE,	/**< \brief Physical package, what goes into a socket.
-			  * In the physical meaning, i.e. that you can add
-			  * or remove physically.
+  HWLOC_OBJ_PACKAGE,	/**< \brief Physical package.
+			  * The physical package that usually gets inserted
+			  * into a socket on the motherboard.
+			  * A processor package usually contains multiple cores.
 			  */
   HWLOC_OBJ_CACHE,	/**< \brief Cache.
 			  * Can be L1i, L1d, L2, L3, ...
@@ -369,9 +375,19 @@ struct hwloc_obj {
 
   /* global position */
   unsigned depth;			/**< \brief Vertical index in the hierarchy.
-					 * If the topology is symmetric, this is equal to the
-					 * parent depth plus one, and also equal to the number
-					 * of parent/child links from the root object to here.
+					 *
+					 * For normal objects, this is the depth of the horizontal level
+					 * that contains this object and its cousins of the same type.
+					 * If the topology is symmetric, this is equal to the parent depth
+					 * plus one, and also equal to the number of parent/child links
+					 * from the root object to here.
+					 *
+					 * For special objects (I/O and Misc) that are not
+					 * in the main tree, this is a special negative value that
+					 * corresponds to their dedicated level,
+					 * see hwloc_get_type_depth() and ::hwloc_get_type_depth_e.
+					 * Those special values can be passed to hwloc functions such
+					 * hwloc_get_nbobjs_by_depth() as usual.
 					 */
   unsigned logical_index;		/**< \brief Horizontal index in the whole list of similar objects,
 					 * hence guaranteed unique across the entire machine.
@@ -1834,6 +1850,7 @@ typedef enum {
    *
    * Memory binding by CPU set cannot work for CPU-less NUMA memory nodes.
    * Binding by nodeset should therefore be preferred whenever possible.
+   * \hideinitializer
    */
   HWLOC_MEMBIND_BYNODESET =     (1<<5)
 } hwloc_membind_flags_t;
@@ -2152,12 +2169,10 @@ HWLOC_DECLSPEC int hwloc_get_area_membind(hwloc_topology_t topology, const void 
  * so this function may return something that is already
  * outdated.
  *
- * If ::HWLOC_MEMBIND_BYNODESET is specified, set is considered a nodeset.
- * Otherwise it's a cpuset.
+ * If ::HWLOC_MEMBIND_BYNODESET is specified in \p flags, set is
+ * considered a nodeset. Otherwise it's a cpuset.
  *
  * If \p len is 0, \p set is emptied.
- *
- * Flags are currently unused.
  */
 HWLOC_DECLSPEC int hwloc_get_area_memlocation(hwloc_topology_t topology, const void *addr, size_t len, hwloc_bitmap_t set, int flags);
 
