@@ -1,4 +1,5 @@
 use LinearAlgebra;
+use TestUtils;
 
 /* LinearAlgebra correctness tests
 
@@ -6,8 +7,6 @@ use LinearAlgebra;
 
    Many of these tests are trivial and can be expanded upon in the future.
 */
-
-config const correctness = true;
 
 //
 // Initializers
@@ -855,82 +854,4 @@ config const correctness = true;
       assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
   }
-
-}
-
-
-//
-// Helpers
-//
-
-proc assertEqual(X, Y, msg) {
-  if !correctness then writeln(msg);
-  if X != Y {
-    writeln("Test Failed: ", msg);
-    writeln(X, ' != ', Y);
-  }
-}
-
-
-proc assertEqual(X: [], Y: [], msg) where isArrayValue(X) && isArrayValue(Y)
-{
-  if !correctness then writeln(msg);
-  if X.shape != Y.shape {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  } else if !X.equals(Y) {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  }
-}
-
-/* array.equals(array) overload for CS sparse arrays with different domains */
-proc _array.equals(that: _array) where Sparse.isCSArr(that) && Sparse.isCSArr(this) {
-  // First assert that domains share the same indices
-  if this.domain != that.domain {
-    return false;
-  }
-  // Then check that the values at each index are equal
-  for (i,j) in this.domain {
-    if this[i,j] != that[i,j] {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-proc assertEqual(X: _tuple, Y: _tuple, msg) {
-  if !correctness then writeln(msg);
-  if X.size != Y.size {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  } else {
-    for (x, y) in zip(X, Y) {
-      if x != y {
-        writeln("Test Failed: ", msg);
-        writeln(X, '\n!=\n', Y);
-        return;
-      }
-    }
-  }
-}
-
-proc assertTrue(x: bool, msg="") {
-  if !correctness then writeln(msg);
-  if !x {
-    writeln("Test Failed: ", msg);
-    writeln("boolean is false");
-  }
-}
-
-proc assertFalse(x: bool, msg="") {
-  if !correctness then writeln(msg);
-  if x {
-    writeln("Test Failed: ", msg);
-    writeln("boolean is true");
-  }
-}
+} // LinearAlgebra.Sparse
