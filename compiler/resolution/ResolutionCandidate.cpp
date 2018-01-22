@@ -470,7 +470,7 @@ void ResolutionCandidate::computeSubstitutions() {
           subs.put(formal, se->symbol());
         } else {
           if (!se || !se->symbol()->isParameter()) {
-            USR_FATAL(formal, "default value for param formal is not a param");
+            USR_FATAL(formal, "default value for param is not a param");
           } else {
             USR_FATAL(formal, "type mismatch between declared formal type "
                               "and default value type");
