@@ -656,6 +656,10 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
 
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
+      bool isInitThis        = strcmp(fn->name,"init") == 0 &&
+                               formal->hasFlag(FLAG_ARG_THIS);
+      bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
+                               coindex == 0; // first formal/actual
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
@@ -675,8 +679,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              NULL,
                              formalIsParam) == false) {
         return false;
-      } else if (strcmp(fn->name,"init") == 0 &&
-                 formal->hasFlag(FLAG_ARG_THIS)) {
+      } else if (isInitThis || isNewTypeArg) {
         AggregateType* ft = toAggregateType(formal->getValType());
         AggregateType* at = toAggregateType(actual->getValType());
 
