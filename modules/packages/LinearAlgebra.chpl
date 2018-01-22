@@ -648,15 +648,15 @@ proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
   var C = Vector(Adom, eltType);
 
-  // 0-based indices
-  const zeroDom = {0..#Adom.size};
-  ref Az = A.reindex(zeroDom),
-      Bz = B.reindex(zeroDom),
-      Cz = C.reindex(zeroDom);
+  // Reindex to ensure 1-based indices
+  const A1Dom = {1..Adom.size};
+  ref A1 = A.reindex(A1Dom),
+      B1 = B.reindex(A1Dom),
+      C1 = C.reindex(A1Dom);
 
-  Cz[0] = Az[1]*Bz[2] - Az[2]*Bz[1];
-  Cz[1] = Az[2]*Bz[0] - Az[0]*Bz[2];
-  Cz[2] = Az[0]*Bz[1] - Az[1]*Bz[0];
+  C1[1] = A1[2]*B1[3] - A1[3]*B1[2];
+  C1[2] = A1[3]*B1[1] - A1[1]*B1[3];
+  C1[3] = A1[1]*B1[2] - A1[2]*B1[1];
 
   return C;
 }
@@ -937,6 +937,7 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
+
 /* Return the Kronecker Product of matrix ``A`` and matrix ``B``.
    If the size of A is ``x * y`` and of B is ``a * b`` then size of the resulting
    matrix will be ``(x * a) * (y * b)`` */
@@ -946,23 +947,25 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const (rowA, colA) = A.shape;
   const (rowB, colB) = B.shape;
 
-  const AzDom = {0..#rowA, 0..#colA},
-        BzDom = {0..#rowB, 0..#colB};
+  const A1Dom = {1..rowA, 1..colA},
+        B1Dom = {1..rowB, 1..colB};
 
-  ref Az = A.reindex(AzDom),
-      Bz = B.reindex(BzDom);
+  // Reindex to ensure 1-based indices
+  ref A1 = A.reindex(A1Dom),
+      B1 = B.reindex(B1Dom);
 
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
 
-  forall (i, j) in AzDom {
-    const stR = i*rowB,
-          stC = j*colB;
-    for (k, l) in BzDom {
-      C[stR+k, stC+l] = Az[i, j]*Bz[k, l];
+  forall (i, j) in A1Dom {
+    const stR = (i-1)*rowB,
+          stC = (j-1)*colB;
+    for (k, l) in B1Dom {
+      C[stR+k, stC+l] = A1[i, j]*B1[k, l];
     }
   }
   return C;
 }
+
 
 //
 // Type helpers
