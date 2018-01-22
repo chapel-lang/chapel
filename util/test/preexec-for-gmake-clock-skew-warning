@@ -23,6 +23,9 @@
 outfile=$2
 temp=$outfile.temp
 
-grep < $outfile > $temp -Ev '^g?make(\[[0-9]+\])?: *[Ww]arning: *(File .* has modification time .* in the future|Clock skew detected\. *Your build may be incomplete\.) *$'
-
-mv $temp $outfile
+if [ -s "$outfile" ]; then
+    grep < $outfile > $temp -v \
+        -e '^g*make: Warning: File .* has modification time .* in the future *$' \
+        -e '^g*make: warning:  Clock skew detected\.  Your build may be incomplete\. *$'
+    mv $temp $outfile
+fi
