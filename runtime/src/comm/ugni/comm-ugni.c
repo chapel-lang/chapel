@@ -3060,7 +3060,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Note that this may leave remnant (and misleading) non-0 values in
   // table entries past the new end of the active area in remote nodes'
   // copies of our region table.  This is okay as long as these entries
-  // always get overwitten if the table grows past them again, as is
+  // always get overwritten if the table grows past them again, as is
   // the case now.  If removing the entry didn't change the length of
   // the table then we can just send the now-empty entry.
   //
