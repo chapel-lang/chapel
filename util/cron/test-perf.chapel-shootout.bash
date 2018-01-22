@@ -4,6 +4,9 @@
 # configuration.
 
 CWD=$(cd $(dirname $0) ; pwd)
+
+export CHPL_TEST_PERF_CONFIG_NAME="shootout"
+
 source $CWD/common-perf.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapel-shootout"

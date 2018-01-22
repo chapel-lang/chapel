@@ -262,8 +262,10 @@ proc file.realPath(): string throws {
    return result;
  }
  
-/* Determines whether the path specified is an absolute path in Unix
-   environment and returns error if it is not in Unix environment
+/* Determines whether the path specified is an absolute path.
+
+   Note: this is currently only implemented in a Unix environment.  It will not
+   behave correctly in a non-Unix environment.
 
    :arg name: the path to be checked.
    :type name: `string`
@@ -273,20 +275,15 @@ proc file.realPath(): string throws {
 */
 
   proc isAbsPath(name: string): bool {
-    if (CHPL_TARGET_PLATFORM != "cygwin64" &&
-        CHPL_TARGET_PLATFORM != "cygwin32") {
-        if name.isEmptyString() {
-           return false;
-        }
-        const len: int = name.length;
-        var str: string = name[1];
-        if (str == '/') {
-          return true;
-        }
-        else 
-          return false;
+    if name.isEmptyString() {
+      return false;
+    }
+    const len: int = name.length;
+    var str: string = name[1];
+    if (str == '/') {
+      return true;
     } else {
-      compilerError("Target platform should have Unix like environment");
+      return false;
     }
   }
 }

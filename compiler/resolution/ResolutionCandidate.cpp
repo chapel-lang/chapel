@@ -671,6 +671,18 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              NULL,
                              formalIsParam) == false) {
         return false;
+      } else if (strcmp(fn->name,"init") == 0 &&
+                 formal->hasFlag(FLAG_ARG_THIS)) {
+        AggregateType* ft = toAggregateType(formal->getValType());
+        AggregateType* at = toAggregateType(actual->getValType());
+
+        // Do not allow dispatch for 'this' formal with initializers
+        //
+        // Types may only mismatch if the formal's type is an instantiation of
+        // the actual's type.
+        if (ft != at && ft->isInstantiatedFrom(at) == false) {
+          return false;
+        }
       }
     }
   }

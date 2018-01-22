@@ -1,9 +1,10 @@
+var global = true;
+
 record Foo {
   param stridable:bool;
   var _stride;
 
-  proc someFunc(param arg1:bool = false,
-                arg2 = if arg1 then 1 else 2) {
+  proc someFunc(arg2 = if global then 1 else 2) {
     writeln(arg2);
   }
 }

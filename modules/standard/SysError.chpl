@@ -158,8 +158,11 @@ class ChildProcessError : SystemError {
    base class for all system errors regarding connections.
 
 */
-pragma "use default init"
-class ConnectionError : SystemError { }
+class ConnectionError : SystemError {
+  proc init(err: syserr, details: string = "") {
+    super.init(err, details);
+  }
+}
 
 /*
 
@@ -313,8 +316,11 @@ class TimeoutError : SystemError {
    used and emitted by the IO module.
 
 */
-pragma "use default init"
-class IOError : SystemError { }
+class IOError : SystemError {
+  proc init(err: syserr, details: string = "") {
+    super.init(err, details);
+  }
+}
 
 /*
 
