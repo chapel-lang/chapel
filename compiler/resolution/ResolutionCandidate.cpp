@@ -464,13 +464,17 @@ void ResolutionCandidate::computeSubstitutions() {
 
         SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
 
-        if (se                          != NULL                              &&
-            se->symbol()->isParameter() == true                              &&
-            (formal->type->symbol->hasFlag(FLAG_GENERIC)      == false ||
-             canInstantiate(se->symbol()->type, formal->type) ==  true)) {
+        if (se && se->symbol()->isParameter() &&
+            (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
+             canInstantiate(se->symbol()->type, formal->type))) {
           subs.put(formal, se->symbol());
         } else {
-          INT_FATAL(fn, "unable to handle default parameter");
+          if (!se || !se->symbol()->isParameter()) {
+            USR_FATAL(formal, "default value for param formal is not a param");
+          } else {
+            USR_FATAL(formal, "type mismatch between declared formal type "
+                              "and default value type");
+          }
         }
       }
 
