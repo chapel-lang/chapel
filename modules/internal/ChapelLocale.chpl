@@ -403,6 +403,10 @@ module ChapelLocale {
   class AbstractRootLocale : locale {
     proc init() { }
 
+    proc init(parent_loc : locale) {
+      super.init(parent_loc);
+    }
+
     // These functions are used to establish values for Locales[] and
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
