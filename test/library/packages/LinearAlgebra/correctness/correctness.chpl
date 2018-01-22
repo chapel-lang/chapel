@@ -1,4 +1,5 @@
 use LinearAlgebra;
+use TestUtils;
 
 /* LinearAlgebra correctness tests
 
@@ -7,16 +8,14 @@ use LinearAlgebra;
    Many of these tests are trivial and can be expanded upon in the future.
 */
 
-config const correctness = true;
-
 //
 // Initializers
 //
 
 {
-  const Dom = {0..#10},
-        MDom = {0..#3, 0..#3},
-        MDom2 = {0..#4, 0..#6};
+  const Dom = {1..10},
+        MDom = {1..3, 1..3},
+        MDom2 = {1..4, 1..6};
 
   //
   // Vectors
@@ -30,13 +29,13 @@ config const correctness = true;
 
   /* Range */
   {
-    var v = Vector(0..#10);
-    assertEqual(v.domain, Dom, "Vector(0..#10)");
+    var v = Vector(1..10);
+    assertEqual(v.domain, Dom, "Vector(1..10)");
   }
   {
-    var v = Vector(1..#10);
-    const d = {1..#10};
-    assertEqual(v.domain, d, "Vector(1..#10)");
+    // 0-based
+    var v = Vector(0..#10);
+    assertEqual(v.domain, {0..#10}, "Vector(0..#10)");
   }
 
   /* Domain */
@@ -51,6 +50,16 @@ config const correctness = true;
     var A: [Dom] real;
     var v = Vector(A);
     assertEqual(v.domain, Dom, "Vector(A)");
+  }
+
+  /* Elements */
+  {
+    const v1 = Vector(1);
+    assertEqual(v1, [0.0], 'Vector(1)');
+    const v12 = Vector(1, 2);
+    assertEqual(v12, [1, 2], 'Vector(1, 2)');
+    const v123 = Vector(1, 2, 3);
+    assertEqual(v123, [1, 2, 3], 'Vector(1, 2, 3)');
   }
 
   //
@@ -72,14 +81,14 @@ config const correctness = true;
 
   /* Range */
   {
-    var M = Matrix(0..#3);
-    assertEqual(M.domain, MDom, "Matrix(0..#3)");
+    var M = Matrix(1..3);
+    assertEqual(M.domain, MDom, "Matrix(1..3)");
   }
 
   /* Ranges */
   {
-    var M = Matrix(0..#4, 0..#6);
-    assertEqual(M.domain, MDom2, "Matrix(0..#4, 0..#6)");
+    var M = Matrix(1..4, 1..6);
+    assertEqual(M.domain, MDom2, "Matrix(1..4, 1..6)");
   }
 
   /* Domain */
@@ -136,7 +145,7 @@ config const correctness = true;
                    [4,5,6],
                    [7,8,9]);
     assertEqual(M.domain, MDom, "Matrix([1,2,3], [4,5,6], [7,8,9]).domain");
-    assertEqual(M[1,1], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
+    assertEqual(M[2,2], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
   }
 
   /* Identity - Dimensions */
@@ -330,7 +339,7 @@ config const correctness = true;
   v13 = 1;
   M = 1;
 
-  S[0, 0] =  inner(v13[0, ..], v31[.., 0]);
+  S[1, 1] =  inner(v13[1, ..], v31[.., 1]);
 
   // outer-product
   assertEqual(dot(v31, v13), M, "dot(Matrix(3, 1), Matrix(1, 3))");
@@ -466,7 +475,7 @@ config const correctness = true;
                   [63, 56, 49, 72, 64, 56, 81, 72, 63],
                   [42, 35, 28, 48, 40, 32, 54, 45, 36],
                   [21, 14, 7, 24, 16, 8, 27, 18, 9]);
-  
+
 
   var I1 = eye(3, eltType=int(64));
   var I2 = eye(4, eltType=int(64));
@@ -524,7 +533,7 @@ config const correctness = true;
   assertTrue(isDiag(I), "isDiag(Irect)");
 
   var M = I;
-  M[0,2] = 1;
+  M[1,2] = 1;
   assertFalse(isDiag(M), "isDiag(M)");
 }
 
@@ -535,7 +544,7 @@ config const correctness = true;
                  [4.0+0.0i, 0.0-1.0i, 1.0+0.0i],
                  eltType=complex);
   assertTrue(isHermitian(H), "isHermitian(H)");
-  H[0,1] += -2i;
+  H[1,2] += -2i;
   assertFalse(isHermitian(H), "isHermitian(H')");
 
   // rectangular
@@ -551,10 +560,10 @@ config const correctness = true;
                  [4.0+0.0i, 0.0+1.0i, 1.0+0.0i],
                  eltType=complex);
   assertTrue(isSymmetric(S), "isSymmetric(S)");
-  S[0, 1] += 2;
+  S[1, 2] += 2;
   assertFalse(isSymmetric(S), "isSymmetric(S')");
-  S[0, 1] -= 2;
-  S[1, 0] += 2;
+  S[1, 2] -= 2;
+  S[2, 1] += 2;
   assertFalse(isSymmetric(S), "isSymmetric(S'')");
 }
 
@@ -575,10 +584,10 @@ config const correctness = true;
 {
   use LinearAlgebra.Sparse;
 
-  const parentDom = {0..#3, 0..#3},
-        parentDom2 = {0..#4, 0..#6},
-        tParentDom = {0..#3, 0..#5},
-        tParentDomT = {0..#5, 0..#3};
+  const parentDom = {1..3, 1..3},
+        parentDom2 = {1..4, 1..6},
+        tParentDom = {1..3, 1..5},
+        tParentDomT = {1..5, 1..3};
 
   var   Dom: sparse subdomain(parentDom) dmapped CS(),
         Dom2: sparse subdomain(parentDom2) dmapped CS(),
@@ -588,9 +597,9 @@ config const correctness = true;
 
 
   // Identity sparse domain
-  IDom += [(0,0), (1,1), (2,2)];
-  tDom += [(0,0), (1,0), (2,0), (2,3), (2,4)];
-  tDomT += [(0,0), (0,1), (0,2), (3,2), (4,2)];
+  IDom += [(1,1), (2,2), (3,3)];
+  tDom += [(1,1), (2,1), (3,1), (3,4), (3,5)];
+  tDomT += [(1,1), (1,2), (1,3), (4,3), (5,3)];
 
   /* Rows */
   {
@@ -606,14 +615,14 @@ config const correctness = true;
 
   /* Range */
   {
-    var D = CSRDomain(0..#3);
+    var D = CSRDomain(1..3);
     assertEqual(D, Dom, "CSRDomain(0..#3)");
   }
 
   /* Ranges */
   {
-    var D = CSRDomain(0..#4, 0..#6);
-    assertEqual(D, Dom2, "CSRDomain(0..#4, 0..#6)");
+    var D = CSRDomain(1..4, 1..6);
+    assertEqual(D, Dom2, "CSRDomain(1..4, 1..6)");
   }
 
   /* Domain - CSR */
@@ -729,7 +738,7 @@ config const correctness = true;
   /* dot - matrix-vector */
   {
     var A: [IDom] real = 1;
-    var v: [0..#3] real = 2;
+    var v: [1..3] real = 2;
     var Av = dot(A, v);
     var A2 = 2*A;
     assertEqual(Av, A2, 'A.dot(v)');
@@ -753,7 +762,7 @@ config const correctness = true;
     test_CSRdot(A);
 
     // Get some leading zeros in CSR data structure
-    A[0,0] = 0.0;
+    A[1,1] = 0.0;
     test_CSRdot(A);
 
     // Get some leading zeros in CSR data structure
@@ -761,8 +770,8 @@ config const correctness = true;
     test_CSRdot(A);
 
     var B = Matrix(5, 4);
-    B[.., 0] =  1.0;
-    B[0, ..] =  1.0;
+    B[.., 1] =  1.0;
+    B[1, ..] =  1.0;
     test_CSRdot(A, B);
 
     // A big matrix
@@ -786,7 +795,7 @@ config const correctness = true;
   /* .dot - matrix-vector */
   {
     var A: [IDom] real = 1;
-    var v: [0..#3] real = 2;
+    var v: [1..3] real = 2;
     var Av = A.dot(v);
     var A2 = 2*A;
     assertEqual(Av, A2, 'A.dot(v)');
@@ -795,7 +804,7 @@ config const correctness = true;
   /* .dot - vector-matrix */
   {
     var A: [IDom] real = 1;
-    var v: [0..#3] real = 2;
+    var v: [1..3] real = 2;
     var Av = v.dot(A);
     var A2 = 2*A;
     assertEqual(Av, A2, 'v.dot(A)');
@@ -831,7 +840,7 @@ config const correctness = true;
 
     assertEqual(B.domain, tDomT, "transpose(A)");
     for i in A.domain.dim(1) {
-      assertEqual(A[i,0], B[0, i], "transpose(A) values");
+      assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
   }
 
@@ -842,85 +851,7 @@ config const correctness = true;
 
     assertEqual(B.domain, tDomT, "transpose(A)");
     for i in A.domain.dim(1) {
-      assertEqual(A[i,0], B[0, i], "transpose(A) values");
+      assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
   }
-
-}
-
-
-//
-// Helpers
-//
-
-proc assertEqual(X, Y, msg) {
-  if !correctness then writeln(msg);
-  if X != Y {
-    writeln("Test Failed: ", msg);
-    writeln(X, ' != ', Y);
-  }
-}
-
-
-proc assertEqual(X: [], Y: [], msg) where isArrayValue(X) && isArrayValue(Y)
-{
-  if !correctness then writeln(msg);
-  if X.shape != Y.shape {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  } else if !X.equals(Y) {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  }
-}
-
-/* array.equals(array) overload for CS sparse arrays with different domains */
-proc _array.equals(that: _array) where Sparse.isCSArr(that) && Sparse.isCSArr(this) {
-  // First assert that domains share the same indices
-  if this.domain != that.domain {
-    return false;
-  }
-  // Then check that the values at each index are equal
-  for (i,j) in this.domain {
-    if this[i,j] != that[i,j] {
-      return false;
-    }
-  }
-  return true;
-}
-
-
-proc assertEqual(X: _tuple, Y: _tuple, msg) {
-  if !correctness then writeln(msg);
-  if X.size != Y.size {
-    writeln("Test Failed: ", msg);
-    writeln(X, '\n!=\n', Y);
-    return;
-  } else {
-    for (x, y) in zip(X, Y) {
-      if x != y {
-        writeln("Test Failed: ", msg);
-        writeln(X, '\n!=\n', Y);
-        return;
-      }
-    }
-  }
-}
-
-proc assertTrue(x: bool, msg="") {
-  if !correctness then writeln(msg);
-  if !x {
-    writeln("Test Failed: ", msg);
-    writeln("boolean is false");
-  }
-}
-
-proc assertFalse(x: bool, msg="") {
-  if !correctness then writeln(msg);
-  if x {
-    writeln("Test Failed: ", msg);
-    writeln("boolean is true");
-  }
-}
+} // LinearAlgebra.Sparse
