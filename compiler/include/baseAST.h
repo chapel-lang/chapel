@@ -652,10 +652,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ShadowVarSymbol:                                               \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep, call, __VA_ARGS__);\
-    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,   call, __VA_ARGS__);\
-    break;                                                              \
+  case E_ShadowVarSymbol:                                                   \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,     call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);  \
+    break;                                                                  \
   case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \
