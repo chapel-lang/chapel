@@ -287,7 +287,7 @@ public:
 
   // If isRef() is true, returns a QualifiedType with
   // a ref type (i.e. with FLAG_REF). This is useful for
-  // working with parts of the compiler that havn't fully
+  // working with parts of the compiler that haven't fully
   // transferred to QualifiedType.
   QualifiedType refToRefType() const;
 
