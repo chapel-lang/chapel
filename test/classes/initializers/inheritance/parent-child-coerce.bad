@@ -1,3 +1,0 @@
-parent-child-coerce.chpl:16: error: ambiguous call '_new(type Child, int(64))'
-parent-child-coerce.chpl:1: note: candidates are: _new(type chpl_t, x: int(64))
-parent-child-coerce.chpl:9: note:                 _new(type chpl_t, x: real(64))
