@@ -1,3 +1,4 @@
+#if 1 //wass
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 #include "implementForallIntents.h"
@@ -413,6 +414,18 @@ static VarSymbol* createVarAS(SymbolMap& map, ShadowVarSymbol* AS) {
 #endif
 }
 
+static void addCloneOfIB(Expr* anchor1, SymbolMap& map, ShadowVarSymbol* svar) {
+  BlockStmt* IB = svar->initBlock();
+  for_alist(stmt, IB->body)
+    anchor1->insertBefore(stmt->copy(&map));
+}
+
+static void addCloneOfDB(Expr* anchor2, SymbolMap& map, ShadowVarSymbol* svar) {
+  BlockStmt* DB = svar->deinitBlock();
+  for_alist_backward(stmt, DB->body)
+    anchor2->insertAfter(stmt->copy(&map));
+}
+
 
 /////////// expandYield ///////////
 
@@ -470,7 +483,30 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 
 /////////// expandTaskFn ///////////
 
-static void expandShadowVarTaskFn(ShadowVarSymbol* svar, SymbolMap& map, int ix) {
+static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn, int numOrigActuals, SymbolMap& map, ShadowVarSymbol* svar, bool expandClone, int ix, Symbol* mappee = svar) {
+  Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
+  callToTFn->insertAtTail(eActual);
+
+  if (expandClone) {
+    ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
+                                        false/*vass-nested*/);
+    cloneTaskFn->insertFormalAtTail(eFormal);
+    map.put(mappee, eFormal);
+  }
+  else {
+    ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+ix);
+    if (eFormal->hasFlag(FLAG_REF_TO_IMMUTABLE))
+      // Ensure this flag is correct for all calls. See newExtraFormal().
+      INT_ASSERT(eActual->isConstValWillNotChange() ||
+                 eActual->hasFlag(FLAG_REF_TO_IMMUTABLE));
+  }
+}
+
+static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
+                                  Expr* anchor1, Expr* anchor2, int numOrigAct,
+                                  SymbolMap& map, ShadowVarSymbol* svar,
+                                  bool expandClone, int ix) {
+  SET_LINENO(svar);
   switch (svar->intent)
   {
     case TFI_DEFAULT:
@@ -480,36 +516,40 @@ static void expandShadowVarTaskFn(ShadowVarSymbol* svar, SymbolMap& map, int ix)
 
     case TFI_IN:
     case TFI_CONST_IN:
-      addArgAndMap(map, expandClone, ix, svar);
+      addArgAndMap(cloneTaskFn, callToTFn, numOrigAct,
+                   map, svar, expandClone, ix);
       // init happens implicitly due to argument passing
-      addCloneOfDB(map, svar);
+      addCloneOfDB(anchor2, map, svar);
       break;
 
     case TFI_REF:
     case TFI_CONST_REF:
-      addArgAndMap(map, expandClone, ix, svar);
+      addArgAndMap(cloneTaskFn, callToTFn, numOrigAct,
+                   map, svar, expandClone, ix);
       // no init/deinit
       break;
 
     case TFI_REDUCE_OP:
-      addArgAndMap(map, expandClone, svar, ix, svar->getOuterVarSym());
-      addDefAndMap(map, createVarRP(svar));
-      addCloneOfIB(map, svar);
-      addCloneOfDB(map, svar);
+      addArgAndMap(cloneTaskFn, callToTFn, numOrigAct,
+                   map, svar, expandClone, ix, svar->getOuterVarSym());
+      addDefAndMap(anchor1, map, createVarRP(svar));
+      addCloneOfIB(anchor1, map, svar);
+      addCloneOfDB(anchor2, map, svar);
       break;
 
     case TFI_REDUCE:      // accumulation state
-      addDefAndMap(map, createVarAS(svar));
-      addCloneOfIB(map, svar);
-      addCloneOfDB(map, svar);
+      addDefAndMap(anchor1, map, createVarAS(svar));
+      addCloneOfIB(anchor1, map, svar);
+      addCloneOfDB(anchor2, map, svar);
       break;
   }
 }
 
-static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
+static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskFn)
 {
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
   bool expandClone = false;
+  Expr *anchor1=NULL, *anchor2=NULL;
 
   if (cloneTaskFn == NULL) {
     // Follow the cloning steps in expandBodyForIteratorInline().
@@ -523,50 +563,33 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
     EV->taskFnCopies.put(taskFn, cloneTaskFn);
 
     if (!preserveInlinedLineNumbers)
-      reset_ast_loc(cloneTaskFn, call);
+      reset_ast_loc(cloneTaskFn, callToTFn);
 
     // Note that 'fcopy' will likely get a copy of 'body',
     // so we need to preserve correct scoping of its SymExprs.
-    call->insertBefore(new DefExpr(cloneTaskFn));
+    callToTFn->insertBefore(new DefExpr(cloneTaskFn));
 
     // We will need to process the clone.
     expandClone = true;
+    anchor1 = new CallExpr("anchor1"); cloneTaskFn->insertAtHead(anchor1);
+    anchor2 = new CallExpr("anchor2"); cloneTaskFn->insertIntoEpilogue(anchor2);
+    // Should anchor2 go into the epilogue or before epilogue?
   }
   else {
     INT_ASSERT(false); // do we ever hit the cache?
   }
 
-  call->baseExpr->replace(new SymExpr(cloneTaskFn));
+  callToTFn->baseExpr->replace(new SymExpr(cloneTaskFn));
 
   SymbolMap& iMap = EV->svar2clonevar;  // incoming "current map"
   SymbolMap  map;                       // "current map" for cloneTaskFn body
 
-  int numOrigActuals = call->numActuals();
+  int numOrigActuals = callToTFn->numActuals();
   int ix = 0;
 
-  for_shadow_vars(svar, temp, EV->forall) {
-    ix++;
-    expandShadowVarTaskFn(svar, map, ix);
-
-    VASS move to addArgAndMap();
-    Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
-    call->insertAtTail(eActual);
-
-    if (expandClone) {
-      VASS move to addArgAndMap();
-      ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
-                                          false/*vass-nested*/);
-      cloneTaskFn->insertFormalAtTail(eFormal);
-      map.put(svar, eFormal);
-    }
-    else {
-      ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+ix);
-      if (eFormal->hasFlag(FLAG_REF_TO_IMMUTABLE))
-        // Ensure this flag is correct for all calls. See newExtraFormal().
-        INT_ASSERT(eActual->isConstValWillNotChange() ||
-                   eActual->hasFlag(FLAG_REF_TO_IMMUTABLE));
-    }
-  }
+  for_shadow_vars(svar, temp, EV->forall)
+    expandShadowVarTaskFn(cloneTaskFn, callToTFn, anchor1, anchor2,
+                          numOrigActuals, map, svar, expandClone, ++ix);
 
   if (expandClone) {
 #if 0 //wass replace with intents
@@ -574,6 +597,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* call, FnSymbol* taskFn)
     cloneTaskFn->insertAtHead(EV->forall->taskStartup()->copy(&map));
     cloneTaskFn->insertAtTail(EV->forall->taskTeardown()->copy(&map));
 #endif
+
+    anchor1->remove(); anchor2->remove();
 
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
@@ -598,7 +623,8 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   SymbolMap       map;                      // "current map" for fs body
   ExpandVisitor   forallVis(EV, map);
 
-  for_shadow_vars(svar, temp, pfs) {
+  for_shadow_vars(svar, temp, pfs)
+  {
     SET_LINENO(svar);
     // copy() also performs map.put(svar, newSV)
     ShadowVarSymbol* newSV = svar->copy(&map);
@@ -637,7 +663,8 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 
 /////////// outermost visitor ///////////
 
-static void expandShadowVarTopLevel(ShadowVarSymbol* svar, SymbolMap& map) {
+static void expandShadowVarTopLevel(Expr* anchor1, Expr* anchor2, ShadowVarSymbol* svar, SymbolMap& map) {
+  SET_LINENO(svar);
   switch (svar->intent)
   {
     case TFI_DEFAULT:
@@ -648,8 +675,8 @@ static void expandShadowVarTopLevel(ShadowVarSymbol* svar, SymbolMap& map) {
     case TFI_IN:
     case TFI_CONST_IN:
       addDefAndMap(map, createVarSI(svar));
-      addCloneOfIB(map, svar);
-      addCloneOfDB(map, svar);
+      addCloneOfIB(anchor1, map, svar);
+      addCloneOfDB(anchor2, map, svar);
       break;
 
     case TFI_REF:
@@ -667,8 +694,8 @@ static void expandShadowVarTopLevel(ShadowVarSymbol* svar, SymbolMap& map) {
 
     case TFI_REDUCE:
       addDefAndMap(map, createVarAS(svar));
-      addCloneOfIB(map, svar);
-      addCloneOfDB(map, svar);
+      addCloneOfIB(anchor1, map, svar);
+      addCloneOfDB(anchor2, map, svar);
       break;
   }
 }
@@ -750,7 +777,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 //wass
   showLOFS(fs, parentVis, "} lonfs", false);
 }
-
 ///////////
 
 static void lowerForallStmtsInline() {
@@ -766,3 +792,9 @@ static void lowerForallStmtsInline() {
 
   clearUpRefsInShadowVars();
 }
+
+#else //wass
+static void lowerForallStmtsInline() {clearUpRefsInShadowVars();}
+void lowerForallIntentsAtResolution(ForallStmt* fs); //wass to header
+void lowerForallIntentsAtResolution(ForallStmt* fs) {}
+#endif //wass
