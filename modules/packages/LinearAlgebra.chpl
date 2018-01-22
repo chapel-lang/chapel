@@ -184,8 +184,8 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
   V[1] = x: eltType;
 
-  for (v, s) in zip(V[2..], Scalars) {
-    v = s: eltType;
+  forall i in 2..n+1 {
+    V[i] = Scalars[i-1]: eltType;
   }
 
   return V;
