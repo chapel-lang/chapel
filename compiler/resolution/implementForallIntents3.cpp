@@ -499,6 +499,8 @@ if (verb) //wass
 
 /////////// expandTaskFn ///////////
 
+static Vec<FnSymbol*> taskFnClonesToFlatten;
+
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                          int numOrigActuals, SymbolMap& iMap,
                          SymbolMap& map, ShadowVarSymbol* svar,
@@ -620,14 +622,13 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
 #endif
 
     aInit->remove(); aFini->remove();
+    taskFnClonesToFlatten.add(cloneTaskFn);
 
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
 
     // Traverse recursively.
     cloneTaskFn->body->accept(&taskFnVis);
-
-    flattenNestedFunction(cloneTaskFn);
   }
 
   // todo: addDummyErrorArgumentToCall() ?
@@ -815,10 +816,14 @@ static void lowerForallStmtsInline() {
   gdbShouldBreakHere(); //vass
 
   clearUpRefsInShadowVars();
+
+  // It is faster to do them all at once.
+  void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions); //wass
+  flattenNestedFunctions(taskFnClonesToFlatten);
 }
 
 #else //wass
 static void lowerForallStmtsInline() {clearUpRefsInShadowVars();}
-void lowerForallIntentsAtResolution(ForallStmt* fs); //wass to header
+void lowerForallIntentsAtResolution(ForallStmt* fs);
 void lowerForallIntentsAtResolution(ForallStmt* fs) {}
 #endif //wass

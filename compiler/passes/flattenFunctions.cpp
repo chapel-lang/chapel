@@ -26,7 +26,7 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
-static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions); // wass to .h
 static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions);
 
 void flattenFunctions() {
@@ -360,7 +360,7 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
   }
 }
 
-static void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   compute_call_sites();
 
   Vec<FnSymbol*> outerFunctionSet;
