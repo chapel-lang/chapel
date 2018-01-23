@@ -1054,8 +1054,10 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
 }
 
 void ShadowVarSymbol::removeSupportingReferences() {
-  if (outerVarRep) outerVarRep->remove();
-  if (specBlock)   specBlock->remove();
+  if (outerVarRep)   outerVarRep->remove();
+  if (specBlock)     specBlock->remove();
+  if (svInitBlock)   svInitBlock->remove();
+  if (svDeinitBlock) svDeinitBlock->remove();
 }
 
 bool isOuterVarOfShadowVar(Expr* expr) {
