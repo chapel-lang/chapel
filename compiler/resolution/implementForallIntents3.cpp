@@ -133,6 +133,7 @@ void lowerForallIntentsAtResolution(ForallStmt* fs); //wass to header
 void lowerForallIntentsAtResolution(ForallStmt* fs) {
   for_shadow_vars(svar, temp, fs)
   {
+    SET_LINENO(svar);
     Symbol* ovar = svar->outerVarSym();
     BlockStmt* IB = svar->initBlock();
     BlockStmt* DB = svar->deinitBlock();

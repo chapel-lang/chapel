@@ -879,8 +879,11 @@ void lowerForallStmts() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
-    if (fs->yesLI())
+    if (fs->yesLI()) {
+      void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
+      lowerForallIntentsAtResolution(fs);
       continue;
+    }
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();

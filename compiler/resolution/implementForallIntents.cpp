@@ -2560,8 +2560,5 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
    // Need to handle these if non-empty even when there are no shadow vars.
    INT_ASSERT(fs->taskStartup()->body.empty() &&
               fs->taskTeardown()->body.empty());
- } else {
-   void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
-   lowerForallIntentsAtResolution(fs);
  }
 }
