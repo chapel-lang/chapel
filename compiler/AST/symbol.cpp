@@ -979,7 +979,10 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
                                             COPY_INT(outerVarRep), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->specBlock   = COPY_INT(specBlock);
+  ss->specBlock     = COPY_INT(specBlock);
+  ss->svInitBlock   = COPY_INT(svInitBlock);
+  ss->svDeinitBlock = COPY_INT(svDeinitBlock);
+
   ss->copyFlags(this);
   ss->cname = cname;
   return ss;

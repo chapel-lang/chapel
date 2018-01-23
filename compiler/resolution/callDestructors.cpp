@@ -219,10 +219,6 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
     // For now, this case is not handled.
     INT_FATAL(fn, "mixed uses are not handled");
 
-  // vass - I expect this during the yesLI+noLI situation.
-  INT_ASSERT(otherUse ==
-             (fn->getModule()->modTag != MOD_USER));
-
   // Transform only if we got non-ForallStmt uses.
   return otherUse ? false : true;
 }  

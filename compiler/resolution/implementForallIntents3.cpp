@@ -4,6 +4,8 @@
 #include "implementForallIntents.h"
 #include "view.h" //wass
 
+static bool verb = false; //wass
+
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
 static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
@@ -57,6 +59,14 @@ static void insertDeinitialization(BlockStmt* destBlock,
 
 static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
                        BlockStmt* IB, BlockStmt* DB) {
+  // setShadowVarFlagsNew() makes all svars refs.
+  // If this assert fails, we do not need to bother with the following.
+  INT_ASSERT(SI->isRef() && SI->hasFlag(FLAG_REF_VAR));
+  // We need to undo that.
+  SI->type = SI->type->getValType();
+  SI->removeFlag(FLAG_REF_VAR);
+  SI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
+
   insertInitialization(IB, SI, gI);
   resolveBlockStmt(IB);
 
@@ -223,11 +233,12 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
 //wass
 static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
                      const char* msg, bool showParent) {
+  if (!verb) return;
   printf("%s  %d", msg, fs->id);
   if (showParent) {
     printf("  %s", debugLoc(fs));
-    if (parentVis) printf("   parentVis %d", parentVis->forall->id);
-    else           printf("   -parentVis");
+//    if (parentVis) printf("   parentVis %d", parentVis->forall->id);
+//    else           printf("   -parentVis");
   }
   printf("\n");
 }
@@ -356,8 +367,9 @@ static void insertDeinitialization(Symbol* dest, Type* valType, Expr* anchor)
 /////////// standardized svar actions ///////////
 
 static VarSymbol* createCurrSI(ShadowVarSymbol* SI) {
-  VarSymbol* currSI = new VarSymbol(SI->name, SI->type->getValType());
-  currSI->qual = (SI->intent == TFI_CONST_IN) ? QUAL_CONST_VAL : QUAL_VAL;
+  INT_ASSERT(!SI->isRef());
+  VarSymbol* currSI = new VarSymbol(SI->name, SI->type);
+  currSI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
   return currSI;
 
 #if 0 //wass was
@@ -453,8 +465,8 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
 // Replace 'yield' with a clone of the forall loop body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
-//wass
-  printf("    expandYield %d %s   fs %d\n", yieldCall->id, debugLoc(yieldCall),
+if (verb) //wass
+  printf("   expandYield %d %s   fs %d\n", yieldCall->id, debugLoc(yieldCall),
          EV->forall->id);
   if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
 
@@ -631,13 +643,16 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   SymbolMap       map;                      // "current map" for fs body
   ExpandVisitor   forallVis(EV, map);
 
-  for_shadow_vars(svar, temp, pfs)
+  for_shadow_vars(srcSV, temp, pfs)
   {
-    SET_LINENO(svar);
-    // copy() also performs map.put(svar, newSV)
-    ShadowVarSymbol* newSV = svar->copy(&map);
-    if (SymExpr* ovar = newSV->outerVarSE())
-      ovar->setSymbol(iMap.get(svar));
+    SET_LINENO(srcSV);
+    // Redirect the original outer vars to their current counterparts.
+    if (Symbol* srcOVar = srcSV->outerVarSym())
+      map.put(srcOVar, iMap.get(srcSV));
+    // copy() also performs map.put(srcSV, newSV)
+    ShadowVarSymbol* newSV = srcSV->copy(&map);
+    if (Symbol* newOVar = newSV->outerVarSym()) // wass remove after testing
+      INT_ASSERT(newOVar == iMap.get(srcSV));
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
   }
 
