@@ -17,4 +17,4 @@ export CHPL_NIGHTLY_TEST_DIRS="release/examples/benchmarks/shootout studies/shoo
 perf_args="${perf_args} -performance-description llvm -performance-configs default:v,llvm:v -sync-dir-suffix llvm"
 perf_args="${perf_args} -performance -numtrials 5 -startdate 11/17/14"
 
-$CWD/nightly -cron ${nighly_args} ${perf_args}
+$CWD/nightly -cron ${nightly_args} ${perf_args}
