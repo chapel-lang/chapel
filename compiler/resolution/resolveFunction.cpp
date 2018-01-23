@@ -1075,7 +1075,7 @@ Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool formalRequiresTemp(ArgSymbol* formal);
+bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn); // wass to .h
 
 static bool backendRequiresCopyForIn(Type* t);
 
@@ -1090,7 +1090,7 @@ void insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
 
   for_formals(formal, fn) {
-    if (formalRequiresTemp(formal)) {
+    if (formalRequiresTemp(formal, fn)) {
       SET_LINENO(formal);
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1115,14 +1115,7 @@ void insertFormalTemps(FnSymbol* fn) {
 }
 
 // Returns true if the formal needs an internal temporary, false otherwise.
-static bool formalRequiresTemp(ArgSymbol* formal) {
-  //
-  // get the formal's function
-  //
-  FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
-
-  INT_ASSERT(fn);
-
+bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
     // 'out' and 'inout' intents are passed by ref at the C level, so we
@@ -1195,16 +1188,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
     // to implement the ref-to-value semantics, where needed.
     switch (formal->intent)
     {
-      // Make sure we handle every case.
-     default:
-      INT_FATAL("Unhandled INTENT case.");
-      break;
-
       // These cases are weeded out by formalRequiresTemp() above.
      case INTENT_PARAM:
      case INTENT_TYPE:
      case INTENT_REF:
      case INTENT_CONST_REF:
+     case INTENT_REF_MAYBE_CONST:
       INT_FATAL("Unexpected INTENT case.");
       break;
 
