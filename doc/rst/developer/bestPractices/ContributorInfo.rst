@@ -44,7 +44,7 @@ Overview:
 Discuss design changes or big development efforts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before embarking on a big project, please open an issue on the git repository
+Before embarking on a big project, please open an issue on the GitHub page
 and/or send an email to chapel-developers_ with a prefix of ``[Design]`` in the
 subject header for discussion with the community and to ensure that you are
 aware of any parallel efforts in that area.  It may also be a good idea to ask
