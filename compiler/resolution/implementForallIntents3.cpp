@@ -6,6 +6,12 @@
 
 static bool verb = false; //wass
 
+/*
+At this point we are mostly not concerned about const-ness,
+so we may be blurring const and non-const intents.
+We DO need to preserve some const properties to enable optimizations.
+*/
+
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
 static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
@@ -501,6 +507,44 @@ if (verb) //wass
 
 static Vec<FnSymbol*> taskFnClonesToFlatten;
 
+/*
+At this point in compilation, in certain cases an in-intent formal is
+represented as a ref-intent formal + copy construction into a "formal temp".
+See insertFormalTemps(). As a result, in-intent formals are treated
+as PODs, with argument passing implemented as memcopy,
+
+So we need to mimick that here because otherwise we miss
+without copy-construction from the actual into the formal.
+*/
+static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
+                                    SymbolMap& map, ShadowVarSymbol* SI,
+                                    bool expandClone) {
+  if (!expandClone)
+    return; // not modifying cloneTaskFn
+
+  // This record must be present and contain the eFormal - see addArgAndMap().
+  SymbolMapElem* e = map.get_record(SI);
+  ArgSymbol* eFormal = toArgSymbol(e->value);
+
+  bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn); //wass
+  if (!formalRequiresTemp(eFormal, cloneTaskFn))
+    return; // not that case
+
+  VarSymbol* currSI = createCurrSI(SI);
+  aInit->insertBefore(new DefExpr(currSI));
+
+  // map(SI) = currSI; map(gI) = eFormal
+  e->value = currSI;
+  map.put(SI->outerVarSym(), eFormal);
+
+  eFormal->intent = INTENT_CONST_REF;
+  // non-ref type is ok for eFormal
+
+  addCloneOfIB(aInit, map, SI);
+
+  gdbShouldBreakHere();
+}
+
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                          int numOrigActuals, SymbolMap& iMap,
                          SymbolMap& map, ShadowVarSymbol* svar,
@@ -541,7 +585,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
     case TFI_CONST_IN:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, expandClone, ix);
-      // init happens implicitly due to argument passing
+      addFormalTempSIifNeeded(cloneTaskFn, aInit, map, svar, expandClone);
       addCloneOfDB(aFini, map, svar);
       break;
 
