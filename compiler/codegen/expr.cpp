@@ -3166,8 +3166,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         GenRet value = codegenValue(from);
         assert(value.val);
 
-	// The third argument to codegenStoreLLVM() is a hint, in the
-	// case that we don't already know the type of the destination.
+        // The third argument to codegenStoreLLVM() is a hint, in the
+        // case that we don't already know the type of the destination.
         codegenStoreLLVM(value, to_ptr, type);
 #endif
       }
