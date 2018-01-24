@@ -1086,7 +1086,15 @@ void TypeSymbol::codegenCplxMetadata() {
 
 void TypeSymbol::codegenAggMetadata() {
 #ifdef HAVE_LLVM
+  // Don't do anything if we've already visited this type.
+  if (llvmTbaaAggTypeDescriptor) return;
+
   GenInfo* info = gGenInfo;
+
+  // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
+  // avoid recursing.
+  llvmTbaaAggTypeDescriptor = info->tbaaRootNode;
+
   llvm::LLVMContext& ctx = info->module->getContext();
   const llvm::DataLayout& dl = info->module->getDataLayout();
   AggregateType *ct = toAggregateType(type);
@@ -1140,6 +1148,7 @@ void TypeSymbol::codegenAggMetadata() {
       if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
         is_super = true;
         fieldType = info->lvt->getType(fct->classStructName(true));
+        field->type->symbol->codegenAggMetadata();
       } else if (field->type->symbol->hasFlag(FLAG_EXTERN)) {
         fieldType = info->lvt->getType(field->type->symbol->cname);
       } else {
