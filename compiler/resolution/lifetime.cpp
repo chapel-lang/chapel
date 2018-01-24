@@ -33,6 +33,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "view.h"
+#include "wellknown.h"
 
 /* This file implements lifetime checking.
 
@@ -594,6 +595,11 @@ static bool isSubjectToLifetimeAnalysis(Symbol* sym) {
       sym->type->symbol->hasFlag(FLAG_EXTERN))
     return false;
 
+  // Locale type not subject to lifetime analysis
+  // (since locales exist for the entire program run)
+  if (isSubClass(sym->type, dtLocale))
+    return false;
+
   // Symbols marked "unsafe" are not subject to analysis.
   if (sym->hasFlag(FLAG_UNSAFE))
     return false;
@@ -769,6 +775,9 @@ static Lifetime infiniteLifetime() {
 
 /* Language design questions:
     * how do you say which kind of class instance pointer you have?
+
+      - borrow vs owning reference
+
     * how does one indicate relationship of returned ref/borrow
        lifetime to arguments / calling scope?
     * how do you specify lifetime based how do you specify the different types of pointers?
@@ -907,4 +916,11 @@ result is ultimately stored in a global variable.
 
  - fix: lifetime of _domain/etc instance variables is not managed, instance
    "unsafe"
+
+test/modules/standard/Spawn was giving lifetime errors for the result
+of spawn being stored in a global variable after initialization routine
+returned.
+
+ - fix: make the 'locale' type not subject to lifetime analysis
+        (channel has a locale pointer in it, this was considered a borrow).
  */
