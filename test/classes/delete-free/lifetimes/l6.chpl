@@ -1,5 +1,5 @@
 pragma "safe"
-module t9 {
+module l6 {
 
 use OwnedObject;
 
