@@ -304,6 +304,7 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharEscapeNonprint(char c);
+static void  addUnescapedChar(char c);
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -512,51 +513,7 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
       startChCount = 0;
     }
 
-    switch (c) {
-      case '\"' :
-        addChar('\\');
-        addChar('"');
-        break;
-      case '?' :
-        addChar('\\');
-        addChar('?');
-        break;
-      case '\\' :
-        addChar('\\');
-        addChar('\\');
-        break;
-      case '\a' :
-        addChar('\\');
-        addChar('a');
-        break;
-      case '\b' :
-        addChar('\\');
-        addChar('b');
-        break;
-      case '\f' :
-        addChar('\\');
-        addChar('f');
-        break;
-      case '\n' :
-        addChar('\\');
-        addChar('n');
-        break;
-      case '\r' :
-        addChar('\\');
-        addChar('r');
-        break;
-      case '\t' :
-        addChar('\\');
-        addChar('t');
-        break;
-      case '\v' :
-        addChar('\\');
-        addChar('v');
-        break;
-      default :
-        addChar(c);
-        break;
-    }
+    addUnescapedChar(c);
   } /* eat up string */
 
   if (c == 0) {
@@ -988,6 +945,55 @@ static void addCharEscapeNonprint(char c) {
     stringBuffer.push_back(toHex(c & 0xf));
   } else {
     stringBuffer.push_back(c);
+  }
+}
+
+// Convert C escape characters into two characters '\\' and the other character
+static void addUnescapedChar(char c) {
+  switch (c) {
+    case '\"' :
+      addChar('\\');
+      addChar('"');
+      break;
+    case '?' :
+      addChar('\\');
+      addChar('?');
+      break;
+    case '\\' :
+      addChar('\\');
+      addChar('\\');
+      break;
+    case '\a' :
+      addChar('\\');
+      addChar('a');
+      break;
+    case '\b' :
+      addChar('\\');
+      addChar('b');
+      break;
+    case '\f' :
+      addChar('\\');
+      addChar('f');
+      break;
+    case '\n' :
+      addChar('\\');
+      addChar('n');
+      break;
+    case '\r' :
+      addChar('\\');
+      addChar('r');
+      break;
+    case '\t' :
+      addChar('\\');
+      addChar('t');
+      break;
+    case '\v' :
+      addChar('\\');
+      addChar('v');
+      break;
+    default :
+      addChar(c);
+      break;
   }
 }
 
