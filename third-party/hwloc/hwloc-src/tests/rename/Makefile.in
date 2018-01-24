@@ -524,7 +524,9 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-all-local: needed useless
+@HWLOC_HAVE_DARWIN_FALSE@all-local: needed useless
+# Do nothing on Darwin because their default compiler doesn't like our gcc/cpp lines
+@HWLOC_HAVE_DARWIN_TRUE@all-local:
 
 dirs:
 	mkdir -p include/hwloc/autogen include/private/autogen

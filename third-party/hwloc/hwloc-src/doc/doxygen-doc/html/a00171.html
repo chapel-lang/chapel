@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -67,7 +67,7 @@ Enumerations</h2></td></tr>
 <a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2aa6e49e54f52827cb143cc869cfd748af">HWLOC_MEMBIND_MIGRATE</a>, 
 <br />
 &#160;&#160;<a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2aad6b9eaf2ee324ca58dc8f58094b9997">HWLOC_MEMBIND_NOCPUBIND</a>, 
-<a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2a71f19fe4505f1c083dc8e6f7bdea6256">HWLOC_MEMBIND_BYNODESET</a> = (1&lt;&lt;5)
+<a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2a71f19fe4505f1c083dc8e6f7bdea6256">HWLOC_MEMBIND_BYNODESET</a>
 <br />
  }</td></tr>
 <tr class="separator:gab00475fd98815bf4fb9aaf752030e7d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -660,9 +660,8 @@ NULL with errno set to ENOMEM if the memory allocation failed even before trying
 <p>Fills <code>set</code> according to the NUMA nodes where the memory area pages are physically allocated. If no page is actually allocated yet, <code>set</code> may be empty.</p>
 <p>If pages spread to multiple nodes, it is not specified whether they spread equitably, or whether most of them are on a single node, etc.</p>
 <p>The operating system may move memory pages from one processor to another at any time according to their binding, so this function may return something that is already outdated.</p>
-<p>If <a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2a71f19fe4505f1c083dc8e6f7bdea6256" title="Consider the bitmap argument as a nodeset. ">HWLOC_MEMBIND_BYNODESET</a> is specified, set is considered a nodeset. Otherwise it's a cpuset.</p>
-<p>If <code>len</code> is 0, <code>set</code> is emptied.</p>
-<p>Flags are currently unused. </p>
+<p>If <a class="el" href="a00171.html#ggab00475fd98815bf4fb9aaf752030e7d2a71f19fe4505f1c083dc8e6f7bdea6256" title="Consider the bitmap argument as a nodeset. ">HWLOC_MEMBIND_BYNODESET</a> is specified in <code>flags</code>, set is considered a nodeset. Otherwise it's a cpuset.</p>
+<p>If <code>len</code> is 0, <code>set</code> is emptied. </p>
 
 </div>
 </div>

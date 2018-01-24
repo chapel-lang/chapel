@@ -1305,7 +1305,7 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
-static void      regMemBroadcast(void*, size_t);
+static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*, void*);
@@ -2983,7 +2983,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
             "chpl_comm_regMemPostAlloc(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(mr, sizeof(*mr));
+    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
   } else {
     const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
@@ -2993,59 +2993,11 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
             (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
             (int) mem_regions.mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(&mem_regions.mregs[mreg_cnt_public],
-                    (mem_regions.mreg_cnt - mreg_cnt_public) * sizeof(*mr));
-    PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
+    regMemBroadcast(mreg_cnt_public, mem_regions.mreg_cnt - mreg_cnt_public,
+                    true /*send_mreg_cnt*/);
   }
 
   mem_regions_unlock();
-}
-
-
-static
-void regMemBroadcast(void* base_addr, size_t size)
-{
-  size_t off = (char*) base_addr - (char*) &mem_regions;
-  void* src_v[MAX_CHAINED_PUT_LEN];
-  int32_t node_v[MAX_CHAINED_PUT_LEN];
-  void* tgt_v[MAX_CHAINED_PUT_LEN];
-  size_t size_v[MAX_CHAINED_PUT_LEN];
-  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
-  int ci;
-
-  ci = 0;
-  for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
-    if (ni == chpl_nodeID) {
-      //
-      // Update our own map in place.
-      //
-      memcpy((char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off,
-             (char*) &mem_regions + off,
-             size);
-    } else {
-      //
-      // Update every other node's map remotely.
-      //
-      if (ci >= MAX_CHAINED_PUT_LEN) {
-        do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
-                        may_proxy_false);
-        ci = 0;
-      }
-
-      src_v[ci] = (char*) &mem_regions + off;
-      node_v[ci] = ni;
-      tgt_v[ci] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID] + off;
-      size_v[ci] = size;
-      remote_mr_v[ci] = &gnr_mreg_map[ni];
-      ci++;
-    }
-  }
-
-  if (ci > 0) {
-    do_remote_put_V(ci, src_v, node_v, tgt_v, size_v, remote_mr_v,
-                    may_proxy_false);
-  }
 }
 
 
@@ -3108,7 +3060,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Note that this may leave remnant (and misleading) non-0 values in
   // table entries past the new end of the active area in remote nodes'
   // copies of our region table.  This is okay as long as these entries
-  // always get overwitten if the table grows past them again, as is
+  // always get overwritten if the table grows past them again, as is
   // the case now.  If removing the entry didn't change the length of
   // the table then we can just send the now-empty entry.
   //
@@ -3117,13 +3069,13 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
             "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
             mr_i, (int) mem_regions.mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(&mem_regions.mreg_cnt, sizeof(mem_regions.mreg_cnt));
+    regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
   } else {
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_regMemFree(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(mr, sizeof(*mr));
+    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
   }
 
   mem_regions_unlock();
@@ -3133,6 +3085,72 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   free_huge_pages(p);
 
   return true;
+}
+
+
+static inline
+void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
+{
+  void* src_v[MAX_CHAINED_PUT_LEN];
+  int32_t node_v[MAX_CHAINED_PUT_LEN];
+  void* tgt_v[MAX_CHAINED_PUT_LEN];
+  size_t size_v[MAX_CHAINED_PUT_LEN];
+  mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
+  const int vi_limit = (mr_cnt > 0 && send_mreg_cnt)
+                       ? (MAX_CHAINED_PUT_LEN - 1)  // using 2 V elems per node
+                       : MAX_CHAINED_PUT_LEN;       // using 1 V elems per node
+  int vi;
+
+  vi = 0;
+  for (int ni = 0; ni < (int) chpl_numNodes; ni++) {
+    if (ni == chpl_nodeID) {
+      //
+      // Update our own map in place.
+      //
+      if (mr_cnt > 0) {
+        memcpy((char*) &mem_regions_map_addr_map[ni][ni].mregs[mr_i],
+               (char*) &mem_regions.mregs[mr_i],
+               mr_cnt * sizeof(mem_region_t));
+      }
+
+      if (send_mreg_cnt) {
+        mem_regions_map_addr_map[ni][ni].mreg_cnt = mem_regions.mreg_cnt;
+      }
+    } else {
+      //
+      // Update every other node's map remotely.
+      //
+      if (vi >= vi_limit) {
+        do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                        may_proxy_false);
+        vi = 0;
+      }
+
+      if (mr_cnt > 0) {
+        src_v[vi] = (char*) &mem_regions.mregs[mr_i];
+        node_v[vi] = ni;
+        tgt_v[vi] = (char*)
+                    &mem_regions_map_addr_map[ni][chpl_nodeID].mregs[mr_i];
+        size_v[vi] = mr_cnt * sizeof(mem_region_t);
+        remote_mr_v[vi] = &gnr_mreg_map[ni];
+        vi++;
+      }
+
+      if (send_mreg_cnt) {
+        src_v[vi] = (char*) &mem_regions.mreg_cnt;
+        node_v[vi] = ni;
+        tgt_v[vi] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID].mreg_cnt;
+        size_v[vi] = sizeof(mem_regions.mreg_cnt);
+        remote_mr_v[vi] = &gnr_mreg_map[ni];
+        vi++;
+      }
+    }
+  }
+
+  if (vi > 0) {
+    do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
+                    may_proxy_false);
+  }
 }
 
 

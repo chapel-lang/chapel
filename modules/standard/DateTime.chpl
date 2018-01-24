@@ -485,27 +485,27 @@ module DateTime {
     pragma "no doc"
     var chpl_tzinfo: Shared(TZInfo);
 
-    /* The hour represented by this date value */
+    /* The hour represented by this `time` value */
     proc hour {
       return chpl_hour;
     }
 
-    /* The minute represented by this `date` value */
+    /* The minute represented by this `time` value */
     proc minute {
       return chpl_minute;
     }
 
-    /* The second represented by this `date` value */
+    /* The second represented by this `time` value */
     proc second {
       return chpl_second;
     }
 
-    /* The microsecond represented by this `date` value */
+    /* The microsecond represented by this `time` value */
     proc microsecond {
       return chpl_microsecond;
     }
 
-    /* The timezone represented by this `date` value */
+    /* The timezone represented by this `time` value */
     proc tzinfo {
       return chpl_tzinfo;
     }

@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -42,10 +42,39 @@ $(function() {
 <div class="title">Terms and Definitions </div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><dl>
+<div class="textblock"><h1><a class="anchor" id="termsanddefs_objects"></a>
+Objects</h1>
+<dl>
 <dt>Object </dt>
-<dd><p class="startdd">Interesting kind of part of the system, such as a Core, a Cache, a Memory node, etc. The different types detected by hwloc are detailed in the <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55" title="Type of topology object. ">hwloc_obj_type_t</a> enumeration.</p>
-<p>They are topologically sorted by CPU set into a tree. </p>
+<dd><p class="startdd">Interesting kind of part of the system, such as a Core, a Cache, a NUMA memory node, etc. The different types detected by hwloc are detailed in the <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55" title="Type of topology object. ">hwloc_obj_type_t</a> enumeration.</p>
+<p>They are topologically sorted by CPU set into a tree (see <a class="el" href="a00321.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>). </p>
+<p class="enddd"></p>
+</dd>
+<dt>Processing Unit (or Logical Processor) </dt>
+<dd><p class="startdd">The smallest processing element that can be represented by a hwloc object. It may be a single-core processor, a core of a multicore processor, or a single thread in a SMT processor. hwloc's PU acronym stands for Processing Unit.</p>
+<p>"Logical processor" should not be confused with "Logical index of a
+  processor". </p>
+<p class="enddd"></p>
+</dd>
+<dt>Package </dt>
+<dd><p class="startdd">A processor Package is the physical package that usually gets inserted into a socket on the motherboard. It is also often called a physical processor or a CPU even if these names bring confusion with respect to cores and processing units. A processor package usually contains multiple cores (and may also be composed of multiple dies). hwloc Package objects were called Sockets up to hwloc 1.10. </p>
+<p class="enddd"></p>
+</dd>
+<dt>NUMA Node </dt>
+<dd><p class="startdd">An object that contains memory that is directly and byte-accessible to the host processors. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree, see <a class="el" href="a00321.html#termsanddefs_tree">Hierarchy, Tree and Levels</a>) as specified by its CPU set. </p>
+<p class="enddd"></p>
+</dd>
+</dl>
+<h1><a class="anchor" id="termsanddefs_indexes"></a>
+Indexes and Sets</h1>
+<dl>
+<dt>OS or physical index </dt>
+<dd><p class="startdd">The index that the operating system (OS) uses to identify the object. This may be completely arbitrary, non-unique, non-contiguous, not representative of logical proximity, and may depend on the BIOS configuration. That is why hwloc almost never uses them, only in the default lstopo output (<code>P#x</code>) and cpuset masks. See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
+<p class="enddd"></p>
+</dd>
+<dt>Logical index </dt>
+<dd><p class="startdd">Index to uniquely identify objects of the same type and depth, automatically computed by hwloc according to the topology. It expresses logical proximity in a generic way, i.e. objects which have adjacent logical indexes are adjacent in the topology. That is why hwloc almost always uses it in its API, since it expresses logical proximity. They can be shown (as <code>L#x</code>) by <code>lstopo</code> thanks to the <code>-l</code> option. This index is always linear and in the range [0, num_objs_same_type_same_level-1]. Think of it as ``cousin rank.'' The ordering is based on topology first, and then on OS CPU numbers, so it is stable across everything except firmware CPU renumbering. "Logical index" should not be confused with "Logical processor". A "Logical
+  processor" (which in hwloc we rather call "processing unit" to avoid the confusion) has both a physical index (as chosen arbitrarily by BIOS/OS) and a logical index (as computed according to logical proximity by hwloc). See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
 <p class="enddd"></p>
 </dd>
 <dt>CPU set </dt>
@@ -60,6 +89,10 @@ $(function() {
 <dd><p class="startdd">A possibly-infinite set of bits used for describing sets of objects such as CPUs (CPU sets) or memory nodes (Node sets). They are implemented with the <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84" title="Set of bits represented as an opaque pointer to an internal bitmap. ">hwloc_bitmap_t</a> opaque structure. </p>
 <p class="enddd"></p>
 </dd>
+</dl>
+<h1><a class="anchor" id="termsanddefs_tree"></a>
+Hierarchy, Tree and Levels</h1>
+<dl>
 <dt>Parent object </dt>
 <dd><p class="startdd">The object logically containing the current object, for example because its CPU set includes the CPU set of the current object.</p>
 <p class="enddd"></p>
@@ -94,24 +127,6 @@ $(function() {
 </dd>
 <dt>Depth </dt>
 <dd><p class="startdd">Nesting level in the object tree, starting from the root object. If the topology is symmetric, the depth of a child is equal to the parent depth plus one, and an object depth is also equal to the number of parent/child links between the root object and the given object. If the topology is asymmetric, the difference between some parent and child depths may be larger than one when some intermediate levels (for instance groups) are missing in only some parts of the machine. </p>
-<p class="enddd"></p>
-</dd>
-<dt>OS or physical index </dt>
-<dd><p class="startdd">The index that the operating system (OS) uses to identify the object. This may be completely arbitrary, non-unique, non-contiguous, not representative of logical proximity, and may depend on the BIOS configuration. That is why hwloc almost never uses them, only in the default lstopo output (<code>P#x</code>) and cpuset masks. See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Logical index </dt>
-<dd><p class="startdd">Index to uniquely identify objects of the same type and depth, automatically computed by hwloc according to the topology. It expresses logical proximity in a generic way, i.e. objects which have adjacent logical indexes are adjacent in the topology. That is why hwloc almost always uses it in its API, since it expresses logical proximity. They can be shown (as <code>L#x</code>) by <code>lstopo</code> thanks to the <code>-l</code> option. This index is always linear and in the range [0, num_objs_same_type_same_level-1]. Think of it as ``cousin rank.'' The ordering is based on topology first, and then on OS CPU numbers, so it is stable across everything except firmware CPU renumbering. "Logical index" should not be confused with "Logical processor". A "Logical
-  processor" (which in hwloc we rather call "processing unit" to avoid the confusion) has both a physical index (as chosen arbitrarily by BIOS/OS) and a logical index (as computed according to logical proximity by hwloc). See also <a class="el" href="a00335.html#faq_indexes">Should I use logical or physical/OS indexes? and how?</a>.</p>
-<p class="enddd"></p>
-</dd>
-<dt>Processing unit </dt>
-<dd><p class="startdd">The smallest processing element that can be represented by a hwloc object. It may be a single-core processor, a core of a multicore processor, or a single thread in a SMT processor. hwloc's PU acronym stands for Processing Unit. </p>
-<p class="enddd"></p>
-</dd>
-<dt>Logical processor </dt>
-<dd><p class="startdd">Synonym of "Processing unit". "Logical processor" should not be confused with "Logical index of a
-  processor". </p>
 <p class="enddd"></p>
 </dd>
 </dl>

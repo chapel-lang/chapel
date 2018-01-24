@@ -11,10 +11,8 @@ proc main() {
   var myvar = initval;
   const m1 = memoryUsed();
 
-  // serial to quiet a sporadic (1 in 1000) regression (see JIRA issue 112)
-  serial do
-    forall da in DARRAY do
-      da = myvar;
+  forall da in DARRAY do
+    da = myvar;
 
   const m2 = memoryUsed();
 

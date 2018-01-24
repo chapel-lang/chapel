@@ -807,8 +807,12 @@ hwloc__xml_import_object(hwloc_topology_t topology,
       ret = hwloc__xml_import_distances(data, obj, &childstate);
     } else if (!strcmp(tag, "userdata")) {
       ret = hwloc__xml_import_userdata(topology, obj, &childstate);
-    } else
+    } else {
+      if (hwloc__xml_verbose())
+	fprintf(stderr, "%s: invalid special object child %s\n",
+		state->global->msgprefix, tag);
       ret = -1;
+    }
 
     if (ret < 0)
       goto error;

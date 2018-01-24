@@ -343,9 +343,9 @@ and \chpl{(1.0, 2.0):complex}.
 \end{example}
 
 \pagebreak
-String literals are designated by the following syntax:
+Interpreted string literals are designated by the following syntax:
 \begin{syntax}
-string-literal:
+interpreted-string-literal:
   " double-quote-delimited-characters[OPT] "
   ' single-quote-delimited-characters[OPT] '
 
@@ -367,6 +367,38 @@ simple-escape-character: one of
 
 hexadecimal-escape-character:
   `$\backslash$x' hexadecimal-digits
+\end{syntax}
+
+Uninterpreted string literals are designated by the following syntax:
+\begin{syntax}
+uninterpreted-string-literal:
+  """ uninterpreted-double-quote-delimited-characters """
+  ''' uninterpreted-single-quote-delimited-characters '''
+
+uninterpreted-double-quote-delimited-characters:
+  uninterpreted-double-quote-string-character uninterpreted-double-quote-delimited-characters[OPT]
+
+uninterpreted-single-quote-delimited-characters:
+  uninterpreted-single-quote-string-character uninterpreted-single-quote-delimited-characters[OPT]
+
+uninterpreted-double-quote-string-character:
+  `any character except three double quotes in a row'
+
+uninterpreted-single-quote-string-character:
+  `any character except three single quotes in a row'
+\end{syntax}
+
+Uninterpreted string literals do not interpret their contents, so for
+example \chpl{"""$\backslash$n"""} is not a newline, but rather two
+characters `$\backslash$' and `n'.  Uninterpreted string literals may
+span multiple lines and the literal newline characters will be
+included in the string.
+
+A string literal can be either interpreted or uninterpreted.
+\begin{syntax}
+string-literal:
+  interpreted-string-literal
+  uninterpreted-string-literal
 \end{syntax}
 
 \subsection{Operators and Punctuation}

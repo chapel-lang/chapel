@@ -186,6 +186,7 @@ static int is_knl_group(struct smbios_header *h, const char *end)
 
 #define PATH_SIZE 512
 #define SMBIOS_FILE_BUF_SIZE 4096
+#define KNL_MCDRAM_SIZE (16ULL*1024*1024*1024)
 
 static int process_smbios_group(const char *input_fsroot, char *dir_name, struct parser_data *data)
 {
@@ -289,6 +290,15 @@ static int process_knl_entry(const char *input_fsroot, char *dir_name, struct pa
             /* convert to bytes  */
             printf("  Total MCDRAM %llu MB\n", (long long unsigned int)data->mcdram_regular*64);
             data->mcdram_regular *= 64*1024*1024;
+            /*
+             * BIOS can expose some MCRAM controllers as fused
+             * When this happens we hardcode MCDRAM size to 16 GB
+             */
+            if (data->mcdram_regular != KNL_MCDRAM_SIZE) {
+                fprintf(stderr, "Not all MCDRAM is exposed in DMI. Please contact BIOS vendor\n");
+                data->mcdram_regular = KNL_MCDRAM_SIZE;
+            }
+
         } else {
             data->mcdram_regular = 0;
             data->mcdram_cache = 0;

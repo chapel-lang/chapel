@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -269,7 +269,9 @@ Data Fields</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Vertical index in the hierarchy. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here. </p>
+<p>Vertical index in the hierarchy. </p>
+<p>For normal objects, this is the depth of the horizontal level that contains this object and its cousins of the same type. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here.</p>
+<p>For special objects (I/O and Misc) that are not in the main tree, this is a special negative value that corresponds to their dedicated level, see <a class="el" href="a00167.html#ga8bec782e21be313750da70cf7428b374" title="Returns the depth of objects of type type. ">hwloc_get_type_depth()</a> and <a class="el" href="a00167.html#gaf4e663cf42bbe20756b849c6293ef575">hwloc_get_type_depth_e</a>. Those special values can be passed to hwloc functions such <a class="el" href="a00167.html#gab17065e3d53455973844568d9f21c72c" title="Returns the width of level at depth depth. ">hwloc_get_nbobjs_by_depth()</a> as usual. </p>
 
 </div>
 </div>

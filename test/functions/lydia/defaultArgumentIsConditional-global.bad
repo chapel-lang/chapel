@@ -1,0 +1,1 @@
+defaultArgumentIsConditional-global.chpl:3: error: cannot currently use an if expression as the default value for an argument when the argument's type is inferred
