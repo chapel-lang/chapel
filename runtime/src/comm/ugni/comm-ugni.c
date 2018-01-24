@@ -1317,6 +1317,7 @@ static void      fork_amo_wrapper(fork_amo_info_t*);
 static void      release_req_buf(uint32_t, int, int);
 static void      indicate_done(fork_base_info_t* b);
 static void      indicate_done2(int, rf_done_t *);
+static void      send_polling_response(void*, c_nodeid_t, void*, size_t);
 static nb_desc_idx_t nb_desc_idx_encode(int, int);
 static void      nb_desc_idx_decode(int*, int*, nb_desc_idx_t);
 static nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t);
@@ -1366,7 +1367,8 @@ static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
 static chpl_bool reacquire_comm_dom(int);
 static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
-static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*, chpl_bool);
+static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
+                                   chpl_bool);
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 static void      local_yield(void);
@@ -2436,17 +2438,17 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
 static
 void polling_task(void* ignore)
 {
-  gni_cq_entry_t ev;
-  gni_return_t   gni_rc;
-
   set_up_for_polling();
 
   polling_task_running = true;
 
   while (!polling_task_please_exit) {
+    gni_cq_entry_t ev;
+    gni_return_t   gni_rc;
+
     //
-    // Each time GNI_CqGetEvent() succeeds, we call the event (request)
-    // handler.  See the comments there for more info.
+    // Process CQ events due to PUT data arriving in the remote-fork
+    // request memory.
     //
     gni_rc = GNI_CqGetEvent(rf_cqh, &ev);
     if (gni_rc == GNI_RC_NOT_DONE) {
@@ -2462,6 +2464,11 @@ void polling_task(void* ignore)
       rf_handler(&ev, NULL);
     else
       GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_CqGetEvent(rf_cqh) failed in polling");
+
+    //
+    // Process CQ events due to our request responses completing.
+    //
+    consume_all_outstanding_cq_events(cd_idx);
   }
 
   polling_task_done = true;
@@ -3849,18 +3856,9 @@ static
 void release_req_buf(uint32_t li, int cdi, int rbi)
 {
   static chpl_bool32 free_flag = true;
-  do_remote_put(&free_flag, li, RECV_SIDE_FORK_REQ_FREE_ADDR(li, cdi, rbi),
-                sizeof(free_flag), &gnr_mreg_map[li], may_proxy_false);
-}
-
-
-static
-inline
-void indicate_done2(int caller, rf_done_t *ack)
-{
-  static rf_done_t done = 1;
-  do_remote_put(&done, caller, ack, sizeof(done), &gnr_mreg_map[caller],
-                may_proxy_false);
+  send_polling_response(&free_flag, li,
+                        RECV_SIDE_FORK_REQ_FREE_ADDR(li, cdi, rbi),
+                        sizeof(free_flag));
 }
 
 
@@ -3869,6 +3867,102 @@ inline
 void indicate_done(fork_base_info_t* b)
 {
   indicate_done2(b->caller, b->rf_done);
+}
+
+
+static
+inline
+void indicate_done2(int caller, rf_done_t *ack)
+{
+  static rf_done_t done = 1;
+  send_polling_response(&done, caller, ack, sizeof(done));
+}
+
+
+static
+void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
+                           size_t size)
+{
+  gni_post_descriptor_t* post_desc;
+
+  //
+  // If we're not the polling task, send the response the regular way.
+  // Thus we only do asynchronous completion processing on polling task
+  // response transactions initiated on its firmly bound comm domain.
+  // This gets nearly all the benefit of not waiting for completions,
+  // while avoiding concurrency control entirely.
+  //
+  if (cd == NULL || !cd->firmly_bound) {
+    do_remote_put(src_addr, locale, tgt_addr, size, &gnr_mreg_map[locale],
+                  may_proxy_false);
+    return;
+  }
+
+  DBG_P_LP(DBGF_GETPUT, "SendPollResp %p -> %d:%p (%#zx)",
+           src_addr, (int) locale, tgt_addr, size);
+
+  {
+    //
+    // This pool of GNI Post descriptors is for the polling task to use
+    // for request responses (buffer releases and "done" indicators).
+    // To improve throughput, we don't wait for the remote completions
+    // when we send these.  Instead, we collect the CQ completion events
+    // later, as they come in.  We can have as many request responses in
+    // flight simultaneously as we have Post descriptors in the pool.
+    // Small-scale runs on Aries-based systems show the polling task can
+    // do about 3 minimum-cost requests ("fast" remote forks, etc.) in
+    // the minimum network latency of ~1 usec.  The pool size we use
+    // here is enough larger that it will cover the max network latency
+    // of ~1.5 usec.
+    //
+    // The post_id members of these are used as alloc/free indicators,
+    // with 0 meaning "free".
+    //
+#define PPDESCS_CNT 8  // must be a power of 2; see PPDI_NEXT()
+
+#define PPDI_NEXT(_i) (((_i) + 1) & (PPDESCS_CNT - 1))
+
+    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = { 0 };
+    static int last_ppdi = 0;
+    int ppdi;
+
+    ppdi = last_ppdi;
+    while (polling_post_descs[ppdi].post_id != 0) {
+      if ((ppdi = PPDI_NEXT(ppdi)) == last_ppdi) {
+        local_yield();
+        consume_all_outstanding_cq_events(cd_idx);
+      }
+    }
+
+    last_ppdi = PPDI_NEXT(ppdi);
+
+    post_desc = &polling_post_descs[ppdi];
+    post_desc->post_id = 1;  // mark as allocated
+
+#undef PPDESCS_CNT
+#undef PPDI_NEXT
+  }
+
+  //
+  // Fill in the POST descriptor.
+  //
+  post_desc->type            = GNI_POST_FMA_PUT;
+  post_desc->cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
+  post_desc->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
+  post_desc->rdma_mode       = 0;
+  post_desc->src_cq_hndl     = 0;
+  post_desc->local_addr      = (uint64_t) (intptr_t) src_addr;
+  post_desc->remote_addr     = (uint64_t) (intptr_t) tgt_addr;
+  post_desc->remote_mem_hndl = gnr_mreg_map[locale].mdh;
+  post_desc->length          = size;
+
+  //
+  // Initiate the transaction.  Don't wait for it to complete.  We'll
+  // consume any completion events later, in various places.
+  //
+  PERFSTATS_INC(put_cnt);
+  PERFSTATS_ADD(put_byte_cnt, size);
+  (void) post_fma(locale, post_desc);
 }
 
 
@@ -4387,7 +4481,21 @@ void consume_all_outstanding_cq_events(int cdi)
       if ((gni_rc = GNI_GetCompleted(cd->cqh, ev, &post_desc))
           != GNI_RC_SUCCESS)
         GNI_FAIL(gni_rc, "GNI_GetCompleted() failed");
-      atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
+
+      if (post_desc->post_id == 1) {
+        //
+        // This Post descriptor is from the polling task's dedicated
+        // pool for responses.  Just mark it free.
+        //
+        post_desc->post_id = 0;  // mark as free
+      } else {
+        //
+        // This event is for completion of a regular transaction and the
+        // post_id is the pointer to the "done" flag the initiating task
+        // is waiting on.
+        //
+        atomic_store_bool((atomic_bool*) (intptr_t) post_desc->post_id, true);
+      }
     }
 
     assert(gni_rc == GNI_RC_NOT_DONE);
@@ -6845,7 +6953,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 }
 
 
-static
+static inline
 void release_comm_dom(void)
 {
   assert(cd != NULL);
@@ -6931,7 +7039,8 @@ int post_fma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
 
 
 static
-void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc, chpl_bool do_yield)
+void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
+                       chpl_bool do_yield)
 {
   int cdi;
   atomic_bool post_done;
