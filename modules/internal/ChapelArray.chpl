@@ -4071,7 +4071,7 @@ module ChapelArray {
 
         // Now copy the data over
         for i in 0..#oldSize {
-          // this is a move, transfering ownership
+          // this is a move, transferring ownership
           __primitive("=", data[i], oldData[i]);
         }
 

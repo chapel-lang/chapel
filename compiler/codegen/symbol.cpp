@@ -1086,7 +1086,15 @@ void TypeSymbol::codegenCplxMetadata() {
 
 void TypeSymbol::codegenAggMetadata() {
 #ifdef HAVE_LLVM
+  // Don't do anything if we've already visited this type.
+  if (llvmTbaaAggTypeDescriptor) return;
+
   GenInfo* info = gGenInfo;
+
+  // Set the llvmTbaaAggTypeDescriptor to non-NULL so that we can
+  // avoid recursing.
+  llvmTbaaAggTypeDescriptor = info->tbaaRootNode;
+
   llvm::LLVMContext& ctx = info->module->getContext();
   const llvm::DataLayout& dl = info->module->getDataLayout();
   AggregateType *ct = toAggregateType(type);
@@ -1136,8 +1144,11 @@ void TypeSymbol::codegenAggMetadata() {
 
       llvm::Type *fieldType = NULL;
       AggregateType *fct = toAggregateType(field->type);
+      bool is_super = false;
       if (fct && field->hasFlag(FLAG_SUPER_CLASS)) {
+        is_super = true;
         fieldType = info->lvt->getType(fct->classStructName(true));
+        field->type->symbol->codegenAggMetadata();
       } else if (field->type->symbol->hasFlag(FLAG_EXTERN)) {
         fieldType = info->lvt->getType(field->type->symbol->cname);
       } else {
@@ -1150,19 +1161,30 @@ void TypeSymbol::codegenAggMetadata() {
         uint64_t byte_offset =
           dl.getStructLayout(struct_type)->getElementOffset(fieldno);
         llvm::Constant *off = llvm::ConstantInt::get(int64Ty, byte_offset);
-        INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor &&
-                   field->type->symbol->llvmTbaaTypeDescriptor !=
-                   info->tbaaRootNode);
-        TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+        if (is_super) {
+          INT_ASSERT(field->type->symbol->llvmTbaaAggTypeDescriptor &&
+                     field->type->symbol->llvmTbaaAggTypeDescriptor !=
+                     info->tbaaRootNode);
+          TypeOps.push_back(field->type->symbol->llvmTbaaAggTypeDescriptor);
+        } else {
+          INT_ASSERT(field->type->symbol->llvmTbaaTypeDescriptor &&
+                     field->type->symbol->llvmTbaaTypeDescriptor !=
+                     info->tbaaRootNode);
+          TypeOps.push_back(field->type->symbol->llvmTbaaTypeDescriptor);
+        }
         TypeOps.push_back(llvm::ConstantAsMetadata::get(off));
 
         llvm::Constant *sz = llvm::ConstantInt::get(int64Ty, store_size);
         CopyOps.push_back(llvm::ConstantAsMetadata::get(off));
         CopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-        CopyOps.push_back(field->type->symbol->llvmTbaaAccessTag);
+        CopyOps.push_back(is_super ?
+                          field->type->symbol->llvmTbaaAggAccessTag :
+                          field->type->symbol->llvmTbaaAccessTag);
         ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(off));
         ConstCopyOps.push_back(llvm::ConstantAsMetadata::get(sz));
-        ConstCopyOps.push_back(field->type->symbol->llvmConstTbaaAccessTag);
+        ConstCopyOps.push_back(is_super ?
+                               field->type->symbol->llvmConstTbaaAggAccessTag :
+                               field->type->symbol->llvmConstTbaaAccessTag);
       }
     }
   }
@@ -1170,6 +1192,19 @@ void TypeSymbol::codegenAggMetadata() {
     llvmTbaaAggTypeDescriptor = llvm::MDNode::get(ctx, TypeOps);
     llvmTbaaStructCopyNode = llvm::MDNode::get(ctx, CopyOps);
     llvmConstTbaaStructCopyNode = llvm::MDNode::get(ctx, ConstCopyOps);
+  }
+  if (llvmTbaaAggTypeDescriptor &&
+      llvmTbaaAggTypeDescriptor != info->tbaaRootNode) {
+    // Create tbaa access tags, one for const and one for not.
+    llvmTbaaAggAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaAggTypeDescriptor,
+                                               llvmTbaaAggTypeDescriptor,
+                                               /*Offset=*/0);
+    llvmConstTbaaAggAccessTag =
+      info->mdBuilder->createTBAAStructTagNode(llvmTbaaAggTypeDescriptor,
+                                               llvmTbaaAggTypeDescriptor,
+                                               /*Offset=*/0,
+                                               /*IsConstant=*/true);
   }
 #endif
 }

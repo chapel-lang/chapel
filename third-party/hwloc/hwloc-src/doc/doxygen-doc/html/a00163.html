@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -269,9 +269,10 @@ Functions</h2></td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55a3f4e83ffc4a259354959ae8a9eaa2a80"></a>HWLOC_OBJ_MACHINE&#160;</td><td class="fielddoc"><p>Machine. The typical root object type. A set of processors and memory with cache coherency. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55a9d917a3e5497950c6d8948b8e183db5a"></a>HWLOC_OBJ_NUMANODE&#160;</td><td class="fielddoc"><p>NUMA node. A set of processors around memory which the processors can directly access. </p>
+<tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55a9d917a3e5497950c6d8948b8e183db5a"></a>HWLOC_OBJ_NUMANODE&#160;</td><td class="fielddoc"><p>NUMA node. An object that contains memory that is directly and byte-accessible to the host processors. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree). </p>
+<p>There is always at one such object in the topology even if the machine is not NUMA. </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55ab16ab8c0dbffc234921d86f3dfb63129"></a>HWLOC_OBJ_PACKAGE&#160;</td><td class="fielddoc"><p>Physical package, what goes into a socket. In the physical meaning, i.e. that you can add or remove physically. </p>
+<tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55ab16ab8c0dbffc234921d86f3dfb63129"></a>HWLOC_OBJ_PACKAGE&#160;</td><td class="fielddoc"><p>Physical package. The physical package that usually gets inserted into a socket on the motherboard. A processor package usually contains multiple cores. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="ggacd37bb612667dc437d66bfb175a8dc55a56ee0b7eca88f363b75b34fdde8c9ddc"></a>HWLOC_OBJ_CACHE&#160;</td><td class="fielddoc"><p>Cache. Can be L1i, L1d, L2, L3, ... </p>
 </td></tr>

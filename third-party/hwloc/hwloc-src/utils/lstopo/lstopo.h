@@ -60,7 +60,11 @@ struct lstopo_obj_userdata {
 
   /* custom style */
   struct style style;
-  unsigned style_set; /* 0x1 if bg set, 0x2 for t, 0x4 for bg2, 0x8 for t2 */
+#define LSTOPO_STYLE_BG  0x1
+#define LSTOPO_STYLE_T   0x2
+#define LSTOPO_STYLE_BG2 0x4
+#define LSTOPO_STYLE_T2  0x8
+  unsigned style_set; /* OR'ed LSTOPO_STYLE_* */
 };
 
 typedef void output_method (struct lstopo_output *output, const char *filename);
@@ -72,8 +76,8 @@ struct draw_methods {
   void (*declare_color) (void *output, int r, int g, int b);
   void (*box) (void *output, int r, int g, int b, unsigned depth, unsigned x, unsigned width, unsigned y, unsigned height);
   void (*line) (void *output, int r, int g, int b, unsigned depth, unsigned x1, unsigned y1, unsigned x2, unsigned y2);
-  void (*text) (void *output, int r, int g, int b, int size, unsigned depth, unsigned x, unsigned y, const char *text);
-  void (*textsize) (void *output, const char *text, unsigned textlength, unsigned fontsize, unsigned *width);
+  void (*text) (void *output, int r, int g, int b, unsigned depth, unsigned x, unsigned y, const char *text);
+  void (*textsize) (void *output, const char *text, unsigned textlength, unsigned *width);
 };
 
 extern unsigned int gridsize, fontsize;

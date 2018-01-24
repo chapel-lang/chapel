@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2016 Inria.  All rights reserved.
+ * Copyright © 2010-2017 Inria.  All rights reserved.
  * Copyright © 2010-2011 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -151,7 +151,7 @@ hwloc_cuda_get_device_pcidev(hwloc_topology_t topology, CUdevice cudevice)
  * CUDA device \p cudevice. Return NULL if there is none.
  *
  * Topology \p topology and device \p cudevice must match the local machine.
- * I/O devices detection and the NVML component must be enabled in the topology.
+ * I/O devices detection and the CUDA component must be enabled in the topology.
  * If not, the locality of the object may still be found using
  * hwloc_cuda_get_device_cpuset().
  *

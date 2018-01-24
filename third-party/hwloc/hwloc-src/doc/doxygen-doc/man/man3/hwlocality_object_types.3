@@ -1,4 +1,4 @@
-.TH "hwlocality_object_types" 3 "Wed Sep 6 2017" "Version 1.11.8" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_object_types" 3 "Thu Jan 18 2018" "Version 1.11.9" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -148,10 +148,10 @@ Whole system (may be a cluster of machines)\&. The whole system that is accessib
 Machine\&. The typical root object type\&. A set of processors and memory with cache coherency\&. 
 .TP
 \fB\fIHWLOC_OBJ_NUMANODE \fP\fP
-NUMA node\&. A set of processors around memory which the processors can directly access\&. 
+NUMA node\&. An object that contains memory that is directly and byte-accessible to the host processors\&. It is usually close to some cores (the corresponding objects are descendants of the NUMA node object in the hwloc tree)\&. There is always at one such object in the topology even if the machine is not NUMA\&. 
 .TP
 \fB\fIHWLOC_OBJ_PACKAGE \fP\fP
-Physical package, what goes into a socket\&. In the physical meaning, i\&.e\&. that you can add or remove physically\&. 
+Physical package\&. The physical package that usually gets inserted into a socket on the motherboard\&. A processor package usually contains multiple cores\&. 
 .TP
 \fB\fIHWLOC_OBJ_CACHE \fP\fP
 Cache\&. Can be L1i, L1d, L2, L3, \&.\&.\&. 

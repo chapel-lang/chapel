@@ -1,5 +1,5 @@
 /*
- * Copyright © 2010-2017 Inria.  All rights reserved.
+ * Copyright © 2010-2018 Inria.  All rights reserved.
  * Copyright © 2010-2013 Université Bordeaux
  * Copyright © 2010-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -76,6 +76,7 @@ struct procinfo {
 enum cpuid_type {
   intel,
   amd,
+  zhaoxin,
   unknown
 };
 
@@ -176,7 +177,8 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
     infos->cpufamilynumber = _family;
   }
   if ((cpuid_type == intel && (_family == 0x6 || _family == 0xf))
-      || (cpuid_type == amd && _family == 0xf)) {
+      || (cpuid_type == amd && _family == 0xf)
+      || (cpuid_type == zhaoxin && (_family == 0x6 || _family == 0x7))) {
     infos->cpumodelnumber = _model + (_extendedmodel << 4);
   } else {
     infos->cpumodelnumber = _model;
@@ -212,7 +214,7 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
   /* Get core/thread information from cpuid 0x80000008
    * (not supported on Intel)
    */
-  if (cpuid_type != intel && highest_ext_cpuid >= 0x80000008) {
+  if (cpuid_type != intel && cpuid_type != zhaoxin && highest_ext_cpuid >= 0x80000008) {
     unsigned coreidsize;
     eax = 0x80000008;
     hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
@@ -245,8 +247,11 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
    * and cache information from cpuid 0x8000001d
    * (AMD topology extension)
    */
-  if (cpuid_type != intel && has_topoext(features)) {
+  if (cpuid_type != intel && cpuid_type != zhaoxin && has_topoext(features)) {
     unsigned apic_id, node_id, nodes_per_proc;
+
+    /* the code below doesn't want any other cache yet */
+    assert(!infos->numcaches);
 
     eax = 0x8000001e;
     hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
@@ -290,8 +295,8 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
     }
 
     cache = infos->cache = malloc(infos->numcaches * sizeof(*infos->cache));
-
-    for (cachenum = 0; ; cachenum++) {
+    if (cache) {
+     for (cachenum = 0; ; cachenum++) {
       unsigned long linesize, linepart, ways, sets;
       unsigned type;
       eax = 0x8000001d;
@@ -324,19 +329,22 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
       hwloc_debug("cache %u type %u L%u t%u c%u linesize %lu linepart %lu ways %lu sets %lu, size %luKB\n", cachenum, cache->type, cache->level, cache->nbthreads_sharing, infos->max_nbcores, linesize, linepart, ways, sets, cache->size >> 10);
 
       cache++;
+     }
+    } else {
+     infos->numcaches = 0;
     }
   } else {
     /* If there's no topoext,
      * get cache information from cpuid 0x80000005 and 0x80000006
      * (not supported on Intel)
      */
-    if (cpuid_type != intel && highest_ext_cpuid >= 0x80000005) {
+    if (cpuid_type != intel && cpuid_type != zhaoxin && highest_ext_cpuid >= 0x80000005) {
       eax = 0x80000005;
       hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
       fill_amd_cache(infos, 1, 1, ecx); /* L1d */
       fill_amd_cache(infos, 1, 2, edx); /* L1i */
     }
-    if (cpuid_type != intel && highest_ext_cpuid >= 0x80000006) {
+    if (cpuid_type != intel && cpuid_type != zhaoxin && highest_ext_cpuid >= 0x80000006) {
       eax = 0x80000006;
       hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
       if (ecx & 0xf000)
@@ -355,6 +363,9 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
    */
   if (cpuid_type != amd && highest_cpuid >= 0x04) {
     unsigned level;
+    struct cacheinfo *tmpcaches;
+    unsigned oldnumcaches = infos->numcaches; /* in case we got caches above */
+
     for (cachenum = 0; ; cachenum++) {
       unsigned type;
       eax = 0x04;
@@ -384,9 +395,12 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
       }
     }
 
-    cache = infos->cache = malloc(infos->numcaches * sizeof(*infos->cache));
+    tmpcaches = realloc(infos->cache, infos->numcaches * sizeof(*infos->cache));
+    if (tmpcaches) {
+     infos->cache = tmpcaches;
+     cache = &infos->cache[oldnumcaches];
 
-    for (cachenum = 0; ; cachenum++) {
+     for (cachenum = 0; ; cachenum++) {
       unsigned long linesize, linepart, ways, sets;
       unsigned type;
       eax = 0x04;
@@ -421,13 +435,14 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
       hwloc_debug("cache %u type %u L%u t%u c%u linesize %lu linepart %lu ways %lu sets %lu, size %luKB\n", cachenum, cache->type, cache->level, cache->nbthreads_sharing, infos->max_nbcores, linesize, linepart, ways, sets, cache->size >> 10);
 
       cache++;
+     }
     }
   }
 
   /* Get package/core/thread information from cpuid 0x0b
    * (Intel x2APIC)
    */
-  if (cpuid_type == intel && highest_cpuid >= 0x0b && has_x2apic(features)) {
+  if ((cpuid_type == intel || cpuid_type == zhaoxin) && highest_cpuid >= 0x0b && has_x2apic(features)) {
     unsigned level, apic_nextshift, apic_number, apic_type, apic_id = 0, apic_shift = 0, id;
     for (level = 0; ; level++) {
       ecx = level;
@@ -437,9 +452,10 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
         break;
     }
     if (level) {
-      infos->levels = level;
       infos->otherids = malloc(level * sizeof(*infos->otherids));
-      for (level = 0; ; level++) {
+      if (infos->otherids) {
+       infos->levels = level;
+       for (level = 0; ; level++) {
 	ecx = level;
 	eax = 0x0b;
 	hwloc_x86_cpuid(&eax, &ebx, &ecx, &edx);
@@ -471,6 +487,7 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
       infos->packageid = apic_id >> apic_shift;
       hwloc_debug("x2APIC remainder: %u\n", infos->packageid);
       hwloc_debug("this is thread %u of core %u\n", infos->threadid, infos->coreid);
+     }
     }
   }
 
@@ -481,38 +498,46 @@ static void look_proc(struct hwloc_backend *backend, struct procinfo *infos, uns
     /* default cacheid value */
     cache->cacheid = infos->apicid / cache->nbthreads_sharing;
 
-    /* AMD quirk */
-    if (cpuid_type == amd
-	&& infos->cpufamilynumber== 0x10 && infos->cpumodelnumber == 0x9
-	&& cache->level == 3
-	&& (cache->ways == -1 || (cache->ways % 2 == 0)) && cache->nbthreads_sharing >= 8) {
-      /* Fix AMD family 0x10 model 0x9 (Magny-Cours) with 8 or 12 cores.
-       * The L3 (and its associativity) is actually split into two halves).
-       */
-      if (cache->nbthreads_sharing == 16)
-	cache->nbthreads_sharing = 12; /* nbthreads_sharing is a power of 2 but the processor actually has 8 or 12 cores */
-      cache->nbthreads_sharing /= 2;
-      cache->size /= 2;
-      if (cache->ways != -1)
-	cache->ways /= 2;
-      /* AMD Magny-Cours 12-cores processor reserve APIC ids as AAAAAABBBBBB....
-       * among first L3 (A), second L3 (B), and unexisting cores (.).
-       * On multi-socket servers, L3 in non-first sockets may have APIC id ranges
-       * such as [16-21] that are not aligned on multiple of nbthreads_sharing (6).
-       * That means, we can't just compare apicid/nbthreads_sharing to identify siblings.
-       */
-      cache->cacheid = (infos->apicid % infos->max_log_proc) / cache->nbthreads_sharing /* cacheid within the package */
-	+ 2 * (infos->apicid / infos->max_log_proc); /* add 2 caches per previous package */
+    if (cpuid_type == amd) {
+      /* AMD quirks */
+      if (infos->cpufamilynumber == 0x17
+	  && cache->level == 3 && cache->nbthreads_sharing == 6) {
+	/* AMD family 0x17 always shares L3 between 8 APIC ids,
+	 * even when only 6 APIC ids are enabled and reported in nbthreads_sharing
+	 * (on 24-core CPUs).
+	 */
+	cache->cacheid = infos->apicid / 8;
 
-    } else if (cpuid_type == amd
-	       && infos->cpufamilynumber == 0x15
-	       && (infos->cpumodelnumber == 0x1 /* Bulldozer */ || infos->cpumodelnumber == 0x2 /* Piledriver */)
-	       && cache->level == 3 && cache->nbthreads_sharing == 6) {
-      /* AMD Bulldozer and Piledriver 12-core processors have same APIC ids as Magny-Cours above,
-       * but we can't merge the checks because the original nbthreads_sharing must be exactly 6 here.
-       */
-      cache->cacheid = (infos->apicid % infos->max_log_proc) / cache->nbthreads_sharing /* cacheid within the package */
-	+ 2 * (infos->apicid / infos->max_log_proc); /* add 2 cache per previous package */
+      } else if (infos->cpufamilynumber== 0x10 && infos->cpumodelnumber == 0x9
+	  && cache->level == 3
+	  && (cache->ways == -1 || (cache->ways % 2 == 0)) && cache->nbthreads_sharing >= 8) {
+	/* Fix AMD family 0x10 model 0x9 (Magny-Cours) with 8 or 12 cores.
+	 * The L3 (and its associativity) is actually split into two halves).
+	 */
+	if (cache->nbthreads_sharing == 16)
+	  cache->nbthreads_sharing = 12; /* nbthreads_sharing is a power of 2 but the processor actually has 8 or 12 cores */
+	cache->nbthreads_sharing /= 2;
+	cache->size /= 2;
+	if (cache->ways != -1)
+	  cache->ways /= 2;
+	/* AMD Magny-Cours 12-cores processor reserve APIC ids as AAAAAABBBBBB....
+	 * among first L3 (A), second L3 (B), and unexisting cores (.).
+	 * On multi-socket servers, L3 in non-first sockets may have APIC id ranges
+	 * such as [16-21] that are not aligned on multiple of nbthreads_sharing (6).
+	 * That means, we can't just compare apicid/nbthreads_sharing to identify siblings.
+	 */
+	cache->cacheid = (infos->apicid % infos->max_log_proc) / cache->nbthreads_sharing /* cacheid within the package */
+	  + 2 * (infos->apicid / infos->max_log_proc); /* add 2 caches per previous package */
+
+      } else if (infos->cpufamilynumber == 0x15
+		 && (infos->cpumodelnumber == 0x1 /* Bulldozer */ || infos->cpumodelnumber == 0x2 /* Piledriver */)
+		 && cache->level == 3 && cache->nbthreads_sharing == 6) {
+	/* AMD Bulldozer and Piledriver 12-core processors have same APIC ids as Magny-Cours above,
+	 * but we can't merge the checks because the original nbthreads_sharing must be exactly 6 here.
+	 */
+	cache->cacheid = (infos->apicid % infos->max_log_proc) / cache->nbthreads_sharing /* cacheid within the package */
+	  + 2 * (infos->apicid / infos->max_log_proc); /* add 2 cache per previous package */
+      }
     }
   }
 
@@ -970,6 +995,14 @@ static void hwloc_x86_os_state_restore(hwloc_x86_os_state_t *state __hwloc_attri
 #define AMD_EDX ('e' | ('n'<<8) | ('t'<<16) | ('i'<<24))
 #define AMD_ECX ('c' | ('A'<<8) | ('M'<<16) | ('D'<<24))
 
+#define ZX_EBX ('C' | ('e'<<8) | ('n'<<16) | ('t'<<24))
+#define ZX_EDX ('a' | ('u'<<8) | ('r'<<16) | ('H'<<24))
+#define ZX_ECX ('a' | ('u'<<8) | ('l'<<16) | ('s'<<24))
+
+#define SH_EBX (' ' | (' '<<8) | ('S'<<16) | ('h'<<24))
+#define SH_EDX ('a' | ('n'<<8) | ('g'<<16) | ('h'<<24))
+#define SH_ECX ('a' | ('i'<<8) | (' '<<16) | (' '<<24))
+
 /* fake cpubind for when nbprocs=1 and no binding support */
 static int fake_get_cpubind(hwloc_topology_t topology __hwloc_attribute_unused,
 			    hwloc_cpuset_t set __hwloc_attribute_unused,
@@ -1044,6 +1077,11 @@ int hwloc_look_x86(struct hwloc_backend *backend, int fulldiscovery)
     cpuid_type = intel;
   if (ebx == AMD_EBX && ecx == AMD_ECX && edx == AMD_EDX)
     cpuid_type = amd;
+  /* support for zhaoxin x86 cpu vendor id */
+  if (ebx == ZX_EBX && ecx == ZX_ECX && edx == ZX_EDX)
+    cpuid_type = zhaoxin;
+  if (ebx == SH_EBX && ecx == SH_ECX && edx == SH_EDX)
+    cpuid_type = zhaoxin;
 
   hwloc_debug("highest cpuid %x, cpuid type %u\n", highest_cpuid, cpuid_type);
   if (highest_cpuid < 0x01) {

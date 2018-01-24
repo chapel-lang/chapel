@@ -1,9 +1,0 @@
-bug: internal error attempting to write atomics in generic class initializer
-
-Something about this test results in an internal error.  I don't think
-this test should work (*), but I stumbled across it while looking for a
-correct solution.
-
-(*) = Because the compiler presumably shouldn't view a .write() as an
-initialization of the atomic?  Yet interestingly, if I remove the
-generic field, it does work, so maybe I'm wrong in that assumption?

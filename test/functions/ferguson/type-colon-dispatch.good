@@ -1,3 +1,4 @@
+foo
 int
 integral
 any type
@@ -5,3 +6,18 @@ R
 Parent
 Parent
 object
+GenericParent
+GenericChild(int)
+GenericParent
+
+bar
+int
+integral
+any type
+R
+Parent
+Parent
+object
+GenericParent
+GenericChild(int)
+GenericParent

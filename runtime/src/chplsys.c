@@ -414,7 +414,7 @@ uint64_t chpl_sys_physicalMemoryBytes(void) {
 // Should return in some sense "currently available user memory"
 // This should return one of:
 //  * the amount of memory that can be allocated without causing swapping
-//  * the amount of memory that is currently unnused (i.e. free)
+//  * the amount of memory that is currently unused (i.e. free)
 uint64_t chpl_sys_availMemoryBytes(void) {
 #if defined(__APPLE__)
 

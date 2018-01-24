@@ -10,5 +10,5 @@ record Foo {
 
 proc main() {
   var f = new Foo(true, 3);
-  writeln(f.someFunc());
+  f.someFunc();
 }

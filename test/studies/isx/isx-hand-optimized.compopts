@@ -1,1 +1,1 @@
---no-warnings -schpl_defaultArrayInitMethod=ArrayInit.serialInit --no-bounds-checks
+--no-warnings --no-bounds-checks

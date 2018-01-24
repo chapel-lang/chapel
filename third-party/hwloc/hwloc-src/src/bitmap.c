@@ -317,6 +317,8 @@ int hwloc_bitmap_asprintf(char ** strp, const struct hwloc_bitmap_s * __hwloc_re
 
   len = hwloc_bitmap_snprintf(NULL, 0, set);
   buf = malloc(len+1);
+  if (!buf)
+    return -1;
   *strp = buf;
   return hwloc_bitmap_snprintf(buf, len+1, set);
 }
@@ -448,6 +450,8 @@ int hwloc_bitmap_list_asprintf(char ** strp, const struct hwloc_bitmap_s * __hwl
 
   len = hwloc_bitmap_list_snprintf(NULL, 0, set);
   buf = malloc(len+1);
+  if (!buf)
+    return -1;
   *strp = buf;
   return hwloc_bitmap_list_snprintf(buf, len+1, set);
 }
@@ -587,6 +591,8 @@ int hwloc_bitmap_taskset_asprintf(char ** strp, const struct hwloc_bitmap_s * __
 
   len = hwloc_bitmap_taskset_snprintf(NULL, 0, set);
   buf = malloc(len+1);
+  if (!buf)
+    return -1;
   *strp = buf;
   return hwloc_bitmap_taskset_snprintf(buf, len+1, set);
 }

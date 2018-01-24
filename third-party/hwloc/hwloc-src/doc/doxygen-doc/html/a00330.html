@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -57,7 +57,7 @@ Machine (2048MB)
 <h1><a class="anchor" id="synthetic_string"></a>
 Synthetic description string</h1>
 <p>Each item in the description string gives the type of the level and the number of such children under each object of the previous level. That is why the above topology contains 4 cores (2 cores times 2 nodes).</p>
-<p>These type names must be written as <code>machine</code>, <code>node</code>, <code>package</code>, <code>core</code>, <code>cache</code>, <code>pu</code>, <code>group</code>. They do not need to be written case-sensitively, nor entirely (as long as there is no ambiguity, 2 characters such as <code>ma</code> select a Machine level). Type-specific attributes may also be given such as <code>L2iCache</code> (<a class="el" href="a00168.html#ga8f8452fa8e707cad59b8a73a6fa06059" title="Return an object type and attributes from a type string. ">hwloc_obj_type_sscanf()</a> is used for parsing the type names). Note that I/O and Misc objects are not available.</p>
+<p>These type names must be written as <code>machine</code>, <code>numanode</code>, <code>package</code>, <code>core</code>, <code>cache</code>, <code>pu</code>, <code>group</code>. They do not need to be written case-sensitively, nor entirely (as long as there is no ambiguity, 2 characters such as <code>ma</code> select a Machine level). Type-specific attributes may also be given such as <code>L2iCache</code> (<a class="el" href="a00168.html#ga8f8452fa8e707cad59b8a73a6fa06059" title="Return an object type and attributes from a type string. ">hwloc_obj_type_sscanf()</a> is used for parsing the type names). Note that I/O and Misc objects are not available.</p>
 <p>The root object does not appear in the string. A Machine object is used by default, and a System object replaces it if a Machine level is specified in the string.</p>
 <p>Cache level depths are automatically chosen by hwloc (only a L2 first, then a L1 under it, then L3 above, then L4 etc.) unless they are specified. Memory and cache sizes are also automatically chosen if needed.</p>
 <p>Each item may be followed parentheses containing a list of space-separated attributes. For instance: </p><ul>

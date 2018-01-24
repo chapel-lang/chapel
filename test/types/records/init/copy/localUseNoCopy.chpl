@@ -1,6 +1,32 @@
-proc dateString() {
-  use DateTime;
-  return datetime.now().strftime("%Y")[1..2];
+module Bar {
+  var globalR = new R();
+
+  record R {
+    var x,y,z : int;
+  }
+  proc R.init(){
+  }
+  proc R.init(a,b,c) {
+    x = a;
+    y = b;
+    z = c;
+  }
+
+  proc getter() {
+    // compiler inserts a chpl__initCopy, which is flagged as erroneous because
+    // we were unable to resolve the default copy initializer from
+    // chpl_gen_main.
+    return globalR;
+  }
 }
 
-writeln(dateString());
+proc main() {
+  use Bar;
+
+  // For 's = r' below, the compiler does actually insert the default copy
+  // initializer.
+  var r : R;
+  var s = r;
+
+  writeln(getter());
+}

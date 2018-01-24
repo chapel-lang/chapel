@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -142,7 +142,7 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the object of type <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55a9d917a3e5497950c6d8948b8e183db5a" title="NUMA node. A set of processors around memory which the processors can directly access. ">HWLOC_OBJ_NUMANODE</a> with <code>os_index</code>. </p>
+<p>Returns the object of type <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55a9d917a3e5497950c6d8948b8e183db5a" title="NUMA node. An object that contains memory that is directly and byte-accessible to the host processors...">HWLOC_OBJ_NUMANODE</a> with <code>os_index</code>. </p>
 <p>This function is useful for converting a nodeset into the NUMA node objects it contains. When retrieving the current binding (e.g. with <a class="el" href="a00171.html#ga84ee275e84286d17a5853c52272a6a95" title="Query the default memory binding policy and physical locality of the current process or thread...">hwloc_get_membind_nodeset()</a>), one may iterate over the bits of the resulting nodeset with <a class="el" href="a00186.html#ga3f6861045a8029ade373510ffa727d2a" title="Loop macro iterating on bitmap bitmap. ">hwloc_bitmap_foreach_begin()</a>, and find the corresponding NUMA nodes with this function. </p>
 
 </div>

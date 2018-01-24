@@ -1,4 +1,0 @@
-feature request: copy initializer for generic record
-
-The compiler is not recognizing that the second initializer in this test is a
-copy initializer.
