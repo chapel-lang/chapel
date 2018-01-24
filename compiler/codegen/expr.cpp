@@ -440,7 +440,7 @@ void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 }
 
 // Create an LLVM store instruction possibly adding
-// appropriate metadata based upon the Chapel type of val.
+// appropriate metadata based upon the Chapel type destType.
 //
 static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
@@ -483,6 +483,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
 
 
 
+// The valType argument is a hint, in case we don't already know the
+// Chapel type of the memory into which we are storing.
 static
 llvm::StoreInst* codegenStoreLLVM(GenRet val,
                                   GenRet ptr,
@@ -550,6 +552,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   return ret;
 }
 
+// The valType argument is a hint, in case we don't already know the
+// Chapel type of the memory from which we are loading.
 static
 llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
                                 Type* valType = NULL,
@@ -2433,6 +2437,8 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     if( sret ) {
+      // The second argument to codegenLoadLLVM() is a hint, in the
+      // case that we don't already know the Chapel type being loaded.
       ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
     }
 #endif
@@ -3160,6 +3166,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         GenRet value = codegenValue(from);
         assert(value.val);
 
+	// The third argument to codegenStoreLLVM() is a hint, in the
+	// case that we don't already know the type of the destination.
         codegenStoreLLVM(value, to_ptr, type);
 #endif
       }
