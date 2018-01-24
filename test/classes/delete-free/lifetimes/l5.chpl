@@ -1,5 +1,5 @@
 pragma "safe"
-module t8 {
+module l5 {
 
 record Rint {
   var x:int;

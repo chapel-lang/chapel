@@ -1,3 +1,5 @@
+pragma "safe"
+module l7 {
 use OwnedObject;
 
 class MyClass {
@@ -23,3 +25,4 @@ proc test() {
 }
 
 test();
+}
