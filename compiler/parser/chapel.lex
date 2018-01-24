@@ -512,28 +512,50 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
       startChCount = 0;
     }
 
-    if (c == '\"') {
-      // escape double quotes
-      addCharEscapeNonprint('\\');
-      addCharEscapeNonprint('"');
-    } else if (c == '?') {
-      // backslash escape ? to avoid C trigraphs
-      addCharEscapeNonprint('\\');
-      addCharEscapeNonprint('?');
-    } else if (c == '\n') {
-      // translate newline into two characters "\n"
-      addCharEscapeNonprint('\\');
-      addCharEscapeNonprint('n');
-    } else if (c == '\t') {
-      // translate tab into two characters "\t"
-      addCharEscapeNonprint('\\');
-      addCharEscapeNonprint('t');
-    } else if (c == '\\') {
-      // translate backslash into an escaped double-backslash
-      addCharEscapeNonprint('\\');
-      addCharEscapeNonprint('\\');
-    } else {
-      addCharEscapeNonprint(c);
+    switch (c) {
+      case '\"' :
+        addChar('\\');
+        addChar('"');
+        break;
+      case '?' :
+        addChar('\\');
+        addChar('?');
+        break;
+      case '\\' :
+        addChar('\\');
+        addChar('\\');
+        break;
+      case '\a' :
+        addChar('\\');
+        addChar('a');
+        break;
+      case '\b' :
+        addChar('\\');
+        addChar('b');
+        break;
+      case '\f' :
+        addChar('\\');
+        addChar('f');
+        break;
+      case '\n' :
+        addChar('\\');
+        addChar('n');
+        break;
+      case '\r' :
+        addChar('\\');
+        addChar('r');
+        break;
+      case '\t' :
+        addChar('\\');
+        addChar('t');
+        break;
+      case '\v' :
+        addChar('\\');
+        addChar('v');
+        break;
+      default :
+        addChar(c);
+        break;
     }
   } /* eat up string */
 
