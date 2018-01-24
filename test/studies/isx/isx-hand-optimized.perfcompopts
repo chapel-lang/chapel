@@ -1,1 +1,1 @@
---no-warnings -schpl_defaultArrayInitMethod=ArrayInit.serialInit -sdisableBlockLazyRAD
+--no-warnings -sdisableBlockLazyRAD
