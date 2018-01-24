@@ -146,31 +146,10 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
-//wass
-#include "view.h"
-static int blockid = 0;
-static int varid = 0;
-static VarSymbol* varsym = NULL;
-static void shovar(std::set<VarSymbol*>& ignoredVariables, BaseAST* ast) {
-  if (!varsym) return;
-  printf("ast %d   ", ast->id);
-  if (ignoredVariables.count(varsym))
-    printf("yes varsym %d\n", varsym->id);
-  else
-    printf("no varsym\n");
-}
-
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables) {
-if (block->id == blockid) {
-  printf("=========== BlockStmt %d   %s\n", block->id, debugLoc(block));
-  varsym = toVarSymbol(aid(varid));
-  debugSummary(varsym);
-  shovar(ignoredVariables, block);
-  gdbShouldBreakHere();
-}
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
@@ -183,7 +162,6 @@ if (block->id == blockid) {
   // it is no longer available for destruction?
 
   for_alist(stmt, block->body) {
-    shovar(ignoredVariables, stmt);
     //
     // Handle the current statement
     //
@@ -257,7 +235,6 @@ if (block->id == blockid) {
 
       // The main block for a function or a simple sub-block
       if (parent == NULL || gotoStmt == NULL) {
-        if (block->id == blockid) gdbShouldBreakHere();
         scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
       // Currently unprepared for a nested scope that ends in a goto
@@ -281,7 +258,6 @@ if (block->id == blockid) {
       }
     }
   }
-  shovar(ignoredVariables, rootModule);
 }
 
 // Is this a DefExpr that defines a variable that might be autoDestroyed?
