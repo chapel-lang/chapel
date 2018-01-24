@@ -3116,7 +3116,7 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharEscapeNonprint(char c);
-static void  addUnescapedChar(char c);
+static void  addCharEscapingC(char c);
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -3302,10 +3302,10 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
 static const char* eatMultilineStringLiteral(yyscan_t scanner,
                                              const char* startChar) {
-  YYLTYPE*   yyLloc  = yyget_lloc(scanner);
+  YYLTYPE* yyLloc    = yyget_lloc(scanner);
   const char startCh = *startChar;
-  int startChCount = 0;
-  int        c       = 0;
+  int startChCount   = 0;
+  int c              = 0;
 
   newString();
 
@@ -3325,7 +3325,7 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
       startChCount = 0;
     }
 
-    addUnescapedChar(c);
+    addCharEscapingC(c);
   } /* eat up string */
 
   if (c == 0) {
@@ -3760,8 +3760,8 @@ static void addCharEscapeNonprint(char c) {
   }
 }
 
-// Convert C escape characters into two characters '\\' and the other character
-static void addUnescapedChar(char c) {
+// Convert C escape characters into two characters: '\\' and the other character
+static void addCharEscapingC(char c) {
   switch (c) {
     case '\"' :
       addChar('\\');
