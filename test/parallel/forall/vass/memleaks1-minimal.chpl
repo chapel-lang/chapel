@@ -7,8 +7,10 @@ proc main() {
   var MY_VAR = 1;
   const m1 = memoryUsed();
 
-  forall idx in MYITER() do
-    useMe(MY_VAR);
+  {
+    forall idx in MYITER() do
+      useMe(MY_VAR);
+  }
 
   const m2 = memoryUsed();
   writeln("leaked: ", m2-m1);
