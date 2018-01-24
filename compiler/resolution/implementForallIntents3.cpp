@@ -541,8 +541,6 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   // non-ref type is ok for eFormal
 
   addCloneOfIB(aInit, map, SI);
-
-  gdbShouldBreakHere();
 }
 
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
