@@ -26,6 +26,7 @@
 #include "DeferStmt.h"
 #include "errorHandling.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -134,7 +135,10 @@ static LabelSymbol* findReturnLabel(FnSymbol* fn);
 static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
 static bool         isErrorLabel(const Expr*        stmt);
-static bool isYieldStmt(const Expr* stmt);
+static bool         isYieldStmt(const Expr* stmt);
+static void         walkForallBlocks(FnSymbol* fn, ForallStmt* forall,
+                                     AutoDestroyScope* parentScope,
+                                     std::set<VarSymbol*>& parentIgnored);
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
     std::set<VarSymbol*>& ignoredVariables);
@@ -142,10 +146,31 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
+//wass
+#include "view.h"
+static int blockid = 0;
+static int varid = 0;
+static VarSymbol* varsym = NULL;
+static void shovar(std::set<VarSymbol*>& ignoredVariables, BaseAST* ast) {
+  if (!varsym) return;
+  printf("ast %d   ", ast->id);
+  if (ignoredVariables.count(varsym))
+    printf("yes varsym %d\n", varsym->id);
+  else
+    printf("no varsym\n");
+}
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
                       std::set<VarSymbol*>& ignoredVariables) {
+if (block->id == blockid) {
+  printf("=========== BlockStmt %d   %s\n", block->id, debugLoc(block));
+  varsym = toVarSymbol(aid(varid));
+  debugSummary(varsym);
+  shovar(ignoredVariables, block);
+  gdbShouldBreakHere();
+}
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
@@ -158,6 +183,7 @@ static void walkBlock(FnSymbol*         fn,
   // it is no longer available for destruction?
 
   for_alist(stmt, block->body) {
+    shovar(ignoredVariables, stmt);
     //
     // Handle the current statement
     //
@@ -197,6 +223,10 @@ static void walkBlock(FnSymbol*         fn,
       } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
         walkBlock(fn, &scope, subBlock, ignoredVariables);
 
+      // Recurse in to a ForallStmt
+      } else if (ForallStmt* forall = toForallStmt(stmt)) {
+        walkForallBlocks(fn, forall, &scope, ignoredVariables);
+
       // Recurse in to the BlockStmt(s) of a CondStmt
       } else if (CondStmt*  cond     = toCondStmt(stmt))  {
 
@@ -227,6 +257,7 @@ static void walkBlock(FnSymbol*         fn,
 
       // The main block for a function or a simple sub-block
       if (parent == NULL || gotoStmt == NULL) {
+        if (block->id == blockid) gdbShouldBreakHere();
         scope.insertAutoDestroys(fn, stmt, ignoredVariables);
 
       // Currently unprepared for a nested scope that ends in a goto
@@ -250,6 +281,7 @@ static void walkBlock(FnSymbol*         fn,
       }
     }
   }
+  shovar(ignoredVariables, rootModule);
 }
 
 // Is this a DefExpr that defines a variable that might be autoDestroyed?
@@ -328,6 +360,27 @@ static bool isYieldStmt(const Expr* stmt) {
 
   return false;
 }
+
+// Helper for walkBlock() to walk everything for a ForallStmt.
+static void walkForallBlocks(FnSymbol* fn, ForallStmt* forall,
+                             AutoDestroyScope* parentScope,
+                             std::set<VarSymbol*>& parentIgnored)
+{
+  std::set<VarSymbol*> toIgnoreLB(parentIgnored);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB);
+
+  for_shadow_vars(svar, temp, forall)
+    if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
+      {
+        // I am unsure about these recursive walkBlock() calls, specifically
+        //  * should 'toIgnoreSV' start out with 'parentIgnored'?
+        //  * is it appropriate to reference 'fn' ?  -vass 1/2018
+        std::set<VarSymbol*> toIgnoreSV(parentIgnored);
+        walkBlock(fn, parentScope, svar->initBlock(), toIgnoreSV);
+        walkBlock(fn, parentScope, svar->deinitBlock(), toIgnoreSV);
+      }
+}
+
 /*
  This function identifies variables that have not yet been initialized
  because the function that would initialize them has thrown an error.
