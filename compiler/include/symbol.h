@@ -435,6 +435,8 @@ class TypeSymbol : public Symbol {
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
   llvm::MDNode* llvmTbaaAggTypeDescriptor;    // aggregate type descriptor
+  llvm::MDNode* llvmTbaaAggAccessTag;         // aggregate access tag
+  llvm::MDNode* llvmConstTbaaAggAccessTag;    // aggregate const access tag
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
@@ -446,6 +448,8 @@ class TypeSymbol : public Symbol {
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
   void* llvmTbaaAggTypeDescriptor;
+  void* llvmTbaaAggAccessTag;
+  void* llvmConstTbaaAggAccessTag;
   void* llvmTbaaStructCopyNode;
   void* llvmConstTbaaStructCopyNode;
   void* llvmDIType;
