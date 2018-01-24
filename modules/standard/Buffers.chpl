@@ -161,9 +161,9 @@ module Buffers {
   proc bytes.init(x: bytes) {
     this.home = here;
     if x.home == here {
+      qbytes_retain(x._bytes_internal);
       this._bytes_internal = x._bytes_internal;
       super.init();
-      qbytes_retain(x._bytes_internal);
     } else {
       // The initial ref count is 1, so no need to call qbytes_retain here.
       this._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
@@ -325,10 +325,10 @@ module Buffers {
   pragma "no doc"
   proc buffer.init(x: buffer) {
     if x.home == here {
+      qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
       super.init();
-      qbuffer_retain(x._buf_internal);
     } else {
       var error: syserr = ENOERR;
       this.init(error);
