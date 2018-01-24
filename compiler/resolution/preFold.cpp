@@ -1579,6 +1579,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   ArgSymbol* thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
 
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+  thisMethod->addFlag(FLAG_COMPILER_GENERATED);
 
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",
