@@ -32,17 +32,15 @@ writeln(myClass);
 //
 // Scalar TBAA type descriptors:  reference to parent type only
 // CHECK-DAG: ![[UNIONS:[0-9]+]] = !{!"all unions", ![[CHPLTYPES]], i64 0}
+// CHECK-DAG: ![[INT32:[0-9]+]] = !{!"int32_t", ![[UNIONS]], i64 0}
 // CHECK-DAG: ![[INT:[0-9]+]] = !{!"int64_t", ![[UNIONS]], i64 0}
 // CHECK-DAG: ![[REAL:[0-9]+]] = !{!"_real64", ![[UNIONS]], i64 0}
-// CHECK-DAG: ![[CVOIDPTR:[0-9]+]] = !{!"C void ptr", ![[UNIONS]], i64 0}
 //
-// Note that "object" is a scalar type descriptor because it is a pointer.
-// CHECK-DAG: ![[OBJECT:[0-9]+]] = !{!"object", ![[CVOIDPTR]], i64 0}
-//
-// Class object TBAA type descriptor:  reference to superclass and each field
-// CHECK-DAG: ![[CLS:[0-9]+]] = !{!"chpl_MyClass_chpl_object", ![[OBJECT]], i64 0, ![[INT]], i64 {{[0-9]+}}, ![[REAL]], i64 {{[0-9]+}}}
+// Class object TBAA type descriptors:  reference to superclass and each field
+// CHECK-DAG: ![[OBJOBJ:[0-9]+]] = !{!"chpl_object_object", ![[INT32]], i64 0}
+// CHECK-DAG: ![[CLSOBJ:[0-9]+]] = !{!"chpl_MyClass_chpl_object", ![[OBJOBJ]], i64 0, ![[INT]], i64 {{[0-9]+}}, ![[REAL]], i64 {{[0-9]+}}}
 //
 // Now validate those access tags.
 // The int is not at offset zero because the object superclass comes first.
-// CHECK-DAG: ![[INTVIACLS]] = !{![[CLS]], ![[INT]], i64 {{[0-9]+}}}
-// CHECK-DAG: ![[REALVIACLS]] = !{![[CLS]], ![[REAL]], i64 {{[0-9]+}}}
+// CHECK-DAG: ![[INTVIACLS]] = !{![[CLSOBJ]], ![[INT]], i64 {{[0-9]+}}}
+// CHECK-DAG: ![[REALVIACLS]] = !{![[CLSOBJ]], ![[REAL]], i64 {{[0-9]+}}}
