@@ -1091,7 +1091,7 @@ void TypeSymbol::codegenAggMetadata() {
 
   GenInfo* info = gGenInfo;
 
-  // Set the llvmTbaaTypeDescriptor to non-NULL so that we can
+  // Set the llvmTbaaAggTypeDescriptor to non-NULL so that we can
   // avoid recursing.
   llvmTbaaAggTypeDescriptor = info->tbaaRootNode;
 
