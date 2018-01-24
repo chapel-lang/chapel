@@ -323,7 +323,7 @@ hasUserAssign(Type* type) {
 bool hasAutoCopyForType(Type* type) {
   std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
 
-  return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
+  return it != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
@@ -340,12 +340,29 @@ FnSymbol* getAutoCopyForType(Type* type) {
   return it->second;
 }
 
+FnSymbol* getAutoCopy(Type* type) {
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
+  if (it == autoCopyMap.end())
+    return NULL;
+  else
+    return it->second;  // can also be NULL
+}
+
 void getAutoCopyTypeKeys(Vec<Type*>& keys) {
   std::map<Type*, FnSymbol*>::iterator it;
 
   for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
     keys.add(it->first);
   }
+}
+
+FnSymbol* getAutoDestroy(Type* t) {
+  return autoDestroyMap.get(t);
+}
+
+FnSymbol* getUnalias(Type* t) {
+  return unaliasMap.get(t);
 }
 
 /************************************* | **************************************
@@ -417,18 +434,6 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
   return false;
 }
 
-
-FnSymbol* getAutoCopy(Type *t) {
-  return getAutoCopyForType(t);
-}
-
-
-FnSymbol* getAutoDestroy(Type* t) {
-  return autoDestroyMap.get(t);
-}
-FnSymbol* getUnalias(Type* t) {
-  return unaliasMap.get(t);
-}
 
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.

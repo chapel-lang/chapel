@@ -69,12 +69,6 @@ extern std::map<CallExpr*, CallExpr*>   eflopiMap;
 
 
 
-bool       hasAutoCopyForType(Type* type);
-
-FnSymbol*  getAutoCopyForType(Type* type);
-
-void       getAutoCopyTypeKeys(Vec<Type*>& keys);
-
 bool       propagateNotPOD(Type* t);
 
 Expr*      resolvePrimInit(CallExpr* call);
@@ -91,6 +85,8 @@ Type*      getConcreteParentForGenericFormal(Type* actualType,
                                              Type* formalType);
 
 bool       isInstantiation(Type* sub, Type* super);
+
+bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
@@ -194,8 +190,11 @@ void      ensureInMethodList(FnSymbol* fn);
 
 bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
-FnSymbol* getAutoCopy(Type* t);
-FnSymbol* getAutoDestroy(Type* t);
+bool      hasAutoCopyForType(Type* type);
+FnSymbol* getAutoCopyForType(Type* type);   // reqiures hasAutoCopyForType()==true
+void      getAutoCopyTypeKeys(Vec<Type*>& keys);
+FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
+FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
 
 Expr*     resolveExpr(Expr* expr);
