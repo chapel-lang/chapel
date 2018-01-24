@@ -496,9 +496,18 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
 
   newString();
 
-  while (((c = getNextYYChar(scanner)) != startCh || startChCount < 2) && c != 0) {
+  while (true) {
+    c = getNextYYChar(scanner);
+
+    if (c == 0) {
+      break;
+    }
+
     if (c == startCh) {
       startChCount++;
+      if (startChCount == 3) {
+        break;
+      }
     } else {
       startChCount = 0;
     }
