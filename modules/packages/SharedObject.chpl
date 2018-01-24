@@ -96,6 +96,7 @@ module SharedObject {
     forwarding p;
 
     pragma "no doc"
+    pragma "unsafe"
     var pn:ReferenceCount; // reference counter
 
     /*
