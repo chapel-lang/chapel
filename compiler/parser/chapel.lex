@@ -303,7 +303,7 @@ zip              return processToken(yyscanner, TZIP);
 static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
-static void  addCharEscape(char c);
+static void  addCharEscapeNonprint(char c);
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -444,14 +444,14 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
       yyerror(yyLloc, &context, "end-of-line in a string literal without a preceding backslash");
     } else {
       if (startCh == '\'' && c == '\"') {
-        addCharEscape('\\');
+        addCharEscapeNonprint('\\');
       }
 
       // \ escape ? to avoid C trigraphs
       if (c == '?')
-        addCharEscape('\\');
+        addCharEscapeNonprint('\\');
 
-      addCharEscape(c);
+      addCharEscapeNonprint(c);
     }
 
     if (c == '\\') {
@@ -459,21 +459,21 @@ static const char* eatStringLiteral(yyscan_t scanner, const char* startChar) {
 
       if (c == '\n') {
         processNewline(scanner);
-        addCharEscape('n');
+        addCharEscapeNonprint('n');
       } else if (c == 'u' || c == 'U') {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "universal character name not yet supported in string literal");
-        addCharEscape('t'); // add a valid escape to continue parsing
+        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
       } else if ('0' <= c && c <= '7' ) {
         ParserContext context(scanner);
         yyerror(yyLloc, &context, "octal escape not supported in string literal");
-        addCharEscape('t'); // add a valid escape to continue parsing
+        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
       } else if (c == 0) {
         // we've reached EOF
-        addCharEscape('t'); // add a valid escape to continue parsing
+        addCharEscapeNonprint('t'); // add a valid escape to continue parsing
         break; // EOF reached, so stop
       } else {
-        addCharEscape(c);
+        addCharEscapeNonprint(c);
       }
     }
   } /* eat up string */
@@ -505,26 +505,26 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
 
     if (c == '\"') {
       // escape double quotes
-      addCharEscape('\\');
-      addCharEscape('"');
+      addCharEscapeNonprint('\\');
+      addCharEscapeNonprint('"');
     } else if (c == '?') {
       // backslash escape ? to avoid C trigraphs
-      addCharEscape('\\');
-      addCharEscape('?');
+      addCharEscapeNonprint('\\');
+      addCharEscapeNonprint('?');
     } else if (c == '\n') {
       // translate newline into two characters "\n"
-      addCharEscape('\\');
-      addCharEscape('n');
+      addCharEscapeNonprint('\\');
+      addCharEscapeNonprint('n');
     } else if (c == '\t') {
       // translate tab into two characters "\t"
-      addCharEscape('\\');
-      addCharEscape('t');
+      addCharEscapeNonprint('\\');
+      addCharEscapeNonprint('t');
     } else if (c == '\\') {
       // translate backslash into an escaped double-backslash
-      addCharEscape('\\');
-      addCharEscape('\\');
+      addCharEscapeNonprint('\\');
+      addCharEscapeNonprint('\\');
     } else {
-      addCharEscape(c);
+      addCharEscapeNonprint(c);
     }
   } /* eat up string */
 
@@ -947,7 +947,7 @@ static void addChar(char c) {
 }
 
 // Escapes
-static void addCharEscape(char c) {
+static void addCharEscapeNonprint(char c) {
   int escape  = !(isascii(c) && isprint(c));
 
   if (escape) {
