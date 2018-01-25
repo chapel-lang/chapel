@@ -868,7 +868,7 @@ module ChapelArray {
   pragma "no doc"
   record _distribution {
     var _pid:int;  // only used when privatized
-    pragma "unsafe"
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
@@ -1013,7 +1013,7 @@ module ChapelArray {
   pragma "ignore noinit"
   record _domain {
     var _pid:int; // only used when privatized
-    pragma "unsafe"
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDom
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
@@ -2046,7 +2046,7 @@ module ChapelArray {
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
-    pragma "unsafe"
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
