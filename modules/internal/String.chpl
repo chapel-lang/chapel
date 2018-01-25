@@ -698,7 +698,7 @@ module String {
       :arg count: an optional integer specifying the number of replacements to
                   make, values less than zero will replace all occurrences
 
-      :returns: a copy of the string where `needle` replaces `replacement` up
+      :returns: a copy of the string where `replacement` replaces `needle` up
                 to `count` times
      */
     // TODO: not ideal - count and single allocation probably faster
