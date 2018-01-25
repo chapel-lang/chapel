@@ -37,7 +37,7 @@ conclusions are
 The first concern is clearly the most pressing and it is the focus of
 this note.  We propose a key change to deliver the missing
 functionality, and then a few smaller changes to compensate for this
-change.  Beyond the fact that this proosal provides key functionality
+change.  Beyond the fact that this proposal provides key functionality
 that the current design does not, it is believed that it will be
 easier for some newer users to adopt.
 
@@ -73,7 +73,7 @@ Primary concerns
 The implementation of initializers in Chapel has matured to the point
 that it is practical to write reasonably sophisticated initializers
 and to begin to convert internal module code from constructors.  This
-provides an opportunity for external contributers to explore the
+provides an opportunity for external contributors to explore the
 specification.
 
 Unfortunately we have learned that
@@ -154,7 +154,7 @@ Unfortunately we have learned that
 
    Chapel allows a developer to omit an explicit call to a parent
    initializer and rely on the compiler to insert this call.  It
-   is unclear whether it is more natural for an initalizer to
+   is unclear whether it is more natural for an initializer to
    default to phase 1 or phase 2, i.e. whether the compiler
    should insert the call at the start of the body or at the end
    of the body, and it is hard to recall which choice has been made
@@ -181,7 +181,7 @@ Additional concerns
    initializer. This ensures that a user does not unintentionally
    rely on a compiler-generated all-fields initializer that fails
    to meet the necessary semantics, but may require the type designer
-   to explicity write this initializer even in the simple cases.
+   to explicitly write this initializer even in the simple cases.
 
    The type designer also becomes responsible for the default
    copy initializer if the type is a record.
@@ -313,7 +313,7 @@ an effort to catch a family of potential logic errors.
 
 Additionally we adopted Swift's policy that a single initializer
 implements both phase 1 and phase 2, and that fields are
-initialized from the most-dervied class towards the base class.
+initialized from the most-derived class towards the base class.
 
 Consider a hierarchy of the classes A -> B -> C -> D where B inherits
 from A, C from B, and D from C.  In the current implementation an
@@ -471,13 +471,13 @@ Derived Classes
 +++++++++++++++
 
 This is the case where the tradeoffs become more challenging.  The
-intent is avoid passing an object with uninitialized fields, and to
+intent is to avoid passing an object with uninitialized fields, and to
 avoid unpredictable/confusing interactions between components of the
 distributed implementation for the overall initializer.
 
-One choice is to allow derived classes to override one of both
+One choice is to allow derived classes to override one or both
 of init() and postInit() without any further extensions.  Additionally
-Derived.postInit() would not explictly invoke Parent.postInit(); the
+Derived.postInit() would not explicitly invoke Parent.postInit(); the
 implementation would arrange to work "as if" from base class towards
 most derived class to ensure that a derived class can "own"
 the final value of every visible field.
