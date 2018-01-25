@@ -371,30 +371,39 @@ static gni_nic_device_t nic_type;
 // The uGNI instance IDs we use are built from locale, communication
 // domain, and request buffer indices, plus remote operation codes.
 //
-#define _IID_LI_BITS  18
-#define _IID_LI_MASK  ((1 << _IID_LI_BITS) - 1)
-#define _IID_LI_POS   0
+#define _IID_LI_BITS        17
+#define _IID_LI_MASK        ((1 << _IID_LI_BITS) - 1)
+#define _IID_LI_POS         0
+#define _IID_ENCODE_LI(li)  (((li) & _IID_LI_MASK) << _IID_LI_POS)
+#define _IID_DECODE_LI(iid) (((iid) >> _IID_LI_POS) & _IID_LI_MASK)
 
-#define _IID_CDI_BITS 5
-#define _IID_CDI_MASK ((1 << _IID_CDI_BITS) - 1)
-#define _IID_CDI_POS  (_IID_LI_POS + _IID_LI_BITS)
+#define _IID_CDI_BITS        7
+#define _IID_CDI_MASK        ((1 << _IID_CDI_BITS) - 1)
+#define _IID_CDI_POS         (_IID_LI_POS + _IID_LI_BITS)
+#define _IID_ENCODE_CDI(cdi) (((cdi) & _IID_CDI_MASK) << _IID_CDI_POS)
+#define _IID_DECODE_CDI(iid) (((iid) >> _IID_CDI_POS) & _IID_CDI_MASK)
 
-#define _IID_RBI_BITS 1
-#define _IID_RBI_MASK ((1 << _IID_RBI_BITS) - 1)
-#define _IID_RBI_POS  (_IID_CDI_POS + _IID_CDI_BITS)
+#define _IID_RBI_BITS        1
+#define _IID_RBI_MASK        ((1 << _IID_RBI_BITS) - 1)
+#define _IID_RBI_POS         (_IID_CDI_POS + _IID_CDI_BITS)
+#define _IID_ENCODE_RBI(rbi) (((rbi) & _IID_RBI_MASK) << _IID_RBI_POS)
+#define _IID_DECODE_RBI(iid) (((iid) >> _IID_RBI_POS) & _IID_RBI_MASK)
 
-#if (_IID_LI_BITS + _IID_CDI_BITS + _IID_RBI_BITS) > 24
+#if (((_IID_LI_BITS + _IID_CDI_BITS) > 24) \
+     || ((_IID_LI_BITS + _IID_CDI_BITS + _IID_RBI_BITS) > 32))
 #error INST_ID fields are too big!
 #endif
 
-#define GNI_INST_ID(li, cdi, rbi)                                       \
-        (  (((li ) & _IID_LI_MASK ) << _IID_LI_POS )                    \
-         | (((cdi) & _IID_CDI_MASK) << _IID_CDI_POS)                    \
-         | (((rbi) & _IID_RBI_MASK) << _IID_RBI_POS))
-#define INST_ID_LI(id)      (((id) >> _IID_LI_POS ) & _IID_LI_MASK )
-#define INST_ID_CDI(id)     (((id) >> _IID_CDI_POS) & _IID_CDI_MASK)
-#define INST_ID_RBI(id)     (((id) >> _IID_RBI_POS) & _IID_RBI_MASK)
+#define GNI_ENCODE_INST_ID(li, cdi) \
+        (_IID_ENCODE_LI(li) | _IID_ENCODE_CDI(cdi))
 
+#define GNI_ENCODE_REM_INST_ID(li, cdi, rbi) \
+        (GNI_ENCODE_INST_ID(li, cdi) | _IID_ENCODE_RBI(rbi))
+
+#define GNI_DECODE_REM_INST_ID(li, cdi, rbi, iid)                       \
+        ((li = _IID_DECODE_LI(iid)),                                    \
+         (cdi = _IID_DECODE_CDI(iid)),                                  \
+         (rbi = _IID_DECODE_RBI(iid)))
 
 //
 // Declarations having to do with memory and memory registration.
@@ -1308,7 +1317,7 @@ static void      set_hugepage_info(void);
 static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
-static void      rf_handler(gni_cq_entry_t*, void*);
+static void      rf_handler(gni_cq_entry_t*);
 static void      fork_call_wrapper_blocking(chpl_comm_on_bundle_t*);
 static void      fork_call_wrapper_large(fork_large_call_task_t*);
 static void      fork_get_wrapper(fork_xfer_task_t*);
@@ -1938,16 +1947,20 @@ static void compute_comm_dom_cnt(void)
   comm_dom_cnt++;  // count the polling task's dedicated comm domain
 
   //
-  // For now, limit us to 30 communication domains.  (The Gemini NIC
-  // only supports up to 32 anyway.  Aries supports 128, but it isn't
-  // clear that we can make use of more than about 30.)
+  // Limit us to 30 communication domains on Gemini (architectural
+  // limit = 32) and 120 on Aries (architectural limit = 128).
   //
   // TODO: Eventually we should collect statistics and figure out how
   //       many comm domains we actually need, that is, the most that we
   //       can really keep busy.
   //
-  if (comm_dom_cnt > 30)
-    comm_dom_cnt = 30;
+  if (nic_type == GNI_DEVICE_GEMINI) {
+    if (comm_dom_cnt > 30)
+      comm_dom_cnt = 30;
+  } else {
+    if (comm_dom_cnt > 120)
+      comm_dom_cnt = 120;
+  }
 
   if (comm_dom_cnt >= (1 << _IID_CDI_BITS))
     CHPL_INTERNAL_ERROR("too many comm domains for internal encoding");
@@ -2001,7 +2014,7 @@ void gni_setup_per_comm_dom(int cdi)
       GNI_FAIL(gni_rc, "GNI_EpCreate(cd->remote_eps[i]) failed");
 
       if ((gni_rc = GNI_EpBind(cd->remote_eps[i], nic_addr_map[i],
-                               GNI_INST_ID(i, 0, 0)))
+                               GNI_ENCODE_INST_ID(i, 0)))
         != GNI_RC_SUCCESS)
       GNI_FAIL(gni_rc, "GNI_EpBind(cd->remote_eps[i]) failed");
   }
@@ -2037,7 +2050,7 @@ void gni_init(gni_nic_handle_t* nih, int cdi)
   GNI_CDM_MODES:
   - Check _FORK options for the data server
 \* -------------------------------------------------------------------------- */
-  if ((gni_rc = GNI_CdmCreate(GNI_INST_ID(chpl_nodeID, cdi, 0),
+  if ((gni_rc = GNI_CdmCreate(GNI_ENCODE_INST_ID(chpl_nodeID, cdi),
                               ptag, cookie, modes, &cdm_handle))
       != GNI_RC_SUCCESS)
     GNI_FAIL(gni_rc, "GNI_CdmCreate() failed");
@@ -2461,7 +2474,7 @@ void polling_task(void* ignore)
       sched_yield();
     }
     else if (gni_rc == GNI_RC_SUCCESS)
-      rf_handler(&ev, NULL);
+      rf_handler(&ev);
     else
       GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_CqGetEvent(rf_cqh) failed in polling");
 
@@ -3379,7 +3392,7 @@ void exit_any(int status)
 
 
 static
-void rf_handler(gni_cq_entry_t* ev, void* context)
+void rf_handler(gni_cq_entry_t* ev)
 {
   //
   // This is invoked for each event on the rf_cqh completion queue.
@@ -3388,17 +3401,15 @@ void rf_handler(gni_cq_entry_t* ev, void* context)
   // not allow it to communicate remotely.  Any communication must
   // be done in an invoked task, not in the handler itself.
   //
+  uint32_t inst_id;
+  uint32_t req_li;
+  int      req_cdi;
+  int      req_rbi;
+  fork_t*  f;
 
-  //
-  // TODO: fr_copy and g_copy could be TLS pointers to space we realloc
-  //       only when necessary to grow it for a larger request than we've
-  //       ever seen before.
-  //
-  uint32_t inst_id = GNI_CQ_GET_INST_ID(*ev);
-  uint32_t req_li  = INST_ID_LI(inst_id);
-  int      req_cdi = INST_ID_CDI(inst_id);
-  int      req_rbi = INST_ID_RBI(inst_id);
-  fork_t*  f       = RECV_SIDE_FORK_REQ_BUF_ADDR(req_li, req_cdi, req_rbi);
+  inst_id = GNI_CQ_GET_REM_INST_ID(*ev);
+  GNI_DECODE_REM_INST_ID(req_li, req_cdi, req_rbi, inst_id);
+  f = RECV_SIDE_FORK_REQ_BUF_ADDR(req_li, req_cdi, req_rbi);
 
   switch (f->b.op) {
   case fork_op_small_call:
@@ -6729,13 +6740,11 @@ void do_fork_post(c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  if (FORK_REQ_BUFS_PER_CD > 1) {
-    gni_rc = GNI_EpSetEventData(cd->remote_eps[locale],
-                                GNI_INST_ID(locale, 0, 0),
-                                GNI_INST_ID(chpl_nodeID, cd_idx, rbi));
-    if (gni_rc != GNI_RC_SUCCESS)
-      GNI_FAIL(gni_rc, "GNI_EpSetEvent() failed");
-  }
+  gni_rc = GNI_EpSetEventData(cd->remote_eps[locale],
+                              GNI_ENCODE_INST_ID(locale, 0),
+                              GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx, rbi));
+  if (gni_rc != GNI_RC_SUCCESS)
+    GNI_FAIL(gni_rc, "GNI_EpSetEvent() failed");
 
   DBG_P_LPS(DBGF_RF, "post %s",
             locale, cd_idx, rbi, p_rf_req->seq,
