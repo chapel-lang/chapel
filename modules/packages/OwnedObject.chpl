@@ -168,6 +168,7 @@ module OwnedObject {
   // for problems with generic initializers
   pragma "init copy fn"
   pragma "no doc"
+  pragma "unsafe"
   proc chpl__initCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
@@ -181,6 +182,7 @@ module OwnedObject {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "erroneous autocopy"
+  pragma "unsafe"
   proc chpl__autoCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
