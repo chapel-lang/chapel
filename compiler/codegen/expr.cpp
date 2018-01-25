@@ -440,28 +440,29 @@ void codegenInvariantStart(llvm::Value *val, llvm::Value *addr)
 }
 
 // Create an LLVM store instruction possibly adding
-// appropriate metadata based upon the Chapel type destType.
+// appropriate metadata based upon the Chapel type of val.
 //
 static
 llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::Value* ptr,
-                                  Type* destType = NULL,
+                                  Type* valType = NULL,
                                   Type* surroundingStruct = NULL,
                                   uint64_t fieldOffset = 0,
+                                  llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                   bool addInvariantStart = false)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
   llvm::MDNode* tbaa = NULL;
-  if (USE_TBAA && destType &&
-      (isClass(destType) || !destType->symbol->llvmTbaaStructCopyNode)) {
+  if (USE_TBAA && valType &&
+      (isClass(valType) || !valType->symbol->llvmTbaaStructCopyNode)) {
     if (surroundingStruct) {
-      INT_ASSERT(destType->symbol->llvmTbaaTypeDescriptor!=info->tbaaRootNode);
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
-               destType->symbol->llvmTbaaTypeDescriptor, fieldOffset);
+               fieldTbaaTypeDescriptor, fieldOffset);
     } else {
-      tbaa = destType->symbol->llvmTbaaAccessTag;
+      tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
   if( tbaa ) ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
@@ -483,20 +484,15 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
 
 
 
-// The valType argument is a hint, in case we don't already know the
-// Chapel type of the memory into which we are storing.
 static
 llvm::StoreInst* codegenStoreLLVM(GenRet val,
                                   GenRet ptr,
                                   Type* valType = NULL)
 {
   if( val.chplType && !valType ) valType = val.chplType;
-  Type *destType;
-  if (ptr.chplType) {
-    if (ptr.isLVPtr) destType = ptr.chplType;
-    else destType = ptr.chplType->getValType();
-  } else {
-    destType = valType;
+  if( ptr.chplType && !valType ) {
+    if( ptr.isLVPtr ) valType = ptr.chplType;
+    else valType = ptr.chplType->getValType();
   }
 
   llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
@@ -514,31 +510,33 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
   ptr.alreadyStored = true;
-  return codegenStoreLLVM(val.val, ptr.val, destType, ptr.surroundingStruct,
-                          ptr.fieldOffset, ptr.canBeMarkedAsConstAfterStore);
+  return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
+                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
+                          ptr.canBeMarkedAsConstAfterStore);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
-                                Type* srcType = NULL,
+                                Type* valType = NULL,
                                 Type* surroundingStruct = NULL,
                                 uint64_t fieldOffset = 0,
+                                llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                 bool isConst = false)
 {
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
   llvm::MDNode* tbaa = NULL;
-  if (USE_TBAA && srcType &&
-      (isClass(srcType) || !srcType->symbol->llvmTbaaStructCopyNode)) {
+  if (USE_TBAA && valType &&
+      (isClass(valType) || !valType->symbol->llvmTbaaStructCopyNode)) {
     if (surroundingStruct) {
-      INT_ASSERT(srcType->symbol->llvmTbaaTypeDescriptor!=info->tbaaRootNode);
+      INT_ASSERT(fieldTbaaTypeDescriptor != info->tbaaRootNode);
       tbaa = info->mdBuilder->createTBAAStructTagNode(
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
-               srcType->symbol->llvmTbaaTypeDescriptor, fieldOffset, isConst);
+               fieldTbaaTypeDescriptor, fieldOffset, isConst);
     } else {
-      if (isConst) tbaa = srcType->symbol->llvmConstTbaaAccessTag;
-      else tbaa = srcType->symbol->llvmTbaaAccessTag;
+      if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
+      else tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
 
@@ -552,23 +550,18 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   return ret;
 }
 
-// The valType argument is a hint, in case we don't already know the
-// Chapel type of the memory from which we are loading.
 static
 llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
                                 Type* valType = NULL,
                                 bool isConst = false)
 {
-  Type *srcType;
-  if (ptr.chplType) {
-    if (ptr.isLVPtr) srcType = ptr.chplType;
-    else srcType = ptr.chplType->getValType();
-  } else {
-    srcType = valType;
+  if( ptr.chplType && !valType ) {
+    if( ptr.isLVPtr ) valType = ptr.chplType;
+    else valType = ptr.chplType->getValType();
   }
 
-  return codegenLoadLLVM(ptr.val, srcType, ptr.surroundingStruct,
-                         ptr.fieldOffset, isConst);
+  return codegenLoadLLVM(ptr.val, valType, ptr.surroundingStruct,
+                         ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor, isConst);
 }
 
 #endif
@@ -1081,6 +1074,8 @@ GenRet codegenFieldPtr(
         ret.surroundingStruct = cBaseType;
         ret.fieldOffset = info->module->getDataLayout().
           getStructLayout(structType)->getElementOffset(fieldno);
+        ret.fieldTbaaTypeDescriptor =
+          ret.chplType->symbol->llvmTbaaTypeDescriptor;
       }
     }
 #endif
@@ -2437,8 +2432,6 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     if( sret ) {
-      // The second argument to codegenLoadLLVM() is a hint, in the
-      // case that we don't already know the Chapel type being loaded.
       ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
     }
 #endif
@@ -3166,8 +3159,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
         GenRet value = codegenValue(from);
         assert(value.val);
 
-        // The third argument to codegenStoreLLVM() is a hint, in the
-        // case that we don't already know the type of the destination.
         codegenStoreLLVM(value, to_ptr, type);
 #endif
       }
