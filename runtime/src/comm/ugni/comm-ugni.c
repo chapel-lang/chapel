@@ -368,10 +368,12 @@ static gni_nic_device_t nic_type;
 
 
 //
-// The uGNI instance IDs we use are built from locale, communication
-// domain, and request buffer indices, plus remote operation codes.
+// The uGNI remote instance IDs we use to tell receiving polling tasks
+// where inbound requests have landed are built from locale (li), comm
+// domain (cdi), and request buffer (rbi) indices.  These have to fit
+// in 32 bits.
 //
-#define _IID_LI_BITS        17
+#define _IID_LI_BITS        18
 #define _IID_LI_MASK        ((1 << _IID_LI_BITS) - 1)
 #define _IID_LI_POS         0
 #define _IID_ENCODE_LI(li)  (((li) & _IID_LI_MASK) << _IID_LI_POS)
@@ -389,16 +391,14 @@ static gni_nic_device_t nic_type;
 #define _IID_ENCODE_RBI(rbi) (((rbi) & _IID_RBI_MASK) << _IID_RBI_POS)
 #define _IID_DECODE_RBI(iid) (((iid) >> _IID_RBI_POS) & _IID_RBI_MASK)
 
-#if (((_IID_LI_BITS + _IID_CDI_BITS) > 24) \
-     || ((_IID_LI_BITS + _IID_CDI_BITS + _IID_RBI_BITS) > 32))
+#if _IID_LI_BITS + _IID_CDI_BITS + _IID_RBI_BITS > 32
 #error INST_ID fields are too big!
 #endif
 
-#define GNI_ENCODE_INST_ID(li, cdi) \
-        (_IID_ENCODE_LI(li) | _IID_ENCODE_CDI(cdi))
-
-#define GNI_ENCODE_REM_INST_ID(li, cdi, rbi) \
-        (GNI_ENCODE_INST_ID(li, cdi) | _IID_ENCODE_RBI(rbi))
+#define GNI_ENCODE_REM_INST_ID(li, cdi, rbi)                            \
+        (  _IID_ENCODE_LI(li)                                           \
+         | _IID_ENCODE_CDI(cdi)                                         \
+         | _IID_ENCODE_RBI(rbi))
 
 #define GNI_DECODE_REM_INST_ID(li, cdi, rbi, iid)                       \
         ((li = _IID_DECODE_LI(iid)),                                    \
@@ -1950,16 +1950,10 @@ static void compute_comm_dom_cnt(void)
   // Limit us to 30 communication domains on Gemini (architectural
   // limit = 32) and 120 on Aries (architectural limit = 128).
   //
-  // TODO: Eventually we should collect statistics and figure out how
-  //       many comm domains we actually need, that is, the most that we
-  //       can really keep busy.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI) {
-    if (comm_dom_cnt > 30)
-      comm_dom_cnt = 30;
-  } else {
-    if (comm_dom_cnt > 120)
-      comm_dom_cnt = 120;
+  {
+    int max_comm_dom_cnt = (nic_type == GNI_DEVICE_GEMINI) ? 30 : 120;
+    if (comm_dom_cnt > max_comm_dom_cnt)
+      comm_dom_cnt = max_comm_dom_cnt;
   }
 
   if (comm_dom_cnt >= (1 << _IID_CDI_BITS))
@@ -2013,8 +2007,7 @@ void gni_setup_per_comm_dom(int cdi)
         != GNI_RC_SUCCESS)
       GNI_FAIL(gni_rc, "GNI_EpCreate(cd->remote_eps[i]) failed");
 
-      if ((gni_rc = GNI_EpBind(cd->remote_eps[i], nic_addr_map[i],
-                               GNI_ENCODE_INST_ID(i, 0)))
+    if ((gni_rc = GNI_EpBind(cd->remote_eps[i], nic_addr_map[i], cdi))
         != GNI_RC_SUCCESS)
       GNI_FAIL(gni_rc, "GNI_EpBind(cd->remote_eps[i]) failed");
   }
@@ -2050,8 +2043,7 @@ void gni_init(gni_nic_handle_t* nih, int cdi)
   GNI_CDM_MODES:
   - Check _FORK options for the data server
 \* -------------------------------------------------------------------------- */
-  if ((gni_rc = GNI_CdmCreate(GNI_ENCODE_INST_ID(chpl_nodeID, cdi),
-                              ptag, cookie, modes, &cdm_handle))
+  if ((gni_rc = GNI_CdmCreate(cdi, ptag, cookie, modes, &cdm_handle))
       != GNI_RC_SUCCESS)
     GNI_FAIL(gni_rc, "GNI_CdmCreate() failed");
 
@@ -6740,8 +6732,7 @@ void do_fork_post(c_nodeid_t locale,
   //
   // Initiate the transaction and wait for it to complete.
   //
-  gni_rc = GNI_EpSetEventData(cd->remote_eps[locale],
-                              GNI_ENCODE_INST_ID(locale, 0),
+  gni_rc = GNI_EpSetEventData(cd->remote_eps[locale], 0,
                               GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx, rbi));
   if (gni_rc != GNI_RC_SUCCESS)
     GNI_FAIL(gni_rc, "GNI_EpSetEvent() failed");
