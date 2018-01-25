@@ -331,6 +331,7 @@ module ChapelArray {
     }
   }
 
+  pragma "unsafe"
   pragma "no copy return"
   proc _newArray(value) {
     if _isPrivatized(value) then
@@ -347,6 +348,7 @@ module ChapelArray {
       return new _array(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe"
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
@@ -361,6 +363,7 @@ module ChapelArray {
       return new _domain(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe" // value assumed to be borrow but it's ownership xfer
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
@@ -868,7 +871,7 @@ module ChapelArray {
   pragma "no doc"
   record _distribution {
     var _pid:int;  // only used when privatized
-    pragma "owned"
+    pragma "unsafe"
     var _instance; // generic, but an instance of a subclass of BaseDist
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
@@ -1013,7 +1016,7 @@ module ChapelArray {
   pragma "ignore noinit"
   record _domain {
     var _pid:int; // only used when privatized
-    pragma "owned"
+    pragma "unsafe"
     var _instance; // generic, but an instance of a subclass of BaseDom
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
@@ -2043,7 +2046,7 @@ module ChapelArray {
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
-    pragma "owned"
+    pragma "unsafe"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
     var _promotionType: _value.eltType;
