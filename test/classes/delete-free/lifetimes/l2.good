@@ -2,7 +2,7 @@ l2.chpl:45: In function 'bad1':
 l2.chpl:48: error: Scoped variable global would outlive the value it is set to
 l2.chpl:46: note: consider scope of r
 l2.chpl:52: In function 'bad2':
-l2.chpl:57: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:57: error: Scoped variable outer would outlive the value it is set to
 l2.chpl:55: note: consider scope of r
 l2.chpl:63: In function 'bad3':
 l2.chpl:67: error: Scoped variable global would outlive the value it is set to
@@ -13,11 +13,11 @@ l2.chpl:73: In function 'bad10':
 l2.chpl:79: error: Scoped variable cannot be returned
 l2.chpl:77: note: consider scope of r
 l2.chpl:83: In function 'bad21':
-l2.chpl:88: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:88: error: Scoped variable outer would outlive the value it is set to
 l2.chpl:86: note: consider scope of r
 l2.chpl:94: In function 'bad22':
-l2.chpl:100: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:100: error: Scoped variable outer would outlive the value it is set to
 l2.chpl:97: note: consider scope of r
 l2.chpl:106: In function 'bad23':
-l2.chpl:111: error: Scoped variable outer reachable after lifetime ends
+l2.chpl:111: error: Scoped variable outer would outlive the value it is set to
 l2.chpl:109: note: consider scope of r
