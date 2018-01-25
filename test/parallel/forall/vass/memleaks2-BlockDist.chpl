@@ -11,8 +11,10 @@ proc main() {
   var myvar = initval;
   const m1 = memoryUsed();
 
-  forall da in DARRAY do
-    da = myvar;
+  {
+    forall da in DARRAY do
+      da = myvar;
+  }
 
   const m2 = memoryUsed();
 
