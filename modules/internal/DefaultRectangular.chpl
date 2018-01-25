@@ -1123,6 +1123,7 @@ module DefaultRectangular {
     where rank == 1 && shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(ind);
 
+    pragma "return scope this"
     inline proc dsiAccess(ind : rank*idxType) ref {
       if boundsChecking then
         if !dom.dsiMember(ind) {
@@ -1136,6 +1137,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(ind : rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
       if boundsChecking then
@@ -1146,6 +1148,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(ind : rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
       if boundsChecking then
