@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -88,7 +88,7 @@ AMD dual-core compute units (<code>Type=ComputeUnit</code>, in the x86 backend),
 <li>
 Intel x2APIC non-core and non-package levels (in the x86 backend). </li>
 <li>
-Windows processor groups. </li>
+Windows processor groups (unless they contain a single NUMA node, or a single Package, etc.). </li>
 <li>
 IBM S/390 "Books" on Linux (<code>Type=Book</code>). </li>
 <li>
@@ -98,6 +98,7 @@ Distance-based groups made of close objects. </li>
 <li>
 I/O parents when I/O locality does not match any existing object. </li>
 </ul>
+<p>hwloc Groups are only kept if no other object has the same locality information. It means that a Group containing a single child is merged into that child. And a Group is merged into its parent if it is its only child. For instance a Windows processor group containing a single NUMA node would be merged with that NUMA node since it already contains the relevant hierarchy information.</p>
 <h2><a class="anchor" id="faq_asymmetric"></a>
 What happens if my topology is asymmetric?</h2>
 <p>hwloc supports asymmetric topologies even if most platforms are usually symmetric. For example, there could be different types of processors in a single machine, each with different numbers of cores, symmetric multithreading, or levels of caches.</p>

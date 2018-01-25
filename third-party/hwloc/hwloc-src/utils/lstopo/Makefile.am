@@ -1,4 +1,4 @@
-# Copyright © 2009-2015 Inria.  All rights reserved.
+# Copyright © 2009-2017 Inria.  All rights reserved.
 # Copyright © 2009-2012, 2014 Université Bordeaux
 # Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
 #
@@ -29,8 +29,9 @@ lstopo_no_graphics_SOURCES = \
         lstopo-text.c \
         lstopo-xml.c
 
-lstopo_no_graphics_CFLAGS =
+lstopo_no_graphics_CFLAGS = $(AM_CFLAGS)
 lstopo_no_graphics_LDADD = $(LDADD) -lm $(HWLOC_TERMCAP_LIBS)
+
 lstopo_SOURCES = $(lstopo_no_graphics_SOURCES)
 lstopo_CPPFLAGS = $(AM_CPPFLAGS)
 lstopo_LDADD = $(lstopo_no_graphics_LDADD)

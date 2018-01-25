@@ -1,1 +1,2 @@
-{head = 0, tail = 0}
+initAtomicsViaWrite.chpl:5: In initializer:
+initAtomicsViaWrite.chpl:6: error: Field used before it is initialized

@@ -1075,7 +1075,6 @@ Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn); // wass to .h
 
 static bool backendRequiresCopyForIn(Type* t);
 

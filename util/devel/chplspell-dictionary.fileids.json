@@ -505,6 +505,9 @@
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
   ],
+  "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
+    "runtime/src/comm/ugni/comm-ugni-launch.c"
+  ],
   "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni.c"
   ],

@@ -1,0 +1,617 @@
+.. _initializers:
+
+Initializers :- Experiences, Concerns, Proposals
+================================================
+
+Status:
+  Draft proposal
+
+Authors:
+  Michael Noakes, Brad Chamberlain
+
+
+
+
+
+
+
+
+Abstract
+++++++++
+
+This note reviews the current specification for initializers in Chapel
+in light of feedback from users, and experiences converting tests and
+module code from constructors to initializers.  The primary
+conclusions are
+
+1. there is an important use case that is hard to support with
+   the current specification
+
+2. the current syntax for two-phase initialization, broadly defined,
+   is unappealing and/or confusing to some users
+
+3. there are several smaller issues that require consideration
+
+
+
+The first concern is clearly the most pressing and it is the focus of
+this note.  We propose a key change to deliver the missing
+functionality, and then a few smaller changes to compensate for this
+change.  Beyond the fact that this proosal provides key functionality
+that the current design does not, it is believed that it will be
+easier for some newer users to adopt.
+
+The remainder of this note considers this proposal in more detail.
+
+* `Primary concerns`_
+
+* `Additional concerns`_
+
+* `Initialization vs. assignment`_
+
+* `Two-phase initialization`_
+
+* `Parents before children`_
+
+* `Records and postInit()`_
+
+* `Base Classes`_
+
+* `Derived Classes`_
+
+* `Variation 1 :- this.initDone()`_
+
+* `Variation 2 :- postInit() with formals`_
+
+* `Transition`_
+
+* `Summary`_
+
+Primary concerns
+++++++++++++++++
+
+The implementation of initializers in Chapel has matured to the point
+that it is practical to write reasonably sophisticated initializers
+and to begin to convert internal module code from constructors.  This
+provides an opportunity for external contributers to explore the
+specification.
+
+Unfortunately we have learned that
+
+1. for classes, the decision to initialize the properties for a
+   derived class before those of the parent classes is inconsistent
+   with Chapel's approach to defining fields that have a type that
+   depends on properties in a parent class.  The most common examples
+   are for generic classes e.g.
+
+   .. code-block:: chapel
+
+      // A contrived variation of BaseRectangularDom
+      class MyClass2 : MyClass1 {
+        param rank : int;
+        type  idxType;
+
+        proc init(param _rank, type _idxType) {
+          rank    = _rank;
+          idxType = _idxType;
+
+          super.init();
+        }
+      }
+
+      // A contrived variation of DefaultRectangularDom
+      class MyClass3 : MyClass2 {
+        var ranges : rank * range(idxType);
+
+        // ***** Unable to initialize omitted field *****
+        proc init(param _rank, type _idxType) {
+          super.init(_rank, _idxType);
+        }
+
+        // ***** Unable to type check initialization *****
+        proc init(_ranges) {
+          ranges = _ranges;
+
+          super.init(_ranges.size, _ranges(1).idxType);
+        }
+      }
+
+   but can also be a problem for non-generic classes e.g.
+
+   .. code-block:: chapel
+
+      class C1 {
+        var D = { 1 .. n };
+        var A : [D] real;
+
+        proc init(_D) {
+          D = _D;
+          super.init();
+        }
+      }
+
+      class C2 : C1 {
+        var B : [D] string;
+
+        // ***** Unable to initialize omitted field *****
+        proc init(_D) {
+          super.init(_D);
+        }
+      }
+
+
+
+
+
+
+
+
+2. some users find some choices to be confusing and/or stylistically
+   unappealing.
+
+   The role of super.init() as the separator between phase 1 and
+   phase 2 remains unclear to some users.
+
+   Chapel allows a developer to omit an explicit call to a parent
+   initializer and rely on the compiler to insert this call.  It
+   is unclear whether it is more natural for an initalizer to
+   default to phase 1 or phase 2, i.e. whether the compiler
+   should insert the call at the start of the body or at the end
+   of the body, and it is hard to recall which choice has been made
+   for Chapel.
+
+   The Chapel language has been modified to disallow the potential to
+   support inheritance for records but we continue to rely on a call
+   to super.init() to signal that the type has been fully initialized.
+
+
+
+
+
+
+
+
+
+
+Additional concerns
++++++++++++++++++++
+
+3. The current implementation suppresses the compiler generated
+   initializers if the developer defines at least one
+   initializer. This ensures that a user does not unintentionally
+   rely on a compiler-generated all-fields initializer that fails
+   to meet the necessary semantics, but may require the type designer
+   to explicity write this initializer even in the simple cases.
+
+   The type designer also becomes responsible for the default
+   copy initializer if the type is a record.
+
+
+
+
+4. It may be unclear how to define a type specifier for a generic
+   type or how to define a minimal initializer.  For example what
+   is the signature for the compiler generated type constructor
+   in the following code fragment
+
+
+   .. code-block:: chapel
+
+      record MyR {
+        param flag  : bool;
+        var   value : int;
+
+        <a user defined initializer>
+      }
+
+      var myR : MyR( ... );
+
+
+   and what is the signature for a user-defined initializer that
+   will satisfy the variable declaration?  Should the answer be
+   different if this were a class instead of a record?
+
+   The compiler implements defensible answers to these questions
+   but it is easy to be momentarily surprised by the answers.
+   Perhaps more so for the user-defined initializer than the
+   compiler generated type constructor.
+
+
+
+
+5. We continue to struggle with copy initializers.  A copy
+   initializer accepts one formal with the same type as the
+   record.  It is not always clear when the compiler will
+   attempt to use a copy initializer or how the user can
+   unambiguously define the copy initializer in the presence
+   of other initializers that accept a single formal.
+
+
+
+
+
+
+
+
+
+
+
+Initialization vs. assignment
++++++++++++++++++++++++++++++
+
+It is important to distinguish between initialization and assignment
+for fields with record type.  Mutable objects must be initialized once
+and may be assigned any number of times after that.  Failing to
+support this requirement correctly may have consequences for
+correctness or performance. Consider the following contrived example
+
+.. code-block:: chapel
+
+   class MyClass : MyParent {
+     var r1 : MyRecord;
+     var r2 : MyRecord;
+     var r3 : MyRecord = new MyRecord(1, 2, false);
+
+     proc init(r : MyRecord) {
+       r1 = new MyRecord(10, 20, true);       // Initialize      r1
+       r2 = r;                                // Copy initialize r2
+                                              // Initialize      r3
+
+       super.init(r);
+
+       r3 = r;                                // Assignment
+     }
+   }
+
+The developer of MyRecord is responsible for overriding the default
+initialization and assignment operators as necessary to implement
+their type correctly and must be confident that the compiler chooses
+the correct operation.
+
+While this issue is critical for record types, the ability to override
+the default assignment operator for primitive types and class types
+implies that a similar level of care is appropriate for these.
+
+
+
+
+
+
+
+
+
+
+
+Two-phase initialization
+++++++++++++++++++++++++
+
+In the first effort we elected to adopt the two-phase initialization
+strategy that Swift uses for classes.  Quoting from "The Swift
+Programming Language" by Apple Inc.
+
+   Class initialization in Swift is a two-phase process.
+   In the first phase, each stored property is assigned
+   an initial value by the class that introduced it.
+   Once the initial state for every stored property
+   has been determined, the second phase begins, and
+   each class is given the opportunity to customize its
+   stored properties further before the new instance is
+   considered ready for use.
+
+   The use of a two-phase initialization process makes
+   initialization safe, while still giving complete
+   flexibility to each class in a class hierarchy.
+   Two-phase initialization prevents property values
+   from being accessed before they are initialized,
+   and prevents property values from being set to a
+   different value by another initializer unexpectedly.
+
+The primary concern here is that the implementation of an initializer
+for a class might be distributed across multiple methods.  It appears
+that the designers of Swift are enforcing certain safety checks in
+an effort to catch a family of potential logic errors.
+
+Additionally we adopted Swift's policy that a single initializer
+implements both phase 1 and phase 2, and that fields are
+initialized from the most-dervied class towards the base class.
+
+Consider a hierarchy of the classes A -> B -> C -> D where B inherits
+from A, C from B, and D from C.  In the current implementation an
+initializer for D is selected based on the actuals to the new
+expression.
+
+On entry to D.init(...args...) the instance can be considered to have
+a runtime type of D and every field is uninitialized.  The first step
+is to initialize each field defined by D, implicitly or explicitly.
+D.init() must then delegate to an implementation of C.init().
+
+Consider a subsequent call to an implementation of B.init(...args...).
+At entry to this method we could regard the dynamic type of the
+instance to continue to be D.  The fields for D and C are initialized
+but the fields for A and B are uninitialized.  When the required
+delegation to A.init() returns, the object is a fully initialized
+instance of D.  The remainder of the body can call any method
+that is applicable to a static type of D, and can rely on dynamic
+dispatch for D.
+
+
+
+
+
+
+
+Parents before children
++++++++++++++++++++++++
+
+It appears obvious that the key problem for Chapel was the choice to
+follow Swift's lead and initialize properties for a derived class
+before those of a parent class.  Suppose this choice were reversed so
+that we followed C++'s strategy instead?  It is clear that we could
+modify the compiler to handle the following variation of the earlier
+example
+
+.. code-block:: chapel
+
+   class MyClass2 : MyClass1 {
+     param rank : int;
+     type  idxType;
+
+     proc init(param _rank, type _idxType) {
+       rank    = _rank;
+       idxType = _idxType;
+     }
+   }
+
+   class MyClass3 : MyClass2 {
+     var ranges : rank * range(idxType);
+
+     proc init(_ranges) {
+       super.init(_ranges.size, _ranges(1).idxType);
+       ranges = _ranges;
+     }
+   }
+
+How does this impact our current view of two-phase initialization?
+Consider the initializer for MyClass3.  Upon return from the
+delegated initializer, the object is a fully initialized MyClass2
+but the fields of MyClass3 and any descendents of MyClass3 are
+uninitialized.  Care is required if we wish to help users avoid
+common forms of logic errors.
+
+
+
+
+Records and postInit()
+++++++++++++++++++++++
+
+We begin by considering the relatively simple case of the record
+MyRecord.  There is no super-type for a record.  The record is fully
+uninitialized at entry to any overload of MyRecord.init(...args...)
+and it must be fully initialized when this method returns.
+
+What operations will we allow within the body of init()?  Certainly
+it must be possible to initialize each field.   Will we adopt the
+existing limiting rules for phase 1, or will we provide some
+additional flexibility?
+
+This proposal suggests that we match the existing limits on phase 1 of
+an initializer. The developer is constrained to initializing each
+field in order.  It must be possible to read an initialized field, so
+that a field with a runtime type can rely on a locally initialized
+field, but it must not be possible to read an uninitialized field.
+This is easy to enforce. It is not possible to call any method
+defined on this type, and 'this' cannot be passed as an actual to any
+function.  However any computation involving local variables and
+module level procedures is permitted. The developer may skip a field
+and rely on the compiler to insert the default value defined by the
+field declaration.
+
+We introduce a new method, currently named postInit(), to support an
+explicit phase 2 when required.  The implementation of a new
+expression will arrange to call postInit() when the selected
+init(..args..) returns i.e. we consider
+
+.. code-block:: chapel
+
+   var x = new MyRecord(...)
+
+to be equivalent to
+
+.. code-block:: chapel
+
+   var x : MyRecord = noinit;
+
+   x.init(...args...);
+   x.postInit();
+
+
+On entry to postInit, the instance is known to be a fully initialized
+instance of MyRecord. The developer may override this method and
+implement any code to customize the instance.
+
+There will be cases in which a record does not implement any overrides
+for init() and the compiler will provide a default all-fields
+initializer.  The provision of postInit() provides the same post-init
+hook that is currently supported by the initialize() method for types
+that rely on legacy constructors.
+
+It is observed that the separation between init() and postInit()
+might be viewed as either "clean" or "overly constraining"
+depending on taste.  It is unclear how common it will
+be for users to implement both init() and postInit() and
+how different users will feel when obliged to do so.
+
+In the longer term we might choose to consider the common
+cases that lead to an override for postInit() and then
+make backward-compatible changes that provide some
+additional flexibility within init().
+
+
+
+
+
+
+Base Classes
+++++++++++++
+
+Here we define a Base Class as a class that is derived from object.
+Currently the type 'object' does not have any user-visible fields and
+very little behavior.  We take the perspective that base classes are
+comparable to records as far as initialization is concerned.  This
+implies that init() has the functionality of phase 1 in the current
+implementation, and that postInit() has the functionality of phase 2
+in the current implementation.  Of course a method dispatch within
+postInit() will dynamically dispatch to the runtime type of the
+instance.
+
+
+
+
+Derived Classes
++++++++++++++++
+
+This is the case where the tradeoffs become more challenging.  The
+intent is avoid passing an object with uninitialized fields, and to
+avoid unpredictable/confusing interactions between components of the
+distributed implementation for the overall initializer.
+
+One choice is to allow derived classes to override one of both
+of init() and postInit() without any further extensions.  Additionally
+Derived.postInit() would not explictly invoke Parent.postInit(); the
+implementation would arrange to work "as if" from base class towards
+most derived class to ensure that a derived class can "own"
+the final value of every visible field.
+
+
+Instead this proposal provides a degree of additional flexibility to
+both init() and postInit() at the risk of enabling unintended
+interactions.
+
+Consider again the case of a class hierarchy for A -> B -> C -> D
+and focus on an initializer for C.  On entry to C.init(...args...)
+all of the fields are uninitialized.  In this new
+proposal the first action is to delegate to an initializer for B.
+When this call returns the object is a fully initialized instance
+of B but no override for postInit() has run.
+
+We require that the remainder of C.init() initialize each field of C
+in order.  In this regard the compiler assumes that static type of
+'this' is C but that the fields are partially initialized.  These
+fields must be initialized in order.  None of these fields can be read
+or assigned.
+
+However it is also allowable to read any property (field, param, type
+alias) of B, assign any non-const field of B, call any method defined
+for B, or call any function that accepts a B as a formal.  In these
+regards the compiler acts as if the static type of 'this' is B.  Note
+that assigning to fields of B has the potential to interact in a
+surprising way with overrides for postInit().
+
+In all cases the dynamic type of 'this' is B.  This is necessary
+to ensure that dynamic method dispatch operates correctly at
+runtime.
+
+Additionally we extend postInit() and allow it to select when
+to call super.postInit(). If there is no call to super.postInit(),
+then the compiler will insert the call as the first statement.
+This will be a natural choice for developers as it ensures
+that multiple assignments to the same field are performed in
+the obvious order.
+
+Variation 1 :- this.initDone()
+++++++++++++++++++++++++++++++
+
+The ability to call parent methods within the init() for a derived
+class provides a certain level of additional flexibility for
+type developers.  It is unclear if it is sufficient.
+
+A possible variation is to add an additional method that can
+be invoked to indicate that the developer asserts that the
+current type is fully initialized.  In this sense it plays
+just one of the two roles of super.init() in the current
+implementation.  The compiler will insert initializations for
+omitted fields if necessary.
+
+The name for this method is unimportant for this proposal but, for
+concreteness, we will refer to this method as initDone().  Consider
+the previous hierarchy and the implementation of C.init() that
+includes a use of this.initDone().  Before this call the object has
+static/dynamic type B.  After this call the static/dynamic type is C.
+This makes it possible to invoke methods defined on C and to pass
+'this' to functions that accept an A, a B, or a C.  Dynamic dispatch
+will recognize that this object has type C.
+
+
+
+
+
+Variation 2 :- postInit() with formals
+++++++++++++++++++++++++++++++++++++++
+
+In the base proposal an override for postInit() does not accept any
+formals.  This means there is just one postInit() no matter how many
+overrides there are for init().  Assume this is C.postInit() for the
+previous hierarchy.
+
+Any business logic that this method implements must be based solely on
+the fields defined by the static type C.  Method calls will
+dynamically dispatch based on the type D.
+
+We consider the option to provide multiple overloads for C.postInit().
+In this model a call to
+
+.. code-block:: chapel
+
+   var  x = new D(...args...)
+
+is equivalent to
+
+.. code-block:: chapel
+
+   var  myInstance = allocate(D);
+
+   myInstance.init(...args...);
+
+   if canDispatch("postInit", myInstance, ...args...) then
+     myInstance.postInit(...args...);
+   else
+     myInstance.postInit();
+
+
+
+Transition
+++++++++++
+
+If/when the broad terms of this proposal are accepted and the
+minor details are ironed out we need to define a transition
+story.
+
+There is some urgency to move as rapidly as possible if we want to be
+fully transitioned to the new syntax within the current release.
+However there is also a need to be sensitive to overly large PRs
+within the team, and to provide some notice to early adopters of
+initializers who are tracking master.
+
+There are several options for transitioning; some are lower latency
+but more abrupt and others are more respectful of current users but
+introduce some additional latency and/or effort for the core team.
+
+There is also the question of how confident we are with this proposal.
+Some approaches offer more room for a period of experimentation and
+refinement on master, but again at the cost of some latency
+and/or effort.
+
+
+
+Summary
++++++++
+
+We have summarized early experiences with initializers in Chapel
+and have identified a critical oversight in the initial design.
+
+We propose a significant revision to the design that enables
+the missing functionality.  There is a consequence to the
+key change and we propose the introduction of postInit()
+to compensate for this.  We also offer two variations
+that might allow additional power to more sophisticated
+developers.

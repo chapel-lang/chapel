@@ -323,7 +323,7 @@ hasUserAssign(Type* type) {
 bool hasAutoCopyForType(Type* type) {
   std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
 
-  return autoCopyMap.find(type) != autoCopyMap.end() && it->second != NULL;
+  return it != autoCopyMap.end() && it->second != NULL;
 }
 
 // This function is intended to protect gets from the autoCopyMap so that
@@ -340,12 +340,29 @@ FnSymbol* getAutoCopyForType(Type* type) {
   return it->second;
 }
 
+FnSymbol* getAutoCopy(Type* type) {
+  std::map<Type*, FnSymbol*>::iterator it = autoCopyMap.find(type);
+
+  if (it == autoCopyMap.end())
+    return NULL;
+  else
+    return it->second;  // can also be NULL
+}
+
 void getAutoCopyTypeKeys(Vec<Type*>& keys) {
   std::map<Type*, FnSymbol*>::iterator it;
 
   for (it = autoCopyMap.begin(); it != autoCopyMap.end(); ++it) {
     keys.add(it->first);
   }
+}
+
+FnSymbol* getAutoDestroy(Type* t) {
+  return autoDestroyMap.get(t);
+}
+
+FnSymbol* getUnalias(Type* t) {
+  return unaliasMap.get(t);
 }
 
 /************************************* | **************************************
@@ -417,18 +434,6 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
   return false;
 }
 
-
-FnSymbol* getAutoCopy(Type *t) {
-  return getAutoCopyForType(t);
-}
-
-
-FnSymbol* getAutoDestroy(Type* t) {
-  return autoDestroyMap.get(t);
-}
-FnSymbol* getUnalias(Type* t) {
-  return unaliasMap.get(t);
-}
 
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.
@@ -4963,7 +4968,7 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasCopyConstructor(AggregateType* ct);
+static bool hasCopyInit(AggregateType* ct, Expr* scope);
 
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
@@ -4994,7 +4999,7 @@ static void resolveInitVar(CallExpr* call) {
 
       resolveMove(call);
 
-    } else if (hasCopyConstructor(ct) == true) {
+    } else if (hasCopyInit(ct, call) == true) {
       dst->type = src->type;
 
       call->setUnresolvedFunction("init");
@@ -5018,25 +5023,24 @@ static void resolveInitVar(CallExpr* call) {
   }
 }
 
-// A simplified version of functions_exists().
-// It seems unfortunate to export that function in its current state
-static bool hasCopyConstructor(AggregateType* ct) {
-  bool retval = false;
+// Detect if there is a copy initializer by attempting to resolve
+//   tmpAt.init(tmpAt, tmpAt);
+// where tmpAt is a temp of type at.
+//
+// This resolution will be attempted at just before scope in the AST.
+static bool hasCopyInit(AggregateType* at, Expr* scope) {
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 3 && strcmp(fn->name, "init") == 0) {
-      ArgSymbol* _this  = fn->getFormal(2);
-      ArgSymbol* _other = fn->getFormal(3);
+  BlockStmt* block = new BlockStmt();
+  VarSymbol* tmpAt = newTemp(at);
+  CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+  block->insertAtTail(call);
+  scope->insertBefore(block);
 
-      if ((_this->type == ct || _this->type == ct->refType) &&
-          _other->type == ct) {
-        retval = true;
-        break;
-      }
-    }
-  }
+  FnSymbol* resolvedFn = tryResolveCall(call);
 
-  return retval;
+  block->remove();
+
+  return resolvedFn != NULL;
 }
 
 /************************************* | **************************************

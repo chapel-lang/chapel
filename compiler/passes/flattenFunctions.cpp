@@ -26,7 +26,6 @@
 #include "stmt.h"
 #include "stlUtil.h"
 
-void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions); // wass to .h
 static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions);
 
 void flattenFunctions() {

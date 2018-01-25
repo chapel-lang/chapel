@@ -464,13 +464,17 @@ void ResolutionCandidate::computeSubstitutions() {
 
         SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
 
-        if (se                          != NULL                              &&
-            se->symbol()->isParameter() == true                              &&
-            (formal->type->symbol->hasFlag(FLAG_GENERIC)      == false ||
-             canInstantiate(se->symbol()->type, formal->type) ==  true)) {
+        if (se && se->symbol()->isParameter() &&
+            (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
+             canInstantiate(se->symbol()->type, formal->type))) {
           subs.put(formal, se->symbol());
         } else {
-          INT_FATAL(fn, "unable to handle default parameter");
+          if (!se || !se->symbol()->isParameter()) {
+            USR_FATAL(formal, "default value for param is not a param");
+          } else {
+            USR_FATAL(formal, "type mismatch between declared formal type "
+                              "and default value type");
+          }
         }
       }
 
@@ -652,6 +656,10 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
 
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
+      bool isInitThis        = strcmp(fn->name,"init") == 0 &&
+                               formal->hasFlag(FLAG_ARG_THIS);
+      bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
+                               coindex == 0; // first formal/actual
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
@@ -671,8 +679,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              NULL,
                              formalIsParam) == false) {
         return false;
-      } else if (strcmp(fn->name,"init") == 0 &&
-                 formal->hasFlag(FLAG_ARG_THIS)) {
+      } else if (isInitThis || isNewTypeArg) {
         AggregateType* ft = toAggregateType(formal->getValType());
         AggregateType* at = toAggregateType(actual->getValType());
 

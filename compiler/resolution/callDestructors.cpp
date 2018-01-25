@@ -379,7 +379,6 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
           {
             if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
                 symLhs->hasFlag(FLAG_NO_COPY)    == false &&
-                symLhs->hasFlag(FLAG_CHPL__ITER) == false &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {
@@ -506,6 +505,7 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
         if (symLhs != NULL && symRhs != NULL)
         {
           if (isUserDefinedRecord(symLhs->type) == true &&
+              symLhs->hasFlag(FLAG_NO_COPY)     == false &&
               symRhs->type                      == symLhs->type)
           {
             DefExpr* def = symRhs->defPoint;

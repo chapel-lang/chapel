@@ -344,8 +344,7 @@ static void insertCopyInitialization(Symbol* dest, Type* valType,
   if (Expr* initExpr = toExpr(init))
     INT_ASSERT(!initExpr->inTree()); // caller responsibility
 
-  if (hasAutoCopyForType(valType)) {
-    FnSymbol* autoCopyFn = getAutoCopyForType(valType);
+  if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {    
     Symbol* initSym = toSymbol(init);
     if (initSym == NULL) {
       VarSymbol* actemp = new VarSymbol("actemp", valType);
@@ -526,7 +525,6 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   SymbolMapElem* e = map.get_record(SI);
   ArgSymbol* eFormal = toArgSymbol(e->value);
 
-  bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn); //wass
   if (!formalRequiresTemp(eFormal, cloneTaskFn))
     return; // not that case
 
@@ -860,7 +858,6 @@ static void lowerForallStmtsInline() {
   clearUpRefsInShadowVars();
 
   // It is faster to do them all at once.
-  void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions); //wass
   flattenNestedFunctions(taskFnClonesToFlatten);
 }
 
