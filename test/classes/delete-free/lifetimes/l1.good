@@ -1,12 +1,11 @@
 l1.chpl:6: In function 'bad':
-l1.chpl:8: error: Scoped variable cannot be returned
+l1.chpl:8: error: Reference to scoped variable cannot be returned
 l1.chpl:7: note: consider scope of x
 l1.chpl:11: In function 'badder':
-l1.chpl:12: error: Scoped variable cannot be returned
-l1.chpl:11: note: consider scope of _formal_tmp_x
+l1.chpl:12: error: Reference to scoped variable cannot be returned
 l1.chpl:20: In function 'baddest':
-l1.chpl:22: error: Scoped variable cannot be returned
+l1.chpl:22: error: Reference to scoped variable cannot be returned
 l1.chpl:21: note: consider scope of r
 l1.chpl:25: In function 'nested_bad':
-l1.chpl:30: error: Scoped variable cannot be returned
+l1.chpl:30: error: Reference to scoped variable cannot be returned
 l1.chpl:26: note: consider scope of x

@@ -1,0 +1,3 @@
+l15.chpl:12: In function 'get':
+l15.chpl:13: error: Reference to scoped variable cannot be returned
+l15.chpl:12: note: consider scope of i

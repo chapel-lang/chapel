@@ -10,14 +10,14 @@ proc refIdentity(const ref x) const ref {
   return x;
 }
 
-proc returnRefIdentityArg(arg) const ref {
+proc badReturnRefIdentityArg(arg) const ref {
   return refIdentity(arg);
 }
 
 proc test() {
   var c = new Owned(new MyClass(1));
   var borrow = c.borrow();
-  const ref r = returnRefIdentityArg(borrow); 
+  const ref r = badReturnRefIdentityArg(borrow);
   writeln(r);
 }
 

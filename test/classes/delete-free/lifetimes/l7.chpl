@@ -18,11 +18,11 @@ proc buildR(sub:SubR) {
 
 var globalR:R;
 
-proc test() {
+proc bad() {
   var c = new Owned(new MyClass(1));
   var subr = new SubR(c.borrow());
   globalR = buildR(subr);
 }
 
-test();
+bad();
 }
