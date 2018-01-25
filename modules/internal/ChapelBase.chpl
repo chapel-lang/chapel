@@ -1050,6 +1050,7 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:object && x:_nilType
     return __primitive("cast", t, x);
 
+  pragma "unsafe"
   inline proc _cast(type t, x) where x:object && t:x && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
