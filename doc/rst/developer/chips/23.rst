@@ -396,12 +396,15 @@ additional flexibility?
 
 This proposal suggests that we match the existing limits on phase 1 of
 an initializer. The developer is constrained to initializing each
-field in order.  Fields cannot be read, it is not possible to call any
-method defined on this type, and 'this' cannot be passed as an actual
-to any function.  However any computation involving local variables
-and module level procedures is permitted. The developer may skip a
-field and rely on the compiler to insert the default value defined by
-the field declaration.
+field in order.  It must be possible to read an initialized field, so
+that a field with a runtime type can rely on a locally initialized
+field, but it must not be possible to read an uninitialized field.
+This is easy to enforce. It is not possible to call any method
+defined on this type, and 'this' cannot be passed as an actual to any
+function.  However any computation involving local variables and
+module level procedures is permitted. The developer may skip a field
+and rely on the compiler to insert the default value defined by the
+field declaration.
 
 We introduce a new method, currently named postInit(), to support an
 explicit phase 2 when required.  The implementation of a new
