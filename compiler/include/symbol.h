@@ -392,7 +392,7 @@ public:
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
   // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE()   const { return (SymExpr*)outerVarRep; }
+  SymExpr* outerVarSE()   const;
   Symbol*  outerVarSym()  const;
   // Returns the EXPR in "with (EXPR reduce x)".
   Expr*    reduceOpExpr() const;

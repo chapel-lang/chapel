@@ -334,7 +334,7 @@ static Symbol* insertAutoCopyForTaskArg
   Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
 
-  FnSymbol* autoCopyFn = getAutoCopy(baseType);
+  FnSymbol* autoCopyFn = getAutoCopyForType(baseType);
 
   // Normal (record) handling
   {
