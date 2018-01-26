@@ -2163,6 +2163,7 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
   // If this assert fails, we need to handle this case.
   INT_ASSERT(!(intent & INTENT_FLAG_OUT));
 
+ if (toForallStmt(svar->defPoint->parentExpr)->noLI()) {
   if (intent & INTENT_FLAG_CONST) {
     svar->addFlag(FLAG_CONST);
     svar->addFlag(FLAG_REF_VAR);
@@ -2177,6 +2178,33 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
     svar->addFlag(FLAG_REF_VAR);
     svar->qual = QUAL_REF;
   }
+ } else {
+  // wass here: yesLI()
+  if (intent & INTENT_FLAG_REF)
+  {
+    if (intent & INTENT_FLAG_CONST) {
+      svar->addFlag(FLAG_CONST);
+      svar->qual = QUAL_CONST_REF;
+    } else {
+      svar->qual = QUAL_REF;
+    }
+    svar->addFlag(FLAG_REF_VAR);
+    if (ovar->isConstValWillNotChange())
+      svar->addFlag(FLAG_REF_TO_IMMUTABLE);
+  }
+  else
+  {
+    if (intent & INTENT_FLAG_CONST) {
+      svar->addFlag(FLAG_CONST);
+      svar->qual = QUAL_CONST_VAL;
+    } else {
+      svar->qual = QUAL_VAL;
+    }
+    svar->type = svar->type->getValType();
+  }
+  if (svar->isConstant() && !ovar->isConstant())
+    svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+ }
 }
 
 static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowVars)

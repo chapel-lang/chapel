@@ -65,6 +65,7 @@ static void insertDeinitialization(BlockStmt* destBlock,
 
 static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
                        BlockStmt* IB, BlockStmt* DB) {
+#if 0 //wass was:
   // setShadowVarFlagsNew() makes all svars refs.
   // If this assert fails, we do not need to bother with the following.
   INT_ASSERT(SI->isRef() && SI->hasFlag(FLAG_REF_VAR));
@@ -72,6 +73,8 @@ static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
   SI->type = SI->type->getValType();
   SI->removeFlag(FLAG_REF_VAR);
   SI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
+#endif
+  INT_ASSERT(!SI->isRef());
 
   insertInitialization(IB, SI, gI);
   resolveBlockStmt(IB);
@@ -183,7 +186,7 @@ public:
   TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
   ExpandVisitor* parentVis;
   bool breakOnYield; // wass for debugging
-  // wass may want to stash forall->singleInductionVar() in a field
+  // wass we may want to stash parIdxVar(forall) in a field
 
   ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
                 SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
@@ -457,7 +460,7 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
                                    SymbolMap& map)
 {
   // There is only one idx var because all zippering has been lowered away.
-  VarSymbol* origIdxVar = EV->forall->singleInductionVar();
+  VarSymbol* origIdxVar = parIdxVar(EV->forall);
   INT_ASSERT(origIdxVar && map.get(origIdxVar) == NULL); //wass remove at end
 
   // copy() also performs map.put(origIdxVar, cloneIdxVar).
@@ -698,7 +701,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
   }
 
-  map.put(pfs->singleInductionVar(), NULL); // reserve a slot
+  map.put(parIdxVar(pfs), NULL); // reserve a slot
 
 #if 0 //wass - will replace with svars
   // Append the startup block. Prepend the teardown block.
@@ -830,7 +833,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
   expandTopLevel(&outerVis, iwrap, ibody);
-  map.put(fs->singleInductionVar(), NULL);  // reserve a slot
+  map.put(parIdxVar(fs), NULL);  // reserve a slot
   outerVis.parentVis = parentVis;
 
   // Traverse recursively.
@@ -853,7 +856,7 @@ static void lowerForallStmtsInline() {
   //vass todo remove parallel iterators themselves
   // now that we have inlined them.
 
-  gdbShouldBreakHere(); //vass
+  gdbShouldBreakHere(); //wass
 
   clearUpRefsInShadowVars();
 

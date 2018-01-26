@@ -231,6 +231,7 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
 
 // valid after addParIdxVarsAndRestruct()
 VarSymbol* parIdxVar(const ForallStmt* fs) {
+  if (fs->yesLI()) return fs->singleInductionVar();
   DefExpr* def = toDefExpr(fs->loopBody()->body.head);
   VarSymbol* result = toVarSymbol(def->sym);
   INT_ASSERT(result && !strcmp(result->name, "chpl__parIdx"));

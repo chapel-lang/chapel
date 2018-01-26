@@ -64,6 +64,7 @@ public:
   static ForallStmt* fromForLoop(ForLoop* forLoop);
 
   // helpers
+  int   numInductionVars()         const;
   VarSymbol* singleInductionVar()  const;
   Expr* firstIteratedExpr()        const;
   int   numIteratedExprs()         const;
@@ -120,6 +121,7 @@ inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return fFromForLoop; }
 
 // conveniences
+inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
 inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
 inline int   ForallStmt::numShadowVars()     const { return fShadowVars.length;}
