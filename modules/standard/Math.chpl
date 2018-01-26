@@ -1080,8 +1080,8 @@ module Math {
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
   inline proc jn(n: int, x: real(32)): real(32) {
-    extern proc jnf(n: c_int, x: real(32)): real(64);
-    return jnf((n.safeCast(c_int), x));
+    extern proc jnf(n: c_int, x: real(32)): real(32);
+    return jnf(n.safeCast(c_int), x);
   }
 
   /* Returns the Bessel function of the first kind of order `n` of `x`. */
