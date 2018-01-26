@@ -4233,6 +4233,8 @@ nbdi
 nbdp
 nopnd
 opnd
+ppdescs
+ppdi
 rfdpp
 themself
 xchgval
