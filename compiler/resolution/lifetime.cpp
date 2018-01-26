@@ -549,18 +549,25 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       } else {
         SymExpr* se = toSymExpr(rhsExpr);
         INT_ASSERT(se);
-        if (call->isPrimitive(PRIM_MOVE) ||
-            isClass(se->symbol()->type)) {
-          // Propagate lifetime for refs across assignment
+        // TODO - this doesn't handle records using default =
+        if (call->isPrimitive(PRIM_MOVE) || isClass(se->symbol()->type)) {
+          // Propagate lifetime for refs across moves
+          // lifetime for classes across any of the options
           lt = lifetimes->lifetimeForSymbol(se->symbol());
         }
       }
 
-      // ref-lifetime of a non-ref symbol is reset here
-      if (!lhs->isRef()) {
-        lt.referent = reachabilityLifetimeForSymbol(lhs);
+      if (lhs->isRef()) {
+        // ref lifetime should only be adjusted when we set the ref
+        // (vs update the pointed-to-value, as with calling operator = on it)
+        if (rhsExpr->isRef() && call->isPrimitive(PRIM_MOVE))
+          lt.referent.relevantExpr = call;
+        else
+          lt.referent = infiniteLifetime();
       } else {
-        lt.referent.relevantExpr = call;
+        // Non-ref symbols use the symbol itself as the ref lifetime
+        // (to be used in case something refers to it)
+        lt.referent = reachabilityLifetimeForSymbol(lhs);
       }
 
       lt.borrowed.relevantExpr = call;
