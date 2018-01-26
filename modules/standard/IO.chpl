@@ -2721,7 +2721,7 @@ pragma "no doc"
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
-    out x:?t, json:bool):syserr where _isIoPrimitiveType(t) {
+    out x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var err:syserr = ENOERR;
     var got:bool = false;
@@ -2761,9 +2761,10 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
+    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     for i in chpl_enumerate(t) {
       var str = i:string;
-      if json then str = '"'+str+'"';
+      if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
       var slen:ssize_t = str.length.safeCast(ssize_t);
       err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
@@ -2780,7 +2781,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
-    x:?t, json:bool):syserr where _isIoPrimitiveType(t) {
+    x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
       return qio_channel_print_literal(false, _channel_internal, c"true", "true".length:ssize_t);
@@ -2806,8 +2807,9 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
+    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
-    if json then
+    if st == QIO_AGGREGATE_FORMAT_JSON then
       return qio_channel_print_string(false, _channel_internal, s.c_str(), s.length:ssize_t);
     else
       return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
@@ -2974,16 +2976,6 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
 
-  var reader = new channel(writing=false, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
-  var inJson = false;
-  var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-
-  if st == QIO_AGGREGATE_FORMAT_JSON then inJson = true;
-  reader._channel_internal = QIO_CHANNEL_PTR_NULL;
-
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
@@ -3008,7 +3000,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
         otherwise             e = _read_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
-      e = _read_text_internal(_channel_internal, x, inJson);
+      e = _read_text_internal(_channel_internal, x);
     }
   } else {
     e = _read_binary_internal(_channel_internal, kind, x);
@@ -3022,17 +3014,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         x:?t,
                                         loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
-
-  var writer = new channel(writing=true, iokind.dynamic, locking=false,
-                           home=here,
-                           _channel_internal=_channel_internal,
-                           _readWriteThisFromLocale=loc);
-
-  var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-  var inJson = false;
-
-  if st == QIO_AGGREGATE_FORMAT_JSON then inJson = true;
-  writer._channel_internal = QIO_CHANNEL_PTR_NULL;
 
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
@@ -3052,7 +3033,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
       }
     } else {
-      e = _write_text_internal(_channel_internal, x, inJson);
+      e = _write_text_internal(_channel_internal, x);
     }
   } else {
     e = _write_binary_internal(_channel_internal, kind, x);
