@@ -249,6 +249,10 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("} ");
       else
         printf("}\n");
+      if (isForallLoopBody(expr)) {
+        print_indent(indent);
+        printf("        end forall %d", parentAst->id);
+      }
     } else if (ForallExpr* e = toForallExpr(expr)) {
       if (e->cond) printf(") ");
       else         printf("} ");
@@ -284,6 +288,10 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       if (cond->condExpr == expr)
         printf("\n");
     } else if (ForallStmt* pfs = toForallStmt(parentAst)) {
+      if (AList* list = expr->list)
+        if (list->parent == pfs)
+          if (expr != list->tail)
+            printf("\n");
       if (expr == pfs->inductionVariables().tail) {
         print_on_its_own_line(indent, pfs->zippered() ? "in zip\n" : "in\n");
       } else if (expr == pfs->iteratedExpressions().tail &&

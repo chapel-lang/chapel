@@ -139,6 +139,7 @@ inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
 
 // helpers
 ForallStmt* enclosingForallStmt(Expr* expr);
+bool        isForallLoopBody(Expr* expr);
 
 // used for lowering ForallStmt and forall intents
 VarSymbol* parIdxVar(const ForallStmt* fs);

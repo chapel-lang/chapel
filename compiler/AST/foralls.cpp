@@ -1048,13 +1048,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
                findStandaloneOrLeader(pfs, iterCall);
   resolveCallAndCallee(iterCall, false);
 
-//vass
-  if (pfs->yesLI()) {
-    gdbShouldBreakHere();
-    list_view(pfs);
-    gdbShouldBreakHere();
-  }
-
   FnSymbol* origIterFn = iterCall->resolvedFunction();
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"

@@ -229,6 +229,14 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
+// Is 'expr' the fs->loopBody() for some 'fs' ?
+bool isForallLoopBody(Expr* expr) {
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return true;
+  return false;
+}
+
 // valid after addParIdxVarsAndRestruct()
 VarSymbol* parIdxVar(const ForallStmt* fs) {
   if (fs->yesLI()) return fs->singleInductionVar();
