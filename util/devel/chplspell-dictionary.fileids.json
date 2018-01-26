@@ -407,6 +407,9 @@
   "71a525f2-43ff-11e6-907f-843835579daa": [
     "modules/packages/BLAS.chpl"
   ],
+  "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
+    "modules/packages/Buffers.chpl"
+  ],
   "527abebe-9db6-11e7-a204-10ddb1d4c3d5": [
     "modules/packages/Crypto.chpl"
   ],
@@ -453,9 +456,6 @@
   ],
   "24a5f32a-792f-11e6-807a-843835579daa": [
     "modules/packages/ZMQ.chpl"
-  ],
-  "ebcca246-1f2f-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/standard/Buffers.chpl"
   ],
   "c0254978-0c13-11e7-980e-10ddb1d4c3d5": [
     "modules/standard/DateTime.chpl"
