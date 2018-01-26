@@ -66,7 +66,7 @@
 
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
-const bool defaultToCheckingLifetimes = false;
+const bool defaultToCheckingLifetimes = true;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -518,17 +518,11 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     INT_ASSERT(at);
     ScopeLifetime lt = infiniteScopeLifetime();
     if (recordContainsBorrowedClassFields(at)) {
-      //printf("%s contains borrows\n", at->symbol->name);
       lt = minimumScopeLifetime(lt, lifetimes->lifetimeForCallReturn(initCall));
-      //printScopeLifetime(lt);
     }
     if (recordContainsOwnedClassFields(at)) {
-      //printf("%s contains owned\n", at->symbol->name);
       lt = minimumScopeLifetime(lt, lifetimes->lifetimeForSymbol(initSym));
-      //printScopeLifetime(lt);
     }
-
-    //lt = lifetimes->lifetimeForCallReturn(initCall);
 
     lt.borrowed.relevantExpr = call;
     changed |= lifetimes->setLifetimeForSymbolToMin(initSym, lt);
@@ -763,6 +757,11 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     Lifetime reachability = reachabilityLifetimeForSymbol(key);
 
+    // Ignore the RVV for this check
+    // (see test lifetimes/tz.chpl)
+    if (key->hasFlag(FLAG_RVV))
+      continue;
+
     if (isLifetimeShorter(value.referent, reachability)) {
       Expr* at = key->defPoint;
       if (value.referent.relevantExpr)
@@ -966,6 +965,11 @@ static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
 
   // Lifetime for index variables is set by infer's for loop visitor
   if (sym->hasFlag(FLAG_INDEX_VAR))
+    return false;
+
+  // Don't propagate lifetime to RVV - we check moves to it
+  // separately
+  if (sym->hasFlag(FLAG_RVV))
     return false;
 
   // Detect old-style record construction. The constructed record
