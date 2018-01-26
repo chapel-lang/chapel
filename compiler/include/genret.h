@@ -99,12 +99,14 @@ public:
   llvm::Type *type; // set when generating a type only
   Type *surroundingStruct; // surrounding structure, if this is a field
   uint64_t fieldOffset; // byte offset of this field within struct
+  llvm::MDNode *fieldTbaaTypeDescriptor;
 #else
   // Keeping same layout for non-LLVM builds
   void* val;
   void* type;
   void* surroundingStruct;
   uint64_t fieldOffset;
+  void* fieldTbaaTypeDescriptor;
 #endif
 
   // Used to mark variables as const after they are stored
@@ -137,7 +139,7 @@ public:
                    // called type, since LLVM native integer types do not
                    // include signed-ness.
                    
-  GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL), fieldOffset(0), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
+  GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL), fieldOffset(0), fieldTbaaTypeDescriptor(NULL), canBeMarkedAsConstAfterStore(false), alreadyStored(false), chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
   // Allow implicit conversion from AST elements.
   GenRet(BaseAST* ast) {
     *this = baseASTCodegen(ast);
