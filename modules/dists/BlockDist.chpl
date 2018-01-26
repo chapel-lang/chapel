@@ -953,6 +953,7 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+pragma "return scope this"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
@@ -1186,6 +1187,7 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // TODO: Should this be inlined?
 //
+pragma "return scope this"
 inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
