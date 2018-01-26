@@ -66,7 +66,7 @@
 
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
-const bool defaultToCheckingLifetimes = true;
+const bool defaultToCheckingLifetimes = false;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -83,10 +83,10 @@ namespace {
   };
 
   struct ScopeLifetime {
-    // referant lifetime is the scope of what a ref variable might refer to
-    Lifetime referant;
+    // referent lifetime is the scope of what a ref variable might refer to
+    Lifetime referent;
     // borrowed lifetime is the scope of what borrowed class instances
-    // might refer to. This might be longer than the referant lifetime.
+    // might refer to. This might be longer than the referent lifetime.
     Lifetime borrowed;
   };
 
@@ -124,6 +124,10 @@ static bool typeHasInfiniteLifetime(Type* type);
 static bool isSubjectToRefLifetimeAnalysis(Symbol* sym);
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type);
 static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym);
+static bool recordContainsClassFields(AggregateType* at);
+static bool recordContainsOwnedClassFields(AggregateType* at);
+static bool recordContainsBorrowedClassFields(AggregateType* at);
+static bool containsBorrowedClass(Type* type);
 static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
 static bool symbolHasInfiniteLifetime(Symbol* sym);
@@ -137,7 +141,9 @@ static ScopeLifetime reachabilityScopeLifetimeForSymbol(Symbol* sym);
 static Lifetime infiniteLifetime();
 static ScopeLifetime infiniteScopeLifetime();
 static bool debuggingLifetimesForFn(FnSymbol* fn);
-static void printLifetimeState(LifetimeState* state);
+void printLifetime(Lifetime lt);
+void printScopeLifetime(ScopeLifetime lt);
+void printLifetimeState(LifetimeState* state);
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 
@@ -218,6 +224,25 @@ static bool debuggingLifetimesForFn(FnSymbol* fn)
   return false;
 }
 
+void printLifetime(Lifetime lt) {
+  if (lt.infinite)
+    printf("infinite ");
+  if (lt.returnScope)
+    printf("return_scope ");
+  if (lt.fromSymbolReachability)
+    printf("like %s[%i] ", lt.fromSymbolReachability->name, lt.fromSymbolReachability->id);
+  if (lt.relevantExpr)
+    printf("expr %i ", lt.relevantExpr->id);
+}
+
+void printScopeLifetime(ScopeLifetime lt) {
+  printf("ref lifetime ");
+  printLifetime(lt.referent);
+  printf("borrow lifetime ");
+  printLifetime(lt.borrowed);
+  printf("\n");
+}
+
 void printLifetimeState(LifetimeState* state)
 {
   printf("Lifetime state:\n");
@@ -227,23 +252,8 @@ void printLifetimeState(LifetimeState* state)
     Symbol* key = it->first;
     ScopeLifetime value = it->second;
 
-    printf("Symbol %s[%i] has ref lifetime ", key->name, key->id);
-    if (value.referant.infinite)
-      printf("infinite ");
-    if (value.referant.returnScope)
-      printf("return_scope ");
-    if (value.referant.fromSymbolReachability)
-      printf("like %s[%i] ", value.referant.fromSymbolReachability->name,
-          value.referant.fromSymbolReachability->id);
-    printf("borrow lifetime ");
-    if (value.borrowed.infinite)
-      printf("infinite ");
-    if (value.borrowed.returnScope)
-      printf("return_scope ");
-    if (value.borrowed.fromSymbolReachability)
-      printf("like %s[%i] ", value.borrowed.fromSymbolReachability->name,
-          value.borrowed.fromSymbolReachability->id);
-    printf("\n");
+    printf("Symbol %s[%i] has lifetimes: ", key->name, key->id);
+    printScopeLifetime(value);
   }
 }
 
@@ -278,16 +288,16 @@ bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, ScopeLifetime lt) {
     ScopeLifetime & value = lifetimes[sym];
     // This is just value = minimumScopeLifetime(value, lt)
     // with debugging code and change tracking.
-    if (isLifetimeShorter(lt.referant, value.referant)) {
+    if (isLifetimeShorter(lt.referent, value.referent)) {
       if (sym->id == breakOnId)
         gdbShouldBreakHere();
-      value.referant = lt.referant;
+      value.referent = lt.referent;
       changed = true;
     }
-    if (isLifetimeShorter(lt.referant, value.referant)) {
+    if (isLifetimeShorter(lt.referent, value.referent)) {
       if (sym->id == breakOnId)
         gdbShouldBreakHere();
-      value.referant = lt.referant;
+      value.referent = lt.referent;
       changed = true;
     }
   }
@@ -309,8 +319,8 @@ ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
   }
 
   if (!sym->isRef()) {
-    // Make sure that the referant part is accurate
-    ret.referant = reachabilityLifetimeForSymbol(sym);
+    // Make sure that the referent part is accurate
+    ret.referent = reachabilityLifetimeForSymbol(sym);
   }
 
   return ret;
@@ -340,7 +350,13 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
                     calledFn->retTag == RET_REF ||
                     calledFn->retTag == RET_CONST_REF;
 
-  bool returnsBorrow = isSubjectToBorrowLifetimeAnalysis(calledFn->retType);
+  bool returnsBorrow = false;
+  Type* returnType = calledFn->retType;
+  if (0 == strcmp("init", calledFn->name)) {
+    returnType = calledFn->getFormal(1)->getValType();
+  }
+  returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
+  //&& containsBorrowedClass(returnType);
 
   for_formals_actuals(formal, actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
@@ -357,9 +373,9 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
         !((formal->originalIntent & INTENT_FLAG_IN) ||
           (formal->originalIntent & INTENT_FLAG_OUT))) {
 
-      // Use the referant part of the actual's lifetime
+      // Use the referent part of the actual's lifetime
       ScopeLifetime temp = lifetimeForSymbol(actualSym);
-      argLifetime.referant = temp.referant;
+      argLifetime.referent = temp.referent;
     }
 
     if (returnsBorrow && isSubjectToBorrowLifetimeAnalysis(actualSym)) {
@@ -406,13 +422,13 @@ ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
     if (returnsRef &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
          isLocalVariable(call->getFunction(), actualSym))) {
-      // Use the referant part of the actual's lifetime
-      argLifetime.referant = temp.referant;
+      // Use the referent part of the actual's lifetime
+      argLifetime.referent = temp.referent;
     }
     if (returnsRef && isClass(actualSym->getValType())) {
       // returning a ref to a class field should make the
       // lifetime of the ref == the lifetime of the borrow
-      argLifetime.referant = temp.borrowed;
+      argLifetime.referent = temp.borrowed;
     }
     if (returnsBorrow &&
         isSubjectToBorrowLifetimeAnalysis(actualSym)) {
@@ -434,9 +450,9 @@ ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
     if (returnsRef &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
          isLocalVariable(call->getFunction(), actualSym))) {
-      // Use the referant part of the actual's lifetime
+      // Use the referent part of the actual's lifetime
       ScopeLifetime temp = lifetimeForSymbol(actualSym);
-      argLifetime.referant = temp.referant;
+      argLifetime.referent = temp.referent;
     }
     if (returnsBorrow &&
         isSubjectToBorrowLifetimeAnalysis(actualSym)) {
@@ -452,12 +468,72 @@ ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
 }
 
 
+static bool isRecordInitOrConstruction(CallExpr* call, Symbol*& lhs, CallExpr*& initOrCtor) {
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+      if (FnSymbol* calledFn = rhsCallExpr->resolvedOrVirtualFunction()) {
+        if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
+          if (isRecord(at) && calledFn->hasFlag(FLAG_CONSTRUCTOR)) {
+            SymExpr* se = toSymExpr(call->get(1));
+            INT_ASSERT(se);
+            lhs = se->symbol();
+            initOrCtor = rhsCallExpr;
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (0 == strcmp("init", calledFn->name)) {
+      SymExpr* se = toSymExpr(call->get(1));
+      INT_ASSERT(se);
+      Symbol* sym = se->symbol();
+      if (isRecord(sym->type)) {
+        lhs = sym;
+        initOrCtor = call;
+        return true;
+      }
+    }
+  }
+
+  lhs = NULL;
+  initOrCtor = NULL;
+  return false;
+}
+
 bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
   if (call->id == debugLifetimesForId)
     gdbShouldBreakHere();
 
-  if (isAnalyzedMoveOrAssignment(call)) {
+  Symbol* initSym = NULL;
+  CallExpr* initCall = NULL;
+  if (isRecordInitOrConstruction(call, initSym, initCall)) {
+
+    AggregateType* at = toAggregateType(initSym->type);
+    INT_ASSERT(at);
+    ScopeLifetime lt = infiniteScopeLifetime();
+    if (recordContainsBorrowedClassFields(at)) {
+      //printf("%s contains borrows\n", at->symbol->name);
+      lt = minimumScopeLifetime(lt, lifetimes->lifetimeForCallReturn(initCall));
+      //printScopeLifetime(lt);
+    }
+    if (recordContainsOwnedClassFields(at)) {
+      //printf("%s contains owned\n", at->symbol->name);
+      lt = minimumScopeLifetime(lt, lifetimes->lifetimeForSymbol(initSym));
+      //printScopeLifetime(lt);
+    }
+
+    //lt = lifetimes->lifetimeForCallReturn(initCall);
+
+    lt.borrowed.relevantExpr = call;
+    changed |= lifetimes->setLifetimeForSymbolToMin(initSym, lt);
+
+  } else if (isAnalyzedMoveOrAssignment(call)) {
 
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
@@ -488,9 +564,9 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 
       // ref-lifetime of a non-ref symbol is reset here
       if (!lhs->isRef()) {
-        lt.referant = reachabilityLifetimeForSymbol(lhs);
+        lt.referent = reachabilityLifetimeForSymbol(lhs);
       } else {
-        lt.referant.relevantExpr = call;
+        lt.referent.relevantExpr = call;
       }
 
       lt.borrowed.relevantExpr = call;
@@ -540,7 +616,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     }
 
     // Set lifetime of iteration variable to lifetime of the iterable (expr).
-    iterableLifetime.referant.relevantExpr = forLoop;
+    iterableLifetime.referent.relevantExpr = forLoop;
     iterableLifetime.borrowed.relevantExpr = forLoop;
     changed |= lifetimes->setLifetimeForSymbolToMin(index, iterableLifetime);
   }
@@ -607,25 +683,26 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
       if (lhs->hasFlag(FLAG_RVV)) {
         if (lhs->isRef()) {
           // check returning a reference
-          if (!rhsLt.referant.infinite) {
-            if (!rhsLt.referant.returnScope) {
+          if (!rhsLt.referent.infinite) {
+            if (!rhsLt.referent.returnScope) {
               emitError(call,
                         "Reference to scoped variable",
                         "cannot be returned",
-                        rhsSym, rhsLt.referant, lifetimes);
+                        rhsSym, rhsLt.referent, lifetimes);
             }
             if (calledFn &&
                 calledFn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME) &&
-                rhsLt.referant.returnScope) {
+                rhsLt.referent.returnScope) {
               emitError(call,
                         "Reference to return scoped variable",
                         "cannot be returned in function returning infinite lifetime",
-                        rhsSym, rhsLt.referant, lifetimes);
+                        rhsSym, rhsLt.referent, lifetimes);
             }
           }
         }
 
-        if (isSubjectToBorrowLifetimeAnalysis(lhs)) {
+        if (isSubjectToBorrowLifetimeAnalysis(lhs) &&
+            containsBorrowedClass(lhs->type)) {
           // check returning a borrow
           if (!rhsLt.borrowed.infinite) {
             if (!rhsLt.borrowed.returnScope) {
@@ -648,7 +725,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         // For the purposes of this check, lhsLt should be no more
         // than the reachability lifetime for that symbol.
         Lifetime lhsReachability = reachabilityLifetimeForSymbol(lhs);
-        Lifetime lhsReachableRefLifetime = minimumLifetime(lhsReachability, lhsLt.referant);
+        Lifetime lhsReachableRefLifetime = minimumLifetime(lhsReachability,
+            lhsLt.referent);
         Lifetime lhsReachableBorrowLifetime = minimumLifetime(lhsReachability, lhsLt.borrowed);
 
         // Raise errors for init/assigning from a value with shorter lifetime
@@ -656,11 +734,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         // I.e. error if RHS lifetime is shorter than LHS lifetime.
         if (call->isPrimitive(PRIM_MOVE) &&
             lhs->isRef() &&
-            isLifetimeShorter(rhsLt.referant, lhsReachableRefLifetime)) {
+            isLifetimeShorter(rhsLt.referent, lhsReachableRefLifetime)) {
           emitError(call,
                     "Reference to scoped variable",
                     "would outlive the value it refers to",
-                    lhs, rhsLt.referant, lifetimes);
+                    lhs, rhsLt.referent, lifetimes);
         }
         if (isLifetimeShorter(rhsLt.borrowed, lhsReachableBorrowLifetime)) {
           emitError(call,
@@ -685,15 +763,15 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
 
     Lifetime reachability = reachabilityLifetimeForSymbol(key);
 
-    if (isLifetimeShorter(value.referant, reachability)) {
+    if (isLifetimeShorter(value.referent, reachability)) {
       Expr* at = key->defPoint;
-      if (value.referant.relevantExpr)
-        at = value.referant.relevantExpr;
+      if (value.referent.relevantExpr)
+        at = value.referent.relevantExpr;
 
       emitError(at,
                 "Reference to scoped variable",
                 "reachable after lifetime ends",
-                key, value.referant, lifetimes);
+                key, value.referent, lifetimes);
     }
 
     if (isLifetimeShorter(value.borrowed, reachability)) {
@@ -704,7 +782,7 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
       emitError(at,
                 "Scoped variable",
                 "reachable after lifetime ends",
-                key, value.referant, lifetimes);
+                key, value.referent, lifetimes);
     }
   }
 }
@@ -811,6 +889,18 @@ static bool recordContainsBorrowedClassFields(AggregateType* at) {
   return false;
 }
 
+static bool containsBorrowedClass(Type* type) {
+  type = type->getValType();
+
+  if (isClass(type) && !typeHasInfiniteLifetime(type))
+    return true;
+
+  if (isRecord(type))
+    return recordContainsBorrowedClassFields(toAggregateType(type));
+
+  return false;
+}
+
 
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
@@ -881,7 +971,9 @@ static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
   // Detect old-style record construction. The constructed record
   // should not have its lifetime set by the constructor call.
   // Instead, it should start with lifetime = reachability.
-  if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+
+  // e.g. l7.chpl
+/*  if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
     if (FnSymbol* calledFn = rhsCallExpr->resolvedOrVirtualFunction()) {
       if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
         if (isRecord(at) &&
@@ -890,7 +982,7 @@ static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
           return false;
       }
     }
-  }
+  }*/
 
 //  if (!sym->hasFlag(FLAG_TEMP))
 //    return false;
@@ -1016,7 +1108,7 @@ static Lifetime minimumLifetime(Lifetime a, Lifetime b) {
 
 static ScopeLifetime minimumScopeLifetime(ScopeLifetime a, ScopeLifetime b) {
   ScopeLifetime ret;
-  ret.referant = minimumLifetime(a.referant, b.referant);
+  ret.referent = minimumLifetime(a.referent, b.referent);
   ret.borrowed = minimumLifetime(a.borrowed, b.borrowed);
   return ret;
 }
@@ -1033,13 +1125,13 @@ static Lifetime reachabilityLifetimeForSymbol(Symbol* sym) {
 static ScopeLifetime reachabilityScopeLifetimeForSymbol(Symbol* sym) {
   Lifetime lt = reachabilityLifetimeForSymbol(sym);
   ScopeLifetime ret;
-  ret.referant = lt;
+  ret.referent = lt;
   ret.borrowed = lt;
 
   // Adjust the returnScope field of these lifetimes.
   if (isArgSymbol(sym)) {
     if (sym->isRef())
-      ret.referant.returnScope = true;
+      ret.referent.returnScope = true;
 
     if (isSubjectToBorrowLifetimeAnalysis(sym->type))
       ret.borrowed.returnScope = true;
@@ -1061,7 +1153,7 @@ static Lifetime infiniteLifetime() {
 static ScopeLifetime infiniteScopeLifetime() {
   Lifetime lt = infiniteLifetime();
   ScopeLifetime ret;
-  ret.referant = lt;
+  ret.referent = lt;
   ret.borrowed = lt;
   return ret;
 }
