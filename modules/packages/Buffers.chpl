@@ -22,18 +22,26 @@
    This module provides :record:`bytes` and :record:`buffer` types which
    can be used to manage memory regions.
 
-   A :record:`bytes` is a contiguous memory region - really a data structure
-   containing a pointer, length, and also the information necessary to free the
-   memory region when it is no longer used.
-
-   A :record:`buffer` consists of a sequence views into :record:`bytes`
-   objects. A :record:`bytes` object might be shared by several
-   :record:`buffer` objects.
-
    These types should be safe to use in a multi-locale context. These types
    should free their memory after the last user of that memory goes out of
    scope. They are currently reference counted but that may not always be the
    case.
+
+   Bytes Type
+   ----------
+
+   A :record:`bytes` is a contiguous memory region - really a data structure
+   containing a pointer, length, and also the information necessary to free the
+   memory region when it is no longer used.
+
+   Buffers
+   -------
+
+   A :record:`buffer` consists of a sequence of views into :record:`bytes`
+   objects. A :record:`bytes` object might be shared by several
+   :record:`buffer` objects.
+   It is efficient to go to a particular offset in a buffer, and to push or pop
+   bytes objects from the beginning or end of a buffer.
 
  */
 module Buffers {

@@ -70,7 +70,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/Buffers.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
@@ -96,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/BLAS.chpl \
+	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/FFTW.chpl \
