@@ -695,7 +695,7 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
   } else {
     //?? parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
     parIdxCopy->addFlag(FLAG_INDEX_VAR);
-    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+// vass ???    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
   INT_ASSERT(fs->numInductionVars() == 1);
