@@ -456,7 +456,12 @@ buildFollowLoop(VarSymbol* iter,
   normalize(followBlock);
   followBlock->remove();
 
+ INT_ASSERT(toForallStmt(ref)->noLI() == (followIdx->defPoint == NULL));
+ // if yesLI(), leave only the "else" stmt.
+ if (followIdx->defPoint == NULL)
   followBlock->insertAtTail(new DefExpr(followIdx));
+ else
+  followBlock->insertAtTail(followIdx->defPoint);
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
@@ -802,14 +807,17 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 
 static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs); // vass ????
-  VarSymbol* followIdx   = toVarSymbol(toDefExpr(
-                             pfs->loopBody()->body.head)->sym);
   bool       zippered    = pfs->zippered();
+
+  DefExpr*  followIdxDef = toDefExpr(pfs->loopBody()->body.head->remove());
+  VarSymbol*   followIdx = toVarSymbol(followIdxDef->sym);
+  BlockStmt*    userBody = toBlockStmt(pfs->loopBody()->body.tail->remove());
+  INT_ASSERT(pfs->loopBody()->body.empty());
 
   // wass formerly 'resultBlock'
   BlockStmt* preFS           = new BlockStmt();
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
-  BlockStmt* leadForLoop     = new BlockStmt();
+  BlockStmt* leadForLoop     = pfs->loopBody(); //wass was: new BlockStmt();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -835,18 +843,6 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
   preFS->insertAtTail(new DefExpr(iterRec));
   preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   Expr* toNormalize = preFS->body.tail;
-
-  // wass was 'loopBody'
-  BlockStmt* userBody = userLoop(pfs);
-
-/* wass: pas du tout
-  // user loop body to refer to followIdx instead of leadIdxCopy
-  for_SymbolSymExprs(se, leadIdxCopy)
-    if (isContainedInWithStop(se, userBody, pfs->loopBody()))
-      se->replace(new SymExpr(followIdx));
-*/
-
-  userBody->remove();
 
   followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
@@ -909,10 +905,12 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
     leadForLoop->insertAtTail(followBlock);
   }
 
+#if 0 //wass
   // Must happen before any resolving ex. resolveBlockStmt below.
   // Otherwise functions defined within the forall body are not visible.
   // Ex. functions/vass/ref-intent-bug-2big.chpl
   pfs->loopBody()->insertAtTail(leadForLoop);
+#endif
 
   pfs->insertBefore(preFS);
   normalize(toNormalize); // requires inTree()
@@ -1113,10 +1111,6 @@ void lowerForallStmts() {
     CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
     INT_ASSERT(parIterCall && !parIterCall->next); // expected
     SET_LINENO(parIterCall);
-    BlockStmt* PARBlock = new BlockStmt();
-    fs->replace(PARBlock); // so we can resolve PARBlock below
-    // Maybe move this ->replace() down to resolveBlockStmt(PARBlock) ?
-    // If so, add ->remove() to fs->iterExprs() and perhaps others.
 
     // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
     VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
@@ -1133,6 +1127,11 @@ void lowerForallStmts() {
     // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
     //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
     parIdx->addFlag(FLAG_INDEX_VAR);
+
+    BlockStmt* PARBlock = new BlockStmt();
+    fs->replace(PARBlock); // so we can resolve PARBlock below
+    // Maybe move this ->replace() down to resolveBlockStmt(PARBlock) ?
+    // If so, add ->remove() to fs->iterExprs() and perhaps others.
 
     PARBlock->insertAtTail(new DefExpr(iterRec));
     PARBlock->insertAtTail(new DefExpr(parIter));

@@ -113,7 +113,7 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
       return "taskTeardown ";
   }
   if (isDeferStmt(ast)) {
-    return "defer  ";
+    return "defer\n";
   }
   return NULL;
 }
@@ -247,6 +247,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       print_indent(indent);
       if ((parent_C_loop && parent_C_loop->get(3) == expr) || *block_explain)
         printf("} ");
+      else if (isDeferStmt(parentAst))
+        printf("}"); // newline is coming
       else
         printf("}\n");
       if (isForallLoopBody(expr)) {

@@ -222,7 +222,6 @@ int ForallStmt::reduceIntentIdx(Symbol* var) {
 // We do this before "lowering" the ForallStmt to leader+follower
 // because after lowering there is always just one induction var.
 void ForallStmt::setNotZippered() {
-  INT_ASSERT(numInductionVars() == 1);
   fZippered = false;
 }
 
