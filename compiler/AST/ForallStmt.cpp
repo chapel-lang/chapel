@@ -200,11 +200,6 @@ VarSymbol* ForallStmt::singleInductionVar() const {
   return ivsym;
 }
 
-// Is 'expr' an iterable-expression for 'this' ?
-bool ForallStmt::isIteratedExpression(Expr* expr) {
-  return expr->list && expr->list == &fIterExprs;
-}
-
 // If 'var' is listed in this's with-clause with a reduce intent,
 // return its position in the with-clause, otherwise return -1.
 // Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
@@ -221,12 +216,31 @@ int ForallStmt::reduceIntentIdx(Symbol* var) {
   return -1;
 }
 
+// If there is only one induction var, treat this forall as non-zippered
+// This is for the rare case that the zip tuple in "forall ... in zip() ..."
+// is a 1-tuple.
+// We do this before "lowering" the ForallStmt to leader+follower
+// because after lowering there is always just one induction var.
+void ForallStmt::setNotZippered() {
+  INT_ASSERT(numInductionVars() == 1);
+  fZippered = false;
+}
+
 // Return the enclosing forall statement for 'expr', or NULL if none.
 ForallStmt* enclosingForallStmt(Expr* expr) {
   for (Expr* curr = expr->parentExpr; curr; curr = curr->parentExpr)
     if (ForallStmt* fs = toForallStmt(curr))
       return fs;
   return NULL;
+}
+
+// Is 'expr' an iterable-expression for some ForallStmt?
+bool isForallIterExpr(Expr* expr) {
+  if (expr->list != NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr->list == &pfs->iteratedExpressions())
+        return true;
+  return false;
 }
 
 // Is 'expr' the fs->loopBody() for some 'fs' ?

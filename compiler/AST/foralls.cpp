@@ -647,7 +647,10 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
       userLoopBody->insertBefore(indvars.head->remove());  // its DefExpr
       parIdxCopy = parIdx;
 
-    } else {
+      // If only one induction var, treat as non-zippered.
+      fs->setNotZippered();
+    }
+    else {
       // Need to create the induction variable of the follower loop.
       VarSymbol* followIdx = newTemp("chpl_followIdx");
       followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
@@ -691,9 +694,6 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
   }
 
   INT_ASSERT(fs->numInductionVars() == 1);
-
-  printf("\n""done addParIdxVarsAndRestructLI(fs=%d)\n\n", fs->id);
-  gdbShouldBreakHere();
 }
 
 static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
@@ -801,20 +801,17 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 }
 
 static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
-  gdbShouldBreakHere(); //wass
-//VASS TODO;
+  VarSymbol* leadIdxCopy = parIdxVar(pfs); // vass ????
+  VarSymbol* followIdx   = toVarSymbol(toDefExpr(
+                             pfs->loopBody()->body.head)->sym);
+  bool       zippered    = pfs->zippered();
 
-  bool zippered = pfs->zippered();
-
-  // Set up the follower call etc.
-
-  BlockStmt* resultBlock     = new BlockStmt();
+  // wass formerly 'resultBlock'
+  BlockStmt* preFS           = new BlockStmt();
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
   BlockStmt* leadForLoop     = new BlockStmt();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
-
-  VarSymbol* followIdx       = newTemp("chpl__followIdx"); // VASS change this
   VarSymbol* followIter      = newTemp("chpl__followIter");
   BlockStmt* followBlock     = NULL;
 
@@ -823,8 +820,9 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
+/*wass
   // Extract leadIdxCopy and its type.
-  VarSymbol* leadIdxCopy     = pfs->singleInductionVar();
+
   leadIdxCopy->defPoint->replace(new DefExpr(followIdx));
 
   // This is how it was for parIdxCopyVar() before our changes:
@@ -832,32 +830,35 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
 
 // wass cf noLI:
 //VarSymbol* leadIdxCopy     = parIdxCopyVar(pfs);
+*/
 
+  preFS->insertAtTail(new DefExpr(iterRec));
+  preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
+  Expr* toNormalize = preFS->body.tail;
 
-  resultBlock->insertAtTail(new DefExpr(iterRec));
-  resultBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
-  Expr* toNormalize = resultBlock->body.tail;
-
-  // todo rename loopBody to userBody
-  BlockStmt* loopBody = userLoop(pfs);
+  // wass was 'loopBody'
+  BlockStmt* userBody = userLoop(pfs);
 
 /* wass: pas du tout
   // user loop body to refer to followIdx instead of leadIdxCopy
   for_SymbolSymExprs(se, leadIdxCopy)
-    if (isContainedInWithStop(se, loopBody, pfs->loopBody()))
+    if (isContainedInWithStop(se, userBody, pfs->loopBody()))
       se->replace(new SymExpr(followIdx));
 */
 
-  loopBody->remove();
+  userBody->remove();
 
   followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
                                 followIter,
                                 followIdx,
-                                loopBody,
+                                userBody,
                                 pfs,
                                 false,
                                 zippered);
+
+  fNoFastFollowers = true; //vass
+  gdbShouldBreakHere(); //wass
 
   if (fNoFastFollowers == false) {
     // from the original buildForallLoopStmt()
@@ -892,13 +893,13 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
 
     SymbolMap map;
     map.put(followIdx, fastFollowIdx);
-    BlockStmt* loopBodyForFast = loopBody->copy(&map);
+    BlockStmt* userBodyForFast = userBody->copy(&map);
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
                                       fastFollowIter,
                                       fastFollowIdx,
-                                      loopBodyForFast,
+                                      userBodyForFast,
                                       pfs,
                                       true,
                                       zippered);
@@ -913,10 +914,10 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
   // Ex. functions/vass/ref-intent-bug-2big.chpl
   pfs->loopBody()->insertAtTail(leadForLoop);
 
-  pfs->insertBefore(resultBlock);
+  pfs->insertBefore(preFS);
   normalize(toNormalize); // requires inTree()
-  resolveBlockStmt(resultBlock);
-  resultBlock->flattenAndRemove();
+  resolveBlockStmt(preFS);
+  preFS->flattenAndRemove();
 }
 
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {

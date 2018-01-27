@@ -6539,15 +6539,10 @@ static bool isParamResolved(FnSymbol* fn, Expr* expr) {
 }
 
 static ForallStmt* toForallForIteratedExpr(SymExpr* expr) {
-  ForallStmt* retval = NULL;
-
-  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
-    if (pfs->isIteratedExpression(expr) == true) {
-      retval = pfs;
-    }
-  }
-
-  return retval;
+  if (isForallIterExpr(expr))
+    return toForallStmt(expr->parentExpr);
+  else
+    return NULL;
 }
 
 static Expr* resolveExprPhase2(Expr* origExpr, FnSymbol* fn, Expr* expr) {
@@ -7866,9 +7861,8 @@ static void insertReturnTemps() {
 
           Expr* parent = contextCallOrCall->parentExpr;
 
-          if (ForallStmt* pfs = toForallStmt(parent))
-            if (pfs->isIteratedExpression(contextCallOrCall))
-              continue; // not really a top-level expression
+          if (isForallIterExpr(contextCallOrCall))
+            continue; // not really a top-level expression
 
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?

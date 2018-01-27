@@ -112,8 +112,8 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
     if (ast == fs->taskTeardown())
       return "taskTeardown ";
   }
-  if (isDeferStmt(parentAst)) {
-    return "defer";
+  if (isDeferStmt(ast)) {
+    return "defer  ";
   }
   return NULL;
 }

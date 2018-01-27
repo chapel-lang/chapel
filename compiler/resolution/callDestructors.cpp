@@ -183,9 +183,8 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
 static bool isForallIterableCallee(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr))
     if (se == call->baseExpr)
-      if (ForallStmt* pfs = toForallStmt(call->parentExpr))
-        if (pfs->isIteratedExpression(call))
-          return true;
+      if (isForallIterExpr(call))
+        return true;
   return false;
 }
 
