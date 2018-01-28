@@ -1207,14 +1207,11 @@ rebuildIterator(IteratorInfo* ii,
   collectCallExprs(fn, icalls);
 
   // ... and the task functions that it calls.
-  for_vector(CallExpr, call, icalls) {
-    if (FnSymbol* taskFn = resolvedToTaskFun(call)) {
-      // If multiple calls to 'taskFn', we probably shouldn't remove it.
-      INT_ASSERT(call == taskFn->singleInvocation());
-
-      taskFn->defPoint->remove();
-    }
-  }
+  for_vector(CallExpr, call, icalls)
+    if (FnSymbol* taskFn = resolvedToTaskFun(call))
+      // ... except those with multiple calls to them.
+      if (taskFn->singleInvocation() != NULL)
+        taskFn->defPoint->remove();
 
   for_alist(expr, fn->body->body)
     expr->remove();
@@ -1467,6 +1464,17 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 // (see protoIteratorClass())
 // This function takes a pointer to an iterator and fills in those types.
 void lowerIterator(FnSymbol* fn) {
+  // We may have created some clones during callDestructors
+  // (see doNotTransformTheParallelIterator()). Those must
+  // have been inlined by lowerForallStmtsInline() and so
+  // can be removed.
+  // (Otherwise they are weird w.r.t. iteratorInfo and IR/IC.)
+  if (fn->iteratorInfo == NULL) {
+    // Have all they uses been lowered?
+    INT_ASSERT(fn->firstSymExpr() == NULL);
+    fn->defPoint->remove();
+    return;
+  }
 
   SET_LINENO(fn);
   Vec<BaseAST*> asts;

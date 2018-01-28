@@ -203,7 +203,6 @@ When the same parallel iterator is used both ways,
 we need to split the uses into two so that each category
 is treated appropriately.
 */
-VASS TODO - split;
 static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
   bool inForallStmt = false;
   bool otherUse     = false;
@@ -213,20 +212,38 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
       inForallStmt = true;
     else
       otherUse = true;
-extern int breakOnID;
-    if (fn->id == breakOnID) printf("%d  %d  %c %c\n", fn->id, use->id,
-      inForallStmt ? '+' : '-', otherUse ? '+' : '-');
   }
 
-  if (inForallStmt && otherUse)
-    // To support this case, we could clone 'fn' and call it
-    // in "inForallStmt" cases. The other uses would continue
-    // calling the original. That way things would work by applying
-    // the return-by-ref transformation to one and not the other.
-    // For now, this case is not handled.
-    INT_FATAL(fn, "mixed uses are not handled");
+  if (inForallStmt && otherUse) {
+    // This is the case where we need to split the uses.
+    // Let the caller transform 'fn' for "otherUses".
+    // Redirect forall statements to a clone.
+    SET_LINENO(fn);
+    FnSymbol* clone = fn->copy();
+    fn->defPoint->insertAfter(new DefExpr(clone));
+//printf("fn %d  clone %d\n", fn->id, clone->id); //wass
 
-  // Transform only if we got non-ForallStmt uses.
+    for_SymbolSymExprs(use, fn)
+{
+      if (isForallIterableCallee(use)) {
+        // redirect
+        SET_LINENO(use);
+#if 1 //wass
+        SymExpr* repl = new SymExpr(clone);
+//          printf("  repl %d > %d\n", use->id, repl->id);
+          use->replace(repl);
+        }
+//      else printf("  as-is %d\n", use->id);
+}
+#else
+    SET_LINENO(use);
+        use->replace(new SymExpr(clone));
+
+#endif
+gdbShouldBreakHere(); //wass
+  }
+
+  // Transform if we got non-ForallStmt uses.
   return otherUse ? false : true;
 }  
 
