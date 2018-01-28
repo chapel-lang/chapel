@@ -188,17 +188,22 @@ static bool isForallIterableCallee(SymExpr* se) {
   return false;
 }
 
-// wass:  isTransformableParallelIterator()
 /*
 If the only uses of the parallel iterator are as the iterable expression
 in ForallStmts, it will be inlined.
 Its return value, which is an iterator record, is irrelevant.
 The return-by-ref transformation adds clutter, so skip it in this case.
 
-Otherwise, there should not be any uses as the iterable expression,
-because the iterable expression does not get transformed correspondingly
-and there will be an actuals-formals mismatch.
+A parallel iterator can also be used in a for-loop.
+Such a for-loop is converted into a forall using replaceEflopiWithForall()
+if the loop body contains a yield statement. Otherwise it remains
+a for-loop. (Todo: convert in this case as well?)
+
+When the same parallel iterator is used both ways,
+we need to split the uses into two so that each category
+is treated appropriately.
 */
+VASS TODO - split;
 static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
   bool inForallStmt = false;
   bool otherUse     = false;
@@ -208,6 +213,9 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
       inForallStmt = true;
     else
       otherUse = true;
+extern int breakOnID;
+    if (fn->id == breakOnID) printf("%d  %d  %c %c\n", fn->id, use->id,
+      inForallStmt ? '+' : '-', otherUse ? '+' : '-');
   }
 
   if (inForallStmt && otherUse)

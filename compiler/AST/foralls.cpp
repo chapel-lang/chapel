@@ -456,8 +456,8 @@ buildFollowLoop(VarSymbol* iter,
   normalize(followBlock);
   followBlock->remove();
 
- INT_ASSERT(toForallStmt(ref)->noLI() == (followIdx->defPoint == NULL));
- // if yesLI(), leave only the "else" stmt.
+  // If yesLI(), followIdx has a defPoint in the non-fast case
+  // and no defPoint in the fast case - for fastFollowIdx.
  if (followIdx->defPoint == NULL)
   followBlock->insertAtTail(new DefExpr(followIdx));
  else
@@ -777,8 +777,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
   QualifiedType iType = fsIterYieldType(pfs, parIter,
                                         origIterator, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
-  if (idxVar->id == breakOnResolveID)
-    gdbShouldBreakHere();
+  if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }
@@ -852,9 +851,6 @@ static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
                                 pfs,
                                 false,
                                 zippered);
-
-  fNoFastFollowers = true; //vass
-  gdbShouldBreakHere(); //wass
 
   if (fNoFastFollowers == false) {
     // from the original buildForallLoopStmt()
