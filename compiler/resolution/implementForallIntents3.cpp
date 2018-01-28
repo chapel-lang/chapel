@@ -814,7 +814,11 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   // Make sure it is a parallel iterator.
   INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
   // We don't know yet what to do with these.
-  INT_ASSERT(!parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR));
+  if (parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
+    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
+    USR_PRINT(parIterFn, "the parallel iterator is here");
+    USR_STOP();
+  }
 
   // Place to put pre- and post- code.
   SET_LINENO(fs); // wass what should it be?
