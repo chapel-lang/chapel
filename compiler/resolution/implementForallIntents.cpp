@@ -2544,10 +2544,11 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
     addActualsToParCallNew(fs, parCall);
     detupleLeadIdxNew(fs, fs->numShadowVars());
    }
-    if (needToReplace)
+    if (needToReplace) {
       replaceVarUsesNew(forallBody1, outer2shadow);
       replaceVarUsesNew(fs->taskStartup(), outer2shadow);
       replaceVarUsesNew(fs->taskTeardown(), outer2shadow);
+    }
   }
 
   checkRefsToReduceSVars(fs);  

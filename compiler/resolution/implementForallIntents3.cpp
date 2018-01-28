@@ -14,6 +14,9 @@ We DO need to preserve some const properties to enable optimizations.
 
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
+//wass
+#define lfiResolve 0
+
 static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
   DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
   ShadowVarSymbol* RR = toShadowVarSymbol(rpDef->sym);
@@ -59,6 +62,8 @@ static void insertInitialization(BlockStmt* destBlock,
 }
 static void insertDeinitialization(BlockStmt* destBlock,
                                    Symbol* destVar) {
+  if (!strcmp(destVar->type->symbol->name, "_array")) gdbShouldBreakHere(); //wass
+// wass: or do it in walkForallBlocks()
   if (FnSymbol* autoDestroy = getAutoDestroy(destVar->type))
     destBlock->insertAtTail(new CallExpr(autoDestroy, destVar));
 }
@@ -77,10 +82,14 @@ static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
   INT_ASSERT(!SI->isRef());
 
   insertInitialization(IB, SI, gI);
+#if lfiResolve
   resolveBlockStmt(IB);
+#endif
 
   insertDeinitialization(DB, SI);
+#if lfiResolve
   // no need to resolve the deinit
+#endif
 }
 
 static void setupForREF(ForallStmt* fs, ShadowVarSymbol* SR, Symbol* gR,
@@ -91,23 +100,33 @@ static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
                          BlockStmt* IB, BlockStmt* DB) {
   IB->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
                    RP, gMethodToken, gOp);
+#if lfiResolve
   resolveBlockStmt(IB);
+#endif
 
   DB->insertAtTail("chpl__reduceCombine(%S,%S)", gOp, RP);
   DB->insertAtTail("chpl__cleanupLocalOp(%S,%S)", gOp, RP); // deletes RP
+#if lfiResolve
   resolveBlockStmt(DB);
+#endif
 }
 
 static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
                          BlockStmt* IB, BlockStmt* DB) {
   ShadowVarSymbol* RP = getRPfromAS(AS);
   insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
+#if lfiResolve
   resolveBlockStmt(IB);
+#endif
 
   DB->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, RP, AS);
+#if lfiResolve
   resolveBlockStmt(DB);
+#endif
   insertDeinitialization(DB, AS);
+#if lfiResolve
   // no need to resolve the deinit
+#endif
 }
 
 // This should be static. Making it extern because it is unused.
@@ -116,10 +135,14 @@ void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
 void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
                         BlockStmt* IB, BlockStmt* DB) {
   // IB already comes from PV's declaration in the with-clause.
+#if lfiResolve
   resolveBlockStmt(IB);
+#endif
 
   insertDeinitialization(DB, PV);
+#if lfiResolve
   // no need to resolve the deinit
+#endif
 }
 
 

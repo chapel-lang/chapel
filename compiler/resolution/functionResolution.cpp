@@ -6389,6 +6389,7 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 
 void resolveBlockStmt(BlockStmt* blockStmt) {
   for_exprs_postorder(expr, blockStmt) {
+    if (blockStmt->id == breakOnResolveID) debugSummary(expr);
     expr = resolveExpr(expr);
 
     if (tryFailure == true) {

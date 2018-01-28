@@ -306,7 +306,7 @@ void resolveFunction(FnSymbol* fn) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn:\n");
-      print_view(fn);
+//wass      print_view(fn);
       gdbShouldBreakHere();
     }
 

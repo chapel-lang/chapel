@@ -1056,6 +1056,10 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
+    void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
+    if (pfs->yesLI())
+      lowerForallIntentsAtResolution(pfs);
+
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         removeOrigIterCall(origSE);
@@ -1092,11 +1096,13 @@ void lowerForallStmts() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
+/*wass
     if (fs->yesLI()) {
       void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
       lowerForallIntentsAtResolution(fs);
       continue;
     }
+*/
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();
