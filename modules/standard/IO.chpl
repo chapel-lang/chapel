@@ -371,23 +371,6 @@ strings passed to fopen() in C:
 
 However, open() in Chapel does not necessarily invoke fopen().
 
-Bytes Type
-----------
-
-A :record:`Buffers.bytes` object is just some data in memory along with a
-size. Bytes objects are reference counted, and the memory will be freed when
-nothing refers to the bytes object any more.
-
-
-Buffers
--------
-
-A :record:`Buffers.buffer` stores some number subsections of bytes objects.
-It is efficient to go to a particular offset in a buffer, and to push or pop
-bytes objects from the beginning or end of a buffer.
-
-Buffers are used internally in each channel.
-
 IO Functions and Types
 ----------------------
 

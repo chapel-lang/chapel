@@ -25,7 +25,7 @@ temp=$outfile.temp
 
 if [ -s "$outfile" ]; then
     grep < $outfile > $temp -v \
-        -e '^g*make: Warning: File .* has modification time .* in the future *$' \
-        -e '^g*make: warning:  Clock skew detected\.  Your build may be incomplete\. *$'
+        -e '^g*make\(\[[0-9]*\]\)*: Warning: File .* has modification time .* in the future *$' \
+        -e '^g*make\(\[[0-9]*\]\)*: warning:  Clock skew detected\.  Your build may be incomplete\. *$'
     mv $temp $outfile
 fi

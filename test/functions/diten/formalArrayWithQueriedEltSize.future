@@ -1,0 +1,3 @@
+bug: array formal with queried element size trips internal error
+
+Issue #8316
