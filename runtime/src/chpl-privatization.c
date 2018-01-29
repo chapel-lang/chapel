@@ -112,7 +112,7 @@ static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, void *da
         
         // Create new defer node that contains both the target epoch and data.
         struct defer_node *defer = chpl_calloc(1, sizeof(*defer));
-        defer->targetEpoch = global_epoch;
+        defer->targetEpoch = targetEpoch;
         defer->data = data;
 
         // Push...
