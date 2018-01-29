@@ -22,9 +22,9 @@
 static volatile uint64_t global_epoch = 0;
 
 struct defer_data {
-	void **data;
-	int numData;
-	bool deleteData;	
+    void **data;
+    int numData;
+    bool deleteData;    
 };
 
 // Deferred deletion list and associated epoch
@@ -101,25 +101,25 @@ static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, struct d
         // Push...
         struct defer_node *old_head;
         do {
-      		old_head = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);
-  			defer->next = old_head;
+            old_head = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);
+            defer->next = old_head;
         } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) defer));
     }
   }
 
   if (canDelete) {
-  	for (int i = 0; i < ddata.numData; i++) {
-  		chpl_mem_free(ddata.data[i], 0, 0);	
-  	}
- 	
- 	if (ddata.deleteData) {
- 		chpl_mem_free(ddata.data, 0, 0);
- 	}
+    for (int i = 0; i < ddata.numData; i++) {
+        chpl_mem_free(ddata.data[i], 0, 0); 
+    }
+    
+    if (ddata.deleteData) {
+        chpl_mem_free(ddata.data, 0, 0);
+    }
   }
 }
 
 void chpl_qsbr_init(void) {
-	CHPL_TLS_INIT(chpl_qsbr_readerTLS);
+    CHPL_TLS_INIT(chpl_qsbr_readerTLS);
 }
 
 void chpl_privatization_onTaskCreation(void) {
@@ -160,28 +160,28 @@ void chpl_privatization_onTaskDestruction(void) {
 }
 
 void chpl_qsbr_checkpoint(void) {
-	struct tls_node *tls = CHPL_TLS_GET(reader_tls);
-	if (tls == NULL) {
-	    init_tls();
-    	tls = CHPL_TLS_GET(reader_tls);
-	}
+    struct tls_node *tls = CHPL_TLS_GET(reader_tls);
+    if (tls == NULL) {
+        init_tls();
+        tls = CHPL_TLS_GET(reader_tls);
+    }
 
-	// Observe the current epoch.
-	tls->epoch = global_epoch;
+    // Observe the current epoch.
+    tls->epoch = global_epoch;
 
-	// Handle a single deferred object we have, if any
-	if (tls->deferList) {
-	   	// Pop
-	    struct defer_node *dnode;
-	    do {
-      		dnode = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &tls->deferList);  
-	    } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
-	    
-	    // Only process threads that come after us as a previous thread would have been processed 
-	    // before us and newly registered threads are pushed as the head of the tls_list.
-	    waitForReaders(dnode->targetEpoch, tls->next, dnode->ddata);
-	    chpl_mem_free(dnode, 0, 0);
-	}
+    // Handle a single deferred object we have, if any
+    if (tls->deferList) {
+        // Pop
+        struct defer_node *dnode;
+        do {
+            dnode = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &tls->deferList);  
+        } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
+        
+        // Only process threads that come after us as a previous thread would have been processed 
+        // before us and newly registered threads are pushed as the head of the tls_list.
+        waitForReaders(dnode->targetEpoch, tls->next, dnode->ddata);
+        chpl_mem_free(dnode, 0, 0);
+    }
 }
 
 // Broadcasts a global state change and deletes 'args' if all threads pass a
@@ -189,31 +189,31 @@ void chpl_qsbr_checkpoint(void) {
 // whether or not it gets deleted is optional. If a thread does not pass the checkpoint
 // the task of deletion is deferred to that thread.
 void chpl_qsbr_defer_deletion(void **data, int numData, bool deleteData) {
-	uint64_t epoch = atomic_fetch_add_uint64_t(&global_epoch, 1);
+    uint64_t epoch = atomic_fetch_add_uint64_t(&global_epoch, 1);
     waitForReaders(epoch, chpl_qsbr_TLSList, (struct defer_data) { .data = data, .numData = numData, .deleteData = deleteData });
 }
 
 void chpl_qsbr_exit(void) {
-	// Clean thread-local storage
-  	while (tls_list) {
-    	struct tls_node *node = tls_list;
-    	tls_list = tls_list->next;
+    // Clean thread-local storage
+    while (tls_list) {
+        struct tls_node *node = tls_list;
+        tls_list = tls_list->next;
 
-    	while (node->deferList) {
-      		struct defer_node *dnode = node->deferList;
-      		node->deferList = node->deferList->next;
+        while (node->deferList) {
+            struct defer_node *dnode = node->deferList;
+            node->deferList = node->deferList->next;
 
-      		for (int i = 0; i < dnode.numData; i++) {
-      			chpl_mem_free(dnode.data[i], 0, 0);
-      		}
+            for (int i = 0; i < dnode.numData; i++) {
+                chpl_mem_free(dnode.data[i], 0, 0);
+            }
 
-      		if (dnode.deleteData) {
-      			chpl_mem_free(dnode.data, 0, 0);
-      		}
-      		
-      		chpl_mem_free(dnode, 0, 0);
-    	}
+            if (dnode.deleteData) {
+                chpl_mem_free(dnode.data, 0, 0);
+            }
+            
+            chpl_mem_free(dnode, 0, 0);
+        }
 
-    	chpl_mem_free(node, 0, 0);
-	}
+        chpl_mem_free(node, 0, 0);
+    }
 }
