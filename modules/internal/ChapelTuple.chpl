@@ -209,29 +209,37 @@ module ChapelTuple {
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minIndicesPerTask = dataParMinGranularity;
     const length = this.size;
-    const myRange = 1..#length;
+    const myRange = (1..#length,);
     var (numChunks, _) = _computeChunkStuff(numTasks, ignoreRunning,
                                             minIndicesPerTask,
-                                            (myRange,));
+                                            myRange);
 
     if numChunks == 1 {
       yield myRange;
     } else {
-
       coforall chunk in 0..#numChunks {
         // _computeBlock assumes 0-based ranges
         const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
-        // adjust for 1-based indexing
-        yield lo+1..hi+1;
+        yield (lo..hi,);
       }
     }
   }
 
   pragma "no doc"
-  iter _tuple.these(param tag:iterKind, followThis)
+  iter _tuple.these(param tag:iterKind, followThis: _tuple)
       where tag == iterKind.follower
   {
-    for i in followThis do yield this(i);
+    var fThis: range;
+
+    // Received followThis from a multi-dimensional object (e.g. an array)
+    if followThis.size != 1 then
+      compilerError('Tuple cannot be zipped with a multi-dimensional object in a forall');
+
+    fThis = followThis(1).translate(1);
+
+    for i in fThis {
+      yield this(i);
+    }
   }
 
   //
