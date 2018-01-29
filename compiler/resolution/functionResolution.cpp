@@ -4150,9 +4150,6 @@ static Expr* parentToMarker(BlockStmt* parent, CallExpr* call) {
 ************************************** | *************************************/
 
 void lvalueCheck(CallExpr* call) {
-  if (call->id == 1131582)
-    gdbShouldBreakHere();
-
   // Check to ensure the actual supplied to an OUT, INOUT or REF argument
   // is an lvalue.
   for_formals_actuals(formal, actual, call) {
