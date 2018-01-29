@@ -20,17 +20,17 @@
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
 
-/*
-	A Quiescent State-Based Reclamation style of Read-Copy-Update and
-	pseudo garbage-collector. We generalize and coarsen the granularity
-	of scope by keeping a single global epoch describing the state of 
-	the entire system. Updates to protected data can be 'broadcast' to the system,
-	incrementing the global epoch and moving the system's state forward.
-	Threads must periodically pass through checkpoints which indicate that they
-	are not currently accessing protected data by updating their thread-local epochs
-	to the current global epoch. Once all threads have passed some epoch, it is
-	safe for the updater to delete the older version of data. Multiple writers are
-	allowed.
+/**
+* A Quiescent State-Based Reclamation style of Read-Copy-Update and
+* pseudo garbage-collector. We generalize and coarsen the granularity
+* of scope by keeping a single global epoch describing the state of 
+* the entire system. Updates to protected data can be 'broadcast' to the system,
+* incrementing the global epoch and moving the system's state forward.
+* Threads must periodically pass through checkpoints which indicate that they
+* are not currently accessing protected data by updating their thread-local epochs
+* to the current global epoch. Once all threads have passed some epoch, it is
+* safe for the updater to delete the older version of data. Multiple writers are
+* allowed.
 */
 
 // Invoked periodically by tasks to indicate that it is no
