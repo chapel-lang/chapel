@@ -209,7 +209,7 @@ module ChapelTuple {
     const ignoreRunning = dataParIgnoreRunningTasks;
     const minIndicesPerTask = dataParMinGranularity;
     const length = this.size;
-    const myRange = (1..#length,);
+    const myRange = (0..#length,);
     var (numChunks, _) = _computeChunkStuff(numTasks, ignoreRunning,
                                             minIndicesPerTask,
                                             myRange);
