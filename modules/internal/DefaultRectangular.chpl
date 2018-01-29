@@ -660,6 +660,7 @@ module DefaultRectangular {
       }
     }
 
+    pragma "return scope this"
     inline proc getDataElem(i) ref {
       if stridable {
         return dataElem(i);
@@ -668,10 +669,12 @@ module DefaultRectangular {
       }
     }
 
+    pragma "return scope this"
     inline proc dataElem(i) ref {
       return data(i);
     }
 
+    pragma "return scope this"
     inline proc shiftedDataElem(i) ref
       return shiftedData(i);
   }

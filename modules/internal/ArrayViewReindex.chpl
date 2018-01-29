@@ -449,21 +449,24 @@ module ArrayViewReindex {
     //
     // accessors
     //
-
+    pragma "return scope this"
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(i: idxType ...rank)
       where shouldReturnRvalueByValue(eltType) {
       return dsiAccess(i);
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(i: idxType ...rank) const ref
       where shouldReturnRvalueByConstRef(eltType) {
       return dsiAccess(i);
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(i) ref {
       checkBounds(i);
       if shouldUseIndexCache() {
@@ -474,6 +477,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
       checkBounds(i);
@@ -485,6 +489,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "return scope this"
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
       checkBounds(i);
@@ -496,13 +501,16 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i) ref
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i)
       where shouldReturnRvalueByValue(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
