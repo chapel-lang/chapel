@@ -70,7 +70,7 @@ struct tls_node {
     time a writer has waited for too long on a particular thread,
     it will 'pass the buck' for deletion to the next thread.
   */
-  struct defer_node * volatile deferList;
+  struct defer_node *deferList;
   struct tls_node *next;
 };
 
@@ -118,10 +118,9 @@ static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, void *da
         // Push...
         struct defer_node *old_head;
         do {
-          old_head = node->deferList;
+          old_head = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);
           defer->next = old_head;
-        } while (atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) defer));
-
+        } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) defer));
         break;
       }
 
@@ -162,12 +161,13 @@ void chpl_privatization_checkpoint(void) {
     // Pop
     struct defer_node *dnode;
     do {
-      dnode = tls->deferList;  
-    } while (atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
+      dnode = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &tls->deferList);  
+    } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
     
     // Only process threads that come after us as a previous thread would have been processed 
     // before us and newly registered threads are pushed as the head of the tls_list.
     waitForReaders(dnode->targetEpoch, tls->next, dnode->data);
+    chpl_mem_free(dnode, 0, 0);
   }
 }
 
@@ -193,6 +193,21 @@ void chpl_privatization_decr(void) {
 
   // Notify that we have one less task
   node->nTasks--;
+
+  // If we are the last task, empty our defer list...
+  while (node->nTasks == 0 && node->deferList) {
+    // Pop
+    struct defer_node *dnode;
+    do {
+      dnode = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);  
+    } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &node->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
+
+    // Only process threads that come after us as a previous thread would have been processed 
+    // before us and newly registered threads are pushed as the head of the tls_list.
+    waitForReaders(dnode->targetEpoch, node->next, dnode->data);
+    chpl_mem_free(dnode, 0, 0);
+  }
+
 }
 
 static inline int64_t max(int64_t a, int64_t b) {
@@ -212,7 +227,7 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
     int64_t oldCap;
 
     oldCap = chpl_capPrivateObjects;
-    chpl_capPrivateObjects = 2*max(pid, oldCap);
+    chpl_capPrivateObjects = 1.5*max(pid, oldCap);
 
     tmp = chpl_mem_allocManyZero(chpl_capPrivateObjects, sizeof(void *),
                                  CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
