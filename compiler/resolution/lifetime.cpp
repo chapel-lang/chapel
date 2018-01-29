@@ -74,7 +74,7 @@
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
 const bool defaultToCheckingLifetimes = true;
-const bool debugOutputOnError = true;
+const bool debugOutputOnError = false;
 
 namespace {
 
