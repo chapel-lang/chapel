@@ -24,6 +24,7 @@
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include <pthread.h>
+#include <stdbool.h>
 
 /*
   TODO: Make calls to check for TLS 'unlikely' as it only happens once.
