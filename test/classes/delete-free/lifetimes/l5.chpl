@@ -59,7 +59,7 @@ proc badReturnRefLocalRec() ref {
   return refIdentity(r);
 }
 
-proc badSetGlobalRecord() {
+proc setGlobalRecord() {
   var ri = new Rint(1);
   var sub = new SubClass(1, ri);
   var c = new MyClass(sub);
@@ -72,7 +72,7 @@ proc test() {
   ref x = badReturnRefLocalRec();
   writeln(x);
 
-  badSetGlobalRecord();
+  setGlobalRecord();
 }
 test();
 

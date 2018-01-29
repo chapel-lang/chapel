@@ -1,6 +1,3 @@
 l5.chpl:57: In function 'badReturnRefLocalRec':
 l5.chpl:59: error: Reference to scoped variable cannot be returned
 l5.chpl:58: note: consider scope of r
-l5.chpl:62: In function 'badSetGlobalRecord':
-l5.chpl:68: error: Scoped variable globalRMyClass would outlive the value it is set to
-l5.chpl:66: note: consider scope of r

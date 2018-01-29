@@ -1,0 +1,6 @@
+zz.chpl:41: In function 'badF1':
+zz.chpl:43: error: Scoped variable cannot be returned
+zz.chpl:42: note: consider scope of r
+zz.chpl:47: In function 'badF2':
+zz.chpl:49: error: Scoped variable cannot be returned
+zz.chpl:48: note: consider scope of r
