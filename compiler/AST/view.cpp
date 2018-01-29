@@ -359,11 +359,25 @@ BaseAST* aid(int id) {
   return aidWithError(id, "aid");
 }
 
-BaseAST* aid(BaseAST* ast); //vass - to .h
 BaseAST* aid(BaseAST* ast) {
   return ast;
 }
 
+Expr* aidExpr(int id) {
+  if (BaseAST* ast = aidWithError(id, "aidExpr"))
+    return aidExpr(ast);
+  else
+    return NULL;
+}
+
+Expr* aidExpr(BaseAST* ast) {
+  if (Expr* expr = toExpr(ast))
+    return expr;
+  if (ast != NULL)
+    printf("<aidExpr: node %d is a %s, not an Expr>\n",
+           ast->id, ast->astTagAsString());
+  return NULL;
+}
 
 void viewFlags(int id) {
   if (BaseAST* ast = aidWithError(id, "viewFlags"))
@@ -741,7 +755,7 @@ void debugSummary(BaseAST* ast) {
 }
 
 // find the Parent Symbol
-BaseAST* debugParentSym(int id) {
+Symbol* debugParentSym(int id) {
   if (BaseAST* ast = aid09(id))
     return debugParentSym(ast);
   else {
@@ -749,7 +763,7 @@ BaseAST* debugParentSym(int id) {
     return NULL;
   }
 }
-BaseAST* debugParentSym(BaseAST* ast) {
+Symbol* debugParentSym(BaseAST* ast) {
   if (!ast)
     return NULL;
   else if (Expr* expr = toExpr(ast))
@@ -758,6 +772,28 @@ BaseAST* debugParentSym(BaseAST* ast) {
     return sym->defPoint->parentSymbol;
   else {
     printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
+    return NULL;
+  }
+}
+
+// find the Parent Expression
+Expr* debugParentExpr(int id) {
+  if (BaseAST* ast = aid09(id))
+    return debugParentExpr(ast);
+  else {
+    printf("%s\n", aidNotFoundError("debugParentExpr", id));
+    return NULL;
+  }
+}
+Expr* debugParentExpr(BaseAST* ast) {
+  if (!ast)
+    return NULL;
+  else if (Expr* expr = toExpr(ast))
+    return expr->parentExpr;
+  else if (Symbol* sym = toSymbol(ast))
+    return sym->defPoint->parentExpr;
+  else {
+    printf("<debugParentExpr: node %d is neither Expr nor Symbol>\n", ast->id);
     return NULL;
   }
 }

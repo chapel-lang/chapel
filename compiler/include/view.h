@@ -23,8 +23,13 @@
 #include "baseAST.h"
 #include "vec.h"
 
-BaseAST*    aid(int id);
-BaseAST*    aid09(int id);
+BaseAST* aid(int id);
+BaseAST* aid09(int id);
+Expr*    aidExpr(int id);
+
+// counterparts of the above for convenient shortcuts
+BaseAST* aid(BaseAST* ast);
+Expr*    aidExpr(BaseAST* ast);
 
 void        list_view_noline(BaseAST* ast);
 void        nprint_view(BaseAST* ast);
@@ -96,7 +101,9 @@ int debugID(int id);
 int debugID(BaseAST* ast);
 void debugSummary(int id);
 void debugSummary(BaseAST* ast);
-BaseAST* debugParentSym(int id);
-BaseAST* debugParentSym(BaseAST* ast);
+Symbol* debugParentSym(int id);
+Symbol* debugParentSym(BaseAST* ast);
+Expr* debugParentExpr(int id);
+Expr* debugParentExpr(BaseAST* ast);
 
 #endif
