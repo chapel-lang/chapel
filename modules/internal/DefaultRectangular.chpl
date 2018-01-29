@@ -1163,13 +1163,16 @@ module DefaultRectangular {
     }
 
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i) ref
       return dsiAccess(i);
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i)
     where shouldReturnRvalueByValue(eltType)
       return dsiAccess(i);
 
+    pragma "return scope this"
     inline proc dsiLocalAccess(i) const ref
     where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
