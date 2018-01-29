@@ -819,6 +819,7 @@ inline proc AccumStencilArr.dsiLocalAccess(i: rank*idxType) ref {
 // BHARSH TODO: Like BlockDist, 'idx' should probably have a 'const in' or 'in'
 // intent
 //
+pragma "return scope this"
 inline
 proc AccumStencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
   var i = idx;
@@ -838,6 +839,7 @@ proc AccumStencilArr.do_dsiAccess(param setter, idx: rank*idxType) ref {
   return nonLocalAccess(i);
 }
 
+pragma "return scope this"
 proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
@@ -879,15 +881,18 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
 }
 
 // ref version
+pragma "return scope this"
 inline proc AccumStencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
 // value version for POD types
+pragma "return scope this"
 inline proc AccumStencilArr.dsiAccess(i: rank*idxType)
 where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
+pragma "return scope this"
 inline proc AccumStencilArr.dsiAccess(i: rank*idxType) const ref
 where shouldReturnRvalueByConstRef(eltType) {
   return do_dsiAccess(false, i);
