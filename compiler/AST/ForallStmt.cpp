@@ -153,37 +153,79 @@ Expr* ForallStmt::getFirstChild() {
   return fIterVars.head;
 }
 
+// wass printfs
 Expr* ForallStmt::getFirstExpr() {
-  if (Expr* iv = fIterVars.head->getFirstExpr())
-    return iv;
-  else if (Expr* ie = fIterExprs.head->getFirstExpr())
-    return ie;
-
-  // we must have found something
-  INT_ASSERT(false);
-  return NULL; //dummy
+  printf("fs %d   >>> fIterVars.head %d\n", this->id, fIterVars.head->id);
+  return fIterVars.head->getFirstExpr();
 }
 
-Expr* ForallStmt::getNextExpr(Expr* expr) {
-  if (expr == fIterVars.tail)
-    return fIterExprs.head;
+//wass
+static void report(ForallStmt* fs, const char* msg, Expr* curr, Expr* next) {
+extern int breakOnDeleteID;
+  if (fs->parentExpr->id == breakOnDeleteID)
+    printf("%-8d %s  >>  %d %s\n", curr->id, msg, next->id, next->astTagAsString());
+}
 
-  if (expr == fIterExprs.tail) {
-    if (Expr* inv = fShadowVars.head)
-      return inv;
-    else
-      return fTaskStartup->getFirstExpr();
+// wass // 'expr' must be either a DefExpr of a shadow variable or NULL.
+// If the former, return IB for that shadow variable.
+static BlockStmt* svarIBforDef(Expr* expr) {
+//wass  if (expr == NULL) return NULL;
+  ShadowVarSymbol* svar = toShadowVarSymbol(toDefExpr(expr)->sym);
+  return svar->initBlock();
+}
+
+Expr* ForallStmt::getNextExpr(Expr* expr)
+{
+  if (BlockStmt* block = toBlockStmt(expr))
+  {
+    if (block == fTaskStartup)
+      return report(this, "fTaskStartup", block, fTaskTeardown), fTaskTeardown->getFirstExpr();
+
+    if (block == fTaskTeardown)
+      return report(this, "fTaskTeardown", block, fLoopBody), fLoopBody->getFirstExpr();
+
+    if (block == fLoopBody)
+      return report(this, "fLoopBody", block, this), this;
+
+    if (ShadowVarSymbol* svar = toShadowVarSymbol(block->parentSymbol))
+    {
+      if (block == svar->initBlock()) {
+        return report(this, "initBlock", block, svar->deinitBlock()), svar->deinitBlock()->getFirstExpr();
+      }
+      if (block == svar->deinitBlock())
+      {
+        if (Expr* nextDef = svar->defPoint->next)
+          return report(this, "deinitBlock>IB for next defPoint", block, nextDef), svarIBforDef(nextDef)->getFirstExpr();
+        else
+          return report(this, "deinitBlock>fTaskStartup", block, fTaskStartup), fTaskStartup->getFirstExpr();
+      }
+    }
+
+    INT_ASSERT(false); // should have hit one of the above cases
   }
 
-  if (expr == fShadowVars.tail)
-    return fTaskStartup->getFirstExpr();
+  if (DefExpr* def = toDefExpr(expr))
+  {
+    if (def == fIterVars.tail)
+      return report(this, "fIterVars.tail", def, fIterExprs.head), fIterExprs.head;
 
-  if (expr == fTaskStartup)
-    return fTaskTeardown->getFirstExpr();
+    if (def == fShadowVars.tail)
+      // Need to descend into IB, DB of each shadow var.
+      return report(this, "fShadowVars.tail>IB for first defPoint", def, fShadowVars.head), svarIBforDef(fShadowVars.head)->getFirstExpr();
+  
+    INT_ASSERT(false); // should have hit one of the above cases
+  }
 
-  if (expr == fTaskTeardown)
-    return fLoopBody->getFirstExpr();
+  if (expr == fIterExprs.tail)
+  {
+    if (Expr* svarDef = fShadowVars.head)
+      return report(this, "fIterExprs.tail>fShadowVars.head", expr, svarDef), svarDef->getFirstExpr();
+    else
+      // no shadow vars
+      return report(this, "fIterExprs.tail>fTaskStartup", expr, fTaskStartup), fTaskStartup->getFirstExpr();
+  }
 
+  INT_ASSERT(false); // should have exited with 'this' above
   return this;
 }
 
