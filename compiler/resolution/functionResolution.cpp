@@ -2430,7 +2430,7 @@ static void resolveNormalCallFinalChecks(CallExpr* call) {
     }
   }
 
-  //lvalueCheck(call);
+  lvalueCheck(call);
 
   checkForStoringIntoTuple(call, fn);
 
