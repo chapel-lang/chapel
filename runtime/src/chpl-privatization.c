@@ -25,19 +25,52 @@
 #include "chpl-tasks.h"
 #include <pthread.h>
 
+/*
+  TODO: Make calls to check for TLS 'unlikely' as it only happens once.
+*/
+
+#define CHPL_PRIVATIZATION_TRIES_BEFORE_DEFER 1024
+
 static chpl_sync_aux_t privatizationSync;
 static volatile uint64_t global_epoch = 0;
 
 void** chpl_privateObjects = NULL;
 static int64_t chpl_capPrivateObjects = 0;
 
+// Deferred deletion list and associated epoch
+// Ideas: First thread that does not complete within a
+// reasonable amount of time gets to handle deleting it.
+// If a thread hits a checkpoint and seeing a deferred node,
+// it will process one of them; if it is unable to, it will
+// 'pass the buck' to the next problematic thread ensuring that
+// eventually it will be deleted. 
+struct defer_node {
+  uint64_t targetEpoch;
+  void *data;
+  struct defer_node *next;
+};
+
 // Thread-local state that keeps track of the current version of
 // 'chpl_privatizedObjects'. This adheres to the Quiescent State-Based Reclamation
 // strategy used in certain RCU implementations.  
 struct tls_node {
+  /*
+    The current observed epoch. This is used to ensure that writers
+    do not delete an older instance that corresponds to this epoch.
+  */
   volatile uint64_t epoch;
+  /*
+    Number of tasks that this thread has running. Required so
+    that threads without tasks (and no longer are able to call
+    checkpoints) are not taken into account.
+  */
   volatile uint64_t nTasks;
-  volatile uint64_t nWriters;
+  /*
+    List of objects that are queued for deferred deletion. Each
+    time a writer has waited for too long on a particular thread,
+    it will 'pass the buck' for deletion to the next thread.
+  */
+  struct defer_node * volatile deferList;
   struct tls_node *next;
 };
 
@@ -61,6 +94,46 @@ static void init_tls(void) {
   CHPL_TLS_SET(reader_tls, node);
 }
 
+// Waits for readers in 'list' to reach (or pass) the 'targetEpoch', and if so will delete 'data'.
+// If a reader does not pass the checkpoint in time, we defer both to the problematic thread.
+static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, void *data);
+static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, void *data) {
+  bool canDelete = true;
+  for (struct tls_node *node = list; canDelete && node != NULL; node = node->next) {
+    // Wait for threads which have tasks that are not writers. If we spin
+    // for a certain number of times on a thread, we defer deletion to it
+    // in case it cannot call their checkpoint.
+    int nTries = 0;
+    while (node->nTasks && node->epoch < targetEpoch) {
+      chpl_task_yield();
+
+      if (nTries == CHPL_PRIVATIZATION_TRIES_BEFORE_DEFER) {
+        canDelete = false;
+        
+        // Create new defer node that contains both the target epoch and data.
+        struct defer_node *defer = chpl_calloc(1, sizeof(*defer));
+        defer->targetEpoch = global_epoch;
+        defer->data = data;
+
+        // Push...
+        struct defer_node *old_head;
+        do {
+          old_head = node->deferList;
+          defer->next = old_head;
+        } while (atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) defer));
+
+        break;
+      }
+
+      nTries++;
+    }
+  }
+
+  if (canDelete) {
+    chpl_mem_free(data, 0, 0);
+  }
+}
+
 void chpl_privatization_init(void) {
     chpl_sync_initAux(&privatizationSync);
     CHPL_TLS_INIT(reader_tls);
@@ -75,14 +148,27 @@ void chpl_privatization_init(void) {
 // Called when we are sure we no longer have access to 'chpl_privatizedObjects'
 void chpl_privatization_checkpoint(void);
 void chpl_privatization_checkpoint(void) {
-  struct tls_node *node = CHPL_TLS_GET(reader_tls);
-  if (node == NULL) {
+  struct tls_node *tls = CHPL_TLS_GET(reader_tls);
+  if (tls == NULL) {
     init_tls();
-    node = CHPL_TLS_GET(reader_tls);
+    tls = CHPL_TLS_GET(reader_tls);
   }
 
-  /* Observe the current epoch. */
-  node->epoch = global_epoch;
+  // Observe the current epoch.
+  tls->epoch = global_epoch;
+
+  // Handle a single deferred object we have, if any
+  if (tls->deferList) {
+    // Pop
+    struct defer_node *dnode;
+    do {
+      dnode = tls->deferList;  
+    } while (atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next));
+    
+    // Only process threads that come after us as a previous thread would have been processed 
+    // before us and newly registered threads are pushed as the head of the tls_list.
+    waitForReaders(dnode->targetEpoch, tls->next, dnode->data);
+  }
 }
 
 void chpl_privatization_incr(void); 
@@ -117,14 +203,7 @@ static inline int64_t max(int64_t a, int64_t b) {
 // called with non-monotonic pid's. e.g. this may be called with pid 27, and
 // then pid 2, so it has to ensure that the privatized array has at least pid+1
 // elements. Be __very__ careful if you have to update it.
-void chpl_newPrivatizedClass(void* v, int64_t pid) {
-  struct tls_node *node = CHPL_TLS_GET(reader_tls);
-  if (node == NULL) {
-    init_tls();
-    node = CHPL_TLS_GET(reader_tls);
-  }
-  node->nWriters++;
-  
+void chpl_newPrivatizedClass(void* v, int64_t pid) {  
   chpl_sync_lock(&privatizationSync);
   // if we're out of space, double (or more) the array size
   if (pid >= chpl_capPrivateObjects) {
@@ -143,46 +222,22 @@ void chpl_newPrivatizedClass(void* v, int64_t pid) {
 
     full_memory_barrier();
     global_epoch = global_epoch + 1;
-    for (struct tls_node *node = tls_list; node != NULL; node = node->next) {
-      // Wait for threads which have tasks that are not writers
-      while (node->nTasks > node->nWriters && node->epoch != global_epoch) {
-        chpl_task_yield();
-      }
-    }
-
-    chpl_mem_free(old, 0, 0);
+    waitForReaders(global_epoch, tls_list, old);
   }
 
   chpl_privateObjects[pid] = v;
 
   chpl_sync_unlock(&privatizationSync);
-  node->nWriters--;
 }
 
 void chpl_clearPrivatizedClass(int64_t i) {
-  struct tls_node *node = CHPL_TLS_GET(reader_tls);
-  if (node == NULL) {
-    init_tls();
-    node = CHPL_TLS_GET(reader_tls);
-  }
-  node->nWriters++;
-
   chpl_sync_lock(&privatizationSync);
   chpl_privateObjects[i] = NULL;
   chpl_sync_unlock(&privatizationSync);
-
-  node->nWriters--;
 }
 
 // Used to check for leaks of privatized classes
 int64_t chpl_numPrivatizedClasses(void) {
-  struct tls_node *node = CHPL_TLS_GET(reader_tls);
-  if (node == NULL) {
-    init_tls();
-    node = CHPL_TLS_GET(reader_tls);
-  }
-  node->nWriters++;
-
   int64_t ret = 0;
   chpl_sync_lock(&privatizationSync);
   for (int64_t i = 0; i < chpl_capPrivateObjects; i++) {
@@ -190,8 +245,6 @@ int64_t chpl_numPrivatizedClasses(void) {
       ret++;
   }
   chpl_sync_unlock(&privatizationSync);
-
-  node->nWriters--;
   return ret;
 }
  
@@ -201,6 +254,13 @@ void chpl_privatization_exit(void) {
   while (tls_list) {
     struct tls_node *node = tls_list;
     tls_list = tls_list->next;
+
+    while (node->deferList) {
+      struct defer_node *dnode = node->deferList;
+      node->deferList = node->deferList->next;
+      chpl_mem_free(dnode, 0, 0);
+    }
+
     chpl_mem_free(node, 0, 0);
   }
 
