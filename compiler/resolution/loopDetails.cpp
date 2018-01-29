@@ -292,10 +292,15 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // i.e. a non-zippered for loop
       // Find the PRIM_MOVE setting iterator
       SymExpr* def = iterator->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-      CallExpr* getIteratorCall = toCallExpr(move->get(2));
-      INT_ASSERT(getIteratorCall);
+      Expr* iterable = NULL;
+      if (def) {
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+        CallExpr* getIteratorCall = toCallExpr(move->get(2));
+        INT_ASSERT(getIteratorCall);
+        if (getIteratorCall->numActuals() >= 1)
+          iterable = getIteratorCall->get(1);
+      }
 
       // Collapse compiler-introduced copies of references
       // to variables marked "index var"
@@ -303,7 +308,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
       index = collapseIndexVarReferences(index);
 
       // The thing being iterated over is the argument to getIterator
-      Expr* iterable = getIteratorCall->get(1);
       IteratorDetails details;
       details.iterable = iterable;
       details.index = index;
@@ -394,8 +398,10 @@ void gatherLoopDetails(ForLoop*  forLoop,
             SymExpr* def = tmpStoringGetIterator->getSingleDef();
             CallExpr* move = toCallExpr(def->parentExpr);
             CallExpr* getIterator = toCallExpr(move->get(2));
-            // The argument to _getIterator is the iterable
-            iterable = getIterator->get(1);
+            if (getIterator->numActuals() >= 1) {
+              // The argument to _getIterator is the iterable
+              iterable = getIterator->get(1);
+            }
           } else {
             iterable = actualSe;
           }
