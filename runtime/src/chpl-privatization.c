@@ -30,7 +30,7 @@
   TODO: Make calls to check for TLS 'unlikely' as it only happens once.
 */
 
-#define CHPL_PRIVATIZATION_TRIES_BEFORE_DEFER 1024
+#define CHPL_PRIVATIZATION_TRIES_BEFORE_DEFER 1
 
 static chpl_sync_aux_t privatizationSync;
 static volatile uint64_t global_epoch = 0;

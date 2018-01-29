@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
 
@@ -33,25 +36,25 @@
 * allowed.
 */
 
+void chpl_qsbr_init(void);
+
 // Invoked periodically by tasks to indicate that it is no
 // longer using QSBR-Protected data. Note that this must never
 // be called while accessing the data itself. This function
 // will update TLS data. 
-void chpl_qsbr_checkpoint();
+void chpl_qsbr_checkpoint(void);
 
-// Broadcasts a state change, returning the previous epoch that can be waited on.
-// Note that this can be used to allow non-blocking deferred deletion.
-uint64_t chpl_qsbr_broadcast();
+// Broadcasts a global state change and deletes 'args' if all threads pass a
+// checkpoint. In the case that the user passes a stack-allocated array for 'args'
+// whether or not it gets deleted is optional. If a thread does not pass the checkpoint
+// the task of deletion is deferred to that thread.
+void chpl_qsbr_defer_deletion(void **data, int numData, bool deleteData);
 
-// Wait for all threads with unblocked tasks to pass through a checkpoint.
-void chpl_qsbr_wait(uint64_t epoch);
+// Keeps track of number of tasks that a thread has. Necessary so that tasks do not wait on
+// threads without any tasks, as threads without tasks will never actually execute deferred deletion.
+void chpl_qsbr_onTaskCreation(void); 
+void chpl_qsbr_onTaskDestruction(void); 
 
-// Informs that a task is about to block and will be unable to pass checkpoints.
-// A 'blocked' task will not be waited on. Note that this can be called if you know
-// that a task will not use the QSBR-Protected data for a prolonged duration of time. 
-void chpl_qsbr_blocked();
-
-// Informs that a task is no longer blocked and should be accounted for.
-void chpl_qsbr_unblocked();
+void chpl_qsbr_exit(void);
 
 #endif // _chpl_qsbr_h_
