@@ -709,7 +709,6 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     Symbol* index = detailsVector[i].index;
     SymExpr* iterableSe = toSymExpr(iterable);
 
-    INT_ASSERT(iterable);
     INT_ASSERT(index);
 
     // Also check if we are iterating using these() method
@@ -717,7 +716,8 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (!iterableSe)
       if (CallExpr* iterableCall = toCallExpr(iterable))
         if (iterableCall->isNamed("these"))
-          iterableSe = toSymExpr(iterableCall->get(1));
+          if (iterableCall->numActuals() >= 1)
+            iterableSe = toSymExpr(iterableCall->get(1));
 
     // Gather lifetime for iterable
     ScopeLifetime iterableLifetime = infiniteScopeLifetime();
@@ -726,7 +726,8 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       iterableLifetime = lifetimes->lifetimeForCallReturn(iterableCall);
     } else {
-      INT_FATAL("Error finding iterable");
+      // Assume infinite lifetime, as iterable takes no arguments
+      // (e.g. enum value iteration)
     }
 
     // Set lifetime of iteration variable to lifetime of the iterable (expr).
