@@ -224,23 +224,11 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
 //printf("fn %d  clone %d\n", fn->id, clone->id); //wass
 
     for_SymbolSymExprs(use, fn)
-{
       if (isForallIterableCallee(use)) {
-        // redirect
+        // go ahead redirect
         SET_LINENO(use);
-#if 1 //wass
-        SymExpr* repl = new SymExpr(clone);
-//          printf("  repl %d > %d\n", use->id, repl->id);
-          use->replace(repl);
-        }
-//      else printf("  as-is %d\n", use->id);
-}
-#else
-    SET_LINENO(use);
         use->replace(new SymExpr(clone));
-
-#endif
-gdbShouldBreakHere(); //wass
+      }
   }
 
   // Transform if we got non-ForallStmt uses.

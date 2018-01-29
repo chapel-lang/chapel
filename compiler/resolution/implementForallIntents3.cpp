@@ -906,7 +906,7 @@ static void lowerForallStmtsInline() {
 
   clearUpRefsInShadowVars();
 
-  // It is faster to do them all at once.
+  // It is faster to flatten all task fns at once.
   flattenNestedFunctions(taskFnClonesToFlatten);
 }
 
