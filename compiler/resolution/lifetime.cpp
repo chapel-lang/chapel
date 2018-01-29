@@ -432,7 +432,7 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
 
   bool returnsBorrow = false;
   Type* returnType = calledFn->retType;
-  if (0 == strcmp("init", calledFn->name)) {
+  if (calledFn->isMethod() && 0 == strcmp("init", calledFn->name)) {
     returnType = calledFn->getFormal(1)->getValType();
   }
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
@@ -592,7 +592,7 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   }
 
   if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
-    if (0 == strcmp("init", calledFn->name)) {
+    if (calledFn->isMethod() && 0 == strcmp("init", calledFn->name)) {
       SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
       Symbol* sym = se->symbol();
