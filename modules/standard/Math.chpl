@@ -1056,6 +1056,15 @@ module Math {
     extern proc truncf(x: real(32)): real(32);
     return truncf(x);
   }
+  
+  /* Returns the greatest common divisor of the integer argument `arg1` and
+     `arg2`. */
+  proc gcd(arg1: int, arg2: int): int {
+     if ( arg1 == 0 ) {
+        return arg2;
+     }
+    return gcd(arg2%arg1, arg1);
+  }
 
 } // end of module Math
 
