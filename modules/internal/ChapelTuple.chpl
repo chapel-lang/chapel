@@ -229,13 +229,11 @@ module ChapelTuple {
   iter _tuple.these(param tag:iterKind, followThis: _tuple)
       where tag == iterKind.follower
   {
-    var fThis: range;
-
-    // Received followThis from a multi-dimensional object (e.g. an array)
+    // Received followThis from a multi-dimensional object (e.g. a 2D array)
     if followThis.size != 1 then
       compilerError('Tuple cannot be zipped with a multi-dimensional object in a forall');
 
-    fThis = followThis(1).translate(1);
+    var fThis = followThis(1).translate(1);
 
     for i in fThis {
       yield this(i);
