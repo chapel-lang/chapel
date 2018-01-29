@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef _chpl_qsbr_h_
+#define _chpl_qsbr_h_
+
 /*
 	A Quiescent State-Based Reclamation style of Read-Copy-Update and
 	pseudo garbage-collector. We generalize and coarsen the granularity
@@ -29,9 +32,6 @@
 	safe for the updater to delete the older version of data. Multiple writers are
 	allowed.
 */
-
-#ifndef _chpl_qsbr_h_
-#define _chpl_qsbr_h_
 
 // Invoked periodically by tasks to indicate that it is no
 // longer using QSBR-Protected data. Note that this must never
