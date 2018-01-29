@@ -6475,6 +6475,9 @@ Expr* resolveExpr(Expr* expr) {
 
     retval = foldTryCond(postFold(expr));
 
+    void resolveShadowVarsIfNeeded(DefExpr* def); //wass
+    resolveShadowVarsIfNeeded(def);
+
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 

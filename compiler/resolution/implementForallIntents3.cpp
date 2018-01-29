@@ -190,6 +190,25 @@ void lowerForallIntentsAtResolution(ForallStmt* fs) {
   }
 }
 
+#if !lfiResolve
+// Also need to resolve IB, DB after we have set them up above.
+void resolveShadowVarsIfNeeded(DefExpr* def); //wass to .h
+void resolveShadowVarsIfNeeded(DefExpr* def) {
+  ForallStmt* efs = NULL;
+  if (AList* list = def->list)
+    if (ForallStmt* fs = toForallStmt(list->parent))
+      if (list == &fs->shadowVariables())
+        if (def == list->tail)
+          efs = fs;
+  if (efs == NULL) return;
+
+  for_shadow_vars(svar, temp, efs) {
+    resolveBlockStmt(svar->initBlock());
+    resolveBlockStmt(svar->deinitBlock());
+  }
+}
+#endif
+
 
 /////////// forwards ///////////
 
