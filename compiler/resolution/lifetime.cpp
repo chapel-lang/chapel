@@ -68,7 +68,14 @@
      - decide on how to declare an owning vs borrowed class instance ptr
      - decide on how to declare ownership transfer arg vs
        borrowing arg
-
+     - Should default for a method be borrowing from 'this'
+       (vs arguments?)
+     - improve error messages for the case in which a
+       function calls another function that needs an annotation
+     - check return scope better (there can only be one
+       return scope argument per function? in that event, that's
+       the only argument marked with return scope?)
+     - tidy up implementation
  */
 
 const char* debugLifetimesForFn = "";
