@@ -8328,9 +8328,10 @@ static void removeAggTypeFieldInfo();
 static void pruneResolvedTree() {
   removeUnusedFunctions();
 
+  /*
   if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
-  }
+  }*/
 
   removeRandomPrimitives();
 
