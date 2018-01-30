@@ -27,6 +27,7 @@
 #include "chpl-topo.h"
 #include "gdb.h"
 #include "chpl-qsbr.h"
+#include "chpl-privatization.h"
 
 #include <stdio.h>
 #include <stdlib.h>
