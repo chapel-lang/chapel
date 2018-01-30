@@ -337,10 +337,10 @@ bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, ScopeLifetime lt) {
       value.referent = lt.referent;
       changed = true;
     }
-    if (isLifetimeShorter(lt.referent, value.referent)) {
+    if (isLifetimeShorter(lt.borrowed, value.borrowed)) {
       if (sym->id == breakOnId)
         gdbShouldBreakHere();
-      value.referent = lt.referent;
+      value.borrowed = lt.borrowed;
       changed = true;
     }
   }
@@ -699,6 +699,10 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
 }
 
 bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
+  
+  if (forLoop->id == debugLifetimesForId)
+    gdbShouldBreakHere();
+
   // Gather the loop details to understand the
   // correspondence between what was iterated over
   // and the index variables.
@@ -729,7 +733,7 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     // Gather lifetime for iterable
     ScopeLifetime iterableLifetime = infiniteScopeLifetime();
     if (iterableSe) {
-      iterableLifetime = lifetimes->lifetimeForSymbol(iterableSe->symbol());
+      iterableLifetime = lifetimes->lifetimeForActual(iterableSe->symbol());
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
       iterableLifetime = lifetimes->lifetimeForCallReturn(iterableCall);
     } else {
