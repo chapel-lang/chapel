@@ -864,7 +864,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       if (buffLen < 1) {
         throw new IllegalArgumentError("Invalid random buffer length specified.");
       }
-      var randomizedBuff = createRandomBuffer(buffLen);
+      var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
       return randomizedCryptoBuff;
     }
@@ -1005,7 +1005,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
 
     pragma "no doc"
-    proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) {
+    proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) throws {
 
       var ctx: EVP_CIPHER_CTX;
       EVP_CIPHER_CTX_init(ctx);
@@ -1026,7 +1026,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        halt("The RSAKey is an invalid match");
+        throw new IllegalArgumentError("The RSAKey is an invalid match");
       }
 
       var plaintextLen = ciphertext.size;
@@ -1124,12 +1124,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc decrypt(envp: Envelope, key: RSAKey): CryptoBuffer {
+    proc decrypt(envp: Envelope, key: RSAKey): CryptoBuffer throws {
       var iv = envp.getIV().getBuffData();
       var ciphertext = envp.getEncMessage().getBuffData();
       var encKeys = envp.getEncKeys();
 
-      var plaintext = rsaDecrypt(key, iv, ciphertext, encKeys);
+      var plaintext = try rsaDecrypt(key, iv, ciphertext, encKeys);
       var plaintextBuff = new CryptoBuffer(plaintext);
       return plaintextBuff;
     }
