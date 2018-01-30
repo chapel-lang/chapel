@@ -111,8 +111,6 @@ static void resolveInitCall(CallExpr* call) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
-    printf("breaking on resolve call:\n");
-    print_view(call);
     gdbShouldBreakHere();
   }
 
@@ -268,8 +266,8 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     AggregateType* at = toAggregateType(fn->_this->type);
 
     if (fn->id == breakOnResolveID) {
-      printf("breaking on resolve fn:\n");
-      print_view(fn);
+      printf("breaking on resolve fn %s[%d] (%d args)\n",
+             fn->name, fn->id, fn->numFormals());
       gdbShouldBreakHere();
     }
 
