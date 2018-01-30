@@ -44,12 +44,11 @@ public:
 
   DECLARE_COPY(ForallStmt);
 
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
   virtual GenRet      codegen();
 
-  virtual Expr*       getFirstChild();
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 

@@ -104,10 +104,6 @@ Expr* UseStmt::getFirstExpr() {
   return this;
 }
 
-Expr* UseStmt::getFirstChild() {
-  return NULL;
-}
-
 void UseStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == src) {
     src = newAst;

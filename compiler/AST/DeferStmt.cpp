@@ -75,10 +75,6 @@ void DeferStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   }
 }
 
-Expr* DeferStmt::getFirstChild() {
-  return _body;
-}
-
 Expr* DeferStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();

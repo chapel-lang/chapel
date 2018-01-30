@@ -292,19 +292,6 @@ void BlockStmt::flattenAndRemove() {
 }
 
 Expr*
-BlockStmt::getFirstChild() {
-  Expr* retval = NULL;
-
-  if (blockInfo)
-    retval = blockInfo;
-
-  else if (body.head)
-    retval = body.head;
-
-  return retval;
-}
-
-Expr*
 BlockStmt::getFirstExpr() {
   Expr* retval = 0;
 
@@ -743,10 +730,6 @@ void CondStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* CondStmt::getFirstChild() {
-  return (condExpr != 0) ? condExpr : NULL ;
-}
-
 Expr* CondStmt::getFirstExpr() {
   return (condExpr != 0) ? condExpr->getFirstExpr() : this;
 }
@@ -935,10 +918,6 @@ void GotoStmt::accept(AstVisitor* visitor) {
   }
 }
 
-Expr* GotoStmt::getFirstChild() {
-  return (label != 0) ? label : NULL;
-}
-
 Expr* GotoStmt::getFirstExpr() {
   return (label != 0) ? label->getFirstExpr() : this;
 }
@@ -999,10 +978,6 @@ ExternBlockStmt* ExternBlockStmt::copyInner(SymbolMap* map) {
 
 void ExternBlockStmt::accept(AstVisitor* visitor) {
   visitor->visitEblockStmt(this);
-}
-
-Expr* ExternBlockStmt::getFirstChild() {
-  return NULL;
 }
 
 Expr* ExternBlockStmt::getFirstExpr() {
@@ -1108,10 +1083,6 @@ void ForwardingStmt::accept(AstVisitor* visitor) {
 
     visitor->exitForwardingStmt(this);
   }
-}
-
-Expr* ForwardingStmt::getFirstChild() {
-  return toFnDef;
 }
 
 Expr* ForwardingStmt::getFirstExpr() {
