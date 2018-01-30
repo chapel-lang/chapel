@@ -66,8 +66,12 @@
    TODO:
      - investigate if this can do escape checking for begins
      - decide on how to declare an owning vs borrowed class instance ptr
+       - vs a raw one
      - decide on how to declare ownership transfer arg vs
        borrowing arg
+       - returns infinite lifetime
+       - returns lifetime matching this
+       - returns lifetime matching arg
      - Should default for a method be borrowing from 'this'
        (vs arguments?)
      - improve error messages for the case in which a
@@ -1187,9 +1191,14 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   if (calledFn && 0 == strcmp("=", calledFn->name)) {
     if (isClassOrNil(call->get(1)->getValType()) &&
         isClassOrNil(call->get(2)->getValType()))
-      return true;
+      // Only consider same-type class assignment overloads
+      // (or those where one type is nil)
+      if (call->get(1)->getValType() == call->get(2)->getValType() ||
+          call->get(1)->getValType() == dtNil ||
+          call->get(2)->getValType() == dtNil)
+        return true;
     if (AggregateType* at = toAggregateType(call->get(1)->getValType()))
-      if (calledFn->hasFlag(FLAG_COMPILER_GENERATED))
+      if (isRecord(at) && calledFn->hasFlag(FLAG_COMPILER_GENERATED))
         if (recordContainsBorrowedClassFields(at))
           return true;
   }
