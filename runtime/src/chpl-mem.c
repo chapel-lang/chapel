@@ -36,10 +36,6 @@ void chpl_mem_init(void) {
 
 
 void chpl_mem_exit(void) {
-  extern void chpl_privatization_exit(void);
-  extern void chpl_qsbr_exit(void);
-  chpl_qsbr_exit();
-  chpl_privatization_exit();
   chpl_mem_layerExit();
 }
 
