@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -218,7 +218,7 @@ static inline int myth_felock_unlock_body(myth_felock_t * fe) {
   return pthread_mutex_unlock(fe->mutex);
 }
 
-static inline int myth_felock_wait_and_lock_body(myth_felock_t * fe, 
+static inline int myth_felock_wait_and_lock_body(myth_felock_t * fe,
                                                  int status_to_wait) {
   pthread_mutex_lock(fe->mutex);
   while (fe->status != status_to_wait) {
@@ -441,7 +441,7 @@ static void * myth_chpl_wrap(void * a_) {
   chpl_bool is_executeOn = arg->is_executeOn;
 
   // Increment # of tasks
-  chpl_qsbr_onTaskCreation(); 
+  chpl_qsbr_onTaskCreation();
   chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                          fid,
                          filename,

@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -188,7 +188,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
           timed_out = chpl_thread_sync_suspend(s, &deadline);
         else
           chpl_thread_yield();
-        
+
         if (s->is_full != want_full && !timed_out)
           gettimeofday(&now, NULL);
       } while (s->is_full != want_full
@@ -419,12 +419,12 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   }
 
   stack_size  = chpl_thread_getCallStackSize();
-  
+
   if(chpl_alloc_stack_in_heap){
     stack = chpl_alloc_pthread_stack(stack_size);
     if(stack == NULL)
       chpl_internal_error("chpl_alloc_pthread_stack main failed");
-  
+
     rc = pthread_attr_setstack(&attr, stack, stack_size);
     if( rc != 0 ) {
       chpl_internal_error("pthread_attr_setstack main failed");
@@ -450,7 +450,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if(chpl_alloc_stack_in_heap){
     chpl_free_pthread_stack(stack);
   }
-  
+
   pthread_attr_destroy(&attr);
 }
 
@@ -669,7 +669,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
       initializeLockReportForThread();
 
     // Increment # of tasks
-    chpl_qsbr_onTaskCreation(); 
+    chpl_qsbr_onTaskCreation();
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
@@ -1175,7 +1175,7 @@ thread_begin(void* ptask_void) {
 
       unset_block_loc();
     }
- 
+
     //
     // Just now the pool had at least one task in it.  Lock and see if
     // there's something still there.
@@ -1215,7 +1215,7 @@ thread_begin(void* ptask_void) {
     }
 
     // Increment # of tasks
-    chpl_qsbr_onTaskCreation(); 
+    chpl_qsbr_onTaskCreation();
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,

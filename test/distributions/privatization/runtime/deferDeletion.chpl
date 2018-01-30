@@ -12,7 +12,7 @@ done.write(false);
 
 // Spin on atomic counter without calling checkpoint
 begin {
-	while !done.read() do ; 
+	while !done.read() do ;
 	writeln("Spinning Thread Finished!");
 }
 

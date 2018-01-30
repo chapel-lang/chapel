@@ -46,6 +46,7 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
+#include "chpl-qsbr.h"
 #include "tasks-qthreads.h"
 
 #include "qthread.h"
@@ -183,7 +184,6 @@ static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 void chpl_task_yield(void)
 {
-    extern void chpl_qsbr_checkpoint(void);
     chpl_qsbr_checkpoint();
     PROFILE_INCR(profile_task_yield,1);
     if (qthread_shep() == NO_SHEPHERD) {
@@ -800,11 +800,8 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
-    extern void chpl_qsbr_onTaskCreation(void);
-    extern void chpl_qsbr_onTaskDestruction(void);
-
     // Increment # of tasks
-    chpl_qsbr_onTaskCreation(); 
+    chpl_qsbr_onTaskCreation();
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
