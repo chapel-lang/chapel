@@ -142,7 +142,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym);
 static bool recordContainsClassFields(AggregateType* at);
 static bool recordContainsOwnedClassFields(AggregateType* at);
 static bool recordContainsBorrowedClassFields(AggregateType* at);
-static bool containsBorrowedClass(Type* type);
+//static bool containsBorrowedClass(Type* type);
 static bool containsOwnedClass(Type* type);
 static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
@@ -638,10 +638,17 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
     //  because a borrow from the owned object might not be valid
     //  after the owning object is destroyed)
     if (recordContainsOwnedClassFields(at)) {
-      ScopeLifetime temp = infiniteScopeLifetime();
-      temp.borrowed = reachabilityLifetimeForSymbol(initSym);
-      //lt = minimumScopeLifetime(lt, lifetimes->lifetimeForSymbol(initSym));
-      lt = minimumScopeLifetime(lt, temp);
+      FnSymbol* calledFn = initCall->resolvedOrVirtualFunction();
+      if (calledFn &&
+          calledFn->hasEitherFlag(FLAG_RETURN_NOT_OWNED,
+                                  FLAG_RETURNS_ALIASING_ARRAY)) {
+        lt = minimumScopeLifetime(lt, lifetimes->lifetimeForCallReturn(initCall));
+      } else {
+        ScopeLifetime temp = infiniteScopeLifetime();
+        temp.borrowed = reachabilityLifetimeForSymbol(initSym);
+        //lt = minimumScopeLifetime(lt, lifetimes->lifetimeForSymbol(initSym));
+        lt = minimumScopeLifetime(lt, temp);
+      }
     }
 
     lt.borrowed.relevantExpr = call;
@@ -780,9 +787,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
   FnSymbol* calledFn = call->resolvedOrVirtualFunction();
 
-  if (call->id == 410686)
-    gdbShouldBreakHere();
-
   if (isAnalyzedMoveOrAssignment(call)) {
 
     SymExpr* lhsSe = toSymExpr(call->get(1));
@@ -844,8 +848,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           }
         }
 
-        if (isSubjectToBorrowLifetimeAnalysis(lhs) &&
-            containsBorrowedClass(lhs->type)) {
+        if (isSubjectToBorrowLifetimeAnalysis(lhs) /*&&
+            containsBorrowedClass(lhs->type)*/) {
           // check returning a borrow
           if (!rhsLt.borrowed.infinite /*&& !rhsLtIsReachability*/) {
             if (!rhsLt.borrowed.returnScope) {
@@ -1037,6 +1041,7 @@ static bool recordContainsBorrowedClassFields(AggregateType* at) {
   return false;
 }
 
+/*
 static bool containsBorrowedClass(Type* type) {
   type = type->getValType();
 
@@ -1048,6 +1053,7 @@ static bool containsBorrowedClass(Type* type) {
 
   return false;
 }
+*/
 
 static bool containsOwnedClass(Type* type) {
   type = type->getValType();
