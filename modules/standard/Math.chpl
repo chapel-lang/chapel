@@ -1059,12 +1059,16 @@ module Math {
   
   /* Returns the greatest common divisor of the integer argument `arg1` and
      `arg2`. */
-  proc gcd(arg1: int, arg2: int): int {
-     if ( arg1 == 0 ) {
-        return arg2;
+  proc gcd(in a: int,in b: int): int {
+     var r: int;
+     while(b != 0) {
+       r = a % b;
+       a = b;
+       b = r;
      }
-    return gcd(arg2%arg1, arg1);
+    return a;
   }
+
 
 } // end of module Math
 
