@@ -586,13 +586,31 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   addCloneOfIB(aInit, map, SI);
 }
 
+//
+// When eActual is not a ref whereas the formal is a ref, insert
+// an explicit address-of. Otherwise create_arg_bundle_class() in parallel.cpp
+// will pass our actual by value in the argument bundle. Ex.
+//   parallel/forall/vass/default-intent-record-with-int-field
+//
+static Symbol* eActualOrRef(Expr* ref, ShadowVarSymbol* svar, Symbol* eActual)
+{
+  if (!svar->isRef() || eActual->isRef())
+    return eActual;
+
+  VarSymbol* temp = newTempConst("eaAddrOf", eActual->getRefType());
+  ref->insertBefore(new DefExpr(temp));
+  ref->insertBefore("'move'(%S,'addr of'(%S))", temp, eActual);
+  gdbShouldBreakHere();
+  return temp;
+}
+
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                          int numOrigActuals, SymbolMap& iMap,
                          SymbolMap& map, ShadowVarSymbol* svar,
                          bool expandClone, int ix, Symbol* mappee = NULL)
 {
   Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
-  callToTFn->insertAtTail(eActual);
+  callToTFn->insertAtTail(eActualOrRef(callToTFn, svar, eActual));
 
   if (expandClone) {
     ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
