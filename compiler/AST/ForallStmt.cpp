@@ -173,11 +173,6 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 // helpers
 /////////////////////////////////////////////////////////////////////////////
 
-// Is 'expr' an iterable-expression for 'this' ?
-bool ForallStmt::isIteratedExpression(Expr* expr) {
-  return expr->list && expr->list == &fIterExprs;
-}
-
 // If 'var' is listed in this's with-clause with a reduce intent,
 // return its position in the with-clause, otherwise return -1.
 // Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
@@ -200,6 +195,23 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
     if (ForallStmt* fs = toForallStmt(curr))
       return fs;
   return NULL;
+}
+
+// Is 'expr' an iterable-expression for some ForallStmt?
+bool isForallIterExpr(Expr* expr) {
+  if (expr->list != NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr->list == &pfs->iteratedExpressions())
+        return true;
+  return false;
+}
+
+// Is 'expr' the fs->loopBody() for some 'fs' ?
+bool isForallLoopBody(Expr* expr) {
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return true;
+  return false;
 }
 
 // valid after addParIdxVarsAndRestruct()

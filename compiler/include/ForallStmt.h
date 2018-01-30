@@ -62,7 +62,6 @@ public:
   // helpers
   Expr* firstIteratedExpr()        const;
   int   numIteratedExprs()         const;
-  bool  isIteratedExpression(Expr* expr);
   int   reduceIntentIdx(Symbol* var);
   int   numShadowVars()            const;
   ShadowVarSymbol* getShadowVar(int index) const;
@@ -122,6 +121,8 @@ inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
       if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
 
 // helpers
+bool isForallIterExpr(Expr* expr);
+bool isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
 
 // used for lowering ForallStmt and forall intents
