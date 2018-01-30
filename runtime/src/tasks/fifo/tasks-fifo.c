@@ -32,6 +32,7 @@
 #include "chpl-tasks-callbacks-internal.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
+#include "chpl-qsbr.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -667,11 +668,8 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     if (blockreport)
       initializeLockReportForThread();
 
-    extern void chpl_privatization_incr(void);
-    extern void chpl_privatization_decr(void);
-
     // Increment # of tasks
-    chpl_privatization_incr(); 
+    chpl_qsbr_onTaskCreation(); 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
@@ -688,7 +686,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
                            child_ptask->bundle.lineno,
                            child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
-    chpl_privatization_decr();
+    chpl_qsbr_onTaskDestruction();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
@@ -790,8 +788,7 @@ char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
 }
 
 void chpl_task_yield(void) {
-  extern void chpl_privatization_checkpoint(void);
-  chpl_privatization_checkpoint();
+  chpl_qsbr_checkpoint();
   chpl_thread_yield();
 }
 
@@ -1217,11 +1214,8 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
-    extern void chpl_privatization_incr(void);
-    extern void chpl_privatization_decr(void);
-
     // Increment # of tasks
-    chpl_privatization_incr(); 
+    chpl_qsbr_onTaskCreation(); 
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,
@@ -1238,7 +1232,7 @@ thread_begin(void* ptask_void) {
                            ptask->bundle.lineno,
                            ptask->bundle.id,
                            ptask->bundle.is_executeOn);
-    chpl_privatization_decr();
+    chpl_qsbr_onTaskDestruction();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);

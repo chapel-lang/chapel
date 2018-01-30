@@ -183,8 +183,8 @@ static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 void chpl_task_yield(void)
 {
-    extern void chpl_privatization_checkpoint(void);
-    chpl_privatization_checkpoint();
+    extern void chpl_qsbr_checkpoint(void);
+    chpl_qsbr_checkpoint();
     PROFILE_INCR(profile_task_yield,1);
     if (qthread_shep() == NO_SHEPHERD) {
         sched_yield();
@@ -800,18 +800,18 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
-    extern void chpl_privatization_incr(void);
-    extern void chpl_privatization_decr(void);
+    extern void chpl_qsbr_onTaskCreation(void);
+    extern void chpl_qsbr_onTaskDestruction(void);
 
     // Increment # of tasks
-    chpl_privatization_incr(); 
+    chpl_qsbr_onTaskCreation(); 
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
     // Decrement # of tasks
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
-    chpl_privatization_decr();
+    chpl_qsbr_onTaskDestruction();
 
     return 0;
 }

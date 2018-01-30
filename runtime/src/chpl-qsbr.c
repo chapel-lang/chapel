@@ -17,9 +17,14 @@
  * limitations under the License.
  */
 
+#include "chplrt.h"
+#include "chpl-thread-local-storage.h"
+#include "chpl-mem.h"
+#include "chpl-atomics.h"
+#include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
-static volatile uint64_t global_epoch = 0;
+static uint64_t global_epoch = 0;
 
 struct defer_data {
     void **data;
@@ -75,9 +80,9 @@ static void init_tls(void) {
   // Append to head of list
   struct tls_node *old_head;
   do {
-    old_head = tls_list;
+    old_head = chpl_qsbr_TLSList;
     node->next = old_head;
-  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &tls_list, (uintptr_t) old_head, (uintptr_t) node));
+  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &chpl_qsbr_TLSList, (uintptr_t) old_head, (uintptr_t) node));
   
   CHPL_TLS_SET(chpl_qsbr_readerTLS, node);
 }
@@ -94,7 +99,7 @@ static void waitForReaders(uint64_t targetEpoch, struct tls_node *list, struct d
         canDelete = false;
         
         // Create new defer node that contains both the target epoch and data.
-        struct defer_node *defer = chpl_calloc(1, sizeof(*defer));
+        struct defer_node *defer = chpl_mem_calloc(1, sizeof(*defer), 0, 0, 0);
         defer->targetEpoch = targetEpoch;
         defer->ddata = ddata;
 
@@ -122,11 +127,11 @@ void chpl_qsbr_init(void) {
     CHPL_TLS_INIT(chpl_qsbr_readerTLS);
 }
 
-void chpl_privatization_onTaskCreation(void) {
-  struct tls_node *node = CHPL_TLS_GET(reader_tls);
+void chpl_qsbr_onTaskCreation(void) {
+  struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_readerTLS);
   if (node == NULL) {
     init_tls();
-    node = CHPL_TLS_GET(reader_tls);
+    node = CHPL_TLS_GET(chpl_qsbr_readerTLS);
   }
 
   // Notify that we are now in-use.
@@ -134,11 +139,11 @@ void chpl_privatization_onTaskCreation(void) {
 }
 
 
-void chpl_privatization_onTaskDestruction(void) {
-  struct tls_node *tls = CHPL_TLS_GET(reader_tls);
+void chpl_qsbr_onTaskDestruction(void) {
+  struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_readerTLS);
   if (tls == NULL) {
     init_tls();
-    tls = CHPL_TLS_GET(reader_tls);
+    tls = CHPL_TLS_GET(chpl_qsbr_readerTLS);
   }
 
   // Notify that we have one less task
@@ -160,10 +165,10 @@ void chpl_privatization_onTaskDestruction(void) {
 }
 
 void chpl_qsbr_checkpoint(void) {
-    struct tls_node *tls = CHPL_TLS_GET(reader_tls);
+    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_readerTLS);
     if (tls == NULL) {
         init_tls();
-        tls = CHPL_TLS_GET(reader_tls);
+        tls = CHPL_TLS_GET(chpl_qsbr_readerTLS);
     }
 
     // Observe the current epoch.
@@ -189,26 +194,26 @@ void chpl_qsbr_checkpoint(void) {
 // whether or not it gets deleted is optional. If a thread does not pass the checkpoint
 // the task of deletion is deferred to that thread.
 void chpl_qsbr_defer_deletion(void **data, int numData, bool deleteData) {
-    uint64_t epoch = atomic_fetch_add_uint64_t(&global_epoch, 1);
+    uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1);
     waitForReaders(epoch, chpl_qsbr_TLSList, (struct defer_data) { .data = data, .numData = numData, .deleteData = deleteData });
 }
 
 void chpl_qsbr_exit(void) {
     // Clean thread-local storage
-    while (tls_list) {
-        struct tls_node *node = tls_list;
-        tls_list = tls_list->next;
+    while (chpl_qsbr_TLSList) {
+        struct tls_node *node = chpl_qsbr_TLSList;
+        chpl_qsbr_TLSList = chpl_qsbr_TLSList->next;
 
         while (node->deferList) {
             struct defer_node *dnode = node->deferList;
             node->deferList = node->deferList->next;
 
-            for (int i = 0; i < dnode.numData; i++) {
-                chpl_mem_free(dnode.data[i], 0, 0);
+            for (int i = 0; i < dnode->ddata.numData; i++) {
+                chpl_mem_free(dnode->ddata.data[i], 0, 0);
             }
 
-            if (dnode.deleteData) {
-                chpl_mem_free(dnode.data, 0, 0);
+            if (dnode->ddata.deleteData) {
+                chpl_mem_free(dnode->ddata.data, 0, 0);
             }
             
             chpl_mem_free(dnode, 0, 0);

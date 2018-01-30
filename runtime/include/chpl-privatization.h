@@ -21,6 +21,7 @@
 #define _chpl_privatization_h_
 #ifndef LAUNCHER
 #include <stdint.h>
+#include "chpl-qsbr.h"
 #include "chpltypes.h"
 
 void chpl_privatization_init(void);
