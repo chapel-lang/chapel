@@ -1222,10 +1222,14 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
 
 static BlockStmt* getDefBlock(Symbol* sym) {
   Expr* defPoint = sym->defPoint;
-  while (defPoint && !isBlockStmt(defPoint)) {
+  while (defPoint) {
+    if (BlockStmt* block = toBlockStmt(defPoint))
+      if (block->blockTag == BLOCK_NORMAL)
+        return block;
+
     defPoint = defPoint->parentExpr;
   }
-  return toBlockStmt(defPoint);
+  return NULL;
 }
 
 // This could definately be implemented in a faster way.
@@ -1257,6 +1261,7 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
     BlockStmt* bBlock = getDefBlock(bSym);
     if (aBlock == bBlock) {
       // TODO: check the order of the declarations
+      return false;
     } else {
       return isBlockWithinBlock(aBlock, bBlock);
     }
