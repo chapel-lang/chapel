@@ -1053,6 +1053,22 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
   return specBlock->body.head;
 }
 
+ShadowVarSymbol* ShadowVarSymbol::RPforAS() {
+  ShadowVarSymbol* AS = this;
+  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
+  ShadowVarSymbol* RR = toShadowVarSymbol(rpDef->sym);
+  INT_ASSERT(RR->intent == TFI_REDUCE_OP);
+  return RR;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::ASforRP() {
+  ShadowVarSymbol* RP = this;
+  DefExpr* asDef = toDefExpr(RP->defPoint->next);
+  ShadowVarSymbol* AS = toShadowVarSymbol(asDef->sym);
+  INT_ASSERT(AS->intent == TFI_REDUCE);
+  return AS;
+}
+
 void ShadowVarSymbol::removeSupportingReferences() {
   if (outerVarRep)   outerVarRep->remove();
   if (specBlock)     specBlock->remove();

@@ -399,7 +399,11 @@ public:
   Expr*    reduceOpExpr() const;
 
   BlockStmt* initBlock()   const { return svInitBlock; }
-  BlockStmt* deinitBlock() const { return svDeinitBlock; } 
+  BlockStmt* deinitBlock() const { return svDeinitBlock; }
+
+  // Convert between Reduce-oP and Accumulation State svars.
+  ShadowVarSymbol* RPforAS();
+  ShadowVarSymbol* ASforRP();
 
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();

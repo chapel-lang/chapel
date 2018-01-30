@@ -17,13 +17,6 @@ We DO need to preserve some const properties to enable optimizations.
 //wass
 #define lfiResolve 0
 
-static ShadowVarSymbol* getRPfromAS(ShadowVarSymbol* AS) {
-  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
-  ShadowVarSymbol* RR = toShadowVarSymbol(rpDef->sym);
-  INT_ASSERT(RR->intent == TFI_REDUCE_OP);
-  return RR;
-}
-
 static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
 {
   SymExpr* gOpSE = toSymExpr(AS->reduceOpExpr()->remove());
@@ -41,7 +34,7 @@ static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
 
   // It goes on the shadow variable list right before AS.
   AS->defPoint->insertBefore(new DefExpr(RP));
-  INT_ASSERT(getRPfromAS(AS) == RP);  // ensure getRPfromAS() works
+  INT_ASSERT(AS->RPforAS() == RP);  // ensure RPforAS() works
 
   return RP;
 }
@@ -113,7 +106,7 @@ static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
 
 static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
                          BlockStmt* IB, BlockStmt* DB) {
-  ShadowVarSymbol* RP = getRPfromAS(AS);
+  ShadowVarSymbol* RP = AS->RPforAS();
   insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
 #if lfiResolve
   resolveBlockStmt(IB);
