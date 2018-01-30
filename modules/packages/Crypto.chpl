@@ -780,15 +780,15 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer throws {
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        halt("Blowfish cipher expects an IV of size 8 bytes.");
+        throw new IllegalArgumentError("Blowfish cipher expects an IV of size 8 bytes.");
       }
 
       if (keyLen < 10) {
-        halt("Blowfish cipher expects a key of size greater than 10 bytes.");
+        throw new IllegalArgumentError("Blowfish cipher expects a key of size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
@@ -824,12 +824,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   }
 
   pragma "no doc"
-  proc createRandomBuffer(buffLen: int) {
+  proc createRandomBuffer(buffLen: int) throws {
     var buff: [0..#buffLen] uint(8);
     var retErrCode: c_int;
     retErrCode = RAND_bytes(c_ptrTo(buff): c_ptr(c_uchar), buffLen: c_int);
     if (!retErrCode) {
-      halt("The random buffer generator has failed to initialize a buffer.");
+      throw new IllegalArgumentError("The random buffer generator has failed to initialize a buffer.");
     }
     return buff;
   }
@@ -860,9 +860,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc createRandomBuffer(buffLen: int): CryptoBuffer {
+    proc createRandomBuffer(buffLen: int): CryptoBuffer throws {
       if (buffLen < 1) {
-        halt("Invalid random buffer length specified.");
+        throw new IllegalArgumentError("Invalid random buffer length specified.");
       }
       var randomizedBuff = createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
