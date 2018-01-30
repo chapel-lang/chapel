@@ -29,6 +29,7 @@
 #include "chpl-locale-model.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
+#include "chpl-qsbr.h"
 #include "chpl-tasks-callbacks-internal.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
@@ -439,11 +440,8 @@ static void * myth_chpl_wrap(void * a_) {
   chpl_taskID_t id = arg->id;
   chpl_bool is_executeOn = arg->is_executeOn;
 
-  extern void chpl_privatization_incr(void);
-  extern void chpl_privatization_decr(void);
-
   // Increment # of tasks
-  chpl_privatization_incr(); 
+  chpl_qsbr_onTaskCreation(); 
   chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                          fid,
                          filename,
@@ -458,7 +456,7 @@ static void * myth_chpl_wrap(void * a_) {
                          id,
                          is_executeOn);
 
-  chpl_privatization_decr();
+  chpl_qsbr_onTaskDestruction();
   return 0;
 }
 
@@ -626,8 +624,7 @@ char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
 // Yield.
 //
 void chpl_task_yield(void) {
-  extern void chpl_privatization_checkpoint(void);
-  chpl_privatization_checkpoint();
+  chpl_qsbr_checkpoint();
   enter_();
   myth_yield();
   return_from_();
