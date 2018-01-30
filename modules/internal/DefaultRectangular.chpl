@@ -77,6 +77,7 @@ module DefaultRectangular {
   pragma "locale private"
   var defaultDist = new dmap(new DefaultDist());
 
+  pragma "unsafe"
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
