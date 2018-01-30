@@ -1849,8 +1849,8 @@ IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
     case TFI_CONST_IN:  return INTENT_CONST_IN;
     case TFI_REF:       return INTENT_REF;
     case TFI_CONST_REF: return INTENT_CONST_REF;
+    case TFI_REDUCE_OP: return INTENT_CONST_IN;  // the reduce op class
     case TFI_REDUCE:
-    case TFI_REDUCE_OP:
       INT_ASSERT(false);    // don't know what to return
       return INTENT_BLANK;  // dummy
   }
