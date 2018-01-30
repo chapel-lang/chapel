@@ -1,0 +1,7 @@
+arr-slice.chpl:9: In function 'badReturnBorrowedArraySlice':
+arr-slice.chpl:12: error: Scoped variable cannot be returned
+arr-slice.chpl:10: note: consider scope of A
+arr-slice.chpl:16: In function 'badReturnBorrowedArraySliceRef':
+arr-slice.chpl:19: error: Reference to scoped variable cannot be returned
+arr-slice.chpl:19: error: Scoped variable cannot be returned
+arr-slice.chpl:17: note: consider scope of A

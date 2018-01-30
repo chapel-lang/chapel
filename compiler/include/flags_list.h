@@ -291,6 +291,7 @@ symbolFlag( FLAG_FN_RETURNS_ITERATOR, ypr, "fn returns iterator", "proc that can
 symbolFlag( FLAG_RETURNS_INFINITE_LIFETIME, ypr, "fn returns infinite lifetime", "function returns a pointer with infinite lifetime for lifetime analysis" )
 symbolFlag( FLAG_RETURN_SCOPE, ypr, "return scope", "indicates scope for return value")
 symbolFlag( FLAG_RETURN_SCOPE_THIS, ypr, "return scope this", "scope for return value matches scope of this")
+symbolFlag( FLAG_RETURN_NOT_OWNED, ypr, "return not owned", "scope for return value should ignore owned fields")
 // See buildRuntimeTypeToValueFns() in functionResolution.cpp for more info on FLAG_RUNTIME_TYPE_INIT_FN
 symbolFlag( FLAG_RUNTIME_TYPE_INIT_FN , ypr, "runtime type init fn" , "function for initializing runtime time types" )
 symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated runtime type (value)" )

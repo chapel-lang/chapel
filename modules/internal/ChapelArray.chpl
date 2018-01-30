@@ -1071,6 +1071,7 @@ module ChapelArray {
     }
 
     /* Return the domain map that implements this domain */
+    pragma "return not owned"
     proc dist return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
@@ -2102,6 +2103,7 @@ module ChapelArray {
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
