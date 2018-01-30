@@ -3980,6 +3980,7 @@ module ChapelArray {
   // Used to implement the copy-out language semantics
   // Relies on the return types being different to detect an ArrayView at
   // compile-time
+  pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
@@ -3988,6 +3989,7 @@ module ChapelArray {
     return ret;
   }
 
+  pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   proc chpl__unref(ir: _iteratorRecord) {
