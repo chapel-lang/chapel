@@ -121,7 +121,7 @@ namespace {
     ScopeLifetime lifetimeForSymbol(Symbol* sym);
     ScopeLifetime lifetimeForActual(Symbol* sym);
     ScopeLifetime lifetimeForCallReturn(CallExpr* call);
-    ScopeLifetime lifetimeForPrimitiveReturn(CallExpr* call, bool lhsIsRef);
+    ScopeLifetime lifetimeForPrimitiveReturn(CallExpr* call);
   };
 
   class GatherRefTempsVisitor : public AstVisitorTraverse {
@@ -560,8 +560,7 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   return minLifetime;
 }
 
-ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call, bool
-    lhsIsRef) {
+ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
 
   bool returnsRef = call->isRef();
   bool returnsBorrow = isSubjectToBorrowLifetimeAnalysis(call->typeInfo());
@@ -770,7 +769,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
           lt = lifetimes->lifetimeForCallReturn(rhsCallExpr);
         } else {
           // Includes propagating refs across PRIM_ADDR_OF/PRIM_SET_REFERENCE
-          lt = lifetimes->lifetimeForPrimitiveReturn(rhsCallExpr, lhs->isRef());
+          lt = lifetimes->lifetimeForPrimitiveReturn(rhsCallExpr);
         }
       } else {
         SymExpr* se = toSymExpr(rhsExpr);
@@ -841,7 +840,10 @@ bool InferLifetimesVisitor::enterForLoop(ForLoop* forLoop) {
     if (iterableSe) {
       iterableLifetime = lifetimes->lifetimeForActual(iterableSe->symbol());
     } else if (CallExpr* iterableCall = toCallExpr(iterable)) {
-      iterableLifetime = lifetimes->lifetimeForCallReturn(iterableCall);
+      if (iterableCall->resolvedOrVirtualFunction())
+        iterableLifetime = lifetimes->lifetimeForCallReturn(iterableCall);
+      else
+        iterableLifetime = lifetimes->lifetimeForPrimitiveReturn(iterableCall);
     } else {
       // Assume infinite lifetime, as iterable takes no arguments
       // (e.g. enum value iteration)
@@ -910,7 +912,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           rhsLt = lifetimes->lifetimeForCallReturn(subCall);
           calledFn = fn;
         } else {
-          rhsLt = lifetimes->lifetimeForPrimitiveReturn(subCall, lhs->isRef());
+          rhsLt = lifetimes->lifetimeForPrimitiveReturn(subCall);
         }
       }
 
