@@ -356,6 +356,8 @@ Expr* Symbol::getInitialization() const {
   // In theory, this should be the first "def" for the symbol,
   // but that might be obfuscated by PRIM_ADDR_OF.
 
+  // Q: Does this routine only make sense for VarSymbols?
+
   FnSymbol* fn = toFnSymbol(defPoint->parentSymbol);
   ModuleSymbol* mod = toModuleSymbol(defPoint->parentSymbol);
   if (fn == NULL && mod != NULL ) {
