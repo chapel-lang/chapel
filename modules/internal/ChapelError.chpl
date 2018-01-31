@@ -87,19 +87,27 @@ module ChapelError {
   }
 
   class IllegalArgumentError : Error {
-    var msg: string;
+    var arg_name: string;
+    var arg_info: string;
 
     proc init() {
       super.init();
     }
 
-    proc init(_msg: string) {
-      this.msg = _msg;
+    proc init(_arg_name: string) {
+      this.arg_name = _arg_name;
+      super.init();
+    }
+
+    proc init(_arg_name: string, _arg_info: string) {
+      this.arg_name = _arg_name;
+      this.arg_info = _arg_info;
       super.init();
     }
 
     proc message() {
-      return msg;
+      var msg_fmt = "illegal argument '%s': %s";
+      return msg_fmt.format(arg_name, arg_info);
     }
   }
 
