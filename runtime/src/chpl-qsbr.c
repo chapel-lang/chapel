@@ -24,6 +24,13 @@
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
+// Maximum number of deferred data to handle deletion of.
+#define CHPL_QSBR_MAX_PROCESS 1024
+// Number of checkpoints to pass before processing
+#define CHPL_QSBR_CHECKPOINTS_PER_PROCESS 8
+
+
+
 static atomic_uint_least64_t global_epoch = 0;
 
 struct defer_data {
@@ -63,50 +70,138 @@ struct tls_node {
     it will 'pass the buck' for deletion to the next thread.
   */
   struct defer_node *deferList;
+  /*
+    Recycled defer nodes that can be reused.
+  */
+  struct defer_node *recycleList;
   struct tls_node *next;
 };
 
 // List of thread-local data.
 static struct tls_node *chpl_qsbr_tls_list;
-static CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_reader_tls);
+static CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
+
+static inline struct tls_node *get_tls_list() {
+  return (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list);
+}
+
+static inline uint64_t get_epoch(struct tls_node *node) {
+  return atomic_load_uint_least64_t(&node->epoch);
+}
+
+static inline void set_epoch(struct tls_node *node, uint64_t epoch) {
+  return atomic_store_uint_least64_t(&node->epoch, epoch);
+}
+
+static inline uint64_t get_global_epoch() {
+  return atomic_load_uint_least64_t(&global_epoch);
+}
+
+static inline uint64_t advance_global_epoch() {
+  return atomic_fetch_add_uint_least64_t(&global_epoch, 1);
+}
+
+static inline uint64_t get_tasks(struct tls_node *node) {
+  return atomic_load_uint_least64_t(&node->nTasks);
+}
+
+static inline uint64_t add_task(struct tls_node *node) {
+  return atomic_fetch_add_uint_least64_t(&node->nTasks, 1);
+}
+
+static inline uint64_t remove_task(struct tls_node *node) {
+  return atomic_fetch_sub_uint_least64_t(&node->nTasks, 1);
+}
+
+static inline struct defer_node *get_defer_list(struct tls_node *node) {
+  return (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);
+}
+
+static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
+  return (struct defer_node *) atomic_exchange_uintptr_t((uintptr_t *) &node->deferList, NULL);
+}
+
+static inline struct defer_node *pop_defer_list(struct tls_node *node) {
+  struct defer_node *dnode;
+  do {
+    dnode = get_defer_list(node);
+    if (dnode == NULL) {
+      return NULL;
+    }
+  } while (!atomic_compare_exchange_weak_uintptr_t(
+      (uintptr_t *) &node->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next)
+    );
+
+  return dnode;
+}
+
+static inline void push_defer_list(struct tls_node *node, struct defer_node *dnode) {
+  struct defer_node *old_head;
+  do {
+      old_head = get_defer_list(node);
+      dnode->next = old_head;
+  } while (!atomic_compare_exchange_weak_uintptr_t(
+      (uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) dnode)
+    );
+}
+
+static inline struct defer_node *get_recycle_list(struct tls_node *node) {
+  return (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->recycleList);
+}
+
+static inline struct defer_node *pop_recycle_list(struct tls_node *node) {
+  struct defer_node *dnode;
+  do {
+    dnode = get_recycle_list(node);
+
+    // TODO: Maybe allocate in bulk with 'chpl_mem_allocMany'?
+    // If empty, allocate a new one.
+    if (dnode == NULL) {
+      return chpl_mem_calloc(1, sizeof(*defer), 0, 0, 0);
+    }
+  } while (!atomic_compare_exchange_weak_uintptr_t(
+      (uintptr_t *) &node->recycleList, (uintptr_t) dnode, (uintptr_t) dnode->next)
+    );
+
+  return dnode;
+}
+
+static inline void push_recycle_list(struct tls_node *node, struct defer_node *dnode) {
+  struct defer_node *old_head;
+  do {
+      old_head = get_recycle_list(node);
+      dnode->next = old_head;
+  } while (!atomic_compare_exchange_weak_uintptr_t(
+      (uintptr_t *) &node->recycleList, (uintptr_t) old_head, (uintptr_t) dnode)
+    );
+}
 
 // Initializes TLS; should only need to be called once.
 static void init_tls(void);
 static void init_tls(void) {
   struct tls_node *node = chpl_calloc(1, sizeof(*node));
-  node->epoch = atomic_load_uint_least64_t(&global_epoch);
+  node->epoch = get_global_epoch();
 
   // Append to head of list
   struct tls_node *old_head;
   do {
     old_head = chpl_qsbr_tls_list;
     node->next = old_head;
-  } while (!atomic_compare_exchange_weak_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list, (uintptr_t) old_head, (uintptr_t) node));
+  } while (!atomic_compare_exchange_weak_uintptr_t(
+      (uintptr_t *) &chpl_qsbr_tls_list, (uintptr_t) old_head, (uintptr_t) node)
+    );
 
-  CHPL_TLS_SET(chpl_qsbr_reader_tls, node);
+  CHPL_TLS_SET(chpl_qsbr_tls, node);
 }
 
 
-static void defer_deletion(uint64_t targetEpoch, struct tls_node *list, struct defer_data ddata);
-static void defer_deletion(uint64_t targetEpoch, struct tls_node *list, struct defer_data ddata) {
-  for (struct tls_node *node = list; node != NULL; node = node->next) {
-    // Look for a thread which is active but is not on the current global epoch and defer
-    // deletion to them.
-    if (node->nTasks && node->epoch < targetEpoch) {
-        // Create new defer node that contains both the target epoch and data.
-        struct defer_node *defer = chpl_mem_calloc(1, sizeof(*defer), 0, 0, 0);
-        defer->targetEpoch = targetEpoch;
-        defer->ddata = ddata;
-
-        // Push...
-        struct defer_node *old_head;
-        do {
-            old_head = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &node->deferList);
-            defer->next = old_head;
-        } while (!atomic_compare_exchange_weak_uintptr_t(
-            (uintptr_t *) &node->deferList, (uintptr_t) old_head, (uintptr_t) defer));
-        
-        return;
+// Check for if all threads
+static bool defer_deletion(uint64_t targetEpoch, struct defer_data ddata);
+static bool defer_deletion(uint64_t targetEpoch, struct defer_data ddata) {
+  // Check all remaining threads for whether they have updated to a more recent epoch.
+  for (struct tls_node *node = get_tls_list(); node != NULL; node = node->next) {
+    if (get_tasks(node) > 0 && get_epoch(node) < targetEpoch) {      
+        return false;
     }
   }
 
@@ -117,19 +212,20 @@ static void defer_deletion(uint64_t targetEpoch, struct tls_node *list, struct d
           chpl_mem_free(arr[i], 0, 0);
       }
   }
-
   chpl_mem_free(ddata.data, 0, 0);
+
+  return true;
 }
 
 void chpl_qsbr_init(void) {
-    CHPL_TLS_INIT(chpl_qsbr_reader_tls);
+    CHPL_TLS_INIT(chpl_qsbr_tls);
 }
 
 void chpl_qsbr_onTaskCreation(void) {
-  struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+  struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
   if (node == NULL) {
     init_tls();
-    node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+    node = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
   // Notify that we are now in-use.
@@ -138,10 +234,10 @@ void chpl_qsbr_onTaskCreation(void) {
 
 
 void chpl_qsbr_onTaskDestruction(void) {
-  struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+  struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
   if (tls == NULL) {
     init_tls();
-    tls = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+    tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
   // Notify that we have one less task
@@ -157,16 +253,16 @@ void chpl_qsbr_onTaskDestruction(void) {
 
     // Only process threads that come after us as a previous thread would have been processed
     // before us and newly registered threads are pushed as the head of the tls_list.
-    defer_deletion(dnode->targetEpoch, tls->next, dnode->ddata);
+    defer_deletion(dnode->targetEpoch, chpl_qsbr_tls_list, dnode->ddata);
     chpl_mem_free(dnode, 0, 0);
   }
 }
 
 void chpl_qsbr_checkpoint(void) {
-    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
     if (tls == NULL) {
         init_tls();
-        tls = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+        tls = CHPL_TLS_GET(chpl_qsbr_tls);
     }
 
     // Observe the current epoch.
@@ -174,7 +270,7 @@ void chpl_qsbr_checkpoint(void) {
 
     // Handle a single deferred object we have, if any
     struct defer_node *defer_list = (struct defer_node *) 
-      atomic_load_uintptr_t((uintptr_t *) &tls->deferList);
+      atomic_exchange_uintptr_t((uintptr_t *) &tls->deferList, NULL);
 
     if (defer_list) {
         // Pop
@@ -189,7 +285,7 @@ void chpl_qsbr_checkpoint(void) {
         // before us and newly registered threads are pushed as the head of the tls_list.
         defer_deletion(
           dnode->targetEpoch, 
-          (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &tls->next), 
+          (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list), 
           dnode->ddata
         );
         chpl_mem_free(dnode, 0, 0);
@@ -199,11 +295,11 @@ void chpl_qsbr_checkpoint(void) {
 }
 
 void chpl_qsbr_defer_deletion(void *data) {
-    uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1);
-    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+    uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
+    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
     if (node == NULL) {
       init_tls();
-      node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+      node = CHPL_TLS_GET(chpl_qsbr_tls);
     }
     atomic_store_uint_least64_t(&node->epoch, epoch);
 
@@ -215,11 +311,11 @@ void chpl_qsbr_defer_deletion(void *data) {
 }
 
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
-    uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1);
-    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+    uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
+    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
     if (node == NULL) {
       init_tls();
-      node = CHPL_TLS_GET(chpl_qsbr_reader_tls);
+      node = CHPL_TLS_GET(chpl_qsbr_tls);
     }
     node->epoch = epoch;
 
