@@ -87,42 +87,52 @@ struct tls_node {
 static struct tls_node *chpl_qsbr_tls_list;
 static CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 
+static inline struct tls_node *get_tls_list();
 static inline struct tls_node *get_tls_list() {
   return (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list);
 }
 
+static inline uint64_t get_epoch(struct tls_node *node);
 static inline uint64_t get_epoch(struct tls_node *node) {
   return atomic_load_uint_least64_t(&node->epoch);
 }
 
+static inline void set_epoch(struct tls_node *node, uint64_t epoch);
 static inline void set_epoch(struct tls_node *node, uint64_t epoch) {
   return atomic_store_uint_least64_t(&node->epoch, epoch);
 }
 
+static inline uint64_t get_global_epoch();
 static inline uint64_t get_global_epoch() {
   return atomic_load_uint_least64_t(&global_epoch);
 }
 
+static inline uint64_t advance_global_epoch();
 static inline uint64_t advance_global_epoch() {
   return atomic_fetch_add_uint_least64_t(&global_epoch, 1);
 }
 
+static inline void observe_epoch(struct tls_node *node);
 static inline void observe_epoch(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->epoch, get_global_epoch());
 }
 
+static inline uint64_t get_tasks(struct tls_node *node);
 static inline uint64_t get_tasks(struct tls_node *node) {
   return atomic_load_uint_least64_t(&node->nTasks);
 }
 
+static inline uint64_t add_task(struct tls_node *node);
 static inline uint64_t add_task(struct tls_node *node) {
   return atomic_fetch_add_uint_least64_t(&node->nTasks, 1);
 }
 
+static inline uint64_t remove_task(struct tls_node *node);
 static inline uint64_t remove_task(struct tls_node *node) {
   return atomic_fetch_sub_uint_least64_t(&node->nTasks, 1);
 }
 
+static inline void acquire_spinlock(struct tls_node *node);
 static inline void acquire_spinlock(struct tls_node *node) {
   // Fast path: Quick acquire spinlock
   if (atomic_exchange_uint_least64_t(&node->spinlock, 1) == 1) {
@@ -138,16 +148,19 @@ static inline void acquire_spinlock(struct tls_node *node) {
   }
 }
 
+static inline void release_spinlock(struct tls_node *node);
 static inline void release_spinlock(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->spinlock, 0);
 }
 
 // Requires spinlock.
+static inline struct defer_node *get_defer_list(struct tls_node *node);
 static inline struct defer_node *get_defer_list(struct tls_node *node) {
   return node->deferList;
 }
 
 // Requires spinlock. Pops all items less than or equal to 'epoch'.
+static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch);
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch) {
   struct defer_node *dnode = node->deferList, *prev = NULL;
   while (dnode != NULL) {
@@ -176,6 +189,7 @@ static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint
 }
 
 // Requires spinlock.
+static inline struct defer_node *pop_all_defer_list(struct tls_node *node);
 static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
   struct defer_node *head = node->deferList;
   node->deferList = NULL;
@@ -183,17 +197,20 @@ static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
 }
 
 // Requires spinlock.
+static inline void push_defer_list(struct tls_node *node, struct defer_node *dnode);
 static inline void push_defer_list(struct tls_node *node, struct defer_node *dnode) {
   dnode->next = node->deferList;
   node->deferList = dnode;
 }
 
 // Requires spinlock.
+static inline struct defer_node *get_recycle_list(struct tls_node *node);
 static inline struct defer_node *get_recycle_list(struct tls_node *node) {
   return node->recycleList;
 }
 
 // Requires spinlock.
+static inline struct defer_node *pop_recycle_list(struct tls_node *node);
 static inline struct defer_node *pop_recycle_list(struct tls_node *node) {
   struct defer_node *dnode = node->recycleList;
   
@@ -206,11 +223,13 @@ static inline struct defer_node *pop_recycle_list(struct tls_node *node) {
   return dnode;
 }
 
+static inline void push_recycle_list(struct tls_node *node, struct defer_node *dnode);
 static inline void push_recycle_list(struct tls_node *node, struct defer_node *dnode) {
   dnode->next = node->recycleList;
   node->recycleList = dnode;
 }
 
+static inline void delete_data(struct defer_node *dnode);
 static inline void delete_data(struct defer_node *dnode) {
   if (dnode->numData) {
       void **arr = dnode->data;
@@ -255,6 +274,7 @@ static uint64_t safe_epoch() {
 }
 
 // Requires spinlock.
+static inline void handle_deferred_data(struct tls_node *node);
 static inline void handle_deferred_data(struct tls_node *node) {
   // Acquire all data that can be deleted.
   uint64_t epoch = safe_epoch();
