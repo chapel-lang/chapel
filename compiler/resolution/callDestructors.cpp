@@ -24,6 +24,7 @@
 #include "errorHandling.h"
 #include "expr.h"
 #include "iterator.h"
+#include "lifetime.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1225,8 +1226,12 @@ void callDestructors() {
   ReturnByRef::apply();
 
   insertYieldTemps();
+
+  checkLifetimes();
+
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();
 
   checkForErroneousInitCopies();
+
 }
