@@ -107,6 +107,10 @@ static inline uint64_t advance_global_epoch() {
   return atomic_fetch_add_uint_least64_t(&global_epoch, 1);
 }
 
+static inline void observe_epoch(struct tls_node *node) {
+  atomic_store_uint_least64_t(&node->epoch, get_global_epoch());
+}
+
 static inline uint64_t get_tasks(struct tls_node *node) {
   return atomic_load_uint_least64_t(&node->nTasks);
 }
@@ -169,6 +173,13 @@ static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint
   // If neither are NULL, we need to correct list so previous points to NULL
   prev->next = NULL;
   return dnode;
+}
+
+// Requires spinlock.
+static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
+  struct defer_node *head = node->deferList;
+  node->deferList = NULL;
+  return head;
 }
 
 // Requires spinlock.
@@ -270,7 +281,7 @@ void chpl_qsbr_onTaskCreation(void) {
   }
 
   // Notify that we are now in-use.
-  node->nTasks++;
+  add_task(tls);
 }
 
 
@@ -282,19 +293,44 @@ void chpl_qsbr_onTaskDestruction(void) {
   }
 
   // Notify that we have one less task
-  uint64_t nTasks = atomic_fetch_sub_uint_least64_t(&tls->nTasks, 1) - 1;
+  uint64_t nTasks = remove_task(tls) - 1;
 
-  // If we are the last task, empty our defer list as best we can...
+  // If we are the last task, handle any extra deferred data...
   if (nTasks == 0) {
     acquire_spinlock(tls);
+
+    // Empty as best we can
     handle_deferred_data(tls);
-    release_spinlock(tls);
+    if (tls->deferList == NULL) {
+      release_spinlock(tls);
+      return;
+    }
 
     // At this point if we have any deferred data, we must pass this to some
     // other thread, as we could be parked indefinitely. Find first active
     // thread to dump the rest of our work on...
+    struct tls_node *node = get_tls_list();
+    for (; node != NULL; node = node->next) {
+      if (get_tasks(node) > 0) {
+        // Double check...
+        acquire_spinlock(node);
+        if (get_tasks(node) > 0) {
+          break;
+        }
+        release_spinlock(node);  
+      }
+    }
 
-    
+    // If node is NULL, then all threads are finished so we should be able to safely
+    // handle our deferred data...
+    if (node == NULL) {
+      handle_deferred_data(tls);
+    } else {
+      // If the node is not NULL, we found our thread to dump on and we already hold its lock.
+
+    }
+
+    release_spinlock(tls);
   }
 }
 
@@ -306,7 +342,7 @@ void chpl_qsbr_checkpoint(void) {
     }
 
     // Observe the current epoch.
-    atomic_store_uint_least64_t(&tls->epoch, atomic_load_uint_least64_t(&global_epoch));
+    observe_epoch(tls);
 
     // Handle a single deferred object we have, if any
     struct defer_node *defer_list = (struct defer_node *) 
