@@ -1,7 +1,5 @@
-//use Memory;
-
 extern proc chpl_qsbr_checkpoint();
-config param nIterationsPerTask = 1024 * 1024;
+config param nIterationsPerTask = 1024;
 
 type localPtr = uint(64);
 
@@ -34,7 +32,6 @@ proc push(val) {
 
 proc pop() : bool {
 	local {
-
 		var h : localPtr;
 		var n : localPtr;
 		do {
@@ -50,7 +47,7 @@ proc pop() : bool {
 }
 
 proc main() {
-	coforall 0 .. #here.maxTaskPar {
+	coforall 0 .. here.maxTaskPar {
 		for i in 1 .. nIterationsPerTask {
 			if i % 2 == 0 {
 				push(i);
@@ -62,8 +59,5 @@ proc main() {
 		}
 	}
 
-	//while dequeue() do ;
-
-	//writeln(memoryUsed());
-	//printMemAllocs();
+	while pop() do ;
 }

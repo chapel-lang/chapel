@@ -151,7 +151,7 @@ static inline struct defer_node *get_defer_list(struct tls_node *node) {
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch) {
   struct defer_node *dnode = node->deferList, *prev = NULL;
   while (dnode != NULL) {
-    if (epoch >= dnode->target_epoch) {
+    if (epoch >= dnode->targetEpoch) {
       break;
     }
 
@@ -224,7 +224,7 @@ static inline void delete_data(struct defer_node *dnode) {
 // Initializes TLS; should only need to be called once.
 static void init_tls(void);
 static void init_tls(void) {
-  struct tls_node *node = chpl_calloc(1, sizeof(*node));
+  struct tls_node *node = chpl_calloc(1, sizeof(struct tls_node));
   node->epoch = get_global_epoch();
 
   // Append to head of list
@@ -265,7 +265,7 @@ static inline void handle_deferred_data(struct tls_node *node) {
     struct defer_node *tmp = dnode;
     dnode = dnode->next;
     delete_data(tmp);
-    push_recycle_list(tmp);
+    push_recycle_list(node, tmp);
   }
 }
 
@@ -274,10 +274,10 @@ void chpl_qsbr_init(void) {
 }
 
 void chpl_qsbr_onTaskCreation(void) {
-  struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
-  if (node == NULL) {
+  struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
+  if (tls == NULL) {
     init_tls();
-    node = CHPL_TLS_GET(chpl_qsbr_tls);
+    tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
   // Notify that we are now in-use.
@@ -400,9 +400,9 @@ void chpl_qsbr_checkpoint(void) {
 void chpl_qsbr_defer_deletion(void *data) {
     uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
     struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-    if (node == NULL) {
+    if (tls == NULL) {
       init_tls();
-      node = CHPL_TLS_GET(chpl_qsbr_tls);
+      tls = CHPL_TLS_GET(chpl_qsbr_tls);
     }
     observe_epoch(tls);
 
@@ -415,10 +415,10 @@ void chpl_qsbr_defer_deletion(void *data) {
 
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
     uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
-    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
-    if (node == NULL) {
+    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
+    if (tls == NULL) {
       init_tls();
-      node = CHPL_TLS_GET(chpl_qsbr_tls);
+      tls = CHPL_TLS_GET(chpl_qsbr_tls);
     }
     observe_epoch(tls);
 
@@ -447,6 +447,12 @@ void chpl_qsbr_exit(void) {
             }
 
             chpl_mem_free(dnode->data, 0, 0);
+            chpl_mem_free(dnode, 0, 0);
+        }
+
+        while (node->recycleList) {
+            struct defer_node *dnode = node->recycleList;
+            node->recycleList = node->recycleList->next;
             chpl_mem_free(dnode, 0, 0);
         }
 
