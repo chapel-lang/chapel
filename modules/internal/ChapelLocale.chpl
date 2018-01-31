@@ -613,6 +613,7 @@ module ChapelLocale {
   
   // Returns a wide pointer to the locale with the given id.
   pragma "no doc"
+  pragma "fn returns infinite lifetime"
   proc chpl_localeID_to_locale(id : chpl_localeID_t) : locale {
     if rootLocale then
       return (rootLocale:AbstractRootLocale).localeIDtoLocale(id);
@@ -622,6 +623,8 @@ module ChapelLocale {
   }
 
   pragma "no doc"
+  pragma "unsafe"
+  pragma "fn returns infinite lifetime"
   proc chpl_getPrivatizedCopy(type objectType, objectPid:int): objectType
     return __primitive("chpl_getPrivatizedClass", nil:objectType, objectPid);
   

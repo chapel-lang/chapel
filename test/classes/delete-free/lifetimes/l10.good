@@ -1,0 +1,3 @@
+l10.chpl:23: In function 'returnReturnBorrow':
+l10.chpl:26: error: Scoped variable cannot be returned
+l10.chpl:24: note: consider scope of rr

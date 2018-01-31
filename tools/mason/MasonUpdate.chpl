@@ -279,6 +279,7 @@ proc createDepTree(root: Toml) {
   return depTree;
 }
 
+pragma "fn returns infinite lifetime"
 proc createDepTrees(depTree: Toml, deps: [?d] Toml, name: string) : Toml {
   var depList: [1..0] Toml;
   while deps.domain.size > 0 {

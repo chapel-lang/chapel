@@ -1,0 +1,3 @@
+l5.chpl:57: In function 'badReturnRefLocalRec':
+l5.chpl:59: error: Reference to scoped variable cannot be returned
+l5.chpl:58: note: consider scope of r

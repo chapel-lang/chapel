@@ -1029,6 +1029,7 @@ inline proc StencilArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 // TODO: Do we need a global bounds check here or in targetLocsIdx?
 //
+pragma "return scope this"
 inline
 proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   local {
@@ -1047,6 +1048,7 @@ proc StencilArr.do_dsiAccess(param setter, const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
+pragma "return scope this"
 proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 
   if doRADOpt {
@@ -1088,15 +1090,18 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
 }
 
 // ref version
+pragma "return scope this"
 inline proc StencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
 // value version for POD types
+pragma "return scope this"
 inline proc StencilArr.dsiAccess(i: rank*idxType)
 where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
+pragma "return scope this"
 inline proc StencilArr.dsiAccess(i: rank*idxType) const ref
 where shouldReturnRvalueByConstRef(eltType) {
   return do_dsiAccess(false, i);
@@ -1583,6 +1588,7 @@ proc StencilArr.setRADOpt(val=true) {
 //
 // the accessor for the local array -- assumes the index is local
 //
+pragma "return scope this"
 inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }

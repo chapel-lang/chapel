@@ -262,6 +262,9 @@ void resolveArgIntent(ArgSymbol* arg) {
     }
   }
 
+  if (arg->intent != intent) {
+    arg->originalIntent = arg->intent;
+  }
   arg->intent = intent;
 }
 
