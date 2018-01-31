@@ -327,9 +327,54 @@ void chpl_qsbr_onTaskDestruction(void) {
       handle_deferred_data(tls);
     } else {
       // If the node is not NULL, we found our thread to dump on and we already hold its lock.
+      struct defer_node *list = pop_all_defer_list(tls);
+      
+      // If their list is empty its easy
+      if (node->deferList == NULL) {
+        node->deferList = list;
+      } else {
+        // TODO: Optimize! If tls->deferList is size N and node->deferList is size M,
+        // then is O((M+N) * N) = O(M*N^2).
+        while (list != NULL) {
+          struct defer_node *dnode = list;
+          list = list->next;
 
+          // Insert as head
+          if (dnode->targetEpoch >= node->deferList->targetEpoch) {
+            dnode->next = node->deferList;
+            node->deferList = dnode;
+            continue;
+          }
+
+          // Insert between nodes...
+          struct defer_node *ddnode = node->deferList, *prev = NULL;
+          for (; ddnode != NULL; ddnode = ddnode->next) {
+            if (ddnode->targetEpoch >= dnode->targetEpoch) {
+              assert(prev != NULL);
+              dnode->next = ddnode->next;
+              ddnode->next = dnode;
+              break;
+            }
+
+            prev = ddnode;
+          }
+
+          // Exhausted all options, make as tail...
+          if (ddnode == NULL) {
+            assert(prev != NULL);
+            prev->next = dnode;
+          }
+        }
+      }
+
+      release_spinlock(node);
     }
 
+    release_spinlock(tls);
+  } else {
+    // Whenever we destroy a task, handle destroying any deferred data as well.
+    acquire_spinlock(tls);
+    handle_deferred_data(tls);
     release_spinlock(tls);
   }
 }
@@ -344,44 +389,28 @@ void chpl_qsbr_checkpoint(void) {
     // Observe the current epoch.
     observe_epoch(tls);
 
-    // Handle a single deferred object we have, if any
-    struct defer_node *defer_list = (struct defer_node *) 
-      atomic_exchange_uintptr_t((uintptr_t *) &tls->deferList, NULL);
-
-    if (defer_list) {
-        // Pop
-        struct defer_node *dnode;
-        do {
-            dnode = (struct defer_node *) atomic_load_uintptr_t((uintptr_t *) &tls->deferList);
-        } while (!atomic_compare_exchange_weak_uintptr_t(
-            (uintptr_t *) &tls->deferList, (uintptr_t) dnode, (uintptr_t) dnode->next)
-          );
-
-        // Only process threads that come after us as a previous thread would have been processed
-        // before us and newly registered threads are pushed as the head of the tls_list.
-        defer_deletion(
-          dnode->targetEpoch, 
-          (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list), 
-          dnode->ddata
-        );
-        chpl_mem_free(dnode, 0, 0);
-    }
+    // Check if we have passed enough checkpoints to process our deferred data.
+    if (++tls->passedCheckpoints % CHPL_QSBR_CHECKPOINTS_PER_PROCESS) {
+      acquire_spinlock(tls);
+      handle_deferred_data(tls);
+      release_spinlock(tls);
+    } 
 }
 
 void chpl_qsbr_defer_deletion(void *data) {
     uint64_t epoch = atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
-    struct tls_node *node = CHPL_TLS_GET(chpl_qsbr_tls);
+    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
     if (node == NULL) {
       init_tls();
       node = CHPL_TLS_GET(chpl_qsbr_tls);
     }
-    atomic_store_uint_least64_t(&node->epoch, epoch);
+    observe_epoch(tls);
 
-    defer_deletion(
-      epoch, 
-      (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list), 
-      (struct defer_data) { .data = data, .numData = 0 }
-    );
+    struct defer_node *dnode = pop_recycle_list(tls);
+    dnode->targetEpoch = epoch;
+    dnode->data = data;
+    dnode->numData = 0;
+    push_defer_list(tls, dnode);
 }
 
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
@@ -391,13 +420,13 @@ void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
       init_tls();
       node = CHPL_TLS_GET(chpl_qsbr_tls);
     }
-    node->epoch = epoch;
+    observe_epoch(tls);
 
-    defer_deletion(
-      epoch, 
-      (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list), 
-      (struct defer_data) { .data = arrData, .numData = numData}
-    );
+    struct defer_node *dnode = pop_recycle_list(tls);
+    dnode->targetEpoch = epoch;
+    dnode->data = arrData;
+    dnode->numData = numData;
+    push_defer_list(tls, dnode);
 }
 
 void chpl_qsbr_exit(void) {
@@ -410,14 +439,14 @@ void chpl_qsbr_exit(void) {
             struct defer_node *dnode = node->deferList;
             node->deferList = node->deferList->next;
 
-            if (dnode->ddata.numData) {
-                void **arr = dnode->ddata.data;
-                for (int i = 0; i < dnode->ddata.numData; i++) {
+            if (dnode->numData) {
+                void **arr = dnode->data;
+                for (int i = 0; i < dnode->numData; i++) {
                     chpl_mem_free(arr[i], 0, 0);
                 }
             }
 
-            chpl_mem_free(dnode->ddata.data, 0, 0);
+            chpl_mem_free(dnode->data, 0, 0);
             chpl_mem_free(dnode, 0, 0);
         }
 
