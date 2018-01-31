@@ -87,8 +87,8 @@ struct tls_node {
 static struct tls_node *chpl_qsbr_tls_list;
 static CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 
-static inline struct tls_node *get_tls_list();
-static inline struct tls_node *get_tls_list() {
+static inline struct tls_node *get_tls_list(void);
+static inline struct tls_node *get_tls_list(void) {
   return (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list);
 }
 
@@ -102,13 +102,13 @@ static inline void set_epoch(struct tls_node *node, uint64_t epoch) {
   return atomic_store_uint_least64_t(&node->epoch, epoch);
 }
 
-static inline uint64_t get_global_epoch();
-static inline uint64_t get_global_epoch() {
+static inline uint64_t get_global_epoch(void);
+static inline uint64_t get_global_epoch(void) {
   return atomic_load_uint_least64_t(&global_epoch);
 }
 
-static inline uint64_t advance_global_epoch();
-static inline uint64_t advance_global_epoch() {
+static inline uint64_t advance_global_epoch(void);
+static inline uint64_t advance_global_epoch(void) {
   return atomic_fetch_add_uint_least64_t(&global_epoch, 1);
 }
 
@@ -259,8 +259,8 @@ static void init_tls(void) {
 }
 
 // Obtains the minimum epoch of all threads.
-static uint64_t safe_epoch();
-static uint64_t safe_epoch() {
+static uint64_t safe_epoch(void);
+static uint64_t safe_epoch(void) {
   uint64_t min = (uint64_t) -1;
   // Check all remaining threads for whether they have updated to a more recent epoch.
   for (struct tls_node *node = get_tls_list(); node != NULL; node = node->next) {
