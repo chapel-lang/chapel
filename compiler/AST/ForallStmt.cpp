@@ -392,6 +392,8 @@ static void adjustReduceOpNames(ForallStmt* fs) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered)
 {
+  checkControlFlow(body, "forall statement");
+
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);
