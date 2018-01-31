@@ -884,10 +884,9 @@ static void emitError(Expr* inExpr,
 
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
 
-  FnSymbol* calledFn = call->resolvedOrVirtualFunction();
-
   if (isAnalyzedMoveOrAssignment(call)) {
 
+    FnSymbol* calledFn = NULL;
     SymExpr* lhsSe = toSymExpr(call->get(1));
     Symbol* lhs = lhsSe->symbol();
     ScopeLifetime lhsLt = lifetimes->lifetimeForSymbol(lhs);
@@ -907,10 +906,12 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           rhsLt = lifetimes->lifetimeForSymbol(rhsSym);
 
       } else if (CallExpr* subCall = toCallExpr(call->get(2))) {
-        if (subCall->resolvedOrVirtualFunction())
+        if (FnSymbol* fn = subCall->resolvedOrVirtualFunction()) {
           rhsLt = lifetimes->lifetimeForCallReturn(subCall);
-        else
+          calledFn = fn;
+        } else {
           rhsLt = lifetimes->lifetimeForPrimitiveReturn(subCall, lhs->isRef());
+        }
       }
 
       // Raise errors for returning a scoped/lifetime'd variable
@@ -925,6 +926,15 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           rhsLt.borrowed.fromSymbolReachability == rhsSym)
         rhsLtIsReachability = true;
        */
+
+      // Don't worry about returning an "owned" type
+      // that is the result of a call returning a record by value.
+      if (containsOwnedClass(lhs->type)) {
+        Symbol* ignoredLhs = NULL;
+        CallExpr* ignoredCall = NULL;
+        if (isRecordInitOrReturn(call, ignoredLhs, ignoredCall, lifetimes))
+          rhsLt.borrowed = infiniteLifetime();
+      }
 
       if (lhs->hasEitherFlag(FLAG_RVV,FLAG_RETARG)) {
         if (lhs->isRef()) {
