@@ -431,18 +431,21 @@ void gatherLoopDetails(ForLoop*  forLoop,
           INT_ASSERT(actualSe); // otherwise not normalized
           // Find the single definition of actualSe->var to find
           // the call to _getIterator.
-          Expr* iterable = NULL;
+          Expr* iterable = actualSe;
           if (actualSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
             Symbol* tmpStoringGetIterator = actualSe->symbol();
-            SymExpr* def = tmpStoringGetIterator->getSingleDef();
-            CallExpr* move = toCallExpr(def->parentExpr);
-            CallExpr* getIterator = toCallExpr(move->get(2));
-            if (getIterator->numActuals() >= 1) {
-              // The argument to _getIterator is the iterable
-              iterable = getIterator->get(1);
-            }
-          } else {
+            Expr* p = findExprProducing(tmpStoringGetIterator);
+
+            // Look for a call to _getIterator that we can ignore
+            // If we don't find it, leave iterable set to actualSe from above.
             iterable = actualSe;
+            if (p)
+              if (CallExpr* call = toCallExpr(p))
+                if (call->numActuals() >= 1)
+                  if (FnSymbol* fn = call->resolvedOrVirtualFunction())
+                    if (fn->hasFlag(FLAG_FN_RETURNS_ITERATOR) ||
+                        fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+                      iterable = call->get(1);
           }
           IteratorDetails details;
           details.iterable = iterable;
