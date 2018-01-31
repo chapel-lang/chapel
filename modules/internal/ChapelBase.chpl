@@ -1171,7 +1171,7 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  pragma "fn returns infinite lifetime"
+  //pragma "fn returns infinite lifetime"
   pragma "last resort"
   pragma "donor fn"
   pragma "unref fn"
