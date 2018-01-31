@@ -516,6 +516,7 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
     // in, out, retarg arguments don't determine the lifetime of
     // a returned variable
     if (formal->hasFlag(FLAG_RETARG) ||
+        formal->hasFlag(FLAG_ERROR_VARIABLE) ||
         (formal->originalIntent & INTENT_FLAG_IN) ||
         (formal->originalIntent & INTENT_FLAG_OUT))
       continue;
