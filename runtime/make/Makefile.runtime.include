@@ -105,6 +105,10 @@ ifeq ($(MAKE_LAUNCHER),1)
   endif
 endif
 
+# Add any further includes for COMM.
+COMM_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.comm-$(CHPL_MAKE_COMM)
+-include $(COMM_INCLUDE)
+
 # Add any further includes for GMP.
 GMP_INCLUDE=$(RUNTIME_ROOT)/make/Makefile.runtime.gmp-$(CHPL_MAKE_GMP)
 -include $(GMP_INCLUDE)
