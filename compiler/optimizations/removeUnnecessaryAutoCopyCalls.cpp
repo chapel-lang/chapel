@@ -23,6 +23,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "passes.h"
+#include "stlUtil.h"
 #include "stmt.h"
 
 // We can remove the calls to chpl__initCopy (should actually be chpl__autoCopy)
@@ -30,8 +31,6 @@
 // See isPOD() and propagateNotPOD().
 static void removePODinitDestroy()
 {
-  compute_call_sites();
-
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_INIT_COPY_FN) || fn->hasFlag(FLAG_AUTO_COPY_FN))
     {
@@ -52,7 +51,15 @@ static void removePODinitDestroy()
         continue;
 
       if (isPOD(fn->retType)) {
-        forv_Vec(CallExpr, call, *fn->calledBy) {
+        std::vector<CallExpr*> calls;
+
+        // Gather calls of this function
+        for_SymbolSymExprs(se, fn) {
+          calls.push_back(toCallExpr(se->parentExpr));
+        }
+
+        // Remove those calls we gathered
+        for_vector(CallExpr, call, calls) {
           Expr* actual = call->get(1);
           ArgSymbol* arg = actual_to_formal(actual);
           if (arg)
