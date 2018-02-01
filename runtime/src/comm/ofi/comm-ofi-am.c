@@ -51,9 +51,9 @@ void ofi_put_get_init(struct ofi_stuff* _ofi) {
 }
 
 static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
-			      chpl_fn_int_t fid,
-			      chpl_comm_on_bundle_t* arg, size_t arg_size,
-			      chpl_bool fast, chpl_bool blocking);
+                              chpl_fn_int_t fid,
+                              chpl_comm_on_bundle_t* arg, size_t arg_size,
+                              chpl_bool fast, chpl_bool blocking);
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
@@ -113,9 +113,9 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 }
 
 static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
-			      chpl_fn_int_t fid,
-			      chpl_comm_on_bundle_t* arg, size_t arg_size,
-			      chpl_bool fast, chpl_bool blocking)
+                              chpl_fn_int_t fid,
+                              chpl_comm_on_bundle_t* arg, size_t arg_size,
+                              chpl_bool fast, chpl_bool blocking)
 {
   chpl_internal_error("Remote ons not yet implemented");
 

@@ -311,13 +311,13 @@ static void libfabric_init() {
   cq_attr.size = 1024; /* ??? */
   cq_attr.wait_obj = FI_WAIT_UNSPEC;
   ofi.tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_tx_ctx,
-						   sizeof(ofi.tx_ep[0]),
-						   CHPL_RT_MD_COMM_PER_LOC_INFO,
-						   0, 0);
+                                                   sizeof(ofi.tx_ep[0]),
+                                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                   0, 0);
   ofi.tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_tx_ctx,
-						   sizeof(ofi.tx_cq[0]),
-						   CHPL_RT_MD_COMM_PER_LOC_INFO,
-						   0, 0);
+                                                   sizeof(ofi.tx_cq[0]),
+                                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                   0, 0);
   for (i = 0; i < ofi.num_tx_ctx; i++) {
     OFICHKERR(fi_tx_context(ofi.ep, i, NULL, &ofi.tx_ep[i], NULL));
     OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.tx_cq[i], NULL));
@@ -326,13 +326,13 @@ static void libfabric_init() {
   }
 
   ofi.rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_rx_ctx,
-						   sizeof(ofi.rx_ep[0]),
-						   CHPL_RT_MD_COMM_PER_LOC_INFO,
-						   0, 0);
+                                                   sizeof(ofi.rx_ep[0]),
+                                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                   0, 0);
   ofi.rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_rx_ctx,
-						    sizeof(ofi.rx_cq[0]),
-						   CHPL_RT_MD_COMM_PER_LOC_INFO,
-						   0, 0);
+                                                    sizeof(ofi.rx_cq[0]),
+                                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                   0, 0);
   for (i = 0; i < ofi.num_rx_ctx; i++) {
     OFICHKERR(fi_rx_context(ofi.ep, i, NULL, &ofi.rx_ep[i], NULL));
     OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.rx_cq[i], NULL));
@@ -341,13 +341,13 @@ static void libfabric_init() {
   }
 
   ofi.am_tx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
-						       sizeof(ofi.am_tx_ep[0]),
-						       CHPL_RT_MD_COMM_PER_LOC_INFO,
-						       0, 0);
+                                                       sizeof(ofi.am_tx_ep[0]),
+                                                       CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                       0, 0);
   ofi.am_tx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
-						      sizeof(ofi.am_tx_cq[0]),
-						      CHPL_RT_MD_COMM_PER_LOC_INFO,
-						      0, 0);
+                                                      sizeof(ofi.am_tx_cq[0]),
+                                                      CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                      0, 0);
 
   /* set up AM contexts */
   for (i = 0; i < ofi.num_am_ctx; i++) {
@@ -358,13 +358,13 @@ static void libfabric_init() {
   }
 
   ofi.am_rx_ep = (struct fid_ep **) chpl_mem_allocMany(ofi.num_am_ctx,
-						       sizeof(ofi.am_rx_ep[0]),
-						       CHPL_RT_MD_COMM_PER_LOC_INFO,
-						       0, 0);
+                                                       sizeof(ofi.am_rx_ep[0]),
+                                                       CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                       0, 0);
   ofi.am_rx_cq = (struct fid_cq **) chpl_mem_allocMany(ofi.num_am_ctx,
-						      sizeof(ofi.am_rx_cq[0]),
-						      CHPL_RT_MD_COMM_PER_LOC_INFO,
-						      0, 0);
+                                                      sizeof(ofi.am_rx_cq[0]),
+                                                      CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                                      0, 0);
   for (i = 0; i < ofi.num_am_ctx; i++) {
     OFICHKERR(fi_rx_context(ofi.ep, i+ofi.num_rx_ctx, NULL, &ofi.am_rx_ep[i], NULL));
     OFICHKERR(fi_cq_open(ofi.domain, &cq_attr, &ofi.am_rx_cq[i], NULL));
@@ -379,14 +379,14 @@ static void libfabric_init() {
   OFICHKRET(fi_getname(&ofi.ep->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
   addr_info_len = sizeof(struct gather_info) + my_addr_len;
   my_addr_info =  chpl_mem_allocMany(1, addr_info_len,
-				     CHPL_RT_MD_COMM_PER_LOC_INFO,
-				     0, 0);
+                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                     0, 0);
   my_addr_info->node = chpl_nodeID;
   OFICHKERR(fi_getname(&ofi.ep->fid, &my_addr_info->info, &my_addr_len));
 
   addr_infos =  chpl_mem_allocMany(chpl_numNodes, addr_info_len,
-				   CHPL_RT_MD_COMM_PER_LOC_INFO,
-				   0, 0);
+                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                   0, 0);
 
 #ifdef CHPL_TARGET_PLATFORM_CRAY_XC
   // Use PMI_AllGather
@@ -395,8 +395,8 @@ static void libfabric_init() {
   }
 
   addrs =  chpl_mem_allocMany(chpl_numNodes, my_addr_len,
-			      CHPL_RT_MD_COMM_PER_LOC_INFO,
-			      0, 0);
+                              CHPL_RT_MD_COMM_PER_LOC_INFO,
+                              0, 0);
 
   for (tai = addr_infos, ta = addrs, i = 0; i < chpl_numNodes; i++) {
     struct gather_info* ai = (struct gather_info*) tai;
@@ -412,18 +412,18 @@ static void libfabric_init() {
 #endif
 
   ofi.fi_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.fi_addrs[0]),
-				    CHPL_RT_MD_COMM_PER_LOC_INFO,
-				    0, 0);
+                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                    0, 0);
   OFICHKRET(fi_av_insert(ofi.av, addrs, chpl_numNodes,
-			 ofi.fi_addrs, 0, NULL), chpl_numNodes);
+                         ofi.fi_addrs, 0, NULL), chpl_numNodes);
 
   ofi.rx_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.rx_addrs[0]),
-				    CHPL_RT_MD_COMM_PER_LOC_INFO,
-				    0, 0);
+                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                    0, 0);
   for (i = 0; i < chpl_numNodes; i++) {
     ofi.rx_addrs[i] = chpl_mem_allocMany(rx_ctx_cnt, sizeof(ofi.rx_addrs[i][0]),
-					 CHPL_RT_MD_COMM_PER_LOC_INFO,
-					 0, 0);
+                                         CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                         0, 0);
     for (j = 0; j < rx_ctx_cnt; j++) {
       ofi.rx_addrs[i][j] = fi_rx_addr(ofi.fi_addrs[i], j, rx_ctx_bits);
     }
@@ -434,9 +434,9 @@ static void libfabric_init() {
   chpl_mem_free(addrs, 0, 0);
 
   OFICHKERR(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
-		      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
-		      FI_SEND | FI_RECV, 0,
-		      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
+                      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
+                      FI_SEND | FI_RECV, 0,
+                      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
 
 
   fi_freeinfo(info);  /* No error returned */
@@ -628,7 +628,7 @@ static void progress_thread(void *args) {
 
   for (i = 0; i < num_rbufs; i++) {
     dst_buf[i] = chpl_mem_allocMany(rbuf_len, sizeof(dst_buf[i][0]),
-				    CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+                                    CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
     iov[i].iov_base = dst_buf[i];
     iov[i].iov_len = rbuf_size;
     msg[i].msg_iov = &iov[i];
@@ -647,12 +647,12 @@ static void progress_thread(void *args) {
     num_read = fi_cq_read(ofi.rx_cq[id], cqes, num_cqes);
     if (num_read > 0) {
       for (i = 0; i < num_read; i++) {
-	ofi_am_handler(&cqes[i]);
-	// send ack
+        ofi_am_handler(&cqes[i]);
+        // send ack
       }
     } else {
       if (num_read != -FI_EAGAIN) {
-	chpl_internal_error(fi_strerror(-num_read));
+        chpl_internal_error(fi_strerror(-num_read));
       }      
     }
   }

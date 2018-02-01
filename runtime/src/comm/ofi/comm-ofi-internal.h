@@ -84,12 +84,12 @@ struct commDiagnostics_atomic {
 struct commDiagnostics_atomic *chpl_getCommDiagnostics(void);
 void chpl_commDiagnosticsInc(atomic_uint_least64_t *val);
 
-#define CHPL_COMM_DIAGS_INC(comm_type)					\
+#define CHPL_COMM_DIAGS_INC(comm_type)                                  \
     chpl_commDiagnosticsInc(&(chpl_getCommDiagnostics()->comm_type))
 
-#define OFICHKRET(fncall, err) do {		 \
+#define OFICHKRET(fncall, err) do {              \
     int retval;                                  \
-    if ((retval = (fncall)) != err) {		  \
+    if ((retval = (fncall)) != err) {             \
       chpl_internal_error(fi_strerror(-retval));  \
     }                                            \
   } while (0)
