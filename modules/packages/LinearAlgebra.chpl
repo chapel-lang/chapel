@@ -944,9 +944,9 @@ enum lowerOrUpper {
 }
 
 
-/* Perform a Cholesky factorization on matrix `A`.  `A` must be square.
-   Argument `uplo` indicates whether to return the lower or upper triangular
-   factor.  Matrix `A` is not modified.
+/* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
+   Argument ``uplo`` indicates whether to return the lower or upper triangular
+   factor.  Matrix ``A`` is not modified.
  */
 proc cholesky(A: [] ?t, uplo = lowerOrUpper.lower) where A.rank == 2 &&
                                                          (isRealType(t) ||
@@ -962,7 +962,7 @@ proc cholesky(A: [] ?t, uplo = lowerOrUpper.lower) where A.rank == 2 &&
 }
 
 
-/* Type to choose which eigenvectors to compute in the `eigvals` function. */
+/* Type to choose which eigenvectors to compute in the ``eigvals`` function. */
 enum EigenVecType {
   none,
   left,
@@ -970,17 +970,16 @@ enum EigenVecType {
   both
 }
 
-/* Find the eigenvalues of matrix `A`. `A` must be square.  If `rl` is
-   `EigenVecType.none` (default) then no eigenvectors are computed and
-   just the eigenvalues are returned. If `rl` is `EigenVecType.left` then
+/* Find the eigenvalues of matrix ``A``. ``A`` must be square.  If ``rl`` is
+   ``EigenVecType.none`` (default) then no eigenvectors are computed and
+   just the eigenvalues are returned. If ``rl`` is ``EigenVecType.left`` then
    the "left" eigenvectors are computed, and a tuple containing
-   `(eigenvalues, leftEigenvectors)` is returned. If `rl` is 
-   `EigenVecType.right` then the "right" eigenvectors are computed, and
-   a tuple containing `(eigenvalues, rightEigenvectors)` is returned.
-   If `rl` is `EigenVecType.both` then both "left" and "right" eigenvectors
-   are computed, and a tuple conaining
-   `(eigenvalues, leftEigenvectors, rightEigenvectors)` is returned.
-   
+   ``(eigenvalues, leftEigenvectors)`` is returned. If ``rl`` is 
+   ``EigenVecType.right`` then the "right" eigenvectors are computed, and
+   a tuple containing ``(eigenvalues, rightEigenvectors)`` is returned.
+   If ``rl`` is ``EigenVecType.both`` then both "left" and "right"
+   eigenvectors are computed, and a tuple conaining
+   ``(eigenvalues, leftEigenvectors, rightEigenvectors)`` is returned.
  */
 proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
   where isRealType(t) && A.domain.rank == 2 {
