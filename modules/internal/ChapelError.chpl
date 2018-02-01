@@ -106,8 +106,7 @@ module ChapelError {
     }
 
     proc message() {
-      var msg_fmt = "illegal argument '%s': %s";
-      return msg_fmt.format(arg_name, arg_info);
+      return "illegal argument '" + arg_name + ': ' + arg_info;
     }
   }
 
