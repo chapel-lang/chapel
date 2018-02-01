@@ -53,7 +53,6 @@ void check_scalarReplace();
 void check_refPropagation();
 void check_copyPropagation();
 void check_deadCodeElimination();
-void check_removeWrapRecords();
 void check_removeEmptyRecords();
 void check_localizeGlobals();
 void check_loopInvariantCodeMotion();

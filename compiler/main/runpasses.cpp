@@ -70,7 +70,6 @@ struct PassInfo {
 #define LOG_refPropagation                     LOG_NO_SHORT
 #define LOG_copyPropagation                    LOG_NO_SHORT
 #define LOG_deadCodeElimination                LOG_NO_SHORT
-#define LOG_removeWrapRecords                  LOG_NO_SHORT
 #define LOG_removeEmptyRecords                 LOG_NO_SHORT
 #define LOG_localizeGlobals                    LOG_NO_SHORT
 #define LOG_loopInvariantCodeMotion            LOG_NO_SHORT
@@ -139,8 +138,6 @@ static PassInfo sPassList[] = {
   RUN(refPropagation),          // reference propagation
   RUN(copyPropagation),         // copy propagation
   RUN(deadCodeElimination),     // eliminate dead code
-  RUN(removeWrapRecords),       // remove _array, _domain, and
-                                // _distribution records
   RUN(removeEmptyRecords),      // remove empty records
   RUN(localizeGlobals),         // pull out global constants from loop runs
   RUN(loopInvariantCodeMotion), // move loop invariant code above loop runs
