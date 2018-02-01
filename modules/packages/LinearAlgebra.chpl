@@ -937,28 +937,22 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
-/* Type to choose which triangle of a matrix is desired */
-enum lowerOrUpper {
-  lower,
-  upper
-}
-
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
-   Argument ``uplo`` indicates whether to return the lower or upper triangular
-   factor.  Matrix ``A`` is not modified.
+   Argument ``lower`` indicates whether to return the lower or upper
+   triangular factor.  Matrix ``A`` is not modified.
  */
-proc cholesky(A: [] ?t, uplo = lowerOrUpper.lower) where A.rank == 2 &&
-                                                         (isRealType(t) ||
-                                                          isComplexType(t)) {
+proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
+                                            (isRealType(t) ||
+                                             isComplexType(t)) {
   assert(A.domain.dim(1) == A.domain.dim(2));
   var copy = A;
-  const uploStr = if uplo == lowerOrUpper.lower then "L" else "U";
+  const uploStr = if lower then "L" else "U";
   potrf(lapack_memory_order.row_major, uploStr, copy);
 
   // tril and triu make/return an extra copy.  Should we zero the unused
   // triangle of the array manually instead to avoid the copy?
-  return if uplo == lowerOrUpper.lower then tril(copy) else triu(copy);
+  return if lower then tril(copy) else triu(copy);
 }
 
 

@@ -7,7 +7,7 @@ var A: [D] real = ((18.0, 22.0,  54.0,  42.0),
                    (42.0, 62.0, 134.0, 106.0));
 
 var L = cholesky(A);
-var U = cholesky(A, uplo=lowerOrUpper.upper);
+var U = cholesky(A, lower=false);
 writeln("A:");
 writeln(A);
 writeln("L:");
