@@ -7,10 +7,10 @@ proc main() {
   var MY_VAR = 1;
   const m1 = memoryUsed();
 
-  // serial to quiet a sporadic (1 in 1000) regression (see JIRA issue 112)
-  serial do
+  {
     forall idx in MYITER() do
       useMe(MY_VAR);
+  }
 
   const m2 = memoryUsed();
   writeln("leaked: ", m2-m1);

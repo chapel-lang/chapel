@@ -1,0 +1,1 @@
+defaultForInheritedInit.chpl:17: error: could not generate default initializer for type 'D', please define one

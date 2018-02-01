@@ -71,6 +71,7 @@ html-release: check-sphinxbuild source clean-build
 	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
+	cp util/versionButton.php $(BUILDDIR)/html/
 	mv $(BUILDDIR)/html .
 	@echo
 	@echo "Build finished. The HTML pages are in "'$$CHPL_HOME'"/doc/html."

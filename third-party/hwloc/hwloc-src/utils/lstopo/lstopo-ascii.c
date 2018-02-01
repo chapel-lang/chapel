@@ -435,7 +435,7 @@ ascii_line(void *output, int r __hwloc_attribute_unused, int g __hwloc_attribute
 }
 
 static void
-ascii_text(void *output, int r, int g, int b, int size __hwloc_attribute_unused, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
+ascii_text(void *output, int r, int g, int b, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
 {
   struct lstopo_ascii_output *disp = output;
 
@@ -460,8 +460,8 @@ ascii_text(void *output, int r, int g, int b, int size __hwloc_attribute_unused,
 #endif
 }
 
-void
-ascii_textsize(void *output __hwloc_attribute_unused, const char *text __hwloc_attribute_unused, unsigned textlength, unsigned fontsize __hwloc_attribute_unused, unsigned *width)
+static void
+ascii_textsize(void *output __hwloc_attribute_unused, const char *text __hwloc_attribute_unused, unsigned textlength, unsigned *width)
 {
   *width = textlength*(gridsize/2);
 }

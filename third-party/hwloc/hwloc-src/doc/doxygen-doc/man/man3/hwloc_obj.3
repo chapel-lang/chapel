@@ -1,4 +1,4 @@
-.TH "hwloc_obj" 3 "Wed Sep 6 2017" "Version 1.11.8" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj" 3 "Thu Jan 18 2018" "Version 1.11.9" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -188,7 +188,9 @@ Its value must not be changed, \fBhwloc_bitmap_dup()\fP must be used instead\&.
 .SS "unsigned hwloc_obj::depth"
 
 .PP
-Vertical index in the hierarchy\&. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here\&. 
+Vertical index in the hierarchy\&. For normal objects, this is the depth of the horizontal level that contains this object and its cousins of the same type\&. If the topology is symmetric, this is equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here\&.
+.PP
+For special objects (I/O and Misc) that are not in the main tree, this is a special negative value that corresponds to their dedicated level, see \fBhwloc_get_type_depth()\fP and \fBhwloc_get_type_depth_e\fP\&. Those special values can be passed to hwloc functions such \fBhwloc_get_nbobjs_by_depth()\fP as usual\&. 
 .SS "struct \fBhwloc_distances_s\fP** hwloc_obj::distances"
 
 .PP

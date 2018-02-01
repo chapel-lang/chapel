@@ -2539,6 +2539,7 @@ seealso
 toctree
 versionadded
 versionchanged
+whitespaces
 
 FILETYPE: man pages; .1
 aqdocs
@@ -2710,6 +2711,7 @@ hashset
 outervar
 urse
 wout
+yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
 ppne
@@ -2746,6 +2748,7 @@ tupcom
 ytemp
 
 FILEID: 803ee256-1d85-11e6-a3a6-10ddb1d4c3d5
+dbaadab
 newresult
 rauto
 
@@ -2841,6 +2844,7 @@ swhole
 
 FILEID: 55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5
 fhello
+fprogram
 smessage
 
 FILEID: a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5
@@ -4143,6 +4147,7 @@ ukacd
 FILEID: 726887c4-bc39-11e6-9740-843835579daa
 ncpu
 oldact
+vmstat
 
 FILEID: 847163aa-bc39-11e6-9740-843835579daa
 bptr
@@ -4205,6 +4210,7 @@ nbobjs
 
 FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
 blockhere
+cmps
 cmpval
 cqmode
 cswap
@@ -4228,6 +4234,7 @@ nbdp
 nopnd
 opnd
 rfdpp
+themself
 xchgval
 
 FILEID: c0254978-0c13-11e7-980e-10ddb1d4c3d5
@@ -4473,6 +4480,10 @@ extd
 FILEID: ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5
 skind
 
+FILEID: c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5
+lrint
+strfy
+
 NATURAL:
 abcd
 abcdefg
@@ -4539,6 +4550,7 @@ aries
 aristotle
 arity
 armenian
+arounds
 arpa
 arrayness
 asciiz
@@ -4895,6 +4907,7 @@ dereference
 dereferenced
 dereferences
 dereferencing
+derefs
 deregister
 deregistration
 descs
@@ -5961,6 +5974,7 @@ noproxy
 nopt
 nordlund
 noref
+noreturn
 nosignal
 nostdincs
 notest
@@ -5970,6 +5984,7 @@ npadmana
 nprint
 nrank
 nrows
+nsecs
 nsync
 nthreads
 numa
@@ -6605,6 +6620,7 @@ telnet
 telugu
 tempdata
 templated
+testcase
 testfile
 testname
 testrun

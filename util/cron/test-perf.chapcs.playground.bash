@@ -22,16 +22,16 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of branch that disables gcc's predictive-commoning optimization
-GITHUB_USER=ronawho
-GITHUB_BRANCH=no-predictive-commoning
-SHORT_NAME=no-predictive-commoning
-START_DATE=12/14/17
+# Test performance of branch that uses RCU for privatization
+GITHUB_USER=LouisJenkinsCS
+GITHUB_BRANCH=RCU-Privatization
+SHORT_NAME=RCU-Privatization
+START_DATE=01/30/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
-perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v,llvm:v -sync-dir-suffix $SHORT_NAME"
+perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args}

@@ -1708,10 +1708,15 @@ reorder_children(hwloc_obj_t parent)
     children = child->next_sibling;
     /* find where to enqueue it */
     prev = &parent->first_child;
-    while (*prev
-	   && (!child->cpuset || !(*prev)->cpuset
-	       || hwloc__object_cpusets_compare_first(child, *prev) > 0))
+    while (*prev) {
+      /* requeue before other children without cpuset (we're dequeueing in reverse-order) */
+      if (!(*prev)->cpuset)
+	break;
+      /* requeue before children with higher cpusets */
+      if (child->cpuset && hwloc__object_cpusets_compare_first(child, *prev) < 0)
+	break;
       prev = &((*prev)->next_sibling);
+    }
     /* enqueue */
     child->next_sibling = *prev;
     *prev = child;

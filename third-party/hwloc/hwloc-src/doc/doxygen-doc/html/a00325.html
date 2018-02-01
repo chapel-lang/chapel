@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.8</span>
+   &#160;<span id="projectnumber">1.11.9</span>
    </div>
   </td>
  </tr>
@@ -119,7 +119,7 @@ PCI devices and bridges</h1>
 <h1><a class="anchor" id="iodevices_consult"></a>
 Consulting I/O devices and binding</h1>
 <p>I/O devices may be consulted by traversing the topology manually (with usual routines such as <a class="el" href="a00167.html#ga6f414dd80a2b943967a0ac92da3181a2" title="Returns the topology object at logical index idx with type type. ">hwloc_get_obj_by_type()</a>) or by using dedicated helpers (such as <a class="el" href="a00185.html#gacdbaf0db98872e224b7883a84bfb0455" title="Find the PCI device object matching the PCI bus id given domain, bus device and function PCI bus id...">hwloc_get_pcidev_by_busid()</a>, see <a class="el" href="a00185.html">Finding I/O objects</a>).</p>
-<p>I/O objects do not actually contain any locality information because their CPU sets and node sets are NULL. Their locality must be retrieved by walking up the object tree (through the <code>parent</code> link) until an non-I/O object is found (see <a class="el" href="a00185.html#gaf139bb61375178e90cc3f1835b452ab6" title="Get the first non-I/O ancestor object. ">hwloc_get_non_io_ancestor_obj()</a>). This regular object should have non-NULL CPU sets and node sets which describe the processing units and memory that are immediately close to the I/O device. For instance the path from a OS device to its locality may go across a PCI device parent, one or several bridges, up to a a NUMA node with the same locality.</p>
+<p>I/O objects do not actually contain any locality information because their CPU sets and node sets are NULL. Their locality must be retrieved by walking up the object tree (through the <code>parent</code> link) until an non-I/O object is found (see <a class="el" href="a00185.html#gaf139bb61375178e90cc3f1835b452ab6" title="Get the first non-I/O ancestor object. ">hwloc_get_non_io_ancestor_obj()</a>). This regular object should have non-NULL CPU sets and node sets which describe the processing units and memory that are immediately close to the I/O device. For instance the path from a OS device to its locality may go across a PCI device parent, one or several bridges, up to a NUMA node with the same locality.</p>
 <p>Command-line tools are also aware of I/O devices. lstopo displays the interesting ones by default (passing <code>--no-io</code> disables it).</p>
 <p>hwloc-calc and hwloc-bind may manipulate I/O devices specified by PCI bus ID or by OS device name. </p><ul>
 <li>

@@ -662,7 +662,7 @@ int AggregateType::getFieldPosition(const char* name, bool fatal) {
 
   current_p->set_add(this);
 
-  int fieldPos = 0;
+  int fieldPos = 1;
 
   while (current_p->n != 0) {
     forv_Vec(Type, t, *current_p) {
@@ -2272,6 +2272,11 @@ DefExpr* defineObjectClass() {
   //  field.  Unfortunately, we would need some significant changes
   //  throughout compilation, and it seemed to me that the it might result
   //  in possibly more special case code.
+  //
+  // Because we never create the actual field, we have a special case
+  //  for it in TypeSymbol::codegenAggMetadata().  Remember to change
+  //  that special case if we ever change the contents of object or
+  //  if we start creating the field.
   //
   DefExpr* retval = buildClassDefExpr("object",
                                       NULL,

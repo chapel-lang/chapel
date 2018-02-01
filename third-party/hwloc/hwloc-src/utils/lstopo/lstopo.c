@@ -229,7 +229,7 @@ static void add_process_objects(hwloc_topology_t topology)
           if (!parenl) {
             snprintf(comm, sizeof(comm), "(unknown)");
           } else {
-            snprintf(comm, sizeof(comm), parenl+1);
+            snprintf(comm, sizeof(comm), "%s", parenl+1);
           }
         }
 

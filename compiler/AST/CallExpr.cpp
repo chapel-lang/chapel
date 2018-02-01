@@ -163,19 +163,6 @@ bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
-Expr* CallExpr::getFirstChild() {
-  Expr* retval = NULL;
-
-  if (baseExpr != NULL) {
-    retval = baseExpr;
-
-  } else if (argList.head != NULL) {
-    retval = argList.head;
-  }
-
-  return retval;
-}
-
 Expr* CallExpr::getFirstExpr() {
   Expr* retval = NULL;
 

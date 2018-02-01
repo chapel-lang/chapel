@@ -260,5 +260,30 @@ proc file.realPath(): string throws {
       }
     }
    return result;
- }  
+ }
+ 
+/* Determines whether the path specified is an absolute path.
+
+   Note: this is currently only implemented in a Unix environment.  It will not
+   behave correctly in a non-Unix environment.
+
+   :arg name: the path to be checked.
+   :type name: `string`
+
+   :return: `true` if `name` is an absolute path, `false` otherwise
+   :rtype: `bool`
+*/
+
+  proc isAbsPath(name: string): bool {
+    if name.isEmptyString() {
+      return false;
+    }
+    const len: int = name.length;
+    var str: string = name[1];
+    if (str == '/') {
+      return true;
+    } else {
+      return false;
+    }
+  }
 }

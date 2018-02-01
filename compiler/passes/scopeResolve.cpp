@@ -486,49 +486,77 @@ static void processImportExprs() {
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
+/************************************* | *************************************/
+
+static void handleLoopStmtGoto(LoopStmt* loop, GotoStmt* gs) {
+  if (gs->gotoTag == GOTO_BREAK) {
+    gs->label->replace(new SymExpr(loop->breakLabelGet()));
+
+  } else if (gs->gotoTag == GOTO_CONTINUE) {
+    gs->label->replace(new SymExpr(loop->continueLabelGet()));
+
+  } else {
+    INT_FATAL(gs, "unexpected goto type");
+  }
+}
+
+/*
+Note that break and continue statements that are placed incorrectly
+inside a forall loop are flagged by checkControlFlow() during parsing.
+This includes 'continue' to a named loop outside of the forall,
+which the code here would not catch.
+*/
+static void handleForallGoto(ForallStmt* forall, GotoStmt* gs) {
+  if (gs->gotoTag == GOTO_BREAK) {
+    INT_ASSERT(false);
+
+  } else if (gs->gotoTag == GOTO_CONTINUE) {
+    INT_ASSERT(isSymExpr(gs->label) == true);
+    gs->label->replace(new SymExpr(forall->continueLabel()));
+
+  } else {
+    INT_FATAL(gs, "unexpected goto type");
+  }
+}
 
 static void resolveGotoLabels() {
   forv_Vec(GotoStmt, gs, gGotoStmts) {
     SET_LINENO(gs);
 
-    LoopStmt* loop = NULL;
+    Stmt* loop = NULL;
 
     if (isSymExpr(gs->label) == true) {
-      loop = LoopStmt::findEnclosingLoop(gs);
+      loop = LoopStmt::findEnclosingLoopOrForall(gs);
 
       if (loop == NULL) {
-        USR_FATAL(gs, "break or continue is not in a loop");
+        USR_FATAL_CONT(gs, "break or continue is not in a loop");
       }
 
     } else if (UnresolvedSymExpr* label = toUnresolvedSymExpr(gs->label)) {
       loop = LoopStmt::findEnclosingLoop(gs, label->unresolved);
 
       if (loop == NULL) {
-        USR_FATAL(gs, "bad label on break or continue");
+        USR_FATAL_CONT(gs, "bad label '%s' on break or continue",
+                       label->unresolved);
       }
     }
 
-    if (gs->gotoTag == GOTO_BREAK) {
-      gs->label->replace(new SymExpr(loop->breakLabelGet()));
+    if (loop == NULL) {
+      // Handled above as needed. Nothing to do here.
 
-    } else if (gs->gotoTag == GOTO_CONTINUE) {
-      gs->label->replace(new SymExpr(loop->continueLabelGet()));
+    } else if (LoopStmt* loopS = toLoopStmt(loop)) {
+      handleLoopStmtGoto(loopS, gs);
+
+    } else if (ForallStmt* forall = toForallStmt(loop)) {
+      handleForallGoto(forall, gs);
 
     } else {
-      INT_FATAL(gs, "unexpected goto type");
+      INT_ASSERT(false); // should not have any other loops here
     }
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
+/************************************* | *************************************/
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 

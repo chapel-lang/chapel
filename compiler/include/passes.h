@@ -109,6 +109,7 @@ void deadBlockElimination();
 
 // flattenFunctions.cpp
 void flattenNestedFunction(FnSymbol* nestedFunction);
+void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);
@@ -120,6 +121,7 @@ void normalize(Expr* expr);
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
 Type* getOrMakeWideTypeDuringCodegen(Type* refType);
+CallExpr* findDownEndCount(FnSymbol* fn);
 
 // type.cpp
 void initForTaskIntents();

@@ -391,7 +391,7 @@ windows_line(void *output, int r, int g, int b, unsigned depth __hwloc_attribute
 }
 
 static void
-windows_text(void *output, int r, int g, int b, int size __hwloc_attribute_unused, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
+windows_text(void *output, int r, int g, int b, unsigned depth __hwloc_attribute_unused, unsigned x, unsigned y, const char *text)
 {
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;
@@ -404,7 +404,7 @@ windows_text(void *output, int r, int g, int b, int size __hwloc_attribute_unuse
 }
 
 static void
-windows_textsize(void *output, const char *text, unsigned textlength, unsigned fontsize __hwloc_attribute_unused, unsigned *width)
+windows_textsize(void *output, const char *text, unsigned textlength, unsigned *width)
 {
   struct lstopo_windows_output *woutput = output;
   PAINTSTRUCT *ps = &woutput->ps;

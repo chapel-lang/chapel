@@ -33,10 +33,14 @@ has been set on the command line, its value is also shown.
 Setting Configuration Variables
 -------------------------------
 
-Configuration constants and variables defined in a Chapel program can
-have their default values overridden on the command line using the ``-s``
-or ``--`` flags.  Either flag takes the name of the configuration variable
-followed by an equals character (``=``) and the value to assign to it.
+~~~~~~~~~~~~
+Command Line
+~~~~~~~~~~~~
+
+:ref:`Configuration constants and variables <ug-configs>` defined in a Chapel
+program can have their default values overridden on the command line using the
+``-s`` or ``--`` flags.  Either flag takes the name of the configuration
+variable followed by an equals character (``=``) and the value to assign to it.
 This value must be a legal Chapel literal for the type of the variable.
 (Exception: for a string literal, the surrounding quotes are implicit.)
 In our current implementation, no extra spaces may appear between
@@ -91,21 +95,78 @@ or:
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+~~~~~~~~~~~~~~~~~~
+Configuration File
+~~~~~~~~~~~~~~~~~~
+
 Configuration values can also be passed to a Chapel program through a
-configuration file, specified by the execution time ``-f`` option. These
-configuration files can contain a whitespace- or newline-separated list of
-configuration assignments. Comments are supported with the ``#`` character.
+configuration file, specified by the execution time ``-f`` option.
+Configuration files can contain a whitespace- or newline-delimited list of
+keys and values separated by an assignment operator ``=``. Comments begin
+with the ``#`` character. The examples below demonstrate this format.
 
-For example:
+Consider the following program:
+
+   .. code-block:: chapel
+
+       // program.chpl
+       config const msg: string,
+                    val1: real,
+                    val2: real;
+
+
+       proc main() {
+         writeln(msg);
+         writeln(val1);
+         writeln(val2);
+       }
+
+The above program can have its configuration variables defined by this
+configuration file:
+
+    .. code-block:: python
+
+        # program.input
+
+        msg="hello world"
+        val1=1.61803
+        val2=3.14159
+
+Configuration files can contain a whitespace- or newline-separated list of
+configuration assignments and comments are supported with the ``#`` character.
+The configuration file above can also be written like this:
+
+    .. code-block:: python
+
+        # program.input
+
+        val1=1.61803 val2=3.14159
+        msg="hello world" # This is a comment
+
+
+The ``program.input`` is passed during execution with the ``-f`` flag:
 
     .. code-block:: sh
 
-        # hello2-module.input
-        message="Hello from a Chapel configuration file"
+        # config variables are populated by program.input values
+        ./program -fprogram.input
 
-    .. code-block:: sh
 
-        ./hello2-module -fhello2-module.input
+.. warning::
+    Assignments cannot contain whitespaces outside of quotes, so the following
+    configuration file would result in an error:
+
+        .. code-block:: python
+
+            # bad.input
+
+            # The additional whitespace will result in an error
+            val1 = 1.161803
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Non-Configuration Variable Arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Chapel programs can also accept C-like command line arguments to their
 ``main()`` procedure in addition to the aforementioned configuration
@@ -119,7 +180,7 @@ Setting the Number of Locales
 
 For multi-locale Chapel executions, the number of locales on which to
 execute a program is specified on the executable's command-line.  This
-can be set either using the -nl flag, or by assigning to the built-in
+can be set either using the ``-nl`` flag, or by assigning to the built-in
 numLocales configuration constant using the normal mechanisms.  So, to
 execute on four locales, one could use:
 

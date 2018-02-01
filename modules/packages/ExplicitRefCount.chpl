@@ -20,6 +20,7 @@
 module ExplicitRefCount {
 
   pragma "no doc"
+  pragma "use default init"
   class RefCountBase {
 
     var refcnt: atomic int;

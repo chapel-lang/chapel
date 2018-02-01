@@ -111,7 +111,7 @@ static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec);
 static void findHeapVarsAndRefs(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                 Vec<Symbol*>& refSet, Vec<Symbol*>& refVec,
                                 Vec<Symbol*>& varSet, Vec<Symbol*>& varVec);
-static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn);
+static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg, FnSymbol* fn);
 
 static void replaceRecordWrappedRefs();
 
@@ -176,7 +176,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // an integer on the caller's stack. We would then observe that we should
     // pass records by const ref, and take the reference of that local integer.
     //
-    bool autoCopy = needsAutoCopyAutoDestroyForArg(arg, fn);
+    bool autoCopy = needsAutoCopyAutoDestroyForArg(formal, arg, fn);
 
     if (var->isRef() || isClass(var->type)) {
       // Only a variable that is passed by reference out of its current scope
@@ -207,6 +207,9 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // BHARSH TODO: This really belongs in RVF. Note the sync/single comment
     // in 'needsAutoCopyAutoDestroyForArg'
     // If the formal is constant, store a value
+    // This results in passing the actual by value into a by-ref formal,
+    // which happens with RVF (for rvfDerefTmp actuals), see ex.
+    //   test/multilocale/diten/needMultiLocales/DijkstraTermination.chpl
     else if (formal->isConstant())
       field->qual = QUAL_VAL;
     // Otherwise, if the formal is a reference, store a reference.
@@ -250,19 +253,15 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
 ///
 /// arg is an actual argument to the task fn call
 /// fn  is the task function that was called
-static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
+static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
+                                           FnSymbol* fn)
 {
   SymExpr* s        = toSymExpr(arg);
   Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
-  ArgSymbol*  formal   = toArgSymbol(actual_to_formal(s));
-  QualifiedType qual = formal->qualType();
-  INT_ASSERT(formal);
 
-  bool passedByRef = formal->intent == INTENT_REF || qual.getQual() == QUAL_REF;
-  if (!passedByRef && isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+  if (!formal->isRef() && isRecord(baseType))
     return true;
-  }
 
   // BHARSH TODO: Move this into RVF. If we do, then we need to handle the
   // following case:
@@ -306,8 +305,7 @@ static bool needsAutoCopyAutoDestroyForArg(Expr* arg, FnSymbol* fn)
       isString(baseType))
   {
     if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
-         isString(baseType) || // TODO -- is this case necessary?
-         (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
+        (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
     {
       if (!formal->isRef())
       {
@@ -330,7 +328,7 @@ static Symbol* insertAutoCopyForTaskArg
   Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
 
-  FnSymbol* autoCopyFn = getAutoCopy(baseType);
+  FnSymbol* autoCopyFn = getAutoCopyForType(baseType);
 
   // Normal (record) handling
   {
@@ -399,7 +397,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
 
   // set the references in the class instance
   int i = 1;
-  for_actuals(arg, fcall)
+  for_formals_actuals(formal, arg, fcall)
   {
     // For anything nonblocking, don't bundle error variables,
     // handle them directly
@@ -416,7 +414,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     // Insert autoCopy/autoDestroy as needed for "begin" or "nonblocking on"
     // calls (and some other cases).
     Symbol  *var = NULL;
-    bool autoCopy = needsAutoCopyAutoDestroyForArg(arg, fn);
+    bool autoCopy = needsAutoCopyAutoDestroyForArg(formal, arg, fn);
     if (autoCopy)
       var = insertAutoCopyForTaskArg(arg, fcall, fn);
     else
@@ -551,7 +549,7 @@ static CallExpr* helpFindDownEndCount(BlockStmt* block)
 }
 
 // Finds downEndCount CallExpr or returns NULL.
-static CallExpr* findDownEndCount(FnSymbol* fn)
+CallExpr* findDownEndCount(FnSymbol* fn)
 {
   return helpFindDownEndCount(fn->body);
 }

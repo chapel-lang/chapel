@@ -1,0 +1,10 @@
+bug: issue with initializers on bigint type being returned in certain situations
+
+Returning directly the result of a reduction over an array created in the same
+expression with a size of 1..0 causes an execution segfault at the deinitializer
+call.  If the reduction result is saved into a temporary first, we still
+encounter the bug.  However, if we save the created array into a temporary, the
+program will always execute correctly.
+
+This version covers saving the reduction result into a temporary when called
+in a loop.

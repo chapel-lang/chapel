@@ -717,7 +717,7 @@ hwloc_look_kstat(struct hwloc_topology *topology)
 	    break;
 #endif
 	  default:
-	    fprintf(stderr, "chip_id type %d unknown\n", stat->data_type);
+	    fprintf(stderr, "chip_id type %u unknown\n", (unsigned) stat->data_type);
 	    look_chips = 0;
 	    continue;
 	}
@@ -767,7 +767,7 @@ hwloc_look_kstat(struct hwloc_topology *topology)
 	    break;
 #endif
 	  default:
-	    fprintf(stderr, "core_id type %d unknown\n", stat->data_type);
+	    fprintf(stderr, "core_id type %u unknown\n", (unsigned) stat->data_type);
 	    look_cores = 0;
 	    continue;
 	}
@@ -935,6 +935,7 @@ hwloc_look_kstat(struct hwloc_topology *topology)
       hwloc_insert_object_by_cpuset(topology, obj);
     }
     hwloc_debug("%s", "\n");
+    topology->support.discovery->pu = 1;
   }
 
   kstat_close(kc);

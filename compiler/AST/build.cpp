@@ -26,15 +26,11 @@
 #include "config.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "expr.h"
 #include "files.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "parser.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
-#include "type.h"
 #include "TryStmt.h"
 #include "wellknown.h"
 
@@ -46,8 +42,7 @@ static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   Expr* expr, Expr* cond, Expr* indices,
                                   bool zippered, Expr*& stmt);
 
-static void
-checkControlFlow(Expr* expr, const char* context) {
+void checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
   Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
   Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
@@ -108,7 +103,15 @@ checkControlFlow(Expr* expr, const char* context) {
       if (gs->gotoTag == GOTO_BREAK) {
         USR_FATAL_CONT(gs, "break is not allowed in %s", context);
       } else if (gs->gotoTag == GOTO_CONTINUE) {
-        USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+        // see also resolveGotoLabels() -> handleForallGoto()
+        if (!strcmp(context, "forall statement")) {
+          if (!strcmp(gs->getName(), "nil"))
+            ; // plain 'continue' is OK in a forall
+          else
+            USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
+        } else {
+          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+        }
       } else {
         USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
       }
@@ -931,6 +934,7 @@ CallExpr*
 buildForLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, bool maybeArrayType, bool zippered) {
   FnSymbol* fn = new FnSymbol(astr("_seqloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // See comment in buildForallLoopExpr()
   ArgSymbol* iteratorExprArg = new ArgSymbol(INTENT_BLANK, "iterExpr", dtAny);
@@ -985,6 +989,7 @@ static void buildLeaderIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   bool zippered)
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
+  lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   Expr* tag = buildDotExpr(buildDotExpr(new UnresolvedSymExpr("ChapelBase"),
                                         iterKindTypename),
@@ -1081,6 +1086,7 @@ static CallExpr* buildForallLoopExprFromForallExpr(ForallExpr* faExpr) {
   FnSymbol* fn = new FnSymbol(astr("_parloopexpr", istr(loopexpr_uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // MPF: We'll add the iteratorExpr to the call, so we need an
   // argument to accept it in the new function. This way,
@@ -1321,6 +1327,7 @@ buildStandaloneForallLoopStmt(Expr* indices,
   VarSymbol* saIdx     = newTemp("chpl__saIdx");
   VarSymbol* saIdxCopy = newTemp("chpl__saIdxCopy");
 
+  iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_MAYBE_REF);
   iterRec->addFlag(FLAG_EXPR_TEMP);
@@ -1424,6 +1431,7 @@ buildForallLoopStmt(Expr*      indices,
   BlockStmt* followBlock     = NULL;
 
   iterRec->addFlag(FLAG_EXPR_TEMP);
+  iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_CHPL__ITER);
 
   leadIdxCopy->addFlag(FLAG_INDEX_VAR);
@@ -2170,6 +2178,7 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
   FnSymbol* fn = new FnSymbol(astr("chpl__scan", istr(uid++)));
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+  fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   // data will hold the reduce-d expression as an argument
   // we'll store dataExpr in the call to the chpl__scan function.

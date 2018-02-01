@@ -1,0 +1,2 @@
+bug: if expressions for argument default value without explicit type don't work
+#8189

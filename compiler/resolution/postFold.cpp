@@ -464,6 +464,11 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
+  } else if (canInstantiate(sub, super)) {
+    // handles special cases like dtIntegral, which aren't covered
+    // by at->instantiatedFrom
+    retval = true;
+
   } else if (AggregateType* at = toAggregateType(sub)) {
     for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
       retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
@@ -640,13 +645,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     if (lhsSym->hasFlag(FLAG_EXPR_TEMP)     ==  true  &&
         lhsSym->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
         requiresImplicitDestroy(rhs)        ==  true) {
-
-      if (isUserDefinedRecord(lhsSym->type) == false) {
-        lhsSym->addFlag(FLAG_INSERT_AUTO_COPY);
-        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      } else {
-        lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      }
+      lhsSym->addFlag(FLAG_INSERT_AUTO_DESTROY);
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||

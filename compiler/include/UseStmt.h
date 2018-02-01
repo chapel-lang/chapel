@@ -37,8 +37,6 @@ public:
 
   virtual Expr*   getFirstExpr();
 
-  virtual Expr*   getFirstChild();
-
   virtual void    replaceChild(Expr* oldAst, Expr* newAst);
 
   virtual void    accept(AstVisitor* visitor);

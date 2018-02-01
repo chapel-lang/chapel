@@ -33,6 +33,8 @@ about your environment for using Chapel:
       expression support (i.e.  CHPL_LLVM=llvm or CHPL_REGEXP=re2). If
       GCC is used, we recommend GCC version 5 or newer for this purpose.
 
+  * Building GMP requires an M4 macro processor
+
   * Building LLVM requires cmake version 3.4.3 or later.
 
   * If you wish to use Chapel's test system, python-setuptools and
@@ -47,20 +49,20 @@ We have used the following commands to install the above prerequisites:
 
   * CentOS, Fedora 21::
 
-      sudo yum install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
+      sudo yum install gcc gcc-c++ m4 perl python python-devel python-setuptools bash make gawk
 
   * Fedora 22::
 
-      sudo dnf install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
+      sudo dnf install gcc gcc-c++ m4 perl python python-devel python-setuptools bash make gawk
 
   * SLES, openSUSE::
 
-      sudo zypper install gcc gcc-c++ perl python python-devel python-setuptools bash make gawk
+      sudo zypper install gcc gcc-c++ m4 perl python python-devel python-setuptools bash make gawk
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ perl python python-dev python-setuptools bash make mawk
+      sudo apt-get install gcc g++ m4 perl python python-dev python-setuptools bash make mawk
 
   * FreeBSD::
 
-     sudo pkg install bash python py27-setuptools gmake gawk
+     sudo pkg install m4 python py27-setuptools bash gmake gawk

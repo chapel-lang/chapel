@@ -1,0 +1,3 @@
+bug: copy initializer not seen with local 'use'
+
+Issue #8231

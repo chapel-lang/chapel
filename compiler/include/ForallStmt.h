@@ -35,6 +35,7 @@ public:
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
+  LabelSymbol* continueLabel();      // create it if not already
 
   // when originating from a ForLoop
   bool       createdFromForLoop()    const;  // is converted from a for-loop
@@ -43,12 +44,11 @@ public:
 
   DECLARE_COPY(ForallStmt);
 
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual void        verify();
   virtual void        accept(AstVisitor* visitor);
   virtual GenRet      codegen();
 
-  virtual Expr*       getFirstChild();
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
   virtual Expr*       getFirstExpr();
   virtual Expr*       getNextExpr(Expr* expr);
 
@@ -61,7 +61,6 @@ public:
   // helpers
   Expr* firstIteratedExpr()        const;
   int   numIteratedExprs()         const;
-  bool  isIteratedExpression(Expr* expr);
   int   reduceIntentIdx(Symbol* var);
   int   numShadowVars()            const;
   ShadowVarSymbol* getShadowVar(int index) const;
@@ -75,6 +74,9 @@ private:
   bool           fFromForLoop; // see comment below
 
   ForallStmt(bool zippered, BlockStmt* body);
+
+public:
+  LabelSymbol*   fContinueLabel;  // update_symbols() needs this
 };
 
 /* fFromForLoop and its accessors
@@ -118,6 +120,8 @@ inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
       if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
 
 // helpers
+bool isForallIterExpr(Expr* expr);
+bool isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
 
 // used for lowering ForallStmt and forall intents

@@ -1,1 +1,0 @@
-bug: cannot yield records by ref from leader/follower iterators

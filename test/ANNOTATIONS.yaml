@@ -279,6 +279,16 @@ all:
   12/08/17:
     - text: Machine upgraded to CLE6
       config: 16 node XC
+  12/12/17:
+    - (no-local) QualifiedType ref improvements (#7990)
+  01/16/18:
+    - rework iterator memory management (#8073)
+  01/17/18:
+    - text: support dynamically extendable heap w/ ugni (#7700)
+      config: 16 node XC
+  01/25/18:
+    - text: Do nonblocking responses in the polling task (#8297)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -544,6 +554,10 @@ isx-no-return:
   02/26/16:
     - ISx ref to array (#3365)
 
+isx-release:
+  01/23/18:
+    - Fix memory leak introduced in PR #8073 (#8268)
+
 isx.ml-time: &isx-ml-base
   02/26/16:
     - ISx ref to array (#3365)
@@ -551,6 +565,10 @@ isx.ml-time: &isx-ml-base
     - Switched to PCG random number generator (#3764)
   12/22/16:
     - Increased isx problem size (internal #279)
+  01/12/18:
+    - Avoid task yielding during ugni memory registration (#8162)
+  01/24/18:
+    - Stop forcing serial initialization for isx-hand-optimized (#8290)
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
@@ -764,6 +782,10 @@ memleaksfull:
     - close more test code leaks (#7406, #7399, #7395, #7364, and #7400)
   11/15/17:
     - Delete classes in some tests (#7791)
+  12/19/17:
+    - Rewrite default argument handling (#7858)
+  01/23/18:
+    - Fix memory leak introduced in PR #8073 (#8268)
 
 meteor:
   12/18/13:

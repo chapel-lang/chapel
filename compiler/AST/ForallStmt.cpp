@@ -35,7 +35,8 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
   fLoopBody(body),
-  fFromForLoop(false)
+  fFromForLoop(false),
+  fContinueLabel(NULL)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
@@ -136,10 +137,6 @@ GenRet ForallStmt::codegen() {
   return ret;
 }
 
-Expr* ForallStmt::getFirstChild() {
-  return fIterVars.head;
-}
-
 Expr* ForallStmt::getFirstExpr() {
   if (Expr* iv = fIterVars.head->getFirstExpr())
     return iv;
@@ -172,11 +169,6 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 // helpers
 /////////////////////////////////////////////////////////////////////////////
 
-// Is 'expr' an iterable-expression for 'this' ?
-bool ForallStmt::isIteratedExpression(Expr* expr) {
-  return expr->list && expr->list == &fIterExprs;
-}
-
 // If 'var' is listed in this's with-clause with a reduce intent,
 // return its position in the with-clause, otherwise return -1.
 // Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
@@ -201,6 +193,23 @@ ForallStmt* enclosingForallStmt(Expr* expr) {
   return NULL;
 }
 
+// Is 'expr' an iterable-expression for some ForallStmt?
+bool isForallIterExpr(Expr* expr) {
+  if (expr->list != NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr->list == &pfs->iteratedExpressions())
+        return true;
+  return false;
+}
+
+// Is 'expr' the fs->loopBody() for some 'fs' ?
+bool isForallLoopBody(Expr* expr) {
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return true;
+  return false;
+}
+
 // valid after addParIdxVarsAndRestruct()
 VarSymbol* parIdxVar(const ForallStmt* fs) {
   DefExpr* def = toDefExpr(fs->loopBody()->body.head);
@@ -222,6 +231,19 @@ BlockStmt* userLoop(const ForallStmt* fs) {
   BlockStmt* ul = toBlockStmt(fs->loopBody()->body.tail);
   INT_ASSERT(ul);
   return ul;
+}
+
+LabelSymbol* ForallStmt::continueLabel() {
+  if (fContinueLabel == NULL) {
+    // We are extra-cautious here, to guard against the potential
+    // that we have added code that must execute at the end of fLoopBody.
+    // If this presents hardship, we can switch to always creating
+    // fContinueLabel, right when the ForallStmt is created.
+    INT_ASSERT(!normalized);
+    fContinueLabel = new LabelSymbol("_continueLabel");
+    fLoopBody->insertAtTail(new DefExpr(fContinueLabel));
+  }
+  return fContinueLabel;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -378,6 +400,8 @@ static void adjustReduceOpNames(ForallStmt* fs) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered)
 {
+  checkControlFlow(body, "forall statement");
+
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);

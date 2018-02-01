@@ -74,7 +74,7 @@ FnSymbol::FnSymbol(const char* initName) : Symbol(E_FnSymbol, initName) {
 }
 
 FnSymbol::~FnSymbol() {
-  if (iteratorInfo) {
+  if (iteratorInfo && !hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
     // Also set iterator class and iterator record iteratorInfo = NULL.
     if (iteratorInfo->iclass) {
       iteratorInfo->iclass->iteratorInfo = NULL;

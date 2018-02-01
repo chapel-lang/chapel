@@ -133,6 +133,21 @@ static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
 
     ct->addDeclarations(def);
 
+  } else if (ArgSymbol* arg = toArgSymbol(def->parentSymbol)) {
+    if (fn->hasFlag(FLAG_IF_EXPR_FN) && arg->typeExpr == NULL) {
+      USR_FATAL_CONT(fn,
+                     "cannot currently use an if expression as the default "
+                     "value for an argument when the argument's type is "
+                     "inferred");
+
+    } else {
+      Expr* stmt = def->getStmtExpr();
+
+      def->replace(new UnresolvedSymExpr(fn->name));
+
+      stmt->insertBefore(def);
+    }
+
   } else {
     Expr* stmt = def->getStmtExpr();
 

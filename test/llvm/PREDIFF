@@ -8,6 +8,12 @@ PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --host`
 COMPILER=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
 FILECHECK=${CHPL_HOME}/third-party/llvm/install/${PLATFORM}-${COMPILER}/bin/FileCheck
 
+if [ ! -x $FILECHECK ]; then
+    PREFERRED_LLVM_VERS=`cat ${CHPL_HOME}/third-party/llvm/LLVM_VERSION`
+    LLVM_CONFIG=`${CHPL_HOME}/third-party/llvm/find-llvm-config.sh $PREFERRED_LLVM_VERS`
+    FILECHECK=${LLVM_CONFIG//llvm-config/FileCheck}
+fi
+
 mv $OUTFILE $TMPFILE
 $FILECHECK --input-file $TMPFILE $TESTNAME.chpl 2> $OUTFILE
 rm $TMPFILE

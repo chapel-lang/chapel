@@ -670,8 +670,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                         origIterator, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
 
-  if (idxVar->id == breakOnResolveID)
-    gdbShouldBreakHere();
+  if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }
@@ -716,6 +715,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* followIter      = newTemp("chpl__followIter");
   BlockStmt* followBlock     = NULL;
 
+  iterRec->addFlag(FLAG_NO_COPY);
   iterRec->addFlag(FLAG_EXPR_TEMP);
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
@@ -889,6 +889,7 @@ void lowerForallStmts() {
     VarSymbol* parIter = newTemp("chpl__parIter");
     VarSymbol* parIdx  = parIdxVar(fs);
 
+    iterRec->addFlag(FLAG_NO_COPY);
     iterRec->addFlag(FLAG_CHPL__ITER);
     iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
     iterRec->addFlag(FLAG_MAYBE_REF);

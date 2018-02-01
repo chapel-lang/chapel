@@ -52,7 +52,7 @@ arrays) will work with any other Chapel library that works with arrays.
 
 **Indexing**
 
-All functions that return new arrays will return arrays over 0-based indices,
+All functions that return new arrays will return arrays over 1-based indices,
 unless otherwise specified.
 
 **Matrix multiplication**
@@ -137,10 +137,10 @@ use BLAS;
 // Matrix and Vector Initializers
 //
 
-/* Return a vector (1D array) over domain ``{0..#length}``*/
+/* Return a vector (1D array) over domain ``{1..length}``*/
 proc Vector(length, type eltType=real) {
   if (length <= 0) then halt("Vector length must be > 0");
-  return Vector(0..#length, eltType);
+  return Vector(1..length, eltType);
 }
 
 
@@ -163,6 +163,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
 }
 
 pragma "no doc"
+/* Vector(Scalars...) overload where eltType is inferred */
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
   type eltType = x.type;
   return Vector(x, (...Scalars), eltType=eltType);
@@ -178,27 +179,30 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
   if !isNumeric(Scalars(1)) then
       compilerError("Vector() expected numeric arguments");
 
-  var V: [0..n] eltType;
+  // First element is x, and remaining elements are Scalars
+  var V: [1..n+1] eltType;
 
-  V[0] = x: eltType;
+  V[1] = x: eltType;
 
-  forall i in 1..n do V[i] = Scalars[i]: eltType;
+  forall i in 2..n+1 {
+    V[i] = Scalars[i-1]: eltType;
+  }
 
   return V;
 }
 
 
-/* Return a square matrix (2D array) over domain ``{0..#rows, 0..#rows}``*/
+/* Return a square matrix (2D array) over domain ``{1..rows, 1..rows}``*/
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
-  return Matrix(0..#rows, 0..#rows, eltType);
+  return Matrix(1..rows, 1..rows, eltType);
 }
 
 
-/* Return a matrix (2D array) over domain ``{0..#rows, 0..#cols}``*/
+/* Return a matrix (2D array) over domain ``{1..rows, 1..cols}``*/
 proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
   if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
-  return Matrix(0..#rows, 0..#cols, eltType);
+  return Matrix(1..rows, 1..cols, eltType);
 }
 
 
@@ -293,31 +297,37 @@ proc Matrix(const Arrays...?n, type eltType) {
 
   if Arrays(1).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
-  const dim2 = 0..#Arrays(1).domain.dim(1).length,
-        dim1 = 0..#n;
+  const dim2 = 1..Arrays(1).domain.dim(1).size,
+        dim1 = 1..n;
 
   var M: [{dim1, dim2}] eltType;
 
   for i in dim1 do
-    M[i, ..] = Arrays(i+1)[..]: eltType;
+    M[i, ..] = Arrays(i)[..]: eltType;
 
   return M;
 }
 
 
-/* Return a square identity matrix over domain ``{0..#m, 0..#m}`` */
+/* Helper function for setting diagonal to 1. ``idx`` is the minimum */
+private proc _eyeDiagonal(ref A: [?Dom] ?eltType) {
+  const (m, n) = A.shape;
+  const idx = if m <= n then 1 else 2;
+  for i in Dom.dim(idx) do A[i, i] = 1: eltType;
+}
+
+/* Return a square identity matrix over domain ``{1..m, 1..m}`` */
 proc eye(m, type eltType=real) {
-  var A: [{0..#m, 0..#m}] eltType;
-  for i in 0..#m do A[i, i] = 1: eltType;
+  var A: [{1..m, 1..m}] eltType;
+  _eyeDiagonal(A);
   return A;
 }
 
 
-/* Return an identity matrix over domain ``{0..#m, 0..#n}`` */
+/* Return an identity matrix over domain ``{1..m, 1..n}`` */
 proc eye(m, n, type eltType=real) {
-  var A: [{0..#m, 0..#n}] eltType;
-  const diagonal = min(m, n);
-  for i in 0..#diagonal do A[i, i] = 1: eltType;
+  var A: [{1..m, 1..n}] eltType;
+  _eyeDiagonal(A);
   return A;
 }
 
@@ -325,8 +335,8 @@ proc eye(m, n, type eltType=real) {
 /* Return an identity matrix over domain ``Dom`` */
 proc eye(Dom: domain(2), type eltType=real) {
   var A: [Dom] eltType;
-  const diagonal = min(Dom.shape(1), Dom.shape(2));
-  return eye(Dom.shape(1), Dom.shape(2), eltType=eltType);
+  _eyeDiagonal(A);
+  return A;
 }
 
 
@@ -638,15 +648,15 @@ proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
   var C = Vector(Adom, eltType);
 
-  // 0-based indices
-  const zeroDom = {0..#Adom.size};
-  ref Azero = A.reindex(zeroDom),
-      Bzero = B.reindex(zeroDom),
-      Czero = C.reindex(zeroDom);
+  // Reindex to ensure 1-based indices
+  const A1Dom = {1..Adom.size};
+  ref A1 = A.reindex(A1Dom),
+      B1 = B.reindex(A1Dom),
+      C1 = C.reindex(A1Dom);
 
-  Czero[0] = Azero[1]*Bzero[2] - Azero[2]*Bzero[1];
-  Czero[1] = Azero[2]*Bzero[0] - Azero[0]*Bzero[2];
-  Czero[2] = Azero[0]*Bzero[1] - Azero[1]*Bzero[0];
+  C1[1] = A1[2]*B1[3] - A1[3]*B1[2];
+  C1[2] = A1[3]*B1[1] - A1[1]*B1[3];
+  C1[3] = A1[1]*B1[2] - A1[2]*B1[1];
 
   return C;
 }
@@ -927,6 +937,36 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
+
+/* Return the Kronecker Product of matrix ``A`` and matrix ``B``.
+   If the size of A is ``x * y`` and of B is ``a * b`` then size of the resulting
+   matrix will be ``(x * a) * (y * b)`` */
+proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
+  if ADom.rank != 2 || BDom.rank != 2 then compilerError("Rank size not 2");
+
+  const (rowA, colA) = A.shape;
+  const (rowB, colB) = B.shape;
+
+  const A1Dom = {1..rowA, 1..colA},
+        B1Dom = {1..rowB, 1..colB};
+
+  // Reindex to ensure 1-based indices
+  ref A1 = A.reindex(A1Dom),
+      B1 = B.reindex(B1Dom);
+
+  var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
+
+  forall (i, j) in A1Dom {
+    const stR = (i-1)*rowB,
+          stC = (j-1)*colB;
+    for (k, l) in B1Dom {
+      C[stR+k, stC+l] = A1[i, j]*B1[k, l];
+    }
+  }
+  return C;
+}
+
+
 //
 // Type helpers
 //
@@ -1002,18 +1042,18 @@ module Sparse {
   use LayoutCS;
 
   /* Return an empty CSR domain over parent domain:
-     ``{0..#rows, 0..#rows}``
+     ``{1..rows, 1..rows}``
    */
   proc CSRDomain(rows) where isIntegral(rows) {
     if rows <= 0 then halt("Matrix dimensions must be > 0");
-    return CSRDomain(0..#rows, 0..#rows);
+    return CSRDomain(1..rows, 1..rows);
   }
 
 
-  /* Return an empty CSR domain  over parent domain: ``{0..#rows, 0..#cols}``*/
+  /* Return an empty CSR domain  over parent domain: ``{1..rows, 1..cols}``*/
   proc CSRDomain(rows, cols) where isIntegral(rows) && isIntegral(cols) {
     if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
-    return CSRDomain(0..#rows, 0..#cols);
+    return CSRDomain(1..rows, 1..cols);
   }
 
 

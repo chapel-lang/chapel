@@ -22,7 +22,7 @@ iter allFoo(param tag:iterKind, followThis) ref where tag == iterKind.follower {
 }
 
 forall f in allFoo() do f.x = 1;
-writeln(A[1]); // Should print 1s, but doesn't!!
+writeln(A[1]); // Should print 1s
 
 for f in allFoo() do f.x = 2;
 writeln(A[1]); // Prints 2s as expected

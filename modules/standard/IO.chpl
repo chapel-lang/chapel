@@ -371,23 +371,6 @@ strings passed to fopen() in C:
 
 However, open() in Chapel does not necessarily invoke fopen().
 
-Bytes Type
-----------
-
-A :record:`Buffers.bytes` object is just some data in memory along with a
-size. Bytes objects are reference counted, and the memory will be freed when
-nothing refers to the bytes object any more.
-
-
-Buffers
--------
-
-A :record:`Buffers.buffer` stores some number subsections of bytes objects.
-It is efficient to go to a particular offset in a buffer, and to push or pop
-bytes objects from the beginning or end of a buffer.
-
-Buffers are used internally in each channel.
-
 IO Functions and Types
 ----------------------
 
@@ -948,6 +931,8 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):syserr;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int):syserr;
+
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
 private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
@@ -1945,16 +1930,6 @@ record channel {
   var _readWriteThisFromLocale:locale;
 }
 
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: channel) {
-  on x.home {
-    qio_channel_retain(x._channel_internal);
-  }
-  return x;
-}
-
 pragma "no doc"
 proc =(ref ret:channel, x:channel) {
   // retain -- release
@@ -1971,7 +1946,54 @@ proc =(ref ret:channel, x:channel) {
 }
 
 pragma "no doc"
-proc channel.channel(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
+}
+
+pragma "no doc"
+proc channel.init(x: channel) {
+  this.writing = x.writing;
+  this.kind = x.kind;
+  this.locking = x.locking;
+  this.home = x.home;
+  this._channel_internal = x._channel_internal;
+  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  super.init();
+  on x.home {
+    qio_channel_retain(x._channel_internal);
+  }
+}
+
+//
+// Note that this is effectively the initializer that the compiler
+// would typically provide and that, by providing the next initializer
+// below, we have to write it out manually...  A good case for having
+// a means to "opt-in" to including the compiler-provided initializer?
+//
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
+                  home: locale, _channel_internal:qio_channel_ptr_t,
+                  _readWriteThisFromLocale: locale) {
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  this.home = home;
+  this._channel_internal = _channel_internal;
+  this._readWriteThisFromLocale = _readWriteThisFromLocale;
+  super.init();
+}
+
+pragma "no doc"
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+  // Note that once issue #7960 is resolved, the following could become a
+  // call to this.init(writing, kind, locking)...
+  this.writing = writing;
+  this.kind = kind;
+  this.locking = locking;
+  super.init();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
@@ -2228,6 +2250,29 @@ proc channel.advance(amount:int(64)) throws {
     this.unlock();
   }
 }
+
+pragma "no doc"
+proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
+  on this.home {
+    try! this.lock();
+    error = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    this.unlock();
+  }
+}
+
+/*
+   Reads until ``byte`` is found and then leave the channel offset
+   just after it. If that byte is never found, raises an EOFError.
+ */
+proc channel.advancePastByte(byte:uint(8)) throws {
+  on this.home {
+    try! this.lock();
+    var err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    if err then try this._ch_ioerror(err, "in advanceToByte");
+    this.unlock();
+  }
+}
+
 
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably

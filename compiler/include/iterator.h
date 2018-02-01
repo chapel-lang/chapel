@@ -19,6 +19,7 @@
 
 #ifndef _ITERATOR_H_
 #define _ITERATOR_H_
+#include "symbol.h"
 #include "vec.h"
 
 class BaseAST;
@@ -51,6 +52,9 @@ public:
   FnSymbol*      getValue;
   FnSymbol*      init;
   FnSymbol*      incr;
+
+  Type*          yieldedType;
+  RetTag         iteratorRetTag;
 };
 
 CallExpr* isSingleLoopIterator(FnSymbol* fn, Vec<BaseAST*>& asts);

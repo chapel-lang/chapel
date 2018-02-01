@@ -74,10 +74,6 @@ void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   }
 }
 
-Expr* CatchStmt::getFirstChild() {
-  return _body;
-}
-
 Expr* CatchStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();
