@@ -106,7 +106,7 @@ module ChapelError {
     }
 
     proc message() {
-      return "illegal argument '" + arg_name + ': ' + arg_info;
+      return "illegal argument '" + arg_name + "': " + arg_info;
     }
   }
 
