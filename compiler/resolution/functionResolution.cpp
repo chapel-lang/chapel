@@ -5687,6 +5687,9 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   if (at->initializerStyle == DEFINES_INITIALIZER) {
     retval = true;
 
+  } else if (at->wantsDefaultInitializer() == true) {
+    retval = true;
+
   } else if (di != NULL && strcmp(di->name, "init") == 0) {
     retval = true;
   }
