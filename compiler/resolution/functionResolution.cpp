@@ -7532,9 +7532,11 @@ static void resolveAutoCopyEtc(AggregateType* at) {
       VarSymbol* tmp   = newTemp(at);
       CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-      resolveUninsertedCall(at, call);
+      FnSymbol* fn = resolveUninsertedCall(at, call);
+      INT_ASSERT(fn);
+      resolveFunction(fn);
 
-      at->setDestructor(call->resolvedFunction());
+      at->setDestructor(fn);
     }
   }
 
