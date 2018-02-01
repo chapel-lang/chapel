@@ -27,7 +27,7 @@ proc main() {
   //
   // Build the long-lived tree.
   //
-  var llTree: Tree; 
+  var llTree: Tree;
 
   cobegin with (ref llTree) {
     llTree = new Tree(maxDepth);
@@ -41,7 +41,7 @@ proc main() {
       forall depth in dynamic(depths) {
         const iterations = 2**(maxDepth - depth + minDepth);
         var sum = 0;
-        
+
         for i in 1..iterations {
           const t = new Tree(depth);
           sum += t.sum();
@@ -49,7 +49,7 @@ proc main() {
         }
         stats[depth] = (iterations, sum);
       }
-      
+
       //
       // Print out the stats for the trees of varying depths.
       //
@@ -58,7 +58,7 @@ proc main() {
                 stats[depth](2));
     }
   }
-    
+
   //
   // Checksum the long-lived tree, print its stats, and free it.
   //
