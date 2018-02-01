@@ -111,6 +111,8 @@ static void resolveInitCall(CallExpr* call) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
+    printf("breaking on resolve call %d:\n", call->id);
+    print_view(call);
     gdbShouldBreakHere();
   }
 
