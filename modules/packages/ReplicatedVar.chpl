@@ -22,7 +22,7 @@ Support for user-level replicated variables.
 
 A "replicated" variable is a variable for which there is a copy on each locale.
 Referencing a replicated variable
-(in a stylized way, see :ref:`below <basic-usage>`)
+(in a stylized way, see :ref:`below <ReplicatedVar_basic-usage>`)
 accesses its copy on the current locale.
 
 Features:
@@ -44,7 +44,7 @@ Limitations:
 
    var replArray: [MyDomain dmapped Replicated()] real;
 
-.. _basic-usage:
+.. _ReplicatedVar_basic-usage:
 
 -------------------------------
 How to use replicated variables
@@ -72,7 +72,7 @@ How to use replicated variables
     // access directly a remote copy on the locale 'remoteLoc' (read or write)
     ... rcRemote(myRepVar, remoteLoc) ...
 
-.. _subset-of-locales:
+.. _ReplicatedVar_subset-of-locales:
 
 ------------------------------------
 Replicating over a subset of locales
@@ -102,12 +102,12 @@ use ReplicatedDist;
 
 private const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,
-   as shown :ref:`above <subset-of-locales>`. */
+   as shown :ref:`above <ReplicatedVar_subset-of-locales>`. */
 const rcDomainBase = {rcDomainIx..rcDomainIx};
 private const rcLocales    = Locales;
 private const rcDomainMap  = new Replicated(rcLocales);
 /* Use this domain to declare a user-level replicated variable,
-   as shown :ref:`above <basic-usage>` . */
+   as shown :ref:`above <ReplicatedVar_basic-usage>` . */
 const rcDomain     = rcDomainBase dmapped new dmap(rcDomainMap);
 private param _rcErr1 = " must be 'rcDomain' or 'rcDomainBase dmapped Replicated(an array of locales)'";
 
