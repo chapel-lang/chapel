@@ -240,7 +240,7 @@ static void libfabric_init() {
   // memory layer hasn't been initialized, need to use the system allocator
 #include "chpl-mem-no-warning-macros.h"
 #ifdef CHPL_COMM_SUBSTRATE_SOCKETS
-  hints->fabric_attr->prov_name = strdup("sockets");
+  hints->fabric_attr->prov_name = "sockets";
 #else
 #ifdef CHPL_COMM_SUBSTRATE_GNI
 #error "Substrate GNI not supported"
