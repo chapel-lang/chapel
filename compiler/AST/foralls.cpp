@@ -670,8 +670,7 @@ static void resolveParallelIteratorAndIdxVar(ForallStmt* pfs,
                                         origIterator, alreadyResolved);
   VarSymbol* idxVar = parIdxVar(pfs);
 
-  if (idxVar->id == breakOnResolveID)
-    gdbShouldBreakHere();
+  if (idxVar->id == breakOnResolveID) gdbShouldBreakHere();
   idxVar->type = iType.type();
   idxVar->qual = iType.getQual();
 }

@@ -305,8 +305,8 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
 void resolveFunction(FnSymbol* fn) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
-      printf("breaking on resolve fn:\n");
-      print_view(fn);
+      printf("breaking on resolve fn %s[%d] (%d args)\n",
+             fn->name, fn->id, fn->numFormals());
       gdbShouldBreakHere();
     }
 

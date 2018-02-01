@@ -2040,7 +2040,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   FnSymbol* retval = NULL;
 
   if (call->id == breakOnResolveID) {
-    printf("breaking on resolve call:\n");
+    printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
     gdbShouldBreakHere();
   }
