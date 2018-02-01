@@ -39,7 +39,6 @@ scalarReplace :
 refPropagation :
 copyPropagation :
 deadCodeElimination :
-removeWrapRecords :
 removeEmptyRecords :
 localizeGlobals :
 loopInvariantCodeMotion :
