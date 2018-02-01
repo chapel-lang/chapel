@@ -5,31 +5,30 @@ iter pariter(param tag) { for i in 6..7 do yield i*111; }
 
 proc test(arg) {
   writeln("test of ", arg);
+
   for s1 in seriter() {
     forall p1 in pariter() {
+      writeln(s1);
       if p1 == 666 then continue;
       writeln(p1);
     }
   }
 
+  writeln("---");
+
   label named
     for s2 in seriter() {
       forall p2 in pariter() {
-        writeln(s2);
-        if s2 == 22 then
-          continue named;
-        writeln("p2");
-        if s2 == 33 then
-          break named;
-        writeln("after break");
+        writeln(s2,p2);
+        continue;
       }
     }
 
-  var l$: sync int = 1;
+  writeln("---");
+
   forall p3 in pariter() {
-    const p3n = l$;
     for s3 in seriter() {
-      writeln(p3n);
+      writeln(p3);
       if s3 == 22 then
         continue;
       writeln(s3);
@@ -37,7 +36,6 @@ proc test(arg) {
         break;
       writeln("after break");
     }
-    l$ = p3n + 1;
   }
 
   writeln("done");
