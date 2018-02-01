@@ -524,10 +524,6 @@ void SymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
   INT_FATAL(this, "Unexpected case in SymExpr::replaceChild");
 }
 
-Expr* SymExpr::getFirstChild() {
-  return NULL;
-}
-
 Expr* SymExpr::getFirstExpr() {
   return this;
 }
@@ -645,10 +641,6 @@ UnresolvedSymExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
 }
 
 
-Expr* UnresolvedSymExpr::getFirstChild() {
-  return NULL;
-}
-
 Expr* UnresolvedSymExpr::getFirstExpr() {
   return this;
 }
@@ -718,10 +710,6 @@ DefExpr::DefExpr(Symbol* initSym, BaseAST* initInit, BaseAST* initExprType) :
     INT_FATAL(this, "DefExpr of ArgSymbol cannot have either exprType or init");
 
   gDefExprs.add(this);
-}
-
-Expr* DefExpr::getFirstChild() {
-  return NULL;
 }
 
 Expr* DefExpr::getFirstExpr() {
@@ -882,10 +870,6 @@ void ContextCallExpr::prettyPrint(std::ostream* o) {
   *o << " )";
 }
 
-Expr* ContextCallExpr::getFirstChild() {
-  return options.head;
-}
-
 Expr* ContextCallExpr::getFirstExpr() {
   return options.head->getFirstExpr();
 }
@@ -1042,11 +1026,6 @@ void ForallExpr::accept(AstVisitor* visitor) {
   INT_FATAL(this, "ForallExpr::accept() is not implemented");
 }
 
-Expr* ForallExpr::getFirstChild() {
-  INT_FATAL(this, "ForallExpr::getFirstChild() is not implemented");
-  return NULL;
-}
-
 Expr* ForallExpr::getFirstExpr() {
   INT_FATAL(this, "ForallExpr::getFirstExpr() is not implemented");
   return NULL;
@@ -1065,10 +1044,6 @@ NamedExpr::NamedExpr(const char* init_name, Expr* init_actual) :
   gNamedExprs.add(this);
 }
 
-
-Expr* NamedExpr::getFirstChild() {
-  return (actual != NULL) ? actual : NULL ;
-}
 
 Expr* NamedExpr::getFirstExpr() {
   return (actual != NULL) ? actual->getFirstExpr() : this;

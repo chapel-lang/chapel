@@ -39,7 +39,6 @@ public:
 
   void                accept(AstVisitor* visitor);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr*               getFirstChild();
   Expr*               getFirstExpr();
   Expr*               getNextExpr(Expr* expr);
   void                verify();

@@ -57,7 +57,6 @@ public:
 
   void                accept(AstVisitor* visitor);
   void                replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr*               getFirstChild();
   Expr*               getFirstExpr();
   void                verify();
   GenRet              codegen();

@@ -137,10 +137,6 @@ GenRet ForallStmt::codegen() {
   return ret;
 }
 
-Expr* ForallStmt::getFirstChild() {
-  return fIterVars.head;
-}
-
 Expr* ForallStmt::getFirstExpr() {
   if (Expr* iv = fIterVars.head->getFirstExpr())
     return iv;

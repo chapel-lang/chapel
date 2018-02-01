@@ -48,8 +48,6 @@ public:
   virtual Expr*   copy(SymbolMap* map = NULL, bool internal = false)   = 0;
   virtual void    replaceChild(Expr* old_ast, Expr* new_ast)           = 0;
 
-  virtual Expr*   getFirstChild()                                      = 0;
-
   virtual Expr*   getFirstExpr()                                       = 0;
   virtual Expr*   getNextExpr(Expr* expr);
 
@@ -115,8 +113,6 @@ public:
 
   virtual GenRet  codegen();
 
-  virtual Expr*   getFirstChild();
-
   virtual Expr*   getFirstExpr();
 
   const char*     name()                               const;
@@ -152,8 +148,6 @@ class SymExpr : public Expr {
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
 
-  virtual Expr*   getFirstChild();
-
   virtual Expr*   getFirstExpr();
 
   Symbol* symbol() {
@@ -178,8 +172,6 @@ class UnresolvedSymExpr : public Expr {
   virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream *o);
-
-  virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
 };
@@ -228,7 +220,6 @@ public:
   virtual GenRet         codegen();
   virtual void           prettyPrint(std::ostream* o);
 
-  virtual Expr*          getFirstChild();
   virtual Expr*          getFirstExpr();
 
   void                   setRefValueConstRefOptions(CallExpr* refCall,
@@ -279,7 +270,6 @@ public:
   virtual void    accept(AstVisitor* visitor);
   virtual GenRet  codegen();
 
-  virtual Expr*   getFirstChild();
   virtual Expr*   getFirstExpr();
 };
 
@@ -300,8 +290,6 @@ class NamedExpr : public Expr {
   virtual QualifiedType qualType();
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
-
-  virtual Expr*   getFirstChild();
 
   virtual Expr*   getFirstExpr();
 };
