@@ -33,7 +33,7 @@ proc main(args: [] string) {
         // Scan forward until we get to the > (end of sequence)
         input.advancePastByte(ascii(">"));
         nextDescOffset = input._offset();
-      } catch e:UnexpectedEOFError {
+      } catch e:EOFError {
         eof = true;
         nextDescOffset = len;
       }
