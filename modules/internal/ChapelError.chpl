@@ -86,6 +86,30 @@ module ChapelError {
     }
   }
 
+  class IllegalArgumentError : Error {
+    var arg_name: string;
+    var arg_info: string;
+
+    proc init() {
+      super.init();
+    }
+
+    proc init(_arg_name: string) {
+      this.arg_name = _arg_name;
+      super.init();
+    }
+
+    proc init(_arg_name: string, _arg_info: string) {
+      this.arg_name = _arg_name;
+      this.arg_info = _arg_info;
+      super.init();
+    }
+
+    proc message() {
+      return "illegal argument '" + arg_name + "': " + arg_info;
+    }
+  }
+
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors

@@ -81,6 +81,7 @@
 module Crypto {
 
   use C_OpenSSL;
+  use SysError;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -780,15 +781,15 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
+    proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer throws {
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        halt("Blowfish cipher expects an IV of size 8 bytes.");
+        throw new IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
       }
 
       if (keyLen < 10) {
-        halt("Blowfish cipher expects a key of size greater than 10 bytes.");
+        throw new IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
@@ -824,12 +825,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   }
 
   pragma "no doc"
-  proc createRandomBuffer(buffLen: int) {
+  proc createRandomBuffer(buffLen: int) throws {
     var buff: [0..#buffLen] uint(8);
     var retErrCode: c_int;
     retErrCode = RAND_bytes(c_ptrTo(buff): c_ptr(c_uchar), buffLen: c_int);
     if (!retErrCode) {
-      halt("The random buffer generator has failed to initialize a buffer.");
+      throw SystemError.fromSyserr(retErrCode);
     }
     return buff;
   }
@@ -860,11 +861,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc createRandomBuffer(buffLen: int): CryptoBuffer {
+    proc createRandomBuffer(buffLen: int): CryptoBuffer throws {
       if (buffLen < 1) {
-        halt("Invalid random buffer length specified.");
+        throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
-      var randomizedBuff = createRandomBuffer(buffLen);
+      var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
       return randomizedCryptoBuff;
     }
@@ -1005,7 +1006,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
 
     pragma "no doc"
-    proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) {
+    proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) throws {
 
       var ctx: EVP_CIPHER_CTX;
       EVP_CIPHER_CTX_init(ctx);
@@ -1026,7 +1027,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        halt("The RSAKey is an invalid match");
+        throw new IllegalArgumentError("key", "The RSAKey is an invalid match.");
       }
 
       var plaintextLen = ciphertext.size;
@@ -1124,12 +1125,12 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc decrypt(envp: Envelope, key: RSAKey): CryptoBuffer {
+    proc decrypt(envp: Envelope, key: RSAKey): CryptoBuffer throws {
       var iv = envp.getIV().getBuffData();
       var ciphertext = envp.getEncMessage().getBuffData();
       var encKeys = envp.getEncKeys();
 
-      var plaintext = rsaDecrypt(key, iv, ciphertext, encKeys);
+      var plaintext = try rsaDecrypt(key, iv, ciphertext, encKeys);
       var plaintextBuff = new CryptoBuffer(plaintext);
       return plaintextBuff;
     }
