@@ -1,0 +1,10 @@
+bug: default initializers with arrays using sparse domains get errors
+
+An array field with a sparse domain that is stored as another field gets the
+error "sparse arrays can't be zippered with anything other than their domains
+and sibling arrays" when we try to set its initial value using the default
+initializer's default value for the argument.
+
+This issue is regardless of whether the domain field was declared concrete or
+generic (though it was originally found in the case where the domain field was
+generic).
