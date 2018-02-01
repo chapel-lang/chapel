@@ -110,6 +110,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/OwnedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
+	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/SharedObject.chpl \
 	packages/Sort.chpl \
