@@ -129,7 +129,7 @@ module LinearAlgebra {
 
 use Norm; // TODO -- merge Norm into LinearAlgebra
 use BLAS;
-// use LAPACK; // TODO -- Use LAPACK routines
+use LAPACK;
 
 // TODO: compilerError if matrices are distributed
 
@@ -935,6 +935,133 @@ proc trace(A: [?D] ?eltType) {
     trace += A[i, i];
   }
   return trace;
+}
+
+/* Type to choose which triangle of a matrix is desired */
+enum lowerOrUpper {
+  lower,
+  upper
+}
+
+
+/* Perform a Cholesky factorization on matrix `A`.  `A` must be square.
+   Argument `uplo` indicates whether to return the lower or upper triangular
+   factor.  Matrix `A` is not modified.
+ */
+proc cholesky(A: [] ?t, uplo = lowerOrUpper.lower) where A.rank == 2 &&
+                                                         (isRealType(t) ||
+                                                          isComplexType(t)) {
+  assert(A.domain.dim(1) == A.domain.dim(2));
+  var copy = A;
+  const uploStr = if uplo == lowerOrUpper.lower then "L" else "U";
+  potrf(lapack_memory_order.row_major, uploStr, copy);
+
+  // tril and triu make/return an extra copy.  Should we zero the unused
+  // triangle of the array manually instead to avoid the copy?
+  return if uplo == lowerOrUpper.lower then tril(copy) else triu(copy);
+}
+
+
+/* Type to choose which eigenvectors to compute in the `eigvals` function. */
+enum EigenVecType {
+  none,
+  left,
+  right,
+  both
+}
+
+/* Find the eigenvalues of matrix `A`. `A` must be square.  If `rl` is
+   `EigenVecType.none` (default) then no eigenvectors are computed and
+   just the eigenvalues are returned. If `rl` is `EigenVecType.left` then
+   the "left" eigenvectors are computed, and a tuple containing
+   `(eigenvalues, leftEigenvectors)` is returned. If `rl` is 
+   `EigenVecType.right` then the "right" eigenvectors are computed, and
+   a tuple containing `(eigenvalues, rightEigenvectors)` is returned.
+   If `rl` is `EigenVecType.both` then both "left" and "right" eigenvectors
+   are computed, and a tuple conaining
+   `(eigenvalues, leftEigenvectors, rightEigenvectors)` is returned.
+   
+ */
+proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
+  where isRealType(t) && A.domain.rank == 2 {
+
+  proc convertToCplx(wr: [] t, wi: [] t) {
+    const n = wi.numElements;
+    var eigVals: [1..n] complex(numBits(t)*2);
+    forall (rv, re, im) in zip(eigVals, wr, wi) {
+      rv = (re, im): complex(numBits(t)*2);
+    }
+    return eigVals;
+  }
+
+  proc flattenCplxEigenVecs(wi: [] t, vec: [] t) {
+    const n = wi.numElements;
+    var cplx: [1..n, 1..n] complex(numBits(t)*2);
+
+    var skipNext = false;
+    for j in 1..n {
+      if skipNext {
+        skipNext = false;
+        continue;
+      }
+
+      // if the imaginary part of the eigenvalue is zero, column j of
+      // vec stores the corresponding eigenvector.  If it is not zero
+      // then column j stores the real part and j+1 stores the imaginary
+      // part.  In this case, the next (j+1) eigenvector is the complex
+      // conjugate of the current (j) eigenvector, so compute it now and
+      // skip the next loop iteration.
+      if wi[j] == 0.0 {
+        cplx[.., j] = vec[.., j];
+      } else {
+        skipNext = true;
+        cplx[.., j  ] = vec[.., j] + 1.0i*vec[.., j+1];
+        cplx[.., j+1] = vec[.., j] - 1.0i*vec[.., j+1];
+      }
+    }
+    return cplx;
+  }
+
+  const n = A.domain.dim(1).length;
+  assert(A.domain.dim(1) == A.domain.dim(2));
+  var copy = A;
+  var wr, wi: [1..n] t;
+
+  if  rl == EigenVecType.none {
+    var vl, vr: [1..1, 1..n] t;
+    geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
+    var eigVals = convertToCplx(wr, wi);
+    return eigVals;
+  } else if rl == EigenVecType.left {
+    var vl: [1..n, 1..n] t;
+    var vr: [1..1, 1..n] t;
+    geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
+
+    var eigVals = convertToCplx(wr, wi);
+    var vlcplx = flattenCplxEigenVecs(wi, vl);
+
+    return (eigVals, vlcplx);
+  } else if rl == EigenVecType.right {
+    var vl: [1..1, 1..n] t;
+    var vr: [1..n, 1..n] t;
+    geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
+
+    var eigVals = convertToCplx(wr, wi);
+    var vrcplx = flattenCplxEigenVecs(wi, vr);
+
+    return (eigVals, vrcplx);
+  } else {
+    // rl == EigenVecType.both
+    var vl: [1..n, 1..n] t;
+    var vr: [1..n, 1..n] t;
+    geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
+
+    var eigVals = convertToCplx(wr, wi);
+    var vlcplx = flattenCplxEigenVecs(wi, vl);
+    var vrcplx = flattenCplxEigenVecs(wi, vr);
+
+    return (eigVals, vlcplx, vrcplx);
+  }
 }
 
 
