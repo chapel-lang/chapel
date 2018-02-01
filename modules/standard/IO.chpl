@@ -2251,21 +2251,23 @@ proc channel.advance(amount:int(64)) throws {
   }
 }
 
-// TODO: this advances to just after the requested byte, or returns EEOF
-proc channel.advancePastByte(byte:c_int, ref error:syserr) {
+pragma "no doc"
+proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
   on this.home {
     try! this.lock();
-    error = qio_channel_advance_past_byte(false, _channel_internal, byte);
+    error = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
     this.unlock();
   }
 }
 
-// documented with the error= version
-pragma "no doc"
-proc channel.advancePastByte(byte:c_int) throws {
+/*
+   Reads until ``byte`` is found and then leave the channel offset
+   just after it. If that byte is never found, raises an EOFError.
+ */
+proc channel.advancePastByte(byte:uint(8)) throws {
   on this.home {
     try! this.lock();
-    var err = qio_channel_advance_past_byte(false, _channel_internal, byte);
+    var err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
     if err then try this._ch_ioerror(err, "in advanceToByte");
     this.unlock();
   }
