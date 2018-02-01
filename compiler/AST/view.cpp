@@ -868,13 +868,13 @@ void vec_view(std::vector<Symbol*>* vec) {
 }
 
 void vec_view(std::vector<Symbol*>& vec) {
-  printf("vector<Symbol> %ld elm(s)\n", vec.size());
-  for (size_t i = 0; i < vec.size(); i++) {
+  printf("vector<Symbol> %d elm(s)\n", (int)vec.size());
+  for (int i = 0; i < (int)vec.size(); i++) {
     Symbol* elm = vec[i];
     if (elm)
-      printf("%3ld %8d  %s\n", i, elm->id, elm->name);
+      printf("%3d %8d  %s\n", i, elm->id, elm->name);
     else
-      printf("%3ld <null>\n", i);
+      printf("%3d <null>\n", i);
   }
 }
 
