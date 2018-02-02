@@ -5,7 +5,7 @@
 LAPACKFLAGS = $(CFLAGS) $(LDFLAGS) -llapack -lblas
 CHPLFLAGS += --ccflags -Wno-enum-conversion -sisBLAS_MKL=true
 
-all: correctness test_identities1 testEigen
+all: correctness test_identities1 testEigen testCholesky
 
 correctness: correctness.chpl
 	chpl $< ${LAPACKFLAGS} ${CHPLFLAGS} -o $@
