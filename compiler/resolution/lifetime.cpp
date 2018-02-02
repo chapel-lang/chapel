@@ -179,6 +179,18 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 
 void checkLifetimes(void) {
 
+  // This makes the default for methods to return the scope
+  // of this (vs something else).
+  // Does it pass testing? yes.
+  // Note though the within-method checks might not be optimal here...
+  /*forv_Vec(FnSymbol, fn, gFnSymbols) {
+    fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
+    if (fn->isMethod()) {
+      if (!fn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
+        fn->addFlag(FLAG_RETURN_SCOPE_THIS);
+    }
+  }*/
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
     if (shouldCheckLifetimesInFn(fn)) {
@@ -1368,6 +1380,10 @@ static bool isLifetimeShorter(Lifetime a, Lifetime b) {
   if (a.infinite) // a infinite, b infinite or not
     return false;
   else if (b.infinite) // a not infinite, b infinite
+    return true;
+  if (a.returnScope && !b.returnScope) // a return scope, b not
+    return false;
+  else if (!a.returnScope && b.returnScope) // a not return scope, b is
     return true;
   else if (a.fromSymbolReachability == b.fromSymbolReachability)
     return false;
