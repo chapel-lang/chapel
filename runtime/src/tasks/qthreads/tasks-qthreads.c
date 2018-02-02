@@ -50,6 +50,7 @@
 #include "tasks-qthreads.h"
 
 #include "qthread.h"
+#include "qthread/qthread.h"
 #include "qthread/qtimer.h"
 #include "qthread-chapel.h"
 
@@ -729,6 +730,9 @@ void chpl_task_init(void)
             perror("Could not register SIGINT handler");
         }
     }
+
+    qthread_registerOnPark(chpl_qsbr_blocked);
+    qthread_registerOnUnpark(chpl_qsbr_unblocked);
 }
 
 void chpl_task_exit(void)
@@ -800,15 +804,11 @@ static aligned_t chapel_wrapper(void *arg)
 
     *tls = pv;
 
-    // Increment # of tasks
-    chpl_qsbr_onTaskCreation();
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (bundle->requested_fn)(arg);
 
-    // Decrement # of tasks
     wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
-    chpl_qsbr_onTaskDestruction();
 
     return 0;
 }
