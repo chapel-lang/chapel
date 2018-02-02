@@ -27,31 +27,37 @@ proc main() {
   //
   // Build the long-lived tree.
   //
-  const llTree = new Tree(maxDepth);
+  var llTree: Tree;
 
-  //
-  // Iterate over the depths in parallel, dynamically assigning them
-  // to tasks.  At each depth, create the required trees, compute
-  // their sums, and free them.
-  //
-  forall depth in dynamic(depths, chunkSize=1) {
-    const iterations = 2**(maxDepth - depth + minDepth);
-    var sum = 0;
-			
-    for i in 1..iterations {
-      const t = new Tree(depth);
-      sum += t.sum();
-      delete t;
+  cobegin with (ref llTree) {
+    llTree = new Tree(maxDepth);
+
+    {
+      //
+      // Iterate over the depths in parallel, dynamically assigning them
+      // to tasks.  At each depth, create the required trees, compute
+      // their sums, and free them.
+      //
+      forall depth in dynamic(depths) {
+        const iterations = 2**(maxDepth - depth + minDepth);
+        var sum = 0;
+
+        for i in 1..iterations {
+          const t = new Tree(depth);
+          sum += t.sum();
+          delete t;
+        }
+        stats[depth] = (iterations, sum);
+      }
+
+      //
+      // Print out the stats for the trees of varying depths.
+      //
+      for depth in depths do
+        writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
+                stats[depth](2));
     }
-    stats[depth] = (iterations, sum);
   }
-
-  //
-  // Print out the stats for the trees of varying depths.
-  //
-  for depth in depths do
-    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-            stats[depth](2));
 
   //
   // Checksum the long-lived tree, print its stats, and free it.
@@ -65,20 +71,16 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const left, right: Tree;
+  var left, right: Tree;
 
   //
   // A Tree-building initializer
   //
   proc init(depth) {
-    var l, r: Tree;
     if depth > 0 {
-      l = new Tree(depth-1);
-      r = new Tree(depth-1);
+      left  = new Tree(depth-1);
+      right = new Tree(depth-1);
     }
-    left  = l;
-    right = r;
-    super.init();
   }
 
   //

@@ -149,11 +149,6 @@ GenRet ForallStmt::codegen() {
   return ret;
 }
 
-Expr* ForallStmt::getFirstChild() {
-  return fIterVars.head;
-}
-
-// wass printfs
 Expr* ForallStmt::getFirstExpr() {
 //wass  printf("fs %d   >>> fIterVars.head %d\n", this->id, fIterVars.head->id);
   return fIterVars.head->getFirstExpr();
@@ -444,6 +439,8 @@ static void adjustReduceOpNames(ForallStmt* fs) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered)
 {
+  checkControlFlow(body, "forall statement");
+
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndices(indices);

@@ -68,7 +68,6 @@ void readExternC();
 void refPropagation();
 void removeEmptyRecords();
 void removeUnnecessaryAutoCopyCalls();
-void removeWrapRecords();
 void replaceArrayAccessesWithRefTemps();
 void resolve();
 void resolveIntents();

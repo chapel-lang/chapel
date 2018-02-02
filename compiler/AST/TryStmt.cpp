@@ -97,10 +97,6 @@ void TryStmt::replaceChild(Expr* old_ast, Expr* new_ast) {
   // catches are handled automatically (AList)
 }
 
-Expr* TryStmt::getFirstChild() {
-  return _body;
-}
-
 Expr* TryStmt::getFirstExpr() {
   if (_body) {
     return _body->getFirstExpr();

@@ -30,7 +30,6 @@ OPTIMIZATIONS_SRCS = \
 	removeEmptyRecords.cpp \
 	removeUnnecessaryAutoCopyCalls.cpp \
 	removeUnnecessaryGotos.cpp \
-	removeWrapRecords.cpp \
 	replaceArrayAccessesWithRefTemps.cpp \
 	scalarReplace.cpp
 

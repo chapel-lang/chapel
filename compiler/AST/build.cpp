@@ -26,15 +26,11 @@
 #include "config.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "expr.h"
 #include "files.h"
 #include "ForLoop.h"
 #include "ParamForLoop.h"
 #include "parser.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
-#include "type.h"
 #include "TryStmt.h"
 #include "wellknown.h"
 
@@ -46,8 +42,7 @@ static void buildSerialIteratorFn(FnSymbol* fn, const char* iteratorName,
                                   Expr* expr, Expr* cond, Expr* indices,
                                   bool zippered, Expr*& stmt);
 
-static void
-checkControlFlow(Expr* expr, const char* context) {
+void checkControlFlow(Expr* expr, const char* context) {
   Vec<const char*> labelSet; // all labels in expr argument
   Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
   Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
@@ -108,7 +103,15 @@ checkControlFlow(Expr* expr, const char* context) {
       if (gs->gotoTag == GOTO_BREAK) {
         USR_FATAL_CONT(gs, "break is not allowed in %s", context);
       } else if (gs->gotoTag == GOTO_CONTINUE) {
-        USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+        // see also resolveGotoLabels() -> handleForallGoto()
+        if (!strcmp(context, "forall statement")) {
+          if (!strcmp(gs->getName(), "nil"))
+            ; // plain 'continue' is OK in a forall
+          else
+            USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
+        } else {
+          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+        }
       } else {
         USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
       }

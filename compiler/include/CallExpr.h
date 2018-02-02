@@ -77,14 +77,11 @@ public:
 
   virtual void    accept(AstVisitor* visitor);
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-
   virtual GenRet  codegen();
   virtual void    prettyPrint(std::ostream* o);
   virtual QualifiedType qualType();
 
-  virtual Expr*   getFirstChild();
-
+  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
   virtual Expr*   getFirstExpr();
   virtual Expr*   getNextExpr(Expr* expr);
 

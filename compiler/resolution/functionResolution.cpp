@@ -2040,7 +2040,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, bool checkOnly) {
   FnSymbol* retval = NULL;
 
   if (call->id == breakOnResolveID) {
-    printf("breaking on resolve call:\n");
+    printf("breaking on resolve call %d:\n", call->id);
     print_view(call);
     gdbShouldBreakHere();
   }
@@ -5687,6 +5687,9 @@ static bool resolveNewHasInitializer(AggregateType* at) {
   bool      retval = false;
 
   if (at->initializerStyle == DEFINES_INITIALIZER) {
+    retval = true;
+
+  } else if (at->wantsDefaultInitializer() == true) {
     retval = true;
 
   } else if (di != NULL && strcmp(di->name, "init") == 0) {

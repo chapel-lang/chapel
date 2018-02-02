@@ -539,12 +539,18 @@ static void handleLoopStmtGoto(LoopStmt* loop, GotoStmt* gs) {
   }
 }
 
+/*
+Note that break and continue statements that are placed incorrectly
+inside a forall loop are flagged by checkControlFlow() during parsing.
+This includes 'continue' to a named loop outside of the forall,
+which the code here would not catch.
+*/
 static void handleForallGoto(ForallStmt* forall, GotoStmt* gs) {
   if (gs->gotoTag == GOTO_BREAK) {
-    USR_FATAL_CONT(gs, "'break' is not allowed in forall loops");
-    USR_PRINT(forall, "the enclosing forall loop is here");
+    INT_ASSERT(false);
 
   } else if (gs->gotoTag == GOTO_CONTINUE) {
+    INT_ASSERT(isSymExpr(gs->label) == true);
     gs->label->replace(new SymExpr(forall->continueLabel()));
 
   } else {

@@ -1217,7 +1217,8 @@ type $T_F$ if any of the following conditions hold:
 \index{functions!resolution!most specific}
 
 Given two functions $F_1$ and $F_2$, the more specific function is
-determined by the following steps:
+determined by the first of the following steps that applies:
+
 \begin{itemize}
 \item If $F_1$ does not require promotion and $F_2$ does require promotion, then $F_1$ is more specific.
 \item If $F_2$ does not require promotion and $F_1$ does require promotion, then $F_2$ is more specific.
@@ -1227,24 +1228,51 @@ specific argument mapping} than the corresponding legal argument
 mapping to $F_2$ and none of the legal argument mappings to $F_2$ is a
 more specific argument mapping than the corresponding legal argument
 mapping to $F_1$, then $F_1$ is more specific.
+
 \item
 If at least one of the legal argument mappings to $F_2$ is a {\em more
 specific argument mapping} than the corresponding legal argument
 mapping to $F_1$ and none of the legal argument mappings to $F_1$ is a
 more specific argument mapping than the corresponding legal argument
 mapping to $F_2$, then $F_2$ is more specific.
+
+
 \item If $F_1$ shadows $F_2$, then $F_1$ is more specific.
 \item If $F_2$ shadows $F_1$, then $F_2$ is more specific.
-\item If all \chpl{param} arguments prefer $F_1$ over $F_2$, then $F_1$ is more specific.  In order of preference, a \chpl{param} argument prefers to be passed to (a) a \chpl{param} formal of matching type; (b) a \chpl{param} formal large enough to store the \chpl{param} value; (c) a non-\chpl{param} formal of matching type.
-\item If all \chpl{param} arguments prefer $F_2$ over $F_1$, then $F_2$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_1$ is {\em
+weak preferred} and none of the legal argument mappings to $F_2$ are {\em weak
+preferred}, then $F_1$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_2$ is {\em
+weak preferred} and none of the legal argument mappings to $F_1$ are {\em weak
+preferred}, then $F_2$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_1$ is {\em
+weaker preferred} and none of the legal argument mappings to $F_2$ are
+{\em weaker preferred}, then $F_1$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_2$ is {\em
+weaker preferred} and none of the legal argument mappings to $F_1$ are
+{\em weaker preferred}, then $F_2$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_1$ is {\em
+weakest preferred} and none of the legal argument mappings to $F_2$ are
+{\em weakest preferred}, then $F_1$ is more specific.
+
+\item If at least one of the legal argument mappings to $F_2$ is {\em
+weakest preferred} and none of the legal argument mappings to $F_1$ are
+{\em weakest preferred}, then $F_2$ is more specific.
+
 \item Otherwise neither function is more specific.
 \end{itemize}
 
 Given an argument mapping, $M_1$, from an actual argument, $A$, of
 type $T_A$ to a formal argument, $F1$, of type $T_{F1}$ and an
 argument mapping, $M_2$, from the same actual argument to a formal
-argument, $F2$, of type $T_{F2}$, the more specific argument mapping
-is determined by the following steps:
+argument, $F2$, of type $T_{F2}$, the level of preference for one of
+these argument mappings is determined by the first of the following steps
+that applies:
 \begin{itemize}
 \item
  If $T_{F1}$ and $T_{F2}$ are the same type, $F1$ is an instantiated
@@ -1279,11 +1307,92 @@ is determined by the following steps:
  If $F1$ and $F2$ are both generic, and $F2$ is partially concrete but
  $F1$ is not, then $M_2$ is more specific.
 \item
+  If $F1$ is a \chpl{param} argument but $F2$ is not, then $M_1$ is weak
+  preferred.
+\item
+  If $F2$ is a \chpl{param} argument but $F1$ is not, then $M_2$ is weak
+  preferred.
+\item
+  If $A$ is not a \chpl{param} argument with a default size and $F2$
+  requires a narrowing conversion but $F1$ does not, then $M_1$ is weak
+  preferred.
+\item
+  If $A$ is not a \chpl{param} argument with a default size and $F1$
+  requires a narrowing conversion but $F2$ does not, then $M_2$ is weak
+  preferred.
+
+\item
  If $T_A$ and $T_{F1}$ are the same type and $T_A$ and $T_{F2}$ are
  not the same type, $M_1$ is more specific.
 \item
  If $T_A$ and $T_{F1}$ are not the same type and $T_A$ and $T_{F2}$
  are the same type, $M_2$ is more specific.
+
+\item
+If $A$ uses a scalar promotion type equal to $T_{F1}$ but different
+from $T_{F2}$, then $M_1$ will be preferred as follows:
+
+\begin{itemize}
+  \item if $A$ is a \chpl{param} argument with a default size, then $M_1$
+    is weakest preferred
+  \item if $A$ is a \chpl{param} argument with non-default size, then $M_1$
+    is weaker preferred
+  \item otherwise, $M_1$ is more specific
+\end{itemize}
+
+\item
+If $A$ uses a scalar promotion type equal to $T_{F2}$ but different
+from $T_{F1}$, then $M_2$ will be preferred as follows:
+
+\begin{itemize}
+  \item if $A$ is a \chpl{param} argument with a default size, then $M_2$
+    is weakest preferred
+  \item if $A$ is a \chpl{param} argument with non-default size, then $M_2$
+    is weaker preferred
+  \item otherwise, $M_2$ is more specific
+\end{itemize}
+
+\item
+If $T_A$ or its scalar promotion type prefers conversion to $T_{F1}$
+over conversion to $T_{F2}$, then $M_1$ is weaker preferred.
+
+Type conversion preferences are as follows:
+\begin{itemize}
+  \item
+    Prefer converting a numeric argument to a numeric argument of
+    a different width but the same category
+    over converting to another type. Categories are
+    \begin{itemize}
+      \item
+        bool
+      \item
+        enum
+      \item
+        int or uint
+      \item
+        real
+      \item
+        imag
+      \item
+        complex
+    \end{itemize}
+
+  \item Prefer an enum or bool cast to int over uint
+  \item Prefer an enum or bool cast to a default-sized int or uint over another
+    size of int or uint
+  \item Prefer an enum, bool, int, or uint cast to a default-sized real
+    over another size of real or complex
+  \item Prefer an enum, bool, int, or uint cast to a default-sized
+    complex over another size of complex
+  \item Prefer real/imag cast to the complex with that component size (ie
+    total width of twice the real/imag) over another size of complex
+
+\end{itemize}
+
+\item
+If $T_A$ or its scalar promotion type prefers conversion to $T_{F2}$
+over conversion to $T_{F1}$, then $M_2$ is weaker preferred.
+
 \item
  If $T_{F1}$ is derived from $T_{F2}$, then $M_1$ is more specific.
 \item

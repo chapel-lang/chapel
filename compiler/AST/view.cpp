@@ -28,7 +28,6 @@
 #include "CForLoop.h"
 #include "CatchStmt.h"
 #include "DeferStmt.h"
-#include "expr.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -37,7 +36,6 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
@@ -106,6 +104,15 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
     if (ast == fe->cond)
       return "} if( ";
   }
+  if (ForallStmt* fs = toForallStmt(parentAst)) {
+    if (ast == fs->taskStartup())
+      return "taskStartup ";
+    if (ast == fs->taskTeardown())
+      return "taskTeardown ";
+  }
+  if (isDeferStmt(ast)) {
+    return "defer\n";
+  }
   return NULL;
 }
 
@@ -125,6 +132,17 @@ list_line(Expr* expr, BaseAST* parentAst) {
   return false;
 }
 
+static void print_indent(int indent) {
+  for (int i = 0; i < indent; i++) printf(" ");
+}
+static void print_on_its_own_line(int indent, const char* msg,
+                                  bool newline = true) {
+  if (newline) printf("\n");
+  printf("%6c", ' ');
+  print_indent(indent);
+  printf("%s", msg);
+}
+
 static void
 list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   bool do_list_line = false;
@@ -132,22 +150,23 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      if (expr == pfs->loopBody()) {
-        printf("\n%6c", ' ');
-        for (int i = 0; i < indent; i++) printf(" ");
+      // wass if no taskStartup/TD, see view.cpp as of branch: li ab68383a67
+      if (expr == pfs->taskStartup()) {
         if (pfs->numShadowVars() == 0)
-          printf("with() ");
-        printf("do\n");
-        indent -= 2;
-      } else if (expr->list) {
+          print_on_its_own_line(indent, "with()");
         printf("\n");
+        indent -= 2;
+      } else if (expr == pfs->taskTeardown()) {
+        indent -= 2;
+      } else if (expr == pfs->loopBody()) {
+        print_on_its_own_line(indent, "do\n", false);
+        indent -= 2;
       }
     }
     do_list_line = !parentAst || list_line(expr, parentAst);
     if (do_list_line) {
       printf("%-7d ", expr->id);
-      for (int i = 0; i < indent; i++)
-        printf(" ");
+      print_indent(indent);
     }
     if (const char* expl = forall_explanation_start(ast, parentAst))
       printf("%s", expl);
@@ -168,7 +187,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
     } else if (toCondStmt(ast)) {
       printf("if ");
     } else if (toForallStmt(ast)) {
-      printf("forall");
+      printf("forall\n");
     } else if (CallExpr* e = toCallExpr(expr)) {
       if (e->isPrimitive(PRIM_BLOCK_C_FOR_LOOP))
           is_C_loop = true;
@@ -224,12 +243,17 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       printf("%-7d ", expr->id);
       if (*block_explain)
         indent -= 2;
-      for (int i = 0; i < indent; i++)
-        printf(" ");
+      print_indent(indent);
       if ((parent_C_loop && parent_C_loop->get(3) == expr) || *block_explain)
         printf("} ");
+      else if (isDeferStmt(parentAst))
+        printf("}"); // newline is coming
       else
         printf("}\n");
+      if (isForallLoopBody(expr)) {
+        print_indent(indent);
+        printf("        end forall %d", parentAst->id);
+      }
     } else if (ForallExpr* e = toForallExpr(expr)) {
       if (e->cond) printf(") ");
       else         printf("} ");
@@ -265,18 +289,15 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
       if (cond->condExpr == expr)
         printf("\n");
     } else if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      if (expr == pfs->loopBody()) {
-        indent += 2;
-      } else if (expr == pfs->inductionVariables().tail) {
-        printf("\n%6c", ' ');
-        for (int i = 0; i < indent; i++) printf(" ");
-        printf("in%s", pfs->zippered() ? " zip" : "");
+      if (AList* list = expr->list)
+        if (list->parent == pfs)
+          if (expr != list->tail)
+            printf("\n");
+      if (expr == pfs->inductionVariables().tail) {
+        print_on_its_own_line(indent, pfs->zippered() ? "in zip\n" : "in\n");
       } else if (expr == pfs->iteratedExpressions().tail &&
-                 pfs->numShadowVars() > 0)
-      {
-        printf("\n      ");
-        for (int i = 0; i < indent; i++) printf(" ");
-        printf("with (...)\n");
+                 pfs->numShadowVars() > 0) {
+        print_on_its_own_line(indent, "with\n");
       }
     } else if (!toCondStmt(expr) && do_list_line) {
       DefExpr* def = toDefExpr(expr);
@@ -337,6 +358,25 @@ BaseAST* aid(int id) {
   return aidWithError(id, "aid");
 }
 
+BaseAST* aid(BaseAST* ast) {
+  return ast;
+}
+
+Expr* aidExpr(int id) {
+  if (BaseAST* ast = aidWithError(id, "aidExpr"))
+    return aidExpr(ast);
+  else
+    return NULL;
+}
+
+Expr* aidExpr(BaseAST* ast) {
+  if (Expr* expr = toExpr(ast))
+    return expr;
+  if (ast != NULL)
+    printf("<aidExpr: node %d is a %s, not an Expr>\n",
+           ast->id, ast->astTagAsString());
+  return NULL;
+}
 
 void viewFlags(int id) {
   if (BaseAST* ast = aidWithError(id, "viewFlags"))
@@ -714,7 +754,7 @@ void debugSummary(BaseAST* ast) {
 }
 
 // find the Parent Symbol
-BaseAST* debugParentSym(int id) {
+Symbol* debugParentSym(int id) {
   if (BaseAST* ast = aid09(id))
     return debugParentSym(ast);
   else {
@@ -722,7 +762,7 @@ BaseAST* debugParentSym(int id) {
     return NULL;
   }
 }
-BaseAST* debugParentSym(BaseAST* ast) {
+Symbol* debugParentSym(BaseAST* ast) {
   if (!ast)
     return NULL;
   else if (Expr* expr = toExpr(ast))
@@ -731,6 +771,28 @@ BaseAST* debugParentSym(BaseAST* ast) {
     return sym->defPoint->parentSymbol;
   else {
     printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
+    return NULL;
+  }
+}
+
+// find the Parent Expression
+Expr* debugParentExpr(int id) {
+  if (BaseAST* ast = aid09(id))
+    return debugParentExpr(ast);
+  else {
+    printf("%s\n", aidNotFoundError("debugParentExpr", id));
+    return NULL;
+  }
+}
+Expr* debugParentExpr(BaseAST* ast) {
+  if (!ast)
+    return NULL;
+  else if (Expr* expr = toExpr(ast))
+    return expr->parentExpr;
+  else if (Symbol* sym = toSymbol(ast))
+    return sym->defPoint->parentExpr;
+  else {
+    printf("<debugParentExpr: node %d is neither Expr nor Symbol>\n", ast->id);
     return NULL;
   }
 }
@@ -812,6 +874,21 @@ void vec_view(Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& v)
   }
 }
 
+void vec_view(std::vector<Symbol*>* vec) {
+  vec_view(*vec);
+}
+
+void vec_view(std::vector<Symbol*>& vec) {
+  printf("vector<Symbol> %d elm(s)\n", (int)vec.size());
+  for (int i = 0; i < (int)vec.size(); i++) {
+    Symbol* elm = vec[i];
+    if (elm)
+      printf("%3d %8d  %s\n", i, elm->id, elm->name);
+    else
+      printf("%3d <null>\n", i);
+  }
+}
+
 //
 // fnsWithName: print all FnSymbols with the given name
 //
@@ -880,6 +957,7 @@ void whocalls(int id) {
 
   int forAll = 0, forMatch = 0, forNonTreeMatch = 0;
   forv_Vec(CallExpr, call, gCallExprs) {
+    // todo: does this really happen?
     if (call->isPrimitive(PRIM_BLOCK_FOR_LOOP) && call->numActuals() >= 2) {
       forAll++;
       // check each step, just in case

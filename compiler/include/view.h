@@ -20,8 +20,9 @@
 #ifndef _VIEW_H_
 #define _VIEW_H_
 
-#include "baseAST.h"
+#include "expr.h"
 #include "vec.h"
+#include <vector>
 
 BaseAST* aid(int id);
 BaseAST* aid09(int id);
@@ -74,6 +75,9 @@ void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
+void        vec_view(std::vector<Symbol*>* vec);
+void        vec_view(std::vector<Symbol*>& vec);
+
 
 void        fnsWithName(const char* name);
 void        fnsWithName(const char* name, Vec<FnSymbol*>& fnVec);

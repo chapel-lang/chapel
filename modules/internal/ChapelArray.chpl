@@ -3500,8 +3500,12 @@ module ChapelArray {
   proc =(ref a: domain, b: domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in domain assignment");
-    if a.idxType != b.idxType then
-      compilerError("index type mismatch in domain assignment");
+
+    if !isOpaqueDom(a) && !isOpaqueDom(b) then
+      // Do not check the .idxType on opaque domains, it isn't allowed.
+      if a.idxType != b.idxType then
+        compilerError("index type mismatch in domain assignment");
+
     if isRectangularDom(a) && isRectangularDom(b) then
       if !a.stridable && b.stridable then
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");

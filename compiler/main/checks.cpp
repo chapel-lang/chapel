@@ -326,17 +326,6 @@ void check_deadCodeElimination()
   // Suggestion: Ensure no dead code.
 }
 
-void check_removeWrapRecords()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterCallDestructors();
-  check_afterLowerIterators();
-  check_afterResolveIntents();
-  check_afterInlineFunctions();
-  // Suggestion: Ensure no more wrap records.
-}
-
 void check_removeEmptyRecords()
 {
   check_afterEveryPass();
