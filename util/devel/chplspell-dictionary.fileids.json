@@ -505,6 +505,13 @@
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
   ],
+  "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-internal.h",
+    "runtime/src/comm/ofi/comm-ofi.c"
+  ],
+  "0502b256-07ea-11e8-bed3-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/comm-ofi-put-get.c"
+  ],
   "c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni-launch.c"
   ],
