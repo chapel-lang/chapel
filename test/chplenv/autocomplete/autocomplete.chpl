@@ -32,5 +32,6 @@ diff.wait();
 if diff.exit_status != 0 {
   writeln();
   writeln("diff failed. You may need to run ", genScript,
-          " to regenerate ", completeScript);
+          " to regenerate ", completeScript, ". Try:");
+  writeln(genScript, " > ", completeScript);
 }
