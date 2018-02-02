@@ -27,6 +27,17 @@
 #include "qt_subsystems.h"
 #include "qt_qthread_mgmt.h"             /* for qthread_thread_free() */
 
+// Our onPark and onUnpark callbacks
+static void (*onPark)(void);
+static void (*onUnpark)(void);
+
+void qthread_registerOnPark(void (*_onPark)(void)) {
+    onPark = _onPark;
+}
+void qthread_registerOnUnpark(void (*_onUnpark)(void)) {
+    onUnpark = _onUnpark;
+}
+
 /* This thread queueing uses the NEMESIS lock-free queue protocol from
  * http://www.mcs.anl.gov/~buntinas/papers/ccgrid06-nemesis.pdf
  * Note: it is NOT SAFE to use with multiple de-queuers, it is ONLY safe to use
@@ -364,6 +375,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                                             uint_fast8_t              QUNUSED(active))
 {                                      /*{{{ */
     int i;
+    int empty = 0;
 #ifdef QTHREAD_USE_EUREKAS
     qt_eureka_disable();
 #endif /* QTHREAD_USE_EUREKAS */
@@ -375,6 +387,10 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
     qthread_debug(THREADQUEUE_DETAILS, "q(%p)->q {head:%p tail:%p sh:%p} q->advisory_queuelen:%u\n", q, q->q.head, q->q.tail, q->q.shadow_head, q->advisory_queuelen);
     PARANOIA(sanity_check_tq(&q->q));
     if (node == NULL) {
+        if (onPark) {
+            empty = 1;
+            onPark();
+        }
 #ifdef QTHREAD_USE_EUREKAS
         qt_eureka_check(0);
 #endif /* QTHREAD_USE_EUREKAS */
@@ -404,6 +420,10 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
         qt_eureka_disable();
 #endif /* QTHREAD_USE_EUREKAS */
         node = qt_internal_NEMESIS_dequeue(&q->q);
+    }
+
+    if (empty == 1) {
+        onUnpark();
     }
     assert(node);
     assert(node->next == NULL);

@@ -52,10 +52,9 @@ void chpl_qsbr_defer_deletion(void *data);
 // Variant of 'chpl_qsbr_defer_deletion' that accepts an array of data.
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData);
 
-// Keeps track of number of tasks that a thread has. Necessary so that tasks do not wait on
-// threads without any tasks, as threads without tasks will never actually execute deferred deletion.
-void chpl_qsbr_onTaskCreation(void);
-void chpl_qsbr_onTaskDestruction(void);
+// Called when a thread is going to be unable to run tasks for a while
+void chpl_qsbr_blocked(void);
+void chpl_qsbr_unblocked(void);
 
 void chpl_qsbr_exit(void);
 

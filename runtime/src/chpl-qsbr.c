@@ -299,7 +299,7 @@ void chpl_qsbr_init(void) {
     CHPL_TLS_INIT(chpl_qsbr_tls);
 }
 
-void chpl_qsbr_onTaskCreation(void) {
+void chpl_qsbr_unblocked(void) {
   struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
   if (tls == NULL) {
     init_tls();
@@ -307,99 +307,93 @@ void chpl_qsbr_onTaskCreation(void) {
   }
 
   // Notify that we are now in-use.
-  add_task(tls);
+  atomic_store_uint_least64_t(&tls->nTasks, 1);
 }
 
 
-void chpl_qsbr_onTaskDestruction(void) {
+void chpl_qsbr_blocked(void) {
   struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  assert(tls != NULL);
-
-  // Notify that we have one less task
-  uint64_t nTasks = remove_task(tls) - 1;
-
-  // If we are the last task, handle any extra deferred data...
-  if (nTasks == 0) {
-    acquire_spinlock(tls);
-
-    // Empty as best we can
-    handle_deferred_data(tls);
-    if (tls->deferList == NULL) {
-      release_spinlock(tls);
-      return;
-    }
-
-    // At this point if we have any deferred data, we must pass this to some
-    // other thread, as we could be parked indefinitely. Find first active
-    // thread to dump the rest of our work on...
-    struct tls_node *node = get_tls_list();
-    for (; node != NULL; node = node->next) {
-      if (get_tasks(node) > 0) {
-        // Double check...
-        acquire_spinlock(node);
-        if (get_tasks(node) > 0) {
-          break;
-        }
-        release_spinlock(node);  
-      }
-    }
-
-    // If node is NULL, then all threads are finished so we should be able to safely
-    // handle our deferred data...
-    if (node == NULL) {
-      handle_deferred_data(tls);
-    } else {
-      // If the node is not NULL, we found our thread to dump on and we already hold its lock.
-      struct defer_node *list = pop_all_defer_list(tls);
-      
-      // If their list is empty its easy
-      if (node->deferList == NULL) {
-        node->deferList = list;
-      } else {
-        // TODO: Optimize! If tls->deferList is size N and node->deferList is size M,
-        // then is O((M+N) * N) = O(M*N^2).
-        while (list != NULL) {
-          struct defer_node *dnode = list;
-          list = list->next;
-
-          // Insert as head
-          if (dnode->targetEpoch >= node->deferList->targetEpoch) {
-            dnode->next = node->deferList;
-            node->deferList = dnode;
-            continue;
-          }
-
-          // Insert between nodes...
-          struct defer_node *ddnode = node->deferList, *prev = NULL;
-          for (; ddnode != NULL; ddnode = ddnode->next) {
-            if (ddnode->targetEpoch >= dnode->targetEpoch) {
-              assert(prev != NULL);
-              dnode->next = ddnode->next;
-              ddnode->next = dnode;
-              break;
-            }
-
-            prev = ddnode;
-          }
-
-          // Exhausted all options, make as tail...
-          if (ddnode == NULL) {
-            assert(prev != NULL);
-            prev->next = dnode;
-          }
-        }
-      }
-
-      release_spinlock(node);
-    }
-
-    release_spinlock(tls);
-  } else {
-    // Whenever we destroy a task, handle destroying any deferred data as well.
-    acquire_spinlock(tls);
-    handle_deferred_data(tls);
-    release_spinlock(tls);
+  if (tls == NULL) {
+    init_tls();
+    tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
+
+  atomic_store_uint_least64_t(&tls->nTasks, 0);
+
+  acquire_spinlock(tls);
+
+  // Empty as best we can
+  handle_deferred_data(tls);
+  if (tls->deferList == NULL) {
+    release_spinlock(tls);
+    return;
+  }
+
+  // At this point if we have any deferred data, we must pass this to some
+  // other thread, as we could be parked indefinitely. Find first active
+  // thread to dump the rest of our work on...
+  struct tls_node *node = get_tls_list();
+  for (; node != NULL; node = node->next) {
+    if (get_tasks(node) > 0) {
+      // Double check...
+      acquire_spinlock(node);
+      if (get_tasks(node) > 0) {
+        break;
+      }
+      release_spinlock(node);  
+    }
+  }
+
+  // If node is NULL, then all threads are finished so we should be able to safely
+  // handle our deferred data...
+  if (node == NULL) {
+    handle_deferred_data(tls);
+  } else {
+    // If the node is not NULL, we found our thread to dump on and we already hold its lock.
+    struct defer_node *list = pop_all_defer_list(tls);
+    
+    // If their list is empty its easy
+    if (node->deferList == NULL) {
+      node->deferList = list;
+    } else {
+      // TODO: Optimize! If tls->deferList is size N and node->deferList is size M,
+      // then is O((M+N) * N) = O(M*N^2).
+      while (list != NULL) {
+        struct defer_node *dnode = list;
+        list = list->next;
+
+        // Insert as head
+        if (dnode->targetEpoch >= node->deferList->targetEpoch) {
+          dnode->next = node->deferList;
+          node->deferList = dnode;
+          continue;
+        }
+
+        // Insert between nodes...
+        struct defer_node *ddnode = node->deferList, *prev = NULL;
+        for (; ddnode != NULL; ddnode = ddnode->next) {
+          if (ddnode->targetEpoch >= dnode->targetEpoch) {
+            assert(prev != NULL);
+            dnode->next = ddnode->next;
+            ddnode->next = dnode;
+            break;
+          }
+
+          prev = ddnode;
+        }
+
+        // Exhausted all options, make as tail...
+        if (ddnode == NULL) {
+          assert(prev != NULL);
+          prev->next = dnode;
+        }
+      }
+    }
+
+    release_spinlock(node);
+  }
+
+  release_spinlock(tls);
 }
 
 void chpl_qsbr_checkpoint(void) {

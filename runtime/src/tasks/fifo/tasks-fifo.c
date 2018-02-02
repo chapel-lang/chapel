@@ -668,8 +668,6 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
     if (blockreport)
       initializeLockReportForThread();
 
-    // Increment # of tasks
-    chpl_qsbr_onTaskCreation();
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
@@ -679,14 +677,12 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
 
     (*task_to_run_fun)(&child_ptask->bundle);
 
-    // Decrement # of tasks
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            child_ptask->bundle.requested_fid,
                            child_ptask->bundle.filename,
                            child_ptask->bundle.lineno,
                            child_ptask->bundle.id,
                            child_ptask->bundle.is_executeOn);
-    chpl_qsbr_onTaskDestruction();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
@@ -1139,6 +1135,12 @@ thread_begin(void* ptask_void) {
     // wait for a task to be present in the task pool
     //
 
+    // If it is empty, we might be here for a while so
+    // unregister ourselves.
+    if (!task_pool_head) {
+      chpl_qsbr_blocked();
+    }
+
     // In revision 22137, we investigated whether it was beneficial to
     // implement this while loop in a hybrid style, where depending on
     // the number of tasks available, idle threads would either yield or
@@ -1193,6 +1195,8 @@ thread_begin(void* ptask_void) {
     if (blockreport)
       progress_cnt++;
 
+    chpl_qsbr_unblocked();
+
     //
     // start new task; remove task from pool also add to task to task-table
     // (structure in ChapelRuntime that keeps track of currently running tasks
@@ -1214,8 +1218,6 @@ thread_begin(void* ptask_void) {
       chpl_thread_mutexUnlock(&taskTable_lock);
     }
 
-    // Increment # of tasks
-    chpl_qsbr_onTaskCreation();
     chpl_task_do_callbacks(chpl_task_cb_event_kind_begin,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,
@@ -1232,7 +1234,6 @@ thread_begin(void* ptask_void) {
                            ptask->bundle.lineno,
                            ptask->bundle.id,
                            ptask->bundle.is_executeOn);
-    chpl_qsbr_onTaskDestruction();
 
     if (do_taskReport) {
       chpl_thread_mutexLock(&taskTable_lock);
