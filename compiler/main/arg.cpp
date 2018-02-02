@@ -499,7 +499,7 @@ static void process_arg(const ArgumentState*       state,
                         char***                    argv,
                         const char*                currentFlag);
 
-static void print_perhaps(const char* flag, const ArgumentDescription* desc);
+static void print_suggestions(const char* flag, const ArgumentDescription* desc);
 static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc);
 static void extraneous_arg(const char* flag, const char* extras, const ArgumentDescription* desc);
 
@@ -711,7 +711,7 @@ static void process_arg(const ArgumentState*       state,
     desc->pfn(desc, arg);
 }
 
-static void print_perhaps(const char* flag, const ArgumentDescription* desc)
+static void print_suggestions(const char* flag, const ArgumentDescription* desc)
 {
   const char* nodashes = flag;
   // skip past any '-' characters at the start of flag
@@ -728,16 +728,16 @@ static void print_perhaps(const char* flag, const ArgumentDescription* desc)
   for (int i = 0; desc[i].name != 0; i++) {
     if (usearg[0] == desc[i].key && usearg[1] == '\0') {
       // e.g. --s was used instead of -s
-      fprintf(stderr, " Perhaps you meant -%c ?\n", desc[i].key);
+      fprintf(stderr, "       Did you mean -%c ?\n", desc[i].key);
       helped = true;
     } if (0 == strcmp(usearg, desc[i].name)) {
-      fprintf(stderr, " Perhaps you meant --%s ?\n", desc[i].name);
+      fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       helped = true;
     } else if (desc[i].env &&
                (0 == strcmp(usearg, desc[i].env) ||
                 (desc[i].env[0] == '_' &&
                  0 == strcmp(usearg, desc[i].env+1)))) {
-      fprintf(stderr, " Perhaps you meant --%s ?\n", desc[i].name);
+      fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       helped = true;
     }
   }
@@ -749,7 +749,7 @@ static void print_perhaps(const char* flag, const ArgumentDescription* desc)
       if (desc[i].name[0] != '\0' &&
           strlen(usearg) > strlen(desc[i].name) &&
           0 == memcmp(usearg, desc[i].name, strlen(desc[i].name))) {
-        fprintf(stderr, " Perhaps you meant --%s ?\n", desc[i].name);
+        fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
         helped = true;
       }
     }
@@ -761,7 +761,7 @@ static void print_perhaps(const char* flag, const ArgumentDescription* desc)
       if (desc[i].name[0] != '\0' &&
           strlen(usearg) < strlen(desc[i].name) &&
           0 == memcmp(usearg, desc[i].name, strlen(usearg))) {
-        fprintf(stderr, " Perhaps you meant --%s ?\n", desc[i].name);
+        fprintf(stderr, "       Did you mean --%s ?\n", desc[i].name);
       }
     }
   }
@@ -772,7 +772,7 @@ static void print_perhaps(const char* flag, const ArgumentDescription* desc)
 static void bad_flag(const char* flag, const char* arg, const ArgumentDescription* desc)
 {
   fprintf(stderr, "Unrecognized flag: '%s' (use '-h' for help)\n", flag);
-  print_perhaps(arg, desc);
+  print_suggestions(arg, desc);
   clean_exit(1);
 }
 
@@ -782,7 +782,7 @@ static void extraneous_arg(const char* flag, const char* extras, const ArgumentD
           "Extra characters after flag '%s': '%s' (use 'h' for help)\n",
           flag,
           extras);
-  print_perhaps(flag, desc);
+  print_suggestions(flag, desc);
   clean_exit(1);
 }
 
