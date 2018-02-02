@@ -25,7 +25,7 @@ var cplxA: [1..10, 1..10] complex = A;
 }
 
 {
-  var (eig, right) = eigvals(A, EigenVecType.right);
+  var (eig, right) = eigvals(A, right=true);
 
   // trace(A) = sum(eigenvalues)
   {
@@ -52,7 +52,7 @@ var cplxA: [1..10, 1..10] complex = A;
 }
 
 {
-  var (eig, left) = eigvals(A, EigenVecType.left);
+  var (eig, left) = eigvals(A, left=true);
 
   // trace(A) = sum(eigenvalues)
   {
@@ -80,7 +80,7 @@ var cplxA: [1..10, 1..10] complex = A;
 }
 
 {
-  var (eig, left, right) = eigvals(A, EigenVecType.both);
+  var (eig, left, right) = eigvals(A, left=true, right=true);
   // Check that the above properties hold when computing both eigenvectors
   // at the same time.
 

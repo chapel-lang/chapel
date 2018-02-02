@@ -956,26 +956,25 @@ proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
 }
 
 
-/* Type to choose which eigenvectors to compute in the ``eigvals`` function. */
-enum EigenVecType {
-  none,
-  left,
-  right,
-  both
-}
+/* Find the eigenvalues of matrix ``A``. ``A`` must be square.
 
-/* Find the eigenvalues of matrix ``A``. ``A`` must be square.  If ``rl`` is
-   ``EigenVecType.none`` (default) then no eigenvectors are computed and
-   just the eigenvalues are returned. If ``rl`` is ``EigenVecType.left`` then
-   the "left" eigenvectors are computed, and a tuple containing
-   ``(eigenvalues, leftEigenvectors)`` is returned. If ``rl`` is 
-   ``EigenVecType.right`` then the "right" eigenvectors are computed, and
-   a tuple containing ``(eigenvalues, rightEigenvectors)`` is returned.
-   If ``rl`` is ``EigenVecType.both`` then both "left" and "right"
-   eigenvectors are computed, and a tuple conaining
-   ``(eigenvalues, leftEigenvectors, rightEigenvectors)`` is returned.
+   * If ``left`` is ``true`` then the "left" eigenvectors are computed. The
+     return value is a tuple with two elements:
+     ``(eigenvalues, leftEigenvectors)``
+
+   * If ``right`` is ``true`` then the "right" eigenvectors are computed. The
+     return value is a tuple with two elements:
+     ``(eigenvalues, rightEigenvectors)``
+
+   * If ``left`` and ``right`` are both ``true`` then both eigenvectors are
+     computed.  The return value is a tuple with three elements:
+     ``(eigenvalues, leftEigenvectors, rightEigenvectors)``
+
+   * If ``left`` and ``right`` are both ``false`` only the eigenvalues are
+     computed, and returned as a single array.
+
  */
-proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
+proc eigvals(A: [] ?t, param left = false, param right = false)
   where isRealType(t) && A.domain.rank == 2 {
 
   proc convertToCplx(wr: [] t, wi: [] t) {
@@ -1020,12 +1019,12 @@ proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
   var copy = A;
   var wr, wi: [1..n] t;
 
-  if  rl == EigenVecType.none {
+  if  !left && !right {
     var vl, vr: [1..1, 1..n] t;
     geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
     return eigVals;
-  } else if rl == EigenVecType.left {
+  } else if left && !right {
     var vl: [1..n, 1..n] t;
     var vr: [1..1, 1..n] t;
     geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, wi, vl, vr);
@@ -1034,7 +1033,7 @@ proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
     var vlcplx = flattenCplxEigenVecs(wi, vl);
 
     return (eigVals, vlcplx);
-  } else if rl == EigenVecType.right {
+  } else if right && !left {
     var vl: [1..1, 1..n] t;
     var vr: [1..n, 1..n] t;
     geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, wi, vl, vr);
@@ -1044,7 +1043,7 @@ proc eigvals(A: [] ?t, param rl: EigenVecType = EigenVecType.none)
 
     return (eigVals, vrcplx);
   } else {
-    // rl == EigenVecType.both
+    // left && right
     var vl: [1..n, 1..n] t;
     var vr: [1..n, 1..n] t;
     geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, wi, vl, vr);
