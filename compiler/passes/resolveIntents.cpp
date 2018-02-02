@@ -33,7 +33,6 @@ static IntentTag constIntentForType(Type* t) {
       is_enum_type(t) ||
       isClass(t) ||
       isUnion(t) ||
-      isAtomicType(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
       t == dtFile ||
@@ -50,6 +49,7 @@ static IntentTag constIntentForType(Type* t) {
   } else if (isSyncType(t)          ||
              isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
+             isAtomicType(t) ||
              isRecord(t)) { // may eventually want to decide based on size
     return INTENT_CONST_REF;
 
