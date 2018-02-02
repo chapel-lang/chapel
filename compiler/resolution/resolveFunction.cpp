@@ -181,8 +181,9 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
-             (isUnion(formal->type)  == true||
-              isRecord(formal->type) == true)) {
+             (isUnion(formal->type)  == true ||
+               (isRecord(formal->type) == true &&
+                !formal->type->symbol->hasFlag(FLAG_RANGE)))) {
     retval = true;
 
   } else {
