@@ -1,5 +1,5 @@
 perfkeys: real, real, real, real, real, real
-files: revcomp.dat, revcomp-begin.dat, revcomp-blc.dat, revcomp-buf.dat, revcomp-line.dat, revcomp-mark-skip-read-begin
+files: revcomp.dat, revcomp-begin.dat, revcomp-blc.dat, revcomp-buf.dat, revcomp-line.dat, revcomp-mark-skip-read-begin.dat
 graphkeys: release version, revcomp-begin, Brad version, Buffered, BufferedLine, mark-skip-read
 graphtitle: Reverse-complement Shootout Benchmark
 ylabel: Time (seconds)
