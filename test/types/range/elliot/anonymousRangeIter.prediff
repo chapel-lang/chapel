@@ -13,11 +13,15 @@ def normalize(ln):
 # open the expected generated code, and grab all the non-empty and non-comment
 # lines
 expectedGeneratedCodeLines = []
+fromLineNumbers = []
 with open(expectedGenCodeFile, 'r') as f:
+    linenum = 0;
     for line in f:
         line = line.rstrip()
+        linenum += 1
         if line != '' and line.startswith('#') == False:
            expectedGeneratedCodeLines.append(normalize(line))
+           fromLineNumbers.append(linenum)
 
 # grab the actual generated code
 with open (actualGenCodeFile) as f:
@@ -25,11 +29,11 @@ with open (actualGenCodeFile) as f:
 
 # add whether the line was found or not to test output
 with open (testOutputFile, 'a') as f:
-    for line in expectedGeneratedCodeLines:
+    for line,linenum in zip(expectedGeneratedCodeLines, fromLineNumbers):
         if line in actualGeneratedCode:
             f.write('Found expected line\n')
         else:
-            f.write('{0} is missing line: {1}\n'.format(actualGenCodeFile, line))
+            f.write('{0} is missing line {1}: {2}\n'.format(actualGenCodeFile, linenum, line))
 
 
 shutil.rmtree(genCodeDir)
