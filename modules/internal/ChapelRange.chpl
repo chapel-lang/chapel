@@ -675,7 +675,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Moves the low bound of the range up to the next alignment point.
   pragma "no doc"
-  /* private */ proc range.alignLow()
+  /* private */ proc ref range.alignLow()
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
@@ -686,7 +686,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Moves the high bound of the range down to the next alignment point.
   pragma "no doc"
-  /* private */ proc range.alignHigh()
+  /* private */ proc ref range.alignHigh()
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
