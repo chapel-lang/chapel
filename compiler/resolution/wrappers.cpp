@@ -2035,6 +2035,7 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   retval->cname = astr("_promotion_wrap_", fn->cname);
 
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
+  retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
     retval->removeFlag(FLAG_DEFAULT_CONSTRUCTOR);
@@ -2448,6 +2449,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
 
   if (fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE)) {
     wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
+  }
+
+  if (fn->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+    wrapper->addFlag(FLAG_FN_RETURNS_ITERATOR);
   }
 
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
