@@ -426,7 +426,9 @@ proc printTimeTable(timeTable, units, timerName) {
 // trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  var minMinTime, maxMinTime, totMinTime: real;
+  var minMinTime = max(real),
+      maxMinTime = min(real),
+      totMinTime: real;
 
   //
   // iterate over the buckets, computing the min/max/total of the
