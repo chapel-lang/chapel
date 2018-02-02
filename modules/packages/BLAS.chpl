@@ -183,23 +183,6 @@ module BLAS {
 
   use SysCTypes;
 
-  class IllegalArgumentError : Error {
-    var msg: string;
-
-    proc init() {
-      super.init();
-    }
-
-    proc init(_msg: string) {
-      this.msg = _msg;
-      super.init();
-    }
-
-    proc message() {
-      return msg;
-    }
-  }
-
   if (isBLAS_MKL) {
     require "mkl_cblas.h";
   } else {
@@ -657,7 +640,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      throw new IllegalArgumentError("B", "Non-square array of dimensions %ix%i".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -715,7 +698,7 @@ module BLAS {
         n = Bdom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to TRSM".format(m, n));
+      throw new IllegalArgumentError("B", "Non-square array of dimensions %ix%i".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -997,7 +980,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to hemv".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1030,7 +1013,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to her".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1065,7 +1048,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to her2".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
 
     // Set strides if necessary
@@ -1335,7 +1318,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to symv".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1370,7 +1353,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to syr".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1405,7 +1388,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to syr2".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1622,7 +1605,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to trmv".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1666,7 +1649,7 @@ module BLAS {
         n = Adom.dim(2).size : c_int;
 
     if m != n then
-      throw new IllegalArgumentError("Non-square array of dimensions %ix%i passed to trsv".format(m, n));
+      throw new IllegalArgumentError("A", "Non-square array of dimensions %ix%i".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
