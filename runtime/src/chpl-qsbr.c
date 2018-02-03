@@ -131,13 +131,13 @@ static inline uint64_t is_parked(struct tls_node *node) {
   return atomic_load_uint_least64_t(&node->parked);
 }
 
-static inline uint64_t park(struct tls_node *node);
-static inline uint64_t park(struct tls_node *node) {
+static inline void park(struct tls_node *node);
+static inline void park(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 1);
 }
 
-static inline uint64_t unpark(struct tls_node *node);
-static inline uint64_t unpark(struct tls_node *node) {
+static inline void unpark(struct tls_node *node);
+static inline void unpark(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 0);
 }
 
