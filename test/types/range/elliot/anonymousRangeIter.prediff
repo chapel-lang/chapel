@@ -39,6 +39,10 @@ with open (testOutputFile, 'a') as f:
         while index < nActualLines:
             actualLine = actualLines[index]
             index += 1;
+
+            if re.search(r'build[a-zA-Z_]*range', actualLine):
+              f.write('Found build range\n')
+
             if expectedLine == actualLine:
               found = True
               break
