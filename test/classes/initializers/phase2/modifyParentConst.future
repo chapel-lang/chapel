@@ -1,4 +1,5 @@
 bug: const checking not working for phase 2 of descendent class
+#8354
 
 This future demonstrates that while the compiler prevents modification
 of a field in phase 2 of a class, it doesn't prevent a child class
