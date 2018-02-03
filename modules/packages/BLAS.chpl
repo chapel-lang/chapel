@@ -1763,10 +1763,10 @@ module BLAS {
 
 
   */
-  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) {
+  proc rotmg(ref d1: ?eltType, ref d2: eltType, ref b1: eltType, b2: eltType, P: []eltType) throws {
 
     if P.size != 5 then
-      halt("P parameter must consist of 5 elements");
+      throw new IllegalArgumentError("P", "must consist of 5 elements");
 
     select eltType {
       when real(32) do{
@@ -1862,11 +1862,10 @@ module BLAS {
       - ``Y``: Vector with updated elements
 
   */
-  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1)
-   where D.rank == 1 {
+  proc rotm(X: [?D]?eltType,  Y: [D]eltType,  P: []eltType, incY: c_int = 1, incX: c_int = 1) throws where D.rank == 1 {
 
     if P.size != 5 then
-      halt("P parameter must consist of 5 elements");
+      throw new IllegalArgumentError("P", "must consist of 5 elements");
 
     const N = D.size: c_int;
 
