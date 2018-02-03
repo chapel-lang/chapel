@@ -375,7 +375,8 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                                             uint_fast8_t              QUNUSED(active))
 {                                      /*{{{ */
     int i;
-    int empty = 0;
+    int spins = 0;
+    int parked = 0;
 #ifdef QTHREAD_USE_EUREKAS
     qt_eureka_disable();
 #endif /* QTHREAD_USE_EUREKAS */
@@ -387,9 +388,11 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
     qthread_debug(THREADQUEUE_DETAILS, "q(%p)->q {head:%p tail:%p sh:%p} q->advisory_queuelen:%u\n", q, q->q.head, q->q.tail, q->q.shadow_head, q->advisory_queuelen);
     PARANOIA(sanity_check_tq(&q->q));
     if (node == NULL) {
-        if (onPark) {
-            empty = 1;
-            onPark();
+        if (spins++ == num_spins_before_condwait && parked == 0) {
+            if (onPark) {
+                parked = 1;
+                onPark();
+            }
         }
 #ifdef QTHREAD_USE_EUREKAS
         qt_eureka_check(0);
@@ -410,6 +413,10 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
             if (qthread_incr(&q->frustration, 1) > 1000) {
                 QTHREAD_COND_LOCK(q->trigger);
                 if (q->frustration > 1000) {
+                    if (onPark && parked == 0) {
+                        parked = 1;
+                        onPark();
+                    }
                     QTHREAD_COND_WAIT(q->trigger);
                 }
                 QTHREAD_COND_UNLOCK(q->trigger);
@@ -422,7 +429,7 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
         node = qt_internal_NEMESIS_dequeue(&q->q);
     }
 
-    if (empty == 1) {
+    if (parked == 1) {
         onUnpark();
     }
     assert(node);
