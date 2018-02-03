@@ -60,11 +60,10 @@ struct tls_node {
   */
   atomic_uint_least64_t epoch;
   /*
-    Number of tasks that this thread has running. Required so
-    that threads without tasks (and no longer are able to call
-    checkpoints) are not taken into account.
+    Whether or not this thread is parked in the runtime. If the thread is
+    parked, it is ignored during memory reclamation checks.
   */
-  atomic_uint_least64_t nTasks;
+  atomic_uint_least64_t parked;
   /*
     List of objects that are queued for deferred deletion, sorted by target_epoch. 
     We defer deletion if we find that while scanning the list of all thread-specific
@@ -127,19 +126,19 @@ static inline void observe_epoch(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->epoch, get_global_epoch());
 }
 
-static inline uint64_t get_tasks(struct tls_node *node);
-static inline uint64_t get_tasks(struct tls_node *node) {
-  return atomic_load_uint_least64_t(&node->nTasks);
+static inline uint64_t is_parked(struct tls_node *node);
+static inline uint64_t is_parked(struct tls_node *node) {
+  return atomic_load_uint_least64_t(&node->parked);
 }
 
-static inline uint64_t add_task(struct tls_node *node);
-static inline uint64_t add_task(struct tls_node *node) {
-  return atomic_fetch_add_uint_least64_t(&node->nTasks, 1);
+static inline uint64_t park(struct tls_node *node);
+static inline uint64_t park(struct tls_node *node) {
+  atomic_store_uint_least64_t(&node->parked, 1);
 }
 
-static inline uint64_t remove_task(struct tls_node *node);
-static inline uint64_t remove_task(struct tls_node *node) {
-  return atomic_fetch_sub_uint_least64_t(&node->nTasks, 1);
+static inline uint64_t unpark(struct tls_node *node);
+static inline uint64_t unpark(struct tls_node *node) {
+  atomic_store_uint_least64_t(&node->parked, 0);
 }
 
 static inline void acquire_spinlock(struct tls_node *node);
@@ -224,6 +223,9 @@ static inline struct defer_node *pop_recycle_list(struct tls_node *node) {
   }
 
   node->recycleList = dnode->next;
+
+  // Sanitize before return...
+  memset(dnode, 0, sizeof(struct defer_node));
   return dnode;
 }
 
@@ -270,7 +272,7 @@ static uint64_t safe_epoch(void) {
   uint64_t min = (uint64_t) -1;
   // Check all remaining threads for whether they have updated to a more recent epoch.
   for (struct tls_node *node = get_tls_list(); node != NULL; node = node->next) {
-    if (get_tasks(node) > 0) {
+    if (!is_parked(node)) {
       uint64_t epoch = get_epoch(node);
       min = min ? (min < epoch) : epoch;       
     }
@@ -307,7 +309,7 @@ void chpl_qsbr_unblocked(void) {
   }
 
   // Notify that we are now in-use.
-  atomic_store_uint_least64_t(&tls->nTasks, 1);
+  unpark(tls);
 }
 
 
@@ -318,12 +320,15 @@ void chpl_qsbr_blocked(void) {
     tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
-  atomic_store_uint_least64_t(&tls->nTasks, 0);
-
   acquire_spinlock(tls);
+  park(tls);
 
   // Empty as best we can
-  handle_deferred_data(tls);
+  if(tls->deferList != NULL) {
+    handle_deferred_data(tls);
+  }
+
+  // Check if fully emptied.
   if (tls->deferList == NULL) {
     release_spinlock(tls);
     return;
@@ -334,10 +339,10 @@ void chpl_qsbr_blocked(void) {
   // thread to dump the rest of our work on...
   struct tls_node *node = get_tls_list();
   for (; node != NULL; node = node->next) {
-    if (get_tasks(node) > 0) {
+    if (!is_parked(node)) {
       // Double check...
       acquire_spinlock(node);
-      if (get_tasks(node) > 0) {
+      if (!is_parked(node)) {
         break;
       }
       release_spinlock(node);  
@@ -356,38 +361,38 @@ void chpl_qsbr_blocked(void) {
     if (node->deferList == NULL) {
       node->deferList = list;
     } else {
-      // TODO: Optimize! If tls->deferList is size N and node->deferList is size M,
-      // then is O((M+N) * N) = O(M*N^2).
-      while (list != NULL) {
-        struct defer_node *dnode = list;
-        list = list->next;
-
-        // Insert as head
-        if (dnode->targetEpoch >= node->deferList->targetEpoch) {
-          dnode->next = node->deferList;
-          node->deferList = dnode;
-          continue;
+      // Sort list
+      struct defer_node *newHead = NULL;
+      struct defer_node *newTail = NULL;
+      while (list != NULL && node->deferList != NULL) {
+        struct defer_node *dnode;
+        if (list->targetEpoch >= node->deferList->targetEpoch) {
+          dnode = list;
+          list = list->next;
+        } else {
+          dnode = node->deferList;
+          node->deferList = node->deferList->next;
         }
 
-        // Insert between nodes...
-        struct defer_node *ddnode = node->deferList, *prev = NULL;
-        for (; ddnode != NULL; ddnode = ddnode->next) {
-          if (ddnode->targetEpoch >= dnode->targetEpoch) {
-            assert(prev != NULL);
-            dnode->next = ddnode->next;
-            ddnode->next = dnode;
-            break;
-          }
-
-          prev = ddnode;
-        }
-
-        // Exhausted all options, make as tail...
-        if (ddnode == NULL) {
-          assert(prev != NULL);
-          prev->next = dnode;
+        if (newHead == NULL) {
+          newHead = newTail = dnode;
+          dnode->next = NULL;
+        } else {
+          newTail->next = dnode;
+          newTail = dnode;
+          dnode->next = NULL;
         }
       }
+      // Append extra
+      if (list != NULL) {
+        newTail->next = list;
+        list = NULL;
+      } else if (node->deferList != NULL) {
+        newTail->next = node->deferList;
+        node->deferList = NULL;
+      }
+
+      node->deferList = newHead;
     }
 
     release_spinlock(node);

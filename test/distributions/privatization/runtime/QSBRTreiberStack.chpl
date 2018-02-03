@@ -1,5 +1,5 @@
 extern proc chpl_qsbr_checkpoint();
-config param nIterationsPerTask = 1024;
+config param nIterationsPerTask = 64 * 1024;
 
 type localPtr = uint(64);
 
