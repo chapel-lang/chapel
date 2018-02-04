@@ -274,7 +274,7 @@ static uint64_t safe_epoch(void) {
   for (struct tls_node *node = get_tls_list(); node != NULL; node = node->next) {
     if (!is_parked(node)) {
       uint64_t epoch = get_epoch(node);
-      min = min ? (min < epoch) : epoch;       
+      min = (min < epoch) ? min : epoch;       
     }
   }
   
