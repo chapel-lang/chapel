@@ -51,7 +51,7 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
-TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS... except ipe/" && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(filter-out ipe/%, $(ALL_SRCS)) */*.h) || echo "$(CHPL_TAGS_UTIL) not available"
 EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." && ebrowse $(ALL_SRCS) */*.h) || echo "ebrowse not available"
 endif
 
@@ -154,11 +154,12 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
-	rm -f $(CHPLIPE)
-	ln -s $(notdir $(CHPL)) $(CHPLIPE)
+	@echo linking $(LDFLAGS) -o $@
+	@$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
+	@rm -f $(CHPLIPE)
+	@ln -s $(notdir $(CHPL)) $(CHPLIPE)
 	$(TAGS_COMMAND)
-	$(EBROWSE_COMMAND)
+	-@#$(EBROWSE_COMMAND)
 
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
