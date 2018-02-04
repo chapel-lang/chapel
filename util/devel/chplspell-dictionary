@@ -4233,6 +4233,8 @@ nbdi
 nbdp
 nopnd
 opnd
+ppdescs
+ppdi
 rfdpp
 themself
 xchgval
@@ -4483,6 +4485,23 @@ skind
 FILEID: c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5
 lrint
 strfy
+
+FILEID: f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5
+allocinfo
+appnum
+cqes
+etoosmall
+freeinfo
+lcpus
+ofichkerr
+ofichkret
+rbuf
+rbufs
+tostr
+
+FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
+ctxs
+readfrom
 
 NATURAL:
 abcd
