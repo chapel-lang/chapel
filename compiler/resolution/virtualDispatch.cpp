@@ -149,6 +149,8 @@ static bool buildVirtualMaps() {
         if (at->isGeneric() == false) {
           if (fn->isResolved()            == true      &&
 
+              strcmp(fn->name, "init")    != 0         &&
+
               fn->hasFlag(FLAG_WRAPPER)   == false     &&
               fn->hasFlag(FLAG_NO_PARENS) == false     &&
 
