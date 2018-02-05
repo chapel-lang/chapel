@@ -481,6 +481,11 @@ concepts:
         * loopIndices = (2,            1,            2)
 
 
+        Open questions to do with this idea: 1) How are multidimensional
+        indices handled? 2) Do loopIndices and loopIterationSpace always
+        have rank 3? Does it depend on the locale model? Or does it
+        depend on the loop / iterator?
+
 	**ii. Special Memory Management**
 
 	GPUs offer a fast access memory to perform synchronizations and
