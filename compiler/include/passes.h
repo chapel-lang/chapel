@@ -61,7 +61,6 @@ void makeBinary();
 void normalize();
 void optimizeOnClauses();
 void parallel();
-void processIteratorYields();
 void prune();
 void prune2();
 void readExternC();
