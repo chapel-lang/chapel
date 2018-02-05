@@ -27,6 +27,12 @@
 // Number of checkpoints to pass before processing our deferral list.
 #define CHPL_QSBR_CHECKPOINTS_PER_PROCESS 8
 
+// We maintain a single global counter that denotes the current epoch.
+// Each time some deletion is published (deferred), we advance the epoch
+// by one. At each checkpoint, a thread will update their thread-local epoch
+// to the global one. Memory that is deferred for deletion is only safe to
+// reclaim after all thread-local epochs exceed the epoch of when the memory was
+// marked for deletion.
 static atomic_uint_least64_t global_epoch = 0;
 
 // Each node in the deferred list has associated with it
@@ -46,7 +52,7 @@ struct defer_node {
   struct defer_node *next;
 };
 
-// Thread-local data that keeps track of our observed global state.
+// Thread-specific meta data.
 struct tls_node {
   /*
     The number of checkpoints passed through
