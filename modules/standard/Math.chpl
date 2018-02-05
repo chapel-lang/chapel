@@ -1057,8 +1057,8 @@ module Math {
     return truncf(x);
   }
   
-  /* Returns the greatest common divisor of the integer argument `arg1` and
-     `arg2`. */
+  /* Returns the greatest common divisor of the integer argument `a` and
+     `b`. */
   proc gcd(in a: int,in b: int): int {
      a = abs(a);
      b = abs(b);
