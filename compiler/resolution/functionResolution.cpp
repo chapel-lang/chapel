@@ -143,7 +143,7 @@ static CapturedValueMap            capturedValues;
 //#
 //# Static Function Declarations
 //#
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure=true);
 static bool hasUserAssign(Type* type);
 static void resolveOther();
 static bool fits_in_int(int width, Immediate* imm);
@@ -217,6 +217,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+
+static FnSymbol* findCopyInit(AggregateType* ct);
 
 /************************************* | **************************************
 *                                                                             *
@@ -394,20 +396,17 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
       // it up completely...
       instantiateBody(newFn);
 
-      Symbol* thisTmp = newTemp(ct);
-      DefExpr* def = new DefExpr(thisTmp);
-      newFn->insertBeforeEpilogue(def);
-      CallExpr* initCall = new CallExpr("init", gMethodToken, thisTmp, arg);
-      def->insertAfter(initCall);
-
-      FnSymbol* initFn = tryResolveCall(initCall);
+      FnSymbol* initFn = findCopyInit(ct);
 
       if (initFn == NULL) {
         // No copy-initializer could be found
-        def->remove();
-        initCall->remove();
         newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       } else {
+        Symbol* thisTmp = newTemp(ct);
+        DefExpr* def = new DefExpr(thisTmp);
+        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+        newFn->insertBeforeEpilogue(def);
+        def->insertAfter(initCall);
         // Replace the other setting of the return-value-variable
         // with what we have now...
 
@@ -1874,57 +1873,73 @@ bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call);
-static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call);
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool errorOnFailure);
+static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call, bool errorOnFailure);
 
 static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
-  if (at == NULL || at->defaultInitializer == NULL) {
+  if (at == NULL) {
+    // Not an AggregateType
     retval = chpl_gen_main->body;
-
-  } else if (BlockStmt* point = at->defaultInitializer->instantiationPoint) {
-    retval = point;
-
+  } else if (at->defaultInitializer &&
+             at->defaultInitializer->instantiationPoint) {
+    // Here for historical reasons
+    retval = at->defaultInitializer->instantiationPoint;
+  } else if (at->defaultTypeConstructor &&
+             at->defaultTypeConstructor->instantiationPoint) {
+    // This case can apply to generic types with initializers
+    retval = at->defaultTypeConstructor->instantiationPoint;
   } else {
+    // This case applies to non-generic AggregateTypes and
+    // possibly to generic AggregateTypes with default fields.
     retval = at->symbol->defPoint;
   }
 
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(Type* type, CallExpr* call, bool errorOnFailure) {
   FnSymbol*      retval = NULL;
 
   Expr* where = getInsertPointForTypeFunction(type);
   if (BlockStmt* stmt = toBlockStmt(where))
-    retval = resolveUninsertedCall(stmt, call);
+    retval = resolveUninsertedCall(stmt, call, errorOnFailure);
   else
-    retval = resolveUninsertedCall(where, call);
+    retval = resolveUninsertedCall(where, call, errorOnFailure);
 
   return retval;
 }
 
-static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call, bool
+    errorOnFailure) {
   BlockStmt* block = new BlockStmt(call);
 
-  insert->insertAtHead(block);
+  insert->insertAtHead(block); // Tail?
 
-  resolveCall(call);
+  if (errorOnFailure)
+    resolveCall(call);
+  else
+    tryResolveCall(call);
 
+  call->remove();
   block->remove();
 
   return call->resolvedFunction();
 }
 
-static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call) {
+static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorOnFailure) {
   BlockStmt* block = new BlockStmt(call);
 
   insert->insertBefore(block);
 
-  resolveCall(call);
+  if (errorOnFailure)
+    resolveCall(call);
+  else
+    tryResolveCall(call);
 
+  call->remove();
   block->remove();
 
   return call->resolvedFunction();
@@ -4968,7 +4983,6 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasCopyInit(AggregateType* ct, Expr* scope);
 
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
@@ -4999,7 +5013,7 @@ static void resolveInitVar(CallExpr* call) {
 
       resolveMove(call);
 
-    } else if (hasCopyInit(ct, call) == true) {
+    } else if (findCopyInit(ct) != NULL) {
       dst->type = src->type;
 
       call->setUnresolvedFunction("init");
@@ -5028,19 +5042,11 @@ static void resolveInitVar(CallExpr* call) {
 // where tmpAt is a temp of type at.
 //
 // This resolution will be attempted at just before scope in the AST.
-static bool hasCopyInit(AggregateType* at, Expr* scope) {
-
-  BlockStmt* block = new BlockStmt();
+static FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  block->insertAtTail(call);
-  scope->insertBefore(block);
-
-  FnSymbol* resolvedFn = tryResolveCall(call);
-
-  block->remove();
-
-  return resolvedFn != NULL;
+  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
+  return copyInit;
 }
 
 /************************************* | **************************************
@@ -7261,7 +7267,7 @@ static void resolveSupportForModuleDeinits() {
   VarSymbol* fnPtrDum   = newTemp("fnPtr", dtCFnPtr);
   CallExpr*  addModule  = new CallExpr("chpl_addModule", modNameDum, fnPtrDum);
 
-  resolveUninsertedCall(chpl_gen_main->body, addModule);
+  resolveUninsertedCall(chpl_gen_main->body, addModule, /*err on fail*/ true);
 
   gAddModuleFn = addModule->resolvedFunction();
 
@@ -7521,29 +7527,16 @@ static void resolveAutoCopyEtc(AggregateType* at) {
         isTupleContainingOnlyReferences(at) == false &&
         // autoDestroy for iterator record filled in callDestructors
         at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-      // Create a block statement and add it where type fns go
-      BlockStmt* block = new BlockStmt();
 
-      Expr* where = getInsertPointForTypeFunction(at);
-      if (BlockStmt* stmt = toBlockStmt(where))
-        stmt->insertAtHead(block);
-      else
-        where->insertBefore(block);
-
-      // Create a call to deinit and put it in the block
-      // In case resolveCall drops other stuff into the tree ahead
-      // of the call, we wrap everything in a block for safe removal.
+      // Resolve a call to deinit
       VarSymbol* tmp   = newTemp(at);
       CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
 
-      block->insertAtTail(new DefExpr(tmp));
-      block->insertAtTail(call);
+      FnSymbol* fn = resolveUninsertedCall(at, call);
+      INT_ASSERT(fn);
+      resolveFunction(fn);
 
-      resolveCallAndCallee(call);
-
-      at->setDestructor(call->resolvedFunction());
-
-      block->remove();
+      at->setDestructor(fn);
     }
   }
 

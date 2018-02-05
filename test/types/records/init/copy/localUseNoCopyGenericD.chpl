@@ -1,20 +1,22 @@
 module Bar {
-  var globalR = new R();
+  var globalR = new R(1,2,3);
 
   record R {
-    var x,y,z : int;
-  }
-  proc R.init(){
+    var x,y,z;
   }
   proc R.init(other:R){
     x = other.x;
     y = other.y;
     z = other.z;
+    super.init();
   }
   proc R.init(a,b,c) {
     x = a;
     y = b;
     z = c;
+    super.init();
+  }
+  proc R.deinit() {
   }
 
   proc getter() {
@@ -25,13 +27,21 @@ module Bar {
   }
 }
 
-proc main() {
-  use Bar;
+module Foo {
+  record Inner {
+    var a:int;
+  }
 
-  // For 's = r' below, the compiler does actually insert the default copy
-  // initializer.
-  var r : R;
-  var s = r;
+  proc main() {
+    use Bar;
 
-  writeln(getter());
+    // For 's = r' below, the compiler does actually insert the default copy
+    // initializer.
+    var r : R(Inner,Inner,Inner);
+    var s = r;
+
+    writeln(r);
+    writeln(s);
+    writeln(getter());
+  }
 }
