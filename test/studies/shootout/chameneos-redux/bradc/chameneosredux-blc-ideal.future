@@ -1,5 +1,0 @@
-bug: internal error for generic argument formed by promoted initializer call
-
-This test generates an internal error in spite of its similarity to
-../elliot/chameneosredux-ejr.chpl.  Seems like this should be legal,
-or even if not, should not be an internal error.

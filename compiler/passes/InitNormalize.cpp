@@ -521,9 +521,8 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   //   var x = f(...);
   //   var y = new MyRecord(...);
   } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (initCall->isPrimitive(PRIM_NEW) == true) {
-      INT_ASSERT(false);
-
+    if (isTypeVar && initCall->isPrimitive(PRIM_NEW) == true) {
+      USR_FATAL(initExpr, "Cannot initialize type field '%s' with 'new' expression", field->sym->name);
     } else if (isTypeVar == true) {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
@@ -850,30 +849,24 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
   // e.g.
   //   var x = f(...);
   //   var y = new MyRecord(...);
-  } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (initCall->isPrimitive(PRIM_NEW) == true) {
+  } else if (isCallExpr(initExpr)) {
+    VarSymbol* tmp      = newTemp("tmp");
+    DefExpr*   tmpDefn  = new DefExpr(tmp);
+    CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
+
+    Symbol*    _this    = mFn->_this;
+    Symbol*    name     = new_CStringSymbol(field->sym->name);
+    CallExpr*  fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
+
+    if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
-
-    } else {
-      VarSymbol* tmp      = newTemp("tmp");
-      DefExpr*   tmpDefn  = new DefExpr(tmp);
-      CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
-
-      Symbol*    _this    = mFn->_this;
-      Symbol*    name     = new_CStringSymbol(field->sym->name);
-      CallExpr*  fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
-
-      if (isFieldAccessible(initExpr) == false) {
-        INT_ASSERT(false);
-      }
-
-      updateFieldsMember(initExpr);
-
-      insertBefore->insertBefore(tmpDefn);
-      insertBefore->insertBefore(tmpInit);
-      insertBefore->insertBefore(fieldSet);
     }
 
+    updateFieldsMember(initExpr);
+
+    insertBefore->insertBefore(tmpDefn);
+    insertBefore->insertBefore(tmpInit);
+    insertBefore->insertBefore(fieldSet);
   } else {
     INT_ASSERT(false);
   }
