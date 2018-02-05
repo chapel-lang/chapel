@@ -940,12 +940,16 @@ proc trace(A: [?D] ?eltType) {
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
-   triangular factor.  Matrix ``A`` is not modified.
+   triangular factor.  Matrix ``A`` is not modified.  Returns an array with
+   the same shape as argument ``A`` with the lower or upper triangular
+   Cholesky factorization of ``A``.
  */
 proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
                                             (isRealType(t) ||
                                              isComplexType(t)) {
-  assert(A.domain.dim(1) == A.domain.dim(2));
+  if !isSquare(A) then
+    halt("Matrix passed to cholesky must be square");
+
   var copy = A;
   const uploStr = if lower then "L" else "U";
   potrf(lapack_memory_order.row_major, uploStr, copy);
@@ -956,7 +960,7 @@ proc cholesky(A: [] ?t, lower = true) where A.rank == 2 &&
 }
 
 
-/* Find the eigenvalues of matrix ``A``. ``A`` must be square.
+/* Find the eigenvalues and eigenvectors of matrix ``A``. ``A`` must be square.
 
    * If ``left`` is ``true`` then the "left" eigenvectors are computed. The
      return value is a tuple with two elements:
@@ -1015,11 +1019,12 @@ proc eigvals(A: [] ?t, param left = false, param right = false)
   }
 
   const n = A.domain.dim(1).length;
-  assert(A.domain.dim(1) == A.domain.dim(2));
+  if !isSquare(A) then
+    halt("Matrix passed to eigvals must be square");
   var copy = A;
   var wr, wi: [1..n] t;
 
-  if  !left && !right {
+  if !left && !right {
     var vl, vr: [1..1, 1..n] t;
     geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, wi, vl, vr);
     var eigVals = convertToCplx(wr, wi);
