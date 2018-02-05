@@ -24,7 +24,6 @@ resolve :
 resolveIntents :
 checkResolved :
 replaceArrayAccessesWithRefTemps :
-processIteratorYields :
 flattenFunctions :
 cullOverReferences :
 lowerErrorHandling :
