@@ -84,6 +84,9 @@ proc const int.test_const_this() {
 global = start;
 global.test_const_this();
 
+// We don't support 'in' or 'const in' as 'this' intents.
+// If we did, I'd want these functions uncommented to test it.
+
 /*proc in range.test_in_this() {
   global = change;
   writeln("in this ", upper(this));
