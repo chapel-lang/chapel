@@ -27,35 +27,35 @@
  Concurrent-safe memory reclamation using Quiescent State-Based Reclamation (QSBR).
 
  For memory to be appropriately protected by QSBR, two invariants must be established:
- 	1.	References to QSBR-protected memory obtained prior to a checkpoint must not be
- 		used after the checkpoint, otherwise the reference is unsafe.
-  	2.	QSBR-protected memory must only be deferred for deletion at most once.
+  1.  References to QSBR-protected memory obtained prior to a checkpoint must not be
+    used after the checkpoint, otherwise the reference is unsafe.
+    2.  QSBR-protected memory must only be deferred for deletion at most once.
 
  The idiomatic usage of QSBR involves separating memory reclamation into two phases:
- 	1.	Logically deleting memory by removing it from some data structure in some linearizable fashion.
- 	2.	Physically deleting the memory by deferring deletion of it.
+  1.  Logically deleting memory by removing it from some data structure in some linearizable fashion.
+  2.  Physically deleting the memory by deferring deletion of it.
 
  This is commonly the case for non-blocking data structures and algorithms. For an example, see below:
 
  ======================================
- 			Non-Blocking Stack
+      Non-Blocking Stack
  ======================================
- 	struct node *head;
+  struct node *head;
 
- 	void *dequeue(void) {
-		struct node *currentHead, *newHead;
-		// The currentHead is logically removed from the list...
-		do {
-			currentHead = load(&head);
-			if (currentHead == NULL) return NULL;
-			newHead = currentHead->next;
-		} while (CAS(&head, currentHead, newHead));
-		
-		// Queue up for physical removal...
-		void *ret = currentHead->value;
-		chpl_qsbr_defer_delete(currentHead);
-		return ret;
- 	}
+  void *dequeue(void) {
+    struct node *currentHead, *newHead;
+    // The currentHead is logically removed from the list...
+    do {
+      currentHead = load(&head);
+      if (currentHead == NULL) return NULL;
+      newHead = currentHead->next;
+    } while (CAS(&head, currentHead, newHead));
+    
+    // Queue up for physical removal...
+    void *ret = currentHead->value;
+    chpl_qsbr_defer_delete(currentHead);
+    return ret;
+  }
 */
 
 void chpl_qsbr_init(void);

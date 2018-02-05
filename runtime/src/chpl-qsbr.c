@@ -24,10 +24,8 @@
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
-// Number of checkpoints to pass before processing
+// Number of checkpoints to pass before processing our deferral list.
 #define CHPL_QSBR_CHECKPOINTS_PER_PROCESS 8
-
-
 
 static atomic_uint_least64_t global_epoch = 0;
 
