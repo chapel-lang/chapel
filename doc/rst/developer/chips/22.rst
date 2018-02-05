@@ -312,6 +312,41 @@ kernel.
 
 		with ( const grid(2)= (1024,1024));
 
+	**ii. Use convention of optional argument to parallel iterators.**
+
+        Since 'forall' loops are normally implemented by parallel
+        iterators, the parallel iterators can include explicit arguments
+        to set the workgroup size. The grid size should be naturally
+        determined by the 'forall' implementation when going over a
+        bounded array / domain / range.
+
+        E.g. ::
+
+           forall i in 1..n { ... }
+
+        should automatically know that the iteration space is 1..n.
+
+        If a user wanted to specify the workgroup size of that loop,
+        they might write ::
+
+           forall i in (1..n).these(workgroup=8) { ... }
+
+        and he parallel iterator implementing foralls over ranges would
+        pass that workgroup size information to the compiler. This
+        implementation would, in practice, attach it to the
+        "vectorizeable C loop" that the forall loops ultimately turn in
+        to. But, it can do that in a implementation-specific way, rather
+        than in a way that requires bigger language changes, since the
+        feature will be available by using these iterators, simply by
+        adding an additional argument to the iterator invocation.
+
+        Also, this strategy makes sense under the assumption that
+        adjusting the workgroup size at all for a particular loop is a
+        relatively advanced / rare feature. Under that assumption, it
+        might not make sense to make language changes to support the
+        idea.
+
+
 **e. Can the new Intents (workgroup and grid) be used outside the kernel (for
 CPU)?**
 	
@@ -409,6 +444,43 @@ concepts:
 	users can infer the workgroup IDs. Hence to keep the extensions
 	simple, we introduce only the minimal set required.
 
+        Current thinking is that these would be available as part of two
+        tuples that are globally available but have special meaning
+        (similarly to the `here` variable): loopIndices and
+        loopIterationSpace (and these are not the final names).
+
+        loopIndices indicates the address of the current iteration, while
+        loopIterationSpace indicates how the iteration space is divided
+        up.
+
+
+        For example, let's think about this example again: ::
+
+           forall i in 1..n { ... }
+
+        Inside the range iterator, it will have something like this: ::
+
+          iter range.these(workgroup=defaultWorkgroupSize, ...) {
+             coforall t in 1..numCores {
+                var start = computeStart(t, n);
+                var end = computeEnd(t, n);
+
+                for j in vectorizeOnly(start..end, workgroup=workgroup) {
+                    yield j;
+                }
+              }
+          }
+
+        So, within the forall loop, we would have:
+        * loopIterationSpace   = (1..n, computeStart(t, n)..computeEnd(t, n), workgroupsize)
+        * loopIndices = (i,       t,  current vector/SIMT lane)
+
+
+        All of these are concrete numbers in practice. More concretely, for n=1000, iteration 2 of the loop running on 10 cores and a workgroup size of 8, it would be:
+        * loopIterationSpace   = (1..1000, 100..199, 8)
+        * loopIndices = (2,            1,            2)
+
+
 	**ii. Special Memory Management**
 
 	GPUs offer a fast access memory to perform synchronizations and
@@ -421,12 +493,15 @@ concepts:
 	overload the “on” statement to specify the location of an
 	allocation. ::
 
-		on here var a[10]: int;
+		on here.LocalMemory var a[10]: int;
 
 	However this proposal does not match well with GPU models as
 	allocation of LDS on GPU can only be performed inside the kernel.
+        This syntax is reasonable even though it would be a runtime or
+        compiletime error to use the feature outside of a GPU kernel.
 
-	Alternatively, we propose to introduce a new keyword like
+	A more language-change-intensive alternative is to 
+        introduce a new keyword like
 	“\ **scratch”** that can be called inside and outside a
  	kernel. If called inside a kernel, the GPU compiler will perform the
 	allocation on LDS. If outside the kernel, the compiler will simply
