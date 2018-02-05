@@ -1066,7 +1066,7 @@ module Math {
        a = b;
        b = r;
      }
-    return a;
+    return abs(a);
   }
 
 
