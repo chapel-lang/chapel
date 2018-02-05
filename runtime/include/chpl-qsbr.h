@@ -23,36 +23,55 @@
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
 
-/**
-* A Quiescent State-Based Reclamation style of Read-Copy-Update and
-* pseudo garbage-collector. We generalize and coarsen the granularity
-* of scope by keeping a single global epoch describing the state of
-* the entire system. Updates to protected data can be 'broadcast' to the system,
-* incrementing the global epoch and moving the system's state forward.
-* Threads must periodically pass through checkpoints which indicate that they
-* are not currently accessing protected data by updating their thread-local epochs
-* to the current global epoch. Once all threads have passed some epoch, it is
-* safe for the updater to delete the older version of data. Multiple writers are
-* allowed.
+/*
+ Concurrent-safe memory reclamation using Quiescent State-Based Reclamation (QSBR).
+
+ For memory to be appropriately protected by QSBR, two invariants must be established:
+ 	1.	References to QSBR-protected memory obtained prior to a checkpoint must not be
+ 		used after the checkpoint, otherwise the reference is unsafe.
+  	2.	QSBR-protected memory must only be deferred for deletion at most once.
+
+ The idiomatic usage of QSBR involves separating memory reclamation into two phases:
+ 	1.	Logically deleting memory by removing it from some data structure in some linearizable fashion.
+ 	2.	Physically deleting the memory by deferring deletion of it.
+
+ This is commonly the case for non-blocking data structures and algorithms. For an example, see below:
+
+ ======================================
+ 			Non-Blocking Stack
+ ======================================
+ 	struct node *head;
+
+ 	void *dequeue(void) {
+		struct node *currentHead, *newHead;
+		// The currentHead is logically removed from the list...
+		do {
+			currentHead = load(&head);
+			if (currentHead == NULL) return NULL;
+			newHead = currentHead->next;
+		} while (CAS(&head, currentHead, newHead));
+		
+		// Queue up for physical removal...
+		void *ret = currentHead->value;
+		chpl_qsbr_defer_delete(currentHead);
+		return ret;
+ 	}
 */
 
 void chpl_qsbr_init(void);
 
-// Invoked periodically by tasks to indicate that it is no
-// longer using QSBR-Protected data. Note that this must never
-// be called while accessing the data itself. This function
-// will update TLS data.
+// Called periodically to declare a quiescent state
 void chpl_qsbr_checkpoint(void);
 
-// Broadcasts a global state change and deletes 'data' if all threads pass a
-// checkpoint. If a thread does not pass the checkpoint the task of deletion
-// is deferred to that thread.
+// Defer deletion of the data until it is safe
 void chpl_qsbr_defer_deletion(void *data);
 
 // Variant of 'chpl_qsbr_defer_deletion' that accepts an array of data.
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData);
 
-// Called when a thread is going to be unable to run tasks for a while
+// Must be called when a thread will be blocked may be unable to call a checkpoint
+// for a time. If a thread is marked as 'blocked' it must not access QSBR-protected
+// data or else it is unsafe.
 void chpl_qsbr_blocked(void);
 void chpl_qsbr_unblocked(void);
 
