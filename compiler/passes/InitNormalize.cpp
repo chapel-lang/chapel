@@ -270,8 +270,7 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
-    DefExpr* field         = mCurrField;
-    bool     isTypeUnknown = mCurrField->sym->type == dtUnknown;
+    DefExpr* field = mCurrField;
 
     if (isOuterField(field)) {
       // The outer field is a compiler generated field.  Handle it specially.
@@ -288,8 +287,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
         if (field->exprType != NULL && field->init == NULL) {
           genericFieldInitTypeWoutInit (insertBefore, field);
 
-        } else if ((field->exprType != NULL  && field->init != NULL)  ||
-                   (isTypeUnknown   == false && field->init != NULL)) {
+        } else if (field->exprType != NULL  && field->init != NULL) {
           genericFieldInitTypeWithInit (insertBefore,
                                         field,
                                         field->init->copy());
@@ -306,8 +304,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
       } else if (field->exprType != NULL && field->init == NULL) {
         fieldInitTypeWoutInit (insertBefore, field);
 
-      } else if ((field->exprType != NULL  && field->init != NULL)  ||
-                 (isTypeUnknown   == false && field->init != NULL)) {
+      } else if (field->exprType != NULL  && field->init != NULL) {
         fieldInitTypeWithInit (insertBefore, field, field->init->copy());
 
       } else if (field->exprType == NULL && field->init != NULL) {
