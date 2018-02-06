@@ -185,7 +185,6 @@ static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 void chpl_task_yield(void)
 {
-    chpl_qsbr_checkpoint();
     PROFILE_INCR(profile_task_yield,1);
     if (qthread_shep() == NO_SHEPHERD) {
         sched_yield();

@@ -24,9 +24,6 @@
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
-// Number of checkpoints to pass before processing our deferral list.
-#define CHPL_QSBR_CHECKPOINTS_PER_PROCESS 8
-
 // We maintain a single global counter that denotes the current epoch.
 // Each time some deletion is published (deferred), we advance the epoch
 // by one. At each checkpoint, a thread will update their thread-local epoch
@@ -54,10 +51,6 @@ struct defer_node {
 
 // Thread-specific meta data.
 struct tls_node {
-  /*
-    The number of checkpoints passed through
-  */
-  uint64_t passedCheckpoints;
   /*
     The current observed epoch. This is used to ensure that writers
     do not delete an older instance that corresponds to this epoch.
@@ -120,7 +113,7 @@ static inline uint64_t get_global_epoch(void) {
 
 static inline uint64_t advance_global_epoch(void);
 static inline uint64_t advance_global_epoch(void) {
-  return atomic_fetch_add_uint_least64_t(&global_epoch, 1);
+  return atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
 }
 
 // Update a thread's current epoch to the most recent; this
@@ -177,7 +170,7 @@ static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch) {
   struct defer_node *dnode = node->deferList, *prev = NULL;
   while (dnode != NULL) {
-    if (epoch > dnode->targetEpoch) {
+    if (epoch >= dnode->targetEpoch) {
       break;
     }
 
@@ -407,60 +400,56 @@ void chpl_qsbr_blocked(void) {
 
 void chpl_qsbr_checkpoint(void) {
     struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
+    
+    // If no tls has been setup then no checkpoint needs to be crossed..
     if (tls == NULL) {
-        init_tls();
-        tls = CHPL_TLS_GET(chpl_qsbr_tls);
+      return;
     }
 
     // Observe the current epoch.
     observe_epoch(tls);
 
     // Check if we have passed enough checkpoints to process our deferred data.
-    tls->passedCheckpoints++;
-    if (tls->passedCheckpoints % CHPL_QSBR_CHECKPOINTS_PER_PROCESS == 0
-      && tls->deferList != NULL) {
+    if (tls->deferList != NULL) {
       acquire_spinlock(tls);
       handle_deferred_data(tls);
       release_spinlock(tls);
     } 
 }
 
+static void _defer_deletion(void *data, int numData) {
+  struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
+
+  // Setup TLS if needed
+  if (tls == NULL) {
+    init_tls();
+    tls = CHPL_TLS_GET(chpl_qsbr_tls);
+  }
+
+  // Broadcast our state change
+  uint64_t epoch = advance_global_epoch();
+  set_epoch(tls, epoch);
+
+  // Defer deletion of the data until all threads are
+  // at least at the received epoch.
+  struct defer_node *dnode = pop_recycle_list(tls);
+  dnode->targetEpoch = epoch;
+  dnode->data = data;
+  dnode->numData = 0;
+
+  // Defer deletion of our node.
+  acquire_spinlock(tls);
+  push_defer_list(tls, dnode);
+  handle_deferred_data(tls);
+  release_spinlock(tls);
+}
+
 void chpl_qsbr_defer_deletion(void *data) {
-    uint64_t epoch = advance_global_epoch() + 1;
-    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-    if (tls == NULL) {
-      init_tls();
-      tls = CHPL_TLS_GET(chpl_qsbr_tls);
-    }
-    observe_epoch(tls);
-
-    struct defer_node *dnode = pop_recycle_list(tls);
-    dnode->targetEpoch = epoch;
-    dnode->data = data;
-    dnode->numData = 0;
-
-    acquire_spinlock(tls);
-    push_defer_list(tls, dnode);
-    release_spinlock(tls);
+    _defer_deletion(data, 1);
 }
 
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
-    uint64_t epoch = advance_global_epoch() + 1;
-    struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-    if (tls == NULL) {
-      init_tls();
-      tls = CHPL_TLS_GET(chpl_qsbr_tls);
-    }
-    observe_epoch(tls);
-
-    struct defer_node *dnode = pop_recycle_list(tls);
-    dnode->targetEpoch = epoch;
-    dnode->data = arrData;
-    dnode->numData = numData;
-
-    acquire_spinlock(tls);
-    push_defer_list(tls, dnode);
-    release_spinlock(tls);
+    _defer_deletion(arrData, numData);
 }
 
 void chpl_qsbr_exit(void) {
