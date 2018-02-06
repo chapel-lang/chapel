@@ -521,8 +521,13 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   //   var x = f(...);
   //   var y = new MyRecord(...);
   } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (isTypeVar && initCall->isPrimitive(PRIM_NEW) == true) {
-      USR_FATAL(initExpr, "Cannot initialize type field '%s' with 'new' expression", field->sym->name);
+    if ((isParam || isTypeVar) && initCall->isPrimitive(PRIM_NEW) == true) {
+      if (isTypeVar == true) {
+        USR_FATAL(initExpr, "Cannot initialize type field '%s' with 'new' expression", field->sym->name);
+      } else {
+        INT_ASSERT(isParam == true);
+        USR_FATAL(initExpr, "Cannot initialize param field '%s' with 'new' expression", field->sym->name);
+      }
     } else if (isTypeVar == true) {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
