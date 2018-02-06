@@ -454,13 +454,6 @@ void chpl_comm_rollcall(void) {
            chpl_numNodes, chpl_nodeName());
 }
 
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
-  // Use of FI_MR_SCALABLE could cover entire address space
-
-  *start_p = NULL;
-  *size_p  = 0;
-}
-
 void chpl_comm_broadcast_global_vars(int numGlobals) {
 #ifdef CHPL_TARGET_PLATFORM_CRAY_XC
   // Use PMI_AllGather
