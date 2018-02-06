@@ -53,11 +53,11 @@ def get_exclusive_nodes():
     Get the nodes reserved exclusively on the chapel partition. Returns tuple
     of (num_exclusive_nodes, exclusive_hostnames)
     """
-    # Grab the "SHARED;NODES;NODELIST;REQ_NODES" info for all jobs. For each
-    # exclusive (SHARED=no) job, track the nodes allocated/requested or the
-    # number of nodes requested if no specific nodes were allocated/requested.
-    # Also consider "draining" nodes as exclusively reserved since no other
-    # jobs will be able to run on them
+    # Grab "OVER_SUBSCRIBE;NODES;NODELIST;REQ_NODES" info for all jobs. For
+    # each non-shared (OVER_SUBSCRIBE!=YES) job, track the allocated/requested
+    # nodes or the number of nodes requested if no specific nodes were
+    # allocated/requested. Also consider "draining" nodes as exclusively
+    # reserved since no other jobs will be able to run on them
     squeue_cmd = ['squeue',
                   '--partition=chapel',
                   '--noheader',
@@ -68,15 +68,15 @@ def get_exclusive_nodes():
                  '--partition=chapel',
                  '--noheader',
                  '--responding',
-                 '--format="no;%D;%N;%N"',
+                 '--format="NO;%D;%N;%N"',
                  '--states=DRAINING']
     sinfo_out = run_command_wrapper(sinfo_cmd)
 
     num_exclusive_nodes = 0
     exclusive_hostnames = set()
     for line in squeue_out + sinfo_out:
-        shared, num_nodes, nodelist, req_nodes = line.split(';')
-        if shared == 'no':
+        oversub, num_nodes, nodelist, req_nodes = line.split(';')
+        if oversub.upper() != 'YES':
             nodes = nodelist or req_nodes
             if nodes:
                 exclusive_hostnames.update(expand_hostnames(nodes))
@@ -104,16 +104,16 @@ def get_num_non_exclusive_nodes():
     return num_non_exclusive_nodes
 
 
-def get_num_shared_jobs_running():
+def get_num_oversub_jobs():
     """
-    Get the number of shared jobs running on the chapel partition
+    Get the number of jobs that allow oversubscription (permit node sharing)
     """
     squeue_cmd = ['squeue',
                   '--partition=chapel',
                   '--noheader',
                   '--format="%h"']
-    squeue_out = run_command_wrapper(squeue_cmd)
-    return squeue_out.count('yes')
+    squeue_out = [s.upper() for s in run_command_wrapper(squeue_cmd)]
+    return squeue_out.count('YES')
 
 
 def get_good_nodepara():
@@ -126,7 +126,7 @@ def get_good_nodepara():
     nodepara = 3
     if chpl_comm.get() != 'none':
         nodepara = 2
-    if get_num_shared_jobs_running() == 0:
+    if get_num_oversub_jobs() == 0:
         nodepara += 1
     return nodepara
 
@@ -134,9 +134,9 @@ def get_good_nodepara():
 def run_paratest(args):
     """
     Run paratest inside an salloc using all nodes that are not reserved
-    exclusively on the chapel partition. Throw `--share --nice` and turn off
-    affinity and limit how many executables can run at once so we play nice
-    with other testing going on.
+    exclusively on the chapel partition. Throw `--oversubscribe --nice` and
+    turn off affinity and limit how many executables can run at once so we play
+    nice with other testing going on.
     """
     nodepara = get_good_nodepara()
     num_free_nodes = get_num_non_exclusive_nodes()
@@ -147,7 +147,7 @@ def run_paratest(args):
                   '--nodes={0}'.format(num_free_nodes),
                   '--immediate=60',
                   '--partition=chapel',
-                  '--share',
+                  '--oversubscribe',
                   '--nice']
 
     exclude_set = get_exclusive_nodes()[1]
