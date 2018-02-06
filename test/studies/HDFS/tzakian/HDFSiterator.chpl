@@ -37,7 +37,7 @@
 use Sys, 
     HDFS,
     HDFStools, 
-    UtilReplicatedVar, 
+    ReplicatedVar,
     BlockDist;
 
 // ============== Serial iterator ========================

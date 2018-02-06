@@ -192,7 +192,7 @@ module MPI {
   use SysCTypes;
   require "mpi.h";
 
-  use UtilReplicatedVar;
+  use ReplicatedVar;
 
   /*
      Automatically initializes MPI (if not already initialized by the runtime), and

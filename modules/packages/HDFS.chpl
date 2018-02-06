@@ -117,7 +117,7 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-use IO, SysBasic, SysError, UtilReplicatedVar;
+use IO, SysBasic, SysError, ReplicatedVar;
 
 pragma "no doc"
 extern type qio_locale_map_ptr_t;     // array of locale to byte range mappings

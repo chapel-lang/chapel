@@ -1,7 +1,7 @@
 // This test invokes the test examples provided with the implementation
 // of the replicated variables.
 
-use UtilReplicatedVar;
+use ReplicatedVar;
 
 rcExample(5.0, 33, Locales[0]);
 

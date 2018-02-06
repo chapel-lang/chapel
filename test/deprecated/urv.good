@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/standard/UtilReplicatedVar.chpl:103: warning: Module 'UtilReplicatedVar' has been deprecated and demoted to the package 'ReplicatedVar'

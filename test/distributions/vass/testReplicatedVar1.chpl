@@ -1,4 +1,4 @@
-use ReplicatedDist, UtilReplicatedVar;
+use ReplicatedDist, ReplicatedVar;
 
 proc writeReplicands(x, locs) {
   for loc in locs {
