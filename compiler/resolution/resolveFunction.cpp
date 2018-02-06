@@ -125,6 +125,7 @@ static void resolveFormals(FnSymbol* fn) {
 // Fix up value types that need to be ref types.
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   // For begin functions, copy ranges in if passed by blank intent.
+  // TODO: remove this code - it should no longer be necessary
   if (fn->hasFlag(FLAG_BEGIN)                   == true &&
       formal->type->symbol->hasFlag(FLAG_RANGE) == true) {
     if (formal->intent == INTENT_BLANK ||
