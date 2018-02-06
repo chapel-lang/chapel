@@ -723,9 +723,27 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
       usearg[i] = '\0';
   }
 
+  // Find the first developer only flag
+  // (Code in this function assumes developer flags are after other flags)
+  int firstDeveloperOnly = 0;
+  for (int i = 0; desc[i].name != 0; i++) {
+    const char* devFlags = "Developer Flags";
+    if (desc[i].description &&
+        // Does the description start with devFlags?
+        strlen(desc[i].description) > strlen(devFlags) &&
+        0 == memcmp(desc[i].description, devFlags, strlen(devFlags))) {
+      firstDeveloperOnly = i;
+      break;
+    }
+  }
+
   bool helped = false;
   // Find some common confusions and print a suggestion
   for (int i = 0; desc[i].name != 0; i++) {
+    // Skip developer-only options for non-developer compile
+    if (!developer && i >= firstDeveloperOnly)
+      break;
+
     if (usearg[0] == desc[i].key && usearg[1] == '\0') {
       // e.g. --s was used instead of -s
       fprintf(stderr, "       Did you mean -%c ?\n", desc[i].key);
@@ -746,6 +764,10 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   // e.g. --helpme
   if (!helped) {
     for (int i = 0; desc[i].name != 0; i++) {
+      // Skip developer-only options for non-developer compile
+      if (!developer && i >= firstDeveloperOnly)
+        break;
+
       if (desc[i].name[0] != '\0' &&
           strlen(usearg) > strlen(desc[i].name) &&
           0 == memcmp(usearg, desc[i].name, strlen(desc[i].name))) {
@@ -758,6 +780,10 @@ static void print_suggestions(const char* flag, const ArgumentDescription* desc)
   // Did the user type a portion of a flag?
   if (!helped) {
     for (int i = 0; desc[i].name != 0; i++) {
+      // Skip developer-only options for non-developer compile
+      if (!developer && i >= firstDeveloperOnly)
+        break;
+
       if (desc[i].name[0] != '\0' &&
           strlen(usearg) < strlen(desc[i].name) &&
           0 == memcmp(usearg, desc[i].name, strlen(usearg))) {
