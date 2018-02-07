@@ -1473,7 +1473,7 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 #endif
-static void      local_yield(void);
+static void      local_yield(int cnt);
 
 
 //
@@ -3357,9 +3357,10 @@ void chpl_comm_barrier(const char *msg)
   //
   DBG_P_LP(DBGF_BARRIER, "BAR wait for %d children", (int) bar_num_children);
   for (uint32_t i = 0; i < bar_num_children; i++) {
+    int spins = 0;
     while (bar_info.child_notify[i] == 0) {
       PERFSTATS_INC(lyield_in_bar_1_cnt);
-      local_yield();
+      local_yield(++spins);
     }
   }
 
@@ -3379,9 +3380,10 @@ void chpl_comm_barrier(const char *msg)
     // Wait for our parent locale to release us from the barrier.
     //
     DBG_P_LP(DBGF_BARRIER, "BAR wait for parental release");
+    int spins = 0;
     while (bar_info.parent_release == 0) {
       PERFSTATS_INC(lyield_in_bar_2_cnt);
-      local_yield();
+      local_yield(++spins);
     }
   }
 
@@ -5235,8 +5237,9 @@ void strd_nb_helper(chpl_comm_nb_handle_t (*xferFn)(void*, int32_t, void*,
 
   if (currHandles >= strd_maxHandles) {
     // reached max in flight -- retire some to make room
+    int spins = 0;
     while (!chpl_comm_try_nb_some(handles, currHandles)) {
-      local_yield();
+      local_yield(++spins);
     }
 
     // compress retired transactions out of the list
@@ -5758,8 +5761,9 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
     // all the other work we could already.
     //
     consume_all_outstanding_cq_events(nbdp->cdi);
+    int spins = 0;
     while (!atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
-      local_yield();
+      local_yield(++spins);
       consume_all_outstanding_cq_events(nbdp->cdi);
     }
 
@@ -6967,9 +6971,10 @@ void do_fork_post(c_nodeid_t locale,
 
   if (blocking) {
     PERFSTATS_INC(wait_rfork_cnt);
+    int spins = 0;
     while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
-      local_yield();
+      local_yield(++spins);
     }
 
     rf_done_free(p_rf_req->rf_done);
@@ -7011,7 +7016,7 @@ void acquire_comm_dom(void)
 
   want_cdi = want_cdi_start = comm_dom_free_idx;
   want_cd = &comm_doms[want_cdi];
-
+  int spins = 0;
   do {
 #ifdef DEBUG_STATS
     acq_looks++;
@@ -7044,7 +7049,7 @@ void acquire_comm_dom(void)
 
     if (want_cdi == want_cdi_start) {
       PERFSTATS_INC(lyield_in_acq_cd_cnt);
-      local_yield();
+      local_yield(++spins);
     }
   } while (1);
 
@@ -7086,7 +7091,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 
   want_cdi = want_cdi_start = comm_dom_free_idx;
   want_cd = &comm_doms[want_cdi];
-
+  int spins = 0;
   do {
 #ifdef DEBUG_STATS
     acq_looks++;
@@ -7141,7 +7146,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 
     if (want_cdi == want_cdi_start) {
       PERFSTATS_INC(lyield_in_acq_cd_rb_cnt);
-      local_yield();
+      local_yield(++spins);
     }
   } while (1);
 
@@ -7267,9 +7272,10 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   // minimum round-trip time on the network isn't small and maybe
   // we can find something else to do in the meantime.
   //
+  int spins = 0;
   do {
     if (do_yield) {
-      local_yield();
+      local_yield(++spins);
     }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
@@ -7340,8 +7346,9 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   // minimum round-trip time on the network isn't small and maybe
   // we can find something else to do in the meantime.
   //
+  int spins = 0;
   do {
-    local_yield();
+    local_yield(++spins);
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
 
@@ -7352,7 +7359,7 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 
 
 static
-void local_yield(void)
+void local_yield(int cnt)
 {
   //
   // Our task cannot make progress.  Yield, to allow some other task to
@@ -7366,7 +7373,7 @@ void local_yield(void)
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
     if (can_task_yield()) 
-      chpl_task_yield();
+      chpl_task_yield2(cnt);
     else
       sched_yield();
   }
