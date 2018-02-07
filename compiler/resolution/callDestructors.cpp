@@ -994,9 +994,9 @@ static void insertYieldTemps()
       // Or foundSe is the argument to PRIM_YIELD.
 
       // TODO - is the check for FLAG_INSERT_AUTO_DESTROY
-      // necessary here?
+      // necessary here? Could this use doesValueReturnRequireCopy?
       if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-          doesValueReturnRequireCopy(foundSe)) {
+          !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
         // Add an auto-copy here.
         SET_LINENO(call);
         Type* type = foundSe->symbol()->getValType();
