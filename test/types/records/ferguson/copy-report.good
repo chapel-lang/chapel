@@ -8,7 +8,6 @@ VARIABLE INITIALIZATION -- VALUE CALL
    const return intent, typed variable
     assign
  call in arg / call
-    initCopy
  field initialization / value call
    default constructor
     initCopy
