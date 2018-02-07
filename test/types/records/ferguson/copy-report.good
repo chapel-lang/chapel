@@ -23,6 +23,13 @@ VARIABLE INITIALIZATION -- LOCAL VAR
    default constructor
     initCopy
 
+VARIABLE INITIALIZATION -- OUTER VAR
+ variable initialization / outer var
+   untyped variable
+    initCopy
+   typed variable
+    assign
+
 VARIABLE INITIALIZATION -- GLOBAL / REF
  variable initialization / global var
    untyped variable
@@ -49,7 +56,7 @@ VARIABLE INITIALIZATION -- GLOBAL / REF
     initCopy
    typed variable
     assign
- variable initialization / blank-intent arg
+ variable initialization / ref arg
    untyped variable
     initCopy
    typed variable
@@ -102,6 +109,10 @@ VALUE RETURN -- VALUE CALL
 VALUE RETURN -- LOCAL VAR
  return / local variable
 
+VALUE RETURN -- OUTER VAR
+ return / outer variable
+    initCopy
+
 VALUE RETURN -- GLOBAL/REF
  return / global variable
     initCopy
@@ -123,3 +134,9 @@ REF USE -- REF VALUE
  return ref / global variable
  return const ref / global variable
  return ref / ref arg
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+
