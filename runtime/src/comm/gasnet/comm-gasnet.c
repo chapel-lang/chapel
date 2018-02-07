@@ -158,9 +158,10 @@ void wait_done_obj(done_t* done)
 #ifndef CHPL_COMM_YIELD_TASK_WHILE_POLLING
   GASNET_BLOCKUNTIL(done->flag);
 #else
+  int spins = 0;
   while (!done->flag) {
     (void) gasnet_AMPoll();
-    chpl_task_yield();
+    chpl_task_yield2(spins++);
   }
 #endif
 }
@@ -1040,8 +1041,9 @@ void chpl_comm_barrier(const char *msg) {
   // processor while waiting.
   //
   gasnet_barrier_notify(id, 0);
+  int spins = 0;
   while ((retval = gasnet_barrier_try(id, 0)) == GASNET_ERR_NOT_READY) {
-    chpl_task_yield();
+    chpl_task_yield2(spins++);
   }
   GASNET_Safe_Retval(gasnet_barrier_try(id, 0), retval);
 }

@@ -58,6 +58,8 @@
   }
 */
 
+const int CHPL_QSBR_ITERATIONS_PER_CHECKPOINT = 64;
+
 void chpl_qsbr_init(void);
 
 // Called periodically to declare a quiescent state
