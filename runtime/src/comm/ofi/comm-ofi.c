@@ -156,8 +156,8 @@ void chpl_comm_post_task_init(void) {
   }
 
   libfabric_init();
-  ofi_put_get_init(&ofi);
-  ofi_am_init(&ofi);
+  chpl_comm_ofi_put_get_init(&ofi);
+  chpl_comm_ofi_am_init(&ofi);
 
   // Start progress thread(s)
   for (i = 0; i < num_progress_threads; i++) {
@@ -601,7 +601,7 @@ int chpl_comm_numPollingTasks(void) { return 1; }
 void chpl_comm_make_progress(void) { }
 
 // In comm-ofi-am.c
-void am_handler(struct fi_cq_data_entry* cqe);
+void chpl_comm_ofi_am_handler(struct fi_cq_data_entry* cqe);
 
 /*
  * Set up the progress thread
@@ -642,7 +642,7 @@ static void progress_thread(void *args) {
     num_read = fi_cq_read(ofi.rx_cq[id], cqes, num_cqes);
     if (num_read > 0) {
       for (i = 0; i < num_read; i++) {
-        ofi_am_handler(&cqes[i]);
+        chpl_comm_ofi_am_handler(&cqes[i]);
         // send ack
       }
     } else {

@@ -42,7 +42,7 @@
 #include "comm-ofi-internal.h"
 
 static struct ofi_stuff* ofi = NULL;
-void ofi_put_get_init(struct ofi_stuff* _ofi) {
+void chpl_comm_ofi_put_get_init(struct ofi_stuff* _ofi) {
   if (ofi == NULL) {
     ofi = _ofi;
   } else {

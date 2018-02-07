@@ -42,7 +42,7 @@
 #include "comm-ofi-internal.h"
 
 static struct ofi_stuff* ofi = NULL;
-void ofi_am_init(struct ofi_stuff* _ofi) {
+void chpl_comm_ofi_am_init(struct ofi_stuff* _ofi) {
   if (ofi == NULL) {
     ofi = _ofi;
   } else {
@@ -127,6 +127,6 @@ static void execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
 //
 //
 
-void ofi_am_handler(struct fi_cq_data_entry* cqe) {
+void chpl_comm_ofi_am_handler(struct fi_cq_data_entry* cqe) {
 
 }

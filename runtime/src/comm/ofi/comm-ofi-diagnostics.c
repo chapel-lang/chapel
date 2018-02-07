@@ -21,14 +21,14 @@
 #include "chpl-gen-includes.h"
 #include "comm-ofi-internal.h"
 
-static struct commDiagnostics_atomic comm_diagnostics;
+static struct commDiags_atomic comm_diagnostics;
 static int chpl_comm_diags_enabled = 1; // for masking diags
 
-struct commDiagnostics_atomic *chpl_getCommDiagnostics() {
+struct commDiags_atomic *chpl_comm_ofi_getCommDiags() {
   return &comm_diagnostics;
 }
 
-void chpl_commDiagnosticsInc(atomic_uint_least64_t *val) {
+void chpl_comm_ofi_commDiagsInc(atomic_uint_least64_t *val) {
   if (chpl_comm_diagnostics && chpl_comm_diags_enabled) {
      atomic_fetch_add_uint_least64_t(val, 1);
   }
