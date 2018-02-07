@@ -34,8 +34,6 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
-  fTaskStartup(new BlockStmt()),
-  fTaskTeardown(new BlockStmt()),
   fLoopBody(body),
   fFromForLoop(false),
   fContinueLabel(NULL)
@@ -56,18 +54,11 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
-  _this->fTaskStartup = COPY_INT(fTaskStartup);
-  _this->fTaskTeardown = COPY_INT(fTaskTeardown);
-
   return _this;
 }
 
 void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
-  if (oldAst == fTaskStartup)
-    fTaskStartup = toBlockStmt(newAst);
-  else if (oldAst == fTaskTeardown)
-    fTaskTeardown = toBlockStmt(newAst);
-  else if (oldAst == fLoopBody)
+  if (oldAst == fLoopBody)
     fLoopBody = toBlockStmt(newAst);
   else
     INT_ASSERT(false);
@@ -102,13 +93,6 @@ void ForallStmt::verify() {
     INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
 
-  INT_ASSERT(fTaskStartup);
-  INT_ASSERT(fTaskTeardown);
-  verifyNotOnList(fTaskStartup);
-  verifyNotOnList(fTaskTeardown);
-  // Currently we do not use fTaskTeardown.
-  INT_ASSERT(fTaskTeardown->body.length == 0);
-
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
   verifyNotOnList(fLoopBody);
@@ -134,10 +118,6 @@ void ForallStmt::accept(AstVisitor* visitor) {
       expr->accept(visitor);
     for_alist(expr, shadowVariables())
       expr->accept(visitor);
-    if (BlockStmt* tStartup = taskStartup())
-      tStartup->accept(visitor);
-    if (BlockStmt* tTeardown = taskTeardown())
-      tTeardown->accept(visitor);
     fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
@@ -162,16 +142,10 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     if (Expr* sv1 = fShadowVars.head)
       return sv1->getFirstExpr();
     else
-      return fTaskStartup->getFirstExpr();
+      return fLoopBody->getFirstExpr();
   }
 
   if (expr == fShadowVars.tail)
-    return fTaskStartup->getFirstExpr();
-
-  if (expr == fTaskStartup)
-    return fTaskTeardown->getFirstExpr();
-
-  if (expr == fTaskTeardown)
     return fLoopBody->getFirstExpr();
 
   if (expr == fLoopBody)

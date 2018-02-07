@@ -283,40 +283,16 @@ static void scopeResolve(BlockStmt*          block,
   scopeResolve(block->body,         scope);
 }
 
-static void scopeResolve(ForallStmt*         fs,
+static void scopeResolve(ForallStmt*         forallStmt,
                          const ResolveScope* parent)
 {
-  // a ForallStmt has 3 scopes: taskStartup, loopBody, taskTeardown
-  // they are handled very similarly, exept:
-  //  * induction variables are visible only in loopBody
-  //  * taskTeardown scope is nested within taskStartup
+  BlockStmt* fBody = forallStmt->loopBody();
 
-  //// taskStartup ////
+  // or, we could construct ResolveScope specifically for forallStmt
+  ResolveScope* bodyScope = new ResolveScope(fBody, parent);
 
-  BlockStmt*    tStartupBlock = fs->taskStartup();
-  ResolveScope* tStartupScope = new ResolveScope(tStartupBlock, parent);
-
-  //
-  // A reference to a TPV within initBlock will resolve to the shadow var's
-  // outerVarSym(). This is because initBlock has a DefExpr for outerVarSym,
-  // so if we extend tStartupScope with the shadow variable itself, we will
-  // get "multiple definitions" in scopeResolve() below, Also, this choice
-  // enables def-before-use checking of TPVs in tStartupBlock.
-  //
-  // Cf. currently all other shadow variables are available a priori.
-  //
-  for_shadow_vars(sv, temp1, fs)
-   // wass TPV todo: if (!sv->isTPV())
-      tStartupScope->extend(sv);
-
-  scopeResolve(tStartupBlock->body, tStartupScope);
-
-  //// bodyBlock ////
-
-  BlockStmt*    bodyBlock = fs->loopBody();
-  ResolveScope* bodyScope = new ResolveScope(bodyBlock, tStartupScope);
-
-  for_alist(ivdef, fs->inductionVariables()) {
+  // cf. scopeResolve(FnSymbol*,parent)
+  for_alist(ivdef, forallStmt->inductionVariables()) {
     Symbol* sym = toDefExpr(ivdef)->sym;
     // "chpl__tuple_blank" indicates the underscore placeholder for
     // the induction variable. Do not add it. Because if there are two
@@ -325,17 +301,11 @@ static void scopeResolve(ForallStmt*         fs,
       bodyScope->extend(sym);
   }
 
-  for_shadow_vars(sv, temp2, fs)
-    bodyScope->extend(sv);
+  for_shadow_var_defs(svd, temp, forallStmt) {
+    bodyScope->extend(svd->sym);
+  }
 
-  scopeResolve(bodyBlock->body, bodyScope);
-
-  //// taskTeardown ////
-
-  BlockStmt*    tTeardownBlock = fs->taskTeardown();
-  ResolveScope* tTeardownScope = new ResolveScope(tTeardownBlock, tStartupScope);
-
-  scopeResolve(tTeardownBlock->body, tTeardownScope);
+  scopeResolve(fBody->body, bodyScope);
 }
 
 static void scopeResolve(FnSymbol*           fn,
@@ -1789,12 +1759,6 @@ BaseAST* getScope(BaseAST* ast) {
       return block;
 
     } else if (parent) {
-
-      // nesting for ForallStmt blocks
-      if (ForallStmt* fs = toForallStmt(parent))
-        if (expr == fs->taskTeardown())
-          return fs->taskStartup();
-
       return getScope(parent);
 
     } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {

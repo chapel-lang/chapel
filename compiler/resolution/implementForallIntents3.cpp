@@ -711,12 +711,6 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
                           numOrigActuals, iMap, map, svar, expandClone, ++ix);
 
   if (expandClone) {
-#if 0 //wass replace with intents
-    // NB need anchors if we treat RI vars explicitly above
-    cloneTaskFn->insertAtHead(EV->forall->taskStartup()->copy(&map));
-    cloneTaskFn->insertAtTail(EV->forall->taskTeardown()->copy(&map));
-#endif
-
     aInit->remove(); aFini->remove();
     taskFnClonesToFlatten.add(cloneTaskFn);
 
@@ -755,25 +749,6 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   }
 
   map.put(parIdxVar(pfs), NULL); // reserve a slot
-
-#if 0 //wass - will replace with svars
-  // Append the startup block. Prepend the teardown block.
-  // This makes pfs's actions "nested" within fs's actions,
-  // analogously to fs->shadowVariables().insertAtTail() above.
-  //
-  fs->taskStartup()->insertAtTail(pfs->taskStartup()->copy(&map));
-  fs->taskTeardown()->insertAtHead(pfs->taskTeardown()->copy(&map));
-
-#if 0 //wass - more efficient
-  BlockStmt* sbClone = pfs->taskStartup()->copy(&map);
-  fs->taskStartup()->insertAtTail(sbClone);
-  sbClone->flattenAndRemove();
-
-  BlockStmt* tdClone = pfs->taskTeardown()->copy(&map);
-  fs->taskTeardown()->insertAtHead(tdClone);
-  tdClone->flattenAndRemove();
-#endif
-#endif
 
   // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
@@ -837,12 +812,6 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
   for_shadow_vars(svar, temp, outerVis->forall)
     expandShadowVarTopLevel(aInit, aFini, map, svar);
-
-#if 0 // wass replace with intents
-  // Execute startup/teardown blocks.
-  aInit->insertBefore(outerVis->forall->taskStartup()->copy(&map));
-  aFini->insertAfter(outerVis->forall->taskTeardown()->copy(&map));
-#endif
 }
 
 

@@ -104,12 +104,6 @@ forall_explanation_start(BaseAST* ast, BaseAST* parentAst) {
     if (ast == fe->cond)
       return "} if( ";
   }
-  if (ForallStmt* fs = toForallStmt(parentAst)) {
-    if (ast == fs->taskStartup())
-      return "taskStartup ";
-    if (ast == fs->taskTeardown())
-      return "taskTeardown ";
-  }
   if (isDeferStmt(ast)) {
     return "defer\n";
   }
@@ -150,15 +144,9 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      // wass if no taskStartup/TD, see view.cpp as of branch: li ab68383a67
-      if (expr == pfs->taskStartup()) {
+      if (expr == pfs->loopBody()) {
         if (pfs->numShadowVars() == 0)
           print_on_its_own_line(indent, "with()");
-        printf("\n");
-        indent -= 2;
-      } else if (expr == pfs->taskTeardown()) {
-        indent -= 2;
-      } else if (expr == pfs->loopBody()) {
         print_on_its_own_line(indent, "do\n", false);
         indent -= 2;
       }
