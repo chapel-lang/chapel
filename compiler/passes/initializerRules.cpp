@@ -1055,7 +1055,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
       }
 
       if (arg->hasFlag(FLAG_INSTANTIATED_PARAM)) {
-        // Continue the building of the paramter map, since these two args are
+        // Continue the building of the parameter map, since these two args are
         // linked.
         paramMap.put(arg, paramMap.get(formal));
       }
