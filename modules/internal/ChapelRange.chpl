@@ -154,7 +154,6 @@ module ChapelRange {
     // This should be a pragma and not a var declaration.
     var _promotionType: idxType;                   // enables promotion
 
-    inline proc size return this.length;
   }
 
   //################################################################################
@@ -364,11 +363,17 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
   }
 
+
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than max(idxType).
+     and the low and high bounds differ by more than ``max(idxType)``.
    */
+  inline proc range.size: idxType {
+    return this.length;
+  }
+
+  /* Returns :proc:`range.size`.  */
   proc range.length: idxType
   {
     if ! isBoundedRange(this) then
