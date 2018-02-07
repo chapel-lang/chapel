@@ -88,6 +88,22 @@ bool       isInstantiation(Type* sub, Type* super);
 
 bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 
+// If formalRequiresTemp(formal,fn), when this function returns true,
+// the new strategy of making the temporary at the call site will be used.
+// (if it returns false, the temporary will be inside fn)
+bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+
+// This function concerns an initialization expression such as:
+//   var x = <expr>;
+// It returns `true` if <expr> should be copied and `false` if
+// ownership can be transferred.
+//
+// In particular:
+//  var y = ...;
+//  var x = y;   // requires a copy
+//  var z = functionReturningRecordByValue(); // does not require a copy
+bool       doesCopyInitializationRequireCopy(Expr* initFrom);
+
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 

@@ -1140,6 +1140,23 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
     );
 }
 
+bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+  if (isRecord(formal->getValType())) {
+    // For now, rule out default ctor/init/_new
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+        (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+         fn->hasFlag(FLAG_LAST_RESORT) &&
+         (0 == strcmp(fn->name, "init") ||
+          0 == strcmp(fn->name, "_new"))))
+      return false; // old strategy for old-path in wrapAndCleanUpActuals
+    else
+      return true;
+  }
+
+  return false;
+}
+
+
 //
 // Can Chapel rely on the compiler's back end (e.g.,
 // C) to provide the copy for us for 'in' or 'const in' intents when
@@ -1253,14 +1270,20 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_IN:
      case INTENT_CONST_IN:
-      // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
-      // If the compiler verifies in a separate pass that it is never written,
-      // we don't have to copy it.
-      fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                    tmp,
-                                    new CallExpr("chpl__initCopy", formal)));
+      if (!shouldAddFormalTempAtCallSite(formal, fn)) {
+        fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                      tmp,
+                                      new CallExpr("chpl__initCopy", formal)));
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      } else {
+        // move from in intent argument to local variable to be destroyed
+        // (The local variable is not strictly necessary but is a more
+        //  typical pattern for follow-on passes)
+        tmp->addFlag(FLAG_NO_COPY);
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
       break;
 
      case INTENT_BLANK:

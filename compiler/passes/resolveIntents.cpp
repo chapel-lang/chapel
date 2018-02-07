@@ -20,6 +20,7 @@
 #include "resolveIntents.h"
 
 #include "passes.h"
+#include "resolution.h"
 
 bool intentsResolved = false;
 
@@ -251,12 +252,15 @@ void resolveArgIntent(ArgSymbol* arg) {
       // Resolution already handled copying for INTENT_IN for
       // records/unions.
       bool addedTmp = (isRecord(arg->type) || isUnion(arg->type));
-      if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN))
+      FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+      if (fn->hasFlag(FLAG_EXTERN))
         // Q - should this check arg->type->symbol->hasFlag(FLAG_EXTERN)?
         addedTmp = false;
 
       if (addedTmp) {
-        if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+        if (arg->type->symbol->hasFlag(FLAG_COPY_MUTATES) ||
+            (formalRequiresTemp(arg, fn) &&
+             shouldAddFormalTempAtCallSite(arg, fn)))
           intent = INTENT_REF;
         else
           intent = constIntentForType(arg->type);

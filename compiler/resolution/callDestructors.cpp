@@ -326,8 +326,13 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
           if (isUserDefinedRecord(symLhs->type) == true &&
               symRhs->type                      == symLhs->type)
           {
+            bool fromInIntent =
+              (symRhs->originalIntent == INTENT_IN ||
+               symRhs->originalIntent == INTENT_CONST_IN);
+
             if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
                 symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                !fromInIntent &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {
@@ -689,6 +694,27 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   }
 }
 
+bool doesCopyInitializationRequireCopy(Expr* initFrom) {
+  if (isUserDefinedRecord(initFrom->getValType())) {
+    // RHS is a reference, need a copy
+    if (initFrom->isRef())
+      return true;
+
+    // It's a value. Is it another variable or the result of a call?
+    SymExpr* fromSe = toSymExpr(initFrom);
+    INT_ASSERT(fromSe);
+    Symbol* fromSym = fromSe->symbol();
+    if (fromSym->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+        !fromSym->hasFlag(FLAG_EXPR_TEMP)) {
+      // It's from an auto-destroyed value that isn't a expression temporary
+      // storing the result of a function call.
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Code to implement original style of return record by ref formal             *
@@ -917,12 +943,7 @@ static void insertYieldTemps()
       //
       // Or foundSe is the argument to PRIM_YIELD.
 
-      // TODO: instead of checking for the case in which a copy
-      // must be added, it might make more sense to check for the
-      // case in which no copy needs to be added (which is that
-      // the yielded value came from a function call)
-      if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-          !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+      if (doesCopyInitializationRequireCopy(foundSe)) {
         // Add an auto-copy here.
         SET_LINENO(call);
         Type* type = foundSe->symbol()->getValType();
