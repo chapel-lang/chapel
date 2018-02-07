@@ -46,10 +46,19 @@ GEN_DYNAMIC_FLAG = -dynamic
 LIB_STATIC_FLAG =
 LIB_DYNAMIC_FLAG = -shared
 
-# With locale models other than 'flat' we will need libnuma.  That is
-# so far available only in .so form, but the PrgEnv compilers default
-# to forcing static linking.  So, override them in this case.
+#
+# Normally we let the PrgEnv compilers choose the linking mode, but in
+# some circumstances we push dynamic linking as the default.
+#
 ifneq ($(CHPL_MAKE_LOCALE_MODEL), flat)
+# With locale models other than 'flat' we will need libnuma.  That is
+# so far available only in .so form, so override them in this case.
+RUNTIME_LFLAGS += -dynamic
+else ifeq ($(CHPL_MAKE_COMM), ofi)
+# libfabric calls dlopen() and getaddrinfo().  With static linking, the
+# references to these cause link-time warnings that the corresponding
+# dynamic libraries will be required at execution time, so default to
+# dynamic linking to avoid these warnings.
 RUNTIME_LFLAGS += -dynamic
 endif
 

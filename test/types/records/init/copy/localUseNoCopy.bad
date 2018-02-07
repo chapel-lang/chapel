@@ -1,2 +1,0 @@
-localUseNoCopy.chpl:15: In function 'getter':
-localUseNoCopy.chpl:19: error: copy-initialization invoked for a type that does not have a copy initializer

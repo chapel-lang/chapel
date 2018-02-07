@@ -946,72 +946,6 @@ countEnclosingLocalBlocks(Expr* expr, BlockStmt* outer = NULL) {
 }
 
 
-static void localizeReturnSymbols(FnSymbol* iteratorFn, std::vector<SymExpr*> symExprs)
-{
-  //
-  // localize return symbols
-  //
-  Symbol* ret = iteratorFn->getReturnSymbol();
-  Map<BlockStmt*,Symbol*> retReplacementMap;
-  for_vector(SymExpr, se, symExprs) {
-    if (se->symbol() == ret) {
-      BlockStmt* block = NULL;
-      for (Expr* parent = se->parentExpr; parent; parent = parent->parentExpr) {
-        block = toBlockStmt(parent);
-        if (block)
-          break;
-      }
-      INT_ASSERT(block);
-      if (block != ret->defPoint->parentExpr) {
-        if (Symbol* repl = retReplacementMap.get(block)) {
-          se->setSymbol(repl);
-        } else {
-          SET_LINENO(se);
-          Symbol* newRet = newTemp("newRet", ret->type);
-          newRet->addFlag(FLAG_SHOULD_NOT_PASS_BY_REF);
-          //newRet->addFlag(FLAG_YVV);
-          block->insertAtHead(new DefExpr(newRet));
-          se->setSymbol(newRet);
-          retReplacementMap.put(block, newRet);
-        }
-      }
-    }
-  }
-}
-
-
-//
-// Invokes localizeReturnSymbols() on all iterators.
-//
-// Q: What about yields in task functions?
-// A: Since this is done before flattenFunctions, task functions
-// are still nested in their respective iterators. So their yields
-// will be included in 'asts' and handled when 'fn' is the enclosing
-// iterator.
-//
-// see commit 8d3b2c4065d6466dbaadab0ae0c8444e6645dae6
-// Now we're using a return temp per yield, but this change is still
-// apparently necessary. I think that lowerIterators isn't copying some
-// variables when it should be.
-//
-// TODO: revisit and remove this
-static void localizeIteratorReturnSymbols() {
-  forv_Vec(FnSymbol, iterFn, gFnSymbols) {
-    if (iterFn->inTree() && iterFn->isIterator()) {
-      std::vector<SymExpr*> symExprs;
-      collectSymExprs(iterFn, symExprs);
-      localizeReturnSymbols(iterFn, symExprs);
-    }
-  }
-}
-
-// processIteratorYields is a separate pass, called before flattenFunctions.
-// TODO: Move this and supporting functions into their own source file.
-void processIteratorYields() {
-  localizeIteratorReturnSymbols();
-}
-
-
 static Map<FnSymbol*,FnSymbol*> loopBodyFnArgsSuppliedMap;
 
 //
@@ -1179,8 +1113,6 @@ createIteratorFn(FnSymbol* iterator, CallExpr* iteratorFnCall, Symbol* index,
   iteratorFn->insertFormalAtTail(loopBodyFnIDArg);
   ArgSymbol* loopBodyFnArgArgs = new ArgSymbol(INTENT_CONST_IN, "_loopBodyFnArgs", argsBundleType);
   iteratorFn->insertFormalAtTail(loopBodyFnArgArgs);
-
-  localizeReturnSymbols(iteratorFn, symExprs);
 
   convertYieldsAndReturns(calls, index, loopBodyFnIDArg, loopBodyFnArgArgs);
 

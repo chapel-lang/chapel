@@ -1455,6 +1455,9 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   } else if (parentCall && parentCall->isPrimitive(PRIM_NEW))  {
     retval = false;
 
+  } else if (isContextCallExpr(parentExpr)) {
+    retval = false;
+
   } else {
     retval =  true;
   }

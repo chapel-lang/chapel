@@ -941,6 +941,8 @@ static void propagateExtraArgsForLoopIter(CallExpr* call,
 //
 // Return this new symbol.
 //
+// TODO: this code may no longer be necessary now that localizeReturnSymbols
+// has been removed.
 VarSymbol* localizeYieldForExtendLeader(Expr* origRetExpr, Expr* ref) {
   SymExpr* orse = toSymExpr(origRetExpr);
   INT_ASSERT(orse);

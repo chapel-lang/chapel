@@ -1,4 +1,4 @@
-use UtilReplicatedVar;
+use ReplicatedVar;
 use Utils;
 
 module Utils {

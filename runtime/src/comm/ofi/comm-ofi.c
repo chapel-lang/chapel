@@ -237,18 +237,20 @@ static void libfabric_init() {
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
-  // memory layer hasn't been initialized, need to use the system allocator
-#include "chpl-mem-no-warning-macros.h"
-#ifdef CHPL_COMM_SUBSTRATE_SOCKETS
-  hints->fabric_attr->prov_name = "sockets";
-#else
-#ifdef CHPL_COMM_SUBSTRATE_GNI
+#if defined(CHPL_COMM_SUBSTRATE_SOCKETS)
+  {
+    const char s[] = "sockets";
+    char* sDup = chpl_mem_alloc(sizeof(s),
+                                CHPL_RT_MD_COMM_UTIL,
+                                0, 0);
+    strcpy(sDup, s);
+    hints->fabric_attr->prov_name = sDup;
+  }
+#elif defined(CHPL_COMM_SUBSTRATE_GNI)
 #error "Substrate GNI not supported"
 #else
 #error "Substrate type not supported"
 #endif
-#endif
-#include "chpl-mem-warning-macros.h"
 
   /* connectionless reliable */
   hints->ep_attr->type = FI_EP_RDM;
@@ -450,13 +452,6 @@ void chpl_comm_rollcall(void) {
   chpl_resetCommDiagnosticsHere();
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID, 
            chpl_numNodes, chpl_nodeName());
-}
-
-void chpl_comm_desired_shared_heap(void** start_p, size_t* size_p) {
-  // Use of FI_MR_SCALABLE could cover entire address space
-
-  *start_p = NULL;
-  *size_p  = 0;
 }
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {

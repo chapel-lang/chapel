@@ -10,7 +10,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_GMP_CFG_OPTIONS += --host=x86_64-cle-linux-gnu
+CHPL_GMP_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
 GMP_CROSS_COMPILED=yes
 else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu

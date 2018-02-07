@@ -12,7 +12,7 @@ record Container {
 record Stored {
   var x: bool;
 
-  proc init(xVal) {
+  proc init(xVal:bool) {
     x = xVal;
 
     super.init();

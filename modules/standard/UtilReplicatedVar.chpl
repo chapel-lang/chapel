@@ -100,6 +100,10 @@ module UtilReplicatedVar {
 
 use ReplicatedDist;
 
+compilerWarning(
+  "Module 'UtilReplicatedVar' has been deprecated and demoted to the package 'ReplicatedVar'"
+);
+
 private const rcDomainIx   = 1; // todo convert to param
 /* Use this domain when replicating over a subset of locales,
    as shown :ref:`above <subset-of-locales>`. */

@@ -1,5 +1,0 @@
-bug: internal error when field with only a declared initial value uses new
-
-We fixed the problem when a field has declared its type, but overlooked fixing
-it when the field has not declared its type and has declared an initial value
-(or is completely generic) using new.

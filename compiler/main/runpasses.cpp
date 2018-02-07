@@ -56,7 +56,6 @@ struct PassInfo {
 #define LOG_resolveIntents                     LOG_NO_SHORT
 #define LOG_checkResolved                      LOG_NEVER
 #define LOG_replaceArrayAccessesWithRefTemps   LOG_NO_SHORT
-#define LOG_processIteratorYields              LOG_NO_SHORT
 #define LOG_flattenFunctions                   LOG_NO_SHORT
 #define LOG_cullOverReferences                 LOG_NO_SHORT
 #define LOG_lowerErrorHandling                 LOG_NO_SHORT
@@ -122,7 +121,6 @@ static PassInfo sPassList[] = {
   RUN(replaceArrayAccessesWithRefTemps), // replace multiple array access calls with reference temps
 
   // Post-resolution cleanup
-  RUN(processIteratorYields),   // adjustments to iterators
   RUN(flattenFunctions),        // denest nested functions
   RUN(cullOverReferences),      // remove excess references
   RUN(lowerErrorHandling),      // lower error handling constructs

@@ -1892,6 +1892,8 @@ for testname in testsrc:
                             launcher_error = 'Jira 193 -- Unexpected close of apsys for'
                         elif re.search('Transient MPP reservation error on create', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 203 -- Transient MPP reservation error for'
+                        elif re.search('Fatal MPP reservation error on confirm', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
                         elif re.search('Failed to recv data from background qsub', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 260 -- Failed to recv data from background qsub for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or

@@ -48,6 +48,7 @@
   m(SET_WIDE_STRING,      "set wide string",                          true ), \
   m(GET_WIDE_STRING,      "get wide string",                          true ), \
   m(COMMAND_BUFFER,       "command buffer",                           true ), \
+  m(COMM_UTIL,            "comm layer utility space",                 false), \
   m(COMM_XMIT_RCV_BUF,    "comm layer transmit/receive buffer",       false), \
   m(COMM_FRK_SND_INFO,    "comm layer sent remote fork info",         false), \
   m(COMM_FRK_SND_ARG,     "comm layer sent remote fork arg",          false), \

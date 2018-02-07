@@ -175,13 +175,6 @@ void check_replaceArrayAccessesWithRefTemps()
   check_afterResolveIntents();
 }
 
-void check_processIteratorYields() {
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterResolution();
-  check_afterResolveIntents();
-}
-
 void check_flattenFunctions()
 {
   check_afterEveryPass();
