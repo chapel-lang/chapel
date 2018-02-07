@@ -61,14 +61,14 @@ struct ofi_stuff {
 
 };
 
-void ofi_put_get_init(struct ofi_stuff*);
-void ofi_am_init(struct ofi_stuff*);
+void chpl_comm_ofi_put_get_init(struct ofi_stuff*);
+void chpl_comm_ofi_am_init(struct ofi_stuff*);
 
-void ofi_am_handler(struct fi_cq_data_entry*);
+void chpl_comm_ofi_am_handler(struct fi_cq_data_entry*);
 
 /* Comm diagnostics stuff */
 /* Dupe of the version in chpl-comm.h except with atomics */
-struct commDiagnostics_atomic {
+struct commDiags_atomic {
   atomic_uint_least64_t get;
   atomic_uint_least64_t get_nb;
   atomic_uint_least64_t put;
@@ -81,11 +81,11 @@ struct commDiagnostics_atomic {
   atomic_uint_least64_t execute_on_nb;
 };
 
-struct commDiagnostics_atomic *chpl_getCommDiagnostics(void);
-void chpl_commDiagnosticsInc(atomic_uint_least64_t *val);
+struct commDiags_atomic *chpl_comm_ofi_getCommDiags(void);
+void chpl_comm_ofi_commDiagsInc(atomic_uint_least64_t *val);
 
 #define CHPL_COMM_DIAGS_INC(comm_type)                                  \
-    chpl_commDiagnosticsInc(&(chpl_getCommDiagnostics()->comm_type))
+    chpl_comm_ofi_commDiagsInc(&(chpl_comm_ofi_getCommDiags()->comm_type))
 
 #define OFICHKRET(fncall, err) do {              \
     int retval;                                  \
