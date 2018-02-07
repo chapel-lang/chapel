@@ -1,3 +1,0 @@
-# This test will pass on other settings, so only run with valgrind until it is
-# fixed.
-CHPL_TEST_VGRND_EXE != on
