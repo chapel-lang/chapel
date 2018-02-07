@@ -95,13 +95,13 @@ module ChapelRange {
   config param useOptimizedRangeIterators = true;
 
   /*
-    The BoundedRangeType enum is used to specify the types of bounds a range
-    is required to have.
+    The ``BoundedRangeType`` enum is used to specify the types of bounds a
+    range is required to have.
 
-    * bounded - The range has finite low and high bounds.
-    * boundedLow - The range starts at a given low bound, but conceptually goes up to infinity.
-    * boundedHigh - The range conceptually starts at negative infinity and ends at a given high bound.
-    * boundedNone - The range conceptually runs from negative infinity to infinity.
+    * ``bounded`` - The range has finite low and high bounds.
+    * ``boundedLow`` - The range starts at a given low bound, but conceptually goes up to infinity.
+    * ``boundedHigh`` - The range conceptually starts at negative infinity and ends at a given high bound.
+    * ``boundedNone`` - The range conceptually runs from negative infinity to infinity.
    */
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
@@ -154,7 +154,6 @@ module ChapelRange {
     // This should be a pragma and not a var declaration.
     var _promotionType: idxType;                   // enables promotion
 
-    inline proc size return this.length;
   }
 
   //################################################################################
@@ -364,11 +363,17 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
   }
 
+
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than max(idxType).
+     and the low and high bounds differ by more than ``max(idxType)``.
    */
+  inline proc range.size: idxType {
+    return this.length;
+  }
+
+  /* Returns :proc:`range.size`.  */
   proc range.length: idxType
   {
     if ! isBoundedRange(this) then
@@ -558,8 +563,8 @@ module ChapelRange {
   proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
   /* Returns true if the two ranges are the same in every respect: i.e. the
-     two ranges have the same idxType, boundedType, stridable, low, high,
-     stride and alignment values.
+     two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
+     ``low``, ``high``, ``stride`` and ``alignment`` values.
    */
   proc ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
