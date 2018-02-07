@@ -100,6 +100,8 @@ module Atomics {
 
   extern type atomic_bool;
 
+  extern proc chpl_task_yield2(cnt : int);
+
   extern proc atomic_thread_fence(order:memory_order);
   extern proc atomic_signal_fence(order:memory_order);
 
