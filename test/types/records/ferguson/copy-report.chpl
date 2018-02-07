@@ -228,6 +228,29 @@ proc varInitArgIn(in arg)
   check(v2);
 }
 
+proc varInitArgConstIn(const in arg)
+{
+  writeln(" variable initialization / const-in-intent arg");
+  writeln("   untyped variable");
+  var v1 = arg;
+  check(v1);
+  writeln("   typed variable");
+  var v2:R = arg;
+  check(v2);
+}
+
+proc do_varInitArgIn(in arg)
+{
+  writeln(" passing in intent arg to in intent arg");
+  varInitArgIn(arg);
+}
+
+proc do_varInitArgConstIn(const in arg)
+{
+  writeln(" passing const in intent arg to const in intent arg");
+  varInitArgConstIn(arg);
+}
+
 proc varInitArgInout(inout arg)
 {
   writeln(" variable initialization / inout-intent arg");
@@ -364,6 +387,14 @@ proc returnOuter() {
   check(inner());
 }
 
+proc returnInArg(in arg) {
+  writeln(" return / in arg");
+  return arg;
+}
+proc returnConstInArg(const in arg) {
+  writeln(" return / const in arg");
+  return arg;
+}
 
 proc returnGlobal() {
   writeln(" return / global variable");
@@ -443,6 +474,17 @@ proc main() {
   fieldInitLocal();
 
   writeln();
+  writeln("VARIABLE INITIALIZATION -- IN ARG (GLOBAL)");
+  varInitArgIn(global);
+  writeln();
+  varInitArgConstIn(global);
+
+  writeln();
+  writeln("VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))");
+  do_varInitArgIn(returnR());
+  do_varInitArgConstIn(returnR());
+
+  writeln();
   writeln("VARIABLE INITIALIZATION -- OUTER VAR");
   varInitOuter();
 
@@ -454,7 +496,6 @@ proc main() {
   varInitArgBlank(global);
   varInitArgConstRef(global);
   varInitArgRef(global);
-  varInitArgIn(global);
   varInitArgInout(global);
 
   fieldInitGlobal();
@@ -479,6 +520,17 @@ proc main() {
   writeln();
   writeln("VALUE RETURN -- OUTER VAR");
   returnOuter();
+
+  writeln();
+  writeln("VALUE RETURN -- IN ARG (GLOBAL)");
+  check(returnInArg(global));
+  writeln();
+  check(returnConstInArg(global));
+
+  writeln();
+  writeln("VALUE RETURN -- IN ARG (CALL-EXPR)");
+  check(returnInArg(returnR()));
+  check(returnConstInArg(returnR()));
 
   writeln();
   writeln("VALUE RETURN -- GLOBAL/REF");
