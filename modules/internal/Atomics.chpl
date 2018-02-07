@@ -1528,7 +1528,7 @@ module Atomics {
         var spins = 0;
         while (atomic_load_explicit__real32(_v, memory_order_relaxed) != val) {
           spins += 1;
-          chpl_task_yield2(spin);
+          chpl_task_yield2(spins);
         }
         atomic_thread_fence(order);
       }
