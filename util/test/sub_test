@@ -1453,6 +1453,8 @@ for testname in testsrc:
                                  (futuretest, localdir, test_filename))
                 printTestVariation(compoptsnum, compoptslist);
                 sys.stdout.write(']\n')
+                sys.stdout.write('[Compilation output was as follows:]\n')
+                sys.stdout.write(trim_output(output))
                 cleanup(execname)
                 cleanup(printpassesfile)
                 continue # on to next compopts
