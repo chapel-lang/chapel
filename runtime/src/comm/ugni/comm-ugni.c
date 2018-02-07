@@ -4101,11 +4101,11 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = { 0 };
     static int last_ppdi = 0;
     int ppdi;
-
+    int spins = 0;
     ppdi = last_ppdi;
     while (polling_post_descs[ppdi].post_id != 0) {
       if ((ppdi = PPDI_NEXT(ppdi)) == last_ppdi) {
-        local_yield();
+        local_yield(++spins);
         consume_all_outstanding_cq_events(cd_idx);
       }
     }
