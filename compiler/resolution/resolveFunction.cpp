@@ -1149,8 +1149,10 @@ bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
          (0 == strcmp(fn->name, "init") ||
           0 == strcmp(fn->name, "_new"))))
       return false; // old strategy for old-path in wrapAndCleanUpActuals
-    else
-      return true;
+    else {
+      if (formal->intent == INTENT_IN || formal->intent == INTENT_CONST_IN)
+        return true;
+    }
   }
 
   return false;

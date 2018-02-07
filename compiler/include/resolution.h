@@ -103,6 +103,9 @@ bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 //  var x = y;   // requires a copy
 //  var z = functionReturningRecordByValue(); // does not require a copy
 bool       doesCopyInitializationRequireCopy(Expr* initFrom);
+// Similar to the above, but it's OK to return a local value
+// variable without a copy.
+bool       doesValueReturnRequireCopy(Expr* initFrom);
 
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
