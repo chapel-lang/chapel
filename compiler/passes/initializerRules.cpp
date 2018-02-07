@@ -529,6 +529,25 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     "can't set value of field \"%s\" from parent type "
                     "during phase 1 of initialization",
                     field->sym->name);
+        } else if (state.isPhase2() == true) {
+          if (field->sym->hasFlag(FLAG_CONST) == true) {
+            USR_FATAL(stmt,
+                      "cannot update a const field, \"%s\", from parent type in phase 2",
+                      field->sym->name);
+
+          } else if (field->sym->hasFlag(FLAG_PARAM) == true) {
+            USR_FATAL(stmt,
+                      "cannot update a param field, \"%s\", from parent type in phase 2",
+                      field->sym->name);
+
+          } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL(stmt,
+                      "cannot update a type field, \"%s\", from parent type in phase 2",
+                      field->sym->name);
+          } else {
+            stmt = stmt->next;
+          }
+
         } else {
           stmt = stmt->next;
         }

@@ -1,0 +1,2 @@
+modifyParentParam.chpl:11: In initializer:
+modifyParentParam.chpl:14: error: cannot update a param field, "x", from parent type in phase 2
