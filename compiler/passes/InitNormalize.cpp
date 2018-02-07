@@ -270,8 +270,7 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
-    DefExpr* field         = mCurrField;
-    bool     isTypeUnknown = mCurrField->sym->type == dtUnknown;
+    DefExpr* field = mCurrField;
 
     if (isOuterField(field)) {
       // The outer field is a compiler generated field.  Handle it specially.
@@ -288,8 +287,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
         if (field->exprType != NULL && field->init == NULL) {
           genericFieldInitTypeWoutInit (insertBefore, field);
 
-        } else if ((field->exprType != NULL  && field->init != NULL)  ||
-                   (isTypeUnknown   == false && field->init != NULL)) {
+        } else if (field->exprType != NULL  && field->init != NULL) {
           genericFieldInitTypeWithInit (insertBefore,
                                         field,
                                         field->init->copy());
@@ -306,8 +304,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
       } else if (field->exprType != NULL && field->init == NULL) {
         fieldInitTypeWoutInit (insertBefore, field);
 
-      } else if ((field->exprType != NULL  && field->init != NULL)  ||
-                 (isTypeUnknown   == false && field->init != NULL)) {
+      } else if (field->exprType != NULL  && field->init != NULL) {
         fieldInitTypeWithInit (insertBefore, field, field->init->copy());
 
       } else if (field->exprType == NULL && field->init != NULL) {
@@ -521,8 +518,13 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   //   var x = f(...);
   //   var y = new MyRecord(...);
   } else if (CallExpr* initCall = toCallExpr(initExpr)) {
-    if (isTypeVar && initCall->isPrimitive(PRIM_NEW) == true) {
-      USR_FATAL(initExpr, "Cannot initialize type field '%s' with 'new' expression", field->sym->name);
+    if ((isParam || isTypeVar) && initCall->isPrimitive(PRIM_NEW) == true) {
+      if (isTypeVar == true) {
+        USR_FATAL(initExpr, "Cannot initialize type field '%s' with 'new' expression", field->sym->name);
+      } else {
+        INT_ASSERT(isParam == true);
+        USR_FATAL(initExpr, "Cannot initialize param field '%s' with 'new' expression", field->sym->name);
+      }
     } else if (isTypeVar == true) {
       VarSymbol* tmp      = newTemp("tmp");
       DefExpr*   tmpDefn  = new DefExpr(tmp);
