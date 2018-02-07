@@ -1,6 +1,2 @@
 Unrecognized flag: '-d' (use '-h' for help)
-       Did you mean --dead-code-elimination ?
-       Did you mean --div-by-zero-checks ?
-       Did you mean --debug ?
-       Did you mean --dynamic ?
        Did you mean --devel ?
