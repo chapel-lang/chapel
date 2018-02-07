@@ -2809,10 +2809,8 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
-    if st == QIO_AGGREGATE_FORMAT_JSON then
-      return qio_channel_print_string(false, _channel_internal, s.c_str(), s.length:ssize_t);
-    else
-      return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
+    if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
+    return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
   }
@@ -2975,7 +2973,6 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        ref x:?t,
                                        loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
-
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
   } else if t == ioChar {
@@ -3014,7 +3011,6 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         x:?t,
                                         loc:locale):syserr where _isIoPrimitiveTypeOrNewline(t) {
   var e:syserr = ENOERR;
-
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
   } else if t == ioChar {
