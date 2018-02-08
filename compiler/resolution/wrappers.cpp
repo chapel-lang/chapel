@@ -1425,6 +1425,7 @@ static void addArgCoercion(FnSymbol*  fn,
   Expr*       newActual  = new SymExpr(castTemp);
 
   castTemp->addFlag(FLAG_COERCE_TEMP);
+  castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   // gotta preserve this-ness, so can write to this's fields in constructors
   if (actualSym->hasFlag(FLAG_ARG_THIS) &&
