@@ -24,6 +24,7 @@
 #include "ForallStmt.h"
 #include "InitNormalize.h"
 #include "passes.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "TryStmt.h"
 #include "type.h"
@@ -1070,6 +1071,12 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
                                             new SymExpr(arg)));
       } else {
         initCall->insertAtTail(new SymExpr(arg));
+      }
+
+      if (arg->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+        // Continue the building of the parameter map, since these two args are
+        // linked.
+        paramMap.put(arg, paramMap.get(formal));
       }
     }
 
