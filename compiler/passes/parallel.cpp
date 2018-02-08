@@ -419,7 +419,14 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
       var = insertAutoCopyForTaskArg(arg, fcall, fn);
     else
       var = toSymExpr(arg)->symbol();
-    baData.needsDestroy.push_back(autoCopy);
+
+    bool autoDestroy = autoCopy;
+    // New "in" intent handling includes destruction in called
+    // function (i.e. in the task function not in the wrapper)
+    if (autoDestroy)
+      autoDestroy = !shouldAddFormalTempAtCallSite(formal, fn);
+
+    baData.needsDestroy.push_back(autoDestroy);
 
     Symbol* field = ctype->getField(i+1); // +1 for rt header
 
