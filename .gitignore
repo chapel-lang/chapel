@@ -140,6 +140,8 @@ tags
 /test/compflags/bradc/printstuff/zhelpvers.good
 /test/compflags/bradc/printstuff/zlicevers.good
 
+/test/compflags/diten/log
+
 /test/compflags/lydia/library/libtesting.a
 
 /test/compflags/shannon/cpplines/cppLines.OUTPUT
