@@ -76,64 +76,11 @@ int32_t chpl_comm_getMaxThreads(void) {
   return 0;
 }
 
-static void oob_init(void);
-
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   atomic_init_uint_least32_t(&progress_thread_count, 0);
 
-  oob_init();
+  chpl_comm_ofi_oob_init();
   chpl_resetCommDiagnosticsHere();
-}
-
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-#include <pmi.h>
-#endif
-
-/*
- * Global, out-of-band initialization
- */
-static void oob_init() {
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-
-#define USE_PMI2
-#ifdef USE_PMI2
-  int spawned, size, rank, appnum;
-
-  if (PMI2_Initialized() != PMI_TRUE) {
-    if (PMI2_Init(&spawned, &size, &rank, &appnum) != PMI_SUCCESS) {
-      chpl_internal_error("PMI2_Init failed");
-    }
-    assert(spawned == 0);
-    chpl_nodeID = (int32_t) rank;
-    chpl_numNodes = (int32_t) size;
-  }
-
-#else
-  PMI_BOOL initialized, spawned;
-  int rank, app_size;
-
-  if (PMI_Initialized(&initialized) != PMI_SUCCESS) {
-    chpl_internal_error("PMI_Initialized() failed");
-  }
-  if (initialized != PMI_TRUE && PMI_Init(&spawned) != PMI_SUCCESS) {
-    chpl_internal_error("PMI_Init() failed");
-  }
-
-  if (PMI_Get_rank_in_app(&rank) != PMI_SUCCESS) {
-    chpl_internal_error("PMI_Get_rank_in_app() failed");
-  }
-  chpl_nodeID = (int32_t) rank;
-
-  if (PMI_Get_size(&app_size) != PMI_SUCCESS) {
-      chpl_internal_error("PMI_Get_size() failed");
-  }
-  chpl_numNodes = (int32_t) app_size;
-
-#endif
-
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Global initialization not supported"
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
 }
 
 void chpl_comm_post_mem_init(void) { }
@@ -205,8 +152,10 @@ static int get_comm_concurrency() {
   return 1;
 }
 
+static void libfabric_init_addrvec(int, int);
+
 static void libfabric_init() {
-  int i, j;
+  int i;
   struct fi_info *info = NULL;
   struct fi_info *hints = fi_allocinfo();
   struct fi_av_attr av_attr = {0};
@@ -215,13 +164,6 @@ static void libfabric_init() {
   int comm_concurrency;
   int rx_ctx_cnt;
   int rx_ctx_bits = 0;
-  struct gather_info* my_addr_info;
-  void* addr_infos;
-  void* addrs;
-  char* ta;
-  char* tai;
-  size_t my_addr_len=0;
-  size_t addr_info_len;
 
   hints->mode = ~0;
 
@@ -376,42 +318,55 @@ static void libfabric_init() {
 
   OFICHKERR(fi_enable(ofi.ep));
 
-  // Set up address vector
+  libfabric_init_addrvec(rx_ctx_cnt, rx_ctx_bits);
+
+  OFICHKERR(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
+                      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
+                      FI_SEND | FI_RECV, 0,
+                      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
+
+  fi_freeinfo(info);  /* No error returned */
+  fi_freeinfo(hints); /* No error returned */
+
+  chpl_msg(2, "%d: completed libfabric initialization\n", chpl_nodeID);
+}
+
+static void libfabric_init_addrvec(int rx_ctx_cnt, int rx_ctx_bits) {
+  struct gather_info* my_addr_info;
+  void* addr_infos;
+  char* addrs;
+  char* tai;
+  size_t my_addr_len;
+  size_t addr_info_len;
+  int i, j;
+
   // Assumes my_addr_len is the same on all nodes
+  my_addr_len = 0;
   OFICHKRET(fi_getname(&ofi.ep->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
   addr_info_len = sizeof(struct gather_info) + my_addr_len;
-  my_addr_info =  chpl_mem_allocMany(1, addr_info_len,
-                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                     0, 0);
+  my_addr_info = chpl_mem_alloc(addr_info_len,
+                                CHPL_RT_MD_COMM_UTIL,
+                                0, 0);
   my_addr_info->node = chpl_nodeID;
   OFICHKERR(fi_getname(&ofi.ep->fid, &my_addr_info->info, &my_addr_len));
 
-  addr_infos =  chpl_mem_allocMany(chpl_numNodes, addr_info_len,
-                                   CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                   0, 0);
+  addr_infos = chpl_mem_allocMany(chpl_numNodes, addr_info_len,
+                                  CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                  0, 0);
 
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-  // Use PMI_AllGather
-  if (PMI_Allgather(my_addr_info, addr_infos, addr_info_len) != PMI_SUCCESS) {
-    chpl_internal_error("PMI_Allgather() failed");
-  }
+  chpl_comm_ofi_oob_allgather(my_addr_info, addr_infos, addr_info_len);
 
-  addrs =  chpl_mem_allocMany(chpl_numNodes, my_addr_len,
-                              CHPL_RT_MD_COMM_PER_LOC_INFO,
-                              0, 0);
+  addrs = chpl_mem_allocMany(chpl_numNodes, my_addr_len,
+                             CHPL_RT_MD_COMM_PER_LOC_INFO,
+                             0, 0);
 
-  for (tai = addr_infos, ta = addrs, i = 0; i < chpl_numNodes; i++) {
+  for (tai = addr_infos, i = 0; i < chpl_numNodes; i++) {
     struct gather_info* ai = (struct gather_info*) tai;
     assert(i >= 0);
     assert(i < chpl_numNodes);
-    memcpy(ta, ai->info, my_addr_len);
+    memcpy(addrs + ai->node * my_addr_len, ai->info, my_addr_len);
     tai += addr_info_len;
-    ta += my_addr_len;
   }
-
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Global address exchange not supported"
-#endif
 
   ofi.fi_addrs = chpl_mem_allocMany(chpl_numNodes, sizeof(ofi.fi_addrs[0]),
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
@@ -423,7 +378,8 @@ static void libfabric_init() {
                                     CHPL_RT_MD_COMM_PER_LOC_INFO,
                                     0, 0);
   for (i = 0; i < chpl_numNodes; i++) {
-    ofi.rx_addrs[i] = chpl_mem_allocMany(rx_ctx_cnt, sizeof(ofi.rx_addrs[i][0]),
+    ofi.rx_addrs[i] = chpl_mem_allocMany(rx_ctx_cnt,
+                                         sizeof(ofi.rx_addrs[i][0]),
                                          CHPL_RT_MD_COMM_PER_LOC_INFO,
                                          0, 0);
     for (j = 0; j < rx_ctx_cnt; j++) {
@@ -434,17 +390,6 @@ static void libfabric_init() {
   chpl_mem_free(my_addr_info, 0, 0);
   chpl_mem_free(addr_infos, 0, 0);
   chpl_mem_free(addrs, 0, 0);
-
-  OFICHKERR(fi_mr_reg(ofi.domain, 0, SIZE_MAX,
-                      FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
-                      FI_SEND | FI_RECV, 0,
-                      (uint64_t) chpl_nodeID, 0, &ofi.mr, NULL));
-
-
-  fi_freeinfo(info);  /* No error returned */
-  fi_freeinfo(hints); /* No error returned */
-
-  chpl_msg(2, "%d: completed libfabric initialization\n", chpl_nodeID);
 }
 
 void chpl_comm_rollcall(void) {
@@ -455,32 +400,27 @@ void chpl_comm_rollcall(void) {
 }
 
 void chpl_comm_broadcast_global_vars(int numGlobals) {
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-  // Use PMI_AllGather
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
+  // TODO: this won't work in the presence of address space randomization
   int i;
   if (chpl_nodeID != 0) {
     for (i = 0; i < numGlobals; i++) {
       chpl_comm_get(chpl_globals_registry[i], 0, chpl_globals_registry[i],
-                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/, 0, 0);
+                    sizeof(wide_ptr_t), -1 /*typeIndex: unused*/,
+                    CHPL_COMM_UNKNOWN_ID, 0, 0);
     }
   }
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
 }
 
 void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) {
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-  // Use PMI_AllGather
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
+  // TODO: this won't work in the presence of address space randomization
   int i;
   for (i = 0; i < chpl_numNodes; i++) {
     if (i != chpl_nodeID) {
-      do_remote_put(chpl_private_broadcast_table[id], i,
+      chpl_comm_put(chpl_private_broadcast_table[id], i,
                     chpl_private_broadcast_table[id], size,
-                    may_proxy_true);
+                    -1 /*typeIndex: unused*/, CHPL_COMM_UNKNOWN_ID, 0, 0);
     }
   }
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
 }
 
 void chpl_comm_barrier(const char *msg) {
@@ -491,23 +431,11 @@ void chpl_comm_barrier(const char *msg) {
   }
 
   if (!progress_threads_running()) {
-    // Comm layer setup is not complete yet
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-    if (PMI_Barrier() != PMI_SUCCESS) {
-      chpl_internal_error("PMI_Barrier failed");
-    }
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Out-of-band barrier not yet implemented"
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
+    // Comm layer setup is not complete yet; use OOB barrier
+    chpl_comm_ofi_oob_barrier();
   } else {
-    //  Use PMI_Barrier() for now
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-    if (PMI_Barrier() != PMI_SUCCESS) {
-      chpl_internal_error("PMI_Barrier failed");
-    }
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Out-of-band barrier not yet implemented"
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
+    // Use OOB barrier for now, but we can do better in the future
+    chpl_comm_ofi_oob_barrier();
   }
 
 }
@@ -566,30 +494,7 @@ static void exit_all(int status) {
   chpl_mem_free(ofi.am_rx_ep, 0, 0);
   chpl_mem_free(ofi.am_rx_cq, 0, 0);
 
-#ifdef CHPL_TARGET_PLATFORM_CRAY_XC
-
-#ifdef USE_PMI2
-  if (PMI2_Initialized() != PMI_TRUE) {
-    if (PMI2_Finalize() != PMI_SUCCESS) {
-      chpl_internal_error("PMI2_Finalize failed");
-    }
-  }
-#else
-  PMI_BOOL initialized;
-
-  if (PMI_Initialized(&initialized) != PMI_SUCCESS) {
-    chpl_internal_error("PMI_Initialized failed");
-  }
-  if ((initialized == PMI_TRUE) && (PMI_Finalize() != PMI_SUCCESS)) {
-    chpl_internal_error("PMI_Finalize failed");
-  }
-
-#endif
-
-#else /* CHPL_TARGET_PLATFORM_CRAY_XC */
-#error "Global teardown not supported"
-#endif /* CHPL_TARGET_PLATFORM_CRAY_XC */
-
+  chpl_comm_ofi_oob_fini();
 }
 
 static void exit_any(int status) {
