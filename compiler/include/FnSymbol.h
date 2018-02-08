@@ -146,9 +146,13 @@ public:
   bool                       isPrimaryMethod()                           const;
   bool                       isSecondaryMethod()                         const;
 
+  bool                       isInitializer()                             const;
+  bool                       isPostInitializer()                         const;
+
   AggregateType*             getReceiver()                               const;
 
   bool                       isIterator()                                const;
+
   bool                       returnsRefOrConstRef()                      const;
 
   QualifiedType              getReturnQualType()                         const;

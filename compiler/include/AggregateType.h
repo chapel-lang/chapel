@@ -85,6 +85,7 @@ public:
   void                        addDeclarations(Expr* expr);
 
   bool                        hasInitializers()                          const;
+  bool                        hasPostInitializer()                       const;
 
   bool                        mayHaveInstances()                         const;
 
@@ -135,6 +136,8 @@ public:
 
   void                        buildDefaultInitializer();
 
+  void                        buildCopyInitializer();
+
 
   //
   // Public fields
@@ -145,8 +148,6 @@ public:
   FnSymbol*                   defaultTypeConstructor;
 
   FnSymbol*                   defaultInitializer;
-
-  void                        buildCopyInitializer();
 
   AggregateType*              instantiatedFrom;
 

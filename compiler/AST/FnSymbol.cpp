@@ -873,7 +873,15 @@ bool FnSymbol::isPrimaryMethod() const {
 // This function is a method on an aggregate type, defined outside its
 // definition
 bool FnSymbol::isSecondaryMethod() const {
-  return isMethod() && !isPrimaryMethod();
+  return isMethod() == true && isPrimaryMethod() == false;
+}
+
+bool FnSymbol::isInitializer() const {
+  return isMethod() == true && strcmp(name, "init")     == 0;
+}
+
+bool FnSymbol::isPostInitializer() const {
+  return isMethod() == true && strcmp(name, "postInit") == 0;
 }
 
 // This function or method is an iterator (as opposed to a procedure).

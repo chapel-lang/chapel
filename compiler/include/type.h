@@ -76,6 +76,8 @@ public:
 
   virtual Symbol*        getField(const char* name, bool fatal = true)   const;
 
+  const char*            name()                                          const;
+
   void                   addSymbol(TypeSymbol* newSymbol);
 
   bool                   isDefaultIntentConst()                          const;
