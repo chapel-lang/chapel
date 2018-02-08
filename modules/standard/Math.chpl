@@ -1056,6 +1056,21 @@ module Math {
     extern proc truncf(x: real(32)): real(32);
     return truncf(x);
   }
+  
+  /* Returns the greatest common divisor of the integer argument `a` and
+     `b`. */
+  proc gcd(in a: int,in b: int): int {
+     a = abs(a);
+     b = abs(b);
+     var r: int;
+     while(b != 0) {
+       r = a % b;
+       a = b;
+       b = r;
+     }
+    return a;
+  }
+
 
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
