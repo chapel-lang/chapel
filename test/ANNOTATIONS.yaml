@@ -290,7 +290,8 @@ all:
     - text: Do nonblocking responses in the polling task (#8297)
       config: 16 node XC
   02/07/18:
-    - machine operating system update
+    - text: machine operating system update to SLES12
+      config: chapcs
 
 
 AllCompTime:
