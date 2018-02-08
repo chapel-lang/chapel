@@ -19,8 +19,8 @@
 
 #include "InitNormalize.h"
 
-#include "stmt.h"
 #include "ForallStmt.h"
+#include "stmt.h"
 
 static bool isSuperInit(Expr* stmt);
 static bool isThisInit (Expr* stmt);
@@ -139,15 +139,21 @@ FnSymbol* InitNormalize::theFn() const {
 }
 
 bool InitNormalize::isRecord() const {
-  return ::isRecord(type());
+  AggregateType* at = type();
+
+  return at->isRecord();
 }
 
 bool InitNormalize::isClass() const {
-  return ::isClass(type());
+  AggregateType* at = type();
+
+  return at->isClass();
 }
 
 bool InitNormalize::isExtern() const {
-  return type()->symbol->hasFlag(FLAG_EXTERN);
+  AggregateType* at = type();
+
+  return at->symbol->hasFlag(FLAG_EXTERN);
 }
 
 InitNormalize::InitPhase  InitNormalize::currPhase() const {
@@ -1249,11 +1255,13 @@ DefExpr* InitNormalize::firstField(FnSymbol* fn) const {
   DefExpr*       retval = toDefExpr(at->fields.head);
 
   // Skip the pseudo-field "super"
-  if (::isClass(at) == true) {
+  if (at->isClass() == true) {
 
     if (at->isGeneric() == true) {
       AggregateType* pt = toAggregateType(retval->sym->type);
+
       INT_ASSERT(pt);
+
       if (pt->isGeneric() == true) {
         // If the super type is generic, label it so that we can handle that
         // appropriately during initializer resolution
