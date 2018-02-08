@@ -1573,11 +1573,16 @@ static void handleInIntents(FnSymbol* fn,
 
     if (formalRequiresTemp(formal, fn) &&
         shouldAddFormalTempAtCallSite(formal, fn)) {
-      SymExpr* se = toSymExpr(currActual);
+
+      Expr* useExpr = currActual;
+      if (NamedExpr* named = toNamedExpr(currActual))
+        useExpr = named->actual;
+
+      SymExpr* se = toSymExpr(useExpr);
       INT_ASSERT(actualSym == se->symbol());
 
       // A copy might be necessary here but might not.
-      if (doesCopyInitializationRequireCopy(currActual)) {
+      if (doesCopyInitializationRequireCopy(useExpr)) {
         // Add a new formal temp at the call site that mimics variable
         // initialization from the actual.
         VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
