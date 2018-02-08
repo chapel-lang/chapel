@@ -124,6 +124,7 @@ static void resolveFormals(FnSymbol* fn) {
 
 // Fix up value types that need to be ref types.
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
+
   // For begin functions, copy ranges in if passed by blank intent.
   // TODO: remove this code - it should no longer be necessary
   if (fn->hasFlag(FLAG_BEGIN)                   == true &&
@@ -150,17 +151,23 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
              formal                                    != fn->_this &&
              doNotChangeTupleTypeRefLevel(fn, false)   == false) {
 
-    // Let 'in' intent work similarly to the blank intent.
     AggregateType* tupleType = toAggregateType(formal->type);
     IntentTag      intent    = formal->intent;
 
-    if (intent == INTENT_IN) {
-      intent = INTENT_BLANK;
-    }
-
     INT_ASSERT(tupleType);
 
-    formal->type = computeTupleWithIntent(intent, tupleType);
+    if (shouldAddFormalTempAtCallSite(formal, fn)) {
+      // In, const in, intents treat tuple as an value variable
+      // so it should not contain any refs.
+      formal->type = computeNonRefTuple(tupleType);
+    } else {
+      // (for !shouldAddFormalTempAtCallSite),
+      // let 'in' intent work similarly to the blank intent.
+      if (intent == INTENT_IN) {
+        intent = INTENT_BLANK;
+      }
+      formal->type = computeTupleWithIntent(intent, tupleType);
+    }
   }
 }
 
