@@ -198,6 +198,9 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     // If it's a record-wrapped type we can just bit-copy into the arg bundle.
     if (isRecordWrappedType(var->getValType()))
       field->qual = QUAL_VAL;
+    // If it's an new 'in' intent to task fn, it should be stored by value
+    else if (shouldAddFormalTempAtCallSite(formal, fn))
+      field->qual = QUAL_VAL;
     // If we needed to auto-copy it, it should be stored by value
     else if (autoCopy)
       field->qual = QUAL_VAL; // this is a no-op
