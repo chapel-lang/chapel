@@ -23,6 +23,7 @@ COMM_SRCS = \
 	comm-ofi.c \
 	comm-ofi-am.c \
 	comm-ofi-diagnostics.c \
+	comm-ofi-oob.c \
 	comm-ofi-put-get.c \
 
 SRCS = $(COMM_SRCS)

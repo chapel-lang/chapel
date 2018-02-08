@@ -26,12 +26,24 @@
 #include "rdma/fi_cm.h"
 #include "rdma/fi_errno.h"
 
+//
+// Out-of-band support
+//
+
 struct gather_info {
   int node;
   char info[0];
 };
 
-/* libfabric stuff */
+void chpl_comm_ofi_oob_init(void);
+void chpl_comm_ofi_oob_fini(void);
+void chpl_comm_ofi_oob_barrier(void);
+void chpl_comm_ofi_oob_allgather(void*, void*, int);
+
+//
+// libfabric stuff
+//
+
 struct ofi_stuff {
   struct fid_fabric* fabric;
   struct fid_domain* domain;
@@ -61,12 +73,42 @@ struct ofi_stuff {
 
 };
 
-void chpl_comm_ofi_put_get_init(struct ofi_stuff*);
-void chpl_comm_ofi_am_init(struct ofi_stuff*);
+#define OFICHKRET(fncall, err) do {              \
+    int retval;                                  \
+    if ((retval = (fncall)) != err) {             \
+      chpl_internal_error(fi_strerror(-retval));  \
+    }                                            \
+  } while (0)
 
+#define OFICHKERR(fncall) OFICHKRET(fncall, FI_SUCCESS)
+
+//
+// GET and PUT
+//
+
+void chpl_comm_ofi_put_get_init(struct ofi_stuff*);
+
+//
+// Active Messages (executeOn)
+//
+
+struct ofi_am_info {
+  c_nodeid_t node;
+  c_sublocid_t subloc;
+  chpl_bool serial_state; // To prevent creation of new tasks
+  chpl_bool fast;
+  chpl_bool blocking;
+  chpl_fn_int_t fid;
+  void* ack;
+};
+
+void chpl_comm_ofi_am_init(struct ofi_stuff*);
 void chpl_comm_ofi_am_handler(struct fi_cq_data_entry*);
 
-/* Comm diagnostics stuff */
+//
+// Comm diagnostics
+//
+
 /* Dupe of the version in chpl-comm.h except with atomics */
 struct commDiags_atomic {
   atomic_uint_least64_t get;
@@ -86,24 +128,5 @@ void chpl_comm_ofi_commDiagsInc(atomic_uint_least64_t *val);
 
 #define CHPL_COMM_DIAGS_INC(comm_type)                                  \
     chpl_comm_ofi_commDiagsInc(&(chpl_comm_ofi_getCommDiags()->comm_type))
-
-#define OFICHKRET(fncall, err) do {              \
-    int retval;                                  \
-    if ((retval = (fncall)) != err) {             \
-      chpl_internal_error(fi_strerror(-retval));  \
-    }                                            \
-  } while (0)
-
-#define OFICHKERR(fncall) OFICHKRET(fncall, FI_SUCCESS)
-
-struct ofi_am_info {
-  c_nodeid_t node;
-  c_sublocid_t subloc;
-  chpl_bool serial_state; // To prevent creation of new tasks
-  chpl_bool fast;
-  chpl_bool blocking;
-  chpl_fn_int_t fid;
-  void* ack;
-};
 
 #endif
