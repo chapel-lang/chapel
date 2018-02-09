@@ -20,6 +20,9 @@
 CRAYPE_GEN_CFLAGS =
 CRAYPE_COMP_CXXFLAGS =
 
+# Don't worry about libmvec.a in PrgEnv-gnu.  It's taken care of.
+WANT_LIBMVEC = no
+
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.gnu
 
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.cray-prgenv

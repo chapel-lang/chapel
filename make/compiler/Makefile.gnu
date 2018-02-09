@@ -43,6 +43,7 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
+
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -231,4 +232,27 @@ endif
 ifdef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
 CHPL_GASNET_MORE_GEN_CFLAGS += -Wno-uninitialized
+endif
+
+
+#
+# Look for the libmvec.a static library
+#
+ifneq ($(WANT_LIBMVEC), no)
+  # Try known locations.
+  ifeq ($(CHPL_MAKE_TARGET_PLATFORM), linux64)
+    ifeq ($(shell test -e /usr/lib64/libmvec.a; echo "$$?"), 0)
+      FOUND_LIBMVEC = yes
+    else ifeq ($(shell test -e /usr/lib/x86_64-linux-gnu/libmvec.a; echo "$$?"), 0)
+      FOUND_LIBMVEC = yes
+    endif
+  else ifeq ($(CHPL_MAKE_TARGET_PLATFORM), linux32)
+    ifeq ($(shell test -e /usr/libx32/libmvec.a; echo "$$?"), 0)
+      FOUND_LIBMVEC = yes
+    endif
+  endif
+
+  ifeq ($(FOUND_LIBMVEC), yes)
+    LIBS += -lmvec -lm
+  endif
 endif
