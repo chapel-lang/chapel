@@ -314,6 +314,13 @@ void resolveFunction(FnSymbol* fn) {
 
     fn->addFlag(FLAG_RESOLVED);
 
+    if (strcmp(fn->name, "init") == 0) {
+      AggregateType* at = toAggregateType(fn->_this->getValType());
+      if (at->scalarPromotionType == NULL ) {
+        resolvePromotionType(at);
+      }
+    }
+
     if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
 
@@ -723,7 +730,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      setScalarPromotionType(AggregateType* at);
 static void      fixTypeNames(AggregateType* at);
 static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
@@ -732,7 +738,10 @@ static FnSymbol* instantiateBase(FnSymbol* fn);
 static void resolveTypeConstructor(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->retType);
 
-  setScalarPromotionType(at);
+  if (at->scalarPromotionType == NULL &&
+      at->symbol->hasFlag(FLAG_REF) == false) {
+    resolvePromotionType(at);
+  }
 
   if (developer == false) {
     fixTypeNames(at);
@@ -779,14 +788,6 @@ static void resolveTypeConstructor(FnSymbol* fn) {
       block->remove();
 
       tmp->defPoint->remove();
-    }
-  }
-}
-
-static void setScalarPromotionType(AggregateType* at) {
-  for_fields(field, at) {
-    if (strcmp(field->name, "_promotionType") == 0) {
-      at->scalarPromotionType = field->type;
     }
   }
 }
@@ -1615,3 +1616,4 @@ void ensureInMethodList(FnSymbol* fn) {
     }
   }
 }
+
