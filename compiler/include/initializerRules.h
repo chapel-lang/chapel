@@ -34,4 +34,6 @@ void      preNormalizeFields(AggregateType* at);
 void      preNormalizeInitMethod(FnSymbol* fn);
 FnSymbol* buildClassAllocator(FnSymbol* initMethod);
 
+void      transformSuperInit(CallExpr* initCall);
+
 #endif

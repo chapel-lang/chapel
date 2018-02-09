@@ -66,7 +66,9 @@ public:
   void            checkPhase(BlockStmt* block);
 
   Expr*           completePhase1(CallExpr* insertBefore);
-  void            initializeFieldsBefore(Expr* insertBefore);
+
+  void            initializeFieldsAtTail(BlockStmt* block);
+  void            initializeFieldsBefore(Expr*      insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            inLoopBody()                                           const;
@@ -157,8 +159,6 @@ private:
   DefExpr*        toSuperField(SymExpr* expr)                            const;
 
   DefExpr*        toSuperField(AggregateType* at, const char* name)      const;
-
-  void            transformSuperInit(Expr* initStmt);
 
   const char*     phaseToString(InitPhase phase)                         const;
 
