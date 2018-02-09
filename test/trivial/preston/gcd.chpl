@@ -1,6 +1,6 @@
 // a beginning
 
-proc gcd(in x, in y) {
+proc mygcd(in x, in y) {
   if x < 0 then x = -x;
   if y < 0 then y = -y;
 
@@ -13,4 +13,4 @@ proc gcd(in x, in y) {
 }
 
 
-writeln(gcd(125,1005));
+writeln(mygcd(125,1005));
