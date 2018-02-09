@@ -452,7 +452,7 @@ static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
 
   // acState.init(globalOp.identity);  (paren-less function)
-  // VASS TODO stash away the FnSymbol for identity at resolution.
+  // TODO stash away the FnSymbol for identity at resolution.
   VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
   aInit->insertBefore(new DefExpr(stemp));
   aInit->insertBefore("'move'(%S, identity(%S,%S))",
@@ -542,7 +542,8 @@ if (verb) //wass
 
 /////////// expandTaskFn ///////////
 
-static Vec<FnSymbol*> taskFnClonesToFlatten;
+// wass was: static Vec<FnSymbol*> taskFnClonesToFlatten;
+//wass static Vec<FnSymbol*> inlinedIteratorsToRemove;
 
 /*
 At this point in compilation, in certain cases an in-intent formal is
@@ -606,8 +607,7 @@ static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   callToTFn->insertAtTail(eActualOrRef(callToTFn, svar, eActual));
 
   if (expandClone) {
-    ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual,
-                                        false/*vass-nested*/);
+    ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual, /*nested:*/false);
     cloneTaskFn->insertFormalAtTail(eFormal);
     map.put(mappee ? mappee : svar, eFormal);
   }
@@ -711,8 +711,9 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
                           numOrigActuals, iMap, map, svar, expandClone, ++ix);
 
   if (expandClone) {
-    aInit->remove(); aFini->remove();
-    taskFnClonesToFlatten.add(cloneTaskFn);
+    aInit->remove();
+    aFini->remove();
+    // wass was: taskFnClonesToFlatten.add(cloneTaskFn);
 
     ExpandVisitor taskFnVis(EV, map);
     taskFnVis.parentVis = EV->parentVis;
@@ -817,6 +818,25 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
 /////////// main driver ///////////
 
+/*
+We have created some nested task functions in expandTaskFn().
+Flatten them because the compiler will crash otherwise.
+
+Implementation considerations:
+* For some task functions, we create them explicitly in expandTaskFn().
+* Some others are created implicitly when we clone iterators that
+  contain such task functions.
+* The way flattenNestedFunctions() works as of this writing,
+  it is faster to flatten all task fns at once, rather than one by one.
+*/
+// wass need startFnID ?
+static void removeDeadAndFlatten(int startFnID) {
+VASS continue here.  
+
+}
+
+///////////
+
 // wass - need 'parentVis' ?
 static void lowerOneForallStmt(ForallStmt* fs) {
   ExpandVisitor* parentVis = NULL; //wass - dummy
@@ -868,26 +888,29 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   fs->remove();
   // We could also do {iwrap,ibody}->flattenAndRemove().
 
+  if (parIterFn->firstSymExpr() == NULL)
+    // We have inlined all uses. So, remove the iterator as well.
+    parIterFn->defPoint->remove();
+
 //wass
   showLOFS(fs, parentVis, "} lonfs", false);
 }
+
 ///////////
 
 static void lowerForallStmtsInline() {
+  const int startFnId = gFnSymbols.n;
+
   forv_Vec(ForallStmt, fs, gForallStmts)
   {
     lowerOneForallStmt(fs);
   }
 
-  //vass todo remove parallel iterators themselves
-  // now that we have inlined them.
-
   gdbShouldBreakHere(); //wass
 
   clearUpRefsInShadowVars();
 
-  // It is faster to flatten all task fns at once.
-  flattenNestedFunctions(taskFnClonesToFlatten);
+  removeDeadAndFlatten(startFnId);
 }
 
 #else //wass

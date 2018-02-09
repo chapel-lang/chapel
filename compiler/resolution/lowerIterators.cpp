@@ -2517,7 +2517,7 @@ void lowerIterators() {
   fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->isIterator() && fn->inTree()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();
