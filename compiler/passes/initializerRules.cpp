@@ -282,14 +282,6 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
   AggregateType* at    = toAggregateType(fn->_this->type);
   ArgSymbol*     _this = toArgSymbol(fn->_this);
 
-  if (_this->intent == INTENT_BLANK) {
-    _this->intent = INTENT_REF;
-  }
-
-  if (at->isGeneric() == true) {
-    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-  }
-
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
@@ -300,49 +292,33 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
   } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
-  // 1) Insert field initializers before the first statement
-  // 2) Pre-normalize the phase2 statements
-  } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-    Expr* head = fn->body->body.head;
+  } else if (state.isPhase2() == true) {
+    if (Expr* head = fn->body->body.head) {
+      state.initializeFieldsBefore(head);
 
-    state.initializeFieldsBefore(head);
+      preNormalize(fn->body, state, head);
 
-    preNormalize(fn->body, state, head);
-
-  // 1) Insert field initializers before the first statement
-  // 2) Pre-normalize the phase2 statements
-  } else if (fn->body->body.head != NULL) {
-    Expr* head = fn->body->body.head;
-
-    state.initializeFieldsBefore(head);
-
-    preNormalize(fn->body, state, head);
-
-  // A degenerate initializer with no body
-  // 1) Insert a NO-OP as an anchor
-  // 2) Insert field initializers before the NO-OP
-  // 3) Remove the NO-OP
-  } else if (fn->body->body.head == NULL) {
-    Expr* noop = new CallExpr(PRIM_NOOP);
-
-    fn->body->insertAtHead(noop);
-
-    state.initializeFieldsBefore(noop);
-
-    noop->remove();
+    } else {
+      state.initializeFieldsAtTail(fn->body);
+    }
 
   } else {
     INT_ASSERT(false);
+  }
+
+  if (at->isGeneric() == true) {
+    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+  }
+
+  if (_this->intent   == INTENT_BLANK) {
+    _this->intent = INTENT_REF;
   }
 }
 
 static void preNormalizeInitClass(FnSymbol* fn) {
   InitNormalize  state(fn);
 
-  AggregateType* at    = toAggregateType(fn->_this->type);
-  ArgSymbol*     _this = fn->getFormal(2);
-
-  INT_ASSERT(fn->_this == _this);
+  AggregateType* at = toAggregateType(fn->_this->type);
 
   if (at->isGeneric() == true) {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
@@ -358,33 +334,33 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   } else if (state.isPhase1() == true) {
     preNormalize(fn->body, state);
 
-  // 1) Insert field initializers before the first statement
-  // 2) Pre-normalize the phase2 statements
-  } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-    Expr* head = fn->body->body.head;
+  } else if (state.isPhase2() == true) {
+    if (at->symbol->hasFlag(FLAG_EXTERN) == false) {
+      CallExpr* superInit = createCallToSuperInit(fn);
 
-    state.initializeFieldsBefore(head);
+      fn->body->insertAtHead(superInit);
 
-    preNormalize(fn->body, state, head);
+      state.initializeFieldsBefore(superInit);
 
-  // 1) Insert super.init()
-  // 2) Insert field initializers before super.init()
-  // 3) Pre-normalize the phase2 statements
+      preNormalize(fn->body, state, superInit->next);
+
+    } else {
+      if (Expr* head = fn->body->body.head) {
+        state.initializeFieldsBefore(head);
+
+        preNormalize(fn->body, state, head);
+
+      } else {
+        state.initializeFieldsAtTail(fn->body);
+      }
+    }
+
   } else {
-    CallExpr* superInit = createCallToSuperInit(fn);
-
-    fn->body->insertAtHead(superInit);
-
-    state.initializeFieldsBefore(superInit);
-
-    preNormalize(fn->body, state, superInit->next);
+    INT_ASSERT(false);
   }
 
-  // If this is a non-generic class then create a type method
-  // to wrap this initializer
-  if (isClass(at) == true && at->isGeneric() == false) {
+  if (at->isGeneric() == false) {
     buildClassAllocator(fn);
-
     fn->addFlag(FLAG_INLINE);
   }
 }
