@@ -908,7 +908,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   if (parIterFn->firstSymExpr() == NULL)
     // We have inlined all uses. So, remove the iterator as well.
-    printf("remove parIter %d   %s\n", parIterFn->id, debugLoc(parIterFn)), //wass
     parIterFn->defPoint->remove();
 
 //wass
