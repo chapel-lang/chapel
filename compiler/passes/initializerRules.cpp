@@ -50,6 +50,9 @@ static bool     isAssignment(CallExpr* callExpr);
 static bool     isSimpleAssignment(CallExpr* callExpr);
 static bool     isCompoundAssignment(CallExpr* callExpr);
 
+static bool     isStringLiteral(Expr* expr, const char* name);
+static bool     isSymbolThis(Expr* expr);
+
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -730,8 +733,6 @@ static bool isMethodCall(CallExpr* callExpr) {
 
 static const char* initName(CallExpr* stmt);
 static const char* initNameInner(CallExpr* expr);
-static bool        isSymbolThis(Expr* expr);
-static bool        isStringLiteral(Expr* expr, const char* name);
 static bool        isUnresolvedSymbol(Expr* expr, const char* name);
 
 static bool isInitStmt(CallExpr* stmt) {
@@ -796,6 +797,16 @@ static const char* initNameInner(CallExpr* expr) {
         }
       }
     }
+  }
+
+  return retval;
+}
+
+static bool isUnresolvedSymbol(Expr* expr, const char* name) {
+  bool retval = false;
+
+  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
+    retval = strcmp(sym->unresolved, name) == 0;
   }
 
   return retval;
@@ -975,50 +986,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
   return retval;
 }
 
-
-/************************************* | **************************************
-*                                                                             *
-* Functions to detect uses of this.init(args) or super.init(args)             *
-*                                                                             *
-*   The 1st function iterates over statements in an FnSymbol.                 *
-*   The 2nd function tests a single stmt.                                     *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isStringLiteral(Expr* expr, const char* name) {
-  bool retval = false;
-
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        retval = strcmp(var->immediate->v_string, name) == 0;
-      }
-    }
-  }
-
-  return retval;
-}
-
-static bool isUnresolvedSymbol(Expr* expr, const char* name) {
-  bool retval = false;
-
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    retval = strcmp(sym->unresolved, name) == 0;
-  }
-
-  return retval;
-}
-
-static bool isSymbolThis(Expr* expr) {
-  bool retval = false;
-
-  if (SymExpr* sym = toSymExpr(expr)) {
-    retval = sym->symbol()->hasFlag(FLAG_ARG_THIS);
-  }
-
-  return retval;
-}
-
 /************************************* | **************************************
 *                                                                             *
 * Consider                                                                    *
@@ -1129,4 +1096,69 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   normalize(fn);
 
   return fn;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Transform `call(".", call(".", this, "super"), "init")` into                *
+* `call(".", call(PRIM_GET_MEMBER_VALUE, this, "super"), "init")`             *
+*                                                                             *
+************************************** | *************************************/
+
+void transformSuperInit(CallExpr* initCall) {
+  CallExpr* initBase = toCallExpr(initCall->baseExpr);
+
+  if (CallExpr* sub = toCallExpr(initBase->get(1))) {
+    if (sub->numActuals()          == 2 &&
+        sub->isNamedAstr(astrSdot) == true) {
+      Expr*      thisExpr  = sub->get(1);
+      Expr*      superExpr = sub->get(2);
+
+      CallExpr*  getValue  = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                          thisExpr->remove(),
+                                          superExpr->remove());
+
+      VarSymbol* superTmp  = newTemp("super_tmp");
+
+      INT_ASSERT(isSymbolThis(thisExpr)              == true);
+      INT_ASSERT(isStringLiteral(superExpr, "super") == true);
+
+      superTmp->addFlag(FLAG_SUPER_TEMP);
+
+      initCall->insertBefore(new DefExpr(superTmp));
+      initCall->insertBefore(new CallExpr(PRIM_MOVE, superTmp, getValue));
+
+      sub->replace(new SymExpr(superTmp));
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool isStringLiteral(Expr* expr, const char* name) {
+  bool retval = false;
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
+      if (var->immediate->const_kind == CONST_KIND_STRING) {
+        retval = strcmp(var->immediate->v_string, name) == 0;
+      }
+    }
+  }
+
+  return retval;
+}
+
+static bool isSymbolThis(Expr* expr) {
+  bool retval = false;
+
+  if (SymExpr* sym = toSymExpr(expr)) {
+    retval = sym->symbol()->hasFlag(FLAG_ARG_THIS);
+  }
+
+  return retval;
 }

@@ -23,9 +23,6 @@
 #include "initializerRules.h"
 #include "stmt.h"
 
-static bool isStringLiteral(Expr* expr, const char* name);
-static bool isSymbolThis(Expr* expr);
-
 static bool mightBeSyncSingleExpr(DefExpr* field);
 
 static bool isAssignment(CallExpr* callExpr);
@@ -1110,42 +1107,6 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 
 /************************************* | **************************************
 *                                                                             *
-* Transform `call(".", call(".", this, "super"), "init")` into                *
-* `call(".", call(PRIM_GET_MEMBER_VALUE, this, "super"), "init")`             *
-*                                                                             *
-************************************** | *************************************/
-
-void InitNormalize::transformSuperInit(Expr* initStmt) {
-  CallExpr* initCall = toCallExpr(initStmt);
-  CallExpr* initBase = toCallExpr(initCall->baseExpr);
-
-  if (CallExpr* sub = toCallExpr(initBase->get(1))) {
-    if (sub->numActuals()          == 2 &&
-        sub->isNamedAstr(astrSdot) == true) {
-      Expr*      thisExpr  = sub->get(1);
-      Expr*      superExpr = sub->get(2);
-
-      CallExpr*  getValue  = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                          thisExpr->remove(),
-                                          superExpr->remove());
-
-      VarSymbol* superTmp  = newTemp("super_tmp");
-
-      INT_ASSERT(isSymbolThis(thisExpr)              == true);
-      INT_ASSERT(isStringLiteral(superExpr, "super") == true);
-
-      superTmp->addFlag(FLAG_SUPER_TEMP);
-
-      initCall->insertBefore(new DefExpr(superTmp));
-      initCall->insertBefore(new CallExpr(PRIM_MOVE, superTmp, getValue));
-
-      sub->replace(new SymExpr(superTmp));
-    }
-  }
-}
-
-/************************************* | **************************************
-*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -1606,30 +1567,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
       callExpr->isNamed("<<=") == true ||
       callExpr->isNamed(">>=") == true) {
     retval = true;
-  }
-
-  return retval;
-}
-
-static bool isStringLiteral(Expr* expr, const char* name) {
-  bool retval = false;
-
-  if (SymExpr* sym = toSymExpr(expr)) {
-    if (VarSymbol* var = toVarSymbol(sym->symbol())) {
-      if (var->immediate->const_kind == CONST_KIND_STRING) {
-        retval = strcmp(var->immediate->v_string, name) == 0;
-      }
-    }
-  }
-
-  return retval;
-}
-
-static bool isSymbolThis(Expr* expr) {
-  bool retval = false;
-
-  if (SymExpr* sym = toSymExpr(expr)) {
-    retval = sym->symbol()->hasFlag(FLAG_ARG_THIS);
   }
 
   return retval;
