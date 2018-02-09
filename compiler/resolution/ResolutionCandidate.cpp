@@ -634,6 +634,16 @@ void ResolutionCandidate::resolveTypedefedArgTypes() {
   }
 }
 
+static AggregateType* getRootInstantiation(AggregateType* at) {
+  AggregateType* ret = at;
+
+  while (ret != NULL && ret->instantiatedFrom != NULL) {
+    ret = ret->instantiatedFrom;
+  }
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -649,6 +659,23 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
    */
   resolveSignature(fn);
 
+  bool isInit = strcmp(fn->name, "init") == 0;
+  bool looksLikeCopyInit = false;
+
+  if (isInit && formalIdxToActual.size() == 3) {
+    // First formal/actual is gMethodToken
+    AggregateType* base  = toAggregateType(formalIdxToActual[1]->getValType());
+    AggregateType* other = toAggregateType(formalIdxToActual[2]->getValType());
+    if (base != NULL && other != NULL) {
+      if (base == other) {
+        looksLikeCopyInit = true;
+      } else if (getRootInstantiation(base) == getRootInstantiation(other)) {
+        looksLikeCopyInit = true;
+      }
+    }
+  }
+
+
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
@@ -660,6 +687,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                                formal->hasFlag(FLAG_ARG_THIS);
       bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
                                coindex == 0; // first formal/actual
+
+      bool promotes          = false;
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
@@ -675,7 +704,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              actual,
                              formal->type,
                              fn,
-                             NULL,
+                             &promotes,
                              NULL,
                              formalIsParam) == false) {
         return false;
@@ -690,6 +719,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
         if (ft != at && ft->isInstantiatedFrom(at) == false) {
           return false;
         }
+      } else if (promotes && looksLikeCopyInit) {
+        return false;
       }
     }
   }
