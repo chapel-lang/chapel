@@ -3116,7 +3116,7 @@ static void  newString();
 static void  addString(const char* str);
 static void  addChar(char c);
 static void  addCharEscapeNonprint(char c);
-static void  addCharEscapingC(char c);
+static void  addCharEscapingC(yyscan_t scanner, char c);
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -3325,7 +3325,7 @@ static const char* eatMultilineStringLiteral(yyscan_t scanner,
       startChCount = 0;
     }
 
-    addCharEscapingC(c);
+    addCharEscapingC(scanner, c);
   } /* eat up string */
 
   if (c == 0) {
@@ -3761,7 +3761,7 @@ static void addCharEscapeNonprint(char c) {
 }
 
 // Convert C escape characters into two characters: '\\' and the other character
-static void addCharEscapingC(char c) {
+static void addCharEscapingC(yyscan_t scanner, char c) {
   switch (c) {
     case '\"' :
       addChar('\\');
@@ -3790,6 +3790,8 @@ static void addCharEscapingC(char c) {
     case '\n' :
       addChar('\\');
       addChar('n');
+      // Keep track of line numbers when a newline is found in a string
+      processNewline(scanner);
       break;
     case '\r' :
       addChar('\\');
