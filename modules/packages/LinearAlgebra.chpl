@@ -1274,8 +1274,10 @@ module Sparse {
   proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
     type idxType = ADom.idxType;
 
-    const major_axis = ADom.dim(1).size;
-    var indPtr: [{1..major_axis+1}] idxType;
+    const (M, K1) = A.shape,
+          (K2, N) = B.shape;
+
+    var indPtr: [{1..M+1}] idxType; // major axis
 
     pass1(A, B, indPtr);
 
@@ -1285,7 +1287,7 @@ module Sparse {
 
     pass2(A, B, indPtr, indices, data);
 
-    var C = CSRMatrix(A.shape, data, indices, indPtr);
+    var C = CSRMatrix((M, N), data, indices, indPtr);
     return C;
   }
 
