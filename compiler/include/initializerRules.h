@@ -21,7 +21,12 @@
 #define _INITIALIZER_RULES_H_
 
 class AggregateType;
+class CallExpr;
 class FnSymbol;
+
+bool      isSuperInit(CallExpr* stmt);
+bool      isThisInit (CallExpr* stmt);
+bool      isInitDone (CallExpr* stmt);
 
 void      errorOnFieldsInArgList(FnSymbol* fn);
 

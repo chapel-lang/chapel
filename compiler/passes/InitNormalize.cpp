@@ -20,10 +20,8 @@
 #include "InitNormalize.h"
 
 #include "ForallStmt.h"
+#include "initializerRules.h"
 #include "stmt.h"
-
-static bool isSuperInit(Expr* stmt);
-static bool isThisInit (Expr* stmt);
 
 static bool isStringLiteral(Expr* expr, const char* name);
 static bool isSymbolThis(Expr* expr);
@@ -106,6 +104,7 @@ InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
 
   if (mBlockType != curr.mBlockType) {
     mPrevBlockType = curr.mBlockType;
+
   } else {
     mPrevBlockType = curr.mPrevBlockType;
   }
@@ -119,11 +118,11 @@ InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
 
   if (mBlockType != curr.mBlockType) {
     mPrevBlockType = curr.mBlockType;
+
   } else {
     mPrevBlockType = curr.mPrevBlockType;
   }
 }
-
 
 void InitNormalize::merge(const InitNormalize& fork) {
   mCurrField = fork.mCurrField;
@@ -246,10 +245,13 @@ bool InitNormalize::inOnInForall() const {
 *                                                                             *
 ************************************** | *************************************/
 
-Expr* InitNormalize::completePhase1(Expr* initStmt) {
+Expr* InitNormalize::completePhase1(CallExpr* initStmt) {
   Expr* retval = initStmt->next;
 
-  if (isSuperInit(initStmt) == true) {
+  if (isThisInit(initStmt) == true) {
+    mCurrField = NULL;
+
+  } else if (isSuperInit(initStmt) == true) {
     initializeFieldsBefore(initStmt);
 
     if (isRecord() == true) {
@@ -261,9 +263,6 @@ Expr* InitNormalize::completePhase1(Expr* initStmt) {
     } else {
       transformSuperInit(initStmt);
     }
-
-  } else if (isThisInit(initStmt) == true) {
-    mCurrField = NULL;
 
   } else {
     INT_ASSERT(false);
@@ -735,17 +734,20 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       insertBefore->insertBefore(fieldSet);
     }
 
-  } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) &&
-             field->init == NULL &&
-             mightBeSyncSingleExpr(field)) {
+  } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) == true &&
+             field->init                               == NULL &&
+             mightBeSyncSingleExpr(field)              == true) {
     // The type of the field depends on something that hasn't been determined
     // yet.  It is entirely possible that the type will end up as a sync or
-    // single and so we need to flag this field initialization for resolution to
-    // handle
-    Symbol*    _this     = mFn->_this;
-    Symbol*    name      = new_CStringSymbol(field->sym->name);
+    // single and so we need to flag this field initialization for resolution
+    // to handle
+    Symbol*   _this    = mFn->_this;
+    Symbol*   name     = new_CStringSymbol(field->sym->name);
     CallExpr* fieldSet = new CallExpr(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD,
-                                      _this, name, initExpr);
+                                      _this,
+                                      name,
+                                      initExpr);
+
     if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
     }
@@ -857,7 +859,7 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
   // e.g.
   //   var x = f(...);
   //   var y = new MyRecord(...);
-  } else if (isCallExpr(initExpr)) {
+  } else if (isCallExpr(initExpr) == true) {
     VarSymbol* tmp      = newTemp("tmp");
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
@@ -875,6 +877,7 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
+
   } else {
     INT_ASSERT(false);
   }
@@ -1028,6 +1031,7 @@ bool InitNormalize::isFieldAccess(CallExpr* callExpr) const {
 }
 
 /************************************* | **************************************
+*                                                                             *
 * If the call is to a method on our type, we need to transform it into        *
 *  something we'll recognize as a method call.                                *
 *                                                                             *
@@ -1105,6 +1109,7 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 }
 
 /************************************* | **************************************
+*                                                                             *
 * Transform `call(".", call(".", this, "super"), "init")` into                *
 * `call(".", call(PRIM_GET_MEMBER_VALUE, this, "super"), "init")`             *
 *                                                                             *
@@ -1112,32 +1117,32 @@ DefExpr* InitNormalize::toSuperField(AggregateType* at,
 
 void InitNormalize::transformSuperInit(Expr* initStmt) {
   CallExpr* initCall = toCallExpr(initStmt);
-  INT_ASSERT(initCall);
   CallExpr* initBase = toCallExpr(initCall->baseExpr);
-  INT_ASSERT(initBase);
-  CallExpr* sub = toCallExpr(initBase->get(1));
-  if (sub &&
-      sub->numActuals() == 2 &&
-      sub->isNamedAstr(astrSdot) == true) {
 
-    Expr* thisExpr = sub->get(1);
-    Expr* superExpr = sub->get(2);
+  if (CallExpr* sub = toCallExpr(initBase->get(1))) {
+    if (sub->numActuals()          == 2 &&
+        sub->isNamedAstr(astrSdot) == true) {
+      Expr*      thisExpr  = sub->get(1);
+      Expr*      superExpr = sub->get(2);
 
-    INT_ASSERT(isSymbolThis(thisExpr) == true);
-    INT_ASSERT(isStringLiteral(superExpr, "super") == true);
+      CallExpr*  getValue  = new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                          thisExpr->remove(),
+                                          superExpr->remove());
 
-    CallExpr* explicitAccess = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                            thisExpr->remove(),
-                                            superExpr->remove());
-    VarSymbol* superTemp = newTemp("super_tmp");
-    superTemp->addFlag(FLAG_SUPER_TEMP);
-    initCall->insertBefore(new DefExpr(superTemp));
-    initCall->insertBefore(new CallExpr(PRIM_MOVE, superTemp, explicitAccess));
+      VarSymbol* superTmp  = newTemp("super_tmp");
 
-    sub->replace(new SymExpr(superTemp));
+      INT_ASSERT(isSymbolThis(thisExpr)              == true);
+      INT_ASSERT(isStringLiteral(superExpr, "super") == true);
+
+      superTmp->addFlag(FLAG_SUPER_TEMP);
+
+      initCall->insertBefore(new DefExpr(superTmp));
+      initCall->insertBefore(new CallExpr(PRIM_MOVE, superTmp, getValue));
+
+      sub->replace(new SymExpr(superTmp));
+    }
   }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -1280,14 +1285,14 @@ bool InitNormalize::isOuterField(DefExpr* field) const {
 }
 
 void InitNormalize::makeOuterArg() {
-  AggregateType* at = type();
-  Type* outerType = at->outer->type;
+  AggregateType* at        = type();
+  Type*          outerType = at->outer->type;
 
   outerType->methods.add(mFn);
+
   mFn->_outer = new ArgSymbol(INTENT_BLANK, "outer", outerType);
 
   mFn->_outer->addFlag(FLAG_GENERIC);
-  // TODO: look into only doing this when necessary
 
   mFn->_this->defPoint->insertAfter(new DefExpr(mFn->_outer));
 
@@ -1534,78 +1539,6 @@ InitNormalize::phaseToString(InitNormalize::InitPhase phase) const {
 *                                                                             *
 ************************************** | *************************************/
 
-static const char* initName(Expr*     stmt);
-
-static const char* initName(CallExpr* expr);
-
-static bool        isUnresolvedSymbol(Expr* expr, const char* name);
-
-static bool isSuperInit(Expr* stmt) {
-  const char* name = initName(stmt);
-
-  return name != NULL && strcmp(name, "super") == 0 ? true : false;
-}
-
-static bool isThisInit(Expr* stmt) {
-  const char* name = initName(stmt);
-
-  return name != NULL && strcmp(name, "this")  == 0 ? true : false;
-}
-
-
-static const char* initName(Expr* stmt) {
-  const char* retval = NULL;
-
-  if (CallExpr* call = toCallExpr(stmt)) {
-    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
-      retval = initName(inner);
-    }
-  }
-
-  return retval;
-}
-
-//
-// Extract init name for the inner part of the call i.e.
-//
-//    this.init(args);
-//      => call(".", this,                     "init")
-//
-//    super.init(args)
-//      => call(".", unresolved("super"),      "init")     // records
-//      => call(".", call(".", this, "super"), "init")     // classes
-//
-
-static const char* initName(CallExpr* expr) {
-  const char* retval = NULL;
-
-  if (expr->numActuals()                    ==    2 &&
-      expr->isNamedAstr(astrSdot)           == true &&
-      isStringLiteral(expr->get(2), "init") == true) {
-
-    if (isSymbolThis(expr->get(1)) == true) {
-      retval = "this";
-
-    } else {
-      // "super" is an unresolved symbol for records
-      if (isUnresolvedSymbol(expr->get(1), "super") == true) {
-        retval = "super";
-
-      // "super" is a expr to a field accessor for classes
-      } else if (CallExpr* subExpr = toCallExpr(expr->get(1))) {
-        if (subExpr->numActuals()                     == 2    &&
-            subExpr->isNamedAstr(astrSdot)            == true &&
-            isSymbolThis(subExpr->get(1))             == true &&
-            isStringLiteral(subExpr->get(2), "super") == true) {
-          retval = "super";
-        }
-      }
-    }
-  }
-
-  return retval;
-}
-
 // The type of the field is not yet determined either due to being entirely a
 // type alias, or due to being a call to a function that returns a type.
 // Therefore, we must be cautious and marking this field initialization as
@@ -1618,17 +1551,20 @@ static bool mightBeSyncSingleExpr(DefExpr* field) {
     if (typeSym->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
       retval = true;
     }
+
   } else if (CallExpr* typeCall = toCallExpr(field->exprType)) {
     /*if (typeCall->isPrimitive(PRIM_QUERY_TYPE_FIELD)) { // might be necessary
       retval = true;
     } else */
+
     if (typeCall->isPrimitive() == false) {
-      // The call is not a known primitive.  We have to assume that it is a type
-      // function being called, and type functions could return a sync or single
-      // type.
+      // The call is not a known primitive.
+      // We have to assume that it is a type function being called,
+      // and type functions could return a sync or single type.
       retval = true;
     }
   }
+
   return retval;
 }
 
@@ -1675,7 +1611,6 @@ static bool isCompoundAssignment(CallExpr* callExpr) {
   return retval;
 }
 
-
 static bool isStringLiteral(Expr* expr, const char* name) {
   bool retval = false;
 
@@ -1685,16 +1620,6 @@ static bool isStringLiteral(Expr* expr, const char* name) {
         retval = strcmp(var->immediate->v_string, name) == 0;
       }
     }
-  }
-
-  return retval;
-}
-
-static bool isUnresolvedSymbol(Expr* expr, const char* name) {
-  bool retval = false;
-
-  if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr)) {
-    retval = strcmp(sym->unresolved, name) == 0;
   }
 
   return retval;

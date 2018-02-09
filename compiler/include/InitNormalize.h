@@ -65,7 +65,7 @@ public:
 
   void            checkPhase(BlockStmt* block);
 
-  Expr*           completePhase1(Expr* insertBefore);
+  Expr*           completePhase1(CallExpr* insertBefore);
   void            initializeFieldsBefore(Expr* insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
