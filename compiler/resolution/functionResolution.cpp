@@ -8653,7 +8653,6 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-          !strcmp(sym->name, "_promotionType") ||
           sym->isParameter())
         call->getStmtExpr()->remove();
       else {
@@ -9370,14 +9369,13 @@ static void removeInitFields()
 }
 
 static void removeMootFields() {
-  // Remove type fields, parameter fields, and _promotionType field
+  // Remove type fields and parameter fields
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (AggregateType* ct = toAggregateType(type->type)) {
         for_fields(field, ct) {
           if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-              field->isParameter() ||
-              !strcmp(field->name, "_promotionType"))
+              field->isParameter())
             field->defPoint->remove();
         }
       }

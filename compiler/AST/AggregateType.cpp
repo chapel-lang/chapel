@@ -1053,16 +1053,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
         fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
-      } else if (strcmp(field->name, "_promotionType") == 0) {
-        Symbol*   _this     = fn->_this;
-        Symbol*   name      = new_CStringSymbol(field->name);
-        Expr*     exprType  = field->defPoint->exprType->remove();
-        CallExpr* call      = new CallExpr(PRIM_TYPE_INIT,  exprType);
-        CallExpr* setMember = new CallExpr(PRIM_SET_MEMBER, _this, name, call);
-
-        fn->insertAtTail(new BlockStmt(setMember, BLOCK_TYPE));
-
-      } else {
+      }  else {
         fieldNamesSet.set_add(field->name);
 
         if (field->isType()            == true ||
@@ -1211,7 +1202,6 @@ void AggregateType::buildConstructor() {
       // "outer" is used internally to supply a pointer to
       // the outer parent of a nested class.
       if (field->hasFlag(FLAG_SUPER_CLASS)      == false &&
-          strcmp(field->name, "_promotionType") != 0 &&
           strcmp(field->name, "outer")          != 0) {
         // Create an argument to the default constructor
         // corresponding to the field.
@@ -1559,11 +1549,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == false &&
-          /* strcmp(field->name, "_promotionType") && */
              strcmp(field->name, "outer")) {
-        // Lydia NOTE 06/16/17: The above cases are commented out because I
-        // wanted to focus on basic support first.  I suspect these will be
-        // useful when I do try to support iterators and nested classes/records
 
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
