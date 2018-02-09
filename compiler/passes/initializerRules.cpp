@@ -37,9 +37,7 @@ enum InitStyle {
   STYLE_BOTH
 };
 
-static bool     isInitStmt (Expr* stmt);
-static bool     isSuperInit(Expr* stmt);
-static bool     isThisInit (Expr* stmt);
+static bool     isInitStmt (CallExpr* stmt);
 
 static bool     isUnacceptableTry(Expr* stmt);
 
@@ -166,10 +164,10 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr) {
 static bool isReturnVoid(FnSymbol* fn);
 
 void preNormalizeInitMethod(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_NO_PARENS) ==  true) {
+  if (fn->hasFlag(FLAG_NO_PARENS) == true) {
     USR_FATAL(fn, "an initializer cannot be declared without parentheses");
 
-  } else if (isReturnVoid(fn)     == false) {
+  } else if (isReturnVoid(fn) == false) {
     USR_FATAL(fn, "an initializer cannot return a non-void result");
 
   } else {
@@ -248,17 +246,18 @@ static InitNormalize preNormalize(BlockStmt*    block,
                                   InitNormalize state,
                                   Expr*         start);
 
-static CallExpr* createCallToSuperInit(FnSymbol* fn);
+static CallExpr*     createCallToSuperInit(FnSymbol* fn);
 
-static bool      isSuperInit(Expr* stmt);
-static bool      isThisInit(Expr* stmt);
-static bool      hasReferenceToThis(Expr* expr);
-static bool      isMethodCall(CallExpr* callExpr);
+static bool          hasReferenceToThis(Expr* expr);
+static bool          isMethodCall(CallExpr* callExpr);
 
 static void preNormalizeInit(FnSymbol* fn) {
-  ArgSymbol*     _this = fn->getFormal(2);
-  AggregateType* at    = toAggregateType(fn->_this->type);
   InitNormalize  state(fn);
+
+  AggregateType* at    = toAggregateType(fn->_this->type);
+  ArgSymbol*     _this = fn->getFormal(2);
+
+  INT_ASSERT(fn->_this == _this);
 
   if (_this->intent == INTENT_BLANK) {
     if (isRecord(at) == true) {
@@ -271,13 +270,11 @@ static void preNormalizeInit(FnSymbol* fn) {
   }
 
   if (fn->throwsError() == true) {
-    // For now.  Remove when we allow it.
     USR_FATAL(fn, "initializers are not yet allowed to throw errors");
-  }
 
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
-  if (state.isPhase0() == true) {
+  } else if (state.isPhase0() == true) {
     preNormalize(fn->body, state);
 
   // The body contains at least one instance of super.init()
@@ -355,11 +352,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
   while (stmt != NULL) {
     if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
-                "Only catch-less try! statements are allowed in initializers"
-                " for now");
-    }
+                "Only catch-less try! statements are allowed in "
+                "initializers for now");
 
-    if (isDefExpr(stmt) == true) {
+    } else if (isDefExpr(stmt) == true) {
       if (state.fieldUsedBeforeInitialized(stmt) == true) {
         USR_FATAL(stmt, "Field used before it is initialized");
       }
@@ -367,12 +363,12 @@ static InitNormalize preNormalize(BlockStmt*    block,
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if (callExpr->isPrimitive(PRIM_THROW)) {
-        USR_FATAL(callExpr, "initializers are not yet allowed to throw errors");
-      }
+      if (callExpr->isPrimitive(PRIM_THROW) == true) {
+        USR_FATAL(callExpr,
+                  "initializers are not yet allowed to throw errors");
 
       // Stmt is super.init() or this.init()
-      if (isInitStmt(callExpr) == true) {
+      } else if (isInitStmt(callExpr) == true) {
         if (state.isPhase2() == true) {
           if (isSuperInit(callExpr) == true) {
             USR_FATAL(stmt, "use of super.init() call in phase 2");
@@ -488,21 +484,21 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     "multiple initializations of field \"%s\"",
                     field->sym->name);
 
-        } else if (state.inLoopBody() == true ||
+        } else if (state.inLoopBody()     == true ||
                    state.inOnInLoopBody() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "loop during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inParallelStmt() == true ||
+        } else if (state.inParallelStmt()     == true ||
                    state.inOnInParallelStmt() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
                     "parallel statement during phase 1 of initialization",
                     field->sym->name);
 
-        } else if (state.inCoforall() == true ||
+        } else if (state.inCoforall()     == true ||
                    state.inOnInCoforall() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
@@ -510,7 +506,7 @@ static InitNormalize preNormalize(BlockStmt*    block,
                     field->sym->name);
 
 
-        } else if (state.inForall() == true ||
+        } else if (state.inForall()     == true ||
                    state.inOnInForall() == true) {
           USR_FATAL(stmt,
                     "can't initialize field \"%s\" inside a "
@@ -732,35 +728,33 @@ static bool isMethodCall(CallExpr* callExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
-static const char* initName(Expr*     stmt);
-static const char* initName(CallExpr* expr);
+static const char* initName(CallExpr* stmt);
+static const char* initNameInner(CallExpr* expr);
 static bool        isSymbolThis(Expr* expr);
 static bool        isStringLiteral(Expr* expr, const char* name);
 static bool        isUnresolvedSymbol(Expr* expr, const char* name);
 
-static bool isInitStmt(Expr* stmt) {
+static bool isInitStmt(CallExpr* stmt) {
   return isSuperInit(stmt) == true || isThisInit(stmt) == true;
 }
 
-static bool isSuperInit(Expr* stmt) {
+bool isSuperInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
   return name != NULL && strcmp(name, "super") == 0 ? true : false;
 }
 
-static bool isThisInit(Expr* stmt) {
+bool isThisInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
   return name != NULL && strcmp(name, "this")  == 0 ? true : false;
 }
 
-static const char* initName(Expr* stmt) {
+static const char* initName(CallExpr* call) {
   const char* retval = NULL;
 
-  if (CallExpr* call = toCallExpr(stmt)) {
-    if (CallExpr* inner = toCallExpr(call->baseExpr)) {
-      retval = initName(inner);
-    }
+  if (CallExpr* inner = toCallExpr(call->baseExpr)) {
+    retval = initNameInner(inner);
   }
 
   return retval;
@@ -777,7 +771,7 @@ static const char* initName(Expr* stmt) {
 //      => call(".", call(".", this, "super"), "init")     // classes
 //
 
-static const char* initName(CallExpr* expr) {
+static const char* initNameInner(CallExpr* expr) {
   const char* retval = NULL;
 
   if (expr->numActuals()                    ==    2 &&
@@ -807,13 +801,44 @@ static const char* initName(CallExpr* expr) {
   return retval;
 }
 
-/* Determine if the expr given is a banned error handling construct */
+bool isInitDone(CallExpr* callExpr) {
+  bool retval = false;
+
+  if (callExpr->numActuals() == 0) {
+    if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(callExpr->baseExpr)) {
+      if (strcmp(usym->unresolved, "initDone") == 0) {
+        retval = true;
+      }
+
+    } else if (CallExpr* subCall = toCallExpr(callExpr->baseExpr)) {
+      if (subCall->numActuals()                        ==    2 &&
+          subCall->isNamedAstr(astrSdot)               == true &&
+          isStringLiteral(subCall->get(2), "initDone") == true) {
+
+        if (isSymbolThis(subCall->get(1)) == true) {
+          retval = true;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the expr given is a banned error handling construct            *
+*                                                                             *
+************************************** | *************************************/
+
 static bool isUnacceptableTry(Expr* stmt) {
   bool retval = false;
+
   if (TryStmt* ts = toTryStmt(stmt)) {
     if (ts->tryBang() == false) {
       // Only allow try! statements in initializers at the moment
       retval = true;
+
     } else if (ts->_catches.length != 0) {
       // But don't allow any catches for a try! statement, as that might
       // permit the initializer to return without having completely initialized
@@ -821,6 +846,7 @@ static bool isUnacceptableTry(Expr* stmt) {
       retval = true;
     }
   }
+
   return retval;
 }
 
