@@ -829,38 +829,22 @@ Implementation considerations:
 * The way flattenNestedFunctions() works as of this writing,
   it is faster to flatten all task fns at once, rather than one by one.
 */
-// wass need startFnID ?
-static void removeDeadAndFlatten(int startFnID) {
+static void removeDeadAndFlatten() {
   Vec<FnSymbol*> taskFnsToFlatten;
-  int gIdx = -1; // wass for debugging only -- startFnID is also
-  printf("\n---------------------------------\n"); //wass
-  printf("removeDeadAndFlatten(%d)\n\n", startFnID); //wass
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    gIdx++;
     if (!fn->inTree()) continue;
 
     if (fn->firstSymExpr() == NULL)
     {
-      INT_ASSERT(!fn->hasFlag(FLAG_INLINE_ITERATOR) || gIdx < startFnID);
-
-      if (fn->hasFlag(FLAG_INLINE_ITERATOR))
-        // Got a parallel iterator no uses. Remove it.
-        printf("removing p iter  %d   %s\n", fn->id, debugLoc(fn)), //wass
+      if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
+        // Got a parallel iterator or task function with no uses. Remove.
+        // We have no business dealing with the other "unused" case.
         fn->defPoint->remove();
-      else if (isTaskFun(fn))
-        // Got a task function with no uses. Remove it.
-        printf("removing task fn %d   %s\n", fn->id, debugLoc(fn)), //wass
-        fn->defPoint->remove();
-//      else
-//        printf("other unused fn  %d   %s\n", fn->id, debugLoc(fn)); //wass
     }
-    else if (!isGlobal(fn)) {
-      // wass - I am curious why these may not be the case
+    else if (!isGlobal(fn))
+    {
       INT_ASSERT(isTaskFun(fn));
-      INT_ASSERT(gIdx >= startFnID);
-
-      printf("flatten  task fn %d   %s\n", fn->id, debugLoc(fn)); //wass
       taskFnsToFlatten.add(fn);
     }
   }
@@ -933,9 +917,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
 ///////////
 
-static void lowerForallStmtsInline() {
-  const int startFnId = gFnSymbols.n;
-
+static void lowerForallStmtsInline()
+{
   forv_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
@@ -944,7 +927,7 @@ static void lowerForallStmtsInline() {
 
   clearUpRefsInShadowVars();
 
-  removeDeadAndFlatten(startFnId);
+  removeDeadAndFlatten();
 
   gdbShouldBreakHere(); //wass
 }
