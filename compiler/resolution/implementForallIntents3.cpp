@@ -831,8 +831,35 @@ Implementation considerations:
 */
 // wass need startFnID ?
 static void removeDeadAndFlatten(int startFnID) {
-VASS continue here.  
+  Vec<FnSymbol*> taskFnsToFlatten;
+  printf("\n---------------------------------\n"); //wass
+  printf("removeDeadAndFlatten(%d)\n\n", startFnID); //wass
 
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->inTree()) continue;
+
+    if (fn->firstSymExpr() == NULL)
+    {
+      // wass - I am curious why these may not be the case
+      INT_ASSERT(!fn->hasFlag(FLAG_INLINE_ITERATOR));
+      INT_ASSERT(isTaskFun(fn));
+
+      // Got a task function with no uses. Remove it.
+      printf("removing task fn %d   %s\n", fn->id, debugLoc(fn)); //wass
+      fn->defPoint->remove();
+    }
+    else if (!isGlobal(fn)) {
+      // wass - I am curious why these may not be the case
+      INT_ASSERT(isTaskFun(fn));
+      INT_ASSERT(fn->id >= startFnID);
+
+      printf("flatten  task fn %d   %s\n", fn->id, debugLoc(fn)); //wass
+      taskFnsToFlatten.add(fn);
+    }
+  }
+
+  if (taskFnsToFlatten.n > 0)
+    flattenNestedFunctions(taskFnsToFlatten);
 }
 
 ///////////
@@ -890,6 +917,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   if (parIterFn->firstSymExpr() == NULL)
     // We have inlined all uses. So, remove the iterator as well.
+    printf("remove parIter %d   %s\n", parIterFn->id, debugLoc(parIterFn)), //wass
     parIterFn->defPoint->remove();
 
 //wass
