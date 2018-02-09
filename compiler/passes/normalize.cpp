@@ -112,6 +112,8 @@ static void        init_noinit_var(VarSymbol* var,
 
 static bool        moduleHonorsNoinit(Symbol* var, Expr* init);
 
+static void        insertPostInit(Symbol* var, CallExpr* anchor);
+
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
@@ -1417,12 +1419,14 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     newArg->insertAtHead(tmp);
     newArg->insertAtHead(gMethodToken);
 
+    // Add a call to postInit() if present
+    insertPostInit(tmp, newArg);
+
     // Move the tmp.init(args) expression to before the call
     stmt->insertBefore(newArg->remove());
 
     // Replace the degenerate new-expression with a use of the tmp variable
     call->replace(new SymExpr(tmp));
-
 
   // No.  The simple case
   } else {
@@ -1987,10 +1991,16 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
+      if (type != NULL) {
+        if (type->isGeneric()                     == false ||
+            isGenericRecordWithInitializers(type) == true) {
+          var->type = type;
+        }
+      }
+
       if (isRecordWithInitializers(type) == true) {
         Expr*     arg1     = initCall->get(1)->remove();
         CallExpr* argExpr  = toCallExpr(arg1);
-
         SymExpr*  modToken = NULL;
         SymExpr*  modValue = NULL;
 
@@ -2029,14 +2039,11 @@ static void normVarTypeInference(DefExpr* defExpr) {
           argExpr->insertAtHead(modToken);
         }
 
+        // Add a call to postInit() if present
+        insertPostInit(var, argExpr);
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-      }
-
-      if (type != NULL &&
-          (type->isGeneric()                     == false ||
-           isGenericRecordWithInitializers(type) == true)) {
-        var->type = type;
       }
 
     } else {
@@ -2096,9 +2103,14 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
+    CallExpr* init = new CallExpr("init", gMethodToken, var);
 
     var->type = type;
+
+    defExpr->insertAfter(init);
+
+    // Add a call to postInit() if present
+    insertPostInit(var, init);
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -2148,8 +2160,15 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
+    var->type = type;
+
     if        (isSymExpr(initExpr) == true) {
-      defExpr->insertAfter(new CallExpr("init", gMethodToken, var, initExpr));
+      CallExpr* initCall = new CallExpr("init", gMethodToken, var, initExpr);
+
+      defExpr->insertAfter(initCall);
+
+      // Add a call to postInit() if present
+      insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
@@ -2167,9 +2186,10 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Add _mt and _this (insert at head in reverse order)
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
-    }
 
-    var->type = type;
+      // Add a call to postInit() if present
+      insertPostInit(var, argExpr);
+    }
 
   } else if (isNewExpr(initExpr) == true) {
     // This check is necessary because the "typeForTypeSpecifier"
@@ -2204,12 +2224,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
       argExpr->insertAtHead(gMethodToken);
 
+      // Add a call to postInit() if present
+      insertPostInit(initExprTemp, argExpr);
+
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
       // Assign the rhs into the lhs.
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
 
       argExpr->insertAfter(assign);
+
       // Move the result into the original variable.
       assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
 
@@ -2224,7 +2248,6 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       typeDefn->insertAfter(initMove);
       initMove->insertAfter(assign);
       assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-
     }
 
   } else {
@@ -2309,6 +2332,20 @@ static void normVarNoinit(DefExpr* defExpr) {
   } else {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void insertPostInit(Symbol* var, CallExpr* anchor) {
+  AggregateType* at = toAggregateType(var->type);
+
+  if (at->hasPostInitializer() == true) {
+    anchor->insertAfter(new CallExpr("postInit", gMethodToken, var));
   }
 }
 
