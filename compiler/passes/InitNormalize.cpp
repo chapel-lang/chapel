@@ -271,7 +271,7 @@ Expr* InitNormalize::completePhase1(CallExpr* initStmt) {
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
-  if (mPhase == cPhase1 && mCurrField != NULL) {
+  if (mCurrField != NULL) {
     Expr* noop = new CallExpr(PRIM_NOOP);
 
     block->insertAtTail(noop);
