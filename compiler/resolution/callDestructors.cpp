@@ -145,7 +145,7 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
     // Only transform calls that are still in the AST tree
     // (defer statement bodies have been removed at this point
     //  in this pass)
-    if (call->parentSymbol != NULL) {
+    if (call->inTree()) {
 
       // Only transform calls to transformable functions
       if (FnSymbol* fn = theTransformableFunction(call))
@@ -946,7 +946,7 @@ static void insertYieldTemps()
 static void insertReferenceTemps() {
   forv_Vec(CallExpr, call, gCallExprs) {
     // Is call in the tree?
-    if (call->parentSymbol != NULL) {
+    if (call->inTree()) {
       if (call->isResolved() || call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         insertReferenceTemps(call);
       }

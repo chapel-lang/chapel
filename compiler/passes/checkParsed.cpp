@@ -174,7 +174,7 @@ static void checkExplicitDeinitCalls(CallExpr* call) {
 static void checkPrivateDecls(DefExpr* def) {
   if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
-    if (def->parentSymbol != NULL) {
+    if (def->inTree()) {
       if (isFnSymbol(def->parentSymbol) == true) {
         // The parent symbol of this definition is a FnSymbol.
         // Private symbols at the function scope are meaningless

@@ -393,7 +393,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
   bool memberAccessed = false;
   for_uses(se, useMap, sym) {
     CallExpr* parent = toCallExpr(se->parentExpr);
-    if (se->parentSymbol && parent != NULL) {
+    if (se->inTree() && parent != NULL) {
       if (isHandledRecordUse(se) == false) {
         return false;
       }

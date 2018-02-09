@@ -136,10 +136,11 @@ void Symbol::verify() {
 
 
 bool Symbol::inTree() {
-  if (this == rootModule)
-    return true;
   if (defPoint)
     return defPoint->inTree();
+  // rootModule->defPoint is always NULL
+  if (this == rootModule)
+    return true;
   else
     return false;
 }
