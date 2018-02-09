@@ -1212,6 +1212,8 @@ rebuildIterator(IteratorInfo* ii,
       // If multiple calls to 'taskFn', we probably shouldn't remove it.
       INT_ASSERT(call == taskFn->singleInvocation());
 
+      // Note that this does not remove task functions that 'taskFn' invokes.
+      // Ex. test/parallel/forall/vass/binary-tree-spawn.no-recurse.chpl
       taskFn->defPoint->remove();
     }
   }
