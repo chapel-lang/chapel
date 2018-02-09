@@ -66,7 +66,9 @@ public:
   void            checkPhase(BlockStmt* block);
 
   Expr*           completePhase1(CallExpr* insertBefore);
-  void            initializeFieldsBefore(Expr* insertBefore);
+
+  void            initializeFieldsAtTail(BlockStmt* block);
+  void            initializeFieldsBefore(Expr*      insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            inLoopBody()                                           const;
