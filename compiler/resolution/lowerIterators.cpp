@@ -2354,7 +2354,11 @@ static void reconstructIRautoCopyAutoDestroy()
   // reconstruct autoCopy and autoDestroy for iterator records
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (!fn->inTree()) continue;
+
+    if (fn->numFormals() == 1 &&
+        fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))
         reconstructIRAutoCopy(fn);
@@ -2465,7 +2469,7 @@ void lowerIterators() {
   lowerForallStmtsInline();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->inTree() && fn->isIterator()) {
       fn->collapseBlocks();
 
       removeUnnecessaryGotos(fn);
@@ -2488,7 +2492,7 @@ void lowerIterators() {
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->inTree() && fn->isIterator()) {
       fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
@@ -2517,7 +2521,7 @@ void lowerIterators() {
   fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator() && fn->inTree()) {
+    if (fn->inTree() && fn->isIterator()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();

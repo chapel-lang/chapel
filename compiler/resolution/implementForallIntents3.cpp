@@ -832,26 +832,33 @@ Implementation considerations:
 // wass need startFnID ?
 static void removeDeadAndFlatten(int startFnID) {
   Vec<FnSymbol*> taskFnsToFlatten;
+  int gIdx = -1; // wass for debugging only -- startFnID is also
   printf("\n---------------------------------\n"); //wass
   printf("removeDeadAndFlatten(%d)\n\n", startFnID); //wass
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    gIdx++;
     if (!fn->inTree()) continue;
 
     if (fn->firstSymExpr() == NULL)
     {
-      // wass - I am curious why these may not be the case
-      INT_ASSERT(!fn->hasFlag(FLAG_INLINE_ITERATOR));
-      INT_ASSERT(isTaskFun(fn));
+      INT_ASSERT(!fn->hasFlag(FLAG_INLINE_ITERATOR) || gIdx < startFnID);
 
-      // Got a task function with no uses. Remove it.
-      printf("removing task fn %d   %s\n", fn->id, debugLoc(fn)); //wass
-      fn->defPoint->remove();
+      if (fn->hasFlag(FLAG_INLINE_ITERATOR))
+        // Got a parallel iterator no uses. Remove it.
+        printf("removing p iter  %d   %s\n", fn->id, debugLoc(fn)), //wass
+        fn->defPoint->remove();
+      else if (isTaskFun(fn))
+        // Got a task function with no uses. Remove it.
+        printf("removing task fn %d   %s\n", fn->id, debugLoc(fn)), //wass
+        fn->defPoint->remove();
+//      else
+//        printf("other unused fn  %d   %s\n", fn->id, debugLoc(fn)); //wass
     }
     else if (!isGlobal(fn)) {
       // wass - I am curious why these may not be the case
       INT_ASSERT(isTaskFun(fn));
-      INT_ASSERT(fn->id >= startFnID);
+      INT_ASSERT(gIdx >= startFnID);
 
       printf("flatten  task fn %d   %s\n", fn->id, debugLoc(fn)); //wass
       taskFnsToFlatten.add(fn);
@@ -930,15 +937,16 @@ static void lowerForallStmtsInline() {
   const int startFnId = gFnSymbols.n;
 
   forv_Vec(ForallStmt, fs, gForallStmts)
-  {
-    lowerOneForallStmt(fs);
-  }
+    if (fs->inTree())
+      lowerOneForallStmt(fs);
 
-  gdbShouldBreakHere(); //wass
+//  gdbShouldBreakHere(); //wass
 
   clearUpRefsInShadowVars();
 
   removeDeadAndFlatten(startFnId);
+
+  gdbShouldBreakHere(); //wass
 }
 
 #else //wass
