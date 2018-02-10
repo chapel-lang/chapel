@@ -504,6 +504,15 @@ static InitNormalize preNormalize(AggregateType* at,
           }
         }
 
+      } else if (isInitDone(callExpr) == true) {
+        Expr* next = stmt->next;
+
+        state.completePhase1(callExpr);
+
+        stmt->remove();
+
+        stmt = next;
+
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
         if (state.isPhase0() == true) {
