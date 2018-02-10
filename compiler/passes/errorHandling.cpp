@@ -696,15 +696,14 @@ void ImplicitThrowsVisitor::exitTryStmt(TryStmt* node) {
 
   bool nonExhaustive = catchesNotExhaustive(node);
 
-  if (node->tryBang()) {
-    canThrow = false;
-  } else {
+  if (!node->tryBang()) {
     canThrow = nonExhaustive;
     if (nonExhaustive)
       onlyUnchecked = false;
     if (reasonThrows == NULL)
       reasonThrows = node;
   }
+  // try! does not change the throwing status of a block
 }
 
 bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
@@ -739,10 +738,14 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
-    canThrow = true;
-    onlyUnchecked = false;
-    if (reasonThrows == NULL)
-      reasonThrows = node;
+    if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+      // OK
+    } else {
+      canThrow = true;
+      onlyUnchecked = false;
+      if (reasonThrows == NULL)
+        reasonThrows = node;
+    }
   }
   return true;
 }
@@ -834,6 +837,9 @@ void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
 }
 
 bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
+  if (node->id == 637145) {
+    gdbShouldBreakHere();
+  }
   bool insideTry = (tryDepth > 0);
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
@@ -917,6 +923,8 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
   // Currently, only task functions can be implicitly throws.
   if (!isTaskFun(fn))
     return;
+
+  gdbShouldBreakHere();
 
   // If we already visited this function, don't visit it again.
   if (visited->count(fn) > 0)
