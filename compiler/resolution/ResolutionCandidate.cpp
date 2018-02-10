@@ -644,6 +644,17 @@ static AggregateType* getRootInstantiation(AggregateType* at) {
   return ret;
 }
 
+static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
+  AggregateType* ret = NULL;
+  Symbol* sym        = rc->formalIdxToActual[idx];
+
+  if (sym != NULL) {
+    ret = toAggregateType(sym->getValType());
+  }
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -659,13 +670,13 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
    */
   resolveSignature(fn);
 
-  bool isInit = strcmp(fn->name, "init") == 0;
+  bool isInit = strcmp(fn->name, "init") == 0 && fn->isMethod();
   bool looksLikeCopyInit = false;
 
   if (isInit && formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
-    AggregateType* base  = toAggregateType(formalIdxToActual[1]->getValType());
-    AggregateType* other = toAggregateType(formalIdxToActual[2]->getValType());
+    AggregateType* base  = getActualType(this, 1);
+    AggregateType* other = getActualType(this, 2);
     if (base != NULL && other != NULL) {
       if (base == other) {
         looksLikeCopyInit = true;
@@ -683,8 +694,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
 
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
-      bool isInitThis        = strcmp(fn->name,"init") == 0 &&
-                               formal->hasFlag(FLAG_ARG_THIS);
+      bool isInitThis        = isInit && formal->hasFlag(FLAG_ARG_THIS);
       bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
                                coindex == 0; // first formal/actual
 
