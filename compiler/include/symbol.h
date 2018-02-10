@@ -79,8 +79,9 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 // ForallIntentTag: a task- or forall-intent tag
 //
 enum ForallIntentTag {
-  TFI_DEFAULT, // aka TFI_BLANK
+  TFI_DEFAULT,    // aka TFI_BLANK
   TFI_CONST,
+  TFI_IN_OVAR,    // added by compiler
   TFI_IN,
   TFI_CONST_IN,
   TFI_REF,
@@ -401,9 +402,11 @@ public:
   BlockStmt* initBlock()   const { return svInitBlock; }
   BlockStmt* deinitBlock() const { return svDeinitBlock; }
 
+  // Convert between IN and IN_OVAR svars.
+  ShadowVarSymbol* SOforSI() const;
   // Convert between Reduce-oP and Accumulation State svars.
-  ShadowVarSymbol* RPforAS();
-  ShadowVarSymbol* ASforRP();
+  ShadowVarSymbol* RPforAS() const;
+  ShadowVarSymbol* ASforRP() const;
 
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();

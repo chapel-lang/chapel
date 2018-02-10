@@ -17,6 +17,21 @@ We DO need to preserve some const properties to enable optimizations.
 //wass
 #define lfiResolve 0
 
+static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
+{
+  ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OVAR, astr("SO_", SI->name),
+                                            new SymExpr(SI->outerVarSym()));
+  SO->addFlag(FLAG_CONST);  // make it be like 'const in'
+  SO->qual = QUAL_CONST_VAL;
+  SO->type = SI->type;
+
+  // It goes on the shadow variable list right before SI.
+  SI->defPoint->insertBefore(new DefExpr(SO));
+  INT_ASSERT(SI->SOforSI() == SO);  // ensure SOforSI() works
+
+  return SO;
+}
+
 static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
 {
   SymExpr* gOpSE = toSymExpr(AS->reduceOpExpr()->remove());
@@ -61,20 +76,11 @@ static void insertDeinitialization(BlockStmt* destBlock,
     destBlock->insertAtTail(new CallExpr(autoDestroy, destVar));
 }
 
-static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
+static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* SO,
                        BlockStmt* IB, BlockStmt* DB) {
-#if 0 //wass was:
-  // setShadowVarFlagsNew() makes all svars refs.
-  // If this assert fails, we do not need to bother with the following.
-  INT_ASSERT(SI->isRef() && SI->hasFlag(FLAG_REF_VAR));
-  // We need to undo that.
-  SI->type = SI->type->getValType();
-  SI->removeFlag(FLAG_REF_VAR);
-  SI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
-#endif
   INT_ASSERT(!SI->isRef());
 
-  insertInitialization(IB, SI, gI);
+  insertInitialization(IB, SI, SO);
 #if lfiResolve
   resolveBlockStmt(IB);
 #endif
@@ -165,20 +171,25 @@ void lowerForallIntentsAtResolution(ForallStmt* fs) {
     
     switch (svar->intent)
     {
-      case TFI_DEFAULT:    // no abstract intents please
-      case TFI_CONST:      INT_ASSERT(false);                     break;
       case TFI_IN:
-      case TFI_CONST_IN:   setupForIN(fs, svar, ovar, IB, DB);    break;
+      case TFI_CONST_IN: { ShadowVarSymbol* SO = createSOforSI(fs, svar);
+                           setupForIN(fs, svar, SO, IB, DB);      break; }
+
       case TFI_REF:
       case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);   break;
-      case TFI_REDUCE: {
-                           ShadowVarSymbol* RP = createRPforAS(fs, svar);
+
+      case TFI_REDUCE: {   ShadowVarSymbol* RP = createRPforAS(fs, svar);
                            setupForR_OP(fs, RP, RP->outerVarSym(),
                                         RP->initBlock(), RP->deinitBlock());
-                           setupForR_AS(fs, svar, ovar, IB, DB);  break;
-      }
-      // We place such svar earlier in the list - it should not come up here.
+                           setupForR_AS(fs, svar, ovar, IB, DB);  break; }
+
+      // We placed such svar earlier in the list - it should not come up here.
+      case TFI_IN_OVAR:
       case TFI_REDUCE_OP:  INT_ASSERT(false);                     break;
+
+      // No abstract intents, please.
+      case TFI_DEFAULT:
+      case TFI_CONST:      INT_ASSERT(false);                     break;
     }
   }
 }
@@ -628,11 +639,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_DEFAULT:
-    case TFI_CONST:
-      INT_ASSERT(false);   // no abstract intents please
-      break;
-
+    case TFI_IN_OVAR: //VASS TODO
     case TFI_IN:
     case TFI_CONST_IN:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
@@ -660,6 +667,12 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addDefAndMap(aInit, map, svar, createCurrAS(svar));
       addCloneOfIB(aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
+      break;
+
+    // No abstract intents, please.
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      INT_ASSERT(false);
       break;
   }
 }
@@ -768,9 +781,9 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_DEFAULT:
-    case TFI_CONST:
-      INT_ASSERT(false);   // no abstract intents please
+    case TFI_IN_OVAR:
+      // The outer var for IB of the corresponding in-intent svar.
+      map.put(svar, svar->outerVarSym());
       break;
 
     case TFI_IN:
@@ -797,6 +810,12 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
       addDefAndMap(aInit, map, svar, createCurrAS(svar));
       addCloneOfIB(aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
+      break;
+
+    // No abstract intents, please.
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      INT_ASSERT(false);
       break;
   }
 }

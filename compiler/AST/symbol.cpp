@@ -1014,6 +1014,9 @@ bool ShadowVarSymbol::isConstant() const {
     case TFI_REF:
     case TFI_REDUCE:
       return false;
+    case TFI_IN_OVAR:
+      INT_ASSERT(false); // this should be queried
+      return false;
   }
   return false; // dummy
 }
@@ -1031,6 +1034,7 @@ const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
     case TFI_DEFAULT:   return "default intent";
     case TFI_CONST:     return "'const' intent";
+    case TFI_IN_OVAR:   return "in-ovar intent";
     case TFI_IN:        return "'in' intent";
     case TFI_CONST_IN:  return "'const in' intent";
     case TFI_REF:       return "'ref' intent";
@@ -1053,16 +1057,24 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
   return specBlock->body.head;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::RPforAS() {
-  ShadowVarSymbol* AS = this;
-  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
-  ShadowVarSymbol* RR = toShadowVarSymbol(rpDef->sym);
-  INT_ASSERT(RR->intent == TFI_REDUCE_OP);
-  return RR;
+ShadowVarSymbol* ShadowVarSymbol::SOforSI() const {
+  const ShadowVarSymbol* SI = this;
+  DefExpr* soDef = toDefExpr(SI->defPoint->prev);
+  ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
+  INT_ASSERT(SO->intent == TFI_IN_OVAR);
+  return SO;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::ASforRP() {
-  ShadowVarSymbol* RP = this;
+ShadowVarSymbol* ShadowVarSymbol::RPforAS() const {
+  const ShadowVarSymbol* AS = this;
+  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
+  ShadowVarSymbol* RP = toShadowVarSymbol(rpDef->sym);
+  INT_ASSERT(RP->intent == TFI_REDUCE_OP);
+  return RP;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::ASforRP() const {
+  const ShadowVarSymbol* RP = this;
   DefExpr* asDef = toDefExpr(RP->defPoint->next);
   ShadowVarSymbol* AS = toShadowVarSymbol(asDef->sym);
   INT_ASSERT(AS->intent == TFI_REDUCE);

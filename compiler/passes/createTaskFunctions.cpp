@@ -186,6 +186,7 @@ ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
       retval = tiMarkConstRef;
       break;
 
+    case TFI_IN_OVAR:
     case TFI_REDUCE:
     case TFI_REDUCE_OP:
       INT_FATAL("unexpected intent in tiMarkForForallIntent()");

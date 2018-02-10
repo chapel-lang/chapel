@@ -37,6 +37,7 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:   return "default";
     case TFI_CONST:     return "const";
+    case TFI_IN_OVAR:   return "in-ovar";
     case TFI_IN:        return "in";
     case TFI_CONST_IN:  return "const in";
     case TFI_REF:       return "ref";
@@ -337,6 +338,7 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
     switch (svar->intent) {
       case TFI_DEFAULT:
       case TFI_CONST:
+      case TFI_IN_OVAR:
       case TFI_IN:
       case TFI_CONST_IN:
       case TFI_REF:

@@ -822,11 +822,13 @@ static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
   switch (fii.svSymbol->intent) {
     case TFI_DEFAULT:
     case TFI_CONST:
-    case TFI_REDUCE_OP:  // should not happen
-    {
       INT_ASSERT(false); // it is better to have a concrete intent here
       return NULL;
-    }
+
+    case TFI_IN_OVAR:
+    case TFI_REDUCE_OP:
+      INT_ASSERT(false); // should not happen
+      return NULL;
 
     case TFI_IN:
     case TFI_CONST_IN:
@@ -842,10 +844,8 @@ static Symbol* tupcomForSerialYield(FIcontext& ctx, int ix)
     }
 
     case TFI_REDUCE:
-    {
       ensureCurrentReduceOpForReduceIntent(ctx, fii, ix);
       return shadowVarForReduceIntent(ctx, fii, ix);
-    }
   }
 
   INT_ASSERT(false); // garbage intent
