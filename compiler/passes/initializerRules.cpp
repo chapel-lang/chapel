@@ -55,6 +55,9 @@ static void     transformSuperInit(CallExpr* initCall);
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
 
+static bool     hasInit(BlockStmt* block);
+static void     addSuperInit(FnSymbol* fn);
+
 static bool     hasInitDone(BlockStmt* block);
 
 /************************************* | **************************************
@@ -73,49 +76,44 @@ static AggregateType* typeForNewExpr(CallExpr* newExpr);
 void preNormalizeFields(AggregateType* at) {
   for_alist(field, at->fields) {
     if (DefExpr* defExpr = toDefExpr(field)) {
+      if (defExpr->sym->hasFlag(FLAG_PARAM)         == false &&
+          defExpr->sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+        Type* type = NULL;
 
-      // Don't do anything about type or param fields.  Generic var/const
-      // fields are okay, though.
-      if (defExpr->sym->hasFlag(FLAG_PARAM) ||
-          defExpr->sym->hasFlag(FLAG_TYPE_VARIABLE))
-        continue;
+        if (Expr* typeExpr = defExpr->exprType) {
+          type = typeForTypeSpecifier(typeExpr, false);
 
+          // var x, y : Foo
+          //   =>
+          // var x : Foo;
+          // var y : typeof(x);       // Handle this case
+          if (type == NULL) {
+            if (CallExpr* callExpr = toCallExpr(typeExpr)) {
+              if (callExpr->isPrimitive(PRIM_TYPEOF) == true) {
+                if (SymExpr* varExpr = toSymExpr(callExpr->get(1))) {
+                  Type* t = varExpr->symbol()->type;
 
-      Type* type = NULL;
-
-      if (Expr* typeExpr = defExpr->exprType) {
-        type = typeForTypeSpecifier(typeExpr, false);
-
-        // var x, y : Foo
-        //   =>
-        // var x : Foo;
-        // var y : typeof(x);       // Handle this case
-        if (type == NULL) {
-          if (CallExpr* callExpr = toCallExpr(typeExpr)) {
-            if (callExpr->isPrimitive(PRIM_TYPEOF) == true) {
-              if (SymExpr* varExpr = toSymExpr(callExpr->get(1))) {
-                Type* t = varExpr->symbol()->type;
-
-                type = (t != dtUnknown) ? t : NULL;
+                  type = (t != dtUnknown) ? t : NULL;
+                }
               }
             }
           }
+
+        } else if (defExpr->init != NULL) {
+          type = typeForExpr(defExpr->init);
         }
 
-      } else if (defExpr->init != NULL) {
-        type = typeForExpr(defExpr->init);
-      }
+        if (type != NULL) {
+          Symbol* sym = defExpr->sym;
 
-      if (type != NULL) {
-        Symbol* sym = defExpr->sym;
+          if (sym->hasFlag(FLAG_CONST) == true) {
+            sym->qual = QUAL_CONST_VAL;
+            sym->type = type;
 
-        if (sym->hasFlag(FLAG_CONST) == true) {
-          sym->qual = QUAL_CONST_VAL;
-          sym->type = type;
-
-        } else {
-          sym->qual = QUAL_VAL;
-          sym->type = type;
+          } else {
+            sym->qual = QUAL_VAL;
+            sym->type = type;
+          }
         }
       }
     }
@@ -338,12 +336,16 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    bool initNew = hasInitDone(fn->body);
+    bool initNew    = hasInitDone(fn->body);
+    bool needsSuper = hasInit(fn->body) == false;
 
     preNormalize(at, fn->body, state, initNew);
 
-  } else if (state.isPhase2() == true) {
+    if (needsSuper == true) {
+      addSuperInit(fn);
+    }
 
+  } else if (state.isPhase2() == true) {
     if (at->symbol->hasFlag(FLAG_EXTERN) == false) {
       CallExpr* superInit = createCallToSuperInit(fn);
 
@@ -375,7 +377,6 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   } else {
     fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
-
 }
 
 static InitNormalize preNormalize(AggregateType* at,
@@ -390,7 +391,6 @@ static InitNormalize preNormalize(AggregateType* at,
                                   InitNormalize  state,
                                   bool           initNew,
                                   Expr*          stmt) {
-
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
@@ -602,33 +602,34 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
-        // Only valid during Phase 2
         if (state.isPhase2() == false) {
           USR_FATAL(stmt,
                     "can't set value of field \"%s\" from parent type "
                     "during phase 1 of initialization",
                     field->sym->name);
-        } else if (state.isPhase2() == true) {
+
+        } else {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
-                      "cannot update a const field, \"%s\", from parent type in phase 2",
+                      "cannot update a const field, \"%s\", "
+                      "from parent type in phase 2",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_PARAM) == true) {
             USR_FATAL(stmt,
-                      "cannot update a param field, \"%s\", from parent type in phase 2",
+                      "cannot update a param field, \"%s\", "
+                      "from parent type in phase 2",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
             USR_FATAL(stmt,
-                      "cannot update a type field, \"%s\", from parent type in phase 2",
+                      "cannot update a type field, \"%s\", "
+                      "from parent type in phase 2",
                       field->sym->name);
+
           } else {
             stmt = stmt->next;
           }
-
-        } else {
-          stmt = stmt->next;
         }
 
       // No action required
@@ -790,15 +791,15 @@ static bool isMethodCall(CallExpr* callExpr) {
     if (base->isNamedAstr(astrSdot) == true) {
       if (SymExpr* lhs = toSymExpr(base->get(1))) {
         if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
+          UnresolvedSymExpr* calledSe = toUnresolvedSymExpr(base->get(2));
+
           retval = arg->hasFlag(FLAG_ARG_THIS);
 
-          // Should only happen for the modifications I made earlier.
-          UnresolvedSymExpr* calledSe = toUnresolvedSymExpr(base->get(2));
           if (calledSe) {
-            if (strstr(calledSe->unresolved, "_if_fn")       != 0 ||
-                strstr(calledSe->unresolved, "_parloopexpr") != 0) {
-              // Only mark it as a method call if it is not a compiler inserted
-              // loop or conditional expression function.
+            if (strstr(calledSe->unresolved, "_if_fn")       != NULL ||
+                strstr(calledSe->unresolved, "_parloopexpr") != NULL) {
+              // Only mark it as a method call if it is not a compiler
+              // inserted loop or conditional expression function.
               retval = false;
             }
           }
@@ -1144,6 +1145,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
     // Ignore _mt and this
     if (count >= 3) {
       ArgSymbol* arg = formal->copy();
+
       initArgToNewArgMap.put(formal, arg);
 
       fn->insertFormalAtTail(arg);
@@ -1188,6 +1190,58 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   normalize(fn);
 
   return fn;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasInit(BlockStmt* block) {
+  Expr* stmt   = block->body.head;
+  bool  retval = false;
+
+  while (stmt != NULL && retval == false) {
+    if (CallExpr* callExpr = toCallExpr(stmt)) {
+      retval = isSuperInit(callExpr) == true || isThisInit(callExpr) == true;
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (cond->elseStmt == NULL) {
+        retval = hasInit(cond->thenStmt);
+
+      } else {
+        retval = hasInit(cond->thenStmt) || hasInit(cond->elseStmt);
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      retval = hasInit(block);
+
+    } else if (ForallStmt* block = toForallStmt(stmt)) {
+      retval = hasInit(block->loopBody());
+    }
+
+    stmt = stmt->next;
+  }
+
+  return retval;
+}
+
+static void addSuperInit(FnSymbol* fn) {
+  BlockStmt* body     = fn->body;
+
+  VarSymbol* tmp      = newTemp("super_tmp");
+
+  Symbol*    _this    = fn->_this;
+  Symbol*    superSym = new_CStringSymbol("super");
+  CallExpr*  superGet = new CallExpr(PRIM_GET_MEMBER_VALUE, _this, superSym);
+
+  tmp->addFlag(FLAG_SUPER_TEMP);
+
+  // Adding at head therefore add in reverse order
+  body->insertAtHead(new CallExpr("init",    gMethodToken, tmp));
+  body->insertAtHead(new CallExpr(PRIM_MOVE, tmp,          superGet));
+  body->insertAtHead(new DefExpr(tmp));
 }
 
 static bool hasInitDone(BlockStmt* block) {
