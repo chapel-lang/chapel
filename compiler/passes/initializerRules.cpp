@@ -50,8 +50,12 @@ static bool     isAssignment(CallExpr* callExpr);
 static bool     isSimpleAssignment(CallExpr* callExpr);
 static bool     isCompoundAssignment(CallExpr* callExpr);
 
+static void     transformSuperInit(CallExpr* initCall);
+
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
+
+static bool     hasInitDone(BlockStmt* block);
 
 /************************************* | **************************************
 *                                                                             *
@@ -246,12 +250,16 @@ static void          preNormalizeInitRecord(FnSymbol* fn);
 
 static void          preNormalizeInitClass(FnSymbol* fn);
 
-static InitNormalize preNormalize(BlockStmt*    block,
-                                  InitNormalize state);
+static InitNormalize preNormalize(AggregateType* at,
+                                  BlockStmt*     block,
+                                  InitNormalize  state,
+                                  bool           initNew);
 
-static InitNormalize preNormalize(BlockStmt*    block,
-                                  InitNormalize state,
-                                  Expr*         start);
+static InitNormalize preNormalize(AggregateType* at,
+                                  BlockStmt*     block,
+                                  InitNormalize  state,
+                                  bool           initNew,
+                                  Expr*          start);
 
 static CallExpr*     createCallToSuperInit(FnSymbol* fn);
 
@@ -285,18 +293,18 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
-    preNormalize(fn->body, state);
+    preNormalize(at, fn->body, state, false);
 
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    preNormalize(fn->body, state);
+    preNormalize(at, fn->body, state, false);
 
   } else if (state.isPhase2() == true) {
     if (Expr* head = fn->body->body.head) {
       state.initializeFieldsBefore(head);
 
-      preNormalize(fn->body, state, head);
+      preNormalize(at, fn->body, state, false, head);
 
     } else {
       state.initializeFieldsAtTail(fn->body);
@@ -320,21 +328,22 @@ static void preNormalizeInitClass(FnSymbol* fn) {
 
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (at->isGeneric() == true) {
-    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-  }
-
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
-    preNormalize(fn->body, state);
+    bool initNew = hasInitDone(fn->body);
+
+    preNormalize(at, fn->body, state, initNew);
 
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    preNormalize(fn->body, state);
+    bool initNew = hasInitDone(fn->body);
+
+    preNormalize(at, fn->body, state, initNew);
 
   } else if (state.isPhase2() == true) {
+
     if (at->symbol->hasFlag(FLAG_EXTERN) == false) {
       CallExpr* superInit = createCallToSuperInit(fn);
 
@@ -342,13 +351,13 @@ static void preNormalizeInitClass(FnSymbol* fn) {
 
       state.initializeFieldsBefore(superInit);
 
-      preNormalize(fn->body, state, superInit->next);
+      preNormalize(at, fn->body, state, false, superInit->next);
 
     } else {
       if (Expr* head = fn->body->body.head) {
         state.initializeFieldsBefore(head);
 
-        preNormalize(fn->body, state, head);
+        preNormalize(at, fn->body, state, false, head);
 
       } else {
         state.initializeFieldsAtTail(fn->body);
@@ -362,17 +371,26 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   if (at->isGeneric() == false) {
     buildClassAllocator(fn);
     fn->addFlag(FLAG_INLINE);
+
+  } else {
+    fn->_this->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
   }
+
 }
 
-static InitNormalize preNormalize(BlockStmt*    block,
-                                  InitNormalize state) {
-  return preNormalize(block, state, block->body.head);
+static InitNormalize preNormalize(AggregateType* at,
+                                  BlockStmt*     block,
+                                  InitNormalize  state,
+                                  bool           initNew) {
+  return preNormalize(at, block, state, initNew, block->body.head);
 }
 
-static InitNormalize preNormalize(BlockStmt*    block,
-                                  InitNormalize state,
-                                  Expr*         stmt) {
+static InitNormalize preNormalize(AggregateType* at,
+                                  BlockStmt*     block,
+                                  InitNormalize  state,
+                                  bool           initNew,
+                                  Expr*          stmt) {
+
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
@@ -471,8 +489,45 @@ static InitNormalize preNormalize(BlockStmt*    block,
           }
 
         } else {
-          stmt = state.completePhase1(callExpr);
+          if (isThisInit(callExpr) == true) {
+            if (initNew == false) {
+              state.completePhase1(callExpr);
+            }
+
+            stmt = callExpr->next;
+
+          } else if (isSuperInit(callExpr) == true) {
+            Expr* next = callExpr->next;
+
+            if (initNew == false) {
+              state.completePhase1(callExpr);
+            }
+
+            if (at->isRecord() == true) {
+              callExpr->remove();
+
+            } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+              callExpr->remove();
+
+            } else {
+              transformSuperInit(callExpr);
+            }
+
+            stmt = next;
+
+          } else {
+            INT_ASSERT(false);
+          }
         }
+
+      } else if (isInitDone(callExpr) == true) {
+        Expr* next = stmt->next;
+
+        state.completePhase1(callExpr);
+
+        stmt->remove();
+
+        stmt = next;
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
@@ -575,6 +630,7 @@ static InitNormalize preNormalize(BlockStmt*    block,
         } else {
           stmt = stmt->next;
         }
+
       // No action required
       } else {
         if (state.fieldUsedBeforeInitialized(stmt) == true) {
@@ -602,8 +658,10 @@ static InitNormalize preNormalize(BlockStmt*    block,
       if (cond->elseStmt == NULL) {
         InitNormalize::InitPhase phaseThen = state.startPhase(cond->thenStmt);
         InitNormalize            stateThen = preNormalize(
+                                                  at,
                                                   cond->thenStmt,
-                                                  InitNormalize(cond, state));
+                                                  InitNormalize(cond, state),
+                                                  initNew);
 
         if (state.isPhase2() == false) {
           if (stateThen.isPhase2() == true) {
@@ -630,11 +688,15 @@ static InitNormalize preNormalize(BlockStmt*    block,
         }
 
       } else {
-        InitNormalize stateThen = preNormalize(cond->thenStmt,
-                                               InitNormalize(cond, state));
+        InitNormalize stateThen = preNormalize(at,
+                                               cond->thenStmt,
+                                               InitNormalize(cond, state),
+                                               initNew);
 
-        InitNormalize stateElse = preNormalize(cond->elseStmt,
-                                               InitNormalize(cond, state));
+        InitNormalize stateElse = preNormalize(at,
+                                               cond->elseStmt,
+                                               InitNormalize(cond, state),
+                                               initNew);
 
         if (state.isPhase2() == false) {
           // Only one branch contained an init
@@ -657,16 +719,22 @@ static InitNormalize preNormalize(BlockStmt*    block,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      preNormalize((BlockStmt*) stmt, InitNormalize(loop, state));
+      preNormalize(at, (BlockStmt*) stmt, InitNormalize(loop, state), initNew);
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
-      preNormalize(forall->loopBody(), InitNormalize(forall, state));
+      preNormalize(at,
+                   forall->loopBody(),
+                   InitNormalize(forall, state),
+                   initNew);
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      state.merge(preNormalize(block, InitNormalize(block, state)));
-      stmt  = stmt->next;
+      state.merge(preNormalize(at,
+                               block,
+                               InitNormalize(block, state),
+                               initNew));
+      stmt = stmt->next;
 
     } else {
       stmt = stmt->next;
@@ -1122,6 +1190,35 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   return fn;
 }
 
+static bool hasInitDone(BlockStmt* block) {
+  Expr* stmt   = block->body.head;
+  bool  retval = false;
+
+  while (stmt != NULL && retval == false) {
+    if (CallExpr* callExpr = toCallExpr(stmt)) {
+      retval = isInitDone(callExpr);
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (cond->elseStmt == NULL) {
+        retval = hasInitDone(cond->thenStmt);
+
+      } else {
+        retval = hasInitDone(cond->thenStmt) || hasInitDone(cond->elseStmt);
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      retval = hasInitDone(block);
+
+    } else if (ForallStmt* block = toForallStmt(stmt)) {
+      retval = hasInitDone(block->loopBody());
+    }
+
+    stmt = stmt->next;
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Transform `call(".", call(".", this, "super"), "init")` into                *
@@ -1129,7 +1226,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 *                                                                             *
 ************************************** | *************************************/
 
-void transformSuperInit(CallExpr* initCall) {
+static void transformSuperInit(CallExpr* initCall) {
   CallExpr* initBase = toCallExpr(initCall->baseExpr);
 
   if (CallExpr* sub = toCallExpr(initBase->get(1))) {

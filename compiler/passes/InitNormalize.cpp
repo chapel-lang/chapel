@@ -134,25 +134,7 @@ FnSymbol* InitNormalize::theFn() const {
   return mFn;
 }
 
-bool InitNormalize::isRecord() const {
-  AggregateType* at = type();
-
-  return at->isRecord();
-}
-
-bool InitNormalize::isClass() const {
-  AggregateType* at = type();
-
-  return at->isClass();
-}
-
-bool InitNormalize::isExtern() const {
-  AggregateType* at = type();
-
-  return at->symbol->hasFlag(FLAG_EXTERN);
-}
-
-InitNormalize::InitPhase  InitNormalize::currPhase() const {
+InitNormalize::InitPhase InitNormalize::currPhase() const {
   return mPhase;
 }
 
@@ -224,8 +206,8 @@ bool InitNormalize::inOnInCondStmt() const {
 }
 
 bool InitNormalize::inOnInParallelStmt() const {
-  return inOn() && (mPrevBlockType == cBlockBegin   ||
-                    mPrevBlockType == cBlockCobegin  );
+  return inOn() && (mPrevBlockType == cBlockBegin ||
+                    mPrevBlockType == cBlockCobegin);
 }
 
 bool InitNormalize::inOnInCoforall() const {
@@ -242,32 +224,21 @@ bool InitNormalize::inOnInForall() const {
 *                                                                             *
 ************************************** | *************************************/
 
-Expr* InitNormalize::completePhase1(CallExpr* initStmt) {
-  Expr* retval = initStmt->next;
-
-  if (isThisInit(initStmt) == true) {
+void InitNormalize::completePhase1(CallExpr* initStmt) {
+  if        (isThisInit(initStmt)  == true) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {
     initializeFieldsBefore(initStmt);
 
-    if (isRecord() == true) {
-      initStmt->remove();
-
-    } else if (isExtern() == true) {
-      initStmt->remove();
-
-    } else {
-      transformSuperInit(initStmt);
-    }
+  } else if (isInitDone(initStmt)  == true) {
+    initializeFieldsBefore(initStmt);
 
   } else {
     INT_ASSERT(false);
   }
 
   mPhase = cPhase2;
-
-  return retval;
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
@@ -286,8 +257,7 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
     DefExpr* field = mCurrField;
 
-
-    if (isOuterField(field)) {
+    if (isOuterField(field) == true) {
       // The outer field is a compiler generated field.  Handle it specially.
       makeOuterArg();
 
@@ -300,10 +270,10 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
 
       } else if (field->sym->hasFlag(FLAG_PARAM)         == true ||
                  field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-        if (field->exprType != NULL && field->init == NULL) {
+        if        (field->exprType != NULL && field->init == NULL) {
           genericFieldInitTypeWoutInit (insertBefore, field);
 
-        } else if (field->exprType != NULL  && field->init != NULL) {
+        } else if (field->exprType != NULL && field->init != NULL) {
           genericFieldInitTypeWithInit (insertBefore,
                                         field,
                                         field->init->copy());
@@ -317,13 +287,13 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
           INT_ASSERT(false);
         }
 
-      } else if (field->exprType != NULL  && field->init == NULL) {
+      } else if (field->exprType != NULL && field->init == NULL) {
         fieldInitTypeWoutInit (insertBefore, field);
 
-      } else if (field->exprType != NULL  && field->init != NULL) {
+      } else if (field->exprType != NULL && field->init != NULL) {
         fieldInitTypeWithInit (insertBefore, field, field->init->copy());
 
-      } else if (field->exprType == NULL  && field->init != NULL) {
+      } else if (field->exprType == NULL && field->init != NULL) {
         fieldInitTypeInference(insertBefore, field, field->init->copy());
 
       } else {
@@ -1171,6 +1141,9 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
         retval = cPhase0;
 
       } else if (isSuperInit(callExpr) == true) {
+        retval = cPhase1;
+
+      } else if (isInitDone(callExpr)  == true) {
         retval = cPhase1;
 
       } else {

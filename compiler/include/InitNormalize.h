@@ -41,7 +41,7 @@ public:
   };
 
 
-                  InitNormalize(FnSymbol*  fn);
+                  InitNormalize(FnSymbol*   fn);
                   InitNormalize(BlockStmt*  block, const InitNormalize& curr);
                   InitNormalize(LoopStmt*   loop,  const InitNormalize& curr);
                   InitNormalize(ForallStmt* loop,  const InitNormalize& curr);
@@ -52,10 +52,6 @@ public:
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
 
-  bool            isRecord()                                             const;
-  bool            isClass()                                              const;
-  bool            isExtern()                                             const;
-
   InitPhase       currPhase()                                            const;
 
   InitPhase       startPhase(BlockStmt* block)                           const;
@@ -65,7 +61,7 @@ public:
 
   void            checkPhase(BlockStmt* block);
 
-  Expr*           completePhase1(CallExpr* insertBefore);
+  void            completePhase1(CallExpr* insertBefore);
 
   void            initializeFieldsAtTail(BlockStmt* block);
   void            initializeFieldsBefore(Expr*      insertBefore);
