@@ -314,9 +314,10 @@ void resolveFunction(FnSymbol* fn) {
 
     fn->addFlag(FLAG_RESOLVED);
 
-    if (strcmp(fn->name, "init") == 0) {
+    if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
-      if (at->scalarPromotionType == NULL ) {
+      if (at->scalarPromotionType == NULL &&
+          at->symbol->hasFlag(FLAG_GENERIC) == false) {
         resolvePromotionType(at);
       }
     }
