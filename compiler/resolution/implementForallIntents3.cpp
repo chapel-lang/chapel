@@ -39,6 +39,12 @@ static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
   return RP;
 }
 
+static Symbol* initPlaceholder(ShadowVarSymbol* SI) {
+  Expr* def = SI->specBlock->body.head;
+  INT_ASSERT(def->next == NULL);
+  return toDefExpr(def)->sym;
+}
+
 
 /////////// lowerForallIntentsAtResolution : setup IB, DB ///////////
 
@@ -74,7 +80,12 @@ static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
 #endif
   INT_ASSERT(!SI->isRef());
 
-  insertInitialization(IB, SI, gI);
+  DefExpr* plhdDef = gI->defPoint->copy();
+  Symbol*  plhdSym = plhdDef->sym;
+  SI->specBlock = new BlockStmt(plhdDef);
+  parent_insert_help(SI, SI->specBlock);
+
+  insertInitialization(IB, SI, plhdSym);
 #if lfiResolve
   resolveBlockStmt(IB);
 #endif
@@ -122,7 +133,7 @@ static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
 #endif
 }
 
-// This should be static. Making it extern because it is unused.
+// This should be static. Making it extern for now while it is unused.
 void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
                         BlockStmt* IB, BlockStmt* DB);
 void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
@@ -570,9 +581,9 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   VarSymbol* currSI = createCurrSI(SI);
   aInit->insertBefore(new DefExpr(currSI));
 
-  // map(SI) = currSI; map(gI) = eFormal
+  // map(SI) = currSI; map(plhd) = eFormal
   e->value = currSI;
-  map.put(SI->outerVarSym(), eFormal);
+  map.put(initPlaceholder(SI), eFormal);
 
   eFormal->intent = INTENT_CONST_REF;
   // non-ref type is ok for eFormal
@@ -739,13 +750,17 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
   for_shadow_vars(srcSV, temp, pfs)
   {
     SET_LINENO(srcSV);
+
     // Redirect the original outer vars to their current counterparts.
     if (Symbol* srcOVar = srcSV->outerVarSym())
       map.put(srcOVar, iMap.get(srcSV));
+
     // copy() also performs map.put(srcSV, newSV)
     ShadowVarSymbol* newSV = srcSV->copy(&map);
+
     if (Symbol* newOVar = newSV->outerVarSym()) // wass remove after testing
       INT_ASSERT(newOVar == iMap.get(srcSV));
+
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
   }
 
@@ -772,6 +787,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
     case TFI_IN:
     case TFI_CONST_IN:
       addDefAndMap(aInit, map, svar, createCurrSI(svar));
+      map.put(initPlaceholder(svar), svar->outerVarSym());
       addCloneOfIB(aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
       break;
@@ -922,7 +938,7 @@ static void lowerForallStmtsInline()
     if (fs->inTree())
       lowerOneForallStmt(fs);
 
-//  gdbShouldBreakHere(); //wass
+  gdbShouldBreakHere(); //wass
 
   clearUpRefsInShadowVars();
 
