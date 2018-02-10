@@ -39,12 +39,6 @@ static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
   return RP;
 }
 
-static Symbol* initPlaceholder(ShadowVarSymbol* SI) {
-  Expr* def = SI->specBlock->body.head;
-  INT_ASSERT(def->next == NULL);
-  return toDefExpr(def)->sym;
-}
-
 
 /////////// lowerForallIntentsAtResolution : setup IB, DB ///////////
 
@@ -80,12 +74,7 @@ static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* gI,
 #endif
   INT_ASSERT(!SI->isRef());
 
-  DefExpr* plhdDef = gI->defPoint->copy();
-  Symbol*  plhdSym = plhdDef->sym;
-  SI->specBlock = new BlockStmt(plhdDef);
-  parent_insert_help(SI, SI->specBlock);
-
-  insertInitialization(IB, SI, plhdSym);
+  insertInitialization(IB, SI, gI);
 #if lfiResolve
   resolveBlockStmt(IB);
 #endif
@@ -581,9 +570,9 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   VarSymbol* currSI = createCurrSI(SI);
   aInit->insertBefore(new DefExpr(currSI));
 
-  // map(SI) = currSI; map(plhd) = eFormal
+  // map(SI) = currSI; map(gI) = eFormal
   e->value = currSI;
-  map.put(initPlaceholder(SI), eFormal);
+  map.put(SI->outerVarSym(), eFormal);
 
   eFormal->intent = INTENT_CONST_REF;
   // non-ref type is ok for eFormal
@@ -787,7 +776,6 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
     case TFI_IN:
     case TFI_CONST_IN:
       addDefAndMap(aInit, map, svar, createCurrSI(svar));
-      map.put(initPlaceholder(svar), svar->outerVarSym());
       addCloneOfIB(aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
       break;
