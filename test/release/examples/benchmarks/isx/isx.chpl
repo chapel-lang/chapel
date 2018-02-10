@@ -17,7 +17,7 @@
 // We want to use block-distributed arrays (BlockDist), barrier
 // synchronization (Barriers), and timers (Time).
 //
-use BlockDist, Barriers, Time;
+use BlockDist, AllLocalesBarriers, Time;
 
 //
 // The type of key to use when sorting.
@@ -147,7 +147,7 @@ var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-var barrier = new Barrier(numTasks);
+var barrier = new AllLocalesBarrier(perBucketMultiply);
 
 // should result in one loop iteration per task
 proc main() {

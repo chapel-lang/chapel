@@ -103,6 +103,19 @@ module Barriers {
       owned = true;
     }
 
+    // needed for default init of an array
+    pragma "no doc"
+    proc init() {
+      this.init(0);
+    }
+
+    // Hack for AllTasksBarrier
+    pragma "no doc"
+    proc init(numTasks: int, param hackIntoCommBarrier: bool) {
+      bar = new aBarrier(numTasks, reusable=true, hackIntoCommBarrier=true);
+      owned = true;
+    }
+
     /* copy initializer */
     pragma "no doc"
     proc init(b: Barrier) {
@@ -212,12 +225,23 @@ module Barriers {
     pragma "no doc"
     var done: atomic bool;
 
+    pragma "no doc"
+    param hackIntoCommBarrier = false;
+
     /* Construct a new Barrier object.
 
        :arg n: The number of tasks involved in this barrier
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
+      super.init();
+      reset(n);
+    }
+
+    pragma "no doc"
+    proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
+      this.reusable = reusable;
+      this.hackIntoCommBarrier = hackIntoCommBarrier;
       super.init();
       reset(n);
     }
@@ -238,6 +262,10 @@ module Barriers {
       on this {
         const myc = count.fetchSub(1);
         if myc<=1 {
+          if hackIntoCommBarrier {
+            extern proc chpl_comm_user_barrier(msg: c_string);
+            chpl_comm_user_barrier("local barrier call".localize().c_str());
+          }
           if done.testAndSet() then
             halt("Too many callers to barrier()");
           if reusable {
