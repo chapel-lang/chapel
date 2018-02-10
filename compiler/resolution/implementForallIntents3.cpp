@@ -440,13 +440,15 @@ static VarSymbol* createCurrSI(ShadowVarSymbol* SI) {
 }
 
 static VarSymbol* createCurrRP(ShadowVarSymbol* RP) {
-  VarSymbol* curRP = new VarSymbol(astr("RP_", RP->name), RP->type);
-  return curRP;
+  VarSymbol* currRP = new VarSymbol(astr("RP_", RP->name), RP->type);
+  currRP->qual = QUAL_CONST_VAL;
+  return currRP;
 }
 
 static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
-  VarSymbol* curAS = new VarSymbol(astr("AS_", AS->name), AS->type);
-  return curAS;
+  VarSymbol* currAS = new VarSymbol(astr("AS_", AS->name), AS->type);
+  currAS->qual = QUAL_VAL;
+  return currAS;
 
 #if 0 //wass - was:
   aInit->insertBefore(new DefExpr(acState));
@@ -562,8 +564,8 @@ represented as a ref-intent formal + copy construction into a "formal temp".
 See insertFormalTemps(). As a result, in-intent formals are treated
 as PODs, with argument passing implemented as memcopy,
 
-So we need to mimick that here because otherwise we miss
-without copy-construction from the actual into the formal.
+So we need to mimick that here. Otherwise we miss copy-construction
+from the actual into the formal.
 */
 static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
                                     SymbolMap& map, ShadowVarSymbol* SI,
@@ -581,9 +583,9 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   VarSymbol* currSI = createCurrSI(SI);
   aInit->insertBefore(new DefExpr(currSI));
 
-  // map(SI) = currSI; map(gI) = eFormal
+  // map(SI) = currSI; map(SO) = eFormal
   e->value = currSI;
-  map.put(SI->outerVarSym(), eFormal);
+  map.put(SI->SOforSI(), eFormal);
 
   eFormal->intent = INTENT_CONST_REF;
   // non-ref type is ok for eFormal
@@ -639,7 +641,10 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_IN_OVAR: //VASS TODO
+    case TFI_IN_OVAR:
+      // nothing to do
+      break;
+
     case TFI_IN:
     case TFI_CONST_IN:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
