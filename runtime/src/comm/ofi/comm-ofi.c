@@ -512,6 +512,10 @@ void chpl_comm_barrier(const char *msg) {
 
 }
 
+void chpl_comm_user_barrier(const char *msg) {
+  chpl_internal_error("chpl_comm_user_barrier not implemented for ofi");
+}
+
 void chpl_comm_pre_task_exit(int all) {
   // Tear down the progress thread
 }

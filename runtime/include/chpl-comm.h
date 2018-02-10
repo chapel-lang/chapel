@@ -354,9 +354,12 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid);
 // function may be called from a Chapel task.  As such, if the barrier
 // cannot be immediately satisfied, while it waits chpl_comm_barrier()
 // must call chpl_task_yield() in order not to monopolize the execution
-// resources and prevent making progress.
+// resources and prevent making progress. chpl_comm_user_barrier is
+// intended to be available for module code usage, chpl_comm_barrier is
+// meant for the runtime
 //
 void chpl_comm_barrier(const char *msg);
+void chpl_comm_user_barrier(const char *msg);
 
 //
 // Do exit processing that has to occur before the tasking layer is

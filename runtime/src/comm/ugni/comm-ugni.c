@@ -1244,6 +1244,10 @@ static barrier_info_t  rt_bar_info;
 static barrier_info_t* rt_child_bar_info[BAR_TREE_NUM_CHILDREN];
 static barrier_info_t* rt_parent_bar_info;
 
+static barrier_info_t  user_bar_info;
+static barrier_info_t* user_child_bar_info[BAR_TREE_NUM_CHILDREN];
+static barrier_info_t* user_parent_bar_info;
+
 
 static void chpl_comm_barrier_init(uint32_t nic_addr,
                                    barrier_info_t*  bar_info,
@@ -1782,6 +1786,7 @@ void chpl_comm_post_task_init(void)
                                        0, 0);
 
     chpl_comm_barrier_init(nic_addr, &rt_bar_info, rt_child_bar_info, &rt_parent_bar_info);
+    chpl_comm_barrier_init(nic_addr, &user_bar_info, user_child_bar_info, &user_parent_bar_info);
 
   }
 
@@ -3290,6 +3295,11 @@ static void chpl_comm_barrier_internal(const char *msg,
 void chpl_comm_barrier(const char *msg)
 {
     chpl_comm_barrier_internal(msg, &rt_bar_info, rt_child_bar_info, rt_parent_bar_info);
+}
+
+void chpl_comm_user_barrier(const char *msg)
+{
+    chpl_comm_barrier_internal(msg, &user_bar_info, user_child_bar_info, user_parent_bar_info);
 }
 
 
