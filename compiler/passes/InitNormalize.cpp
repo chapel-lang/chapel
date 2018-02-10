@@ -134,25 +134,7 @@ FnSymbol* InitNormalize::theFn() const {
   return mFn;
 }
 
-bool InitNormalize::isRecord() const {
-  AggregateType* at = type();
-
-  return at->isRecord();
-}
-
-bool InitNormalize::isClass() const {
-  AggregateType* at = type();
-
-  return at->isClass();
-}
-
-bool InitNormalize::isExtern() const {
-  AggregateType* at = type();
-
-  return at->symbol->hasFlag(FLAG_EXTERN);
-}
-
-InitNormalize::InitPhase  InitNormalize::currPhase() const {
+InitNormalize::InitPhase InitNormalize::currPhase() const {
   return mPhase;
 }
 
@@ -242,32 +224,18 @@ bool InitNormalize::inOnInForall() const {
 *                                                                             *
 ************************************** | *************************************/
 
-Expr* InitNormalize::completePhase1(CallExpr* initStmt) {
-  Expr* retval = initStmt->next;
-
+void InitNormalize::completePhase1(CallExpr* initStmt) {
   if (isThisInit(initStmt) == true) {
     mCurrField = NULL;
 
   } else if (isSuperInit(initStmt) == true) {
     initializeFieldsBefore(initStmt);
 
-    if (isRecord() == true) {
-      initStmt->remove();
-
-    } else if (isExtern() == true) {
-      initStmt->remove();
-
-    } else {
-      transformSuperInit(initStmt);
-    }
-
   } else {
     INT_ASSERT(false);
   }
 
   mPhase = cPhase2;
-
-  return retval;
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
