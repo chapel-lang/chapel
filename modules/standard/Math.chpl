@@ -1071,26 +1071,23 @@ module Math {
     return a;
   }
   /*If given three numbers x, y and p, it computes (x^y) % p.*/
-  proc modularexponential(x:int,y:int,p:int) : int
-{
-          var res : int = 1;
-          var z : int = x;
-          var o : int = y;
-          var u : int = p;
-          z = z % u;
-                    while (o > 0)
-          {
-	          if (o%2!= 0)
-                    {
-                    res = (res * z) % u;
-                    }
-
-                     o=o/2;
-                     z = (z*z)%u;
-          }       
-                    return res;
- }
-
+proc mod(x,n,m):int
+	{
+		var y:int=0; 
+			if(n==0)
+		{
+			return 1;
+		}
+			else if(n%2==0)
+		{
+			y=mod(x,n/2,m);
+			return (y*y)%m;
+		}
+			else
+		{
+			return ((x%m)*mod(x,n-1,m))%m;
+		}
+		}
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   extern "j0f" proc j0(x: real(32)): real(32);
