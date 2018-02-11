@@ -1071,7 +1071,7 @@ module Math {
     return a;
   }
   /*If given three numbers x, y and p, it computes (x^y) % p.*/
-proc modularexp(x: int,n: int,m: int):int
+proc modularexp(in x: int,in n: int,in m: int):int
 	{
 		var y:int=0; 
 			if(n==0)
