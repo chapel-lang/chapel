@@ -1071,7 +1071,7 @@ module Math {
     return a;
   }
   /*If given three numbers x, y and p, it computes (x^y) % p.*/
-proc mod(x,n,m):int
+proc modularexp(x,n,m):int
 	{
 		var y:int=0; 
 			if(n==0)
@@ -1080,12 +1080,12 @@ proc mod(x,n,m):int
 		}
 			else if(n%2==0)
 		{
-			y=mod(x,n/2,m);
+			y=modularexp(x,n/2,m);
 			return (y*y)%m;
 		}
 			else
 		{
-			return ((x%m)*mod(x,n-1,m))%m;
+			return ((x%m)*modularexp(x,n-1,m))%m;
 		}
 		}
 
