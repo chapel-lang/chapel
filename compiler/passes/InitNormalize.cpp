@@ -287,17 +287,22 @@ void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
           INT_ASSERT(false);
         }
 
-      } else if (field->exprType != NULL && field->init == NULL) {
-        fieldInitTypeWoutInit (insertBefore, field);
+      } else if (field->init != NULL) {
+        Expr* initCopy    = field->init->copy();
+        bool  isTypeKnown = mCurrField->sym->type != dtUnknown;
 
-      } else if (field->exprType != NULL && field->init != NULL) {
-        fieldInitTypeWithInit (insertBefore, field, field->init->copy());
+        if (isTypeKnown == true) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
 
-      } else if (field->exprType == NULL && field->init != NULL) {
-        fieldInitTypeInference(insertBefore, field, field->init->copy());
+        } else if (field->exprType != NULL) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else {
+          fieldInitTypeInference(insertBefore, field, initCopy);
+        }
 
       } else {
-        INT_ASSERT(false);
+        fieldInitTypeWoutInit(insertBefore, field);
       }
     }
 
@@ -745,6 +750,27 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
     insertBefore->insertBefore(fieldSet);
 
+  } else if (field->exprType == NULL) {
+    VarSymbol* tmp       = newTemp("tmp", type);
+    DefExpr*   tmpDefn   = new DefExpr(tmp);
+
+    // Set the value for TMP
+    CallExpr*  tmpAssign = new CallExpr("=", tmp,  initExpr);
+
+    Symbol*    _this     = mFn->_this;
+    Symbol*    name      = new_CStringSymbol(field->sym->name);
+    CallExpr*  fieldSet  = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
+
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+
+    updateFieldsMember(initExpr);
+
+    insertBefore->insertBefore(tmpDefn);
+    insertBefore->insertBefore(tmpAssign);
+    insertBefore->insertBefore(fieldSet);
+
   } else {
     VarSymbol* tmp       = newTemp("tmp", type);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
@@ -764,11 +790,11 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(tmpExpr);
-
     if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
     }
+
+    updateFieldsMember(tmpExpr);
 
     updateFieldsMember(initExpr);
 
