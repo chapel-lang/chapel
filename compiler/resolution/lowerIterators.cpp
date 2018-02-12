@@ -2365,8 +2365,13 @@ static void cleanupTemporaryVectors() {
 }
 
 
+//
 // 'depth' is a heuristic to avoid the risk of unbounded recursion.
 // Ex. what if 'parentSym' is a recursive function?
+// When 'parentSym' is a task function, 'depth' should correspond at least
+// to how many task constructs deep the yield call is in the iterator.
+// Ex. test/parallel/forall/vass/binary-tree-spawn.no-recurse.chpl
+//
 static bool maybeCalled(Symbol* parentSym, int depth) {
   if (!parentSym || !parentSym->inTree())
     return false;
@@ -2419,7 +2424,7 @@ static void removeUncalledIterators()
       continue;
 
     // This is a backup check to ensure PRIM_INT_ERROR is never executed.
-    if (fVerify && maybeCalled(call->parentSymbol, 4))
+    if (fVerify && maybeCalled(call->parentSymbol, 5))
       INT_FATAL(call, "unexpected leftover PRIM_YIELD");
 
     // If this function contains a yield, it was never expanded, so the static
@@ -2509,10 +2514,16 @@ void lowerIterators() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
+     if (fn->firstSymExpr() == NULL &&
+         fn->hasFlag(FLAG_INLINE_ITERATOR)) {
+       if (fn->defPoint != NULL)
+         fn->defPoint->remove();
+     } else {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();
       lowerIterator(fn);
+     }
     }
   }
 
