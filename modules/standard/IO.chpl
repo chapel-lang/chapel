@@ -2745,7 +2745,8 @@ pragma "no doc"
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
 
 // Read routines for all primitive types.
-private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
+    out x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var err:syserr = ENOERR;
     var got:bool = false;
@@ -2785,8 +2786,10 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
     return ret;
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
+    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     for i in chpl_enumerate(t) {
       var str = i:string;
+      if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
       var slen:ssize_t = str.length.safeCast(ssize_t);
       err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
       // Do not free str, because enum literals are C string literals
@@ -2802,7 +2805,8 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t, out x:?t):
   return EINVAL;
 }
 
-private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
+    x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
       return qio_channel_print_literal(false, _channel_internal, c"true", "true".length:ssize_t);
@@ -2828,7 +2832,9 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):sys
     const local_x = x.localize();
     return qio_channel_print_string(false, _channel_internal, local_x.c_str(), local_x.length:ssize_t);
   } else if isEnumType(t) {
+    var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     var s = x:string;
+    if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.length:ssize_t);
   } else {
     compilerError("Unknown primitive type in _write_text_internal ", t:string);
