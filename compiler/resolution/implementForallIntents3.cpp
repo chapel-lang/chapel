@@ -492,15 +492,31 @@ static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
 }
 
 static void addCloneOfIB(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar) {
-  BlockStmt* IB = svar->initBlock();
+  //
+  // We have to clone IB as a whole. This is to ensure that the uses
+  // of any symbols that the original IB defines (via DefExprs
+  // within that IB) get converted to uses of these symbols' copies.
+  //
+  BlockStmt* copyIB = svar->initBlock()->copy(&map);
+  aInit->insertBefore(copyIB);
+  // Let's drop the BlockStmt wrapper, to simplify the AST.
+  copyIB->flattenAndRemove();
+/*wass was:  
   for_alist(stmt, IB->body)
     aInit->insertBefore(stmt->copy(&map));
+*/
 }
 
 static void addCloneOfDB(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
+  BlockStmt* copyDB = svar->deinitBlock()->copy(&map);
+  aFini->insertAfter(copyDB);
+  // Let's drop the BlockStmt wrapper, to simplify the AST.
+  copyDB->flattenAndRemove();
+/*wass was:
   BlockStmt* DB = svar->deinitBlock();
   for_alist_backward(stmt, DB->body)
     aFini->insertAfter(stmt->copy(&map));
+*/
 }
 
 
