@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+# This prediff exists to change absolute
+# paths into relative paths.
+ 
+import sys, re
+
+execout=sys.argv[2]
+
+fh = open(execout, 'r')
+myLines = fh.readlines()
+fh.close()
+
+fh = open(execout, 'w')
+for line in myLines:
+    fixed = re.sub(r'".*test-dir"', '"/<snip>/test-dir"', line)
+    fh.write(fixed)
+fh.close()
