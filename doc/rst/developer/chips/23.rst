@@ -37,7 +37,7 @@ conclusions are
 The first concern is clearly the most pressing and it is the focus of
 this note.  We propose a key change to deliver the missing
 functionality, and then a few smaller changes to compensate for this
-change.  Beyond the fact that this proosal provides key functionality
+change.  Beyond the fact that this proposal provides key functionality
 that the current design does not, it is believed that it will be
 easier for some newer users to adopt.
 
@@ -53,15 +53,13 @@ The remainder of this note considers this proposal in more detail.
 
 * `Parents before children`_
 
-* `Records and postInit()`_
+* `Simple classes`_
 
-* `Base Classes`_
+* `Class hierarchies`_
 
-* `Derived Classes`_
+* `The postInit() method`_
 
-* `Variation 1 :- this.initDone()`_
-
-* `Variation 2 :- postInit() with formals`_
+* `Records`_
 
 * `Transition`_
 
@@ -73,7 +71,7 @@ Primary concerns
 The implementation of initializers in Chapel has matured to the point
 that it is practical to write reasonably sophisticated initializers
 and to begin to convert internal module code from constructors.  This
-provides an opportunity for external contributers to explore the
+provides an opportunity for external contributors to explore the
 specification.
 
 Unfortunately we have learned that
@@ -154,7 +152,7 @@ Unfortunately we have learned that
 
    Chapel allows a developer to omit an explicit call to a parent
    initializer and rely on the compiler to insert this call.  It
-   is unclear whether it is more natural for an initalizer to
+   is unclear whether it is more natural for an initializer to
    default to phase 1 or phase 2, i.e. whether the compiler
    should insert the call at the start of the body or at the end
    of the body, and it is hard to recall which choice has been made
@@ -181,7 +179,7 @@ Additional concerns
    initializer. This ensures that a user does not unintentionally
    rely on a compiler-generated all-fields initializer that fails
    to meet the necessary semantics, but may require the type designer
-   to explicity write this initializer even in the simple cases.
+   to explicitly write this initializer even in the simple cases.
 
    The type designer also becomes responsible for the default
    copy initializer if the type is a record.
@@ -313,7 +311,7 @@ an effort to catch a family of potential logic errors.
 
 Additionally we adopted Swift's policy that a single initializer
 implements both phase 1 and phase 2, and that fields are
-initialized from the most-dervied class towards the base class.
+initialized from the most-derived class towards the base class.
 
 Consider a hierarchy of the classes A -> B -> C -> D where B inherits
 from A, C from B, and D from C.  In the current implementation an
@@ -333,9 +331,6 @@ delegation to A.init() returns, the object is a fully initialized
 instance of D.  The remainder of the body can call any method
 that is applicable to a static type of D, and can rely on dynamic
 dispatch for D.
-
-
-
 
 
 
@@ -375,216 +370,330 @@ How does this impact our current view of two-phase initialization?
 Consider the initializer for MyClass3.  Upon return from the
 delegated initializer, the object is a fully initialized MyClass2
 but the fields of MyClass3 and any descendents of MyClass3 are
-uninitialized.  Care is required if we wish to help users avoid
-common forms of logic errors.
+uninitialized.  Care must be taken to ensure that a developer
+does not accidentally provide a reference to an object with
+partially initialized fields.  What rules are required?
 
 
 
 
-Records and postInit()
-++++++++++++++++++++++
 
-We begin by considering the relatively simple case of the record
-MyRecord.  There is no super-type for a record.  The record is fully
-uninitialized at entry to any overload of MyRecord.init(...args...)
-and it must be fully initialized when this method returns.
+Simple classes
+++++++++++++++
 
-What operations will we allow within the body of init()?  Certainly
-it must be possible to initialize each field.   Will we adopt the
-existing limiting rules for phase 1, or will we provide some
-additional flexibility?
-
-This proposal suggests that we match the existing limits on phase 1 of
-an initializer. The developer is constrained to initializing each
-field in order.  It must be possible to read an initialized field, so
-that a field with a runtime type can rely on a locally initialized
-field, but it must not be possible to read an uninitialized field.
-This is easy to enforce. It is not possible to call any method
-defined on this type, and 'this' cannot be passed as an actual to any
-function.  However any computation involving local variables and
-module level procedures is permitted. The developer may skip a field
-and rely on the compiler to insert the default value defined by the
-field declaration.
-
-We introduce a new method, currently named postInit(), to support an
-explicit phase 2 when required.  The implementation of a new
-expression will arrange to call postInit() when the selected
-init(..args..) returns i.e. we consider
+We begin by considering a class that inherits only from 'object' and
+consider the initialization of an instance of this class e.g.
 
 .. code-block:: chapel
 
-   var x = new MyRecord(...)
+   class MyClass1 {
+     var x = 1;
+     var y = 2;
+     var z = 3;
 
-to be equivalent to
+     proc init(val : int) {
+       y = val;
+     }
+   }
+
+   var c = new MyClass1(5);
+
+   writeln(c);      // => {x = 1, y = 5, z = 3}
+
+As in the first implementation, fields must be initialized in
+declaration order.  The compiler will insert a field initializer
+for any omitted field.
+
+The compiler will also insert a call to super.init() at the beginning
+of the initializer if the developer does not explicitly do this.
+However in the new proposal a call to super.init(), whether implicit or
+explicit, does not complete the initialization of a class.
+
+In the current draft of this proposal the call to super.init(), if
+present, must occur before any fields are initialized.  [This
+restriction is subject to change].
 
 .. code-block:: chapel
 
-   var x : MyRecord = noinit;
+   class MyClass1 {
+     var x = 1;
+     var y = 2;
+     var z = 3;
+
+     proc init(val : int) {
+                    // Compiler inserts super.init();
+
+                    // Continues to be phase 1
+                    // Compiler inserts x = 1;
+       y = val;
+                    // Compiler inserts z = 3;
+                    // Continues to be phase 1
+     }
+   }
+
+Experience with initializers confirms that it is important
+to be able to call methods on MyClass1 within an initializer.
+However it is unwise to allow methods to be invoked until
+every field has been initialized.
+
+It must also be possible to modify fields after they have been
+initialized.  A common use case is to assign values to the
+elements of an array after it has been initialized.
+
+In the first implementation, it was certain that every field
+would be initialized when the call to super.init(..) returned.
+In this proposal, none of the local fields are initialized.
+
+Although the compiler could rely on simple flow analysis to
+determine when every field has been initialized, and hence
+when it is safe to invoke methods or to assign fields, the
+rules for inserting omitted initializations and the current
+syntax choices make this problematic in general.
+
+In this proposal we introduce a new method, currently named
+initDone(), that can be inserted by a developer to complete
+initialization.  The compiler will insert omitted initializations
+as necessary and it is then safe to call methods defined on
+MyClass1 and assign local fields e.g.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+                    // Compiler inserts super.init();
+       d = r;
+                    // Compiler initializes a
+       initDone();
+
+       a[2] = 5;
+     }
+   }
+
+   var c = new MyClass1(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 5 0}
+
+
+
+Class hierarchies
++++++++++++++++++
+
+We turn to a simple hierarchy.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+
+       initDone();
+
+       foo();       // This must be MyClass1.foo()
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       f    =  5;
+       a[2] = 10;   // Can assign to a parent field
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 10 30, f = 5}
+
+   c.foo();
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 30, f = 5}
+
+
+After the call to initDone() in MyClass1.init() the local fields will
+be initialized but any fields for a derived class, e.g. MyClass2.f,
+remain uninitialized.  This implies that the subsequent call to method
+foo() must treat 'this' as having type MyClass1, both statically and
+dynamically.
+
+In the following variation the initializer for MyClass2 calls foo()
+twice, once before initDone() and once afterwards.  A different method
+will be invoked for each call.  After the call to super.init() but
+before the call to initDone() it is certain that the fields of
+MyClass1 have been initialized and so we must ensure that the
+call to foo() invokes MyClass1.foo().  Conceptually we treat
+the static type of 'this' as MyClass1 for function resolution
+and ensure that the dynamic type is also MyClass1.  After the
+call to initDone() the local fields of MyClass2 are also initialized
+and so we prefer that the call to foo() invokes MyClass2.foo().
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       foo();       // This is MyClass1.foo()
+
+       f = 5;
+
+       initDone();
+
+       foo();       // This is MyClass2.foo()
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 30, f = 5}
+
+
+
+
+
+
+The postInit() method
++++++++++++++++++++++
+
+This proposal introduces a new method; postInit() e.g.
+
+.. code-block:: chapel
+
+   class MyClass1 {
+     var d : domain(1);
+     var a : [d] int;
+
+     proc init(r) {
+       d = r;
+     }
+
+     proc postInit() {
+       foo();
+     }
+
+     proc foo() {
+       a[3] = 30;
+     }
+   }
+
+   class MyClass2 : MyClass1 {
+     var f : int;
+
+     proc init(r) {
+       super.init(r);
+
+       f = 5;
+     }
+
+     proc foo() {
+       a[2] = 20;
+     }
+   }
+
+   var c : MyClass1 = new MyClass2(1 .. 3);
+
+   writeln(c);      // => {d = {1..3}, a = 0 20 0, f = 5}
+
+
+A use of the new expression for a class
+
+.. code-block:: chapel
+
+   var x = new MyClass1(...);
+
+acts as if it were equivalent to
+
+.. code-block:: chapel
+
+   var x = allocate(MyClass1);
 
    x.init(...args...);
    x.postInit();
 
+i.e. an instance is allocated and then the appropriate overload of the
+MyClass1.init() method is invoked.  When this method returns 'x' is a
+fully initialized instance of MyClass1.  Then the method postInit() is
+invoked.  If this call results in method calls with virtual overloads
+then the dispatch will be for objects of type MyClass1.
 
-On entry to postInit, the instance is known to be a fully initialized
-instance of MyRecord. The developer may override this method and
-implement any code to customize the instance.
+In the initial view of the new proposal, the init() method was
+primarily responsible for field initialization i.e. to implement
+phase 1, and postInit() was to be primarily responsible for phase 2.
 
-There will be cases in which a record does not implement any overrides
-for init() and the compiler will provide a default all-fields
-initializer.  The provision of postInit() provides the same post-init
-hook that is currently supported by the initialize() method for types
-that rely on legacy constructors.
+Early efforts to convert existing initializers to the new proposal
+demonstrated that it was important to support initDone().  There
+were many cases in which the phase 2 behavior needed to depend,
+directly or indirectly, on one or more of the actuals to the
+initializer.  This was not well served by relying on postInit()
+for phase 2.
 
-It is observed that the separation between init() and postInit()
-might be viewed as either "clean" or "overly constraining"
-depending on taste.  It is unclear how common it will
-be for users to implement both init() and postInit() and
-how different users will feel when obliged to do so.
+Full support for initDone() is likely to reduce the incentive to
+override postInit() for types that override init().  However this
+method remains a component of the new proposal.  Firstly it provides
+the ability to define an initialization protocol that relies on
+dynamic dispatch to methods based on the final type of the
+object.
 
-In the longer term we might choose to consider the common
-cases that lead to an override for postInit() and then
-make backward-compatible changes that provide some
-additional flexibility within init().
-
-
-
-
-
-
-Base Classes
-++++++++++++
-
-Here we define a Base Class as a class that is derived from object.
-Currently the type 'object' does not have any user-visible fields and
-very little behavior.  We take the perspective that base classes are
-comparable to records as far as initialization is concerned.  This
-implies that init() has the functionality of phase 1 in the current
-implementation, and that postInit() has the functionality of phase 2
-in the current implementation.  Of course a method dispatch within
-postInit() will dynamically dispatch to the runtime type of the
-instance.
+Perhaps more importantly it also provides a way to customize
+initializers for types that rely on compiler generated initializers.
+This is similar to the motivation for the initialize() method
+for types that use constructors.
 
 
 
+Records
++++++++
 
-Derived Classes
-+++++++++++++++
+Initializers for records are comparable to initializers for
+classes that inherit only from object.  In the first
+implementation of initializers, a record initializer
+invoked super.init() to separate phase 1 and phase 2.
 
-This is the case where the tradeoffs become more challenging.  The
-intent is avoid passing an object with uninitialized fields, and to
-avoid unpredictable/confusing interactions between components of the
-distributed implementation for the overall initializer.
+In the new proposal a record initializer that includes
+phase 2 operations will invoke initDone() rather than
+super.init().  This is consistent with the view that
+records do not define a super field.
 
-One choice is to allow derived classes to override one of both
-of init() and postInit() without any further extensions.  Additionally
-Derived.postInit() would not explictly invoke Parent.postInit(); the
-implementation would arrange to work "as if" from base class towards
-most derived class to ensure that a derived class can "own"
-the final value of every visible field.
-
-
-Instead this proposal provides a degree of additional flexibility to
-both init() and postInit() at the risk of enabling unintended
-interactions.
-
-Consider again the case of a class hierarchy for A -> B -> C -> D
-and focus on an initializer for C.  On entry to C.init(...args...)
-all of the fields are uninitialized.  In this new
-proposal the first action is to delegate to an initializer for B.
-When this call returns the object is a fully initialized instance
-of B but no override for postInit() has run.
-
-We require that the remainder of C.init() initialize each field of C
-in order.  In this regard the compiler assumes that static type of
-'this' is C but that the fields are partially initialized.  These
-fields must be initialized in order.  None of these fields can be read
-or assigned.
-
-However it is also allowable to read any property (field, param, type
-alias) of B, assign any non-const field of B, call any method defined
-for B, or call any function that accepts a B as a formal.  In these
-regards the compiler acts as if the static type of 'this' is B.  Note
-that assigning to fields of B has the potential to interact in a
-surprising way with overrides for postInit().
-
-In all cases the dynamic type of 'this' is B.  This is necessary
-to ensure that dynamic method dispatch operates correctly at
-runtime.
-
-Additionally we extend postInit() and allow it to select when
-to call super.postInit(). If there is no call to super.postInit(),
-then the compiler will insert the call as the first statement.
-This will be a natural choice for developers as it ensures
-that multiple assignments to the same field are performed in
-the obvious order.
-
-Variation 1 :- this.initDone()
-++++++++++++++++++++++++++++++
-
-The ability to call parent methods within the init() for a derived
-class provides a certain level of additional flexibility for
-type developers.  It is unclear if it is sufficient.
-
-A possible variation is to add an additional method that can
-be invoked to indicate that the developer asserts that the
-current type is fully initialized.  In this sense it plays
-just one of the two roles of super.init() in the current
-implementation.  The compiler will insert initializations for
-omitted fields if necessary.
-
-The name for this method is unimportant for this proposal but, for
-concreteness, we will refer to this method as initDone().  Consider
-the previous hierarchy and the implementation of C.init() that
-includes a use of this.initDone().  Before this call the object has
-static/dynamic type B.  After this call the static/dynamic type is C.
-This makes it possible to invoke methods defined on C and to pass
-'this' to functions that accept an A, a B, or a C.  Dynamic dispatch
-will recognize that this object has type C.
-
-
-
-
-
-Variation 2 :- postInit() with formals
-++++++++++++++++++++++++++++++++++++++
-
-In the base proposal an override for postInit() does not accept any
-formals.  This means there is just one postInit() no matter how many
-overrides there are for init().  Assume this is C.postInit() for the
-previous hierarchy.
-
-Any business logic that this method implements must be based solely on
-the fields defined by the static type C.  Method calls will
-dynamically dispatch based on the type D.
-
-We consider the option to provide multiple overloads for C.postInit().
-In this model a call to
-
-.. code-block:: chapel
-
-   var  x = new D(...args...)
-
-is equivalent to
-
-.. code-block:: chapel
-
-   var  myInstance = allocate(D);
-
-   myInstance.init(...args...);
-
-   if canDispatch("postInit", myInstance, ...args...) then
-     myInstance.postInit(...args...);
-   else
-     myInstance.postInit();
 
 
 
 Transition
 ++++++++++
-
-If/when the broad terms of this proposal are accepted and the
-minor details are ironed out we need to define a transition
-story.
 
 There is some urgency to move as rapidly as possible if we want to be
 fully transitioned to the new syntax within the current release.
@@ -592,26 +701,76 @@ However there is also a need to be sensitive to overly large PRs
 within the team, and to provide some notice to early adopters of
 initializers who are tracking master.
 
-There are several options for transitioning; some are lower latency
-but more abrupt and others are more respectful of current users but
-introduce some additional latency and/or effort for the core team.
+We must be able to implement types that rely on the new form of
+initializers as soon as we can and without being required to convert
+all existing initalizers as a precondition.  It is also useful if it
+were reasonably convenient to convert old initializers to new
+initializers and to do so incrementally.
 
-There is also the question of how confident we are with this proposal.
-Some approaches offer more room for a period of experimentation and
-refinement on master, but again at the cost of some latency
-and/or effort.
 
+During the early phases of the transition we will rely on the
+presence of a call to initDone() to indicate that an initializer
+intends to rely on features of the new proposal.
+
+
+The new proposal provides a key change that enables certain
+constructors to be converted to initializers when that is
+not possible with the current implementation.  However there
+are relatively few meaningful differences between the
+current implementation and the new proposal for existing
+initializers.
+
+
+Consider any existing initializer that does not include a
+call to this.init() or super.init().  In the current
+implementation the body of the initializer is assumed to
+be phase 2 but in the new proposal it will be phase 1.
+While validating elements of the new proposal we experimented
+with updates that implement this change.  There were approximately
+35 tests that failed because a record initializer in a user module
+is valid as phase 2 but not valid as phase 1. In a few cases
+one initializer impacted multiple tests.  Separately there were
+a few initializers that could be modified to be valid under
+either assumption.  The remaining tests will require the
+insertion of initDone().  A similar effort for classes found
+approximately 50 tests that required attention.  There were
+just a few initializers in module code that needed attention.
+
+In the new proposal it will be invalid to use super.init() in
+a record initializer; these will be trivially replaced with
+initDone().
+
+In the current implementation any class initializer that invokes
+super.init() transitions from phase 1 to phase 2.  This is not true in
+the new proposal.  This is similar in spirit to altering the default
+for an initializer that does not use super.init().  These initializers
+will require the addition of a call to initDone() at an appropriate
+point after the existing super.init().  Once again we experimented
+with a compiler change that applied the new rule, and once again there
+were relatively few initializers that needed to be updated in this
+way.
+
+Much of the work to convert the remaining constructors to initializers
+will rely on the new proposal and hence on the use of initDone().  In
+some cases this will require the addition of a call initDone() in
+situations that will not require initDone() once the transition is
+complete.  Note that, post-transition, the superfluous use of
+initDone() is valid but non-ideomatic.  In these cases we will adopt
+the convention of placing initDone() as the final statement in the
+body; this will simplify a process of finding these cases and
+removing the unncessary initDone().
+
+These updates can be applied to master in any number of stages
+that is most convenient at a cost of just a few hours per issue.
 
 
 Summary
 +++++++
 
-We have summarized early experiences with initializers in Chapel
-and have identified a critical oversight in the initial design.
+We have summarized early experiences with initializers in Chapel and
+have identified a critical oversight in the initial design.  The key
+to addressing this problem is to initialze parent classes before
+derived classes.  This is a fairly significant change.  We identify
+two modest extensions for initializers that support this
+change.
 
-We propose a significant revision to the design that enables
-the missing functionality.  There is a consequence to the
-key change and we propose the introduction of postInit()
-to compensate for this.  We also offer two variations
-that might allow additional power to more sophisticated
-developers.
