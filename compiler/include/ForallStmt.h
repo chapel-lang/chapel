@@ -74,7 +74,8 @@ public:
 
   // wass this is temporary; we really want all ForallStmts handled this way
   // "li" = "lower during lowerIterators"
-  bool yesLI() const { return ((ForallStmt*)this)->getModule()->modTag == MOD_USER; }
+//wass  bool yesLI() const { return ((ForallStmt*)this)->getModule()->modTag == MOD_USER; }
+  bool yesLI() const { return true; }
   bool noLI() const { return !yesLI(); }
 
 private:
