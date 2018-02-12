@@ -70,10 +70,15 @@ static void insertInitialization(BlockStmt* destBlock,
 }
 static void insertDeinitialization(BlockStmt* destBlock,
                                    Symbol* destVar) {
-  if (!strcmp(destVar->type->symbol->name, "_array")) gdbShouldBreakHere(); //wass
+//  if (!strncmp(destVar->type->symbol->name, "_array(", 7)) gdbShouldBreakHere(); //wass
 // wass: or do it in walkForallBlocks()
+/* wass was:
   if (FnSymbol* autoDestroy = getAutoDestroy(destVar->type))
     destBlock->insertAtTail(new CallExpr(autoDestroy, destVar));
+*/
+  // NB if we use PRIM_CALL_DESTRUCTOR, we end up with
+  // deinit() calls for shadow variables of class types.
+  destBlock->insertAtTail("chpl__autoDestroy(%S)", destVar);
 }
 
 static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* SO,
