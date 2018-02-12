@@ -1454,16 +1454,14 @@ static void addArgCoercion(FnSymbol*  fn,
 
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
-  //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
-  // or
-  //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
+  //   _syncvar(int) --readFE()-> int -> real
   //
   // We warn addArgCoercion's caller about that via checkAgain:
-  if (isSyncType(ats->type) == true) {
+  if (isSyncType(ats->getValType()) == true) {
     checkAgain = true;
     castCall   = new CallExpr("readFE", gMethodToken, prevActual);
 
-  } else if (isSingleType(ats->type) == true) {
+  } else if (isSingleType(ats->getValType()) == true) {
     checkAgain = true;
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
