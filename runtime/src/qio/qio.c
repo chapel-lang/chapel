@@ -769,12 +769,22 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
              ftype == S_IFBLK ) {
     // regular file or block device can seek
     seekable = 1;
+  } else if( ftype == S_IFDIR ) {
+    if( fd == 0 ) {
+      QIO_RETURN_CONSTANT_ERROR(EINVAL, "fd 0 (stdin) is a directory");
+    } else if( fd == 1 ) {
+      QIO_RETURN_CONSTANT_ERROR(EINVAL, "fd 1 (stdout) is a directory");
+    } else if( fd == 2 ) {
+      QIO_RETURN_CONSTANT_ERROR(EINVAL, "fd 2 (stderr) is a directory");
+    } else {
+      QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot openfd a directory");
+    }
+  } else if( ftype == S_IFLNK ) {
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "cannot openfd a symbolic link");
   } else {
-    // ftype == S_IFDIR
-    // ftype == S_IFLNK
     // ftype == S_IFWHT on Mac OS X
-    // can't open symlink/dir/whiteout
-    QIO_RETURN_CONSTANT_ERROR(EINVAL, "file type not openable");
+    // can't open a whiteout
+    QIO_RETURN_CONSTANT_ERROR(EINVAL, "unhandled file type in openfd");
   }
 
   if( seekable ) {

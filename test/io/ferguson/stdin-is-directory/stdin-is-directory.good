@@ -1,0 +1,3 @@
+uncaught SystemError: Invalid argument: fd 0 (stdin) is a directory (in openfd with path "/<snip>/test-dir")
+  <internal>:0: thrown here
+  <internal>:0: uncaught here
