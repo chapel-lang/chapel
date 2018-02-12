@@ -1959,8 +1959,6 @@ void resolvePromotionType(AggregateType* at) {
 
     INT_ASSERT(promoFn->retType != dtUnknown);
     INT_ASSERT(promoFn->retTag == RET_TYPE);
-    INT_ASSERT(at->scalarPromotionType == NULL ||
-               at->scalarPromotionType == promoFn->retType);
 
     at->scalarPromotionType = promoFn->retType;
   }
