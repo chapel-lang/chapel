@@ -740,8 +740,8 @@ void chpl_task_init(void)
         }
     }
 
-    qthread_registerOnPark(chpl_qsbr_blocked);
-    qthread_registerOnUnpark(chpl_qsbr_unblocked);
+    qthread_registerOnPark(chpl_task_onPark);
+    qthread_registerOnUnpark(chpl_task_onUnpark);
 }
 
 void chpl_task_exit(void)

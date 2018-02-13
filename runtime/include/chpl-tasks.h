@@ -26,6 +26,7 @@
 #include "chplcgfns.h"
 #include "chpltypes.h"
 #include "chpl-tasks-prvdata.h"
+#include "chpl-qsbr.h"
 
 #ifdef CHPL_TASKS_MODEL_H
 #include CHPL_TASKS_MODEL_H
@@ -243,14 +244,41 @@ char* chpl_task_idToString(
                chpl_taskID_t); //Task ID
 
 //
-// Yield.
+// Yields the current task. If Quiescent State-Based Reclamation
+// is enabled, it will invoke a checkpoint which will invalidate
+// any references to any protected data.
 //
 void chpl_task_yield(void);
+
+//
+// Yields the current task. If Quiescent State-Based Reclamation
+// is enabled, it will invoke a checkpoint if the passed counter
+// is some multiple of CHPL_QSBR_ITERATIONS_PER_CHECKPOINT. This
+// should be invoked during tight loops which yield repeatedly.
+//
+void chpl_task_yield2(int);
 
 //
 // Suspend.
 //
 void chpl_task_sleep(double);
+
+//
+// (Optional) Invoked by a thread that may be idle for an
+// indefinite amount of time. The registered callback will
+// be used to perform periodic book-keeping.
+//
+static void chpl_task_onPark(void) {
+  chpl_qsbr_blocked();
+}
+
+//
+// (Optional) Invoked by a thread that invoked 'chpl_task_onPark' 
+// after they are no longer idle.
+//
+static void chpl_task_onUnpark(void) {
+  chpl_qsbr_unblocked();
+}
 
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support
