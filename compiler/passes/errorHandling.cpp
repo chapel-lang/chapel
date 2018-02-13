@@ -837,6 +837,9 @@ void ErrorCheckingVisitor::checkCatches(TryStmt* tryStmt) {
 }
 
 bool ErrorCheckingVisitor::enterCallExpr(CallExpr* node) {
+  if (node->id == 637145) {
+    gdbShouldBreakHere();
+  }
   bool insideTry = (tryDepth > 0);
 
   if (FnSymbol* calledFn = node->resolvedFunction()) {
@@ -920,6 +923,8 @@ static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, impli
   // Currently, only task functions can be implicitly throws.
   if (!isTaskFun(fn))
     return;
+
+  gdbShouldBreakHere();
 
   // If we already visited this function, don't visit it again.
   if (visited->count(fn) > 0)
