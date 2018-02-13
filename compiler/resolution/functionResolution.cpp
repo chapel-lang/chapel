@@ -1945,6 +1945,25 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+void resolvePromotionType(AggregateType* at) {
+  INT_ASSERT(at->scalarPromotionType == NULL);
+  INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
+
+  VarSymbol* temp     = newTemp(at);
+  CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
+
+  FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
+
+  if (promoFn != NULL) {
+    resolveFunction(promoFn);
+
+    INT_ASSERT(promoFn->retType != dtUnknown);
+    INT_ASSERT(promoFn->retTag == RET_TYPE);
+
+    at->scalarPromotionType = promoFn->retType;
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -4911,8 +4930,12 @@ static void resolveInitField(CallExpr* call) {
     }
   }
 
-  if (t == dtNil && fs->type == dtUnknown)
+  if (t == dtNil && fs->type == dtUnknown) {
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  }
+
+  bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
+
   if (fs->type == dtUnknown) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
@@ -4945,6 +4968,13 @@ static void resolveInitField(CallExpr* call) {
         fs->type = fs->defPoint->exprType->typeInfo();
       }
     }
+  }
+
+  // Type was just fully instantiated, let's try to find its promotion type.
+  if (wasGeneric                        == true &&
+      ct->symbol->hasFlag(FLAG_GENERIC) == false &&
+      ct->scalarPromotionType           == NULL) {
+    resolvePromotionType(ct);
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -8621,7 +8651,6 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-          !strcmp(sym->name, "_promotionType") ||
           sym->isParameter())
         call->getStmtExpr()->remove();
       else {
@@ -9338,14 +9367,13 @@ static void removeInitFields()
 }
 
 static void removeMootFields() {
-  // Remove type fields, parameter fields, and _promotionType field
+  // Remove type fields and parameter fields
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (AggregateType* ct = toAggregateType(type->type)) {
         for_fields(field, ct) {
           if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-              field->isParameter() ||
-              !strcmp(field->name, "_promotionType"))
+              field->isParameter())
             field->defPoint->remove();
         }
       }

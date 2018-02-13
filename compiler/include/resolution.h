@@ -238,4 +238,6 @@ bool isAutoDestroyedVariable(Symbol* sym);
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void resolvePromotionType(AggregateType* at);
+
 #endif

@@ -1016,7 +1016,10 @@ module ChapelArray {
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
                        // not attempt to delete the _instance.
-    var _promotionType: index(rank, _value.idxType);
+
+    proc chpl__promotionType() type {
+      return index(rank, _value.idxType);
+    }
 
     inline proc _value {
       if _isPrivatized(_instance) {
@@ -2043,7 +2046,10 @@ module ChapelArray {
     var _pid:int;  // only used when privatized
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
-    var _promotionType: _value.eltType;
+
+    proc chpl__promotionType() type {
+      return _value.eltType;
+    }
 
     inline proc _value {
       if _isPrivatized(_instance) {

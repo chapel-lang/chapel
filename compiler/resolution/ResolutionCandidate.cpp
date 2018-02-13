@@ -634,6 +634,63 @@ void ResolutionCandidate::resolveTypedefedArgTypes() {
   }
 }
 
+static AggregateType* getRootInstantiation(AggregateType* at) {
+  AggregateType* ret = at;
+
+  while (ret != NULL && ret->instantiatedFrom != NULL) {
+    ret = ret->instantiatedFrom;
+  }
+
+  return ret;
+}
+
+static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
+  AggregateType* ret = NULL;
+  Symbol* sym        = rc->formalIdxToActual[idx];
+
+  if (sym != NULL) {
+    ret = toAggregateType(sym->getValType());
+  }
+
+  return ret;
+}
+
+//
+// Something looks like a copy initializer if it has three actuals (a
+// gMethodToken and two others), and if the last two actuals' types match in
+// one of the following ways:
+// 1) They are identical
+// 2) They are instantiated from the same root type
+//
+// This case is checked to help avoid confusing users. If the user writes:
+//   var a = new MyClass(b);
+// where ``b`` is also an instantiation of ``MyClass``, most users would expect
+// a copy initializer to be called. If there is not a copy-initializer for b's
+// type, but there is an initializer for b's promotion type, then without this
+// check the compiler would promote the expression. This would result in an
+// array of ``MyClass`` elements, which could be very confusing.
+//
+// See GitHub Issue #6019.
+//
+static bool looksLikeCopyInit(ResolutionCandidate* rc) {
+  bool ret = false;
+
+  if (rc->fn->isInitializer() && rc->formalIdxToActual.size() == 3) {
+    // First formal/actual is gMethodToken
+    AggregateType* base  = getActualType(rc, 1);
+    AggregateType* other = getActualType(rc, 2);
+    if (base != NULL && other != NULL) {
+      if (base == other) {
+        ret = true;
+      } else if (getRootInstantiation(base) == getRootInstantiation(other)) {
+        ret = true;
+      }
+    }
+  }
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -649,6 +706,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
    */
   resolveSignature(fn);
 
+  bool isCopyInit = looksLikeCopyInit(this);
+
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {
       bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
@@ -656,10 +715,12 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
 
       bool formalIsParam     = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
-      bool isInitThis        = strcmp(fn->name,"init") == 0 &&
+      bool isInitThis        = fn->isInitializer() &&
                                formal->hasFlag(FLAG_ARG_THIS);
       bool isNewTypeArg      = strcmp(fn->name,"_new") == 0 &&
                                coindex == 0; // first formal/actual
+
+      bool promotes          = false;
 
       if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
@@ -675,7 +736,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
                              actual,
                              formal->type,
                              fn,
-                             NULL,
+                             &promotes,
                              NULL,
                              formalIsParam) == false) {
         return false;
@@ -690,6 +751,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
         if (ft != at && ft->isInstantiatedFrom(at) == false) {
           return false;
         }
+      } else if (promotes && isCopyInit) {
+        return false;
       }
     }
   }

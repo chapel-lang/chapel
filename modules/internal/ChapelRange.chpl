@@ -150,9 +150,9 @@ module ChapelRange {
 
     proc strType type  return indexToStrideType(idxType);
 
-    // TODO: hilde 2011/03/31
-    // This should be a pragma and not a var declaration.
-    var _promotionType: idxType;                   // enables promotion
+    proc chpl__promotionType() type {
+      return idxType;
+    }
 
   }
 
