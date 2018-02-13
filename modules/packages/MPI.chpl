@@ -290,7 +290,8 @@ module MPI {
             var cookieJar = pmiGniCookie.split(":");
             const lastcookie = cookieJar.domain.last;
             cookieJar[lastcookie] = ((cookieJar[lastcookie]):int + 1):string;
-            C_Env.setenv("PMI_GNI_COOKIE",("%s".format(":".join(cookieJar))).c_str(),1);
+            const newVal = ":".join(cookieJar);
+            C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
           }
         }
     }
