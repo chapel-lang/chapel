@@ -286,7 +286,12 @@ static bool findCallToParallelIterator(ForLoop* forLoop, EflopiInfo& eInfo)
   // We need to see if args... contain a leader or standalone tag.
   // 'asgnToIter' is the second of the above moves. Find the first one.
   CallExpr* rhs1 = toCallExpr(asgnToIter->get(2));
-  INT_ASSERT(rhs1 && rhs1->isNamed("_getIterator"));
+  if (rhs1->isNamed("_build_tuple") ||
+      rhs1->isNamed("_getIteratorZip"))
+    // This is a zippered for-loop. Currently implies not parallel.
+    return false;
+  INT_ASSERT(rhs1->isNamed("_getIterator"));
+
   Symbol* calltemp = toSymExpr(rhs1->get(1))->symbol();
   CallExpr* asgnToCallTemp = NULL;
   for (Expr* curr = asgnToIter->prev; curr; curr = curr->prev)
@@ -427,6 +432,23 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
   return dest;
 }
 
+// Just replace the loop.
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop); //wass to .h
+Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
+  EflopiInfo eflopiInfo;
+  if (!findCallToParallelIterator(forLoop, eflopiInfo))
+    // Not a parallel for-loop. Leave it unchanged.
+    return forLoop;
+
+  // Yes, it is a parallel for-loop. Replace it.
+  // findCallToParallelIterator() filled out eflopiInfo.
+  ForallStmt* fs = replaceEflopiWithForall(eflopiInfo);
+  // If >1 iterated exprs, how to call resolveForallHeader?
+  INT_ASSERT(fs->numIteratedExprs() == 1);
+  SymExpr* itExpr = toSymExpr(fs->iteratedExpressions().head);
+  resolveForallHeader(fs, itExpr);
+  return fs;
+}
 
 /////////// assorted helpers ///////////
 

@@ -6397,8 +6397,10 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 ************************************** | *************************************/
 
 void resolveBlockStmt(BlockStmt* blockStmt) {
+if (blockStmt->id == breakOnResolveID) debugSummary(blockStmt), gdbShouldBreakHere(); //wass
   for_exprs_postorder(expr, blockStmt) {
     if (expr->id == breakOnResolveID) gdbShouldBreakHere();
+if (blockStmt->id == breakOnResolveID) debugSummary(expr); //wass
     expr = resolveExpr(expr);
 
     if (tryFailure == true) {
@@ -6475,7 +6477,12 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
 
-    retval = expr;
+    if (ForLoop* forLoop = toForLoop(block)) {
+      Expr* replaceForWithForallIfNeeded(ForLoop* forLoop); //wass in .h
+      retval = replaceForWithForallIfNeeded(forLoop);
+    } else {
+      retval = expr;
+    }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
