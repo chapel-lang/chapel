@@ -1010,9 +1010,7 @@ module ChapelBase {
 
   pragma "command line setting"
   proc _command_line_cast(param s: c_string, type t, x) {
-    try! {
-      return _cast(t, x:string);
-    }
+    return _cast(t, x:string);
   }
 
 

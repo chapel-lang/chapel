@@ -43,17 +43,17 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t, x: string) where isBoolType(t) {
+  proc _cast(type t, x: string) where isBoolType(t) throws {
     var str = x.strip();
     if str.isEmptyString() {
-      __primitive("chpl_error", c"Empty string when converting from string to bool");
+      throw new IllegalArgumentError("Empty string when converting from string to bool");
       return false;
     } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
     } else {
-      halt("Unexpected value when converting from string to bool: '"+x+"'");
+      throw new IllegalArgumentError("Unexpected value when converting from string to bool: '"+x+"'");
     }
   }
 
@@ -212,7 +212,7 @@ module StringCasts {
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
   }
- 
+
   // Catch all cast anything -> string is in ChapelIO
 
 }
