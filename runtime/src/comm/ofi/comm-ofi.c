@@ -528,6 +528,9 @@ static void exit_all(int status) {
   chpl_mem_free(ofi.am_rx_cq, 0, 0);
 
   chpl_comm_ofi_oob_fini();
+
+  atomic_destroy_bool(&progress_threads_please_exit);
+  atomic_destroy_uint_least32_t(&progress_thread_count);
 }
 
 static void exit_any(int status) {
