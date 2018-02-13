@@ -1168,12 +1168,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     // If this range is unbounded below, we use low from the other range,
     // so that max(lo1, lo2) == lo2.  etc.
-    var lo1 = if hasLowBound() then this._low else other._low;
-    var hi1 = if hasHighBound() then this._high else other._high;
+    var lo1 = if hasLowBound() then this.low else other.low;
+    var hi1 = if hasHighBound() then this.high else other.high;
     var st1 = abs(this.stride);
 
-    var lo2 = if other.hasLowBound() then other._low else this._low;
-    var hi2 = if other.hasHighBound() then other._high else this._high;
+    var lo2 = if other.hasLowBound() then other.low else this.low;
+    var hi2 = if other.hasHighBound() then other.high else this.high;
     var st2 = abs(other.stride);
 
     // If the result type is unsigned, don't let the low bound go negative.
