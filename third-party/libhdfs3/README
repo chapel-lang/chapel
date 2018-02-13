@@ -6,7 +6,7 @@ Chapel runtime support for HDFS using libhdfs3 can be built
 by setting CHPL_AUX_FILESYS=hdfs3.
 
 For more information on the current support for libhdfs3 within Chapel,
-please refer to $CHPL_HOME/doc/technotes/auxIO.rst.  For more
+please refer to $CHPL_HOME/doc/rst/technotes/auxIO.rst.  For more
 information about libhdfs3 itself, please refer to the website: 
 https://github.com/PivotalRD/libhdfs3
 

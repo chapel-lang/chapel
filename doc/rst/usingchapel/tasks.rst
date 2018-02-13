@@ -139,7 +139,7 @@ available by means of the man(1) -m option, for example:
 
 .. code-block:: sh
 
-  man -M $CHPL_HOME/third-party/qthread/qthread-*/man qthread_init
+  man -M $CHPL_HOME/third-party/qthread/qthread-src/man qthread_init
 
 Note that in some cases there are Chapel environment variables that
 override Qthreads counterparts. ``CHPL_RT_NUM_THREADS_PER_LOCALE`` overrides
