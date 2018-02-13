@@ -1,0 +1,12 @@
+feature request: constrain returned array type
+
+This test requests some means of constraining the type of the array
+being returned to help those reading the function signature know what
+to expect.  I've made up a syntax that "sort of" makes sense here by
+trying to show the type of the domain that will describe the returned
+array expression.
+
+Note that although in this test the domain value can be described very
+precisely, for other patterns (say, a function that reads an array of
+integers from a file without knowing how large it is) we can't
+anticipate how large the array will be, only its type.
