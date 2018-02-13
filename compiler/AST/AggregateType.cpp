@@ -1053,7 +1053,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
         fn->insertAtHead(new CallExpr(PRIM_SET_MEMBER, _this, name, _outer));
 
-      }  else {
+      } else {
         fieldNamesSet.set_add(field->name);
 
         if (field->isType()            == true ||
