@@ -269,7 +269,7 @@ static void handleIsWidePointer();
 static bool isLocalBlock(Expr* stmt) {
   BlockStmt* block = toBlockStmt(stmt);
   return block &&
-         block->parentSymbol &&
+         block->inTree() &&
          block->isLoopStmt() == false &&
          block->blockInfoGet() &&
          block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL);

@@ -6347,14 +6347,13 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
       Expr* result = preFold(call);
 
       if (CallExpr* callFolded = toCallExpr(result)) {
-        if (callFolded->parentSymbol != NULL) {
+        if (callFolded->inTree()) {
+
           callStack.add(callFolded);
 
           resolveCall(callFolded);
 
-          if (callFolded->parentSymbol != NULL) {
-            if (FnSymbol* fn = callFolded->resolvedFunction()) {
-
+          if (FnSymbol* fn = callFolded->resolvedFunction()) {
 
               if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
                 resolveSignatureAndFunction(fn);
@@ -6366,7 +6365,6 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
                 resolveSignature(fn);
 
               }
-            }
           }
 
           callStack.pop();
@@ -7323,8 +7321,7 @@ static void resolveEnumTypes() {
 
 static void insertRuntimeTypeTemps() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint &&
-        ts->defPoint->parentSymbol &&
+    if (ts->inTree()                       &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
@@ -7465,8 +7462,8 @@ static void resolveSerializers() {
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentSymbol               != NULL   &&
-        ts->hasFlag(FLAG_GENERIC)                == false  &&
+    if (ts->inTree()                                      &&
+        ts->hasFlag(FLAG_GENERIC)                == false &&
         ts->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
         isSingleType(ts->type)                   == false &&
         isSyncType(ts->type)                     == false &&
@@ -7497,7 +7494,7 @@ static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentSymbol               != NULL   &&
+    if (ts->inTree()                                       &&
         ts->hasFlag(FLAG_GENERIC)                == false  &&
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
       if (AggregateType* at = toAggregateType(ts->type)) {
@@ -7762,7 +7759,7 @@ static void resolveRecordInitializers() {
 static Type* recordInitType(CallExpr* init) {
   Type* retval = NULL;
 
-  if (init->parentSymbol != NULL) {
+  if (init->inTree()) {
     Type* type = init->get(1)->typeInfo();
 
     if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
@@ -8410,7 +8407,7 @@ static void removeUnusedFunctions() {
               if (AggregateType* at = toAggregateType(refType)) {
                 DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
 
-                if (defPoint->parentSymbol != NULL) {
+                if (defPoint->inTree()) {
                   defPoint->remove();
                 }
 
@@ -8441,8 +8438,7 @@ static bool isUnusedClass(AggregateType* ct);
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint                         != NULL  &&
-        type->defPoint->parentSymbol           != NULL  &&
+    if (type->inTree()                                  &&
         type->hasFlag(FLAG_REF)                == false &&
         type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
       if (AggregateType* at = toAggregateType(type->type)) {
@@ -8455,8 +8451,7 @@ static void removeUnusedTypes() {
 
   // Remove unused ref types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint != NULL && type->defPoint->parentSymbol != NULL) {
-      if (type->hasFlag(FLAG_REF) == true) {
+    if (type->inTree() && type->hasFlag(FLAG_REF)) {
         // Get the value type of the ref type.
         if (AggregateType* at1 = toAggregateType(type->getValType())) {
           if (isUnusedClass(at1) == true) {
@@ -8470,10 +8465,9 @@ static void removeUnusedTypes() {
         AggregateType* at2      = toAggregateType(type->type);
         DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
 
-        if (defPoint->parentSymbol != NULL) {
+        if (defPoint->inTree()) {
           defPoint->remove();
         }
-      }
     }
   }
 }

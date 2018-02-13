@@ -126,7 +126,7 @@ void findVisibleFunctions(CallInfo&       info,
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
     FnSymbol* fn = gFnSymbols.v[i];
-    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->defPoint->parentSymbol && !isArgSymbol(fn->defPoint->parentSymbol)) {
+    if (!fn->hasFlag(FLAG_INVISIBLE_FN) && fn->inTree() && !isArgSymbol(fn->defPoint->parentSymbol)) {
       BlockStmt* block = NULL;
       if (fn->hasFlag(FLAG_AUTO_II)) {
         block = theProgram->block;

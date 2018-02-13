@@ -556,7 +556,7 @@ static void check_afterInlineFunctions() {
     forv_Vec(DefExpr, def, gDefExprs) {
       Symbol* sym = def->sym;
       if (isLcnSymbol(sym) &&
-          def->parentSymbol != NULL && // symbol is in the tree
+          def->inTree() && // symbol is in the tree
           def->parentSymbol->hasFlag(FLAG_WIDE_REF) == false) {
         if (sym->type->symbol->hasFlag(FLAG_REF) ||
             sym->type->symbol->hasFlag(FLAG_WIDE_REF)) {
