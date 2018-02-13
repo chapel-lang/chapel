@@ -759,6 +759,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
 
     // Traverse recursively.
     cloneTaskFn->body->accept(&taskFnVis);
+
+    flattenNestedFunction(cloneTaskFn);
   }
 
   // todo: addDummyErrorArgumentToCall() ?
@@ -878,6 +880,7 @@ Implementation considerations:
 * The way flattenNestedFunctions() works as of this writing,
   it is faster to flatten all task fns at once, rather than one by one.
 */
+// wass see if this is no longer needed
 static void removeDeadAndFlatten() {
   Vec<FnSymbol*> taskFnsToFlatten;
 
@@ -898,6 +901,7 @@ static void removeDeadAndFlatten() {
     }
   }
 
+  INT_ASSERT(taskFnsToFlatten.n == 0); // wass - we flatten them right away now
   if (taskFnsToFlatten.n > 0)
     flattenNestedFunctions(taskFnsToFlatten);
 }
