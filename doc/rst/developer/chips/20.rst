@@ -543,7 +543,7 @@ The application developer updates to the latest LibraryZ:
     }
 
     proc main() {
-      var instance = new Widget();
+      var instance:Base = new Widget();
       var x = 1;
       instance.run(x);
       delete instance;
@@ -554,10 +554,12 @@ It outputs
 
 ::
 
-  In Application.Widget.run
+  starting LibraryZ.Base.run!
 
-which is what we want! Not all languages would have that output for this
-example.
+which might be surprising. In particular, it might be confusing to the
+user whether or not they were overriding ``proc run``. The following
+sections cover potential solutions to this problem, including an
+``override`` keyword.
 
 New Method is Accidentally Overridden
 +++++++++++++++++++++++++++++++++++++
