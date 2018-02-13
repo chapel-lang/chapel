@@ -26,7 +26,6 @@
 #include "chplcgfns.h"
 #include "chpltypes.h"
 #include "chpl-tasks-prvdata.h"
-#include "chpl-qsbr.h"
 
 #ifdef CHPL_TASKS_MODEL_H
 #include CHPL_TASKS_MODEL_H
@@ -268,17 +267,13 @@ void chpl_task_sleep(double);
 // indefinite amount of time. The registered callback will
 // be used to perform periodic book-keeping.
 //
-static void chpl_task_onPark(void) {
-  chpl_qsbr_blocked();
-}
+void chpl_task_onPark(void);
 
 //
 // (Optional) Invoked by a thread that invoked 'chpl_task_onPark' 
 // after they are no longer idle.
 //
-static void chpl_task_onUnpark(void) {
-  chpl_qsbr_unblocked();
-}
+void chpl_task_onUnpark(void);
 
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support
