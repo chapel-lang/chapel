@@ -1,6 +1,0 @@
-bug: classes allow param record fields
-#8422
-
-Without the writeln(), this compiles.
-With the writeln(), there's a failure to build the generated source in
-ChapelIO.c
