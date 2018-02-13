@@ -1,0 +1,5 @@
+feature request: return assumed-domain arrays
+
+Just as formal arguments support arrays of "any domain" as a type
+signature, it seems we should support a similar syntax for return type
+signatures.
