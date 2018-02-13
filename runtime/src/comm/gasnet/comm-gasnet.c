@@ -1033,6 +1033,21 @@ void chpl_comm_barrier(const char *msg) {
   GASNET_Safe_Retval(gasnet_barrier_try(id, 0), retval);
 }
 
+void chpl_comm_user_barrier(const char *msg) {
+  int id = (int) msg[0] + 255; // offset from other barrier
+  int retval;
+
+#ifdef CHPL_COMM_DEBUG
+  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
+#endif
+
+  gasnet_barrier_notify(id, 0);
+  while ((retval = gasnet_barrier_try(id, 0)) == GASNET_ERR_NOT_READY) {
+    chpl_task_yield();
+  }
+  GASNET_Safe_Retval(gasnet_barrier_try(id, 0), retval);
+}
+
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
     chpl_comm_barrier("stop polling");

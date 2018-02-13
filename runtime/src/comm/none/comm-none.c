@@ -137,6 +137,8 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid) { }
 
 void chpl_comm_barrier(const char *msg) { }
 
+void chpl_comm_user_barrier(const char *msg) { }
+
 void chpl_comm_pre_task_exit(int all) { }
 
 void chpl_comm_exit(int all, int status) { }

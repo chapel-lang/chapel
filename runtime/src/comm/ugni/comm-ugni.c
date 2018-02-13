@@ -1240,10 +1240,48 @@ static uint32_t bar_min_child;
 static uint32_t bar_num_children;
 static uint32_t bar_parent;
 
-static barrier_info_t  bar_info;
-static barrier_info_t* child_bar_info[BAR_TREE_NUM_CHILDREN];
-static barrier_info_t* parent_bar_info;
+static barrier_info_t  rt_bar_info;
+static barrier_info_t* rt_child_bar_info[BAR_TREE_NUM_CHILDREN];
+static barrier_info_t* rt_parent_bar_info;
 
+static barrier_info_t  user_bar_info;
+static barrier_info_t* user_child_bar_info[BAR_TREE_NUM_CHILDREN];
+static barrier_info_t* user_parent_bar_info;
+
+
+static void chpl_comm_barrier_init(uint32_t nic_addr,
+                                   barrier_info_t*  bar_info,
+                                   barrier_info_t** child_bar_info,
+                                   barrier_info_t** parent_bar_info)
+{
+
+  typedef struct {
+    c_nodeid_t nodeID;
+    uint32_t nic_addr;
+    barrier_info_t* bar_info;
+  } gdata_t;
+
+  gdata_t  my_gdata = { chpl_nodeID, nic_addr, bar_info };
+  gdata_t* gdata;
+
+  gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
+                                        CHPL_RT_MD_COMM_PER_LOC_INFO,
+                                        0, 0);
+  if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
+    CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
+
+  for (int i = 0; i < chpl_numNodes; i++) {
+    nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
+
+    if (gdata[i].nodeID >= bar_min_child
+        && gdata[i].nodeID < bar_min_child + bar_num_children)
+      child_bar_info[gdata[i].nodeID - bar_min_child] = gdata[i].bar_info;
+    else if (chpl_nodeID != 0 && gdata[i].nodeID == bar_parent)
+      *parent_bar_info = gdata[i].bar_info;
+  }
+
+  chpl_mem_free(gdata, 0, 0);
+}
 
 //
 // These flags tell tell the state of, or give direction to, the polling
@@ -1747,34 +1785,9 @@ void chpl_comm_post_task_init(void)
                                        CHPL_RT_MD_COMM_PER_LOC_INFO,
                                        0, 0);
 
-    {
-      typedef struct {
-        c_nodeid_t nodeID;
-        uint32_t nic_addr;
-        barrier_info_t* bar_info;
-      } gdata_t;
+    chpl_comm_barrier_init(nic_addr, &rt_bar_info, rt_child_bar_info, &rt_parent_bar_info);
+    chpl_comm_barrier_init(nic_addr, &user_bar_info, user_child_bar_info, &user_parent_bar_info);
 
-      gdata_t  my_gdata = { chpl_nodeID, nic_addr, &bar_info };
-      gdata_t* gdata;
-
-      gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                            CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                            0, 0);
-      if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-        CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
-
-      for (int i = 0; i < chpl_numNodes; i++) {
-        nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
-
-        if (gdata[i].nodeID >= bar_min_child
-            && gdata[i].nodeID < bar_min_child + bar_num_children)
-          child_bar_info[gdata[i].nodeID - bar_min_child] = gdata[i].bar_info;
-        else if (chpl_nodeID != 0 && gdata[i].nodeID == bar_parent)
-          parent_bar_info = gdata[i].bar_info;
-      }
-
-      chpl_mem_free(gdata, 0, 0);
-    }
   }
 
   compute_comm_dom_cnt();
@@ -3203,7 +3216,11 @@ void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
 }
 
 
-void chpl_comm_barrier(const char *msg)
+
+static void chpl_comm_barrier_internal(const char *msg,
+                                       barrier_info_t*  bar_info,
+                                       barrier_info_t** child_bar_info,
+                                       barrier_info_t* parent_bar_info)
 {
   DBG_P_L(DBGF_IFACE, "IFACE chpl_comm_barrier(\"%s\")", msg);
 
@@ -3228,7 +3245,7 @@ void chpl_comm_barrier(const char *msg)
   //
   DBG_P_LP(DBGF_BARRIER, "BAR wait for %d children", (int) bar_num_children);
   for (uint32_t i = 0; i < bar_num_children; i++) {
-    while (bar_info.child_notify[i] == 0) {
+    while (bar_info->child_notify[i] == 0) {
       PERFSTATS_INC(lyield_in_bar_1_cnt);
       local_yield();
     }
@@ -3250,7 +3267,7 @@ void chpl_comm_barrier(const char *msg)
     // Wait for our parent locale to release us from the barrier.
     //
     DBG_P_LP(DBGF_BARRIER, "BAR wait for parental release");
-    while (bar_info.parent_release == 0) {
+    while (bar_info->parent_release == 0) {
       PERFSTATS_INC(lyield_in_bar_2_cnt);
       local_yield();
     }
@@ -3260,8 +3277,8 @@ void chpl_comm_barrier(const char *msg)
   // Clear all our barrier flags.
   //
   for (uint32_t i = 0; i < bar_num_children; i++)
-    bar_info.child_notify[i] = 0;
-  bar_info.parent_release = 0;
+    bar_info->child_notify[i] = 0;
+  bar_info->parent_release = 0;
 
   //
   // Release our children.
@@ -3273,6 +3290,16 @@ void chpl_comm_barrier(const char *msg)
                   (void*) &child_bar_info[i]->parent_release,
                   sizeof(release_flag), NULL, may_proxy_true);
   }
+}
+
+void chpl_comm_barrier(const char *msg)
+{
+    chpl_comm_barrier_internal(msg, &rt_bar_info, rt_child_bar_info, rt_parent_bar_info);
+}
+
+void chpl_comm_user_barrier(const char *msg)
+{
+    chpl_comm_barrier_internal(msg, &user_bar_info, user_child_bar_info, user_parent_bar_info);
 }
 
 
