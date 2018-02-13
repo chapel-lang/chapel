@@ -760,6 +760,8 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
     // Traverse recursively.
     cloneTaskFn->body->accept(&taskFnVis);
 
+    // If we don't flatten them right away, we get non-global taskFns
+    // in expandTaskFn() and may have issues with scoping.
     flattenNestedFunction(cloneTaskFn);
   }
 
