@@ -4902,6 +4902,15 @@ static void resolveInitField(CallExpr* call) {
   if (t == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
+  if (fs->hasFlag(FLAG_PARAM)) {
+    if (isLegalParamType(t) == false) {
+      USR_FATAL_CONT(fs, "'%s' is not of a supported param type", fs->name);
+    }
+    if (rhs->symbol()->isParameter() == false) {
+      USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
+    }
+  }
+
   if (t == dtNil && fs->type == dtUnknown)
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
   if (fs->type == dtUnknown) {
