@@ -37,8 +37,10 @@
 #ifdef CHPL_TARGET_PLATFORM_CRAY_XC
 #define OOB_USE_PMI
 #define OOB_USE_PMI2
+#elif defined(CHPL_COMM_SUBSTRATE_SOCKETS)
+#define OOB_USE_SOCKETS
 #else
-#define OOB_USE_OWN
+#error "undefined out-of-band environment"
 #endif
 
 #ifdef OOB_USE_PMI
@@ -84,15 +86,42 @@ void chpl_comm_ofi_oob_init(void) {
   chpl_numNodes = (int32_t) app_size;
 
 #endif // defined(OOB_USE_PMI2)
-#elif defined(OOB_USE_OWN)
+#elif defined(OOB_USE_SOCKETS)
 
-#error "USE_OWN OOB mode init not supported"
+  char const* ev;
 
-#else // defined(OOB_USE_OWN)
+  if ((ev = getenv("SLURM_PROCID")) != NULL) {
+    int ev_i;
+
+    if (sscanf(ev, "%i", &ev_i) != 1) {
+      chpl_internal_error("SLURM_PROCID");
+    }
+    chpl_nodeID = ev_i;
+
+    if ((ev = getenv("SLURM_NTASKS")) == NULL
+        || sscanf(ev, "%i", &ev_i) != 1) {
+      chpl_internal_error("SLURM_NTASKS");
+    }
+    chpl_numNodes = ev_i;
+
+#if 0
+    // TODO: this is temporary debug code
+    {
+      #define _P(name) printf("%d: %s %s\n", chpl_nodeID, #name, getenv(#name))
+      _P(SLURM_STEP_NODELIST);
+      fflush(stdout);
+      #undef _P
+    }
+#endif
+  } else {
+    chpl_internal_error("OOB_USE_SOCKETS requires slurm launcher");
+  }
+
+#else // defined(OOB_USE_SOCKETS)
 
 #error "unknown OOB mode for init"
 
-#endif // defined(OOB_USE_OWN)
+#endif // defined(OOB_USE_SOCKETS)
 
 }
 
@@ -116,15 +145,17 @@ void chpl_comm_ofi_oob_fini(void) {
   }
 
 #endif // defined(OOB_USE_PMI2)
-#elif defined(OOB_USE_OWN)
+#elif defined(OOB_USE_SOCKETS)
 
-#error "USE_OWN OOB mode fini not supported"
+  if (chpl_numNodes != 1) {
+    chpl_internal_error("multi-locale OOB_USE_SOCKETS fini not supported");
+  }
 
-#else // defined(OOB_USE_OWN)
+#else // defined(OOB_USE_SOCKETS)
 
 #error "unknown OOB mode for fini"
 
-#endif // defined(OOB_USE_OWN)
+#endif // defined(OOB_USE_SOCKETS)
 
 }
 
@@ -135,9 +166,11 @@ void chpl_comm_ofi_oob_barrier(void) {
 
   PMICHKSUCCESS(PMI_Barrier());
 
-#elif defined(OOB_USE_OWN)
+#elif defined(OOB_USE_SOCKETS)
 
-#error "USE_OWN OOB mode barrier not supported"
+  if (chpl_numNodes != 1) {
+    chpl_internal_error("multi-locale OOB_USE_SOCKETS barrier not supported");
+  }
 
 #else
 
@@ -154,9 +187,13 @@ void chpl_comm_ofi_oob_allgather(void* in, void* out, int len) {
 
   PMICHKSUCCESS(PMI_Allgather(in, out, len));
 
-#elif defined(OOB_USE_OWN)
+#elif defined(OOB_USE_SOCKETS)
 
-#error "USE_OWN OOB mode allgather not supported"
+  if (chpl_numNodes == 1) {
+    memcpy(out, in, len);
+  } else {
+    chpl_internal_error("multi-locale OOB_USE_SOCKETS allgather not supported");
+  }
 
 #else
 

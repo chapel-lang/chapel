@@ -26,6 +26,15 @@
 #include "rdma/fi_cm.h"
 #include "rdma/fi_errno.h"
 
+#define CALL_CHECK(fncall, errcode)                                     \
+    do {                                                                \
+      if ((fncall) != errcode) {                                        \
+        chpl_internal_error(#fncall);                                   \
+      }                                                                 \
+    } while (0)
+
+#define CALL_CHECK_ZERO(fncall) CALL_CHECK(fncall, 0)
+
 //
 // Out-of-band support
 //
