@@ -2643,6 +2643,8 @@ yystartlineno
 
 FILEID: 5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5
 aargv
+nodashes
+usearg
 
 FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 rungdb
@@ -4294,15 +4296,21 @@ bdom
 bulu
 bzero
 cdom
+cplx
 csrmatmat
 csrmatvec
 czero
+eigvals
+geev
 gemm
 gemv
 matmat
 nzcur
 nznew
 pinv
+potrf
+vlcplx
+vrcplx
 xdom
 ydom
 
@@ -4356,8 +4364,12 @@ uhvb
 
 FILEID: 554af092-652a-11e7-88ba-10ddb1d4c3d5
 arglist
+compiletime
 helloworld
+simt
 targetlocale
+vectorizeable
+workgroupsize
 
 FILEID: 26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5
 rtmp
@@ -4487,6 +4499,7 @@ lrint
 strfy
 
 FILEID: f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5
+addrvec
 allocinfo
 appnum
 cqes
@@ -4495,6 +4508,8 @@ freeinfo
 lcpus
 ofichkerr
 ofichkret
+pmichkret
+pmichksuccess
 rbuf
 rbufs
 tostr
@@ -4621,6 +4636,7 @@ benhavns
 berkeley
 bernstein
 bertolacci
+bessel
 betweenness
 bharshbarg
 bharshbarger
