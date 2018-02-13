@@ -588,6 +588,8 @@ static void printReason(BaseAST* node, implicitThrowsReasons_t* reasons)
 
 // Returns true if the catches don't cover all of the cases.
 static bool catchesNotExhaustive(TryStmt* tryStmt) {
+  if (tryStmt->tryBang())
+    return false;
 
   bool hasCatchAll = false;
 
@@ -692,19 +694,15 @@ bool ImplicitThrowsVisitor::enterTryStmt(TryStmt* node) {
 void ImplicitThrowsVisitor::exitTryStmt(TryStmt* node) {
   tryDepth--;
 
-  // is it an exhaustive catch?
-
+  // is it a non-exhaustive catch?
   bool nonExhaustive = catchesNotExhaustive(node);
 
-  if (node->tryBang()) {
-    canThrow = false;
-  } else {
-    canThrow = nonExhaustive;
-    if (nonExhaustive)
-      onlyUnchecked = false;
-    if (reasonThrows == NULL)
-      reasonThrows = node;
-  }
+  if (tryDepth == 0)
+    canThrow = canThrow || nonExhaustive;
+  if (nonExhaustive)
+    onlyUnchecked = false;
+  if (reasonThrows == NULL)
+    reasonThrows = node;
 }
 
 bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
@@ -739,10 +737,14 @@ bool ImplicitThrowsVisitor::enterCallExpr(CallExpr* node) {
       }
     }
   } else if (node->isPrimitive(PRIM_THROW)) {
-    canThrow = true;
-    onlyUnchecked = false;
-    if (reasonThrows == NULL)
-      reasonThrows = node;
+    if (insideTry || node->tryTag == TRY_TAG_IN_TRYBANG) {
+      // OK
+    } else {
+      canThrow = true;
+      onlyUnchecked = false;
+      if (reasonThrows == NULL)
+        reasonThrows = node;
+    }
   }
   return true;
 }
@@ -798,12 +800,8 @@ void ErrorCheckingVisitor::exitTryStmt(TryStmt* node) {
   // is it an exhaustive catch?
   bool nonExhaustive = catchesNotExhaustive(node);
 
-  if (node->tryBang()) {
-    // OK
-  } else {
-    if (tryDepth==0 && nonExhaustive && !fnCanThrow) {
-      USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
-    }
+  if (tryDepth==0 && nonExhaustive && !fnCanThrow) {
+    USR_FATAL_CONT(node, "try without a catchall in a non-throwing function");
   }
 }
 
