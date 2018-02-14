@@ -36,7 +36,8 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fZippered(zippered),
   fLoopBody(body),
   fFromForLoop(false),
-  fContinueLabel(NULL)
+  fContinueLabel(NULL),
+  fFromResolvedForLoop(false)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;

@@ -534,8 +534,13 @@ static CallExpr* buildForallParIterCall(ForallStmt* pfs, SymExpr* origSE)
       //  test/reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
       targetName = astr("_iterator_for_loopexpr", targetName + 12);
 
-    iterCall = origIterCall->copy();
-    iterCall->baseExpr = new UnresolvedSymExpr(targetName);
+    if (pfs->fFromResolvedForLoop) {
+      iterCall = origIterCall;
+      iterCall->remove();
+    } else {
+      iterCall = origIterCall->copy();
+      iterCall->baseExpr = new UnresolvedSymExpr(targetName);
+    }
 
   } else {
     // Not an iterator call, so add a call to these().

@@ -467,6 +467,7 @@ Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
   // Yes, it is a parallel for-loop. Replace it.
   // findCallToParallelIterator() filled out eflopiInfo.
   ForallStmt* fs = replaceEflopiWithForall(eflopiInfo);
+  fs->fFromResolvedForLoop = true;
   // If >1 iterated exprs, how to call resolveForallHeader?
   INT_ASSERT(fs->numIteratedExprs() == 1);
   SymExpr* itExpr = toSymExpr(fs->iteratedExpressions().head);
