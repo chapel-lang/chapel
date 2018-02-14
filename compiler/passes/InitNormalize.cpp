@@ -905,8 +905,9 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
 ************************************** | *************************************/
 
 bool InitNormalize::isFieldAccessible(Expr* expr) const {
-  AggregateType* at     = type();
-  bool           retval = true;
+  AggregateType* at      = type();
+  bool           initNew = hasInitDone(mFn->body);
+  bool           retval  = true;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
     Symbol* sym = symExpr->symbol();
@@ -917,6 +918,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
     } else if (DefExpr* field = at->toLocalField(symExpr)) {
       if (isFieldInitialized(field) == true) {
         retval = true;
+
       } else {
         USR_FATAL(expr,
                   "'%s' used before defined (first used here)",
@@ -924,8 +926,9 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      if (isPhase2() == true) {
+      if (initNew == true || isPhase2() == true) {
         retval = true;
+
       } else {
         USR_FATAL(expr,
                   "Cannot access parent field '%s' during phase 1",
@@ -940,6 +943,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
     if (DefExpr* field = at->toLocalField(callExpr)) {
       if (isFieldInitialized(field) == true) {
         retval = true;
+
       } else {
         USR_FATAL(expr,
                   "'%s' used before defined (first used here)",
@@ -947,8 +951,9 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      if (isPhase2() == true) {
+      if (initNew == true || isPhase2() == true) {
         retval = true;
+
       } else {
         USR_FATAL(expr,
                   "Cannot access parent field '%s' during phase 1",
@@ -1002,9 +1007,13 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
 
     } else if (DefExpr* field = toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
+      bool initNew = hasInitDone(mFn->body);
+
+      if (initNew == false) {
+        USR_FATAL(expr,
+                  "Cannot access parent field '%s' during phase 1",
+                  field->sym->name);
+      }
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
