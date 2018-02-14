@@ -1,5 +1,5 @@
 pragma "safe"
-module l2 {
+module borrowescapes {
 
 use OwnedObject;
 
@@ -157,6 +157,19 @@ proc ok4() {
   }
 }
 
+proc ok5() {
+  var group:MyCollection;
+  group.a.c.retain(new MyClass(1));
+  group.b.c.retain(new MyClass(2));
+
+  var first:MyClass = nil;
+
+  for i in group {
+    if first == nil then
+      first = i;
+  }
+}
+
 proc test() {
   bad1();
   bad2();
@@ -175,6 +188,7 @@ proc test() {
   ok2();
   ok3();
   ok4();
+  ok5();
 }
 
 test();

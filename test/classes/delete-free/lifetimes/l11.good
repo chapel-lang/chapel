@@ -1,3 +1,0 @@
-l11.chpl:20: In function 'badReturnReturnBorrow':
-l11.chpl:23: error: Scoped variable cannot be returned
-l11.chpl:21: note: consider scope of rr

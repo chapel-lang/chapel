@@ -1,3 +1,0 @@
-l12.chpl:15: In function 'test':
-l12.chpl:20: error: Scoped variable cannot be returned
-l12.chpl:16: note: consider scope of rr

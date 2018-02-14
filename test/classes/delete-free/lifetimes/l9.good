@@ -1,6 +1,0 @@
-l9.chpl:18: In function 'badReturnRefIdentityArg':
-l9.chpl:19: error: Reference to scoped variable cannot be returned
-l9.chpl:18: note: consider scope of arg
-l9.chpl:31: In function 'bad':
-l9.chpl:33: error: Reference to scoped variable cannot be returned
-l9.chpl:32: note: consider scope of b

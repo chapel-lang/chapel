@@ -68,11 +68,35 @@ proc setGlobalRecord() {
   globalRMyClass = r;
 }
 
+class MyClassA {
+  var x:int;
+}
+record SubRA {
+  var c:MyClassA;
+}
+record RA {
+  var sub:SubRA;
+}
+
+proc buildR(sub:SubRA) {
+  return new RA(sub);
+}
+
+var globalRA:RA;
+
+proc bad() {
+  var c = new Owned(new MyClassA(1));
+  var subr = new SubRA(c.borrow());
+  globalR = buildR(subr);
+}
+
+
 proc test() {
   ref x = badReturnRefLocalRec();
   writeln(x);
 
   setGlobalRecord();
+  bad();
 }
 test();
 

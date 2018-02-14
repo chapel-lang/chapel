@@ -50,6 +50,15 @@ proc badF2(borrow:MyClass) {
   // r.owned destroyed here.
 }
 
+proc badF3() {
+  var c = new MyClass(1);
+  var r = makeR(c);
+  {
+    var r2 = makeR(r.borrowed);
+    return r2;
+  }
+}
+
 config const branch = false;
 proc g() {
   var a = makeR(nil);
@@ -80,7 +89,8 @@ proc test() {
   var v5 = g();
   var v6 = h();
   var v7 = badF2(c);
- 
+  badF3();
+
   writeln(v1);
   writeln(v2);
   writeln(v3);
