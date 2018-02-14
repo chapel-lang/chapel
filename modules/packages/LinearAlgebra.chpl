@@ -1288,13 +1288,17 @@ module Sparse {
     pass2(A, B, indPtr, indices, data);
 
     var C = CSRMatrix((M, N), data, indices, indPtr);
+
+    sortIndices(C);
+
     return C;
   }
 
 
   /* Populate indPtr and total nnz (last element of indPtr) */
   proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
-    // TODO: Parallelize
+    // TODO: Parallelize - mask -> atomic ints,
+    //                   - Write a scan to compute idxPtr in O(log(n))
 
     /* Aliases for readability */
     proc _array.indPtr ref return this.dom.startIdx;
@@ -1303,17 +1307,22 @@ module Sparse {
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
     type idxType = ADom.idxType;
-    var mask: [1..N] idxType = -1;
+    var mask: [1..N] idxType;
     indPtr[1] = 1;
-    var nnz = 0: idxType;
+    var nnz = 1: idxType;
 
+    // Rows of C
     for i in 1..M {
       var row_nnz = 0;
       const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      // Row pointers of A
       for jj in Arange {
-        var j = A.indices[jj];
+        // Column index of A
+        const j = A.indices[jj];
         const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        // Row pointers of B
         for kk in Brange {
+          // Column index of B
           var k = B.indices[kk];
           if mask[k] != i {
             mask[k] = i;
@@ -1322,18 +1331,15 @@ module Sparse {
         }
       }
 
-      var next_nnz = nnz + row_nnz;
-
-      // TODO check row_nnz and next_nnz for overflow
-
-      nnz = next_nnz;
+      nnz = nnz + row_nnz;
       indPtr[i+1] = nnz;
     }
   }
 
   /* Populate indices and data */
   proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref indices, ref data) {
-    // TODO: Parallelize
+    use DistributedDeque;
+    // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
     proc _array.indPtr ref return this.dom.startIdx;
@@ -1344,22 +1350,27 @@ module Sparse {
     type idxType = ADom.idxType;
     var next: [1..N] idxType = -1;
     var sums: [1..N] eltType;
-
     var nnz = 1;
 
+    // Rows of C
     for i in 1..M {
       var head = -2:idxType,
           length = 0:idxType;
 
+      // Row pointers of A
       for jj in A.indPtr[i]..A.indPtr[i+1]-1 {
+        // Non-zero column index of A for row i
         var j = A.indices[jj];
         var v = A.data[jj];
 
+        // Row pointers of B
         for kk in B.indPtr[j]..B.indPtr[j+1]-1 {
+          // Non-zero column index of B for row j
           var k = B.indices[kk];
 
           sums[k] += v*B.data[kk];
 
+          // push k to a stack
           if next[k] == -1 {
             next[k] = head;
             head = k;
@@ -1368,21 +1379,46 @@ module Sparse {
         }
       }
 
+      // Recounting is faster than accessing 'nnz in indPtr[1]..indPtr[i+1]-1'
       for 1..length {
-        if sums[head] != 0 {
-          indices[nnz] = head;
-          data[nnz] = sums[head];
-          nnz += 1;
-        }
+        indices[nnz] = head;
+        data[nnz] = sums[head];
+        nnz += 1;
 
+        // pop next k
         const temp = head;
         head = next[head];
 
-        next[temp] = -1; // clear arrays
+        // clear stack as we traverse
+        next[temp] = -1;
         sums[temp] = 0;
       }
+    }
+  }
 
-      indPtr[i+1] = nnz;
+  /* Sort CS array indices */
+  private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
+    use Sort;
+
+    const (M, N) = A.shape;
+
+    proc _array.indPtr ref return this.dom.startIdx;
+    proc _array.indices ref return this.dom.idx;
+    type idxType = A.indices.eltType;
+
+    var temp: [1..A.indices.size] (idxType, eltType);
+    temp = for (idx, datum) in zip(A.indices, A.data) do (idx, datum);
+
+    for i in 1..M {
+      const rowStart = A.indPtr[i],
+            rowEnd = A.indPtr[i+1]-1;
+      if rowEnd - rowStart > 0 {
+        insertionSort(temp[rowStart..rowEnd]);
+      }
+    }
+
+    for i in temp.domain {
+      (A.indices[i], A.data[i]) = temp[i];
     }
   }
 
