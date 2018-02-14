@@ -1765,6 +1765,18 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         retval = false;
       }
     }
+  } else if (isRecord() == true) {
+    // This should get removed during preNormalizeInitMethod, but we need it to
+    // know we are in Phase 1 of normal initializers for the old proposal.
+    CallExpr* superPortion = new CallExpr(".",
+                                          new SymExpr(fn->_this),
+                                          new_CStringSymbol("super"));
+
+    SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
+    CallExpr* base         = new CallExpr(".", superPortion, initPortion);
+    CallExpr* superCall    = new CallExpr(base);
+
+    fn->body->insertAtTail(superCall);
   }
 
   return retval;
@@ -1866,8 +1878,8 @@ void AggregateType::buildCopyInitializer() {
 // generate default initializers for types where neither an initializer nor a
 // constructor has been defined.
 bool AggregateType::needsConstructor() {
-  // Temporarily only generate default initializers for classes
-  if (isRecord() || isUnion())
+  // Temporarily only generate default initializers for classes and records
+  if (isUnion())
     return true;
 
   // We don't want a default constructor if the type has been explicitly marked
@@ -1974,10 +1986,7 @@ bool AggregateType::wantsDefaultInitializer() const {
   } else if (initializerStyle != DEFINES_NONE_USE_DEFAULT) {
     retval = false;
 
-  // For now, no default initializers for records and unions
-  } else if (isRecord() == true) {
-    retval = false;
-
+  // For now, no default initializers for unions
   } else if (isUnion()  == true) {
     retval = false;
 
