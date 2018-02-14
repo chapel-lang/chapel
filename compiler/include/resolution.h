@@ -95,13 +95,13 @@ bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 
 // This function concerns an initialization expression such as:
 //   var x = <expr>;
-// It returns `true` if <expr> should be copied and `false` if
+// It returns `true` if <expr> should be copy-initialized and `false` if
 // ownership can be transferred.
 //
 // In particular:
 //  var y = ...;
-//  var x = y;   // requires a copy
-//  var z = functionReturningRecordByValue(); // does not require a copy
+//  var x = y;   // requires a copy-init
+//  var z = functionReturningRecordByValue(); // does not require a copy-init
 bool       doesCopyInitializationRequireCopy(Expr* initFrom);
 // Similar to the above, but it's OK to return a local value
 // variable without a copy.
