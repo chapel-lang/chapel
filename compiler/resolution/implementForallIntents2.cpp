@@ -370,6 +370,17 @@ static void removeWithEnclosing(Expr* expr) {
   return;
 }
 
+static bool isMoveToOIOI(SymExpr* se) {
+  if (CallExpr* parent1 = toCallExpr(se->parentExpr))
+    if (parent1->isPrimitive(PRIM_GET_MEMBER_VALUE))
+      if (CallExpr* parent2 = toCallExpr(parent1->parentExpr))
+        if (parent2->isPrimitive(PRIM_MOVE))
+          if (SymExpr* dest = toSymExpr(parent2->get(1)))
+            if (!strcmp(dest->symbol()->name, "origIndexOfInterest"))
+              return true;
+  return false;
+}
+
 static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
 {
   // the loop to be replaced
@@ -387,6 +398,12 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
   Symbol* srcIndex = src->indexGet()->symbol();
   src->indexGet()->remove(); // get it out of the way
   dest->inductionVariables().insertAtHead(srcIndex->defPoint->remove());
+
+  // For assertions only.
+  // Should not be needed once we eliminate _toLeader, _toStandalone.
+  bool onlySingleUse = true;
+  bool gotMoveToOIOI = false;
+
   // remove its uses outside the loop
   for_SymbolSymExprs(idxSE, srcIndex) {
     if (Expr* idxStmt = idxSE->getStmtExpr()) {
@@ -400,10 +417,17 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
         INT_ASSERT(toBlockStmt(idxStmt->parentExpr)->body.length == 1);
         removeWithEnclosing(idxStmt);
       } else {
-        INT_ASSERT(idxSE == srcIndex->getSingleUse());
+        if (idxSE == srcIndex->getSingleUse()) {
+          // great
+        } else {
+          // happens for eflopies in extendLeader()-ed iterators
+          if (isMoveToOIOI(idxSE)) gotMoveToOIOI = true;
+        }
       }
     }
   }
+
+  INT_ASSERT(onlySingleUse || gotMoveToOIOI);
 
   // set the iterator call
   dest->iteratedExpressions().insertAtHead(new SymExpr(eInfo.iterCallTemp));
