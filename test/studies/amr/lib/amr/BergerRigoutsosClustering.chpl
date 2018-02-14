@@ -237,7 +237,8 @@ proc CandidateDomain.trim()
       //---- Approximately center the enlarged range ----
       
       var n_overflow_low = (min_width(d) - R.length) / 2;
-      R = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d)).alignHigh();
+      var tmp = ((trim_low - n_overflow_low*stride .. by stride) #min_width(d));
+      R = tmp.alignHigh();
 
 
       //---- Enforce bounds of D ----

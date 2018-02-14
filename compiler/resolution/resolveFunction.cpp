@@ -125,6 +125,7 @@ static void resolveFormals(FnSymbol* fn) {
 // Fix up value types that need to be ref types.
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   // For begin functions, copy ranges in if passed by blank intent.
+  // TODO: remove this code - it should no longer be necessary
   if (fn->hasFlag(FLAG_BEGIN)                   == true &&
       formal->type->symbol->hasFlag(FLAG_RANGE) == true) {
     if (formal->intent == INTENT_BLANK ||
@@ -181,8 +182,9 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
-             (isUnion(formal->type)  == true||
-              isRecord(formal->type) == true)) {
+             (isUnion(formal->type)  == true ||
+               (isRecord(formal->type) == true &&
+                !formal->type->symbol->hasFlag(FLAG_RANGE)))) {
     retval = true;
 
   } else {
@@ -311,6 +313,14 @@ void resolveFunction(FnSymbol* fn) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
+      AggregateType* at = toAggregateType(fn->_this->getValType());
+      if (at->scalarPromotionType == NULL &&
+          at->symbol->hasFlag(FLAG_GENERIC) == false) {
+        resolvePromotionType(at);
+      }
+    }
 
     if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
@@ -721,7 +731,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      setScalarPromotionType(AggregateType* at);
 static void      fixTypeNames(AggregateType* at);
 static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
@@ -730,7 +739,10 @@ static FnSymbol* instantiateBase(FnSymbol* fn);
 static void resolveTypeConstructor(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->retType);
 
-  setScalarPromotionType(at);
+  if (at->scalarPromotionType == NULL &&
+      at->symbol->hasFlag(FLAG_REF) == false) {
+    resolvePromotionType(at);
+  }
 
   if (developer == false) {
     fixTypeNames(at);
@@ -777,14 +789,6 @@ static void resolveTypeConstructor(FnSymbol* fn) {
       block->remove();
 
       tmp->defPoint->remove();
-    }
-  }
-}
-
-static void setScalarPromotionType(AggregateType* at) {
-  for_fields(field, at) {
-    if (strcmp(field->name, "_promotionType") == 0) {
-      at->scalarPromotionType = field->type;
     }
   }
 }
@@ -1114,6 +1118,7 @@ void insertFormalTemps(FnSymbol* fn) {
 }
 
 // Returns true if the formal needs an internal temporary, false otherwise.
+// See also ArgSymbol::requiresCPtr
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
@@ -1132,7 +1137,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
       (backendRequiresCopyForIn(formal->type) ||
        fn->hasFlag(FLAG_INLINE) ||
        fn->hasFlag(FLAG_ITERATOR_FN)))
-     );
+    );
 }
 
 //
@@ -1141,7 +1146,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return isRecord(t)                     == true ||
+  return (isRecord(t) == true && !t->symbol->hasFlag(FLAG_RANGE)) ||
          isUnion(t)                      == true ||
          t->symbol->hasFlag(FLAG_ARRAY)  == true ||
          t->symbol->hasFlag(FLAG_DOMAIN) == true;
@@ -1612,3 +1617,4 @@ void ensureInMethodList(FnSymbol* fn) {
     }
   }
 }
+

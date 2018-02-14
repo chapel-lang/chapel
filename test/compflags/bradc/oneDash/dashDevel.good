@@ -1,1 +1,2 @@
-Extra characters after flag '-d': 'evel' (use 'h' for help)
+Unrecognized flag: '-d' (use '-h' for help)
+       Did you mean --devel ?

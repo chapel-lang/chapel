@@ -1,2 +1,0 @@
-# On certain machines, our GMP build will generate two invalid reads.
-CHPL_TEST_VGRND_EXE == on

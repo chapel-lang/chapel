@@ -55,7 +55,6 @@ static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 
 static bool        isConstructor(FnSymbol* fn);
-static bool        isInitMethod (FnSymbol* fn);
 
 static void        updateConstructor(FnSymbol* fn);
 static void        updateInitMethod (FnSymbol* fn);
@@ -113,6 +112,8 @@ static void        init_noinit_var(VarSymbol* var,
 
 static bool        moduleHonorsNoinit(Symbol* var, Expr* init);
 
+static void        insertPostInit(Symbol* var, CallExpr* anchor);
+
 static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
@@ -154,7 +155,7 @@ void normalize() {
       if (isConstructor(fn) == true) {
         updateConstructor(fn);
 
-      } else if (isInitMethod(fn) == true) {
+      } else if (fn->isInitializer() == true) {
         updateInitMethod(fn);
       }
     }
@@ -292,10 +293,12 @@ static void insertModuleInit() {
     //
     for_alist(stmt, mod->block->body) {
       if (stmt->isModuleDefinition() == false) {
-        if (FnSymbol* deinitFn = toModuleDeinitFn(mod, stmt))
+        if (FnSymbol* deinitFn = toModuleDeinitFn(mod, stmt)) {
           mod->deinitFn = deinitFn; // the rest is in handleModuleDeinitFn()
-        else
+
+        } else {
           mod->initFn->insertAtTail(stmt->remove());
+        }
       }
     }
 
@@ -311,48 +314,50 @@ static void insertModuleInit() {
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
   }
+
   USR_STOP();
 }
 
 static FnSymbol* toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt) {
-  if (DefExpr* def = toDefExpr(stmt))
-    if (FnSymbol* fn = toFnSymbol(def->sym))
-      // When we retire ~classname naming for deinits,
-      // we can replace this strcmp with a check for FLAG_DESTRUCTOR.
-      if (fn->name == astrDeinit)
+  FnSymbol* retval = NULL;
+
+  if (DefExpr* def = toDefExpr(stmt)) {
+    if (FnSymbol* fn = toFnSymbol(def->sym)) {
+      if (fn->name == astrDeinit) {
         if (fn->numFormals() == 0) {
-          if (mod->deinitFn) {
+          if (mod->deinitFn == NULL) {
+            retval = fn;
+
+          } else {
             // Already got one deinit() before.
             // We could allow multiple deinit() fns and merge their contents.
             // If so, beware of possible 'return' stmts in each.
             USR_FATAL_CONT(def,
-              "an additional module deinit() function is not allowed");
+                           "an additional module deinit() "
+                           "function is not allowed");
+
             USR_PRINT(mod->deinitFn,
-              "the first deinit() function is declared here");
-            // Let the duplicate play like an ordinary function until USR_STOP.
-            return NULL;
+                      "the first deinit() function is declared here");
           }
-
-        return fn;
         }
+      }
+    }
+  }
 
-  // Not a deinit.
-  return NULL;
+  return retval;
 }
 
 static void handleModuleDeinitFn(ModuleSymbol* mod) {
-  FnSymbol* deinitFn = mod->deinitFn;
-  if (!deinitFn)
-    // We could alternatively create an empty function here.
-    return;
-  if (deinitFn->hasFlag(FLAG_NO_PARENS))
-    USR_FATAL_CONT(deinitFn, "module deinit() functions must have parentheses");
+  if (FnSymbol* deinitFn = mod->deinitFn) {
+    if (deinitFn->hasFlag(FLAG_NO_PARENS) == true) {
+      USR_FATAL_CONT(deinitFn,
+                     "module deinit() functions must have parentheses");
+    }
 
-  deinitFn->name = astr("chpl__deinit_", mod->name);
-  deinitFn->removeFlag(FLAG_DESTRUCTOR);
-  // For now leave deinitFn->defPoint wherever the user put it.
+    deinitFn->name = astr("chpl__deinit_", mod->name);
+    deinitFn->removeFlag(FLAG_DESTRUCTOR);
+  }
 }
-
 
 /************************************* | **************************************
 *                                                                             *
@@ -368,21 +373,16 @@ static void handleModuleDeinitFn(ModuleSymbol* mod) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void transformLogicalShortCircuit()
-{
+static void transformLogicalShortCircuit() {
   std::set<Expr*>           stmts;
   std::set<Expr*>::iterator iter;
 
   // Collect the distinct stmts that contain logical AND/OR expressions
-  forv_Vec(CallExpr, call, gCallExprs)
-  {
-    if (call->primitive == 0)
-    {
-      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr))
-      {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->primitive == 0) {
+      if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
         if (strcmp(expr->unresolved, "&&") == 0 ||
-            strcmp(expr->unresolved, "||") == 0)
-        {
+            strcmp(expr->unresolved, "||") == 0) {
           stmts.insert(call->getStmtExpr());
         }
       }
@@ -397,8 +397,7 @@ static void transformLogicalShortCircuit()
   // scope has been wrapped around the do-while before we perform this
   // transform.
   //
-  for (iter = stmts.begin(); iter != stmts.end(); iter++)
-  {
+  for (iter = stmts.begin(); iter != stmts.end(); iter++) {
     Expr*                        stmt = *iter;
     TransformLogicalShortCircuit transform(stmt);
 
@@ -411,26 +410,37 @@ static void transformLogicalShortCircuit()
 //
 static void handleReduceAssign() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
-      SET_LINENO(call);
+    if (call->isPrimitive(PRIM_REDUCE_ASSIGN) == true) {
       INT_ASSERT(call->numActuals() == 2); // comes from the parser
+
+      SET_LINENO(call);
+
       int rOpIdx;
 
       // l.h.s. must be a single variable
       if (SymExpr* lhsSE = toSymExpr(call->get(1))) {
-        Symbol* lhsVar = lhsSE->symbol();
-        // ... which is mentioned in a with clause with a reduce intent
+        Symbol*     lhsVar      = lhsSE->symbol();
         ForallStmt* enclosingFS = enclosingForallStmt(call);
 
-        if (!enclosingFS)
-          USR_FATAL_CONT(call, "The reduce= operator must occur within a forall statement.");
-        else if ((rOpIdx = enclosingFS->reduceIntentIdx(lhsVar)) >= 0) {
+        if (enclosingFS == NULL) {
+          USR_FATAL_CONT(call,
+                         "The reduce= operator must occur within "
+                         "a forall statement.");
+
+        } else if ((rOpIdx = enclosingFS->reduceIntentIdx(lhsVar)) >= 0) {
           call->insertAtHead(new_IntSymbol(rOpIdx, INT_SIZE_64));
-        } else
-          USR_FATAL(lhsSE, "The l.h.s. of a reduce= operator, '%s', must be passed by a reduce intent into the nearest enclosing forall loop", lhsVar->name);
+
+        } else {
+          USR_FATAL(lhsSE,
+                    "The l.h.s. of a reduce= operator, '%s', "
+                    "must be passed by a reduce intent into the "
+                    "nearest enclosing forall loop",
+                    lhsVar->name);
+        }
 
       } else {
-        USR_FATAL(call->get(1), "The l.h.s. of a reduce= operator must be just a variable");
+        USR_FATAL(call->get(1),
+                  "The l.h.s. of a reduce= operator must be just a variable");
       }
     }
   }
@@ -456,12 +466,10 @@ static void insertCallTempsForRiSpecs(BaseAST* base) {
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
+*                                                                             *
 ************************************** | *************************************/
 
-// the following function is called from multiple places,
-// e.g., after generating default or wrapper functions
 static void normalizeBase(BaseAST* base) {
-
   //
   // Phase 0
   //
@@ -491,8 +499,10 @@ static void normalizeBase(BaseAST* base) {
     if (FnSymbol* fn = toFnSymbol(symbol)) {
       if (fn->isNormalized() == false) {
         normalizeReturns(fn);
-        if (fn->isIterator())
+
+        if (fn->isIterator() == true) {
           normalizeYields(fn);
+        }
       }
     }
   }
@@ -528,6 +538,7 @@ static void normalizeBase(BaseAST* base) {
       }
     }
   }
+
 
   //
   // Phase 4
@@ -716,32 +727,29 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void
-moveGlobalDeclarationsToModuleScope() {
+static void moveGlobalDeclarationsToModuleScope() {
   bool move = false;
+
   forv_Vec(ModuleSymbol, mod, allModules) {
     for_alist(expr, mod->initFn->body->body) {
       // If the last iteration set "move" to true, move this block to the end
       // of the module (see below).
-      if (move)
-      {
+      if (move == true) {
         INT_ASSERT(isBlockStmt(expr));
+
         mod->block->insertAtTail(expr->remove());
+
         move = false;
-        continue;
-      }
 
-      if (DefExpr* def = toDefExpr(expr)) {
-
+      } else if (DefExpr* def = toDefExpr(expr)) {
         // Non-temporary variable declarations are moved out to module scope.
-        if (VarSymbol* vs = toVarSymbol(def->sym))
-        {
+        if (VarSymbol* vs = toVarSymbol(def->sym)) {
           // Ignore compiler-inserted temporaries.
           // Only non-compiler-generated variables in the module init
           // function are moved out to module scope.
           //
           // Make an exception for references to array slices.
-          if (vs->hasFlag(FLAG_TEMP)) {
+          if (vs->hasFlag(FLAG_TEMP) == true) {
             // is this a call_tmp that is later stored in a ref variable?
             // if so, move the call_tmp to global scope as well. E.g.
             //   var MyArray:[1..20] int;
@@ -750,31 +758,36 @@ moveGlobalDeclarationsToModuleScope() {
             // Look for global = PRIM_ADDR_OF var
             //          global with flag FLAG_REF_VAR.
             bool refToTempInGlobal = false;
+
             for_SymbolSymExprs(se, vs) {
-              if (CallExpr* addrOf = toCallExpr(se->parentExpr))
-                if (addrOf->isPrimitive(PRIM_ADDR_OF))
-                  if (CallExpr* move = toCallExpr(addrOf->parentExpr))
-                    if (move->isPrimitive(PRIM_MOVE)) {
+              if (CallExpr* addrOf = toCallExpr(se->parentExpr)) {
+                if (addrOf->isPrimitive(PRIM_ADDR_OF) == true) {
+                  if (CallExpr* move = toCallExpr(addrOf->parentExpr)) {
+                    if (move->isPrimitive(PRIM_MOVE) == true) {
                       SymExpr* lhs = toSymExpr(move->get(1));
-                      if (lhs->symbol()->hasFlag(FLAG_REF_VAR))
+
+                      if (lhs->symbol()->hasFlag(FLAG_REF_VAR) == true) {
                         refToTempInGlobal = true;
+                      }
                     }
+                  }
+                }
+              }
             }
 
-            if (refToTempInGlobal == false)
+            if (refToTempInGlobal == false) {
               continue;
+            }
           }
 
           // If the var declaration is an extern, we want to move its
           // initializer block with it.
-          if (vs->hasFlag(FLAG_EXTERN))
-          {
-            BlockStmt* block = toBlockStmt(def->next);
-            if (block)
-            {
+          if (vs->hasFlag(FLAG_EXTERN) == true) {
+            if (BlockStmt* block = toBlockStmt(def->next)) {
               // Mark this as a type block, so it is removed later.
               // Casts are because C++ is lame.
               (unsigned&)(block->blockTag) |= (unsigned) BLOCK_TYPE_ONLY;
+
               // Set the flag, so we move it out to module scope.
               move = true;
             }
@@ -784,8 +797,7 @@ moveGlobalDeclarationsToModuleScope() {
         }
 
         // All type and function symbols are moved out to module scope.
-        if (isTypeSymbol(def->sym) || isFnSymbol(def->sym))
-        {
+        if (isTypeSymbol(def->sym) == true || isFnSymbol(def->sym) == true) {
           mod->block->insertAtTail(def->remove());
         }
       }
@@ -801,7 +813,7 @@ moveGlobalDeclarationsToModuleScope() {
 
 static void insertUseForExplicitModuleCalls() {
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && se->symbol() == gModuleToken) {
+    if (se->inTree() && se->symbol() == gModuleToken) {
       SET_LINENO(se);
 
       CallExpr*     call  = toCallExpr(se->parentExpr);
@@ -1407,12 +1419,14 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     newArg->insertAtHead(tmp);
     newArg->insertAtHead(gMethodToken);
 
+    // Add a call to postInit() if present
+    insertPostInit(tmp, newArg);
+
     // Move the tmp.init(args) expression to before the call
     stmt->insertBefore(newArg->remove());
 
     // Replace the degenerate new-expression with a use of the tmp variable
     call->replace(new SymExpr(tmp));
-
 
   // No.  The simple case
   } else {
@@ -1434,6 +1448,9 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   } else if (isDefExpr(parentExpr)                    == true) {
     retval = false;
 
+  } else if (isContextCallExpr(parentExpr)            == true) {
+    retval = false;
+
   } else if (stmt                                     == NULL) {
     retval = false;
 
@@ -1453,9 +1470,6 @@ static bool shouldInsertCallTemps(CallExpr* call) {
     retval = false;
 
   } else if (parentCall && parentCall->isPrimitive(PRIM_NEW))  {
-    retval = false;
-
-  } else if (isContextCallExpr(parentExpr)) {
     retval = false;
 
   } else {
@@ -1977,10 +1991,16 @@ static void normVarTypeInference(DefExpr* defExpr) {
     if (initCall->isPrimitive(PRIM_NEW) == true) {
       AggregateType* type = typeForNewExpr(initCall);
 
+      if (type != NULL) {
+        if (type->isGeneric()                     == false ||
+            isGenericRecordWithInitializers(type) == true) {
+          var->type = type;
+        }
+      }
+
       if (isRecordWithInitializers(type) == true) {
         Expr*     arg1     = initCall->get(1)->remove();
         CallExpr* argExpr  = toCallExpr(arg1);
-
         SymExpr*  modToken = NULL;
         SymExpr*  modValue = NULL;
 
@@ -2019,14 +2039,11 @@ static void normVarTypeInference(DefExpr* defExpr) {
           argExpr->insertAtHead(modToken);
         }
 
+        // Add a call to postInit() if present
+        insertPostInit(var, argExpr);
+
       } else {
         defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
-      }
-
-      if (type != NULL &&
-          (type->isGeneric()                     == false ||
-           isGenericRecordWithInitializers(type) == true)) {
-        var->type = type;
       }
 
     } else {
@@ -2086,9 +2103,14 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
-    defExpr->insertAfter(new CallExpr("init", gMethodToken, var));
+    CallExpr* init = new CallExpr("init", gMethodToken, var);
 
     var->type = type;
+
+    defExpr->insertAfter(init);
+
+    // Add a call to postInit() if present
+    insertPostInit(var, init);
 
   } else {
     VarSymbol* typeTemp = newTemp("type_tmp");
@@ -2138,8 +2160,15 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
+    var->type = type;
+
     if        (isSymExpr(initExpr) == true) {
-      defExpr->insertAfter(new CallExpr("init", gMethodToken, var, initExpr));
+      CallExpr* initCall = new CallExpr("init", gMethodToken, var, initExpr);
+
+      defExpr->insertAfter(initCall);
+
+      // Add a call to postInit() if present
+      insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
       defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
@@ -2157,9 +2186,10 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Add _mt and _this (insert at head in reverse order)
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
-    }
 
-    var->type = type;
+      // Add a call to postInit() if present
+      insertPostInit(var, argExpr);
+    }
 
   } else if (isNewExpr(initExpr) == true) {
     // This check is necessary because the "typeForTypeSpecifier"
@@ -2194,12 +2224,16 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
       argExpr->insertAtHead(gMethodToken);
 
+      // Add a call to postInit() if present
+      insertPostInit(initExprTemp, argExpr);
+
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
       // Assign the rhs into the lhs.
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
 
       argExpr->insertAfter(assign);
+
       // Move the result into the original variable.
       assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
 
@@ -2214,7 +2248,6 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       typeDefn->insertAfter(initMove);
       initMove->insertAfter(assign);
       assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
-
     }
 
   } else {
@@ -2299,6 +2332,20 @@ static void normVarNoinit(DefExpr* defExpr) {
   } else {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void insertPostInit(Symbol* var, CallExpr* anchor) {
+  AggregateType* at = toAggregateType(var->type);
+
+  if (at->hasPostInitializer() == true) {
+    anchor->insertAfter(new CallExpr("postInit", gMethodToken, var));
   }
 }
 
@@ -2967,18 +3014,6 @@ static bool isConstructor(FnSymbol* fn) {
       fn->getFormal(1)->type == dtMethodToken) {
 
     retval = strcmp(fn->name, fn->getFormal(2)->type->symbol->name) == 0;
-  }
-
-  return retval;
-}
-
-static bool isInitMethod(FnSymbol* fn) {
-  bool retval = false;
-
-  if (fn->numFormals()       >= 2 &&
-      fn->getFormal(1)->type == dtMethodToken) {
-
-    retval = strcmp(fn->name, "init") == 0;
   }
 
   return retval;

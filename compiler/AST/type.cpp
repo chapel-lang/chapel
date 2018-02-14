@@ -56,6 +56,10 @@ Type::~Type() {
 
 }
 
+const char* Type::name() const {
+  return symbol->name;
+}
+
 void Type::verify() {
 }
 

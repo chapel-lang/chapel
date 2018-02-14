@@ -106,7 +106,7 @@ class Symbol : public BaseAST {
 public:
   // Interface for BaseAST
   virtual GenRet     codegen();
-  virtual bool       inTree();
+          bool       inTree();
   virtual QualifiedType qualType();
   virtual void       verify();
 

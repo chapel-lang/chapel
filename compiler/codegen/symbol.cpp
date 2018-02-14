@@ -754,6 +754,7 @@ bool argMustUseCPtr(Type* type) {
   if (isUnion(type))
     return true;
   if (isRecord(type) &&
+      !type->symbol->hasFlag(FLAG_RANGE) &&
       // TODO: why are ref types being created with AGGREGATE_RECORD?
       !type->symbol->hasFlag(FLAG_REF) &&
       !type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))

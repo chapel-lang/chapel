@@ -35,7 +35,7 @@ ModuleSymbol*                      standardModule        = NULL;
 ModuleSymbol*                      printModuleInitModule = NULL;
 
 Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
-Vec<ModuleSymbol*>                 allModules;  // Contains all modules
+Vec<ModuleSymbol*>                 allModules;  // Contains all modules except rootModule
 
 static ModuleSymbol*               sMainModule           = NULL;
 static std::string                 sMainModuleName;
@@ -213,8 +213,6 @@ ModuleSymbol::ModuleSymbol(const char* iName,
   doc                 = NULL;
   extern_info         = NULL;
   llvmDINameSpace     = NULL;
-
-  block->parentSymbol = this;
 
   registerModule(this);
 
@@ -695,6 +693,7 @@ void initRootModule() {
                                           new BlockStmt());
 
   rootModule->filename = astr("<internal>");
+  rootModule->block->parentSymbol = rootModule;
 }
 
 void initStringLiteralModule() {

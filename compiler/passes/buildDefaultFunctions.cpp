@@ -148,9 +148,7 @@ static void buildFieldAccessorFunctions(AggregateType* at) {
   for_fields(field, at) {
     if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (isVarSymbol(field)) {
-        if (strcmp(field->name, "_promotionType")) {
-          build_accessors(at, field);
-        }
+        build_accessors(at, field);
       } else if (isEnumType(field->type)) {
         build_accessors(at, field);
       }
@@ -679,11 +677,9 @@ static void build_record_equality_function(AggregateType* ct) {
   fn->retType = dtBool;
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      if (strcmp(tmp->name, "_promotionType")) {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
-      }
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
@@ -709,12 +705,10 @@ static void build_record_inequality_function(AggregateType* ct) {
   fn->retType = dtBool;
   for_fields(tmp, ct) {
     if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      if (strcmp(tmp->name, "_promotionType")) {
-        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-        fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right),
-                                      new CallExpr(PRIM_RETURN, gTrue)));
-      }
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right),
+                                    new CallExpr(PRIM_RETURN, gTrue)));
     }
   }
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
@@ -1013,8 +1007,7 @@ static void build_record_assignment_function(AggregateType* ct) {
     for_fields(tmp, ct) {
       if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
         if (!tmp->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !tmp->isParameter()               &&
-            strcmp(tmp->name, "_promotionType"))
+            !tmp->isParameter())
           fn->insertAtTail(new CallExpr("=",
                                         new CallExpr(".", arg1, new_CStringSymbol(tmp->name)),
                                         new CallExpr(".", arg2, new_CStringSymbol(tmp->name))));
@@ -1235,12 +1228,6 @@ static void build_record_copy_function(AggregateType* ct) {
     for_fields(tmp, ct) {
       // Weed out implicit alias and promotion type fields.
       if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-        continue;
-      }
-
-      // TODO: This needs to be done uniformly, using an ignore_field
-      // flag or...
-      if (strcmp("_promotionType", tmp->name) == 0) {
         continue;
       }
 

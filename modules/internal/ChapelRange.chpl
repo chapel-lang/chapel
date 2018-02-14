@@ -95,13 +95,13 @@ module ChapelRange {
   config param useOptimizedRangeIterators = true;
 
   /*
-    The BoundedRangeType enum is used to specify the types of bounds a range
-    is required to have.
+    The ``BoundedRangeType`` enum is used to specify the types of bounds a
+    range is required to have.
 
-    * bounded - The range has finite low and high bounds.
-    * boundedLow - The range starts at a given low bound, but conceptually goes up to infinity.
-    * boundedHigh - The range conceptually starts at negative infinity and ends at a given high bound.
-    * boundedNone - The range conceptually runs from negative infinity to infinity.
+    * ``bounded`` - The range has finite low and high bounds.
+    * ``boundedLow`` - The range starts at a given low bound, but conceptually goes up to infinity.
+    * ``boundedHigh`` - The range conceptually starts at negative infinity and ends at a given high bound.
+    * ``boundedNone`` - The range conceptually runs from negative infinity to infinity.
    */
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
@@ -150,11 +150,10 @@ module ChapelRange {
 
     proc strType type  return indexToStrideType(idxType);
 
-    // TODO: hilde 2011/03/31
-    // This should be a pragma and not a var declaration.
-    var _promotionType: idxType;                   // enables promotion
+    proc chpl__promotionType() type {
+      return idxType;
+    }
 
-    inline proc size return this.length;
   }
 
   //################################################################################
@@ -364,11 +363,17 @@ module ChapelRange {
       return isBoundedRange(this) && this.alignedLow > this.alignedHigh;
   }
 
+
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
-     and the low and high bounds differ by more than max(idxType).
+     and the low and high bounds differ by more than ``max(idxType)``.
    */
+  inline proc range.size: idxType {
+    return this.length;
+  }
+
+  /* Returns :proc:`range.size`.  */
   proc range.length: idxType
   {
     if ! isBoundedRange(this) then
@@ -558,8 +563,8 @@ module ChapelRange {
   proc !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
   /* Returns true if the two ranges are the same in every respect: i.e. the
-     two ranges have the same idxType, boundedType, stridable, low, high,
-     stride and alignment values.
+     two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
+     ``low``, ``high``, ``stride`` and ``alignment`` values.
    */
   proc ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
@@ -675,7 +680,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Moves the low bound of the range up to the next alignment point.
   pragma "no doc"
-  /* private */ proc range.alignLow()
+  /* private */ proc ref range.alignLow()
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignLow -- Cannot be applied to a range with ambiguous alignment.");
@@ -686,7 +691,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Moves the high bound of the range down to the next alignment point.
   pragma "no doc"
-  /* private */ proc range.alignHigh()
+  /* private */ proc ref range.alignHigh()
   {
     if this.isAmbiguous() then
       __primitive("chpl_error", c"alignHigh -- Cannot be applied to a range with ambiguous alignment.");
@@ -2064,7 +2069,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // Write implementation for ranges
   pragma "no doc"
-  proc range.readWriteThis(f)
+  proc range.writeThis(f)
   {
     // a range with a more normalized alignment
     // a separate variable so 'this' can be const
@@ -2083,29 +2088,39 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
-    if f.writing {
-      if ! alignCheckRange.isNaturallyAligned() && aligned then
-        f <~> new ioLiteral(" align ") <~> chpl__mod(alignment, stride);
-    } else {
-      // try reading an 'align'
-      if !f.error() {
-        f <~> new ioLiteral(" align ");
-        if f.error() == EFORMAT then {
-          // naturally aligned.
-          f.clearError();
+    if ! alignCheckRange.isNaturallyAligned() && aligned then
+      f <~> new ioLiteral(" align ") <~> chpl__mod(alignment, stride);
+  }
+  pragma "no doc"
+  proc ref range.readThis(f)
+  {
+    if hasLowBound() then
+      f <~> _low;
+    f <~> new ioLiteral("..");
+    if hasHighBound() then
+      f <~> _high;
+    if stride != 1 then
+      f <~> new ioLiteral(" by ") <~> stride;
+
+    // try reading an 'align'
+    if !f.error() {
+      f <~> new ioLiteral(" align ");
+      if f.error() == EFORMAT then {
+        // naturally aligned.
+        f.clearError();
+      } else {
+        if stridable {
+          // un-naturally aligned - read the un-natural alignment
+          var a: idxType;
+          f <~> a;
+          _alignment = a;
         } else {
-          if stridable {
-            // un-naturally aligned - read the un-natural alignment
-            var a: idxType;
-            f <~> a;
-            _alignment = a;
-          } else {
-            halt("Trying to read an aligned range value into a non-stridable array");
-          }
+          halt("Trying to read an aligned range value into a non-stridable array");
         }
       }
     }
   }
+
 
   //################################################################################
   //# Internal helper functions.

@@ -18,6 +18,7 @@ paratest.server options can be passed as additional command-line arguments
 
 from __future__ import print_function
 
+import datetime
 import os.path
 import sys
 import timeit
@@ -171,8 +172,24 @@ def run_paratest(args):
     print('paratest took {0} minutes and {1} seconds'.format(minutes, seconds))
 
 
+def running_during_nightly():
+    """
+    Check if running when nightly has exclusive access (11:30 - ~2:30 PST)
+    Note that chapcs is in CST, and this script can only be run on chapcs, so
+    don't bother adjusting for timezones
+    """
+    nightly_start_exclusive = datetime.time(1, 30, 0)
+    nightly_end_exclusive = datetime.time(4, 30, 0)
+    now = datetime.datetime.now().time()
+    return nightly_start_exclusive <= now <= nightly_end_exclusive
+
+
 def main(paratest_args):
     """ Just run paratest with the user's args """
+    if running_during_nightly():
+        print('Please avoid running when nightly has exclusive access')
+        exit(1)
+
     run_paratest(paratest_args)
 
 

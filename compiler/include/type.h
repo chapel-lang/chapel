@@ -62,7 +62,7 @@ public:
 
   // Interface for BaseAST
   virtual GenRet         codegen();
-  virtual bool           inTree();
+          bool           inTree();
   virtual QualifiedType  qualType();
   virtual void           verify();
 
@@ -75,6 +75,8 @@ public:
                                           const char* baseoffset);
 
   virtual Symbol*        getField(const char* name, bool fatal = true)   const;
+
+  const char*            name()                                          const;
 
   void                   addSymbol(TypeSymbol* newSymbol);
 

@@ -10,7 +10,7 @@ class C {
     yield z;
   }
 
-  var _promotionType: int;
+  proc chpl__promotionType() type return int;
 }
 
 var myC = new C();

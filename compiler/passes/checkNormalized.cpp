@@ -64,8 +64,7 @@ static void checkFunctionSignatures() {
 
 static void checkPrimNew() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol          != NULL &&
-        call->isPrimitive(PRIM_NEW) == true) {
+    if (call->inTree() &&  call->isPrimitive(PRIM_NEW)) {
 
       if (call->numActuals() >= 1) {
         Expr*    arg1     = call->get(1);

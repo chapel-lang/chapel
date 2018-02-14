@@ -41,7 +41,7 @@ public:
   };
 
 
-                  InitNormalize(FnSymbol*  fn);
+                  InitNormalize(FnSymbol*   fn);
                   InitNormalize(BlockStmt*  block, const InitNormalize& curr);
                   InitNormalize(LoopStmt*   loop,  const InitNormalize& curr);
                   InitNormalize(ForallStmt* loop,  const InitNormalize& curr);
@@ -52,10 +52,6 @@ public:
   AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
 
-  bool            isRecord()                                             const;
-  bool            isClass()                                              const;
-  bool            isExtern()                                             const;
-
   InitPhase       currPhase()                                            const;
 
   InitPhase       startPhase(BlockStmt* block)                           const;
@@ -65,8 +61,10 @@ public:
 
   void            checkPhase(BlockStmt* block);
 
-  Expr*           completePhase1(Expr* insertBefore);
-  void            initializeFieldsBefore(Expr* insertBefore);
+  void            completePhase1(CallExpr* insertBefore);
+
+  void            initializeFieldsAtTail(BlockStmt* block);
+  void            initializeFieldsBefore(Expr*      insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            inLoopBody()                                           const;
@@ -157,8 +155,6 @@ private:
   DefExpr*        toSuperField(SymExpr* expr)                            const;
 
   DefExpr*        toSuperField(AggregateType* at, const char* name)      const;
-
-  void            transformSuperInit(Expr* initStmt);
 
   const char*     phaseToString(InitPhase phase)                         const;
 

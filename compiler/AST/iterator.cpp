@@ -1406,7 +1406,7 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   // calls for PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL
   std::map<Symbol*, std::vector<CallExpr*> > formalToPrimMap;
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+    if (call->inTree() && call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
       AggregateType* ir = toAggregateType(toArgSymbol((toSymExpr(call->get(1))->symbol()))->type);
       if (ii->irecord == ir) {
         Symbol* formal = toSymExpr(call->get(2))->symbol();

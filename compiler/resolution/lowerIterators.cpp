@@ -424,7 +424,7 @@ fragmentLocalBlocks() {
     // NOAKES 2014/11/25 Transitional.  Avoid calling blockInfoGet() on loops
     if (block->isLoopStmt() == true) {
 
-    } else if (block->parentSymbol &&
+    } else if (block->inTree()       &&
                block->blockInfoGet() &&
                block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL) &&
                !leaveLocalBlockUnfragmented(block)) {
@@ -587,7 +587,7 @@ replaceIteratorFormals(FnSymbol* iterator, Symbol* ic,
     if (throws)
       replaceErrorFormalWithEnclosingError(se);
     // if se was not replaced by the above call...
-    if (se->parentSymbol != NULL)
+    if (se->inTree())
       replaceIteratorFormalsWithIteratorFields(iterator, ic, se);
   }
 }
@@ -2129,7 +2129,7 @@ static void
 inlineIterators() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     // Skip blocks that are no longer in the tree.
-    if (block->parentSymbol == NULL)
+    if (!block->inTree())
       continue;
 
     if (ForLoop* forLoop = toForLoop(block)) {
@@ -2153,7 +2153,7 @@ static void fixNumericalGetMemberPrims()
   // fix GET_MEMBER primitives that access fields of an iterator class
   // via a number
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol && call->isPrimitive(PRIM_GET_MEMBER)) {
+    if (call->inTree() && call->isPrimitive(PRIM_GET_MEMBER)) {
       AggregateType* ct = toAggregateType(call->get(1)->getValType());
       int64_t num;
       if (get_int(call->get(2), &num)) {
@@ -2228,7 +2228,7 @@ static void handlePolymorphicIterators()
 {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     // Find iterator functions that are not in the AST tree.
-    if (fn->defPoint->parentSymbol &&
+    if (fn->inTree()     &&
         fn->iteratorInfo &&
         !fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
       // Assert that the getIterator() function *is* in the tree.

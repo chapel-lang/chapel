@@ -564,11 +564,17 @@ void considerExitingEndOfPass() {
 
 
 static void handleInterrupt(int sig) {
-  USR_FATAL("received interrupt");
+  stopCatchingSignals();
+  fprintf(stderr, "error: received interrupt\n");
+  fflush(stdout);
+  fflush(stderr);
+
+  clean_exit(1);
 }
 
 
 static void handleSegFault(int sig) {
+  stopCatchingSignals();
   INT_FATAL("seg fault");
 }
 
@@ -583,6 +589,8 @@ void startCatchingSignals() {
 
 void stopCatchingSignals() {
   signal(SIGINT,  SIG_DFL);
+  signal(SIGTERM, SIG_DFL);
+  signal(SIGHUP,  SIG_DFL);
   signal(SIGSEGV, SIG_DFL);
 }
 

@@ -58,7 +58,7 @@ void codegenStmt(Expr* stmt) {
       // Adjust the current line number, but leave the scope alone.
       llvm::MDNode* scope;
 
-      if(stmt->parentSymbol && stmt->parentSymbol->astTag == E_FnSymbol) {
+      if(stmt->inTree() && stmt->parentSymbol->astTag == E_FnSymbol) {
         scope = debug_info->get_function((FnSymbol *)stmt->parentSymbol);
       } else {
         scope = info->irBuilder->getCurrentDebugLocation().getScope();

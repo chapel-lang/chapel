@@ -293,7 +293,7 @@ void Expr::verifyParent(const Expr* child) {
 
 bool Expr::inTree() {
   if (parentSymbol)
-    return parentSymbol->inTree();
+    return true;
   else
     return false;
 }
@@ -535,7 +535,7 @@ void SymExpr::verify() {
     INT_FATAL(this, "SymExpr::verify %12d: var is NULL", id);
 
   if (var->defPoint) {
-    if (var->defPoint->parentSymbol == NULL)
+    if (!var->defPoint->inTree())
       INT_FATAL(this, "SymExpr::verify %12d:  var->defPoint is not in AST", id);
   } else {
     if (var != rootModule)
