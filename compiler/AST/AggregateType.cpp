@@ -1932,8 +1932,8 @@ bool AggregateType::needsConstructor() {
       }
     }
   }
-  // Otherwise, we don't need a default constructor.
-  return false;
+  // Otherwise, we need a default constructor.
+  return true;
 }
 
 bool AggregateType::parentDefinesInitializer() const {
