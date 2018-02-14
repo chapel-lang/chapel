@@ -268,7 +268,7 @@ class ``GlobalDomain``
 
    ::
 
-     $CHPL_HOME/examples/primers/leaderfollower.chpl
+     $CHPL_HOME/examples/primers/parIters.chpl
 
   The job of the leader iterator is to:
 

@@ -3,7 +3,7 @@
 /*
 
   This primer covers the use of chpldoc to document source code. For further
-  information, please see $CHPL_HOME/doc/rst/technotes/chpldoc.rst
+  information, please see $CHPL_HOME/doc/rst/tools/chpldoc/chpldoc.rst
 
 */
 
