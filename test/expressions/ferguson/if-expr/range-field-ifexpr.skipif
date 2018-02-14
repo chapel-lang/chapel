@@ -1,0 +1,2 @@
+# returns pointer to local argument, skip everywhere except valgrind
+CHPL_TEST_VGRND_EXE!=on
