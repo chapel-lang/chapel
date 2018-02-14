@@ -238,7 +238,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("}"); // newline is coming
       else
         printf("}\n");
-      if (isForallLoopBody(expr)) {
+      if (isForallLoopBody(expr) && parentAst != NULL) {
         print_indent(indent);
         printf("        end forall %d", parentAst->id);
       }

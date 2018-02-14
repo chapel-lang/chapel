@@ -1009,14 +1009,12 @@ bool ShadowVarSymbol::isConstant() const {
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
+    case TFI_IN_OVAR:
     case TFI_REDUCE_OP:
       return true;
     case TFI_IN:
     case TFI_REF:
     case TFI_REDUCE:
-      return false;
-    case TFI_IN_OVAR:
-      INT_ASSERT(false); // this should be queried
       return false;
   }
   return false; // dummy
