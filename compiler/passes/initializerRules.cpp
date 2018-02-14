@@ -58,8 +58,6 @@ static bool     isSymbolThis(Expr* expr);
 static bool     hasInit(BlockStmt* block);
 static void     addSuperInit(FnSymbol* fn);
 
-static bool     hasInitDone(BlockStmt* block);
-
 /************************************* | **************************************
 *                                                                             *
 * Attempt to assign a type to the symbol for each field in some of the        *
@@ -1244,7 +1242,13 @@ static void addSuperInit(FnSymbol* fn) {
   body->insertAtHead(new DefExpr(tmp));
 }
 
-static bool hasInitDone(BlockStmt* block) {
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool hasInitDone(BlockStmt* block) {
   Expr* stmt   = block->body.head;
   bool  retval = false;
 
