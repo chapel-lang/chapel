@@ -1009,7 +1009,13 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
     } else if (DefExpr* field = toSuperField(symExpr)) {
       bool initNew = hasInitDone(mFn->body);
 
-      if (initNew == false) {
+      if (initNew == true) {
+        SymExpr* _this = new SymExpr(mFn->_this);
+        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+
+      } else {
         USR_FATAL(expr,
                   "Cannot access parent field '%s' during phase 1",
                   field->sym->name);
