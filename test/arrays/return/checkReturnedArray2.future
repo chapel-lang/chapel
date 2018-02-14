@@ -1,0 +1,11 @@
+bug: returned array expressions not checked against return type's domain
+
+At present, when a function declares an array return type, we don't
+check that an array of the specified type (in this case, of the right
+size) is returned.  This seems incorrect and likely to cause user
+confusion.
+
+A question about tests like this is whether the domain named in the
+formal signature must literally be the same domain as the returned
+expression, or merely have the same indices; and would we want to do
+different things here for anonymous vs. named domains.
