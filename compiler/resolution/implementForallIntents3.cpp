@@ -796,8 +796,6 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
   }
 
-  map.put(parIdxVar(pfs), NULL); // reserve a slot
-
   // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
 
@@ -952,7 +950,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
   expandTopLevel(&outerVis, iwrap, ibody);
-  map.put(parIdxVar(fs), NULL);  // reserve a slot
   outerVis.parentVis = parentVis;
 
   // Traverse recursively.
