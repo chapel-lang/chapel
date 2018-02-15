@@ -662,8 +662,8 @@ sub main {
 
     # Check for a compatible valgrind configuration
     if ($valgrind > 0) {
-      $tasks = `../util/chplenv/chpl_tasks.py`; chomp $tasks;
-      $mem = `../util/chplenv/chpl_mem.py`; chomp $mem;
+      $tasks = `$ENV{CHPL_HOME}/util/chplenv/chpl_tasks.py`; chomp $tasks;
+      $mem = `$ENV{CHPL_HOME}/util/chplenv/chpl_mem.py`; chomp $mem;
 
       if ($tasks ne "fifo") {
         die "Error: valgrind requires tasks=fifo - try quickstart";
