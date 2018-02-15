@@ -1519,13 +1519,13 @@ module String {
 
   // Concatenation with other types is done by casting to string
   private inline proc concatHelp(s: string, x:?t) where t != string {
-    var cs = x:string;
+    var cs = try! x:string;
     const ret = s + cs;
     return ret;
   }
 
   private inline proc concatHelp(x:?t, s: string) where t != string  {
-    var cs = x:string;
+    var cs = try! x:string;
     const ret = cs + s;
     return ret;
   }

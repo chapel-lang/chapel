@@ -43,29 +43,34 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t, x: string) where isBoolType(t) throws {
+  proc _cast(type t, x: string) throws where isBoolType(t) {
     var str = x.strip();
     if str.isEmptyString() {
-      throw new IllegalArgumentError("Empty string when converting from string to bool");
-      return false;
+      throw new IllegalArgumentError("string", "Empty string when converting from string to bool");
     } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
     } else {
-      throw new IllegalArgumentError("Unexpected value when converting from string to bool: '"+x+"'");
+      throw new IllegalArgumentError("string", "Unexpected value when converting from string to bool: '"+x+"'");
     }
+    return false;
   }
 
   //
   // int
   //
-  proc _cast(type t, x: integral) where t == string {
+  proc _cast(type t, x: integral) throws where t == string {
     //TODO: switch to using qio's writef somehow
-    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool) : c_string;
+    extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: c_string) : c_string;
     extern proc strlen(const str: c_string) : size_t;
 
-    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type));
+    var err_str: c_string;
+    var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), err_str);
+
+    var err_str_cast = err_str:string;
+    if !err_str_cast.isEmptyString() then
+      throw new IllegalArgumentError("integral", err_str_cast);
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
@@ -75,43 +80,52 @@ module StringCasts {
     return ret;
   }
 
-  inline proc _cast(type t, x: string) where isIntegralType(t) {
+  inline proc _cast(type t, x: string) throws where isIntegralType(t) {
     //TODO: switch to using qio's readf somehow
     pragma "insert line file info"
-    extern proc c_string_to_int8_t  (x:c_string) : int(8);
+    extern proc c_string_to_int8_t  (x:c_string, ref err:c_string) : int(8);
     pragma "insert line file info"
-    extern proc c_string_to_int16_t (x:c_string) : int(16);
+    extern proc c_string_to_int16_t (x:c_string, ref err:c_string) : int(16);
     pragma "insert line file info"
-    extern proc c_string_to_int32_t (x:c_string) : int(32);
+    extern proc c_string_to_int32_t (x:c_string, ref err:c_string) : int(32);
     pragma "insert line file info"
-    extern proc c_string_to_int64_t (x:c_string) : int(64);
+    extern proc c_string_to_int64_t (x:c_string, ref err:c_string) : int(64);
     pragma "insert line file info"
-    extern proc c_string_to_uint8_t (x:c_string) : uint(8);
+    extern proc c_string_to_uint8_t (x:c_string, ref err:c_string) : uint(8);
     pragma "insert line file info"
-    extern proc c_string_to_uint16_t(x:c_string) : uint(16);
+    extern proc c_string_to_uint16_t(x:c_string, ref err:c_string) : uint(16);
     pragma "insert line file info"
-    extern proc c_string_to_uint32_t(x:c_string) : uint(32);
+    extern proc c_string_to_uint32_t(x:c_string, ref err:c_string) : uint(32);
     pragma "insert line file info"
-    extern proc c_string_to_uint64_t(x:c_string) : uint(64);
+    extern proc c_string_to_uint64_t(x:c_string, ref err:c_string) : uint(64);
 
+    var retVal: t;
+    var err_str: c_string;
     const localX = x.localize();
+
     if isIntType(t) {
       select numBits(t) {
-        when 8  do return c_string_to_int8_t(localX.c_str());
-        when 16 do return c_string_to_int16_t(localX.c_str());
-        when 32 do return c_string_to_int32_t(localX.c_str());
-        when 64 do return c_string_to_int64_t(localX.c_str());
+        when 8  do retVal = c_string_to_int8_t(localX.c_str(), err_str);
+        when 16 do retVal = c_string_to_int16_t(localX.c_str(), err_str);
+        when 32 do retVal = c_string_to_int32_t(localX.c_str(), err_str);
+        when 64 do retVal = c_string_to_int64_t(localX.c_str(), err_str);
         otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
     } else {
       select numBits(t) {
-        when 8  do return c_string_to_uint8_t(localX.c_str());
-        when 16 do return c_string_to_uint16_t(localX.c_str());
-        when 32 do return c_string_to_uint32_t(localX.c_str());
-        when 64 do return c_string_to_uint64_t(localX.c_str());
+        when 8  do retVal = c_string_to_uint8_t(localX.c_str(), err_str);
+        when 16 do retVal = c_string_to_uint16_t(localX.c_str(), err_str);
+        when 32 do retVal = c_string_to_uint32_t(localX.c_str(), err_str);
+        when 64 do retVal = c_string_to_uint64_t(localX.c_str(), err_str);
         otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
     }
+
+    var err_str_cast = err_str:string;
+    if !err_str_cast.isEmptyString() then
+      throw new IllegalArgumentError("string", err_str_cast);
+
+    return retVal;
   }
 
   //
@@ -144,32 +158,50 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cast(type t, x: string) where isRealType(t) {
+  inline proc _cast(type t, x: string) throws where isRealType(t) {
     pragma "insert line file info"
-    extern proc c_string_to_real32(x: c_string) : real(32);
+    extern proc c_string_to_real32(x: c_string, ref err: c_string) : real(32);
     pragma "insert line file info"
-    extern proc c_string_to_real64(x: c_string) : real(64);
+    extern proc c_string_to_real64(x: c_string, ref err: c_string) : real(64);
 
+    var retVal: t;
+    var err_str: c_string;
     const localX = x.localize();
+
     select numBits(t) {
-      when 32 do return c_string_to_real32(localX.c_str());
-      when 64 do return c_string_to_real64(localX.c_str());
+      when 32 do retVal = c_string_to_real32(localX.c_str(), err_str);
+      when 64 do retVal = c_string_to_real64(localX.c_str(), err_str);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    var err_str_cast = err_str:string;
+    if !err_str_cast.isEmptyString() then
+      throw new IllegalArgumentError("string", err_str_cast);
+
+    return retVal;
   }
 
-  inline proc _cast(type t, x: string) where isImagType(t) {
+  inline proc _cast(type t, x: string) throws where isImagType(t) {
     pragma "insert line file info"
-    extern proc c_string_to_imag32(x: c_string) : imag(32);
+    extern proc c_string_to_imag32(x: c_string, ref err: c_string) : imag(32);
     pragma "insert line file info"
-    extern proc c_string_to_imag64(x: c_string) : imag(64);
+    extern proc c_string_to_imag64(x: c_string, ref err: c_string) : imag(64);
 
+    var retVal: t;
+    var err_str: c_string;
     const localX = x.localize();
+
     select numBits(t) {
-      when 32 do return c_string_to_imag32(localX.c_str());
-      when 64 do return c_string_to_imag64(localX.c_str());
+      when 32 do retVal = c_string_to_imag32(localX.c_str(), err_str);
+      when 64 do retVal = c_string_to_imag64(localX.c_str(), err_str);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    var err_str_cast = err_str:string;
+    if !err_str_cast.isEmptyString() then
+      throw new IllegalArgumentError("string", err_str_cast);
+
+    return retVal;
   }
 
 
@@ -199,18 +231,27 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t, x: string) where isComplexType(t) {
+  inline proc _cast(type t, x: string) throws where isComplexType(t) {
     pragma "insert line file info"
-    extern proc c_string_to_complex64(x:c_string) : complex(64);
+    extern proc c_string_to_complex64(x:c_string, ref err: c_string) : complex(64);
     pragma "insert line file info"
-    extern proc c_string_to_complex128(x:c_string) : complex(128);
+    extern proc c_string_to_complex128(x:c_string, ref err: c_string) : complex(128);
 
+    var retVal: t;
+    var err_str: c_string;
     const localX = x.localize();
+
     select numBits(t) {
-      when 64 do return c_string_to_complex64(localX.c_str());
-      when 128 do return c_string_to_complex128(localX.c_str());
+      when 64 do retVal = c_string_to_complex64(localX.c_str(), err_str);
+      when 128 do retVal = c_string_to_complex128(localX.c_str(), err_str);
       otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
     }
+
+    var err_str_cast = err_str:string;
+    if !err_str_cast.isEmptyString() then
+      throw new IllegalArgumentError("string", err_str_cast);
+
+    return retVal;
   }
 
   // Catch all cast anything -> string is in ChapelIO

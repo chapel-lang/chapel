@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -132,16 +132,14 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-chpl_bool c_string_to_chpl_bool(c_string str, int lineno, int32_t filename) {
+chpl_bool c_string_to_chpl_bool(c_string str, c_string* err, int lineno, int32_t filename) {
   if (string_compare(str, "true") == 0) {
     return true;
   } else if (string_compare(str, "false") == 0) {
     return false;
   } else {
-    const char* message = 
-      chpl_glom_strings(3, "Unexpected value when converting from string to bool: '",
-                        str, "'");
-    chpl_error(message, lineno, filename);
+    *err = chpl_glom_strings(3, "Unexpected value when converting from string to bool: '",
+                             str, "'");
     return false;
   }
 }
@@ -311,8 +309,8 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_int_type(base, width)                             \
-  _type(base, width) c_string_to_##base##width##_t(c_string str, int lineno, \
-                                                   int32_t filename) {   \
+  _type(base, width) c_string_to_##base##width##_t(c_string str, c_string* err,\
+                                                   int lineno, int32_t filename) { \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
     _type(base, width) val = 0;                                         \
@@ -325,19 +323,17 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
     }                                                                   \
                                                                         \
     if (invalid) {                                                      \
-      const char* message;                                              \
       if (invalid == 2) {                                               \
         if (invalidStr[0] == '\0') {                                    \
-          message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
+          *err = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
         } else {                                                        \
-          message = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+          *err = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
         }                                                               \
       } else if (invalidStr[0]) {                                       \
-        message = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+        *err = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
       } else {                                                          \
-        message = "Empty string when converting from string to " #base "(" #width ")"; \
+        *err = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      chpl_error(message, lineno, filename);                           \
     }                                                                   \
     return val;                                                         \
   }
@@ -352,8 +348,8 @@ _define_string_to_int_type(uint, 32)
 _define_string_to_int_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
-  _##base##width c_string_to_##base##width(c_string str, int lineno,    \
-                                           int32_t filename) {         \
+  _##base##width c_string_to_##base##width(c_string str, c_string* err, \
+                                           int lineno, int32_t filename) { \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
     _##base##width val = 0.0;                                           \
@@ -365,19 +361,17 @@ _define_string_to_int_type(uint, 64)
                                                 invalidStr);            \
     }                                                                   \
     if (invalid) {                                                      \
-      const char* message;                                              \
       if (invalid == 2) {                                               \
         if (invalidStr[0] == '\0') {                                    \
-          message = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
+          *err = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
         } else {                                                        \
-          message = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
+          *err = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
         }                                                               \
       } else if (invalidStr[0]) {                                       \
-        message = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
+        *err = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
       } else {                                                          \
-        message = "Empty string when converting from string to " #base "(" #width ")"; \
+        *err = "Empty string when converting from string to " #base "(" #width ")"; \
       }                                                                 \
-      chpl_error(message, lineno, filename);                            \
     }                                                                   \
     return val;                                                         \
   }
@@ -391,7 +385,7 @@ _define_string_to_real_type(complex, 128)
 
 
 c_string
-integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned)
+integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, c_string* err)
 {
   char buffer[256];
   const char* format = "";
@@ -399,7 +393,7 @@ integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned)
   switch (SIGNED * isSigned + size)
   {
    default:
-    chpl_error("Unexpected case in integral_to_c_string", -1, 0);
+    *err = "Unexpected case in integral_to_c_string";
     break;
 
    case UNSIGNED + 1: format = "%" PRIu8;  break;

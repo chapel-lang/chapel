@@ -3437,7 +3437,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
 
   for param i in 1..tup.size {
     if i != 1 then str += ", ";
-    str += tup[i]:string;
+    str += try! tup[i]:string;
   }
 
  str += ")";
@@ -3469,7 +3469,7 @@ proc stringify(const args ...?k):string {
         str += args[i]:string;
       } else if isRangeType(args[i].type) ||
                 isPrimitiveType(args[i].type) {
-        str += args[i]:string;
+        str += try! args[i]:string;
       } else if isTupleType(args[i].type) {
         str += _stringify_tuple(args[i]);
       }
