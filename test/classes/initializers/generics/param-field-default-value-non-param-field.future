@@ -1,0 +1,2 @@
+bug: compiler segfault on class param field w/default value from non-param field
+#8443
