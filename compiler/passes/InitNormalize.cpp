@@ -996,9 +996,9 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
     if (DefExpr* field = toLocalField(symExpr)) {
       if (isFieldInitialized(field) == true) {
         SymExpr* _this = new SymExpr(mFn->_this);
-        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+        SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
 
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, name));
 
       } else {
         USR_FATAL(expr,
@@ -1011,9 +1011,15 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
 
       if (initNew == true) {
         SymExpr* _this = new SymExpr(mFn->_this);
-        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+        SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
 
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+        if (field->sym->hasFlag(FLAG_PARAM)         == true ||
+            field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, name));
+
+        } else {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER,       _this, name));
+        }
 
       } else {
         USR_FATAL(expr,
@@ -1031,7 +1037,7 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
     }
 
-  } else if (isNamedExpr(expr) == true) {
+  } else if (isNamedExpr(expr)         == true) {
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 
