@@ -4790,7 +4790,7 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
   if (SymExpr* symExpr = toSymExpr(expr)) {
     Symbol* sym = symExpr->symbol();
     SymExpr* _this = new SymExpr(fn->_this);
-    AggregateType* _thisType = toAggregateType(_this->symbol()->type);
+    AggregateType* _thisType = toAggregateType(_this->symbol()->getValType());
     INT_ASSERT(_thisType);
 
     if (DefExpr* fieldDef = _thisType->toLocalField(symExpr)) {
