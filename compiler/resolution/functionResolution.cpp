@@ -9198,13 +9198,15 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Expr* resolvePrimInit(CallExpr* call, Type* type);
+static Symbol* resolvePrimInitGetField(CallExpr* call);
 
-static bool  primInitIsIteratorRecord(Type* type);
+static Expr*   resolvePrimInit(CallExpr* call, Type* type);
 
-static bool  primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
+static bool    primInitIsIteratorRecord(Type* type);
 
-static void  primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
+static bool    primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
+
+static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
 
 Expr* resolvePrimInit(CallExpr* call) {
   Expr* retval = NULL;
@@ -9217,8 +9219,52 @@ Expr* resolvePrimInit(CallExpr* call) {
       USR_FATAL(call, "invalid type specification");
     }
 
+  } else if (CallExpr* ce = toCallExpr(call->get(1))) {
+    if (Symbol* field = resolvePrimInitGetField(ce)) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retval = resolvePrimInit(call, field->typeInfo());
+
+      } else {
+        USR_FATAL(call, "invalid type specification");
+      }
+    }
+
   } else {
-    INT_FATAL(call, "Actual 1 is not a sym expr");
+    INT_FATAL(call, "Unsupported primInit");
+  }
+
+  return retval;
+}
+
+static Symbol* resolvePrimInitGetField(CallExpr* call) {
+  Symbol* retval = NULL;
+
+  if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+    AggregateType* ct  = toAggregateType(call->get(1)->getValType());
+    SymExpr*       se  = toSymExpr(call->get(2));
+    VarSymbol*     var = toVarSymbol(se->symbol());
+
+    if (Immediate* imm = var->immediate) {
+      if (imm->const_kind == CONST_KIND_STRING) {
+        retval = ct->getField(var->immediate->v_string);
+
+      } else if (imm->const_kind == NUM_KIND_INT) {
+        int64_t i = imm->int_value();
+
+        if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true) {
+          retval = getTheIteratorFn(ct)->getFormal(i);
+
+        } else {
+          retval = ct->getField(i);
+        }
+      }
+
+    } else {
+      INT_FATAL(call, "Bad actual to \".v\"");
+    }
+
+  } else {
+    INT_FATAL(call, "PrimInit only support \".v\"");
   }
 
   return retval;
