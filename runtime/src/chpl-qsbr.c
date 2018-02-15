@@ -20,6 +20,7 @@
 #include "chplrt.h"
 #include "chpl-thread-local-storage.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chpl-atomics.h"
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
@@ -244,7 +245,7 @@ static inline struct defer_node *pop_recycle_list(struct tls_node *node) {
   
   // If empty, return fresh allocation
   if (dnode == NULL) {
-    return chpl_mem_calloc(1, sizeof(struct defer_node), 0, 0, 0);
+    return chpl_mem_calloc(1, sizeof(struct defer_node), CHPL_RT_MD_QSBR, 0, 0);
   }
 
   node->recycleList = dnode->next;
@@ -276,7 +277,7 @@ static inline void delete_data(struct defer_node *dnode) {
 // Initializes TLS; should only need to be called once.
 static void init_tls(void);
 static void init_tls(void) {
-  struct tls_node *node = chpl_mem_calloc(1, sizeof(struct tls_node), 0, 0, 0);
+  struct tls_node *node = chpl_mem_calloc(1, sizeof(struct tls_node), CHPL_RT_MD_QSBR, 0, 0);
   node->epoch = get_global_epoch();
 
   // Append to head of list

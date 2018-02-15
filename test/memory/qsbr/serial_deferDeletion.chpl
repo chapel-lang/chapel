@@ -13,4 +13,4 @@ chpl_qsbr_checkpoint();
 var m2 = memoryUsed();
 
 // Some memory is 'leaked' due to the TLS nodes and recycle nodes
-writeln("Memory Leaked: ", (m2 - m1) >= nObjects);
+writeln("Memory Leaked: ", (m2 - m1) != 0);
