@@ -787,6 +787,28 @@ def set_up_general():
             logger.write("[valgrind: OFF]")
             os.environ["CHPL_TEST_VGRND_EXE"] = "off"
 
+    if args.valgrind or args.valgrind_exe:
+      # Set a maximum number of threads per locale for valgrind testing.
+      # Without this, several task-heavy tests will fail.
+      if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
+        os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "100";
+
+      # Additionally, fail with an error if valgrind testing
+      # is running with qthreads or jemalloc.
+      tasks = chpl_tasks.get();
+      mem = chpl_mem.get();
+      if tasks != "fifo":
+        print("Cannot run valgrind testing unless CHPL_TASKS=fifo - "
+              "try the quickstart config?")
+        print("Note, CHPL_TASKS was {0}".format(tasks));
+        sys.exit(-1)
+      if mem != "cstdlib":
+        print("Cannot run valgrind testing unless CHPL_MEM=cstdlib - "
+              "try the quickstart config?")
+        print ("Note, CHPL_MEM was {0}".format(mem));
+        sys.exit(-1)
+
+
     # compiler
     global compiler
     if not args.compiler:
