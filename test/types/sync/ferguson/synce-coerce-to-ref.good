@@ -1,0 +1,2 @@
+synce-coerce-to-ref.chpl:5: In function 'test':
+synce-coerce-to-ref.chpl:10: error: value from coercion passed to ref formal 'arg'

@@ -59,6 +59,7 @@ module OwnedObject {
    */
   pragma "no copy"
   pragma "copy mutates"
+  pragma "managed pointer"
   record Owned {
     pragma "no doc"
     type t;                // contained type (class type)
@@ -186,10 +187,24 @@ module OwnedObject {
     var ret = new Owned(src);
     return ret;
   }
+  // This is a workaround - compiler was resolving
+  // chpl__autoDestroy(x:object) from internal coercions.
+  proc chpl__autoDestroy(x: Owned) {
+    __primitive("call destructor", x);
+  }
 
   // Don't print out 'p' when printing an Owned, just print class pointer
   pragma "no doc"
   proc Owned.readWriteThis(f) {
     f <~> this.p;
+  }
+
+  // Note, coercion from Owned -> Owned.t is directly
+  // supported in the compiler via a call to borrow().
+
+  pragma "no doc"
+  inline proc _cast(type t, in x) where t:Owned && x:Owned && x.t:t.t {
+    var ret = new Owned(x.release());
+    return ret;
   }
 }

@@ -849,6 +849,9 @@ static void insertUseForExplicitModuleCalls() {
 *  chpl__buildDistValue() performs this task, returning _newDistribution(x),  *
 *  where x is a distribution.                                                 *
 *                                                                             *
+*    1. supports e.g.  var x = new dmap(new Block(...));                      *
+*    2. supports e.g.  var y = space dmapped Block (...);                     *
+*                                                                             *
 ************************************** | *************************************/
 
 static void processSyntacticDistributions(CallExpr* call) {
