@@ -756,8 +756,7 @@ void cullOverReferences() {
 
         if (isForallIterExpr(call)) {
           ForallStmt* pfs = toForallStmt(call->parentExpr);
-          INT_ASSERT(!pfs); //VASS - CONTINUE HERE
-          gatherLoopDetails(NULL, isForall, leaderDetails,
+          gatherLoopDetails(pfs, isForall, leaderDetails,
                             followerForLoop, detailsVector);
           foundLoop = true;
         }
