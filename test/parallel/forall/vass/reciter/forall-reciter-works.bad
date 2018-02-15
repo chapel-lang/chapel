@@ -1,0 +1,3 @@
+forall-reciter-works.chpl:51: In function 'main':
+forall-reciter-works.chpl:55: error: forall loops over recursive parallel iterators are currently not implemented
+forall-reciter-works.chpl:25: note: the parallel iterator is here
