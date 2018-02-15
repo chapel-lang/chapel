@@ -326,8 +326,13 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
           if (isUserDefinedRecord(symLhs->type) == true &&
               symRhs->type                      == symLhs->type)
           {
+            bool fromInIntent =
+              (symRhs->originalIntent == INTENT_IN ||
+               symRhs->originalIntent == INTENT_CONST_IN);
+
             if (symLhs->hasFlag(FLAG_ARG_THIS)   == false &&
                 symLhs->hasFlag(FLAG_NO_COPY)    == false &&
+                !fromInIntent &&
                 (symRhs->intent == INTENT_REF ||
                  symRhs->intent == INTENT_CONST_REF))
             {
@@ -689,6 +694,77 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   }
 }
 
+static
+bool isLocalVariable(Expr* initFrom) {
+  if (SymExpr* se = toSymExpr(initFrom)) {
+    Symbol* sym = se->symbol();
+    // is it local?
+    if (sym->defPoint->getFunction() == initFrom->getFunction())
+      // is it value (not ref) ?
+      if (!sym->isRef())
+        return true;
+
+  }
+
+  return false;
+}
+
+static
+bool isCallExprTemporary(Expr* initFrom) {
+  SymExpr* fromSe = toSymExpr(initFrom);
+  INT_ASSERT(fromSe);
+  Symbol* fromSym = fromSe->symbol();
+  if (fromSym->hasFlag(FLAG_EXPR_TEMP)) {
+    // It's from an auto-destroyed value that is an expression temporary
+    // storing the result of a function call.
+    return true;
+  }
+
+  return false;
+}
+
+bool doesCopyInitializationRequireCopy(Expr* initFrom) {
+  if (isUserDefinedRecord(initFrom->getValType())) {
+    // RHS is a reference, need a copy
+    if (initFrom->isRef())
+      return true;
+    // Past here, it's a value.
+
+    // Is it the result of a call returning by value?
+    if (isCallExprTemporary(initFrom))
+      return false;
+
+    // Is it a local variable? Or a global? or an outer?
+    // Need a copy in any of these cases for variable initialization.
+    return true;
+  }
+
+  return false;
+}
+
+bool doesValueReturnRequireCopy(Expr* initFrom) {
+  if (isUserDefinedRecord(initFrom->getValType())) {
+    // RHS is a reference, need a copy
+    if (initFrom->isRef())
+      return true;
+    // Past here, it's a value.
+
+    // Is it the result of a call returning by value?
+    if (isCallExprTemporary(initFrom))
+      return false;
+
+    // Is it a local variable?
+    if (isLocalVariable(initFrom))
+      return false;
+
+    // Or a global? or an outer?
+    // Need a copy in any of these cases for return.
+    return true;
+  }
+
+  return false;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Code to implement original style of return record by ref formal             *
@@ -917,10 +993,8 @@ static void insertYieldTemps()
       //
       // Or foundSe is the argument to PRIM_YIELD.
 
-      // TODO: instead of checking for the case in which a copy
-      // must be added, it might make more sense to check for the
-      // case in which no copy needs to be added (which is that
-      // the yielded value came from a function call)
+      // TODO - is the check for FLAG_INSERT_AUTO_DESTROY
+      // necessary here? Could this use doesValueReturnRequireCopy?
       if (foundSe->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
           !foundSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
         // Add an auto-copy here.

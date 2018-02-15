@@ -346,6 +346,7 @@ public:
   GenRet          codegenType();
 
   IntentTag       intent;
+  IntentTag       originalIntent; // stores orig intent after resolve intents
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
 
