@@ -116,7 +116,7 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t, x:c_string) where isBoolType(t)
+  inline proc _cast(type t, x:c_string) throws where isBoolType(t)
   {
     pragma "insert line file info"
     extern proc c_string_to_chpl_bool(x:c_string, ref err: c_string) : bool;

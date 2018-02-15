@@ -111,7 +111,7 @@ module StringCasts {
         when 16 do retVal = c_string_to_int16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_int32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_int64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t): string, " in cast to string");
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
 
       if isErr then
@@ -125,7 +125,7 @@ module StringCasts {
         when 16 do retVal = c_string_to_uint16_t(localX.c_str(), isErr);
         when 32 do retVal = c_string_to_uint32_t(localX.c_str(), isErr);
         when 64 do retVal = c_string_to_uint64_t(localX.c_str(), isErr);
-        otherwise compilerError("Unsupported bit width ", numBits(t): string, " in cast to string");
+        otherwise compilerError("Unsupported bit width ", numBits(t), " in cast to string");
       }
 
       if isErr then
