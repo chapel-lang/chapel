@@ -1277,7 +1277,8 @@ module Sparse {
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
-    var indPtr: [{1..M+1}] idxType; // major axis
+    // major axis
+    var indPtr: [{1..M+1}] idxType;
 
     pass1(A, B, indPtr);
 
@@ -1289,6 +1290,7 @@ module Sparse {
 
     var C = CSRMatrix((M, N), data, indices, indPtr);
 
+    // TODO: Check if array is not using sorted indices, when that's possible
     sortIndices(C);
 
     return C;
@@ -1338,39 +1340,44 @@ module Sparse {
 
   /* Populate indices and data */
   proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref indices, ref data) {
-    use DistributedDeque;
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
     proc _array.indPtr ref return this.dom.startIdx;
     proc _array.indices ref return this.dom.idx;
 
+    type idxType = ADom.idxType;
+
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
-    type idxType = ADom.idxType;
-    var next: [1..N] idxType = -1;
-    var sums: [1..N] eltType;
+
+    const cols = {1..N};
+
+    var next: [cols] idxType = -1,
+        sums: [cols] eltType;
+
     var nnz = 1;
 
-    // Rows of C
     for i in 1..M {
-      var head = -2:idxType,
+      var head = 0:idxType,
           length = 0:idxType;
 
-      // Row pointers of A
-      for jj in A.indPtr[i]..A.indPtr[i+1]-1 {
+      // Maps row index (i) -> nnz index of A
+      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      for jj in Arange {
         // Non-zero column index of A for row i
-        var j = A.indices[jj];
-        var v = A.data[jj];
+        const j = A.indices[jj];
+        const v = A.data[jj];
 
-        // Row pointers of B
-        for kk in B.indPtr[j]..B.indPtr[j+1]-1 {
+        // Maps row index (j) -> nnz index of B
+        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        for kk in Brange {
           // Non-zero column index of B for row j
-          var k = B.indices[kk];
+          const k = B.indices[kk];
 
           sums[k] += v*B.data[kk];
 
-          // push k to a stack
+          // push k to stack
           if next[k] == -1 {
             next[k] = head;
             head = k;
@@ -1379,13 +1386,14 @@ module Sparse {
         }
       }
 
-      // Recounting is faster than accessing 'nnz in indPtr[1]..indPtr[i+1]-1'
+      // Recounting is faster than accessing 'nnz in indPtr[i]..indPtr[i+1]-1'
       for 1..length {
         indices[nnz] = head;
         data[nnz] = sums[head];
+
         nnz += 1;
 
-        // pop next k
+        // pop next k off stack
         const temp = head;
         head = next[head];
 
@@ -1395,6 +1403,7 @@ module Sparse {
       }
     }
   }
+
 
   /* Sort CS array indices */
   private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
