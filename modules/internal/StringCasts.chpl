@@ -60,7 +60,7 @@ module StringCasts {
   //
   // int
   //
-  proc _cast(type t, x: integral) throws where t == string {
+  proc _cast(type t, x: integral) where t == string {
     //TODO: switch to using qio's writef somehow
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
     extern proc strlen(const str: c_string) : size_t;
@@ -68,8 +68,11 @@ module StringCasts {
     var isErr: bool;
     var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
 
-    if isErr then
-      throw new IllegalArgumentError("integral", "Unexpected case in integral_to_c_string");
+    if isErr {
+      try! {
+        throw new IllegalArgumentError("integral", "Unexpected case in integral_to_c_string");
+      }
+    }
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
