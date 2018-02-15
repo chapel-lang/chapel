@@ -1472,9 +1472,23 @@ static void addArgCoercion(FnSymbol*  fn,
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
 
+  } else if (isManagedPtrType(ats->getValType()) == true &&
+             !isManagedPtrType(formal->getValType())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
                formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+
+    // MPF: I'm adding this assert in order to reduce my level
+    // of concern about this code.
+    AggregateType* at = toAggregateType(ats->getValType());
+    if (isUserDefinedRecord(at))
+      if (propagateNotPOD(at))
+        INT_FATAL("would add problematic deref");
+
     //
     // dereference a reference actual
     //

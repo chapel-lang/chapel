@@ -85,6 +85,7 @@ module SharedObject {
      This is currently implemented with task-safe reference counting.
 
    */
+  pragma "managed pointer"
   record Shared {
     pragma "no doc"
     type t;              // contained type (class type)

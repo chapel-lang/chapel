@@ -655,6 +655,16 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
         break;
       }
     }
+
+    if (retval == NULL) {
+      // Handle e.g. Owned(GenericClass) passed to a formal of type GenericClass
+      if (isManagedPtrType(at) && isClass(formalType)) {
+        Type* classType = actualType->getField("t")->type;
+        if (canInstantiate(classType, formalType)) {
+          retval = classType;
+        }
+      }
+    }
   }
 
   return retval;
@@ -1094,6 +1104,12 @@ bool canCoerce(Type*     actualType,
     // sync can't store an array or a param, so no need to
     // propagate promotes / paramNarrows
     return canDispatch(baseType, NULL, formalType, fn);
+  }
+
+  if (isManagedPtrType(actualType)) {
+    Type* baseType = actualType->getField("t")->type;
+    return canDispatch(baseType, NULL, formalType, fn,
+                       promotes, paramNarrows);
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
