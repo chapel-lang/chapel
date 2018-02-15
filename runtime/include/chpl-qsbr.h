@@ -77,6 +77,15 @@ void chpl_qsbr_defer_deletion_multi(void **arrData, int numData);
 void chpl_qsbr_blocked(void);
 void chpl_qsbr_unblocked(void);
 
+// Enables/Disables QSBR. When disabled, no memory deferred for deletion after the current
+// safest epoch will be reclaimed, but memory deferred for deletion prior to the safest is
+// still eligible for reclamation. Note that this is disabled/enables QSBR for the *entire locale*
+// and as such care must be taken so that it is only called by a single coordinating thread. After
+// being enabled, memory reclamation proceeds as normal. Memory deferred for deletion while disabled
+// is safe but will not reclaimed until enabled.
+void chpl_qsbr_disable(void);
+void chpl_qsbr_enable(void);
+
 void chpl_qsbr_exit(void);
 
 #endif // _chpl_qsbr_h_

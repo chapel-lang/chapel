@@ -32,6 +32,19 @@
 // marked for deletion.
 static atomic_uint_least64_t global_epoch = 0;
 
+// We allow users to disable memory reclamation at runtime to allow 
+// for unregistered threads to access protected data, which is useful
+// if the user calls out to C code (like OpenMP) which may call back
+// into Chapel code, potentially accessing the protected data without
+// registering. If memory reclamation is disabled, we still allow the
+// reclamation of all memory that was deferred for deletion prior to
+// being disabled; this is safe as all memory must be logically deleted
+// and therefore not accessible to future tasks and threads prior to 
+// being deferred for deletion. This is used when deciding the safest
+// epoch, being the minimum.
+#define CHPL_QSBR_ENABLED_SAFE_EPOCH ((uint64_t) -1)
+static atomic_uint_least64_t disabled_safe_epoch = CHPL_QSBR_ENABLED_SAFE_EPOCH;
+
 // Each node in the deferred list has associated with it
 // the data (and numData, useful for determining if it
 // is an array and should be treated as a 'void **') and
@@ -121,6 +134,21 @@ static inline uint64_t advance_global_epoch(void) {
 static inline void observe_epoch(struct tls_node *node);
 static inline void observe_epoch(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->epoch, get_global_epoch());
+}
+
+static inline uint64_t get_disabled_epoch(void);
+static inline uint64_t get_disabled_epoch(void) {
+  return atomic_load_uint_least64_t(&disabled_safe_epoch);
+}
+
+static inline void reset_disabled_epoch(void);
+static inline void reset_disabled_epoch(void) {
+  atomic_store_uint_least64_t(&disabled_safe_epoch, CHPL_QSBR_ENABLED_SAFE_EPOCH);
+}
+
+static inline void set_disabled_epoch(uint64_t epoch);
+static inline void set_disabled_epoch(uint64_t epoch) {
+  atomic_store_uint_least64_t(&disabled_safe_epoch, epoch);
 }
 
 static inline uint64_t is_parked(struct tls_node *node);
@@ -248,7 +276,7 @@ static inline void delete_data(struct defer_node *dnode) {
 // Initializes TLS; should only need to be called once.
 static void init_tls(void);
 static void init_tls(void) {
-  struct tls_node *node = chpl_calloc(1, sizeof(struct tls_node));
+  struct tls_node *node = chpl_mem_calloc(1, sizeof(struct tls_node), 0, 0, 0);
   node->epoch = get_global_epoch();
 
   // Append to head of list
@@ -263,17 +291,17 @@ static void init_tls(void) {
   CHPL_TLS_SET(chpl_qsbr_tls, node);
 }
 
-// Obtains the minimum epoch of all threads.
+// Obtains the minimum epoch of all threads and of the disabled safest epoch.
 static uint64_t safe_epoch(void);
 static uint64_t safe_epoch(void) {
-  uint64_t min = (uint64_t) -1;
+  uint64_t min = get_disabled_epoch();
   // Check all remaining threads for whether they have updated to a more recent epoch.
   for (struct tls_node *node = get_tls_list(); node != NULL; node = node->next) {
     if (!is_parked(node)) {
       uint64_t epoch = get_epoch(node);
       min = (min < epoch) ? min : epoch;       
     }
-  }
+  } 
   
   return min;
 }
@@ -451,6 +479,15 @@ void chpl_qsbr_defer_deletion(void *data) {
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
     _defer_deletion(arrData, numData);
 }
+
+void chpl_qsbr_disable(void) {
+  set_disabled_epoch(safe_epoch());
+}
+
+void chpl_qsbr_enable(void) {
+  reset_disabled_epoch();
+}
+
 
 void chpl_qsbr_exit(void) {
     // Clean thread-local storage
