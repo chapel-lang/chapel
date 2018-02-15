@@ -309,7 +309,7 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
 
 
 #define _define_string_to_int_type(base, width)                             \
-  _type(base, width) c_string_to_##base##width##_t(c_string str, c_string* err,\
+  _type(base, width) c_string_to_##base##width##_t(c_string str, chpl_bool* err,\
                                                    int lineno, int32_t filename) { \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
@@ -322,19 +322,9 @@ _define_string_to_complex_precise(complex, 128, "%lf", 64)
                                                   invalidStr);          \
     }                                                                   \
                                                                         \
-    if (invalid) {                                                      \
-      if (invalid == 2) {                                               \
-        if (invalidStr[0] == '\0') {                                    \
-          *err = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
-        } else {                                                        \
-          *err = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
-        }                                                               \
-      } else if (invalidStr[0]) {                                       \
-        *err = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
-      } else {                                                          \
-        *err = "Empty string when converting from string to " #base "(" #width ")"; \
-      }                                                                 \
-    }                                                                   \
+    if (invalid)                                                        \
+      *err = true;                                                      \
+                                                                        \
     return val;                                                         \
   }
 
@@ -348,7 +338,7 @@ _define_string_to_int_type(uint, 32)
 _define_string_to_int_type(uint, 64)
 
 #define _define_string_to_real_type(base, width)                        \
-  _##base##width c_string_to_##base##width(c_string str, c_string* err, \
+  _##base##width c_string_to_##base##width(c_string str, chpl_bool* err, \
                                            int lineno, int32_t filename) { \
     int invalid;                                                        \
     char invalidStr[2] = "\0\0";                                        \
@@ -360,20 +350,11 @@ _define_string_to_int_type(uint, 64)
                                                 &invalid,               \
                                                 invalidStr);            \
     }                                                                   \
-    if (invalid) {                                                      \
-      if (invalid == 2) {                                               \
-        if (invalidStr[0] == '\0') {                                    \
-          *err = "Missing terminating 'i' character when converting from string to " #base "(" #width ")"; \
-        } else {                                                        \
-          *err = chpl_glom_strings(3, "Missing terminating 'i' character when converting from string to " #base "(" #width "); got '", invalidStr, "' instead"); \
-        }                                                               \
-      } else if (invalidStr[0]) {                                       \
-        *err = chpl_glom_strings(3, "Unexpected character when converting from string to " #base "(" #width "): '", invalidStr, "'"); \
-      } else {                                                          \
-        *err = "Empty string when converting from string to " #base "(" #width ")"; \
-      }                                                                 \
-    }                                                                   \
-    return val;                                                         \
+                                                                        \
+    if (invalid)                                                        \
+      *err = true;                                                      \
+                                                                        \
+   return val;                                                          \
   }
 
 _define_string_to_real_type(real, 32)
@@ -385,7 +366,7 @@ _define_string_to_real_type(complex, 128)
 
 
 c_string
-integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, c_string* err)
+integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, chpl_bool* err)
 {
   char buffer[256];
   const char* format = "";
@@ -393,7 +374,7 @@ integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, c_string* err
   switch (SIGNED * isSigned + size)
   {
    default:
-    *err = "Unexpected case in integral_to_c_string";
+    *err = true;
     break;
 
    case UNSIGNED + 1: format = "%" PRIu8;  break;

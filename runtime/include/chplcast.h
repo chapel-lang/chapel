@@ -36,14 +36,14 @@ uint32_t c_string_to_uint32_t_precise(c_string str, int* invalid, char* invalidC
 uint64_t c_string_to_uint64_t_precise(c_string str, int* invalid, char* invalidChar);
 
 /* string to every other primitive type */
-int8_t c_string_to_int8_t(c_string str, c_string* err, int lineno, int32_t filename);
-int16_t c_string_to_int16_t(c_string str, c_string* err, int lineno, int32_t filename);
-int32_t c_string_to_int32_t(c_string str, c_string* err, int lineno, int32_t filename);
-int64_t c_string_to_int64_t(c_string str, c_string* err, int lineno, int32_t filename);
-uint8_t c_string_to_uint8_t(c_string str, c_string* err, int lineno, int32_t filename);
-uint16_t c_string_to_uint16_t(c_string str, c_string* err, int lineno, int32_t filename);
-uint32_t c_string_to_uint32_t(c_string str, c_string* err, int lineno, int32_t filename);
-uint64_t c_string_to_uint64_t(c_string str, c_string* err, int lineno, int32_t filename);
+int8_t c_string_to_int8_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+int16_t c_string_to_int16_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+int32_t c_string_to_int32_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+int64_t c_string_to_int64_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+uint8_t c_string_to_uint8_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+uint16_t c_string_to_uint16_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+uint32_t c_string_to_uint32_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
+uint64_t c_string_to_uint64_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
 
 chpl_bool c_string_to_chpl_bool(c_string str, c_string* err, int lineno, int32_t filename);
 
@@ -56,18 +56,18 @@ _complex64 c_string_to_complex64_precise(c_string str, int* invalid, char* inval
 _complex128 c_string_to_complex128_precise(c_string str, int* invalid, char* invalidCh);
 #endif
 
-_real32 c_string_to_real32(c_string str, c_string* err, int lineno, int32_t filename);
-_real64 c_string_to_real64(c_string str, c_string* err, int lineno, int32_t filename);
-_imag32 c_string_to_imag32(c_string str, c_string* err, int lineno, int32_t filename);
-_imag64 c_string_to_imag64(c_string str, c_string* err, int lineno, int32_t filename);
+_real32 c_string_to_real32(c_string str, chpl_bool* err, int lineno, int32_t filename);
+_real64 c_string_to_real64(c_string str, chpl_bool* err, int lineno, int32_t filename);
+_imag32 c_string_to_imag32(c_string str, chpl_bool* err, int lineno, int32_t filename);
+_imag64 c_string_to_imag64(c_string str, chpl_bool* err, int lineno, int32_t filename);
 #ifndef __cplusplus
-_complex64 c_string_to_complex64(c_string str, c_string* err, int lineno, int32_t filename);
-_complex128 c_string_to_complex128(c_string str, c_string* err, int lineno, int32_t filename);
+_complex64 c_string_to_complex64(c_string str, chpl_bool* err, int lineno, int32_t filename);
+_complex128 c_string_to_complex128(c_string str, chpl_bool* err, int lineno, int32_t filename);
 #endif
 
 
 /* every other primitive type to string */
-c_string integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, c_string* err);
+c_string integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, chpl_bool* err);
 c_string real_to_c_string(_real64 x, chpl_bool isImag);
 
 // TODO: Can we use the pattern above, to reduce the number of interfaces required?
