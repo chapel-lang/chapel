@@ -9198,6 +9198,8 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts) {
 *                                                                             *
 ************************************** | *************************************/
 
+static Expr* resolvePrimInit(CallExpr* call, Type* type);
+
 static bool  primInitIsIteratorRecord(Type* type);
 
 static bool  primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
@@ -9208,48 +9210,54 @@ Expr* resolvePrimInit(CallExpr* call) {
   Expr* retval = NULL;
 
   if (SymExpr* se = toSymExpr(call->get(1))) {
-    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-      USR_FATAL(call, "invalid type specification");
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = resolvePrimInit(call, resolveTypeAlias(se));
 
     } else {
-      Type*          type = resolveTypeAlias(se);
-      AggregateType* at   = toAggregateType(type);
-
-      // These are handled later
-      if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
-        INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-
-      // These are handled in replaceInitPrims().
-      } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-
-      // Initializers for IteratorRecords cannot be used as constructors
-      } else if (primInitIsIteratorRecord(type)               == true) {
-
-      // Generate a more specific USR_FATAL if resolution would fail
-      } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-        primInitHaltForUnacceptableGeneric(call, type);
-
-      // NonGeneric records with initializers do not support _defaultOf
-      } else if (at                                           != NULL &&
-                 at->instantiatedFrom                         == NULL &&
-                 isNonGenericRecordWithInitializers(at)       == true) {
-        // Parent PRIM_MOVE will be updated to init() later in resolution
-
-      } else {
-        SET_LINENO(call);
-
-        CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-
-        call->replace(defOfCall);
-
-        resolveCallAndCallee(defOfCall);
-
-        retval = foldTryCond(postFold(defOfCall));
-      }
+      USR_FATAL(call, "invalid type specification");
     }
 
   } else {
     INT_FATAL(call, "Actual 1 is not a sym expr");
+  }
+
+  return retval;
+}
+
+static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+  AggregateType* at     = toAggregateType(type);
+  Expr*          retval = NULL;
+
+  // These are handled later
+  if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
+    INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+
+  // These are handled in replaceInitPrims().
+  } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+
+  // Initializers for IteratorRecords cannot be used as constructors
+  } else if (primInitIsIteratorRecord(type)               == true) {
+
+  // Generate a more specific USR_FATAL if resolution would fail
+  } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
+    primInitHaltForUnacceptableGeneric(call, type);
+
+  // NonGeneric records with initializers do not support _defaultOf
+  } else if (at                                           != NULL &&
+             at->instantiatedFrom                         == NULL &&
+             isNonGenericRecordWithInitializers(at)       == true) {
+    // Parent PRIM_MOVE will be updated to init() later in resolution
+
+  } else {
+    SET_LINENO(call);
+
+    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+
+    call->replace(defOfCall);
+
+    resolveCallAndCallee(defOfCall);
+
+    retval = foldTryCond(postFold(defOfCall));
   }
 
   return retval;
