@@ -661,8 +661,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var boundedOther = new range(
                           idxType, BoundedRangeType.bounded,
                           s || this.stridable,
-                          if other.hasLowBound() then other._low else _low,
-                          if other.hasHighBound() then other._high else _high,
+                          if other.hasLowBound() then other.low else low,
+                          if other.hasHighBound() then other.high else high,
                           other.stride,
                           other.alignment,
                           true);
@@ -1375,11 +1375,11 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var diff = count : signedComputeType * r.stride : signedComputeType;
 
     var lo : resultType =
-      if diff > 0 then r._low
-      else chpl__add(r._high : computeType, (diff + 1): computeType, resultType);
+      if diff > 0 then r.low
+      else chpl__add(r.high : computeType, (diff + 1): computeType, resultType);
     var hi : resultType =
-      if diff < 0 then r._high
-      else chpl__add(r._low : computeType, diff : computeType - 1, resultType);
+      if diff < 0 then r.high
+      else chpl__add(r.low : computeType, diff : computeType - 1, resultType);
 
     if r.stridable {
       if r.hasLowBound() && lo < r._low then lo = r._low;
@@ -1393,8 +1393,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      _high = hi,
                      _stride = if r.stridable then (r.stride: strType)
                                             else _void,
-                     _alignment = if r.stridable then r._alignment else _void,
-                     _aligned = if r.stridable then r._aligned else _void);
+                     _alignment = if r.stridable then r.alignment else _void,
+                     _aligned = if r.stridable then r.aligned else _void);
   }
 
   proc #(r:range(?i), count:chpl__signedType(i)) {
@@ -2055,7 +2055,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if stridable && !aligned {
       _alignment =
         if isBoundedRange(this) then
-          (if stride > 0 then _low else _high)
+          (if stride > 0 then low else high)
         else if this.boundedType == BoundedRangeType.boundedLow then
           _low
         else if this.boundedType == BoundedRangeType.boundedHigh then
