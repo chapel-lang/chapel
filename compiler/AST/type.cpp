@@ -1714,3 +1714,26 @@ bool isRecordWithInitializers(Type* type) {
 
   return retval;
 }
+
+//
+// The simplest and most obvious case is that generic records need generic
+// initializers.
+//
+// Instantiated records also require generic initializers, because their
+// type or param fields need to be handled by an initializer.
+//
+bool needsGenericRecordInitializer(Type* type) {
+  bool retval = false;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    if (isRecordWithInitializers(type)) {
+      if (at->isGeneric() == true ||
+          at->symbol->hasFlag(FLAG_GENERIC) == true ||
+          at->instantiatedFrom != NULL) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
+}
