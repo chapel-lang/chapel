@@ -106,10 +106,7 @@ module ChapelError {
     }
 
     proc message() {
-      if arg_name.isEmptyString() then
-        return "'" + arg_info + "'";
-      else
-        return "illegal argument '" + arg_name + "': " + arg_info;
+      return "illegal argument '" + arg_name + "': " + arg_info;
     }
   }
 
