@@ -612,9 +612,10 @@ void gatherLoopDetails(ForallStmt* fs,
   isForall = true;
   detailsVector.clear();
 
-if (zippered || 1) gdbShouldBreakHere(); //wass
+gdbShouldBreakHere(); //wass
 
   {
+//wass todo factor our shared code with the other gatherLoopDetails()?
     // Handle forall loops
 
     // It could be:
@@ -637,8 +638,6 @@ if (zippered || 1) gdbShouldBreakHere(); //wass
     }
     else
     {
-INT_ASSERT(false);
-#if 0 //wass
       // Leader-follower iteration
 
       // Find the iterables
@@ -648,6 +647,8 @@ INT_ASSERT(false);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
       if (!zippered) {
+INT_ASSERT(false); //wass
+#if 0 //wass
         Expr* iterable = move->get(2);
         INT_ASSERT(iterable);
         // Comes up in non-zippered leader-follower iteration
@@ -655,6 +656,7 @@ INT_ASSERT(false);
         details.iterable = iterable;
         // Other details set below.
         detailsVector.push_back(details);
+#endif
       } else {
         CallExpr* buildTupleCall = toCallExpr(move->get(2));
         INT_ASSERT(buildTupleCall);
@@ -671,11 +673,12 @@ INT_ASSERT(false);
       }
 
       leaderDetails.iterable = detailsVector[0].iterable;
-      leaderDetails.index = index;
-      leaderDetails.iteratorClass = iterator->typeInfo();
-      leaderDetails.iterator = getTheIteratorFn(leaderDetails.iteratorClass);
+      leaderDetails.index = fs->singleInductionVar();
+      leaderDetails.iteratorClass = NULL;
+      leaderDetails.iterator = toCallExpr(
+            fs->iteratedExpressions().head)->resolvedFunction();
 
-      ForLoop* followerFor = findFollowerForLoop(forLoop);
+      ForLoop* followerFor = findFollowerForLoop(fs->loopBody());
       INT_ASSERT(followerFor);
       followerForLoop = followerFor;
 
@@ -705,7 +708,6 @@ INT_ASSERT(false);
         }
       }
       return;
-#endif
     }
   }
 }
