@@ -275,6 +275,13 @@ static bool recordContainingCopyMutatesField(Type* t) {
     }
   }
 
+  // Set the flag so that:
+  // 1. this is easier to compute in the future and
+  // 2. other code working with this type will know
+  //    (e.g. lvalue checking)
+  if (ret && !at->symbol->hasFlag(FLAG_COPY_MUTATES))
+    at->symbol->addFlag(FLAG_COPY_MUTATES);
+
   return ret;
 }
 
