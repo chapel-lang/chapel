@@ -970,11 +970,11 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
 static void lowerForallStmtsInline()
 {
+  gdbShouldBreakHere(); //wass
+
   forv_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
-
-  gdbShouldBreakHere(); //wass
 
   clearUpRefsInShadowVars();
 
