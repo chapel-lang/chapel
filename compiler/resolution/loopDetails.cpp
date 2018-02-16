@@ -100,6 +100,8 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
   return NULL;
 }
 
+static Symbol* findNewIterLF(Expr* ref);
+
 /* Given chpl_iter for a "new-style" forall loop ie generated from ForallStmt,
    find the corresponding chpl__iterLF variable, if it exists.
    That's because it has the corresponding _build_tuple call that
@@ -107,7 +109,11 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
  */
 static Symbol* findNewIterLF(Symbol* chpl_iter) {
   INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterPAR"));
-  Expr* iprev = chpl_iter->defPoint->prev;
+  return findNewIterLF(chpl_iter->defPoint);
+}
+
+static Symbol* findNewIterLF(Expr* ref) {
+  Expr* iprev = ref->prev;
   if (!iprev) return NULL;
   DefExpr* defExp = toDefExpr(iprev->prev);
   if (!defExp) return NULL;
@@ -587,12 +593,34 @@ void gatherLoopDetails(ForallStmt* fs,
                        ForLoop*& followerForLoop,
                        std::vector<IteratorDetails>& detailsVector)
 {
+  bool isLeader = false;
+  bool zippered = false;
+
+  Symbol* newIterLF = findNewIterLF(fs);
+  // copied from the other gatherLoopDetails()
+  if (newIterLF) {
+    isLeader = true;
+    if (SymExpr* useSE = newIterLF->getSingleUse())
+      if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
+        if (useCall->isNamed("_toFollowerZip"))
+          zippered = true;
+  }
+
+  INT_ASSERT(isLeader ==
+             !strcmp(fs->singleInductionVar()->name, "chpl_followThis"));
+
   isForall = true;
-  detailsVector.clear();//vass todo
+  detailsVector.clear();
 
-gdbShouldBreakHere(); //wass
+if (zippered || 1) gdbShouldBreakHere(); //wass
 
- bool isLeader = false;
+  {
+    // Handle forall loops
+
+    // It could be:
+    // standalone iterator that is not zippered
+    // leader-follower loop that is not zippered
+    // leader-follower loop that is zippered
 
     if (!isLeader)
     {
@@ -607,7 +635,8 @@ gdbShouldBreakHere(); //wass
       detailsVector.push_back(detailsSA);
       return;
     }
-    else {
+    else
+    {
 #if 0 //wass
       // Leader-follower iteration
 
@@ -677,4 +706,5 @@ gdbShouldBreakHere(); //wass
       return;
 #endif
     }
+  }
 }
