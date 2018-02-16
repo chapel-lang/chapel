@@ -215,7 +215,11 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       }
 
     } else {
-      USR_FATAL(this, "Cannot find module or enum");
+      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
+        USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
+      } else {
+        USR_FATAL(this, "Cannot find module or enum");
+      }
     }
 
   } else {
