@@ -1270,9 +1270,13 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   }
 
   // globalOp = new reduceOp(eltType = ...);
-  if (!useThisGlobalOp)
-    iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))",
-                        globalOp, reduceOp, new NamedExpr("eltType", eltType));
+  if (!useThisGlobalOp) {
+    NamedExpr* newArg = new NamedExpr("eltType", eltType);
+    CallExpr* newCall = new CallExpr(PRIM_NEW, reduceOp, newArg);
+    CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
+    iterRec->defPoint->insertBefore(move);
+    //iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))", globalOp, reduceOp, new NamedExpr("eltType", eltType));
+  }
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("chpl__delete(%S)",
                        globalOp);
@@ -2065,7 +2069,12 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
                         Expr* opExpr)
 {
   fn->insertAtTail(new DefExpr(globalOp));
-  fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
+
+  NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
+  CallExpr* newCall = new CallExpr(PRIM_NEW, opExpr, newArg);
+  CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
+  fn->insertAtTail(move);
+  //fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
 }
 
 static void
@@ -2138,7 +2147,14 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   followBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", followIter)));
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S))}", followIdx, followIter);
-  followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
+  // move localOp, new OpExpr(eltType=eltType)
+  {
+    NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
+    CallExpr* newCall = new CallExpr(PRIM_NEW, opExpr->copy(), newArg);
+    CallExpr* move = new CallExpr(PRIM_MOVE, localOp, newCall);
+    followBlock->insertAtTail(move);
+    //followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
+  }
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);
   followBlock->insertAtTail("chpl__delete(%S)", localOp);
