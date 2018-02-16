@@ -797,13 +797,13 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 {
   INT_ASSERT(iterCall == pfs->firstIteratedExpr()); // still here?
 
-  if (!pfs->zippered()) {
-    INT_ASSERT(!iterCall->next);
+  int origLength = pfs->iteratedExpressions().length;
+  if (origLength == 1) {
+    INT_ASSERT(!pfs->zippered());
     // no tuple building here
     return origExprFlw;
   }
 
-  int origLength = pfs->iteratedExpressions().length;
   CallExpr* result = new CallExpr("_build_tuple", origExprFlw);
   while (Expr* curr = iterCall->next)
     result->insertAtTail(curr->remove());
