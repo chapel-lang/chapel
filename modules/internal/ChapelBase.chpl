@@ -1278,6 +1278,10 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
+  inline proc chpl__toraw(ref arg:Owned) {
+    return arg.release();
+  }
+
   // implements 'delete' statement
   inline proc chpl__delete(arg)
     where isClassType(arg.type) || isExternClassType(arg.type) {

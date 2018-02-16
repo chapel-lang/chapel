@@ -1273,7 +1273,8 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   if (!useThisGlobalOp) {
     NamedExpr* newArg = new NamedExpr("eltType", eltType);
     CallExpr* newCall = new CallExpr(PRIM_NEW, reduceOp, newArg);
-    CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
+    CallExpr* move = new CallExpr(PRIM_MOVE, globalOp,
+                                  new CallExpr("chpl__toraw", newCall));
     iterRec->defPoint->insertBefore(move);
     //iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))", globalOp, reduceOp, new NamedExpr("eltType", eltType));
   }
@@ -2072,7 +2073,8 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
 
   NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
   CallExpr* newCall = new CallExpr(PRIM_NEW, opExpr, newArg);
-  CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
+  CallExpr* move = new CallExpr(PRIM_MOVE, globalOp,
+                                new CallExpr("chpl__toraw", newCall));
   fn->insertAtTail(move);
   //fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
 }
@@ -2151,7 +2153,8 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   {
     NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
     CallExpr* newCall = new CallExpr(PRIM_NEW, opExpr->copy(), newArg);
-    CallExpr* move = new CallExpr(PRIM_MOVE, localOp, newCall);
+    CallExpr* move = new CallExpr(PRIM_MOVE, localOp,
+                                  new CallExpr("chpl__toraw", newCall));
     followBlock->insertAtTail(move);
     //followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
   }
