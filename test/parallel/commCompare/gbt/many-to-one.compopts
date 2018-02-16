@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+numOps = 1000
+
+base_opts = 'many-to-one-helper.h'
+
+print(base_opts
+      + ' -sop=opGet -snumOps={0} # many-to-one-gets'.format(numOps))
+print(base_opts
+      + ' -sop=opPut -snumOps={0} # many-to-one-puts'.format(numOps))
+print(base_opts
+      + ' -sop=opFastOn -snumOps={0} # many-to-one-fastOns'.format(numOps))
+print(base_opts
+      + ' -sop=opOn -snumOps={0} # many-to-one-ons'.format(numOps))
