@@ -1190,6 +1190,7 @@ module ChapelBase {
   pragma "last resort"
   pragma "donor fn"
   pragma "auto copy fn"
+  pragma "suppress lvalue error"
   inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
 
   pragma "compiler generated"
