@@ -43,7 +43,6 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
-
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -253,6 +252,6 @@ ifneq ($(WANT_LIBMVEC), no)
   endif
 
   ifeq ($(FOUND_LIBMVEC), yes)
-    LIBS += -lmvec -lm
+    LIBMVEC = -lmvec
   endif
 endif
