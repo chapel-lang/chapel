@@ -111,18 +111,30 @@ module ChapelSyncvar {
     var  wrapped : getSyncClassType(valType) = nil;
     var  isOwned : bool                      = true;
 
-    proc _syncvar(type valType) {
+    proc init(type valType) {
       ensureFEType(valType);
-
-      wrapped = new (getSyncClassType(valType))(valType);
-      isOwned = true;
+      this.valType = valType;
+      this.wrapped = new (getSyncClassType(valType))(valType);
+      this.isOwned = true;
+      super.init();
     }
 
-    proc _syncvar(type valType, const other : _syncvar(valType)) {
-      ensureFEType(valType);
-
-      wrapped = other.wrapped;
-      isOwned = false;
+    //
+    // This is technically a copy-initializer, but it's only called through
+    // chpl__autoCopy.
+    //
+    // Also note that syncs **need** to use chpl__initCopy in order to return
+    // a different type. For example:
+    //
+    //   var a = x$;
+    //
+    // ``a`` needs to be a ``valType``, not a sync.
+    //
+    proc init(const other : _syncvar) {
+      this.valType = other.valType;
+      this.wrapped = other.wrapped;
+      this.isOwned = false;
+      super.init();
     }
 
     proc deinit() {
@@ -285,15 +297,15 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(sv : _syncvar(?t)) {
+  proc chpl__initCopy(ref sv : _syncvar(?t)) {
     return sv.readFE();
   }
 
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _syncvar(?t)) {
-    return new _syncvar(t, rhs);
+  proc chpl__autoCopy(const ref rhs : _syncvar) {
+    return new _syncvar(rhs);
   }
 
   // Be explicit about whether syncs are auto-destroyed.
@@ -345,7 +357,9 @@ module ChapelSyncvar {
     var  value   : valType;
     var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
 
-    proc _synccls(type valType) {
+    proc init(type valType) {
+      this.valType = valType;
+      super.init();
       chpl_sync_initAux(syncAux);
     }
 
@@ -482,7 +496,9 @@ module ChapelSyncvar {
 
     var  alignedValue : aligned_t;
 
-    proc _qthreads_synccls(type valType) {
+    proc init(type valType) {
+      this.valType = valType;
+      super.init();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -613,18 +629,30 @@ module ChapelSyncvar {
     var  wrapped : _singlecls(valType) = nil;
     var  isOwned : bool                = true;
 
-    proc _singlevar(type valType) {
+    proc init(type valType) {
       ensureFEType(valType);
-
+      this.valType = valType;
       wrapped = new _singlecls(valType);
       isOwned = true;
+      super.init();
     }
 
-    proc _singlevar(type valType, const other : _singlevar(valType)) {
-      ensureFEType(valType);
-
+    //
+    // This is technically a copy-initializer, but it's only called through
+    // chpl__autoCopy.
+    //
+    // Also note that singles **need** to use chpl__initCopy in order to return
+    // a different type. For example:
+    //
+    //   var a = x$;
+    //
+    // ``a`` needs to be a ``valType``, not a single.
+    //
+    proc init(const other : _singlevar) {
+      this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
+      super.init();
     }
 
     proc deinit() {
@@ -700,20 +728,20 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
-  proc   = (ref lhs : _singlevar(?t), rhs : t) {
+  proc =(ref lhs : _singlevar(?t), rhs : t) {
     lhs.wrapped.writeEF(rhs);
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(sv : _singlevar(?t)) {
+  proc chpl__initCopy(ref sv : _singlevar(?t)) {
     return sv.readFF();
   }
 
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _singlevar(?t)) {
-    return new _singlevar(t, rhs);
+  proc chpl__autoCopy(const ref rhs : _singlevar) {
+    return new _singlevar(rhs);
   }
 
   // Be explicit about whether singles are auto-destroyed.
@@ -746,7 +774,9 @@ module ChapelSyncvar {
     var  value     : valType;
     var  singleAux : chpl_single_aux_t;      // Locking, signaling, ...
 
-    proc _singlecls(type valType) {
+    proc init(type valType) {
+      this.valType = valType;
+      super.init();
       chpl_single_initAux(singleAux);
     }
 
