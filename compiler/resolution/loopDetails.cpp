@@ -637,12 +637,13 @@ if (zippered || 1) gdbShouldBreakHere(); //wass
     }
     else
     {
+INT_ASSERT(false);
 #if 0 //wass
       // Leader-follower iteration
 
       // Find the iterables
 
-      SymExpr* def = (newIterLF ? newIterLF : chpl_iter)->getSingleDef();
+      SymExpr* def = newIterLF->getSingleDef();
       CallExpr* move = toCallExpr(def->parentExpr);
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
