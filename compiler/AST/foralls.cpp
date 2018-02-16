@@ -653,34 +653,39 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
     AList& indvars = fs->inductionVariables();
     int idx = indvars.length;
 
-    if (idx == 1) {
-      // The original forall's induction variable to become
-      // the induction variable of the follower loop.
-      userLoopBody->insertBefore(indvars.head->remove());  // its DefExpr
-      parIdxCopy = parIdx;
+    // If there is only one follower, we are tempted to use
+    // the original forall's induction variable as the
+    // the induction variable of the follower loop.
+    // Alas, this results in the autoDestroy for that variable
+    // to be inserted outside the loop, and more trouble from that.
+    // Ex. test/functions/ferguson/ref-pair/iterating-over-arrays.chpl
 
+    // The induction variable of the follower loop.
+    VarSymbol* followIdx = newTemp("chpl__followIdx");
+    followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+    userLoopBody->insertBefore(new DefExpr(followIdx));
+    parIdxCopy = followIdx;
+
+    if (idx == 1) {
       // If only one induction var, treat as non-zippered.
       fs->setNotZippered();
+      userLoopBody->insertAtHead("'move'(%S,%S)",
+                                 toDefExpr(indvars.head)->sym, followIdx);
+
     }
     else {
-      // Need to create the induction variable of the follower loop.
-      VarSymbol* followIdx = newTemp("chpl_followIdx");
-      followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-      userLoopBody->insertBefore(new DefExpr(followIdx));
-      parIdxCopy = followIdx;
-
       for_alist_backward(def, indvars)
         userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
                                    followIdx, new_IntSymbol(idx--));
-
-      // Move induction variables' DefExprs to the loop body.
-      // That's where their scope is; ex. deinit them at end of each iteration.
-      // Do it now, before the loop body gets cloned for and dissolves into
-      // the scaffolding for fast-followers.
-      //
-      for_alist_backward(def, indvars)
-        userLoopBody->insertAtHead(def->remove());
     }
+
+    // Move induction variables' DefExprs to the loop body.
+    // That's where their scope is; ex. deinit them at end of each iteration.
+    // Do it now, before the loop body gets cloned for and dissolves into
+    // the scaffolding for fast-followers.
+    //
+    for_alist_backward(def, indvars)
+      userLoopBody->insertAtHead(def->remove());
 
     // parIdx to be the index variable of the parallel loop.
     indvars.insertAtHead(new DefExpr(parIdx));
