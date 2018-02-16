@@ -104,7 +104,7 @@ class Symbol : public BaseAST {
 public:
   // Interface for BaseAST
   virtual GenRet     codegen();
-  virtual bool       inTree();
+          bool       inTree();
   virtual QualifiedType qualType();
   virtual void       verify();
 
@@ -346,6 +346,7 @@ public:
   GenRet          codegenType();
 
   IntentTag       intent;
+  IntentTag       originalIntent; // stores orig intent after resolve intents
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
 

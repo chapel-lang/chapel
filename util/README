@@ -5,8 +5,8 @@ Chapel Utility Directory
 This directory contains utility scripts that are intended to be useful
 to end-users or the Chapel build/test itself.
 
-The following are designed for beginning users (see $CHPL_HOME/README
-for details):
+The following are designed for beginning users
+(see $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst for details):
 
    quickstart/      :
      setchplenv.*   : quick-start source scripts for minimal Chapel environments

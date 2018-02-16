@@ -813,7 +813,7 @@ static void moveGlobalDeclarationsToModuleScope() {
 
 static void insertUseForExplicitModuleCalls() {
   forv_Vec(SymExpr, se, gSymExprs) {
-    if (se->parentSymbol && se->symbol() == gModuleToken) {
+    if (se->inTree() && se->symbol() == gModuleToken) {
       SET_LINENO(se);
 
       CallExpr*     call  = toCallExpr(se->parentExpr);

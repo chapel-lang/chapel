@@ -1,0 +1,6 @@
+copyInitLookalike.chpl:34: In function 'main':
+copyInitLookalike.chpl:43: error: unresolved call 'C.init(C(real(64)))'
+copyInitLookalike.chpl:14: note: candidates are: C.init(x: int)
+copyInitLookalike.chpl:20: note:                 C.init(r: real)
+copyInitLookalike.chpl:26: note:                 C.init(other: C(int))
+(prediff deleted module lines)

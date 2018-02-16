@@ -8,7 +8,6 @@ VARIABLE INITIALIZATION -- VALUE CALL
    const return intent, typed variable
     assign
  call in arg / call
-    initCopy
  field initialization / value call
    default constructor
     initCopy
@@ -22,6 +21,44 @@ VARIABLE INITIALIZATION -- LOCAL VAR
  field initialization / local var
    default constructor
     initCopy
+
+VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
+    initCopy
+ variable initialization / in-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+
+    initCopy
+ variable initialization / const-in-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+
+VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
+ passing in intent arg to in intent arg
+    initCopy
+ variable initialization / in-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+ passing const in intent arg to const in intent arg
+    initCopy
+ variable initialization / const-in-intent arg
+   untyped variable
+    initCopy
+   typed variable
+    assign
+
+VARIABLE INITIALIZATION -- OUTER VAR
+ variable initialization / outer var
+   untyped variable
+    initCopy
+   typed variable
+    assign
 
 VARIABLE INITIALIZATION -- GLOBAL / REF
  variable initialization / global var
@@ -49,13 +86,7 @@ VARIABLE INITIALIZATION -- GLOBAL / REF
     initCopy
    typed variable
     assign
- variable initialization / blank-intent arg
-   untyped variable
-    initCopy
-   typed variable
-    assign
-    initCopy
- variable initialization / in-intent arg
+ variable initialization / ref arg
    untyped variable
     initCopy
    typed variable
@@ -102,6 +133,21 @@ VALUE RETURN -- VALUE CALL
 VALUE RETURN -- LOCAL VAR
  return / local variable
 
+VALUE RETURN -- OUTER VAR
+ return / outer variable
+    initCopy
+
+VALUE RETURN -- IN ARG (GLOBAL)
+    initCopy
+ return / in arg
+
+    initCopy
+ return / const in arg
+
+VALUE RETURN -- IN ARG (CALL-EXPR)
+ return / in arg
+ return / const in arg
+
 VALUE RETURN -- GLOBAL/REF
  return / global variable
     initCopy
@@ -123,3 +169,9 @@ REF USE -- REF VALUE
  return ref / global variable
  return const ref / global variable
  return ref / ref arg
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

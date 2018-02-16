@@ -135,11 +135,11 @@ be found in the ENVIRONMENT section of the qthread_init man page.  (Note
 that although this man page documents variables named ``QTHREAD_*``, each
 variable is actually present in both ``QT_*`` and ``QTHREAD_*`` forms,
 with the former superseding the latter.)  The qthreads man pages are
-available by means of the man(1) -m option, for example:
+available by means of the man -M option, for example:
 
 .. code-block:: sh
 
-  man -M $CHPL_HOME/third-party/qthread/qthread-*/man qthread_init
+  man -M $CHPL_HOME/third-party/qthread/qthread-src/man qthread_init
 
 Note that in some cases there are Chapel environment variables that
 override Qthreads counterparts. ``CHPL_RT_NUM_THREADS_PER_LOCALE`` overrides

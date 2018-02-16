@@ -1945,6 +1945,25 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+void resolvePromotionType(AggregateType* at) {
+  INT_ASSERT(at->scalarPromotionType == NULL);
+  INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
+
+  VarSymbol* temp     = newTemp(at);
+  CallExpr* promoCall = new CallExpr("chpl__promotionType", gMethodToken, temp);
+
+  FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
+
+  if (promoFn != NULL) {
+    resolveFunction(promoFn);
+
+    INT_ASSERT(promoFn->retType != dtUnknown);
+    INT_ASSERT(promoFn->retTag == RET_TYPE);
+
+    at->scalarPromotionType = promoFn->retType;
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -4771,7 +4790,7 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
   if (SymExpr* symExpr = toSymExpr(expr)) {
     Symbol* sym = symExpr->symbol();
     SymExpr* _this = new SymExpr(fn->_this);
-    AggregateType* _thisType = toAggregateType(_this->symbol()->type);
+    AggregateType* _thisType = toAggregateType(_this->symbol()->getValType());
     INT_ASSERT(_thisType);
 
     if (DefExpr* fieldDef = _thisType->toLocalField(symExpr)) {
@@ -4902,8 +4921,21 @@ static void resolveInitField(CallExpr* call) {
   if (t == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
 
-  if (t == dtNil && fs->type == dtUnknown)
+  if (fs->hasFlag(FLAG_PARAM)) {
+    if (isLegalParamType(t) == false) {
+      USR_FATAL_CONT(fs, "'%s' is not of a supported param type", fs->name);
+    }
+    if (rhs->symbol()->isParameter() == false) {
+      USR_FATAL_CONT(call, "Initializing parameter '%s' to value not known at compile time", fs->name);
+    }
+  }
+
+  if (t == dtNil && fs->type == dtUnknown) {
     USR_FATAL(call->parentSymbol, "unable to determine type of field from nil");
+  }
+
+  bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
+
   if (fs->type == dtUnknown) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
@@ -4936,6 +4968,13 @@ static void resolveInitField(CallExpr* call) {
         fs->type = fs->defPoint->exprType->typeInfo();
       }
     }
+  }
+
+  // Type was just fully instantiated, let's try to find its promotion type.
+  if (wasGeneric                        == true &&
+      ct->symbol->hasFlag(FLAG_GENERIC) == false &&
+      ct->scalarPromotionType           == NULL) {
+    resolvePromotionType(ct);
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -6347,14 +6386,13 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
       Expr* result = preFold(call);
 
       if (CallExpr* callFolded = toCallExpr(result)) {
-        if (callFolded->parentSymbol != NULL) {
+        if (callFolded->inTree()) {
+
           callStack.add(callFolded);
 
           resolveCall(callFolded);
 
-          if (callFolded->parentSymbol != NULL) {
-            if (FnSymbol* fn = callFolded->resolvedFunction()) {
-
+          if (FnSymbol* fn = callFolded->resolvedFunction()) {
 
               if (fn->retTag  == RET_PARAM || fn->retTag  == RET_TYPE) {
                 resolveSignatureAndFunction(fn);
@@ -6366,7 +6404,6 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
                 resolveSignature(fn);
 
               }
-            }
           }
 
           callStack.pop();
@@ -7323,8 +7360,7 @@ static void resolveEnumTypes() {
 
 static void insertRuntimeTypeTemps() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint &&
-        ts->defPoint->parentSymbol &&
+    if (ts->inTree()                       &&
         ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
       SET_LINENO(ts);
@@ -7465,8 +7501,8 @@ static void resolveSerializers() {
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentSymbol               != NULL   &&
-        ts->hasFlag(FLAG_GENERIC)                == false  &&
+    if (ts->inTree()                                      &&
+        ts->hasFlag(FLAG_GENERIC)                == false &&
         ts->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
         isSingleType(ts->type)                   == false &&
         isSyncType(ts->type)                     == false &&
@@ -7497,7 +7533,7 @@ static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->defPoint->parentSymbol               != NULL   &&
+    if (ts->inTree()                                       &&
         ts->hasFlag(FLAG_GENERIC)                == false  &&
         ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
       if (AggregateType* at = toAggregateType(ts->type)) {
@@ -7762,7 +7798,7 @@ static void resolveRecordInitializers() {
 static Type* recordInitType(CallExpr* init) {
   Type* retval = NULL;
 
-  if (init->parentSymbol != NULL) {
+  if (init->inTree()) {
     Type* type = init->get(1)->typeInfo();
 
     if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
@@ -8410,7 +8446,7 @@ static void removeUnusedFunctions() {
               if (AggregateType* at = toAggregateType(refType)) {
                 DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
 
-                if (defPoint->parentSymbol != NULL) {
+                if (defPoint->inTree()) {
                   defPoint->remove();
                 }
 
@@ -8441,8 +8477,7 @@ static bool isUnusedClass(AggregateType* ct);
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint                         != NULL  &&
-        type->defPoint->parentSymbol           != NULL  &&
+    if (type->inTree()                                  &&
         type->hasFlag(FLAG_REF)                == false &&
         type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
       if (AggregateType* at = toAggregateType(type->type)) {
@@ -8455,8 +8490,7 @@ static void removeUnusedTypes() {
 
   // Remove unused ref types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
-    if (type->defPoint != NULL && type->defPoint->parentSymbol != NULL) {
-      if (type->hasFlag(FLAG_REF) == true) {
+    if (type->inTree() && type->hasFlag(FLAG_REF)) {
         // Get the value type of the ref type.
         if (AggregateType* at1 = toAggregateType(type->getValType())) {
           if (isUnusedClass(at1) == true) {
@@ -8470,10 +8504,9 @@ static void removeUnusedTypes() {
         AggregateType* at2      = toAggregateType(type->type);
         DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
 
-        if (defPoint->parentSymbol != NULL) {
+        if (defPoint->inTree()) {
           defPoint->remove();
         }
-      }
     }
   }
 }
@@ -8618,7 +8651,6 @@ static void removeRandomPrimitive(CallExpr* call) {
 
       Symbol* sym = baseType->getField(memberName);
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-          !strcmp(sym->name, "_promotionType") ||
           sym->isParameter())
         call->getStmtExpr()->remove();
       else {
@@ -9166,61 +9198,116 @@ static void replaceInitPrims(std::vector<BaseAST*>& asts) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool primInitIsIteratorRecord(Type* type);
+static Symbol* resolvePrimInitGetField(CallExpr* call);
 
-static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
-static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
+static Expr*   resolvePrimInit(CallExpr* call, Type* type);
+
+static bool    primInitIsIteratorRecord(Type* type);
+
+static bool    primInitIsUnacceptableGeneric(CallExpr* call, Type* type);
+
+static void    primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type);
 
 Expr* resolvePrimInit(CallExpr* call) {
-  SymExpr* se     = toSymExpr(call->get(1));
-  Expr*    retval = NULL;
+  Expr* retval = NULL;
 
-  if (se == NULL) {
-    INT_FATAL(call, "Actual 1 is not a sym expr");
-
-  } else if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
-    USR_FATAL(call, "invalid type specification");
-
-  } else {
-    Type*          type = resolveTypeAlias(se);
-    AggregateType* at   = toAggregateType(type);
-
-    // These are handled later
-    if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
-      INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
-
-    // These are handled in replaceInitPrims().
-    } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-
-    // Initializers for IteratorRecords cannot be used as constructors
-    } else if (primInitIsIteratorRecord(type)               == true) {
-
-    // Generate a more specific USR_FATAL if resolution would fail
-    } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-      primInitHaltForUnacceptableGeneric(call, type);
-
-    // NonGeneric records with initializers do not support _defaultOf
-    } else if (at                                           != NULL &&
-               at->instantiatedFrom                         == NULL &&
-               isNonGenericRecordWithInitializers(at)       == true) {
-      // Parent PRIM_MOVE will be updated to init() later in resolution
+  if (SymExpr* se = toSymExpr(call->get(1))) {
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = resolvePrimInit(call, resolveTypeAlias(se));
 
     } else {
-      SET_LINENO(call);
-
-      CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
-
-      call->replace(defOfCall);
-
-      resolveCallAndCallee(defOfCall);
-
-      retval = foldTryCond(postFold(defOfCall));
+      USR_FATAL(call, "invalid type specification");
     }
+
+  } else if (CallExpr* ce = toCallExpr(call->get(1))) {
+    if (Symbol* field = resolvePrimInitGetField(ce)) {
+      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retval = resolvePrimInit(call, field->typeInfo());
+
+      } else {
+        USR_FATAL(call, "invalid type specification");
+      }
+    }
+
+  } else {
+    INT_FATAL(call, "Unsupported primInit");
   }
 
   return retval;
 }
 
+static Symbol* resolvePrimInitGetField(CallExpr* call) {
+  Symbol* retval = NULL;
+
+  if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+    AggregateType* ct  = toAggregateType(call->get(1)->getValType());
+    SymExpr*       se  = toSymExpr(call->get(2));
+    VarSymbol*     var = toVarSymbol(se->symbol());
+
+    if (Immediate* imm = var->immediate) {
+      if (imm->const_kind == CONST_KIND_STRING) {
+        retval = ct->getField(var->immediate->v_string);
+
+      } else if (imm->const_kind == NUM_KIND_INT) {
+        int64_t i = imm->int_value();
+
+        if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS) == true) {
+          retval = getTheIteratorFn(ct)->getFormal(i);
+
+        } else {
+          retval = ct->getField(i);
+        }
+      }
+
+    } else {
+      INT_FATAL(call, "Bad actual to \".v\"");
+    }
+
+  } else {
+    INT_FATAL(call, "PrimInit only support \".v\"");
+  }
+
+  return retval;
+}
+
+static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+  AggregateType* at     = toAggregateType(type);
+  Expr*          retval = NULL;
+
+  // These are handled later
+  if (type->symbol->hasFlag(FLAG_EXTERN) == true) {
+    INT_ASSERT(toCallExpr(call->parentExpr)->isPrimitive(PRIM_MOVE));
+
+  // These are handled in replaceInitPrims().
+  } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
+
+  // Initializers for IteratorRecords cannot be used as constructors
+  } else if (primInitIsIteratorRecord(type)               == true) {
+
+  // Generate a more specific USR_FATAL if resolution would fail
+  } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
+    primInitHaltForUnacceptableGeneric(call, type);
+
+  // NonGeneric records with initializers do not support _defaultOf
+  } else if (at                                           != NULL &&
+             at->instantiatedFrom                         == NULL &&
+             isNonGenericRecordWithInitializers(at)       == true) {
+    // Parent PRIM_MOVE will be updated to init() later in resolution
+
+  } else {
+    SET_LINENO(call);
+
+    CallExpr* defOfCall = new CallExpr("_defaultOf", type->symbol);
+
+    call->replace(defOfCall);
+
+    resolveCallAndCallee(defOfCall);
+
+    retval = foldTryCond(postFold(defOfCall));
+  }
+
+  return retval;
+}
 
 static bool primInitIsIteratorRecord(Type* type) {
   bool retval = false;
@@ -9335,14 +9422,13 @@ static void removeInitFields()
 }
 
 static void removeMootFields() {
-  // Remove type fields, parameter fields, and _promotionType field
+  // Remove type fields and parameter fields
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->defPoint && type->defPoint->parentSymbol) {
       if (AggregateType* ct = toAggregateType(type->type)) {
         for_fields(field, ct) {
           if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-              field->isParameter() ||
-              !strcmp(field->name, "_promotionType"))
+              field->isParameter())
             field->defPoint->remove();
         }
       }

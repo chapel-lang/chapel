@@ -21,6 +21,7 @@
 #define _INITIALIZER_RULES_H_
 
 class AggregateType;
+class BlockStmt;
 class CallExpr;
 class FnSymbol;
 
@@ -28,12 +29,12 @@ bool      isSuperInit(CallExpr* stmt);
 bool      isThisInit (CallExpr* stmt);
 bool      isInitDone (CallExpr* stmt);
 
+bool      hasInitDone(BlockStmt* block);
+
 void      errorOnFieldsInArgList(FnSymbol* fn);
 
 void      preNormalizeFields(AggregateType* at);
 void      preNormalizeInitMethod(FnSymbol* fn);
 FnSymbol* buildClassAllocator(FnSymbol* initMethod);
-
-void      transformSuperInit(CallExpr* initCall);
 
 #endif

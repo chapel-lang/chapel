@@ -77,11 +77,11 @@ As an example, there is a primer on the chpldoc capability in
 ``$CHPL_HOME/examples/primers/`` that can be turned into documentation using::
 
    cd $CHPL_HOME/examples/primers
-   chpldoc chpldoc.chpl
+   chpldoc chpldoc.doc.chpl
 
 The output documentation will be located in::
 
-   $CHPL_HOME/examples/primers/docs/chpldoc.html
+   $CHPL_HOME/examples/primers/docs/index.html
 
 
 Comment style

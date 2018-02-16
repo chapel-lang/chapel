@@ -97,7 +97,7 @@ Debugging the generated code
 
 Using gdb and other debugging features are also discussed in:
 
-      $CHPL_HOME/doc/usingchapel/executing.rst
+      $CHPL_HOME/doc/rst/usingchapel/executing.rst
 
 * If you want to debug the runtime library as well, build your runtime so:
 
@@ -268,7 +268,7 @@ Tracing memory use
 ------------------
 
 See:
-      $CHPL_HOME/doc/usingchapel/executing.rst
+      $CHPL_HOME/doc/rst/usingchapel/executing.rst
 
 
 Miscellanea

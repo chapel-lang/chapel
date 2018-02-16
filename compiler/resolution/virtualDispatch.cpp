@@ -736,7 +736,7 @@ static bool wasSuperDot(CallExpr* call);
 
 void insertDynamicDispatchCalls() {
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol != NULL) {
+    if (call->inTree()) {
       if (FnSymbol* fn = call->resolvedFunction()) {
 
         if (virtualChildrenMap.get(fn) != NULL  &&   // There are overrides

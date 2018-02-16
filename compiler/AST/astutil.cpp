@@ -453,7 +453,7 @@ void buildDefUseMaps(Vec<Symbol*>& symSet,
     if (sym == NULL) continue;
 
     for_SymbolSymExprs(se, sym) {
-      if (se->parentSymbol && sym == se->symbol()) {
+      if (se->inTree() && sym == se->symbol()) {
         int result = isDefAndOrUse(se);
 
         if (result & 1)
@@ -488,7 +488,7 @@ buildDefUseSetsInternal(BaseAST* ast,
                         Vec<SymExpr*>& defSet,
                         Vec<SymExpr*>& useSet) {
   if (SymExpr* se = toSymExpr(ast)) {
-    if (se->parentSymbol && se->symbol() && symSet.set_in(se->symbol())) {
+    if (se->inTree() && se->symbol() && symSet.set_in(se->symbol())) {
       int result = isDefAndOrUse(se);
       if (result & 1)
         defSet.set_add(se);
@@ -902,7 +902,7 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
   // change symbols with dead types to void (important for baseline)
   //
   forv_Vec(DefExpr, def, gDefExprs) {
-    if (def->parentSymbol                != NULL  &&
+    if (def->inTree()                             &&
         def->sym->type                   != NULL  &&
         isAggregateType(def->sym->type)  ==  true &&
         isTypeSymbol(def->sym)           == false &&

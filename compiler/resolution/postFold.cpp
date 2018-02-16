@@ -90,7 +90,7 @@ Expr* postFold(Expr* expr) {
 
   Expr* retval = expr;
 
-  INT_ASSERT(expr->parentSymbol != NULL);
+  INT_ASSERT(expr->inTree());
 
   if (CallExpr* call = toCallExpr(expr)) {
     if (call->isResolved() == true) {

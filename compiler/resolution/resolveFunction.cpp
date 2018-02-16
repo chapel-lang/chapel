@@ -125,6 +125,7 @@ static void resolveFormals(FnSymbol* fn) {
 // Fix up value types that need to be ref types.
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   // For begin functions, copy ranges in if passed by blank intent.
+  // TODO: remove this code - it should no longer be necessary
   if (fn->hasFlag(FLAG_BEGIN)                   == true &&
       formal->type->symbol->hasFlag(FLAG_RANGE) == true) {
     if (formal->intent == INTENT_BLANK ||
@@ -149,17 +150,23 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
              formal                                    != fn->_this &&
              doNotChangeTupleTypeRefLevel(fn, false)   == false) {
 
-    // Let 'in' intent work similarly to the blank intent.
     AggregateType* tupleType = toAggregateType(formal->type);
     IntentTag      intent    = formal->intent;
 
-    if (intent == INTENT_IN) {
-      intent = INTENT_BLANK;
-    }
-
     INT_ASSERT(tupleType);
 
-    formal->type = computeTupleWithIntent(intent, tupleType);
+    if (shouldAddFormalTempAtCallSite(formal, fn)) {
+      // In, const in, intents treat tuple as an value variable
+      // so it should not contain any refs.
+      formal->type = computeNonRefTuple(tupleType);
+    } else {
+      // (for !shouldAddFormalTempAtCallSite),
+      // let 'in' intent work similarly to the blank intent.
+      if (intent == INTENT_IN) {
+        intent = INTENT_BLANK;
+      }
+      formal->type = computeTupleWithIntent(intent, tupleType);
+    }
   }
 }
 
@@ -181,8 +188,9 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   } else if (formal                              == fn->_this &&
              formal->hasFlag(FLAG_TYPE_VARIABLE) == false     &&
-             (isUnion(formal->type)  == true||
-              isRecord(formal->type) == true)) {
+             (isUnion(formal->type)  == true ||
+               (isRecord(formal->type) == true &&
+                !formal->type->symbol->hasFlag(FLAG_RANGE)))) {
     retval = true;
 
   } else {
@@ -311,6 +319,14 @@ void resolveFunction(FnSymbol* fn) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
+      AggregateType* at = toAggregateType(fn->_this->getValType());
+      if (at->scalarPromotionType == NULL &&
+          at->symbol->hasFlag(FLAG_GENERIC) == false) {
+        resolvePromotionType(at);
+      }
+    }
 
     if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
@@ -721,7 +737,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      setScalarPromotionType(AggregateType* at);
 static void      fixTypeNames(AggregateType* at);
 static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
@@ -730,7 +745,10 @@ static FnSymbol* instantiateBase(FnSymbol* fn);
 static void resolveTypeConstructor(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->retType);
 
-  setScalarPromotionType(at);
+  if (at->scalarPromotionType == NULL &&
+      at->symbol->hasFlag(FLAG_REF) == false) {
+    resolvePromotionType(at);
+  }
 
   if (developer == false) {
     fixTypeNames(at);
@@ -777,14 +795,6 @@ static void resolveTypeConstructor(FnSymbol* fn) {
       block->remove();
 
       tmp->defPoint->remove();
-    }
-  }
-}
-
-static void setScalarPromotionType(AggregateType* at) {
-  for_fields(field, at) {
-    if (strcmp(field->name, "_promotionType") == 0) {
-      at->scalarPromotionType = field->type;
     }
   }
 }
@@ -1114,6 +1124,7 @@ void insertFormalTemps(FnSymbol* fn) {
 }
 
 // Returns true if the formal needs an internal temporary, false otherwise.
+// See also ArgSymbol::requiresCPtr
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
@@ -1132,8 +1143,30 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
       (backendRequiresCopyForIn(formal->type) ||
        fn->hasFlag(FLAG_INLINE) ||
        fn->hasFlag(FLAG_ITERATOR_FN)))
-     );
+    );
 }
+
+bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+  if (isRecord(formal->getValType())) {
+    // For now, rule out default ctor/init/_new
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
+        (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+         fn->hasFlag(FLAG_LAST_RESORT) &&
+         (0 == strcmp(fn->name, "init") ||
+          0 == strcmp(fn->name, "_new"))))
+      return false; // old strategy for old-path in wrapAndCleanUpActuals
+    else {
+      if (formal->intent == INTENT_IN ||
+          formal->intent == INTENT_CONST_IN ||
+          formal->originalIntent == INTENT_IN ||
+          formal->originalIntent == INTENT_CONST_IN)
+        return true;
+    }
+  }
+
+  return false;
+}
+
 
 //
 // Can Chapel rely on the compiler's back end (e.g.,
@@ -1141,7 +1174,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return isRecord(t)                     == true ||
+  return (isRecord(t) == true && !t->symbol->hasFlag(FLAG_RANGE)) ||
          isUnion(t)                      == true ||
          t->symbol->hasFlag(FLAG_ARRAY)  == true ||
          t->symbol->hasFlag(FLAG_DOMAIN) == true;
@@ -1248,14 +1281,20 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_IN:
      case INTENT_CONST_IN:
-      // TODO: Adding a formal temp for INTENT_CONST_IN is conservative.
-      // If the compiler verifies in a separate pass that it is never written,
-      // we don't have to copy it.
-      fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                    tmp,
-                                    new CallExpr("chpl__initCopy", formal)));
+      if (!shouldAddFormalTempAtCallSite(formal, fn)) {
+        fn->insertAtHead(new CallExpr(PRIM_MOVE,
+                                      tmp,
+                                      new CallExpr("chpl__initCopy", formal)));
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      } else {
+        // move from in intent argument to local variable to be destroyed
+        // (The local variable is not strictly necessary but is a more
+        //  typical pattern for follow-on passes)
+        tmp->addFlag(FLAG_NO_COPY);
+        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      }
       break;
 
      case INTENT_BLANK:
@@ -1612,3 +1651,4 @@ void ensureInMethodList(FnSymbol* fn) {
     }
   }
 }
+

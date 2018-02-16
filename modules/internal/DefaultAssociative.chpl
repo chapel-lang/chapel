@@ -857,16 +857,13 @@ module DefaultAssociative {
   // Implementation of chpl__defaultHash for ranges, in case the 'idxType'
   // contains a range in some way (e.g. tuple of ranges).
   //
-  // Need to skip '_promotionType' to avoid bizarre compiler errors.
-  //
   inline proc chpl__defaultHash(r : range): uint {
     use Reflection;
     var ret : uint;
     for param i in 1..numFields(r.type) {
       if isParam(getField(r, i)) == false &&
          isType(getField(r, i)) == false &&
-         isVoidType(getField(r, i).type) == false &&
-         getFieldName(r.type, i) != "_promotionType" {
+         isVoidType(getField(r, i).type) == false {
         const ref field = getField(r, i);
         const fieldHash = chpl__defaultHash(field);
         if i == 1 then

@@ -88,6 +88,25 @@ bool       isInstantiation(Type* sub, Type* super);
 
 bool       formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn);
 
+// If formalRequiresTemp(formal,fn), when this function returns true,
+// the new strategy of making the temporary at the call site will be used.
+// (if it returns false, the temporary will be inside fn)
+bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
+
+// This function concerns an initialization expression such as:
+//   var x = <expr>;
+// It returns `true` if <expr> should be copy-initialized and `false` if
+// ownership can be transferred.
+//
+// In particular:
+//  var y = ...;
+//  var x = y;   // requires a copy-init
+//  var z = functionReturningRecordByValue(); // does not require a copy-init
+bool       doesCopyInitializationRequireCopy(Expr* initFrom);
+// Similar to the above, but it's OK to return a local value
+// variable without a copy.
+bool       doesValueReturnRequireCopy(Expr* initFrom);
+
 // explain call stuff
 bool explainCallMatch(CallExpr* call);
 
@@ -237,5 +256,7 @@ bool evaluateWhereClause(FnSymbol* fn);
 bool isAutoDestroyedVariable(Symbol* sym);
 
 SymExpr* findSourceOfYield(CallExpr* yield);
+
+void resolvePromotionType(AggregateType* at);
 
 #endif

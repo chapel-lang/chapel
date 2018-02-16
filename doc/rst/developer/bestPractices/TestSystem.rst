@@ -433,9 +433,7 @@ associated GitHub issue number in the `#issue-number` format, e.g. `#1`.
 
 The rest of the file is optional and free-form. It can be used over the
 future's lifetime to describe in what way the test isn't working or should be
-working, implementation notes, philosophical arguments, etc.  The one-line
-summaries of all outstanding futures can be viewed by running
-``$CHPL_HOME/util/devel/test/list_futures``.
+working, implementation notes, philosophical arguments, etc.
 
 The current categories of futures reflect GitHub labels:
 

@@ -112,14 +112,17 @@ class Grid {
     for loc in (loc1d.below:int .. loc1d.above by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
-          if loc(d) == loc1d.below then 
-            ranges(d) = ((extended_cells.low(d).. by 2) #n_ghost_cells(d)).alignHigh();
-          else if loc(d) == loc1d.inner then
+          if loc(d) == loc1d.below {
+            var tmp = ((extended_cells.low(d).. by 2) #n_ghost_cells(d));
+            ranges(d) = tmp.alignHigh();
+          } else if loc(d) == loc1d.inner {
             ranges(d) = cells.dim(d);
-          else
+          } else {
             // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
             // hilde sez: Mathematical precision meets ease of use
-            ranges(d) = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d)).alignLow();
+            var tmp = ((..extended_cells.high(d) by 2 align extended_cells.high(d)) #-n_ghost_cells(d));
+            ranges(d) = tmp.alignLow();
+          }
         }
         ghost_domain = ranges;
         ghost_domains.add(ghost_domain);

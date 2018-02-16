@@ -36,7 +36,7 @@ public:
   virtual        ~Expr();
 
   // Interface for BaseAST
-  virtual bool    inTree();
+          bool    inTree();
   virtual bool    isStmt()                                           const;
   virtual QualifiedType qualType();
   virtual void    verify();
@@ -297,8 +297,17 @@ class NamedExpr : public Expr {
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
-// Exception: 'n' is also live if isRootModule(n).
-
+//
+// We may want to replace isAlive() with {Expr,Symbol,Type}::inTree().
+// Right now they are different:
+//  - Symbol::inTree() performs an additional check for rootModule
+//    whereas isAlive(Symbol) does not.
+//  - isAlive(Symbol) is false vs. Symbol::inTree() is true on rootModule.
+//    'rootModule' is the only module that is always alive/in tree
+//    yet does not have a defPoint.
+//  - Type::inTree() performs an additional check for Type::symbol != NULL,
+//    whereas isAlive(Type) does not.
+//
 static inline bool isAlive(Expr* expr) {
   return expr->parentSymbol;
 }

@@ -750,7 +750,7 @@ effect as passing that option once.
 BUGS
 ----
 
-See $CHPL\_HOME/doc/rst/bugs.rst for instructions on reporting bugs.
+See $CHPL\_HOME/doc/rst/usingchapel/bugs.rst for instructions on reporting bugs.
 
 SEE ALSO
 --------

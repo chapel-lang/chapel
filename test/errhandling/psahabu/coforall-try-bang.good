@@ -1,0 +1,4 @@
+coforall-try-bang.chpl:6: In function 'test':
+coforall-try-bang.chpl:7: error: call to throwing function coforall_fn without throws, try, or try! (relaxed mode)
+coforall-try-bang.chpl:7: note: throwing function coforall_fn defined here
+coforall-try-bang.chpl:10: note: call to throwing function here

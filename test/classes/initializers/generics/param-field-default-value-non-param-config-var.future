@@ -1,0 +1,5 @@
+bug: class with initializer allows non-param default value for param field
+#8423
+
+Without the writeln() it compiles.
+With the writeln(), there's an error compiling the generated ChapelIO.c.

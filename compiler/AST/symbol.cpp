@@ -136,10 +136,11 @@ void Symbol::verify() {
 
 
 bool Symbol::inTree() {
-  if (this == rootModule)
-    return true;
   if (defPoint)
     return defPoint->inTree();
+  // rootModule->defPoint is always NULL
+  if (this == rootModule)
+    return true;
   else
     return false;
 }
@@ -669,6 +670,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
                      Expr* iDefaultExpr, Expr* iVariableExpr) :
   LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
+  originalIntent(iIntent),
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
@@ -743,6 +745,7 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ps->copyFlags(this);
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
+  ps->originalIntent = this->originalIntent;
   return ps;
 }
 

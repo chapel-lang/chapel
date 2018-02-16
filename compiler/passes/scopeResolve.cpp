@@ -637,7 +637,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
 
   const char* name = usymExpr->unresolved;
 
-  if (name == astrSdot || usymExpr->parentSymbol == NULL) {
+  if (name == astrSdot || !usymExpr->inTree()) {
 
   } else if (Symbol* sym = lookup(name, usymExpr)) {
     FnSymbol* fn = toFnSymbol(sym);
