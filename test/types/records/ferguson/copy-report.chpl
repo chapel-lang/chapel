@@ -1,26 +1,48 @@
+class Instance {
+  var x: int;
+}
+
+/*proc Instance.init(x:int) {
+  this.x = x;
+  super.init();
+}
+*/
+
 record R {
   var x: int = 0;
+  var ptr: Instance = nil;
+}
+
+proc R.R(x:int) {
+  this.x = x;
+  this.ptr = new Instance(x);
 }
 
 /*
-After PR #5164, user records can't actually
-write their own autoCopy functions.
+proc R.init() {
+  this.x = 0;
+  this.ptr = nil;
+  super.init();
+}
 
-pragma "donor fn"
-pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
+proc R.init(x:int) {
+  this.x = x;
+  this.ptr = new Instance(x);
+  super.init();
+}
 
-  // TODO - is no auto destroy necessary here?
-  pragma "no auto destroy"
-  var ret: R;
-
-  ret.x = arg.x + 1;
-
-  writeln("    autoCopy");
-
-  return ret;
+proc R.init(from: R) {
+  this.x = from.x + 1;
+  this.ptr = new Instance(this.x);
+  super.init();
+  writeln("    initCopy"); // ie copy-init
 }
 */
+
+proc R.deinit() {
+  delete this.ptr;
+  this.ptr = nil;
+}
 
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }
@@ -31,6 +53,7 @@ proc chpl__initCopy(arg: R) {
   var ret: R;
 
   ret.x = arg.x + 1;
+  ret.ptr = new Instance(ret.x);
 
   writeln("    initCopy");
 
@@ -40,12 +63,16 @@ proc chpl__initCopy(arg: R) {
 proc =(ref lhs: R, rhs: R) {
   writeln("    assign");
   lhs.x = rhs.x;
+  delete lhs.ptr;
+  lhs.ptr = new Instance(rhs.x);
 }
 
 
 proc check(r:R)
 {
   assert(r.x > 0);
+  assert(r.ptr != nil);
+  assert(r.ptr.x == r.x);
 }
 
 var global = new R(1);
@@ -67,7 +94,7 @@ proc returnRConstRef() const ref {
   return global;
 }
 
-proc varInitValueCall() 
+proc varInitValueCall()
 {
   writeln(" variable initialization / value call");
   writeln("   blank return intent, untyped variable");
@@ -95,7 +122,7 @@ proc callToInArg()
 }
 
 
-proc varInitLocal() 
+proc varInitLocal()
 {
   writeln(" variable initialization / local var");
   var loc = new R(1);
@@ -107,7 +134,7 @@ proc varInitLocal()
   check(v2);
 }
 
-proc varInitGlobal() 
+proc varInitGlobal()
 {
   writeln(" variable initialization / global var");
   writeln("   untyped variable");
@@ -118,7 +145,22 @@ proc varInitGlobal()
   check(v2);
 }
 
-proc varInitRefGlobal() 
+proc varInitOuter()
+{
+  writeln(" variable initialization / outer var");
+  var outer = new R(1);
+  proc inner() {
+    writeln("   untyped variable");
+    var v1 = outer;
+    check(v1);
+    writeln("   typed variable");
+    var v2:R = outer;
+    check(v2);
+  }
+  inner();
+}
+
+proc varInitRefGlobal()
 {
   writeln(" variable initialization / global ref");
   writeln("   untyped variable");
@@ -129,7 +171,7 @@ proc varInitRefGlobal()
   check(v2);
 }
 
-proc varInitLocalRef() 
+proc varInitLocalRef()
 {
   writeln(" variable initialization / local ref");
   var loc = new R(1);
@@ -142,7 +184,7 @@ proc varInitLocalRef()
   check(v2);
 }
 
-proc varInitArgBlank(arg) 
+proc varInitArgBlank(arg)
 {
   writeln(" variable initialization / blank-intent arg");
   writeln("   untyped variable");
@@ -153,7 +195,7 @@ proc varInitArgBlank(arg)
   check(v2);
 }
 
-proc varInitArgConstRef(const ref arg) 
+proc varInitArgConstRef(const ref arg)
 {
   writeln(" variable initialization / const-ref arg");
   writeln("   untyped variable");
@@ -164,9 +206,9 @@ proc varInitArgConstRef(const ref arg)
   check(v2);
 }
 
-proc varInitArgRef(ref arg) 
+proc varInitArgRef(ref arg)
 {
-  writeln(" variable initialization / blank-intent arg");
+  writeln(" variable initialization / ref arg");
   writeln("   untyped variable");
   var v1 = arg;
   check(v1);
@@ -175,7 +217,7 @@ proc varInitArgRef(ref arg)
   check(v2);
 }
 
-proc varInitArgIn(in arg) 
+proc varInitArgIn(in arg)
 {
   writeln(" variable initialization / in-intent arg");
   writeln("   untyped variable");
@@ -186,7 +228,30 @@ proc varInitArgIn(in arg)
   check(v2);
 }
 
-proc varInitArgInout(inout arg) 
+proc varInitArgConstIn(const in arg)
+{
+  writeln(" variable initialization / const-in-intent arg");
+  writeln("   untyped variable");
+  var v1 = arg;
+  check(v1);
+  writeln("   typed variable");
+  var v2:R = arg;
+  check(v2);
+}
+
+proc do_varInitArgIn(in arg)
+{
+  writeln(" passing in intent arg to in intent arg");
+  varInitArgIn(arg);
+}
+
+proc do_varInitArgConstIn(const in arg)
+{
+  writeln(" passing const in intent arg to const in intent arg");
+  varInitArgConstIn(arg);
+}
+
+proc varInitArgInout(inout arg)
 {
   writeln(" variable initialization / inout-intent arg");
   writeln("   untyped variable");
@@ -208,7 +273,7 @@ record Container {
 }
 
 // initializing a field
-proc fieldInitCall() 
+proc fieldInitCall()
 {
   writeln(" field initialization / value call");
   writeln("   default constructor");
@@ -216,7 +281,7 @@ proc fieldInitCall()
   check(cont.field);
 }
 
-proc fieldInitLocal() 
+proc fieldInitLocal()
 {
   writeln(" field initialization / local var");
   var loc = new R(1);
@@ -225,7 +290,7 @@ proc fieldInitLocal()
   check(cont.field);
 }
 
-proc fieldInitGlobal() 
+proc fieldInitGlobal()
 {
   writeln(" field initialization / global var");
   writeln("   default constructor");
@@ -233,7 +298,7 @@ proc fieldInitGlobal()
   check(cont.field);
 }
 
-proc fieldInitRefGlobal() 
+proc fieldInitRefGlobal()
 {
   writeln(" field initialization / global ref");
   writeln("   default constructor");
@@ -241,7 +306,7 @@ proc fieldInitRefGlobal()
   check(cont.field);
 }
 
-proc fieldInitLocalRef() 
+proc fieldInitLocalRef()
 {
   writeln(" field initialization / local ref");
   var loc = new R(1);
@@ -251,7 +316,7 @@ proc fieldInitLocalRef()
   check(cont.field);
 }
 
-proc fieldInitArgBlank(arg) 
+proc fieldInitArgBlank(arg)
 {
   writeln(" field initialization / blank-intent arg");
   writeln("   default constructor");
@@ -259,7 +324,7 @@ proc fieldInitArgBlank(arg)
   check(cont.field);
 }
 
-proc fieldInitArgConstRef(const ref arg) 
+proc fieldInitArgConstRef(const ref arg)
 {
   writeln(" field initialization / const-ref arg");
   writeln("   default constructor");
@@ -267,7 +332,7 @@ proc fieldInitArgConstRef(const ref arg)
   check(cont.field);
 }
 
-proc fieldInitArgRef(ref arg) 
+proc fieldInitArgRef(ref arg)
 {
   writeln(" field initialization / ref arg");
   writeln("   default constructor");
@@ -275,7 +340,7 @@ proc fieldInitArgRef(ref arg)
   check(cont.field);
 }
 
-proc fieldInitArgIn(in arg) 
+proc fieldInitArgIn(in arg)
 {
   writeln(" field initialization / in arg");
   writeln("   default constructor");
@@ -283,7 +348,7 @@ proc fieldInitArgIn(in arg)
   check(cont.field);
 }
 
-proc fieldInitArgInout(inout arg) 
+proc fieldInitArgInout(inout arg)
 {
   writeln(" field initialization / inout arg");
   writeln("   default constructor");
@@ -311,6 +376,24 @@ proc returnLocal() {
   writeln(" return / local variable");
   var x = new R(1);
   return x;
+}
+
+proc returnOuter() {
+  var outer = new R(1);
+  proc inner() {
+    writeln(" return / outer variable");
+    return outer;
+  }
+  check(inner());
+}
+
+proc returnInArg(in arg) {
+  writeln(" return / in arg");
+  return arg;
+}
+proc returnConstInArg(const in arg) {
+  writeln(" return / const in arg");
+  return arg;
 }
 
 proc returnGlobal() {
@@ -389,7 +472,22 @@ proc main() {
   writeln("VARIABLE INITIALIZATION -- LOCAL VAR");
   varInitLocal();
   fieldInitLocal();
-  
+
+  writeln();
+  writeln("VARIABLE INITIALIZATION -- IN ARG (GLOBAL)");
+  varInitArgIn(global);
+  writeln();
+  varInitArgConstIn(global);
+
+  writeln();
+  writeln("VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))");
+  do_varInitArgIn(returnR());
+  do_varInitArgConstIn(returnR());
+
+  writeln();
+  writeln("VARIABLE INITIALIZATION -- OUTER VAR");
+  varInitOuter();
+
   writeln();
   writeln("VARIABLE INITIALIZATION -- GLOBAL / REF");
   varInitGlobal();
@@ -398,7 +496,6 @@ proc main() {
   varInitArgBlank(global);
   varInitArgConstRef(global);
   varInitArgRef(global);
-  varInitArgIn(global);
   varInitArgInout(global);
 
   fieldInitGlobal();
@@ -421,6 +518,21 @@ proc main() {
   check(returnLocal());
 
   writeln();
+  writeln("VALUE RETURN -- OUTER VAR");
+  returnOuter();
+
+  writeln();
+  writeln("VALUE RETURN -- IN ARG (GLOBAL)");
+  check(returnInArg(global));
+  writeln();
+  check(returnConstInArg(global));
+
+  writeln();
+  writeln("VALUE RETURN -- IN ARG (CALL-EXPR)");
+  check(returnInArg(returnR()));
+  check(returnConstInArg(returnR()));
+
+  writeln();
   writeln("VALUE RETURN -- GLOBAL/REF");
   check(returnGlobal());
   check(returnRefGlobal());
@@ -441,6 +553,5 @@ proc main() {
     check(returnGlobalConstRef());
     check(returnRefArgRef(global));
   }
-
 }
 

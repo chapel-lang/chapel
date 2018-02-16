@@ -6,30 +6,35 @@ config param enable_type_r32 = (CHPL_COMM == 'ugni'
                                 && false /* no support in module code */ );
 config param enable_type_r64 = (CHPL_COMM == 'ugni');
 
-config const do_type_i32 = true;
-config const do_type_i64 = true;
-config const do_type_ui32 = true;
-config const do_type_ui64 = true;
-config const do_type_r32 = true;
-config const do_type_r64 = true;
+config const default_do_type_flag = true;
 
-config const do_op_read = true;
-config const do_op_write = true;
-config const do_op_xchg = true;
-config const do_op_cmpxchg = true;
-config const do_op_add = true;
-config const do_op_sub = true;
-config const do_op_and = true;
-config const do_op_or = true;
-config const do_op_xor = true;
-config const do_op_fadd = true;
-config const do_op_fsub = true;
-config const do_op_fand = true;
-config const do_op_for = true;
-config const do_op_fxor = true;
+config const do_type_i32 = default_do_type_flag;
+config const do_type_i64 = default_do_type_flag;
+config const do_type_ui32 = default_do_type_flag;
+config const do_type_ui64 = default_do_type_flag;
+config const do_type_r32 = default_do_type_flag;
+config const do_type_r64 = default_do_type_flag;
+
+config const default_do_op_flag = true;
+
+config const do_op_read = default_do_op_flag;
+config const do_op_write = default_do_op_flag;
+config const do_op_xchg = default_do_op_flag;
+config const do_op_cmpxchg = default_do_op_flag;
+config const do_op_add = default_do_op_flag;
+config const do_op_sub = default_do_op_flag;
+config const do_op_and = default_do_op_flag;
+config const do_op_or = default_do_op_flag;
+config const do_op_xor = default_do_op_flag;
+config const do_op_fadd = default_do_op_flag;
+config const do_op_fsub = default_do_op_flag;
+config const do_op_fand = default_do_op_flag;
+config const do_op_for = default_do_op_flag;
+config const do_op_fxor = default_do_op_flag;
 
 
-config const verbose = false;
+config const verbose_failures = false;
+config const verbose = verbose_failures;
 
 var pass = true;
 
@@ -428,6 +433,23 @@ proc test_fxor(ref x: ?t, in val, in what) {
 }
 
 
-proc check(ref x, ref x0, expect) return (   x[0].read() == x0[0].read()
-                                          && x[1].read() == expect
-                                          && x[2].read() == x0[2].read());
+proc check(ref x, ref x0, expect) {
+  const x_0  = x[0].read();
+  const x0_0 = x0[0].read();
+  const x_1  = x[1].read();
+  const x_2  = x[2].read();
+  const x0_2 = x0[2].read();
+
+  const pass = (x_0 == x0_0 && x_1 == expect && x_2 == x0_2);
+
+  const fmt = if isFloatType(x.type) then '%er' else '%@xu';
+  
+  if !pass && verbose_failures {
+    writef('!(' + fmt + '==' + fmt + ' && '
+                + fmt + '==' + fmt + ' && '
+                + fmt + '==' + fmt + ')\n',
+           x_0, x0_0, x_1, expect, x_2, x0_2);
+  }
+
+  return pass;
+}

@@ -84,6 +84,9 @@ static void       reorderActuals(FnSymbol*                fn,
 static void       coerceActuals(FnSymbol* fn,
                                 CallInfo& info);
 
+static void       handleInIntents(FnSymbol* fn,
+                                  CallInfo& info);
+
 static bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                 std::vector<ArgSymbol*>& actualIdxToFormal);
 
@@ -182,6 +185,9 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     if (info.actuals.n > 0) {
       coerceActuals(retval, info);
     }
+
+    // handle 'in' intent
+    handleInIntents(retval, info);
   }
 
   return retval;
@@ -1339,8 +1345,10 @@ static void coerceActuals(FnSymbol* fn, CallInfo& info) {
 
           currActual = newActual;
 
+          info.actuals.v[j] = newActual->symbol();
         } else {
           addArgCoercion(fn, info.call, formal, currActual, actualSym, c2);
+          info.actuals.v[j] = actualSym;
         }
       }
     } while (c2 && --checksLeft > 0);
@@ -1366,6 +1374,12 @@ static bool needToAddCoercion(Type*      actualType,
   // a REF or CONST REF argument intent, no coercion is necessary.
   } else if (actualType == formalType->getRefType() &&
              (getIntent(formal) & INTENT_FLAG_REF) != 0) {
+    retval = false;
+
+  // New in-intents don't require coercion from ref to value
+  // since it'll be handled by the initCopy call.
+  } else if (actualType == formalType->getRefType() &&
+             shouldAddFormalTempAtCallSite(formal, fn)) {
     retval = false;
 
   // If actual and formal are type symbols, no coercion is necessary
@@ -1417,6 +1431,7 @@ static void addArgCoercion(FnSymbol*  fn,
   Expr*       newActual  = new SymExpr(castTemp);
 
   castTemp->addFlag(FLAG_COERCE_TEMP);
+  castTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   // gotta preserve this-ness, so can write to this's fields in constructors
   if (actualSym->hasFlag(FLAG_ARG_THIS) &&
@@ -1445,16 +1460,14 @@ static void addArgCoercion(FnSymbol*  fn,
 
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
-  //   _syncvar(int) --readFE()-> _ref(int) --(dereference)-> int --> real
-  // or
-  //   _syncvar(_syncvar(int))  -->...  _syncvar(int)  -->  [as above]
+  //   _syncvar(int) --readFE()-> int -> real
   //
   // We warn addArgCoercion's caller about that via checkAgain:
-  if (isSyncType(ats->type) == true) {
+  if (isSyncType(ats->getValType()) == true) {
     checkAgain = true;
     castCall   = new CallExpr("readFE", gMethodToken, prevActual);
 
-  } else if (isSingleType(ats->type) == true) {
+  } else if (isSingleType(ats->getValType()) == true) {
     checkAgain = true;
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
@@ -1530,6 +1543,86 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 
   resolveCall(castMove);
+}
+
+/************************************* | **************************************
+*                                                                             *
+* handle intents at call site                                                 *
+*                                                                             *
+************************************** | *************************************/
+
+
+static void handleInIntents(FnSymbol* fn,
+                            CallInfo& info) {
+
+  int j = 0;
+
+  // Function with no actuals can't use in intent
+  // Returning early in that event simplifies the following code.
+  if (info.call->numActuals() == 0)
+    return;
+
+  Expr* anchor = info.call->getStmtExpr();
+
+  Expr* currActual = info.call->get(1);
+  Expr* nextActual = NULL;
+
+  for_formals(formal, fn) {
+
+    nextActual = currActual->next;
+
+    Symbol* actualSym  = info.actuals.v[j];
+
+    if (formalRequiresTemp(formal, fn) &&
+        shouldAddFormalTempAtCallSite(formal, fn)) {
+
+      Expr* useExpr = currActual;
+      if (NamedExpr* named = toNamedExpr(currActual))
+        useExpr = named->actual;
+
+      SymExpr* se = toSymExpr(useExpr);
+      INT_ASSERT(actualSym == se->symbol());
+
+      // A copy might be necessary here but might not.
+      if (doesCopyInitializationRequireCopy(useExpr)) {
+        // Add a new formal temp at the call site that mimics variable
+        // initialization from the actual.
+        VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
+        // "move" from call site to called function, so don't destroy
+        // here. The called function will destroy.
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+
+        // Does this need to be here?
+        if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+          tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+        }
+
+        CallExpr* copy = new CallExpr("chpl__initCopy", actualSym);
+        CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
+        anchor->insertBefore(new DefExpr(tmp));
+        anchor->insertBefore(move);
+
+        resolveCallAndCallee(copy, false); // false - allow unresolved
+        resolveCall(move);
+
+        currActual->replace(new SymExpr(tmp));
+      } else {
+        // Is actualSym something that owns its value?
+        // Is it a call-temp storing the result of a call?
+        // Then "move" ownership to the called function
+        // (don't destroy it here, it will be destroyed there).
+        actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+        /*CallExpr* move = new CallExpr(PRIM_MOVE, tmp, actualSym);
+        anchor->insertBefore(new DefExpr(tmp));
+        anchor->insertBefore(move);
+        resolveCall(move);*/
+      }
+
+    }
+
+    currActual = nextActual;
+    j++;
+  }
 }
 
 /************************************* | **************************************

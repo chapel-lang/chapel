@@ -1,0 +1,11 @@
+----- Records -----
+rX = ()
+rX.stride.type = void
+rY = (stride = 5)
+rY.stride.type = int(64)
+
+----- Classes -----
+cX = ()
+cX.stride.type = void
+cY = (stride = 5)
+cY.stride.type = int(64)

@@ -1,0 +1,1 @@
+param-field-default-value-non-param-field.chpl:3: error: default value for param is not a param
