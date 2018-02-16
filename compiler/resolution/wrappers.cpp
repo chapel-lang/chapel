@@ -2548,6 +2548,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
     wrapper->addFlag(FLAG_FN_RETURNS_ITERATOR);
   }
 
+  if (fn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+    wrapper->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+  }
+
   wrapper->addFlag(FLAG_COMPILER_GENERATED);
 
   if (fn->throwsError())
