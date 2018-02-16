@@ -5031,6 +5031,10 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   if (dst->hasFlag(FLAG_NO_COPY)               == true)  {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
@@ -5039,7 +5043,9 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true)  {
+  } else if (isRecordWithInitializers(srcType) == true &&
+             isSyncType(srcType) == false &&
+             isSingleType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
