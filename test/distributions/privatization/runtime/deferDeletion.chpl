@@ -4,9 +4,11 @@
 // to this spinning thread.
 
 use PrivatizationWrappers;
+use Memory;
 
 config const numIters = 100000;
 
+var m1 = memoryUsed();
 var done : atomic bool;
 done.write(false);
 
@@ -25,3 +27,7 @@ for i in 1 .. numIters {
   delete c;
   clearPrivatized(i);
 }
+
+var m2 = memoryUsed();
+
+writeln("Memory Leaked: ", (m2 - m1) > 0);

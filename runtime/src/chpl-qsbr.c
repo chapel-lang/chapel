@@ -167,16 +167,16 @@ static inline void unpark(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 0);
 }
 
-static inline void acquire_spinlock(struct tls_node *node);
-static inline void acquire_spinlock(struct tls_node *node) {
+static inline void acquire_spinlock(struct tls_node *node, uintptr_t value);
+static inline void acquire_spinlock(struct tls_node *node, uintptr_t value) {
   // Fast path: Quick acquire spinlock
-  if (atomic_exchange_uint_least64_t(&node->spinlock, 1) == 1) {
+  if (!atomic_compare_exchange_strong_uint_least64_t(&node->spinlock, 0, value)) {
     // Slow path: TestAndTestAndSet. Note that we cannot yield or
     // we will end up calling the checkpoint.
     while (true) {
       uint64_t spinlock = atomic_load_uint_least64_t(&node->spinlock);
       if (spinlock == 0 
-        && atomic_compare_exchange_weak_uint_least64_t(&node->spinlock, 0, 1)) {
+        && atomic_compare_exchange_weak_uint_least64_t(&node->spinlock, 0, value)) {
         break;
       }
     }
@@ -315,11 +315,59 @@ static inline void handle_deferred_data(struct tls_node *node) {
   struct defer_node *list = pop_bulk_defer_list(node, epoch);
 
   // Handle deletion of said data...
+  // WARNING: Due to how `--memTrack` works, it is possible for
+  // it to trigger a task-switch when it acquires the memTrack_sync
+  // auxiliary sync var so we must handle this outside of the spinlock.
+  release_spinlock(node);
   for (struct defer_node *dnode = list; dnode != NULL;) {
     struct defer_node *tmp = dnode;
     dnode = dnode->next;
     delete_data(tmp);
     push_recycle_list(node, tmp);
+  }
+  acquire_spinlock(node, (uintptr_t) node);
+}
+
+// Requires spinlock for both tls_nodes. Transfers deferred deletion from giver to receiver
+static inline void give_deferred(struct tls_node *giver, struct tls_node *receiver);
+static inline void give_deferred(struct tls_node *giver, struct tls_node *receiver) {
+  struct defer_node *list = pop_all_defer_list(giver);
+  
+  if (receiver->deferList == NULL) {
+    receiver->deferList = list;
+  } else {
+    // Sort list
+    struct defer_node *newHead = NULL;
+    struct defer_node *newTail = NULL;
+    while (list != NULL && receiver->deferList != NULL) {
+      struct defer_node *dnode;
+      if (list->targetEpoch >= receiver->deferList->targetEpoch) {
+        dnode = list;
+        list = list->next;
+      } else {
+        dnode = receiver->deferList;
+        receiver->deferList = receiver->deferList->next;
+      }
+
+      if (newHead == NULL) {
+        newHead = newTail = dnode;
+        dnode->next = NULL;
+      } else {
+        newTail->next = dnode;
+        newTail = dnode;
+        dnode->next = NULL;
+      }
+    }
+    // Append extra
+    if (list != NULL) {
+      newTail->next = list;
+      list = NULL;
+    } else if (receiver->deferList != NULL) {
+      newTail->next = receiver->deferList;
+      receiver->deferList = NULL;
+    }
+
+    receiver->deferList = newHead;
   }
 }
 
@@ -346,7 +394,7 @@ void chpl_qsbr_blocked(void) {
     tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
-  acquire_spinlock(tls);
+  acquire_spinlock(tls, (uintptr_t) tls);
   park(tls);
 
   // Empty as best we can
@@ -365,65 +413,20 @@ void chpl_qsbr_blocked(void) {
   // thread to dump the rest of our work on...
   struct tls_node *node = get_tls_list();
   for (; node != NULL; node = node->next) {
-    if (!is_parked(node)) {
+    if (node != tls && !is_parked(node)) {
       // Double check...
-      acquire_spinlock(node);
+      acquire_spinlock(node, (uintptr_t) tls);
       if (!is_parked(node)) {
-        break;
+        give_deferred(tls, node);
+        release_spinlock(node);
+        release_spinlock(tls);
+        return;
       }
       release_spinlock(node);  
     }
   }
-
-  // If node is NULL, then all threads are finished so we should be able to safely
-  // handle our deferred data...
-  if (node == NULL) {
-    handle_deferred_data(tls);
-  } else {
-    // If the node is not NULL, we found our thread to dump on and we already hold its lock.
-    struct defer_node *list = pop_all_defer_list(tls);
-    
-    // If their list is empty its easy
-    if (node->deferList == NULL) {
-      node->deferList = list;
-    } else {
-      // Sort list
-      struct defer_node *newHead = NULL;
-      struct defer_node *newTail = NULL;
-      while (list != NULL && node->deferList != NULL) {
-        struct defer_node *dnode;
-        if (list->targetEpoch >= node->deferList->targetEpoch) {
-          dnode = list;
-          list = list->next;
-        } else {
-          dnode = node->deferList;
-          node->deferList = node->deferList->next;
-        }
-
-        if (newHead == NULL) {
-          newHead = newTail = dnode;
-          dnode->next = NULL;
-        } else {
-          newTail->next = dnode;
-          newTail = dnode;
-          dnode->next = NULL;
-        }
-      }
-      // Append extra
-      if (list != NULL) {
-        newTail->next = list;
-        list = NULL;
-      } else if (node->deferList != NULL) {
-        newTail->next = node->deferList;
-        node->deferList = NULL;
-      }
-
-      node->deferList = newHead;
-    }
-
-    release_spinlock(node);
-  }
-
+  // all threads are finished so we should be able to safely handle our deferred data...
+  handle_deferred_data(tls);
   release_spinlock(tls);
 }
 
@@ -432,7 +435,8 @@ void chpl_qsbr_checkpoint(void) {
     
     // If no tls has been setup then no checkpoint needs to be crossed..
     if (tls == NULL) {
-      return;
+      init_tls();
+      tls = CHPL_TLS_GET(chpl_qsbr_tls);
     }
 
     // Observe the current epoch.
@@ -440,7 +444,7 @@ void chpl_qsbr_checkpoint(void) {
 
     // Check if we have passed enough checkpoints to process our deferred data.
     if (tls->deferList != NULL) {
-      acquire_spinlock(tls);
+      acquire_spinlock(tls, (uintptr_t) tls);
       handle_deferred_data(tls);
       release_spinlock(tls);
     } 
@@ -467,9 +471,8 @@ static void _defer_deletion(void *data, int numData) {
   dnode->numData = 0;
 
   // Defer deletion of our node.
-  acquire_spinlock(tls);
+  acquire_spinlock(tls, (uintptr_t) tls);
   push_defer_list(tls, dnode);
-  handle_deferred_data(tls);
   release_spinlock(tls);
 }
 
