@@ -60,24 +60,22 @@
 
 
 // Used for debugging this pass.
-static int breakOnId1 = 0; //wass
-static int breakOnId2 = 0; //wass
-static int breakOnId3 = 0; //wass
+static const int breakOnId1 = 0;
+static const int breakOnId2 = 0;
+static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
   if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3) { \
     gdbShouldBreakHere(); \
   }
 
-static int trace_all = 0; //wass
-static int trace_usr = 0; //wass
+static const int trace_all = 0;
+static const int trace_usr = 0;
 
 static bool shouldTrace(Symbol* sym)
 {
   if (trace_all ||
       (trace_usr && sym->defPoint->getModule()->modTag == MOD_USER))
-    return true;
-  else if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3)
     return true;
   else
     return false;
@@ -758,7 +756,6 @@ void cullOverReferences() {
 
         if (isForallIterExpr(call)) {
           ForallStmt* pfs = toForallStmt(call->parentExpr);
-if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->id, pfs->id); //wass
           gatherLoopDetails(pfs, isForall, leaderDetails,
                             followerForLoop, detailsVector);
           foundLoop = true;
@@ -813,13 +810,13 @@ if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->
                 printf("for iterator %i\n", iterator->id);
                 */
 
-if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  forLoop %d\n", sym->id, forLoop->id); //wass
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
                 foundLoop = true;
               }
               else if (fs) {
-if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->id, fs->id); //wass
+                // Ditto if it is a ForallStmt.
+
                 gatherLoopDetails(fs, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
                 foundLoop = true;
@@ -1211,7 +1208,6 @@ if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->
     }
   }
 
-gdbShouldBreakHere(); //wass
   // Now, lower ContextCalls
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
