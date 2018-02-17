@@ -1384,7 +1384,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            //  destructor calls delete on any fields.  I think we
            //  probably need a similar change in the INOUT/IN case
            //  above.  See test/types/records/sungeun/destructor3.chpl
-           //  and test/users/recordbug3.chpl.
+           //  and test/users/ferguson/recordbug3.chpl.
            //
            // For records, this problem should go away if/when we
            //  implement 'const ref' intents and make them the default
