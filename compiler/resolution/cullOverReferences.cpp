@@ -60,22 +60,24 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
-static const int breakOnId2 = 0;
-static const int breakOnId3 = 0;
+static int breakOnId1 = 0; //wass
+static int breakOnId2 = 0; //wass
+static int breakOnId3 = 0; //wass
 
 #define DEBUG_SYMBOL(sym) \
   if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3) { \
     gdbShouldBreakHere(); \
   }
 
-static const int trace_all = 0;
-static const int trace_usr = 0;
+static int trace_all = 0; //wass
+static int trace_usr = 0; //wass
 
 static bool shouldTrace(Symbol* sym)
 {
   if (trace_all ||
       (trace_usr && sym->defPoint->getModule()->modTag == MOD_USER))
+    return true;
+  else if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3)
     return true;
   else
     return false;
@@ -756,6 +758,7 @@ void cullOverReferences() {
 
         if (isForallIterExpr(call)) {
           ForallStmt* pfs = toForallStmt(call->parentExpr);
+if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->id, pfs->id); //wass
           gatherLoopDetails(pfs, isForall, leaderDetails,
                             followerForLoop, detailsVector);
           foundLoop = true;
@@ -779,6 +782,8 @@ void cullOverReferences() {
             SymExpr* lhs = toSymExpr(move->get(1));
             Symbol* iterator = lhs->symbol();
             ForLoop* forLoop = NULL;
+            ForallStmt*   fs = NULL;
+            // Todo expand isChplIterOrLoopIterator to watch for ForallStmt?
 
             // marked with chpl__iter or with type iterator class?
             if (isChplIterOrLoopIterator(iterator, forLoop)) {
@@ -787,10 +792,13 @@ void cullOverReferences() {
 
               if (!forLoop) {
                 Expr* e = move;
-                while (e && !isForLoop(e)) {
+                while (e) {
+                  if ( (forLoop = toForLoop(e)) )
+                    break;
+                  if ( (fs = toForallStmt(e)) )
+                    break;
                   e = e->next;
                 }
-                forLoop = toForLoop(e);
               }
 
               if (forLoop) {
@@ -805,7 +813,14 @@ void cullOverReferences() {
                 printf("for iterator %i\n", iterator->id);
                 */
 
+if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  forLoop %d\n", sym->id, forLoop->id); //wass
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
+                                  followerForLoop, detailsVector);
+                foundLoop = true;
+              }
+              else if (fs) {
+if (shouldTrace(sym)) printf("gatherLoopDetails  sym %d  ForallStmt %d\n", sym->id, fs->id); //wass
+                gatherLoopDetails(fs, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
                 foundLoop = true;
               }
@@ -1196,10 +1211,11 @@ void cullOverReferences() {
     }
   }
 
+gdbShouldBreakHere(); //wass
   // Now, lower ContextCalls
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
-    if (cc->parentExpr == NULL)
+    if (!cc->inTree())
       continue;
 
     CallExpr* move = toCallExpr(cc->parentExpr);
