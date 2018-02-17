@@ -245,7 +245,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/types/atomic/sungeun/no_atomic_assign.chpl
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
-//   test/studies/shootout/spectral-norm/spectralnorm.chpl
+//   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
 //   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
