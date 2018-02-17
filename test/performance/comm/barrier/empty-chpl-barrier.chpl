@@ -17,8 +17,6 @@ config param barrierMode = LocalAtomic;
 proc main() {
   var t: Timer;
 
-  var LocalAtomicBarrier = new Barrier(numTasks, BarrierType.Sync);
-
   t.start();
   select barrierMode {
     when LocalAtomic do LocalBarrierBarrier();
