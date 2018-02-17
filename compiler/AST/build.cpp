@@ -1849,7 +1849,7 @@ static void adjustEltTypeFE(FnSymbol* fn, Symbol* eltType, ForallExpr* fe)
 
 //
 // Currently a forall loop requires a parallel iterator, whereas
-// a reduction does not. See e.g. test/trivial/deitz/monte.chpl
+// a reduction does not. See e.g. test/trivial/deitz/other/monte.chpl
 // To allow a reduction to iterate serially when there are no parallel
 // iterators, we add another if tryToken.
 //
@@ -2017,7 +2017,7 @@ buildReduceViaForall(FnSymbol* fn, Expr* opExpr, Expr* dataExpr,
 
   // useThisGlobalOp argument lets us handle the case where the result type
   // differs from eltType, e.g. + reduce over booleans
-  // as in test/trivial/deitz/monte.chpl
+  // as in test/trivial/deitz/other/monte.chpl
 
   BlockStmt* forall = buildForallLoopStmt(
     index->copy(),      // indices
