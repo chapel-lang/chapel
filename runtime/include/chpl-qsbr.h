@@ -65,7 +65,7 @@ void chpl_qsbr_init(void);
 // Called periodically to declare a quiescent state
 void chpl_qsbr_checkpoint(void);
 
-// Defer deletion of the data until it is safe
+// Defer deletion of the data until it is safe.
 void chpl_qsbr_defer_deletion(void *data);
 
 // Variant of 'chpl_qsbr_defer_deletion' that accepts an array of data.
@@ -85,6 +85,9 @@ void chpl_qsbr_unblocked(void);
 // is safe but will not reclaimed until enabled.
 void chpl_qsbr_disable(void);
 void chpl_qsbr_enable(void);
+
+// Registers a thread to use QSBR. 
+void chpl_qsbr_register(void);
 
 void chpl_qsbr_exit(void);
 

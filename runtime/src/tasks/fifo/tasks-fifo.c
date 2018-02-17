@@ -783,7 +783,16 @@ char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
     return NULL;
 }
 
-void chpl_task_yield(void) {
+void chpl_task_yield(void)
+{
+    chpl_task_yield2(0);
+}
+
+void chpl_task_yield2(int64_t cnt) {
+  if (cnt >= 0 && cnt % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
+    chpl_qsbr_checkpoint();
+  }
+
   chpl_thread_yield();
 }
 

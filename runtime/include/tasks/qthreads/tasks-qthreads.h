@@ -45,7 +45,7 @@ extern "C" {
 
 #define CHPL_COMM_YIELD_TASK_WHILE_POLLING
 void chpl_task_yield(void);
-void chpl_task_yield2(int);
+void chpl_task_yield2(int64_t);
 
 //
 // Type (and default value) used to communicate task identifiers

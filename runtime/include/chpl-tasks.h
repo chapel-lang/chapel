@@ -255,7 +255,7 @@ void chpl_task_yield(void);
 // is some multiple of CHPL_QSBR_ITERATIONS_PER_CHECKPOINT. This
 // should be invoked during tight loops which yield repeatedly.
 //
-void chpl_task_yield2(int);
+void chpl_task_yield2(int64_t);
 
 //
 // Suspend.
@@ -267,13 +267,13 @@ void chpl_task_sleep(double);
 // indefinite amount of time. The registered callback will
 // be used to perform periodic book-keeping.
 //
-void chpl_task_onPark(void);
+void chpl_task_threadOnPark(void);
 
 //
 // (Optional) Invoked by a thread that invoked 'chpl_task_onPark' 
 // after they are no longer idle.
 //
-void chpl_task_onUnpark(void);
+void chpl_task_threadOnUnpark(void);
 
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support

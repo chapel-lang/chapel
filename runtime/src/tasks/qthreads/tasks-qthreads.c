@@ -185,8 +185,8 @@ static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
 // Yield that will periodically call the checkpoint depending
 // on the number of iterations, 'cnt'
-void chpl_task_yield2(int cnt) {
-  if (cnt % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
+void chpl_task_yield2(int64_t cnt) {
+  if (cnt >= 0 && cnt % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
     chpl_qsbr_checkpoint();
   }
 
@@ -740,8 +740,8 @@ void chpl_task_init(void)
         }
     }
 
-    qthread_registerOnPark(chpl_task_onPark);
-    qthread_registerOnUnpark(chpl_task_onUnpark);
+    qthread_registerOnPark(chpl_task_threadOnPark);
+    qthread_registerOnUnpark(chpl_task_threadOnUnpark);
 }
 
 void chpl_task_exit(void)

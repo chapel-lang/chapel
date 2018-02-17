@@ -209,10 +209,10 @@ size_t chpl_task_getDefaultCallStackSize(void)
   return deflt;
 }
 
-void chpl_task_onPark(void) {
+void chpl_task_threadOnPark(void) {
   chpl_qsbr_blocked();
 }
 
-void chpl_task_onUnpark(void) {
+void chpl_task_threadOnUnpark(void) {
   chpl_qsbr_unblocked();
 }
