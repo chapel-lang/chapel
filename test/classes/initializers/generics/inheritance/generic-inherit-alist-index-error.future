@@ -1,0 +1,6 @@
+bug: alist must be indexed by positive integer (generic inheritance inits)
+
+Something about this code trips an internal error on alists that I
+don't recognize regarding that they must be indexed by a positive
+integer.  Though I haven't looked into it, I'd guess it's due to the
+lack of fields in the classes and probably a pretty easy fix.
