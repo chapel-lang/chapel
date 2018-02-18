@@ -820,7 +820,12 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 
 static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs); // vass ????
-  bool       zippered    = toCallExpr(iterExpr)->numActuals() > 1;
+  bool       zippered    = false;
+  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
+    INT_ASSERT(buildTup->isNamed("_build_tuple"));
+    if (buildTup->numActuals() > 1)
+      zippered = true;
+  }
 
   DefExpr*  followIdxDef = toDefExpr(pfs->loopBody()->body.head->remove());
   VarSymbol*   followIdx = toVarSymbol(followIdxDef->sym);
