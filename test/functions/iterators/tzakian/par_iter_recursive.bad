@@ -1,0 +1,2 @@
+par_iter_recursive.chpl:23: error: forall loops over recursive parallel iterators are currently not implemented
+par_iter_recursive.chpl:10: note: the parallel iterator is here

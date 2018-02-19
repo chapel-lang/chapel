@@ -1,0 +1,2 @@
+recursiveLeader.chpl:19: error: forall loops over recursive parallel iterators are currently not implemented
+recursiveLeader.chpl:7: note: the parallel iterator is here

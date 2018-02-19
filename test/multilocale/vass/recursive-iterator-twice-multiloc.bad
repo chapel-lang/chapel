@@ -1,0 +1,2 @@
+recursive-iterator-twice-multiloc.chpl:53: error: forall loops over recursive parallel iterators are currently not implemented
+recursive-iterator-twice-multiloc.chpl:41: note: the parallel iterator is here
