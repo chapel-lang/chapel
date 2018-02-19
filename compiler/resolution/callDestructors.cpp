@@ -22,16 +22,14 @@
 #include "addAutoDestroyCalls.h"
 #include "astutil.h"
 #include "errorHandling.h"
-#include "expr.h"
+#include "ForallStmt.h"
 #include "iterator.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "stringutil.h"
-#include "symbol.h"
 #include "virtualDispatch.h"
 
 /************************************* | **************************************
@@ -178,8 +176,6 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
   return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
 
-//vass reorganize
-#include "ForallStmt.h"
 static bool isForallIterableCallee(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr))
     if (se == call->baseExpr)
@@ -231,8 +227,8 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
       }
   }
 
-  // Transform if we got non-ForallStmt uses.
-  return otherUse ? false : true;
+  // Return true -- do not transform -- only if no non-ForallStmt uses.
+  return !otherUse;
 }  
 
 bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
