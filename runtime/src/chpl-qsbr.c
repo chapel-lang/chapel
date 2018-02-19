@@ -434,7 +434,7 @@ static void _defer_deletion(void *data, int numData) {
   struct defer_node *dnode = pop_recycle_list(tls);
   dnode->targetEpoch = epoch;
   dnode->data = data;
-  dnode->numData = 0;
+  dnode->numData = numData;
 
   // Defer deletion of our node.
   acquire_spinlock(tls, (uintptr_t) tls);
@@ -443,7 +443,7 @@ static void _defer_deletion(void *data, int numData) {
 }
 
 void chpl_qsbr_defer_deletion(void *data) {
-    _defer_deletion(data, 1);
+    _defer_deletion(data, 0);
 }
 
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
@@ -451,7 +451,14 @@ void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
 }
 
 void chpl_qsbr_disable(void) {
-  set_disabled_epoch(safe_epoch());
+  uint64_t minEpoch = safe_epoch();
+
+  // If no thread is registered it will return 'ENABLED_SAFE_EPOCH' constant...
+  if (minEpoch == CHPL_QSBR_ENABLED_SAFE_EPOCH) {
+    minEpoch = 0;
+  }
+
+  set_disabled_epoch(minEpoch);
 }
 
 void chpl_qsbr_enable(void) {
