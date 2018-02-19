@@ -32,6 +32,7 @@ void chpl_newPrivatizedClass(void*, int64_t);
 // frequently, so putting it in a header allows the backend to fully optimize.
 extern void** chpl_privateObjects;
 static inline void* chpl_getPrivatizedClass(int64_t i) {
+  chpl_qsbr_quickcheck();
   return chpl_privateObjects[i];
 }
 

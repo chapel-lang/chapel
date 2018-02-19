@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "chpl-atomics.h"
 
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
@@ -59,6 +60,54 @@
 */
 
 static const int CHPL_QSBR_ITERATIONS_PER_CHECKPOINT = 64;
+
+// Thread-specific meta data.
+struct tls_node {
+  /*
+    The current observed epoch. This is used to ensure that writers
+    do not delete an older instance that corresponds to this epoch.
+  */
+  atomic_uint_least64_t epoch;
+  /*
+    Whether or not this thread is parked in the runtime. If the thread is
+    parked, it is ignored during memory reclamation checks.
+  */
+  atomic_uint_least64_t parked;
+  /*
+    List of objects that are queued for deferred deletion, sorted by target_epoch. 
+    We defer deletion if we find that while scanning the list of all thread-specific
+    data, they are not up-to-date on that epoch. By sorting by target_epoch, we can
+    make shortcuts by removing a large bulk of data at once. The list is protected
+    by a lightweight spinlock, but is acquired using pseudo-TestAndSet operations
+    due to low contention.
+  */
+  atomic_uint_least64_t spinlock;
+  struct defer_node *deferList;
+
+  /*
+    Recycled defer nodes that can be reused. This is not a thread-safe field and
+    only be accessed by the thread that owns this node.
+  */
+  struct defer_node *recycleList;
+
+  /*
+    Next TLS node. Note that this field can be updated atomically by newer threads
+    and so should be accessed via atomics.
+  */
+  struct tls_node *next;
+};
+
+extern __thread struct tls_node *chpl_qsbr_tls;
+
+#define chpl_qsbr_likely(x)       __builtin_expect((x),1)
+#define chpl_qsbr_unlikely(x)     __builtin_expect((x),0)
+
+extern void init_tls(void);
+static inline void chpl_qsbr_quickcheck(void) {
+  if (chpl_qsbr_unlikely(chpl_qsbr_tls == NULL)) {
+    init_tls();
+  }
+}
 
 void chpl_qsbr_init(void);
 

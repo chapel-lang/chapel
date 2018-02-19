@@ -21,7 +21,7 @@
 #include "chpl-thread-local-storage.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
-#include "chpl-atomics.h"
+
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
@@ -63,45 +63,11 @@ struct defer_node {
   struct defer_node *next;
 };
 
-// Thread-specific meta data.
-struct tls_node {
-  /*
-    The current observed epoch. This is used to ensure that writers
-    do not delete an older instance that corresponds to this epoch.
-  */
-  atomic_uint_least64_t epoch;
-  /*
-    Whether or not this thread is parked in the runtime. If the thread is
-    parked, it is ignored during memory reclamation checks.
-  */
-  atomic_uint_least64_t parked;
-  /*
-    List of objects that are queued for deferred deletion, sorted by target_epoch. 
-    We defer deletion if we find that while scanning the list of all thread-specific
-    data, they are not up-to-date on that epoch. By sorting by target_epoch, we can
-    make shortcuts by removing a large bulk of data at once. The list is protected
-    by a lightweight spinlock, but is acquired using pseudo-TestAndSet operations
-    due to low contention.
-  */
-  atomic_uint_least64_t spinlock;
-  struct defer_node *deferList;
 
-  /*
-    Recycled defer nodes that can be reused. This is not a thread-safe field and
-    only be accessed by the thread that owns this node.
-  */
-  struct defer_node *recycleList;
-
-  /*
-    Next TLS node. Note that this field can be updated atomically by newer threads
-    and so should be accessed via atomics.
-  */
-  struct tls_node *next;
-};
 
 // List of thread-local data.
-static struct tls_node *chpl_qsbr_tls_list;
-static CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
+struct tls_node *chpl_qsbr_tls_list;
+CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 
 // As multiple threads can register themselves at a later time using atomic 
 // RMW operations, all loads of the list must also be atomic.
@@ -275,8 +241,8 @@ static inline void delete_data(struct defer_node *dnode) {
 }
 
 // Initializes TLS; should only need to be called once.
-static void init_tls(void);
-static void init_tls(void) {
+void init_tls(void);
+void init_tls(void) {
   struct tls_node *node = chpl_mem_calloc(1, sizeof(struct tls_node), CHPL_RT_MD_QSBR, 0, 0);
   node->epoch = get_global_epoch();
 
