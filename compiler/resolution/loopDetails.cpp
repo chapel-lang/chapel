@@ -612,8 +612,6 @@ void gatherLoopDetails(ForallStmt* fs,
   isForall = true;
   detailsVector.clear();
 
-gdbShouldBreakHere(); //wass
-
   {
 //wass todo factor our shared code with the other gatherLoopDetails()?
     // Handle forall loops
@@ -647,8 +645,6 @@ gdbShouldBreakHere(); //wass
       INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
 
       if (!zippered) {
-INT_ASSERT(false); //wass
-#if 0 //wass
         Expr* iterable = move->get(2);
         INT_ASSERT(iterable);
         // Comes up in non-zippered leader-follower iteration
@@ -656,7 +652,6 @@ INT_ASSERT(false); //wass
         details.iterable = iterable;
         // Other details set below.
         detailsVector.push_back(details);
-#endif
       } else {
         CallExpr* buildTupleCall = toCallExpr(move->get(2));
         INT_ASSERT(buildTupleCall);
