@@ -5,6 +5,7 @@
 #include "view.h" //wass
 
 static bool verb = false; //wass
+static int breakOnExpand = false; //wass
 
 /*
 At this point we are mostly not concerned about const-ness,
@@ -19,8 +20,8 @@ We DO need to preserve some const properties to enable optimizations.
 
 static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
 {
-  ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OVAR, astr("SO_", SI->name),
-                                            new SymExpr(SI->outerVarSym()));
+  ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OVAR,
+                                            astr("SO_", SI->name), NULL);
   SO->addFlag(FLAG_CONST);  // make it be like 'const in'
   SO->qual = QUAL_CONST_VAL;
   SO->type = SI->type;
@@ -546,7 +547,7 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 if (verb) //wass
   printf("   expandYield %d %s   fs %d\n", yieldCall->id, debugLoc(yieldCall),
          EV->forall->id);
-  if (EV->breakOnYield || breakOnResolveID==-2) gdbShouldBreakHere();
+if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
   // Todo: update EV->svar2clonevar in-place, then reset to NULL,
   // to avoid map creation+destruction cost.
@@ -705,6 +706,8 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
 
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskFn)
 {
+if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
+
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
   bool expandClone = false;
   Expr *aInit=NULL, *aFini=NULL;
@@ -773,6 +776,7 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
   showLOFS(fs, EV, " { expandForall", true);
+if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
   ForallStmt*     pfs  = EV->forall;
   SymbolMap&      iMap = EV->svar2clonevar; // incoming "current map"
@@ -811,7 +815,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
   {
     case TFI_IN_OVAR:
       // The outer var for IB of the corresponding in-intent svar.
-      map.put(svar, svar->outerVarSym());
+      map.put(svar, svar->SIforSO()->outerVarSym());
       break;
 
     case TFI_IN:
@@ -912,7 +916,7 @@ static void removeDeadAndFlatten() {
 static void lowerOneForallStmt(ForallStmt* fs) {
   ExpandVisitor* parentVis = NULL; //wass - dummy
   showLOFS(fs, parentVis, "{ lonfs", true);
-  if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass
+  if (fs->id == breakOnResolveID) breakOnExpand = true, gdbShouldBreakHere(); //wass
 
   // If this fails, need to filter out those FSes.
   // We lower and remove each FS from the tree *after* we see it here.

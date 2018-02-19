@@ -943,7 +943,7 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && !isReduce())
+  if (!iteratorsLowered && intent != TFI_REDUCE && intent != TFI_IN_OVAR)
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -1064,6 +1064,14 @@ ShadowVarSymbol* ShadowVarSymbol::SOforSI() const {
   ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
   INT_ASSERT(SO->intent == TFI_IN_OVAR);
   return SO;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::SIforSO() const {
+  const ShadowVarSymbol* SO = this;
+  DefExpr* siDef = toDefExpr(SO->defPoint->next);
+  ShadowVarSymbol* SI = toShadowVarSymbol(siDef->sym);
+  INT_ASSERT(SI->intent == TFI_IN || SI->intent == TFI_CONST_IN);
+  return SI;
 }
 
 ShadowVarSymbol* ShadowVarSymbol::RPforAS() const {

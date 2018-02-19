@@ -405,6 +405,7 @@ public:
 
   // Convert between IN and IN_OVAR svars.
   ShadowVarSymbol* SOforSI() const;
+  ShadowVarSymbol* SIforSO() const;
   // Convert between Reduce-oP and Accumulation State svars.
   ShadowVarSymbol* RPforAS() const;
   ShadowVarSymbol* ASforRP() const;
