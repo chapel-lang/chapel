@@ -1,3 +1,8 @@
+// This test checks several patterns of
+// records and classes with Owned and Shared fields.
+// This test is intended to make sure that fields
+// of Owned or Shared type continue to function.
+
 use OwnedObject;
 use SharedObject;
 
