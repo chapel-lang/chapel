@@ -102,7 +102,7 @@ reductions/vass/reductions-perf.ml-time.graph
 parallel/taskCompare/elliot/taskSpawn.ml-time.graph
 performance/comm/barrier/empty-chpl-barrier.ml-time.graph
 performance/elliot/no-op.ml-time.graph
-performance/commCompare/gbt/remote-gets.ml-perf.graph
-performance/commCompare/gbt/remote-puts.ml-perf.graph
-performance/commCompare/gbt/remote-ons.ml-perf.graph
-performance/commCompare/gbt/remote-fastOns.ml-perf.graph
+performance/comm/low-level/remote-gets.ml-perf.graph
+performance/comm/low-level/remote-puts.ml-perf.graph
+performance/comm/low-level/remote-ons.ml-perf.graph
+performance/comm/low-level/remote-fastOns.ml-perf.graph
