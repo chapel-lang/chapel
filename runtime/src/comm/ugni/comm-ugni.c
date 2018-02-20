@@ -2539,7 +2539,7 @@ void polling_task(void* ignore)
   set_up_for_polling();
 
   polling_task_running = true;
-
+  int64_t spins = 0;
   while (!polling_task_please_exit) {
     gni_cq_entry_t ev;
     gni_return_t   gni_rc;
@@ -2552,14 +2552,23 @@ void polling_task(void* ignore)
     else
       gni_rc = GNI_CqGetEvent(rf_cqh, &ev);
 
-    if (gni_rc == GNI_RC_SUCCESS)
+    if (gni_rc == GNI_RC_SUCCESS) {
+      spins = 0;
       rf_handler(&ev);
-    else if (gni_rc == GNI_RC_NOT_DONE)
+    }
+    else if (gni_rc == GNI_RC_NOT_DONE) {
       sched_yield();
-    else if (gni_rc == GNI_RC_TIMEOUT)
-      ; // no-op
-    else
+      if (spins++ % 1024 == 0) {
+        extern void chpl_qsbr_checkpoint(void);
+        chpl_qsbr_checkpoint();
+      }
+    }
+    else if (gni_rc == GNI_RC_TIMEOUT) {
+      chpl_qsbr_checkpoint(); // Invoke checkpoint
+    }
+    else {
       GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_Cq*Event(rf_cqh) failed in polling");
+    }
 
     //
     // Process CQ events due to our request responses completing.
@@ -2736,6 +2745,10 @@ void set_up_for_polling(void)
 
     chpl_mem_free(gdata, 0, 0);
   }
+
+  // Register
+  extern void chpl_qsbr_quickcheck(void);
+  chpl_qsbr_quickcheck();
 }
 
 

@@ -795,6 +795,8 @@ static aligned_t main_wrapper(void *arg)
 
     *tls = pv;
 
+    chpl_qsbr_quickcheck();
+
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
     (m_bundle->chpl_main)();
