@@ -131,6 +131,13 @@ module ChapelRange {
   // The _aligned bit can also be set through the application of an explicit alignment.
   //
 
+  // BHARSH TODO, 2018-02-20:
+  // A (hopefully) temporary workaround until if-exprs are fixed.
+  private proc typeHelper(param cond : bool, type t) type {
+    if cond then return t;
+    else return void;
+  }
+
   // I think the record itself should not be documented, but the above comment
   // should be moved to the top-level module documentation.
   pragma "no doc"
@@ -142,11 +149,11 @@ module ChapelRange {
     param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
     param stridable: bool = false;                 // range can be strided
 
-    var _low: idxType = 1;                         // lower bound
-    var _high: idxType = 0;                        // upper bound
-    var _stride = if stridable then 1:strType else _void; // signed stride
-    var _alignment: if stridable then idxType else void;  // alignment
-    var _aligned : if stridable then bool else void;
+    var _low       : idxType;                      // lower bound
+    var _high      : idxType;                      // upper bound
+    var _stride    : typeHelper(stridable, indexToStrideType(idxType)); // signed stride
+    var _alignment : typeHelper(stridable, idxType); // alignment
+    var _aligned   : typeHelper(stridable, bool);
 
     proc strType type  return indexToStrideType(idxType);
 
@@ -157,55 +164,64 @@ module ChapelRange {
   }
 
   //################################################################################
-  //# Constructors
+  //# Initializers
   //#
 
-  // Declare this as constructor, so we can capture range creation.
-  // If it is not a constructor, then the user can still create a maximal range
-  // (for example) without being warned.
+  // Declare this as an initializer, so we can capture range creation.
+  // If it is not an initializer, then the user can still create a maximal
+  // range (for example) without being warned.
   //
   pragma "no doc"
-  proc range.range(type idxType = int,
-                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                   param stridable : bool = false,
-                   _low : idxType = 1,
-                   _high : idxType = 0,
-                   _stride : indexToStrideType(idxType) = 1,
-                   _alignment : idxType = 0,
-                   _aligned : bool = false)
-  {
-    this._low = _low;
-    this._high = _high;
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false,
+                  _low : idxType = 1,
+                  _high : idxType = 0,
+                  _stride : indexToStrideType(idxType) = 1,
+                  _alignment : idxType = 0,
+                  _aligned : bool = false) {
+    this.idxType     = idxType;
+    this.boundedType = boundedType;
+    this.stridable   = stridable;
+    this._low        = _low;
+    this._high       = _high;
+    super.init();
     if stridable {
-      this._stride = _stride;
+      this._stride    = _stride;
       this._alignment = _alignment;
-      this._aligned = _aligned;
+      this._aligned   = _aligned;
     }
 
-
-    // todo: remove the check for boundsChecking once assert is no-op upon --fast
     if !stridable && boundsChecking then
       assert(_stride == 1);
   }
 
-    pragma "no doc"
-  proc range.range(type idxType = int,
-                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
-                   param stridable : bool = false,
-                   _low : idxType = 1,
-                   _high : idxType = 0,
-                   _stride : indexToStrideType(idxType) = 1,
-                   _alignment : void,
-                   _aligned /* : void | bool */)
-  {
-    this._low = _low;
-    this._high = _high;
+  private proc _isAnyVoid(args...) param : bool {
+    for param i in 1..args.size {
+      if isVoidType(args(i).type) then return true;
+    }
+    return false;
+  }
+
+  pragma "no doc"
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false,
+                  _low : idxType = 1,
+                  _high : idxType = 0,
+                  _stride,
+                  _alignment,
+                  _aligned)
+    where _isAnyVoid(_stride, _alignment, _aligned) {
+
+    this.idxType     = idxType;
+    this.boundedType = boundedType;
+    this.stridable   = stridable;
+    this._low        = _low;
+    this._high       = _high;
+    super.init();
     if stridable then
-      compilerError("non-stridable range constructor called with stridable=true");
-    else
-      if boundsChecking then
-        // todo: remove the check for boundsChecking once assert is no-op upon --fast
-        assert(_stride == 1);
+      compilerError("non-stridable range initializer called with stridable=true");
   }
 
   /////////////////////////////////
