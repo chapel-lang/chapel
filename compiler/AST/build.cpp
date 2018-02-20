@@ -147,9 +147,9 @@ static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
         fn->retTag = RET_TYPE;
       } else if (flag == FLAG_USE_DEFAULT_INIT) {
         AggregateType* at = toAggregateType(sym->type);
-        if (!isTypeSymbol(sym) || at == NULL || at->isRecord()) {
+        if (!isTypeSymbol(sym) || at == NULL) {
           USR_FATAL_CONT(sym, "cannot apply 'use default init' to symbol '%s',"
-                         " not a class definition", sym->name);
+                         " not a class or record definition", sym->name);
         }
       }
     }

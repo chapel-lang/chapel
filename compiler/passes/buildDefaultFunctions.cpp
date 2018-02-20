@@ -1175,7 +1175,7 @@ static void build_record_copy_function(AggregateType* ct) {
       }
     }
 
-  } else if (ct->initializerStyle == DEFINES_INITIALIZER) {
+  } else if (isGenericRecordWithInitializers(ct) == true) {
     if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       foundUserDefinedCopy = true;
     } else {
