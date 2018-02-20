@@ -1281,6 +1281,10 @@ module ChapelBase {
   inline proc chpl__toraw(ref arg:Owned) {
     return arg.release();
   }
+  inline proc chpl__toraw(arg) where arg:object {
+    return arg;
+  }
+
 
   // implements 'delete' statement
   inline proc chpl__delete(arg)
