@@ -23,5 +23,6 @@
 class BaseAST;
 
 void lowerTryExprs(BaseAST* ast);
+void normalizeThrows(BaseAST* ast);
 
 #endif

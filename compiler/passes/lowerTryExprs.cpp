@@ -88,11 +88,41 @@ void NormalizeTryExprsVisitor::exitCallExpr(CallExpr* call) {
 
 }
 
+class NormalizeThrowsVisitor : public AstVisitorTraverse {
+
+public:
+  NormalizeThrowsVisitor();
+
+  virtual bool enterCallExpr   (CallExpr*   call);
+};
+
+NormalizeThrowsVisitor::NormalizeThrowsVisitor()
+{
+}
+
+bool NormalizeThrowsVisitor::enterCallExpr(CallExpr* call) {
+
+  if (call->isPrimitive(PRIM_THROW)) {
+    SET_LINENO(call);
+
+    INT_ASSERT(call->numActuals() == 1);
+    CallExpr* callFixError = new CallExpr("chpl_fix_thrown_error",
+                                          call->get(1)->remove());
+    call->insertAtTail(callFixError);
+  }
+
+  return true;
+}
 
 } /* end anon namespace */
 
 void lowerTryExprs(BaseAST* ast)
 {
   NormalizeTryExprsVisitor n;
+  ast->accept(&n);
+}
+
+void normalizeThrows(BaseAST* ast) {
+  NormalizeThrowsVisitor n;
   ast->accept(&n);
 }

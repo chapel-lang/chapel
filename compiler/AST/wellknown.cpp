@@ -54,7 +54,6 @@ FnSymbol *gChplDeleteError;
 FnSymbol *gChplUncaughtError;
 FnSymbol *gChplPropagateError;
 FnSymbol *gChplSaveTaskError;
-FnSymbol *gChplFixThrownError;
 FnSymbol *gChplForallError;
 
 /************************************* | **************************************
@@ -276,12 +275,6 @@ static WellKnownFn sWellKnownFns[] = {
   {
     "chpl_save_task_error",
     &gChplSaveTaskError,
-    FLAG_UNKNOWN
-  },
-
-  {
-    "chpl_fix_thrown_error",
-    &gChplFixThrownError,
     FLAG_UNKNOWN
   },
 

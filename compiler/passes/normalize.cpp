@@ -474,6 +474,7 @@ static void normalizeBase(BaseAST* base) {
   // Phase 0
   //
   lowerTryExprs(base);
+  normalizeThrows(base);
 
 
   //
