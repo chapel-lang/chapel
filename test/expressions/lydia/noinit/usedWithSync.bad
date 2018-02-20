@@ -1,4 +1,0 @@
-usedWithSync.chpl:1: warning: type _syncvar(int(64)) does not currently support noinit, using default initialization
-usedWithSync.chpl:2: warning: type _syncvar(bool) does not currently support noinit, using default initialization
-4
-true
