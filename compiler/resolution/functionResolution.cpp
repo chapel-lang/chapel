@@ -570,18 +570,34 @@ static bool fits_in_uint(int width, Immediate* imm) {
 static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   Symbol* calledFn = formal->defPoint->parentSymbol;
-  if (SymExpr* se = toSymExpr(actual))
-    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-        ((se->symbol()->hasFlag(FLAG_REF_TO_CONST) ||
-          se->symbol()->isConstant()) && !formal->hasFlag(FLAG_ARG_THIS)) ||
-        se->symbol()->isParameter())
+
+  if (SymExpr* se = toSymExpr(actual)) {
+    Symbol* sym = se->symbol();
+
+    bool actualConst = false;
+
+    if (sym->hasFlag(FLAG_REF_TO_CONST) ||
+        sym->isConstant() ||
+        sym->isParameter())
+      actualConst = true;
+
+    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
+    TypeSymbol* formalTS = formal->getValType()->symbol;
+    bool formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+
+    if ((actualExprTmp && !formalCopyMutates) ||
+        (actualConst && !formal->hasFlag(FLAG_ARG_THIS)) ||
+        se->symbol()->isParameter()) {
       // But ignore for now errors with this argument
       // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
       // These will be checked for later, along with ref-pairs.
       if (! (formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
-      return false;
-  // Perhaps more checks are needed.
+
+        return false;
+    }
+  }
+
   return true;
 }
 
@@ -1655,23 +1671,26 @@ static bool leftCallIsOrContainsRightCall(CallExpr* callLeft,
 
 static void findNonTaskFnParent(CallExpr* call,
                                 FnSymbol*& parent, int& stackIdx) {
-  // We assume that 'call' is at the top of the call stack.
-  INT_ASSERT(callStack.n >= 1);
-  INT_ASSERT(leftCallIsOrContainsRightCall(callStack.v[callStack.n-1], call));
+  if (callStack.n >= 1 &&
+      leftCallIsOrContainsRightCall(callStack.v[callStack.n-1], call)) {
 
-  int ix;
-  for (ix = callStack.n-1; ix >= 0; ix--) {
-    CallExpr* curr = callStack.v[ix];
-    Symbol* parentSym = curr->parentSymbol;
-    FnSymbol* parentFn = toFnSymbol(parentSym);
-    if (!parentFn)
-      break;
-    if (!isTaskFun(parentFn)) {
-      stackIdx = ix;
-      parent = parentFn;
-      return;
+    // We assume that 'call' is at the top of the call stack.
+
+    int ix;
+    for (ix = callStack.n-1; ix >= 0; ix--) {
+      CallExpr* curr = callStack.v[ix];
+      Symbol* parentSym = curr->parentSymbol;
+      FnSymbol* parentFn = toFnSymbol(parentSym);
+      if (!parentFn)
+        break;
+      if (!isTaskFun(parentFn)) {
+        stackIdx = ix;
+        parent = parentFn;
+        return;
+      }
     }
   }
+
   // backup plan
   parent = toFnSymbol(call->parentSymbol);
   stackIdx = -1;
@@ -4199,7 +4218,7 @@ void lvalueCheck(CallExpr* call) {
      case INTENT_CONST_IN:
       // generally, not checking them here
       // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
-      if (formal->type->symbol->hasFlag(FLAG_COPY_MUTATES))
+      if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
         if (!isLegalLvalueActualArg(formal, actual))
           errorMsg = true;
       break;

@@ -7,8 +7,15 @@ class C {
   }
 }
 
+proc takeOwnershipAgain(in arg:Owned(C)) {
+  writeln("in takeOwnershipAgain with arg=", arg.borrow());
+}
+
+
 proc takeOwnership(const in arg:Owned(C)) {
   writeln("in takeOwnership with arg=", arg.borrow());
+  takeOwnershipAgain(arg);
+  writeln("in takeOwnership, now arg=", arg.borrow());
 }
 
 

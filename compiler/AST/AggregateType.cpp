@@ -1169,6 +1169,7 @@ void AggregateType::buildConstructor() {
   fn->addFlag(FLAG_CONSTRUCTOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   if (symbol->hasFlag(FLAG_REF) == true) {
     fn->addFlag(FLAG_REF);

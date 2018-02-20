@@ -1118,6 +1118,7 @@ module ChapelBase {
 
   pragma "dont disable remote value forwarding"
   pragma "no copy return"
+  pragma "suppress lvalue error"
   inline proc _createFieldDefault(type t, init) {
     pragma "no auto destroy" var x: t;
     x = init;
@@ -1189,6 +1190,7 @@ module ChapelBase {
   pragma "last resort"
   pragma "donor fn"
   pragma "auto copy fn"
+  pragma "suppress lvalue error"
   inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
 
   pragma "compiler generated"
