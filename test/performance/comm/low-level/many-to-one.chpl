@@ -40,11 +40,13 @@ proc main() {
     startCommDiagnostics();
   }
 
-  const startTime = getCurrentTime();
+  var timer: Timer;
 
-  coforall locIdx in 1..numWorkerNodes with ( ref x0, ref x0Atomic ) {
+  timer.start();
+
+  coforall locIdx in 1..numWorkerNodes with ( ref x0 ) {
     on Locales(locIdx) {
-      coforall 1..numTasksPerNode with ( ref x0, ref x0Atomic ) {
+      coforall 1..numTasksPerNode with ( ref x0 ) {
         for i in 1..numOpsPerTask {
           select op {
             when opNone {
@@ -77,11 +79,11 @@ proc main() {
   }
 
   if printTimings {
-    const execTime = getCurrentTime() - startTime;
-    const mOpsPerSecPerTask = (numOpsPerTask / execTime) * 1e-6;
+    timer.stop();
+    const mOpsPerSecPerTask = (numOpsPerTask / timer.elapsed()) * 1e-6;
     const mOpsPerSec = mOpsPerSecPerTask * numTasksPerNode * numWorkerNodes;
 
-    writeln('Execution time = ', execTime);
+    writeln('Execution time = ', timer.elapsed());
     writeln('Performance (mOps/sec) = ', mOpsPerSec);
     writeln('Performance (mOps/sec/Task) = ', mOpsPerSecPerTask);
   }
