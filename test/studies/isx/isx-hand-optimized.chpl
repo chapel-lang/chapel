@@ -440,26 +440,23 @@ proc printTimeTable(timeTable, units, timerName) {
 }
 
 //
-// print timing statistics (avg/min/max across tasks of min across
-// trials)
+// print timing statistics (avg/min/max across tasks and trials)
 //
 proc printTimingStats(timeTable, timerName) {
-  var minMinTime = max(real),
-      maxMinTime = min(real),
-      totMinTime: real;
+  var minTime = max(real),
+      maxTime = min(real),
+      totTime: real;
 
   //
-  // iterate over the buckets, computing the min/max/total of the
-  // min times across trials.
+  // iterate over the buckets, computing the min/max/total
   //
-  forall timings in timeTable with (min reduce minMinTime,
-                                    max reduce maxMinTime,
-                                    + reduce totMinTime) {
-    const minTime = min reduce timings;
-    totMinTime += minTime;
-    minMinTime = min(minMinTime, minTime);
-    maxMinTime = max(maxMinTime, minTime);
+  forall timings in timeTable with (min reduce minTime,
+                                    max reduce maxTime,
+                                    + reduce totTime) {
+    totTime += + reduce timings;
+    minTime = min(minTime, min reduce timings);
+    maxTime = max(maxTime, max reduce timings);
   }
-  var avgTime = totMinTime / numTasks;
-  writeln(timerName, " = ", avgTime, " (", minMinTime, "..", maxMinTime, ")");
+  var avgTime = totTime / (numTasks * numTrials) ;
+  writeln(timerName, " = ", avgTime, " (", minTime, "..", maxTime, ")");
 }
