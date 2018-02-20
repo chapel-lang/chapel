@@ -61,6 +61,7 @@
 #include "comm-ugni-mem.h"
 #include "config.h"
 #include "error.h"
+#include "chpl-qsbr.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -2559,7 +2560,6 @@ void polling_task(void* ignore)
     else if (gni_rc == GNI_RC_NOT_DONE) {
       sched_yield();
       if (spins++ % 1024 == 0) {
-        extern void chpl_qsbr_checkpoint(void);
         chpl_qsbr_checkpoint();
       }
     }
@@ -2747,7 +2747,6 @@ void set_up_for_polling(void)
   }
 
   // Register
-  extern void chpl_qsbr_quickcheck(void);
   chpl_qsbr_quickcheck();
 }
 
