@@ -1242,7 +1242,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       } else {
         AggregateType* formalAt = toAggregateType(formal->getValType());
 
-        if (isNonGenericRecordWithInitializers(formalAt)) {
+        // BHARSH TODO: This pattern (is it concrete, otherwise use PRIM_INIT)
+        // is all over the place. Can we unify this stuff somewhere?
+        if (isNonGenericRecordWithInitializers(formalAt) &&
+            needsGenericRecordInitializer(formalAt) == false) {
           fn->insertAtHead(new CallExpr("init",
                                         gMethodToken,
                                         tmp));

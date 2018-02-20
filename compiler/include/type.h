@@ -485,6 +485,8 @@ bool isGenericRecordWithInitializers(Type* type);
 bool isClassWithInitializers (Type* type);
 bool isRecordWithInitializers(Type* type);
 
+bool needsGenericRecordInitializer(Type* type);
+
 void registerTypeToStructurallyCodegen(TypeSymbol* type);
 GenRet genTypeStructureIndex(TypeSymbol* typesym);
 void codegenTypeStructures(FILE* hdrfile);
