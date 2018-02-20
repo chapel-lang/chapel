@@ -241,8 +241,8 @@ static inline void delete_data(struct defer_node *dnode) {
 }
 
 // Initializes TLS; should only need to be called once.
-void init_tls(void);
-void init_tls(void) {
+void chpl_qsbr_init_tls(void);
+void chpl_qsbr_init_tls(void) {
   struct tls_node *node = chpl_mem_calloc(1, sizeof(struct tls_node), CHPL_RT_MD_QSBR, 0, 0);
   node->epoch = get_global_epoch();
 
@@ -355,7 +355,7 @@ void chpl_qsbr_blocked(void) {
 
   // Initialize TLS...
   if (tls == NULL) {
-    init_tls();
+    chpl_qsbr_init_tls();
     tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
@@ -400,7 +400,7 @@ void chpl_qsbr_checkpoint(void) {
     
     // Initialize TLS...
     if (tls == NULL) {
-      init_tls();
+      chpl_qsbr_init_tls();
       tls = CHPL_TLS_GET(chpl_qsbr_tls);
     }
 
@@ -420,7 +420,7 @@ static void _defer_deletion(void *data, int numData) {
 
   // Setup TLS if needed
   if (tls == NULL) {
-    init_tls();
+    chpl_qsbr_init_tls();
     tls = CHPL_TLS_GET(chpl_qsbr_tls);
   }
 
