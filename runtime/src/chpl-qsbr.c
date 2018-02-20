@@ -350,7 +350,12 @@ void chpl_qsbr_unblocked(void) {
 
 void chpl_qsbr_blocked(void) {
   struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  assert(tls != NULL);
+
+  // Initialize TLS...
+  if (tls == NULL) {
+    init_tls();
+    tls = CHPL_TLS_GET(chpl_qsbr_tls);
+  }
 
   acquire_spinlock(tls, (uintptr_t) tls);
   park(tls);
@@ -391,7 +396,7 @@ void chpl_qsbr_blocked(void) {
 void chpl_qsbr_checkpoint(void) {
     struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
     
-    // If no tls has been setup then no checkpoint needs to be crossed..
+    // Initialize TLS...
     if (tls == NULL) {
       init_tls();
       tls = CHPL_TLS_GET(chpl_qsbr_tls);
