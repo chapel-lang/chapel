@@ -726,6 +726,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "\nLIBS =");
   for (int i=0; i<numLibFlags; i++)
     fprintf(makefile.fptr, " %s", libFlag[i]);
+  if (fLinkStyle==LS_STATIC)
+      fprintf(makefile.fptr, " $(LIBMVEC)" );
   fprintf(makefile.fptr, "\n");
 
   fprintf(makefile.fptr, "\n");

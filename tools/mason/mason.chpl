@@ -78,6 +78,8 @@ proc main(args: [] string) {
     when 'env' do masonEnv(args);
     when 'doc' do masonDoc(args);
     when 'clean' do masonClean();
+    when 'help' do masonHelp();
+    when 'version' do printVersion();
     when '--list' do masonList();
     when '-h' do masonHelp();
     when '--help' do masonHelp();

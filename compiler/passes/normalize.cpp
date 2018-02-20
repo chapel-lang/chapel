@@ -2102,7 +2102,8 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 
     var->type = type;
 
-  } else if (isNonGenericRecordWithInitializers(type) == true) {
+  } else if (isNonGenericRecordWithInitializers(type) == true &&
+             needsGenericRecordInitializer(type) == false) {
     CallExpr* init = new CallExpr("init", gMethodToken, var);
 
     var->type = type;

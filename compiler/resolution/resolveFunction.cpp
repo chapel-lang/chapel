@@ -96,9 +96,11 @@ void resolveSignature(FnSymbol* fn) {
 
 static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
 
-static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal);
+static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
+
+static bool recordContainingCopyMutatesField(Type* at);
 
 static void resolveFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
@@ -134,7 +136,8 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
     }
   }
 
-  if (needRefFormal(fn, formal) == true) {
+  bool needRefIntent = false;
+  if (needRefFormal(fn, formal, &needRefIntent) == true) {
     makeRefType(formal->type);
 
     if (formal->type->refType) {
@@ -143,6 +146,9 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
     } else {
       formal->qual = QUAL_REF;
     }
+
+    if (needRefIntent)
+      formal->intent = INTENT_REF;
 
   // Adjust tuples for intent.
   } else if (formal->type->symbol->hasFlag(FLAG_TUPLE) == true      &&
@@ -170,7 +176,8 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   }
 }
 
-static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
+static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
+                          bool* needRefIntent) {
   bool retval = false;
 
   if (formal->intent == INTENT_INOUT     ||
@@ -181,6 +188,20 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   } else if (shouldUpdateAtomicFormalToRef(fn, formal) == true) {
     retval = true;
+
+  // Adjust compiler-generated record copy-init to take in RHS by ref
+  // if it contains a record field marked with FLAG_COPY_MUTATES.
+  } else if (fn->hasFlag(FLAG_DEFAULT_COPY_INIT) &&
+             formal == fn->getFormal(3) &&
+             recordContainingCopyMutatesField(formal->getValType())) {
+    retval = true;
+    *needRefIntent = true;
+
+  } else if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
+             formal == fn->getFormal(1) &&
+             recordContainingCopyMutatesField(formal->getValType())) {
+    retval = true;
+    *needRefIntent = true;
 
   } else if (fn->hasFlag(FLAG_ITERATOR_FN)     == true &&
              isRecordWrappedType(formal->type) == true) {
@@ -239,6 +260,31 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          fn->hasFlag(FLAG_CONSTRUCTOR)         == false        &&
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
+
+static bool recordContainingCopyMutatesField(Type* t) {
+  AggregateType* at = toAggregateType(t);
+  if (at == NULL) return false;
+  if (!isRecord(at)) return false;
+  if (at->symbol->hasFlag(FLAG_COPY_MUTATES)) return true;
+
+  bool ret = false;
+  for_fields(field, at) {
+    if (AggregateType* atf = toAggregateType(field->type)) {
+      if (isRecord(atf))
+        ret |= recordContainingCopyMutatesField(atf);
+    }
+  }
+
+  // Set the flag so that:
+  // 1. this is easier to compute in the future and
+  // 2. other code working with this type will know
+  //    (e.g. lvalue checking)
+  if (ret && !at->symbol->hasFlag(FLAG_COPY_MUTATES))
+    at->symbol->addFlag(FLAG_COPY_MUTATES);
+
+  return ret;
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -1242,7 +1288,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       } else {
         AggregateType* formalAt = toAggregateType(formal->getValType());
 
-        if (isNonGenericRecordWithInitializers(formalAt)) {
+        // BHARSH TODO: This pattern (is it concrete, otherwise use PRIM_INIT)
+        // is all over the place. Can we unify this stuff somewhere?
+        if (isNonGenericRecordWithInitializers(formalAt) &&
+            needsGenericRecordInitializer(formalAt) == false) {
           fn->insertAtHead(new CallExpr("init",
                                         gMethodToken,
                                         tmp));
