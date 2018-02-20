@@ -96,8 +96,6 @@ static inline uint64_t advance_global_epoch(void) {
   return atomic_fetch_add_uint_least64_t(&global_epoch, 1) + 1;
 }
 
-// Update a thread's current epoch to the most recent; this
-// is a full memory barrier operation
 static inline void observe_epoch(struct tls_node *node);
 static inline void observe_epoch(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->epoch, get_global_epoch());
@@ -343,10 +341,7 @@ void chpl_qsbr_init(void) {
 
 void chpl_qsbr_unblocked(void) {
   struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  if (tls == NULL) {
-    init_tls();
-    tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  }
+  assert(tls != NULL);
 
   // Notify that we are now in-use.
   unpark(tls);
@@ -355,10 +350,7 @@ void chpl_qsbr_unblocked(void) {
 
 void chpl_qsbr_blocked(void) {
   struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  if (tls == NULL) {
-    init_tls();
-    tls = CHPL_TLS_GET(chpl_qsbr_tls);
-  }
+  assert(tls != NULL);
 
   acquire_spinlock(tls, (uintptr_t) tls);
   park(tls);
@@ -453,7 +445,7 @@ void chpl_qsbr_defer_deletion_multi(void **arrData, int numData) {
 void chpl_qsbr_disable(void) {
   uint64_t minEpoch = safe_epoch();
 
-  // If no thread is registered it will return 'ENABLED_SAFE_EPOCH' constant...
+  // If no thread is registered it will return the 'ENABLED_SAFE_EPOCH' constant...
   if (minEpoch == CHPL_QSBR_ENABLED_SAFE_EPOCH) {
     minEpoch = 0;
   }

@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "chpl-atomics.h"
+#include "chpl-thread-local-storage.h"
 
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
@@ -29,8 +30,8 @@
 
  For memory to be appropriately protected by QSBR, two invariants must be established:
   1.  References to QSBR-protected memory obtained prior to a checkpoint must not be
-    used after the checkpoint, otherwise the reference is unsafe.
-    2.  QSBR-protected memory must only be deferred for deletion at most once.
+      used after the checkpoint, otherwise the reference is unsafe.
+  2.  QSBR-protected memory must only be deferred for deletion at most once.
 
  The idiomatic usage of QSBR involves separating memory reclamation into two phases:
   1.  Logically deleting memory by removing it from some data structure in some linearizable fashion.
@@ -97,32 +98,45 @@ struct tls_node {
   struct tls_node *next;
 };
 
-extern __thread struct tls_node *chpl_qsbr_tls;
+extern CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 
 #define chpl_qsbr_likely(x)       __builtin_expect((x),1)
 #define chpl_qsbr_unlikely(x)     __builtin_expect((x),0)
 
 extern void init_tls(void);
+
+// Performs a check to ensure that the current thread is registered
+// for QSBR, and if not then it will handle registration. On average takes ~1 nanosecond.
 static inline void chpl_qsbr_quickcheck(void) {
-  if (chpl_qsbr_unlikely(chpl_qsbr_tls == NULL)) {
+  if (chpl_qsbr_unlikely(CHPL_TLS_GET(chpl_qsbr_tls) == NULL)) {
     init_tls();
   }
 }
 
 void chpl_qsbr_init(void);
 
-// Called periodically to declare a quiescent state
+// Declares the current thread as being in a quiescent-state; that is, that
+// it does not have any access to any QSBR-protected data. It is erroneous
+// to use a reference to some QSBR-protected data after invoking a checkpoint
+// as the reference could have been reclaimed. A checkpoint should be invoked
+// where it is known that no task multiplexed to the same thread will access
+// any aforementioned data. It is recommended that no task switching (that is
+// calls to `chpl_task_yield` or acquiring a lock) should take place while
+// intending to use any QSBR-protected data. If QSBR is disabled no data after
+// to the point of which it was disabled will be reclaimed, but data inserted
+// prior will be elible for memory reclamation. On average takes ~30 nanoseconds.
 void chpl_qsbr_checkpoint(void);
 
-// Defer deletion of the data until it is safe.
+// Defer deletion of the data until it is safe. No data is reclaimed until a checkpoint
+// is invoked, so strategic calls to the a checkpoint is required to avoid memory leakage.
 void chpl_qsbr_defer_deletion(void *data);
 
 // Variant of 'chpl_qsbr_defer_deletion' that accepts an array of data.
 void chpl_qsbr_defer_deletion_multi(void **arrData, int numData);
 
-// Must be called when a thread will be blocked may be unable to call a checkpoint
-// for a time. If a thread is marked as 'blocked' it must not access QSBR-protected
-// data or else it is unsafe.
+// Invoked when a thread (Note: *Not just a task*) will be unable to invoke checkpoints.
+// A blocked thread will not count when determining whether data can be reclaimed, and as
+// such a blocked thread should never access QSBR-protected data. 
 void chpl_qsbr_blocked(void);
 void chpl_qsbr_unblocked(void);
 
@@ -134,9 +148,6 @@ void chpl_qsbr_unblocked(void);
 // is safe but will not reclaimed until enabled.
 void chpl_qsbr_disable(void);
 void chpl_qsbr_enable(void);
-
-// Registers a thread to use QSBR. 
-void chpl_qsbr_register(void);
 
 void chpl_qsbr_exit(void);
 

@@ -243,17 +243,17 @@ char* chpl_task_idToString(
                chpl_taskID_t); //Task ID
 
 //
-// Yields the current task. If Quiescent State-Based Reclamation
-// is enabled, it will invoke a checkpoint which will invalidate
-// any references to any protected data.
+// Invokes a QSBR checkpoint and yields the current task.
 //
 void chpl_task_yield(void);
 
 //
-// Yields the current task. If Quiescent State-Based Reclamation
-// is enabled, it will invoke a checkpoint if the passed counter
-// is some multiple of CHPL_QSBR_ITERATIONS_PER_CHECKPOINT. This
-// should be invoked during tight loops which yield repeatedly.
+// Conditionally invokes a QSBR checkpoint and yields the current task. 
+// Whether a checkpoint is invoked depends on if the argument passed
+// is some multiple of CHPL_QSBR_ITERATIONS_PER_CHECKPOINT. This should
+// be used during particularly tight loops that repeatedly yield. If the
+// passed argument is negative it will never invoke a checkpoint, 
+// but if the argument is 0 then it will always invoke a checkpoint.
 //
 void chpl_task_yield2(int64_t);
 
@@ -264,13 +264,13 @@ void chpl_task_sleep(double);
 
 //
 // (Optional) Invoked by a thread that may be idle for an
-// indefinite amount of time. The registered callback will
-// be used to perform periodic book-keeping.
+// indefinite amount of time. Currently used by tasking layers
+// which detect that the work queue has been depleted for a while.
 //
 void chpl_task_threadOnPark(void);
 
 //
-// (Optional) Invoked by a thread that invoked 'chpl_task_onPark' 
+// (Optional) Invoked by a thread that invoked 'chpl_task_threadOnPark' 
 // after they are no longer idle.
 //
 void chpl_task_threadOnUnpark(void);
