@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "lowerTryExprs.h"
+#include "errorHandling.h"
 
 #include "AstVisitorTraverse.h"
 #include "stmt.h"
@@ -116,13 +116,21 @@ bool NormalizeThrowsVisitor::enterCallExpr(CallExpr* call) {
 
 } /* end anon namespace */
 
+static
 void lowerTryExprs(BaseAST* ast)
 {
   NormalizeTryExprsVisitor n;
   ast->accept(&n);
 }
 
+static
 void normalizeThrows(BaseAST* ast) {
   NormalizeThrowsVisitor n;
   ast->accept(&n);
+}
+
+void normalizeErrorHandling(BaseAST* ast)
+{
+  lowerTryExprs(ast);
+  normalizeThrows(ast);
 }
