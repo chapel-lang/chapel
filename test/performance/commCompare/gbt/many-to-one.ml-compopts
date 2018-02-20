@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# Aim for about 1 second of run time.  The number of updates needed to
-# achieve this varies with the network architecture.
+# Aim for about 1 second of run time.  The number of operations needed
+# to achieve this varies with the network architecture and op type.
 import os
 
 comm = os.getenv('CHPL_COMM')
@@ -9,11 +9,19 @@ comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
 ugni = comm == 'ugni'
 gn_aries = comm == 'gasnet' and comm_sub  == 'aries'
 
-numGets    = 100000000
-numPuts    =  10000000
-numAMOs    = 100000000
-numFastOns =   2000000
-numOns     =   1000000
+if ugni or gn_aries:
+  numGets    =  20000000
+  numPuts    = 100000000
+  numAMOs    =  10000000
+  numFastOns =   2000000
+  numOns     =   1000000
+else:
+  # Tentative, really just the above divided by 10.
+  numGets    =   2000000
+  numPuts    =  10000000
+  numAMOs    =   1000000
+  numFastOns =    200000
+  numOns     =    100000
 
 base_opts = 'many-to-one-helper.h'
 
