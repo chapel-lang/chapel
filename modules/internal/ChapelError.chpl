@@ -348,6 +348,12 @@ module ChapelError {
     return fixErr;
   }
   pragma "no doc"
+  pragma "insert line file info"
+  proc chpl_fix_thrown_error(ref err: Owned(Error)): Error {
+    return chpl_fix_thrown_error(err.release());
+  }
+
+  pragma "no doc"
   proc chpl_delete_error(err: Error) {
     if err != nil then delete err;
   }
