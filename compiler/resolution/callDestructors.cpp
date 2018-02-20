@@ -227,7 +227,8 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
       }
   }
 
-  // Return true -- do not transform -- only if no non-ForallStmt uses.
+  // Return true - meaning "do not transform" -
+  // only when 'fn' is not used outside ForallStmts.
   return !otherUse;
 }  
 
