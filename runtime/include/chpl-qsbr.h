@@ -21,6 +21,7 @@
 #include <stdbool.h>
 #include "chpl-atomics.h"
 #include "chpl-thread-local-storage.h"
+#include "chpl-env.h"
 
 #ifndef _chpl_qsbr_h_
 #define _chpl_qsbr_h_
@@ -104,11 +105,25 @@ extern CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 #define chpl_qsbr_unlikely(x)     __builtin_expect((x),0)
 
 extern void init_tls(void);
+extern int chpl_qsbr_is_enabled;
+extern pthread_once_t chpl_qsbr_once_flag;
+
+static inline void chpl_qsbr_get_enabled(void) {
+  chpl_qsbr_is_enabled = chpl_env_rt_get_bool("QSBR", true);
+}
+
+static inline chpl_bool chpl_qsbr_enabled(void) {
+  if (chpl_qsbr_is_enabled == -1) {
+    pthread_once(&chpl_qsbr_once_flag, chpl_qsbr_get_enabled);
+  }
+
+  return chpl_qsbr_is_enabled;
+}
 
 // Performs a check to ensure that the current thread is registered
 // for QSBR, and if not then it will handle registration. On average takes ~1 nanosecond.
 static inline void chpl_qsbr_quickcheck(void) {
-  if (chpl_qsbr_unlikely(CHPL_TLS_GET(chpl_qsbr_tls) == NULL)) {
+  if (chpl_qsbr_enabled() && chpl_qsbr_unlikely(CHPL_TLS_GET(chpl_qsbr_tls) == NULL)) {
     init_tls();
   }
 }

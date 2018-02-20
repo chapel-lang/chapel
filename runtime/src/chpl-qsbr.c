@@ -68,6 +68,8 @@ struct defer_node {
 // List of thread-local data.
 struct tls_node *chpl_qsbr_tls_list;
 CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
+int chpl_qsbr_is_enabled = -1;
+pthread_once_t chpl_qsbr_once_flag = PTHREAD_ONCE_INIT;
 
 // As multiple threads can register themselves at a later time using atomic 
 // RMW operations, all loads of the list must also be atomic.
