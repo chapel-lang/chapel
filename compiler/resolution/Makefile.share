@@ -29,6 +29,7 @@ RESOLUTION_SRCS =                                              \
                   functionResolution.cpp                       \
                   initializerResolution.cpp                    \
                   loopDetails.cpp                              \
+                  lowerForalls.cpp                             \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \

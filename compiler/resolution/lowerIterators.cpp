@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#include "optimizations.h"
-
 #include "astutil.h"
 #include "CForLoop.h"
 #include "driver.h"
@@ -27,6 +25,7 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "oldCollectors.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -2458,15 +2457,13 @@ static void removeUncalledIterators()
   }
 }
 
-#include "implementForallIntents3.cpp" // vass
-
 void lowerIterators() {
   nonLeaderParCheck();
   parallelIterVirtualCheck();
 
   computeRecursiveIteratorSet();
 
-  lowerForallStmtsInline();
+  lowerForallStmts();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->inTree() && fn->isIterator()) {
