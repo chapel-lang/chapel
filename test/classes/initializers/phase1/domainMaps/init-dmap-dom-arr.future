@@ -1,0 +1,5 @@
+bug: deref of nil after correct output
+
+This is a variant of init-dmap-dom-arr-local.chpl which for some
+reason works better but then gets a dereference of nil at the
+end of its run.
