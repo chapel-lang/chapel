@@ -1,7 +1,29 @@
-#if 1 //wass
+/*
+ * Copyright 2004-2018 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "astutil.h"
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 #include "implementForallIntents.h"
+#include "passes.h"
+#include "resolution.h"
+#include "stringutil.h"
 #include "view.h" //wass
 
 static bool verb = false; //wass
@@ -12,6 +34,9 @@ At this point we are mostly not concerned about const-ness,
 so we may be blurring const and non-const intents.
 We DO need to preserve some const properties to enable optimizations.
 */
+
+typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap; //wass need this?
+
 
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
 
@@ -873,6 +898,14 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
 /////////// main driver ///////////
 
+// Remove supporting references in ShadowVarSymbols.
+// Otherwise flattenNestedFunction() will try to propagate them.
+static void clearUpRefsInShadowVars() {
+  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
+    if (svar->inTree())
+      svar->removeSupportingReferences();
+}
+
 /*
 We have created some nested task functions in expandTaskFn().
 Flatten them because the compiler will crash otherwise.
@@ -972,7 +1005,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
 ///////////
 
-static void lowerForallStmtsInline()
+void lowerForallStmtsInline()
 {
   gdbShouldBreakHere(); //wass
 
@@ -986,9 +1019,3 @@ static void lowerForallStmtsInline()
 
   gdbShouldBreakHere(); //wass
 }
-
-#else //wass
-static void lowerForallStmtsInline() {clearUpRefsInShadowVars();}
-void lowerForallIntentsAtResolution(ForallStmt* fs);
-void lowerForallIntentsAtResolution(ForallStmt* fs) {}
-#endif //wass

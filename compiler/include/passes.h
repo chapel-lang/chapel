@@ -113,7 +113,7 @@ void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
 // lowerIterators.cpp, lowerForalls.cpp
-void lowerForallStmts();
+void lowerForallStmtsInline();
 
 // normalize.cpp
 void normalize(FnSymbol* fn);

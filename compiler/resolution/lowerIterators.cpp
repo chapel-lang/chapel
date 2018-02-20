@@ -331,15 +331,6 @@ static void computeRecursiveIteratorSet() {
 }
 
 
-// Remove supporting references in ShadowVarSymbols.
-// Otherwise flattenNestedFunction() will try to propagate them.
-static void clearUpRefsInShadowVars() {
-  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
-    if (svar->inTree())
-      svar->removeSupportingReferences();
-}
-
-
 static bool containsYield(Expr* arg) {
   std::vector<CallExpr*> calls;
   collectCallExprs(arg, calls);
@@ -2463,7 +2454,7 @@ void lowerIterators() {
 
   computeRecursiveIteratorSet();
 
-  lowerForallStmts();
+  lowerForallStmtsInline();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->inTree() && fn->isIterator()) {
