@@ -131,6 +131,7 @@ module ChapelRange {
   // The _aligned bit can also be set through the application of an explicit alignment.
   //
 
+  // BHARSH TODO, 2018-02-20:
   // A (hopefully) temporary workaround until if-exprs are fixed.
   private proc typeHelper(param cond : bool, type t) type {
     if cond then return t;
