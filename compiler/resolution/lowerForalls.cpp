@@ -898,6 +898,31 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
 /////////// iterator forwarders ///////////
 
+//
+// If the iterable expression calls something that is NOT
+// a parallel iterator proper, pre-process it and update
+// 'iterCall' and 'iterFn' to be the new iterable expression.
+//
+// Tests:
+//   library/packages/Collection/CollectionCounter.chpl
+//   library/standard/Random/deitz/test1D2D.chpl
+//   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
+//
+static void handleIteratorForwarders(ForallStmt* fs,
+                                     CallExpr*& iterCall, FnSymbol*& iterFn)
+{
+  if (!strncmp(iterFn->name, "_iterator_for_loopexpr", 22)) {
+    // In this case, we have a _toLeader call and no side effects.
+    // Just use the iterator corresponding to the iterator record.
+    iterFn = getTheIteratorFnFromIR(iterFn->retType);
+    iterCall->baseExpr->replace(new SymExpr(iterFn));
+    return;
+  }
+
+  INT_ASSERT(false); // VASS CONTINUE HERE
+}
+
+/* wass
 // If this calls a parallel iterator, return that.
 // Otherwise find the parallel iterator being invoked,
 // modify the callee to reference it, and return it.
@@ -916,7 +941,7 @@ static FnSymbol* getParIterAndConvertForwarders(CallExpr* parIterCall) {
   parIterCall->baseExpr->replace(new SymExpr(destFn));
   return destFn;
 }
-
+*/
 
 
 /////////// main driver ///////////
@@ -972,19 +997,22 @@ static void removeDeadAndFlatten() {
 static void lowerOneForallStmt(ForallStmt* fs) {
   ExpandVisitor* parentVis = NULL; //wass - dummy
   showLOFS(fs, parentVis, "{ lonfs", true);
-  if (fs->id == breakOnResolveID) breakOnExpand = true, gdbShouldBreakHere(); //wass
+  if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass // optionally: set breakOnExpand = true
 
   // If this fails, need to filter out those FSes.
-  // We lower and remove each FS from the tree *after* we see it here.
-  // Except when the iterator being inlined itself has a FS.
   INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
 
   // We convert zippering, if any, to a follower loop during resolution.
   INT_ASSERT(fs->numIteratedExprs() == 1);
-  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
 
-  FnSymbol* parIterFn = getParIterAndConvertForwarders(parIterCall);
+  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
+  FnSymbol* parIterFn = parIterCall->resolvedFunction();
+
   // Make sure it is a parallel iterator.
+  if (!parIterFn->hasFlag(FLAG_INLINE_ITERATOR))
+    // This updates parIterCall, parIterFn.
+    handleIteratorForwarders(fs, parIterCall, parIterFn);
+
   INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
 
   // We don't know yet what to do with these.
