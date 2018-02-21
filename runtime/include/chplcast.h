@@ -45,7 +45,7 @@ uint16_t c_string_to_uint16_t(c_string str, chpl_bool* err, int lineno, int32_t 
 uint32_t c_string_to_uint32_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
 uint64_t c_string_to_uint64_t(c_string str, chpl_bool* err, int lineno, int32_t filename);
 
-chpl_bool c_string_to_chpl_bool(c_string str, c_string* err, int lineno, int32_t filename);
+chpl_bool c_string_to_chpl_bool(c_string str, chpl_bool* err, int lineno, int32_t filename);
 
 _real32 c_string_to_real32_precise(c_string str, int* invalid, char* invalidCh);
 _real64 c_string_to_real64_precise(c_string str, int* invalid, char* invalidCh);

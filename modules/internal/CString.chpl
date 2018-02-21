@@ -119,14 +119,13 @@ module CString {
   inline proc _cast(type t, x:c_string) throws where isBoolType(t)
   {
     pragma "insert line file info"
-    extern proc c_string_to_chpl_bool(x:c_string, ref err: c_string) : bool;
+    extern proc c_string_to_chpl_bool(x:c_string, ref err: bool) : bool;
 
-    var err_str: c_string;
-    var retVal = c_string_to_chpl_bool((x:string).strip().c_str(), err_str) : t;
+    var isErr: bool;
+    var retVal = c_string_to_chpl_bool((x:string).strip().c_str(), isErr): t;
 
-    var err_str_cast = err_str:string;
-    if !err_str_cast.isEmptyString() then
-      throw new IllegalArgumentError("string", err_str_cast);
+    if isErr then
+      throw new IllegalArgumentError(x:string, "Unexpected value when converting from string to bool");
 
     return retVal;
   }

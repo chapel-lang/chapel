@@ -132,14 +132,13 @@ _define_string_to_int_precise(uint, 32, 1)
 _define_string_to_bigint_precise(uint, 64, 1, "%" SCNu64)
 
 
-chpl_bool c_string_to_chpl_bool(c_string str, c_string* err, int lineno, int32_t filename) {
+chpl_bool c_string_to_chpl_bool(c_string str, chpl_bool* err, int lineno, int32_t filename) {
   if (string_compare(str, "true") == 0) {
     return true;
   } else if (string_compare(str, "false") == 0) {
     return false;
   } else {
-    *err = chpl_glom_strings(3, "Unexpected value when converting from string to bool: '",
-                             str, "'");
+    *err = true;
     return false;
   }
 }
