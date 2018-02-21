@@ -575,6 +575,8 @@ sub main {
                 print "missing -futures-mode arg\n";
                 exit (8);
             }
+        } elsif (/^-futures-only/) {
+            $futures_mode = 2;
         } elsif (/^-futures/) {
             $futures_mode = 1;
         } elsif (/^-logfile/) {
