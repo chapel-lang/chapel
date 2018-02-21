@@ -208,9 +208,9 @@ module Barriers {
     pragma "no doc"
     var n: int;
     pragma "no doc"
-    var count: atomic int;
+    var count: chpl__processorAtomicType(int);
     pragma "no doc"
-    var done: atomic bool;
+    var done: chpl__processorAtomicType(bool);
 
     /* Construct a new Barrier object.
 
