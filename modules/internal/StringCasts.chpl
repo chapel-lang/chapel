@@ -46,13 +46,13 @@ module StringCasts {
   proc _cast(type t, x: string) throws where isBoolType(t) {
     var str = x.strip();
     if str.isEmptyString() {
-      throw new IllegalArgumentError("string", "Empty string when converting from string to bool");
+      throw new IllegalArgumentError(x, "Empty string when converting from string to bool");
     } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
     } else {
-      throw new IllegalArgumentError("string", "Unexpected value when converting from string to bool: '"+x+"'");
+      throw new IllegalArgumentError(x, "Unexpected value when converting from string to bool");
     }
     return false;
   }
