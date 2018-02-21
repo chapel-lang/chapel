@@ -402,6 +402,7 @@ static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
   IntentTag oldIntent = arg->intent;
+  bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
   ArgSymbol* oldArg   = NULL;
 
   Serializers ser = serializeMap[oldArgType->getValType()];
@@ -538,9 +539,11 @@ static void insertSerialization(FnSymbol*  fn,
     lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
   }
 
-  FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
-  if (deserializeDestroyFn != NULL) {
-    lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
+  if (!newStyleInIntent) {
+    FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
+    if (deserializeDestroyFn != NULL) {
+      lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
+    }
   }
 }
 
