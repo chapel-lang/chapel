@@ -220,8 +220,12 @@ module LocaleModel {
     }
 
     proc deinit() {
-      for loc in myLocales do
-        delete loc;
+      for loc in myLocales {
+        on loc {
+          rootLocaleInitialized = false;
+          delete loc;
+        }
+      }
     }
   }
 
