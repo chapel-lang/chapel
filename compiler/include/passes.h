@@ -96,6 +96,9 @@ void buildDefaultDestructor(AggregateType* ct);
 void buildNearScopeEnumFunctions(EnumType* et);
 void buildFarScopeEnumFunctions(EnumType* et);
 
+// callDestructors.cpp
+void insertReferenceTemps(CallExpr* call);
+
 // createTaskFunctions.cpp -> implementForallIntents.cpp
 extern Symbol* markPruned;
 extern Symbol* markUnspecified;
@@ -109,8 +112,8 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
-// callDestructors.cpp
-void insertReferenceTemps(CallExpr* call);
+// inlineFunctions.cpp
+BlockStmt* copyBody(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);
