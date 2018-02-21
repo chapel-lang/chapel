@@ -47,6 +47,7 @@ module LocaleModelHelpMem {
   // model alloc" in any compilation and the function must be fully specified.
   pragma "allocator"
   pragma "locale model alloc"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
@@ -54,6 +55,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
@@ -61,6 +63,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
       extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
@@ -68,12 +71,14 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "always propagate line file info"
   proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "insert line file info"
       extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
   }
 
+  pragma "always propagate line file info"
   proc chpl_here_good_alloc_size(min_size:integral): min_size.type {
     pragma "insert line file info"
       extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
@@ -81,6 +86,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "locale model free"
+  pragma "always propagate line file info"
   proc chpl_here_free(ptr:c_void_ptr): void {
     pragma "insert line file info"
       extern proc chpl_mem_free(ptr:c_void_ptr) : void;

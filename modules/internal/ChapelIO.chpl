@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,11 +20,11 @@
 /*
 
 Basic types and utilities in support of I/O operation.
- 
+
 Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.
- 
+
 Writing and Reading
 ~~~~~~~~~~~~~~~~~~~
 
@@ -199,7 +199,7 @@ appropriately before the elements can be read.
 module ChapelIO {
   use ChapelBase; // for uint().
   use SysBasic;
-  
+
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
@@ -207,7 +207,7 @@ module ChapelIO {
     proc helper(o)         return false;
     return helper(val);
   }
- 
+
   use IO;
 
     private
@@ -255,7 +255,7 @@ module ChapelIO {
     proc writeThisFieldsDefaultImpl(writer, x:?t, inout first:bool) {
       param num_fields = __primitive("num fields", t);
       var isBinary = writer.binary();
-  
+
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
@@ -263,7 +263,7 @@ module ChapelIO {
           writeThisFieldsDefaultImpl(writer, x.super, first);
         }
       }
-  
+
       if !isUnionType(t) {
         // print out all fields for classes and records
         for param i in 1..num_fields {
@@ -271,13 +271,13 @@ module ChapelIO {
             if !isBinary {
               var comma = new ioLiteral(", ");
               if !first then writer.readwrite(comma);
-    
+
               var eq:ioLiteral = ioFieldNameEqLiteral(writer, t, i);
               writer.readwrite(eq);
             }
 
             writer.readwrite(__primitive("field by num", x, i));
-  
+
             first = false;
           }
         }
@@ -303,7 +303,7 @@ module ChapelIO {
     // with the appropriate *concrete* type of x; that's what
     // happens now with buildDefaultWriteFunction
     // since it has the concrete type and then calls this method.
-  
+
     // MPF: We would like to entirely write the default writeThis
     // method in Chapel, but that seems to be a bit of a challenge
     // right now and I'm having trouble with scoping/modules.
@@ -329,11 +329,11 @@ module ChapelIO {
         }
         writer.readwrite(start);
       }
-  
+
       var first = true;
-  
+
       writeThisFieldsDefaultImpl(writer, x, first);
-  
+
       if !writer.binary() {
         var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
         var end:ioLiteral;
@@ -351,7 +351,7 @@ module ChapelIO {
         writer.readwrite(end);
       }
     }
- 
+
     private
     proc skipFieldsAtEnd(reader, inout needsComma:bool) {
 
@@ -395,7 +395,7 @@ module ChapelIO {
       param num_fields = __primitive("num fields", t);
       var isBinary = reader.binary();
       var superclass_error : syserr = ENOERR;
-  
+
       if (isClassType(t)) {
         if t != object {
           // only write parent fields for subclasses of object
@@ -408,7 +408,7 @@ module ChapelIO {
           superclass_error = reader.error();
         }
       }
-  
+
       if !isUnionType(t) {
         // read all fields for classes and records
         if isBinary {
@@ -587,9 +587,9 @@ module ChapelIO {
         }
         reader.readwrite(start);
       }
-  
+
       var needsComma = false;
-  
+
       var obj = x; // make obj point to x so ref works
       if ! reader.error() {
         readThisFieldsDefaultImpl(reader, t, obj, needsComma);
@@ -624,9 +624,9 @@ module ChapelIO {
         }
         reader.readwrite(start);
       }
-  
+
       var needsComma = false;
-  
+
       if ! reader.error() {
         readThisFieldsDefaultImpl(reader, t, x, needsComma);
       }
@@ -645,13 +645,14 @@ module ChapelIO {
         reader.readwrite(end);
       }
     }
-  
+
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
   pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt() {
     __primitive("chpl_error", c"halt reached");
   }
@@ -662,38 +663,42 @@ module ChapelIO {
      if any, then exits the program.
    */
   pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt(s:string) {
     halt(s.localize().c_str());
   }
- 
+
   /*
      Prints an error message to stderr giving the location of the call to
      ``halt`` in the Chapel source, followed by the arguments to the call,
      if any, then exits the program.
    */
   pragma "function terminates program"
+  pragma "always propagate line file info"
   proc halt(args ...?numArgs) {
     var tmpstring = "halt reached - " + stringify((...args));
     __primitive("chpl_error", tmpstring.c_str());
   }
-  
+
   /*
     Prints a warning to stderr giving the location of the call to ``warning``
     in the Chapel source, followed by the argument(s) to the call.
   */
+  pragma "always propagate line file info"
   proc warning(s:string) {
     __primitive("chpl_warning", s.localize().c_str());
   }
- 
+
   /*
     Prints a warning to stderr giving the location of the call to ``warning``
     in the Chapel source, followed by the argument(s) to the call.
   */
+  pragma "always propagate line file info"
   proc warning(args ...?numArgs) {
     var tmpstring = stringify((...args));
     warning(tmpstring);
   }
-  
+
   pragma "no doc"
   proc _ddata.writeThis(f) {
     compilerWarning("printing _ddata class");
