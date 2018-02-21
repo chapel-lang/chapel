@@ -112,6 +112,9 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// inlineFunctions.cpp
+BlockStmt* copyBody(CallExpr* call, FnSymbol* fn, Expr* anchor);
+
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
 

@@ -175,8 +175,6 @@ static void inlineAtCallSites(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static BlockStmt* copyBody(CallExpr* call);
-
 static void inlineCall(CallExpr* call) {
   SET_LINENO(call);
 
@@ -192,14 +190,13 @@ static void inlineCall(CallExpr* call) {
   // call does not consume the return value, then stmt == call
   //
   Expr*      stmt  = call->getStmtExpr();
-
   FnSymbol*  fn    = call->resolvedFunction();
-  BlockStmt* block = copyBody(call);
+  BlockStmt* bCopy = copyBody(call, fn, stmt);
 
   // Transfer most of the statements from the body to immediately before
   // the statement that that contains the call.
   // The final statement, which be some form of return, is handled specially.
-  for_alist(copy, block->body) {
+  for_alist(copy, bCopy->body) {
     // This is not the final statement
     if (copy->next != NULL) {
 
@@ -228,7 +225,9 @@ static void inlineCall(CallExpr* call) {
 
 //
 // Make a copy of the function's body.  The symbol map is initialized
-// with a map from the function's formals to the actuals for the call
+// with a map from the function's formals to the actuals for the call.
+// The copy is not inserted into the tree.
+// Any adjustments for inlining are inserted before 'stmt'.
 //
 // It is possible that a) the function being inlined takes the address
 // of one or more of the formals and b) that an actual for this call
@@ -237,13 +236,9 @@ static void inlineCall(CallExpr* call) {
 // choose to always replace an actual immediate with a temp.
 //
 
-static BlockStmt* copyBody(CallExpr* call) {
+BlockStmt* copyBody(CallExpr* call, FnSymbol* fn, Expr* stmt) {
   SET_LINENO(call);
-
   SymbolMap  map;
-
-  FnSymbol*  fn     = call->resolvedFunction();
-  BlockStmt* retval = NULL;
 
   for_formals_actuals(formal, actual, call) {
     Symbol* sym = toSymExpr(actual)->symbol();
@@ -251,7 +246,6 @@ static BlockStmt* copyBody(CallExpr* call) {
     // Replace an immediate actual with a temp var "just in case"
     if (sym->isImmediate() == true) {
       VarSymbol* tmp  = newTemp("inlineImm", sym->type);
-      Expr*      stmt = call->getStmtExpr();
 
       actual->replace(new SymExpr(tmp));
 
@@ -265,7 +259,6 @@ static BlockStmt* copyBody(CallExpr* call) {
       // create a reference temporary so that nothing in the
       // inlined code changes meaning.
 
-      Expr*      stmt = call->getStmtExpr();
       VarSymbol* tmp  = newTemp(astr("i_", formal->name),
                                 formal->type);
       DefExpr*   def  = new DefExpr(tmp);
@@ -285,7 +278,7 @@ static BlockStmt* copyBody(CallExpr* call) {
     map.put(formal, sym);
   }
 
-  retval = fn->body->copy(&map);
+  BlockStmt* retval = fn->body->copy(&map);
 
   if (preserveInlinedLineNumbers == false) {
     reset_ast_loc(retval, call);

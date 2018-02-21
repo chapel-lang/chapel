@@ -343,6 +343,7 @@ static void removeParIterReturn(BlockStmt* cloneBody) {
   INT_ASSERT(retsym->firstSymExpr() == NULL);
 }
 
+#if 0 //wass - replaced with copyBody()
 // Cf. copyBody() for inlineFunctions().
 // 'anchor' is the AST that the new body will replace.
 static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
@@ -402,7 +403,7 @@ static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
 
   return retval;
 }
-
+#endif
 #if 0 //wass need this?
 
 /* Do we want to make this available to all compiler code?
@@ -1029,7 +1030,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   // Clone the iterator body.
   // Cf. expandIteratorInline() and inlineCall().
-  BlockStmt* ibody = copyParIterBody(parIterFn, parIterCall, ianch);
+  BlockStmt* ibody = copyBody(parIterCall, parIterFn, ianch);
+  removeParIterReturn(ibody);
 
   // Let us remove 'fs' later, for debugging convenience.
   fs->insertAfter(iwrap);
