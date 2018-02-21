@@ -491,7 +491,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks f] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
@@ -499,6 +499,7 @@ sub print_help {
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
     print "    -futures   : include .future tests (default is none).\n";
+    print "    -futures-only : only run .future tests, not regular ones.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
@@ -575,6 +576,8 @@ sub main {
                 print "missing -futures-mode arg\n";
                 exit (8);
             }
+        } elsif (/^-futures-only/) {
+            $futures_mode = 2;
         } elsif (/^-futures/) {
             $futures_mode = 1;
         } elsif (/^-logfile/) {
