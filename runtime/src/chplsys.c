@@ -558,16 +558,16 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
     // See if the /sys filesystem has any more information for us.
     int threads_per_core = 0;
     if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings",
-		   "r")) != NULL) {
+                   "r")) != NULL) {
       int c;
       while ((c = getc(f)) != EOF) {
-	if (c == '1') {
-	  ++threads_per_core;
-	} else if (c != '0' && c != ',' && c != '\n') {
-	  // unknown file format -- don't use
-	  threads_per_core = 1;
-	  break;
-	}
+        if (c == '1') {
+          ++threads_per_core;
+        } else if (c != '0' && c != ',' && c != '\n') {
+          // unknown file format -- don't use
+          threads_per_core = 1;
+          break;
+        }
       }
       fclose(f);
     }
