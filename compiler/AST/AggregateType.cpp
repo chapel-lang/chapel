@@ -1994,6 +1994,12 @@ bool AggregateType::wantsDefaultInitializer() const {
   } else if (symbol->hasFlag(FLAG_REF) == true) {
     retval = false;
 
+  // Iterator classes and records want neither default constructors nor
+  // initializers, and never will
+  } else if (symbol->hasFlag(FLAG_ITERATOR_CLASS) ||
+             symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    retval = false;
+
   } else {
     // No default initializer for types that have an initialize() method
     forv_Vec(FnSymbol, method, nonConstHole->methods) {
