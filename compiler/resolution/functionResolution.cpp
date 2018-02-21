@@ -8336,6 +8336,21 @@ static void cleanupVoidVarsAndFields() {
       }
     }
   }
+
+  // Problem case introduced by postFoldNormal where a statement-level call
+  // returning void can be replaced by a '_void' SymExpr. Such SymExprs will
+  // be left in the tree if optimizations are disabled, and can cause codegen
+  // failures later on (at least under LLVM).
+  //
+  // Solution: only keep '_void' SymExprs if the parent is a PRIM_RETURN
+  for_SymbolSymExprs(se, gVoid) {
+    CallExpr*  parent       = toCallExpr(se->parentExpr);
+    const bool isPrimReturn = parent != NULL &&
+                              parent->isPrimitive(PRIM_RETURN);
+    if (isPrimReturn == false) {
+      se->remove();
+    }
+  }
 }
 
 /************************************* | **************************************
