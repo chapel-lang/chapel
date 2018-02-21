@@ -799,6 +799,7 @@ typedef enum {
   fork_op_get,
   fork_op_free,
   fork_op_amo,
+  fork_op_shutdown,
   fork_op_num_ops
 } fork_op_t;
 
@@ -891,6 +892,10 @@ typedef struct {
 } fork_amo_info_t;
 
 typedef struct {
+  fork_base_info_t b;
+} fork_shutdown_info_t;
+
+typedef struct {
   unsigned char buf[FORK_T_MAX_SIZE];
 } fork_space_t;
 
@@ -901,6 +906,7 @@ typedef union fork_t {
   fork_xfer_info_t x;
   fork_free_info_t f;
   fork_amo_info_t  a;
+  fork_shutdown_info_t s;
   fork_space_t bytes; // get fork_t to be >= FORK_T_MAX_SIZE bytes
 } fork_t;
 
@@ -1255,6 +1261,14 @@ static volatile chpl_bool polling_task_done        = false;
 
 
 //
+// These tell the state of, or give direction to, the main process
+//
+static chpl_bool can_shutdown = false;
+static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
+
+
+//
 // Comm diagnostic information.  The local_commDiagnostics_t type must
 // be kept in sync with the public chpl_commDiagnostics type defined
 // in chpl-comm.h.  We need our own diagnostic counter type because we
@@ -1369,6 +1383,7 @@ static void      fork_put(void*, c_nodeid_t, void*, size_t);
 static void      fork_get(void*, c_nodeid_t, void*, size_t);
 static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
+static void      fork_shutdown(c_nodeid_t);
 static void      do_fork_post(c_nodeid_t, chpl_bool,
                               uint64_t, fork_base_info_t* const, int*, int*);
 static void      acquire_comm_dom(void);
@@ -3283,6 +3298,22 @@ void chpl_comm_pre_task_exit(int all)
     return;
 
   if (all) {
+
+    if (chpl_nodeID == 0) {
+      int i;
+      for (i = 0; i < chpl_numNodes; i++) {
+        if (i != chpl_nodeID) {
+          fork_shutdown(i);
+        }
+      }
+    } else {
+      pthread_mutex_lock(&shutdown_mutex);
+      while (!can_shutdown) {
+        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
+      }
+      pthread_mutex_unlock(&shutdown_mutex);
+    }
+
     chpl_comm_barrier("chpl_comm_pre_task_exit");
 
     polling_task_please_exit = true;
@@ -3531,6 +3562,19 @@ void rf_handler(gni_cq_entry_t* ev)
       fork_amo_info_t f_a = f->a;
       release_req_buf(req_li, req_cdi, req_rbi);
       fork_amo_wrapper(&f_a);
+    }
+    break;
+
+  case fork_op_shutdown:
+    DBG_P_LP(DBGF_RF, "shutdownFrom(%d) %s",
+             (int) req_li, sprintf_rf_req(-1, f));
+
+    {
+      release_req_buf(req_li, req_cdi, req_rbi);
+      pthread_mutex_lock(&shutdown_mutex);
+      can_shutdown = true;
+      pthread_cond_signal(&shutdown_cond);
+      pthread_mutex_unlock(&shutdown_mutex);
     }
     break;
 
@@ -6687,6 +6731,26 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   PERFSTATS_INC(fork_amo_cnt);
   do_fork_post(locale, true /*blocking*/,
                sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
+}
+
+static
+void fork_shutdown(c_nodeid_t locale)
+{
+  fork_base_info_t hdr = { .op = fork_op_shutdown };
+
+  fork_shutdown_info_t req = { .b = hdr };
+
+  if (locale < 0 || locale >= chpl_numNodes)
+    CHPL_INTERNAL_ERROR("fork_shutdown(): remote locale out of range");
+
+  DBG_SET_SEQ(req.b.seq);
+  DBG_P_LP(DBGF_RF, "shutdown(%d) %s",
+           (int) locale, sprintf_rf_req(locale, &req));
+
+  //
+  // Send the request to the target.
+  //
+  do_fork_post(locale, false /*blocking*/, sizeof(req), &req.b, NULL, NULL);
 }
 
 

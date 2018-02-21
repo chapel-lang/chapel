@@ -248,6 +248,7 @@ typedef enum {
   PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
   FREE,                 // free data at addr
   EXIT_ANY,             // <unused> to be used for exit_any() cleanup
+  SHUTDOWN,             // tell nodes to get ready for shutdown
   BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
   DO_COPY_PAYLOAD       // copy AM payload to another address
@@ -535,6 +536,17 @@ static void AM_exit_any(gasnet_token_t token, void* buf, size_t nbytes) {
   // ensure only one thread calls chpl_exit_all on this locale.
 }
 
+static chpl_bool can_shutdown = false;
+static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
+
+static void AM_shutdown(gasnet_token_t token) {
+  pthread_mutex_lock(&shutdown_mutex);
+  can_shutdown = true;
+  pthread_cond_signal(&shutdown_cond);
+  pthread_mutex_unlock(&shutdown_mutex);
+}
+
 //
 // This global and routine are used to broadcast the seginfo_table at the outset
 // of the program's execution.  It is designed to only be used once.  This code
@@ -590,6 +602,7 @@ static gasnet_handlerentry_t ftable[] = {
   {PRIV_BCAST_LARGE, AM_priv_bcast_large},
   {FREE,          AM_free},
   {EXIT_ANY,      AM_exit_any},
+  {SHUTDOWN,      AM_shutdown},
   {BCAST_SEGINFO, AM_bcast_seginfo},
   {DO_REPLY_PUT,  AM_reply_put},
   {DO_COPY_PAYLOAD, AM_copy_payload}
@@ -1035,6 +1048,22 @@ void chpl_comm_barrier(const char *msg) {
 
 void chpl_comm_pre_task_exit(int all) {
   if (all) {
+
+    if (chpl_nodeID == 0) {
+     int node;
+     for (node = 0; node < chpl_numNodes; node++) {
+       if (node != chpl_nodeID) {
+          GASNET_Safe(gasnet_AMRequestShort0(node, SHUTDOWN));
+        }
+      }
+    } else {
+      pthread_mutex_lock(&shutdown_mutex);
+      while (!can_shutdown) {
+        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
+      }
+      pthread_mutex_unlock(&shutdown_mutex);
+    }
+
     chpl_comm_barrier("stop polling");
 
     //
