@@ -1591,6 +1591,7 @@ static void handleInIntents(FnSymbol* fn,
         // "move" from call site to called function, so don't destroy
         // here. The called function will destroy.
         tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+        tmp->addFlag(FLAG_EXPR_TEMP);
 
         // Does this need to be here?
         if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
