@@ -1,6 +1,0 @@
-usedWithSingle.chpl:1: warning: type _singlevar(int(64)) does not currently support noinit, using default initialization
-usedWithSingle.chpl:2: warning: type _singlevar(bool) does not currently support noinit, using default initialization
-Task 1 finishing
-Task 2 done!
-4
-true
