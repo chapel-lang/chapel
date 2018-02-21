@@ -8342,6 +8342,18 @@ static void cleanupVoidVarsAndFields() {
       }
     }
   }
+
+  // Problem case introduced by postFoldNormal where a statement-level call
+  // returning void can be replaced by a '_void' SymExpr. Such SymExprs will
+  // be left in the tree if optimizations are disabled, and can cause codegen
+  // failures later on (at least under LLVM).
+  //
+  // Solution: Remove SymExprs to _void if the expr is at the statement level.
+  for_SymbolSymExprs(se, gVoid) {
+    if (se == se->getStmtExpr()) {
+      se->remove();
+    }
+  }
 }
 
 /************************************* | **************************************
