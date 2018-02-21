@@ -263,6 +263,10 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   Symbol*  var      = s->symbol();
   Type*    baseType = arg->getValType();
 
+  // new-style in intents are handled elsewhere
+  if (shouldAddFormalTempAtCallSite(formal, fn))
+    return false;
+
   if (!formal->isRef() && isRecord(baseType))
     return true;
 
