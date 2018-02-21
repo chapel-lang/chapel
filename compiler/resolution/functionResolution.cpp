@@ -8342,12 +8342,9 @@ static void cleanupVoidVarsAndFields() {
   // be left in the tree if optimizations are disabled, and can cause codegen
   // failures later on (at least under LLVM).
   //
-  // Solution: only keep '_void' SymExprs if the parent is a PRIM_RETURN
+  // Solution: Remove SymExprs to _void if the expr is at the statement level.
   for_SymbolSymExprs(se, gVoid) {
-    CallExpr*  parent       = toCallExpr(se->parentExpr);
-    const bool isPrimReturn = parent != NULL &&
-                              parent->isPrimitive(PRIM_RETURN);
-    if (isPrimReturn == false) {
+    if (se == se->getStmtExpr()) {
       se->remove();
     }
   }
