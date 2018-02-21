@@ -115,7 +115,6 @@ module ChapelSyncvar {
       ensureFEType(valType);
       this.valType = valType;
       this.wrapped = new (getSyncClassType(valType))(valType);
-      this.isOwned = true;
       super.init();
     }
 
@@ -633,7 +632,6 @@ module ChapelSyncvar {
       ensureFEType(valType);
       this.valType = valType;
       wrapped = new _singlecls(valType);
-      isOwned = true;
       super.init();
     }
 
