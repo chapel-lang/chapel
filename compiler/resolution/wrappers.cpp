@@ -1612,12 +1612,7 @@ static void handleInIntents(FnSymbol* fn,
         // Then "move" ownership to the called function
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
-        /*CallExpr* move = new CallExpr(PRIM_MOVE, tmp, actualSym);
-        anchor->insertBefore(new DefExpr(tmp));
-        anchor->insertBefore(move);
-        resolveCall(move);*/
       }
-
     }
 
     currActual = nextActual;
