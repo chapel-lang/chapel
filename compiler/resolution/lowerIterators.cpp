@@ -1474,8 +1474,6 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   Expr* stmt = se->getStmtExpr(); // aka last scope
   Expr* scope = stmt->parentExpr;
 
-  gdbShouldBreakHere();
-
   while (scope) {
     if (isBlockStmt(scope)) {
       // Consider statements that appear before stmt
