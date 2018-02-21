@@ -442,6 +442,38 @@ static void insertSerialization(FnSymbol*  fn,
     SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
     SET_LINENO(actual);
 
+    Symbol* actualInput = actual->symbol();
+
+    // If we're working with a copy added to support an 'in' intent,
+    // we don't need that copy anymore since the serialize/deserialize
+    // calls will have the same effect. So remove the copy call
+    // in that event.
+    if (newStyleInIntent) {
+      Expr* initExpr = actual->symbol()->getInitialization();
+
+      CallExpr* initCall = toCallExpr(initExpr);
+      INT_ASSERT(initCall);
+
+      if (initCall->isPrimitive(PRIM_MOVE) ||
+          initCall->isPrimitive(PRIM_ASSIGN))
+        initCall = toCallExpr(initCall->get(2));
+
+      INT_ASSERT(initCall);
+
+      FnSymbol* initFn = initCall->resolvedFunction();
+      INT_ASSERT(initFn);
+      INT_ASSERT(initFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                 initFn->hasFlag(FLAG_AUTO_COPY_FN));
+
+      SymExpr* initArg = toSymExpr(initCall->get(1));
+      INT_ASSERT(initArg);
+
+      if (initArg->getValType() == actual->getValType()) {
+        actualInput = initArg->symbol();
+        initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
+      }
+    }
+
     VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
     if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
       data->addFlag(FLAG_COFORALL_INDEX_VAR);
@@ -449,9 +481,9 @@ static void insertSerialization(FnSymbol*  fn,
     call->insertBefore(new DefExpr(data));
 
     if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
-      call->insertBefore(new CallExpr(serializeFn, actual->copy(), data));
+      call->insertBefore(new CallExpr(serializeFn, actualInput, data));
     } else {
-      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actual->copy())));
+      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actualInput)));
     }
 
     // Old argument not passed so we can't destroy the original
