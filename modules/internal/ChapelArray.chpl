@@ -3144,6 +3144,11 @@ module ChapelArray {
     return result;
   }
 
+  // How to cast arrays to strings
+  pragma "no doc"
+  proc _cast(type t, x: []) where t == string {
+    return stringify(x);
+  }
 
   //
   // isXxxType, isXxxValue
