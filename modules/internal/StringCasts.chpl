@@ -68,6 +68,7 @@ module StringCasts {
     var isErr: bool;
     var csc = integral_to_c_string(x:int(64), numBytes(x.type), isIntType(x.type), isErr);
 
+    // this should only happen if the runtime is broken
     if isErr {
       try! {
         throw new IllegalArgumentError("integral", "Unexpected case in integral_to_c_string");
