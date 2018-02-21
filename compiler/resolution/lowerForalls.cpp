@@ -330,17 +330,20 @@ static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
   printf("\n");
 }
 
-// Remove the return statement and the def of 'ret'.
-static void removeParIterReturn(BlockStmt* cloneBody) {
+// Remove the return statement and the def of 'ret'. Return 'ret'.
+// See also removeRetSymbolAndUses().
+static Symbol* removeParIterReturn(BlockStmt* cloneBody, bool moreRefs) {
   CallExpr* retexpr = toCallExpr(cloneBody->body.tail);
   INT_ASSERT(retexpr && retexpr->isPrimitive(PRIM_RETURN));
   Symbol* retsym = toSymExpr(retexpr->get(1))->symbol();
   INT_ASSERT(retsym->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
   
   retexpr->remove();
-  retsym->defPoint->remove();
-  // There should not be any references left to 'ret'.
-  INT_ASSERT(retsym->firstSymExpr() == NULL);
+  if (!moreRefs) retsym->defPoint->remove();
+  // There should not be any references left to 'ret', unless moreRefs.
+  INT_ASSERT(moreRefs || retsym->firstSymExpr() == NULL);
+
+  return retsym;
 }
 
 #if 0 //wass - replaced with copyBody()
@@ -399,7 +402,7 @@ static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
     reset_ast_loc(retval, iterCall);
   }
 
-  removeParIterReturn(retval);
+  removeParIterReturn(retval, false);
 
   return retval;
 }
@@ -900,6 +903,44 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 /////////// iterator forwarders ///////////
 
 //
+// For 'block' the body of a function, return the single CallExpr*
+// that computes the return value. Fail if it does not exist.
+// Remove the return symbol and the temps that propagate this value
+// into the return statement.
+//
+static CallExpr* stripReturnScaffolding(BlockStmt* block) {
+  Symbol* currSym  = removeParIterReturn(block, true); // 'ret'
+
+  while (true) {
+    if (SymExpr* defSE = currSym->getSingleDef())
+      if (CallExpr* defMove = toCallExpr(defSE->parentExpr))
+        if (defMove->isPrimitive(PRIM_MOVE)) {
+          currSym->defPoint->remove();
+          Expr* defSrc = defMove->get(2);
+
+          if (SymExpr* srcSE = toSymExpr(defSrc)) {
+            defMove->remove();
+            INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
+            currSym = srcSE->symbol();
+            continue;
+          }
+          if (CallExpr* srcCall = toCallExpr(defSrc)) {
+            // Found it. Place it where our ForallStmt will go.
+            defMove->replace(srcCall->remove());
+            INT_ASSERT(currSym->firstSymExpr() == NULL); // no other refs to it
+            return srcCall;
+          }
+        }
+
+    // The AST is beyond our expectations. Bail out.
+    USR_FATAL(currSym, "only simple control flow is allowed in a procedure that returns an iterator for use in a forall loop");
+    break;
+  }
+
+  return NULL; //dummy
+}
+
+//
 // If the iterable expression calls something that is NOT
 // a parallel iterator proper, pre-process it and update
 // 'iterCall' and 'iterFn' to be the new iterable expression.
@@ -916,11 +957,35 @@ static void handleIteratorForwarders(ForallStmt* fs,
     // In this case, we have a _toLeader call and no side effects.
     // Just use the iterator corresponding to the iterator record.
     iterFn = getTheIteratorFnFromIR(iterFn->retType);
+    SET_LINENO(iterCall);
     iterCall->baseExpr->replace(new SymExpr(iterFn));
     return;
   }
 
-  INT_ASSERT(false); // VASS CONTINUE HERE
+  // Inline the forwarder, i.e. 'iterFn', like so:
+  //
+  //   forall x in iter1() do BODY;
+  //   proc iter1() { doSomething; return iter2(); }
+  //
+  //  ==>
+  //
+  //   doSomething;
+  //   forall x in iter2() do BODY;
+  //
+  // Correspondingly, update:
+  //   iterFn   <- iter2
+  //   iterCall <- the call iter2() in the forall
+
+  BlockStmt* fBody = copyBody(iterCall, iterFn, fs);
+  fs->replace(fBody);
+
+  CallExpr* forwardee = stripReturnScaffolding(fBody);
+
+  forwardee->replace(fs);
+  iterCall->replace(forwardee);
+
+  iterCall = forwardee;
+  iterFn   = iterCall->resolvedFunction();
 }
 
 /* wass
@@ -1031,7 +1096,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   // Clone the iterator body.
   // Cf. expandIteratorInline() and inlineCall().
   BlockStmt* ibody = copyBody(parIterCall, parIterFn, ianch);
-  removeParIterReturn(ibody);
+  removeParIterReturn(ibody, false);
 
   // Let us remove 'fs' later, for debugging convenience.
   fs->insertAfter(iwrap);
