@@ -134,6 +134,7 @@ void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
+FnSymbol* getTheIteratorFnFromIR(Type* irType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);

@@ -896,6 +896,29 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 }
 
 
+/////////// iterator forwarders ///////////
+
+// If this calls a parallel iterator, return that.
+// Otherwise find the parallel iterator being invoked,
+// modify the callee to reference it, and return it.
+static FnSymbol* getParIterAndConvertForwarders(CallExpr* parIterCall) {
+  FnSymbol* destFn = parIterCall->resolvedFunction();
+  if (destFn->hasFlag(FLAG_INLINE_ITERATOR))
+    return destFn;
+
+  // Other things may behave differently.
+  INT_ASSERT(!strncmp(destFn->name, "_iterator_for_loopexpr", 22));
+  destFn = getTheIteratorFnFromIR(destFn->retType);
+  INT_ASSERT(destFn->hasFlag(FLAG_INLINE_ITERATOR));
+
+  // Update parIterCall.
+  SET_LINENO(parIterCall);
+  parIterCall->baseExpr->replace(new SymExpr(destFn));
+  return destFn;
+}
+
+
+
 /////////// main driver ///////////
 
 // Remove supporting references in ShadowVarSymbols.
@@ -960,9 +983,10 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   INT_ASSERT(fs->numIteratedExprs() == 1);
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
 
-  FnSymbol* parIterFn = parIterCall->resolvedFunction();
+  FnSymbol* parIterFn = getParIterAndConvertForwarders(parIterCall);
   // Make sure it is a parallel iterator.
   INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
+
   // We don't know yet what to do with these.
   if (parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");

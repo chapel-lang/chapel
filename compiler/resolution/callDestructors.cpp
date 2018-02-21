@@ -176,11 +176,46 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
   return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
 
+static inline bool isParIterOrForwarder(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN))
+    return fn->hasFlag(FLAG_INLINE_ITERATOR);
+
+  if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    // This is a forwarder. Get to the iterator itself
+    // like we do in getTheIteratorFn(), and query that one.
+    if (AggregateType* ag = toAggregateType(fn->retType))
+      return ag->iteratorInfo->iterator->hasFlag(FLAG_INLINE_ITERATOR);
+
+  // Otherwise, no.
+  return false;
+}
+
+/*wass
 static bool isForallIterableCallee(SymExpr* se) {
   if (CallExpr* call = toCallExpr(se->parentExpr))
     if (se == call->baseExpr)
       if (isForallIterExpr(call))
         return true;
+  return false;
+}
+*/
+
+static bool feedsIntoForallIterableExpr(SymExpr* se, int depth = 5) {
+  if (CallExpr* call = toCallExpr(se->parentExpr))
+    if (se == call->baseExpr)
+      {
+        if (isForallIterExpr(call))
+          return true;
+
+        // Last-resort check against recursion or other unexpected things.
+        INT_ASSERT(depth >= 0);
+
+        for_SymbolSymExprs(parentCaller, se->parentSymbol)
+          if (feedsIntoForallIterableExpr(parentCaller, depth-1))
+            return true;
+      }
+
+  // Otherwise, no.
   return false;
 }
 
@@ -193,24 +228,25 @@ The return-by-ref transformation adds clutter, so skip it in this case.
 A parallel iterator can also be used in a for-loop.
 Such a for-loop is converted into a forall using replaceEflopiWithForall()
 if the loop body contains a yield statement. Otherwise it remains
-a for-loop. (Todo: convert in this case as well?)
+a for-loop. (Todo: convert in this case as well?) (wass: converted as well?)
 
 When the same parallel iterator is used both ways,
 we need to split the uses into two so that each category
 is treated appropriately.
 */
-static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
-  bool inForallStmt = false;
-  bool otherUse     = false;
+static bool doNotTransformForForall(FnSymbol* fn) {
+  bool forForall = false;
+  bool otherUse  = false;
 
   for_SymbolSymExprs(use, fn) {
-    if (isForallIterableCallee(use))
-      inForallStmt = true;
+    if (feedsIntoForallIterableExpr(use))
+      forForall = true;
     else
       otherUse = true;
   }
 
-  if (inForallStmt && otherUse) {
+  if (forForall && otherUse) {
+INT_ASSERT(false); //wass - when does this happen?
     // This is the case where we need to split the uses.
     // Let the caller transform 'fn' for "otherUses".
     // Redirect forall statements to a clone.
@@ -220,7 +256,7 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
 //printf("fn %d  clone %d\n", fn->id, clone->id); //wass
 
     for_SymbolSymExprs(use, fn)
-      if (isForallIterableCallee(use)) {
+      if (feedsIntoForallIterableExpr(use)) {
         // go ahead redirect
         SET_LINENO(use);
         use->replace(new SymExpr(clone));
@@ -230,7 +266,7 @@ static bool doNotTransformTheParallelIterator(FnSymbol* fn) {
   // Return true - meaning "do not transform" -
   // only when 'fn' is not used outside ForallStmts.
   return !otherUse;
-}  
+}
 
 bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 {
@@ -272,8 +308,7 @@ if (fn->id == breakOnResolveID) gdbShouldBreakHere(); //wass
       retval = true;
   }
 
-  if (retval && fn->hasFlag(FLAG_INLINE_ITERATOR) &&
-      doNotTransformTheParallelIterator(fn))
+  if (retval && isParIterOrForwarder(fn) && doNotTransformForForall(fn))
     retval = false;
 
   return retval;

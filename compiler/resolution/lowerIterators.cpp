@@ -82,6 +82,12 @@ FnSymbol* getTheIteratorFn(Type* icType)
     Type* irType = getIterFn->getFormal(1)->type;
     INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
+    return getTheIteratorFnFromIR(irType);
+  }
+}
+
+FnSymbol* getTheIteratorFnFromIR(Type* irType)
+{
     AggregateType* irTypeAgg = toAggregateType(irType);
     INT_ASSERT(irTypeAgg->iteratorInfo);
 
@@ -90,7 +96,6 @@ FnSymbol* getTheIteratorFn(Type* icType)
     INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
 
     return result;
-  }
 }
 
 FnSymbol* debugGetTheIteratorFn(Type* type) {
