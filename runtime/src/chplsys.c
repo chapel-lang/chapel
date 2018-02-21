@@ -504,7 +504,7 @@ uint64_t chpl_sys_availMemoryBytes(void) {
 static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   //
   // Currently this is pretty limited -- it only returns the number of
-  // physical and logical (hyperthread, e.g.) CPUs, only looks at
+  // physical and logical (hyperthread, e.g.) CPUs, mostly relies on
   // /proc/cpuinfo, and only supports homogeneous compute nodes with
   // the same number of cores and siblings on every physical CPU.  It
   // will probably need to become more complicated in the future.
@@ -553,12 +553,36 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
 
   fclose(f);
 
-  if (cpuCores == 0)
-    cpuCores = 1;
-  if (siblings == 0)
-    siblings = 1;
-  if ((*p_numPhysCpus = procs / (siblings / cpuCores)) <= 0)
-    *p_numPhysCpus = 1;
+  if (cpuCores == 0 && siblings == 0) {
+    // We have a limited-format /proc/cpuinfo.
+    // See if the /sys filesystem has any more information for us.
+    int threads_per_core = 0;
+    if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings",
+		   "r")) != NULL) {
+      int c;
+      while ((c = getc(f)) != EOF) {
+	if (c == '1') {
+	  ++threads_per_core;
+	} else if (c != '0' && c != ',' && c != '\n') {
+	  // unknown file format -- don't use
+	  threads_per_core = 1;
+	  break;
+	}
+      }
+      fclose(f);
+    }
+    if (threads_per_core == 0)
+      threads_per_core = 1;
+    if ((*p_numPhysCpus = procs / threads_per_core) <= 0)
+      *p_numPhysCpus = 1;
+  } else {
+    if (cpuCores == 0)
+      cpuCores = 1;
+    if (siblings == 0)
+      siblings = 1;
+    if ((*p_numPhysCpus = procs / (siblings / cpuCores)) <= 0)
+      *p_numPhysCpus = 1;
+  }
   if ((*p_numLogCpus = procs) <= 0)
     *p_numLogCpus = 1;
 }
