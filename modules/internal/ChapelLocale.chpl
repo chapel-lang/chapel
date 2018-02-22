@@ -508,7 +508,7 @@ module ChapelLocale {
         for f in flags do
           f.s.testAndSet();
       } else {
-        var f = new localesSignal();
+        var f = chpl__toraw(new localesSignal());
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag

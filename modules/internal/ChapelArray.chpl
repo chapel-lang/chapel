@@ -2295,11 +2295,11 @@ module ChapelArray {
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-      var a = new ArrayViewSliceArr(eltType=this.eltType,
+      var a = chpl__toraw(new ArrayViewSliceArr(eltType=this.eltType,
                                     _DomPid=d._pid,
                                     dom=d._instance,
                                     _ArrPid=arrpid,
-                                    _ArrInstance=arr);
+                                    _ArrInstance=arr));
 
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
@@ -2321,7 +2321,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      var a = new ArrayViewRankChangeArr(eltType=this.eltType,
+      var a = chpl__toraw(new ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
                                          _ArrPid=arrpid,
@@ -2329,7 +2329,7 @@ module ChapelArray {
                                          // TODO: Should the array really store
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
-                                         idx=rcdom._value.idx);
+                                         idx=rcdom._value.idx));
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);

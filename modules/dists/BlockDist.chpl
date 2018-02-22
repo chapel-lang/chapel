@@ -456,8 +456,8 @@ proc Block.init(boundingBox: domain,
   const targetLocDomDims = targetLocDom.dims();
   coforall locid in targetLocDom do
     on this.targetLocales(locid) do
-      locDist(locid) =  new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                     targetLocDomDims);
+      locDist(locid) = chpl__toraw(new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                     targetLocDomDims));
 
   // NOTE: When these knobs stop using the global defaults, we will need
   // to add checks to make sure dataParTasksPerLocale<0 and
@@ -489,8 +489,8 @@ proc Block.dsiAssign(other: this.type) {
 
   coforall locid in targetLocDom do
     on targetLocales(locid) do
-      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
-                                    targetLocDomDims);
+      locDist(locid) = chpl__toraw(new LocBlock(rank, idxType, locid, boundingBoxDims,
+                                    targetLocDomDims));
 }
 
 //
@@ -510,12 +510,12 @@ proc Block.dsiEqualDMaps(that) param {
 }
 
 proc Block.dsiClone() {
-  return new Block(boundingBox, targetLocales,
+  return chpl__toraw(new Block(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity,
                    rank,
                    idxType,
-                   sparseLayoutType);
+                   sparseLayoutType));
 }
 
 proc Block.dsiDestroyDist() {
@@ -543,8 +543,8 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new BlockDom(rank=rank, idxType=idxType, dist=this,
-      stridable=stridable, sparseLayoutType=sparseLayoutType);
+  var dom = chpl__toraw(new BlockDom(rank=rank, idxType=idxType, dist=this,
+      stridable=stridable, sparseLayoutType=sparseLayoutType));
   dom.dsiSetIndices(inds);
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -554,11 +554,11 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 }
 
 proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-  return new SparseBlockDom(rank=rank, idxType=idxType,
+  return chpl__toraw(new SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
                             stridable=dom.stridable,
                             dist=this, whole=dom._value.whole,
-                            parentDom=dom);
+                            parentDom=dom));
 }
 
 //
@@ -790,8 +790,8 @@ proc BlockDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockDom.dsiBuildArray(type eltType) {
-  var arr = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
+  var arr = chpl__toraw(new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this));
   arr.setup();
   return arr;
 }
@@ -854,8 +854,8 @@ proc BlockDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom do {
       on dist.targetLocales(localeIdx) do
-        locDoms(localeIdx) = new LocBlockDom(rank, idxType, stridable,
-                                             dist.getChunk(whole, localeIdx));
+        locDoms(localeIdx) = chpl__toraw(new LocBlockDom(rank, idxType, stridable,
+                                             dist.getChunk(whole, localeIdx)));
     }
   } else {
     coforall localeIdx in dist.targetLocDom do {
@@ -908,7 +908,7 @@ proc BlockArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableBlockLazyRAD {
-        myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+        myLocArr.locRAD = chpl__toraw(new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom));
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -924,7 +924,7 @@ proc BlockArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
-      locArr(localeIdx) = new LocBlockArr(eltType, rank, idxType, stridable, locDom);
+      locArr(localeIdx) = chpl__toraw(new LocBlockArr(eltType, rank, idxType, stridable, locDom));
       if thisid == here.id then
         myLocArr = locArr(localeIdx);
     }
@@ -972,7 +972,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+            var tempLocRAD = chpl__toraw(new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom));
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
@@ -1230,7 +1230,7 @@ proc Block.dsiGetPrivatizeData() {
 }
 
 proc Block.dsiPrivatize(privatizeData) {
-  return new Block(this, privatizeData);
+  return chpl__toraw(new Block(this, privatizeData));
 }
 
 proc Block.dsiGetReprivatizeData() return boundingBox.dims();
@@ -1252,8 +1252,8 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
   // in initializer we have to pass sparseLayoutType as it has no default value
-  var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
-      sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
+  var c = chpl__toraw(new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
+      sparseLayoutType=privdist.sparseLayoutType, dist=privdist));
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
   c.whole = {(...privatizeData(2))};
@@ -1274,8 +1274,8 @@ proc BlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom);
+  var c = chpl__toraw(new BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=privdom));
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);
     if c.locArr(localeIdx).locale.id == here.id then

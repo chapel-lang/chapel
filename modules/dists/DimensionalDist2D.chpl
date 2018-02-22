@@ -437,8 +437,8 @@ proc newDimensionalDist2D(
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
   ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
-  return new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
-   dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
+  return chpl__toraw(new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
+   dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity));
 }
 
 
@@ -515,7 +515,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                        di2new, di2.dsiSupportsPrivatization1d(),
                        privTargetLocales, false, plliddDummy);
 
-  return new DimensionalDist2D(targetLocales = privTargetLocales,
+  return chpl__toraw(new DimensionalDist2D(targetLocales = privTargetLocales,
                              name          = privatizeData(2),
                              idxType       = this.idxType,
                              di1           = di1new,
@@ -523,7 +523,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                              dataParTasksPerLocale     = privatizeData(3),
                              dataParIgnoreRunningTasks = privatizeData(4),
                              dataParMinGranularity     = privatizeData(5),
-                             dummy = 0);
+                             dummy = 0));
 }
 
 // initializer of a privatized copy
@@ -688,14 +688,14 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   if dom2orig.dsiSupportsPrivatization1d() then
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
-  const result = new DimensionalDom(rank      = this.rank,
+  const result = chpl__toraw(new DimensionalDom(rank      = this.rank,
                                     idxType   = this.idxType,
                                     stridable = this.stridable,
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
                                     whole       = {(...privatizeData(6))},
-                                    localDdescs = privatizeData(7));
+                                    localDdescs = privatizeData(7)));
 
   // update local-to-global pointers as needed
   param lg1 = dom1orig.dsiSupportsPrivatization1d() &&
@@ -808,9 +808,9 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
-  const result = new DimensionalDom(rank=rank, idxType=idxType,
+  const result = chpl__toraw(new DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=this,
-                                    dom1 = dom1, dom2 = dom2);
+                                    dom1 = dom1, dom2 = dom2));
   // result.whole is initialized to the default value (empty domain)
 
   if stoIndexT != result.stoIndexT then
@@ -819,9 +819,9 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   coforall (loc, locIds, locDdesc)
    in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
-      locDdesc = new LocDimensionalDom(result.stoDomainT,
+      locDdesc = chpl__toraw(new LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
-                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
+                       doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2))));
   result.dsiSetIndices(inds);
   return result;
 }
@@ -911,12 +911,12 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new DimensionalArr(rank     = this.rank,
+  const result = chpl__toraw(new DimensionalArr(rank     = this.rank,
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
                                     dom      = privDom,
-                                    allocDom = privAllocDom);
+                                    allocDom = privAllocDom));
 
   result.localAdescs = privatizeData(3);
 
@@ -952,16 +952,16 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new DimensionalArr(rank = rank,
+  const result = chpl__toraw(new DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
                                     dom      = this,
-                                    allocDom = this);
+                                    allocDom = this));
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
-      locAdesc = new LocDimensionalArr(eltType, locDdesc);
+      locAdesc = chpl__toraw(new LocDimensionalArr(eltType, locDdesc));
 
   assert(!result.isAlias);
   return result;

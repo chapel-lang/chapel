@@ -123,7 +123,7 @@ proc BlockDim.dsiGetPrivatizeData1d() {
 }
 
 proc BlockDim.dsiPrivatize1d(privatizeData) {
-  return new BlockDim(privatizeData, this.idxType);
+  return chpl__toraw(new BlockDim(privatizeData, this.idxType));
 }
 
 // constructor for privatization
@@ -143,10 +143,10 @@ proc Block1dom.dsiGetPrivatizeData1d() {
 
 proc Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new Block1dom(idxType   = this.idxType,
+  return chpl__toraw(new Block1dom(idxType   = this.idxType,
                   stridable = this.stridable,
                   wholeR    = privatizeData(1),
-                  pdist     = privDist);
+                  pdist     = privDist));
 }
 
 proc Block1dom.dsiGetReprivatizeData1d() {
@@ -190,14 +190,14 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
     compilerError("The index type ", idxType:string,
                   " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
-  return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
+  return chpl__toraw(new Block1dom(idxType = idxType, stridable = stridable, pdist = this));
 }
 
 proc Block1dom.dsiIsReplicated1d() param return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   var defaultVal: range(stoIndexT, stridable=this.stridable);
-  return new Block1locdom(myRange = defaultVal);
+  return chpl__toraw(new Block1locdom(myRange = defaultVal));
 }
 
 proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {

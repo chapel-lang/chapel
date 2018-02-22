@@ -130,10 +130,10 @@ proc BlockCyclicDim.dsiGetPrivatizeData1d() {
 }
 
 proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
-  return new BlockCyclicDim(lowIdx = privatizeData(1),
+  return chpl__toraw(new BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
-                   name = privatizeData(4));
+                   name = privatizeData(4)));
 }
 
 proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
@@ -146,7 +146,7 @@ proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new BlockCyclic1dom(idxType   = this.idxType,
+  return chpl__toraw(new BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
                   name            = privatizeData(5),
@@ -157,7 +157,7 @@ proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
                   // could include these in privatizeData
                   blockSizePos  = privDist.blockSizePos,
                   numLocalesPos = privDist.numLocalesPos,
-                  cycleSizePos  = privDist.cycleSizePos);
+                  cycleSizePos  = privDist.cycleSizePos));
 }
 
 proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
@@ -259,14 +259,14 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
   _checkFitsWithin(adjLowIdx, idxType);
 
-  const result = new BlockCyclic1dom(idxType = idxType,
+  const result = chpl__toraw(new BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
                   adjLowIdx = adjLowIdx: idxType,
                   blockSizePos  = this.blockSizePos,
                   numLocalesPos = this.numLocalesPos,
                   cycleSizePos  = this.cycleSizePos,
-                  name = this.name);
+                  name = this.name));
 
   return result;
 }
@@ -274,9 +274,9 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new BlockCyclic1locdom(idxType = this.idxType,
+  const result = chpl__toraw(new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
-                             locId = locId);
+                             locId = locId));
   return result;
 }
 

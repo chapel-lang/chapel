@@ -100,7 +100,7 @@ proc ReplicatedDim.dsiGetPrivatizeData1d() {
 
 // REQ if privatization is supported - same purpose as dsiPrivatize()
 proc ReplicatedDim.dsiPrivatize1d(privatizeData) {
-  return new ReplicatedDim(numLocales = privatizeData(1));
+  return chpl__toraw(new ReplicatedDim(numLocales = privatizeData(1)));
 }
 
 // REQ does this class need -- and provide -- the localLocID?
@@ -148,9 +148,9 @@ proc Replicated1dom.dsiGetPrivatizeData1d() {
 // privatized (if it supports privatization).
 proc Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new Replicated1dom(idxType   = this.idxType,
+  return chpl__toraw(new Replicated1dom(idxType   = this.idxType,
                   stridable = this.stridable,
-                  wholeR    = privatizeData(1));
+                  wholeR    = privatizeData(1)));
 }
 
 // REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
@@ -215,7 +215,7 @@ proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
                                   type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
-  return new Replicated1dom(idxType, stridable);
+  return chpl__toraw(new Replicated1dom(idxType, stridable));
 }
 
 // A nicety: produce a string showing the parameters.
@@ -233,7 +233,7 @@ proc Replicated1dom.dsiIsReplicated1d() param return true;
 // stoIndexT must be the index type of the range returned by
 // dsiSetLocalIndices1d().
 proc Replicated1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  return new Replicated1locdom(stoIndexT, wholeR.stridable);
+  return chpl__toraw(new Replicated1locdom(stoIndexT, wholeR.stridable));
 }
 
 // REQ given our dimension of the array index, on which locale is it located?
