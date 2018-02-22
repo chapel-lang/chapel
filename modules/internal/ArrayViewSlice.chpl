@@ -244,11 +244,11 @@ module ArrayViewSlice {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewSliceArr(eltType=this.eltType,
+      return chpl__toraw(new ArrayViewSliceArr(eltType=this.eltType,
                                    _DomPid=privatizeData(1),
                                    dom=privatizeData(2),
                                    _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
+                                   _ArrInstance=privatizeData(4)));
     }
 
     //

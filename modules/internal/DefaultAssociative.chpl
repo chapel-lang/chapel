@@ -99,8 +99,8 @@ module DefaultAssociative {
     // Standard Internal Domain Interface
     //
     proc dsiBuildArray(type eltType) {
-      return new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
-                                       parSafeDom=parSafe, dom=this);
+      return chpl__toraw(new DefaultAssociativeArr(eltType=eltType, idxType=idxType,
+                                       parSafeDom=parSafe, dom=this));
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
