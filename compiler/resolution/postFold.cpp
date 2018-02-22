@@ -615,11 +615,14 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
     if (FnSymbol* fn = rhs->resolvedFunction()) {
       isTypeVar = fn->retTag == RET_TYPE;
 
-    } else if (rhs->isPrimitive(PRIM_DEREF)  == true) {
+    } else if (rhs->isPrimitive(PRIM_DEREF)            == true) {
       isTypeVar = isTypeExpr(rhs->get(1));
 
-    } else if (rhs->isPrimitive(PRIM_TYPEOF) == true) {
+    } else if (rhs->isPrimitive(PRIM_TYPEOF)           == true) {
       isTypeVar = true;
+
+    } else if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+      isTypeVar = isTypeExpr(rhs);
     }
 
   } else {
