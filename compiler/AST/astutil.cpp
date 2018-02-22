@@ -682,15 +682,9 @@ bool isTypeExpr(Expr* expr) {
 
         } else if (var->immediate != NULL) {
           const char* name = var->immediate->v_string;
+          Symbol*     field = ct->getField(name);
 
-          for_fields(field, ct) {
-            if (strcmp(field->name, name) == 0) {
-              if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
-                retval = true;
-                break;
-              }
-            }
-          }
+          retval = field->hasFlag(FLAG_TYPE_VARIABLE);
         }
       }
 
