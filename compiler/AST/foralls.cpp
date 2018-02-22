@@ -480,7 +480,6 @@ buildFollowLoop(VarSymbol* iter,
 //   library/packages/Collection/CollectionCounter.chpl
 //   library/standard/Random/deitz/test1D2D.chpl
 //   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
-// vass remove this treatment from handleIteratorForwarders() after testing
 //
 static void convertIteratorForLoopexpr(ForallStmt* fs) {
   if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))

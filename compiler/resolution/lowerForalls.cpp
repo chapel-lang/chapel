@@ -953,14 +953,8 @@ static CallExpr* stripReturnScaffolding(BlockStmt* block) {
 static void handleIteratorForwarders(ForallStmt* fs,
                                      CallExpr*& iterCall, FnSymbol*& iterFn)
 {
-  if (!strncmp(iterFn->name, "_iterator_for_loopexpr", 22)) {
-    // In this case, we have a _toLeader call and no side effects.
-    // Just use the iterator corresponding to the iterator record.
-    iterFn = getTheIteratorFnFromIR(iterFn->retType);
-    SET_LINENO(iterCall);
-    iterCall->baseExpr->replace(new SymExpr(iterFn));
-    return;
-  }
+  // These should have been replaced away in convertIteratorForLoopexpr().
+  INT_ASSERT(strncmp(iterFn->name, "_iterator_for_loopexpr", 22));
 
   // Inline the forwarder, i.e. 'iterFn', like so:
   //
