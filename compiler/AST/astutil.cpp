@@ -633,73 +633,73 @@ Expr* formal_to_actual(CallExpr* call, Symbol* arg) {
 }
 
 bool givesType(Symbol* sym) {
-  if (isTypeSymbol(sym))
-    return true;
+  bool retval = false;
 
-  if (sym->hasFlag(FLAG_TYPE_VARIABLE))
-    return true;
+  if (isTypeSymbol(sym) == true) {
+    retval = true;
 
-  if (FnSymbol* fn = toFnSymbol(sym))
-    if (fn->retTag == RET_TYPE)
-      return true;
+  } else if (sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    retval = true;
 
-  return false;
+  } else if (FnSymbol* fn = toFnSymbol(sym)) {
+    retval = fn->retTag == RET_TYPE;
+  }
+
+  return retval;
 }
 
+bool isTypeExpr(Expr* expr) {
+  bool retval = false;
 
-bool isTypeExpr(Expr* expr)
-{
-  if (SymExpr* sym = toSymExpr(expr))
-  {
-    if (givesType(sym->symbol()))
-      return true;
-  }
+  if (SymExpr* sym = toSymExpr(expr)) {
+    retval = givesType(sym->symbol());
 
-  if (CallExpr* call = toCallExpr(expr))
-  {
-    if (call->isPrimitive(PRIM_TYPEOF))
-      return true;
+  } else if (CallExpr* call = toCallExpr(expr)) {
+    if (call->isPrimitive(PRIM_TYPEOF) == true) {
+      retval = true;
 
-    if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-        call->isPrimitive(PRIM_GET_MEMBER))
-    {
-      AggregateType* ct = toAggregateType(call->get(1)->typeInfo());
-      INT_ASSERT(ct);
+    } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true ||
+               call->isPrimitive(PRIM_GET_MEMBER)       == true) {
+      SymExpr*       left = toSymExpr(call->get(1));
+      AggregateType* ct   = toAggregateType(left->typeInfo());
 
-      if (ct->symbol->hasFlag(FLAG_REF))
+      INT_ASSERT(ct != NULL);
+
+      if (ct->symbol->hasFlag(FLAG_REF) == true) {
         ct = toAggregateType(ct->getValType());
+      }
 
-      SymExpr* left = toSymExpr(call->get(1));
+      if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) == true &&
+          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE)       == true) {
+        retval = true;
 
-      if (left->symbol()->type->symbol->hasFlag(FLAG_TUPLE) &&
-          left->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
-        return true;
+      } else {
+        SymExpr*   right = toSymExpr(call->get(2));
+        VarSymbol* var   = toVarSymbol(right->symbol());
 
-      SymExpr* right = toSymExpr(call->get(2));
-      VarSymbol* var = toVarSymbol(right->symbol());
+        if (var->isType() == true) {
+          retval = true;
 
-      if (var->isType())
-        return true;
+        } else if (var->immediate != NULL) {
+          const char* name = var->immediate->v_string;
 
-      if (var->immediate)
-      {
-        const char* name = var->immediate->v_string;
-        for_fields(field, ct) {
-          if (!strcmp(field->name, name))
-            if (field->hasFlag(FLAG_TYPE_VARIABLE))
-              return true;
+          for_fields(field, ct) {
+            if (strcmp(field->name, name) == 0) {
+              if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+                retval = true;
+                break;
+              }
+            }
+          }
         }
       }
-    }
 
-    if (FnSymbol* fn = call->resolvedFunction()) {
-      if (fn->retTag == RET_TYPE) {
-        return true;
-      }
+    } else if (FnSymbol* fn = call->resolvedFunction()) {
+      retval = fn->retTag == RET_TYPE;
     }
   }
 
-  return false;
+  return retval;
 }
 
 static void pruneVisit(TypeSymbol*       ts,
