@@ -12,7 +12,7 @@ proc acceptOwnedMyClass(own:Owned(MyClass)) {
 }
 
 proc test4() {
-  var instance = new SubClass(1);
+  var instance = new Owned(new SubClass(1));
 
   acceptOwnedMyClass(instance);
 }

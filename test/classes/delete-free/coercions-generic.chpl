@@ -3,13 +3,13 @@ class MyClass {
 }
 
 proc test1() {
-  var instance = new MyClass(1);
+  var instance = new Owned(new MyClass(1));
 }
 
 /* One day this should work...
    But an error is OK for now*/
 proc test2() {
-  var instance:MyClass(int) = new MyClass(1);
+  var instance:MyClass(int) = new Owned(new MyClass(1));
 }
 
 proc acceptMyClass(c:MyClass) {
@@ -17,13 +17,13 @@ proc acceptMyClass(c:MyClass) {
 }
 
 proc test3() {
-  var instance = new MyClass(1);
+  var instance = new Owned(new MyClass(1));
 
   acceptMyClass(instance);
 }
 
 proc test5() {
-  var instance = new MyClass(1);
+  var instance = new Owned(new MyClass(1));
 
   var otherInstance: Owned(MyClass(int)) = instance;
 
