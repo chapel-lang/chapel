@@ -173,6 +173,7 @@ static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveGenericActuals(CallExpr* call);
+static void resolveAutoCopyEtc(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -7456,6 +7457,12 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
       USR_FATAL(serializeFn, "chpl__serialize cannot return void");
     }
 
+    // Make sure we have resolved autocopy / autodestroy etc
+    if (AggregateType* at = toAggregateType(retType)) {
+      resolveAutoCopyEtc(at);
+      propagateNotPOD(at);
+    }
+
     if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
       USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
       serializeFn = NULL;
@@ -7561,7 +7568,6 @@ static void resolveSerializers() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void        resolveAutoCopyEtc(AggregateType* at);
 static const char* autoCopyFnForType(AggregateType* at);
 static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
