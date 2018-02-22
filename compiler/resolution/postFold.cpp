@@ -40,9 +40,11 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
 #define FOLD_CALL1(prim)                                                \
   if (SymExpr* se = toSymExpr(call->get(1))) {                          \
     Symbol* sym = se->symbol();                                         \
-    if (isEnumSymbol(sym)) {                      \
+                                                                        \
+    if (isEnumSymbol(sym)) {                                            \
       ensureEnumTypeResolved(toEnumType(sym->type));                    \
     }                                                                   \
+                                                                        \
     if (Immediate* imm = getSymbolImmediate(sym)) {                     \
       Immediate i3;                                                     \
                                                                         \
@@ -59,12 +61,15 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
     if (SymExpr* rhsSe = toSymExpr(call->get(2))) {                     \
       Symbol* lhsSym = lhsSe->symbol();                                 \
       Symbol* rhsSym = rhsSe->symbol();                                 \
-      if (isEnumSymbol(lhsSym)) {                 \
+                                                                        \
+      if (isEnumSymbol(lhsSym)) {                                       \
         ensureEnumTypeResolved(toEnumType(lhsSym->type));               \
       }                                                                 \
-      if (isEnumSymbol(rhsSym)) {                 \
+                                                                        \
+      if (isEnumSymbol(rhsSym)) {                                       \
         ensureEnumTypeResolved(toEnumType(rhsSym->type));               \
       }                                                                 \
+                                                                        \
       if (Immediate* lhs = getSymbolImmediate(lhsSym)) {                \
         if (Immediate* rhs = getSymbolImmediate(rhsSym)) {              \
           Immediate i3;                                                 \
@@ -211,33 +216,34 @@ static Expr* postFoldPrimop(CallExpr* call) {
     }
 
   } else if (call->isPrimitive(PRIM_GET_MEMBER) == true) {
-    Type*       baseType   = call->get(1)->getValType();
-    const char* memberName = get_string(call->get(2));
-    Symbol*     sym        = baseType->getField(memberName);
-    SymExpr*    left       = toSymExpr(call->get(1));
-    VarSymbol*  varSym     = toVarSymbol(sym);
+    SymExpr*       base      = toSymExpr (call->get(1));
+    const char*    fieldName = get_string(call->get(2));
 
-    if (left != NULL && left->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true &&
-        !sym->isParameter()) {
-      retval = new SymExpr(sym->type->symbol);
+    AggregateType* at        = toAggregateType(base->getValType());
+    VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
-      call->replace(retval);
-
-    } else if (sym->isParameter() == true ||
-               (varSym != NULL && varSym->isType() == true)) {
+    if (field->isParameter() == true || field->isType() == true) {
       Vec<Symbol*> keys;
 
-      baseType->substitutions.get_keys(keys);
+      at->substitutions.get_keys(keys);
 
       forv_Vec(Symbol, key, keys) {
-        if (strcmp(sym->name, key->name) == 0) {
-          if (Symbol* value = baseType->substitutions.get(key)) {
+        if (strcmp(field->name, key->name) == 0) {
+          if (Symbol* value = at->substitutions.get(key)) {
             retval = new SymExpr(value);
 
             call->replace(retval);
+            break;
           }
         }
       }
+
+    } else if (base->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      INT_ASSERT(field->isType() == false);
+
+      retval = new SymExpr(field->type->symbol);
+
+      call->replace(retval);
     }
 
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
