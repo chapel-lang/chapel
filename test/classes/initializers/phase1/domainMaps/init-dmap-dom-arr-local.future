@@ -1,5 +1,11 @@
 bug: domain field doesn't get dmap set up correctly
 
+Update to original text below: It seems that there's a valgrind
+failure that makes the behavior of this test in --local mode
+nondeterministic.  As a result, my initial diagnosis below might be
+wrong.  Changing this to a valgrind-only future for the time being to
+ensure stability in testing.
+
 In this test, the 'D' field is declared in terms of dmap 'C' yet
 inspecting the code within the Cyclic distribution in the place where
 the failure occurs, it is clear that D's distribution is not referring

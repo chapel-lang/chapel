@@ -1591,6 +1591,7 @@ static void handleInIntents(FnSymbol* fn,
         // "move" from call site to called function, so don't destroy
         // here. The called function will destroy.
         tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+        tmp->addFlag(FLAG_EXPR_TEMP);
 
         // Does this need to be here?
         if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
@@ -1612,12 +1613,7 @@ static void handleInIntents(FnSymbol* fn,
         // Then "move" ownership to the called function
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
-        /*CallExpr* move = new CallExpr(PRIM_MOVE, tmp, actualSym);
-        anchor->insertBefore(new DefExpr(tmp));
-        anchor->insertBefore(move);
-        resolveCall(move);*/
       }
-
     }
 
     currActual = nextActual;

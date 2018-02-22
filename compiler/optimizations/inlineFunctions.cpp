@@ -191,7 +191,7 @@ static void inlineCall(CallExpr* call) {
   //
   Expr*      stmt  = call->getStmtExpr();
   FnSymbol*  fn    = call->resolvedFunction();
-  BlockStmt* bCopy = copyBody(call, fn, stmt);
+  BlockStmt* bCopy = copyFnBodyForInlining(call, fn, stmt);
 
   // Transfer most of the statements from the body to immediately before
   // the statement that that contains the call.
@@ -236,7 +236,7 @@ static void inlineCall(CallExpr* call) {
 // choose to always replace an actual immediate with a temp.
 //
 
-BlockStmt* copyBody(CallExpr* call, FnSymbol* fn, Expr* stmt) {
+BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
   SET_LINENO(call);
   SymbolMap  map;
 

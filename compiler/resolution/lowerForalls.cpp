@@ -970,7 +970,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
   //   iterFn   <- iter2
   //   iterCall <- the call iter2() in the forall
 
-  BlockStmt* fBody = copyBody(iterCall, iterFn, fs);
+  BlockStmt* fBody = copyFnBodyForInlining(iterCall, iterFn, fs);
   fs->replace(fBody);
 
   CallExpr* forwardee = stripReturnScaffolding(fBody);
@@ -1093,7 +1093,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   // Clone the iterator body.
   // Cf. expandIteratorInline() and inlineCall().
-  BlockStmt* ibody = copyBody(parIterCall, parIterFn, ianch);
+  BlockStmt* ibody = copyFnBodyForInlining(parIterCall, parIterFn, ianch);
   removeParIterReturn(ibody, false);
 
   // Let us remove 'fs' later, for debugging convenience.

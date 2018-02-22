@@ -348,7 +348,7 @@ proc makeInput(myKeys, bucketID) {
   // Fill local array
   //
 
-  for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):int(32);
+  for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):keyType;
 
   if (debug) then
     writeln(bucketID, ": myKeys: ", myKeys);

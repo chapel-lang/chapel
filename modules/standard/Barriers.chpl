@@ -28,9 +28,11 @@
    then all of the tasks will print their "past the barrier" messages, also
    in an unspecified order.  Because of the barrier, all of the
    "entering the barrier" messages will be printed before any of the
-   "past the barrier" messages. ::
+   "past the barrier" messages.
 
-     use Barrier;
+   .. code-block:: chapel
+
+     use Barriers;
 
      config const numTasks = here.maxTaskPar;
      var b = new Barrier(numTasks);
@@ -101,6 +103,11 @@ module Barriers {
         }
       }
       owned = true;
+    }
+
+    pragma "no doc"
+    proc init() {
+      this.init(0);
     }
 
     /* copy initializer */
@@ -208,9 +215,9 @@ module Barriers {
     pragma "no doc"
     var n: int;
     pragma "no doc"
-    var count: atomic int;
+    var count: chpl__processorAtomicType(int);
     pragma "no doc"
-    var done: atomic bool;
+    var done: chpl__processorAtomicType(bool);
 
     /* Construct a new Barrier object.
 
