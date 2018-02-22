@@ -529,7 +529,7 @@ module ChapelLocale {
   // object.
   pragma "no doc"
   proc chpl_init_rootLocale() {
-    origRootLocale = new RootLocale();
+    origRootLocale = chpl__toraw(new RootLocale());
     (origRootLocale:RootLocale).setup();
   }
 
@@ -545,7 +545,7 @@ module ChapelLocale {
     rootLocale = origRootLocale;
     if replicateRootLocale && locIdx!=0 {
       // Create a new local rootLocale
-      var newRootLocale = new RootLocale();
+      var newRootLocale = chpl__toraw(new RootLocale());
       // We don't want to be doing unnecessary ref count updates here
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.

@@ -279,7 +279,7 @@ module LocaleModel {
 
       this.complete();
 
-      ddr = new MemoryLocale(sid, this);
+      ddr = chpl__toraw(new MemoryLocale(sid, this));
 
       var hbm_available = (hbw_check_available() == 0);
       // hbw_check_available() == 0 -> HBM is available.
@@ -292,7 +292,7 @@ module LocaleModel {
       extern proc chpl_task_setSubloc(chpl_sublocID_t);
       const origSubloc = chpl_task_getRequestedSubloc();
       chpl_task_setSubloc(hbm_id);
-      hbm = new MemoryLocale(hbm_id, this);
+      hbm = chpl__toraw(new MemoryLocale(hbm_id, this));
 
       chpl_task_setSubloc(origSubloc);
     }
@@ -432,7 +432,7 @@ module LocaleModel {
     proc setup() {
       helpSetupLocaleNUMA(this, local_name, numSublocales);
 
-      ddr = new MemoryLocale(c_sublocid_any, this);
+      ddr = chpl__toraw(new MemoryLocale(c_sublocid_any, this));
 
       var hbm_available = (hbw_check_available() == 0);
       // hbw_check_available() == 0 -> HBM is available.
@@ -445,7 +445,7 @@ module LocaleModel {
       const origSubloc = chpl_task_getRequestedSubloc();
       extern proc chpl_task_setSubloc(chpl_sublocID_t);
       chpl_task_setSubloc(hbm_id);
-      hbm = new MemoryLocale(hbm_id, this);
+      hbm = chpl__toraw(new MemoryLocale(hbm_id, this));
       chpl_task_setSubloc(origSubloc);
     }
     //------------------------------------------------------------------------}
