@@ -658,7 +658,6 @@ static Symbol* eActualOrRef(Expr* ref, ShadowVarSymbol* svar, Symbol* eActual)
   VarSymbol* temp = newTempConst("eaAddrOf", eActual->getRefType());
   ref->insertBefore(new DefExpr(temp));
   ref->insertBefore("'move'(%S,'addr of'(%S))", temp, eActual);
-  gdbShouldBreakHere();
   return temp;
 }
 
@@ -692,11 +691,10 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_IN_OVAR:
-      // nothing to do
+    case TFI_IN_OVAR:     // helper svar - nothing to do
       break;
 
-    case TFI_IN:
+    case TFI_IN:          // in intents
     case TFI_CONST_IN:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, expandClone, ix);
@@ -704,14 +702,14 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addCloneOfDB(aFini, map, svar);
       break;
 
-    case TFI_REF:
+    case TFI_REF:         // ref intents
     case TFI_CONST_REF:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, expandClone, ix);
       // no init/deinit
       break;
 
-    case TFI_REDUCE_OP:
+    case TFI_REDUCE_OP:   // reduction op class
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, expandClone, ix, svar->outerVarSym());
       addDefAndMap(aInit, map, svar, createCurrRP(svar));
@@ -725,8 +723,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addCloneOfDB(aFini, map, svar);
       break;
 
-    // No abstract intents, please.
-    case TFI_DEFAULT:
+    case TFI_DEFAULT:    // no abstract intents, please
     case TFI_CONST:
       INT_ASSERT(false);
       break;
@@ -766,7 +763,7 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
     // Should aFini go into the epilogue or before epilogue?
   }
   else {
-    INT_ASSERT(false); // do we ever hit the cache?
+    INT_ASSERT(false); // wass if we never hit the cache, remove the complexity
   }
 
   callToTFn->baseExpr->replace(new SymExpr(cloneTaskFn));
@@ -793,7 +790,7 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
     cloneTaskFn->body->accept(&taskFnVis);
 
     // If we don't flatten them right away, we get non-global taskFns
-    // in expandTaskFn() and may have issues with scoping.
+    // in expandTaskFn(). That may cause issues with scoping.
     flattenNestedFunction(cloneTaskFn);
   }
 
