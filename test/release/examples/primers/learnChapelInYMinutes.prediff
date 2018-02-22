@@ -132,7 +132,9 @@ good_serial = [ 'Hello, World!',
                 '(5, -1)',
                 '-100 -99 -98 -97 -96',
                 '-100 -99 -98 -97 -96',
+                'MyClass deinitializer called (10, true)',
                 '10',
+                'MyClass deinitializer called (-1, true)',
                 '{memberInt = -1, memberBool = true}',
                 '{memberInt = 0, memberBool = true}',
                 '{memberInt = 9, memberBool = true}',
@@ -157,7 +159,7 @@ if len( test_serial ) != len( good_serial):
   
 # Check Parallel section in stages
 # test_parallel is modified through the running. 
-# save entier length before-hand
+# save entire length before-hand
 len_test_parallel = len( test_parallel ) 
 
 # 'Begin task, work, sync' section

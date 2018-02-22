@@ -814,18 +814,18 @@ class MyClass {
 } // end MyClass
 
 // Call compiler-generated initializer, using default value for memberBool.
-var myObject = new MyClass(10);
-    myObject = new MyClass(memberInt = 10); // Equivalent
+var myObject = new Owned(new MyClass(10));
+    myObject = new Owned(new MyClass(memberInt = 10)); // Equivalent
 writeln(myObject.getMemberInt());
 
 // Same, but provide a memberBool value explicitly.
-var myDiffObject = new MyClass(-1, true);
-    myDiffObject = new MyClass(memberInt = -1,
-                                memberBool = true); // Equivalent
+var myDiffObject = new Owned(new MyClass(-1, true));
+    myDiffObject = new Owned(new MyClass(memberInt = -1,
+                                memberBool = true)); // Equivalent
 writeln(myDiffObject);
 
 // Similar, but rely on the default value of memberInt, passing in memberBool.
-var myThirdObject = new MyClass(memberBool = true);
+var myThirdObject = new Owned(new MyClass(memberBool = true));
 writeln(myThirdObject);
 
 // If the user-defined initializer above had been uncommented, we could
@@ -840,9 +840,11 @@ writeln(myThirdObject);
 
 // We can define an operator on our class as well, but
 // the definition has to be outside the class definition.
-proc +(A : MyClass, B : MyClass) : MyClass {
-  return new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
-                      memberBool = A.getMemberBool() || B.getMemberBool());
+proc +(A : MyClass, B : MyClass) : Owned(MyClass) {
+  return
+    new Owned(
+      new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                  memberBool = A.getMemberBool() || B.getMemberBool()));
 }
 
 var plusObject = myObject + myDiffObject;
