@@ -214,7 +214,7 @@ writeln();
 //
 class Node {
   var data: real;
-  var next: Node;
+  var next: Owned(Node);
 }
 
 
@@ -231,14 +231,14 @@ class Node {
 // the next locale.  That way, our execution of ``new`` will create
 // the new object on that "next" locale.
 //
-var head    = new Node(0);
+var head    = new Owned(new Node(0));
 
-var current = head;
+var current = head.borrow();
 
 for i in 1..numLocales-1 do
   on Locales[i] {
-    current.next = new Node(i);
-    current      = current.next;
+    current.next = new Owned(new Node(i));
+    current      = current.next.borrow();
   }
 
 //
@@ -247,11 +247,11 @@ for i in 1..numLocales-1 do
 // computation takes place entirely on locale 0 and accesses remote
 // memory as necessary.
 //
-current = head;
+current = head.borrow();
 
 while current {
   writeln("node with data = ", current.data, " on locale ", current.locale.id);
-  current = current.next;
+  current = current.next.borrow();
 }
 
 writeln();
@@ -261,28 +261,20 @@ writeln();
 // linked list.  Note that on-clauses, when applied to class
 // variables, resolve to the locale of the object, not the reference.
 //
-current = head;
+current = head.borrow();
 
 while current {
   on current {
     writeln("node with data = ", current.data, " on locale ", here.id);
-    current = current.next;
+    current = current.next.borrow();
   }
 }
 
 //
-// We can now deallocate our objects to ensure no memory leaks.
+// Since head is Owned, it will be deleted here at the end of its containing
+// block. Since its .next fields are also Owned, each will be deleted here as
+// well.
 //
-
-current = head;
-
-while current {
-  on current {
-    var ptr = current;
-    current = current.next;
-    delete ptr;
-  }
-}
 
 //
 // For more information about locales, refer to the Locales chapter of
