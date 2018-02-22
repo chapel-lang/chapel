@@ -1463,9 +1463,6 @@ static bool shouldInsertCallTemps(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_TUPLE_EXPAND)     == true) {
     retval = false;
 
-  } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
-    retval = false;
-
   } else if (parentCall && parentCall->isPrimitive(PRIM_MOVE)) {
     retval = false;
 
