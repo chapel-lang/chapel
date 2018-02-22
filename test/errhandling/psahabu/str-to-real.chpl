@@ -2,6 +2,7 @@ var x: string = "3.1415";
 var s: string = "brad";
 
 var x_r = x: real;
+writeln("successful cast");
 
 try! {
   var s_r = s: real;

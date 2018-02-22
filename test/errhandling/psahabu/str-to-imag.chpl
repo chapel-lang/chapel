@@ -2,6 +2,7 @@ var x: string = "9i";
 var s: string = "brad";
 
 var x_im = x: imag;
+writeln("successful cast");
 
 try! {
   var s_im = s: imag;

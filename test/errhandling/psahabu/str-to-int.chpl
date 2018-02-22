@@ -2,6 +2,7 @@ var x: string = "5";
 var s: string = "brad";
 
 var x_i = x: int;
+writeln("successful cast");
 
 try! {
   var s_i = s: int;

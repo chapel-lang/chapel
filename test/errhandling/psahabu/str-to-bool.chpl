@@ -2,6 +2,8 @@ var x = "true";
 var s = "brad";
 
 var x_b = x: bool;
+writeln("successful cast");
+
 var tmp_b: bool;
 
 try! {

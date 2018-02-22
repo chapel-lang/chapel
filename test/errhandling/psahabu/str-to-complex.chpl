@@ -2,6 +2,7 @@ var x: string = "1 + 9i";
 var s: string = "brad";
 
 var x_c = x: complex;
+writeln("successful cast");
 
 try! {
   var s_c = s: complex;
