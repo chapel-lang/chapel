@@ -293,7 +293,7 @@ all:
     - text: machine operating system update to SLES12
       config: chapcs
   02/13/18:
-    - text: Change default intent for range to const in (#8368)
+    - Change default intent for range to const in (#8368)
 
 AllCompTime:
   11/09/14:
