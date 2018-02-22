@@ -986,6 +986,10 @@ static void handleIteratorForwarders(ForallStmt* fs,
 
   iterCall = forwardee;
   iterFn   = iterCall->resolvedFunction();
+
+  // Todo: handle the case where the new 'iterFn' is yet
+  // another forwarder. If so, repeat the same steps
+  // until we reach an iterFn that is a parallel iterator.
 }
 
 /* wass

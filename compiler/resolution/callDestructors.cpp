@@ -178,13 +178,13 @@ FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
 
 static inline bool isParIterOrForwarder(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_ITERATOR_FN))
+    // This is an iterator. Is it parallel?
     return fn->hasFlag(FLAG_INLINE_ITERATOR);
 
   if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
-    // This is a forwarder. Get to the iterator itself
-    // like we do in getTheIteratorFn(), and query that one.
-    if (AggregateType* ag = toAggregateType(fn->retType))
-      return ag->iteratorInfo->iterator->hasFlag(FLAG_INLINE_ITERATOR);
+    // This is a forwarder. Query the iterator itself.
+    return getTheIteratorFnFromIR(fn->retType)
+             ->hasFlag(FLAG_INLINE_ITERATOR);
 
   // Otherwise, no.
   return false;
@@ -200,20 +200,62 @@ static bool isForallIterableCallee(SymExpr* se) {
 }
 */
 
-static bool feedsIntoForallIterableExpr(SymExpr* se, int depth = 5) {
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-    if (se == call->baseExpr)
+static CallExpr* callingExpr(SymExpr* targetSE) {
+  if (CallExpr* call = toCallExpr(targetSE->parentExpr))
+    if (targetSE == call->baseExpr)
+      return call;
+  return NULL;
+}
+
+// Does 'fn' return the result of a call to 'se' ?
+static bool isReturnedValue(FnSymbol* fn, SymExpr* se) {
+  Symbol* currSym  = fn->getReturnSymbol();
+
+  // Traverse the chain of moves. Like in stripReturnScaffolding().
+  while (true) {
+    if (SymExpr* defSE = currSym->getSingleDef())
+      if (CallExpr* defMove = toCallExpr(defSE->parentExpr))
+        if (defMove->isPrimitive(PRIM_MOVE)) {
+          Expr* defSrc = defMove->get(2);
+
+          if (CallExpr* srcCall = toCallExpr(defSrc))
+            if (srcCall->baseExpr == se)
+              return true;  // found it
+
+          if (SymExpr* srcSE = toSymExpr(defSrc)) {
+            currSym = srcSE->symbol();
+            continue;  // continue traversing the chain of moves
+          }
+        }
+    // The chain of moves is over. Return false.
+    break;
+  }
+  return false;
+}
+
+static bool feedsIntoForallIterableExpr(FnSymbol* fn, SymExpr* use) {
+  if (CallExpr* call = callingExpr(use))
+  {
+    if (isForallIterExpr(call))
+      return true;
+
+    if (FnSymbol* useFn = toFnSymbol(use->parentSymbol))
+      // Does 'useFn' return the value of 'use' ?
+      if (useFn->retType == fn->retType &&
+          isReturnedValue(useFn, use))
       {
-        if (isForallIterExpr(call))
-          return true;
+        bool forForall = false;
+        bool otherUse  = false;
+        for_SymbolSymExprs(use2, useFn) {
+          CallExpr* call2 = callingExpr(use2);
+          if (isForallIterExpr(call2)) forForall = true;
+          else                          otherUse = true;
+        }
 
-        // Last-resort check against recursion or other unexpected things.
-        INT_ASSERT(depth >= 0);
-
-        for_SymbolSymExprs(parentCaller, se->parentSymbol)
-          if (feedsIntoForallIterableExpr(parentCaller, depth-1))
-            return true;
+        INT_ASSERT(!(forForall && otherUse));
+        return forForall;
       }
+  }
 
   // Otherwise, no.
   return false;
@@ -239,7 +281,7 @@ static bool doNotTransformForForall(FnSymbol* fn) {
   bool otherUse  = false;
 
   for_SymbolSymExprs(use, fn) {
-    if (feedsIntoForallIterableExpr(use))
+    if (feedsIntoForallIterableExpr(fn, use))
       forForall = true;
     else
       otherUse = true;
@@ -256,7 +298,7 @@ INT_ASSERT(false); //wass - when does this happen?
 //printf("fn %d  clone %d\n", fn->id, clone->id); //wass
 
     for_SymbolSymExprs(use, fn)
-      if (feedsIntoForallIterableExpr(use)) {
+      if (feedsIntoForallIterableExpr(fn, use)) {
         // go ahead redirect
         SET_LINENO(use);
         use->replace(new SymExpr(clone));
