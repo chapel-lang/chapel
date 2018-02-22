@@ -7214,6 +7214,8 @@ void resolve() {
     printUnusedFunctions();
 
   pruneResolvedTree();
+  extern void lowerForallStmts2(); //wass
+  lowerForallStmts2();
 
   freeCache(defaultsCache);
 

@@ -270,7 +270,10 @@ The return-by-ref transformation adds clutter, so skip it in this case.
 A parallel iterator can also be used in a for-loop.
 Such a for-loop is converted into a forall using replaceEflopiWithForall()
 if the loop body contains a yield statement. Otherwise it remains
-a for-loop. (Todo: convert in this case as well?) (wass: converted as well?)
+a for-loop. (Todo: convert in this case as well?)
+
+Another double-use scenario is in an _iterator_for_loopexprNN via _toLeader.
+Todo: replace _iterator_for_loopexprNN with a ForallStmt.
 
 When the same parallel iterator is used both ways,
 we need to split the uses into two so that each category
@@ -288,7 +291,6 @@ static bool doNotTransformForForall(FnSymbol* fn) {
   }
 
   if (forForall && otherUse) {
-INT_ASSERT(false); //wass - when does this happen?
     // This is the case where we need to split the uses.
     // Let the caller transform 'fn' for "otherUses".
     // Redirect forall statements to a clone.

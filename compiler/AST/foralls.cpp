@@ -472,6 +472,42 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
+//
+// Handle the case where the leader iterator is _iterator_for_loopexpr.
+// Not doing so confuses ReturnByRef and lowering of ForallStmts.
+//
+// Tests:
+//   library/packages/Collection/CollectionCounter.chpl
+//   library/standard/Random/deitz/test1D2D.chpl
+//   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
+// vass remove this treatment from handleIteratorForwarders() after testing
+//
+static void convertIteratorForLoopexpr(ForallStmt* fs) {
+  if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
+    if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
+      if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
+        if (!strncmp(calleeFn->name, "_iterator_for_loopexpr", 22)) {
+          // In this case, we have a _toLeader call and no side effects.
+          // Just use the iterator corresponding to the iterator record.
+          FnSymbol* iterator = getTheIteratorFnFromIR(calleeFn->retType);
+          SET_LINENO(calleeSE);
+          calleeSE->replace(new SymExpr(iterator));
+          if (calleeFn->firstSymExpr() == NULL)
+            calleeFn->defPoint->remove(); // not needed any more
+        }
+}
+
+void lowerForallStmts2(); //wass - to .h; where to place it?
+void lowerForallStmts2() {
+  forv_Vec(ForallStmt, fs, gForallStmts) {
+    if (!fs->inTree() || !fs->getFunction()->isResolved())
+      continue;
+    
+    INT_ASSERT(fs->yesLI());
+    convertIteratorForLoopexpr(fs);
+  }
+}
+
 // Return NULL if the def is not found or is uncertain.
 static Expr* findDefOfTemp(SymExpr* origSE)
 {
