@@ -1579,11 +1579,19 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     }
 
     var host = path[host_start..host_end];
-    var port = "";
-    if port_start > 0 then port = path[port_start..port_end];
+    var port_str = "";
+    if port_start > 0 then port_str = path[port_start..port_end];
+
+    var port: int;
+    try! {
+      port = port_str: int;
+    } catch e: IllegalArgumentError {
+      error = ENOENT;
+    }
+
     var file_path = "";
     if path_start > 0 then file_path = path[path_start..];
-    return (host, port:int, file_path);
+    return (host, port, file_path);
   }
 
   var local_style = style;

@@ -1,1 +1,3 @@
-<command line setting of 'i'>: error: Unexpected character when converting from string to int(64): 'x'
+uncaught IllegalArgumentError: illegal argument '0xFF': Unexpected character when converting from string to int(64)
+  <command line setting of 'i'>:0: thrown here
+  <command line setting of 'i'>:0: uncaught here
