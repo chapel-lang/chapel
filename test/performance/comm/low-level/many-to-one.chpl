@@ -5,6 +5,7 @@ enum op_t {
   opNone,
   opGet,
   opPut,
+  opFetchAMO,
   opAMO,
   opFastOn,
   opOn
@@ -62,7 +63,6 @@ proc main() {
         var t: Timer;
         var tElapsed: real;
 
-        // We want all nodes & tasks communicating at once.
         barrier(barTaskCnt);
 
         t.start();
@@ -123,8 +123,11 @@ inline proc doOneOp(nops) {
   else if op == opPut {
     x0 = infiniteSource();
   }
+  else if op == opFetchAMO {
+    infiniteSink(x0Atomic.fetchAdd(1));
+  }
   else if op == opAMO {
-    x0Atomic.xor(1);
+    x0Atomic.add(1);
   }
   else if op == opFastOn {
     on Locales(0) do ;
