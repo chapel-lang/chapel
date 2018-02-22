@@ -28,9 +28,11 @@
    then all of the tasks will print their "past the barrier" messages, also
    in an unspecified order.  Because of the barrier, all of the
    "entering the barrier" messages will be printed before any of the
-   "past the barrier" messages. ::
+   "past the barrier" messages.
 
-     use Barrier;
+   .. code-block:: chapel
+
+     use Barriers;
 
      config const numTasks = here.maxTaskPar;
      var b = new Barrier(numTasks);
