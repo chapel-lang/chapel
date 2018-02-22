@@ -1,37 +1,5 @@
-#!/usr/bin/env python
-
-# Aim for about 1 second of run time.  The number of operations needed
-# to achieve this varies with the network architecture and op type.
-import os
-
-comm = os.getenv('CHPL_COMM')
-comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
-ugni = comm == 'ugni'
-gn_aries = comm == 'gasnet' and comm_sub  == 'aries'
-
-if ugni or gn_aries:
-  numGets    =  100000000
-  numPuts    = 1000000000
-  numAMOs    = 1000000000
-  numFastOns =    8000000
-  numOns     =    4000000
-else:
-  # Tentative, really just the above divided by 10.
-  numGets    =   10000000
-  numPuts    =  100000000
-  numAMOs    =  100000000
-  numFastOns =     800000
-  numOns     =     400000
-
-base_opts = 'many-to-one-helper.h'
-
-print(base_opts
-      + ' -sop=opGet -snumOps={0} # many-to-one-gets'.format(numGets))
-print(base_opts
-      + ' -sop=opPut -snumOps={0} # many-to-one-puts'.format(numPuts))
-print(base_opts
-      + ' -sop=opAMO -snumOps={0} # many-to-one-amos'.format(numAMOs))
-print(base_opts
-      + ' -sop=opFastOn -snumOps={0} # many-to-one-fastOns'.format(numFastOns))
-print(base_opts
-      + ' -sop=opOn -snumOps={0} # many-to-one-ons'.format(numOns))
+-sop=opGet      -srunSecs=5 many-to-one-helper.h # many-to-one-gets
+-sop=opPut      -srunSecs=5 many-to-one-helper.h # many-to-one-puts
+-sop=opAMO      -srunSecs=5 many-to-one-helper.h # many-to-one-amos
+-sop=opFastOn   -srunSecs=5 many-to-one-helper.h # many-to-one-fastOns
+-sop=opOn       -srunSecs=5 many-to-one-helper.h # many-to-one-ons

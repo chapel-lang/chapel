@@ -1,4 +1,5 @@
--sop=opGet -snumOps=1000 many-to-one-helper.h
--sop=opPut -snumOps=1000 many-to-one-helper.h
--sop=opFastOn -snumOps=1000 many-to-one-helper.h
--sop=opOn -snumOps=1000 many-to-one-helper.h
+-sop=opGet      -srunSecs=1 many-to-one-helper.h
+-sop=opPut      -srunSecs=1 many-to-one-helper.h
+-sop=opAMO      -srunSecs=1 many-to-one-helper.h
+-sop=opFastOn   -srunSecs=1 many-to-one-helper.h
+-sop=opOn       -srunSecs=1 many-to-one-helper.h
