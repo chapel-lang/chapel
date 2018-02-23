@@ -29,24 +29,69 @@ proc MASON_HOME : string {
   return masonHome;
 }
 
-proc MASON_CACHED_REGISTRY : string {
+/* Read the MASON_CACHED_REGISTRY environment variable.  It should be a
+   comma separated list of directories. Returns an array of directory
+   strings.  If unset, defaults to MASON_HOME/name for each name in
+   MASON_REGISTRY.
+ */
+proc MASON_CACHED_REGISTRY {
   const env = getEnv("MASON_CACHED_REGISTRY");
+  const masonRegistry = MASON_REGISTRY;
+  const masonHome = MASON_HOME;
+  var cachedRegistry: [masonRegistry.domain] string;
   if env == "" {
-    return MASON_HOME + '/registry';
+    for ((name, _), cached) in zip(masonRegistry, cachedRegistry) {
+      cached = MASON_HOME + "/" + name;
+    }
   } else {
-    return env;
+    var envDirs = env.split(',');
+    if envDirs.size != masonRegistry.size {
+      stderr.writeln("MASON_CACHED_REGISTRY must have the same " +
+                     "length as MASON_REGISTRY");
+      exit(1);
+    }
+    cachedRegistry = envDirs;
   }
+  return cachedRegistry;
 }
 
-proc MASON_REGISTRY : string {
+/* Read the MASON_REGISTRY environment variable.  It should be a comma
+   separated list of registry name:location pairs. Returns an array of
+   tuples containing (name, location).
+ */
+proc MASON_REGISTRY {
   const env = getEnv("MASON_REGISTRY");
-  const default = "https://github.com/chapel-lang/mason-registry";
+  const default = ("registry",
+                   "https://github.com/chapel-lang/mason-registry");
+  var registries: [1..0] 2*string;
 
   if env == "" {
-    return default;
+    registries.push_back(default);
   } else {
-    return env;
+    for str in env.split(',') {
+      const regArr = str.split(':', maxsplit=1);
+      if regArr.numElements != 2 {
+        stderr.writeln("expected MASON_REGISTRY to contain 'name:location' pairs");
+        stderr.writeln(regArr);
+        exit(1);
+      }
+      var regTup: 2*string;
+      regTup = (regArr(1), regArr(2));
+
+      registries.push_back(regTup);
+    }
+
+    // Make sure all of the registry names are unique
+    for i in 1..registries.size {
+      for j in i+1..registries.size {
+        if registries(i)(1) == registries(j)(1) {
+          stderr.writeln("registry names specified in MASON_REGISTRY must be unique");
+          exit(1);
+        }
+      }
+    }
   }
+  return registries;
 }
 
 proc masonEnv(args) {
@@ -62,6 +107,32 @@ proc masonEnv(args) {
       val += " *";
 
     writeln(name, ": ", val);
+  }
+  proc printVar(name : string, val : [] string) {
+    const star = if getEnv(name) != "" then " *" else "";
+    var first = true;
+    write(name, ": ");
+    for v in val {
+      if !first {
+        write(",");
+      }
+      first = false;
+      write(v);
+    }
+    writeln(star);
+  }
+  proc printVar(name : string, val : [] 2*string) {
+    const star = if getEnv(name) != "" then " *" else "";
+    var first = true;
+    write(name, ": ");
+    for v in val {
+      if !first {
+        write(",");
+      }
+      first = false;
+      write(v(1), ":", v(2));
+    }
+    writeln(star);
   }
 
   printVar("MASON_HOME", MASON_HOME);
