@@ -5,6 +5,9 @@
 # Instructions: To customize this script to time a given branch, see
 # the numbered steps in the comment block below.
 #
+# The graphs will be at:
+#    https://chapel-lang.org/perf/chapcs/$SHORT_NAME
+#
 
 CWD=$(cd $(dirname $0) ; pwd)
 
@@ -26,7 +29,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 GITHUB_USER=vasslitvinov
 GITHUB_BRANCH=li
 SHORT_NAME=lower-ForallStmt
-START_DATE=02/22
+START_DATE=02/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
