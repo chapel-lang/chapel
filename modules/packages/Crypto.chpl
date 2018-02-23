@@ -452,7 +452,7 @@ module Crypto {
     */
     proc getDigest(inputBuffer: CryptoBuffer): CryptoBuffer {
       this.hashSpace = digestPrimitives(this.digestName, this.hashLen, inputBuffer);
-      var hashBuffer = new CryptoBuffer(this.hashSpace);
+      var hashBuffer = chpl__toraw(new CryptoBuffer(this.hashSpace));
       return hashBuffer;
     }
   }
@@ -612,7 +612,7 @@ module Crypto {
     */
     proc encrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var encryptedPlaintext = aesEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = chpl__toraw(new CryptoBuffer(encryptedPlaintext));
       return encryptedPlaintextBuff;
     }
 
@@ -639,7 +639,7 @@ module Crypto {
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var decryptedCiphertext = aesDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = chpl__toraw(new CryptoBuffer(decryptedCiphertext));
       return decryptedCiphertextBuff;
     }
   }
@@ -795,7 +795,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         throw new IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
-      var encryptedPlaintextBuff = new CryptoBuffer(encryptedPlaintext);
+      var encryptedPlaintextBuff = chpl__toraw(new CryptoBuffer(encryptedPlaintext));
       return encryptedPlaintextBuff;
     }
 
@@ -822,7 +822,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc decrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer): CryptoBuffer {
       var decryptedCiphertext = bfDecrypt(ciphertext, key, IV, this.cipher);
-      var decryptedCiphertextBuff = new CryptoBuffer(decryptedCiphertext);
+      var decryptedCiphertextBuff = chpl__toraw(new CryptoBuffer(decryptedCiphertext));
       return decryptedCiphertextBuff;
     }
   }
@@ -870,7 +870,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
-      var randomizedCryptoBuff = new CryptoBuffer(randomizedBuff);
+      var randomizedCryptoBuff = chpl__toraw(new CryptoBuffer(randomizedBuff));
       return randomizedCryptoBuff;
     }
   }
@@ -954,7 +954,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc passKDF(userKey: string, saltBuff: CryptoBuffer): CryptoBuffer {
       var key = PBKDF2(userKey, saltBuff, this.byteLen, this.iterCount, this.hashName);
-      var keyBuff = new CryptoBuffer(key);
+      var keyBuff = chpl__toraw(new CryptoBuffer(key));
       return keyBuff;
     }
   }
@@ -969,7 +969,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       for i in keys.domain do {
         var keySize = EVP_PKEY_size(keys[i].getKeyPair());
         var dummyMalloc: [1..((keySize): int(64))] uint(8);
-        encSymmKeys[i] = new CryptoBuffer(dummyMalloc);
+        encSymmKeys[i] = chpl__toraw(new CryptoBuffer(dummyMalloc));
       }
 
       var encSymmKeysPtr: [keys.domain] c_ptr(uint(8));
@@ -1105,7 +1105,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
       var ciphertext = rsaEncrypt(keys, plaintext, iv, encSymmKeys);
 
-      var envp = new Envelope(new CryptoBuffer(iv), encSymmKeys, new CryptoBuffer(ciphertext));
+      var envp = chpl__toraw(new Envelope(chpl__toraw(new CryptoBuffer(iv)), encSymmKeys, chpl__toraw(new CryptoBuffer(ciphertext))));
       return envp;
     }
 
@@ -1135,7 +1135,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var encKeys = envp.getEncKeys();
 
       var plaintext = try rsaDecrypt(key, iv, ciphertext, encKeys);
-      var plaintextBuff = new CryptoBuffer(plaintext);
+      var plaintextBuff = chpl__toraw(new CryptoBuffer(plaintext));
       return plaintextBuff;
     }
   }
