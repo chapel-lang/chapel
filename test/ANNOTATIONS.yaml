@@ -294,6 +294,9 @@ all:
       config: chapcs
   02/13/18:
     - Change default intent for range to const in (#8368)
+  02/22/18:
+    - text: Put the main process to sleep while waiting to shutdown (#8533)
+      config: 16 node XC
 
 AllCompTime:
   11/09/14:
