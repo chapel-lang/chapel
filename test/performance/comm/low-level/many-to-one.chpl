@@ -1,5 +1,6 @@
 use Time;
 use CommDiagnostics;
+use AllLocalesBarriers;
 
 enum op_t {
   opNone,
@@ -49,9 +50,11 @@ proc main() {
   if printTimings then
     timer.start();
 
+  allLocalesBarrier.reset(numTasksPerNode);
+  begin { coforall 1..numTasksPerNode do allLocalesBarrier.barrier(); }
+
   coforall locIdx in 1..numWorkerNodes with ( ref x0 ) {
     on Locales(locIdx) {
-      var barTaskCnt: chpl__processorAtomicType(int); // for barrier()
 
       var numOpsPerTask: [1..numTasksPerNode] int;
       var timePerTask: [1..numTasksPerNode] real;
@@ -63,7 +66,7 @@ proc main() {
         var t: Timer;
         var tElapsed: real;
 
-        barrier(barTaskCnt);
+        allLocalesBarrier.barrier();
 
         t.start();
 
@@ -136,22 +139,6 @@ inline proc doOneOp(nops) {
     on Locales(0) do emptyFn();
   }
 }
-
-
-//
-// This is a simple nonreusable barrier.  If desired, we could replace
-// it with something better when the Barriers module is improved.
-//
-var barNodeCnt: atomic int;
-
-proc barrier(barTaskCnt) {
-  if barTaskCnt.fetchAdd(1) == 0 {
-    barNodeCnt.add(1);
-    barNodeCnt.waitFor(numWorkerNodes);
-  }
-  barTaskCnt.waitFor(numTasksPerNode);
-}
-
 
 extern proc emptyFn();
 extern proc infiniteSink(x: int);
