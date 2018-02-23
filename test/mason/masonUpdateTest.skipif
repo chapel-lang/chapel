@@ -5,10 +5,10 @@
 if [ -f /etc/SuSE-release ] ; then
   slesVersion=`sed -n -e 's/VERSION = //p' /etc/SuSE-release`
   if [ $slesVersion -le 11 ] ; then
-    echo true
+    echo True
   else
-    echo false
+    echo False
   fi
 else
-  echo false
+  echo False
 fi
