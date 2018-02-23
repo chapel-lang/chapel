@@ -185,6 +185,12 @@ module OwnedObject {
     return ret;
   }
 
+  // TODO: disallow 'delete' on not-var-Owned
+  pragma "suppress lvalue error"
+  proc chpl__delete(const ref arg) where arg:Owned {
+    arg.clear();
+  }
+
   // Don't print out 'p' when printing an Owned, just print class pointer
   pragma "no doc"
   proc Owned.readWriteThis(f) {
