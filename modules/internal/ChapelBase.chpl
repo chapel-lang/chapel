@@ -540,10 +540,12 @@ module ChapelBase {
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
 
+  pragma "last resort"
   inline proc _cond_test(x) {
     compilerError("type '", x.type:string, "' used in if or while condition");
   }
 
+  pragma "last resort"
   inline proc _cond_test(x: _iteratorRecord) {
     compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
   }
