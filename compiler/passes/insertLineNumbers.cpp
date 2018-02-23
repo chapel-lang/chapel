@@ -133,6 +133,14 @@ insertLineNumber(CallExpr* call) {
   ArgSymbol*    file = filenameMap.get(fn);
   ArgSymbol*    line = linenoMap.get(fn);
 
+  if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
+      strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
+      strcmp(fn->name, "chpl__initModuleGuards")    == 0 ||
+      strcmp(fn->name, "chpl_gen_main") == 0) {
+    assert( fn->hasFlag(FLAG_EXPORT) &&
+           !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
+  }
+
   if (call->isPrimitive(PRIM_GET_USER_FILE) ||
       call->isPrimitive(PRIM_GET_USER_LINE)) {
 
