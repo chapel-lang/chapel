@@ -94,6 +94,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
+	packages/AllLocalesBarriers.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
