@@ -1350,7 +1350,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 // For task functions, we need an error argument for
 // parallel to process them correctly, but the error
 // is actually passed through the end-count error list.
-static void
+void
 addDummyErrorArgumentToCall(CallExpr* call)
 {
   VarSymbol* errorTmp = newTemp("dummy_error", dtError);
@@ -1388,7 +1388,7 @@ addDummyErrorFormalToFn(FnSymbol* fn)
 // 2. the error variable updated is outside of this function.
 // In both cases, we need to change it to update this function's
 // error_out argument and exit this function.
-static void
+void
 fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   INT_ASSERT(fn);

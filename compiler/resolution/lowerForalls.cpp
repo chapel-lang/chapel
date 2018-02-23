@@ -736,6 +736,7 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
   FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
   bool expandClone = false;
+  bool addErrorArgToCall = false;
   Expr *aInit=NULL, *aFini=NULL;
 
   if (cloneTaskFn == NULL) {
@@ -789,12 +790,16 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
     // Traverse recursively.
     cloneTaskFn->body->accept(&taskFnVis);
 
+    fixupErrorHandlingExits(cloneTaskFn->body, addErrorArgToCall);
+
     // If we don't flatten them right away, we get non-global taskFns
     // in expandTaskFn(). That may cause issues with scoping.
     flattenNestedFunction(cloneTaskFn);
   }
 
-  // todo: addDummyErrorArgumentToCall() ?
+  INT_ASSERT(expandClone); // otherwise addErrorArgToCall may be overlooked
+  if (addErrorArgToCall)
+    addDummyErrorArgumentToCall(callToTFn);
 }
 
 /////////// expandForall ///////////

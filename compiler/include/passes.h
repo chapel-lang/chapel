@@ -117,6 +117,8 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
 // lowerIterators.cpp, lowerForalls.cpp
 void lowerForallStmtsInline();
+void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
+void addDummyErrorArgumentToCall(CallExpr* call);
 
 // normalize.cpp
 void normalize(FnSymbol* fn);
