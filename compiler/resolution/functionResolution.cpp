@@ -6007,6 +6007,13 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
 
+    if (at->isClass() == false) {
+      if (isArgSymbol(call->parentSymbol) &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(new_temp));
+      }
+    }
+
   } else {
     Expr* parent = call->parentExpr;
 
