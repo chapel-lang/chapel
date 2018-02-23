@@ -5864,6 +5864,11 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
 
+      if (isArgSymbol(call->parentSymbol) &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
+
     } else {
       Expr* parent = call->parentExpr;
 
