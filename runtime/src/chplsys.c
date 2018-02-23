@@ -561,9 +561,37 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
                    "r")) != NULL) {
       int c;
       while ((c = getc(f)) != EOF) {
-        if (c == '1') {
-          ++threads_per_core;
-        } else if (c != '0' && c != ',' && c != '\n') {
+        // The number of threads per core is the total number of bits
+        // set in the hex digits of the thread_siblings map.
+        if (isxdigit(c)) {
+          switch (tolower(c)) {
+          case '0':
+            break;
+          case '1':
+          case '2':
+          case '4':
+          case '8':
+            threads_per_core += 1;
+            break;
+          case '3':
+          case '5':
+          case '6':
+          case '9':
+          case 'a':
+          case 'c':
+            threads_per_core += 2;
+            break;
+          case '7':
+          case 'b':
+          case 'd':
+          case 'e':
+            threads_per_core += 3;
+            break;
+          case 'f':
+            threads_per_core += 4;
+            break;
+          }
+        } else if (c != ',' && c != '\n' && tolower(c) != 'x') {
           // unknown file format -- don't use
           threads_per_core = 1;
           break;
