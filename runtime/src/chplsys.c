@@ -52,6 +52,7 @@
 #include <sched.h>
 #endif
 
+#include <ctype.h>
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
