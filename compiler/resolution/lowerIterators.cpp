@@ -1510,6 +1510,20 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   return false;
 }
 
+void handleChplPropagateErrorCall(CallExpr* call); //wass - to .h
+void handleChplPropagateErrorCall(CallExpr* call) {
+  SymExpr* errSe = toSymExpr(call->get(1));
+  INT_ASSERT(errSe && errSe->typeInfo() == dtError);
+  LabelSymbol* label = NULL;
+  Symbol* error = NULL;
+  if (findFollowingCheckErrorBlock(errSe, label, error)) {
+    errSe->remove();
+    call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
+    call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
+    call->remove();
+  }
+}
+
 /* When inlining an iterator, the iterator might throw
    an error. If it does, instead of updating the iterator's
    out error argument, the error should propagate to
@@ -1657,18 +1671,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
       // Adjust calls to chpl_propagate_error
       if (FnSymbol* calledFn = call->resolvedFunction()) {
-        if (calledFn == gChplPropagateError) {
-          SymExpr* errSe = toSymExpr(call->get(1));
-          INT_ASSERT(errSe && errSe->typeInfo() == dtError);
-          LabelSymbol* label = NULL;
-          Symbol* error = NULL;
-          if (findFollowingCheckErrorBlock(errSe, label, error)) {
-            errSe->remove();
-            call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
-            call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
-            call->remove();
-          }
-        }
+        if (calledFn == gChplPropagateError)
+          handleChplPropagateError(call);
       }
 
       // Adjust task functions within the iterator

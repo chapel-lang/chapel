@@ -25,6 +25,7 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "view.h" //wass
+#include "wellknown.h"
 
 static bool verb = false; //wass
 static int breakOnExpand = false; //wass
@@ -275,8 +276,13 @@ public:
     if (node->isPrimitive(PRIM_YIELD)) {
       expandYield(this, node);
     }
-    else if (FnSymbol* taskFn = resolvedToTaskFun(node)) {
-      expandTaskFn(this, node, taskFn);
+    else if (FnSymbol* calledFn = node->resolvedFunction()) {
+      if (isTaskFun(calledFn)) {
+        expandTaskFn(this, node, calledFn);
+      } else if (calledFn == gChplPropagateError) {
+        void handleChplPropagateErrorCall(CallExpr* call); //wass - in .h
+        handleChplPropagateErrorCall(node);
+      }
     }
     // There shouldn't be anything interesting inside the call.
     // expandTaskFn() takes care of descending into 'taskFn'.
