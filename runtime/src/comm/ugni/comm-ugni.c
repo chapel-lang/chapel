@@ -4713,6 +4713,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
                      void** tgt_addr_v, size_t* size_v,
                      mem_region_t** remote_mr_v, drpg_may_proxy_t may_proxy)
 {
+  int vi, ci = -1;
   mem_region_t* remote_mr;
   gni_post_descriptor_t pd;
   gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
@@ -4742,7 +4743,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   // proxy these PUTs then defer to the scalar PUT routine for any that
   // refer to unregistered memory on the remote side.
   //
-  for (int vi = 0, ci = -1; vi < v_len; vi++) {
+  for (vi = 0, ci = -1; vi < v_len; vi++) {
     remote_mr = ((remote_mr_v == NULL)
                  ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
                  : remote_mr_v[vi]);
@@ -4790,7 +4791,8 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
     ci++;
   }
 
-  post_fma_ct_and_wait(locale_v, &pd);
+  if (ci != -1)
+    post_fma_ct_and_wait(locale_v, &pd);
 }
 
 
