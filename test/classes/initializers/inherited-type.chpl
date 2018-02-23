@@ -4,17 +4,11 @@ class Derived : Base {
   proc init(_x : int, _y : int, _z : int) {
     super.init(_x, _y);
 
-    type t1 = int;
-    var  a  : t1;
-
     z = _z;
 
     initDone();
   }
 }
-
-
-
 
 
 class Base {
@@ -32,9 +26,6 @@ class Base {
     initDone();
   }
 }
-
-
-
 
 
 proc main() {

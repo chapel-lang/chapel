@@ -1125,6 +1125,10 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
+  if (initMethod->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+  }
+
   fn->retType = at;
 
   // Add the formal that provides the type for the type method

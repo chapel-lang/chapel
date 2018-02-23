@@ -5,6 +5,9 @@
 # Instructions: To customize this script to time a given branch, see
 # the numbered steps in the comment block below.
 #
+# The graphs will be at:
+#    https://chapel-lang.org/perf/chapcs/$SHORT_NAME
+#
 
 CWD=$(cd $(dirname $0) ; pwd)
 
@@ -22,17 +25,15 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today
 #
 
-# Test performance of gcc 7.3
-#GITHUB_USER=LouisJenkinsCS
-#GITHUB_BRANCH=RCU-Privatization
-SHORT_NAME=gcc73
-START_DATE=02/15/18
+# Test performance of lowering ForallStmt at lowerIterators
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=li
+SHORT_NAME=lower-ForallStmt
+START_DATE=02/23
 
-source /data/cf/chapel/setup_gcc73.bash
-
-#git branch -D $GITHUB_USER-$GITHUB_BRANCH
-#git checkout -b $GITHUB_USER-$GITHUB_BRANCH
-#git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
+git branch -D $GITHUB_USER-$GITHUB_BRANCH
+git checkout -b $GITHUB_USER-$GITHUB_BRANCH
+git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 5 -startdate $START_DATE"
