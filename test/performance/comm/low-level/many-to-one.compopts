@@ -1,0 +1,6 @@
+-sop=opGet      -srunSecs=1 many-to-one-helper.h
+-sop=opPut      -srunSecs=1 many-to-one-helper.h
+-sop=opFetchAMO -srunSecs=1 many-to-one-helper.h
+-sop=opAMO      -srunSecs=1 many-to-one-helper.h
+-sop=opFastOn   -srunSecs=1 many-to-one-helper.h
+-sop=opOn       -srunSecs=1 many-to-one-helper.h

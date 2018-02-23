@@ -1509,6 +1509,7 @@ void AggregateType::buildDefaultInitializer() {
     // then I will need to do something different in wrappers.cpp.
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
     _this->addFlag(FLAG_ARG_THIS);
 
