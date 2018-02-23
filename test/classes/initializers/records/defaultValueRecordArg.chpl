@@ -1,7 +1,7 @@
 record Foo {
   var x: int;
 
-  proc init(xVal) {
+  proc init(xVal) where xVal.type != Foo {
     x = xVal;
     super.init();
   }
