@@ -1672,7 +1672,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
       // Adjust calls to chpl_propagate_error
       if (FnSymbol* calledFn = call->resolvedFunction()) {
         if (calledFn == gChplPropagateError)
-          handleChplPropagateError(call);
+          handleChplPropagateErrorCall(call);
       }
 
       // Adjust task functions within the iterator

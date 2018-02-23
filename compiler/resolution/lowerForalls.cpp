@@ -798,14 +798,13 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
     fixupErrorHandlingExits(cloneTaskFn->body, addErrorArgToCall);
 
-    // If we don't flatten them right away, we get non-global taskFns
+    if (addErrorArgToCall)
+      addDummyErrorArgumentToCall(callToTFn);
+
+    // If we don't flatten it right away, we get non-global taskFns
     // in expandTaskFn(). That may cause issues with scoping.
     flattenNestedFunction(cloneTaskFn);
   }
-
-  INT_ASSERT(expandClone); // otherwise addErrorArgToCall may be overlooked
-  if (addErrorArgToCall)
-    addDummyErrorArgumentToCall(callToTFn);
 }
 
 /////////// expandForall ///////////
