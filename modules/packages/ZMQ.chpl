@@ -504,7 +504,7 @@ module ZMQ {
      */
     proc init() {
       this.complete();
-      acquire(new ContextClass());
+      acquire(chpl__toraw(new ContextClass()));
     }
 
     pragma "no doc"
@@ -613,7 +613,7 @@ module ZMQ {
       context = ctx;
       this.complete();
       on ctx.classRef.home do
-        acquire(new SocketClass(ctx, sockType));
+        acquire(chpl__toraw(new SocketClass(ctx, sockType)));
     }
 
     pragma "no doc"
