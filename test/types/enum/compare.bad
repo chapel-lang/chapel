@@ -1,1 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:137: error: 'param' functions cannot return non-'param' values
