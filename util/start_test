@@ -207,6 +207,8 @@ def test_directory(test, test_type):
         # stop recursing if flag is set
         if not args.recurse:
             del dirs[:]
+        else:
+            dirs.sort()
 
         # ignore skipifs for --clean-only run
         if not args.clean_only:
