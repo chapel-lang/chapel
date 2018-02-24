@@ -133,6 +133,13 @@ insertLineNumber(CallExpr* call) {
   ArgSymbol*    file = filenameMap.get(fn);
   ArgSymbol*    line = linenoMap.get(fn);
 
+  if (strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
+      strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
+      strcmp(fn->name, "chpl__initModuleGuards")    == 0 ||
+      strcmp(fn->name, "chpl_gen_main") == 0) {
+    assert( fn->hasFlag(FLAG_EXPORT) &&
+           !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO));
+  }
 
   if (call->isPrimitive(PRIM_GET_USER_FILE) ||
       call->isPrimitive(PRIM_GET_USER_LINE)) {
@@ -153,15 +160,11 @@ insertLineNumber(CallExpr* call) {
   } else if (fn->hasFlag(FLAG_EXTERN)                           ||
              (fn->hasFlag(FLAG_EXPORT) &&
               !fn->hasFlag(FLAG_INSERT_LINE_FILE_INFO))         ||
-             strcmp(fn->name, "chpl__heapAllocateGlobals") == 0 ||
-             strcmp(fn->name, "chpl__initStringLiterals")  == 0 ||
-             strcmp(fn->name, "chpl__initModuleGuards")    == 0 ||
-             strcmp(fn->name, "chpl_gen_main")             == 0 ||
              ftableMap.count(fn)                                ||
              (mod->modTag == MOD_USER               &&
               !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
               !fn->hasFlag(FLAG_INLINE)) ||
-             (developer && strcmp(fn->name, "halt"))) {
+             (developer && !fn->hasFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO))) {
     // call is in user code; insert AST line number and filename
     // or developer flag is on and the call is not the halt() call
     // or the call is via the ftable

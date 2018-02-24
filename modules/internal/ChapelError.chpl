@@ -390,6 +390,8 @@ module ChapelError {
   // compiler. In case of iterator inlining (say), this call
   // should be replaced by goto-error-handling.
   pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc chpl_propagate_error(err: Error) {
     chpl_uncaught_error(err);
   }
