@@ -2070,18 +2070,19 @@ void codegen(void) {
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
 
-  // Set the executable name if it isn't set already.
+  // Set the executable name to the name of the file containing the
+  // main module (minus its extension) if it isn't set already.
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    const char* mainModFilename = mainMod->astloc.filename;
-    char* lastDot = strrchr(mainModFilename, '.');
+    strncpy(executableFilename, mainMod->astloc.filename,
+            sizeof(executableFilename));
+    // remove the filename extension
+    char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
-                mainModFilename);
+                executableFilename);
     }
     *lastDot = '\0';
-    strncpy(executableFilename, mainModFilename, sizeof(executableFilename));
-    *lastDot = '.';
   }
 
   if( llvmCodegen ) {
