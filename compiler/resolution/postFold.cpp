@@ -237,6 +237,23 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
+  } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+    SymExpr*       base      = toSymExpr (call->get(1));
+    const char*    fieldName = get_string(call->get(2));
+
+    AggregateType* at        = toAggregateType(base->getValType());
+    VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
+
+    if (field->isParameter() == true || field->isType() == true) {
+      if (field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+        if (Symbol* value = at->getSubstitution(field->name)) {
+          retval = new SymExpr(value);
+
+          call->replace(retval);
+        }
+      }
+    }
+
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
@@ -250,7 +267,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
         AggregateType* ag = toAggregateType(st);
 
         st = ag->getField("_instance")->type;
-
       } else {
         // Try to work around some resolution order issues
         st = resolveTypeAlias(subExpr);
