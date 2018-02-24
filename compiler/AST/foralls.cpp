@@ -460,10 +460,11 @@ buildFollowLoop(VarSymbol* iter,
 
   // If yesLI(), followIdx has a defPoint in the non-fast case
   // and no defPoint in the fast case - for fastFollowIdx.
- if (followIdx->defPoint == NULL)
+ if (followIdx->defPoint == NULL) {
   followBlock->insertAtTail(new DefExpr(followIdx));
- else
+ } else {
   followBlock->insertAtTail(followIdx->defPoint);
+ }
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 
@@ -1101,10 +1102,11 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false) {
-   if (pfs->noLI())
+   if (pfs->noLI()) {
     addParIdxVarsAndRestruct(pfs, gotSA);
-   else
+   } else {
     addParIdxVarsAndRestructLI(pfs, gotSA);
+   }
 
     implementForallIntentsNew(pfs, iterCall);
 
