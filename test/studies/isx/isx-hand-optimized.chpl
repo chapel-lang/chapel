@@ -144,7 +144,8 @@ const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
-    exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
+    exchangeKeysTime, exchangeKeysBarrierTime,
+    countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
 allLocalesBarrier.reset(perBucketMultiply);
@@ -223,10 +224,16 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
   
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
-  allLocalesBarrier.barrier();
 
   if subtime {
     exchangeKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
+  allLocalesBarrier.barrier();
+
+  if subtime {
+    exchangeKeysBarrierTime.localAccess[taskID][trial] = subTimer.elapsed();
     subTimer.clear();
   }
 
@@ -404,6 +411,7 @@ proc printTimingData(units) {
       printTimeTable(bucketOffsetTime, units, "bucket offset");
       printTimeTable(bucketizeTime, units, "bucketize");
       printTimeTable(exchangeKeysTime, units, "exchange");
+      printTimeTable(exchangeKeysBarrierTime, units, "exchange barrier");
       printTimeTable(countKeysTime, units, "count keys");
     }
     printTimeTable(totalTime, units, "total");
@@ -417,6 +425,7 @@ proc printTimingData(units) {
     printTimingStats(bucketOffsetTime, "bucket offset");
     printTimingStats(bucketizeTime, "bucketize");
     printTimingStats(exchangeKeysTime, "exchange");
+    printTimingStats(exchangeKeysBarrierTime, "exchange barrier");
     printTimingStats(countKeysTime, "count keys");
   }
   printTimingStats(totalTime, "total");
