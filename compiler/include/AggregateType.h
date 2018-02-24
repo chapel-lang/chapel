@@ -138,6 +138,8 @@ public:
 
   void                        buildCopyInitializer();
 
+  Symbol*                     getSubstitution(const char* name);
+
 
   //
   // Public fields
