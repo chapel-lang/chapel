@@ -2073,7 +2073,15 @@ void codegen(void) {
   // Set the executable name if it isn't set already.
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    strncpy(executableFilename, mainMod->name, sizeof(executableFilename));
+    const char* mainModFilename = mainMod->astloc.filename;
+    char* lastDot = strrchr(mainModFilename, '.');
+    if (lastDot == NULL) {
+      INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
+                mainModFilename);
+    }
+    *lastDot = '\0';
+    strncpy(executableFilename, mainModFilename, sizeof(executableFilename));
+    *lastDot = '.';
   }
 
   if( llvmCodegen ) {
