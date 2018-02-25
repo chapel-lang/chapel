@@ -1259,6 +1259,8 @@ static volatile chpl_bool polling_task_running     = false;
 static volatile chpl_bool polling_task_please_exit = false;
 static volatile chpl_bool polling_task_done        = false;
 
+static chpl_bool polling_task_blocking_cq = false;
+
 
 //
 // These tell the state of, or give direction to, the main process
@@ -2469,21 +2471,19 @@ void polling_task(void* ignore)
     //
     // Process CQ events due to PUT data arriving in the remote-fork
     // request memory.
-    //
-    gni_rc = GNI_CqGetEvent(rf_cqh, &ev);
-    if (gni_rc == GNI_RC_NOT_DONE) {
-      //
-      // On the offhand chance we're oversubscribed, we yield the
-      // processor if there isn't anything for us to do.  And if we're
-      // not oversubscribed, the trip through sched_yield(2) if no
-      // other process or pthread can run is quite quick.
-      //
-      sched_yield();
-    }
-    else if (gni_rc == GNI_RC_SUCCESS)
-      rf_handler(&ev);
+    if (polling_task_blocking_cq)
+      gni_rc = GNI_CqWaitEvent(rf_cqh, 100, &ev);
     else
-      GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_CqGetEvent(rf_cqh) failed in polling");
+      gni_rc = GNI_CqGetEvent(rf_cqh, &ev);
+
+    if (gni_rc == GNI_RC_SUCCESS)
+      rf_handler(&ev);
+    else if (gni_rc == GNI_RC_NOT_DONE)
+      sched_yield();
+    else if (gni_rc == GNI_RC_TIMEOUT)
+      ; // no-op
+    else
+      GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_Cq*Event(rf_cqh) failed in polling");
 
     //
     // Process CQ events due to our request responses completing.
@@ -2596,11 +2596,21 @@ void set_up_for_polling(void)
   //
   // Create remote fork completion queue.
   //
-  cq_cnt = FORK_REQ_BUFS_PER_LOCALE;
-  if ((gni_rc = GNI_CqCreate(cd->nih, cq_cnt, 0, GNI_CQ_NOBLOCK, NULL, NULL,
-                             &rf_cqh))
-      != GNI_RC_SUCCESS)
-    GNI_FAIL(gni_rc, "GNI_CqCreate(rf_cqh) failed");
+    {
+    uint32_t cq_mode = GNI_CQ_NOBLOCK;
+
+    polling_task_blocking_cq = chpl_env_rt_get_bool("COMM_UGNI_BLOCKING_CQ",
+                                                    false);
+
+    if (polling_task_blocking_cq)
+      cq_mode = GNI_CQ_BLOCKING;
+
+    cq_cnt = FORK_REQ_BUFS_PER_LOCALE;
+    if ((gni_rc = GNI_CqCreate(cd->nih, cq_cnt, 0, cq_mode, NULL, NULL,
+                               &rf_cqh))
+        != GNI_RC_SUCCESS)
+      GNI_FAIL(gni_rc, "GNI_CqCreate(rf_cqh) failed");
+  }
 
   //
   // Register the fork request memory.
