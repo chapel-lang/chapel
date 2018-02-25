@@ -1217,13 +1217,8 @@ module ChapelBase {
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
-  inline proc chpl__maybeAutoDestroyed(x: object) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: ?t) param where t:object return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
-
-  pragma "compiler generated"
-  pragma "last resort"
-  pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: object) { }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -1234,7 +1229,8 @@ module ChapelBase {
   pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
-    __primitive("call destructor", x);
+    if !isClassType(t) then
+      __primitive("call destructor", x);
   }
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
