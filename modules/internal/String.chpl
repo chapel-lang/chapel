@@ -427,6 +427,84 @@ module String {
       return ret;
     }
 
+    proc commonPrefix(paths: []): string {
+
+    var prefix: string = "";    // result string
+    var itr: string;
+    var inputLength = paths.size;   // size of input array
+    var firstPath = paths[1];
+    var i: int = 1;
+    var ind: int = 1;
+    var delimiter: string;
+    var shortestPathIndex: int = 1;
+    var cnt: int = 1;
+    var flag: int = 0;    // used in case given paths are subsets of
+    var pos: int = firstPath.length;    // rightmost index of common prefix
+
+    // if input is empty, return empty string.
+    // if input is just one string, return that string as longest common prefix path.
+
+    if inputLength == 0 then {
+      return prefix;
+    } else if inputLength == 1 then{
+      return firstPath;
+    }
+
+    // finding delimiter to split the paths.
+
+    if firstPath.find("\\", 1..firstPath.length) == 0 then {
+      delimiter = "/";
+    } else {
+      delimiter = "\\";
+    }
+    cnt = firstPath.count(delimiter);
+
+    var prefixArray:[1..cnt+1] string;    // array of resultant prefix string
+
+    // making array of the first path (prefixArray).
+    prefixArray = firstPath.split(delimiter, -1, false);
+
+    // split all other paths using delimiter and check for common prefix. Update prefixArray at every iteration.
+    for i in 2..inputLength do {
+
+    cnt = paths[i].count(delimiter);
+    var tempArray:[1..cnt+1] string;
+    tempArray = paths[i].split(delimiter, -1, false);
+
+    var minimum = min(prefixArray.size, cnt+1 );
+    pos= minimum;
+
+      for (itr, ind) in zip(1..minimum, 1..minimum) do {
+
+            if tempArray[itr] != prefixArray[ind] then {
+              if ind <= pos then {
+                pos = ind;
+                flag = 1;
+              }
+              break;
+
+            }
+          }
+          if flag == 0 then{
+              pos = pos + 1;
+          }
+    }
+
+
+    if pos <= prefixArray.size then{
+    prefixArray.remove(pos..prefixArray.size);
+    }
+
+    // join the prefixArray with delimiter
+
+    prefix = delimiter.join(prefixArray);
+    if prefixArray.size > 0 then {
+      prefix += delimiter;
+    }
+
+    return prefix;
+    }
+
     // Checks to see if r is inside the bounds of this and returns a finite
     // range that can be used to iterate over a section of the string
     // TODO: move into the public interface in some form? better name if so?
