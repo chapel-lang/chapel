@@ -430,11 +430,8 @@ module String {
     proc commonPrefix(paths: []): string {
 
     var prefix: string = "";    // result string
-    var itr: string;
     var inputLength = paths.size;   // size of input array
     var firstPath = paths[1];
-    var i: int = 1;
-    var ind: int = 1;
     var delimiter: string;
     var shortestPathIndex: int = 1;
     var cnt: int = 1;
