@@ -28,6 +28,7 @@ def get():
 
         if (platform_val.startswith('cygwin') or
                 platform_val.startswith('netbsd') or
+                platform_val.startswith('freebsd') or
                 using_qthreads_incompatible_cce):
             tasks_val = 'fifo'
         else:

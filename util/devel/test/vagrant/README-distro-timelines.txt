@@ -46,4 +46,5 @@ x 15.04 "Vivid Vervet"     is EOL as of Feb 2016
 x 15.10 "Wily Werewolf"    is EOL as of July 2016
   16.04 "Xenial Xerus"     LTS until Apr 2021
 x 16.10 "Yakkety Yak"      until July 2017
-  17.04 "Zesty Zapus"      until Jan 2018
+x 17.04 "Zesty Zapus"      until Jan 2018
+  17.10 "Artful Aardvark"  until July 2018

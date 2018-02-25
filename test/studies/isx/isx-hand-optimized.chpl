@@ -17,7 +17,7 @@
 // We want to use block-distributed arrays (BlockDist), barrier
 // synchronization (Barriers), and timers (Time).
 //
-use BlockDist, Barriers, Time;
+use BlockDist, AllLocalesBarriers, Time;
 
 //
 // The type of key to use when sorting.
@@ -144,10 +144,11 @@ const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
 var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
-    exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
+    exchangeKeysTime, exchangeKeysOnlyTime, exchangeKeysBarrierTime,
+    countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-var barrier = new Barrier(numTasks);
+allLocalesBarrier.reset(perBucketMultiply);
 
 // should result in one loop iteration per task
 proc main() {
@@ -223,10 +224,18 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
   
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
-  barrier.barrier();
 
   if subtime {
+    exchangeKeysOnlyTime.localAccess[taskID][trial] = subTimer.elapsed();
     exchangeKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
+    subTimer.clear();
+  }
+
+  allLocalesBarrier.barrier();
+
+  if subtime {
+    exchangeKeysBarrierTime.localAccess[taskID][trial] = subTimer.elapsed();
+    exchangeKeysTime.localAccess[taskID][trial] += subTimer.elapsed();
     subTimer.clear();
   }
 
@@ -248,7 +257,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   // reset the receive offsets for the next iteration
   //
   recvOffset[taskID].write(0);
-  barrier.barrier();
+  allLocalesBarrier.barrier();
 }
 
 
@@ -338,7 +347,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
   //
   //
   verifyKeyCount.add(myBucketSize);
-  barrier.barrier();
+  allLocalesBarrier.barrier();
   if verifyKeyCount.read() != totalKeys then
     halt("total key count mismatch: " + verifyKeyCount.read() + " != " + totalKeys);
 
@@ -404,6 +413,8 @@ proc printTimingData(units) {
       printTimeTable(bucketOffsetTime, units, "bucket offset");
       printTimeTable(bucketizeTime, units, "bucketize");
       printTimeTable(exchangeKeysTime, units, "exchange");
+      printTimeTable(exchangeKeysOnlyTime, units, "exchange only");
+      printTimeTable(exchangeKeysBarrierTime, units, "exchange barrier");
       printTimeTable(countKeysTime, units, "count keys");
     }
     printTimeTable(totalTime, units, "total");
@@ -417,6 +428,8 @@ proc printTimingData(units) {
     printTimingStats(bucketOffsetTime, "bucket offset");
     printTimingStats(bucketizeTime, "bucketize");
     printTimingStats(exchangeKeysTime, "exchange");
+    printTimingStats(exchangeKeysOnlyTime, "exchange only");
+    printTimingStats(exchangeKeysBarrierTime, "exchange barrier");
     printTimingStats(countKeysTime, "count keys");
   }
   printTimingStats(totalTime, "total");
