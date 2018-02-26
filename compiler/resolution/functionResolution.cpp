@@ -5925,6 +5925,18 @@ static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
 
+    if (at->isClass() == false) {
+      // Provide the return type for new expressions in default arguments to
+      // other parts of resolution. (Because the `new` expression is top level
+      // for argument symbols, we would fail to insert the temporary needed for
+      // argument analysis to appropriately determine the type without inserting
+      // this SymExpr directly
+      if (isArgSymbol(call->parentSymbol) &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(new_temp));
+      }
+    }
+
   } else {
     Expr* parent = call->parentExpr;
 
