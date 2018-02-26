@@ -463,6 +463,7 @@ module String {
     prefixArray = firstPath.split(delimiter, -1, false);
 
     pos = prefixArray.size;
+    minPathLength = prefixArray.size;
 
     for i in 2..inputLength do {
 
@@ -471,7 +472,9 @@ module String {
       tempArray = paths[i].split(delimiter, -1, false);
 
       var minimum = min(prefixArray.size, cnt+1);
-      minPathLength = minimum;
+      if minimum < minPathLength then {
+        minPathLength = minimum;
+      }
 
       for (itr, ind) in zip(1..minimum, 1..minimum) do {
         if tempArray[itr]!=prefixArray[ind] then {
