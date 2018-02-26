@@ -427,6 +427,10 @@ module String {
       return ret;
     }
 
+    /* This function takes an array of stings as input.
+
+    returns:  The longest common prefix path of all the input paths
+    */
     proc commonPrefix(paths: []): string {
 
     var prefix: string = "";    // result string
@@ -436,7 +440,8 @@ module String {
     var shortestPathIndex: int = 1;
     var cnt: int = 1;
     var flag: int = 0;    // used in case given paths are subsets of
-    var pos: int = firstPath.length;    // rightmost index of common prefix
+    var pos: int ;    // rightmost index of common prefix
+    var minPathLength: int ;
 
     // if input is empty, return empty string.
     // if input is just one string, return that string as longest common prefix path.
@@ -457,47 +462,35 @@ module String {
     cnt = firstPath.count(delimiter);
 
     var prefixArray:[1..cnt+1] string;    // array of resultant prefix string
-
-    // making array of the first path (prefixArray).
     prefixArray = firstPath.split(delimiter, -1, false);
 
-    // split all other paths using delimiter and check for common prefix. Update prefixArray at every iteration.
+    pos = prefixArray.size;
+
     for i in 2..inputLength do {
 
-    cnt = paths[i].count(delimiter);
-    var tempArray:[1..cnt+1] string;
-    tempArray = paths[i].split(delimiter, -1, false);
+      cnt = paths[i].count(delimiter);
+      var tempArray:[1..cnt+1] string;    // temporary array storing the current path under consideration
+      tempArray = paths[i].split(delimiter, -1, false);
 
-    var minimum = min(prefixArray.size, cnt+1 );
-    pos= minimum;
+      var minimum = min(prefixArray.size, cnt+1);
+      minPathLength = minimum;
 
       for (itr, ind) in zip(1..minimum, 1..minimum) do {
-
-            if tempArray[itr] != prefixArray[ind] then {
-              if ind <= pos then {
-                pos = ind;
-                flag = 1;
-              }
-              break;
-
-            }
-          }
-          if flag == 0 then{
-              pos = pos + 1;
-          }
+        if tempArray[itr]!=prefixArray[ind] then {
+          pos = ind;
+          break;
+        }
+      }
     }
 
-
-    if pos <= prefixArray.size then{
-    prefixArray.remove(pos..prefixArray.size);
+    if pos < prefixArray.size then {
+      prefixArray.remove(pos..prefixArray.size);
+      prefixArray.push_back(" ");
+    }   else {
+      prefixArray.remove(minPathLength+1..prefixArray.size);
     }
-
-    // join the prefixArray with delimiter
 
     prefix = delimiter.join(prefixArray);
-    if prefixArray.size > 0 then {
-      prefix += delimiter;
-    }
 
     return prefix;
     }
