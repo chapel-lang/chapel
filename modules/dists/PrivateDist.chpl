@@ -72,7 +72,7 @@ class Private: BaseDist {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
+    return chpl__toraw(new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this));
   }
 
   proc writeThis(x) {
@@ -108,8 +108,9 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
-  proc dsiBuildArray(type eltType)
-    return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  proc dsiBuildArray(type eltType) {
+    return chpl__toraw(new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this));
+  }
 
   proc dsiNumIndices return numLocales;
   proc dsiLow return 0;
@@ -128,8 +129,9 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiGetPrivatizeData() return 0;
 
-  proc dsiPrivatize(privatizeData)
-    return new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+  proc dsiPrivatize(privatizeData) {
+    return chpl__toraw(new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist));
+  }
 
   proc dsiGetReprivatizeData() return 0;
 
@@ -153,7 +155,7 @@ proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  return new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  return chpl__toraw(new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom));
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
@@ -203,5 +205,5 @@ proc PrivateArr.dsiSerialWrite(x) {
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726
-const PrivateSpace: domain(1) dmapped new dmap(new Private());
+const PrivateSpace: domain(1) dmapped Private();
 
