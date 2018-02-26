@@ -5707,6 +5707,10 @@ static void     resolveNewHandleGenericInitializer(CallExpr*      call,
                                                    AggregateType* at,
                                                    SymExpr*       typeExpr);
 
+static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
+                                              CallExpr*      call,
+                                              VarSymbol*     newTmp);
+
 static SymExpr* resolveNewTypeExpr(CallExpr* call);
 
 static void     resolveNewHalt(CallExpr* call);
@@ -5861,18 +5865,10 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 
     parent_insert_help(call, call->baseExpr);
 
+    fixupArgDefaultWhenRecordInit(at, call, newTmp);
+
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
-
-      // Provide the return type for new expressions in default arguments to
-      // other parts of resolution. (Because the `new` expression is top level
-      // for argument symbols, we would fail to insert the temporary needed for
-      // argument analysis to appropriately determine the type without inserting
-      // this SymExpr directly)
-      if (isArgSymbol(call->parentSymbol) &&
-          toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(newTmp));
-      }
 
     } else {
       Expr* parent = call->parentExpr;
@@ -5927,20 +5923,10 @@ static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
 
   parent_insert_help(call, call->baseExpr);
 
+  fixupArgDefaultWhenRecordInit(at, call, new_temp);
+
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
-
-    if (at->isClass() == false) {
-      // Provide the return type for new expressions in default arguments to
-      // other parts of resolution. (Because the `new` expression is top level
-      // for argument symbols, we would fail to insert the temporary needed for
-      // argument analysis to appropriately determine the type without inserting
-      // this SymExpr directly)
-      if (isArgSymbol(call->parentSymbol) &&
-          toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(new_temp));
-      }
-    }
 
   } else {
     Expr* parent = call->parentExpr;
@@ -6021,20 +6007,10 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   parent_insert_help(call, call->baseExpr);
 
+  fixupArgDefaultWhenRecordInit(at, call, new_temp);
+
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
-
-    if (at->isClass() == false) {
-      // Provide the return type for new expressions in default arguments to
-      // other parts of resolution. (Because the `new` expression is top level
-      // for argument symbols, we would fail to insert the temporary needed for
-      // argument analysis to appropriately determine the type without inserting
-      // this SymExpr directly)
-      if (isArgSymbol(call->parentSymbol) &&
-          toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(new_temp));
-      }
-    }
 
   } else {
     Expr* parent = call->parentExpr;
@@ -6078,6 +6054,23 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
     resolveFunction(call->resolvedFunction());
 
     def->remove();
+  }
+}
+
+// Provide the return type for new expressions in default arguments to other
+// parts of resolution. (Because the `new` expression is top level for argument
+// symbols, we would fail to insert the temporary needed for argument analysis
+// to appropriately determine the type without inserting this SymExpr directly)
+static void fixupArgDefaultWhenRecordInit(AggregateType* at,
+                                          CallExpr*      call,
+                                          VarSymbol*     newTmp) {
+  if (at->isClass() == false) {
+    if (isBlockStmt(call->parentExpr) == true) {
+      if (isArgSymbol(call->parentSymbol) &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
+    }
   }
 }
 
