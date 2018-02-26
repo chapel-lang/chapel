@@ -1213,9 +1213,9 @@ mpool_idx_base_t amo_res_next_pool_i(void)
 //
 // We do a simple tree-based split-phase barrier, with locale 0 as the
 // root of the tree.  Each of the locales has a barrier_info_t struct,
-// and knows the address of that struct in its two child locales (the
-// locales with indices 2*my_index+1 and 2*my_index+2) and its parent
-// (the one with index (my_index-1)/2).  The notify and release flags on
+// and knows the address of that struct in its child locales (locales
+// num_children*my_idx+1 - num_children*my_idx+num_children) and its
+// parent (locale (my_idx-1)/num_children).  Notify and release flags on
 // all locales start out 0.  The notify step consists of each locale
 // waiting for its children, if it has any, to set the child_notify
 // flags in its own barrier info struct to 1, and then if it is not
@@ -1233,9 +1233,16 @@ mpool_idx_base_t amo_res_next_pool_i(void)
 // Note that we can (and do) do other things while waiting for notify
 // and release flags to be set.
 //
-// QUESTION FROM REVIEW: This should be bigger.  How much bigger?
+// Since we do a vector/chained put, make the number of children based
+// on the max chained put length. Any smaller and we'd be unnessarily
+// adding locales and thus extra 1-way network delays (each additional
+// layer in a tree-based spawn adds at least the cost of a network trip
+// (plus the time for the child's task to wake up). Any larger and the
+// parent locale would have to wait for the round trip ACK back from the
+// chained put. This seems like a good balance (assuming a child can
+// wake up within roughly a 1-way network trip.)
 //
-#define BAR_TREE_NUM_CHILDREN 2
+#define BAR_TREE_NUM_CHILDREN MAX_CHAINED_PUT_LEN
 
 typedef struct {
   volatile uint32_t child_notify[BAR_TREE_NUM_CHILDREN];
@@ -3291,12 +3298,25 @@ void chpl_comm_barrier(const char *msg)
   //
   // Release our children.
   //
-  DBG_P_LP(DBGF_BARRIER, "BAR release %d children", (int) bar_num_children);
-  for (uint32_t i = 0; i < bar_num_children; i++) {
-    static uint32_t release_flag = 1;
-    do_remote_put(&release_flag, bar_min_child + i,
-                  (void*) &child_bar_info[i]->parent_release,
-                  sizeof(release_flag), NULL, may_proxy_true);
+  if (bar_num_children > 0) {
+    void* src_v[MAX_CHAINED_PUT_LEN];
+    int32_t node_v[MAX_CHAINED_PUT_LEN];
+    void* tgt_v[MAX_CHAINED_PUT_LEN];
+    size_t size_v[MAX_CHAINED_PUT_LEN];
+
+    // TODO handle this case instead of forcing children < MAX_CHAINED_PUT_LEN
+    assert(bar_num_children < MAX_CHAINED_PUT_LEN);
+
+    DBG_P_LP(DBGF_BARRIER, "BAR release %d children", (int) bar_num_children);
+    for (uint32_t i = 0; i < bar_num_children; i++) {
+      static uint32_t release_flag = 1;
+      src_v[i] = &release_flag;
+      node_v[i] = bar_min_child + i;
+      tgt_v[i] = (void*) &child_bar_info[i]->parent_release;
+      size_v[i] = sizeof(release_flag);
+    }
+    do_remote_put_V(bar_num_children, src_v, node_v, tgt_v, size_v, NULL,
+                    may_proxy_true);
   }
 }
 
