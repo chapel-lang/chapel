@@ -3845,11 +3845,11 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    prefer1 = STRONG; reason = "generic any vs generic";
+    prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    prefer2 = STRONG; reason = "generic any vs generic";
+    prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
