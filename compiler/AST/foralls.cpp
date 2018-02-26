@@ -502,6 +502,12 @@ void lowerForallStmts2() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
+
+    // formerly nonLeaderParCheckInt()
+    FnSymbol* parent = fs->getFunction();
+    // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
+    if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
+      USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
     
     INT_ASSERT(fs->yesLI());
     convertIteratorForLoopexpr(fs);
