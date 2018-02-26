@@ -37,6 +37,7 @@ ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   fLoopBody(body),
   fFromForLoop(false),
   fContinueLabel(NULL),
+  fErrorHandlerLabel(NULL),
   fFromResolvedForLoop(false)
 {
   fIterVars.parent = this;

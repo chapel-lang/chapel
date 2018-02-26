@@ -90,6 +90,7 @@ private:
 
 public:
   LabelSymbol*   fContinueLabel;  // update_symbols() needs this
+  LabelSymbol*   fErrorHandlerLabel;  // update_symbols() needs this
   bool           fFromResolvedForLoop;
 };
 

@@ -22,6 +22,7 @@
 #include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
 #include "DeferStmt.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "driver.h"
 #include "stmt.h"
@@ -167,6 +168,8 @@ public:
   virtual bool enterCallExpr (CallExpr*  node);
   virtual bool enterForLoop  (ForLoop*   node);
   virtual void exitForLoop   (ForLoop*   node);
+  virtual bool enterForallStmt(ForallStmt* node);
+  virtual void exitForallStmt (ForallStmt* node);
   virtual bool enterDeferStmt(DeferStmt* node);
   virtual void exitDeferStmt (DeferStmt* node);
 
@@ -175,7 +178,7 @@ private:
     VarSymbol*   errorVar;
     LabelSymbol* handlerLabel;
     TryStmt*     tryStmt;
-    ForLoop*     throwingForall;
+    Expr*        throwingForall;
     BlockStmt*   tryBody;
   };
 
@@ -461,10 +464,69 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
   return true;
 }
 
+bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
+  if (!canBlockStmtThrow(node->loopBody()))
+    return true;
+
+  SET_LINENO(node);
+
+   // Make sure that there's a break label.
+  if (node->fErrorHandlerLabel == NULL) {
+    LabelSymbol* b = new LabelSymbol("forall_break_label");
+    // intentionally *not* marked with FLAG_ERROR_LABEL so that
+    // we don't auto-destroy everything just before it.
+    node->fErrorHandlerLabel = b;
+    node->insertAfter(new DefExpr(b));
+  }
+
+  VarSymbol*   errorVar     = newTemp("error", dtError);
+  errorVar->addFlag(FLAG_ERROR_VARIABLE);
+  LabelSymbol* handlerLabel = node->fErrorHandlerLabel;
+
+  node->insertBefore(new DefExpr(errorVar));
+  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
+
+  TryInfo info = {errorVar, handlerLabel, NULL, node, node->loopBody()};
+  tryStack.push(info);
+
+  return true;
+}
+
 void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
 
   if (!node->isLoweredForallLoop())
     return;
+  if (tryStack.empty())
+    return;
+
+  TryInfo& info = tryStack.top();
+  if (info.throwingForall == NULL)
+    return;
+
+  tryStack.pop();
+
+  SET_LINENO(node);
+
+  BlockStmt* handler = new BlockStmt();
+  // Always wrap errors from foralls in a TaskErrors
+  VarSymbol* err = info.errorVar;
+  VarSymbol* normErr = newTemp("forall_error", dtError);
+  handler->insertAtTail(new DefExpr(normErr));
+
+  handler->insertAtTail(new CallExpr(PRIM_MOVE, normErr,
+                                     new CallExpr(gChplForallError, err)));
+
+  if (!tryStack.empty()) {
+    handler->insertAtTail(setOuterErrorAndGotoHandler(normErr));
+  } else if (outError != NULL) {
+    handler->insertAtTail(setOutGotoEpilogue(normErr));
+  } else {
+    handler->insertAtTail(haltExpr(normErr, false));
+  }
+  info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
+}
+
+void ErrorHandlingVisitor::exitForallStmt(ForallStmt* node) {
   if (tryStack.empty())
     return;
 
