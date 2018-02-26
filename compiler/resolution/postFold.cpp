@@ -223,19 +223,10 @@ static Expr* postFoldPrimop(CallExpr* call) {
     VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
 
     if (field->isParameter() == true || field->isType() == true) {
-      Vec<Symbol*> keys;
+      if (Symbol* value = at->getSubstitution(field->name)) {
+        retval = new SymExpr(value);
 
-      at->substitutions.get_keys(keys);
-
-      forv_Vec(Symbol, key, keys) {
-        if (strcmp(field->name, key->name) == 0) {
-          if (Symbol* value = at->substitutions.get(key)) {
-            retval = new SymExpr(value);
-
-            call->replace(retval);
-            break;
-          }
-        }
+        call->replace(retval);
       }
 
     } else if (base->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -246,9 +237,27 @@ static Expr* postFoldPrimop(CallExpr* call) {
       call->replace(retval);
     }
 
+  } else if (call->isPrimitive(PRIM_GET_MEMBER_VALUE) == true) {
+    SymExpr*       base      = toSymExpr (call->get(1));
+    const char*    fieldName = get_string(call->get(2));
+
+    AggregateType* at        = toAggregateType(base->getValType());
+    VarSymbol*     field     = toVarSymbol(at->getField(fieldName));
+
+    if (field->isParameter() == true || field->isType() == true) {
+      if (field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+        if (Symbol* value = at->getSubstitution(field->name)) {
+          retval = new SymExpr(value);
+
+          call->replace(retval);
+        }
+      }
+    }
+
   } else if (call->isPrimitive(PRIM_IS_SUBTYPE) == true) {
     SymExpr* parentExpr = toSymExpr(call->get(1));
     SymExpr* subExpr    = toSymExpr(call->get(2));
+
     if (isTypeExpr(parentExpr) == true  ||
         isTypeExpr(subExpr)    == true)  {
       Type* st = subExpr->getValType();
@@ -256,6 +265,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
       if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
         AggregateType* ag = toAggregateType(st);
+
         st = ag->getField("_instance")->type;
       } else {
         // Try to work around some resolution order issues
@@ -279,9 +289,14 @@ static Expr* postFoldPrimop(CallExpr* call) {
         }
 
         call->replace(retval);
+
       } else {
-        USR_FATAL(call, "Unable to perform subtype query: %s:%s", st->symbol->name, pt->symbol->name);
+        USR_FATAL(call,
+                  "Unable to perform subtype query: %s:%s",
+                  st->symbol->name,
+                  pt->symbol->name);
       }
+
     } else {
       USR_FATAL(call, "Subtype query requires a type");
     }

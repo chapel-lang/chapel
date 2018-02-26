@@ -62,7 +62,6 @@ extern FnSymbol *gChplDeleteError;
 extern FnSymbol *gChplUncaughtError;
 extern FnSymbol *gChplPropagateError;
 extern FnSymbol *gChplSaveTaskError;
-extern FnSymbol *gChplFixThrownError;
 extern FnSymbol *gChplForallError;
 
 #endif

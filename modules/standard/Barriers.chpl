@@ -110,13 +110,6 @@ module Barriers {
       this.init(0);
     }
 
-    // Hack for AllLocalesBarrier
-    pragma "no doc"
-    proc init(numTasks: int, param hackIntoCommBarrier: bool) {
-      bar = new aBarrier(numTasks, reusable=true, hackIntoCommBarrier=true);
-      owned = true;
-    }
-
     /* copy initializer */
     pragma "no doc"
     proc init(b: Barrier) {
@@ -226,6 +219,7 @@ module Barriers {
     pragma "no doc"
     var done: chpl__processorAtomicType(bool);
 
+    // Hack for AllLocalesBarrier
     pragma "no doc"
     param hackIntoCommBarrier = false;
 
@@ -239,6 +233,7 @@ module Barriers {
       reset(n);
     }
 
+    // Hack for AllLocalesBarrier
     pragma "no doc"
     proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;

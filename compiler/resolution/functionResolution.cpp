@@ -3845,11 +3845,11 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    prefer1 = STRONG; reason = "generic any vs generic";
+    prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    prefer2 = STRONG; reason = "generic any vs generic";
+    prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
@@ -5709,6 +5709,10 @@ static void     resolveNewHandleGenericInitializer(CallExpr*      call,
                                                    AggregateType* at,
                                                    SymExpr*       typeExpr);
 
+static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
+                                              CallExpr*      call,
+                                              VarSymbol*     newTmp);
+
 static SymExpr* resolveNewTypeExpr(CallExpr* call);
 
 static void     resolveNewHalt(CallExpr* call);
@@ -5863,6 +5867,8 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 
     parent_insert_help(call, call->baseExpr);
 
+    fixupArgDefaultWhenRecordInit(at, call, newTmp);
+
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
 
@@ -5918,6 +5924,8 @@ static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
   call->baseExpr  = call->get(1)->remove();
 
   parent_insert_help(call, call->baseExpr);
+
+  fixupArgDefaultWhenRecordInit(at, call, new_temp);
 
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
@@ -6001,6 +6009,8 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
 
   parent_insert_help(call, call->baseExpr);
 
+  fixupArgDefaultWhenRecordInit(at, call, new_temp);
+
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
 
@@ -6046,6 +6056,23 @@ static void resolveNewHandleGenericInitializer(CallExpr*      call,
     resolveFunction(call->resolvedFunction());
 
     def->remove();
+  }
+}
+
+// Provide the return type for new expressions in default arguments to other
+// parts of resolution. (Because the `new` expression is top level for argument
+// symbols, we would fail to insert the temporary needed for argument analysis
+// to appropriately determine the type without inserting this SymExpr directly)
+static void fixupArgDefaultWhenRecordInit(AggregateType* at,
+                                          CallExpr*      call,
+                                          VarSymbol*     newTmp) {
+  if (at->isClass() == false) {
+    if (isBlockStmt(call->parentExpr) == true) {
+      if (isArgSymbol(call->parentSymbol) &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
+    }
   }
 }
 

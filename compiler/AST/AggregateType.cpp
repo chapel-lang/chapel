@@ -2320,3 +2320,28 @@ DefExpr* defineObjectClass() {
   return retval;
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+Symbol* AggregateType::getSubstitution(const char* name) {
+  Vec<Symbol*> keys;
+  Symbol*      retval = NULL;
+
+  substitutions.get_keys(keys);
+
+  forv_Vec(Symbol, key, keys) {
+    if (strcmp(name, key->name) == 0) {
+      retval = substitutions.get(key);
+      break;
+    }
+  }
+
+  if (retval == NULL && dispatchParents.n == 1) {
+    retval = dispatchParents.v[0]->getSubstitution(name);
+  }
+
+  return retval;
+}
