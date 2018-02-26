@@ -390,14 +390,10 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
-    VarSymbol* fixedError  = newTemp("fixed_error", dtError);
-    SymExpr*   castedError = NULL;
-    AList      castError   = castToError(thrownError, castedError);
-    CallExpr*  fixError    = new CallExpr(gChplFixThrownError, castedError);
+    // normalizeThrows should give us this invariant earlier
+    INT_ASSERT(thrownError->typeInfo() == dtError);
 
-    throwBlock->insertAtTail(castError);
-    throwBlock->insertAtTail(new DefExpr(fixedError));
-    throwBlock->insertAtTail(new CallExpr(PRIM_MOVE, fixedError, fixError));
+    VarSymbol* fixedError = thrownError;
 
     if (!catchesStack.empty()) {
       Expr*      parent      = throwBlock;
