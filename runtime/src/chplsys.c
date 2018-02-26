@@ -557,6 +557,9 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   if (cpuCores == 0 && siblings == 0) {
     // We have a limited-format /proc/cpuinfo.
     // See if the /sys filesystem has any more information for us.
+    //
+    // Note that we always look at CPU 0, which means we depend on
+    // the system being homogeneous (as noted at the start of this function).
     int threads_per_core = 0;
     if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings",
                    "r")) != NULL) {
@@ -564,6 +567,15 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
       while ((c = getc(f)) != EOF) {
         // The number of threads per core is the total number of bits
         // set in the hex digits of the thread_siblings map.
+        //
+        // The most authoritative source, kernel.org, does not dictate
+        // the formatting of the mask.  However, the following document
+        // indicates that it is either a hex or binary bit mask.  The code
+        // below works in either case.
+        //
+        // https://www.ibm.com/support/knowledgecenter/en/linuxonibm/liaat/liaattunproctop.htm
+        //
+        // Also note that hwloc itself parses the file as a hex bitmap only.
         if (isxdigit(c)) {
           switch (tolower(c)) {
           case '0':
