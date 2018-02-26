@@ -437,9 +437,7 @@ module String {
     var inputLength = paths.size;   // size of input array
     var firstPath = paths[1];
     var delimiter: string;
-    var shortestPathIndex: int = 1;
     var cnt: int = 1;
-    var flag: int = 0;    // used in case given paths are subsets of
     var pos: int ;    // rightmost index of common prefix
     var minPathLength: int ;
 
