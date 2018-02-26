@@ -22,14 +22,14 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 1) Update GITHUB_USER to the GitHub username owning the branch
 # 2) Update GITHUB_BRANCH to the name of the GitHub branch under that user
 # 3) Update SHORT_NAME to be a short name that will be used in graph generation
-# 4) Update START_DATE to be today
+# 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
 # Test performance of lowering ForallStmt at lowerIterators
 GITHUB_USER=vasslitvinov
 GITHUB_BRANCH=li
 SHORT_NAME=lower-ForallStmt
-START_DATE=02/23
+START_DATE=02/24/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

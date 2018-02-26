@@ -27,9 +27,9 @@
 #include "astutil.h"
 #include "build.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "ForallStmt.h"
 #include "initializerRules.h"
-#include "lowerTryExprs.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -473,8 +473,7 @@ static void normalizeBase(BaseAST* base) {
   //
   // Phase 0
   //
-  lowerTryExprs(base);
-
+  normalizeErrorHandling(base);
 
   //
   // Phase 1

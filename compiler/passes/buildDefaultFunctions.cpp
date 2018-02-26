@@ -862,13 +862,17 @@ static void build_enum_cast_function(EnumType* et) {
     // enumeration constants, and an otherwise clause that calls halt.
     int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
+    Expr* lastInit = new SymExpr(new_IntSymbol(count));
     for_enums(constant, et) {
-      if (!get_int(constant->init, &count)) {
+      if (constant->init) {
+        lastInit = constant->init;
+        count = 0;
+      } else {
         count++;
       }
       CondStmt* when =
         new CondStmt(new CallExpr(PRIM_WHEN,
-                                  new SymExpr(new_IntSymbol(count))),
+                                  new CallExpr("+", lastInit->copy(), new SymExpr(new_IntSymbol(count)))),
                      new CallExpr(PRIM_RETURN,
                                   new CallExpr(PRIM_CAST,
                                                et->symbol, arg2)));
