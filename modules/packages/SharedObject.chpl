@@ -230,4 +230,10 @@ module SharedObject {
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
   }
+
+  // This is a workaround
+  pragma "no doc"
+  proc chpl__autoDestroy(x: Shared) {
+    __primitive("call destructor", x);
+  }
 }

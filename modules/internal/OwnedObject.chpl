@@ -185,6 +185,11 @@ module OwnedObject {
     var ret = new Owned(src);
     return ret;
   }
+  // This is a workaround - compiler was resolving
+  // chpl__autoDestroy(x:object) from internal coercions.
+  proc chpl__autoDestroy(x: Owned) {
+    __primitive("call destructor", x);
+  }
 
   // Don't print out 'p' when printing an Owned, just print class pointer
   pragma "no doc"

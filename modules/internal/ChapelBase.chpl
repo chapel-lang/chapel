@@ -1229,8 +1229,7 @@ module ChapelBase {
   pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: ?t) {
-    if !isClassType(t) then
-      __primitive("call destructor", x);
+    __primitive("call destructor", x);
   }
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(ir: _iteratorRecord) {
