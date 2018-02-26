@@ -1305,6 +1305,115 @@ void InitNormalize::makeOuterArg() {
                                  mFn->_outer));
 }
 
+static bool isThisDot(CallExpr* call) {
+  bool retval = false;
+
+  if (call->isNamedAstr(astrSdot) == true) {
+    SymExpr* base = toSymExpr(call->get(1));
+    if (base != NULL &&
+        base->symbol()->hasFlag(FLAG_ARG_THIS)) {
+      retval = true;
+    }
+  }
+  
+  return retval;
+}
+
+static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (isAssignment(call) == true) {
+      if (CallExpr* LHS = toCallExpr(call->get(1))) {
+        if (isThisDot(LHS) == true) {
+          if (LHS->square == true) {
+            // this.x[1] = blah;
+            uses.push_back(LHS);
+          }
+        } else {
+          // this.x.foo = blah;
+          collectThisUses(LHS, uses);
+        }
+      }
+      collectThisUses(call->get(2), uses);
+    } else if (isThisDot(call) == true) {
+      uses.push_back(call);
+    } else {
+      // this.foo(1,2,3);
+      collectThisUses(call->baseExpr, uses);
+
+      bool passesThis = false;
+
+      // foo(this.x);
+      for_actuals(actual, call) {
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
+            passesThis = true;
+          }
+        }
+        collectThisUses(actual, uses);
+      }
+
+      // foo(1,2, this);
+      if (passesThis == true) {
+        uses.push_back(call);
+      }
+    }
+  }
+}
+
+static bool isMethodCall(CallExpr* call) {
+  bool retval = false;
+
+  if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+    if (parent->baseExpr == call) {
+      retval = true;
+      if (UnresolvedSymExpr* se = toUnresolvedSymExpr(call->get(2))) {
+        if (strstr(se->unresolved, "_if_fn") != NULL ||
+            strstr(se->unresolved, "_parloopexpr") != NULL) {
+          // Don't consider compiler-inserted loop/conditional functions
+          retval = false;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+// Catch a handful of errors:
+// 1) use-before-init
+// 2) method call in phase 1
+// 3) pass 'this' to function in phase 1
+void InitNormalize::checkAndEmitErrors(Expr* expr) {
+  if (isPhase2() == true) return;
+  CallExpr* call = toCallExpr(expr);
+  INT_ASSERT(call != NULL);
+
+  std::vector<CallExpr*> uses;
+  collectThisUses(call, uses);
+
+  int numErrors = 0;
+
+  for_vector(CallExpr, use, uses) {
+    if (DefExpr* field = type()->toLocalField(use)) {
+      if (isFieldInitialized(field) == false) {
+        USR_FATAL_CONT(call, "Field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
+    } else if (isMethodCall(use)) {
+      USR_FATAL_CONT(call, "cannot call a method during phase 1 of initialization");
+      numErrors += 1;
+    } else {
+      USR_FATAL_CONT(call, "cannot pass \"this\" to a function in phase 1 of initialization");
+      numErrors += 1;
+      // TODO: Ensure 'this' in 'use'
+    }
+  }
+
+  if (numErrors > 0) {
+    USR_STOP();
+  }
+}
+
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
   Expr* retval = NULL;
@@ -1319,10 +1428,11 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     }
   }
 
-  // Now that omitted fields have been handled, see if RHS is OK
-  if (fieldUsedBeforeInitialized(initStmt) == true) {
-    USR_FATAL(initStmt, "Field used before it is initialized");
-  }
+  //// Now that omitted fields have been handled, see if RHS is OK
+  //if (fieldUsedBeforeInitialized(initStmt) == true) {
+  //  USR_FATAL(initStmt, "Field used before it is initialized");
+  //}
+  checkAndEmitErrors(initStmt);
 
   retval     = fieldInitFromStmt(initStmt, field);
   mCurrField = toDefExpr(mCurrField->next);

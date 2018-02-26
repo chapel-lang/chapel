@@ -93,6 +93,8 @@ public:
 
   void            describe(int offset = 0)                               const;
 
+  void            checkAndEmitErrors(Expr* expr);
+
 private:
   enum BlockType {
     cBlockNormal,

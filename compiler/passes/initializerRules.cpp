@@ -259,10 +259,6 @@ static InitNormalize preNormalize(AggregateType* at,
 
 static CallExpr*     createCallToSuperInit(FnSymbol* fn);
 
-static bool          hasReferenceToThis(Expr* expr);
-
-static bool          isMethodCall(CallExpr* callExpr);
-
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
@@ -399,9 +395,7 @@ static InitNormalize preNormalize(AggregateType* at,
                 "initializers for now");
 
     } else if (isDefExpr(stmt) == true) {
-      if (state.fieldUsedBeforeInitialized(stmt) == true) {
-        USR_FATAL(stmt, "Field used before it is initialized");
-      }
+      state.checkAndEmitErrors(stmt);
 
       stmt = stmt->next;
 
@@ -632,25 +626,9 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // No action required
       } else {
-        if (state.fieldUsedBeforeInitialized(stmt) == true) {
-          USR_FATAL(stmt, "Field used before it is initialized");
+        state.checkAndEmitErrors(stmt);
 
-        } else if (state.isPhase2()             == false &&
-                   hasReferenceToThis(callExpr) == true) {
-          USR_FATAL(stmt,
-                    "can't pass \"this\" as an actual to a function "
-                    "during phase 1 of initialization");
-
-
-        } else if (state.isPhase2()       == false &&
-                   isMethodCall(callExpr) == true) {
-          USR_FATAL(stmt,
-                    "cannot call a method "
-                    "during phase 1 of initialization");
-
-        } else {
-          stmt = stmt->next;
-        }
+        stmt = stmt->next;
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
@@ -751,62 +729,6 @@ static CallExpr* createCallToSuperInit(FnSymbol* fn) {
   Symbol*   initSym   = new_CStringSymbol("init");
 
   return new CallExpr(new CallExpr(".", superCall, initSym));
-}
-
-static bool hasReferenceToThis(Expr* expr) {
-  bool retval = false;
-
-  if (isUnresolvedSymExpr(expr) == true) {
-    retval = false;
-
-  } else if (SymExpr* symExpr = toSymExpr(expr)) {
-    if (ArgSymbol* arg = toArgSymbol(symExpr->symbol())) {
-      retval = arg->hasFlag(FLAG_ARG_THIS);
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    for_actuals(actual, callExpr) {
-      if (hasReferenceToThis(actual) == true) {
-        retval = true;
-        break;
-      }
-    }
-
-  } else if (NamedExpr* named = toNamedExpr(expr)) {
-    retval = hasReferenceToThis(named->actual);
-
-  } else {
-    INT_ASSERT(false);
-  }
-
-  return retval;
-}
-
-static bool isMethodCall(CallExpr* callExpr) {
-  bool retval = false;
-
-  if (CallExpr* base = toCallExpr(callExpr->baseExpr)) {
-    if (base->isNamedAstr(astrSdot) == true) {
-      if (SymExpr* lhs = toSymExpr(base->get(1))) {
-        if (ArgSymbol* arg = toArgSymbol(lhs->symbol())) {
-          UnresolvedSymExpr* calledSe = toUnresolvedSymExpr(base->get(2));
-
-          retval = arg->hasFlag(FLAG_ARG_THIS);
-
-          if (calledSe) {
-            if (strstr(calledSe->unresolved, "_if_fn")       != NULL ||
-                strstr(calledSe->unresolved, "_parloopexpr") != NULL) {
-              // Only mark it as a method call if it is not a compiler
-              // inserted loop or conditional expression function.
-              retval = false;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return retval;
 }
 
 /************************************* | **************************************
