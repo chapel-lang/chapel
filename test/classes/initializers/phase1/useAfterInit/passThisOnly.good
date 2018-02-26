@@ -1,0 +1,2 @@
+passThisOnly.chpl:10: In initializer:
+passThisOnly.chpl:13: error: can't pass "this" as an actual to a function during phase 1 of initialization

@@ -1,0 +1,2 @@
+outOfOrder.chpl:6: In initializer:
+outOfOrder.chpl:8: error: Field "x" initialized out of order
