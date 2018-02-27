@@ -286,4 +286,55 @@ proc file.realPath(): string throws {
       return false;
     }
   }
+
+/* Expands any environment variables in the path of the form `$<name>` or
+   `${<name>}` into their values.  If <name> does not exist, they are left
+   in place. Returns the path which includes these expansions.
+
+   :arg path: a string representation of a path, which may or may not include
+                   `$<name>` or `${<name>}`.
+   :type path: `string`
+
+   :return: `path`, having replaced all references to environment variables with
+                their values
+   :rtype: `string`
+*/
+  proc expandVars(path: string): string{
+    var path_expanded: string = path;
+    var env_arr = [("CHPL_HOME", CHPL_HOME),
+                   ("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS),
+                   ("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM),
+                   ("CHPL_HOST_PLATFORM", CHPL_HOST_PLATFORM),
+                   ("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER),
+                   ("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER),
+                   ("CHPL_TARGET_ARCH", CHPL_TARGET_ARCH),
+                   ("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL),
+                   ("CHPL_COMM", CHPL_COMM),
+                   ("CHPL_COMM_SUBSTRATE", CHPL_COMM_SUBSTRATE),
+                   ("CHPL_GASNET_SEGMENT", CHPL_GASNET_SEGMENT),
+                   ("CHPL_TASKS", CHPL_TASKS),
+                   ("CHPL_LAUNCHER", CHPL_LAUNCHER),
+                   ("CHPL_TIMERS", CHPL_TIMERS),
+                   ("CHPL_UNWIND", CHPL_UNWIND),
+                   ("CHPL_MEM", CHPL_MEM),
+                   ("CHPL_MAKE", CHPL_MAKE),
+                   ("CHPL_ATOMICS", CHPL_ATOMICS),
+                   ("CHPL_NETWORK_ATOMICS", CHPL_NETWORK_ATOMICS),
+                   ("CHPL_GMP", CHPL_GMP),
+                   ("CHPL_HWLOC", CHPL_HWLOC),
+                   ("CHPL_REGEXP", CHPL_REGEXP),
+                   //("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS),
+                   ("CHPL_LLVM", CHPL_LLVM)
+                  ];
+    for i in 1..23{
+      if(path_expanded.find("$"+env_arr(i)(1))>0){
+        path_expanded = path_expanded.replace("$"+env_arr(i)(1), env_arr(i)(2));
+      }
+      if(path_expanded.find("${"+env_arr(i)(1)+"}")>0){
+        path_expanded = path_expanded.replace("${"+env_arr(i)(1)+"}", env_arr(i)(2));
+      }
+    }
+    return path_expanded;
+  }
 }
+
