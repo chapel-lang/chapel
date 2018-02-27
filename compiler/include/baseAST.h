@@ -146,6 +146,13 @@ public:
 
   const char* filename;  // filename of location
   int         lineno;    // line number of location
+
+  inline bool operator==(const astlocT other) const {
+    return this->filename == other.filename && this->lineno == other.lineno;
+  }
+  inline bool operator!=(const astlocT other) const {
+    return this->filename != other.filename || this->lineno != other.lineno;
+  }
 };
 
 //
