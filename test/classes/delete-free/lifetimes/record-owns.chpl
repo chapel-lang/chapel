@@ -1,5 +1,5 @@
 pragma "safe"
-module l6 {
+module recordOwns {
 
 use OwnedObject;
 
