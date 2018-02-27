@@ -306,7 +306,6 @@ proc file.realPath(): string throws {
   var end: int = paths.domain.last;
   var firstPath = paths[start];
   var delimiter: string;
-  var minimum: int;
   var flag: int = 0;
 
   // if input is empty, return empty string.
@@ -335,16 +334,16 @@ proc file.realPath(): string throws {
 
     var tempArray = paths[i].split(delimiter, -1, false);   // temporary array storing the current path under consideration
 
-    minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixArray.size, tempArray.size);
 
     if minimum < minPathLength then {
       minPathLength = minimum;
     }
 
-    for (itr, ind) in zip(1..minimum, 1..minimum) do {
-      if (tempArray[itr]!=prefixArray[ind] && ind<=pos) {
-        pos = ind;
-        flag=1;   // indicating that pos was changed
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag = 1;   // indicating that pos was changed
         break;
       }
     }
@@ -353,7 +352,7 @@ proc file.realPath(): string throws {
   if (flag == 1) {
     prefixArray.remove(pos..prefixArray.size);
   }   else {
-      prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path
+      prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path thus pos was never updated
   }
 
   result = delimiter.join(prefixArray);
