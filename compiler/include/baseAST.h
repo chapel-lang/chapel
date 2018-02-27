@@ -146,16 +146,14 @@ public:
 
   const char* filename;  // filename of location
   int         lineno;    // line number of location
-};
 
-static inline
-bool operator==(const astlocT lhs, const astlocT rhs) {
-  return lhs.filename == rhs.filename && lhs.lineno == rhs.lineno;
-}
-static inline
-bool operator!=(const astlocT lhs, const astlocT rhs) {
-  return lhs.filename != rhs.filename || lhs.lineno != rhs.lineno;
-}
+  inline bool operator==(const astlocT other) const {
+    return this->filename == other.filename && this->lineno == other.lineno;
+  }
+  inline bool operator!=(const astlocT other) const {
+    return this->filename != other.filename || this->lineno != other.lineno;
+  }
+};
 
 //
 // enumerated type of all AST node types
