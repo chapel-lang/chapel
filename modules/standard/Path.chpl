@@ -352,7 +352,6 @@ proc file.realPath(): string throws {
 
   if (flag == 1) {
     prefixArray.remove(pos..prefixArray.size);
-    prefixArray.push_back(" ");
   }   else {
       prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path
   }
