@@ -557,9 +557,6 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   if (cpuCores == 0 && siblings == 0) {
     // We have a limited-format /proc/cpuinfo.
     // See if the /sys filesystem has any more information for us.
-    //
-    // Note that we always look at CPU 0, which means we depend on
-    // the system being homogeneous (as noted at the start of this function).
     int threads_per_core = 0;
     if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings",
                    "r")) != NULL) {
