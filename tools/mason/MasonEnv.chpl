@@ -29,29 +29,17 @@ proc MASON_HOME : string {
   return masonHome;
 }
 
-/* Read the MASON_CACHED_REGISTRY environment variable.  It should be a
-   comma separated list of directories. Returns an array of directory
-   strings.  If unset, defaults to MASON_HOME/name for each name in
-   MASON_REGISTRY.
+/* Returns an array of directory strings corresponding to MASON_HOME/name for
+   each name in MASON_REGISTRY.
  */
 proc MASON_CACHED_REGISTRY {
-  const env = getEnv("MASON_CACHED_REGISTRY");
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
   var cachedRegistry: [masonRegistry.domain] string;
-  if env == "" {
-    for ((name, _), cached) in zip(masonRegistry, cachedRegistry) {
-      cached = MASON_HOME + "/" + name;
-    }
-  } else {
-    var envDirs = env.split(',');
-    if envDirs.size != masonRegistry.size {
-      stderr.writeln("MASON_CACHED_REGISTRY must have the same " +
-                     "length as MASON_REGISTRY");
-      exit(1);
-    }
-    cachedRegistry = envDirs;
+  for ((name, _), cached) in zip(masonRegistry, cachedRegistry) {
+    cached = MASON_HOME + "/" + name;
   }
+
   return cachedRegistry;
 }
 
