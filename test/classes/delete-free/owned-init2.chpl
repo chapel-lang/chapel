@@ -2,13 +2,6 @@ use OwnedObject;
 
 class C {
   var x: int;
-
-  proc matches(other) {
-    if this == other then
-      writeln("same!");
-    else
-      writeln("different!");
-  }
 }
 
 proc main() {
