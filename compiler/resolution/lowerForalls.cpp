@@ -907,6 +907,17 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 }
 
 
+/////////// recursive iterators ///////////
+
+static void handleRecursiveIter(ForallStmt* fs,
+                                FnSymbol* parIterFn,  CallExpr* parIterCall)
+{
+    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
+    USR_PRINT(parIterFn, "the parallel iterator is here");
+}
+
+
+
 /////////// iterator forwarders ///////////
 
 //
@@ -1062,8 +1073,6 @@ static void removeDeadAndFlatten() {
     flattenNestedFunctions(taskFnsToFlatten);
 }
 
-///////////
-
 // wass - need 'parentVis' ?
 static void lowerOneForallStmt(ForallStmt* fs) {
   ExpandVisitor* parentVis = NULL; //wass - dummy
@@ -1086,11 +1095,10 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   INT_ASSERT(parIterFn->hasFlag(FLAG_INLINE_ITERATOR));
 
-  // We don't know yet what to do with these.
   if (parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
-    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
-    USR_PRINT(parIterFn, "the parallel iterator is here");
-    USR_STOP();
+    handleRecursiveIter(fs, parIterFn, parIterCall);
+    // It is probably OK to lower other foralls meanwhile.
+    return;
   }
 
   // Place to put pre- and post- code.
@@ -1136,6 +1144,8 @@ void lowerForallStmtsInline()
   forv_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
+
+  USR_STOP();
 
   clearUpRefsInShadowVars();
 

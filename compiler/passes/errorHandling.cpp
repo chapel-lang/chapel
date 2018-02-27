@@ -430,6 +430,10 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
+// wass factor our enter+exit For/Forall Loop
+// "When a ForLoop represents a forall loop no longer, we can undo the
+// refactoring by inlining these into enterForallStmt/exitForallStmt.
+
 bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
   if (!node->isLoweredForallLoop())
     return true;
