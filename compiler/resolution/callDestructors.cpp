@@ -1065,22 +1065,70 @@ void insertReferenceTemps(CallExpr* call) {
 // flag is ever called and raises an error if so.
 static void checkForErroneousInitCopies() {
 
+  // Mark initCopy/autoCopy functions calling functions marked with
+  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEUS_AUTOCOPY with the same
+  // flag. This situation can come up with the compiler-generated
+  // tuple copy functions.
+  bool changed;
+  do {
+    changed = false;
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+        for_SymbolSymExprs(se, fn) {
+          if (FnSymbol* callInFn = se->getFunction()) {
+            if (callInFn->hasFlag(FLAG_INIT_COPY_FN) &&
+                !callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
+              callInFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+              changed = true;
+            }
+          }
+        }
+      }
+
+      if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
+        for_SymbolSymExprs(se, fn) {
+          if (FnSymbol* callInFn = se->getFunction()) {
+            if (callInFn->hasFlag(FLAG_AUTO_COPY_FN) &&
+                !callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
+              callInFn->addFlag(FLAG_ERRONEOUS_AUTOCOPY);
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+  } while(changed);
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_INITCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se,
-                       "copy-initialization invoked for a type "
-                       "that does not have a copy initializer");
+        if (FnSymbol* callInFn = se->getFunction()) {
+          if (!callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            USR_FATAL_CONT(se,
+                           "copy-initialization invoked for a type "
+                           "that does not have a copy initializer");
+          } else {
+            // Should have been propagated above
+            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_INITCOPY));
+          }
+        }
       }
     }
 
     if (fn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY)) {
       // Error on each call site
       for_SymbolSymExprs(se, fn) {
-        USR_FATAL_CONT(se,
-                       "implicit copy-initialization invoked for a type "
-                       "that does not allow it");
+        if (FnSymbol* callInFn = se->getFunction()) {
+          if (!callInFn->hasFlag(FLAG_AUTO_COPY_FN)) {
+            USR_FATAL_CONT(se,
+                           "implicit copy-initialization invoked for a type "
+                           "that does not allow it");
+          } else {
+            // Should have been propagated above
+            INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_AUTOCOPY));
+          }
+        }
       }
     }
   }
