@@ -67,8 +67,6 @@ module OwnedObject {
     pragma "no doc"
     var p:t;               // contained pointer (class type)
 
-    forwarding p;
-
     /*
        Default-initialize a :record:`Owned`.
      */
