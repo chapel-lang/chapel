@@ -5333,7 +5333,13 @@ proc _toIntegral(x:?t) where isIntegralType(t)
 private inline
 proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
 }
 private inline
 proc _toIntegral(x:?t) where !_isIoPrimitiveType(t)
@@ -5370,7 +5376,13 @@ proc _toSigned(x:uint(64))
 private inline
 proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
 }
 private inline
 proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
@@ -5408,7 +5420,13 @@ proc _toUnsigned(x:int(64))
 private inline
 proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:uint, true);
+  var ret: (uint, bool);
+  try {
+    ret = (x:uint, true);
+  } catch {
+    ret = (0:uint, false);
+  }
+  return ret;
 }
 private inline
 proc _toUnsigned(x:?t) where !_isIoPrimitiveType(t)
@@ -5425,7 +5443,13 @@ proc _toReal(x:?t) where isRealType(t)
 private inline
 proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
-  return (x:real, true);
+  var ret: (real, bool);
+  try {
+    ret = (x:real, true);
+  } catch {
+    ret = (0.0, false);
+  }
+  return ret;
 }
 private inline
 proc _toReal(x:?t) where !_isIoPrimitiveType(t)
@@ -5441,7 +5465,13 @@ proc _toImag(x:?t) where isImagType(t)
 private inline
 proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
-  return (x:imag, true);
+  var ret: (imag, bool);
+  try {
+    ret = (x:imag, true);
+  } catch {
+    ret = (0.0i, false);
+  }
+  return ret;
 }
 private inline
 proc _toImag(x:?t) where !_isIoPrimitiveType(t)
@@ -5458,7 +5488,13 @@ proc _toComplex(x:?t) where isComplexType(t)
 private inline
 proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
-  return (x:complex, true);
+  var ret: (complex, bool);
+  try {
+    ret = (x:complex, true);
+  } catch {
+    ret = (0.0+0.0i, false);
+  }
+  return ret;
 }
 private inline
 proc _toComplex(x:?t) where !_isIoPrimitiveType(t)
@@ -5496,7 +5532,14 @@ private inline
 proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
+
 }
 private inline
 proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
@@ -5559,7 +5602,11 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t==bool&&_isIoP
 private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
-  lhs = rhs:t;
+  try {
+    lhs = rhs:t;
+  } catch {
+    return EFORMAT;
+  }
   return ENOERR;
 }
 private inline
@@ -6506,7 +6553,11 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                   if _isIoPrimitiveType(args(i).type) {
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
-                    args(i) = r.capArr[r.capturei]:args(i).type;
+                    try {
+                      args(i) = r.capArr[r.capturei]:args(i).type;
+                    } catch {
+                      error = qio_format_error_bad_regexp();
+                    }
                   }
                   r.capturei += 1;
                 }
