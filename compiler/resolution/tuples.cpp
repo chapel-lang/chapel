@@ -968,8 +968,6 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
   int       i              = 0;
 
-  bool      returnWithNull = false;
-
   FnSymbol* retval         = NULL;
 
   // This is a workaround for iterators use of build_tuple_always_allow_ref
@@ -985,13 +983,9 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       SymExpr*   se = toSymExpr(actual);
       VarSymbol* v  = toVarSymbol(se->symbol());
 
-      if (v == NULL || v->immediate == NULL) {
-        returnWithNull = true;
-        break;
+      INT_ASSERT(v != NULL && v->immediate != NULL);
 
-      } else {
-        actualN = v->immediate->int_value();
-      }
+      actualN = v->immediate->int_value();
 
     } else {
       // Subsequent arguments are tuple types.
@@ -1018,50 +1012,48 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     i++;
   }
 
-  if (returnWithNull == false) {
-    if (firstArgIsSize == true) {
-      if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
-        // Copy the first argument actualN times.
-        for (size_t j = 1; j < actualN; j++) {
-          args.push_back(args[0]);
-        }
-      }
-
-      INT_ASSERT(actualN == 0 || actualN == args.size());
-
-      args.resize(actualN);
-    }
-
-    if (noRef == true) {
-      for (size_t i = 0; i < args.size(); i++) {
-        args[i] = args[i]->getValType()->symbol;
+  if (firstArgIsSize == true) {
+    if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+      // Copy the first argument actualN times.
+      for (size_t j = 1; j < actualN; j++) {
+        args.push_back(args[0]);
       }
     }
 
-    BlockStmt* point = getVisibilityBlock(call);
-    TupleInfo info   = getTupleInfo(args, point, noRef);
+    INT_ASSERT(actualN == 0 || actualN == args.size());
 
-    if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-      AggregateType* at = toAggregateType(info.typeSymbol->type);
+    args.resize(actualN);
+  }
 
-      retval = at->defaultTypeConstructor;
+  if (noRef == true) {
+    for (size_t i = 0; i < args.size(); i++) {
+      args[i] = args[i]->getValType()->symbol;
+    }
+  }
 
-    } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-      AggregateType* at = toAggregateType(info.typeSymbol->type);
+  BlockStmt* point = getVisibilityBlock(call);
+  TupleInfo info   = getTupleInfo(args, point, noRef);
 
-      retval = at->defaultInitializer;
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
+    AggregateType* at = toAggregateType(info.typeSymbol->type);
 
-    } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
-      if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
-        retval = info.buildStarTupleType;
+    retval = at->defaultTypeConstructor;
 
-      } else {
-        retval = info.buildTupleType;
-      }
+  } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
+    AggregateType* at = toAggregateType(info.typeSymbol->type);
+
+    retval = at->defaultInitializer;
+
+  } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
+    if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {
+      retval = info.buildStarTupleType;
 
     } else {
-      INT_ASSERT(false); // all cases should be handled by now...
+      retval = info.buildTupleType;
     }
+
+  } else {
+    INT_ASSERT(false); // all cases should be handled by now...
   }
 
   return retval;
