@@ -44,12 +44,15 @@ proc MASON_CACHED_REGISTRY {
 }
 
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
-   separated list of registry name:location pairs. Returns an array of
-   tuples containing (name, location).
+   separated list of registry 'name|location' pairs. Returns an array of
+   tuples containing (name, location). If 'name|' is ommitted, it defaults
+   to the text following the final slash in 'location' after removing any
+   trailing slashes. e.g. if location is "/path/to/my/local_registry//"
+   then the default name is "local_registry".
  */
 proc MASON_REGISTRY {
   const env = getEnv("MASON_REGISTRY");
-  const default = ("registry",
+  const default = ("mason-registry",
                    "https://github.com/chapel-lang/mason-registry");
   var registries: [1..0] 2*string;
 
@@ -57,16 +60,25 @@ proc MASON_REGISTRY {
     registries.push_back(default);
   } else {
     for str in env.split(',') {
-      const regArr = str.split(':', maxsplit=1);
-      if regArr.numElements != 2 {
-        stderr.writeln("expected MASON_REGISTRY to contain 'name:location' pairs");
+      const regArr = str.split('|');
+      if regArr.size > 2 || regArr.size < 1 {
+        stderr.writeln("expected MASON_REGISTRY to contain a comma " +
+                       "separated list of locations or 'name|location' pairs");
         stderr.writeln(regArr);
         exit(1);
-      }
-      var regTup: 2*string;
-      regTup = (regArr(1), regArr(2));
+      } else {
+        var regTup: 2*string;
 
-      registries.push_back(regTup);
+        if regArr.numElements == 1 {
+          // get the name from the last part of the location
+          var name: string = getRegNameFromLoc(regArr[1]);
+          regTup = (name, regArr[1]);
+        } else {
+          // found a 'name|location' pair
+          regTup = (regArr[1], regArr[2]);
+        }
+        registries.push_back(regTup);
+      }
     }
 
     // Make sure all of the registry names are unique
@@ -129,4 +141,14 @@ proc masonEnv(args) {
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);
   }
+}
+
+private proc getRegNameFromLoc(location: string): string {
+  var strippedLoc  = location.strip("/", leading=false);
+  var lastSlashPos = strippedLoc.rfind("/");
+  if lastSlashPos == 0 {
+    stderr.writeln("location should be an absolute path or URL");
+    exit(1);
+  }
+  return strippedLoc[lastSlashPos+1..];
 }
