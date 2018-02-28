@@ -373,6 +373,51 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   }
 }
 
+static void checkLocalPhaseOneErrors(InitNormalize state,
+                                     DefExpr* field,
+                                     CallExpr* callExpr) {
+  if (isCompoundAssignment(callExpr) == true) {
+    USR_FATAL(callExpr,
+              "cannot apply compound assignment to field \"%s\" "
+              "in phase 1",
+              field->sym->name);
+
+  } else if (state.isFieldReinitialized(field) == true) {
+    USR_FATAL(callExpr,
+              "multiple initializations of field \"%s\"",
+              field->sym->name);
+
+  } else if (state.inLoopBody()     == true ||
+             state.inOnInLoopBody() == true) {
+    USR_FATAL(callExpr,
+              "can't initialize field \"%s\" inside a "
+              "loop during phase 1 of initialization",
+              field->sym->name);
+
+  } else if (state.inParallelStmt()     == true ||
+             state.inOnInParallelStmt() == true) {
+    USR_FATAL(callExpr,
+              "can't initialize field \"%s\" inside a "
+              "parallel statement during phase 1 of initialization",
+              field->sym->name);
+
+  } else if (state.inCoforall()     == true ||
+             state.inOnInCoforall() == true) {
+    USR_FATAL(callExpr,
+              "can't initialize field \"%s\" inside a "
+              "coforall during phase 1 of initialization",
+              field->sym->name);
+
+
+  } else if (state.inForall()     == true ||
+             state.inOnInForall() == true) {
+    USR_FATAL(callExpr,
+              "can't initialize field \"%s\" inside a "
+              "forall during phase 1 of initialization",
+              field->sym->name);
+  }
+}
+
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
@@ -546,50 +591,12 @@ static InitNormalize preNormalize(AggregateType* at,
           } else {
             stmt = stmt->next;
           }
-
-        } else if (isCompoundAssignment(callExpr) == true) {
-          USR_FATAL(stmt,
-                    "cannot apply compound assignment to field \"%s\" "
-                    "in phase 1",
-                    field->sym->name);
-
-        } else if (state.isFieldReinitialized(field) == true) {
-          USR_FATAL(stmt,
-                    "multiple initializations of field \"%s\"",
-                    field->sym->name);
-
-        } else if (state.inLoopBody()     == true ||
-                   state.inOnInLoopBody() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "loop during phase 1 of initialization",
-                    field->sym->name);
-
-        } else if (state.inParallelStmt()     == true ||
-                   state.inOnInParallelStmt() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "parallel statement during phase 1 of initialization",
-                    field->sym->name);
-
-        } else if (state.inCoforall()     == true ||
-                   state.inOnInCoforall() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "coforall during phase 1 of initialization",
-                    field->sym->name);
-
-
-        } else if (state.inForall()     == true ||
-                   state.inOnInForall() == true) {
-          USR_FATAL(stmt,
-                    "can't initialize field \"%s\" inside a "
-                    "forall during phase 1 of initialization",
-                    field->sym->name);
-
+        } else if (state.isFieldInitialized(field) == false) {
+          checkLocalPhaseOneErrors(state, field, callExpr);
+          stmt = state.fieldInitFromInitStmt(field, callExpr);
 
         } else {
-          stmt = state.fieldInitFromInitStmt(field, callExpr);
+          stmt = stmt->next;
         }
 
       // Stmt is assignment to a super field
