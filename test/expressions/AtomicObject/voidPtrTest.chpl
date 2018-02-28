@@ -7,3 +7,4 @@ proc fn(f : c_void_ptr) {
 
 var obj : Obj = new Obj(1,2,3);
 fn(obj : c_void_ptr);
+
