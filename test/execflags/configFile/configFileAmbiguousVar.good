@@ -1,0 +1,1 @@
+configFileAmbiguousVar.cfg: error: Multiple modules define a config named 'name'.  Use '--help' for a list and disambiguate using '<moduleName>.name'.

@@ -297,8 +297,23 @@ void initSetValue(const char* varName, const char* value,
     chpl_error(message, lineno, filename);
   }
   configVar = lookupConfigVar(moduleName, varName);
-  if (configVar == NULL || configVar == ambiguousConfigVar) {
-    chpl_internal_error("unknown config var case not handled appropriately");
+  if (configVar == NULL) {
+    const char* configName = ((moduleName == NULL || !strcmp(moduleName, ""))
+                              ? varName
+                              : chpl_glom_strings(3,
+                                                  moduleName, ".", varName));
+    const char* message = chpl_glom_strings(3, "attempt to set config named '",
+                                            configName,
+                                            "', but there is no such config");
+    chpl_error(message, lineno, filename);
+  } else if (configVar == ambiguousConfigVar) {
+    const char* message = chpl_glom_strings(5,
+                                            "Multiple modules define a config "
+                                            "named '", varName,
+                                            "'.  Use '--help' for a list and "
+                                            "disambiguate using '<moduleName>.",
+                                            varName, "'.");
+    chpl_error(message, lineno, filename);
   }
   if (strcmp(varName, "numLocales") == 0) {
     parseNumLocales(value, lineno, filename);
