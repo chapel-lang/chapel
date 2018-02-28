@@ -291,6 +291,7 @@ module Atomics {
     else if base_type==int(64) then return atomic_int64;
     else if base_type==real(64) then return atomic_real64;
     else if base_type==real(32) then return atomic_real32;
+    else if isClass(base_type) then return atomic_object(base_type);
     else compilerError("Unsupported atomic type");
   }
 
@@ -303,6 +304,30 @@ module Atomics {
     }
   };
 
+
+  extern type wide_ptr_t;
+  extern proc create_atomic_object() : wide_ptr_t;
+
+  pragma "atomic type"
+  pragma "ignore noinit"
+  record atomic_object {  
+    type objType;
+    var _v : wide_ptr_t = create_atomic_object();
+
+    // TODO: Resolve issue where compiler automatically casts this to a c_void_ptr
+    // instead of a wide_ptr_t as requested.
+    inline proc read(order:memory_order = memory_order_seq_cst) : objType {
+      var ret : objType;
+      extern proc Read128(src : c_ptr(wide_ptr_t)) : wide_ptr_t;
+      on this {
+        var ptr = Read128(c_ptrTo(_v));
+        ret = __primitive("cast", objType, ptr);
+      }
+      return ret;
+    }
+
+
+  }
 
   pragma "no doc"
   inline proc create_atomic_bool():atomic_bool {

@@ -363,6 +363,73 @@ DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 DECLARE_REAL_ATOMICS(_real32, uint32_t);
 DECLARE_REAL_ATOMICS(_real64, uint64_t);
 
+static inline wide_ptr_t create_atomic_object(void) {
+  wide_ptr_t ret = {0};
+  return ret;
+}
+
+// Define atomic object using Intel CMPXCHG128B
+// TODO: Detect if not supported...
+static inline chpl_bool CAS128(wide_ptr_t *src, wide_ptr_t expect, wide_ptr_t replace) {
+  chpl_bool result;
+  __asm__ __volatile__
+  (
+      "lock cmpxchg16b %1\n\t"
+      "setz %0"
+      : "=q" ( result )
+      , "+m" ( *src )
+      , "+d" ( expect.locale )
+      , "+a" ( expect.addr )
+      : "c" ( replace.locale )
+      , "b" ( replace.addr )
+      : "cc"
+  );
+  return result;
+}
+
+static inline wide_ptr_t Read128(wide_ptr_t *src) {
+  chpl_bool result;
+  // Note: We cannot reuse the same operand twice or else we get a General Protection Fault...
+  wide_ptr_t value = {0};
+  wide_ptr_t dummy = {0};
+  __asm__ __volatile__
+  (
+      "lock cmpxchg16b %1\n\t"
+      "setz %0"
+      : "=q" ( result )
+      , "+m" ( *src )
+      , "+d" ( value.locale )
+      , "+a" ( value.addr )
+      : "c" ( dummy.locale )
+      , "b" ( dummy.addr )
+      : "cc"
+  );
+
+  // The actual result is placed in value.
+  return value;
+}
+
+static inline void Write128(wide_ptr_t *src, wide_ptr_t value) {
+  chpl_bool result = false;
+  wide_ptr_t expect = *src;
+
+  // As writes must be performed via a CAS, we must loop
+  while (!result) {
+    __asm__ __volatile__
+    (
+        "lock cmpxchg16b %1\n\t"
+        "setz %0"
+        : "=q" ( result )
+        , "+m" ( *src )
+        , "+d" ( expect.locale )
+        , "+a" ( expect.addr )
+        : "c" ( value.locale )
+        , "b" ( value.addr )
+        : "cc"
+    );
+  }
+}
+
 
 #undef DECLARE_ATOMICS_BASE
 #undef DECLARE_ATOMICS_EXCHANGE_OPS
