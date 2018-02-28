@@ -184,4 +184,10 @@ module OwnedObject {
     var ret = new Owned(src);
     return ret;
   }
+
+  // Don't print out 'p' when printing an Owned, just print class pointer
+  pragma "no doc"
+  proc Owned.readWriteThis(f) {
+    f <~> this.p;
+  }
 }
