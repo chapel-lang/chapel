@@ -56,8 +56,6 @@ private:
 
   bool                      isApplicableForInitGeneric(CallInfo& info);
 
-  FnSymbol*                 instantiateInitSig(CallInfo& info);
-
   bool                      computeAlignment(CallInfo& info);
 
   void                      computeSubstitutions();
