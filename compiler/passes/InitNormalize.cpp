@@ -1540,58 +1540,6 @@ void InitNormalize::fieldInitFromField(Expr* insertBefore) {
   }
 }
 
-bool InitNormalize::fieldUsedBeforeInitialized(Expr* expr) const {
-  bool retval = false;
-
-  if (DefExpr* defExpr = toDefExpr(expr)) {
-    if (defExpr->init != NULL) {
-      retval = fieldUsedBeforeInitialized(defExpr->init);
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    retval = fieldUsedBeforeInitialized(callExpr);
-  }
-
-  return retval;
-}
-
-bool InitNormalize::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
-  bool retval = false;
-
-  if (isAssignment(callExpr) == true) {
-    if (CallExpr* LHS = toCallExpr(callExpr->get(1))) {
-      if (isFieldAccess(LHS)) {
-        // Want to watch out for array-like accesses that appear as field
-        // accesses: x[1] = 1;
-        retval = LHS->square;
-      } else {
-        // Look for expressions like: x.foo = 1;
-        retval = fieldUsedBeforeInitialized(callExpr->get(1));
-      }
-    }
-    retval = retval || fieldUsedBeforeInitialized(callExpr->get(2));
-
-  } else if (DefExpr* field = type()->toLocalField(callExpr)) {
-    retval = isFieldInitialized(field) == true ? false : true;
-
-  } else {
-    // Need to check the baseExpr in cases like:
-    //   myField.set(1)
-    // Because the baseExpr is a field access of 'this.myField'
-    retval = fieldUsedBeforeInitialized(callExpr->baseExpr);
-    if (retval == false) {
-      for_actuals(actual, callExpr) {
-        if (fieldUsedBeforeInitialized(actual) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
-  }
-
-  return retval;
-}
-
 void InitNormalize::describe(int offset) const {
   char pad[512];
 

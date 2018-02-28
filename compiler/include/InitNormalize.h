@@ -80,10 +80,6 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
-  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
-
-  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
-
   void            describe(int offset = 0)                               const;
 
   void            checkAndEmitErrors(Expr* expr);
