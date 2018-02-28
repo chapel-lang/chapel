@@ -594,6 +594,10 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (state.isFieldInitialized(field) == false) {
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
+        } else if (state.isFieldImplicitlyInitialized(field) == true) {
+          USR_FATAL(stmt,
+                    "Field \"%s\" initialized out of order",
+                    field->sym->name);
 
         } else {
           stmt = stmt->next;

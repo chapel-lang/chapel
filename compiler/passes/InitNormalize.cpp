@@ -124,6 +124,9 @@ InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
 void InitNormalize::merge(const InitNormalize& fork) {
   mCurrField = fork.mCurrField;
   mPhase     = fork.mPhase;
+
+  implicitFields.insert(fork.implicitFields.begin(),
+                        fork.implicitFields.end());
 }
 
 AggregateType* InitNormalize::type() const {
@@ -1165,6 +1168,10 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   return retval;
 }
 
+bool InitNormalize::isFieldImplicitlyInitialized(DefExpr* field) const {
+  return implicitFields.find(field) != implicitFields.end();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1428,6 +1435,7 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
 
     while (field != mCurrField) {
       fieldInitFromField(initStmt);
+      implicitFields.insert(mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
     }
