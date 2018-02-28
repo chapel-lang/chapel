@@ -439,22 +439,21 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
-            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC)       == true &&
+            e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
-        }
 
-        TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+        } else {
+          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
 
-        if (ts != nts) {
-          e->value = nts;
+          if (ts != nts) {
+            e->value = nts;
+          }
         }
       }
     }
 
-    //
     // determine root function in the case of partial instantiation
-    //
     FnSymbol* root = determineRootFunc(fn);
 
     //
@@ -466,74 +465,56 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
     determineAllSubs(fn, root, subs, allSubs);
 
-    //
     // use cached instantiation if possible
-    //
     if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
       if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
         retval = cached;
-      } else {
-        retval = NULL;
       }
+
     } else {
       SET_LINENO(fn);
 
-      //
       // copy generic class type if this function is a type constructor
-      //
+      SymbolMap      map;
       AggregateType* newType = NULL;
+      FnSymbol*      newFn   = NULL;
 
-      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-        INT_ASSERT(isAggregateType(fn->retType));
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle != DEFINES_INITIALIZER &&
-            !ct->wantsDefaultInitializer()) {
-          newType = instantiateTypeForTypeConstructor(fn,
-                                                      subs,
-                                                      call,
-                                                      ct);
+        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+            ct->wantsDefaultInitializer() == false) {
+          newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
+
         } else {
           newType = ct->getInstantiationMulti(subs, fn);
         }
       }
 
-      //
       // instantiate function
-      //
-      SymbolMap map;
-
-      if (newType) {
+      if (newType != NULL) {
         map.put(fn->retType->symbol, newType->symbol);
       }
 
-      FnSymbol* newFn = instantiateFunction(fn,
-                                            root,
-                                            allSubs,
-                                            call,
-                                            subs,
-                                            map);
+      newFn = instantiateFunction(fn, root, allSubs, call, subs, map);
 
-      if (newType) {
+      if (newType != NULL) {
         newType->defaultTypeConstructor = newFn;
         newFn->retType                  = newType;
       }
 
-      bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-
-      // Fix up chpl__initCopy for user-defined records
-      if (fixedTuple                           == false &&
-          fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
-          fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
-        // Generate the initCopy function based upon initializer
-        fixupDefaultInitCopy(fn, newFn, call);
+      if (fixupTupleFunctions(fn, newFn, call) == false) {
+        // Fix up chpl__initCopy for user-defined records
+        if (fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+            fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
+          fixupDefaultInitCopy(fn, newFn, call);
+        }
       }
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
-        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
@@ -545,8 +526,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     }
   }
 
-  if (retval != NULL && fn->throwsError())
+  if (retval != NULL && fn->throwsError() == true) {
     retval->throwsErrorInit();
+  }
 
   return retval;
 }
