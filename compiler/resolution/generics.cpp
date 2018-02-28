@@ -459,8 +459,10 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
-  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, call)) {
-    retval = tupleFn;
+
+  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
+    retval = createTupleSignature(fn, subs, call);
 
   } else {
     form_Map(SymbolMapElem, e, subs) {
