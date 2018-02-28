@@ -256,12 +256,24 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
     // If the caller is the same as the iterator we started with,
     // it calls itself recursively.  Further searching is unnecessary.
     if (caller == iter)
+{//wass
+      if (iter->id == breakOnID) gdbShouldBreakHere(); //wass
       return true;
+}
+    // Ignore recursion through non-iterators.
+    if (!(caller->isIterator() ||
+          caller->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
+          isTaskFun(caller)))
+      return false;
 
     // Otherwise, search recursively up the call chain.
     // If recursion was detected, no further searching is required.
     if (find_recursive_caller(caller, iter, fnSet))
+{//wass
+      if (iter->id == breakOnID) printf("iter %d %s   caller %d %s\n",
+       iter->id, iter->name, caller->id, caller->name); //wass
       return true;
+}
 
     // Otherwise, try the next call site.
   }
