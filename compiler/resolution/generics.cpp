@@ -435,12 +435,25 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   return instantiateSignature(fn, subs, call, false);
 }
 
+FnSymbol* instantiateInitSig(FnSymbol*  fn,
+                             SymbolMap& subs,
+                             CallExpr*  call) {
+  return instantiateSignature(fn, subs, call, true);
+}
+
 static FnSymbol* instantiateSignature(FnSymbol*  fn,
                                       SymbolMap& subs,
                                       CallExpr*  call,
                                       bool       isGenericInit) {
-  Flag      flagReqForGeneric = FLAG_DELAY_GENERIC_EXPANSION;
+  Flag      flagReqForGeneric;
   FnSymbol* retval            = NULL;
+
+  if (isGenericInit == true) {
+    flagReqForGeneric = FLAG_ARG_THIS;
+
+  } else {
+    flagReqForGeneric = FLAG_DELAY_GENERIC_EXPANSION;
+  }
 
   //
   // Handle tuples explicitly
@@ -520,7 +533,8 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       if (fixupTupleFunctions(fn, newFn, call) == false) {
         // Fix up chpl__initCopy for user-defined records
-        if (fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+        if (isGenericInit                        == false &&
+            fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
             fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
           fixupDefaultInitCopy(fn, newFn, call);
         }
@@ -533,14 +547,25 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       newFn->tagIfGeneric();
 
-      explainAndCheckInstantiation(newFn, fn);
+      if (isGenericInit                ==  true &&
+          newFn->hasFlag(FLAG_GENERIC) == false &&
+          evaluateWhereClause(newFn)   == false) {
 
-      retval = newFn;
+        // where clause evaluates to false so cache gVoid as a function
+        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
+
+      } else {
+        explainAndCheckInstantiation(newFn, fn);
+
+        retval = newFn;
+      }
     }
   }
 
-  if (retval != NULL && fn->throwsError() == true) {
-    retval->throwsErrorInit();
+  if (isGenericInit == false) {
+    if (retval != NULL && fn->throwsError() == true) {
+      retval->throwsErrorInit();
+    }
   }
 
   return retval;
