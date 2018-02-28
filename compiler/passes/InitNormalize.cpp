@@ -1399,6 +1399,11 @@ void InitNormalize::checkAndEmitErrors(Expr* expr) {
         USR_FATAL_CONT(call, "Field \"%s\" used before it is initialized", field->sym->name);
         numErrors += 1;
       }
+    } else if (DefExpr* field = type()->toSuperField(use)) {
+      if (isPhase0() == true) {
+        USR_FATAL_CONT(call, "Parent field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
     } else if (isMethodCall(use)) {
       USR_FATAL_CONT(call, "cannot call a method during phase 1 of initialization");
       numErrors += 1;
