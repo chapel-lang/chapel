@@ -1,2 +1,1 @@
-multipleInits.chpl:6: In initializer:
-multipleInits.chpl:9: error: multiple initializations of field "f2"
+{f1 = 2, f2 = 18.9, f3 = true}
