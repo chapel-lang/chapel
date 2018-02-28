@@ -598,7 +598,9 @@ static InitNormalize preNormalize(AggregateType* at,
           USR_FATAL(stmt,
                     "Field \"%s\" initialized out of order",
                     field->sym->name);
-        } else if (field->sym->hasFlag(FLAG_CONST) == true &&
+        } else if ((field->sym->hasFlag(FLAG_CONST) == true ||
+                    field->sym->hasFlag(FLAG_PARAM) == true ||
+                    field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) &&
                    state.isFieldReinitialized(field) == true) {
           USR_FATAL(callExpr,
                     "multiple initializations of field \"%s\"",
