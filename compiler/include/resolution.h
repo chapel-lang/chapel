@@ -103,6 +103,7 @@ bool       shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn);
 //  var x = y;   // requires a copy-init
 //  var z = functionReturningRecordByValue(); // does not require a copy-init
 bool       doesCopyInitializationRequireCopy(Expr* initFrom);
+
 // Similar to the above, but it's OK to return a local value
 // variable without a copy.
 bool       doesValueReturnRequireCopy(Expr* initFrom);
@@ -151,6 +152,7 @@ bool isReduceOp(Type* type);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiateInitSig  (FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
 // generics support

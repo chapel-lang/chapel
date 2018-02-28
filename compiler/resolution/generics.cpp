@@ -44,6 +44,11 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
+static FnSymbol* instantiateSignature(FnSymbol*  fn,
+                                      SymbolMap& subs,
+                                      CallExpr*  call,
+                                      bool       isGenericInit);
+
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -427,34 +432,56 @@ void instantiateBody(FnSymbol* fn) {
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                CallExpr*  call) {
-  FnSymbol* retval = NULL;
+  return instantiateSignature(fn, subs, call, false);
+}
+
+FnSymbol* instantiateInitSig(FnSymbol*  fn,
+                             SymbolMap& subs,
+                             CallExpr*  call) {
+  return instantiateSignature(fn, subs, call, true);
+}
+
+static FnSymbol* instantiateSignature(FnSymbol*  fn,
+                                      SymbolMap& subs,
+                                      CallExpr*  call,
+                                      bool       isGenericInit) {
+  Flag      flagReqForGeneric;
+  FnSymbol* retval            = NULL;
+
+  if (isGenericInit == true) {
+    flagReqForGeneric = FLAG_ARG_THIS;
+
+  } else {
+    flagReqForGeneric = FLAG_DELAY_GENERIC_EXPANSION;
+  }
 
   //
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
-  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, call)) {
-    retval = tupleFn;
+
+  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
+    retval = createTupleSignature(fn, subs, call);
 
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
-            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) == true &&
+            e->key->hasFlag(flagReqForGeneric)      == false) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
-        }
 
-        TypeSymbol* nts = getNewSubType(fn, e->key, ts);
+        } else {
+          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
 
-        if (ts != nts) {
-          e->value = nts;
+          if (ts != nts) {
+            e->value = nts;
+          }
         }
       }
     }
 
-    //
     // determine root function in the case of partial instantiation
-    //
     FnSymbol* root = determineRootFunc(fn);
 
     //
@@ -466,87 +493,82 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
     determineAllSubs(fn, root, subs, allSubs);
 
-    //
     // use cached instantiation if possible
-    //
     if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
       if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
         retval = cached;
-      } else {
-        retval = NULL;
       }
+
     } else {
       SET_LINENO(fn);
 
-      //
       // copy generic class type if this function is a type constructor
-      //
+      SymbolMap      map;
       AggregateType* newType = NULL;
+      FnSymbol*      newFn   = NULL;
 
-      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-        INT_ASSERT(isAggregateType(fn->retType));
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle != DEFINES_INITIALIZER &&
-            !ct->wantsDefaultInitializer()) {
-          newType = instantiateTypeForTypeConstructor(fn,
-                                                      subs,
-                                                      call,
-                                                      ct);
+        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+            ct->wantsDefaultInitializer() == false) {
+          newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
+
         } else {
           newType = ct->getInstantiationMulti(subs, fn);
         }
       }
 
-      //
       // instantiate function
-      //
-      SymbolMap map;
-
-      if (newType) {
+      if (newType != NULL) {
         map.put(fn->retType->symbol, newType->symbol);
       }
 
-      FnSymbol* newFn = instantiateFunction(fn,
-                                            root,
-                                            allSubs,
-                                            call,
-                                            subs,
-                                            map);
+      newFn = instantiateFunction(fn, root, allSubs, call, subs, map);
 
-      if (newType) {
+      if (newType != NULL) {
         newType->defaultTypeConstructor = newFn;
         newFn->retType                  = newType;
       }
 
-      bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-
-      // Fix up chpl__initCopy for user-defined records
-      if (fixedTuple                           == false &&
-          fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
-          fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
-        // Generate the initCopy function based upon initializer
-        fixupDefaultInitCopy(fn, newFn, call);
+      if (fixupTupleFunctions(fn, newFn, call) == false) {
+        // Fix up chpl__initCopy for user-defined records
+        if (isGenericInit                        == false &&
+            fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+            fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
+          fixupDefaultInitCopy(fn, newFn, call);
+        }
       }
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
-        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
       newFn->tagIfGeneric();
 
-      explainAndCheckInstantiation(newFn, fn);
+      if (isGenericInit                ==  true &&
+          newFn->hasFlag(FLAG_GENERIC) == false &&
+          evaluateWhereClause(newFn)   == false) {
 
-      retval = newFn;
+        // where clause evaluates to false so cache gVoid as a function
+        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
+
+      } else {
+        explainAndCheckInstantiation(newFn, fn);
+
+        retval = newFn;
+      }
     }
   }
 
-  if (retval != NULL && fn->throwsError())
-    retval->throwsErrorInit();
+  if (isGenericInit == false) {
+    if (retval != NULL && fn->throwsError() == true) {
+      retval->throwsErrorInit();
+    }
+  }
 
   return retval;
 }
