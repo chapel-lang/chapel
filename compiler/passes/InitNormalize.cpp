@@ -1351,10 +1351,14 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
 
       // foo(this.x);
       for_actuals(actual, call) {
+        SymExpr* actSe = NULL;
         if (SymExpr* se = toSymExpr(actual)) {
-          if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
-            passesThis = true;
-          }
+          actSe = se;
+        } else if (NamedExpr* named = toNamedExpr(actual)) {
+          actSe = toSymExpr(named->actual);
+        }
+        if (actSe && actSe->symbol()->hasFlag(FLAG_ARG_THIS)) {
+          passesThis = true;
         }
         collectThisUses(actual, uses);
       }
