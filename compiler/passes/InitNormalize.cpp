@@ -1441,10 +1441,6 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     }
   }
 
-  //// Now that omitted fields have been handled, see if RHS is OK
-  //if (fieldUsedBeforeInitialized(initStmt) == true) {
-  //  USR_FATAL(initStmt, "Field used before it is initialized");
-  //}
   checkAndEmitErrors(initStmt);
 
   retval     = fieldInitFromStmt(initStmt, field);
