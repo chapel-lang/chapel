@@ -507,6 +507,12 @@ module ZMQ {
     }
 
     pragma "no doc"
+    proc init(c: Context) {
+      super.init();
+      this.acquire(c.classRef);
+    }
+
+    pragma "no doc"
     proc deinit() {
       release();
     }
@@ -544,20 +550,6 @@ module ZMQ {
     }
 
   } // record Context
-
-  pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Context) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Context) {
-    x.acquire();
-    return x;
-  }
 
   pragma "no doc"
   proc =(ref lhs: Context, rhs: Context) {
@@ -607,6 +599,12 @@ module ZMQ {
     pragma "no doc"
     proc init() {
       compilerError("Cannot create Socket directly; try Context.socket()");
+    }
+
+    pragma "no doc"
+    proc init(s: Socket) {
+      super.init();
+      this.acquire(s.classRef);
     }
 
     pragma "no doc"
@@ -927,20 +925,6 @@ module ZMQ {
       throw SystemError.fromSyserr(socket_errno:syserr, errmsg_str);
     }
   } // record Socket
-
-  pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Socket) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Socket) {
-    x.acquire();
-    return x;
-  }
 
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {
