@@ -595,9 +595,12 @@ static InitNormalize preNormalize(AggregateType* at,
           checkLocalPhaseOneErrors(state, field, callExpr);
           stmt = state.fieldInitFromInitStmt(field, callExpr);
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
-          USR_FATAL(stmt,
-                    "Field \"%s\" initialized out of order",
-                    field->sym->name);
+          USR_FATAL_CONT(stmt,
+                         "Field \"%s\" initialized out of order",
+                         field->sym->name);
+          USR_PRINT(stmt, "initialization of fields before .init() call must be in field declaration order");
+          USR_STOP();
+
         } else if ((field->sym->hasFlag(FLAG_CONST) == true ||
                     field->sym->hasFlag(FLAG_PARAM) == true ||
                     field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) &&
