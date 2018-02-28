@@ -264,7 +264,7 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
     if (!(caller->isIterator() ||
           caller->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) ||
           isTaskFun(caller)))
-      return false;
+      continue;
 
     // Otherwise, search recursively up the call chain.
     // If recursion was detected, no further searching is required.
