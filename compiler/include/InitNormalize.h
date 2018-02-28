@@ -87,6 +87,7 @@ public:
   void            describe(int offset = 0)                               const;
 
   void            checkAndEmitErrors(Expr* expr);
+  void            checkAndEmitErrors(CallExpr* call);
 
 private:
   enum BlockType {

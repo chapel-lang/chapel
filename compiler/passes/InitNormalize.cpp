@@ -1386,15 +1386,21 @@ static bool isMethodCall(CallExpr* call) {
   return retval;
 }
 
+void InitNormalize::checkAndEmitErrors(Expr* expr) {
+  if (isPhase2() != true) {
+    if (CallExpr* call = toCallExpr(expr)) {
+      checkAndEmitErrors(call);
+    } else if (DefExpr* def = toDefExpr(expr)) {
+      checkAndEmitErrors(def->init);
+    }
+  }
+}
+
 // Catch a handful of errors:
 // 1) use-before-init
 // 2) method call in phase 1
 // 3) pass 'this' to function in phase 1
-void InitNormalize::checkAndEmitErrors(Expr* expr) {
-  if (isPhase2() == true) return;
-  CallExpr* call = toCallExpr(expr);
-  INT_ASSERT(call != NULL);
-
+void InitNormalize::checkAndEmitErrors(CallExpr* call) {
   std::vector<CallExpr*> uses;
   collectThisUses(call, uses);
 
