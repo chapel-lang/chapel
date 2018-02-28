@@ -912,8 +912,22 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
-    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
-    USR_PRINT(parIterFn, "the parallel iterator is here");
+  USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
+
+  // wass this is temporary
+  bool gotNonRefs = false;
+  for_shadow_vars(svar, temp, fs)
+    if (!(svar->intent == TFI_REF || svar->intent == TFI_CONST_REF)) {
+      gotNonRefs = true;
+      break;
+    }
+  if (gotNonRefs)
+    gdbShouldBreakHere(),
+    USR_PRINT(fs, "with non-ref intents");
+  else
+    USR_PRINT(fs, "only ref intents, if any");
+
+  USR_PRINT(parIterFn, "the parallel iterator is here");
 }
 
 
