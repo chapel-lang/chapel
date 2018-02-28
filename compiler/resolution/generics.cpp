@@ -44,6 +44,11 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
+static FnSymbol* instantiateSignature(FnSymbol*  fn,
+                                      SymbolMap& subs,
+                                      CallExpr*  call,
+                                      bool       isGenericInit);
+
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -427,7 +432,15 @@ void instantiateBody(FnSymbol* fn) {
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                CallExpr*  call) {
-  FnSymbol* retval = NULL;
+  return instantiateSignature(fn, subs, call, false);
+}
+
+static FnSymbol* instantiateSignature(FnSymbol*  fn,
+                                      SymbolMap& subs,
+                                      CallExpr*  call,
+                                      bool       isGenericInit) {
+  Flag      flagReqForGeneric = FLAG_DELAY_GENERIC_EXPANSION;
+  FnSymbol* retval            = NULL;
 
   //
   // Handle tuples explicitly
@@ -439,8 +452,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC)       == true &&
-            e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false) {
+        if (ts->type->symbol->hasFlag(FLAG_GENERIC) == true &&
+            e->key->hasFlag(flagReqForGeneric)      == false) {
           INT_FATAL(fn, "illegal instantiation with a generic type");
 
         } else {
