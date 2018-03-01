@@ -305,9 +305,7 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
   // based on the install path in the third-party/chpl-venv/ dir.
 
-  const char * venvDir = astr(
-    CHPL_HOME, "/third-party/chpl-venv/install/", CHPL_HOST_PLATFORM,
-    "/py", getChplPythonVersion().c_str(), "/chpl-virtualenv");
+  const char * venvDir = getVenvDir().c_str();
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr("sphinx-build");
 
