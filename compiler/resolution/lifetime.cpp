@@ -181,20 +181,20 @@ void checkLifetimes(void) {
 
   // This makes the default for methods to return the scope
   // of this (vs something else).
-  // Does it pass testing? yes.
-  // Note though the within-method checks might not be optimal here...
-  /*forv_Vec(FnSymbol, fn, gFnSymbols) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
     fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
     if (fn->isMethod()) {
       if (!fn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
         fn->addFlag(FLAG_RETURN_SCOPE_THIS);
     }
-  }*/
+  }
 
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_RETURN_SCOPE_THIS)) {
-      fn->_this->addFlag(FLAG_RETURN_SCOPE);
+      // type methods don't have a _this at this point
+      if (fn->_this)
+        fn->_this->addFlag(FLAG_RETURN_SCOPE);
       fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
     }
 
