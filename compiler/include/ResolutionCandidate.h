@@ -37,8 +37,6 @@ public:
 
   bool                      isApplicable(CallInfo& info);
 
-  bool                      isApplicableForInit(CallInfo& info);
-
   FnSymbol*                 fn;
   std::vector<Symbol*>      formalIdxToActual;
   std::vector<ArgSymbol*>   actualIdxToFormal;
@@ -51,10 +49,6 @@ private:
   void                      resolveTypeConstructor(CallInfo& info);
 
   bool                      isApplicableGeneric(CallInfo& info);
-
-  bool                      isApplicableForInitConcrete(CallInfo& info);
-
-  bool                      isApplicableForInitGeneric(CallInfo& info);
 
   bool                      computeAlignment(CallInfo& info);
 

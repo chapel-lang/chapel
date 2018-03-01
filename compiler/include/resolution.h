@@ -151,7 +151,6 @@ bool isReduceOp(Type* type);
 
 FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
-FnSymbol* instantiateInitSig  (FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
