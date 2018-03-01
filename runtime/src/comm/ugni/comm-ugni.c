@@ -267,6 +267,8 @@ static uint64_t debug_stats_flag = 0;
         MACRO(regMem_lock_nsecs)                                        \
         MACRO(regMem_critsec_nsecs)                                     \
         MACRO(regMem_alloc_nsecs)                                       \
+        MACRO(regMem_kpage_nsecs)                                       \
+        MACRO(regMem_defaultInit_nsecs)                                 \
         MACRO(regMem_reg_nsecs)                                         \
         MACRO(regMem_dereg_nsecs)                                       \
         MACRO(regMem_free_nsecs)                                        \
@@ -302,6 +304,20 @@ static uint64_t debug_stats_flag = 0;
 
 #define PERFSTATS_VARS_ALL(MACRO)                                       \
         PERFSTATS_VARS_EPHEMERAL(MACRO)
+
+//
+// Define this to measure the kernel's page creation+zero time for
+// regMemAlloc memory and also the Chapel default initialization
+// time for such memory.  There are caveats:
+// - Measuring the page creation+zero time will set the memory's NUMA
+//   locality (to the thread's default) and thus nullify any later code
+//   (such as default initialization) which tries to do the same.
+// - The default initialization measurement assumes that defaultInit
+//   occurs between the regMemAlloc() return and the regMemPostAlloc()
+//   call, i.e., we continue with the current alloc-defaultInit-register
+//   sequence.
+// 
+//#define PERFSTATS_TIME_ZERO_INIT 1
 
 #define _PSV_C_TYPE      uint_least64_t
 #define _PSV_FMT         PRIu64
@@ -2943,12 +2959,7 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 }
 
 
-#if 0 && defined(PERFSTATS_COMM_UGNI)
-//
-// Enable this to measure hugepage creation+zero time and also
-// default init time, but you'll have to add regMem_zero_nsecs
-// and regMem_defaultInit_nsecs to the perfstats vars also.
-//
+#ifdef PERFSTATS_TIME_ZERO_INIT
 static __thread uint64_t defaultInit_ts;
 #endif
 
@@ -3024,19 +3035,14 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
            "mregs[%d] = %#" PRIx64 ", cnt %d",
            size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
 
-#if 0 && defined(PERFSTATS_COMM_UGNI)
-  //
-  // Enable this to measure hugepage creation+zero time and also
-  // default init time, but you'll have to add regMem_zero_nsecs
-  // and regMem_defaultInit_nsecs to the perfstats vars also.
-  //
+#ifdef PERFSTATS_TIME_ZERO_INIT
   const size_t pgSize = get_hugepage_size();
-  PERFSTATS_TSTAMP(zero_ts);
+  PERFSTATS_TSTAMP(kpage_ts);
   for (int i = 0; i < size; i += pgSize) {
     ((char*) p)[i] = 0;
   }
   PERFSTATS_TGET(defaultInit_ts);
-  PERFSTATS_ADD(regMem_zero_nsecs, PERFSTATS_TDIFF(defaultInit_ts, zero_ts));
+  PERFSTATS_ADD(regMem_kpage_nsecs, PERFSTATS_TDIFF(defaultInit_ts, kpage_ts));
 #endif
 
   return p;
@@ -3048,12 +3054,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   mem_region_t* mr;
   int mr_i;
 
-#if 0
-  //
-  // Enable this to measure hugepage creation+zero time and also
-  // default init time, but you'll have to add regMem_zero_nsecs
-  // and regMem_defaultInit_nsecs to the perfstats vars also.
-  //
+#ifdef PERFSTATS_TIME_ZERO_INIT
   PERFSTATS_ADD(regMem_defaultInit_nsecs, PERFSTATS_TELAPSED(defaultInit_ts));
 #endif
 
