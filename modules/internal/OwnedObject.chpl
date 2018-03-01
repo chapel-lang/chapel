@@ -59,14 +59,13 @@ module OwnedObject {
    */
   pragma "no copy"
   pragma "copy mutates"
+  pragma "managed pointer"
   record Owned {
     pragma "no doc"
     type t;                // contained type (class type)
 
     pragma "no doc"
     var p:t;               // contained pointer (class type)
-
-    forwarding p;
 
     /*
        Default-initialize a :record:`Owned`.
@@ -183,6 +182,11 @@ module OwnedObject {
   proc chpl__autoCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
+  }
+  // This is a workaround - compiler was resolving
+  // chpl__autoDestroy(x:object) from internal coercions.
+  proc chpl__autoDestroy(x: Owned) {
+    __primitive("call destructor", x);
   }
 
   // Don't print out 'p' when printing an Owned, just print class pointer

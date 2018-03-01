@@ -1095,6 +1095,10 @@ static void build_record_cast_function(AggregateType* ct) {
   if (ct->symbol->hasFlag(FLAG_TUPLE))
     return;
 
+  // Don't do this for Owned/etc.
+  if (isManagedPtrType(ct))
+    return;
+
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);

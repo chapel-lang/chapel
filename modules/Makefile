@@ -108,7 +108,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LinearAlgebra.chpl \
 	packages/MPI.chpl \
 	packages/Norm.chpl \
-	packages/OwnedObject.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
@@ -150,7 +149,8 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/ChapelEnv.chpl               \
-	internal/CPtr.chpl
+	internal/CPtr.chpl                    \
+	internal/OwnedObject.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

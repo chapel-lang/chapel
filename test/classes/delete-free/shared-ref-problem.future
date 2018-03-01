@@ -1,8 +1,0 @@
-bug: passing a 'Shared' object to a routine causes 'ref' mismatches
-
-It seems this program should work as written, but it doesn't.  Adding
-an explicit `ref` intent to foo() causes it to work, but Michael
-agrees you shouldn't need to do that.  Michael thinks that adding
-support for implicit conversions from 'Shared' to the wrapped class
-type ought to solve this problem (though given the workaround I'm
-not seeing how... not to suggest I'm doubting him... :)

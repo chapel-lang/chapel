@@ -1217,7 +1217,7 @@ module ChapelBase {
 
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
-  inline proc chpl__maybeAutoDestroyed(x: object) param return false;
+  inline proc chpl__maybeAutoDestroyed(x: ?t) param where t:object return false;
   inline proc chpl__maybeAutoDestroyed(x) param return true;
 
   pragma "compiler generated"
