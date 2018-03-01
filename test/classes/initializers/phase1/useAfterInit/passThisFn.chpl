@@ -15,4 +15,8 @@ record R {
     printer(this.foo());
     this.initDone();
   }
+
+  proc foo() {
+    return x * y;
+  }
 }
