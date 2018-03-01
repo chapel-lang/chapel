@@ -130,7 +130,7 @@ proc masonEnv(args) {
         write(",");
       }
       first = false;
-      write(v(1), ":", v(2));
+      write(v(1), "|", v(2));
     }
     writeln(star);
   }
