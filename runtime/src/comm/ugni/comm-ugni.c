@@ -259,10 +259,19 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_get_cnt)                                             \
         MACRO(fork_free_cnt)                                            \
         MACRO(fork_amo_cnt)                                             \
-        MACRO(regMem_cnt)                                               \
-        MACRO(deregMem_cnt)                                             \
+        MACRO(regMemAlloc_cnt)                                          \
+        MACRO(regMemPostAlloc_cnt)                                      \
+        MACRO(regMemFree_cnt)                                           \
         MACRO(regMem_bCast_cnt)                                         \
-        MACRO(regMem_mutex_nsecs)                                       \
+        MACRO(regMem_locks)                                             \
+        MACRO(regMem_lock_nsecs)                                        \
+        MACRO(regMem_critsec_nsecs)                                     \
+        MACRO(regMem_alloc_nsecs)                                       \
+        MACRO(regMem_kpage_nsecs)                                       \
+        MACRO(regMem_defaultInit_nsecs)                                 \
+        MACRO(regMem_reg_nsecs)                                         \
+        MACRO(regMem_dereg_nsecs)                                       \
+        MACRO(regMem_free_nsecs)                                        \
         MACRO(local_mreg_cnt)                                           \
         MACRO(local_mreg_cmps)                                          \
         MACRO(local_mreg_nsecs)                                         \
@@ -290,15 +299,38 @@ static uint64_t debug_stats_flag = 0;
         MACRO(lyield_in_acq_cd_cnt)                                     \
         MACRO(lyield_in_acq_cd_rb_cnt)                                  \
         MACRO(lyield_in_wait_rfork_cnt)                                 \
-        MACRO(lyield_in_wait_glb_cq_ev_cnt)
+        MACRO(lyield_in_wait_glb_cq_ev_cnt)                             \
+        MACRO(timer_nsecs)
 
 #define PERFSTATS_VARS_ALL(MACRO)                                       \
         PERFSTATS_VARS_EPHEMERAL(MACRO)
 
-#define _PSV_C_TYPE      uint64_t
-#define _PSV_ATOMIC_TYPE atomic_uint_least64_t
-#define _PSV_ADD_FUNC    atomic_fetch_add_uint_least64_t
-#define _PSV_SUB_FUNC    atomic_fetch_sub_uint_least64_t
+//
+// Define this to measure the kernel's page creation+zero time for
+// regMemAlloc memory and also the Chapel default initialization
+// time for such memory.  There are caveats:
+// - Measuring the page creation+zero time will set the memory's NUMA
+//   locality (to the thread's default) and thus nullify any later code
+//   (such as default initialization) which tries to do the same.
+// - The default initialization measurement assumes that defaultInit
+//   occurs between the regMemAlloc() return and the regMemPostAlloc()
+//   call, i.e., we continue with the current alloc-defaultInit-register
+//   sequence.
+// 
+//#define PERFSTATS_TIME_ZERO_INIT 1
+
+#define _PSV_C_TYPE      uint_least64_t
+#define _PSV_FMT         PRIu64
+
+#define _PSV_SYM(x)      _PSV_SYM2(x, _PSV_C_TYPE)
+#define _PSV_SYM2(x, t)  _PSV_SYM3(x, t)
+#define _PSV_SYM3(x, t)  x##_##t
+
+#define _PSV_ATOMIC_TYPE _PSV_SYM(atomic)
+#define _PSV_LD_FUNC     _PSV_SYM(atomic_load)
+#define _PSV_ST_FUNC     _PSV_SYM(atomic_store)
+#define _PSV_ADD_FUNC    _PSV_SYM(atomic_fetch_add)
+#define _PSV_SUB_FUNC    _PSV_SYM(atomic_fetch_sub)
 
 #define _PSV_DECL(psv)  _PSV_ATOMIC_TYPE psv;
 typedef struct chpl_comm_pstats {
@@ -315,28 +347,52 @@ chpl_comm_pstats_t chpl_comm_pstats;
 
 #define _PSV_VAR(cnt)  chpl_comm_pstats.cnt
 
-#define PERFSTATS_ADD(cnt, val)  (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
-#define PERFSTATS_INC(cnt)       PERFSTATS_ADD(cnt, 1)
+#define PERFSTATS_LD(cnt)         _PSV_LD_FUNC(&_PSV_VAR(cnt))
+#define PERFSTATS_ST(cnt, val)    _PSV_ST_FUNC(&_PSV_VAR(cnt), val)
+#define PERFSTATS_STZ(cnt)        PERFSTATS_ST(cnt, 0)
+#define PERFSTATS_ADD(cnt, val)   (void) _PSV_ADD_FUNC(&_PSV_VAR(cnt), val)
+#define PERFSTATS_INC(cnt)        PERFSTATS_ADD(cnt, 1)
 
 #include <time.h>
 
 static struct timespec perfstats_timeBase;
 
-static inline uint64_t perfstats_timer_get(void)
+static _PSV_C_TYPE timer_overhead;
+
+static inline _PSV_C_TYPE perfstats_timer_get(void)
 {
   struct timespec _ts;
   (void) clock_gettime(CLOCK_MONOTONIC, &_ts);
-  return (uint64_t) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
-         + (uint64_t) _ts.tv_nsec;
+  return (_PSV_C_TYPE) (_ts.tv_sec - perfstats_timeBase.tv_sec) * 1000000000UL
+         + (_PSV_C_TYPE) _ts.tv_nsec;
 }
 
-#define PERFSTATS_TIMER_START(ts) uint64_t ts = perfstats_timer_get()
-
-#define PERFSTATS_TIMER_ELAPSED(ts) ((_PSV_C_TYPE) (perfstats_timer_get() - ts))
+#define PERFSTATS_TGET(ts)      ts = perfstats_timer_get()
+#define PERFSTATS_TSTAMP(ts)    _PSV_C_TYPE ts = perfstats_timer_get()
+#define PERFSTATS_TDIFF(te, ts) ((te) - (ts) - timer_overhead)
+#define PERFSTATS_TELAPSED(ts)  PERFSTATS_TDIFF(perfstats_timer_get(), ts)
 
 static void perfstats_init(void)
 {
   (void) clock_gettime(CLOCK_MONOTONIC, &perfstats_timeBase);
+
+  //
+  // Measure the timer overhead.  We only use timer_nsecs so that we
+  // get a realistic measurement including the atomic summation into
+  // the perfstats.  Afterward we zero it so it doesn't get printed,
+  // and timer_overhead is used to adjust for the measurement cost.
+  //
+  {
+    const int nTrials = 10000; // ~80 ns per trial on XC, so < 1 ms total
+
+    for (int i = 0; i < nTrials; i++) {
+      PERFSTATS_TSTAMP(ts);
+      PERFSTATS_ADD(timer_nsecs, PERFSTATS_TELAPSED(ts));
+    }
+
+    timer_overhead = (PERFSTATS_LD(timer_nsecs) + nTrials) / nTrials;
+    PERFSTATS_STZ(timer_nsecs);
+  }
 }
 
 #define PERFSTATS_INIT() perfstats_init();
@@ -346,8 +402,8 @@ static void perfstats_init(void)
 #define PERFSTATS_INC(cnt)
 #define PERFSTATS_DO_EPHEMERAL(MACRO)
 #define PERFSTATS_DO_ALL(MACRO)
-#define PERFSTATS_TIMER_START(ts)
-#define PERFSTATS_TIMER_ELAPSED(ts)
+#define PERFSTATS_TGET(ts)
+#define PERFSTATS_TSTAMP(ts)
 #define PERFSTATS_INIT()
 #endif
 
@@ -462,17 +518,24 @@ static mem_region_table_t mem_regions;
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread chpl_bool allow_task_yield = true;
 
+#ifdef PERFSTATS_COMM_UGNI
+static _PSV_C_TYPE critsec_ts;
+#endif
+
 static inline
 void mem_regions_lock(void) {
-  PERFSTATS_TIMER_START(pstStart);
+  PERFSTATS_TSTAMP(pstStart);
   if (pthread_mutex_lock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
-  PERFSTATS_ADD(regMem_mutex_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  PERFSTATS_TGET(critsec_ts);
+  PERFSTATS_ADD(regMem_lock_nsecs, PERFSTATS_TDIFF(critsec_ts, pstStart));
+  PERFSTATS_INC(regMem_locks);
   allow_task_yield = false;
 }
 
 static inline
 void mem_regions_unlock(void) {
+  PERFSTATS_ADD(regMem_critsec_nsecs, PERFSTATS_TELAPSED(critsec_ts));
   if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
     CHPL_INTERNAL_ERROR("cannot release mem region lock");
   allow_task_yield = true;
@@ -2422,7 +2485,7 @@ mem_region_t* mreg_for_local_addr(void* addr)
 {
   static __thread mem_region_t* mr;
   PERFSTATS_INC(local_mreg_cnt);
-  PERFSTATS_TIMER_START(pstStart);
+  PERFSTATS_TSTAMP(pstStart);
   if (mr == NULL
       || (uint64_t) addr < mr->addr
       || (uint64_t) addr >= mr->addr + mr->len) {
@@ -2432,7 +2495,7 @@ mem_region_t* mreg_for_local_addr(void* addr)
                    ? mem_regions.mreg_cnt
                    : (mr - &mem_regions.mregs[0] + 1)));
   }
-  PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  PERFSTATS_ADD(local_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
   return mr;
 }
 
@@ -2449,7 +2512,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
                                                   0, 0);
   }
   PERFSTATS_INC(remote_mreg_cnt);
-  PERFSTATS_TIMER_START(pstStart);
+  PERFSTATS_TSTAMP(pstStart);
   if ((mr = mrs[locale]) == NULL
       || (uint64_t) addr < mr->addr
       || (uint64_t) addr >= mr->addr + mr->len) {
@@ -2459,7 +2522,7 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
                    ? mem_regions_map[locale].mreg_cnt
                    : (mr - &mem_regions_map[locale].mregs[0] + 1)));
   }
-  PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+  PERFSTATS_ADD(remote_mreg_nsecs, PERFSTATS_TELAPSED(pstStart));
   return mr;
 }
 
@@ -2896,6 +2959,10 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 }
 
 
+#ifdef PERFSTATS_TIME_ZERO_INIT
+static __thread uint64_t defaultInit_ts;
+#endif
+
 void* chpl_comm_impl_regMemAlloc(size_t size)
 {
   int mr_i;
@@ -2905,7 +2972,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   if (get_hugepage_size() == 0)
     return NULL;
 
-  PERFSTATS_INC(regMem_cnt);
+  PERFSTATS_INC(regMemAlloc_cnt);
 
   //
   // Do we have room for another registered memory region?
@@ -2925,7 +2992,9 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   //
   // Try to get the memory.
   //
+  PERFSTATS_TSTAMP(alloc_ts);
   p = get_huge_pages(ALIGN_UP(size, get_hugepage_size()), GHP_DEFAULT);
+  PERFSTATS_ADD(regMem_alloc_nsecs, PERFSTATS_TELAPSED(alloc_ts));
   if (p == NULL) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
@@ -2966,6 +3035,16 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
            "mregs[%d] = %#" PRIx64 ", cnt %d",
            size, mr_i, mr->addr, (int) mem_regions.mreg_cnt);
 
+#ifdef PERFSTATS_TIME_ZERO_INIT
+  const size_t pgSize = get_hugepage_size();
+  PERFSTATS_TSTAMP(kpage_ts);
+  for (int i = 0; i < size; i += pgSize) {
+    ((char*) p)[i] = 0;
+  }
+  PERFSTATS_TGET(defaultInit_ts);
+  PERFSTATS_ADD(regMem_kpage_nsecs, PERFSTATS_TDIFF(defaultInit_ts, kpage_ts));
+#endif
+
   return p;
 }
 
@@ -2974,6 +3053,12 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 {
   mem_region_t* mr;
   int mr_i;
+
+#ifdef PERFSTATS_TIME_ZERO_INIT
+  PERFSTATS_ADD(regMem_defaultInit_nsecs, PERFSTATS_TELAPSED(defaultInit_ts));
+#endif
+
+  PERFSTATS_INC(regMemPostAlloc_cnt);
 
   if (get_hugepage_size() == 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
@@ -3007,7 +3092,9 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   if (!can_register_memory)
     return;
 
+  PERFSTATS_TSTAMP(reg_ts);
   register_mem_region(mr);
+  PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
 
   mem_regions_lock();
 
@@ -3064,7 +3151,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   if (mr_i < 0)
     return false;
 
-  PERFSTATS_INC(deregMem_cnt);
+  PERFSTATS_INC(regMemFree_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
            "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
@@ -3078,7 +3165,9 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // have to finish broadcasting the update before we unlock, because as
   // soon as we unlock, the entry could be reused.
   //
+  PERFSTATS_TSTAMP(dereg_ts);
   deregister_mem_region(mr);
+  PERFSTATS_ADD(regMem_dereg_nsecs, PERFSTATS_TELAPSED(dereg_ts));
 
   mem_regions_lock();
 
@@ -3126,7 +3215,9 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
 
   atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
+  PERFSTATS_TSTAMP(free_ts);
   free_huge_pages(p);
+  PERFSTATS_ADD(regMem_free_nsecs, PERFSTATS_TELAPSED(free_ts));
 
   return true;
 }
@@ -7342,9 +7433,9 @@ void chpl_resetCommDiagnosticsHere()
   atomic_store_uint_least64_t(&comm_diagnostics.execute_on_fast, 0);
   atomic_store_uint_least64_t(&comm_diagnostics.execute_on_nb, 0);
 
-#define _PSV_STORE(psv) atomic_store_uint_least64_t(&_PSV_VAR(psv), 0);
-  PERFSTATS_DO_ALL(_PSV_STORE);
-#undef _PSV_STORE
+#define _PSZM(psv) PERFSTATS_STZ(psv);
+  PERFSTATS_DO_ALL(_PSZM);
+#undef _PSZM
 }
 
 
@@ -7369,9 +7460,9 @@ void chpl_comm_ugni_help_register_global_var(int i, wide_ptr_t wide)
 
 void chpl_comm_statsStartHere(void)
 {
-#define _PSV_STORE(psv) atomic_store_uint_least64_t(&_PSV_VAR(psv), 0);
-  PERFSTATS_DO_EPHEMERAL(_PSV_STORE);
-#undef _PSV_STORE
+#define _PSZM(psv) PERFSTATS_STZ(psv);
+  PERFSTATS_DO_EPHEMERAL(_PSZM);
+#undef _PSZM
 }
 
 
@@ -7391,7 +7482,7 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
     for (int li = 0; li < chpl_numNodes; li++) {
       if (li != chpl_nodeID) {
         chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
-#define _PSV_SUM(psv) sum.psv += ps.psv;
+#define _PSV_SUM(psv) _PSV_ADD_FUNC(&sum.psv, _PSV_LD_FUNC(&ps.psv));
         PERFSTATS_DO_ALL(_PSV_SUM);
 #undef _PSV_SUM
       }
@@ -7412,9 +7503,10 @@ static void _psv_print(int li, chpl_comm_pstats_t* ps)
 
 #define _PSV_PRINT(psv)                                                 \
         do {                                                            \
-          if (ps->psv != 0) {                                           \
+          _PSV_C_TYPE _psvv = _PSV_LD_FUNC(&ps->psv);                   \
+          if (_psvv != 0) {                                             \
             size_t wc = snprintf(&buf[buf_cnt], sizeof(buf) - buf_cnt,  \
-                                 "%s = %" PRIu64 "; ", # psv, ps->psv); \
+                                 "%s = %" _PSV_FMT "; ", # psv, _psvv); \
             if (wc > sizeof(buf) - buf_cnt)                             \
               buf_cnt = sizeof(buf);                                    \
             else                                                        \
