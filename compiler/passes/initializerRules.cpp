@@ -373,7 +373,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   }
 }
 
-static void checkLocalPhaseOneErrors(InitNormalize state,
+static void checkLocalPhaseOneErrors(const InitNormalize& state,
                                      DefExpr* field,
                                      CallExpr* callExpr) {
   if (isCompoundAssignment(callExpr) == true) {
