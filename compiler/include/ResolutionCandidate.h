@@ -58,7 +58,14 @@ private:
 
   bool                      computeAlignment(CallInfo& info);
 
-  void                      computeSubstitutions();
+  int                       computeSubstitutions();
+
+  bool                      verifyGenericFormal(ArgSymbol* formal)       const;
+
+  void                      computeSubstitution(ArgSymbol* formal,
+                                                Symbol*    actual);
+
+  void                      computeSubstitution(ArgSymbol* formal);
 
   void                      resolveTypedefedArgTypes();
 
