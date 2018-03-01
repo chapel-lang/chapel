@@ -345,7 +345,10 @@ int ResolutionCandidate::computeSubstitutions() {
 
     if (formal->intent                              == INTENT_PARAM ||
         formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (Symbol* actual = formalIdxToActual[i - 1]) {
+      if (verifyGenericFormal(formal) == false) {
+        USR_FATAL(formal, "invalid generic type specification on class field");
+
+      } else if (Symbol* actual = formalIdxToActual[i - 1]) {
         if (formal->intent == INTENT_PARAM) {
           if (actual->isParameter() == true) {
             if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
@@ -355,36 +358,9 @@ int ResolutionCandidate::computeSubstitutions() {
           }
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          //
-          // check for field with specified generic type
-          //
-          if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-              formal->type                        != dtAny) {
-            if (strcmp(formal->name, "outer")       != 0     &&
-                formal->hasFlag(FLAG_IS_MEME)       == false &&
-                (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-                 fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
-              USR_FATAL(formal,
-                        "invalid generic type specification on class field");
-
-            } else if (fn->isMethod()                       == true  &&
-                       strcmp(fn->name, "init")             == 0     &&
-                       fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
-                       fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
-                       !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
-                         formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
-              // This is a compiler generated initializer, so the argument with
-              // a generic type corresponds with a class field.
-              USR_FATAL(formal,
-                        "invalid generic type specification on class field");
-            }
-          }
-
-
           if (formal->hasFlag(FLAG_ARG_THIS)                == true &&
               formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
               actual->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
-
             // If the "this" arg is generic, we're resolving an initializer, and
             // the actual being passed is also still generic, don't count this as
             // a substitution.  Otherwise, we'll end up in an infinite loop if
@@ -419,7 +395,6 @@ int ResolutionCandidate::computeSubstitutions() {
         }
 
       } else {
-
         if (formal->intent == INTENT_PARAM) {
           if (formal->defaultExpr != NULL) {
             // break because default expression may reference generic
@@ -451,31 +426,6 @@ int ResolutionCandidate::computeSubstitutions() {
           }
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          //
-          // check for field with specified generic type
-          //
-          if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-              formal->type                        != dtAny) {
-            if (strcmp(formal->name, "outer")       != 0     &&
-                formal->hasFlag(FLAG_IS_MEME)       == false &&
-                (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-                 fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
-              USR_FATAL(formal,
-                        "invalid generic type specification on class field");
-
-            } else if (fn->isMethod()                       == true  &&
-                       strcmp(fn->name, "init")             == 0     &&
-                       fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
-                       fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
-                       !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
-                         formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
-              // This is a compiler generated initializer, so the argument with
-              // a generic type corresponds with a class field.
-              USR_FATAL(formal,
-                        "invalid generic type specification on class field");
-            }
-          }
-
           if (formal->defaultExpr) {
             // break because default expression may reference generic
             // arguments earlier in formal list; make those substitutions
@@ -503,6 +453,33 @@ int ResolutionCandidate::computeSubstitutions() {
   }
 
   return substitutions.n;
+}
+
+bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
+  bool retval = true;
+
+  if (formal->intent                      != INTENT_PARAM &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
+      formal->type                        != dtAny) {
+    if (strcmp(formal->name, "outer") != 0     &&
+        formal->hasFlag(FLAG_IS_MEME) == false &&
+        (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
+         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
+      retval = false;
+
+    } else if (fn->isMethod()                       == true  &&
+               strcmp(fn->name, "init")             == 0     &&
+               fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
+               fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
+               (formal->hasFlag(FLAG_ARG_THIS)                == false ||
+                formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
+      // This is a compiler generated initializer, so the argument with
+      // a generic type corresponds with a class field.
+      retval = false;
+    }
+  }
+
+  return retval;
 }
 
 static Type* getInstantiationType(Type* actualType, Type* formalType) {
