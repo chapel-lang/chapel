@@ -342,130 +342,134 @@ int ResolutionCandidate::computeSubstitutions() {
 
   for (int i = 1; i <= fn->numFormals(); i++) {
     ArgSymbol* formal = fn->getFormal(i);
-    Symbol*    actual = formalIdxToActual[i - 1];
 
-    if (formal->intent == INTENT_PARAM) {
-      if (actual != NULL) {
-        if (actual->isParameter() == true) {
-          if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
-              canInstantiate(actual->type, formal->type)  == true) {
-            subs.put(formal, actual);
+    if (formal->intent                              == INTENT_PARAM ||
+        formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      Symbol* actual = formalIdxToActual[i - 1];
+
+      if (formal->intent == INTENT_PARAM) {
+        if (actual != NULL) {
+          if (actual->isParameter() == true) {
+            if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
+                canInstantiate(actual->type, formal->type)  == true) {
+              subs.put(formal, actual);
+            }
           }
-        }
 
-      } else {
-        if (formal->defaultExpr != NULL) {
-          // break because default expression may reference generic
-          // arguments earlier in formal list; make those substitutions
-          // first (test/classes/bradc/paramInClass/weirdParamInit4)
-          if (subs.n > 0) {
-            break;
-
-          } else {
-            resolveBlockStmt(formal->defaultExpr);
-
-            SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
-
-            if (se && se->symbol()->isParameter() &&
-                (formal->type->symbol->hasFlag(FLAG_GENERIC)      == false ||
-                 canInstantiate(se->symbol()->type, formal->type) == true)) {
-              subs.put(formal, se->symbol());
+        } else {
+          if (formal->defaultExpr != NULL) {
+            // break because default expression may reference generic
+            // arguments earlier in formal list; make those substitutions
+            // first (test/classes/bradc/paramInClass/weirdParamInit4)
+            if (subs.n > 0) {
+              break;
 
             } else {
-              if (!se || !se->symbol()->isParameter()) {
-                USR_FATAL(formal, "default value for param is not a param");
+              resolveBlockStmt(formal->defaultExpr);
+
+              SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
+
+              if (se && se->symbol()->isParameter() &&
+                  (formal->type->symbol->hasFlag(FLAG_GENERIC)      == false ||
+                   canInstantiate(se->symbol()->type, formal->type) == true)) {
+                subs.put(formal, se->symbol());
 
               } else {
-                USR_FATAL(formal, "type mismatch between declared formal type "
-                          "and default value type");
+                if (!se || !se->symbol()->isParameter()) {
+                  USR_FATAL(formal, "default value for param is not a param");
+
+                } else {
+                  USR_FATAL(formal, "type mismatch between declared formal type "
+                            "and default value type");
+                }
               }
             }
           }
         }
-      }
 
-    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      //
-      // check for field with specified generic type
-      //
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-          formal->type                        != dtAny) {
-        if (strcmp(formal->name, "outer")       != 0     &&
-            formal->hasFlag(FLAG_IS_MEME)       == false &&
-            (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
-          USR_FATAL(formal,
-                    "invalid generic type specification on class field");
+      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+        //
+        // check for field with specified generic type
+        //
+        if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
+            formal->type                        != dtAny) {
+          if (strcmp(formal->name, "outer")       != 0     &&
+              formal->hasFlag(FLAG_IS_MEME)       == false &&
+              (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
+               fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
+            USR_FATAL(formal,
+                      "invalid generic type specification on class field");
 
-        } else if (fn->isMethod()                       == true  &&
-                   strcmp(fn->name, "init")             == 0     &&
-                   fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
-                   fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
-                   !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
-                     formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
-          // This is a compiler generated initializer, so the argument with
-          // a generic type corresponds with a class field.
-          USR_FATAL(formal,
-                    "invalid generic type specification on class field");
-        }
-      }
-
-      if (actual != NULL) {
-        if (formal->hasFlag(FLAG_ARG_THIS)                == true &&
-            formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
-            actual->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
-
-          // If the "this" arg is generic, we're resolving an initializer, and
-          // the actual being passed is also still generic, don't count this as
-          // a substitution.  Otherwise, we'll end up in an infinite loop if
-          // one of the later generic args has a defaultExpr, as we will always
-          // count the this arg as a substitution and so always approach the
-          // generic arg with a defaultExpr as though a substitution was going
-          // to take place.
-
-        } else if (Type* type = getInstantiationType(actual->type,
-                                                     formal->type)) {
-
-          // String literal actuals aligned with non-param generic formals of
-          // type dtAny will result in an instantiation of dtStringC when the
-          // function is extern. In other words, let us write:
-          //   extern proc foo(str);
-          //   foo("bar");
-          // and pass "bar" as a c_string instead of a string
-          if (fn->hasFlag(FLAG_EXTERN)    == true     &&
-              formal->type                == dtAny    &&
-              formal->hasFlag(FLAG_PARAM) == false    &&
-
-              type                        == dtString &&
-
-              actual->type                == dtString &&
-              actual->isImmediate()       == true) {
-            subs.put(formal, dtStringC->symbol);
-
-          } else {
-            subs.put(formal, type->symbol);
+          } else if (fn->isMethod()                       == true  &&
+                     strcmp(fn->name, "init")             == 0     &&
+                     fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
+                     fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
+                     !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
+                       formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
+            // This is a compiler generated initializer, so the argument with
+            // a generic type corresponds with a class field.
+            USR_FATAL(formal,
+                      "invalid generic type specification on class field");
           }
         }
 
-      } else {
-        if (formal->defaultExpr) {
-          // break because default expression may reference generic
-          // arguments earlier in formal list; make those substitutions
-          // first (test/classes/bradc/genericTypes)
-          if (subs.n > 0) {
-            break;
+        if (actual != NULL) {
+          if (formal->hasFlag(FLAG_ARG_THIS)                == true &&
+              formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
+              actual->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
 
-          } else {
-            resolveBlockStmt(formal->defaultExpr);
+            // If the "this" arg is generic, we're resolving an initializer, and
+            // the actual being passed is also still generic, don't count this as
+            // a substitution.  Otherwise, we'll end up in an infinite loop if
+            // one of the later generic args has a defaultExpr, as we will always
+            // count the this arg as a substitution and so always approach the
+            // generic arg with a defaultExpr as though a substitution was going
+            // to take place.
 
-            Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
+          } else if (Type* type = getInstantiationType(actual->type,
+                                                       formal->type)) {
 
-            if (defaultType == dtTypeDefaultToken) {
-              subs.put(formal, dtTypeDefaultToken->symbol);
+            // String literal actuals aligned with non-param generic formals of
+            // type dtAny will result in an instantiation of dtStringC when the
+            // function is extern. In other words, let us write:
+            //   extern proc foo(str);
+            //   foo("bar");
+            // and pass "bar" as a c_string instead of a string
+            if (fn->hasFlag(FLAG_EXTERN)    == true     &&
+                formal->type                == dtAny    &&
+                formal->hasFlag(FLAG_PARAM) == false    &&
 
-            } else if (Type* type = getInstantiationType(defaultType,
-                                                         formal->type)) {
+                type                        == dtString &&
+
+                actual->type                == dtString &&
+                actual->isImmediate()       == true) {
+              subs.put(formal, dtStringC->symbol);
+
+            } else {
               subs.put(formal, type->symbol);
+            }
+          }
+
+        } else {
+          if (formal->defaultExpr) {
+            // break because default expression may reference generic
+            // arguments earlier in formal list; make those substitutions
+            // first (test/classes/bradc/genericTypes)
+            if (subs.n > 0) {
+              break;
+
+            } else {
+              resolveBlockStmt(formal->defaultExpr);
+
+              Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
+
+              if (defaultType == dtTypeDefaultToken) {
+                subs.put(formal, dtTypeDefaultToken->symbol);
+
+              } else if (Type* type = getInstantiationType(defaultType,
+                                                           formal->type)) {
+                subs.put(formal, type->symbol);
+              }
             }
           }
         }
