@@ -20,17 +20,9 @@
 #ifndef _INIT_NORMALIZE_H_
 #define _INIT_NORMALIZE_H_
 
-class AggregateType;
-class BlockStmt;
-class CallExpr;
-class CondStmt;
-class DefExpr;
-class Expr;
-class FnSymbol;
-class ForallStmt;
-class LoopStmt;
-class SymExpr;
-class UnresolvedSymExpr;
+// Need to include 'baseAst' in order to find comparators for std::set
+#include "baseAST.h"
+#include <set>
 
 class InitNormalize {
 public:
@@ -67,6 +59,7 @@ public:
   void            initializeFieldsBefore(Expr*      insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
+  bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
   bool            inLoopBody()                                           const;
   bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
@@ -87,11 +80,10 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
-  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
-
-  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
-
   void            describe(int offset = 0)                               const;
+
+  void            checkAndEmitErrors(Expr* expr);
+  void            checkAndEmitErrors(CallExpr* call);
 
 private:
   enum BlockType {
@@ -163,6 +155,8 @@ private:
   InitPhase       mPhase;
   BlockType       mBlockType;
   BlockType       mPrevBlockType;
+
+  std::set<DefExpr*> mImplicitFields;
 };
 
 #endif
