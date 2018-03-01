@@ -65,6 +65,8 @@ private:
   void                      computeSubstitution(ArgSymbol* formal,
                                                 Symbol*    actual);
 
+  void                      computeSubstitution(ArgSymbol* formal);
+
   void                      resolveTypedefedArgTypes();
 
   bool                      checkResolveFormalsWhereClauses();
