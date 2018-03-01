@@ -1583,10 +1583,10 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     if port_start > 0 then port_str = path[port_start..port_end];
 
     var port: int;
-    try! {
+    try {
       port = port_str: int;
-    } catch e: IllegalArgumentError {
-      error = ENOENT;
+    } catch {
+      error = EINVAL;
     }
 
     var file_path = "";
@@ -5605,7 +5605,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoP
   try {
     lhs = rhs:t;
   } catch {
-    return EFORMAT;
+    return ERANGE;
   }
   return ENOERR;
 }

@@ -46,13 +46,13 @@ module StringCasts {
   proc _cast(type t, x: string) throws where isBoolType(t) {
     var str = x.strip();
     if str.isEmptyString() {
-      throw new IllegalArgumentError(x, "Empty string when converting from string to bool");
+      throw new IllegalArgumentError("bad cast from empty string to bool");
     } else if (str == "true") {
       return true;
     } else if (str == "false") {
       return false;
     } else {
-      throw new IllegalArgumentError(x, "Unexpected value when converting from string to bool");
+      throw new IllegalArgumentError("bad cast from string '" + x + "' to bool");
     }
     return false;
   }
@@ -71,7 +71,7 @@ module StringCasts {
     // this should only happen if the runtime is broken
     if isErr {
       try! {
-        throw new IllegalArgumentError("integral", "Unexpected case in integral_to_c_string");
+        throw new IllegalArgumentError("Unexpected case in integral_to_c_string");
       }
     }
 
@@ -108,7 +108,7 @@ module StringCasts {
 
     if isIntType(t) {
       if localX.isEmptyString() then
-        throw new IllegalArgumentError(x, "Empty string when converting from string to int(" + numBits(t) + ")");
+        throw new IllegalArgumentError("bad cast from empty string to int(" + numBits(t) + ")");
 
       select numBits(t) {
         when 8  do retVal = c_string_to_int8_t(localX.c_str(), isErr);
@@ -119,10 +119,10 @@ module StringCasts {
       }
 
       if isErr then
-        throw new IllegalArgumentError(x, "Unexpected character when converting from string to int(" + numBits(t) + ")");
+        throw new IllegalArgumentError("bad cast from string '" + x + "' to int(" + numBits(t) + ")");
     } else {
       if localX.isEmptyString() then
-        throw new IllegalArgumentError(x, "Empty string when converting from string to uint(" + numBits(t) + ")");
+        throw new IllegalArgumentError("bad cast from empty string to uint(" + numBits(t) + ")");
 
       select numBits(t) {
         when 8  do retVal = c_string_to_uint8_t(localX.c_str(), isErr);
@@ -133,7 +133,7 @@ module StringCasts {
       }
 
       if isErr then
-        throw new IllegalArgumentError(x, "Unexpected character when converting from string to uint(" + numBits(t) + ")");
+        throw new IllegalArgumentError("bad cast from string '" + x + "' to uint(" + numBits(t) + ")");
     }
 
     return retVal;
@@ -180,7 +180,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new IllegalArgumentError(x, "Empty string when converting from string to real(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from empty string to real(" + numBits(t) + ")");
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -189,7 +189,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new IllegalArgumentError(x, "Unexpected character when converting from string to real(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from string '" + x + "' to real(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -205,7 +205,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new IllegalArgumentError(x, "Empty string when converting from string to imag(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from empty string to imag(" + numBits(t) + ")");
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
@@ -214,7 +214,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new IllegalArgumentError(x, "Unexpected character when converting from string to imag(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from string '" + x + "' to imag(" + numBits(t) + ")");
 
     return retVal;
   }
@@ -257,7 +257,7 @@ module StringCasts {
     const localX = x.localize();
 
     if localX.isEmptyString() then
-      throw new IllegalArgumentError(x, "Empty string when converting from string to complex(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from empty string to complex(" + numBits(t) + ")");
 
     select numBits(t) {
       when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
@@ -266,7 +266,7 @@ module StringCasts {
     }
 
     if isErr then
-      throw new IllegalArgumentError(x, "Unexpected character when converting from string to complex(" + numBits(t) + ")");
+      throw new IllegalArgumentError("bad cast from string '" + x + "' to complex(" + numBits(t) + ")");
 
     return retVal;
   }
