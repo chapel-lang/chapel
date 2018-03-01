@@ -1,6 +1,6 @@
 
 record R {
-  var x : int;
+  var x : int = 2;
   var y : real;
 
   proc init() {
@@ -8,3 +8,6 @@ record R {
     this.initDone();
   }
 }
+
+var r = new R();
+writeln("r = ", r);
