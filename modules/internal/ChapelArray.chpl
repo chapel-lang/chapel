@@ -2890,7 +2890,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc insert(pos: this.idxType, val: this.eltType) {
+    proc insert(pos: this.idxType, in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
