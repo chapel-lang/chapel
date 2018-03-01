@@ -336,11 +336,12 @@ static Type* getInstantiationType(Type* actualType, Type* formalType);
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
 int ResolutionCandidate::computeSubstitutions() {
-  SymbolMap& subs = substitutions;
+  SymbolMap& subs           = substitutions;
+  bool       exitForDefault = false;
 
   substitutions.clear();
 
-  for (int i = 1; i <= fn->numFormals(); i++) {
+  for (int i = 1; i <= fn->numFormals() && exitForDefault == false; i++) {
     ArgSymbol* formal = fn->getFormal(i);
 
     if (formal->intent                              == INTENT_PARAM ||
@@ -352,16 +353,10 @@ int ResolutionCandidate::computeSubstitutions() {
         computeSubstitution(formal, actual);
 
       } else if (formal->defaultExpr != NULL) {
-        if (formal->intent == INTENT_PARAM) {
-          // break because default expression may reference generic
-          // arguments earlier in formal list; make those substitutions
-          // first (test/classes/bradc/paramInClass/weirdParamInit4)
-          if (subs.n > 0) {
-            break;
+        if (subs.n == 0) {
+          resolveBlockStmt(formal->defaultExpr);
 
-          } else {
-            resolveBlockStmt(formal->defaultExpr);
-
+          if (formal->intent == INTENT_PARAM) {
             SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
 
             if (se && se->symbol()->isParameter() &&
@@ -379,18 +374,8 @@ int ResolutionCandidate::computeSubstitutions() {
                           "and default value type");
               }
             }
-          }
 
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          // break because default expression may reference generic
-          // arguments earlier in formal list; make those substitutions
-          // first (test/classes/bradc/genericTypes)
-          if (subs.n > 0) {
-            break;
-
-          } else {
-            resolveBlockStmt(formal->defaultExpr);
-
+          } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
             Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
 
             if (defaultType == dtTypeDefaultToken) {
@@ -401,6 +386,12 @@ int ResolutionCandidate::computeSubstitutions() {
               subs.put(formal, type->symbol);
             }
           }
+
+        } else {
+          // break because default expression may reference generic
+          // arguments earlier in formal list; make those substitutions
+          // first (test/classes/bradc/paramInClass/weirdParamInit4)
+          exitForDefault = true;
         }
       }
     }
