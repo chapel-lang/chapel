@@ -60,6 +60,11 @@ private:
 
   int                       computeSubstitutions();
 
+  bool                      verifyGenericFormal(ArgSymbol* formal)       const;
+
+  void                      computeSubstitution(ArgSymbol* formal,
+                                                Symbol*    actual);
+
   void                      resolveTypedefedArgTypes();
 
   bool                      checkResolveFormalsWhereClauses();

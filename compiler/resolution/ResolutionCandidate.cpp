@@ -349,50 +349,7 @@ int ResolutionCandidate::computeSubstitutions() {
         USR_FATAL(formal, "invalid generic type specification on class field");
 
       } else if (Symbol* actual = formalIdxToActual[i - 1]) {
-        if (formal->intent == INTENT_PARAM) {
-          if (actual->isParameter() == true) {
-            if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
-                canInstantiate(actual->type, formal->type)  == true) {
-              subs.put(formal, actual);
-            }
-          }
-
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-          if (formal->hasFlag(FLAG_ARG_THIS)                == true &&
-              formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
-              actual->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
-            // If the "this" arg is generic, we're resolving an initializer, and
-            // the actual being passed is also still generic, don't count this as
-            // a substitution.  Otherwise, we'll end up in an infinite loop if
-            // one of the later generic args has a defaultExpr, as we will always
-            // count the this arg as a substitution and so always approach the
-            // generic arg with a defaultExpr as though a substitution was going
-            // to take place.
-
-          } else if (Type* type = getInstantiationType(actual->type,
-                                                       formal->type)) {
-
-            // String literal actuals aligned with non-param generic formals of
-            // type dtAny will result in an instantiation of dtStringC when the
-            // function is extern. In other words, let us write:
-            //   extern proc foo(str);
-            //   foo("bar");
-            // and pass "bar" as a c_string instead of a string
-            if (fn->hasFlag(FLAG_EXTERN)    == true     &&
-                formal->type                == dtAny    &&
-                formal->hasFlag(FLAG_PARAM) == false    &&
-
-                type                        == dtString &&
-
-                actual->type                == dtString &&
-                actual->isImmediate()       == true) {
-              subs.put(formal, dtStringC->symbol);
-
-            } else {
-              subs.put(formal, type->symbol);
-            }
-          }
-        }
+        computeSubstitution(formal, actual);
 
       } else {
         if (formal->intent == INTENT_PARAM) {
@@ -480,6 +437,53 @@ bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
   }
 
   return retval;
+}
+
+void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
+                                              Symbol*    actual) {
+
+  if (formal->intent == INTENT_PARAM) {
+    if (actual->isParameter() == true) {
+      if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
+          canInstantiate(actual->type, formal->type)  == true) {
+        substitutions.put(formal, actual);
+      }
+    }
+
+  } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
+        formal->hasFlag(FLAG_ARG_THIS)                == true &&
+        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
+      // If the "this" arg is generic, we're resolving an initializer, and
+      // the actual being passed is also still generic, don't count this as
+      // a substitution.  Otherwise, we'll end up in an infinite loop if
+      // one of the later generic args has a defaultExpr, as we will always
+      // count the this arg as a substitution and so always approach the
+      // generic arg with a defaultExpr as though a substitution was going
+      // to take place.
+
+    } else if (Type* type = getInstantiationType(actual->type, formal->type)) {
+      // String literal actuals aligned with non-param generic formals of
+      // type dtAny will result in an instantiation of dtStringC when the
+      // function is extern. In other words, let us write:
+      //   extern proc foo(str);
+      //   foo("bar");
+      // and pass "bar" as a c_string instead of a string
+      if (fn->hasFlag(FLAG_EXTERN)    == true     &&
+          formal->type                == dtAny    &&
+          formal->hasFlag(FLAG_PARAM) == false    &&
+
+          type                        == dtString &&
+
+          actual->type                == dtString &&
+          actual->isImmediate()       == true) {
+        substitutions.put(formal, dtStringC->symbol);
+
+      } else {
+        substitutions.put(formal, type->symbol);
+      }
+    }
+  }
 }
 
 static Type* getInstantiationType(Type* actualType, Type* formalType) {
