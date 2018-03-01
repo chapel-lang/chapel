@@ -19,18 +19,12 @@
 
 #include "lifetime.h"
 
-// TODO - prune these
 #include "AstVisitorTraverse.h"
-#include "astutil.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "iterator.h"
 #include "loopDetails.h"
-#include "postFold.h"
-#include "resolution.h"
 #include "stlUtil.h"
-#include "stmt.h"
 #include "symbol.h"
 #include "view.h"
 #include "wellknown.h"
@@ -96,9 +90,9 @@
        being destroyed in the same block.
  */
 
+// These enable debug facilities
 const char* debugLifetimesForFn = "";
 const int debugLifetimesForId = 0;
-const bool defaultToCheckingLifetimes = true;
 const bool debugOutputOnError = false;
 
 namespace {
@@ -301,7 +295,7 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
     return true;
 
 
-  return defaultToCheckingLifetimes;
+  return fLifetimeChecking;
 }
 
 static bool debuggingLifetimesForFn(FnSymbol* fn)
