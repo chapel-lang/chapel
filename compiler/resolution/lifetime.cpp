@@ -37,30 +37,41 @@
 
 /* This file implements lifetime checking.
 
-   TODO: define lifetime and reachability.
+   The lifetime checker infers the lifetime of each symbol (how long what it
+   refers to will be allocated). Globals have infinite lifetime, but a local
+   simple value variable (e.g. an integer) has lifetime of the function block it
+   is declared in.
 
-   It includes some lifetime propagation. Lifetimes are only
-   stored for symbols when they are non-obvious (i.e. they differ
-   from the reachability of the symbol).
+   The reachability of a symbol is simply the lexical block in which
+   it is alive.
+
+   The checker emits errors for several cases:
+
+     * reachability of a symbol is greater than its lifetime
+     * setting a symbol to another value with longer lifetime
+     * returning a symbol with non-infinite and non-return lifetime
+       (e.g. reference arguments are marked with return lifetime)
+
+   This pass proceeds by computing the minimum lifetime of each
+   local variable and then proceeds to look for the above error cases.
+   Lifetime inference is particularly important to making this
+   system usable.
 
    * pointer/ref arguments are inferred to be return scope
-   * A value containing indirections and with a non-infinite inferred
-     lifetime cannot be returned from a function
-        - TODO -- what about a locally declared record that is returned?
-   * A value containining indirections cannot be set to a
-     value with a longer lifetime
-   * A scope value cannot be reachable after its lifetime ends
+     generally, but for methods, the default is that only 'this'
+     is return scope.
 
-   * Lifetime inference assigns the minimum lifetime assigned
-     to a scope variable as its lifetime.
+   When considering the lifetime of the result of a call,
+   this pass assumes that the lifetime is the minimum of the
+   lifetimes of actual arguments with return scope.
 
-   * records are subject to lifetime checking if they contain
-     fields that are subject to lifetime checking.
+   Records are subject to lifetime checking if they contain
+   fields that are subject to lifetime checking.
 
-   * Assumption: = operator overloads for records or classes
-     handle lifetimes as if by-value. But note, ownership
-     operations with Shared or Owned records count as "by value"
-     here.
+   Assumption: = operator overloads for records or classes
+   handle lifetimes as if by-value. But note, ownership
+   operations with Shared or Owned records count as "by value"
+   here.
 
 
    TODO:
@@ -79,7 +90,10 @@
      - check return scope better (there can only be one
        return scope argument per function? in that event, that's
        the only argument marked with return scope?)
-     - tidy up implementation
+     - consider the order of declarations, so that
+       a borrow of a variable used in a deinit call
+       won't be invalid if the borrow is from something
+       being destroyed in the same block.
  */
 
 const char* debugLifetimesForFn = "";
@@ -156,7 +170,6 @@ static bool isSubjectToBorrowLifetimeAnalysis(Symbol* sym);
 static bool recordContainsClassFields(AggregateType* at);
 static bool recordContainsOwnedClassFields(AggregateType* at);
 static bool recordContainsBorrowedClassFields(AggregateType* at);
-//static bool containsBorrowedClass(Type* type);
 static bool containsOwnedClass(Type* type);
 static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym);
 static bool isAnalyzedMoveOrAssignment(CallExpr* call);
@@ -179,24 +192,10 @@ static bool shouldCheckLifetimesInFn(FnSymbol* fn);
 
 void checkLifetimes(void) {
 
-  // This makes the default for methods to return the scope
-  // of this (vs something else).
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
-    if (fn->isMethod()) {
-      if (!fn->hasFlag(FLAG_RETURNS_INFINITE_LIFETIME))
-        fn->addFlag(FLAG_RETURN_SCOPE_THIS);
-    }
-  }
-
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
+  // Default for methods is to mark 'this' argument with return scope.
+  // Default for everything else is to mark all arguments with return scope.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_RETURN_SCOPE_THIS)) {
-      // type methods don't have a _this at this point
-      if (fn->_this)
-        fn->_this->addFlag(FLAG_RETURN_SCOPE);
-      fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
-    }
 
     bool anyReturnScope = false;
     // Figure out if any arguments have FLAG_RETURN_SCOPE on them.
@@ -205,6 +204,12 @@ void checkLifetimes(void) {
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_RETURN_SCOPE))
         anyReturnScope = true;
+    }
+
+    if (fn->isMethod() && fn->_this != NULL && !anyReturnScope) {
+      // Methods default to 'this' return scope
+      fn->_this->addFlag(FLAG_RETURN_SCOPE);
+      anyReturnScope = true;
     }
 
     for_formals(formal, fn) {
@@ -240,7 +245,7 @@ void checkLifetimes(void) {
 
       LifetimeState state;
 
-      // Gather temps that are just aliases for something else?
+      // Gather temps that are just aliases for something else
       GatherRefTempsVisitor gather;
       gather.lifetimes = &state;
       fn->accept(&gather);
@@ -499,14 +504,6 @@ ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
     }
   }
 
-  /*
-  if (!sym->isRef()) {
-    // Make sure that the referent part is accurate
-    //ret.referent = reachabilityForSymbol(sym);
-    ret.referent = infiniteScopeLifetime();
-  }*/
-
-
   return ret;
 }
 
@@ -574,12 +571,6 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   }
 
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
-  //&& containsBorrowedClass(returnType);
-
-  /*bool containsOwned = false;
-  if (AggregateType* at = toAggregateType(returnType))
-    containsOwned = recordContainsOwnedClassFields(at);
-   */
 
   for_formals_actuals(formal, actual, call) {
     SymExpr* actualSe = toSymExpr(actual);
@@ -616,30 +607,9 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
       argLifetime.borrowed = temp.borrowed;
     }
 
-    /*
-    if (formal->hasFlag(FLAG_RETURN_SCOPE))
-      return argLifetime;
-
-    if (calledFn->hasFlag(FLAG_RETURN_SCOPE_THIS) &&
-        formal == calledFn->_this)
-      return argLifetime;
-     */
-
     minLifetime = minimumScopeLifetime(minLifetime, argLifetime);
   }
 
-  // Something returning an "owned" class pointer has a minimum scope
-  // of its own reachability.
-  // (I.e. it can't have infinite borrow scope, anymore, say,
-  //  because a borrow from the owned object might not be valid
-  //  after the owning object is destroyed)
-  /*if (containsOwned) {
-    ScopeLifetime temp = lifetimeForSymbol(actualSym);
-    argLifetime.borrowed = temp.borrowed;
-  }*/
-
-  // If no argument was marked with FLAG_RETURN_SCOPE,
-  // just assume it's the minimum of the passed lifetimes.
   return minLifetime;
 }
 
@@ -681,15 +651,7 @@ ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
     }
 
     return argLifetime;
-  }/* else if (call->isPrimitive(PRIM_SET_REFERENCE) ||
-             call->isPrimitive(PRIM_ADDR_OF)) {
-    // TODO - is this section necessary?
-    SymExpr* se = toSymExpr(call->get(1));
-    INT_ASSERT(se);
-    Symbol* actualSym = se->symbol();
-
-    return lifetimeForActual(actualSym);
-  }*/
+  }
 
   ScopeLifetime minLifetime = infiniteScopeLifetime();
 
@@ -755,9 +717,9 @@ static bool isRecordInitOrReturn(CallExpr* call, Symbol*& lhs, CallExpr*& initOr
   if (call->isPrimitive(PRIM_MOVE) ||
       call->isPrimitive(PRIM_ASSIGN)) {
     if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-      if (/*FnSymbol* calledFn = */rhsCallExpr->resolvedOrVirtualFunction()) {
+      if (rhsCallExpr->resolvedOrVirtualFunction()) {
         if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-          if (isRecord(at) /*&& calledFn->hasFlag(FLAG_CONSTRUCTOR)*/) {
+          if (isRecord(at)) {
             SymExpr* se = toSymExpr(call->get(1));
             INT_ASSERT(se);
             lhs = lifetimes->getCanonicalSymbol(se->symbol());
@@ -830,7 +792,6 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
       } else {
         ScopeLifetime temp = infiniteScopeLifetime();
         temp.borrowed = lifetimes->reachabilityForSymbol(initSym);
-        //lt = minimumScopeLifetime(lt, lifetimes->lifetimeForSymbol(initSym));
         lt = minimumScopeLifetime(lt, temp);
       }
     }
@@ -1007,19 +968,6 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
         }
       }
 
-      // Raise errors for returning a scoped/lifetime'd variable
-      // For the purposes of this check, it's only considered to
-      // be a problem to return a variable with scope other than
-      // it's own scope, since doing otherwise would disallow
-      // returning any record..
-      /* This has the problem that it might give a different
-         result when the minimum is minimumed more
-      bool rhsLtIsReachability = false;
-      if (rhsSym && isRecord(rhsSym->type) &&
-          rhsLt.borrowed.fromSymbolReachability == rhsSym)
-        rhsLtIsReachability = true;
-       */
-
       // Don't worry about returning an "owned" type
       // that is the result of a call returning a record by value.
       if (containsOwnedClass(lhs->type)) {
@@ -1050,10 +998,9 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           }
         }
 
-        if (isSubjectToBorrowLifetimeAnalysis(lhs) /*&&
-            containsBorrowedClass(lhs->type)*/) {
+        if (isSubjectToBorrowLifetimeAnalysis(lhs)) {
           // check returning a borrow
-          if (!rhsLt.borrowed.infinite /*&& !rhsLtIsReachability*/) {
+          if (!rhsLt.borrowed.infinite) {
             if (!rhsLt.borrowed.returnScope) {
               emitError(call,
                         "Scoped variable",
@@ -1113,7 +1060,7 @@ void EmitLifetimeErrorsVisitor::emitErrors() {
     Lifetime reachability = lifetimes->reachabilityForSymbol(key);
 
     // Ignore the RVV for this check
-    // (see test lifetimes/tz.chpl)
+    // (see test lifetimes/bug-like-timezones.chpl)
     if (key->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
       continue;
 
@@ -1243,20 +1190,6 @@ static bool recordContainsBorrowedClassFields(AggregateType* at) {
   return false;
 }
 
-/*
-static bool containsBorrowedClass(Type* type) {
-  type = type->getValType();
-
-  if (isClass(type) && !typeHasInfiniteLifetime(type))
-    return true;
-
-  if (isRecord(type))
-    return recordContainsBorrowedClassFields(toAggregateType(type));
-
-  return false;
-}
-*/
-
 static bool containsOwnedClass(Type* type) {
   type = type->getValType();
 
@@ -1337,39 +1270,6 @@ static bool shouldPropagateLifetimeTo(CallExpr* call, Symbol* sym) {
   if (sym->hasEitherFlag(FLAG_RVV,FLAG_RETARG))
     return false;
 
-  // Detect old-style record construction. The constructed record
-  // should not have its lifetime set by the constructor call.
-  // Instead, it should start with lifetime = reachability.
-
-  // e.g. l7.chpl
-/*  if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
-    if (FnSymbol* calledFn = rhsCallExpr->resolvedOrVirtualFunction()) {
-      if (AggregateType* at = toAggregateType(rhsCallExpr->typeInfo())) {
-        if (isRecord(at) &&
-            calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
-            recordContainsOwnedClassFields(at))
-          return false;
-      }
-    }
-  }*/
-
-//  if (!sym->hasFlag(FLAG_TEMP))
-//    return false;
-
-  //Symbol* parentSymbol = sym->defPoint->parentSymbol;
-  // unsafe fns not lifetime analyzed
-  //if (parentSymbol->hasFlag(FLAG_UNSAFE))
-  //  return false;
-  //else
-  /*if (parentSymbol->hasFlag(FLAG_SAFE))
-    return true;
-  else if (sym->hasFlag(FLAG_SAFE))
-    return true;
-  else if (sym->hasFlag(FLAG_SCOPE))
-    return true;
-  else
-    return defaultToCheckingLifetimes;
-   */
   return true;
 }
 
@@ -1419,10 +1319,10 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
     return true;
   }
 
-  if (isClass(sym->type) && sym->hasFlag(FLAG_RAW)) {
+  /*if (isClass(sym->type) && sym->hasFlag(FLAG_RAW)) {
     // raw class instances have infinite lifetime
     return true;
-  }
+  }*/
 
   return false;
 }
@@ -1505,26 +1405,6 @@ static Lifetime reachabilityLifetimeForSymbol(Symbol* sym) {
   return lt;
 }
 
-/*
-static ScopeLifetime reachabilityScopeLifetimeForSymbol(Symbol* sym) {
-  Lifetime lt = reachabilityLifetimeForSymbol(sym);
-  ScopeLifetime ret;
-  ret.referent = lt;
-  ret.borrowed = lt;
-
-  // Adjust the returnScope field of these lifetimes.
-  if (isArgSymbol(sym)) {
-    if (sym->isRef())
-      ret.referent.returnScope = true;
-
-    if (isSubjectToBorrowLifetimeAnalysis(sym->type))
-      ret.borrowed.returnScope = true;
-  }
-
-  return ret;
-}
-*/
-
 static Lifetime infiniteLifetime() {
   Lifetime lt;
   lt.fromSymbolReachability = NULL;
@@ -1541,201 +1421,3 @@ static ScopeLifetime infiniteScopeLifetime() {
   ret.borrowed = lt;
   return ret;
 }
-
-/* Types of class instance pointers:
-     * raw/unsafe - could be ptr in Owned/Shared
-     * borrow - want this to be just var x:ClassType one day.
- */
-
-/* Cases to catch
-
-    - returning a ref to a local variable
-      ... including through the ref-identity function
-    - returning a ref to a field & destroying record before using ref
-    - store result of a 'borrow' in a global variable
-    - other scenario: new returns Owned
-       - class instance created and stored in a global variable
-       - Owned record initialized with it and is destroyed, deleting instance
-       - the global variable is dereferenced
- */
-
-
-/* Language design questions:
-    * how do you say which kind of class instance pointer you have?
-
-      - borrow vs owning reference
-
-    * how does one indicate relationship of returned ref/borrow
-       lifetime to arguments / calling scope?
-    * how do you specify lifetime based how do you specify the different types of pointers?
-       - explicitly (Rust)
-       - 'return scope' (D)
-       - inference
-          - D - ?
-          - minimum lifetime of arguments?
-
-    Is it possible to have a Owned/Shared reset to a new value?
-      Then the lifetime of the object is shorter.
-
-       MyShared.clear();
-       MyShared.retain(OtherPtr);
-       MyShared = YourShared;
-
-       MyOwned.clear();
-       MyOwned.retain(OtherPtr);
-       MyOwned = YourOwned;
-
-       -> mark functions that potentially invalidate ?
-       -> it is illegal to have any borrows at that moment the invalidation
-          occurs?
-
-          Isn't this the same as the array-resize-with-ref case?
-          Maybe reasonable to completely ignore checking for it...
-
-      ArrayOfOwned[i] = OtherOwned;
-       -> would mean no borrows allowed to other elements,
-          because ArrayOfOwned[i] assumed to invalidate all of the array?
- */
-
- /*
-
-Challenging cases for this analysis:
-
-String.chpl copyRemoteBuffer - allocates and returns something
-   (should be returning a new Owned)
-
-returning nil -- fixed (was just an AST pattern issue)
-
-method that returns something with infinite lifetime (e.g. always returning nil)
-   - locale.here returns chpl_localeID_to_locale(here_id)
-
-Linked list destruction, linked list on bare pointers
-  e.g. chpl_deinitModules
-  e.g. TaskErrors.init
-
-  var next = start;
-  while next {
-    const curr = prev;
-    prev = curr.next
-    delete curr;
-  }
-
-  Problem is that 'curr' is inner scope as compared to 'next'.
-
-  var first:MyClass;
-  for e in something.iterateClasses() {
-    first = e;
-  }
-
-
-This is a problem in D too
-// compile with dmd -c -dip1000
-int g1 = 1;
-int g2 = 2;
-void test1() @safe {
-
-  scope int*[2] array;
-  array[0] = &g1;
-  array[1] = &g2;
-
-  scope int* first = null;
-  for (int i = 0; i < 2; i++) {
-    auto cur = array[i];
-    if (first == null) {
-      first = cur;
-    }
-  }
-}
-void test2() @safe {
-
-  int[2] array;
-  array[0] = 1;
-  array[1] = 2;
-
-  scope int* first = null;
-  for (int i = 0; i < 2; i++) {
-    auto cur = &array[i];
-    if (first == null) {
-      first = cur;
-    }
-  }
-}
-
-These cases seem to be handled by a strategy of inferring the lifetime
-  of each variable to be a minimum of what it is set to & explicitly
-  checking that reachability < lifetime.
-
-
-ChapelError:241 proc message
-
-first = nil;
-while ... {
-  if first == nil then
-     first = e;
-}
-
-This is something the compiler translates to
-first = nil;
-while ... {
-  if first:object == nil then
-     first = e;
-}
-
-
-Problem here is that first might be inferred to have infinite lifetime,
-and then at the time the assignment is run, infinite lifetime
-will be returned for the cast to object,and then problems ensue.
-
-Resolve that by putting the minimum-lifetime-finding in a loop while changed.
-
-
-Returning a tuple of class instances e.g. BaseDom.remove().
-
-resolved by fixing inference for var x:MyClass = nil;
-
-openfd error resolved by fixing out intent
-
-
-test/release/examples/hello4-datapar-dist.chpl error -
-range is passed to chpl__buildDomainExpr, sets the lifetime
-of the result to the lifetime of the range, but the
-result is ultimately stored in a global variable.
-
- - fix: lifetime of _domain/etc instance variables is not managed, instance
-   "unsafe"
-
-test/modules/standard/Spawn was giving lifetime errors for the result
-of spawn being stored in a global variable after initialization routine
-returned.
-
- - fix: make the 'locale' type not subject to lifetime analysis
-        (channel has a locale pointer in it, this was considered a borrow).
-
-*** There is a fundamental challenge with borrow checking
-    for constructed records. This can be seen in test l7
-    vs. test l11. The AST forms are different for initializers
-    vs constructors too.
-
-    The question comes down to - what should the borrow-checking lifetime
-    of
-       new SomeRecord(SomeArgument)
-    be ?
-
-    It's especially interesting to consider the case that SomeArgument
-    itself is a record containing a borrow.
-
-    On one hand, if 'new SomeRecord' does not include any arguments,
-    or if all of its arguments are globals (or have infinite lifetime
-    for another reason), it seems that the new record should have
-    infinite borrow lifetime.
-
-    On the other hand, if SomeRecord contains a pointer it "owns", it
-    should have lifetime equal to its reachability.
-
-    Solution: consider "Owned" pointers to be different from "Unsafe" pointers.
-
-    _newDistribution and _getDistribution seem to have an issue in
-    this area. The thing about _array etc is that they sometimes own the
-    pointer and sometimes borrow it.
-
- */
