@@ -1262,7 +1262,10 @@ def help_all(help_msg):
 def parser_setup():
     parser = argparse.ArgumentParser(description="Test Chapel code.")
     # main args
-    parser.add_argument("tests", nargs="*", help="test files or directories")
+    p = parser.add_argument("tests", nargs="*", help="test files or directories")
+    if argcomplete:
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c"])
+
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 
             dest="execopts", help="set options for executing tests")
@@ -1318,9 +1321,12 @@ def parser_setup():
     # performance
     parser.add_argument("-performance", "--performance", action="store_true",
             dest="performance", help="run performance tests")
-    parser.add_argument("-perflabel", "--perflabel", action="store",
-            default="perf", dest="perflabel",
-            help="set alternate performance test label")
+    p = parser.add_argument("-perflabel", "--perflabel", action="store",
+               default="perf", dest="perflabel",
+               help="set alternate performance test label")
+    if argcomplete:
+        p.completer = argcomplete.completers.ChoicesCompleter(('ml-', ))
+
     parser.add_argument("-performance-description",
             "--performance-description", action="store", default="",
             dest="performance_description", help=help_all(""))
