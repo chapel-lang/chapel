@@ -1,4 +1,6 @@
 """ Access to home variables """
+
+import optparse
 import os
 import sys
 
@@ -48,3 +50,25 @@ def using_chapel_module():
     if chpl_home and chpl_module_home:
         return os.path.normpath(chpl_home) == os.path.normpath(chpl_module_home)
     return False
+
+
+def _main():
+    parser = optparse.OptionParser()
+    parser.add_option('--home', action='store_const',
+                      dest='func', const=get_chpl_home)
+    parser.add_option('--third-party', action='store_const',
+                      dest='func', const=get_chpl_third_party)
+    parser.add_option('--venv', action='store_const',
+                      dest='func', const=get_chpl_venv)
+    parser.add_option('--test-venv', action='store_const',
+                      dest='func', const=get_chpl_test_venv)
+    parser.add_option('--using-module', action='store_const',
+                      dest='func', const=using_chapel_module)
+    (options, args) = parser.parse_args()
+
+    if options.func:
+        sys.stdout.write("{0}\n".format(options.func()))
+
+
+if __name__ == '__main__':
+    _main()
