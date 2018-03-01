@@ -405,6 +405,29 @@ bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, ScopeLifetime lt) {
   return changed;
 }
 
+static bool intentIsLocalVariable(IntentTag tag) {
+  switch (tag) {
+    case INTENT_IN:
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_CONST_IN:
+      return true;
+    case INTENT_CONST:
+    case INTENT_REF:
+    case INTENT_CONST_REF:
+      return false;
+    case INTENT_REF_MAYBE_CONST:
+    case INTENT_PARAM:
+    case INTENT_TYPE:
+    case INTENT_BLANK:
+      // These might be original intent, but shouldn't
+      // be encountered for the current intent.
+      return false;
+  }
+  INT_FATAL("case not handled");
+  return false;
+}
+
 ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
 
   // Ignore reference temporaries
@@ -424,11 +447,13 @@ ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
     // inference will sort it out based on assignments.
 
     // Adjust the returnScope field of these lifetimes.
-    if (isArgSymbol(sym)) {
+    if (ArgSymbol* arg = toArgSymbol(sym)) {
       Lifetime lt = reachabilityForSymbol(sym);
       ret.referent = lt;
       ret.borrowed = lt;
-      if (sym->isRef())
+      if (sym->isRef() &&
+          !intentIsLocalVariable(arg->intent) &&
+          !intentIsLocalVariable(arg->originalIntent))
         ret.referent.returnScope = true;
 
       if (isSubjectToBorrowLifetimeAnalysis(sym->type))
