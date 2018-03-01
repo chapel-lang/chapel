@@ -460,28 +460,6 @@ static mem_region_table_t mem_regions;
 // yielding while grabbing memory to initialize task stacks.
 //
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
-static __thread chpl_bool allow_task_yield = true;
-
-static inline
-void mem_regions_lock(void) {
-  PERFSTATS_TIMER_START(pstStart);
-  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
-  PERFSTATS_ADD(regMem_mutex_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
-  allow_task_yield = false;
-}
-
-static inline
-void mem_regions_unlock(void) {
-  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("cannot release mem region lock");
-  allow_task_yield = true;
-}
-
-static inline
-chpl_bool can_task_yield(void) {
-  return allow_task_yield;
-}
 
 static chpl_bool can_register_memory = false;
 
@@ -1337,7 +1315,9 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
-static void      regMemBroadcast(int, int, chpl_bool);
+static void      regMemLock(void);
+static void      regMemUnlock(void);
+static void      regMemBroadcast(int, int, mem_region_t*, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*);
@@ -1404,6 +1384,9 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
                                    chpl_bool);
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
+static void      allow_task_yield(void);
+static void      disallow_task_yield(void);
+static chpl_bool can_task_yield(void);
 static void      local_yield(void);
 
 
@@ -2933,7 +2916,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
     return NULL;
   }
 
-  mem_regions_lock();
+  regMemLock();
 
   //
   // Find an entry to use and fill it in.  There must be one available,
@@ -2959,7 +2942,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
       mreg_cnt_max = mem_regions.mreg_cnt;
   }
 
-  mem_regions_unlock();
+  regMemUnlock();
 
   DBG_P_LP(DBGF_MEMREG,
            "chpl_regMemAlloc(%#" PRIx64 "): "
@@ -3009,7 +2992,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 
   register_mem_region(mr);
 
-  mem_regions_lock();
+  regMemLock();
 
   //
   // Update the copies of our memory regions on all nodes.  If this
@@ -3023,11 +3006,13 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // be able to send just the entries and not the count again.
   //
   if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
+    regMemUnlock();
+
     DBG_P_L(DBGF_MEMREG_BCAST,
             "chpl_comm_regMemPostAlloc(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
+    regMemBroadcast(mr_i, 1, NULL, false /*send_mreg_cnt*/);
   } else {
     const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
@@ -3038,10 +3023,10 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
             (int) mem_regions.mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mreg_cnt_public, mem_regions.mreg_cnt - mreg_cnt_public,
-                    true /*send_mreg_cnt*/);
-  }
+                    NULL, true /*send_mreg_cnt*/);
 
-  mem_regions_unlock();
+    regMemUnlock();
+  }
 }
 
 
@@ -3070,59 +3055,25 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
            "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
            p, size, mr_i);
 
-  //
-  // Deregister the memory and empty the entry in our table.  Note that
-  // even with single-threading we can't compress the table or do
-  // anything else that would move entries around, because other threads
-  // may be doing lookups in it and they aren't locked out.  Also, we
-  // have to finish broadcasting the update before we unlock, because as
-  // soon as we unlock, the entry could be reused.
-  //
   deregister_mem_region(mr);
 
-  mem_regions_lock();
+  //
+  // Empty this table entry on all other nodes.
+  //
+  // NB: Is there a "tearing" issue here?  In particular, could a search
+  //     on a remote node see an address that was only partly zeroed and
+  //     thereby appeared to specify some other range?
+  //
+  static mem_region_t zero_mr = { 0 };
+  regMemBroadcast(mr_i, 1, &zero_mr, false /*send_mreg_cnt*/);
 
-  mr->addr = 0;
+  //
+  // Empty this table entry on our own node.
+  //
   mr->len = 0;
   mr->mdh = (gni_mem_handle_t) { 0 };
-
-  //
-  // Adjust the memory region count downward, if this was the last
-  // active region.
-  //
-  if (mr_i == mem_regions.mreg_cnt - 1) {
-    int j;
-    for (j = mr_i - 1; j >= 0 && mem_regions.mregs[j].addr == 0; j--)
-      ;
-    assert(j >= 0);
-    mem_regions.mreg_cnt = j + 1;
-  }
-
-  //
-  // Update the copies of our memory regions on all nodes.  If removing
-  // this entry shortened our table then we just send the new count.
-  // Note that this may leave remnant (and misleading) non-0 values in
-  // table entries past the new end of the active area in remote nodes'
-  // copies of our region table.  This is okay as long as these entries
-  // always get overwritten if the table grows past them again, as is
-  // the case now.  If removing the entry didn't change the length of
-  // the table then we can just send the now-empty entry.
-  //
-  if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
-    DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
-            mr_i, (int) mem_regions.mreg_cnt);
-    PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
-  } else {
-    DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast",
-            mr_i);
-    PERFSTATS_INC(regMem_bCast_cnt);
-    regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
-  }
-
-  mem_regions_unlock();
+  atomic_thread_fence(memory_order_release);
+  mr->addr = 0;
 
   atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
@@ -3131,9 +3082,24 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   return true;
 }
 
+static inline
+void regMemLock(void) {
+  PERFSTATS_TIMER_START(pstStart);
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
+  PERFSTATS_ADD(regMem_mutex_nsecs, PERFSTATS_TIMER_ELAPSED(pstStart));
+}
 
 static inline
-void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
+void regMemUnlock(void) {
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot release mem region lock");
+}
+
+
+static inline
+void regMemBroadcast(int mr_i, int mr_cnt, mem_region_t* src_mr,
+                     chpl_bool send_mreg_cnt)
 {
   void* src_v[MAX_CHAINED_PUT_LEN];
   int32_t node_v[MAX_CHAINED_PUT_LEN];
@@ -3152,8 +3118,8 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       // Update our own map in place.
       //
       if (mr_cnt > 0) {
-        memcpy((char*) &mem_regions_map_addr_map[ni][ni].mregs[mr_i],
-               (char*) &mem_regions.mregs[mr_i],
+        memcpy(&mem_regions_map_addr_map[ni][ni].mregs[mr_i],
+               (src_mr != NULL) ? src_mr : &mem_regions.mregs[mr_i],
                mr_cnt * sizeof(mem_region_t));
       }
 
@@ -3165,25 +3131,26 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
       // Update every other node's map remotely.
       //
       if (vi >= vi_limit) {
+        disallow_task_yield();
         do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
                         may_proxy_false);
+        allow_task_yield();
         vi = 0;
       }
 
       if (mr_cnt > 0) {
-        src_v[vi] = (char*) &mem_regions.mregs[mr_i];
+          src_v[vi] = (src_mr != NULL) ? src_mr : &mem_regions.mregs[mr_i];
         node_v[vi] = ni;
-        tgt_v[vi] = (char*)
-                    &mem_regions_map_addr_map[ni][chpl_nodeID].mregs[mr_i];
+        tgt_v[vi] = &mem_regions_map_addr_map[ni][chpl_nodeID].mregs[mr_i];
         size_v[vi] = mr_cnt * sizeof(mem_region_t);
         remote_mr_v[vi] = &gnr_mreg_map[ni];
         vi++;
       }
 
       if (send_mreg_cnt) {
-        src_v[vi] = (char*) &mem_regions.mreg_cnt;
+        src_v[vi] = &mem_regions.mreg_cnt;
         node_v[vi] = ni;
-        tgt_v[vi] = (char*) &mem_regions_map_addr_map[ni][chpl_nodeID].mreg_cnt;
+        tgt_v[vi] = &mem_regions_map_addr_map[ni][chpl_nodeID].mreg_cnt;
         size_v[vi] = sizeof(mem_regions.mreg_cnt);
         remote_mr_v[vi] = &gnr_mreg_map[ni];
         vi++;
@@ -3192,8 +3159,10 @@ void regMemBroadcast(int mr_i, int mr_cnt, chpl_bool send_mreg_cnt)
   }
 
   if (vi > 0) {
+    disallow_task_yield();
     do_remote_put_V(vi, src_v, node_v, tgt_v, size_v, remote_mr_v,
                     may_proxy_false);
+    allow_task_yield();
   }
 }
 
@@ -7231,6 +7200,33 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 }
 
 
+//
+// Encapsulate yielding, including control over whether we yield the
+// task on the pthread, or just the thread on the processor.
+//
+static __thread chpl_bool tasks_may_yield = true;
+
+static inline
+void allow_task_yield(void)
+{
+  tasks_may_yield = true;
+}
+
+
+static inline
+void disallow_task_yield(void)
+{
+  tasks_may_yield = false;
+}
+
+
+static inline
+chpl_bool can_task_yield(void)
+{
+  return tasks_may_yield;
+}
+
+
 static
 void local_yield(void)
 {
@@ -7245,7 +7241,7 @@ void local_yield(void)
     // Without a comm domain, just yield.
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
-    if (can_task_yield()) 
+    if (can_task_yield())
       chpl_task_yield();
     else
       sched_yield();
