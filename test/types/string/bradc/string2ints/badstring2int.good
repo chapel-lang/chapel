@@ -1,1 +1,3 @@
-badstring2int.chpl:3: error: Unexpected character when converting from string to int(64): 'e'
+uncaught IllegalArgumentError: illegal argument '1e': Unexpected character when converting from string to int(64)
+  badstring2int.chpl:3: thrown here
+  badstring2int.chpl:3: uncaught here

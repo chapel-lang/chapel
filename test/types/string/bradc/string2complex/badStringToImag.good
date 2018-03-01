@@ -1,1 +1,3 @@
-badStringToImag.chpl:3: error: Missing terminating 'i' character when converting from string to imag(64)
+uncaught IllegalArgumentError: illegal argument '1.2': Unexpected character when converting from string to imag(64)
+  badStringToImag.chpl:3: thrown here
+  badStringToImag.chpl:3: uncaught here

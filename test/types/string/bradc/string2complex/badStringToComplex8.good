@@ -1,1 +1,3 @@
-badStringToComplex8.chpl:3: error: Unexpected character when converting from string to complex(64): 'j'
+uncaught IllegalArgumentError: illegal argument '1.2 + 3.4ij': Unexpected character when converting from string to complex(64)
+  badStringToComplex8.chpl:3: thrown here
+  badStringToComplex8.chpl:3: uncaught here
