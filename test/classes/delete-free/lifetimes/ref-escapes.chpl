@@ -70,7 +70,22 @@ proc badBar2(ref x: int) ref {
   return identity2(y,x);
 }
 
+
+pragma "return scope this"
+proc R.badBorrow1(const ref other) const ref {
+  return other;
+}
+
+pragma "return scope this"
+proc R.badBorrow2(const ref other) const ref {
+  const ref tmp = other;
+  return tmp;
+}
+
+
 var global = 1;
+var globalR:R;
+
 proc ok1() ref {
   return global;
 }
@@ -109,6 +124,12 @@ proc test() {
   ref r2 = badBar2(arg);
   writeln(r1);
   writeln(r2);
+
+  var anR:R;
+  const ref r3 = anR.badBorrow1(globalR);
+  const ref r4 = anR.badBorrow2(globalR);
+  writeln(r3);
+  writeln(r4);
 
   ref e = ok1();
   var f = ok2();

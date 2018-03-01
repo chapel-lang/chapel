@@ -191,6 +191,42 @@ void checkLifetimes(void) {
     }
   }*/
 
+  // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_RETURN_SCOPE_THIS)) {
+      fn->_this->addFlag(FLAG_RETURN_SCOPE);
+      fn->removeFlag(FLAG_RETURN_SCOPE_THIS);
+    }
+
+    bool anyReturnScope = false;
+    // Figure out if any arguments have FLAG_RETURN_SCOPE on them.
+    // If not, we default to putting it on all of them.
+    // If so, we put FLAG_SCOPE on the rest.
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_RETURN_SCOPE))
+        anyReturnScope = true;
+    }
+
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_SCOPE) ||
+          formal->hasFlag(FLAG_RETURN_SCOPE)) {
+        // OK
+      } else {
+        // Set it to the default
+        if (anyReturnScope)
+          formal->addFlag(FLAG_SCOPE);
+        else
+          formal->addFlag(FLAG_RETURN_SCOPE);
+      }
+    }
+
+    for_formals(formal, fn) {
+      INT_ASSERT(formal->hasFlag(FLAG_SCOPE) ||
+                 formal->hasFlag(FLAG_RETURN_SCOPE));
+    }
+  }
+
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
     if (shouldCheckLifetimesInFn(fn)) {
@@ -451,13 +487,15 @@ ScopeLifetime LifetimeState::lifetimeForSymbol(Symbol* sym) {
       Lifetime lt = reachabilityForSymbol(sym);
       ret.referent = lt;
       ret.borrowed = lt;
-      if (sym->isRef() &&
-          !intentIsLocalVariable(arg->intent) &&
-          !intentIsLocalVariable(arg->originalIntent))
-        ret.referent.returnScope = true;
+      if (arg->hasFlag(FLAG_RETURN_SCOPE)) {
+        if (sym->isRef() &&
+            !intentIsLocalVariable(arg->intent) &&
+            !intentIsLocalVariable(arg->originalIntent))
+          ret.referent.returnScope = true;
 
-      if (isSubjectToBorrowLifetimeAnalysis(sym->type))
-        ret.borrowed.returnScope = true;
+        if (isSubjectToBorrowLifetimeAnalysis(sym->type))
+          ret.borrowed.returnScope = true;
+      }
     }
   }
 
@@ -558,6 +596,11 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
         (formal->originalIntent & INTENT_FLAG_OUT))
       continue;
 
+    // arguments marked with FLAG_SCOPE don't determine the lifetime
+    // of a returned variable, since only return scope returns are allowed.
+    if (formal->hasFlag(FLAG_SCOPE))
+      continue;
+
     if (returnsRef && formal->isRef() &&
         (isSubjectToRefLifetimeAnalysis(actualSym) ||
          isLocalVariable(call->getFunction(), actualSym))) {
@@ -573,12 +616,14 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
       argLifetime.borrowed = temp.borrowed;
     }
 
+    /*
     if (formal->hasFlag(FLAG_RETURN_SCOPE))
       return argLifetime;
 
     if (calledFn->hasFlag(FLAG_RETURN_SCOPE_THIS) &&
         formal == calledFn->_this)
       return argLifetime;
+     */
 
     minLifetime = minimumScopeLifetime(minLifetime, argLifetime);
   }
@@ -680,6 +725,11 @@ bool GatherRefTempsVisitor::enterCallExpr(CallExpr* call) {
     SymExpr* lhsSe = toSymExpr(call->get(1));
     INT_ASSERT(lhsSe);
     Symbol* lhs = lhsSe->symbol();
+
+    // don't de-temp the return value
+    if (lhs->hasFlag(FLAG_RVV))
+      return false;
+
     if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
       Symbol* rhs = rhsSe->symbol();
       if (rhs->hasFlag(FLAG_TEMP) && !lhs->hasFlag(FLAG_TEMP)) {
@@ -923,6 +973,9 @@ static void emitError(Expr* inExpr,
 
 
 bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
+
+  if (call->id == debugLifetimesForId)
+    gdbShouldBreakHere();
 
   if (isAnalyzedMoveOrAssignment(call)) {
 
