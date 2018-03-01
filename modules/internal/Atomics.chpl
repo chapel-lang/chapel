@@ -308,8 +308,10 @@ module Atomics {
     var locale : chpl_localeID_t;
     var addr : c_void_ptr;
   }
+
   extern proc create_atomic_object() : wide_ptr_t;
   extern proc Read128(src : c_ptr(wide_ptr_t)) : wide_ptr_t;
+  extern proc Write128(src : c_ptr(wide_ptr_t), val : wide_ptr_t);
 
   pragma "atomic type"
   pragma "ignore noinit"
@@ -317,27 +319,41 @@ module Atomics {
     type objType;
     var _v : wide_ptr_t = create_atomic_object();
 
-    // TODO: Resolve issue where compiler automatically casts this to a c_void_ptr
-    // instead of a wide_ptr_t as requested.
     inline proc read(order:memory_order = memory_order_seq_cst) : objType {
       var ret : objType;
       var retAddr = c_ptrTo(ret);
       
       on this {
         var ptr = Read128(c_ptrTo(_v));
+        var tmp : objType;
         
         // If the type is of a wide class, then we perform a memcpy
-        if (__primitive("is wide pointer", ret)) {
-          __primitive("chpl_comm_array_put", ptr, ret.locale.id, ret, 1);
+        if (__primitive("is wide pointer", tmp)) {
+          c_memcpy(c_ptrTo(tmp), c_ptrTo(ptr), c_sizeof(wide_ptr_t));
         } else {
-          //var addr = __primitive("_wide_get_addr", ptr);
-          c_memcpy(retAddr, ptr.addr, c_sizeof(wide_ptr_t));
+          c_memcpy(c_ptrTo(tmp), c_ptrTo(ptr.addr), c_sizeof(c_void_ptr));
         }
+
+        ret = tmp;
       }
       return ret;
     }
 
+    inline proc write(value:objType, order:memory_order = memory_order_seq_cst) {
+      on this {
+        var ptr : wide_ptr_t;
+        var tmp = value;
 
+        if (__primitive("is wide pointer", tmp)) {
+          c_memcpy(c_ptrTo(ptr), c_ptrTo(tmp), c_sizeof(wide_ptr_t));
+        } else {
+          var obj = __primitive("_wide_make", objType, __primitive("_wide_get_locale", value), tmp : c_void_ptr);
+          c_memcpy(c_ptrTo(ptr), c_ptrTo(obj), c_sizeof(wide_ptr_t));
+        }
+
+        Write128(c_ptrTo(_v), ptr);
+      }
+    }
   }
 
   pragma "no doc"
