@@ -58,7 +58,7 @@ private:
 
   bool                      computeAlignment(CallInfo& info);
 
-  void                      computeSubstitutions();
+  int                       computeSubstitutions();
 
   void                      resolveTypedefedArgTypes();
 

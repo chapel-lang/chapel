@@ -144,9 +144,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
       computeAlignment(info) == true &&
      checkGenericFormals()   == true) {
     // Compute the param/type substitutions for generic arguments.
-    computeSubstitutions();
-
-    if (substitutions.n > 0) {
+    if (computeSubstitutions() > 0) {
       /*
        * Instantiate enough of the generic to get through the rest of the
        * filtering and disambiguation processes.
@@ -218,9 +216,7 @@ bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
     retval = false;
 
   } else {
-    computeSubstitutions();
-
-    if (substitutions.n > 0) {
+    if (computeSubstitutions() > 0) {
       /*
        * Instantiate just enough of the generic to get through the
        * the rest of the filtering and disambiguation processes.
@@ -339,7 +335,7 @@ static Type* getInstantiationType(Type* actualType, Type* formalType);
 
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
-void ResolutionCandidate::computeSubstitutions() {
+int ResolutionCandidate::computeSubstitutions() {
   SymbolMap& subs = substitutions;
   int        i    = 0;
 
@@ -469,6 +465,8 @@ void ResolutionCandidate::computeSubstitutions() {
 
     i++;
   }
+
+  return substitutions.n;
 }
 
 static Type* getInstantiationType(Type* actualType, Type* formalType) {
