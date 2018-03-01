@@ -571,9 +571,6 @@ static bool
 isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
   Symbol* calledFn = formal->defPoint->parentSymbol;
 
-  if (formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-    return true;
-
   if (SymExpr* se = toSymExpr(actual)) {
     Symbol* sym = se->symbol();
 
@@ -4237,8 +4234,7 @@ void lvalueCheck(CallExpr* call) {
      case INTENT_INOUT:
      case INTENT_OUT:
      case INTENT_REF:
-      if (!formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-        if (!isLegalLvalueActualArg(formal, actual))
+      if (!isLegalLvalueActualArg(formal, actual))
         errorMsg = true;
       break;
 
