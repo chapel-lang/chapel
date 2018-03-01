@@ -221,7 +221,7 @@ bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
        * Instantiate just enough of the generic to get through the
        * the rest of the filtering and disambiguation processes.
        */
-      fn = instantiateInitSig(fn, substitutions, info.call);
+      fn = instantiateSignature(fn, substitutions, info.call);
 
       if (fn != NULL) {
         retval = isApplicableForInit(info);

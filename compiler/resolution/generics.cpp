@@ -44,11 +44,6 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-static FnSymbol* instantiateSignature(FnSymbol*  fn,
-                                      SymbolMap& subs,
-                                      CallExpr*  call,
-                                      bool       isGenericInit);
-
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -432,19 +427,6 @@ void instantiateBody(FnSymbol* fn) {
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                CallExpr*  call) {
-  return instantiateSignature(fn, subs, call, false);
-}
-
-FnSymbol* instantiateInitSig(FnSymbol*  fn,
-                             SymbolMap& subs,
-                             CallExpr*  call) {
-  return instantiateSignature(fn, subs, call, true);
-}
-
-static FnSymbol* instantiateSignature(FnSymbol*  fn,
-                                      SymbolMap& subs,
-                                      CallExpr*  call,
-                                      bool       isGenericInit) {
   FnSymbol* retval = NULL;
 
   //
