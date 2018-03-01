@@ -337,19 +337,21 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
 int ResolutionCandidate::computeSubstitutions() {
   SymbolMap& subs = substitutions;
-  int        i    = 0;
 
   substitutions.clear();
 
-  for_formals(formal, fn) {
-    if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual[i]                != NULL &&
-          formalIdxToActual[i]->isParameter() == true) {
-        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual[i]);
+  for (int i = 1; i <= fn->numFormals(); i++) {
+    ArgSymbol* formal = fn->getFormal(i);
+    Symbol*    actual = formalIdxToActual[i - 1];
 
-      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
+    if (formal->intent == INTENT_PARAM) {
+      if (actual                != NULL &&
+          actual->isParameter() == true) {
+        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
+            canInstantiate(actual->type, formal->type))
+          subs.put(formal, actual);
+
+      } else if (actual == NULL && formal->defaultExpr) {
         // break because default expression may reference generic
         // arguments earlier in formal list; make those substitutions
         // first (test/classes/bradc/paramInClass/weirdParamInit4)
@@ -402,12 +404,10 @@ int ResolutionCandidate::computeSubstitutions() {
         }
       }
 
-      if (formalIdxToActual[i] != NULL) {
-        Type* actualType = formalIdxToActual[i]->type;
-
-        if (formal->hasFlag(FLAG_ARG_THIS)                == true  &&
+      if (actual != NULL) {
+        if (formal->hasFlag(FLAG_ARG_THIS)                == true &&
             formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
-            actualType->symbol->hasFlag(FLAG_GENERIC)     == true) {
+            actual->type->symbol->hasFlag(FLAG_GENERIC)   == true) {
 
           // If the "this" arg is generic, we're resolving an initializer, and
           // the actual being passed is also still generic, don't count this as
@@ -417,7 +417,7 @@ int ResolutionCandidate::computeSubstitutions() {
           // generic arg with a defaultExpr as though a substitution was going
           // to take place.
 
-        } else if (Type* type = getInstantiationType(actualType,
+        } else if (Type* type = getInstantiationType(actual->type,
                                                      formal->type)) {
 
           // String literal actuals aligned with non-param generic formals of
@@ -426,15 +426,16 @@ int ResolutionCandidate::computeSubstitutions() {
           //   extern proc foo(str);
           //   foo("bar");
           // and pass "bar" as a c_string instead of a string
-          if (fn->hasFlag(FLAG_EXTERN)            == true      &&
-              formal->type                        == dtAny     &&
-              formal->hasFlag(FLAG_PARAM)         == false     &&
+          if (fn->hasFlag(FLAG_EXTERN)    == true     &&
+              formal->type                == dtAny    &&
+              formal->hasFlag(FLAG_PARAM) == false    &&
 
-              type                                == dtString  &&
+              type                        == dtString &&
 
-              actualType                          == dtString  &&
-              formalIdxToActual[i]->isImmediate() == true) {
+              actual->type                == dtString &&
+              actual->isImmediate()       == true) {
             subs.put(formal, dtStringC->symbol);
+
           } else {
             subs.put(formal, type->symbol);
           }
@@ -446,8 +447,8 @@ int ResolutionCandidate::computeSubstitutions() {
         // first (test/classes/bradc/genericTypes)
         if (subs.n > 0) {
           break;
-        } else {
 
+        } else {
           resolveBlockStmt(formal->defaultExpr);
 
           Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
@@ -462,8 +463,6 @@ int ResolutionCandidate::computeSubstitutions() {
         }
       }
     }
-
-    i++;
   }
 
   return substitutions.n;
