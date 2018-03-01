@@ -757,7 +757,6 @@ inline proc _remoteAccessData.getDataIndex(
   return sum;
 }
 
-pragma "return scope this"
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(i) then
@@ -808,7 +807,6 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-pragma "return scope this"
 proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 

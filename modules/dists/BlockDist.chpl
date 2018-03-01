@@ -933,7 +933,6 @@ proc BlockArr.dsiDestroyArr() {
   }
 }
 
-pragma "return scope this"
 inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return myLocArr.this(i);
 }
@@ -946,7 +945,6 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 // By splitting the non-local case into its own function, we can inline the
 // fast/local path and get better performance.
 //
-pragma "return scope this"
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
     if myLocArr != nil && myLocArr.locDom.member(idx) then
@@ -955,7 +953,6 @@ inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   return nonLocalAccess(idx);
 }
 
-pragma "return scope this"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
     if myLocArr {
@@ -1189,7 +1186,6 @@ proc BlockArr.setRADOpt(val=true) {
 //
 // TODO: Should this be inlined?
 //
-pragma "return scope this"
 inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }

@@ -71,12 +71,10 @@ proc badBar2(ref x: int) ref {
 }
 
 
-pragma "return scope this"
 proc R.badBorrow1(const ref other) const ref {
   return other;
 }
 
-pragma "return scope this"
 proc R.badBorrow2(const ref other) const ref {
   const ref tmp = other;
   return tmp;

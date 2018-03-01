@@ -516,7 +516,6 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
 }
 
 // Return the array element corresponding to the index - on the current locale
-pragma "return scope this"
 proc ReplicatedArr.dsiAccess(indexx) ref {
   return chpl_myLocArr().arrLocalRep[indexx];
 }
