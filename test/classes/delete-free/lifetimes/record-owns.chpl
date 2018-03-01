@@ -41,6 +41,10 @@ record RMyClass {
   }
 }
 
+proc =(ref lhs:RMyClass, ref rhs:RMyClass) {
+  lhs.c = rhs.c;
+}
+
 // Globals
 var globalMyClass:Owned(MyClass);
 var globalRMyClass:RMyClass;
