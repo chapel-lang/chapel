@@ -14,6 +14,7 @@ ref-escapes.chpl:43: error: Reference to scoped variable cannot be returned
 ref-escapes.chpl:42: note: consider scope of x
 ref-escapes.chpl:46: In function 'bad_record_arg':
 ref-escapes.chpl:47: error: Reference to scoped variable cannot be returned
+ref-escapes.chpl:46: note: consider scope of arg
 ref-escapes.chpl:54: In function 'bad_return_return_record_arg':
 ref-escapes.chpl:56: error: Reference to scoped variable cannot be returned
 ref-escapes.chpl:55: note: consider scope of aa
