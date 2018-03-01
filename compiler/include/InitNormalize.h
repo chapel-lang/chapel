@@ -156,7 +156,7 @@ private:
   BlockType       mBlockType;
   BlockType       mPrevBlockType;
 
-  std::set<DefExpr*> implicitFields;
+  std::set<DefExpr*> mImplicitFields;
 };
 
 #endif
