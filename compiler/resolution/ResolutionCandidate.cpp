@@ -345,34 +345,41 @@ int ResolutionCandidate::computeSubstitutions() {
     Symbol*    actual = formalIdxToActual[i - 1];
 
     if (formal->intent == INTENT_PARAM) {
-      if (actual                != NULL &&
-          actual->isParameter() == true) {
-        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(actual->type, formal->type))
-          subs.put(formal, actual);
-
-      } else if (actual == NULL && formal->defaultExpr) {
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/paramInClass/weirdParamInit4)
-        if (subs.n > 0) {
-          break;
+      if (actual != NULL) {
+        if (actual->isParameter() == true) {
+          if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
+              canInstantiate(actual->type, formal->type)  == true) {
+            subs.put(formal, actual);
+          }
         }
 
-        resolveBlockStmt(formal->defaultExpr);
+      } else {
+        if (formal->defaultExpr != NULL) {
+          // break because default expression may reference generic
+          // arguments earlier in formal list; make those substitutions
+          // first (test/classes/bradc/paramInClass/weirdParamInit4)
+          if (subs.n > 0) {
+            break;
 
-        SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
-
-        if (se && se->symbol()->isParameter() &&
-            (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-             canInstantiate(se->symbol()->type, formal->type))) {
-          subs.put(formal, se->symbol());
-        } else {
-          if (!se || !se->symbol()->isParameter()) {
-            USR_FATAL(formal, "default value for param is not a param");
           } else {
-            USR_FATAL(formal, "type mismatch between declared formal type "
-                              "and default value type");
+            resolveBlockStmt(formal->defaultExpr);
+
+            SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
+
+            if (se && se->symbol()->isParameter() &&
+                (formal->type->symbol->hasFlag(FLAG_GENERIC)      == false ||
+                 canInstantiate(se->symbol()->type, formal->type) == true)) {
+              subs.put(formal, se->symbol());
+
+            } else {
+              if (!se || !se->symbol()->isParameter()) {
+                USR_FATAL(formal, "default value for param is not a param");
+
+              } else {
+                USR_FATAL(formal, "type mismatch between declared formal type "
+                          "and default value type");
+              }
+            }
           }
         }
       }
@@ -400,7 +407,6 @@ int ResolutionCandidate::computeSubstitutions() {
           // a generic type corresponds with a class field.
           USR_FATAL(formal,
                     "invalid generic type specification on class field");
-
         }
       }
 
@@ -440,25 +446,27 @@ int ResolutionCandidate::computeSubstitutions() {
             subs.put(formal, type->symbol);
           }
         }
-      } else if (formal->defaultExpr) {
 
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/genericTypes)
-        if (subs.n > 0) {
-          break;
+      } else {
+        if (formal->defaultExpr) {
+          // break because default expression may reference generic
+          // arguments earlier in formal list; make those substitutions
+          // first (test/classes/bradc/genericTypes)
+          if (subs.n > 0) {
+            break;
 
-        } else {
-          resolveBlockStmt(formal->defaultExpr);
+          } else {
+            resolveBlockStmt(formal->defaultExpr);
 
-          Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
+            Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
 
-          if (defaultType == dtTypeDefaultToken) {
-            subs.put(formal, dtTypeDefaultToken->symbol);
+            if (defaultType == dtTypeDefaultToken) {
+              subs.put(formal, dtTypeDefaultToken->symbol);
 
-          } else if (Type* type = getInstantiationType(defaultType,
-                                                       formal->type)) {
-            subs.put(formal, type->symbol);
+            } else if (Type* type = getInstantiationType(defaultType,
+                                                         formal->type)) {
+              subs.put(formal, type->symbol);
+            }
           }
         }
       }
