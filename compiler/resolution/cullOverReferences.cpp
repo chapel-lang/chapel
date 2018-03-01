@@ -25,7 +25,6 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "loopDetails.h"
-#include "loopDetails.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -1594,9 +1593,6 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
             error = true;
           }
         }
-
-        if (error && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-          error = false;
 
         // TODO: check tuple const-ness:
         //   make analysis above more complete
