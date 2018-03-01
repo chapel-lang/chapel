@@ -502,16 +502,16 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
-std::string getChplPythonVersion() {
-  // Runs util/chplenv/chpl_python_version.py and removes the newline
+std::string getVenvDir() {
+  // Runs `util/chplenv/chpl_home_utils.py --venv` and removes the newline
 
-  std::string command = "";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_python_version.py 2> /dev/null";
+  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --venv 2> /dev/null";
 
-  std::string pyVer = runCommand(command);
-  pyVer.erase(pyVer.find_last_not_of("\n\r")+1);
+  std::string venvDir = runCommand(command);
+  venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
 
-  return pyVer;
+  return venvDir;
 }
 
 bool compilingWithPrgEnv() {
