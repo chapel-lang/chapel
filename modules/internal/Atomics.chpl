@@ -304,9 +304,12 @@ module Atomics {
     }
   };
 
-
-  extern type wide_ptr_t;
+  extern record wide_ptr_t {
+    var locale : chpl_localeID_t;
+    var addr : c_void_ptr;
+  }
   extern proc create_atomic_object() : wide_ptr_t;
+  extern proc Read128(src : c_ptr(wide_ptr_t)) : wide_ptr_t;
 
   pragma "atomic type"
   pragma "ignore noinit"
@@ -318,10 +321,18 @@ module Atomics {
     // instead of a wide_ptr_t as requested.
     inline proc read(order:memory_order = memory_order_seq_cst) : objType {
       var ret : objType;
-      extern proc Read128(src : c_ptr(wide_ptr_t)) : wide_ptr_t;
+      var retAddr = c_ptrTo(ret);
+      
       on this {
         var ptr = Read128(c_ptrTo(_v));
-        ret = __primitive("cast", objType, ptr);
+        
+        // If the type is of a wide class, then we perform a memcpy
+        if (__primitive("is wide pointer", ret)) {
+          __primitive("chpl_comm_array_put", ptr, ret.locale.id, ret, 1);
+        } else {
+          //var addr = __primitive("_wide_get_addr", ptr);
+          c_memcpy(retAddr, ptr.addr, c_sizeof(wide_ptr_t));
+        }
       }
       return ret;
     }
