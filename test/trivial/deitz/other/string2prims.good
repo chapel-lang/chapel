@@ -20,6 +20,6 @@
 3.14 + 2.1i
 true
 false
-uncaught IllegalArgumentError: illegal argument 'maybe': Unexpected value when converting from string to bool
+uncaught IllegalArgumentError: bad cast from string 'maybe' to bool
   string2prims.chpl:42: thrown here
   string2prims.chpl:42: uncaught here

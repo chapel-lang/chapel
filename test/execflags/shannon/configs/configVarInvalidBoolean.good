@@ -1,3 +1,3 @@
-uncaught IllegalArgumentError: illegal argument 'maybe': Unexpected value when converting from string to bool
+uncaught IllegalArgumentError: bad cast from string 'maybe' to bool
   <command line setting of 'x'>:0: thrown here
   <command line setting of 'x'>:0: uncaught here
