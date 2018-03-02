@@ -50,9 +50,9 @@ We note some of the most useful flags here:
 =====================   ======================================================
 Flags                   Description
 ---------------------   ------------------------------------------------------
-``-o <filename>``       specify the filename of the generated
-                        executable, otherwise the main module name is
-                        used by default
+``-o <filename>``       specify the filename of the generated executable,
+                        otherwise the name of the file containing the main
+                        module is used (minus its ``.chpl`` extension).
 ``--no-checks``         turns off runtime semantic checks like bounds
                         checking and nil class instance dereferencing
 ``-O``                  turns on optimization of the generated C code
