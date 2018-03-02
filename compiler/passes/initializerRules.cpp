@@ -489,81 +489,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is super.init() or this.init()
       } else if (isInitStmt(callExpr) == true) {
-        if (state.isPhase2() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of super.init() call in phase 2");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of this.init() call in phase 2");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inLoopBody() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of super.init() call in loop body");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of this.init() call in loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inParallelStmt() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a parallel statement");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a parallel statement");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inCoforall() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a coforall loop body");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a coforall loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inForall() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a forall loop body");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a forall loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inOn() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in an on block");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in an on block");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else {
+        checkInvalidInit(state, callExpr);
           if (isThisInit(callExpr) == true) {
             if (initNew == false) {
               state.completePhase1(callExpr);
@@ -593,7 +519,6 @@ static InitNormalize preNormalize(AggregateType* at,
           } else {
             INT_ASSERT(false);
           }
-        }
 
       } else if (isInitDone(callExpr) == true) {
         Expr* next = stmt->next;
