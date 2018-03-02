@@ -43,6 +43,7 @@ static void buildDefaultOfFunction(AggregateType* ct);
 static void build_union_assignment_function(AggregateType* ct);
 
 static void build_enum_assignment_function(EnumType* et);
+static void build_enum_comparison_functions(EnumType* et);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
@@ -722,6 +723,7 @@ static void build_record_inequality_function(AggregateType* ct) {
 // enum type is defined
 void buildNearScopeEnumFunctions(EnumType* et) {
   build_enum_assignment_function(et);
+  build_enum_comparison_functions(et);
   build_enum_enumerate_function(et);
 }
 
@@ -971,6 +973,39 @@ static void build_enum_assignment_function(EnumType* et) {
   et->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
+}
+
+static void build_enum_comparison_functions(EnumType* et) {
+  if (!function_exists("==", et, et)) {
+    FnSymbol* fn = new FnSymbol("==");
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_INLINE);
+    ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
+    ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
+    fn->insertFormalAtTail(arg1);
+    fn->insertFormalAtTail(arg2);
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_EQUAL, arg1, arg2)));
+    DefExpr* def = new DefExpr(fn);
+    et->symbol->defPoint->insertBefore(def);
+    reset_ast_loc(def, et->symbol);
+    normalize(fn);
+  }
+  if (!function_exists("!=", et, et)) {
+    FnSymbol* fn = new FnSymbol("!=");
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_INLINE);
+    ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
+    ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
+    fn->insertFormalAtTail(arg1);
+    fn->insertFormalAtTail(arg2);
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_NOTEQUAL, arg1, arg2)));
+    DefExpr* def = new DefExpr(fn);
+    et->symbol->defPoint->insertBefore(def);
+    reset_ast_loc(def, et->symbol);
+    normalize(fn);
+  }
 }
 
 

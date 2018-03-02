@@ -822,6 +822,10 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(u: uint(64)): uint {
     return _gen_key(u);
   }
+
+  inline proc chpl__defaultHash(e) where isEnum(e) {
+    return _gen_key(e:int);
+  }
   
   inline proc chpl__defaultHash(f: real): uint {
     return _gen_key(__primitive( "real2int", f));

@@ -759,6 +759,7 @@ static bool canParamCoerce(Type*   actualType,
     // If the actual is an enum, check to see if *all* its values
     // are small enough that they fit into this integer width
     //
+    /*
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
@@ -775,6 +776,7 @@ static bool canParamCoerce(Type*   actualType,
           fits_in_int(get_width(formalType), etype->getMaxConstant()))
         return true;
     }
+    */
 
     //
     // For smaller integer types, if the argument is a param, does it
@@ -791,6 +793,7 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
 
+      /*
       if (EnumType* etype = toEnumType(actualType)) {
         ensureEnumTypeResolved(etype);
 
@@ -803,6 +806,7 @@ static bool canParamCoerce(Type*   actualType,
           }
         }
       }
+      */
     }
   }
 
@@ -829,6 +833,7 @@ static bool canParamCoerce(Type*   actualType,
     // If the actual is an enum, check to see if *all* its values
     // are small enough that they fit into this integer width
     //
+    /*
     if (EnumType* etype = toEnumType(actualType)) {
       ensureEnumTypeResolved(etype);
 
@@ -844,6 +849,7 @@ static bool canParamCoerce(Type*   actualType,
           fits_in_uint(get_width(formalType), etype->getMaxConstant()))
         return true;
     }
+    */
 
     //
     // For smaller integer types, if the argument is a param, does it
@@ -860,6 +866,7 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
 
+      /*
       if (EnumType* etype = toEnumType(actualType)) {
         ensureEnumTypeResolved(etype);
 
@@ -872,6 +879,7 @@ static bool canParamCoerce(Type*   actualType,
           }
         }
       }
+      */
     }
   }
 
