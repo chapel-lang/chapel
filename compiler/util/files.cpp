@@ -668,8 +668,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   // BLC: We generate a TMPBINNAME which is the name that will be used
   // by the C compiler in creating the executable, and is in the
   // --savec directory (a /tmp directory by default).  We then copy it
-  // over to BINNAME -- the name given by the user/default module --
-  // after linking is done.  As it turns out, this saves a
+  // over to BINNAME -- the name given by the user/default module's filename
+  // -- after linking is done.  As it turns out, this saves a
   // factor of 5 or so in time in running the test system, as opposed
   // to specifying BINNAME on the C compiler command line.
 
