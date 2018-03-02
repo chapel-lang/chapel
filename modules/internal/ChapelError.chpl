@@ -99,9 +99,9 @@ module ChapelError {
       super.init();
     }
 
-    proc init(_formal: string, _info: string) {
-      this.formal = _formal;
-      this.info = _info;
+    proc init(formal: string, info: string) {
+      this.formal = formal;
+      this.info   = info;
       super.init();
     }
 
