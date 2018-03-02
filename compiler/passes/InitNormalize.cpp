@@ -1453,6 +1453,8 @@ static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
   }
 }
 
+// TODO: split into 'isMethodCall' and 'isMethodException'.
+// TODO: Handle 'c = new C()' where 'C' is a nested type
 static bool isMethodCall(CallExpr* call) {
   bool retval = false;
 
