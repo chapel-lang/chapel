@@ -418,6 +418,44 @@ static void checkLocalPhaseOneErrors(const InitNormalize& state,
   }
 }
 
+static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
+  const char* initName = NULL;
+  if (isSuperInit(callExpr) == true) {
+    initName = "super.init()";
+  } else if (isThisInit(callExpr) == true) {
+    initName = "this.init()";
+  } else if (isInitDone(callExpr) == true) {
+    initName = "this.initDone()";
+  }
+
+  if (initName == NULL) {
+    INT_FATAL("Called 'checkInvalidInit' with invalid call");
+  }
+
+  if (state.isPhase2() == true) {
+    USR_FATAL(callExpr, "use of %s call in phase 2", initName);
+
+  } else if (state.inLoopBody() == true) {
+    USR_FATAL(callExpr, "use of %s call in loop body", initName);
+
+  } else if (state.inParallelStmt() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a parallel statement", initName);
+
+  } else if (state.inCoforall() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a coforall loop body", initName);
+
+  } else if (state.inForall() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a forall loop body", initName);
+
+  } else if (state.inOn() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in an on block", initName);
+  }
+}
+
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
