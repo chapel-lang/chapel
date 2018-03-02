@@ -1136,11 +1136,9 @@ DefExpr* InitNormalize::toSuperField(SymExpr* expr) const {
 
 DefExpr* InitNormalize::toSuperField(AggregateType* at,
                                      const char*    name) const {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = pt->toLocalField(name)) {
-        return field;
-      }
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (DefExpr* field = pt->toLocalField(name)) {
+      return field;
     }
   }
 

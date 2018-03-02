@@ -333,7 +333,7 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
     int            myId  = at->classId;
     int            maxN1 = myId;
 
-    forv_Vec(Type, child, at->dispatchChildren) {
+    forv_Vec(AggregateType, child, at->dispatchChildren) {
       if (child != NULL) {
         int subMax = computeMaxSubclass(child->symbol, n2);
 
