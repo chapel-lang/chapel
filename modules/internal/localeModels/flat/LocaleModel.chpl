@@ -57,7 +57,7 @@ module LocaleModel {
   //
   class LocaleModel : AbstractLocaleModel {
     const _node_id : int;
-    const local_name : string;
+    var local_name : string; // should never be modified after first assignment
 
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
@@ -67,6 +67,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
+      super.init();
+
       setup();
     }
 
@@ -74,7 +78,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
       super.init(parent_loc);
+
       setup();
     }
 
@@ -142,8 +149,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      _node_id = chpl_nodeID: int;
-
       helpSetupLocaleFlat(this, local_name);
     }
     //------------------------------------------------------------------------}
