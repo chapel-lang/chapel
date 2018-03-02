@@ -183,10 +183,11 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
-// Yield that will periodically call the checkpoint depending
-// on the number of iterations, 'cnt'
-void chpl_task_yield2(int64_t cnt) {
-  if (cnt >= 0 && cnt % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
+static __thread uint64_t nYields = 0;
+
+void chpl_task_yield(void)
+{
+  if (nYields++ % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
     chpl_qsbr_checkpoint();
   }
 
@@ -196,11 +197,6 @@ void chpl_task_yield2(int64_t cnt) {
   } else {
       qthread_yield();
   }
-}
-
-void chpl_task_yield(void)
-{
-    chpl_task_yield2(0);
 }
 
 // Sync variables

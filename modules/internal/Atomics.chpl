@@ -100,8 +100,6 @@ module Atomics {
 
   extern type atomic_bool;
 
-  extern proc chpl_task_yield2(cnt : int);
-
   extern proc atomic_thread_fence(order:memory_order);
   extern proc atomic_signal_fence(order:memory_order);
 
@@ -402,10 +400,10 @@ module Atomics {
     */
     inline proc const waitFor(val:bool, order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_bool(_v, memory_order_relaxed) != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         // After waiting for the value, do a thread fence
         // in order to guarantee e.g. an acquire barrier even
@@ -517,11 +515,11 @@ module Atomics {
 
     inline proc const waitFor(val:uint(8), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_uint_least8_t(_v, memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -622,11 +620,11 @@ module Atomics {
 
     inline proc const waitFor(val:uint(16), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_uint_least16_t(_v, memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -727,11 +725,11 @@ module Atomics {
 
     inline proc const waitFor(val:uint(32), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_uint_least32_t(_v,memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -832,11 +830,11 @@ module Atomics {
 
     inline proc const waitFor(val:uint(64), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_uint_least64_t(_v, memory_order_relaxed)
                  != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -937,11 +935,11 @@ module Atomics {
 
     inline proc const waitFor(val:int(8), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_int_least8_t(_v, memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -1042,11 +1040,11 @@ module Atomics {
 
     inline proc const waitFor(val:int(16), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_int_least16_t(_v,memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -1147,11 +1145,11 @@ module Atomics {
 
     inline proc const waitFor(val:int(32), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_int_least32_t(_v, memory_order_relaxed)
                 != val) { 
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -1355,11 +1353,11 @@ module Atomics {
     */
     inline proc const waitFor(val:int(64), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit_int_least64_t(_v, memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -1445,11 +1443,11 @@ module Atomics {
     }
     inline proc const waitFor(val:real(64), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit__real64(_v, memory_order_relaxed)
                 != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }
@@ -1527,10 +1525,10 @@ module Atomics {
     }
     inline proc const waitFor(val:real(32), order:memory_order = memory_order_seq_cst) {
       on this {
-        var spins = 0;
+        
         while (atomic_load_explicit__real32(_v, memory_order_relaxed) != val) {
-          spins += 1;
-          chpl_task_yield2(spins);
+          
+          chpl_task_yield();
         }
         atomic_thread_fence(order);
       }

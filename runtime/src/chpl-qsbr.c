@@ -25,6 +25,16 @@
 #include "chpl-tasks.h"
 #include "chpl-qsbr.h"
 
+// Profile counters...
+#ifndef CHPL_QSBR_PROFILE
+#define CHPL_QSBR_PROFILE 0
+#endif
+
+static atomic_uint_least64_t nParked = 0;
+static atomic_uint_least64_t nUnparked = 0;
+static atomic_uint_least64_t nCheckpoints = 0;
+
+
 // We maintain a single global counter that denotes the current epoch.
 // Each time some deletion is published (deferred), we advance the epoch
 // by one. At each checkpoint, a thread will update their thread-local epoch
@@ -126,11 +136,17 @@ static inline uint64_t is_parked(struct tls_node *node) {
 static inline void park(struct tls_node *node);
 static inline void park(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 1);
+  #ifdef CHPL_QSBR_PROFILE
+  atomic_fetch_add_uint_least64_t(&nParked, 1);
+  #endif
 }
 
 static inline void unpark(struct tls_node *node);
 static inline void unpark(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 0);
+  #ifdef CHPL_QSBR_PROFILE
+  atomic_fetch_add_uint_least64_t(&nUnparked, 1);
+  #endif
 }
 
 static inline void acquire_spinlock(struct tls_node *node, uintptr_t value);
@@ -396,6 +412,9 @@ void chpl_qsbr_blocked(void) {
 }
 
 void chpl_qsbr_checkpoint(void) {
+    #ifdef CHPL_QSBR_PROFILE
+    atomic_fetch_add_uint_least64_t(&nCheckpoints, 1);
+    #endif
     struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
     
     // Initialize TLS...
@@ -466,6 +485,11 @@ void chpl_qsbr_enable(void) {
 
 
 void chpl_qsbr_exit(void) {
+    #ifdef CHPL_QSBR_PROFILE
+    printf("nParks: %lu, nUnparks: %lu, nCheckpoints: %lu", 
+      atomic_load_uint_least64_t(&nParked), atomic_load_uint_least64_t(&nUnparked), atomic_load_uint_least64_t(&nCheckpoints));
+    #endif
+
     // Clean thread-local storage
     while (chpl_qsbr_tls_list) {
         struct tls_node *node = chpl_qsbr_tls_list;

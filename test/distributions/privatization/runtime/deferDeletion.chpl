@@ -4,11 +4,9 @@
 // to this spinning thread.
 
 use PrivatizationWrappers;
-use Memory;
 
 config const numIters = 100000;
 
-var m1 = memoryUsed();
 var done : atomic bool;
 done.write(false);
 
@@ -21,13 +19,11 @@ begin {
 for i in 1 .. numIters do insertPrivatized(new object(), i);
 done.write(true);
 
-// no leaks
+// no leaks, but we cannot check for memory leakage
+// as it is not reliable yet as to when memory is reclaimed
 for i in 1 .. numIters {
   var c = getPrivatized(i);
   delete c;
   clearPrivatized(i);
 }
 
-var m2 = memoryUsed();
-
-writeln("Memory Leaked: ", (m2 - m1) > 0);
