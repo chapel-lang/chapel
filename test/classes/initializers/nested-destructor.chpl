@@ -20,6 +20,9 @@ record R
 
   proc init()
   {
+    // Note: calling 'new C()' in phase 1 will pass 'this' along, which is
+    // generally frowned upon...
+    this.initDone();
     writeln("  in init of R");
 
     id = 1;
