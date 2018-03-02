@@ -30,10 +30,11 @@
 #define CHPL_QSBR_PROFILE 0
 #endif
 
+#if CHPL_QSBR_PROFILE
 static atomic_uint_least64_t nParked = 0;
 static atomic_uint_least64_t nUnparked = 0;
 static atomic_uint_least64_t nCheckpoints = 0;
-
+#endif
 
 // We maintain a single global counter that denotes the current epoch.
 // Each time some deletion is published (deferred), we advance the epoch
