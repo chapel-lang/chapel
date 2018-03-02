@@ -972,6 +972,7 @@ if systemPrediff:
 
 # consistently look only at the files in the current directory
 dirlist=os.listdir(".")
+dirlist.sort()
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:

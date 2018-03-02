@@ -4770,6 +4770,11 @@ GenRet CallExpr::codegenPrimitive() {
       } else if (isRecord(typeInfo()) || isUnion(typeInfo())) {
         INT_FATAL("TODO - don't like type-punning record/union");
 
+      } else if (src->symbol->hasFlag(FLAG_WIDE_CLASS) && typeInfo() == dtCVoidPtr) {
+        // Special case: If we are casting a wide-ptr to a c_void_ptr we need to ensure
+        // that we perform the cast on the actual address portion of the wide-ptr. LouisJenkinsCS
+        ret = codegenCast(typeInfo(), codegenRaddr(srcGen));
+      
       } else {
         GenRet v = codegenValue(srcGen);
 

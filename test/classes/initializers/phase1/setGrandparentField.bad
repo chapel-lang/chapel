@@ -1,2 +1,1 @@
-setGrandparentField.chpl:22: In initializer:
-setGrandparentField.chpl:24: error: can't pass "this" as an actual to a function during phase 1 of initialization
+{a = 3, b = true, c = 6.2}

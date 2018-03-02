@@ -244,7 +244,7 @@ static void filterInitCandidate(CallInfo&                  info,
                                 Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
 
-  if (candidate->isApplicableForInit(info) == true) {
+  if (candidate->isApplicable(info) == true) {
     candidates.add(candidate);
 
   } else {

@@ -1,0 +1,5 @@
+adding enums to uint(8)s works in a surprising manner
+
+Generally, we treat enums like int(8)s and enum values as param
+int(8)s.  However, this test shows a case in which they are not
+treated equivalently which seems surprising.

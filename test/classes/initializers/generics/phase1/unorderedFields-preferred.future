@@ -1,5 +1,0 @@
-error message: improve field ordering messages
-
-This test currently generates an error message about a field
-being initialized more than once.  It would be nicer if it
-indicated that the fields are initialized in the wrong order.

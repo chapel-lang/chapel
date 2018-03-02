@@ -21,6 +21,6 @@
 
 PREFIX=$CHPL_HOME/tools/c2chapel
 
-source ${PREFIX}/install/venv/bin/activate
+. ${PREFIX}/install/venv/bin/activate
 
 exec ${PREFIX}/c2chapel.py "${@}"

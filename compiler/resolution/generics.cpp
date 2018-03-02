@@ -44,11 +44,6 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
-static FnSymbol* instantiateSignature(FnSymbol*  fn,
-                                      SymbolMap& subs,
-                                      CallExpr*  call,
-                                      bool       isGenericInit);
-
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -432,28 +427,7 @@ void instantiateBody(FnSymbol* fn) {
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
                                CallExpr*  call) {
-  return instantiateSignature(fn, subs, call, false);
-}
-
-FnSymbol* instantiateInitSig(FnSymbol*  fn,
-                             SymbolMap& subs,
-                             CallExpr*  call) {
-  return instantiateSignature(fn, subs, call, true);
-}
-
-static FnSymbol* instantiateSignature(FnSymbol*  fn,
-                                      SymbolMap& subs,
-                                      CallExpr*  call,
-                                      bool       isGenericInit) {
-  Flag      flagReqForGeneric;
-  FnSymbol* retval            = NULL;
-
-  if (isGenericInit == true) {
-    flagReqForGeneric = FLAG_ARG_THIS;
-
-  } else {
-    flagReqForGeneric = FLAG_DELAY_GENERIC_EXPANSION;
-  }
+  FnSymbol* retval = NULL;
 
   //
   // Handle tuples explicitly
@@ -467,16 +441,10 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC) == true &&
-            e->key->hasFlag(flagReqForGeneric)      == false) {
-          INT_FATAL(fn, "illegal instantiation with a generic type");
+        TypeSymbol* nts = getNewSubType(fn, e->key, ts);
 
-        } else {
-          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
-
-          if (ts != nts) {
-            e->value = nts;
-          }
+        if (ts != nts) {
+          e->value = nts;
         }
       }
     }
@@ -535,8 +503,7 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       if (fixupTupleFunctions(fn, newFn, call) == false) {
         // Fix up chpl__initCopy for user-defined records
-        if (isGenericInit                        == false &&
-            fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+        if (fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
             fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
           fixupDefaultInitCopy(fn, newFn, call);
         }
@@ -549,25 +516,14 @@ static FnSymbol* instantiateSignature(FnSymbol*  fn,
 
       newFn->tagIfGeneric();
 
-      if (isGenericInit                ==  true &&
-          newFn->hasFlag(FLAG_GENERIC) == false &&
-          evaluateWhereClause(newFn)   == false) {
+      explainAndCheckInstantiation(newFn, fn);
 
-        // where clause evaluates to false so cache gVoid as a function
-        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
-
-      } else {
-        explainAndCheckInstantiation(newFn, fn);
-
-        retval = newFn;
-      }
+      retval = newFn;
     }
   }
 
-  if (isGenericInit == false) {
-    if (retval != NULL && fn->throwsError() == true) {
-      retval->throwsErrorInit();
-    }
+  if (retval != NULL && fn->throwsError() == true) {
+    retval->throwsErrorInit();
   }
 
   return retval;

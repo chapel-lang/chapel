@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 #
 # CHAPEL TESTING
 
@@ -27,6 +28,10 @@ from chplenv import *
 
 from test import activate_chpl_test_venv
 import argparse
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 import subprocess32 as subprocess
 
 # PROGRAM ENTRY POINT
@@ -35,6 +40,8 @@ def main():
 
     # set up the parser and parse command-line arguments
     parser = parser_setup()
+    if argcomplete:
+        argcomplete.autocomplete(parser)
     global args
     preprocess_options()
     args = parser.parse_args()
@@ -207,6 +214,8 @@ def test_directory(test, test_type):
         # stop recursing if flag is set
         if not args.recurse:
             del dirs[:]
+        else:
+            dirs.sort()
 
         # ignore skipifs for --clean-only run
         if not args.clean_only:
@@ -1242,16 +1251,27 @@ def jUnit():
 
 # PARSER
 
+
+def help_all(help_msg):
+    if any("help-all" in s for s in sys.argv):
+        return help_msg
+    else:
+        return argparse.SUPPRESS
+
+
 def parser_setup():
     parser = argparse.ArgumentParser(description="Test Chapel code.")
     # main args
-    parser.add_argument("tests", nargs="*", help="test files or directories")
+    p = parser.add_argument("tests", nargs="*", help="test files or directories")
+    if argcomplete:
+        p.completer = argcomplete.completers.FilesCompleter([".chpl", ".test.c"])
+
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 
             dest="execopts", help="set options for executing tests")
     # compiler
     parser.add_argument("-compiler", "--compiler", action="store",
-            dest="compiler", help="set alternate compiler")
+            dest="compiler", help=help_all("set alternate compiler"))
     # program launch utility
     parser.add_argument("-launchcmd", "--launchcmd", action="store",
             dest="launch_cmd", default=os.getenv("CHPL_TEST_LAUNCHCMD", ""),
@@ -1301,22 +1321,25 @@ def parser_setup():
     # performance
     parser.add_argument("-performance", "--performance", action="store_true",
             dest="performance", help="run performance tests")
-    parser.add_argument("-perflabel", "--perflabel", action="store",
-            default="perf", dest="perflabel",
-            help="set alternate performance test label")
+    p = parser.add_argument("-perflabel", "--perflabel", action="store",
+               default="perf", dest="perflabel",
+               help="set alternate performance test label")
+    if argcomplete:
+        p.completer = argcomplete.completers.ChoicesCompleter(('ml-', ))
+
     parser.add_argument("-performance-description",
             "--performance-description", action="store", default="",
-            dest="performance_description")
+            dest="performance_description", help=help_all(""))
     parser.add_argument("-performance-configs", "--performance-configs",
             "-performance-configurations", "--performance-configurations",
             action="store", dest="performance_configs",
-            help="set performance configurations")
+            help=help_all("set performance configurations"))
     parser.add_argument("-compperformance", "--compperformance",
             action="store_true", dest="comp_performance",
-            help="test compiler performance")
+            help=help_all("test compiler performance"))
     parser.add_argument("-compperformance-description",
             "--compperformance-description", action="store", default="",
-            dest="comp_performance_description")
+            dest="comp_performance_description", help=help_all(""))
     parser.add_argument("-numtrials", "--numtrials", "-num-trials",
         "--num-trials", action="store", dest="num_trials",
         default=os.getenv("CHPL_TEST_NUM_TRIALS", "1"),
@@ -1324,22 +1347,22 @@ def parser_setup():
     # graphing
     parser.add_argument("-gen-graphs", "--gen-graphs", "-generate-graphs",
             "--generate-graphs", action="store_true", dest="gen_graphs",
-            help="only generate graphs, don't run tests")
+            help=help_all("only generate graphs, don't run tests"))
     parser.add_argument("-nodisplaygraphrange", "--nodisplaygraphrange",
             "-no-display-graph-range", "--no-display-graph-range",
             action="store_false", dest="graphs_disp_range",
-            help="don't display trial range envelopes on the graphs")
+            help=help_all("don't display trial range envelopes ongraphs"))
     parser.add_argument("-graphsgendefault", "--graphsgendefault",
             "-graphs-gen-default", "--graphs-gen-default", action="store",
             choices=["avg", "min", "max", "med"], default="avg",
             dest="graphs_gen_default",
-            help="set default method to reduce multiple trials")
+            help=help_all("set default method to reduce multiple trials"))
     parser.add_argument("-startdate", "--startdate", action="store",
             dest="start_date", metavar="<MM/DD/YY>", 
             help="set graph start date")
     parser.add_argument("-gengraphopts", "--gengraphopts", "-genGraphOpts",
             "--genGraphOpts", action="store", dest="gen_graph_opts",
-            default="", help="set additional graph generation options")
+            default="", help=help_all("set additional graph gen options"))
     # only compile
     parser.add_argument("-comp-only", "--comp-only", action="store_true",
             dest="comp_only", help="only compile the tests, don't run")
@@ -1358,35 +1381,37 @@ def parser_setup():
     # stdin redirect
     parser.add_argument("-nostdinredirect", "--nostdinredirect",
             action="store_true", dest="no_stdin_redirect",
-            help="run the tests without redirecting stdin from /dev/null")
+            help=help_all("don't redirect stdin from /dev/null"))
     parser.add_argument("-stdinredirect", "--stdinredirect",
             action="store_true", dest="stdin_redirect",
-            help="force stdin redirection from /dev/null")
+            help=help_all("force stdin redirection from /dev/null"))
     # launcher timeout
     parser.add_argument("-launchertimeout", "--launchertimeout", 
             action="store", dest="launcher_timeout",
-            help="rely on the launcher to enforce the timeout, not timedexec")
+            help=help_all("rely on the launcher to enforce the timeout"))
     # no chpl home warning
     parser.add_argument("-no-chpl-home-warn", "--no-chpl-home-warn",
             action="store_false", dest="chpl_home_warn",
-            help="don't warn about not starting in CHPL_HOME")
+            help=help_all("don't warn about not starting in CHPL_HOME"))
     # progress
     parser.add_argument("-progress", "--progress", action="store_true",
-            dest="progress", help="Log pass/fail for each test to stderr")
+            dest="progress", help=help_all("Log pass/fail for each test"))
     # test root
     parser.add_argument("-test-root", "--test-root", action="store",
-        dest="test_root_dir", help="set absolute path to test directory")
+        dest="test_root_dir", help=help_all("set abs path to test directory"))
     # jUnit
     parser.add_argument("-junit-xml", "--junit-xml", action="store_true",
-            dest="junit_xml", help="create jUnit XML report")
+            dest="junit_xml", help=help_all("create jUnit XML report"))
     parser.add_argument("-junit-xml-file", "--junit-xml-file", action="store",
             dest="junit_xml_file", metavar="<file>",
-            help="set the path to store the jUnit XML report")
+            help=help_all("set the path to store the jUnit XML report"))
     parser.add_argument("-junit-remove-prefix", "--junit-remove-prefix",
             action="store", dest="junit_remove_prefix", metavar="<prefix>",
-            help="set the <prefix> to remove from tests in the jUnit report")
+            help=help_all("<prefix> to remove from tests in jUnit report"))
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
+    parser.add_argument("--help-all", action="help",
+            help="show all options, including ones meant for other scripts")
 
     return parser
 

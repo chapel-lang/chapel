@@ -1,2 +1,1 @@
-hasLoopBad3.chpl:6: In initializer:
-hasLoopBad3.chpl:9: error: multiple initializations of field "highestNum"
+{highestNum = 0}

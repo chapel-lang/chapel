@@ -1,2 +1,2 @@
 initAtomicsViaWrite.chpl:5: In initializer:
-initAtomicsViaWrite.chpl:6: error: Field used before it is initialized
+initAtomicsViaWrite.chpl:6: error: Field "head" used before it is initialized

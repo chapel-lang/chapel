@@ -124,6 +124,9 @@ InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
 void InitNormalize::merge(const InitNormalize& fork) {
   mCurrField = fork.mCurrField;
   mPhase     = fork.mPhase;
+
+  mImplicitFields.insert(fork.mImplicitFields.begin(),
+                         fork.mImplicitFields.end());
 }
 
 AggregateType* InitNormalize::type() const {
@@ -1165,6 +1168,10 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   return retval;
 }
 
+bool InitNormalize::isFieldImplicitlyInitialized(DefExpr* field) const {
+  return mImplicitFields.find(field) != mImplicitFields.end();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1305,6 +1312,130 @@ void InitNormalize::makeOuterArg() {
                                  mFn->_outer));
 }
 
+static bool isThisDot(CallExpr* call) {
+  bool retval = false;
+
+  if (call->isNamedAstr(astrSdot) == true) {
+    SymExpr* base = toSymExpr(call->get(1));
+    if (base != NULL &&
+        base->symbol()->hasFlag(FLAG_ARG_THIS)) {
+      retval = true;
+    }
+  }
+  
+  return retval;
+}
+
+static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (isAssignment(call) == true) {
+      if (CallExpr* LHS = toCallExpr(call->get(1))) {
+        if (isThisDot(LHS) == true) {
+          if (LHS->square == true) {
+            // this.x[1] = blah;
+            uses.push_back(LHS);
+          }
+        } else {
+          // this.x.foo = blah;
+          collectThisUses(LHS, uses);
+        }
+      }
+      collectThisUses(call->get(2), uses);
+    } else if (isThisDot(call) == true) {
+      uses.push_back(call);
+    } else {
+      // this.foo(1,2,3);
+      collectThisUses(call->baseExpr, uses);
+
+      bool passesThis = false;
+
+      // foo(this.x);
+      for_actuals(actual, call) {
+        SymExpr* actSe = NULL;
+        if (SymExpr* se = toSymExpr(actual)) {
+          actSe = se;
+        } else if (NamedExpr* named = toNamedExpr(actual)) {
+          actSe = toSymExpr(named->actual);
+        }
+        if (actSe && actSe->symbol()->hasFlag(FLAG_ARG_THIS)) {
+          passesThis = true;
+        }
+        collectThisUses(actual, uses);
+      }
+
+      // foo(1,2, this);
+      if (passesThis == true) {
+        uses.push_back(call);
+      }
+    }
+  }
+}
+
+static bool isMethodCall(CallExpr* call) {
+  bool retval = false;
+
+  if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+    if (parent->baseExpr == call) {
+      retval = true;
+      if (UnresolvedSymExpr* se = toUnresolvedSymExpr(call->get(2))) {
+        if (strstr(se->unresolved, "_if_fn") != NULL ||
+            strstr(se->unresolved, "_parloopexpr") != NULL) {
+          // Don't consider compiler-inserted loop/conditional functions
+          retval = false;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+void InitNormalize::checkAndEmitErrors(Expr* expr) {
+  if (isPhase2() != true) {
+    if (CallExpr* call = toCallExpr(expr)) {
+      checkAndEmitErrors(call);
+    } else if (DefExpr* def = toDefExpr(expr)) {
+      checkAndEmitErrors(def->init);
+    }
+  }
+}
+
+// Catch a handful of errors:
+// 1) use-before-init
+// 2) method call in phase 1
+// 3) pass 'this' to function in phase 1
+void InitNormalize::checkAndEmitErrors(CallExpr* call) {
+  std::vector<CallExpr*> uses;
+  collectThisUses(call, uses);
+
+  int numErrors = 0;
+
+  for_vector(CallExpr, use, uses) {
+    if (DefExpr* field = type()->toLocalField(use)) {
+      if (isFieldInitialized(field) == false) {
+        USR_FATAL_CONT(call, "Field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
+    } else if (DefExpr* field = type()->toSuperField(use)) {
+      if (isPhase0() == true) {
+        USR_FATAL_CONT(call, "Parent field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
+    } else if (isMethodCall(use)) {
+      USR_FATAL_CONT(call, "cannot call a method during phase 1 of initialization");
+      numErrors += 1;
+    } else {
+      USR_FATAL_CONT(call, "cannot pass \"this\" to a function in phase 1 of initialization");
+      numErrors += 1;
+      // TODO: Ensure 'this' in 'use'
+    }
+  }
+
+  if (numErrors > 0) {
+    USR_STOP();
+  }
+}
+
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
   Expr* retval = NULL;
@@ -1314,15 +1445,13 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
 
     while (field != mCurrField) {
       fieldInitFromField(initStmt);
+      mImplicitFields.insert(mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
     }
   }
 
-  // Now that omitted fields have been handled, see if RHS is OK
-  if (fieldUsedBeforeInitialized(initStmt) == true) {
-    USR_FATAL(initStmt, "Field used before it is initialized");
-  }
+  checkAndEmitErrors(initStmt);
 
   retval     = fieldInitFromStmt(initStmt, field);
   mCurrField = toDefExpr(mCurrField->next);
@@ -1409,58 +1538,6 @@ void InitNormalize::fieldInitFromField(Expr* insertBefore) {
   } else {
     INT_ASSERT(false);
   }
-}
-
-bool InitNormalize::fieldUsedBeforeInitialized(Expr* expr) const {
-  bool retval = false;
-
-  if (DefExpr* defExpr = toDefExpr(expr)) {
-    if (defExpr->init != NULL) {
-      retval = fieldUsedBeforeInitialized(defExpr->init);
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    retval = fieldUsedBeforeInitialized(callExpr);
-  }
-
-  return retval;
-}
-
-bool InitNormalize::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
-  bool retval = false;
-
-  if (isAssignment(callExpr) == true) {
-    if (CallExpr* LHS = toCallExpr(callExpr->get(1))) {
-      if (isFieldAccess(LHS)) {
-        // Want to watch out for array-like accesses that appear as field
-        // accesses: x[1] = 1;
-        retval = LHS->square;
-      } else {
-        // Look for expressions like: x.foo = 1;
-        retval = fieldUsedBeforeInitialized(callExpr->get(1));
-      }
-    }
-    retval = retval || fieldUsedBeforeInitialized(callExpr->get(2));
-
-  } else if (DefExpr* field = type()->toLocalField(callExpr)) {
-    retval = isFieldInitialized(field) == true ? false : true;
-
-  } else {
-    // Need to check the baseExpr in cases like:
-    //   myField.set(1)
-    // Because the baseExpr is a field access of 'this.myField'
-    retval = fieldUsedBeforeInitialized(callExpr->baseExpr);
-    if (retval == false) {
-      for_actuals(actual, callExpr) {
-        if (fieldUsedBeforeInitialized(actual) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
-  }
-
-  return retval;
 }
 
 void InitNormalize::describe(int offset) const {

@@ -313,6 +313,11 @@ module String {
     inline proc length return len;
 
     /*
+      :returns: The number of characters in the string.
+      */
+    inline proc size return len;
+
+    /*
        Gets a version of the :record:`string` that is on the currently
        executing locale.
 
