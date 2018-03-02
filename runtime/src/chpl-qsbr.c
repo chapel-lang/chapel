@@ -136,7 +136,7 @@ static inline uint64_t is_parked(struct tls_node *node) {
 static inline void park(struct tls_node *node);
 static inline void park(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 1);
-  #ifdef CHPL_QSBR_PROFILE
+  #if CHPL_QSBR_PROFILE
   atomic_fetch_add_uint_least64_t(&nParked, 1);
   #endif
 }
@@ -144,7 +144,7 @@ static inline void park(struct tls_node *node) {
 static inline void unpark(struct tls_node *node);
 static inline void unpark(struct tls_node *node) {
   atomic_store_uint_least64_t(&node->parked, 0);
-  #ifdef CHPL_QSBR_PROFILE
+  #if CHPL_QSBR_PROFILE
   atomic_fetch_add_uint_least64_t(&nUnparked, 1);
   #endif
 }
@@ -412,7 +412,7 @@ void chpl_qsbr_blocked(void) {
 }
 
 void chpl_qsbr_checkpoint(void) {
-    #ifdef CHPL_QSBR_PROFILE
+    #if CHPL_QSBR_PROFILE
     atomic_fetch_add_uint_least64_t(&nCheckpoints, 1);
     #endif
     struct tls_node *tls = CHPL_TLS_GET(chpl_qsbr_tls);
@@ -485,7 +485,7 @@ void chpl_qsbr_enable(void) {
 
 
 void chpl_qsbr_exit(void) {
-    #ifdef CHPL_QSBR_PROFILE
+    #if CHPL_QSBR_PROFILE
     printf("nParks: %lu, nUnparks: %lu, nCheckpoints: %lu", 
       atomic_load_uint_least64_t(&nParked), atomic_load_uint_least64_t(&nUnparked), atomic_load_uint_least64_t(&nCheckpoints));
     #endif
