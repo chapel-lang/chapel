@@ -839,7 +839,7 @@ fixupDestructors() {
       INT_ASSERT(ct->dispatchParents.n <= 1);
 
       if (ct->dispatchParents.n == 1 && isClass(ct) == true) {
-        Type* parType = ct->dispatchParents.v[0];
+        AggregateType* parType = ct->dispatchParents.v[0];
 
         if (FnSymbol* parDestructor = parType->getDestructor()) {
           SET_LINENO(fn);

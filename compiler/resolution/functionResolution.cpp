@@ -644,7 +644,7 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   Type* retval = NULL;
 
   if (AggregateType* at = toAggregateType(actualType)) {
-    forv_Vec(Type, parent, at->dispatchParents) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
       if (isInstantiation(parent, formalType) == true) {
         retval = parent;
         break;
@@ -1833,15 +1833,18 @@ static void collectVisibleMethodsNamed(Type*                   t,
     }
 
     size_t maxChildMethods = methods.size();
+
     // Collect also methods from a parent class type
-    forv_Vec(Type, parent, at->dispatchParents) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
       collectVisibleMethodsNamed(parent, nameAstr, methods);
     }
+
     // Filter out methods any of the parent methods
     // that have a signature match with the child's methods.
     // Such methods represent overrides with inheritance.
     for (size_t i = maxChildMethods; i < methods.size(); i++) {
       bool remove = false;
+
       for (size_t j = 0; j < maxChildMethods; j++) {
         if (methods[i] != NULL &&
             methods[j] != NULL &&
@@ -1850,8 +1853,10 @@ static void collectVisibleMethodsNamed(Type*                   t,
           break;
         }
       }
-      if (remove)
+
+      if (remove) {
         methods[i] = NULL;
+      }
     }
   }
 }
