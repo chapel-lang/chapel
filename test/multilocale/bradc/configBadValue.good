@@ -1,1 +1,3 @@
-<command line setting of 'intVal'>: error: Unexpected character when converting from string to int(64): '.'
+uncaught IllegalArgumentError: bad cast from string '3.2i' to int(64)
+  <command line setting of 'intVal'>:0: thrown here
+  <command line setting of 'intVal'>:0: uncaught here

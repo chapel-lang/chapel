@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "wellknown.h"
 
 static bool mainReturnsInt;
@@ -907,14 +908,6 @@ static void build_enum_cast_function(EnumType* et) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
 
-  // First, handle error case of trying to convert an empty string
-  fn->insertAtTail(new CondStmt(new CallExpr(buildDotExpr(arg2,
-                                                          "isEmptyString"),
-                                             new CallExpr(PRIM_ACTUALS_LIST)),
-                                new CallExpr(PRIM_RT_ERROR,
-                                             new_CStringSymbol(astr("Empty string when converting from string to ",
-                                                                    et->symbol->name)))));
-
   CondStmt* cond = NULL;
   for_enums(constant, et) {
     cond = new CondStmt(
@@ -931,11 +924,16 @@ static void build_enum_cast_function(EnumType* et) {
 
   fn->insertAtTail(cond);
 
-  fn->insertAtTail(new CallExpr("halt",
-                                new_StringSymbol("illegal conversion of string \\\""),
-                                arg2,
-                                new_StringSymbol("\\\" to "),
-                                new_StringSymbol(et->symbol->name)));
+  fn->throwsErrorInit();
+  fn->insertAtTail(new TryStmt(
+                     false,
+                     new BlockStmt(
+                       new CallExpr("chpl_enum_cast_error",
+                                    arg2,
+                                    new_StringSymbol(et->symbol->name))),
+                     NULL));
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN,
                                 toDefExpr(et->constants.first())->sym));
