@@ -8618,11 +8618,7 @@ static bool isUnusedClass(AggregateType* ct) {
     retval = false;
 
   } else {
-    forv_Vec(Type, child, ct->dispatchChildren) {
-      AggregateType* childClass = toAggregateType(child);
-
-      INT_ASSERT(childClass);
-
+    forv_Vec(AggregateType, childClass, ct->dispatchChildren) {
       if (isUnusedClass(childClass) == false) {
         retval = false;
         break;
