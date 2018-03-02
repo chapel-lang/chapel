@@ -39,7 +39,8 @@ static void cullForDefaultConstructor(FnSymbol* fn);
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables);
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs = NULL);
 
 void addAutoDestroyCalls() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -136,9 +137,11 @@ static bool         isReturnLabel(const Expr*        stmt,
                                   const LabelSymbol* returnLabel);
 static bool         isErrorLabel(const Expr*        stmt);
 static bool         isYieldStmt(const Expr* stmt);
-static void         walkForallBlocks(FnSymbol* fn, ForallStmt* forall,
+static void         walkForallBlocks(FnSymbol* fn,
                                      AutoDestroyScope* parentScope,
+                                     ForallStmt* forall,
                                      std::set<VarSymbol*>& parentIgnored);
+
 static void gatherIgnoredVariablesForErrorHandling(
     CondStmt* cond,
     std::set<VarSymbol*>& ignoredVariables);
@@ -146,14 +149,29 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
+/* A ForallStmt index variable does not have a DefExprs in the loop body.
+   Yet, it needs to be autoDestroyed at the end of the block.
+   For that to happen, we add it to 'scope'. */
+static void addFSindexVarToScope(AutoDestroyScope* scope, ForallStmt* forall) {
+  VarSymbol* idx = forall->singleInductionVar();
+  if (isAutoDestroyedVariable(idx)) {
+    INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
+    scope->variableAdd(idx);
+  }
+}
+
 static void walkBlock(FnSymbol*         fn,
                       AutoDestroyScope* parent,
                       BlockStmt*        block,
-                      std::set<VarSymbol*>& ignoredVariables) {
+                      std::set<VarSymbol*>& ignoredVariables,
+                      ForallStmt*       pfs) {
   AutoDestroyScope scope(parent, block);
 
   LabelSymbol*     retLabel   = (parent == NULL) ? findReturnLabel(fn) : NULL;
   bool             isDeadCode = false;
+
+  if (pfs != NULL)
+    addFSindexVarToScope(&scope, pfs);
 
   // Updating the variableToExclude is a good start, but an iterator
   // can have multiple yields in it. If each yield consumes the value,
@@ -203,7 +221,7 @@ static void walkBlock(FnSymbol*         fn,
 
       // Recurse in to a ForallStmt
       } else if (ForallStmt* forall = toForallStmt(stmt)) {
-        walkForallBlocks(fn, forall, &scope, ignoredVariables);
+        walkForallBlocks(fn, &scope, forall, ignoredVariables);
 
       // Recurse in to the BlockStmt(s) of a CondStmt
       } else if (CondStmt*  cond     = toCondStmt(stmt))  {
@@ -338,12 +356,13 @@ static bool isYieldStmt(const Expr* stmt) {
 }
 
 // Helper for walkBlock() to walk everything for a ForallStmt.
-static void walkForallBlocks(FnSymbol* fn, ForallStmt* forall,
+static void walkForallBlocks(FnSymbol* fn,
                              AutoDestroyScope* parentScope,
+                             ForallStmt* forall,
                              std::set<VarSymbol*>& parentIgnored)
 {
   std::set<VarSymbol*> toIgnoreLB(parentIgnored);
-  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB);
+  walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, forall);
 
   for_shadow_vars(svar, temp, forall)
     if (!svar->initBlock()->body.empty() || !svar->deinitBlock()->body.empty())
