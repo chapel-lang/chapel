@@ -1217,7 +1217,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(FnSymbol*  fn)    const {
 
 InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
   Expr*     stmt   = block->body.head;
-  const bool initNew = type()->isRecord();
+  const bool initNew = type()->isRecord() || hasInitDone(block);
   const InitPhase defaultPhase = initNew ? cPhase1 : cPhase2;
   InitPhase retval = defaultPhase;
 
