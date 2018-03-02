@@ -94,8 +94,8 @@ module ChapelError {
       super.init();
     }
 
-    proc init(_info: string) {
-      this.info = _info;
+    proc init(info: string) {
+      this.info = info;
       super.init();
     }
 
