@@ -490,35 +490,35 @@ static InitNormalize preNormalize(AggregateType* at,
       // Stmt is super.init() or this.init()
       } else if (isInitStmt(callExpr) == true) {
         checkInvalidInit(state, callExpr);
-          if (isThisInit(callExpr) == true) {
-            if (initNew == false) {
-              state.completePhase1(callExpr);
-            }
+        if (isThisInit(callExpr) == true) {
+          if (initNew == false) {
+            state.completePhase1(callExpr);
+          }
 
-            stmt = callExpr->next;
+          stmt = callExpr->next;
 
-          } else if (isSuperInit(callExpr) == true) {
-            Expr* next = callExpr->next;
+        } else if (isSuperInit(callExpr) == true) {
+          Expr* next = callExpr->next;
 
-            if (initNew == false) {
-              state.completePhase1(callExpr);
-            }
+          if (initNew == false) {
+            state.completePhase1(callExpr);
+          }
 
-            if (at->isRecord() == true) {
-              callExpr->remove();
+          if (at->isRecord() == true) {
+            callExpr->remove();
 
-            } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-              callExpr->remove();
-
-            } else {
-              transformSuperInit(callExpr);
-            }
-
-            stmt = next;
+          } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+            callExpr->remove();
 
           } else {
-            INT_ASSERT(false);
+            transformSuperInit(callExpr);
           }
+
+          stmt = next;
+
+        } else {
+          INT_ASSERT(false);
+        }
 
       } else if (isInitDone(callExpr) == true) {
         Expr* next = stmt->next;
