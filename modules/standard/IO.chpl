@@ -2468,10 +2468,12 @@ proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=false, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var reader = fl.reader(error=error, kind, locking, start, end, hints, fl_style);
@@ -2541,10 +2543,12 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=true, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var writer = fl.writer(error=error, kind, locking, start, end, hints, fl_style);
@@ -3460,7 +3464,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
-proc stringify(const args ...?k):string {
+proc stringify(const args ...?k):string throws {
   if _can_stringify_direct(args) {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
@@ -3485,33 +3489,27 @@ proc stringify(const args ...?k):string {
   } else {
     // otherwise, write it using the I/O system.
 
-    try! {
-      // Open a memory buffer to store the result
-      var f = openmem();
+    // Open a memory buffer to store the result
+    var f = openmem();
+    defer f.close();
 
-      var w = f.writer(locking=false);
+    var w = f.writer(locking=false);
+    defer w.close();
 
-      w.write((...args));
+    w.write((...args));
 
-      var offset = w.offset();
+    var offset = w.offset();
 
-      var buf = c_malloc(uint(8), offset+1);
+    var buf = c_malloc(uint(8), offset+1);
 
-      // you might need a flush here if
-      // close went away
-      w.close();
+    var r = f.reader(locking=false);
+    defer r.close();
 
-      var r = f.reader(locking=false);
+    r.readBytes(buf, offset:ssize_t);
+    // Add the terminating NULL byte to make C string conversion easy.
+    buf[offset] = 0;
 
-      r.readBytes(buf, offset:ssize_t);
-      // Add the terminating NULL byte to make C string conversion easy.
-      buf[offset] = 0;
-      r.close();
-
-      f.close();
-
-      return new string(buf, offset, offset+1, owned=true, needToCopy=false);
-    }
+    return new string(buf, offset, offset+1, owned=true, needToCopy=false);
   }
 }
 
