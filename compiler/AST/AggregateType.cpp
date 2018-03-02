@@ -1767,19 +1767,9 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         retval = false;
       }
     }
-  } else if (isRecord() == true) {
-    // This should get removed during preNormalizeInitMethod, but we need it to
-    // know we are in Phase 1 of normal initializers for the old proposal.
-    CallExpr* superPortion = new CallExpr(".",
-                                          new SymExpr(fn->_this),
-                                          new_CStringSymbol("super"));
-
-    SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
-    CallExpr* base         = new CallExpr(".", superPortion, initPortion);
-    CallExpr* superCall    = new CallExpr(base);
-
-    fn->body->insertAtTail(superCall);
   }
+
+  // Nothing to be done for records.
 
   return retval;
 }
@@ -1848,16 +1838,6 @@ void AggregateType::buildCopyInitializer() {
         }
       }
     }
-
-    CallExpr*  super     = new CallExpr(".",
-                                        new SymExpr(fn->_this),
-                                        new_CStringSymbol("super"));
-
-    SymExpr*   initExpr  = new SymExpr(new_CStringSymbol("init"));
-    CallExpr*  base      = new CallExpr(".", super, initExpr);
-    CallExpr*  superCall = new CallExpr(base);
-
-    fn->insertAtTail(superCall);
 
     symbol->defPoint->insertBefore(def);
 

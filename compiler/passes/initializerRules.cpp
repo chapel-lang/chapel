@@ -282,25 +282,10 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
   AggregateType* at    = toAggregateType(fn->_this->type);
   ArgSymbol*     _this = toArgSymbol(fn->_this);
 
-  // The body contains at least one instance of this.init()
-  // i.e. the body is not empty and we do not need to insert super.init()
-  if (state.isPhase0() == true) {
-    preNormalize(at, fn->body, state, false);
-
-  // The body contains at least one instance of super.init()
-  // i.e. the body is not empty and we do not need to insert super.init()
-  } else if (state.isPhase1() == true) {
-    preNormalize(at, fn->body, state, false);
-
-  } else if (state.isPhase2() == true) {
-    if (Expr* head = fn->body->body.head) {
-      state.initializeFieldsBefore(head);
-
-      preNormalize(at, fn->body, state, false, head);
-
-    } else {
-      state.initializeFieldsAtTail(fn->body);
-    }
+  // The body contains at least one instance of this.init() or super.init()
+  if (state.isPhase0() == true || state.isPhase1() == true) {
+    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    finalState.initializeFieldsAtTail(fn->body);
 
   } else {
     INT_ASSERT(false);
@@ -319,18 +304,17 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at = toAggregateType(fn->_this->type);
+  bool initNew = hasInitDone(fn->body);
 
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
-    bool initNew = hasInitDone(fn->body);
 
     preNormalize(at, fn->body, state, initNew);
 
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    bool initNew    = hasInitDone(fn->body);
     bool needsSuper = hasInit(fn->body) == false;
 
     preNormalize(at, fn->body, state, initNew);
@@ -347,13 +331,13 @@ static void preNormalizeInitClass(FnSymbol* fn) {
 
       state.initializeFieldsBefore(superInit);
 
-      preNormalize(at, fn->body, state, false, superInit->next);
+      preNormalize(at, fn->body, state, initNew, superInit->next);
 
     } else {
       if (Expr* head = fn->body->body.head) {
         state.initializeFieldsBefore(head);
 
-        preNormalize(at, fn->body, state, false, head);
+        preNormalize(at, fn->body, state, initNew, head);
 
       } else {
         state.initializeFieldsAtTail(fn->body);
@@ -491,9 +475,8 @@ static InitNormalize preNormalize(AggregateType* at,
       } else if (isInitStmt(callExpr) == true) {
         checkInvalidInit(state, callExpr);
         if (isThisInit(callExpr) == true) {
-          if (initNew == false) {
-            state.completePhase1(callExpr);
-          }
+          INT_ASSERT(state.isPhase0() == true);
+          state.completePhase1(callExpr);
 
           stmt = callExpr->next;
 
@@ -502,9 +485,15 @@ static InitNormalize preNormalize(AggregateType* at,
 
           if (initNew == false) {
             state.completePhase1(callExpr);
+          } else {
+            INT_ASSERT(state.isPhase0() == true);
+            state.completePhase0(callExpr);
           }
 
           if (at->isRecord() == true) {
+            // INIT TODO: disallow super.init in records
+            // gdbShouldBreakHere();
+            // USR_FATAL_CONT(stmt, "super.init not allowed in records");
             callExpr->remove();
 
           } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
@@ -523,6 +512,7 @@ static InitNormalize preNormalize(AggregateType* at,
       } else if (isInitDone(callExpr) == true) {
         Expr* next = stmt->next;
 
+        checkInvalidInit(state, callExpr);
         state.completePhase1(callExpr);
 
         stmt->remove();
@@ -531,7 +521,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase0() == true) {
+        if (state.isPhase0() == true && initNew == false) {
           USR_FATAL(stmt,
                     "field initialization not allowed before this.init()");
 
