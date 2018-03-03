@@ -506,25 +506,10 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
     INT_FATAL(this, "trying to set a later generic field %d", index);
   }
 
-  // First, look to see if we have an instantiation with that value already
-  for_vector(AggregateType, at, instantiations) {
-    // TODO: test me
-    Symbol* field = at->getField(genericField);
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
-      if (field->type == sym->typeInfo())
-        return at;
-    }
-    if (field->hasFlag(FLAG_PARAM) &&
-        at->substitutions.get(field) == sym) {
-      return at;
-    }
-    if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_PARAM)) {
-      if (field->type == sym->typeInfo()) {
-        return at;
-      }
-    }
+  if (AggregateType* at = getCurInstantiation(sym)) {
+    return at;
   }
+
   // Otherwise, we need to create an instantiation for that type
   AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
   this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
@@ -572,6 +557,35 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
   }
 
   return newInstance;
+}
+
+AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
+  AggregateType* retval = NULL;
+
+  for_vector(AggregateType, at, instantiations) {
+    Symbol* field = at->getField(genericField);
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      if (givesType(sym) == true && field->type == sym->typeInfo()) {
+        retval = at;
+        break;
+      }
+
+    } else if (field->hasFlag(FLAG_PARAM) == true) {
+      if (at->substitutions.get(field) == sym) {
+        retval = at;
+        break;
+      }
+
+    } else {
+      if (field->type == sym->typeInfo()) {
+        retval = at;
+        break;
+      }
+    }
+  }
+
+  return retval;
 }
 
 AggregateType*
