@@ -1,5 +1,0 @@
-#! /bin/sh
-
-outfile=$2
-grep -v 'ld: skipping incompatible' $outfile >$outfile.tmp
-mv $outfile.tmp $outfile
