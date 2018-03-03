@@ -510,53 +510,7 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
     return at;
   }
 
-  // Otherwise, we need to create an instantiation for that type
-  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
-  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
-  newInstance->symbol->copyFlags(this->symbol);
-
-  newInstance->substitutions.copy(this->substitutions);
-
-  Symbol* field = newInstance->getField(genericField);
-
-  if (field->hasFlag(FLAG_PARAM)) {
-    newInstance->substitutions.put(field, sym);
-    newInstance->symbol->renameInstantiatedSingle(sym);
-
-  } else {
-    newInstance->substitutions.put(field, sym->typeInfo()->symbol);
-    newInstance->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
-  }
-
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
-    field->type = sym->typeInfo();
-
-  } else {
-    if (!field->defPoint->exprType && field->type == dtUnknown) {
-      field->type = sym->typeInfo();
-
-    } else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
-      // TODO: Something something, casts and coercions
-
-    } else {
-      field->type = sym->typeInfo();
-    }
-  }
-
-  instantiations.push_back(newInstance);
-
-  newInstance->instantiatedFrom = this;
-
-  forv_Vec(AggregateType, at, dispatchParents) {
-    newInstance->dispatchParents.add(at);
-    at->dispatchChildren.add_exclusive(newInstance);
-  }
-
-  if (newInstance->setNextGenericField() == false) {
-    newInstance->symbol->removeFlag(FLAG_GENERIC);
-  }
-
-  return newInstance;
+  return getNewInstantiation(sym);
 }
 
 AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
@@ -583,6 +537,55 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
         break;
       }
     }
+  }
+
+  return retval;
+}
+
+AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
+  AggregateType* retval = toAggregateType(this->symbol->copy()->type);
+  Symbol*        field  = retval->getField(genericField);
+
+  this->symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
+  retval->symbol->copyFlags(this->symbol);
+
+  retval->substitutions.copy(this->substitutions);
+
+  if (field->hasFlag(FLAG_PARAM)) {
+    retval->substitutions.put(field, sym);
+    retval->symbol->renameInstantiatedSingle(sym);
+
+  } else {
+    retval->substitutions.put(field, sym->typeInfo()->symbol);
+    retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
+  }
+
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+    field->type = sym->typeInfo();
+
+  } else {
+    if (!field->defPoint->exprType && field->type == dtUnknown) {
+      field->type = sym->typeInfo();
+
+    } else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
+      // TODO: Something something, casts and coercions
+
+    } else {
+      field->type = sym->typeInfo();
+    }
+  }
+
+  instantiations.push_back(retval);
+
+  retval->instantiatedFrom = this;
+
+  forv_Vec(AggregateType, at, dispatchParents) {
+    retval->dispatchParents.add(at);
+    at->dispatchChildren.add_exclusive(retval);
+  }
+
+  if (retval->setNextGenericField() == false) {
+    retval->symbol->removeFlag(FLAG_GENERIC);
   }
 
   return retval;

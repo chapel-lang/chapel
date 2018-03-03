@@ -108,6 +108,8 @@ public:
 
   AggregateType*              getCurInstantiation(Symbol* sym);
 
+  AggregateType*              getNewInstantiation(Symbol* sym);
+
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
