@@ -104,6 +104,8 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
     copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
   }
 
+  copy_type->genericField = genericField;
+
   return copy_type;
 }
 
@@ -436,21 +438,8 @@ bool AggregateType::mayHaveInstances() const {
 // Return true if a generic field was found.
 bool AggregateType::setFirstGenericField() {
   if (genericField == 0) {
-    int idx = 1;
-
-    for_fields(field, this) {
-      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true ||
-          field->hasFlag(FLAG_PARAM)         == true ||
-          (field->defPoint->init     == NULL &&
-           field->defPoint->exprType == NULL &&
-           field->type               == dtUnknown)) {
-        genericField = idx;
-        symbol->addFlag(FLAG_GENERIC);
-        break;
-
-      } else {
-        idx++;
-      }
+    if (setNextGenericField() == true) {
+      symbol->addFlag(FLAG_GENERIC);
     }
 
     if (isClass() == true) {
@@ -462,7 +451,33 @@ bool AggregateType::setFirstGenericField() {
     }
   }
 
-  return (genericField != 0) ? true : false;
+  return genericField != 0 ? true : false;
+}
+
+bool AggregateType::setNextGenericField() {
+  int index;
+
+  for (index = genericField + 1; index <= fields.length; index++) {
+    Symbol* field = getField(index);
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      break;
+
+    } else if (field->hasFlag(FLAG_PARAM) == true) {
+      break;
+
+    } else if (field->type  == dtUnknown) {
+      DefExpr* def = field->defPoint;
+
+      if (def->init == NULL && def->exprType == NULL) {
+        break;
+      }
+    }
+  }
+
+  genericField = index <= fields.length ? index : 0;
+
+  return genericField != 0 ? true : false;
 }
 
 // Returns an instantiation of this AggregateType at the given index.
@@ -478,109 +493,101 @@ bool AggregateType::setFirstGenericField() {
 // Otherwise, will create a new instantiation with the given
 // argument and will return that.
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
-  // If the index of the field is prior to the index of the next generic field
-  // then trivially return ourselves
-  if (index < genericField)
-    return this;
+  AggregateType* retval = NULL;
 
-  if (index > genericField) {
-    // Internal error, because initializerRules should have ensured that we
-    // access the generic fields in order, and so we should never try to update
-    // a generic field after the current generic field when the current one
-    // hasn't been updated.
+  if (index < genericField) {
+    retval = this;
+
+  } else if (index == genericField) {
+    if (AggregateType* at = getCurInstantiation(sym)) {
+      retval = at;
+    } else {
+      retval = getNewInstantiation(sym);
+    }
+
+  } else {
     INT_FATAL(this, "trying to set a later generic field %d", index);
   }
 
-  // First, look to see if we have an instantiation with that value already
+  return retval;
+}
+
+AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
+  AggregateType* retval = NULL;
+
   for_vector(AggregateType, at, instantiations) {
-    // TODO: test me
     Symbol* field = at->getField(genericField);
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
-      if (field->type == sym->typeInfo())
-        return at;
-    }
-    if (field->hasFlag(FLAG_PARAM) &&
-        at->substitutions.get(field) == sym) {
-      return at;
-    }
-    if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_PARAM)) {
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      if (givesType(sym) == true && field->type == sym->typeInfo()) {
+        retval = at;
+        break;
+      }
+
+    } else if (field->hasFlag(FLAG_PARAM) == true) {
+      if (at->substitutions.get(field) == sym) {
+        retval = at;
+        break;
+      }
+
+    } else {
       if (field->type == sym->typeInfo()) {
-        return at;
+        retval = at;
+        break;
       }
     }
   }
-  // Otherwise, we need to create an instantiation for that type
-  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
-  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
-  newInstance->symbol->copyFlags(this->symbol);
 
-  newInstance->substitutions.copy(this->substitutions);
+  return retval;
+}
 
-  Symbol* field = newInstance->getField(genericField);
+AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
+  AggregateType* retval = toAggregateType(symbol->copy()->type);
+  Symbol*        field  = retval->getField(genericField);
 
-  if (field->hasFlag(FLAG_PARAM)) {
-    newInstance->substitutions.put(field, sym);
-    newInstance->symbol->renameInstantiatedSingle(sym);
+  symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
+
+  retval->instantiatedFrom = this;
+
+  retval->symbol->copyFlags(symbol);
+
+  retval->substitutions.copy(substitutions);
+
+  if (field->hasFlag(FLAG_PARAM) == true) {
+    retval->substitutions.put(field, sym);
+    retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
-    newInstance->substitutions.put(field, sym->typeInfo()->symbol);
-    newInstance->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
+    retval->substitutions.put(field, sym->typeInfo()->symbol);
+    retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
     field->type = sym->typeInfo();
 
+  } else if (field->defPoint->exprType == NULL) {
+    if (field->type == dtUnknown) {
+      field->type = sym->typeInfo();
+    }
+
   } else {
-    if (!field->defPoint->exprType && field->type == dtUnknown) {
-      field->type = sym->typeInfo();
-
-    } else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
-      // TODO: Something something, casts and coercions
-
-    } else {
+    if (field->defPoint->exprType->typeInfo() == sym->typeInfo()) {
       field->type = sym->typeInfo();
     }
   }
 
-  instantiations.push_back(newInstance);
-
-  newInstance->instantiatedFrom = this;
-
-  // Handle dispatch parents (because it totally makes sense for this to have
-  // been done outside of the AggregateType by
-  // instantiateTypeForTypeConstructor.  Totally)
   forv_Vec(AggregateType, at, dispatchParents) {
-    newInstance->dispatchParents.add(at);
-
-    bool inserted = at->dispatchChildren.add_exclusive(newInstance);
-
-    INT_ASSERT(inserted);
+    retval->dispatchParents.add(at);
+    at->dispatchChildren.add_exclusive(retval);
   }
 
-  DefExpr* next = toDefExpr(field->defPoint->next);
-
-  newInstance->genericField = this->genericField + 1;
-
-  while (next) {
-    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-        next->sym->hasFlag(FLAG_PARAM) ||
-        (next->init == NULL && next->exprType == NULL)) {
-      // This is the next value for genericField
-      break;
-
-    } else {
-      newInstance->genericField = newInstance->genericField + 1;
-      next = toDefExpr(next->next);
-    }
+  if (retval->setNextGenericField() == false) {
+    retval->symbol->removeFlag(FLAG_GENERIC);
   }
 
-  if (newInstance->genericField > newInstance->fields.length) {
-    newInstance->genericField = 0;
-    newInstance->symbol->removeFlag(FLAG_GENERIC);
-  }
+  instantiations.push_back(retval);
 
-  return newInstance;
+  return retval;
 }
 
 AggregateType*
