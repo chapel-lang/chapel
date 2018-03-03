@@ -1248,7 +1248,7 @@ static void setupModule()
   targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
 
   if (ffloatOpt) {
-    // see also FastMathFlags FM.setUnsafeAlgebra etc
+    // see also FastMathFlags FM.setAllowReassoc etc
     targetOptions.UnsafeFPMath = 1;
     targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
     targetOptions.NoNaNsFPMath = 1;
@@ -1439,7 +1439,13 @@ void prepareCodegenLLVM()
     FM.setNoInfs();
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
+#if HAVE_LLVM_VER < 6
     FM.setUnsafeAlgebra();
+#else
+    FM.setAllowContract(true);
+    FM.setApproxFunc();
+    FM.setAllowReassoc();
+#endif
     info->irBuilder->setFastMathFlags(FM);
   }
 
