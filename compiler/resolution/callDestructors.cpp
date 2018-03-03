@@ -71,14 +71,16 @@ public:
 
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
+  typedef std::set<FnSymbol*>         FnSet;
+  typedef enum { TF_NONE, TF_FULL, TF_ASGN } TFkind;
 
-  static void             returnByRefCollectCalls(RefMap& calls);
-  static FnSymbol*        theTransformableFunction(CallExpr* call);
-  static bool             isTransformableFunction(FnSymbol* fn);
+  static void             returnByRefCollectCalls(RefMap& calls, FnSet& fns);
+  static TFkind           transformableFunctionKind(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
                                                    ArgSymbol* formal);
+  static void             updateAssignments(FnSymbol* fn);
   static void             updateAssignmentsFromRefArgToValue(FnSymbol* fn);
   static void             updateAssignmentsFromRefTypeToValue(FnSymbol* fn);
   static void             updateAssignmentsFromModuleLevelValue(FnSymbol* fn);
@@ -106,11 +108,15 @@ void ReturnByRef::apply()
 {
   RefMap           map;
   RefMap::iterator iter;
+  FnSet            asgnUpdates;
 
-  returnByRefCollectCalls(map);
+  returnByRefCollectCalls(map, asgnUpdates);
 
   for (iter = map.begin(); iter != map.end(); iter++)
     iter->second->transform();
+
+  for_set(FnSymbol, fn, asgnUpdates)
+    updateAssignments(fn);
 
   for (int i = 0; i < virtualMethodTable.n; i++)
   {
@@ -121,9 +127,12 @@ void ReturnByRef::apply()
       for (int j = 0; j < numFns; j++)
       {
         FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
+        TFkind tfKind = transformableFunctionKind(fn);
 
-        if (isTransformableFunction(fn))
+        if (tfKind == TF_FULL)
           transformFunction(fn);
+        else if (tfKind == TF_ASGN)
+          updateAssignments(fn);
       }
     }
   }
@@ -134,7 +143,7 @@ void ReturnByRef::apply()
 // and all calls to these functions.
 //
 
-void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
+void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
 {
   RefMap::iterator iter;
 
@@ -146,8 +155,12 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
     if (call->inTree()) {
 
       // Only transform calls to transformable functions
-      if (FnSymbol* fn = theTransformableFunction(call))
-      {
+      // The common case is a user-level call to a resolved function
+      // Also handle the PRIMOP for a virtual method call
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+       TFkind tfKind = transformableFunctionKind(fn);
+       if (tfKind == TF_FULL)
+       {
         RefMap::iterator iter = calls.find(fn->id);
         ReturnByRef*     info = NULL;
 
@@ -162,18 +175,14 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls)
         }
 
         info->addCall(call);
+       }
+       else if (tfKind == TF_ASGN)
+       {
+         fns.insert(fn);
+       }
       }
     }
   }
-}
-
-FnSymbol* ReturnByRef::theTransformableFunction(CallExpr* call)
-{
-  // The common case is a user-level call to a resolved function
-  // Also handle the PRIMOP for a virtual method call
-  FnSymbol* theCall = call->resolvedOrVirtualFunction();
-
-  return (theCall && isTransformableFunction(theCall)) ? theCall : NULL;
 }
 
 static inline bool isParIterOrForwarder(FnSymbol* fn) {
@@ -312,11 +321,12 @@ static bool doNotTransformForForall(FnSymbol* fn) {
   return !otherUse;
 }
 
-bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
+ReturnByRef::TFkind ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 {
 extern int breakOnResolveID; //wass
 if (fn->id == breakOnResolveID) gdbShouldBreakHere(); //wass
   bool retval = false;
+  bool asgn   = false;
 
   if (AggregateType* type = toAggregateType(fn->retType))
   {
@@ -353,9 +363,14 @@ if (fn->id == breakOnResolveID) gdbShouldBreakHere(); //wass
   }
 
   if (retval && isParIterOrForwarder(fn) && doNotTransformForForall(fn))
-    retval = false;
+    asgn = true;
 
-  return retval;
+  if (asgn)
+    return TF_ASGN;
+  else if (retval)
+    return TF_FULL;
+  else
+    return TF_NONE;
 }
 
 void ReturnByRef::transformFunction(FnSymbol* fn)
@@ -369,9 +384,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
   if (fn->hasFlag(FLAG_ITERATOR_FN) == false && formal != NULL) {
     insertAssignmentToFormal(fn, formal);
   }
-  updateAssignmentsFromRefArgToValue(fn);
-  updateAssignmentsFromRefTypeToValue(fn);
-  updateAssignmentsFromModuleLevelValue(fn);
+  updateAssignments(fn);
   if (formal != NULL) {
     updateReturnStatement(fn);
     updateReturnType(fn);
@@ -431,6 +444,12 @@ void ReturnByRef::insertAssignmentToFormal(FnSymbol* fn, ArgSymbol* formal)
   // if that turns out to be necessary. It might well be
   // necessary in order to return array slices by value.
   returnOrFirstAutoDestroy->insertBefore(moveExpr);
+}
+
+void ReturnByRef::updateAssignments(FnSymbol* fn) {
+  updateAssignmentsFromRefArgToValue(fn);
+  updateAssignmentsFromRefTypeToValue(fn);
+  updateAssignmentsFromModuleLevelValue(fn);
 }
 
 //
