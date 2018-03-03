@@ -493,24 +493,23 @@ bool AggregateType::setNextGenericField() {
 // Otherwise, will create a new instantiation with the given
 // argument and will return that.
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
-  // If the index of the field is prior to the index of the next generic field
-  // then trivially return ourselves
-  if (index < genericField)
-    return this;
+  AggregateType* retval = NULL;
 
-  if (index > genericField) {
-    // Internal error, because initializerRules should have ensured that we
-    // access the generic fields in order, and so we should never try to update
-    // a generic field after the current generic field when the current one
-    // hasn't been updated.
+  if (index < genericField) {
+    retval = this;
+
+  } else if (index == genericField) {
+    if (AggregateType* at = getCurInstantiation(sym)) {
+      retval = at;
+    } else {
+      retval = getNewInstantiation(sym);
+    }
+
+  } else {
     INT_FATAL(this, "trying to set a later generic field %d", index);
   }
 
-  if (AggregateType* at = getCurInstantiation(sym)) {
-    return at;
-  }
-
-  return getNewInstantiation(sym);
+  return retval;
 }
 
 AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
@@ -543,15 +542,18 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
 }
 
 AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
-  AggregateType* retval = toAggregateType(this->symbol->copy()->type);
+  AggregateType* retval = toAggregateType(symbol->copy()->type);
   Symbol*        field  = retval->getField(genericField);
 
-  this->symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
-  retval->symbol->copyFlags(this->symbol);
+  symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
-  retval->substitutions.copy(this->substitutions);
+  retval->instantiatedFrom = this;
 
-  if (field->hasFlag(FLAG_PARAM)) {
+  retval->symbol->copyFlags(symbol);
+
+  retval->substitutions.copy(substitutions);
+
+  if (field->hasFlag(FLAG_PARAM) == true) {
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
@@ -560,24 +562,19 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
     retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
     field->type = sym->typeInfo();
 
-  } else {
-    if (!field->defPoint->exprType && field->type == dtUnknown) {
+  } else if (field->defPoint->exprType == NULL) {
+    if (field->type == dtUnknown) {
       field->type = sym->typeInfo();
+    }
 
-    } else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
-      // TODO: Something something, casts and coercions
-
-    } else {
+  } else {
+    if (field->defPoint->exprType->typeInfo() == sym->typeInfo()) {
       field->type = sym->typeInfo();
     }
   }
-
-  instantiations.push_back(retval);
-
-  retval->instantiatedFrom = this;
 
   forv_Vec(AggregateType, at, dispatchParents) {
     retval->dispatchParents.add(at);
@@ -587,6 +584,8 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
   if (retval->setNextGenericField() == false) {
     retval->symbol->removeFlag(FLAG_GENERIC);
   }
+
+  instantiations.push_back(retval);
 
   return retval;
 }
