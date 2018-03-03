@@ -14,8 +14,9 @@ casts       // is this the right place?
 coercions   // or merge this into casts and call it "type conversions"?
 ...
 operators
-ranges
-basicArrays
+ranges **
+basicArrays **
+domains **
 compoundStatements
 ...
 forloops
@@ -23,8 +24,9 @@ zip
 ...
 enums
  - config enums -- can name or drop enum type name on executable command line
+procedures **
 records
-classes
+classes **
 ...
 modules? // make sure to mention ambiguous config overrides
 ...
