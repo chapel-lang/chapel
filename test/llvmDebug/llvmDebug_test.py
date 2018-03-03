@@ -25,7 +25,8 @@ else:
     os._exit(1) #exit without raising an exception
 
 # Check Debug Info Existence
-Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump -debug-dump=str ' + target  
+#Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump -debug-dump=str ' + target  
+Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump -debug-str ' + target
 output = subprocess.check_output(Command_check, shell=True)
 # Verify the module
 if 'My_foo' in output:
