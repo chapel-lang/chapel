@@ -105,6 +105,7 @@ public:
   bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
+
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              getInstantiationMulti(SymbolMap& subs,
@@ -182,9 +183,9 @@ public:
 
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
-  static void                 insertImplicitThis(
-                                            FnSymbol*         fn,
-                                            Vec<const char*>& fieldNamesSet);
+
+  static void                 insertImplicitThis(FnSymbol*         fn,
+                                                 Vec<const char*>& names);
 
 private:
   virtual std::string         docsDirective();
@@ -206,6 +207,8 @@ private:
 
   void                        typeConstrSetFields(FnSymbol* fn,
                                                   CallExpr* superCall)   const;
+
+  bool                        setNextGenericField();
 
   void                        typeConstrSetField(FnSymbol*  fn,
                                                  VarSymbol* field,

@@ -104,6 +104,8 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
     copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
   }
 
+  copy_type->genericField = genericField;
+
   return copy_type;
 }
 
@@ -436,21 +438,8 @@ bool AggregateType::mayHaveInstances() const {
 // Return true if a generic field was found.
 bool AggregateType::setFirstGenericField() {
   if (genericField == 0) {
-    int idx = 1;
-
-    for_fields(field, this) {
-      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true ||
-          field->hasFlag(FLAG_PARAM)         == true ||
-          (field->defPoint->init     == NULL &&
-           field->defPoint->exprType == NULL &&
-           field->type               == dtUnknown)) {
-        genericField = idx;
-        symbol->addFlag(FLAG_GENERIC);
-        break;
-
-      } else {
-        idx++;
-      }
+    if (setNextGenericField() == true) {
+      symbol->addFlag(FLAG_GENERIC);
     }
 
     if (isClass() == true) {
@@ -462,7 +451,33 @@ bool AggregateType::setFirstGenericField() {
     }
   }
 
-  return (genericField != 0) ? true : false;
+  return genericField != 0 ? true : false;
+}
+
+bool AggregateType::setNextGenericField() {
+  int index;
+
+  for (index = genericField + 1; index <= fields.length; index++) {
+    Symbol* field = getField(index);
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      break;
+
+    } else if (field->hasFlag(FLAG_PARAM) == true) {
+      break;
+
+    } else if (field->type  == dtUnknown) {
+      DefExpr* def = field->defPoint;
+
+      if (def->init == NULL && def->exprType == NULL) {
+        break;
+      }
+    }
+  }
+
+  genericField = index <= fields.length ? index : 0;
+
+  return genericField != 0 ? true : false;
 }
 
 // Returns an instantiation of this AggregateType at the given index.
@@ -547,36 +562,12 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
 
   newInstance->instantiatedFrom = this;
 
-  // Handle dispatch parents (because it totally makes sense for this to have
-  // been done outside of the AggregateType by
-  // instantiateTypeForTypeConstructor.  Totally)
   forv_Vec(AggregateType, at, dispatchParents) {
     newInstance->dispatchParents.add(at);
-
-    bool inserted = at->dispatchChildren.add_exclusive(newInstance);
-
-    INT_ASSERT(inserted);
+    at->dispatchChildren.add_exclusive(newInstance);
   }
 
-  DefExpr* next = toDefExpr(field->defPoint->next);
-
-  newInstance->genericField = this->genericField + 1;
-
-  while (next) {
-    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-        next->sym->hasFlag(FLAG_PARAM) ||
-        (next->init == NULL && next->exprType == NULL)) {
-      // This is the next value for genericField
-      break;
-
-    } else {
-      newInstance->genericField = newInstance->genericField + 1;
-      next = toDefExpr(next->next);
-    }
-  }
-
-  if (newInstance->genericField > newInstance->fields.length) {
-    newInstance->genericField = 0;
+  if (newInstance->setNextGenericField() == false) {
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
 
