@@ -87,26 +87,29 @@ module ChapelError {
   }
 
   class IllegalArgumentError : Error {
-    var arg_name: string;
-    var arg_info: string;
+    var formal: string;
+    var info: string;
 
     proc init() {
       super.init();
     }
 
-    proc init(_arg_name: string) {
-      this.arg_name = _arg_name;
+    proc init(info: string) {
+      this.info = info;
       super.init();
     }
 
-    proc init(_arg_name: string, _arg_info: string) {
-      this.arg_name = _arg_name;
-      this.arg_info = _arg_info;
+    proc init(formal: string, info: string) {
+      this.formal = formal;
+      this.info   = info;
       super.init();
     }
 
     proc message() {
-      return "illegal argument '" + arg_name + "': " + arg_info;
+      if formal.isEmptyString() then
+        return info;
+      else
+        return "illegal argument '" + formal + "': " + info;
     }
   }
 
@@ -405,5 +408,17 @@ module ChapelError {
       return err;
     // If err wasn't a taskError, wrap it in one
     return new TaskErrors(err);
+  }
+
+  // The compiler generates functions to cast from strings to enums. This
+  // function helps the compiler throw errors from those generated casts.
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_enum_cast_error(casted: string, enumName: string) throws {
+    if casted.isEmptyString() then
+      throw new IllegalArgumentError("bad cast from empty string to " + enumName);
+    else
+      throw new IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
 }

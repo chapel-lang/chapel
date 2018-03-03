@@ -327,7 +327,7 @@ module DateTime {
     timeStruct.tm_wday = weekday(): int(32);
     timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
-    return timeStruct; 
+    return timeStruct;
   }
 
   /* Return the number of days since 1-1-0001 this `date` represents */
@@ -1105,7 +1105,7 @@ module DateTime {
 
     // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
     // characters on its own, so do it manually.
-    var year = zeroPad(4, strftime("%Y"):int);
+    var year = zeroPad(4, try! strftime("%Y"):int);
     return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 

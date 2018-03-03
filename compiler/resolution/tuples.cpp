@@ -381,7 +381,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
 
     newType->instantiatedFrom = dtTuple;
 
-    forv_Vec(Type, t, dtTuple->dispatchParents) {
+    forv_Vec(AggregateType, t, dtTuple->dispatchParents) {
       AggregateType* at = toAggregateType(t);
 
       INT_ASSERT(at != NULL);

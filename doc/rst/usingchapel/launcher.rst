@@ -243,8 +243,8 @@ according to the following rules using tools and queueing mechanisms
 appropriate for your system:
 
 * on most systems, the number of locales should be equal to the number
-  of nodes on which you execute which. That in turn should match the
-  number of copies of the program that you are running.
+  of nodes on which you execute. That in turn should match the number
+  of copies of the program that you are running.
 
 * some queueing systems require you to specify the number of cores to
   use per node. For best results, you will typically want to use all

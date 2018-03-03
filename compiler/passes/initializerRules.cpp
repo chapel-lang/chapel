@@ -910,11 +910,9 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr);
 static DefExpr* fieldByName(AggregateType* at, const char* name);
 
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
-        return field;
-      }
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
+      return field;
     }
   }
 

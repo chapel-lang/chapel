@@ -20,4 +20,6 @@
 3.14 + 2.1i
 true
 false
-string2prims.chpl:42: error: halt reached - Unexpected value when converting from string to bool: 'maybe'
+uncaught IllegalArgumentError: bad cast from string 'maybe' to bool
+  string2prims.chpl:42: thrown here
+  string2prims.chpl:42: uncaught here
