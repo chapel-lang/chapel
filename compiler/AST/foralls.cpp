@@ -734,6 +734,14 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
     // Cf. if gotSA, the original forall's induction variable remains that.
   }
 
+#if 1 //wass
+    // This is needed in setConstFlagsAndCheckUponMove():
+    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+
+    parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+    parIdxCopy->addFlag(FLAG_INDEX_VAR);
+#else
   // This is how these flags have been set historically.
   // Todo make them the same regardless of gotSA.
   if (gotSA) {
@@ -749,8 +757,9 @@ static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
   } else {
     //?? parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
     parIdxCopy->addFlag(FLAG_INDEX_VAR);
-// vass ???    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+// wass ???    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
+#endif
 
   INT_ASSERT(fs->numInductionVars() == 1);
 }
