@@ -233,8 +233,8 @@ module LocaleModel {
   class NumaDomain : AbstractLocaleModel {
     const sid : chpl_sublocID_t;
     const ndName : string; // note: locale provides `proc name`
-    const ddr : MemoryLocale;
-    const hbm : MemoryLocale;
+    var ddr : MemoryLocale; // should never be modified after first assignment
+    var hbm : MemoryLocale; // should never be modified after first assignment
 
     proc chpl_id() return parent.chpl_id(); // top-level node id
     proc chpl_localeid() {
@@ -271,6 +271,9 @@ module LocaleModel {
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
+
+      super.init(_parent);
+
       ddr = new MemoryLocale(sid, this);
 
       var hbm_available = (hbw_check_available() == 0);
@@ -287,8 +290,6 @@ module LocaleModel {
       hbm = new MemoryLocale(hbm_id, this);
 
       chpl_task_setSubloc(origSubloc);
-
-      super.init(_parent);
     }
 
     proc deinit() {
@@ -324,11 +325,11 @@ module LocaleModel {
   //
   class LocaleModel : AbstractLocaleModel {
     const _node_id : int;
-    const local_name : string;
-    const ddr : MemoryLocale;
-    const hbm : MemoryLocale;
+    var local_name : string; // should never be modified after first assignment
+    var ddr : MemoryLocale; // should never be modified after first assignment
+    var hbm : MemoryLocale; // should never be modified after first assignment
 
-    const numSublocales: int;
+    var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
     var childLocales: [childSpace] NumaDomain;
 
@@ -340,6 +341,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
+      super.init();
+
       setup();
     }
 
@@ -347,7 +352,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
       super.init(parent_loc);
+
       setup();
     }
 
@@ -419,8 +427,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      _node_id = chpl_nodeID: int;
-
       helpSetupLocaleNUMA(this, local_name, numSublocales);
 
       ddr = new MemoryLocale(c_sublocid_any, this);
