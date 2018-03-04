@@ -651,115 +651,74 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
 }
 
 static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
-  BlockStmt* userLoopBody = NULL; fs->loopBody();
-  BlockStmt* newLoopBody  = NULL;
-  VarSymbol* parIdx       = NULL;
-  VarSymbol* parIdxCopy   = NULL;
-
   if (gotSA) {
     // No need to restructure anything. Leaving it as-is for simplicity.
-//wass need this?    userLoopBody = newLoopBody = fs->loopBody();
 
-    parIdx = fs->singleInductionVar();
-    parIdxCopy = parIdx;
+    VarSymbol* parIdx = fs->singleInductionVar();
 
-    // This is how these flags have been set historically.
-    // Todo make them the same regardless of gotSA.
-
-    // This is needed in setConstFlagsAndCheckUponMove():
+    // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
     parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-
     parIdx->addFlag(FLAG_INDEX_VAR);
 
-    // If we add FLAG_INSERT_AUTO_DESTROY, 'filename' gets double-delete'd in:
-    //   test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
-    //parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    return;
+  }
+
+  // Keep the user loop as its own BlockStmt.
+  // Make it the last thing in the new fs->loopBody().
+  BlockStmt* userLoopBody = fs->loopBody();
+  BlockStmt* newLoopBody = new BlockStmt();
+  userLoopBody->replace(newLoopBody);
+  newLoopBody->insertAtTail(userLoopBody);
+
+  // The induction variable of the parallel loop.
+  VarSymbol* parIdx = newTemp("chpl_followThis");
+
+  // If there is only one follower, we are tempted to use
+  // the original forall's induction variable as the
+  // the induction variable of the follower loop.
+  // Alas, this results in the autoDestroy for that variable
+  // to be inserted outside the loop, and more trouble from that.
+  // Ex. test/functions/ferguson/ref-pair/iterating-over-arrays.chpl
+
+  // The induction variable of the follower loop.
+  VarSymbol* followIdx = newTemp("chpl__followIdx");
+  userLoopBody->insertBefore(new DefExpr(followIdx));
+
+  AList& indvars = fs->inductionVariables();
+  int idx = indvars.length;
+
+  if (idx == 1) {
+    // If only one induction var, treat as non-zippered.
+    fs->setNotZippered();
+    userLoopBody->insertAtHead("'move'(%S,%S)",
+                               toDefExpr(indvars.head)->sym, followIdx);
+
   }
   else {
-    // First, save away the user loop as its own BlockStmt.
-    // Make it the last thing in the new fs->loopBody().
-    userLoopBody = fs->loopBody();
-    newLoopBody = new BlockStmt();
-    userLoopBody->replace(newLoopBody);
-    newLoopBody->insertAtTail(userLoopBody);
-
-    // Now, add parIdx*.
-    parIdx = newTemp("chpl_followThis");
-
-#if 0 //wass need this comment?
-  // detuple into induction variables
-  // Todo: do it outside userLoopBody instead? NB these need to be placed
-  // after detuple parIdx->parIdxCopy and after the DefExprs for ind vars.
-#endif
-
-    AList& indvars = fs->inductionVariables();
-    int idx = indvars.length;
-
-    // If there is only one follower, we are tempted to use
-    // the original forall's induction variable as the
-    // the induction variable of the follower loop.
-    // Alas, this results in the autoDestroy for that variable
-    // to be inserted outside the loop, and more trouble from that.
-    // Ex. test/functions/ferguson/ref-pair/iterating-over-arrays.chpl
-
-    // The induction variable of the follower loop.
-    VarSymbol* followIdx = newTemp("chpl__followIdx");
-    followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-    userLoopBody->insertBefore(new DefExpr(followIdx));
-    parIdxCopy = followIdx;
-
-    if (idx == 1) {
-      // If only one induction var, treat as non-zippered.
-      fs->setNotZippered();
-      userLoopBody->insertAtHead("'move'(%S,%S)",
-                                 toDefExpr(indvars.head)->sym, followIdx);
-
-    }
-    else {
-      for_alist_backward(def, indvars)
-        userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                   followIdx, new_IntSymbol(idx--));
-    }
-
-    // Move induction variables' DefExprs to the loop body.
-    // That's where their scope is; ex. deinit them at end of each iteration.
-    // Do it now, before the loop body gets cloned for and dissolves into
-    // the scaffolding for fast-followers.
-    //
     for_alist_backward(def, indvars)
-      userLoopBody->insertAtHead(def->remove());
-
-    // parIdx to be the index variable of the parallel loop.
-    indvars.insertAtHead(new DefExpr(parIdx));
-    // Cf. if gotSA, the original forall's induction variable remains that.
+      userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
+                                 followIdx, new_IntSymbol(idx--));
   }
 
-#if 1 //wass
-    // This is needed in setConstFlagsAndCheckUponMove():
-    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  // Move induction variables' DefExprs to the loop body.
+  // That's where their scope is; ex. deinit them at end of each iteration.
+  // Do it now, before the loop body gets cloned for and dissolves into
+  // the scaffolding for fast-followers.
+  //
+  for_alist_backward(def, indvars)
+    userLoopBody->insertAtHead(def->remove());
 
-    parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  // parIdx to be the index variable of the parallel loop.
+  // Cf. if gotSA, the original forall's induction variable remains that.
+  indvars.insertAtHead(new DefExpr(parIdx));
 
-    parIdxCopy->addFlag(FLAG_INDEX_VAR);
-#else
-  // This is how these flags have been set historically.
-  // Todo make them the same regardless of gotSA.
-  if (gotSA) {
-    // This is needed in setConstFlagsAndCheckUponMove():
-    parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
+  parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
-    parIdxCopy->addFlag(FLAG_INDEX_VAR);
-
-    // If we add FLAG_INSERT_AUTO_DESTROY, 'filename' gets double-delete'd in:
-    //   test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
-    //parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-  } else {
-    //?? parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-    parIdxCopy->addFlag(FLAG_INDEX_VAR);
-// wass ???    parIdxCopy->addFlag(FLAG_INSERT_AUTO_DESTROY);
-  }
-#endif
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  followIdx->addFlag(FLAG_INDEX_VAR);
+  //followIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   INT_ASSERT(fs->numInductionVars() == 1);
 }
