@@ -958,7 +958,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail(new DefExpr(iterRec));
   PARBlock->insertAtTail(new DefExpr(parIter));
   DefExpr* parIdxDef = parIdx->defPoint;
-  INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
+  INT_ASSERT(parIdxDef == fs->inductionVariables().head);
   PARBlock->insertAtTail(parIdxDef->remove());
 
   PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall));
