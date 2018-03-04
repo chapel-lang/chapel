@@ -238,6 +238,7 @@ VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
 }
 
 // ditto
+// wass inline when yesLI()
 BlockStmt* userLoop(const ForallStmt* fs) {
   // inTree() is workaround for calls to userLoop in lowerForallStmts()
   // after 'fs' has been removed from the tree. It should not

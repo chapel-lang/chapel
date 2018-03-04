@@ -912,22 +912,88 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
-  USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
-
-  // wass this is temporary
+  // Check for non-ref intents.
+  SymbolMap sv2ov; // wass empty: sv2ov.size() NB - not a real size; which is sv2ov.i
   bool gotNonRefs = false;
-  for_shadow_vars(svar, temp, fs)
-    if (!(svar->intent == TFI_REF || svar->intent == TFI_CONST_REF)) {
-      gotNonRefs = true;
-      break;
-    }
-  if (gotNonRefs)
-    gdbShouldBreakHere(),
-    USR_PRINT(fs, "with non-ref intents");
-  else
-    USR_PRINT(fs, "only ref intents, if any");
+  for_shadow_vars(svar, temp, fs) {
+    if (svar->intent == TFI_REF || svar->intent == TFI_CONST_REF)
+      sv2ov.put(svar, svar->outerVarSym());
+    else
+      { gotNonRefs = true; break; }
+  }
 
-  USR_PRINT(parIterFn, "the parallel iterator is here");
+  if (gotNonRefs) {
+    USR_FATAL_CONT(fs, "forall loops over recursive parallel iterators are currently not implemented");
+    USR_PRINT(fs, "in the presence of non-ref intents");
+    USR_PRINT(parIterFn, "the parallel iterator is here");
+    return;
+  }
+
+  CallExpr* parIterCall1 = toCallExpr(fs->firstIteratedExpr());
+  INT_ASSERT(parIterCall1 == parIterCall); // wass - remove the previous line
+  INT_ASSERT(parIterCall && !parIterCall->next); // wass - remove - this is checked in the caller
+  SET_LINENO(parIterCall);
+
+  // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
+  VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
+  VarSymbol* parIter = newTemp("chpl__parIter");
+  VarSymbol* parIdx  = parIdxVar(fs);
+
+  iterRec->addFlag(FLAG_NO_COPY);
+  iterRec->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
+  iterRec->addFlag(FLAG_MAYBE_REF);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+
+  parIter->addFlag(FLAG_EXPR_TEMP);
+  // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
+  //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INDEX_VAR);
+
+  BlockStmt* PARBlock = new BlockStmt();
+  fs->replace(PARBlock); // so we can resolve PARBlock below
+  // Maybe move this ->replace() down to resolveBlockStmt(PARBlock) ?
+  // If so, add ->remove() to fs->iterExprs() and perhaps others.
+
+  PARBlock->insertAtTail(new DefExpr(iterRec));
+  PARBlock->insertAtTail(new DefExpr(parIter));
+  DefExpr* parIdxDef = parIdx->defPoint;
+  INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
+  PARBlock->insertAtTail(parIdxDef->remove());
+
+  PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall));
+  PARBlock->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
+  PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
+  PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
+
+ { // shadow the above SET_LINENO
+  SET_LINENO(fs->loopBody());
+
+  ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
+
+  PARBlock->insertAtTail(PARBody);
+  resolveBlockStmt(PARBlock);
+  PARBlock->flattenAndRemove(); // into where 'fs' used to be
+
+  BlockStmt* userBody = userLoop(fs);
+  if (sv2ov.size() > 0)  // wass the size of a Map is given by sv2ov.i
+    update_symbols(userBody, &sv2ov);
+  gdbShouldBreakHere(); //wass
+  while (Expr* def = fs->inductionVariables().tail)
+    userBody->insertAtHead(def->remove());
+
+#if 0 //wass - no more shadow variables in loopBody!
+  while (Expr* svdef = fs->shadowVariables().tail)
+    fs->loopBody()->insertAtHead(svdef->remove());
+#endif
+
+  // wass improve clarity of what is flattened into what
+  // relying on this assertion:
+  INT_ASSERT(userBody == fs->loopBody());
+  userBody->flattenAndRemove();          // into fs->loopBody()
+  PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
+  fs->loopBody()->flattenAndRemove();    // into PARBody
+ }
 }
 
 
