@@ -1217,7 +1217,7 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
 
         } else {
           // Transform C ( ... ) into _type_construct_C ( ... )
-          const char* name = at->defaultTypeConstructor->name;
+          const char* name = at->typeConstructor->name;
 
           se->replace(new UnresolvedSymExpr(name));
         }
@@ -3040,22 +3040,22 @@ static void updateConstructor(FnSymbol* fn) {
   // the initializer body is intended to perform this operation on its own.
   CallExpr* call = new CallExpr(ct->defaultInitializer);
 
-  for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
+  for_formals(typeConstructorArg, ct->typeConstructor) {
     ArgSymbol* arg = NULL;
 
     for_formals(methodArg, fn) {
-      if (defaultTypeConstructorArg->name == methodArg->name) {
+      if (typeConstructorArg->name == methodArg->name) {
         arg = methodArg;
       }
     }
 
     if (arg == NULL) {
-      if (defaultTypeConstructorArg->defaultExpr == NULL) {
+      if (typeConstructorArg->defaultExpr == NULL) {
         USR_FATAL_CONT(fn,
                        "constructor for class '%s' requires a generic "
                        "argument called '%s'",
                        ct->symbol->name,
-                       defaultTypeConstructorArg->name);
+                       typeConstructorArg->name);
       }
     } else {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));

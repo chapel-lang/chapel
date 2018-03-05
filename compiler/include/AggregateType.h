@@ -152,7 +152,7 @@ public:
 
   AggregateTag                aggregateTag;
 
-  FnSymbol*                   defaultTypeConstructor;
+  FnSymbol*                   typeConstructor;
 
   FnSymbol*                   defaultInitializer;
 

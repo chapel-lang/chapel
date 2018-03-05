@@ -497,8 +497,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       newFn = instantiateFunction(fn, root, allSubs, call, subs, map);
 
       if (newType != NULL) {
-        newType->defaultTypeConstructor = newFn;
-        newFn->retType                  = newType;
+        newType->typeConstructor = newFn;
+        newFn->retType           = newType;
       }
 
       if (fixupTupleFunctions(fn, newFn, call) == false) {

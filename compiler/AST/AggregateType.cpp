@@ -40,24 +40,24 @@ AggregateType* dtString = NULL;
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
-  aggregateTag           = initTag;
-  defaultTypeConstructor = NULL;
-  defaultInitializer     = NULL;
-  initializerStyle       = DEFINES_NONE_USE_DEFAULT;
-  initializerResolved    = false;
-  outer                  = NULL;
-  iteratorInfo           = NULL;
-  doc                    = NULL;
+  aggregateTag        = initTag;
+  typeConstructor     = NULL;
+  defaultInitializer  = NULL;
+  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved = false;
+  outer               = NULL;
+  iteratorInfo        = NULL;
+  doc                 = NULL;
 
-  instantiatedFrom       = NULL;
+  instantiatedFrom    = NULL;
 
-  fields.parent          = this;
-  inherits.parent        = this;
+  fields.parent       = this;
+  inherits.parent     = this;
 
-  genericField           = 0;
-  mIsGeneric             = false;
+  genericField        = 0;
+  mIsGeneric          = false;
 
-  classId                = 0;
+  classId             = 0;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
@@ -424,8 +424,8 @@ bool AggregateType::hasPostInitializer() const {
 bool AggregateType::mayHaveInstances() const {
   bool retval = false;
 
-  if (defaultTypeConstructor != NULL) {
-    retval = defaultTypeConstructor->isResolved();
+  if (typeConstructor != NULL) {
+    retval = typeConstructor->isResolved();
 
   } else {
     retval = initializerResolved;
@@ -961,7 +961,7 @@ void AggregateType::buildConstructors() {
   if (defaultInitializer == NULL) {
     SET_LINENO(this);
 
-    if (defaultTypeConstructor == NULL) {
+    if (typeConstructor == NULL) {
       buildTypeConstructor();
     }
 
@@ -1018,14 +1018,14 @@ FnSymbol* AggregateType::buildTypeConstructor() {
 
   addToSymbolTable(retval);
 
-  defaultTypeConstructor = retval;
+  typeConstructor = retval;
 
   return retval;
 }
 
 CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
   AggregateType* parent        = dispatchParents.v[0];
-  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
+  FnSymbol*      superTypeCtor = parent->typeConstructor;
   CallExpr*      retval        = NULL;
 
   if (superTypeCtor == NULL) {
