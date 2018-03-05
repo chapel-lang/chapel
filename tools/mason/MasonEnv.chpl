@@ -45,7 +45,7 @@ proc MASON_CACHED_REGISTRY {
 
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
    separated list of registry 'name|location' pairs. Returns an array of
-   tuples containing (name, location). If 'name|' is ommitted, it defaults
+   tuples containing (name, location). If 'name|' is omitted, it defaults
    to the text following the final slash in 'location' after removing any
    trailing slashes. e.g. if location is "/path/to/my/local_registry//"
    then the default name is "local_registry".
@@ -64,7 +64,7 @@ proc MASON_REGISTRY {
       if regArr.size > 2 || regArr.size < 1 {
         stderr.writeln("expected MASON_REGISTRY to contain a comma " +
                        "separated list of locations or 'name|location' pairs");
-        stderr.writeln(regArr);
+        stderr.writeln(str);
         exit(1);
       } else {
         var regTup: 2*string;
@@ -85,7 +85,9 @@ proc MASON_REGISTRY {
     for i in 1..registries.size {
       for j in i+1..registries.size {
         if registries(i)(1) == registries(j)(1) {
-          stderr.writeln("registry names specified in MASON_REGISTRY must be unique");
+          stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
+          stderr.writeln(registries(i)(1), " - ", registries(i)(2));
+          stderr.writeln(registries(j)(1), " - ", registries(j)(2));
           exit(1);
         }
       }
@@ -108,6 +110,7 @@ proc masonEnv(args) {
 
     writeln(name, ": ", val);
   }
+
   proc printVar(name : string, val : [] string) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
@@ -121,6 +124,7 @@ proc masonEnv(args) {
     }
     writeln(star);
   }
+
   proc printVar(name : string, val : [] 2*string) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
@@ -150,5 +154,9 @@ private proc getRegNameFromLoc(location: string): string {
     stderr.writeln("location should be an absolute path or URL");
     exit(1);
   }
-  return strippedLoc[lastSlashPos+1..];
+  if strippedLoc.endsWith(".git") {
+    return strippedLoc[lastSlashPos+1..strippedLoc.length-4];
+  } else {
+    return strippedLoc[lastSlashPos+1..];
+  }
 }

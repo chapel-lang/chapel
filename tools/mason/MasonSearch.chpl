@@ -48,26 +48,25 @@ proc masonSearch(origArgs : [] string) {
   // If no query is provided, list all packages in registry
   const query = if args.size > 0 then args.tail().toLower()
                 else ".*";
+  const pattern = compile(query, ignorecase=true);
 
   var results : [1..0] string;
 
   for cached in MASON_CACHED_REGISTRY {
     const searchDir = cached + "/Bricks/";
-    const pattern   = compile(query, ignorecase=true);
 
     for dir in listdir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
 
-      // This always print hidden files in debug mode even if they
-      // don't match the search pattern.  Seems strange.
-      if isHidden(name) {
-        if debug {
-          writeln("[DEBUG] found hidden package: ", name);
+      if pattern.search(name) {
+        if isHidden(name) {
+          if debug {
+            writeln("[DEBUG] found hidden package: ", name);
+          }
+        }  else {
+          const ver = findLatest(searchDir + dir);
+          results.push_back(name + " (" + ver.str() + ")");
         }
-      }
-      else if pattern.search(name) {
-        const ver = findLatest(searchDir + dir);
-        results.push_back(name + " (" + ver.str() + ")");
       }
     }
   }
