@@ -106,10 +106,6 @@ public:
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
 
-  AggregateType*              getCurInstantiation(Symbol* sym);
-
-  AggregateType*              getNewInstantiation(Symbol* sym);
-
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              generateType(SymbolMap& subs, FnSymbol* fn);
@@ -199,6 +195,10 @@ private:
 
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
+
+  AggregateType*              getCurInstantiation(Symbol* sym);
+
+  AggregateType*              getNewInstantiation(Symbol* sym);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
