@@ -503,12 +503,13 @@ module ZMQ {
       Create a ZMQ context.
      */
     proc init() {
+      this.initDone();
       acquire(new ContextClass());
     }
 
     pragma "no doc"
     proc init(c: Context) {
-      super.init();
+      this.initDone();
       this.acquire(c.classRef);
     }
 
@@ -603,14 +604,14 @@ module ZMQ {
 
     pragma "no doc"
     proc init(s: Socket) {
-      super.init();
+      this.initDone();
       this.acquire(s.classRef);
     }
 
     pragma "no doc"
     proc init(ctx: Context, sockType: int) {
       context = ctx;
-      super.init();
+      this.initDone();
       on ctx.classRef.home do
         acquire(new SocketClass(ctx, sockType));
     }

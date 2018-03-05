@@ -146,7 +146,7 @@ module Futures {
     pragma "no doc"
     proc init(type retType) {
       this.retType = retType;
-      super.init();
+      this.initDone();
       acquire(new FutureClass(retType));
     }
 

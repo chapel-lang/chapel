@@ -1958,7 +1958,6 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  super.init();
 }
 
 pragma "no doc"
@@ -1969,7 +1968,7 @@ proc channel.init(x: channel) {
   this.home = x.home;
   this._channel_internal = x._channel_internal;
   _readWriteThisFromLocale = x._readWriteThisFromLocale;
-  super.init();
+  this.initDone();
   on x.home {
     qio_channel_retain(x._channel_internal);
   }
@@ -1991,7 +1990,6 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
   this.home = home;
   this._channel_internal = _channel_internal;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
-  super.init();
 }
 
 pragma "no doc"
@@ -2001,7 +1999,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  super.init();
+  this.initDone();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {

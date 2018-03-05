@@ -54,6 +54,7 @@ public:
   void            checkPhase(BlockStmt* block);
 
   void            completePhase1(CallExpr* insertBefore);
+  void            completePhase0(CallExpr* initStmt);
 
   void            initializeFieldsAtTail(BlockStmt* block);
   void            initializeFieldsBefore(Expr*      insertBefore);
