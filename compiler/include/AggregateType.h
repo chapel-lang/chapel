@@ -112,8 +112,7 @@ public:
 
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              getInstantiationMulti(SymbolMap& subs,
-                                                    FnSymbol*  fn);
+  AggregateType*              generateType(SymbolMap& subs, FnSymbol* fn);
 
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
