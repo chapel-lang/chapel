@@ -656,11 +656,8 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 // substitutions it needs and send them here, to create the instantiation from
 // those substitutions following the same mechanism used by the resolution of
 // initializers but extended to handling multiple updates at a time.
-AggregateType* AggregateType::generateType(SymbolMap& subs, FnSymbol* fn) {
+AggregateType* AggregateType::generateType(SymbolMap& subs) {
   AggregateType* retval = this;
-
-  INT_ASSERT(symbol->hasFlag(FLAG_GENERIC)      == true);
-  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true);
 
   if (genericField == 0) {
     setFirstGenericField();

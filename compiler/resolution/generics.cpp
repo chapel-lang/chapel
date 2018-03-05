@@ -485,7 +485,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
           newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
 
         } else {
-          newType = ct->generateType(subs, fn);
+          newType = ct->generateType(subs);
         }
       }
 
