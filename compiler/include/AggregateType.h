@@ -198,6 +198,9 @@ private:
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
 
+  Symbol*                     substitutionForField(Symbol*    field,
+                                                   SymbolMap& subs)      const;
+
   AggregateType*              getCurInstantiation(Symbol* sym);
 
   AggregateType*              getNewInstantiation(Symbol* sym);

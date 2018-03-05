@@ -666,16 +666,29 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, FnSymbol* fn) {
     setFirstGenericField();
   }
 
-  for_formals(formal, fn) {
-    if (Symbol* val = subs.get(formal)) {
-      // Assumes that the type constructor arguments will correspond directly
-      // to the generic fields, and that they will gain substitutions in order.
-      // Bad things will happen if this assumption is violated
-      retval = retval->getInstantiation(val, retval->genericField);
+  for_fields(field, this) {
+    if (fieldIsGeneric(field) == true) {
+      if (Symbol* val = substitutionForField(field, subs)) {
+        retval = retval->getInstantiation(val, retval->genericField);
+      }
     }
   }
 
   retval->instantiatedFrom = this;
+
+  return retval;
+}
+
+Symbol* AggregateType::substitutionForField(Symbol*    field,
+                                            SymbolMap& subs) const {
+  Symbol* retval = NULL;
+
+  form_Map(SymbolMapElem, e, subs) {
+    if (strcmp(field->name, e->key->name) == 0) {
+      retval = e->value;
+      break;
+    }
+  }
 
   return retval;
 }
