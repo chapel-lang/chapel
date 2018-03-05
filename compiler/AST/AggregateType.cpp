@@ -490,6 +490,79 @@ bool AggregateType::setNextGenericField() {
   return genericField != 0 ? true : false;
 }
 
+/************************************* | **************************************
+*                                                                             *
+* This method is invoked to handle declarations of the form                   *
+*                                                                             *
+*   var c : MyGenericType(int, int, 3, real);                                 *
+*                                                                             *
+* MyGenericType is a type constructor i.e a type function. In this example    *
+* it has four formals.  The formals for the type constructor have the same    *
+* names as the generic fields.  A use of this type function will find or      *
+* create a concrete type that is parameterized with these actuals.            *
+*                                                                             *
+* This type constructor is associated with a generic type that is one of      *
+*   1) A generic record                                                       *
+*                                                                             *
+*   2) A generic base    class                                                *
+*   3) A generic derived class with a concrete parent                         *
+*                                                                             *
+*   4) A generic derived class with purely     concrete local fields          *
+*   5) A generic dervied class with additional generic  local fields          *
+*                                                                             *
+* The first three cases are effectively equivalent; this code needs to bind   *
+* the local fields and find/create an instantiated type.                      *
+*                                                                             *
+* The 4th case is a simple recursive use.  This code must create a concrete   *
+* class for the parent class using the actuals, and then generate a simple    *
+* instantiation of MyGenericType with the concrete parent.                    *
+*                                                                             *
+* The final case builds on the former.  It is necessary to instantiate the    *
+* generic parent and then instantiate the local generic fields.               *
+*                                                                             *
+* The resolution process handles a type constructor in much the same way as   *
+* any type function.  A SymbolMap is constructed that maps the formals to     *
+* this specific type constructor to the the actuals.  If the generic type is  *
+* a class with a generic parent, directly or indirectly, then this            *
+* dictionary must be passed up the hierarchy so that the parent types can     *
+* be instantiated.                                                            *
+*                                                                             *
+************************************** | *************************************/
+
+AggregateType* AggregateType::generateType(SymbolMap& subs) {
+  AggregateType* retval = this;
+
+  if (genericField == 0) {
+    setFirstGenericField();
+  }
+
+  for_fields(field, this) {
+    if (fieldIsGeneric(field) == true) {
+      if (Symbol* val = substitutionForField(field, subs)) {
+        retval = retval->getInstantiation(val, retval->genericField);
+      }
+    }
+  }
+
+  retval->instantiatedFrom = this;
+
+  return retval;
+}
+
+Symbol* AggregateType::substitutionForField(Symbol*    field,
+                                            SymbolMap& subs) const {
+  Symbol* retval = NULL;
+
+  form_Map(SymbolMapElem, e, subs) {
+    if (strcmp(field->name, e->key->name) == 0) {
+      retval = e->value;
+      break;
+    }
+  }
+
+  return retval;
+}
+
 // Returns an instantiation of this AggregateType at the given index.
 //
 // If the index is earlier than this AggregateType's first unsubstituted
@@ -647,47 +720,6 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
   }
 
   return newInstance;
-}
-
-// Obtain the instantiation of this generic type with the given substitutions.
-// fn is the type constructor.  Used exclusively for types that define
-// initializers.
-// Basically, when a type constructor gets resolved, it will gather the
-// substitutions it needs and send them here, to create the instantiation from
-// those substitutions following the same mechanism used by the resolution of
-// initializers but extended to handling multiple updates at a time.
-AggregateType* AggregateType::generateType(SymbolMap& subs) {
-  AggregateType* retval = this;
-
-  if (genericField == 0) {
-    setFirstGenericField();
-  }
-
-  for_fields(field, this) {
-    if (fieldIsGeneric(field) == true) {
-      if (Symbol* val = substitutionForField(field, subs)) {
-        retval = retval->getInstantiation(val, retval->genericField);
-      }
-    }
-  }
-
-  retval->instantiatedFrom = this;
-
-  return retval;
-}
-
-Symbol* AggregateType::substitutionForField(Symbol*    field,
-                                            SymbolMap& subs) const {
-  Symbol* retval = NULL;
-
-  form_Map(SymbolMapElem, e, subs) {
-    if (strcmp(field->name, e->key->name) == 0) {
-      retval = e->value;
-      break;
-    }
-  }
-
-  return retval;
 }
 
 bool AggregateType::isInstantiatedFrom(const AggregateType* base) const {
