@@ -76,28 +76,30 @@ proc genLock(lock: Toml, lf) {
 }
 
 proc checkRegistryChanged() {
-  if isDir(MASON_CACHED_REGISTRY) == false {
-    return;
-  }
-
-  const oldRegistry = gitC(MASON_CACHED_REGISTRY, "git config --get remote.origin.url", quiet=true).strip();
-
-  if oldRegistry != MASON_REGISTRY {
-    writeln("MASON_REGISTRY changed since last update:");
-    writeln("  old: ", oldRegistry);
-    writeln("  new: ", MASON_REGISTRY);
-    writeln();
-    writeln("Removing cached registry and sources to avoid conflicts");
-
-    proc tryRemove(name : string) {
-      if isDir(name) {
-        writeln("Removing ", name);
-        rmTree(name);
-      }
+  for ((_, registry), cached) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
+    if !isDir(cached) {
+      return;
     }
 
-    tryRemove(MASON_CACHED_REGISTRY);
-    tryRemove(MASON_HOME + "/src");
+    const oldRegistry = gitC(cached, "git config --get remote.origin.url", quiet=true).strip();
+
+    if oldRegistry != registry {
+      writeln("MASON_REGISTRY changed since last update:");
+      writeln("  old: ", oldRegistry);
+      writeln("  new: ", registry);
+      writeln();
+      writeln("Removing cached registry and sources to avoid conflicts");
+
+      proc tryRemove(name : string) {
+        if isDir(name) {
+          writeln("Removing ", name);
+          rmTree(name);
+        }
+      }
+
+      tryRemove(cached);
+      tryRemove(MASON_HOME + "/src");
+    }
   }
 }
 
@@ -110,21 +112,23 @@ proc updateRegistry(tf: string, args : [] string) {
   }
 
   checkRegistryChanged();
+  for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
-  const registryHome = MASON_CACHED_REGISTRY;
-  if isDir(registryHome) {
-    var pullRegistry = 'git pull -q origin master';
-    if tf == "Mason.toml" then writeln("Updating mason-registry");
-    gitC(registryHome, pullRegistry);
-  }
-  // Registry has moved or does not exist
-  else {
-    mkdir(MASON_HOME + '/src', parents=true);
-    const localRegistry = MASON_CACHED_REGISTRY;
-    mkdir(localRegistry, parents=true);
-    const cloneRegistry = 'git clone -q ' + MASON_REGISTRY + ' .';
-    writeln("Initializing mason-registry...");
-    gitC(localRegistry, cloneRegistry);
+    if isDir(registryHome) {
+      var pullRegistry = 'git pull -q origin master';
+      if tf == "Mason.toml" then
+        writeln("Updating mason-registry for ", name);
+      gitC(registryHome, pullRegistry);
+    }
+    // Registry has moved or does not exist
+    else {
+      mkdir(MASON_HOME + '/src', parents=true);
+      const localRegistry = registryHome;
+      mkdir(localRegistry, parents=true);
+      const cloneRegistry = 'git clone -q ' + registry + ' .';
+      writeln("Initializing mason-registry for ", name);
+      gitC(localRegistry, cloneRegistry);
+    }
   }
 }
 
@@ -395,16 +399,17 @@ proc getManifests(deps: [?dom] (string, Toml)) {
 /* Responsible for parsing the Mason.toml to be given
    back to a call from getManifests */
 proc retrieveDep(name: string, version: string) {
-  const tomlPath = MASON_CACHED_REGISTRY + "/Bricks/"+name+"/"+version+".toml";
-  if isFile(tomlPath) {
-    var tomlFile = open(tomlPath, iomode.r);
-    var depToml = parseToml(tomlFile);
-    return depToml;
+  for cached in MASON_CACHED_REGISTRY {
+    const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
+    if isFile(tomlPath) {
+      var tomlFile = open(tomlPath, iomode.r);
+      var depToml = parseToml(tomlFile);
+      return depToml;
+    }
   }
-  else {
-    stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
-    exit(1);
-  }
+
+  stderr.writeln("No toml file found in mason-registry for " + name +'-'+ version);
+  exit(1);
 }
 
 /* Checks if a dependency has deps; if so, the
