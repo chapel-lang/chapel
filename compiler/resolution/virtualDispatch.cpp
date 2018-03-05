@@ -216,7 +216,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
     FnSymbol* fn = instantiate(cfn, subs);
 
     if (ct->hasInitializers() == false) {
-      FnSymbol*  typeConstr         = ct->defaultTypeConstructor;
+      FnSymbol*  typeConstr         = ct->typeConstructor;
       BlockStmt* instantiationPoint = typeConstr->instantiationPoint;
 
       if (instantiationPoint == NULL) {

@@ -865,8 +865,8 @@ static void fixTypeNames(AggregateType* at) {
 }
 
 static void resolveDefaultTypeConstructor(AggregateType* at) {
-  if (at->defaultTypeConstructor != NULL) {
-    resolveSignatureAndFunction(at->defaultTypeConstructor);
+  if (at->typeConstructor != NULL) {
+    resolveSignatureAndFunction(at->typeConstructor);
   }
 }
 

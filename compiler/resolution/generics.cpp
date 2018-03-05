@@ -485,7 +485,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
           newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
 
         } else {
-          newType = ct->getInstantiationMulti(subs, fn);
+          newType = ct->generateType(subs);
         }
       }
 
@@ -497,8 +497,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       newFn = instantiateFunction(fn, root, allSubs, call, subs, map);
 
       if (newType != NULL) {
-        newType->defaultTypeConstructor = newFn;
-        newFn->retType                  = newType;
+        newType->typeConstructor = newFn;
+        newFn->retType           = newType;
       }
 
       if (fixupTupleFunctions(fn, newFn, call) == false) {
