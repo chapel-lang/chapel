@@ -167,6 +167,28 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+bool AggregateType::fieldIsGeneric(Symbol* field) const {
+  bool retval = false;
+
+  if (VarSymbol* var = toVarSymbol(field)) {
+    if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = true;
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      retval = true;
+
+    } else if (var->type == dtUnknown) {
+      DefExpr* def = var->defPoint;
+
+      if (def->init == NULL && def->exprType == NULL) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
+}
+
 DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
   DefExpr* retval = NULL;
 
@@ -458,20 +480,8 @@ bool AggregateType::setNextGenericField() {
   int index;
 
   for (index = genericField + 1; index <= fields.length; index++) {
-    Symbol* field = getField(index);
-
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+    if (fieldIsGeneric(getField(index)) == true) {
       break;
-
-    } else if (field->hasFlag(FLAG_PARAM) == true) {
-      break;
-
-    } else if (field->type  == dtUnknown) {
-      DefExpr* def = field->defPoint;
-
-      if (def->init == NULL && def->exprType == NULL) {
-        break;
-      }
     }
   }
 

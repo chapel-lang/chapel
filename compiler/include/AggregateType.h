@@ -191,6 +191,8 @@ private:
 
   std::string                 docsSuperClass();
 
+  bool                        fieldIsGeneric(Symbol* field)              const;
+
   void                        addDeclaration(DefExpr* defExpr);
 
   void                        addClassToHierarchy(
