@@ -24,9 +24,17 @@ else:
     print 'Build Failed'
     os._exit(1) #exit without raising an exception
 
+# Determine syntax from LLVM version
+with open(chpl_home + '/third-party/llvm/LLVM_VERSION', 'r') as f:
+    llvm_version = float(f.readline())
+if llvm_version < 6.0:
+    debug_option = ' -debug-dump=str '
+else:
+    debug_option = ' -debug-str '
+
 # Check Debug Info Existence
-#Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump -debug-dump=str ' + target  
-Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump -debug-str ' + target
+Command_check = llvm_tool_path + os.sep + 'llvm-dwarfdump' + debug_option + target
+
 output = subprocess.check_output(Command_check, shell=True)
 # Verify the module
 if 'My_foo' in output:
