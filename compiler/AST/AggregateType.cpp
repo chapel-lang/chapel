@@ -532,19 +532,88 @@ bool AggregateType::setNextGenericField() {
 AggregateType* AggregateType::generateType(SymbolMap& subs) {
   AggregateType* retval = this;
 
-  if (genericField == 0) {
-    setFirstGenericField();
+  // Determine if there is a generic parent class
+  if (isClass() == true) {
+    AggregateType* parent = dispatchParents.v[0];
+
+    // Is the parent generic?
+    if (parent->typeConstructor->numFormals() > 0) {
+      AggregateType* instantiatedParent = parent->generateType(subs);
+
+      retval = instantiationWithParent(instantiatedParent);
+    }
   }
 
-  for_fields(field, this) {
+  // Process the local fields
+  for (int index = 1; index <= numFields(); index = index + 1) {
+    Symbol* field = getField(index);
+
     if (fieldIsGeneric(field) == true) {
       if (Symbol* val = substitutionForField(field, subs)) {
-        retval = retval->getInstantiation(val, retval->genericField);
+        retval->genericField = index;
+
+        retval = retval->getInstantiation(val, index);
       }
     }
   }
 
   retval->instantiatedFrom = this;
+
+  return retval;
+}
+
+// Find or create an instantation that has the provided parent as its parent
+AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
+  AggregateType* retval = NULL;
+
+  // Scan the current instantations
+  for (size_t i = 0; i < instantiations.size() && retval == NULL; i++) {
+    AggregateType* at = instantiations[i];
+
+    // Does this instantiation have the desired parent?
+    if (at->dispatchParents.v[0] == parent) {
+      retval = at;
+    }
+  }
+
+  // If nothing was found then create a new instantation
+  if (retval == NULL) {
+    const char* parentName  = parent->symbol->name;
+    const char* parentCname = parent->symbol->cname;
+    const char* paren       = strchr(parentName, '(');
+    int         rootLen     = (int) (paren - parentName);
+    Symbol*     sym         = NULL;
+
+    retval     = toAggregateType(symbol->copy()->type);
+
+    // Update the name/cname based on the parent's name/cname
+    sym        = retval->symbol;
+    sym->name  = astr(sym->name,  parentName  + rootLen);
+    sym->cname = astr(sym->cname, parentCname + rootLen);
+
+    // Update the type of the 'super' field
+    for_fields(field, retval) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == true) {
+        field->type = parent;
+        break;
+      }
+    }
+
+    retval->instantiatedFrom = this;
+
+    retval->symbol->copyFlags(symbol);
+
+    retval->substitutions.copy(substitutions);
+
+    retval->dispatchParents.add(parent);
+    parent->dispatchChildren.add_exclusive(retval);
+
+    retval->symbol->removeFlag(FLAG_GENERIC);
+
+    symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
+
+    instantiations.push_back(retval);
+  }
 
   return retval;
 }
