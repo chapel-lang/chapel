@@ -257,8 +257,6 @@ static InitNormalize preNormalize(AggregateType* at,
                                   bool           initNew,
                                   Expr*          start);
 
-static CallExpr*     createCallToSuperInit(FnSymbol* fn);
-
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
@@ -304,47 +302,30 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at = toAggregateType(fn->_this->type);
-  bool initNew = hasInitDone(fn->body);
 
-  // The body contains at least one instance of this.init()
+  // The body contains at least one instance of this.init() or super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
 
-    preNormalize(at, fn->body, state, initNew);
+    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    finalState.initializeFieldsAtTail(fn->body);
 
-  // The body contains at least one instance of super.init()
-  // i.e. the body is not empty and we do not need to insert super.init()
+  // The body contains zero or more instances of this.initDone()
+  // If there isn't a super.init or this.init anywhere, we need to insert
+  // a super.init call.
+  //
+  // INIT TODO: Don't we always need to insert a super.init?
   } else if (state.isPhase1() == true) {
     int  style       = findInitStyle(fn->body);
     bool hasSuper    = style & InitStyle::STYLE_SUPER_INIT;
     bool hasThisInit = style & InitStyle::STYLE_THIS_INIT;
     bool needsSuper  = hasSuper == false && hasThisInit == false;
 
-    preNormalize(at, fn->body, state, initNew);
+    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    finalState.initializeFieldsAtTail(fn->body);
 
     if (needsSuper == true) {
       addSuperInit(fn);
-    }
-
-  } else if (state.isPhase2() == true) {
-    if (at->symbol->hasFlag(FLAG_EXTERN) == false) {
-      CallExpr* superInit = createCallToSuperInit(fn);
-
-      fn->body->insertAtHead(superInit);
-
-      state.initializeFieldsBefore(superInit);
-
-      preNormalize(at, fn->body, state, initNew, superInit->next);
-
-    } else {
-      if (Expr* head = fn->body->body.head) {
-        state.initializeFieldsBefore(head);
-
-        preNormalize(at, fn->body, state, initNew, head);
-
-      } else {
-        state.initializeFieldsAtTail(fn->body);
-      }
     }
 
   } else {
@@ -458,6 +439,14 @@ static InitNormalize preNormalize(AggregateType* at,
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
+  // INIT TODO: Temporary workaround to allow field initialization before
+  // phase one, which aids transition process by reducing diff sizes.
+  bool hasSuperInit = false;
+  if (state.isPhase0()) {
+    int foundInit = findInitStyle(block);
+    hasSuperInit = foundInit & InitStyle::STYLE_SUPER_INIT;
+  }
+
   while (stmt != NULL) {
     if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
@@ -486,12 +475,8 @@ static InitNormalize preNormalize(AggregateType* at,
         } else if (isSuperInit(callExpr) == true) {
           Expr* next = callExpr->next;
 
-          if (initNew == false) {
-            state.completePhase1(callExpr);
-          } else {
-            INT_ASSERT(state.isPhase0() == true);
-            state.completePhase0(callExpr);
-          }
+          INT_ASSERT(state.isPhase0() == true);
+          state.completePhase0(callExpr);
 
           if (at->isRecord() == true) {
             // INIT TODO: disallow super.init in records
@@ -524,7 +509,9 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase0() == true && initNew == false) {
+        // INIT TODO: Emit error for local field initialization before
+        // super.init() as well as this.init()
+        if (state.isPhase0() == true && hasSuperInit == false) {
           USR_FATAL(stmt,
                     "field initialization not allowed before this.init()");
 
@@ -657,7 +644,7 @@ static InitNormalize preNormalize(AggregateType* at,
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
             USR_FATAL(cond,
                       "Both arms of a conditional must use this.init() "
-                      "or super.init() in phase 1");
+                      "or this.initDone() in phase 1");
 
           } else if (stateThen.currField() != stateElse.currField()) {
             USR_FATAL(cond,
@@ -696,16 +683,6 @@ static InitNormalize preNormalize(AggregateType* at,
   }
 
   return state;
-}
-
-// Pre-normalized call to the function super.init with no arguments
-static CallExpr* createCallToSuperInit(FnSymbol* fn) {
-  Symbol*   superSym  = new_CStringSymbol("super");
-  CallExpr* superCall = new CallExpr(".", fn->_this, superSym);
-
-  Symbol*   initSym   = new_CStringSymbol("init");
-
-  return new CallExpr(new CallExpr(".", superCall, initSym));
 }
 
 /************************************* | **************************************
