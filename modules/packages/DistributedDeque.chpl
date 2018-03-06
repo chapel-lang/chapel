@@ -268,8 +268,10 @@ module DistributedDeque {
       considered unbounded.
     */
     var cap : int;
+
     pragma "no doc"
     var targetLocDom : domain(1);
+
     /*
       Locales to distribute the `Deque` across.
     */
@@ -282,8 +284,10 @@ module DistributedDeque {
     // Keeps track of which slot we are on...
     pragma "no doc"
     var globalHead : DistributedDequeCounter;
+
     pragma "no doc"
     var globalTail : DistributedDequeCounter;
+
     pragma "no doc"
     var queueSize : DistributedDequeCounter;
 
@@ -292,17 +296,25 @@ module DistributedDeque {
     // to reduce the amount of contention.
     pragma "no doc"
     var nSlots : int;
+
     pragma "no doc"
     var slotSpace = {0..-1};
+
     pragma "no doc"
     var slots : [slotSpace] LocalDeque(eltType);
 
-    proc DistributedDequeImpl(type eltType, cap : int = -1, targetLocales : [?locDom] locale =Locales) {
-      this.cap = cap;
-      this.nSlots = here.maxTaskPar * targetLocales.size;
-      this.slotSpace = {0..#this.nSlots};
-      this.targetLocDom = locDom;
+    proc init(type eltType,
+              cap : int = -1,
+              targetLocales : [?locDom] locale = Locales) {
+      super.init(eltType);
+
+      this.cap           = cap;
+      this.targetLocDom  = locDom;
       this.targetLocales = targetLocales;
+      this.nSlots        = here.maxTaskPar * targetLocales.size;
+      this.slotSpace     = {0..#this.nSlots};
+
+      initDone();
 
       // Initialize each slot. We use a round-robin algorithm.
       var idx : atomic int;
@@ -332,7 +344,9 @@ module DistributedDeque {
     }
 
     pragma "no doc"
-    proc DistributedDequeImpl(other, privData, type eltType = other.eltType) {
+    proc init(other, privData, type eltType = other.eltType) {
+      super.init(eltType);
+
       this.cap = other.cap;
       this.targetLocDom = other.targetLocDom;
       this.targetLocales = other.targetLocales;
@@ -342,6 +356,8 @@ module DistributedDeque {
       this.nSlots = other.nSlots;
       this.slotSpace = {0..#this.nSlots};
       slots = other.slots;
+
+      initDone();
     }
 
     pragma "no doc"
