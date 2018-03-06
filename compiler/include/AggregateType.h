@@ -198,6 +198,8 @@ private:
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
 
+  AggregateType*              instantiationWithParent(AggregateType* parent);
+
   Symbol*                     substitutionForField(Symbol*    field,
                                                    SymbolMap& subs)      const;
 
