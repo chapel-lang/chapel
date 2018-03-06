@@ -77,6 +77,7 @@ class Tree {
   // A Tree-building initializer
   //
   proc init(depth) {
+    this.initDone();
     if depth > 0 {
       left  = new Tree(depth-1);
       right = new Tree(depth-1);

@@ -6,6 +6,7 @@ class ParentCallInIf {
       f1 = val;
       super.init();
     } else {
+      this.initDone();
       f1 = -val;
       f1 += 3;
       // Because the conditional is param, this section will know it is in Phase
