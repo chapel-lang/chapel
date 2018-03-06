@@ -55,7 +55,7 @@ static void     transformSuperInit(CallExpr* initCall);
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
 
-static int      hasInit(BlockStmt* block);
+static int      findInitStyle(BlockStmt* block);
 static void     addSuperInit(FnSymbol* fn);
 
 /************************************* | **************************************
@@ -315,7 +315,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    int  style       = hasInit(fn->body);
+    int  style       = findInitStyle(fn->body);
     bool hasSuper    = style & InitStyle::STYLE_SUPER_INIT;
     bool hasThisInit = style & InitStyle::STYLE_THIS_INIT;
     bool needsSuper  = hasSuper == false && hasThisInit == false;
@@ -1096,11 +1096,11 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 * The possible values are the union of the values in InitStyle.               *
 *                                                                             *
 * For example, to determine if a super.init was found:                        *
-*   bool foundSuper = hasInit(fn->body) & InitStyle::STYLE_SUPER_INIT:  *
+*   bool foundSuper = findInitStyle(fn->body) & InitStyle::STYLE_SUPER_INIT:  *
 *                                                                             *
 ************************************** | *************************************/
 
-static int hasInit(BlockStmt* block) {
+static int findInitStyle(BlockStmt* block) {
   Expr* stmt = block->body.head;
   int retval = InitStyle::STYLE_NONE;
 
@@ -1114,17 +1114,17 @@ static int hasInit(BlockStmt* block) {
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       if (cond->elseStmt == NULL) {
-        retval = hasInit(cond->thenStmt);
+        retval = findInitStyle(cond->thenStmt);
 
       } else {
-        retval = hasInit(cond->thenStmt) | hasInit(cond->elseStmt);
+        retval = findInitStyle(cond->thenStmt) | findInitStyle(cond->elseStmt);
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      retval = hasInit(block);
+      retval = findInitStyle(block);
 
     } else if (ForallStmt* block = toForallStmt(stmt)) {
-      retval = hasInit(block->loopBody());
+      retval = findInitStyle(block->loopBody());
     }
 
     stmt = stmt->next;
