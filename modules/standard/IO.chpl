@@ -1593,8 +1593,8 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
   }
 
   var local_style = style;
-  var ret:file;
-  var error:syserr;
+  var error: syserr = ENOERR;
+  var ret:   file;
   ret.home = here;
   if (url != "") {
     if (url.startsWith("hdfs://")) { // HDFS
@@ -1610,7 +1610,6 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
       if error then
         try ioerror(error, "Unable to connect to HDFS", host);
 
-      // connect fully specifies the error message so all we'd need to do is return
       error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       if error then
         try ioerror(error, "Unable to open file in HDFS", url);
@@ -1628,6 +1627,8 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
       try ioerror(ENOENT:syserr, "in open: Both path and url were blank");
 
     error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
+    if error then
+      try ioerror(error, "Unable to open file in HDFS", url);
   }
 
   return ret;
@@ -1637,14 +1638,16 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 pragma "no doc"
 proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
     style:iostyle = defaultIOStyle(), url:string=""):file {
+  var err: syserr = ENOERR;
   var ret: file;
   try {
-   ret = open(path, mode, hints, style, url);
+    ret = open(path, mode, hints, style, url);
   } catch e: SystemError {
-    error = e.err;
+    err = e.err;
   } catch {
-    error = EINVAL;
+    err = EINVAL;
   }
+  error = err;
   return ret;
 }
 
