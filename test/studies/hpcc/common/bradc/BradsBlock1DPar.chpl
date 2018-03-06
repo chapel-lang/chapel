@@ -70,7 +70,7 @@ class Block1DDist {
     targetLocDom = {0..#targetLocales.numElements};
     targetLocs = targetLocales;
 
-    super.init();
+    this.initDone();
 
     for locid in targetLocDom do
       on targetLocs(locid) do
@@ -220,7 +220,7 @@ class LocBlock1DDist {
       halt("Creating a local distribution class on the wrong locale");
     }
 
-    super.init();
+    this.initDone();
     if debugBradsBlock1D then
       writeln(this);
   }
