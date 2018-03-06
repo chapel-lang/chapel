@@ -314,17 +314,10 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   //
   // INIT TODO: Don't we always need to insert a super.init?
   } else if (state.isPhase1() == true) {
-    int  style       = findInitStyle(fn->body);
-    bool hasSuper    = style & InitStyle::STYLE_SUPER_INIT;
-    bool hasThisInit = style & InitStyle::STYLE_THIS_INIT;
-    bool needsSuper  = hasSuper == false && hasThisInit == false;
-
     InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
-    if (needsSuper == true) {
-      addSuperInit(fn);
-    }
+    addSuperInit(fn);
 
   } else {
     INT_ASSERT(false);
