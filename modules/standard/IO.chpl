@@ -3430,7 +3430,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
-proc stringify(const args ...?k):string throws {
+proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
@@ -3454,28 +3454,29 @@ proc stringify(const args ...?k):string throws {
     return str;
   } else {
     // otherwise, write it using the I/O system.
+    try! {
+      // Open a memory buffer to store the result
+      var f = openmem();
+      defer f.close();
 
-    // Open a memory buffer to store the result
-    var f = openmem();
-    defer f.close();
+      var w = f.writer(locking=false);
+      defer w.close();
 
-    var w = f.writer(locking=false);
-    defer w.close();
+      w.write((...args));
 
-    w.write((...args));
+      var offset = w.offset();
 
-    var offset = w.offset();
+      var buf = c_malloc(uint(8), offset+1);
 
-    var buf = c_malloc(uint(8), offset+1);
+      var r = f.reader(locking=false);
+      defer r.close();
 
-    var r = f.reader(locking=false);
-    defer r.close();
+      r.readBytes(buf, offset:ssize_t);
+      // Add the terminating NULL byte to make C string conversion easy.
+      buf[offset] = 0;
 
-    r.readBytes(buf, offset:ssize_t);
-    // Add the terminating NULL byte to make C string conversion easy.
-    buf[offset] = 0;
-
-    return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+      return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+    }
   }
 }
 
