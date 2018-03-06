@@ -284,19 +284,29 @@ module DistributedBag {
     pragma "no doc"
     var bag : Bag(eltType);
 
-    proc DistributedBagImpl(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
-      bag = new Bag(eltType, this);
-      this.targetLocDom = targetLocDom;
+    proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
+      super.init(eltType);
+
+      this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
-      pid = _newPrivatizedClass(this);
+
+      initDone();
+
+      this.pid           = _newPrivatizedClass(this);
+      this.bag           = new Bag(eltType, this);
     }
 
     pragma "no doc"
-    proc DistributedBagImpl(other, pid, type eltType = other.eltType) {
-      bag = new Bag(eltType, this);
-      this.targetLocDom = other.targetLocDom;
+    proc init(other, pid, type eltType = other.eltType) {
+      super.init(eltType);
+
+      this.targetLocDom  = other.targetLocDom;
       this.targetLocales = other.targetLocales;
-      this.pid = pid;
+      this.pid           = pid;
+
+      initDone();
+
+      this.bag           = new Bag(eltType, this);
     }
 
     pragma "no doc"

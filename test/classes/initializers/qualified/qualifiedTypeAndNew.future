@@ -1,0 +1,7 @@
+bug: internal error when using fully qualified 'new' with type declaration
+
+#8555
+
+Note that in issue #8555, Paul gives a fairly complete run-down of
+which cases work and which don't.  Here I've just captured the
+original case that didn't work and one that did.

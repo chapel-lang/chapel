@@ -63,6 +63,12 @@ module Collection {
     */
     type eltType;
 
+    proc init(type eltType) {
+      this.eltType = eltType;
+
+      initDone();
+    }
+
     /*
       Adds an element to this data structure.
     */

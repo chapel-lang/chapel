@@ -1907,14 +1907,17 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
+
   } else if (at->defaultInitializer &&
              at->defaultInitializer->instantiationPoint) {
     // Here for historical reasons
     retval = at->defaultInitializer->instantiationPoint;
-  } else if (at->defaultTypeConstructor &&
-             at->defaultTypeConstructor->instantiationPoint) {
+
+  } else if (at->typeConstructor &&
+             at->typeConstructor->instantiationPoint) {
     // This case can apply to generic types with initializers
-    retval = at->defaultTypeConstructor->instantiationPoint;
+    retval = at->typeConstructor->instantiationPoint;
+
   } else {
     // This case applies to non-generic AggregateTypes and
     // possibly to generic AggregateTypes with default fields.
@@ -6294,7 +6297,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
-      CallExpr*   cc    = new CallExpr(at->defaultTypeConstructor->name);
+      CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
       TypeSymbol* retTS = NULL;
 
       se->replace(cc);
@@ -6879,7 +6882,7 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (FnSymbol* fn = at->defaultTypeConstructor) {
+    if (FnSymbol* fn = at->typeConstructor) {
       if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
@@ -7298,7 +7301,7 @@ static void unmarkDefaultedGenerics() {
           SET_LINENO(formal);
 
           AggregateType* formalAt   = toAggregateType(formal->type);
-          FnSymbol*      typeConstr = formalAt->defaultTypeConstructor;
+          FnSymbol*      typeConstr = formalAt->typeConstructor;
 
           formal->type     = dtUnknown;
           formal->typeExpr = new BlockStmt(new CallExpr(typeConstr));
@@ -7810,7 +7813,7 @@ static void resolveRecordInitializers() {
 
       if (init->isPrimitive(PRIM_NO_INIT) == true) {
         AggregateType* rec = toAggregateType(type);
-        FnSymbol*      fn  = rec->defaultTypeConstructor;
+        FnSymbol*      fn  = rec->typeConstructor;
         CallExpr*      res = new CallExpr(fn);
 
         for_formals(formal, fn) {
@@ -8531,7 +8534,7 @@ static void removeUnusedFunctions() {
               removeCopyFns(typeSym->type);
 
               if (AggregateType* at = toAggregateType(refType)) {
-                DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
+                DefExpr* defPoint = at->typeConstructor->defPoint;
 
                 if (defPoint->inTree()) {
                   defPoint->remove();
@@ -8589,7 +8592,7 @@ static void removeUnusedTypes() {
         // If the default type constructor for this ref type is in the tree,
         // it can be removed.
         AggregateType* at2      = toAggregateType(type->type);
-        DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
+        DefExpr*       defPoint = at2->typeConstructor->defPoint;
 
         if (defPoint->inTree()) {
           defPoint->remove();
@@ -8625,8 +8628,8 @@ static bool isUnusedClass(AggregateType* ct) {
     retval = false;
 
   // FALSE if the type constructor is used.
-  } else if (ct->defaultTypeConstructor                   != NULL &&
-             ct->defaultTypeConstructor->isResolved()     == true) {
+  } else if (ct->typeConstructor                          != NULL &&
+             ct->typeConstructor->isResolved()            == true) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was
@@ -9412,7 +9415,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // If it is generic then try to resolve the default type constructor
   if (retval == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->defaultTypeConstructor) {
+      if (FnSymbol* typeCons = at->typeConstructor) {
         SET_LINENO(call);
 
         // Swap in a call to the default type constructor and try to resolve it
@@ -9436,7 +9439,7 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
   const char* label = "abstract";
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultTypeConstructor != NULL) {
+    if (at->typeConstructor != NULL) {
       label = "not-fully-instantiated";
     }
   }

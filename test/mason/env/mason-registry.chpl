@@ -66,14 +66,16 @@ proc main() {
   // Clear environment for testing
   unsetEnv("MASON_HOME");
   unsetEnv("MASON_REGISTRY");
-  unsetEnv("MASON_CACHED_REGISTRY");
 
   const tempHome = here.cwd() + "/tempHome";
-  const altRegistry = tempHome + "/myRegistry";
-  mkdir(tempHome, parents=true);
+  const uncached = "/uncached";
+  const altRegistry = tempHome + uncached + "/myRegistry";
+  const altRegistryName = "myRegistry";
+
+  mkdir(tempHome + uncached, parents=true);
 
   setEnv("MASON_HOME", tempHome);
-  setEnv("MASON_REGISTRY", altRegistry);
+  setEnv("MASON_REGISTRY", altRegistryName + "|" + altRegistry);
 
   buildFakeRegistry(altRegistry);
 

@@ -83,6 +83,7 @@ module Barriers {
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
               reusable: bool = (barrierType == BarrierType.Atomic)) {
+      this.initDone();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {

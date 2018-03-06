@@ -127,7 +127,7 @@ makeTupleTypeCtor(std::vector<ArgSymbol*> typeCtorArgs,
 
   tupleModule->block->insertAtTail(new DefExpr(typeCtor));
 
-  newType->defaultTypeConstructor = typeCtor;
+  newType->typeConstructor = typeCtor;
 
   return typeCtor;
 }
@@ -831,7 +831,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   // Construct tuple that would be used for a particular argument intent.
   std::vector<TypeSymbol*> args;
   bool                     allSame            = true;
-  FnSymbol*                typeConstr         = at->defaultTypeConstructor;
+  FnSymbol*                typeConstr         = at->typeConstructor;
   BlockStmt*               instantiationPoint = typeConstr->instantiationPoint;
   int                      i                  = 0;
   AggregateType*           retval             = NULL;
@@ -1037,7 +1037,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
     AggregateType* at = toAggregateType(info.typeSymbol->type);
 
-    retval = at->defaultTypeConstructor;
+    retval = at->typeConstructor;
 
   } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
     AggregateType* at = toAggregateType(info.typeSymbol->type);

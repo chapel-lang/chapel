@@ -282,25 +282,10 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
   AggregateType* at    = toAggregateType(fn->_this->type);
   ArgSymbol*     _this = toArgSymbol(fn->_this);
 
-  // The body contains at least one instance of this.init()
-  // i.e. the body is not empty and we do not need to insert super.init()
-  if (state.isPhase0() == true) {
-    preNormalize(at, fn->body, state, false);
-
-  // The body contains at least one instance of super.init()
-  // i.e. the body is not empty and we do not need to insert super.init()
-  } else if (state.isPhase1() == true) {
-    preNormalize(at, fn->body, state, false);
-
-  } else if (state.isPhase2() == true) {
-    if (Expr* head = fn->body->body.head) {
-      state.initializeFieldsBefore(head);
-
-      preNormalize(at, fn->body, state, false, head);
-
-    } else {
-      state.initializeFieldsAtTail(fn->body);
-    }
+  // The body contains at least one instance of this.init() or super.init()
+  if (state.isPhase0() == true || state.isPhase1() == true) {
+    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    finalState.initializeFieldsAtTail(fn->body);
 
   } else {
     INT_ASSERT(false);
@@ -319,18 +304,17 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   InitNormalize  state(fn);
 
   AggregateType* at = toAggregateType(fn->_this->type);
+  bool initNew = hasInitDone(fn->body);
 
   // The body contains at least one instance of this.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
-    bool initNew = hasInitDone(fn->body);
 
     preNormalize(at, fn->body, state, initNew);
 
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    bool initNew    = hasInitDone(fn->body);
     bool needsSuper = hasInit(fn->body) == false;
 
     preNormalize(at, fn->body, state, initNew);
@@ -347,13 +331,13 @@ static void preNormalizeInitClass(FnSymbol* fn) {
 
       state.initializeFieldsBefore(superInit);
 
-      preNormalize(at, fn->body, state, false, superInit->next);
+      preNormalize(at, fn->body, state, initNew, superInit->next);
 
     } else {
       if (Expr* head = fn->body->body.head) {
         state.initializeFieldsBefore(head);
 
-        preNormalize(at, fn->body, state, false, head);
+        preNormalize(at, fn->body, state, initNew, head);
 
       } else {
         state.initializeFieldsAtTail(fn->body);
@@ -418,6 +402,44 @@ static void checkLocalPhaseOneErrors(const InitNormalize& state,
   }
 }
 
+static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
+  const char* initName = NULL;
+  if (isSuperInit(callExpr) == true) {
+    initName = "super.init()";
+  } else if (isThisInit(callExpr) == true) {
+    initName = "this.init()";
+  } else if (isInitDone(callExpr) == true) {
+    initName = "this.initDone()";
+  }
+
+  if (initName == NULL) {
+    INT_FATAL("Called 'checkInvalidInit' with invalid call");
+  }
+
+  if (state.isPhase2() == true) {
+    USR_FATAL(callExpr, "use of %s call in phase 2", initName);
+
+  } else if (state.inLoopBody() == true) {
+    USR_FATAL(callExpr, "use of %s call in loop body", initName);
+
+  } else if (state.inParallelStmt() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a parallel statement", initName);
+
+  } else if (state.inCoforall() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a coforall loop body", initName);
+
+  } else if (state.inForall() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in a forall loop body", initName);
+
+  } else if (state.inOn() == true) {
+    USR_FATAL(callExpr,
+              "use of %s call in an on block", initName);
+  }
+}
+
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
@@ -451,115 +473,46 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is super.init() or this.init()
       } else if (isInitStmt(callExpr) == true) {
-        if (state.isPhase2() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of super.init() call in phase 2");
+        checkInvalidInit(state, callExpr);
+        if (isThisInit(callExpr) == true) {
+          INT_ASSERT(state.isPhase0() == true);
+          state.completePhase1(callExpr);
 
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of this.init() call in phase 2");
+          stmt = callExpr->next;
 
+        } else if (isSuperInit(callExpr) == true) {
+          Expr* next = callExpr->next;
+
+          if (initNew == false) {
+            state.completePhase1(callExpr);
           } else {
-            INT_ASSERT(false);
+            INT_ASSERT(state.isPhase0() == true);
+            state.completePhase0(callExpr);
           }
 
-        } else if (state.inLoopBody() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of super.init() call in loop body");
+          if (at->isRecord() == true) {
+            // INIT TODO: disallow super.init in records
+            // gdbShouldBreakHere();
+            // USR_FATAL_CONT(stmt, "super.init not allowed in records");
+            callExpr->remove();
 
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt, "use of this.init() call in loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inParallelStmt() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a parallel statement");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a parallel statement");
+          } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+            callExpr->remove();
 
           } else {
-            INT_ASSERT(false);
+            transformSuperInit(callExpr);
           }
 
-        } else if (state.inCoforall() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a coforall loop body");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a coforall loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inForall() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in a forall loop body");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in a forall loop body");
-
-          } else {
-            INT_ASSERT(false);
-          }
-
-        } else if (state.inOn() == true) {
-          if (isSuperInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of super.init() call in an on block");
-
-          } else if (isThisInit(callExpr) == true) {
-            USR_FATAL(stmt,
-                      "use of this.init() call in an on block");
-
-          } else {
-            INT_ASSERT(false);
-          }
+          stmt = next;
 
         } else {
-          if (isThisInit(callExpr) == true) {
-            if (initNew == false) {
-              state.completePhase1(callExpr);
-            }
-
-            stmt = callExpr->next;
-
-          } else if (isSuperInit(callExpr) == true) {
-            Expr* next = callExpr->next;
-
-            if (initNew == false) {
-              state.completePhase1(callExpr);
-            }
-
-            if (at->isRecord() == true) {
-              callExpr->remove();
-
-            } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
-              callExpr->remove();
-
-            } else {
-              transformSuperInit(callExpr);
-            }
-
-            stmt = next;
-
-          } else {
-            INT_ASSERT(false);
-          }
+          INT_ASSERT(false);
         }
 
       } else if (isInitDone(callExpr) == true) {
         Expr* next = stmt->next;
 
+        checkInvalidInit(state, callExpr);
         state.completePhase1(callExpr);
 
         stmt->remove();
@@ -568,7 +521,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        if (state.isPhase0() == true) {
+        if (state.isPhase0() == true && initNew == false) {
           USR_FATAL(stmt,
                     "field initialization not allowed before this.init()");
 
