@@ -286,9 +286,12 @@ static void scopeResolve(BlockStmt*          block,
 static void scopeResolve(ForallStmt*         forallStmt,
                          const ResolveScope* parent)
 {
+  // No need to scopeResolve the iterRecSetup block.
+  INT_ASSERT(forallStmt->iterRecSetup()->body.empty());
+
   BlockStmt* fBody = forallStmt->loopBody();
 
-  // or, we could construct ResolveScope specifically for forallStmt
+  // Or, we could construct ResolveScope specifically for forallStmt.
   ResolveScope* bodyScope = new ResolveScope(fBody, parent);
 
   // cf. scopeResolve(FnSymbol*,parent)

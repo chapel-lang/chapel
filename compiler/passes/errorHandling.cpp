@@ -465,6 +465,8 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
 }
 
 bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
+  // We assume that the iterRecSetup() block does not throw.
+
   if (!canBlockStmtThrow(node->loopBody()))
     return true;
 

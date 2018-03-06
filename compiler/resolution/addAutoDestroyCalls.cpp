@@ -361,6 +361,8 @@ static void walkForallBlocks(FnSymbol* fn,
                              ForallStmt* forall,
                              std::set<VarSymbol*>& parentIgnored)
 {
+  // We do not want any deinits in iterRecSetup().
+
   std::set<VarSymbol*> toIgnoreLB(parentIgnored);
   walkBlock(fn, parentScope, forall->loopBody(), toIgnoreLB, forall);
 

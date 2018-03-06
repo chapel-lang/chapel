@@ -929,6 +929,8 @@ static void handleRecursiveIter(ForallStmt* fs,
     return;
   }
 
+  gdbShouldBreakHere(); // VASS CONTINUE HERE
+
   CallExpr* parIterCall1 = toCallExpr(fs->firstIteratedExpr());
   INT_ASSERT(parIterCall1 == parIterCall); // wass - remove the previous line
   INT_ASSERT(parIterCall && !parIterCall->next); // wass - remove - this is checked in the caller

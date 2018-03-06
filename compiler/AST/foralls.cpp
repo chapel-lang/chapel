@@ -1116,6 +1116,64 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 //                           //
 ///////////////////////////////
 
+//
+// The block iterRecSetup() is used to fall back to the "old",
+// iterator-record-based implementation for the ForallStmt's
+// parallel iterator. We set it up here so that calls like
+// _getIterator can be resolved.
+//
+// Currently iterRecSetup() is used only when the parallel iterator
+// is recursive. Because otherwise the iterator is simply inlined
+// by lowerForallStmtsInline()/lowerOneForallStmt().
+// Recursive-ness is detected later by
+// computeRecursiveIteratorSet()/find_recursive_caller().
+// Since we do not know the outcome, we do the work here
+// also in the (common) case where it will not be needed.
+//
+void static populateIterRecSetup(ForallStmt* fs)
+{
+  if (lastNodeIDUsed() > 0) return; //wass temporarily skip this.
+
+  CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
+  INT_ASSERT(parIterCall && !parIterCall->next); // expected
+  SET_LINENO(parIterCall);
+
+  // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
+  VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
+  VarSymbol* parIter = newTemp("chpl__parIter");
+  VarSymbol* parIdx  = parIdxVar(fs);
+
+  iterRec->addFlag(FLAG_NO_COPY);
+  iterRec->addFlag(FLAG_CHPL__ITER);
+  iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
+  iterRec->addFlag(FLAG_MAYBE_REF);
+  iterRec->addFlag(FLAG_EXPR_TEMP);
+
+  parIter->addFlag(FLAG_EXPR_TEMP);
+  // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
+  //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
+  parIdx->addFlag(FLAG_INDEX_VAR);
+
+  BlockStmt* holder = fs->iterRecSetup();
+
+  holder->insertAtTail(new DefExpr(iterRec));
+  holder->insertAtTail(new DefExpr(parIter));
+/* wass needed?
+  DefExpr* parIdxDef = parIdx->defPoint;
+  INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
+  holder->insertAtTail(parIdxDef->remove());
+*/
+
+  holder->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy()));
+  holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
+  holder->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
+  holder->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
+
+  // This may not resolve if postponed until lowerIterators.
+  resolveBlockStmt(holder);
+}
+
+
 // lowerForallStmts() removes each ForallStmt from AST,
 // replacing it with explicit loop(s) etc.
 // Currently this is done towards the end of resolution.
@@ -1131,6 +1189,7 @@ void lowerForallStmts() {
       void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
       lowerForallIntentsAtResolution(fs);
 */
+      populateIterRecSetup(fs);
       continue;
     }
 

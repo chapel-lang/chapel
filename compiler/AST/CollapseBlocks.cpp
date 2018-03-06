@@ -142,6 +142,8 @@ void CollapseBlocks::visitForallIntents(ForallIntents* clause) {
 }
 
 bool CollapseBlocks::enterForallStmt(ForallStmt* node) {
+  if (!node->iterRecSetup()->body.empty())
+    enterBlockStmt(node->iterRecSetup());
   return enterBlockStmt(node->loopBody());
 }
 

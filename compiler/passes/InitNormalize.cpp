@@ -1283,8 +1283,11 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
         stmt   = stmt->next;
       }
 
-    } else if (ForallStmt* block = toForallStmt(stmt)) {
-      InitPhase phase = startPhase(block->loopBody());
+    } else if (ForallStmt* forall = toForallStmt(stmt)) {
+      // Nothing to normalize in iterRecSetup().
+      INT_ASSERT(forall->iterRecSetup()->body.empty());
+
+      InitPhase phase = startPhase(forall->loopBody());
 
       if (phase != defaultPhase) {
         retval = phase;
