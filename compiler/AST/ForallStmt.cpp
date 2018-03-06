@@ -34,6 +34,7 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
+  fIterRecSetup(new BlockStmt()),
   fLoopBody(body),
   fFromForLoop(false),
   fContinueLabel(NULL),
@@ -55,6 +56,8 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fIterExprs.insertAtTail(COPY_INT(expr));
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
+  for_alist(expr, fIterRecSetup->body)
+    _this->fIterRecSetup->insertAtTail(COPY_INT(expr));
 
   return _this;
 }
@@ -62,6 +65,8 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
 void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == fLoopBody)
     fLoopBody = toBlockStmt(newAst);
+  else if (oldAst == fIterRecSetup)
+    fIterRecSetup = toBlockStmt(newAst);
   else
     INT_ASSERT(false);
 }
@@ -95,6 +100,10 @@ void ForallStmt::verify() {
     INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
 
+  INT_ASSERT(fIterRecSetup);
+  verifyParent(fIterRecSetup);
+  verifyNotOnList(fIterRecSetup);
+
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
   verifyNotOnList(fLoopBody);
@@ -120,6 +129,7 @@ void ForallStmt::accept(AstVisitor* visitor) {
       expr->accept(visitor);
     for_alist(expr, shadowVariables())
       expr->accept(visitor);
+    fIterRecSetup->accept(visitor);
     fLoopBody->accept(visitor);
     visitor->exitForallStmt(this);
   }
@@ -144,11 +154,14 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     if (Expr* sv1 = fShadowVars.head)
       return sv1->getFirstExpr();
     else
-      return fLoopBody->getFirstExpr();
+      return fIterRecSetup->getFirstExpr();
   }
 
   if (expr == fShadowVars.tail)
-    return fLoopBody->getFirstExpr();
+    return fIterRecSetup->getFirstExpr();
+
+  if (expr == fIterRecSetup)
+    return fLoopBody;
 
   if (expr == fLoopBody)
     return this;

@@ -34,6 +34,7 @@ public:
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
+  BlockStmt* iterRecSetup()   const; // code to create the iter record
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already
 
@@ -83,14 +84,15 @@ private:
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
+  BlockStmt*     fIterRecSetup;// always present - for recursive iterators
   BlockStmt*     fLoopBody;    // always present
   bool           fFromForLoop; // see comment below
 
   ForallStmt(bool zippered, BlockStmt* body);
 
 public:
-  LabelSymbol*   fContinueLabel;  // update_symbols() needs this
-  LabelSymbol*   fErrorHandlerLabel;  // update_symbols() needs this
+  LabelSymbol*   fContinueLabel;     // update_symbols() needs the labels
+  LabelSymbol*   fErrorHandlerLabel;
   bool           fFromResolvedForLoop;
 };
 
@@ -109,14 +111,15 @@ set membership is propagated through cloning, if applicable.
 */
 
 // accessor implementations
-inline bool   ForallStmt::zippered()       const { return fZippered;   }
-inline AList& ForallStmt::inductionVariables()   { return fIterVars;   }
-inline AList& ForallStmt::iteratedExpressions()  { return fIterExprs;  }
-inline AList& ForallStmt::shadowVariables()      { return fShadowVars; }
-inline BlockStmt* ForallStmt::loopBody()   const { return fLoopBody;   }
-inline bool ForallStmt::iterCallAlreadyTagged() const { return fFromForLoop; }
+inline bool   ForallStmt::zippered()         const { return fZippered;   }
+inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
+inline AList& ForallStmt::iteratedExpressions()    { return fIterExprs;  }
+inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
+inline BlockStmt* ForallStmt::iterRecSetup() const { return fIterRecSetup; }
+inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
+inline bool ForallStmt::iterCallAlreadyTagged() const { return  fFromForLoop; }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
-inline bool ForallStmt::createdFromForLoop()    const { return fFromForLoop; }
+inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }
 
 // conveniences
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
