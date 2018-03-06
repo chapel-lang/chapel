@@ -578,7 +578,7 @@ enum iostringformat {
             to store in :var:`iostyle.str_style`.
  */
 proc stringStyleTerminated(terminator:uint(8)) {
-  return -(terminator - iostringstyle.data_null);
+  return -(terminator - iostringstyle.data_null:int(64));
 }
 
 /*
@@ -604,7 +604,7 @@ proc stringStyleExactLen(len:int(64)) {
   length as described in :type:`iostringstyle`.
  */
 proc stringStyleWithVariableLength() {
-  return iostringstyle.lenVb_data;
+  return iostringstyle.lenVb_data: int(64);
 }
 
 /*
@@ -760,7 +760,7 @@ extern record iostyle { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = iostringstyle.data_toeof;
+  var str_style:int(64) = iostringstyle.data_toeof: int(64);
 
   // text style choices
   /* When performing text I/O, pad out to this many columns */
@@ -3048,7 +3048,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
-      select byteorder:iokind {
+      select byteorder:int:iokind {
         when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
         when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
@@ -3725,7 +3725,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     if binary {
       error = qio_channel_read_string(false, byteorder,
-                                      iostringstyle.data_toeof,
+                                      iostringstyle.data_toeof:int(64),
                                       this._channel_internal, tx,
                                       lenread, uselen);
     } else {
@@ -6843,7 +6843,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string;
     error =
-        qio_channel_read_string(false, iokind.native, stringStyleExactLen(len),
+        qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
     s = new string(ts, length=gotlen, needToCopy=false);
   }
