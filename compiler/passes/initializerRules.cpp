@@ -437,10 +437,10 @@ static InitNormalize preNormalize(AggregateType* at,
 
   // INIT TODO: Temporary workaround to allow field initialization before
   // phase one, which aids transition process by reducing diff sizes.
-  bool hasSuperInit = false;
+  bool hasThisInit = false;
   if (state.isPhase0()) {
     int foundInit = findInitStyle(block);
-    hasSuperInit = foundInit & InitStyle::STYLE_SUPER_INIT;
+    hasThisInit = foundInit & InitStyle::STYLE_THIS_INIT;
   }
 
   while (stmt != NULL) {
@@ -507,7 +507,7 @@ static InitNormalize preNormalize(AggregateType* at,
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
         // INIT TODO: Emit error for local field initialization before
         // super.init() as well as this.init()
-        if (state.isPhase0() == true && hasSuperInit == false) {
+        if (state.isPhase0() == true && hasThisInit == true) {
           USR_FATAL(stmt,
                     "field initialization not allowed before this.init()");
 
