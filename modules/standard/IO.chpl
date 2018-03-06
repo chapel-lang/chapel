@@ -1584,7 +1584,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
     try {
       port = port_str: int;
     } catch {
-      error = EINVAL;
+      throw SystemError.fromSyserr(EINVAL, "invalid port");
     }
 
     var file_path = "";
@@ -1594,7 +1594,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 
   var local_style = style;
   var error: syserr = ENOERR;
-  var ret:   file;
+  var ret: file;
   ret.home = here;
   if (url != "") {
     if (url.startsWith("hdfs://")) { // HDFS
