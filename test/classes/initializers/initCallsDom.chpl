@@ -6,6 +6,7 @@ record R {
 
   proc init(x) where !x: R {
     d = x.domain;
+    this.initDone();
     for i in d do
       a[i] = i/10.0;
   }

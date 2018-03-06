@@ -1402,11 +1402,11 @@ static Symbol* determineQueriedField(CallExpr* call) {
   } else {
     Vec<ArgSymbol*> args;
     int             position      = var->immediate->int_value();
-    FnSymbol*       typeConstruct = at->defaultTypeConstructor;
+    FnSymbol*       typeConstruct = at->typeConstructor;
     AggregateType*  source        = at->instantiatedFrom;
 
     while (typeConstruct == NULL) {
-      typeConstruct = source->defaultTypeConstructor;
+      typeConstruct = source->typeConstructor;
       source        = source->instantiatedFrom;
     }
 
@@ -1451,7 +1451,7 @@ static bool isInstantiatedField(Symbol* field) {
   AggregateType* at     = toAggregateType(ts->type);
   bool           retval = false;
 
-  for_formals(formal, at->defaultTypeConstructor) {
+  for_formals(formal, at->typeConstructor) {
     if (strcmp(field->name, formal->name) == 0) {
       if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         retval = true;

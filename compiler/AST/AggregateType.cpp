@@ -40,24 +40,24 @@ AggregateType* dtString = NULL;
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
-  aggregateTag           = initTag;
-  defaultTypeConstructor = NULL;
-  defaultInitializer     = NULL;
-  initializerStyle       = DEFINES_NONE_USE_DEFAULT;
-  initializerResolved    = false;
-  outer                  = NULL;
-  iteratorInfo           = NULL;
-  doc                    = NULL;
+  aggregateTag        = initTag;
+  typeConstructor     = NULL;
+  defaultInitializer  = NULL;
+  initializerStyle    = DEFINES_NONE_USE_DEFAULT;
+  initializerResolved = false;
+  outer               = NULL;
+  iteratorInfo        = NULL;
+  doc                 = NULL;
 
-  instantiatedFrom       = NULL;
+  instantiatedFrom    = NULL;
 
-  fields.parent          = this;
-  inherits.parent        = this;
+  fields.parent       = this;
+  inherits.parent     = this;
 
-  genericField           = 0;
-  mIsGeneric             = false;
+  genericField        = 0;
+  mIsGeneric          = false;
 
-  classId                = 0;
+  classId             = 0;
 
   // set defaultValue to nil to keep it from being constructed
   if (aggregateTag == AGGREGATE_CLASS) {
@@ -103,6 +103,8 @@ AggregateType* AggregateType::copyInner(SymbolMap* map) {
   for_alist(delegate, forwardingTo) {
     copy_type->forwardingTo.insertAtTail(COPY_INT(delegate));
   }
+
+  copy_type->genericField = genericField;
 
   return copy_type;
 }
@@ -163,6 +165,28 @@ void AggregateType::verify() {
 
 int AggregateType::numFields() const {
   return fields.length;
+}
+
+bool AggregateType::fieldIsGeneric(Symbol* field) const {
+  bool retval = false;
+
+  if (VarSymbol* var = toVarSymbol(field)) {
+    if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      retval = true;
+
+    } else if (var->hasFlag(FLAG_PARAM) == true) {
+      retval = true;
+
+    } else if (var->type == dtUnknown) {
+      DefExpr* def = var->defPoint;
+
+      if (def->init == NULL && def->exprType == NULL) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
 }
 
 DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
@@ -422,8 +446,8 @@ bool AggregateType::hasPostInitializer() const {
 bool AggregateType::mayHaveInstances() const {
   bool retval = false;
 
-  if (defaultTypeConstructor != NULL) {
-    retval = defaultTypeConstructor->isResolved();
+  if (typeConstructor != NULL) {
+    retval = typeConstructor->isResolved();
 
   } else {
     retval = initializerResolved;
@@ -436,21 +460,8 @@ bool AggregateType::mayHaveInstances() const {
 // Return true if a generic field was found.
 bool AggregateType::setFirstGenericField() {
   if (genericField == 0) {
-    int idx = 1;
-
-    for_fields(field, this) {
-      if (field->hasFlag(FLAG_TYPE_VARIABLE) == true ||
-          field->hasFlag(FLAG_PARAM)         == true ||
-          (field->defPoint->init     == NULL &&
-           field->defPoint->exprType == NULL &&
-           field->type               == dtUnknown)) {
-        genericField = idx;
-        symbol->addFlag(FLAG_GENERIC);
-        break;
-
-      } else {
-        idx++;
-      }
+    if (setNextGenericField() == true) {
+      symbol->addFlag(FLAG_GENERIC);
     }
 
     if (isClass() == true) {
@@ -462,7 +473,21 @@ bool AggregateType::setFirstGenericField() {
     }
   }
 
-  return (genericField != 0) ? true : false;
+  return genericField != 0 ? true : false;
+}
+
+bool AggregateType::setNextGenericField() {
+  int index;
+
+  for (index = genericField + 1; index <= fields.length; index++) {
+    if (fieldIsGeneric(getField(index)) == true) {
+      break;
+    }
+  }
+
+  genericField = index <= fields.length ? index : 0;
+
+  return genericField != 0 ? true : false;
 }
 
 // Returns an instantiation of this AggregateType at the given index.
@@ -478,109 +503,101 @@ bool AggregateType::setFirstGenericField() {
 // Otherwise, will create a new instantiation with the given
 // argument and will return that.
 AggregateType* AggregateType::getInstantiation(Symbol* sym, int index) {
-  // If the index of the field is prior to the index of the next generic field
-  // then trivially return ourselves
-  if (index < genericField)
-    return this;
+  AggregateType* retval = NULL;
 
-  if (index > genericField) {
-    // Internal error, because initializerRules should have ensured that we
-    // access the generic fields in order, and so we should never try to update
-    // a generic field after the current generic field when the current one
-    // hasn't been updated.
+  if (index < genericField) {
+    retval = this;
+
+  } else if (index == genericField) {
+    if (AggregateType* at = getCurInstantiation(sym)) {
+      retval = at;
+    } else {
+      retval = getNewInstantiation(sym);
+    }
+
+  } else {
     INT_FATAL(this, "trying to set a later generic field %d", index);
   }
 
-  // First, look to see if we have an instantiation with that value already
+  return retval;
+}
+
+AggregateType* AggregateType::getCurInstantiation(Symbol* sym) {
+  AggregateType* retval = NULL;
+
   for_vector(AggregateType, at, instantiations) {
-    // TODO: test me
     Symbol* field = at->getField(genericField);
-    if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
-      if (field->type == sym->typeInfo())
-        return at;
-    }
-    if (field->hasFlag(FLAG_PARAM) &&
-        at->substitutions.get(field) == sym) {
-      return at;
-    }
-    if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
-        !field->hasFlag(FLAG_PARAM)) {
+
+    if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      if (givesType(sym) == true && field->type == sym->typeInfo()) {
+        retval = at;
+        break;
+      }
+
+    } else if (field->hasFlag(FLAG_PARAM) == true) {
+      if (at->substitutions.get(field) == sym) {
+        retval = at;
+        break;
+      }
+
+    } else {
       if (field->type == sym->typeInfo()) {
-        return at;
+        retval = at;
+        break;
       }
     }
   }
-  // Otherwise, we need to create an instantiation for that type
-  AggregateType* newInstance = toAggregateType(this->symbol->copy()->type);
-  this->symbol->defPoint->insertBefore(new DefExpr(newInstance->symbol));
-  newInstance->symbol->copyFlags(this->symbol);
 
-  newInstance->substitutions.copy(this->substitutions);
+  return retval;
+}
 
-  Symbol* field = newInstance->getField(genericField);
+AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
+  AggregateType* retval = toAggregateType(symbol->copy()->type);
+  Symbol*        field  = retval->getField(genericField);
 
-  if (field->hasFlag(FLAG_PARAM)) {
-    newInstance->substitutions.put(field, sym);
-    newInstance->symbol->renameInstantiatedSingle(sym);
+  symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
+
+  retval->instantiatedFrom = this;
+
+  retval->symbol->copyFlags(symbol);
+
+  retval->substitutions.copy(substitutions);
+
+  if (field->hasFlag(FLAG_PARAM) == true) {
+    retval->substitutions.put(field, sym);
+    retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
-    newInstance->substitutions.put(field, sym->typeInfo()->symbol);
-    newInstance->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
+    retval->substitutions.put(field, sym->typeInfo()->symbol);
+    retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
 
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) && givesType(sym)) {
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) == true && givesType(sym) == true) {
     field->type = sym->typeInfo();
 
+  } else if (field->defPoint->exprType == NULL) {
+    if (field->type == dtUnknown) {
+      field->type = sym->typeInfo();
+    }
+
   } else {
-    if (!field->defPoint->exprType && field->type == dtUnknown) {
-      field->type = sym->typeInfo();
-
-    } else if (field->defPoint->exprType->typeInfo() != sym->typeInfo()) {
-      // TODO: Something something, casts and coercions
-
-    } else {
+    if (field->defPoint->exprType->typeInfo() == sym->typeInfo()) {
       field->type = sym->typeInfo();
     }
   }
 
-  instantiations.push_back(newInstance);
-
-  newInstance->instantiatedFrom = this;
-
-  // Handle dispatch parents (because it totally makes sense for this to have
-  // been done outside of the AggregateType by
-  // instantiateTypeForTypeConstructor.  Totally)
   forv_Vec(AggregateType, at, dispatchParents) {
-    newInstance->dispatchParents.add(at);
-
-    bool inserted = at->dispatchChildren.add_exclusive(newInstance);
-
-    INT_ASSERT(inserted);
+    retval->dispatchParents.add(at);
+    at->dispatchChildren.add_exclusive(retval);
   }
 
-  DefExpr* next = toDefExpr(field->defPoint->next);
-
-  newInstance->genericField = this->genericField + 1;
-
-  while (next) {
-    if (next->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
-        next->sym->hasFlag(FLAG_PARAM) ||
-        (next->init == NULL && next->exprType == NULL)) {
-      // This is the next value for genericField
-      break;
-
-    } else {
-      newInstance->genericField = newInstance->genericField + 1;
-      next = toDefExpr(next->next);
-    }
+  if (retval->setNextGenericField() == false) {
+    retval->symbol->removeFlag(FLAG_GENERIC);
   }
 
-  if (newInstance->genericField > newInstance->fields.length) {
-    newInstance->genericField = 0;
-    newInstance->symbol->removeFlag(FLAG_GENERIC);
-  }
+  instantiations.push_back(retval);
 
-  return newInstance;
+  return retval;
 }
 
 AggregateType*
@@ -639,27 +656,36 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 // substitutions it needs and send them here, to create the instantiation from
 // those substitutions following the same mechanism used by the resolution of
 // initializers but extended to handling multiple updates at a time.
-AggregateType* AggregateType::getInstantiationMulti(SymbolMap& subs,
-                                                    FnSymbol*  fn) {
+AggregateType* AggregateType::generateType(SymbolMap& subs) {
   AggregateType* retval = this;
-
-  INT_ASSERT(symbol->hasFlag(FLAG_GENERIC)      == true);
-  INT_ASSERT(fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true);
 
   if (genericField == 0) {
     setFirstGenericField();
   }
 
-  for_formals(formal, fn) {
-    if (Symbol* val = subs.get(formal)) {
-      // Assumes that the type constructor arguments will correspond directly
-      // to the generic fields, and that they will gain substitutions in order.
-      // Bad things will happen if this assumption is violated
-      retval = retval->getInstantiation(val, retval->genericField);
+  for_fields(field, this) {
+    if (fieldIsGeneric(field) == true) {
+      if (Symbol* val = substitutionForField(field, subs)) {
+        retval = retval->getInstantiation(val, retval->genericField);
+      }
     }
   }
 
   retval->instantiatedFrom = this;
+
+  return retval;
+}
+
+Symbol* AggregateType::substitutionForField(Symbol*    field,
+                                            SymbolMap& subs) const {
+  Symbol* retval = NULL;
+
+  form_Map(SymbolMapElem, e, subs) {
+    if (strcmp(field->name, e->key->name) == 0) {
+      retval = e->value;
+      break;
+    }
+  }
 
   return retval;
 }
@@ -954,7 +980,7 @@ void AggregateType::buildConstructors() {
   if (defaultInitializer == NULL) {
     SET_LINENO(this);
 
-    if (defaultTypeConstructor == NULL) {
+    if (typeConstructor == NULL) {
       buildTypeConstructor();
     }
 
@@ -1011,14 +1037,14 @@ FnSymbol* AggregateType::buildTypeConstructor() {
 
   addToSymbolTable(retval);
 
-  defaultTypeConstructor = retval;
+  typeConstructor = retval;
 
   return retval;
 }
 
 CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
   AggregateType* parent        = dispatchParents.v[0];
-  FnSymbol*      superTypeCtor = parent->defaultTypeConstructor;
+  FnSymbol*      superTypeCtor = parent->typeConstructor;
   CallExpr*      retval        = NULL;
 
   if (superTypeCtor == NULL) {
@@ -1793,19 +1819,9 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         retval = false;
       }
     }
-  } else if (isRecord() == true) {
-    // This should get removed during preNormalizeInitMethod, but we need it to
-    // know we are in Phase 1 of normal initializers for the old proposal.
-    CallExpr* superPortion = new CallExpr(".",
-                                          new SymExpr(fn->_this),
-                                          new_CStringSymbol("super"));
-
-    SymExpr*  initPortion  = new SymExpr(new_CStringSymbol("init"));
-    CallExpr* base         = new CallExpr(".", superPortion, initPortion);
-    CallExpr* superCall    = new CallExpr(base);
-
-    fn->body->insertAtTail(superCall);
   }
+
+  // Nothing to be done for records.
 
   return retval;
 }
@@ -1874,16 +1890,6 @@ void AggregateType::buildCopyInitializer() {
         }
       }
     }
-
-    CallExpr*  super     = new CallExpr(".",
-                                        new SymExpr(fn->_this),
-                                        new_CStringSymbol("super"));
-
-    SymExpr*   initExpr  = new SymExpr(new_CStringSymbol("init"));
-    CallExpr*  base      = new CallExpr(".", super, initExpr);
-    CallExpr*  superCall = new CallExpr(base);
-
-    fn->insertAtTail(superCall);
 
     symbol->defPoint->insertBefore(def);
 

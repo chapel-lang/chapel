@@ -151,14 +151,14 @@ module Buffers {
    */
   proc bytes.init(len:int(64), out error:syserr) {
     this.home = here;
-    super.init();
+    this.initDone();
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
   pragma "no doc"
   proc bytes.init(len:int(64)) {
     this.home = here;
-    super.init();
+    this.initDone();
     var error:syserr = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes constructor");
     // The buffer is retained internally on construction, but only on success.
@@ -317,14 +317,14 @@ module Buffers {
    */
   proc buffer.init(out error:syserr) {
     this.home = here;
-    super.init();
+    this.initDone();
     error = qbuffer_create(this._buf_internal);
   }
   pragma "no doc"
   proc buffer.init() /*throws*/ {
     var error:syserr = ENOERR;
     this.home = here;
-    super.init();
+    this.initDone();
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
@@ -336,7 +336,7 @@ module Buffers {
       qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
-      super.init();
+      this.initDone();
     } else {
       var error: syserr = ENOERR;
       this.init(error);

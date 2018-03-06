@@ -105,10 +105,10 @@ public:
   bool                        setFirstGenericField();
 
   AggregateType*              getInstantiation(Symbol* sym, int index);
+
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
-  AggregateType*              getInstantiationMulti(SymbolMap& subs,
-                                                    FnSymbol*  fn);
+  AggregateType*              generateType(SymbolMap& subs);
 
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
@@ -147,7 +147,7 @@ public:
 
   AggregateTag                aggregateTag;
 
-  FnSymbol*                   defaultTypeConstructor;
+  FnSymbol*                   typeConstructor;
 
   FnSymbol*                   defaultInitializer;
 
@@ -182,19 +182,28 @@ public:
 
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
-  static void                 insertImplicitThis(
-                                            FnSymbol*         fn,
-                                            Vec<const char*>& fieldNamesSet);
+
+  static void                 insertImplicitThis(FnSymbol*         fn,
+                                                 Vec<const char*>& names);
 
 private:
   virtual std::string         docsDirective();
 
   std::string                 docsSuperClass();
 
+  bool                        fieldIsGeneric(Symbol* field)              const;
+
   void                        addDeclaration(DefExpr* defExpr);
 
   void                        addClassToHierarchy(
                                           std::set<AggregateType*>& seen);
+
+  Symbol*                     substitutionForField(Symbol*    field,
+                                                   SymbolMap& subs)      const;
+
+  AggregateType*              getCurInstantiation(Symbol* sym);
+
+  AggregateType*              getNewInstantiation(Symbol* sym);
 
   AggregateType*              discoverParentAndCheck(Expr* storesName);
 
@@ -206,6 +215,8 @@ private:
 
   void                        typeConstrSetFields(FnSymbol* fn,
                                                   CallExpr* superCall)   const;
+
+  bool                        setNextGenericField();
 
   void                        typeConstrSetField(FnSymbol*  fn,
                                                  VarSymbol* field,

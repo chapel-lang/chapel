@@ -20,7 +20,6 @@ proc main() {
   // Clear environment for testing
   unsetEnv("MASON_HOME");
   unsetEnv("MASON_REGISTRY");
-  unsetEnv("MASON_CACHED_REGISTRY");
 
   setEnv("MASON_HOME", here.cwd());
 
@@ -31,7 +30,7 @@ proc main() {
   masonEnv(args);
   writeln("----------");
 
-  setEnv("MASON_REGISTRY", "foobar");
+  setEnv("MASON_REGISTRY", "foobar|foobar");
   masonEnv(args);
   writeln("----------");
   unsetEnv("MASON_REGISTRY");
