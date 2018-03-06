@@ -472,7 +472,7 @@ module ZMQ {
     proc init() {
       this.ctx = zmq_ctx_new();
       this.home = here;
-      super.init();
+      this.initDone();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
         halt("Error in ContextClass(): %s\n", errmsg);
@@ -567,7 +567,7 @@ module ZMQ {
     proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       this.home = here;
-      super.init();
+      this.initDone();
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
         halt("Error in SocketClass(): %s\n", errmsg);

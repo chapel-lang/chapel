@@ -118,7 +118,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      super.init();
+      this.initDone();
       refcnt.write(0);
       state.clear();
     }
