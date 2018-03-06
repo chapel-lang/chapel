@@ -31,10 +31,10 @@
 #include "typeSpecifier.h"
 
 enum InitStyle {
-  STYLE_NONE,
-  STYLE_SUPER_INIT,
-  STYLE_THIS_INIT,
-  STYLE_BOTH
+  STYLE_NONE          = 0,
+  STYLE_SUPER_INIT    = 1,
+  STYLE_THIS_INIT     = 2,
+  STYLE_THIS_INITDONE = 4
 };
 
 static bool     isInitStmt (CallExpr* stmt);
@@ -55,7 +55,7 @@ static void     transformSuperInit(CallExpr* initCall);
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
 
-static bool     hasInit(BlockStmt* block);
+static int      hasInit(BlockStmt* block);
 static void     addSuperInit(FnSymbol* fn);
 
 /************************************* | **************************************
@@ -315,7 +315,10 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   // The body contains at least one instance of super.init()
   // i.e. the body is not empty and we do not need to insert super.init()
   } else if (state.isPhase1() == true) {
-    bool needsSuper = hasInit(fn->body) == false;
+    int  style       = hasInit(fn->body);
+    bool hasSuper    = style & InitStyle::STYLE_SUPER_INIT;
+    bool hasThisInit = style & InitStyle::STYLE_THIS_INIT;
+    bool needsSuper  = hasSuper == false && hasThisInit == false;
 
     preNormalize(at, fn->body, state, initNew);
 
@@ -1089,25 +1092,32 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 }
 
 /************************************* | **************************************
+* Returns an integer encoding the types of initializers found in the block.   *
+* The possible values are the union of the values in InitStyle.               *
 *                                                                             *
-*                                                                             *
+* For example, to determine if a super.init was found:                        *
+*   bool foundSuper = hasInit(fn->body) & InitStyle::STYLE_SUPER_INIT:  *
 *                                                                             *
 ************************************** | *************************************/
 
-static bool hasInit(BlockStmt* block) {
-  Expr* stmt   = block->body.head;
-  bool  retval = false;
+static int hasInit(BlockStmt* block) {
+  Expr* stmt = block->body.head;
+  int retval = InitStyle::STYLE_NONE;
 
-  while (stmt != NULL && retval == false) {
+  while (stmt != NULL && retval == InitStyle::STYLE_NONE) {
     if (CallExpr* callExpr = toCallExpr(stmt)) {
-      retval = isSuperInit(callExpr) == true || isThisInit(callExpr) == true;
+      if (isSuperInit(callExpr) == true) {
+        retval = InitStyle::STYLE_SUPER_INIT;
+      } else if (isThisInit(callExpr) == true) {
+        retval = InitStyle::STYLE_THIS_INIT;
+      }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
       if (cond->elseStmt == NULL) {
         retval = hasInit(cond->thenStmt);
 
       } else {
-        retval = hasInit(cond->thenStmt) || hasInit(cond->elseStmt);
+        retval = hasInit(cond->thenStmt) | hasInit(cond->elseStmt);
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
