@@ -248,13 +248,11 @@ static void          preNormalizeInitClass(FnSymbol* fn);
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
-                                  InitNormalize  state,
-                                  bool           initNew);
+                                  InitNormalize  state);
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
-                                  bool           initNew,
                                   Expr*          start);
 
 static void preNormalizeInit(FnSymbol* fn) {
@@ -282,7 +280,7 @@ static void preNormalizeInitRecord(FnSymbol* fn) {
 
   // The body contains at least one instance of this.init() or super.init()
   if (state.isPhase0() == true || state.isPhase1() == true) {
-    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
   } else {
@@ -307,7 +305,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
   // i.e. the body is not empty and we do not need to insert super.init()
   if (state.isPhase0() == true) {
 
-    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
   // The body contains zero or more instances of this.initDone()
@@ -321,7 +319,7 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     bool hasThisInit = style & InitStyle::STYLE_THIS_INIT;
     bool needsSuper  = hasSuper == false && hasThisInit == false;
 
-    InitNormalize finalState = preNormalize(at, fn->body, state, true);
+    InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
     if (needsSuper == true) {
@@ -426,15 +424,13 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
-                                  InitNormalize  state,
-                                  bool           initNew) {
-  return preNormalize(at, block, state, initNew, block->body.head);
+                                  InitNormalize  state) {
+  return preNormalize(at, block, state, block->body.head);
 }
 
 static InitNormalize preNormalize(AggregateType* at,
                                   BlockStmt*     block,
                                   InitNormalize  state,
-                                  bool           initNew,
                                   Expr*          stmt) {
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
@@ -601,8 +597,7 @@ static InitNormalize preNormalize(AggregateType* at,
         InitNormalize            stateThen = preNormalize(
                                                   at,
                                                   cond->thenStmt,
-                                                  InitNormalize(cond, state),
-                                                  initNew);
+                                                  InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
           if (stateThen.isPhase2() == true) {
@@ -631,13 +626,11 @@ static InitNormalize preNormalize(AggregateType* at,
       } else {
         InitNormalize stateThen = preNormalize(at,
                                                cond->thenStmt,
-                                               InitNormalize(cond, state),
-                                               initNew);
+                                               InitNormalize(cond, state));
 
         InitNormalize stateElse = preNormalize(at,
                                                cond->elseStmt,
-                                               InitNormalize(cond, state),
-                                               initNew);
+                                               InitNormalize(cond, state));
 
         if (state.isPhase2() == false) {
           // Only one branch contained an init
@@ -660,21 +653,19 @@ static InitNormalize preNormalize(AggregateType* at,
       stmt = stmt->next;
 
     } else if (LoopStmt* loop = toLoopStmt(stmt)) {
-      preNormalize(at, (BlockStmt*) stmt, InitNormalize(loop, state), initNew);
+      preNormalize(at, (BlockStmt*) stmt, InitNormalize(loop, state));
       stmt = stmt->next;
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
       preNormalize(at,
                    forall->loopBody(),
-                   InitNormalize(forall, state),
-                   initNew);
+                   InitNormalize(forall, state));
       stmt = stmt->next;
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
       state.merge(preNormalize(at,
                                block,
-                               InitNormalize(block, state),
-                               initNew));
+                               InitNormalize(block, state)));
       stmt = stmt->next;
 
     } else {
