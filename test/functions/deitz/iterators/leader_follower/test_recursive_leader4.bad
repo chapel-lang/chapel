@@ -1,2 +1,0 @@
-test_recursive_leader4.chpl:25: error: forall loops over recursive parallel iterators are currently not implemented
-test_recursive_leader4.chpl:8: note: the parallel iterator is here

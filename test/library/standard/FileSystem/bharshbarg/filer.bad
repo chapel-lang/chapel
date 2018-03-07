@@ -1,2 +1,0 @@
-filer.chpl:174: error: forall loops over recursive parallel iterators are currently not implemented
-filer.chpl:140: note: the parallel iterator is here

@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/standard/FileSystem.chpl:1497: note: the parallel iterator is here
-findfiles-par.chpl:7: error: forall loops over recursive parallel iterators are currently not implemented

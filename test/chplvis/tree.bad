@@ -1,2 +1,0 @@
-tree.chpl:65: error: forall loops over recursive parallel iterators are currently not implemented
-tree.chpl:23: note: the parallel iterator is here
