@@ -55,7 +55,6 @@ static void     transformSuperInit(CallExpr* initCall);
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
 
-static int      findInitStyle(BlockStmt* block);
 static void     addSuperInit(FnSymbol* fn);
 
 /************************************* | **************************************
@@ -309,10 +308,8 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     finalState.initializeFieldsAtTail(fn->body);
 
   // The body contains zero or more instances of this.initDone()
-  // If there isn't a super.init or this.init anywhere, we need to insert
-  // a super.init call.
-  //
-  // INIT TODO: Don't we always need to insert a super.init?
+  // A super.init is not present because the state is phase one, so we need to
+  // insert one.
   } else if (state.isPhase1() == true) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
@@ -428,14 +425,6 @@ static InitNormalize preNormalize(AggregateType* at,
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
-  // INIT TODO: Temporary workaround to allow field initialization before
-  // phase one, which aids transition process by reducing diff sizes.
-  bool hasThisInit = false;
-  if (state.isPhase0()) {
-    int foundInit = findInitStyle(block);
-    hasThisInit = foundInit & STYLE_THIS_INIT;
-  }
-
   while (stmt != NULL) {
     if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
@@ -496,11 +485,9 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        // INIT TODO: Emit error for local field initialization before
-        // super.init() as well as this.init()
-        if (state.isPhase0() == true && hasThisInit == true) {
+        if (state.isPhase0() == true) {
           USR_FATAL(stmt,
-                    "field initialization not allowed before this.init()");
+                    "field initialization not allowed before super.init() or this.init()");
 
         } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
@@ -1048,48 +1035,6 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   normalize(fn);
 
   return fn;
-}
-
-/************************************* | **************************************
-* Returns an integer encoding the types of initializers found in the block.   *
-* The possible values are the union of the values in InitStyle.               *
-*                                                                             *
-* For example, to determine if a super.init was found:                        *
-*   bool foundSuper = findInitStyle(fn->body) & STYLE_SUPER_INIT:             *
-*                                                                             *
-************************************** | *************************************/
-
-static int findInitStyle(BlockStmt* block) {
-  Expr* stmt = block->body.head;
-  int retval = STYLE_NONE;
-
-  while (stmt != NULL && retval == STYLE_NONE) {
-    if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if (isSuperInit(callExpr) == true) {
-        retval = STYLE_SUPER_INIT;
-      } else if (isThisInit(callExpr) == true) {
-        retval = STYLE_THIS_INIT;
-      }
-
-    } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
-        retval = findInitStyle(cond->thenStmt);
-
-      } else {
-        retval = findInitStyle(cond->thenStmt) | findInitStyle(cond->elseStmt);
-      }
-
-    } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      retval = findInitStyle(block);
-
-    } else if (ForallStmt* block = toForallStmt(stmt)) {
-      retval = findInitStyle(block->loopBody());
-    }
-
-    stmt = stmt->next;
-  }
-
-  return retval;
 }
 
 static void addSuperInit(FnSymbol* fn) {
