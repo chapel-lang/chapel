@@ -287,18 +287,80 @@ proc file.realPath(): string throws {
     }
   }
 
+  /* Determines and returns the longest common path prefix (taken character-by-character) of
+   all the string pathnames provided.
+
+   :arg paths: Any number of paths
+   :type paths: `string`
+
+   :return: The longest common path prefix
+   :rtype: `string`
+   */
+
+  proc commonPath(paths: string ...?n): string {
+
+  var result: string = "";    // result string
+  var inputLength = n;   // size of input array
+  var start: int = 1;
+  var end: int = n;
+  var firstPath = paths(1);
+  var flag: int = 0;
+
+  // if input is empty, return empty string.
+  // if input is just one string, return that string as longest common prefix path.
+
+  if inputLength == 0 then {
+    return result;
+  } else if inputLength == 1 then{
+    return firstPath;
+  }
+
+  var prefixArray = firstPath.split(pathSep, -1, false);    // array of resultant prefix string
+
+  var pos = prefixArray.size;   // rightmost index of common prefix
+  var minPathLength = prefixArray.size;
+
+  for i in (start+1)..end do {
+
+    var tempArray = paths(i).split(pathSep, -1, false);   // temporary array storing the current path under consideration
+
+    var minimum = min(prefixArray.size, tempArray.size);
+
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
+
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag=1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
+
+  if (flag == 1) {
+    prefixArray.remove(pos..prefixArray.size);
+  }   else {
+    prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path thus pos was never updated
+  }
+
+  result = pathSep.join(prefixArray);
+
+  return result;
+  }
+
   /* Determines and returns the longest common path prefix of
-   all the string pathnames provided. If no arguments are specified, returns
-   the empty string.
+   all the string pathnames provided.
 
    :arg paths: Any number of paths as an array
    :type paths: `array`
 
    :return: The longest common path prefix
    :rtype: `string`
-*/
+   */
 
-  proc commonPrefix(paths: []): string {
+  proc commonPath(paths: []): string {
 
   var result: string = "";    // result string
   var inputLength = paths.size;   // size of input array
