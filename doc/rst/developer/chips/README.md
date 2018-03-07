@@ -24,4 +24,5 @@ See the first CHIP for an overview.
 * [20 Function Hijacking](20.rst)
 * [21 Chapel's Cryptography Library](21.rst)
 * [22 GPU Language Extensions](22.rst)
+* [23 Initializers :- Experiences, Concerns, Proposals](23.rst)
 
