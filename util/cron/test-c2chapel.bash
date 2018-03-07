@@ -8,4 +8,13 @@ source $CWD/common.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="c2chapel"
 
 export CHPL_NIGHTLY_TEST_DIRS="c2chapel/"
+
+# test/c2chapel/SKIPIF relies on 'c2chapel' being in $PATH.
+#
+# Depending on how this script is called, $PATH may have been reset (e.g. a
+# .bashrc was sourced).
+#
+# TODO: emit useful error if tests will be skipped
+export PATH="$CHPL_HOME/bin/$CHPL_HOST_PLATFORM:$PATH"
+
 $CWD/nightly -cron
