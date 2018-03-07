@@ -433,7 +433,7 @@ static InitNormalize preNormalize(AggregateType* at,
   bool hasThisInit = false;
   if (state.isPhase0()) {
     int foundInit = findInitStyle(block);
-    hasThisInit = foundInit & InitStyle::STYLE_THIS_INIT;
+    hasThisInit = foundInit & STYLE_THIS_INIT;
   }
 
   while (stmt != NULL) {
@@ -1057,20 +1057,20 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 * The possible values are the union of the values in InitStyle.               *
 *                                                                             *
 * For example, to determine if a super.init was found:                        *
-*   bool foundSuper = findInitStyle(fn->body) & InitStyle::STYLE_SUPER_INIT:  *
+*   bool foundSuper = findInitStyle(fn->body) & STYLE_SUPER_INIT:             *
 *                                                                             *
 ************************************** | *************************************/
 
 static int findInitStyle(BlockStmt* block) {
   Expr* stmt = block->body.head;
-  int retval = InitStyle::STYLE_NONE;
+  int retval = STYLE_NONE;
 
-  while (stmt != NULL && retval == InitStyle::STYLE_NONE) {
+  while (stmt != NULL && retval == STYLE_NONE) {
     if (CallExpr* callExpr = toCallExpr(stmt)) {
       if (isSuperInit(callExpr) == true) {
-        retval = InitStyle::STYLE_SUPER_INIT;
+        retval = STYLE_SUPER_INIT;
       } else if (isThisInit(callExpr) == true) {
-        retval = InitStyle::STYLE_THIS_INIT;
+        retval = STYLE_THIS_INIT;
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt)) {
