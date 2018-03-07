@@ -1161,14 +1161,18 @@ void static populateIterRecSetup(ForallStmt* fs)
   INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
   holder->insertAtTail(parIdxDef->remove());
 */
-
-  holder->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy()));
+  CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
+  holder->insertAtTail(initIterRec);
   holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-  holder->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
-  holder->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
+  holder->insertAtTail("'move'(%S, iteratorIndex(%S))", parIdx, parIter);
+  holder->insertAtTail("_freeIterator(%S)", parIter);
 
   // This may not resolve if postponed until lowerIterators.
   resolveBlockStmt(holder);
+
+  // This call messes up doNotTransformForForall() in callDestructors.
+  // Remove it until we need it, if at all.
+  initIterRec->remove();
 }
 
 

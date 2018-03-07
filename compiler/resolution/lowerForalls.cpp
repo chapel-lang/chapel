@@ -909,6 +909,14 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
 /////////// recursive iterators ///////////
 
+/*
+If 'fs' has only ref intents, or none at all,
+revert to old iterator-record-based implementation.
+If so, do what the original buildStandaloneForallLoopStmt()
+did during parsing, with modifications.
+
+Remove 'fs' and replace it with a ForLoop.
+*/
 static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
@@ -929,44 +937,40 @@ static void handleRecursiveIter(ForallStmt* fs,
     return;
   }
 
-  gdbShouldBreakHere(); // VASS CONTINUE HERE
-
-  CallExpr* parIterCall1 = toCallExpr(fs->firstIteratedExpr());
-  INT_ASSERT(parIterCall1 == parIterCall); // wass - remove the previous line
-  INT_ASSERT(parIterCall && !parIterCall->next); // wass - remove - this is checked in the caller
+  // We assume these in the foregoing.
+  INT_ASSERT(parIterCall == fs->firstIteratedExpr());
+  INT_ASSERT(parIterCall && !parIterCall->next);
   SET_LINENO(parIterCall);
 
-  // From the original buildStandaloneForallLoopStmt(), with "sa" -> "par".
-  VarSymbol* iterRec = newTemp("chpl__iterPAR"); // serial iter, PAR case
-  VarSymbol* parIter = newTemp("chpl__parIter");
+  BlockStmt* PARBlock = fs->iterRecSetup();
+  // Keep 'fs' in the tree for now, for debugging convenience.
+  fs->insertAfter(PARBlock->remove());
+
+  // These come from populateIterRecSetup().
+  DefExpr* iterRecDef = toDefExpr(PARBlock->body.head);
+  DefExpr* parIterDef = toDefExpr(iterRecDef->next);
+  Expr*  callGetIter  = parIterDef->next;
+  Expr*  callIterIdx  = callGetIter->next;
+  Expr*  callFreeIter = callIterIdx->next;
+
+  VarSymbol* iterRec = toVarSymbol(iterRecDef->sym);
+  VarSymbol* parIter = toVarSymbol(parIterDef->sym);
   VarSymbol* parIdx  = parIdxVar(fs);
+  DefExpr*   parIdxDef = parIdx->defPoint;
 
-  iterRec->addFlag(FLAG_NO_COPY);
-  iterRec->addFlag(FLAG_CHPL__ITER);
-  iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
-  iterRec->addFlag(FLAG_MAYBE_REF);
-  iterRec->addFlag(FLAG_EXPR_TEMP);
-
-  parIter->addFlag(FLAG_EXPR_TEMP);
-  // Too late to do it here - it's needed in setConstFlagsAndCheckUponMove().
-  //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
-  parIdx->addFlag(FLAG_INDEX_VAR);
-
-  BlockStmt* PARBlock = new BlockStmt();
-  fs->replace(PARBlock); // so we can resolve PARBlock below
-  // Maybe move this ->replace() down to resolveBlockStmt(PARBlock) ?
-  // If so, add ->remove() to fs->iterExprs() and perhaps others.
-
-  PARBlock->insertAtTail(new DefExpr(iterRec));
-  PARBlock->insertAtTail(new DefExpr(parIter));
-  DefExpr* parIdxDef = parIdx->defPoint;
+  // Just in case.
+  INT_ASSERT(!strcmp(iterRec->name, "chpl__iterPAR"));
+  INT_ASSERT(!strcmp(parIter->name, "chpl__parIter"));
   INT_ASSERT(parIdxDef == fs->inductionVariables().head);
-  PARBlock->insertAtTail(parIdxDef->remove());
 
-  PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall));
+  parIterDef->insertAfter(parIdxDef->remove());
+  parIdxDef->insertAfter(new CallExpr(PRIM_MOVE, iterRec, parIterCall->remove()));
+
+/*wass was:
   PARBlock->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
   PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
   PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
+*/
 
  { // shadow the above SET_LINENO
   SET_LINENO(fs->loopBody());
@@ -974,15 +978,22 @@ static void handleRecursiveIter(ForallStmt* fs,
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
   PARBlock->insertAtTail(PARBody);
+
+/* wass not needed
   resolveBlockStmt(PARBlock);
   PARBlock->flattenAndRemove(); // into where 'fs' used to be
+*/
 
   BlockStmt* userBody = userLoop(fs);
   if (sv2ov.size() > 0)  // wass the size of a Map is given by sv2ov.i
     update_symbols(userBody, &sv2ov);
-  gdbShouldBreakHere(); //wass
+
+#if 1 //wass - induction variables no more!
+  INT_ASSERT(fs->inductionVariables().length == 0);
+#else
   while (Expr* def = fs->inductionVariables().tail)
     userBody->insertAtHead(def->remove());
+#endif
 
 #if 0 //wass - no more shadow variables in loopBody!
   while (Expr* svdef = fs->shadowVariables().tail)
@@ -992,9 +1003,14 @@ static void handleRecursiveIter(ForallStmt* fs,
   // wass improve clarity of what is flattened into what
   // relying on this assertion:
   INT_ASSERT(userBody == fs->loopBody());
-  userBody->flattenAndRemove();          // into fs->loopBody()
-  PARBody->insertAtTail(fs->loopBody()); // loopBody is already resolved
-  fs->loopBody()->flattenAndRemove();    // into PARBody
+
+  // Transfer the loop body from fs to PARBody.
+  while (Expr* stmt = userBody->body.head)
+    PARBody->insertAtTail(stmt->remove());
+
+  PARBlock->insertAtTail(callFreeIter->remove());
+  gdbShouldBreakHere(); //wass
+  fs->remove();
  }
 }
 
