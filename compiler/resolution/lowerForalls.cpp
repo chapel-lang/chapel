@@ -920,6 +920,8 @@ Remove 'fs' and replace it with a ForLoop.
 static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
+  SET_LINENO(parIterCall);
+
   // Check for non-ref intents.
   SymbolMap sv2ov; // wass empty: sv2ov.size() NB - not a real size; which is sv2ov.i
   bool gotNonRefs = false;
@@ -940,7 +942,6 @@ static void handleRecursiveIter(ForallStmt* fs,
   // We assume these in the foregoing.
   INT_ASSERT(parIterCall == fs->firstIteratedExpr());
   INT_ASSERT(parIterCall && !parIterCall->next);
-  SET_LINENO(parIterCall);
 
   BlockStmt* PARBlock = fs->iterRecSetup();
   // Keep 'fs' in the tree for now, for debugging convenience.
@@ -973,10 +974,10 @@ static void handleRecursiveIter(ForallStmt* fs,
   PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
 */
 
- { // shadow the above SET_LINENO
-  SET_LINENO(fs);
-
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
+  // not parIterCall, ex.
+  //  library/standard/FileSystem/filerator/bradc/walk-par.chpl
+  PARBody->astloc = fs->astloc;
 
   PARBlock->insertAtTail(PARBody);
 
@@ -1012,9 +1013,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   // Todo: what to do with this in the presence of error handling?
   // Move callFreeIter and parIterDef outside of PARBlock?
   PARBlock->insertAtTail(callFreeIter->remove());
-  gdbShouldBreakHere(); //wass
   fs->remove();
- }
 }
 
 
