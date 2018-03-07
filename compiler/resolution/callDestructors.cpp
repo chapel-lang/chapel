@@ -242,6 +242,15 @@ static bool isReturnedValue(FnSymbol* fn, SymExpr* se) {
   return false;
 }
 
+// Is 'call' in a 'move' in an iterRecSetup() for some ForallStmt?
+static bool isInIterRecSetup(CallExpr* call) {
+  if (Expr* parent1 = call->parentExpr)
+    if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr))
+      if (isIterRecSetup(parent2))
+        return true;
+  return false;
+}
+
 static bool feedsIntoForallIterableExpr(FnSymbol* fn, SymExpr* use) {
   if (CallExpr* call = callingExpr(use))
   {
@@ -264,6 +273,10 @@ static bool feedsIntoForallIterableExpr(FnSymbol* fn, SymExpr* use) {
         INT_ASSERT(!(forForall && otherUse));
         return forForall;
       }
+
+    if (isInIterRecSetup(call))
+      // White lie. There is a corresponding isForallIterExpr call.
+      return true;
   }
 
   // Otherwise, no.

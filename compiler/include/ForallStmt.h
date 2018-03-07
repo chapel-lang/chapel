@@ -140,6 +140,7 @@ inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
 
 // helpers
 bool isForallIterExpr(Expr* expr);
+bool isIterRecSetup(Expr* expr);
 bool isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
 

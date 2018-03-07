@@ -225,6 +225,14 @@ bool isForallIterExpr(Expr* expr) {
   return false;
 }
 
+// Is 'expr' the iterRecSetup() block of some ForallStmt?
+bool isIterRecSetup(Expr* expr) {
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->iterRecSetup())
+      return true;
+  return false;
+}
+
 // Is 'expr' the fs->loopBody() for some 'fs' ?
 bool isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
