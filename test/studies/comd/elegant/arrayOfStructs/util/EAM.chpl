@@ -19,7 +19,7 @@ class InterpolationObject {
     this.invDx  = 1.0/dx;
     this.nSpace = {-1..n+1};
 
-    super.init();
+    this.initDone();
 
     values[0..n-1] = buf;
 
@@ -68,6 +68,8 @@ class PotentialEAM : BasePotential {
     else
       halt("Unsupported pot type: ", potType);
 
+    super.init(info);
+
     this.phiIO = p;
     this.rhoIO = r;
     this.fIO   = f;
@@ -75,8 +77,6 @@ class PotentialEAM : BasePotential {
     const boxInfo  = computeBoxInfo(info.lat, info.cutoff);
     const numBoxes = boxInfo(2);
     rhoDom         = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
-
-    super.init(info);
 
     delete info;
   }

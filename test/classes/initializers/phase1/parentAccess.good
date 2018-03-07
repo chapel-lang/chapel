@@ -1,1 +1,0 @@
-parentAccess.chpl:10: error: Cannot access parent field 'f1' during phase 1

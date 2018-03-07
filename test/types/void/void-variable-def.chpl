@@ -15,7 +15,7 @@ proc vartype() type {
 
 class c {
   var v: vartype();
-  proc init() { if enabled then v = 5; }
+  proc init() { this.initDone(); if enabled then v = 5; }
 }
 
 var foo = new c();

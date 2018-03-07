@@ -10,6 +10,7 @@ class C {
 class D : C {
   proc init(type t) {
     super.init(t);
+    this.initDone();
     this.x = int;
   }
 }

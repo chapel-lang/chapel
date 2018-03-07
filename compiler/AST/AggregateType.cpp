@@ -1906,7 +1906,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
           // Insert no arguments
         }
 
-        fn->body->insertAtTail(superCall);
+        fn->body->insertAtHead(superCall);
 
       } else {
         USR_FATAL(this,
