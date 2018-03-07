@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# The Allinea compiler is ARM's commercial compiler based on Clang.
+# The allinea compiler is ARM's commercial compiler based on clang.
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
 
-# Any Allinea-specific settings can go here.
+# Any allinea-specific settings can go here.
