@@ -358,7 +358,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       chpl_sync_initAux(syncAux);
     }
 
@@ -497,7 +497,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -774,7 +774,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       chpl_single_initAux(singleAux);
     }
 

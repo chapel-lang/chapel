@@ -9,6 +9,7 @@ class C {
   }
 
   proc init(b: bool) {
+    this.initDone();
     if b then
       x = 24;
     else

@@ -63,7 +63,7 @@ module SharedObject {
     // count should be initialized to 1 in default initializer.
     proc init() {
       // Want this:      count = 1;
-      super.init();
+      this.initDone();
       count.write(1);
     }
 
@@ -150,7 +150,7 @@ module SharedObject {
       this.p = src.p;
       this.pn = src.pn;
 
-      super.init();
+      this.initDone();
 
       if this.pn != nil then
         this.pn.retain();

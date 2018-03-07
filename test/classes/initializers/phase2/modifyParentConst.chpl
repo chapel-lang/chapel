@@ -11,6 +11,7 @@ class C {
 class D : C {
   proc init(x) {
     super.init(x);
+    this.initDone();
     this.x = 42;   // but can do this...
   }
 }

@@ -917,7 +917,6 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
 
 bool InitNormalize::isFieldAccessible(Expr* expr) const {
   AggregateType* at      = type();
-  bool           initNew = at->isRecord() || hasInitDone(mFn->body);
   bool           retval  = true;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
@@ -938,21 +937,12 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      if (initNew == true) {
-        if (isPhase0() == true) {
-          USR_FATAL(expr,
-                    "Cannot access parent field \"%s\" before super.init() or this.init()",
-                    field->sym->name);
-        } else {
-          retval = true;
-        }
-      } else if (isPhase2() == true) {
-        retval = true;
-
-      } else {
+      if (isPhase0() == true) {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
                   field->sym->name);
+      } else {
+        retval = true;
       }
 
     } else {
@@ -971,23 +961,13 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      if (initNew == true) {
-        if (isPhase0() == true) {
-          USR_FATAL(expr,
-                    "Cannot access parent field \"%s\" before super.init() or this.init()",
-                    field->sym->name);
-        } else {
-          retval = true;
-        }
-      } else if (isPhase2() == true) {
-        retval = true;
-
-      } else {
+      if (isPhase0() == true) {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
                   field->sym->name);
+      } else {
+        retval = true;
       }
-
 
     } else {
       for_actuals(actual, callExpr) {
@@ -1036,31 +1016,21 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
 
     } else if (DefExpr* field = toSuperField(symExpr)) {
-      bool initNew = this->type()->isRecord() ||
-                     hasInitDone(mFn->body);
-
-      if (initNew == true) {
-        if (isPhase0() == true) {
-          USR_FATAL(expr,
-                    "Cannot access parent field \"%s\" before super.init() or this.init()",
-                    field->sym->name);
-        } else {
-          SymExpr* _this = new SymExpr(mFn->_this);
-          SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
-
-          if (field->sym->hasFlag(FLAG_PARAM)         == true ||
-              field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-            symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, name));
-
-          } else {
-            symExpr->replace(new CallExpr(PRIM_GET_MEMBER,       _this, name));
-          }
-        }
-
-      } else {
+      if (isPhase0() == true) {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
                   field->sym->name);
+      } else {
+        SymExpr* _this = new SymExpr(mFn->_this);
+        SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
+
+        if (field->sym->hasFlag(FLAG_PARAM)         == true ||
+            field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, name));
+
+        } else {
+          symExpr->replace(new CallExpr(PRIM_GET_MEMBER,       _this, name));
+        }
       }
     }
 
@@ -1215,8 +1185,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(FnSymbol*  fn)    const {
 
 InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
   Expr*     stmt   = block->body.head;
-  const bool initNew = type()->isRecord() || hasInitDone(block);
-  const InitPhase defaultPhase = initNew ? cPhase1 : cPhase2;
+  const InitPhase defaultPhase = cPhase1;
   InitPhase retval = defaultPhase;
 
   while (stmt != NULL && retval == defaultPhase) {
@@ -1229,11 +1198,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
         break;
 
       } else if (isSuperInit(callExpr) == true) {
-        if (initNew == true) {
-          retval = cPhase0;
-        } else {
-          retval = cPhase1;
-        }
+        retval = cPhase0;
         break;
 
       } else if (isInitDone(callExpr)  == true) {
@@ -1263,11 +1228,9 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
 
         } else if (thenPhase == cPhase1 || elsePhase == cPhase1) {
           retval = cPhase1;
-          if (initNew == true) {
-            // We want to keep looking in case there's a super.init further
-            // down.
-            stmt = stmt->next;
-          }
+          // We want to keep looking in case there's a super.init further
+          // down.
+          stmt = stmt->next;
 
         } else {
           stmt   = stmt->next;
@@ -1332,16 +1295,14 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
 //   super.init();
 // }
 //
+// INIT TODO: Can we restrict this operation to just conditionals?
+//
 void InitNormalize::checkPhase(BlockStmt* block) {
   if (mPhase == cPhase0) {
     InitPhase newPhase = startPhase(block);
 
     if (newPhase == cPhase1) {
-      if (type()->isRecord()) {
-        if (hasInitDone(block)) {
-          mPhase = newPhase;
-        }
-      } else {
+      if (hasInitDone(block)) {
         mPhase = newPhase;
       }
     }

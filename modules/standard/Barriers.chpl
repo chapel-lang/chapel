@@ -230,7 +230,7 @@ module Barriers {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      super.init();
+      this.initDone();
       reset(n);
     }
 
@@ -239,7 +239,7 @@ module Barriers {
     proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      super.init();
+      this.initDone();
       reset(n);
     }
 

@@ -7,10 +7,14 @@ Repository
 The git repository for the project is hosted on Github at
 `chapel-lang/chapel`_. Anyone can read the repository. It is open source!
 
-See the `Developer Workflow`_ instructions below for setting up a github
-account, signing the contributor agreement, and submitting pull requests.
 This document contains a mixture of tips for git beginners and specific
 Chapel workflow recommendations.
+
+Below are instructions for setting up a github account, developing a
+feature,and submitting pull requests.
+
+**Note:** A `contributor license agreement`_ must be signed before any
+contributing pull requests can be merged.
 
 Developer Workflow
 ------------------
@@ -80,10 +84,8 @@ grow).
    chapel-developers_ and/or chapel-users_ lists to make sure effort is not
    wasted.
 
-#. Sign a Chapel contributor's agreement and mail it, with your GitHub
-   ID, using the instructions here:
-
-   https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+#. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
+   ID.
 
 * You do not need commit/push access to the main repo in order to
   contribute code.  See
@@ -233,7 +235,7 @@ Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
 - the PR has been reviewed
-- the contributor agreement has been signed
+- the `contributor license agreement`_ (CLA) has been signed
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -544,13 +546,15 @@ How to open a PR:
   `Final merge message`_ for recommendations on what that commit message should
   look like.
 
-  You will have to have signed a contributors agreement.  See https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+  You will have to have signed a `contributor license agreement`_ (CLA).
 
   Your pull request will be available at a URL like:
 
   ``https://github.com/chapel-lang/chapel/pull/<number>``
 
   and you can discuss the patch with your reviewers there.
+
+.. _contributor license agreement: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 .. _How to merge a PR:
 
@@ -888,7 +892,7 @@ Reviewer responsibilities
 +++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
-  team, be sure they have signed the contributor's agreement (see the
+  team, be sure they have signed the `contributor license agreement`_ (see the
   `Developer Workflow`_ instructions for this).  If the developer cannot
   or will not sign the agreement, bring the situation to the attention
   of the Chapel project leadership.

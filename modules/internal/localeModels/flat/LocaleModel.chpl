@@ -69,7 +69,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      super.init();
+      this.initDone();
 
       setup();
     }
@@ -81,6 +81,7 @@ module LocaleModel {
       _node_id = chpl_nodeID: int;
 
       super.init(parent_loc);
+      this.initDone();
 
       setup();
     }

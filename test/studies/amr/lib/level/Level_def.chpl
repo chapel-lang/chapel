@@ -326,6 +326,7 @@ class SiblingGhostRegion {
     level: Level,
     grid:  Grid)
   {
+    this.initDone();
     for sibling in level.grids 
     {
       if sibling != grid 
