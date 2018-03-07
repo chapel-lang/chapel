@@ -974,7 +974,7 @@ static void handleRecursiveIter(ForallStmt* fs,
 */
 
  { // shadow the above SET_LINENO
-  SET_LINENO(fs->loopBody());
+  SET_LINENO(fs);
 
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
 
