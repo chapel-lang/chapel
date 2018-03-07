@@ -1164,7 +1164,7 @@ void static populateIterRecSetup(ForallStmt* fs)
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
   holder->insertAtTail(initIterRec);
   holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-  holder->insertAtTail("'move'(%S, iteratorIndex(%S))", parIdx, parIter);
+//VASS  holder->insertAtTail("'move'(%S, iteratorIndex(%S))", parIdx, parIter);
   holder->insertAtTail("_freeIterator(%S)", parIter);
 
   // This may not resolve if postponed until lowerIterators.

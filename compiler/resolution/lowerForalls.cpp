@@ -950,8 +950,9 @@ static void handleRecursiveIter(ForallStmt* fs,
   DefExpr* iterRecDef = toDefExpr(PARBlock->body.head);
   DefExpr* parIterDef = toDefExpr(iterRecDef->next);
   Expr*  callGetIter  = parIterDef->next;
-  Expr*  callIterIdx  = callGetIter->next;
-  Expr*  callFreeIter = callIterIdx->next;
+//VASS  Expr*  callIterIdx  = callGetIter->next;
+//  Expr*  callFreeIter = callIterIdx->next;
+  Expr*  callFreeIter = callGetIter->next;
 
   VarSymbol* iterRec = toVarSymbol(iterRecDef->sym);
   VarSymbol* parIter = toVarSymbol(parIterDef->sym);
