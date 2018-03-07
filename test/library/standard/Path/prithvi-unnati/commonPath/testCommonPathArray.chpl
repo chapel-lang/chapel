@@ -1,5 +1,5 @@
 /*
-Test cases to validate the commonPath([]) in Path.chpl
+Test cases to validate the commonPath(paths: []) in Path.chpl
 */
 
 use Path;
@@ -23,4 +23,4 @@ writeln(commonPath(["/home/user/Documents/foo/bar","/home/user/Desktop/bar","/ho
 writeln(commonPath(["../Documents/foo/bar","../Documents/foo/bar/baz","../Documents/foo"]));
 
 //same paths
-writeln(common(["/home/user/Documents","/home/user/Documents"]));
+writeln(commonPath(["/home/user/Documents","/home/user/Documents"]));

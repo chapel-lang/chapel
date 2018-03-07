@@ -287,7 +287,7 @@ proc file.realPath(): string throws {
     }
   }
 
-  /* Determines and returns the longest common path prefix (taken character-by-character) of
+  /* Determines and returns the longest common path prefix of
    all the string pathnames provided.
 
    :arg paths: Any number of paths
