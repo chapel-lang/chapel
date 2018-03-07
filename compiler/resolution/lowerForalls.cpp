@@ -1008,6 +1008,8 @@ static void handleRecursiveIter(ForallStmt* fs,
   while (Expr* stmt = userBody->body.head)
     PARBody->insertAtTail(stmt->remove());
 
+  // Todo: what to do with this in the presence of error handling?
+  // Move callFreeIter and parIterDef outside of PARBlock?
   PARBlock->insertAtTail(callFreeIter->remove());
   gdbShouldBreakHere(); //wass
   fs->remove();
