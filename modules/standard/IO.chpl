@@ -3460,10 +3460,10 @@ proc stringify(const args ...?k):string {
     try! {
       // Open a memory buffer to store the result
       var f = openmem();
-      defer f.close();
+      defer try! f.close();
 
       var w = f.writer(locking=false);
-      defer w.close();
+      defer try! w.close();
 
       w.write((...args));
 
@@ -3472,7 +3472,7 @@ proc stringify(const args ...?k):string {
       var buf = c_malloc(uint(8), offset+1);
 
       var r = f.reader(locking=false);
-      defer r.close();
+      defer try! r.close();
 
       r.readBytes(buf, offset:ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
