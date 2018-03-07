@@ -301,8 +301,6 @@ proc file.realPath(): string throws {
 
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
-  var start: int = 1;
-  var end: int = n;
   var firstPath = paths(1);
   var flag: int = 0;
 
@@ -320,7 +318,7 @@ proc file.realPath(): string throws {
   var pos = prefixArray.size;   // rightmost index of common prefix
   var minPathLength = prefixArray.size;
 
-  for i in (start+1)..end do {
+  for i in 1..n do {
 
     var tempArray = paths(i).split(pathSep, -1, false);   // temporary array storing the current path under consideration
 
