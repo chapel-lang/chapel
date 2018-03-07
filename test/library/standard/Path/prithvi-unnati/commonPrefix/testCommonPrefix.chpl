@@ -22,6 +22,5 @@ writeln(commonPrefix(["/home/user/Documents/foo/bar","/home/user/Desktop/bar","/
 //only relative paths are provided
 writeln(commonPrefix(["../Documents/foo/bar","../Documents/foo/bar/baz","../Documents/foo"]));
 
-
-
-
+//same paths
+writeln(commonPrefix(["/home/user/Documents","/home/user/Documents"]));
