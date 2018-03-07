@@ -50,7 +50,6 @@ class SystemError : Error {
   proc init(err: syserr, details: string = "") {
     this.err     = err;
     this.details = details;
-    super.init();
   }
 
   /*
