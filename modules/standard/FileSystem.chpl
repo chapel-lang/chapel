@@ -644,7 +644,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
   if (recursive) then
-    forall subdir in walkdirs(startdir, hidden=hidden) do
+    forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
       for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
