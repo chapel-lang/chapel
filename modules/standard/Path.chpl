@@ -318,7 +318,7 @@ proc file.realPath(): string throws {
   var pos = prefixArray.size;   // rightmost index of common prefix
   var minPathLength = prefixArray.size;
 
-  for i in 1..n do {
+  for i in 2..n do {
 
     var tempArray = paths(i).split(pathSep, -1, false);   // temporary array storing the current path under consideration
 
