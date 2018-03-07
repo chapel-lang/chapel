@@ -2,7 +2,6 @@ record MyRecord {
   var y:int;
   proc init(x:int) {
     y = x;
-    super.init();
   }
   proc init(from:MyRecord) {
     y = from.y;

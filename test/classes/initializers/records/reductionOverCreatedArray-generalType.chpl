@@ -5,19 +5,16 @@ record Foo {
   proc init(x: int) {
     this.x = x;
     this.y = true;
-    super.init();
   }
 
   proc init() {
     x = 0;
     y = true;
-    super.init();
   }
 
   proc init(other: Foo) {
     x = other.x;
     y = false;
-    super.init();
   }
 }
 

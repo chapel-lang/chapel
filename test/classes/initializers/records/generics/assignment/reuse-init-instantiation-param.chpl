@@ -7,7 +7,6 @@ record Foo {
 
   proc init(param pVal) {
     p = pVal;
-    super.init();
   }
 }
 

@@ -5,7 +5,6 @@ record Generic {
   proc init(value: ?eltType) where !value: Generic {
     this.eltType = eltType;
     this.value   = value;
-    super.init();
   }
 }
 

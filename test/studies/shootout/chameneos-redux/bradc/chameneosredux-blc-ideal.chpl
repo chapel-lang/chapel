@@ -54,7 +54,6 @@ record Population {
   //
   proc init(colors : [] Color) {
     chameneos = new Chameneos(1..colors.size, colors);
-    super.init();
   }
 
   //

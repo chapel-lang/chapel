@@ -1,6 +1,5 @@
 record Foo {
   proc init() {
-    super.init();
   }
 }
 proc quux(x: Foo) return x;
