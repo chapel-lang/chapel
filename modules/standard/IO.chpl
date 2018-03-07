@@ -1551,7 +1551,8 @@ to create a channel to actually perform I/O operations
 
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
     defaultIOStyle(), url:string=""):file throws {
-  proc parse_hdfs_path(path:string) {
+
+  proc parse_hdfs_path(path:string) throws {
     // hdfs://<host>:<port>/<path>
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
@@ -1598,7 +1599,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
   ret.home = here;
   if (url != "") {
     if (url.startsWith("hdfs://")) { // HDFS
-      var (host, port, file_path) = parse_hdfs_path(url);
+      var (host, port, file_path) = try parse_hdfs_path(url);
       var fs:c_void_ptr;
 
       // Since we don't have an auto-destructor for this, we actually need to make
