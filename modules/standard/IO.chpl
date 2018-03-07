@@ -1629,7 +1629,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 
     error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
     if error then
-      try ioerror(error, "Unable to open file in HDFS", url);
+      try ioerror(error, "in open", path);
   }
 
   return ret;
