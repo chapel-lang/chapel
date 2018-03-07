@@ -144,10 +144,13 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      if (expr == pfs->loopBody()) {
+      if (expr == pfs->iterRecSetup()) {
+        print_on_its_own_line(indent, "iterRecSetup\n");
+      } else if (expr == pfs->loopBody()) {
         if (pfs->numShadowVars() == 0)
-          print_on_its_own_line(indent, "with()");
-        print_on_its_own_line(indent, "do\n", false);
+          print_on_its_own_line(indent, "with() do\n");
+        else
+          print_on_its_own_line(indent, "do\n", false);
         indent -= 2;
       }
     }
