@@ -1,3 +1,4 @@
+// This test is here because it used to crash the compiler.
 
 iter ITER() { yield 555; }
 
