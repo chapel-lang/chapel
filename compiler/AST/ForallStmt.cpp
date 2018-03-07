@@ -161,7 +161,7 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
     return fIterRecSetup->getFirstExpr();
 
   if (expr == fIterRecSetup)
-    return fLoopBody;
+    return fLoopBody->getFirstExpr();
 
   if (expr == fLoopBody)
     return this;

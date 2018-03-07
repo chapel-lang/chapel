@@ -1132,8 +1132,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 //
 void static populateIterRecSetup(ForallStmt* fs)
 {
-  if (lastNodeIDUsed() > 0) return; //wass temporarily skip this.
-
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   INT_ASSERT(parIterCall && !parIterCall->next); // expected
   SET_LINENO(parIterCall);
