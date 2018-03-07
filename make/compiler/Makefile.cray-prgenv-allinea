@@ -16,6 +16,7 @@
 # limitations under the License.
 
 # put Cray PE cross-compilation allinea-specific settings here
+# This is currently experimental, and not yet fully supported by Chapel.
 
 CRAYPE_GEN_CFLAGS =
 CRAYPE_COMP_CXXFLAGS =

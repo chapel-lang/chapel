@@ -16,6 +16,7 @@
 # limitations under the License.
 
 # The allinea compiler is ARM's commercial compiler based on clang.
+# This is currently experimental, and not yet fully supported by Chapel.
 include $(CHPL_MAKE_HOME)/make/compiler/Makefile.clang
 
 # Any allinea-specific settings can go here.
