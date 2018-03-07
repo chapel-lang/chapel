@@ -104,7 +104,6 @@ module SharedObject {
       this.t = t;
       this.p = nil;
       this.pn = nil;
-      super.init();
     }
 
     /*
@@ -132,7 +131,7 @@ module SharedObject {
       this.p = p;
       this.pn = rc;
 
-      super.init();
+      this.initDone();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the

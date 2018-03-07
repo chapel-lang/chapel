@@ -842,7 +842,6 @@ record ReverseComparator {
    */
   proc init() {
     this.comparator = defaultComparator;
-    super.init();
   }
 
   /*
@@ -855,7 +854,6 @@ record ReverseComparator {
    */
   proc init(comparator) {
     this.comparator = comparator;
-    super.init();
   }
 
   /*
@@ -867,7 +865,6 @@ record ReverseComparator {
   pragma "no doc"
   proc init(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
-    super.init();
   }
 
   /*

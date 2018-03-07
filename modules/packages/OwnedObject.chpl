@@ -90,7 +90,6 @@ module OwnedObject {
         compilerError("Owned only works with classes");
 
       this.p = p;
-      //super.init();
     }
 
     /*
