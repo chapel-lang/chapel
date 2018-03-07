@@ -30,7 +30,6 @@ record R3 {
   proc init(a:MyClass, b:MyClass) {
     fo = new Owned(a);
     fs = new Shared(b);
-    super.init();
   }
 }
 
@@ -38,7 +37,7 @@ record R4 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);
   proc init(a:MyClass, b:MyClass) {
-    super.init();
+    this.initDone();
     fo = new Owned(a);
     fs = new Shared(b);
   }
