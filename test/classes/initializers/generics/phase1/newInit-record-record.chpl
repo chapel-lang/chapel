@@ -7,7 +7,6 @@ record Container {
     y = new Stored(true);
 
     v = 10;
-    super.init();
   }
 }
 
@@ -17,7 +16,6 @@ record Stored {
   proc init(xVal) where !xVal: Stored {
     x = xVal;
 
-    super.init();
   }
 }
 

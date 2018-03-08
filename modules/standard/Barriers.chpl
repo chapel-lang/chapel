@@ -116,7 +116,6 @@ module Barriers {
     proc init(b: Barrier) {
       this.bar = b.bar;
       this.owned = false;
-      super.init();
     }
 
     pragma "no doc"

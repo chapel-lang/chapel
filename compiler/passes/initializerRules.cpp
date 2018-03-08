@@ -468,9 +468,7 @@ static InitNormalize preNormalize(AggregateType* at,
           state.completePhase0(callExpr);
 
           if (at->isRecord() == true) {
-            // INIT TODO: disallow super.init in records
-            // gdbShouldBreakHere();
-            // USR_FATAL_CONT(stmt, "super.init not allowed in records");
+            USR_FATAL_CONT(stmt, "super.init() not allowed in records");
             callExpr->remove();
 
           } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {

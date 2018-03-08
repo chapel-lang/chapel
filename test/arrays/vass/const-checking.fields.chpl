@@ -9,7 +9,7 @@ record REC {
   proc init() {
     arvar = ARR;
     arcst = ARR;
-    super.init();
+    this.initDone();
     arvar[1] = 1111;
     arcst[2] = 1111;
   }
@@ -22,7 +22,7 @@ class CLSS {
   proc init() {
     cvar = ARR;
     ccst = ARR;
-    super.init();
+    this.initDone();
     cvar[1] = 1111;
     ccst[2] = 1111;
   }

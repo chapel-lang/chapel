@@ -111,7 +111,6 @@ record VersionInfo {
   }
 
   proc init(str:string) {
-    super.init();
     const s : [1..3] string = str.split(".");
     assert(s.size == 3);
 

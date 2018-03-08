@@ -38,8 +38,6 @@ record R
     // a compiler generated copy initializer?
     this.id = other.id + 1;
     this.c  = other.c;
-
-    super.init();
   }
 
   proc deinit()

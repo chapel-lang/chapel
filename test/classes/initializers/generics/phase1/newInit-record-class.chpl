@@ -6,8 +6,6 @@ record Container {
   proc init() {
     y = new Stored(true);
     v = 10;
-
-    super.init();
   }
 
   proc deinit() {
