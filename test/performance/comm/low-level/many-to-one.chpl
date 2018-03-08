@@ -45,14 +45,14 @@ proc main() {
   var numOpsPerNode: [1..numWorkerNodes] int;
   var timePerNode: [1..numWorkerNodes] real;
 
-  coforall locIdx in 1..numWorkerNodes with ( ref x0 ) {
+  coforall locIdx in 1..numWorkerNodes {
     on Locales(locIdx) {
       var barTaskCnt: chpl__processorAtomicType(int); // for barrier()
 
       var numOpsPerTask: [1..numTasksPerNode] int;
       var timePerTask: [1..numTasksPerNode] real;
 
-      coforall taskIdx in 1..numTasksPerNode with ( ref x0 ) {
+      coforall taskIdx in 1..numTasksPerNode {
         var nopsAtCheck = minOpsPerTimerCheck;
         var nops: int;
 
