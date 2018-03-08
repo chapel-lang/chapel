@@ -1,5 +1,6 @@
 use Time;
 use CommDiagnostics;
+use AllLocalesBarriers;
 
 enum op_t {
   opNone,
@@ -45,47 +46,58 @@ proc main() {
   var numOpsPerNode: [1..numWorkerNodes] int;
   var timePerNode: [1..numWorkerNodes] real;
 
-  coforall locIdx in 1..numWorkerNodes {
-    on Locales(locIdx) {
-      var barTaskCnt: chpl__processorAtomicType(int); // for barrier()
+  allLocalesBarrier.reset(numTasksPerNode);
 
-      var numOpsPerTask: [1..numTasksPerNode] int;
-      var timePerTask: [1..numTasksPerNode] real;
+  coforall locIdx in 0..#numLocales {
+    if locIdx == 0 {
+      //
+      // Locale 0 must participate in the barrier but otherwise is not
+      // involved, since it is the many-to-one target node.
+      //
+      coforall 1..numTasksPerNode do allLocalesBarrier.barrier() ;
+    } else {
+      //
+      // Locales 1..numLocales-1 generate the many-to-one ops.
+      //
+      on Locales(locIdx) {
+        var numOpsPerTask: [1..numTasksPerNode] int;
+        var timePerTask: [1..numTasksPerNode] real;
 
-      coforall taskIdx in 1..numTasksPerNode {
-        var nopsAtCheck = minOpsPerTimerCheck;
-        var nops: int;
+        coforall taskIdx in 1..numTasksPerNode {
+          var nopsAtCheck = minOpsPerTimerCheck;
+          var nops: int;
 
-        var t: Timer;
-        var tElapsed: real;
+          var t: Timer;
+          var tElapsed: real;
 
-        barrier(barTaskCnt);
+          allLocalesBarrier.barrier();
 
-        t.start();
+          t.start();
 
-        while true {
-          //
-          // We do comms until runSecs has passed in this task, using
-          // nopsAtCheck to limit how much overhead we spend checking
-          // for that.
-          //
-          if nops == nopsAtCheck {
-            tElapsed = t.elapsed();
-            if tElapsed >= runSecs then break;
-            nopsAtCheck = (nops * (0.75 * runSecs / tElapsed)):int;
-            if nopsAtCheck - nops < minOpsPerTimerCheck then
-              nopsAtCheck = nops + minOpsPerTimerCheck;
+          while true {
+            //
+            // We do comms until runSecs has passed in this task, using
+            // nopsAtCheck to limit how much overhead we spend checking
+            // for that.
+            //
+            if nops == nopsAtCheck {
+              tElapsed = t.elapsed();
+              if tElapsed >= runSecs then break;
+              nopsAtCheck = (nops * (0.75 * runSecs / tElapsed)):int;
+              if nopsAtCheck - nops < minOpsPerTimerCheck then
+                nopsAtCheck = nops + minOpsPerTimerCheck;
+            }
+            doOneOp(nops);
+            nops += 1;
           }
-          doOneOp(nops);
-          nops += 1;
+
+          numOpsPerTask(taskIdx) = nops;
+          timePerTask(taskIdx) = tElapsed;
         }
 
-        numOpsPerTask(taskIdx) = nops;
-        timePerTask(taskIdx) = tElapsed;
+        numOpsPerNode(locIdx) = + reduce numOpsPerTask;
+        timePerNode(locIdx) = + reduce timePerTask;
       }
-
-      numOpsPerNode(locIdx) = + reduce numOpsPerTask;
-      timePerNode(locIdx) = + reduce timePerTask;
     }
   }
 
@@ -132,22 +144,6 @@ inline proc doOneOp(nops) {
     on Locales(0) do emptyFn();
   }
 }
-
-
-//
-// This is a simple nonreusable barrier.  If desired, we could replace
-// it with something better when the Barriers module is improved.
-//
-var barNodeCnt: atomic int;
-
-proc barrier(barTaskCnt) {
-  if barTaskCnt.fetchAdd(1) == 0 {
-    barNodeCnt.add(1);
-    barNodeCnt.waitFor(numWorkerNodes);
-  }
-  barTaskCnt.waitFor(numTasksPerNode);
-}
-
 
 extern proc emptyFn();
 extern proc infiniteSink(x: int);
