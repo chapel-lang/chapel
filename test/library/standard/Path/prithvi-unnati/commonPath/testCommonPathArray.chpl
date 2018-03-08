@@ -5,7 +5,8 @@ Test cases to validate the commonPath(paths: []) in Path.chpl
 use Path;
 
 //paths=null
-writeln(commonPath([""]));
+var EmptyArrayInput: [1..0] string;
+writeln(commonPath(EmptyArrayInput));
 
 //only one path has been sent as argument
 writeln(commonPath(["/home/user/Documents/foo/bar"]));

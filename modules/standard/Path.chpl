@@ -362,18 +362,19 @@ proc file.realPath(): string throws {
 
   var result: string = "";    // result string
   var inputLength = paths.size;   // size of input array
+  if inputLength == 0 then {     // if input is empty, return empty string.
+    return result;
+  } 
+  
   var start: int = paths.domain.first;
   var end: int = paths.domain.last;
   var firstPath = paths[start];
   var delimiter: string;
   var flag: int = 0;
 
-  // if input is empty, return empty string.
   // if input is just one string, return that string as longest common prefix path.
 
-  if inputLength == 0 then {
-    return result;
-  } else if inputLength == 1 then{
+  if inputLength == 1 then{
     return firstPath;
   }
 
