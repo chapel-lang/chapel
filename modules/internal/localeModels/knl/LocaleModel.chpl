@@ -206,6 +206,10 @@ module LocaleModel {
 
     proc init(_sid, _parent) {
       extern proc chpl_task_getNumSublocales(): int(32);
+
+      super.init(_parent);
+
+      sid = _sid: chpl_sublocID_t;
       const (whichNuma, kind) =
         unpackSublocID(chpl_task_getNumSublocales(), sid);
       var kindstr:string;
@@ -213,10 +217,6 @@ module LocaleModel {
         kindstr = "DDR";
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
-
-      super.init(_parent);
-
-      sid = _sid: chpl_sublocID_t;
       mlName = kindstr+whichNuma;
     }
 
