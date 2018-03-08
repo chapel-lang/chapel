@@ -495,6 +495,8 @@ Used to recursively hold tables and respective values
 
     // Clone
     proc init(root: Toml) {
+      // INIT TODO: Can this be written in phase one?
+      this.initDone();
       this.boo = root.boo;
       this.i = root.i;
       this.re = root.re;
@@ -864,6 +866,7 @@ module TomlReader {
 
     proc init(tomlStr: string) {
      this.tomlStr = tomlStr;
+     this.initDone();
      genTokenlist(tomlStr);
     }
 

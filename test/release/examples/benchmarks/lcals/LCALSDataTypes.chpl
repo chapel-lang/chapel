@@ -80,6 +80,7 @@ module LCALSDataTypes {
     var loop_chksum: [loop_length_dom] real;
 
     proc init() {
+      this.initDone();
       for i in loop_length_dom do
         loop_run_time[i] = new vector(real);
     }

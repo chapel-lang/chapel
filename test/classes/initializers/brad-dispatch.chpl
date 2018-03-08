@@ -9,7 +9,7 @@ class C {
    proc init(a:int,b:int) {
      x = a;
      y = b;
-     super.init();
+     this.initDone();
      writeln(this); // Only doable in Phase 2
    }
 }

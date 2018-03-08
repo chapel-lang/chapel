@@ -100,7 +100,7 @@ class Grid {
     //-------------------------------------------------------------
 
     ghost_domains = new List( domain(dimension,stridable=true) );
-    super.init();
+    this.initDone();
 
     //==== Sanity check ====
     sanityChecks();

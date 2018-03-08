@@ -5,7 +5,7 @@ class ThisPhase2 {
   proc init(val: complex, param genVal: bool) {
     someField = val;
     genField = genVal;
-    super.init();
+    this.initDone();
     myMethod(); // Verifies that we can call methods in Phase 2
   }
 

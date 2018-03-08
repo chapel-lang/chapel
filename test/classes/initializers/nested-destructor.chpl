@@ -6,6 +6,7 @@ record R
   {
     proc init()
     {
+      this.initDone();
       writeln("    in init of C ", outer.id);
     }
 
