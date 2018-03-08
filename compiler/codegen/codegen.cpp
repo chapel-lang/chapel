@@ -2085,12 +2085,13 @@ void codegen(void) {
       lastSlash++;
     }
 
-    if (strlen(lastSlash) > FILENAME_MAX) {
+    // copy from that slash onwards into the executableFilename,
+    // saving space for a `\0` terminator
+    if (strlen(lastSlash) >= sizeof(executableFilename)) {
       INT_FATAL("input filename exceeds executable filename buffer size");
     }
+    strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
 
-    // copy from that slash onwards into the executableFilename
-    strncpy(executableFilename, lastSlash, sizeof(executableFilename));
     // remove the filename extension
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
