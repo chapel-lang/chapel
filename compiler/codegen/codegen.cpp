@@ -2085,6 +2085,10 @@ void codegen(void) {
       lastSlash++;
     }
 
+    if (strlen(lastSlash) > FILENAME_MAX) {
+      INT_FATAL("input filename exceeds executable filename buffer size");
+    }
+
     // copy from that slash onwards into the executableFilename
     strncpy(executableFilename, lastSlash, sizeof(executableFilename));
     // remove the filename extension
