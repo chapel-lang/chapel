@@ -67,9 +67,9 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
+      super.init(_parent);
       sid = _sid;
       ndName = "ND"+sid;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -116,7 +116,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      super.init();
+      this.initDone();
 
       setup();
     }
@@ -125,9 +125,11 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      super.init(parent_loc);
+
       _node_id = chpl_nodeID: int;
 
-      super.init(parent_loc);
+      this.initDone();
 
       setup();
     }
