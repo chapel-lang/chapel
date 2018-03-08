@@ -1549,8 +1549,8 @@ to create a channel to actually perform I/O operations
 
 */
 
-proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle(), url:string=""):file throws {
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""): file throws {
 
   proc parse_hdfs_path(path:string) throws {
     // hdfs://<host>:<port>/<path>
@@ -1638,7 +1638,7 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle 
 // documented in open() throws version
 pragma "no doc"
 proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle(), url:string=""):file {
+          style:iostyle = defaultIOStyle(), url:string=""):file {
   var err: syserr = ENOERR;
   var ret: file;
   try {
