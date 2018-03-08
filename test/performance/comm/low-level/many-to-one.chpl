@@ -45,10 +45,6 @@ proc main() {
   var numOpsPerNode: [1..numWorkerNodes] int;
   var timePerNode: [1..numWorkerNodes] real;
 
-  var timer: Timer;
-  if printTimings then
-    timer.start();
-
   coforall locIdx in 1..numWorkerNodes with ( ref x0 ) {
     on Locales(locIdx) {
       var barTaskCnt: chpl__processorAtomicType(int); // for barrier()
