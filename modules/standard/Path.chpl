@@ -225,7 +225,7 @@ proc file.realPath(): string throws {
    if err != ENOERR then try ioerror(err, "in file.getParentName");
    return ret;
  }
- 
+
 /* Join and return one or more paths, putting precedent on the last absolute
    path seen.  Return value is the concatenation of the paths with one
    directory separator following each non-empty argument except the last.
@@ -248,10 +248,10 @@ proc file.realPath(): string throws {
     var result : string = paths(1); // result variable stores final answer
    // loop to iterate over all the paths
     for i in 2..n {
-      var temp : string = paths(i); 
+      var temp : string = paths(i);
       if temp.startsWith('/') {
         result = temp;
-      }  
+      }
       else if result.endsWith('/') {
         result = result + temp;
       }
@@ -261,7 +261,7 @@ proc file.realPath(): string throws {
     }
    return result;
  }
- 
+
 /* Determines whether the path specified is an absolute path.
 
    Note: this is currently only implemented in a Unix environment.  It will not
@@ -286,4 +286,139 @@ proc file.realPath(): string throws {
       return false;
     }
   }
+
+  /* Determines and returns the longest common path prefix of
+   all the string pathnames provided.
+
+   :arg paths: Any number of paths
+   :type paths: `string`
+
+   :return: The longest common path prefix
+   :rtype: `string`
+   */
+
+  proc commonPath(paths: string ...?n): string {
+
+  var result: string = "";    // result string
+  var inputLength = n;   // size of input array
+  var firstPath = paths(1);
+  var flag: int = 0;
+
+  // if input is empty, return empty string.
+  // if input is just one string, return that string as longest common prefix path.
+
+  if inputLength == 0 then {
+    return result;
+  } else if inputLength == 1 then{
+    return firstPath;
+  }
+
+  var prefixArray = firstPath.split(pathSep, -1, false);    // array of resultant prefix string
+
+  var pos = prefixArray.size;   // rightmost index of common prefix
+  var minPathLength = prefixArray.size;
+
+  for i in 2..n do {
+
+    var tempArray = paths(i).split(pathSep, -1, false);   // temporary array storing the current path under consideration
+
+    var minimum = min(prefixArray.size, tempArray.size);
+
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
+
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag=1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
+
+  if (flag == 1) {
+    prefixArray.remove(pos..prefixArray.size);
+  }   else {
+    prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path thus pos was never updated
+  }
+
+  result = pathSep.join(prefixArray);
+
+  return result;
+  }
+
+  /* Determines and returns the longest common path prefix of
+   all the string pathnames provided.
+
+   :arg paths: Any number of paths as an array
+   :type paths: `array`
+
+   :return: The longest common path prefix
+   :rtype: `string`
+   */
+
+  proc commonPath(paths: []): string {
+
+  var result: string = "";    // result string
+  var inputLength = paths.size;   // size of input array
+  if inputLength == 0 then {     // if input is empty, return empty string.
+    return result;
+  } 
+  
+  var start: int = paths.domain.first;
+  var end: int = paths.domain.last;
+  var firstPath = paths[start];
+  var delimiter: string;
+  var flag: int = 0;
+
+  // if input is just one string, return that string as longest common prefix path.
+
+  if inputLength == 1 then{
+    return firstPath;
+  }
+
+  // finding delimiter to split the paths.
+
+  if firstPath.find("\\", 1..firstPath.length) == 0 then {
+    delimiter = "/";
+  } else {
+    delimiter = "\\";
+  }
+
+  var prefixArray = firstPath.split(delimiter, -1, false);    // array of resultant prefix string
+
+  var pos = prefixArray.size;   // rightmost index of common prefix
+  var minPathLength = prefixArray.size;
+
+  for i in (start+1)..end do {
+
+    var tempArray = paths[i].split(delimiter, -1, false);   // temporary array storing the current path under consideration
+
+    var minimum = min(prefixArray.size, tempArray.size);
+
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
+
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag = 1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
+
+  if (flag == 1) {
+    prefixArray.remove(pos..prefixArray.size);
+  }   else {
+      prefixArray.remove(minPathLength+1..prefixArray.size);    // in case all paths are subsets of the longest path thus pos was never updated
+  }
+
+  result = delimiter.join(prefixArray);
+
+  return result;
+  }
+
 }
