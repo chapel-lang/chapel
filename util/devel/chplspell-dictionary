@@ -3584,6 +3584,7 @@ ttag
 
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
+libmvec
 tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
@@ -4147,6 +4148,10 @@ scspell
 ukacd
 
 FILEID: 726887c4-bc39-11e6-9740-843835579daa
+knowledgecenter
+liaat
+liaattunproctop
+linuxonibm
 ncpu
 oldact
 vmstat
@@ -4215,6 +4220,7 @@ blockhere
 cmps
 cmpval
 cqmode
+critsec
 cswap
 dbgf
 dbgsf
@@ -4230,6 +4236,7 @@ fxor
 gdata
 iadd
 iptag
+kpage
 mdhs
 nbdi
 nbdp
@@ -4237,8 +4244,14 @@ nopnd
 opnd
 ppdescs
 ppdi
+psvv
+pszm
 rfdpp
+tdiff
+telapsed
+tget
 themself
+tstamp
 xchgval
 
 FILEID: c0254978-0c13-11e7-980e-10ddb1d4c3d5
@@ -4510,6 +4523,7 @@ ofichkerr
 ofichkret
 pmichkret
 pmichksuccess
+procid
 rbuf
 rbufs
 tostr
@@ -5455,6 +5469,7 @@ infilesize
 infiniband
 infinitum
 initcopy
+initdone
 initialise
 initializer
 initializers
