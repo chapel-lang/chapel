@@ -374,10 +374,7 @@ module Buffers {
         if err then try! ioerror(err, "put failed in buffer copy");
       }
 
-      var appendErr:syserr = ENOERR;
-      this.append(b, error=appendErr);
-      if appendErr then
-        try! ioerror(appendErr, "append failed in buffer copy");
+      try! this.append(b);
     }
   }
   /*
@@ -689,9 +686,9 @@ module Buffers {
      :returns: a buffer iterator storing the position immediately after
                the read value.
   */
-  proc buffer.copyout(it:buffer_iterator, out value):buffer_iterator throws {
-    var err:syserr = ENOERR;
+  proc buffer.copyout(it:buffer_iterator, out value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
+    var err:syserr = ENOERR;
     ret.home = this.home;
     on this.home {
       var end:buffer_iterator = it;
@@ -707,8 +704,9 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value: string, out error:syserr):buffer_iterator {
+  proc buffer.copyout(it:buffer_iterator, out value: string):buffer_iterator throws {
     var ret:buffer_iterator;
+    var err:syserr = ENOERR;
     ret.home = this.home;
     on this.home {
       var start = it;
@@ -716,18 +714,18 @@ module Buffers {
       // Read string length
       var len: int;
       this.advance(end, numBytes(int));
-      error = qbuffer_copyout(this._buf_internal,
-                              start._bufit_internal, end._bufit_internal,
-                              len, numBytes(int));
+      err = qbuffer_copyout(this._buf_internal,
+                            start._bufit_internal, end._bufit_internal,
+                            len, numBytes(int));
       ret = end;
       // Read byte array
-      if !error {
+      if !err {
         this.advance(start, numBytes(int));
         this.advance(end, len);
         var buf = c_calloc(uint(8), (len+1):size_t);
-        error = qbuffer_copyout(this._buf_internal,
-                                start._bufit_internal, end._bufit_internal,
-                                buf, len);
+        err = qbuffer_copyout(this._buf_internal,
+                              start._bufit_internal, end._bufit_internal,
+                              buf, len);
         value = new string(buff=buf, length=len, size=len+1,
                              isowned=true, needToCopy=false);
         ret = end;
@@ -737,7 +735,7 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
+  proc buffer.copyout(it:buffer_iterator, out value, out error:syserr):buffer_iterator {
     compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     var ret: buffer_iterator;
     try {
@@ -786,8 +784,9 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyin(it:buffer_iterator, value: string, out error:syserr):buffer_iterator {
+  proc buffer.copyin(it:buffer_iterator, value: string):buffer_iterator throws {
     var ret:buffer_iterator;
+    var err:syserr = ENOERR;
     ret.home = this.home;
     on this.home {
       var start = it;
@@ -796,17 +795,17 @@ module Buffers {
       var len = value.length:int;
       // Write string length
       this.advance(end, numBytes(int));
-      error = qbuffer_copyin(this._buf_internal,
+      err = qbuffer_copyin(this._buf_internal,
                              start._bufit_internal, end._bufit_internal,
                              len, numBytes(int));
       ret = end;
       // Write byte array
-      if !error {
+      if !err {
         this.advance(start, numBytes(int));
         this.advance(end, len);
-        error = qbuffer_copyin(this._buf_internal,
-                               start._bufit_internal, end._bufit_internal,
-                               tmp.c_str():c_void_ptr, len);
+        err = qbuffer_copyin(this._buf_internal,
+                             start._bufit_internal, end._bufit_internal,
+                             tmp.c_str():c_void_ptr, len);
         ret = end;
       }
     }
@@ -814,11 +813,11 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyin(it:buffer_iterator, value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
+  proc buffer.copyin(it:buffer_iterator, value, out error:syserr):buffer_iterator {
     compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     var ret:buffer_iterator;
     try {
-      ret = this.copyin();
+      ret = this.copyin(it, value);
     } catch e: SystemError {
       error = e.err;
     } catch {
