@@ -463,7 +463,7 @@ static InitNormalize preNormalize(AggregateType* at,
                 "initializers for now");
 
     } else if (isDefExpr(stmt) == true) {
-      state.checkAndEmitErrors(stmt);
+      state.processThisUses(stmt);
 
       stmt = stmt->next;
 
@@ -598,7 +598,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // No action required
       } else {
-        state.checkAndEmitErrors(stmt);
+        state.processThisUses(stmt);
 
         stmt = stmt->next;
       }

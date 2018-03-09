@@ -83,8 +83,8 @@ public:
 
   void            describe(int offset = 0)                               const;
 
-  void            checkAndEmitErrors(Expr* expr);
-  void            checkAndEmitErrors(CallExpr* call);
+  void            processThisUses(Expr* expr);
+  void            processThisUses(CallExpr* call);
 
   void            makeThisAsParent(CallExpr* initCall);
 

@@ -1511,12 +1511,12 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
   return retval;
 }
 
-void InitNormalize::checkAndEmitErrors(Expr* expr) {
+void InitNormalize::processThisUses(Expr* expr) {
   if (isPhase2() != true) {
     if (CallExpr* call = toCallExpr(expr)) {
-      checkAndEmitErrors(call);
+      processThisUses(call);
     } else if (DefExpr* def = toDefExpr(expr)) {
-      checkAndEmitErrors(def->init);
+      processThisUses(def->init);
     }
   }
 }
@@ -1531,7 +1531,7 @@ void InitNormalize::checkAndEmitErrors(Expr* expr) {
 // 2) cast 'this'
 // 3) call child-only method in phase one
 //
-void InitNormalize::checkAndEmitErrors(CallExpr* call) {
+void InitNormalize::processThisUses(CallExpr* call) {
   std::vector<CallExpr*> uses;
   collectThisUses(call, uses);
 
@@ -1610,7 +1610,7 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
     }
   }
 
-  checkAndEmitErrors(initStmt);
+  processThisUses(initStmt);
 
   retval     = fieldInitFromStmt(initStmt, field);
   mCurrField = toDefExpr(mCurrField->next);
