@@ -187,7 +187,7 @@ module Buffers {
 
   pragma "no doc"
   private proc create_iobuf(out error:syserr):bytes {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     var ret: bytes;
     try {
       ret = create_iobuf();
@@ -432,7 +432,7 @@ module Buffers {
 
   pragma "no doc"
   proc buffer.flatten(range:buffer_range, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     var ret: bytes;
     try {
       ret = this.flatten(range);
@@ -533,7 +533,7 @@ module Buffers {
 
   pragma "no doc"
   proc buffer.append(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     try {
       this.append(b, skip_bytes, len_bytes);
     } catch e: SystemError {
@@ -563,7 +563,7 @@ module Buffers {
 
   pragma "no doc"
   proc buffer.append(buf:buffer, part:buffer_range = buf.all(), out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     try {
       this.append(buf, part);
     } catch e: SystemError {
@@ -594,7 +594,7 @@ module Buffers {
 
   pragma "no doc"
   proc buffer.prepend(b:bytes, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len, out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     try {
       this.prepend(b, skip_bytes, len_bytes);
     } catch e: SystemError {
@@ -707,20 +707,6 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyout(it:buffer_iterator, out value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, call 'throws' function instead");
-    var ret: buffer_iterator;
-    try {
-      ret = this.copyout(it, value);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
-
-  pragma "no doc"
   proc buffer.copyout(it:buffer_iterator, out value: string, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
     ret.home = this.home;
@@ -750,6 +736,20 @@ module Buffers {
     return ret;
   }
 
+  pragma "no doc"
+  proc buffer.copyout(it:buffer_iterator, out value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    var ret: buffer_iterator;
+    try {
+      ret = this.copyout(it, value);
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
+    return ret;
+  }
+
   /* Write a basic type (integral or floating point value) or `string`
      to a buffer.
      For basic types, this method writes the value by copying to memory -
@@ -759,13 +759,12 @@ module Buffers {
 
      :arg it: a :record:`buffer_iterator` where reading will start
      :arg value: a basic type or `string`
-     :arg error: (optional) capture an error that was encountered instead of
-                 halting on error
      :returns: a buffer iterator storing the position immediately after
                the written value.
   */
-  proc buffer.copyin( it:buffer_iterator, value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
+  proc buffer.copyin(it:buffer_iterator, value):buffer_iterator throws {
     var ret:buffer_iterator;
+    var err:syserr = ENOERR;
     ret.home = this.home;
     on this.home {
       //writeln("iterator on way in");
@@ -779,14 +778,15 @@ module Buffers {
       //writeln("sz is ", sz);
       this.advance(end, sz);
       //debug_print_qbuffer_iter(end._bufit_internal);
-      error = qbuffer_copyin(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz);
+      err = qbuffer_copyin(this._buf_internal, it._bufit_internal, end._bufit_internal, tmp, sz);
       ret = end;
     }
+    if err then try ioerror(err, "in buffer.copyin");
     return ret;
   }
 
   pragma "no doc"
-  proc buffer.copyin( it:buffer_iterator, value: string, out error:syserr):buffer_iterator {
+  proc buffer.copyin(it:buffer_iterator, value: string, out error:syserr):buffer_iterator {
     var ret:buffer_iterator;
     ret.home = this.home;
     on this.home {
@@ -814,10 +814,16 @@ module Buffers {
   }
 
   pragma "no doc"
-  proc buffer.copyin( it:buffer_iterator, value):buffer_iterator throws {
-    var err:syserr = ENOERR;
-    var ret = this.copyin(it, value, err);
-    if err then try ioerror(err, "in buffer.copyin");
+  proc buffer.copyin(it:buffer_iterator, value: ?T, out error:syserr):buffer_iterator where isNumericType(T) {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    var ret:buffer_iterator;
+    try {
+      ret = this.copyin();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
     return ret;
   }
 }
