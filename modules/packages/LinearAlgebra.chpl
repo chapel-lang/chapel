@@ -1142,7 +1142,14 @@ module Sparse {
     return M;
   }
 
-  /* Return a CSR matrix constructed from internal representation */
+  /* Return a CSR matrix constructed from internal representation:
+
+    - ``shape``: bounding box dimensions
+    - ``data``: non-zero element values
+    - ``indices``: non-zero row pointers
+    - ``indptr``: index pointers
+
+  */
   proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
     where indDom.rank == 1 && nnzDom.rank == 1 {
     var ADom = CSRDomain(shape, indices, indptr);
@@ -1278,7 +1285,7 @@ module Sparse {
           (K2, N) = B.shape;
 
     // major axis
-    var indPtr: [{1..M+1}] idxType;
+    var indPtr: [1..M+1] idxType;
 
     pass1(A, B, indPtr);
 
