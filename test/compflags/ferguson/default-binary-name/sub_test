@@ -85,6 +85,7 @@ run("test-default-binary-name-main-module.chpl", "test-default-binary-name-main-
 run("test-default-binary-name2.chpl", "test-default-binary-name2", [], "Hi\nHello")
 run("test-default-binary-name3.chpl", "test-default-binary-name3", [], "Hi")
 run("test-default-binary-name3.chpl", "M3", ["M3.chpl"], "Hi\nHello")
+run("subdir/testSubDirFile.chpl", "testSubDirFile", [], "Hello")
 
 # finally, test with setting the binary name with the enivronment variable.
 # this is last so we don't have to worry about restoring the environment
