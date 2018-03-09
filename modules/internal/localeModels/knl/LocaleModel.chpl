@@ -205,8 +205,11 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      sid = _sid: chpl_sublocID_t;
       extern proc chpl_task_getNumSublocales(): int(32);
+
+      super.init(_parent);
+
+      sid = _sid: chpl_sublocID_t;
       const (whichNuma, kind) =
         unpackSublocID(chpl_task_getNumSublocales(), sid);
       var kindstr:string;
@@ -215,7 +218,6 @@ module LocaleModel {
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
       mlName = kindstr+whichNuma;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -268,11 +270,14 @@ module LocaleModel {
     proc init(_sid, _parent) {
       extern proc chpl_task_getNumSublocales(): int(32);
       var numSublocales = chpl_task_getNumSublocales();
+
+      super.init(_parent);
+
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
 
-      super.init(_parent);
+      this.initDone();
 
       ddr = new MemoryLocale(sid, this);
 
@@ -343,7 +348,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      super.init();
+      this.initDone();
 
       setup();
     }
@@ -352,9 +357,11 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      super.init(parent_loc);
+
       _node_id = chpl_nodeID: int;
 
-      super.init(parent_loc);
+      this.initDone();
 
       setup();
     }
