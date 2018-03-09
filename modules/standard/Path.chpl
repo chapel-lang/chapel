@@ -36,6 +36,7 @@
 module Path {
 
 use SysError;
+use Sys;
 
 /* Returns the basename of the file name provided.  For instance, in the
    name `/foo/bar/baz`, this function would return `baz`, while `/foo/bar/`
@@ -300,41 +301,70 @@ proc file.realPath(): string throws {
    :rtype: `string`
 */
   proc expandVars(path: string): string{
-    var path_expanded: string = path;
-    var env_arr = [("CHPL_HOME", CHPL_HOME),
-                   ("CHPL_AUX_FILESYS", CHPL_AUX_FILESYS),
-                   ("CHPL_TARGET_PLATFORM", CHPL_TARGET_PLATFORM),
-                   ("CHPL_HOST_PLATFORM", CHPL_HOST_PLATFORM),
-                   ("CHPL_HOST_COMPILER", CHPL_HOST_COMPILER),
-                   ("CHPL_TARGET_COMPILER", CHPL_TARGET_COMPILER),
-                   ("CHPL_TARGET_ARCH", CHPL_TARGET_ARCH),
-                   ("CHPL_LOCALE_MODEL", CHPL_LOCALE_MODEL),
-                   ("CHPL_COMM_SUBSTRATE", CHPL_COMM_SUBSTRATE),
-                   ("CHPL_COMM", CHPL_COMM),
-                   ("CHPL_GASNET_SEGMENT", CHPL_GASNET_SEGMENT),
-                   ("CHPL_TASKS", CHPL_TASKS),
-                   ("CHPL_LAUNCHER", CHPL_LAUNCHER),
-                   ("CHPL_TIMERS", CHPL_TIMERS),
-                   ("CHPL_UNWIND", CHPL_UNWIND),
-                   ("CHPL_MEM", CHPL_MEM),
-                   ("CHPL_MAKE", CHPL_MAKE),
-                   ("CHPL_ATOMICS", CHPL_ATOMICS),
-                   ("CHPL_NETWORK_ATOMICS", CHPL_NETWORK_ATOMICS),
-                   ("CHPL_GMP", CHPL_GMP),
-                   ("CHPL_HWLOC", CHPL_HWLOC),
-                   ("CHPL_REGEXP", CHPL_REGEXP),
-                   //("CHPL_WIDE_POINTERS", CHPL_WIDE_POINTERS),
-                   ("CHPL_LLVM", CHPL_LLVM)
-                  ];
-    for i in 1..23{
-      if(path_expanded.find("$"+env_arr(i)(1))>0){
-        path_expanded = path_expanded.replace("$"+env_arr(i)(1), env_arr(i)(2));
-      }
-      if(path_expanded.find("${"+env_arr(i)(1)+"}")>0){
-        path_expanded = path_expanded.replace("${"+env_arr(i)(1)+"}", env_arr(i)(2));
-      }
+    var path_p:string = path;
+    var varChars:string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_";
+    var res:string = "";
+    var ind:int = 1;
+    var pathlen:int = path_p.length;
+    while(ind <= pathlen){
+        var c:string = path_p(ind);
+        if(c == "$"){
+            if(path_p(ind+1) == "$"){
+                res = res + c;
+                ind += 1;
+            }
+            else if(path_p(ind+1) == "{"){
+                path_p = path_p((ind+2)..);
+                pathlen = path_p.length;
+                ind = path_p.find("}");
+                if(ind == 0){
+                    res += "${" +path_p;
+                    ind = pathlen;
+                }
+                else{
+                    var env_var:string = path_p(..(ind-1));
+                    var value:string;
+                    var value_c:c_string;
+                    var h:int = sys_getenv(env_var.c_str(), value_c);
+                    if(h != 0){
+                        value = "${" + env_var + "}";
+                    }
+                    else{
+                        value = value_c:string;
+                    }
+                    res += value;
+                }
+            }
+            else{
+                var env_var:string = "";
+                ind += 1;
+                var c:string = path_p(ind);
+                while(ind <= path_p.length && varChars.find(c)!= 0){
+                    env_var += c;
+                    ind += 1;
+                    c = path_p(ind);
+                }
+                var value:string;
+                var value_c:c_string;
+                var h:int = sys_getenv(env_var.c_str(), value_c);
+                if(h != 0){
+                    value = "$" + env_var;
+                }
+                else{
+                    value = value_c:string;
+                }
+                res += value;
+                if(ind <= path_p.length){
+                    ind -= 1;
+                }
+            }
+        }
+        else{
+            res += c;
+        }
+        ind +=1;
     }
-    return path_expanded;
+    return res;
   }
 }
 
