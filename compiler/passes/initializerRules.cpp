@@ -308,16 +308,36 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
+
   // The body contains zero or more instances of this.initDone()
   // If there isn't a super.init or this.init anywhere, we need to insert
   // a super.init call.
   //
   // INIT TODO: Don't we always need to insert a super.init?
   } else if (state.isPhase1() == true) {
-    InitNormalize finalState = preNormalize(at, fn->body, state);
+    Expr* startStmt = fn->body->body.head;
+
+    CallExpr* dummy = new CallExpr("init", gMethodToken, fn->_this);
+    fn->insertAtHead(dummy);
+    state.makeThisAsParent(dummy);
+    dummy->remove();
+
+    // Call with 'startStmt' to avoid processing the 'this as parent' setup
+    InitNormalize finalState = preNormalize(at, fn->body, state, startStmt);
     finalState.initializeFieldsAtTail(fn->body);
 
     addSuperInit(fn);
+
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
 
   } else {
     INT_ASSERT(false);
@@ -476,6 +496,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
           } else {
             transformSuperInit(callExpr);
+            state.makeThisAsParent(callExpr);
           }
 
           stmt = next;

@@ -86,6 +86,8 @@ public:
   void            checkAndEmitErrors(Expr* expr);
   void            checkAndEmitErrors(CallExpr* call);
 
+  void            makeThisAsParent(CallExpr* initCall);
+
 private:
   enum BlockType {
     cBlockNormal,
@@ -156,6 +158,7 @@ private:
   InitPhase       mPhase;
   BlockType       mBlockType;
   BlockType       mPrevBlockType;
+  VarSymbol*      mThisAsParent;
 
   std::set<DefExpr*> mImplicitFields;
 };
