@@ -7,7 +7,6 @@ class Scoping {
       a = aVal;
     }
     b = bVal;
-    super.init();
   }
 }
 

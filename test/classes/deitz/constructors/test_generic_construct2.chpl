@@ -8,13 +8,11 @@ class C {
     this.ct = ct;
     this.bt = bt;
     x = y;
-    super.init();
   }
 
   proc init(type ct, y: ct) {
     this.ct = ct;
     x = y;
-    super.init();
   }
 }
 

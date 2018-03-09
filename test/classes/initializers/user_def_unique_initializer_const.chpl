@@ -5,7 +5,6 @@ class C {
 
   proc init(y, z) {
     x = y+z;
-    super.init();
   }
 }
 

@@ -4,7 +4,6 @@ class Foo {
 
   proc init(dom) {
     D = dom;
-    super.init();
   }
 }
 

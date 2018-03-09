@@ -4,12 +4,10 @@ class Foo {
 
   proc init(param xVal: int) where (xVal > 10) {
     x = xVal;
-    super.init();
   }
 
   proc init(param xVal: int) where (xVal <= 10) {
     x = abs(xVal) + 10;
-    super.init();
   }
 }
 

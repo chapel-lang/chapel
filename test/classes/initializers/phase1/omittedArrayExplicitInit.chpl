@@ -5,7 +5,6 @@ class Foo {
   proc init(n : int) {
     D = { 1 .. n, 1 .. n };
 
-    super.init();
   }
 }
 

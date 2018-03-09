@@ -6,7 +6,6 @@ class Foo {
 
   proc init(param a) {
     this.a = a;
-    super.init();
   }
 }
 

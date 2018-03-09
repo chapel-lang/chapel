@@ -7,9 +7,9 @@ class Parent {
   // child is invalid
   proc Parent() {
     a = 11;
-    super.init();
   }
 }
+
 
 class Child : Parent {
   var b: int;

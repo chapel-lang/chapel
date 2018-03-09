@@ -4,7 +4,6 @@ class ParentCallInIf {
   proc init(param val: int) {
     if (val > 10) {
       f1 = val;
-      super.init();
     } else {
       this.initDone();
       f1 = -val;

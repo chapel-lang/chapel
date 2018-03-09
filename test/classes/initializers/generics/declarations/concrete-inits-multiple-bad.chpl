@@ -11,7 +11,6 @@ class Foo {
     x = xVal;
     y = yVal;
     z = xVal + 2;
-    super.init();
   }
 }
 

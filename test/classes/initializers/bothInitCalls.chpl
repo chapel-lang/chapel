@@ -13,7 +13,6 @@ class EitherOr {
   proc init(useField: bool, otherVal: int) {
     fieldInit = useField;
     infer = otherVal;
-    super.init();
   }
 }
 

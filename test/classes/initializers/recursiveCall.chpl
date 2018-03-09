@@ -78,7 +78,6 @@ class Tree {
     this.item = item;
     this.left = left;
     this.right = right;
-    super.init();
   }
 
   proc init(item, depth) {

@@ -5,7 +5,6 @@ class C {
 
   proc init(dom) {
     D = dom;
-    super.init();
   }
 }
 

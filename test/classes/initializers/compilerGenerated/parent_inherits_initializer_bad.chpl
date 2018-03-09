@@ -9,9 +9,9 @@ class GrandParent {
   // super.init() call in the generated parent initializer.
   proc init(x1: int, x2: int) {
     a = x1 + x2;
-    super.init();
   }
 }
+
 
 class Parent: GrandParent {
   var b: int;

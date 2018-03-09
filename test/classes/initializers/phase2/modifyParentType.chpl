@@ -3,7 +3,7 @@ class C {
 
   proc init(type t) {
     this.x = t;
-    super.init();
+
   }
 }
 
