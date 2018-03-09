@@ -2091,6 +2091,7 @@ void codegen(void) {
       INT_FATAL("input filename exceeds executable filename buffer size");
     }
     strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+    executableFilename[sizeof(executableFilename)-1] = '\0';
 
     // remove the filename extension
     char* lastDot = strrchr(executableFilename, '.');
