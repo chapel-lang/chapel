@@ -1552,6 +1552,9 @@ void InitNormalize::processThisUses(CallExpr* call) {
       if (isPhase0() == true) {
         USR_FATAL_CONT(call, "cannot call a method before super.init() or this.init()");
         numErrors += 1;
+      } else if (type()->isRecord()) {
+        USR_FATAL_CONT(call, "cannot call a method on a record during phase 1 of initialization");
+        numErrors += 1;
       } else {
         // Check if the called method can be dynamically dispatched, otherwise
         // it's an error.
@@ -1570,7 +1573,10 @@ void InitNormalize::processThisUses(CallExpr* call) {
         }
       }
     } else {
-      if (use->isPrimitive(PRIM_CAST) || use->isNamed("_cast")) {
+      if (type()->isRecord()) {
+        USR_FATAL_CONT(call, "cannot pass \"this\" to a function in phase 1 of initialization");
+        numErrors += 1;
+      } else if (use->isPrimitive(PRIM_CAST) || use->isNamed("_cast")) {
         USR_FATAL_CONT(call, "cannot cast \"this\" in phase one");
         numErrors += 1;
       } else {
