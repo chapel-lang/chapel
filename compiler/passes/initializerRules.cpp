@@ -608,9 +608,10 @@ static InitNormalize preNormalize(AggregateType* at,
           }
 
           if (stateThen.currField() != state.currField()) {
-            USR_FATAL(cond,
-                      "cannot initialize fields in an if statement "
-                      "in phase 1");
+            cond->elseStmt = new BlockStmt();
+            state.initializeFieldsThroughField(cond->elseStmt,
+                                               stateThen.currField());
+            INT_ASSERT(stateThen.currField() == state.currField());
           }
         }
 

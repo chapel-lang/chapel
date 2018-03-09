@@ -264,6 +264,72 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
   }
 }
 
+void InitNormalize::initializeFieldsThroughField(BlockStmt* block,
+                                                 DefExpr*   field) {
+  Expr* insertBefore = new CallExpr(PRIM_NOOP);
+
+  block->insertAtTail(insertBefore);
+
+  Expr* endCondition = ((field == NULL)? NULL : field->next);
+
+  while (mCurrField != NULL && mCurrField != endCondition) {
+    DefExpr* field = mCurrField;
+
+    if (isOuterField(field) == true) {
+      // The outer field is a compiler generated field.  Handle it specially.
+      makeOuterArg();
+
+    } else {
+      if (field->exprType == NULL && field->init == NULL) {
+        USR_FATAL_CONT(insertBefore,
+                       "can't omit initialization of field \"%s\", "
+                       "no type or default value provided",
+                       field->sym->name);
+
+      } else if (field->sym->hasFlag(FLAG_PARAM)         == true ||
+                 field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        if        (field->exprType != NULL && field->init == NULL) {
+          genericFieldInitTypeWoutInit (insertBefore, field);
+
+        } else if (field->exprType != NULL && field->init != NULL) {
+          genericFieldInitTypeWithInit (insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else if (field->exprType == NULL && field->init != NULL) {
+          genericFieldInitTypeInference(insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else if (field->init != NULL) {
+        Expr* initCopy    = field->init->copy();
+        bool  isTypeKnown = mCurrField->sym->type != dtUnknown;
+
+        if (isTypeKnown == true) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else if (field->exprType != NULL) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else {
+          fieldInitTypeInference(insertBefore, field, initCopy);
+        }
+
+      } else {
+        fieldInitTypeWoutInit(insertBefore, field);
+      }
+    }
+
+    mCurrField = toDefExpr(mCurrField->next);
+  }
+
+  insertBefore->remove();
+}
+
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
   while (mCurrField != NULL) {
     DefExpr* field = mCurrField;
