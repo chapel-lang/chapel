@@ -9,9 +9,10 @@ use LinearAlgebra.Sparse;
 use Time;
 
 
-config const n = 1000,  // 2000000
-             nnz = 100, // 1000
+config const n = 1000,
+             nnz = 100,
              seed = 42,
+             trials = 1,
              /* Omit non-timing output */
              performance = false,
              /* Omit timing output */
@@ -62,9 +63,15 @@ proc main() {
   var AA = A.dot(A);
   t.stop();
 
+  for 2..trials {
+    t.start();
+    A.dot(A);
+    t.stop();
+  }
+
   if !correctness {
     writeln('sparsity : ', nnz, '/', n*n, ' = ', sparsity);
-    writeln('time (s) : ', t.elapsed());
+    writeln('time (s) : ', t.elapsed() / trials);
   }
 
   if write {
