@@ -1066,7 +1066,7 @@ void insertReferenceTemps(CallExpr* call) {
 static void checkForErroneousInitCopies() {
 
   // Mark initCopy/autoCopy functions calling functions marked with
-  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEUS_AUTOCOPY with the same
+  // FLAG_ERRONEOUS_INITCOPY/FLAG_ERRONEOUS_AUTOCOPY with the same
   // flag. This situation can come up with the compiler-generated
   // tuple copy functions.
   bool changed;
