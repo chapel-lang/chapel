@@ -1,2 +1,0 @@
-try-check-returns.chpl:7: In function 'consumeMinusOne':
-try-check-returns.chpl:7: error: control reaches end of function that returns a value
