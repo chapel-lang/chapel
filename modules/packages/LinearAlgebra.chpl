@@ -1266,6 +1266,7 @@ module Sparse {
     return Y;
   }
 
+  pragma "no doc"
   /* Sparse matrix-matrix multiplication.
 
      Does not assume sorted indices, but preserves sorted indices.
