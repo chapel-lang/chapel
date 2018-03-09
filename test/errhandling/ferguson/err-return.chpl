@@ -10,7 +10,6 @@ record MyRecord {
   var y:my_struct;
   proc init(x:int) {
     y = new my_struct(x:c_int);
-    super.init();
   }
   proc deinit() {
     writeln("deinit ", y.x);

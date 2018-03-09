@@ -129,7 +129,6 @@ module Buffers {
   proc bytes.init() {
     this.home = here;
     this._bytes_internal = QBYTES_PTR_NULL;
-    super.init();
   }
   /*
 
@@ -171,11 +170,9 @@ module Buffers {
     if x.home == here {
       qbytes_retain(x._bytes_internal);
       this._bytes_internal = x._bytes_internal;
-      super.init();
     } else {
       // The initial ref count is 1, so no need to call qbytes_retain here.
       this._bytes_internal = bulk_get_bytes(x.home.id, x._bytes_internal);
-      super.init();
     }
   }
 
@@ -271,7 +268,6 @@ module Buffers {
   proc buffer_iterator.init() {
     this.home = here;
     this._bufit_internal = qbuffer_iter_null();
-    super.init();
   }
 
   /* A region within a buffer (indicated by two :record:`buffer_iterator` s ) */

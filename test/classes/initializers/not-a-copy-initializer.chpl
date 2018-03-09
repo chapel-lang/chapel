@@ -18,7 +18,6 @@ record Foo {
   proc init(genericArg) where (!genericArg: Foo) {
     genericArg.someMethod();
     a = true;
-    super.init();
   }
 }
 

@@ -59,7 +59,6 @@ record Population {
   proc init(colors: [] Color) {
     chamSpace = colors.domain;
     chameneos = new Chameneos(1..colors.size, colors);
-    super.init();
   }
 
   //

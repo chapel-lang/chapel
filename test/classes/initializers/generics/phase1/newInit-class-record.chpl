@@ -16,8 +16,6 @@ record Stored {
 
   proc init(xVal) where !xVal: Stored {
     x = xVal;
-
-    super.init();
   }
 }
 

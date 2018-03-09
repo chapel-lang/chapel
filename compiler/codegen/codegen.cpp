@@ -2071,11 +2071,28 @@ void codegen(void) {
   }
 
   // Set the executable name to the name of the file containing the
-  // main module (minus its extension) if it isn't set already.
+  // main module (minus its path and extension) if it isn't set
+  // already.
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    strncpy(executableFilename, mainMod->astloc.filename,
-            sizeof(executableFilename));
+    const char* mainModFilename = mainMod->astloc.filename;
+
+    // find the last slash in the filename's path, if there is one
+    const char* lastSlash = strrchr(mainModFilename, '/');
+    if (lastSlash == NULL) {
+      lastSlash = mainModFilename;
+    } else {
+      lastSlash++;
+    }
+
+    // copy from that slash onwards into the executableFilename,
+    // saving space for a `\0` terminator
+    if (strlen(lastSlash) >= sizeof(executableFilename)) {
+      INT_FATAL("input filename exceeds executable filename buffer size");
+    }
+    strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+    executableFilename[sizeof(executableFilename)-1] = '\0';
+
     // remove the filename extension
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {

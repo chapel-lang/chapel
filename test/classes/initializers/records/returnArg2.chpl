@@ -1,10 +1,8 @@
 record Foo {
   proc init() {
-    super.init();
   }
 
   proc init(other: Foo) {
-    super.init();
   }
 }
 proc quux(x: Foo) return x;
