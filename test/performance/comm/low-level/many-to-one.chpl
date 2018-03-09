@@ -48,8 +48,8 @@ proc main() {
     startCommDiagnostics();
   }
 
-  var numOpsPerNode: [0..#numLocales] int;
-  var timePerNode: [0..#numLocales] real;
+  var numOpsOnNodes: [0..#numLocales] int;
+  var timeOnNodes: [0..#numLocales] real;
 
   allLocalesBarrier.reset(numTasksPerNode);
 
@@ -70,8 +70,8 @@ proc main() {
         ref x = remoteVar(1);
         ref xAtomic = remoteVarAtomic(1);
 
-        var numOpsPerTask: [1..numTasksPerNode] int;
-        var timePerTask: [1..numTasksPerNode] real;
+        var numOpsOnTasks: [1..numTasksPerNode] int;
+        var timeOnTasks: [1..numTasksPerNode] real;
 
         coforall taskIdx in 1..numTasksPerNode with (ref x, ref xAtomic) {
           var nopsAtCheck = minOpsPerTimerCheck;
@@ -101,27 +101,27 @@ proc main() {
             nops += 1;
           }
 
-          numOpsPerTask(taskIdx) = nops;
-          timePerTask(taskIdx) = tElapsed;
+          numOpsOnTasks(taskIdx) = nops;
+          timeOnTasks(taskIdx) = tElapsed;
         }
 
-        numOpsPerNode(locIdx) = + reduce numOpsPerTask;
-        timePerNode(locIdx) = + reduce timePerTask;
+        numOpsOnNodes(locIdx) = + reduce numOpsOnTasks;
+        timeOnNodes(locIdx) = + reduce timeOnTasks;
       }
     }
   }
 
   if printTimings {
-    const numOpsTotal = + reduce numOpsPerNode;
-    const timeTotal = + reduce timePerNode;
-    const timeAvg = timeTotal / (numTasksPerNode * numWorkerNodes);
-    const mOpsPerSecAvg = (numOpsTotal / timeAvg) * 1e-6;
-    const mOpsPerSecPerTask = (numOpsTotal / timeTotal) * 1e-6;
+    const numOpsTotal = + reduce numOpsOnNodes;
+    const timeTotal = + reduce timeOnNodes;
+    const opRatePerSource = (numOpsTotal / timeTotal) / 1e6;
+    const numSources = numTasksPerNode * numWorkerNodes;
+    const opRateToTarget = opRatePerSource * numSources;
 
     writeln('numOps = ', numOpsTotal);
-    writeln('Execution time = ', timeAvg);
-    writeln('Performance (mOps/sec) = ', mOpsPerSecAvg);
-    writeln('Performance (mOps/sec/Task) = ', mOpsPerSecPerTask);
+    writeln('Execution time per source = ', timeTotal / numSources);
+    writeln('Performance (mOps/sec/source) = ', opRatePerSource);
+    writeln('Performance (mOps/sec to target) = ', opRateToTarget);
   }
 
   if printCommDiags {

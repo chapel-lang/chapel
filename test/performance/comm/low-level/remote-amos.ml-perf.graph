@@ -1,4 +1,4 @@
-perfkeys: Performance (mOps/sec) =
+perfkeys: Performance (mOps/sec to target) =
 files: many-to-one-amos.dat
 graphkeys: AMOs to 1 node
 graphtitle: Remote AMO Performance
