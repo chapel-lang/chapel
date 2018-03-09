@@ -3,7 +3,7 @@ record R {
 
   proc init(xVal: int = 0) {
     x = xVal;
-    super.init();
+    this.initDone();
   }
 }
 
@@ -12,7 +12,7 @@ record StoresR {
 
   proc init(arr = [new R(2), new R(3), new R(4)]) {
     x = arr;
-    super.init();
+    this.initDone();
   }
 }
 
