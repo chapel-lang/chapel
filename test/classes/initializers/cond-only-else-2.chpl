@@ -11,7 +11,7 @@ record MyRec {
     else
       writeln('Else does not initialize x');
 
-    super.init();
+    this.initDone();
   }
 }
 

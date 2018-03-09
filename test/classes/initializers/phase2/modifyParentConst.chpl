@@ -3,7 +3,7 @@ class C {
 
   proc init(x) {
     this.x = x;
-    super.init();
+    this.initDone();
     //    this.x = 36;  can't do this
   }
 }
