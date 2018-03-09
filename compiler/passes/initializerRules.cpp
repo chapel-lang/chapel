@@ -30,13 +30,6 @@
 #include "type.h"
 #include "typeSpecifier.h"
 
-enum InitStyle {
-  STYLE_NONE          = 0,
-  STYLE_SUPER_INIT    = 1,
-  STYLE_THIS_INIT     = 2,
-  STYLE_THIS_INITDONE = 4
-};
-
 static bool     isInitStmt (CallExpr* stmt);
 
 static bool     isUnacceptableTry(Expr* stmt);
