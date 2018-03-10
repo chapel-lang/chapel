@@ -97,7 +97,7 @@ class CSDom: BaseSparseDomImpl {
   var colRange: range(idxType, stridable=stridable);
 
   /* (row|col) startIdxDom */
-  const startIdxDom: domain(1, idxType);
+  var startIdxDom: domain(1, idxType);
 
   /* (row|col) start */
   pragma "local field"

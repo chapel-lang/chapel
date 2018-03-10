@@ -1,0 +1,2 @@
+bug: initializers with default value on array argument with implicit type
+#8763

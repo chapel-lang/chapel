@@ -2275,6 +2275,7 @@ void codegen(void) {
     codegen_header_addons();
 
     closeCFile(&hdrfile);
+    fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
     closeCFile(&mainfile);
     closeCFile(&defnfile);
     closeCFile(&strconfig);

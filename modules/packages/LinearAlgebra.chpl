@@ -1266,6 +1266,43 @@ module Sparse {
     return M;
   }
 
+  /* Return a CSR matrix constructed from internal representation:
+
+    - ``shape``: bounding box dimensions
+    - ``data``: non-zero element values
+    - ``indices``: non-zero row pointers
+    - ``indptr``: index pointers
+
+  */
+  proc CSRMatrix(shape: 2*int, data: [?nnzDom] ?eltType, indices: [nnzDom], indptr: [?indDom])
+    where indDom.rank == 1 && nnzDom.rank == 1 {
+    var ADom = CSRDomain(shape, indices, indptr);
+    var A: [ADom] eltType;
+    A.data = data;
+    return A;
+  }
+
+  /* Return a CSR domain constructed from internal representation */
+  proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
+    where indDom.rank == 1 && nnzDom.rank == 1 {
+    const (M, N) = shape;
+    const D = {1..M, 1..N};
+    var ADom: sparse subdomain(D) dmapped CS();
+
+    ADom.startIdxDom = {1..indptr.size};
+    ADom.startIdx = indptr;
+    const (hasZero, zeroIndex) = indices.find(0);
+    if hasZero {
+      ADom.nnz = zeroIndex-1;
+    } else {
+      ADom.nnz = indices.size;
+    }
+    ADom.nnzDom = {1..indices.size};
+    ADom.idx = indices;
+
+    return ADom;
+  }
+
   /*
       Generic matrix multiplication, ``A`` and ``B`` can be a scalar, dense
       vector, or sparse matrix.
@@ -1353,101 +1390,176 @@ module Sparse {
     return Y;
   }
 
+  pragma "no doc"
+  /* Sparse matrix-matrix multiplication.
 
-  /* CSR matrix-matrix multiplication
+     Does not assume sorted indices, but preserves sorted indices.
 
-    Implementation derived from:
+     Implementation derived from the SMMP algorithm:
 
-      Buluç, Aydın, J. R. Gilbert, and Viral B. Shah.
-      "Implementing sparse matrices for graph algorithms."
-      Graph Algorithms in the Language of Linear Algebra 22 (2011): 287.
+      "Sparse Matrix Multiplication Package (SMMP)"
+        Randolph E. Bank and Craig C. Douglas
 
-   */
-  private proc _csrmatmatMult(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
+      https://link.springer.com/article/10.1007/BF02070824
 
-    const D = {Adom.dim(1), Bdom.dim(2)};
-    var Cdom: sparse subdomain(D) dmapped CS();
-    var C: [Cdom] A.eltType;
+  */
+  proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
+    type idxType = ADom.idxType;
 
-    // pre-allocate nnz(A) + nnz(B) -- TODO: shrink later
-    const nnzAB = Adom._value.nnz + Bdom._value.nnz;
-    Cdom._value.nnzDom = {1..nnzAB};
+    const (M, K1) = A.shape,
+          (K2, N) = B.shape;
 
-    var spa = new _SPA(cols=D.dim(1), eltType=A.eltType);
+    // major axis
+    var indPtr: [1..M+1] idxType;
 
-    /*
-     IR (row)     - nnz-rows  - A.domain._value.startIdx
-     JC (column)  - nnz       - A.domain._value.idx
-     VAL (values) - nnz       - A._value.data
-    */
+    pass1(A, B, indPtr);
 
-    for i in A.domain.dim(1) {
-      const colRange = A.IR(i)..(A.IR(i+1)-1);
-      for k in colRange {
-        const jRange = B.IR(A.JC(k))..(B.IR(A.JC(k)+1)-1);
-        for j in jRange {
-          const value = A.NUM(k) * B.NUM(j),
-                pos = B.JC(j);
-          spa.scatter(value, pos);
-        }
-      }
-      const nznew = spa.gather(C, i);
-      C.IR[i+1] = C.IR[i] + nznew;
-      spa.reset();
-    }
+    const nnz = indPtr[indPtr.domain.last];
+    var indices: [1..nnz] idxType;
+    var data: [1..nnz] eltType;
+
+    pass2(A, B, indPtr, indices, data);
+
+    var C = CSRMatrix((M, N), data, indices, indPtr);
+
+    // TODO: Check if array is not using sorted indices, when that's possible
+    sortIndices(C);
+
     return C;
-
-    /* Cleaner startIdx accessor */
-    proc _array.IR ref return this._value.dom.startIdx;
-    /* Cleaner idx accessor */
-    proc _array.JC ref return this._value.dom.idx;
-    /* Cleaner data accessor */
-    proc _array.NUM ref return this._value.data;
-
   }
 
-  pragma "no doc"
-  /* Sparse-accumulator */
-  record _SPA {
-    var cols; // range(?)
-    type eltType = int;
-    var b: [cols] bool,      // occupation
-        w: [cols] eltType,   // values
-        ls: [1..0] int;  // indices
 
-    /* Reset w, b, and ls to empty */
-    proc reset() {
-      b = false;
-      w = 0;
-      ls.clear();
+  /* Populate indPtr and total nnz (last element of indPtr) */
+  proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
+    // TODO: Parallelize - mask -> atomic ints,
+    //                   - Write a scan to compute idxPtr in O(log(n))
+
+    /* Aliases for readability */
+    proc _array.indPtr ref return this.dom.startIdx;
+    proc _array.indices ref return this.dom.idx;
+
+    const (M, K1) = A.shape,
+          (K2, N) = B.shape;
+    type idxType = ADom.idxType;
+    var mask: [1..N] idxType;
+    indPtr[1] = 1;
+    var nnz = 1: idxType;
+
+    // Rows of C
+    for i in 1..M {
+      var row_nnz = 0;
+      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      // Row pointers of A
+      for jj in Arange {
+        // Column index of A
+        const j = A.indices[jj];
+        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        // Row pointers of B
+        for kk in Brange {
+          // Column index of B
+          var k = B.indices[kk];
+          if mask[k] != i {
+            mask[k] = i;
+            row_nnz += 1;
+          }
+        }
+      }
+
+      nnz = nnz + row_nnz;
+      indPtr[i+1] = nnz;
     }
+  }
 
-    /* Accumulate nonzeros in SPA */
-    proc scatter(const value, const pos) {
-      if this.b[pos] == 0 {
-        this.w[pos] = value;
-        this.b[pos] = true;
-        this.ls.push_back(pos);
-      } else {
-        this.w[pos] += value;
+  /* Populate indices and data */
+  proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref indices, ref data) {
+    // TODO: Parallelize - next, sums -> task-private stacks
+
+    /* Aliases for readability */
+    proc _array.indPtr ref return this.dom.startIdx;
+    proc _array.indices ref return this.dom.idx;
+
+    type idxType = ADom.idxType;
+
+    const (M, K1) = A.shape,
+          (K2, N) = B.shape;
+
+    const cols = {1..N};
+
+    var next: [cols] idxType = -1,
+        sums: [cols] eltType;
+
+    var nnz = 1;
+
+    for i in 1..M {
+      var head = 0:idxType,
+          length = 0:idxType;
+
+      // Maps row index (i) -> nnz index of A
+      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      for jj in Arange {
+        // Non-zero column index of A for row i
+        const j = A.indices[jj];
+        const v = A.data[jj];
+
+        // Maps row index (j) -> nnz index of B
+        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        for kk in Brange {
+          // Non-zero column index of B for row j
+          const k = B.indices[kk];
+
+          sums[k] += v*B.data[kk];
+
+          // push k to stack
+          if next[k] == -1 {
+            next[k] = head;
+            head = k;
+            length += 1;
+          }
+        }
+      }
+
+      // Recounting is faster than accessing 'nnz in indPtr[i]..indPtr[i+1]-1'
+      for 1..length {
+        indices[nnz] = head;
+        data[nnz] = sums[head];
+
+        nnz += 1;
+
+        // pop next k off stack
+        const temp = head;
+        head = next[head];
+
+        // clear stack as we traverse
+        next[temp] = -1;
+        sums[temp] = 0;
+      }
+    }
+  }
+
+
+  /* Sort CS array indices */
+  private proc sortIndices(ref A: [?Dom] ?eltType) where isCSArr(A) {
+    use Sort;
+
+    const (M, N) = A.shape;
+
+    proc _array.indPtr ref return this.dom.startIdx;
+    proc _array.indices ref return this.dom.idx;
+    type idxType = A.indices.eltType;
+
+    var temp: [1..A.indices.size] (idxType, eltType);
+    temp = for (idx, datum) in zip(A.indices, A.data) do (idx, datum);
+
+    for i in 1..M {
+      const rowStart = A.indPtr[i],
+            rowEnd = A.indPtr[i+1]-1;
+      if rowEnd - rowStart > 0 {
+        insertionSort(temp[rowStart..rowEnd]);
       }
     }
 
-    proc gather(ref C: [?Cdom], i) {
-      use Sort;
-
-      const nzcur = C.IR[i];
-      var nzi = 0;
-      sort(this.ls);
-
-      for idx in this.ls {
-        if nzcur + nzi  > C.JC.size then break;
-        C.JC[nzcur+nzi] = idx;
-        C.NUM[nzcur+nzi] = w[idx];
-        Cdom._value.nnz += 1;
-        nzi += 1;
-      }
-      return nzi;
+    for i in temp.domain {
+      (A.indices[i], A.data[i]) = temp[i];
     }
   }
 
