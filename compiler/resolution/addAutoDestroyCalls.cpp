@@ -153,7 +153,7 @@ static void gatherIgnoredVariablesForYield(
    Yet, it needs to be autoDestroyed at the end of the block.
    For that to happen, we add it to 'scope'. */
 static void addFSindexVarToScope(AutoDestroyScope* scope, ForallStmt* forall) {
-  VarSymbol* idx = forall->singleInductionVar();
+  VarSymbol* idx = parIdxVar(forall);
   if (isAutoDestroyedVariable(idx)) {
     INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
     scope->variableAdd(idx);

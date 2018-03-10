@@ -1464,34 +1464,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
 // (see protoIteratorClass())
 // This function takes a pointer to an iterator and fills in those types.
 void lowerIterator(FnSymbol* fn) {
-/* wass - we take care of that at the point when the iterator is inlined
-  1st version:
-
-  // We may have created some clones during callDestructors
-  // (see doNotTransformTheParallelIterator()). Those must
-  // have been inlined by lowerForallStmtsInline() and so
-  // can be removed.
-  // (Otherwise they are weird w.r.t. iteratorInfo and IR/IC.)
-  if (fn->iteratorInfo == NULL) {
-    // Have all they uses been lowered?
-    INT_ASSERT(fn->firstSymExpr() == NULL);
-    fn->defPoint->remove();
-    return;
-  }
-*/
-/* wass - we take care of that at the point when the iterator is inlined
-   2nd version:
-
-  // Most parallel iterators have been inlined and are no longer relevant.
-  //
-  // BTW among those are the ones we may have created during callDestructors
-  // (see doNotTransformTheParallelIterator()). They iterators are weird
-  // in that their iteratorInfo==NULL and IR/IC point to their clone source.
-  if(fn->firstSymExpr() == NULL) {
-    fn->defPoint->remove();
-    return;
-  }
-*/
   SET_LINENO(fn);
   Vec<BaseAST*> asts;
   Type* yieldedType = removeRetSymbolAndUses(fn);

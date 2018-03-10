@@ -141,7 +141,6 @@ GenRet ForallStmt::codegen() {
 }
 
 Expr* ForallStmt::getFirstExpr() {
-//wass  printf("fs %d   >>> fIterVars.head %d\n", this->id, fIterVars.head->id);
   return fIterVars.head->getFirstExpr();
 }
 
@@ -232,8 +231,8 @@ bool isForallLoopBody(Expr* expr) {
   return false;
 }
 
-// valid after addParIdxVarsAndRestruct()
-// wass inline?
+// Return the index variable of the parallel loop.
+// Valid after addParIdxVarsAndRestruct().
 VarSymbol* parIdxVar(const ForallStmt* fs) {
   return fs->singleInductionVar();
 }

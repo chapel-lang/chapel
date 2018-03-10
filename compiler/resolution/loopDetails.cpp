@@ -638,13 +638,13 @@ void gatherLoopDetails(ForallStmt* fs,
   }
 
   INT_ASSERT(isLeader ==
-             !strcmp(fs->singleInductionVar()->name, "chpl_followThis"));
+             !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
 
   isForall = true;
   detailsVector.clear();
 
   {
-//wass todo factor our shared code with the other gatherLoopDetails()?
+    // Todo: factor our shared code with the other gatherLoopDetails()?
     // Handle forall loops
 
     // It could be:
@@ -656,7 +656,7 @@ void gatherLoopDetails(ForallStmt* fs,
     {
       IteratorDetails detailsSA;
       detailsSA.iterable = fs->iteratedExpressions().head;
-      detailsSA.index = fs->singleInductionVar();
+      detailsSA.index = parIdxVar(fs);
       detailsSA.iteratorClass = NULL;
       detailsSA.iterator = toCallExpr(detailsSA.iterable)->resolvedFunction();
 
@@ -699,7 +699,7 @@ void gatherLoopDetails(ForallStmt* fs,
       }
 
       leaderDetails.iterable = detailsVector[0].iterable;
-      leaderDetails.index = fs->singleInductionVar();
+      leaderDetails.index = parIdxVar(fs);
       leaderDetails.iteratorClass = NULL;
       leaderDetails.iterator = toCallExpr(
             fs->iteratedExpressions().head)->resolvedFunction();

@@ -333,23 +333,6 @@ static void addCloneOfDB(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
 
 /////////// expandYield ///////////
 
-// Clone and return the index variable for use in the cloned body.
-// Wass after the body is simplified, can inline it back into expandYield.
-//
-static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
-                                   SymbolMap& map)
-{
-  // There is only one idx var because all zippering has been lowered away.
-  VarSymbol* origIdxVar = parIdxVar(EV->forall);
-  INT_ASSERT(origIdxVar && map.get(origIdxVar) == NULL); //wass remove at end
-
-  // copy() also performs map.put(origIdxVar, cloneIdxVar).
-  // Does not affect EV->svar2clonevar.
-  VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
-
-  return cloneIdxVar;
-}
-
 // Replace 'yield' with a clone of the forall loop body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
@@ -362,7 +345,8 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
   map.copy(EV->svar2clonevar);
 
   // This adds (original idxVar -> cloneIdxVar) to 'map'.
-  VarSymbol* cloneIdxVar = setupCloneIdxVar(EV, yieldCall, map);
+  // There is only one idx var because all zippering has been lowered away.
+  VarSymbol* cloneIdxVar = parIdxVar(EV->forall)->copy(&map);
   yieldCall->insertBefore(new DefExpr(cloneIdxVar));
 
   Expr* yieldExpr = yieldCall->get(1)->remove();
