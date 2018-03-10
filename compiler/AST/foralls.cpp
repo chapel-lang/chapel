@@ -829,7 +829,7 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 }
 
 static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
-  VarSymbol* leadIdxCopy = parIdxVar(pfs); // vass ????
+  VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
   if (CallExpr* buildTup = toCallExpr(iterExpr)) {
     INT_ASSERT(buildTup->isNamed("_build_tuple"));
@@ -1164,7 +1164,6 @@ void static populateIterRecSetup(ForallStmt* fs)
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
   holder->insertAtTail(initIterRec);
   holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-//VASS  holder->insertAtTail("'move'(%S, iteratorIndex(%S))", parIdx, parIter);
   holder->insertAtTail("_freeIterator(%S)", parIter);
 
   // This may not resolve if postponed until lowerIterators.

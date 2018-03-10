@@ -234,6 +234,7 @@ bool isForallLoopBody(Expr* expr) {
 }
 
 // valid after addParIdxVarsAndRestruct()
+// wass inline when yesLI()
 VarSymbol* parIdxVar(const ForallStmt* fs) {
   if (fs->yesLI()) return fs->singleInductionVar();
   DefExpr* def = toDefExpr(fs->loopBody()->body.head);
