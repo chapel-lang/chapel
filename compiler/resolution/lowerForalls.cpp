@@ -261,16 +261,13 @@ public:
   ForallStmt* const forall;
   FnSymbol* const parIter; // wass needed?
   SymbolMap& svar2clonevar;
-  TaskFnCopyMap& taskFnCopies;  // like in expandBodyForIteratorInline()
   ExpandVisitor* parentVis;
   bool breakOnYield; // wass for debugging
   // wass we may want to stash parIdxVar(forall) in a field
 
-  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg,
-                SymbolMap& map, TaskFnCopyMap& taskFnCopiesArg);
+  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg, SymbolMap& map);
 
-  ExpandVisitor(ExpandVisitor* parentEV,
-                SymbolMap& map);
+  ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
 
   virtual bool enterCallExpr(CallExpr* node) {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -298,11 +295,10 @@ public:
 
 // constructor for the outer level
 ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
-                             SymbolMap& map, TaskFnCopyMap& taskFnCps) :
+                             SymbolMap& map) :
   forall(fs),
   parIter(parIterFn),
   svar2clonevar(map),
-  taskFnCopies(taskFnCps),
   parentVis(NULL),
   breakOnYield(false)
 {
@@ -314,7 +310,6 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
   forall(parentEV->forall),
   parIter(parentEV->parIter),
   svar2clonevar(map),
-  taskFnCopies(parentEV->taskFnCopies),
   parentVis(NULL),
   breakOnYield(false)
 {
@@ -606,7 +601,7 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
   // that needs to be done there is to lower its ForallStmts, if any.
   // That will be done when lowerForallStmtsInline() gets to them.
   // They are guaranteed to come later because we just created them
-  // when doing loopBody->copy().
+  // when doing loopBody->copy(), so added at the end of gForallStmts.
 }
 
 
@@ -625,11 +620,8 @@ So we need to mimick that here. Otherwise we miss copy-construction
 from the actual into the formal.
 */
 static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
-                                    SymbolMap& map, ShadowVarSymbol* SI,
-                                    bool expandClone) {
-  if (!expandClone)
-    return; // not modifying cloneTaskFn
-
+                                    SymbolMap& map, ShadowVarSymbol* SI)
+{
   // This record must be present and contain the eFormal - see addArgAndMap().
   SymbolMapElem* e = map.get_record(SI);
   ArgSymbol* eFormal = toArgSymbol(e->value);
@@ -670,30 +662,21 @@ static Symbol* eActualOrRef(Expr* ref, ShadowVarSymbol* svar, Symbol* eActual)
 static void addArgAndMap(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                          int numOrigActuals, SymbolMap& iMap,
                          SymbolMap& map, ShadowVarSymbol* svar,
-                         bool expandClone, int ix, Symbol* mappee = NULL)
+                         int ix, Symbol* mappee = NULL)
 {
   Symbol* eActual = iMap.get(svar);   // 'e' for "extra" (i.e. newly added)
   callToTFn->insertAtTail(eActualOrRef(callToTFn, svar, eActual));
 
-  if (expandClone) {
-    ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual, /*nested:*/false);
-    cloneTaskFn->insertFormalAtTail(eFormal);
-    map.put(mappee ? mappee : svar, eFormal);
-  }
-  else {
-    ArgSymbol* eFormal = cloneTaskFn->getFormal(numOrigActuals+ix);
-    if (eFormal->hasFlag(FLAG_REF_TO_IMMUTABLE))
-      // Ensure this flag is correct for all calls. See newExtraFormal().
-      INT_ASSERT(eActual->isConstValWillNotChange() ||
-                 eActual->hasFlag(FLAG_REF_TO_IMMUTABLE));
-  }
+  ArgSymbol* eFormal = newExtraFormal(svar, ix, eActual, /*nested:*/false);
+  cloneTaskFn->insertFormalAtTail(eFormal);
+  map.put(mappee ? mappee : svar, eFormal);
 }
 
 static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
                                   Expr* aInit, Expr* aFini,
                                   int numOrigAct, SymbolMap& iMap,
                                   SymbolMap& map, ShadowVarSymbol* svar,
-                                  bool expandClone, int ix) {
+                                  int ix) {
   SET_LINENO(svar);
   switch (svar->intent)
   {
@@ -703,21 +686,21 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
     case TFI_IN:          // in intents
     case TFI_CONST_IN:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
-                   map, svar, expandClone, ix);
-      addFormalTempSIifNeeded(cloneTaskFn, aInit, map, svar, expandClone);
+                   map, svar, ix);
+      addFormalTempSIifNeeded(cloneTaskFn, aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
       break;
 
     case TFI_REF:         // ref intents
     case TFI_CONST_REF:
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
-                   map, svar, expandClone, ix);
+                   map, svar, ix);
       // no init/deinit
       break;
 
     case TFI_REDUCE_OP:   // reduction op class
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
-                   map, svar, expandClone, ix, svar->outerVarSym());
+                   map, svar, ix, svar->outerVarSym());
       addDefAndMap(aInit, map, svar, createCurrRP(svar));
       addCloneOfIB(aInit, map, svar);
       addCloneOfDB(aFini, map, svar);
@@ -738,40 +721,29 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
 
 static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskFn)
 {
-if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
-
-  FnSymbol* cloneTaskFn = EV->taskFnCopies.get(taskFn);
-  bool expandClone = false;
   bool addErrorArgToCall = false;
   Expr *aInit=NULL, *aFini=NULL;
 
-  if (cloneTaskFn == NULL) {
-    // Follow the cloning steps in expandBodyForIteratorInline().
+  // Follow the cloning steps in expandBodyForIteratorInline().
+  // No need for taskFnCopies.
 
-    // This holds because we flatten everything right away.
-    // We need it so that we can place the def of 'fcopy' anywhere
-    // while preserving correct scoping of its SymExprs.
-    INT_ASSERT(isGlobal(taskFn));
+  // This holds because we flatten everything right away.
+  // We need it so that we can place the def of 'fcopy' anywhere
+  // while preserving correct scoping of its SymExprs.
+  INT_ASSERT(isGlobal(taskFn));
 
-    cloneTaskFn = taskFn->copy();
-    EV->taskFnCopies.put(taskFn, cloneTaskFn);
+  FnSymbol* cloneTaskFn = taskFn->copy();
 
-    if (!preserveInlinedLineNumbers)
-      reset_ast_loc(cloneTaskFn, callToTFn);
+  if (!preserveInlinedLineNumbers)
+    reset_ast_loc(cloneTaskFn, callToTFn);
 
-    // Note that 'fcopy' will likely get a copy of 'body',
-    // so we need to preserve correct scoping of its SymExprs.
-    callToTFn->insertBefore(new DefExpr(cloneTaskFn));
+  // Note that 'cloneTaskFn' will likely get a copy of forall loop body,
+  // so we need to preserve correct scoping of its SymExprs.
+  callToTFn->insertBefore(new DefExpr(cloneTaskFn));
 
-    // We will need to process the clone.
-    expandClone = true;
-    aInit = new CallExpr("aInit"); cloneTaskFn->insertAtHead(aInit);
-    aFini = new CallExpr("aFini"); cloneTaskFn->insertIntoEpilogue(aFini);
-    // Should aFini go into the epilogue or before epilogue?
-  }
-  else {
-    INT_ASSERT(false); // wass if we never hit the cache, remove the complexity
-  }
+  aInit = new CallExpr("aInit"); cloneTaskFn->insertAtHead(aInit);
+  aFini = new CallExpr("aFini"); cloneTaskFn->insertIntoEpilogue(aFini);
+  // Should aFini go into the epilogue or before epilogue?
 
   callToTFn->baseExpr->replace(new SymExpr(cloneTaskFn));
 
@@ -783,28 +755,24 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
   for_shadow_vars(svar, temp, EV->forall)
     expandShadowVarTaskFn(cloneTaskFn, callToTFn, aInit, aFini,
-                          numOrigActuals, iMap, map, svar, expandClone, ++ix);
+                          numOrigActuals, iMap, map, svar, ++ix);
 
-  if (expandClone) {
-    aInit->remove();
-    aFini->remove();
-    // wass was: taskFnClonesToFlatten.add(cloneTaskFn);
+  aInit->remove();
+  aFini->remove();
 
-    ExpandVisitor taskFnVis(EV, map);
-    taskFnVis.parentVis = EV->parentVis;
+  ExpandVisitor taskFnVis(EV, map);
+  taskFnVis.parentVis = EV->parentVis;
 
-    // Traverse recursively.
-    cloneTaskFn->body->accept(&taskFnVis);
+  // Traverse recursively.
+  cloneTaskFn->body->accept(&taskFnVis);
 
-    fixupErrorHandlingExits(cloneTaskFn->body, addErrorArgToCall);
+  fixupErrorHandlingExits(cloneTaskFn->body, addErrorArgToCall);
+  if (addErrorArgToCall)
+    addDummyErrorArgumentToCall(callToTFn);
 
-    if (addErrorArgToCall)
-      addDummyErrorArgumentToCall(callToTFn);
-
-    // If we don't flatten it right away, we get non-global taskFns
-    // in expandTaskFn(). That may cause issues with scoping.
-    flattenNestedFunction(cloneTaskFn);
-  }
+  // If we don't flatten it right away, we get non-global taskFns
+  // in expandTaskFn(). That may cause issues with scoping.
+  flattenNestedFunction(cloneTaskFn);
 }
 
 /////////// expandForall ///////////
@@ -1213,9 +1181,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   fs->insertAfter(iwrap);
   ianch->replace(ibody);
 
-  TaskFnCopyMap   taskFnCopies;
   SymbolMap       map;
-  ExpandVisitor   outerVis(fs, parIterFn, map, taskFnCopies);
+  ExpandVisitor   outerVis(fs, parIterFn, map);
   expandTopLevel(&outerVis, iwrap, ibody);
   outerVis.parentVis = parentVis;
 
