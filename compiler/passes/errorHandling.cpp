@@ -196,6 +196,10 @@ private:
                             BlockStmt*     thenBlock,
                             BlockStmt*     elseBlock = NULL);
   CallExpr* haltExpr       (VarSymbol*     error, bool tryBang);
+  void setupForThrowingLoop(Stmt* node,
+                            LabelSymbol* handlerLabel,
+                            BlockStmt* body);
+  void exitForallLoop(Stmt* node);
 
   ErrorHandlingVisitor();
 };
@@ -430,9 +434,24 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
   return true;
 }
 
-// wass factor our enter+exit For/Forall Loop
-// "When a ForLoop represents a forall loop no longer, we can undo the
-// refactoring by inlining these into enterForallStmt/exitForallStmt.
+// setupForThrowingLoop() and exitForallLoop() factor out the handling
+// of a ForLoop and a ForallStmt.
+// When a ForLoop can no longer represent a forall loop, we can undo the
+// refactoring by inlining them into enterForallStmt()/exitForallStmt().
+
+void ErrorHandlingVisitor::setupForThrowingLoop(Stmt* node,
+                                                LabelSymbol* handlerLabel,
+                                                BlockStmt* body)
+{
+  VarSymbol*   errorVar     = newTemp("error", dtError);
+  errorVar->addFlag(FLAG_ERROR_VARIABLE);
+
+  node->insertBefore(new DefExpr(errorVar));
+  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
+
+  TryInfo info = {errorVar, handlerLabel, NULL, node, body};
+  tryStack.push(info);
+}
 
 bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
   if (!node->isLoweredForallLoop())
@@ -451,15 +470,7 @@ bool ErrorHandlingVisitor::enterForLoop(ForLoop* node) {
     node->insertAfter(new DefExpr(b));
   }
 
-  VarSymbol*   errorVar     = newTemp("error", dtError);
-  errorVar->addFlag(FLAG_ERROR_VARIABLE);
-  LabelSymbol* handlerLabel = node->breakLabelGet();
-
-  node->insertBefore(new DefExpr(errorVar));
-  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
-
-  TryInfo info = {errorVar, handlerLabel, NULL, node, node};
-  tryStack.push(info);
+  setupForThrowingLoop(node, node->breakLabelGet(), node);
 
   return true;
 }
@@ -481,23 +492,13 @@ bool ErrorHandlingVisitor::enterForallStmt(ForallStmt* node) {
     node->insertAfter(new DefExpr(b));
   }
 
-  VarSymbol*   errorVar     = newTemp("error", dtError);
-  errorVar->addFlag(FLAG_ERROR_VARIABLE);
-  LabelSymbol* handlerLabel = node->fErrorHandlerLabel;
-
-  node->insertBefore(new DefExpr(errorVar));
-  node->insertBefore(new CallExpr(PRIM_MOVE, errorVar, gNil));
-
-  TryInfo info = {errorVar, handlerLabel, NULL, node, node->loopBody()};
-  tryStack.push(info);
+  setupForThrowingLoop(node, node->fErrorHandlerLabel, node->loopBody());
 
   return true;
 }
 
-void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
-
-  if (!node->isLoweredForallLoop())
-    return;
+void ErrorHandlingVisitor::exitForallLoop(Stmt* node)
+{
   if (tryStack.empty())
     return;
 
@@ -528,35 +529,15 @@ void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
   info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
 }
 
+void ErrorHandlingVisitor::exitForLoop(ForLoop* node) {
+  if (!node->isLoweredForallLoop())
+    return;
+
+  exitForallLoop(node);
+}
+
 void ErrorHandlingVisitor::exitForallStmt(ForallStmt* node) {
-  if (tryStack.empty())
-    return;
-
-  TryInfo& info = tryStack.top();
-  if (info.throwingForall == NULL)
-    return;
-
-  tryStack.pop();
-
-  SET_LINENO(node);
-
-  BlockStmt* handler = new BlockStmt();
-  // Always wrap errors from foralls in a TaskErrors
-  VarSymbol* err = info.errorVar;
-  VarSymbol* normErr = newTemp("forall_error", dtError);
-  handler->insertAtTail(new DefExpr(normErr));
-
-  handler->insertAtTail(new CallExpr(PRIM_MOVE, normErr,
-                                     new CallExpr(gChplForallError, err)));
-
-  if (!tryStack.empty()) {
-    handler->insertAtTail(setOuterErrorAndGotoHandler(normErr));
-  } else if (outError != NULL) {
-    handler->insertAtTail(setOutGotoEpilogue(normErr));
-  } else {
-    handler->insertAtTail(haltExpr(normErr, false));
-  }
-  info.handlerLabel->defPoint->insertAfter(errorCond(err, handler));
+  exitForallLoop(node);
 }
 
 bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
