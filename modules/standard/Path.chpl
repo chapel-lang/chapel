@@ -434,7 +434,7 @@ proc file.realPath(): string throws {
    :rtype: `string`
   */
 
-  proc normPath(name: string): string{
+  proc normPath(name: string): string {
 
   if name.isEmptyString() {
       return name;
@@ -449,12 +449,12 @@ proc file.realPath(): string throws {
   if result.find("/./") then
     result = result.replace("/./", "/", -1);
     
-  if result.find("/../"){
+  if result.find("/../") {
 
     var i = result.find("/../");
     var j = i-1;
 
-    while(result(j) != "/"){
+    while(result(j) != "/") {
 
       //checks if "/./../" is present 
       if result.this(j) == "." then
@@ -465,13 +465,12 @@ proc file.realPath(): string throws {
 
     result = result.replace(result[j..i+3], "/", -1);
     
-    
   }
 
   const len: int = result.length ;
 
   //removes "/" if present at the end of string if "./" not present at end
-  if (result.this(len) == "/" && len-1>0 && result.this(len-1) != "." ){
+  if (result.this(len) == "/" && len-1>0 && result.this(len-1) != "." ) {
     result = result[1..len-1];
   }
   
