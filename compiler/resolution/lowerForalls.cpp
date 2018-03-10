@@ -27,9 +27,6 @@
 #include "view.h" //wass
 #include "wellknown.h"
 
-static bool verb = false; //wass
-static int breakOnExpand = false; //wass
-
 /*
 At this point we are mostly not concerned about const-ness,
 so we may be blurring const and non-const intents.
@@ -91,12 +88,6 @@ static void insertInitialization(BlockStmt* destBlock,
 }
 static void insertDeinitialization(BlockStmt* destBlock,
                                    Symbol* destVar) {
-//  if (!strncmp(destVar->type->symbol->name, "_array(", 7)) gdbShouldBreakHere(); //wass
-// wass: or do it in walkForallBlocks()
-/* wass was:
-  if (FnSymbol* autoDestroy = getAutoDestroy(destVar->type))
-    destBlock->insertAtTail(new CallExpr(autoDestroy, destVar));
-*/
   // NB if we use PRIM_CALL_DESTRUCTOR, we end up with
   // deinit() calls for shadow variables of class types.
   destBlock->insertAtTail("chpl__autoDestroy(%S)", destVar);
@@ -225,9 +216,6 @@ public:
   ForallStmt* const forall;
   FnSymbol* const parIter; // wass needed?
   SymbolMap& svar2clonevar;
-  ExpandVisitor* parentVis;
-  bool breakOnYield; // wass for debugging
-  // wass we may want to stash parIdxVar(forall) in a field
 
   ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg, SymbolMap& map);
 
@@ -262,9 +250,7 @@ ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
                              SymbolMap& map) :
   forall(fs),
   parIter(parIterFn),
-  svar2clonevar(map),
-  parentVis(NULL),
-  breakOnYield(false)
+  svar2clonevar(map)
 {
 }
 
@@ -273,27 +259,12 @@ ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
                              SymbolMap& map) :
   forall(parentEV->forall),
   parIter(parentEV->parIter),
-  svar2clonevar(map),
-  parentVis(NULL),
-  breakOnYield(false)
+  svar2clonevar(map)
 {
 }
 
 
 /////////// misc helpers ///////////
-
-//wass
-static void showLOFS(ForallStmt* fs, ExpandVisitor* parentVis,
-                     const char* msg, bool showParent) {
-  if (!verb) return;
-  printf("%s  %d", msg, fs->id);
-  if (showParent) {
-    printf("  %s", debugLoc(fs));
-//    if (parentVis) printf("   parentVis %d", parentVis->forall->id);
-//    else           printf("   -parentVis");
-  }
-  printf("\n");
-}
 
 // Remove the return statement and the def of 'ret'. Return 'ret'.
 // See also removeRetSymbolAndUses().
@@ -311,113 +282,6 @@ static Symbol* removeParIterReturn(BlockStmt* cloneBody, bool moreRefs) {
   return retsym;
 }
 
-#if 0 //wass - replaced with copyBody()
-// Cf. copyBody() for inlineFunctions().
-// 'anchor' is the AST that the new body will replace.
-static BlockStmt* copyParIterBody(FnSymbol* iterFn, CallExpr* iterCall,
-                                  Expr* anchor)
-{
-  SET_LINENO(iterCall);
-
-  SymbolMap  map;
-
-  BlockStmt* retval = NULL;
-
-  for_formals_actuals(formal, actual, iterCall) {
-    Symbol* sym = toSymExpr(actual)->symbol();
-
-    // Replace an immediate actual with a temp var "just in case"
-    if (sym->isImmediate() == true) {
-      VarSymbol* tmp  = newTemp("inlineImm", sym->type);
-
-      actual->replace(new SymExpr(tmp));
-
-      anchor->insertBefore(new DefExpr(tmp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, tmp, actual));
-
-      sym = tmp;
-    }
-    if (formal->isRef() && !sym->isRef()) {
-      // When passing a value to a reference argument,
-      // create a reference temporary so that nothing in the
-      // inlined code changes meaning.
-
-      VarSymbol* tmp  = newTemp(astr("i_", formal->name),
-                                formal->type);
-      DefExpr*   def  = new DefExpr(tmp);
-      CallExpr*  move = NULL;
-
-      tmp->qual = QUAL_REF;
-      move      = new CallExpr(PRIM_MOVE,
-                               tmp,
-                               new CallExpr(PRIM_SET_REFERENCE, sym));
-
-      anchor->insertBefore(def);
-      anchor->insertBefore(move);
-
-      sym = tmp;
-    }
-
-    map.put(formal, sym);
-  }
-
-  retval = iterFn->body->copy(&map);
-
-  if (preserveInlinedLineNumbers == false) {
-    reset_ast_loc(retval, iterCall);
-  }
-
-  removeParIterReturn(retval, false);
-
-  return retval;
-}
-#endif
-#if 0 //wass need this?
-
-/* Do we want to make this available to all compiler code?
-MF says "It should:
- * check isUserDefinedRecord and possibly is POD
- * error if a user-defined record has no auto copy
- * use PRIM_MOVE for non-user defined records
- * use autoCopy if one is defined, even for if isUserDefinedRecord returned false
-Todo: should it support the case of initializing a 'ref' variable?
-Todo: what if 'valType' is a ref type, ex. for RI accumulation state?
-*/
-//
-// Initialize 'dest' from 'init', which can be either a symbol or an expr.
-// Insert the initialization code before 'anchor'.
-//
-static void insertCopyInitialization(Symbol* dest, Type* valType,
-                                     BaseAST* init, Expr* anchor)
-{
-  if (Expr* initExpr = toExpr(init))
-    INT_ASSERT(!initExpr->inTree()); // caller responsibility
-
-  if (FnSymbol* autoCopyFn = getAutoCopy(valType)) {    
-    Symbol* initSym = toSymbol(init);
-    if (initSym == NULL) {
-      VarSymbol* actemp = new VarSymbol("actemp", valType);
-      anchor->insertBefore(new DefExpr(actemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, actemp, init));
-      initSym = actemp;
-    }
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, dest,
-                           new CallExpr(autoCopyFn, initSym)));
-  } else {
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, dest, init));
-  }
-}
-
-//
-// Insert deinit() if needed, after 'anchor'.
-//
-static void insertDeinitialization(Symbol* dest, Type* valType, Expr* anchor)
-{
-  if (FnSymbol* autoDestroy = getAutoDestroy(valType))
-    anchor->insertAfter(new CallExpr(autoDestroy, dest));
-}
-#endif
-
 
 /////////// standardized svar actions ///////////
 
@@ -426,17 +290,6 @@ static VarSymbol* createCurrSI(ShadowVarSymbol* SI) {
   VarSymbol* currSI = new VarSymbol(SI->name, SI->type);
   currSI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
   return currSI;
-
-#if 0 //wass was
-          aInit->insertBefore(new DefExpr(bodyvar));
-
-          // Initialize it from the outer var.
-          insertCopyInitialization(bodyvar, bodyvar->type,
-                                   svar->outerVarSym(), aInit);
-
-          // Deinitialize it at the end.
-          insertDeinitialization(bodyvar, bodyvar->type, aFini);
-#endif
 }
 
 static VarSymbol* createCurrRP(ShadowVarSymbol* RP) {
@@ -449,34 +302,6 @@ static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   VarSymbol* currAS = new VarSymbol(astr("AS_", AS->name), AS->type);
   currAS->qual = QUAL_VAL;
   return currAS;
-
-#if 0 //wass - was:
-  aInit->insertBefore(new DefExpr(acState));
-  insertDeinitialization(acState, acState->type, aFini);
-
-  map.put(svar, acState);
-
-  aInit->insertBefore(svar->initBlock()->copy(&map));
-  aFini->insertAfter(svar->deinitBlock()->copy(&map));
-#endif
-
-#if 0 //wass - was:
-  ShadowVarSymbol* rOp = toShadowVarSymbol(svar->outerVarSym());
-  Symbol*     globalOp = rOp->outerVarSym(); // aka map.get(rOp)
-
-  // acState.init(globalOp.identity);  (paren-less function)
-  // TODO stash away the FnSymbol for identity at resolution.
-  VarSymbol*  stemp = newTempConst("rsvTemp", svar->type);
-  aInit->insertBefore(new DefExpr(stemp));
-  aInit->insertBefore("'move'(%S, identity(%S,%S))",
-                      stemp, gMethodToken, globalOp);
-  // What if this is a ref type?
-  insertCopyInitialization(acState, acState->type, stemp, aInit);
-
-  // globalOp.accumulate(acState); acState.deinit();
-  aFini->insertAfter("accumulate(%S,%S,%S)",
-                     gMethodToken, globalOp, acState);
-#endif
  }
 
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
@@ -496,10 +321,6 @@ static void addCloneOfIB(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar) {
   aInit->insertBefore(copyIB);
   // Let's drop the BlockStmt wrapper, to simplify the AST.
   copyIB->flattenAndRemove();
-/*wass was:  
-  for_alist(stmt, IB->body)
-    aInit->insertBefore(stmt->copy(&map));
-*/
 }
 
 static void addCloneOfDB(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
@@ -507,11 +328,6 @@ static void addCloneOfDB(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
   aFini->insertAfter(copyDB);
   // Let's drop the BlockStmt wrapper, to simplify the AST.
   copyDB->flattenAndRemove();
-/*wass was:
-  BlockStmt* DB = svar->deinitBlock();
-  for_alist_backward(stmt, DB->body)
-    aFini->insertAfter(stmt->copy(&map));
-*/
 }
 
 
@@ -528,9 +344,8 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
   INT_ASSERT(origIdxVar && map.get(origIdxVar) == NULL); //wass remove at end
 
   // copy() also performs map.put(origIdxVar, cloneIdxVar).
+  // Does not affect EV->svar2clonevar.
   VarSymbol* cloneIdxVar = origIdxVar->copy(&map);
-  INT_ASSERT(map.get(origIdxVar) == cloneIdxVar); //wass remove at end
-  // wass confirming: this does not affect EV->svar2clonevar
 
   return cloneIdxVar;
 }
@@ -538,11 +353,6 @@ static VarSymbol* setupCloneIdxVar(ExpandVisitor* EV, CallExpr* yieldCall,
 // Replace 'yield' with a clone of the forall loop body.
 static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 {
-if (verb) //wass
-  printf("   expandYield %d %s   fs %d\n", yieldCall->id, debugLoc(yieldCall),
-         EV->forall->id);
-if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
-
   // Todo: update EV->svar2clonevar in-place, then reset to NULL,
   // to avoid map creation+destruction cost.
 
@@ -570,9 +380,6 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
 
 
 /////////// expandTaskFn ///////////
-
-// wass was: static Vec<FnSymbol*> taskFnClonesToFlatten;
-//wass static Vec<FnSymbol*> inlinedIteratorsToRemove;
 
 /*
 At this point in compilation, in certain cases an in-intent formal is
@@ -725,7 +532,6 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
   aFini->remove();
 
   ExpandVisitor taskFnVis(EV, map);
-  taskFnVis.parentVis = EV->parentVis;
 
   // Traverse recursively.
   cloneTaskFn->body->accept(&taskFnVis);
@@ -743,9 +549,6 @@ static void expandTaskFn(ExpandVisitor* EV, CallExpr* callToTFn, FnSymbol* taskF
 
 static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 {
-  showLOFS(fs, EV, " { expandForall", true);
-if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
-
   ForallStmt*     pfs  = EV->forall;
   SymbolMap&      iMap = EV->svar2clonevar; // incoming "current map"
   SymbolMap       map;                      // "current map" for fs body
@@ -762,16 +565,11 @@ if (EV->forall->id == breakOnResolveID || breakOnExpand) gdbShouldBreakHere();
     // copy() also performs map.put(srcSV, newSV)
     ShadowVarSymbol* newSV = srcSV->copy(&map);
 
-    if (Symbol* newOVar = newSV->outerVarSym()) // wass remove after testing
-      INT_ASSERT(newOVar == iMap.get(srcSV));
-
     fs->shadowVariables().insertAtTail(new DefExpr(newSV));
   }
 
   // Traverse recursively.
   fs->loopBody()->accept(&forallVis);
-
-  showLOFS(fs, EV, " } expandForall", false);
 }
 
 
@@ -855,7 +653,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   SET_LINENO(parIterCall);
 
   // Check for non-ref intents.
-  SymbolMap sv2ov; // wass empty: sv2ov.size() NB - not a real size; which is sv2ov.i
+  SymbolMap sv2ov;
   bool gotNonRefs = false;
   for_shadow_vars(svar, temp, fs) {
     if (svar->intent == TFI_REF || svar->intent == TFI_CONST_REF)
@@ -898,12 +696,6 @@ static void handleRecursiveIter(ForallStmt* fs,
   parIterDef->insertAfter(parIdxDef->remove());
   parIdxDef->insertAfter(new CallExpr(PRIM_MOVE, iterRec, parIterCall->remove()));
 
-/*wass was:
-  PARBlock->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-  PARBlock->insertAtTail(new DeferStmt(new CallExpr("_freeIterator", parIter)));
-  PARBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", parIdx, parIter);
-*/
-
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
   // not parIterCall, ex.
   //  library/standard/FileSystem/filerator/bradc/walk-par.chpl
@@ -911,26 +703,9 @@ static void handleRecursiveIter(ForallStmt* fs,
 
   PARBlock->insertAtTail(PARBody);
 
-/* wass not needed
-  resolveBlockStmt(PARBlock);
-  PARBlock->flattenAndRemove(); // into where 'fs' used to be
-*/
-
   BlockStmt* userBody = userLoop(fs);
-  if (sv2ov.size() > 0)  // wass the size of a Map is given by sv2ov.i
+  if (sv2ov.size() > 0)  // actually, the size of a Map is given by sv2ov.i
     update_symbols(userBody, &sv2ov);
-
-#if 1 //wass - induction variables no more!
-  INT_ASSERT(fs->inductionVariables().length == 0);
-#else
-  while (Expr* def = fs->inductionVariables().tail)
-    userBody->insertAtHead(def->remove());
-#endif
-
-#if 0 //wass - no more shadow variables in loopBody!
-  while (Expr* svdef = fs->shadowVariables().tail)
-    fs->loopBody()->insertAtHead(svdef->remove());
-#endif
 
   // wass improve clarity of what is flattened into what
   // relying on this assertion:
@@ -1034,27 +809,6 @@ static void handleIteratorForwarders(ForallStmt* fs,
   // until we reach an iterFn that is a parallel iterator.
 }
 
-/* wass
-// If this calls a parallel iterator, return that.
-// Otherwise find the parallel iterator being invoked,
-// modify the callee to reference it, and return it.
-static FnSymbol* getParIterAndConvertForwarders(CallExpr* parIterCall) {
-  FnSymbol* destFn = parIterCall->resolvedFunction();
-  if (destFn->hasFlag(FLAG_INLINE_ITERATOR))
-    return destFn;
-
-  // Other things may behave differently.
-  INT_ASSERT(!strncmp(destFn->name, "_iterator_for_loopexpr", 22));
-  destFn = getTheIteratorFnFromIR(destFn->retType);
-  INT_ASSERT(destFn->hasFlag(FLAG_INLINE_ITERATOR));
-
-  // Update parIterCall.
-  SET_LINENO(parIterCall);
-  parIterCall->baseExpr->replace(new SymExpr(destFn));
-  return destFn;
-}
-*/
-
 
 /////////// main driver ///////////
 
@@ -1079,8 +833,6 @@ Implementation considerations:
 */
 // wass see if this is no longer needed
 static void removeDeadAndFlatten() {
-  Vec<FnSymbol*> taskFnsToFlatten;
-
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
@@ -1088,26 +840,15 @@ static void removeDeadAndFlatten() {
     {
       if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
         // Got a parallel iterator or task function with no uses. Remove.
-        // We have no business dealing with the other "unused" case.
         fn->defPoint->remove();
     }
-    else if (!isGlobal(fn))
-    {
-      INT_ASSERT(isTaskFun(fn));
-      taskFnsToFlatten.add(fn);
-    }
+    else
+      INT_ASSERT(isGlobal(fn)); // we flatten all task functions right away
   }
-
-  INT_ASSERT(taskFnsToFlatten.n == 0); // wass - we flatten them right away now
-  if (taskFnsToFlatten.n > 0)
-    flattenNestedFunctions(taskFnsToFlatten);
 }
 
-// wass - need 'parentVis' ?
 static void lowerOneForallStmt(ForallStmt* fs) {
-  ExpandVisitor* parentVis = NULL; //wass - dummy
-  showLOFS(fs, parentVis, "{ lonfs", true);
-  if (fs->id == breakOnResolveID) gdbShouldBreakHere(); //wass // optionally: set breakOnExpand = true
+  if (fs->id == breakOnResolveID) gdbShouldBreakHere();
 
   // If this fails, need to filter out those FSes.
   INT_ASSERT(fs->inTree() && fs->getFunction()->isResolved());
@@ -1148,7 +889,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, parIterFn, map);
   expandTopLevel(&outerVis, iwrap, ibody);
-  outerVis.parentVis = parentVis;
 
   // Traverse recursively.
   ibody->accept(&outerVis);
@@ -1159,9 +899,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   if (parIterFn->firstSymExpr() == NULL)
     // We have inlined all uses. So, remove the iterator as well.
     parIterFn->defPoint->remove();
-
-//wass
-  showLOFS(fs, parentVis, "} lonfs", false);
 }
 
 ///////////
