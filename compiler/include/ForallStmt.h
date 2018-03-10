@@ -66,18 +66,10 @@ public:
   int numIteratedExprs()  const;
   int numShadowVars()     const;
 
-  VarSymbol*        singleInductionVar()    const;
   Expr*             firstIteratedExpr()     const;
-  ShadowVarSymbol*  getShadowVar(int index) const;
 
   int        reduceIntentIdx(Symbol* var);
   void       setNotZippered();
-
-  // wass this is temporary; we really want all ForallStmts handled this way
-  // "li" = "lower during lowerIterators"
-//wass  bool yesLI() const { return ((ForallStmt*)this)->getModule()->modTag == MOD_USER; }
-  bool yesLI() const { return true; }
-  bool noLI() const { return !yesLI(); }
 
 private:
   bool           fZippered;
@@ -126,8 +118,6 @@ inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
 inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
 inline int   ForallStmt::numShadowVars()     const { return fShadowVars.length;}
 inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
-inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
-  { return toShadowVarSymbol(toDefExpr(fShadowVars.get(index))->sym); }
 
 #define for_shadow_var_defs(SVD,TEMP,FS)    \
   for_alist(TEMP,(FS)->shadowVariables())   \
@@ -139,13 +129,9 @@ inline ShadowVarSymbol* ForallStmt::getShadowVar(int index) const
       if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
 
 // helpers
-bool isForallIterExpr(Expr* expr);
-bool isForallLoopBody(Expr* expr);
+bool        isForallIterExpr(Expr* expr);
+bool        isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
-
-// used for lowering ForallStmt and forall intents
-VarSymbol* parIdxVar(const ForallStmt* fs);
-VarSymbol* parIdxCopyVar(const ForallStmt* fs);
-BlockStmt* userLoop(const ForallStmt* fs);
+VarSymbol*  parIdxVar(ForallStmt* fs);
 
 #endif

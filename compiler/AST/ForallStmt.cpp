@@ -172,15 +172,6 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
 // helpers
 /////////////////////////////////////////////////////////////////////////////
 
-// Get the index variable. Ensure it is the only one.
-VarSymbol* ForallStmt::singleInductionVar() const {
-  INT_ASSERT(fIterVars.length == 1);
-  DefExpr* ivdef = toDefExpr(fIterVars.head);
-  VarSymbol* ivsym = toVarSymbol(ivdef->sym);
-  INT_ASSERT(ivsym != NULL);
-  return ivsym;
-}
-
 // If 'var' is listed in this's with-clause with a reduce intent,
 // return its position in the with-clause, otherwise return -1.
 // Used in preFold for PRIM_REDUCE_ASSIGN, set up in normalize.
@@ -233,8 +224,12 @@ bool isForallLoopBody(Expr* expr) {
 
 // Return the index variable of the parallel loop.
 // Valid after addParIdxVarsAndRestruct().
-VarSymbol* parIdxVar(const ForallStmt* fs) {
-  return fs->singleInductionVar();
+VarSymbol* parIdxVar(ForallStmt* fs) {
+  INT_ASSERT(fs->inductionVariables().length == 1);
+  DefExpr* ivdef = toDefExpr(fs->inductionVariables().head);
+  VarSymbol* ivsym = toVarSymbol(ivdef->sym);
+  INT_ASSERT(ivsym != NULL);
+  return ivsym;
 }
 
 LabelSymbol* ForallStmt::continueLabel() {
