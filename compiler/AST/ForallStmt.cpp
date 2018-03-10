@@ -238,15 +238,6 @@ VarSymbol* parIdxVar(const ForallStmt* fs) {
 }
 
 // ditto
-// wass needed?
-VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
-  DefExpr* def = toDefExpr(fs->loopBody()->body.head->next);
-  VarSymbol* result = toVarSymbol(def->sym);
-  INT_ASSERT(result && !strcmp(result->name, "chpl__parIdxCopy"));
-  return result;
-}
-
-// ditto
 // wass inline ?!
 BlockStmt* userLoop(const ForallStmt* fs) {
   return fs->loopBody();

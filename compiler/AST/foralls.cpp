@@ -777,18 +777,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
-/*wass
-  // Extract leadIdxCopy and its type.
-
-  leadIdxCopy->defPoint->replace(new DefExpr(followIdx));
-
-  // This is how it was for parIdxCopyVar() before our changes:
-  pfs->loopBody()->insertAtHead(leadIdxCopy->defPoint);
-
-// wass cf noLI:
-//VarSymbol* leadIdxCopy     = parIdxCopyVar(pfs);
-*/
-
   preFS->insertAtTail(new DefExpr(iterRec));
   preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   Expr* toNormalize = preFS->body.tail;
