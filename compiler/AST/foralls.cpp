@@ -763,10 +763,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   BlockStmt*    userBody = toBlockStmt(pfs->loopBody()->body.tail->remove());
   INT_ASSERT(pfs->loopBody()->body.empty());
 
-  // wass formerly 'resultBlock'
   BlockStmt* preFS           = new BlockStmt();
   // cf in build.cpp: new ForLoop(leadIdx, leadIter, NULL, zippered)
-  BlockStmt* leadForLoop     = pfs->loopBody(); //wass was: new BlockStmt();
+  BlockStmt* leadForLoop     = pfs->loopBody();
 
   VarSymbol* iterRec         = newTemp("chpl__iterLF"); // serial iter, LF case
   VarSymbol* followIter      = newTemp("chpl__followIter");
@@ -838,13 +837,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   } else {
     leadForLoop->insertAtTail(followBlock);
   }
-
-#if 0 //wass
-  // Must happen before any resolving ex. resolveBlockStmt below.
-  // Otherwise functions defined within the forall body are not visible.
-  // Ex. functions/vass/ref-intent-bug-2big.chpl
-  pfs->loopBody()->insertAtTail(leadForLoop);
-#endif
 
   pfs->insertBefore(preFS);
   normalize(toNormalize); // requires inTree()
@@ -950,11 +942,7 @@ void static populateIterRecSetup(ForallStmt* fs)
 
   holder->insertAtTail(new DefExpr(iterRec));
   holder->insertAtTail(new DefExpr(parIter));
-/* wass needed?
-  DefExpr* parIdxDef = parIdx->defPoint;
-  INT_ASSERT(parIdxDef == fs->loopBody()->body.head);
-  holder->insertAtTail(parIdxDef->remove());
-*/
+
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
   holder->insertAtTail(initIterRec);
   holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
@@ -979,10 +967,6 @@ void lowerForallStmts() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
-/*wass
-      void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
-      lowerForallIntentsAtResolution(fs);
-*/
     populateIterRecSetup(fs);
   }
 }

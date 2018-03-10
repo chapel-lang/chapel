@@ -214,10 +214,9 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
 class ExpandVisitor : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
-  FnSymbol* const parIter; // wass needed?
   SymbolMap& svar2clonevar;
 
-  ExpandVisitor(ForallStmt* fs, FnSymbol* parIterArg, SymbolMap& map);
+  ExpandVisitor(ForallStmt* fs, SymbolMap& map);
 
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
 
@@ -246,19 +245,15 @@ public:
 };
 
 // constructor for the outer level
-ExpandVisitor::ExpandVisitor(ForallStmt* fs, FnSymbol* parIterFn,
-                             SymbolMap& map) :
+ExpandVisitor::ExpandVisitor(ForallStmt* fs, SymbolMap& map) :
   forall(fs),
-  parIter(parIterFn),
   svar2clonevar(map)
 {
 }
 
 // constructor for a nested situation
-ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV,
-                             SymbolMap& map) :
+ExpandVisitor::ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map) :
   forall(parentEV->forall),
-  parIter(parentEV->parIter),
   svar2clonevar(map)
 {
 }
@@ -796,7 +791,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
 static void clearUpRefsInShadowVars() {
   forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
     if (svar->inTree())
-      svar->removeSupportingReferences();
+      INT_ASSERT(false); // was: svar->removeSupportingReferences(); // wass - remove removeSupportingReferences()
 }
 
 /*
@@ -810,8 +805,8 @@ Implementation considerations:
 * The way flattenNestedFunctions() works as of this writing,
   it is faster to flatten all task fns at once, rather than one by one.
 */
-// wass see if this is no longer needed
-static void removeDeadAndFlatten() {
+// Or we could do it for all iterators in or near removeUncalledIterators().
+static void removeDeadIters() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
@@ -866,7 +861,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   ianch->replace(ibody);
 
   SymbolMap       map;
-  ExpandVisitor   outerVis(fs, parIterFn, map);
+  ExpandVisitor   outerVis(fs, map);
   expandTopLevel(&outerVis, iwrap, ibody);
 
   // Traverse recursively.
@@ -894,7 +889,7 @@ void lowerForallStmtsInline()
 
   clearUpRefsInShadowVars();
 
-  removeDeadAndFlatten();
+  removeDeadIters();
 
   gdbShouldBreakHere(); //wass
 }

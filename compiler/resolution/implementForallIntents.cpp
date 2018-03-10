@@ -2208,7 +2208,7 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
       svar->qual = QUAL_REF;
       svar->type = dtUnknown;
     }
-/* wass TPV todo
+/* TPV todo
     else if (svar->isTPV())
     {
       IntentTag tiIntent = INTENT_BLANK;
