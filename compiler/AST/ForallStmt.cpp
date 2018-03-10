@@ -116,9 +116,8 @@ void ForallStmt::verify() {
   INT_ASSERT(!fLoopBody->byrefVars);
   INT_ASSERT(!fLoopBody->forallIntents);
 
-  // Currently ForallStmt are gone during resolve().
-  // The ones that are yesLI() are lowered away during lowerIterators().
-  INT_ASSERT((yesLI() && !iteratorsLowered) || !resolved);
+  // ForallStmts are lowered away during lowerIterators().
+  INT_ASSERT(!iteratorsLowered);
 }
 
 void ForallStmt::accept(AstVisitor* visitor) {
@@ -234,16 +233,13 @@ bool isForallLoopBody(Expr* expr) {
 }
 
 // valid after addParIdxVarsAndRestruct()
-// wass inline when yesLI()
+// wass inline?
 VarSymbol* parIdxVar(const ForallStmt* fs) {
-  if (fs->yesLI()) return fs->singleInductionVar();
-  DefExpr* def = toDefExpr(fs->loopBody()->body.head);
-  VarSymbol* result = toVarSymbol(def->sym);
-  INT_ASSERT(result && !strcmp(result->name, "chpl__parIdx"));
-  return result;
+  return fs->singleInductionVar();
 }
 
 // ditto
+// wass needed?
 VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
   DefExpr* def = toDefExpr(fs->loopBody()->body.head->next);
   VarSymbol* result = toVarSymbol(def->sym);
@@ -252,15 +248,9 @@ VarSymbol* parIdxCopyVar(const ForallStmt* fs) {
 }
 
 // ditto
-// wass inline when yesLI()
+// wass inline ?!
 BlockStmt* userLoop(const ForallStmt* fs) {
-  // inTree() is workaround for calls to userLoop in lowerForallStmts()
-  // after 'fs' has been removed from the tree. It should not
-  // be needed after we eliminate lowerForallStmts() altogether.
-  if (((ForallStmt*)fs)->inTree() && fs->yesLI()) return fs->loopBody();
-  BlockStmt* ul = toBlockStmt(fs->loopBody()->body.tail);
-  INT_ASSERT(ul);
-  return ul;
+  return fs->loopBody();
 }
 
 LabelSymbol* ForallStmt::continueLabel() {

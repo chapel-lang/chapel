@@ -2165,23 +2165,6 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
   // If this assert fails, we need to handle this case.
   INT_ASSERT(!(intent & INTENT_FLAG_OUT));
 
- if (toForallStmt(svar->defPoint->parentExpr)->noLI()) {
-  if (intent & INTENT_FLAG_CONST) {
-    svar->addFlag(FLAG_CONST);
-    svar->addFlag(FLAG_REF_VAR);
-    svar->qual = QUAL_CONST_REF;
-    if (intent == INTENT_CONST_IN)
-      // Enables canForwardValue(), ex.
-      //   release/examples/benchmarks/hpcc/fft.chpl
-      svar->addFlag(FLAG_REF_TO_IMMUTABLE);
-    if (!ovar->isConstant())
-      svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-  } else {
-    svar->addFlag(FLAG_REF_VAR);
-    svar->qual = QUAL_REF;
-  }
- } else {
-  // wass here: yesLI()
   if (intent & INTENT_FLAG_REF)
   {
     if (intent & INTENT_FLAG_CONST) {
@@ -2206,7 +2189,6 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
   }
   if (svar->isConstant() && !ovar->isConstant())
     svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
- }
 }
 
 static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowVars)
@@ -2357,95 +2339,6 @@ static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
 
 /////////////////////////////////////////////////////////////////////////////
 
-static void addActualsToParCallNew(ForallStmt* fs, CallExpr* parCall)
-{
-  Expr* parStmt = parCall->getStmtExpr();
-
-  for_shadow_vars(svar, temp, fs)
-  {
-    Symbol* ovar = svar->outerVarSym();
-    Symbol* globalOp = svar->reduceGlobalOp;
-    Symbol* actual = NULL;
-
-    // Pass 'ovar' into the parallel iterator.
-    //
-    // The intent of the corresponding iterator formal is set appropriately
-    // in extendLeaderNew() / propagateExtraLeaderArgsNew().
-
-    switch (svar->intent)
-    {
-      // by reference
-      case TFI_REF:
-      case TFI_CONST_REF:
-        actual = ovar;
-        break;
-
-      // by value
-      case TFI_IN:
-      case TFI_CONST_IN:
-        if (ovar->isRef()) {
-          // If it is a reference, dereference it. E.g. m-lsms.chpl (-nl 1?)
-          // or test/parallel/forall/vass/intents-all-int.chpl.
-          VarSymbol* deref = newTemp(ovar->name, ovar->type->getValType());
-          parStmt->insertBefore(new DefExpr(deref));
-          parStmt->insertBefore("'move'(%S, 'deref'(%S))", deref, ovar);
-          actual = deref;
-        } else {
-          actual = ovar;
-        }
-        break;
-
-      case TFI_REDUCE:
-        actual = globalOp;
-        break;
-
-      case TFI_DEFAULT:
-      case TFI_CONST:
-        // These should not appear here because all intents must be concrete
-        // by now. An abstract intent would not let us distinguish between
-        // by-ref and by-val, which we need for adjustments done above.
-      case TFI_IN_OVAR:
-      case TFI_REDUCE_OP:
-        // We have not created svars with this intent yet.
-        INT_ASSERT(false);
-        break;
-    }
-
-    parCall->insertAtTail(actual);
-  }
-}
-
-static void extractFromLeaderYieldNew(Expr* ref, int ix,
-                                   Symbol* dest, Symbol* leadIdx) {
-  insertExtractFromYield(ref, ix, dest, leadIdx);
-}
-
-static void detupleLeadIdxNew(ForallStmt* fs,
-                           Symbol* leadIdxSym, Symbol* leadIdxCopySym,
-                           Expr* ref, int numLeaderActuals)
-{
-  int ix = 0;
-
-  // first, leadIdxCopy
-  if (numLeaderActuals > 0)
-    extractFromLeaderYieldNew(ref, ++ix, leadIdxCopySym, leadIdxSym);
-
-  for_shadow_vars(svar, temp, fs)
-    extractFromLeaderYieldNew(ref, ++ix, svar, leadIdxSym);
-}
-
-static void detupleLeadIdxNew(ForallStmt* fs, int numLeaderActuals)
-{
-  VarSymbol* leadIdx     = parIdxVar(fs);
-  VarSymbol* leadIdxCopy = parIdxCopyVar(fs);
-  BlockStmt* fbody       = userLoop(fs);
-
-  if (numLeaderActuals == 0)
-    fbody->insertBefore("'move'(%S, %S)", leadIdxCopy, leadIdx);
-
-  detupleLeadIdxNew(fs, leadIdx, leadIdxCopy, fbody, numLeaderActuals);
-}
-
 // Same as replaceVarUses() in createTaskFunctions.
 static void replaceVarUsesNew(BlockStmt* body, SymbolMap& outer2shadow) {
   std::vector<SymExpr*> symExprs;
@@ -2461,12 +2354,6 @@ static void replaceVarUsesNew(BlockStmt* body, SymbolMap& outer2shadow) {
       if (se->symbol() == oldSym)
         se->setSymbol(newSym);
   }
-}
-
-static void addParIdxCopy(ForallStmt* fs) {
-  VarSymbol* parIdx     = parIdxVar(fs);
-  VarSymbol* parIdxCopy = parIdxCopyVar(fs);
-  parIdxCopy->defPoint->insertAfter("'move'(%S,%S)", parIdxCopy, parIdx);
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2504,19 +2391,9 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
     pruneShadowVars(fs, forallBody1, outer2shadow, numInitialVars,
                     numShadowVars, needToReplace); // updates needToReplace
 
-  if (fs->numShadowVars() == 0)
-  {
-   if (fs->noLI())
-    addParIdxCopy(fs);
-  }
-  else
-  {
-   if (fs->noLI()) {
-    addActualsToParCallNew(fs, parCall);
-    detupleLeadIdxNew(fs, fs->numShadowVars());
-   }
-    if (needToReplace)
-      replaceVarUsesNew(forallBody1, outer2shadow);
+  if (needToReplace) {
+    INT_ASSERT(fs->numShadowVars() > 0); // wass remove after testing
+    replaceVarUsesNew(forallBody1, outer2shadow);
   }
 }
 
@@ -2545,9 +2422,4 @@ void implementForallIntentsNew(ForallStmt* fs, CallExpr* parCall)
   implementForallIntents1New(fs, parCall);
 
   checkForNonIterator(parCall);
-
- if (fs->noLI()) {
-  if (fs->numShadowVars() > 0)
-   implementForallIntents2New(fs, parCall);
- }
 }
