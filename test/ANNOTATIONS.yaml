@@ -300,6 +300,10 @@ all:
   03/01/18:
     - text: system update
       config: 16 node XC
+  03/03/18:
+    - text: add error handling to casts from string #8547
+      config: chapcs
+
 
 AllCompTime:
   11/09/14:
