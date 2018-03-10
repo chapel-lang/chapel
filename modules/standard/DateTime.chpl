@@ -273,7 +273,6 @@ module DateTime {
     this.chpl_year = year;
     this.chpl_month = month;
     this.chpl_day = day;
-    super.init();
   }
 
   /* A `date` object representing the current day */
@@ -546,7 +545,6 @@ module DateTime {
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
     this.chpl_tzinfo = tzinfo;
-    super.init();
   }
 
   pragma "no doc"
@@ -870,7 +868,6 @@ module DateTime {
     // Testcase: test/library/standard/DateTime/testTimezone.chpl
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
-    super.init();
   }
 
   /* Return a `datetime` value representing the current time and date */
@@ -1458,7 +1455,6 @@ module DateTime {
 
     if this.days > 999999999 then
       halt("Overflow: days > 999999999");
-    super.init();
   }
 
   /* Create a `timedelta` from a given number of seconds */

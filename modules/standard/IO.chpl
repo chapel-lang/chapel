@@ -1291,10 +1291,12 @@ proc file.check() throws {
 /* Return a syserr through out error if a file is invalid */
 proc file.check(out error:syserr) {
   var err: syserr = ENOERR;
-  try! {
+  try {
     check();
   } catch e: SystemError {
     err = e.err;
+  } catch {
+    err = EINVAL;
   }
   error = err;
 }
@@ -1523,9 +1525,6 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
-:arg error: optional argument to capture an error code. If this argument
-            is not provided and an error is encountered, this function
-            will halt with an error message.
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg iomode: specify whether to open the file for reading or writing and
@@ -1550,10 +1549,10 @@ to create a channel to actually perform I/O operations
 
 */
 
-proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle(), url:string=""):file {
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""): file throws {
 
-  proc parse_hdfs_path(path:string) {
+  proc parse_hdfs_path(path:string) throws {
     // hdfs://<host>:<port>/<path>
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
@@ -1586,7 +1585,7 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     try {
       port = port_str: int;
     } catch {
-      error = EINVAL;
+      throw SystemError.fromSyserr(EINVAL, "invalid port");
     }
 
     var file_path = "";
@@ -1595,90 +1594,61 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
   }
 
   var local_style = style;
-  var ret:file;
+  var error: syserr = ENOERR;
+  var ret: file;
   ret.home = here;
   if (url != "") {
     if (url.startsWith("hdfs://")) { // HDFS
-      var (host, port, file_path) = parse_hdfs_path(url);
+      var (host, port, file_path) = try parse_hdfs_path(url);
       var fs:c_void_ptr;
-      error = hdfs_connect(fs, host.c_str(), port);
-      if error then try! ioerror(error, "Unable to connect to HDFS", host);
-      /* TODO: This code is an alternative to the above line, which breaks the
-         function's original invariant of not generating errors within itself.
-         This is better style and should still work, but we can't be certain
-         until we test it and aren't capable of testing HDFS at this point.
-         When further work with HDFS is done, please test and edit this function
-         to behave appropriately by removing the above line and replacing it
-         with the following three. (2015-02-04, lydia)
 
-      if error then return ret;
-      // connect fully specifies the error message so all we'd need to do is
-      // return.
-      */
-      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
-      hdfs_do_release(fs);
-      if error then try! ioerror(error, "Unable to open file in HDFS", url);
-      /* TODO: The above line breaks the function's original invariant of not
-         generating errors within itself.  It is better style to remove this
-         line.  Doing so should still work, but we can't be certain until we
-         test it and aren't capable of testing HDFS at this point.  When
-         further work with HDFS is done, please test and edit this function to
-         behave appropriately by removing the above line (2015-02-04, lydia)
+      defer hdfs_do_release(fs);
 
-      */
+      error = hdfs_connect(fs, host.c_str(), port);
+      if error then
+        try ioerror(error, "Unable to connect to HDFS", host);
+
+      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      if error then
+        try ioerror(error, "Unable to open file in HDFS", url);
+
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then try! ioerror(error, "Unable to open URL", url);
-      /* TODO: The above line breaks the function's original invariant of not
-         generating errors within itself.  It is better style to remove this
-         line.  Doing so should still work, but we can't be certain until we
-         test it and aren't capable of regularly testing curl at this point.
-         When further work with auxiliary file systems are done, please test and
-         edit this function to behave appropriately by removing the above line
-         (2015-02-04, lydia)
+      if error then
+        try ioerror(error, "Unable to open URL", url);
 
-      */
     } else {
-      try! ioerror(ENOENT:syserr, "Invalid URL passed to open");
-      /* TODO: This code is an alternative to the above line, which breaks the
-         function's original invariant of not generating errors within itself.
-         This is better style and should still work, but we can't be certain
-         until we test it and aren't capable of testing HDFS at this point.
-         When further work with HDFS is done, please test and edit this function
-         to behave appropriately by removing the above line and replacing it
-         with the following one. (2015-02-04, lydia)
-
-      error = ENOENT:syserr; // Invalid URL provided
-      */
+      try ioerror(ENOENT:syserr, "Invalid URL passed to open");
     }
   } else {
     if (path == "") then
-      try! ioerror(ENOENT:syserr, "in open: Both path and url were blank");
-    /* TODO: The above two lines breaks the function's original invariant of not
-       generating errors within itself.  It is better style to remove these
-       lines.  Doing so should still work, but we can't be certain until we
-       test it and aren't capable of regularly testing auxiliary file systems at
-       this point.  When further work with auxiliary file systems are done,
-       please test and edit this function to behave appropriately by removing
-       the above two lines. (2015-02-04, lydia)
+      try ioerror(ENOENT:syserr, "in open: Both path and url were blank");
 
-    */
     error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
+    if error then
+      try ioerror(error, "in open", path);
   }
 
   return ret;
 }
 
-// documented in open(error=) version
+// documented in open() throws version
 pragma "no doc"
-proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle(), url:string=""):file throws {
-  var err:syserr = ENOERR;
-  var ret = open(err, path, mode, hints, style, url);
-  if err then try ioerror(err, "in open", path);
+proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""):file {
+  var err: syserr = ENOERR;
+  var ret: file;
+  try {
+    ret = open(path, mode, hints, style, url);
+  } catch e: SystemError {
+    err = e.err;
+  } catch {
+    err = EINVAL;
+  }
+  error = err;
   return ret;
 }
 
@@ -2468,10 +2438,12 @@ proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=false, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var reader = fl.reader(error=error, kind, locking, start, end, hints, fl_style);
@@ -2541,10 +2513,12 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=true, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var writer = fl.writer(error=error, kind, locking, start, end, hints, fl_style);
@@ -3410,7 +3384,7 @@ iter channel.lines() {
   // Set the iostyle back to original state
   this._set_style(saved_style);
 
-  try! this.unlock();
+  this.unlock();
 }
 
 
@@ -3484,12 +3458,13 @@ proc stringify(const args ...?k):string {
     return str;
   } else {
     // otherwise, write it using the I/O system.
-
     try! {
       // Open a memory buffer to store the result
       var f = openmem();
+      defer try! f.close();
 
       var w = f.writer(locking=false);
+      defer try! w.close();
 
       w.write((...args));
 
@@ -3497,18 +3472,12 @@ proc stringify(const args ...?k):string {
 
       var buf = c_malloc(uint(8), offset+1);
 
-      // you might need a flush here if
-      // close went away
-      w.close();
-
       var r = f.reader(locking=false);
+      defer try! r.close();
 
       r.readBytes(buf, offset:ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
-      r.close();
-
-      f.close();
 
       return new string(buf, offset, offset+1, owned=true, needToCopy=false);
     }

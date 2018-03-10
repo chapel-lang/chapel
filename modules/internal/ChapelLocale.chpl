@@ -103,7 +103,6 @@ module ChapelLocale {
     pragma "no doc"
     proc init(parent: locale) {
       this.parent = parent;
-      super.init();
     }
 
     //------------------------------------------------------------------------{

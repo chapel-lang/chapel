@@ -47,7 +47,6 @@ record GenericRecord {
 
   proc init(type t) {
     this.eltType = t;
-    super.init();
   }
 
   proc chpl__promotionType() type {

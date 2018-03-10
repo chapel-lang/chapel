@@ -9,7 +9,6 @@ record Foo {
   proc init(param pVal) {
     p = pVal;
     x = p + 2;
-    super.init();
   }
 }
 

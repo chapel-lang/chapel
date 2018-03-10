@@ -4,7 +4,6 @@ module A {
 
     proc init(a: int) {
       this.a = a + 1;
-      super.init();
     }
   }
 }
