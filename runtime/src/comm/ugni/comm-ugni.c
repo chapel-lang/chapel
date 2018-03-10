@@ -4090,7 +4090,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 
 #define PPDI_NEXT(_i) (((_i) + 1) & (PPDESCS_CNT - 1))
 
-    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = { 0 };
+    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = {{ 0 }};
     static int last_ppdi = 0;
     int ppdi;
 
