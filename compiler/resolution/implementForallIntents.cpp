@@ -2360,7 +2360,7 @@ static void replaceVarUsesNew(BlockStmt* body, SymbolMap& outer2shadow) {
 
 static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   SymbolMap            outer2shadow;
-  BlockStmt*           forallBody1 = userLoop(fs);
+  BlockStmt*           forallBody1 = fs->loopBody();
   int                  numShadowVars = 0;
   bool                 needToReplace = false;
   SET_LINENO(forallBody1);

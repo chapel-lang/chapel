@@ -237,12 +237,6 @@ VarSymbol* parIdxVar(const ForallStmt* fs) {
   return fs->singleInductionVar();
 }
 
-// ditto
-// wass inline ?!
-BlockStmt* userLoop(const ForallStmt* fs) {
-  return fs->loopBody();
-}
-
 LabelSymbol* ForallStmt::continueLabel() {
   if (fContinueLabel == NULL) {
     // We are extra-cautious here, to guard against the potential

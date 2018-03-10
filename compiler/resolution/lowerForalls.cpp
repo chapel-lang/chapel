@@ -687,16 +687,11 @@ static void handleRecursiveIter(ForallStmt* fs,
 
   PARBlock->insertAtTail(PARBody);
 
-  BlockStmt* userBody = userLoop(fs);
   if (sv2ov.size() > 0)  // actually, the size of a Map is given by sv2ov.i
-    update_symbols(userBody, &sv2ov);
-
-  // wass improve clarity of what is flattened into what
-  // relying on this assertion:
-  INT_ASSERT(userBody == fs->loopBody());
+    update_symbols(fs->loopBody(), &sv2ov);
 
   // Transfer the loop body from fs to PARBody.
-  while (Expr* stmt = userBody->body.head)
+  while (Expr* stmt = fs->loopBody()->body.head)
     PARBody->insertAtTail(stmt->remove());
 
   // Todo: what to do with this in the presence of error handling?
