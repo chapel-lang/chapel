@@ -847,7 +847,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   }
 
   // Place to put pre- and post- code.
-  SET_LINENO(fs); // wass what should it be?
+  SET_LINENO(fs);
   CallExpr*  ianch = new CallExpr("anchor");
   BlockStmt* iwrap = new BlockStmt(ianch);
 

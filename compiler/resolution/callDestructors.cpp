@@ -199,16 +199,6 @@ static inline bool isParIterOrForwarder(FnSymbol* fn) {
   return false;
 }
 
-/*wass
-static bool isForallIterableCallee(SymExpr* se) {
-  if (CallExpr* call = toCallExpr(se->parentExpr))
-    if (se == call->baseExpr)
-      if (isForallIterExpr(call))
-        return true;
-  return false;
-}
-*/
-
 static CallExpr* callingExpr(SymExpr* targetSE) {
   if (CallExpr* call = toCallExpr(targetSE->parentExpr))
     if (targetSE == call->baseExpr)
@@ -306,7 +296,6 @@ static bool doNotTransformForForall(FnSymbol* fn) {
     SET_LINENO(fn);
     FnSymbol* clone = fn->copy();
     fn->defPoint->insertAfter(new DefExpr(clone));
-//printf("fn %d  clone %d\n", fn->id, clone->id); //wass
 
     for_SymbolSymExprs(use, fn)
       if (feedsIntoForallIterableExpr(fn, use)) {
@@ -323,8 +312,6 @@ static bool doNotTransformForForall(FnSymbol* fn) {
 
 ReturnByRef::TFkind ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 {
-extern int breakOnResolveID; //wass
-if (fn->id == breakOnResolveID) gdbShouldBreakHere(); //wass
   bool retval = false;
   bool asgn   = false;
 
@@ -670,8 +657,6 @@ void ReturnByRef::transform()
   for (size_t i = 0; i < mCalls.size(); i++)
   {
     CallExpr* call   = mCalls[i];
-extern int breakOnResolveID; //wass
-if (call->id == breakOnResolveID) gdbShouldBreakHere(); //wass
     Expr*     parent = call->parentExpr;
 
     if (CallExpr* parentCall = toCallExpr(parent))

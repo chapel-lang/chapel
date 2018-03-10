@@ -6494,10 +6494,7 @@ static Expr* resolveTypeOrParamExpr(Expr* expr) {
 ************************************** | *************************************/
 
 void resolveBlockStmt(BlockStmt* blockStmt) {
-if (blockStmt->id == breakOnResolveID) debugSummary(blockStmt), gdbShouldBreakHere(); //wass
   for_exprs_postorder(expr, blockStmt) {
-    if (expr->id == breakOnResolveID) gdbShouldBreakHere();
-if (blockStmt->id == breakOnResolveID) debugSummary(expr); //wass
     expr = resolveExpr(expr);
 
     if (tryFailure == true) {
