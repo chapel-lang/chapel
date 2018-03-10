@@ -36,13 +36,7 @@ so we may be blurring const and non-const intents.
 We DO need to preserve some const properties to enable optimizations.
 */
 
-typedef Map<FnSymbol*,FnSymbol*> TaskFnCopyMap; //wass need this?
-
-
 /////////// lowerForallIntentsAtResolution : RP for AS ///////////
-
-//wass
-#define lfiResolve 0
 
 static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
 {
@@ -113,14 +107,7 @@ static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* SO,
   INT_ASSERT(!SI->isRef());
 
   insertInitialization(IB, SI, SO);
-#if lfiResolve
-  resolveBlockStmt(IB);
-#endif
-
   insertDeinitialization(DB, SI);
-#if lfiResolve
-  // no need to resolve the deinit
-#endif
 }
 
 static void setupForREF(ForallStmt* fs, ShadowVarSymbol* SR, Symbol* gR,
@@ -131,33 +118,18 @@ static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
                          BlockStmt* IB, BlockStmt* DB) {
   IB->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
                    RP, gMethodToken, gOp);
-#if lfiResolve
-  resolveBlockStmt(IB);
-#endif
 
   DB->insertAtTail("chpl__reduceCombine(%S,%S)", gOp, RP);
   DB->insertAtTail("chpl__cleanupLocalOp(%S,%S)", gOp, RP); // deletes RP
-#if lfiResolve
-  resolveBlockStmt(DB);
-#endif
 }
 
 static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
                          BlockStmt* IB, BlockStmt* DB) {
   ShadowVarSymbol* RP = AS->RPforAS();
   insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
-#if lfiResolve
-  resolveBlockStmt(IB);
-#endif
 
   DB->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, RP, AS);
-#if lfiResolve
-  resolveBlockStmt(DB);
-#endif
   insertDeinitialization(DB, AS);
-#if lfiResolve
-  // no need to resolve the deinit
-#endif
 }
 
 // This should be static. Making it extern for now while it is unused.
@@ -166,14 +138,8 @@ void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
 void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
                         BlockStmt* IB, BlockStmt* DB) {
   // IB already comes from PV's declaration in the with-clause.
-#if lfiResolve
-  resolveBlockStmt(IB);
-#endif
 
   insertDeinitialization(DB, PV);
-#if lfiResolve
-  // no need to resolve the deinit
-#endif
 }
 
 
@@ -226,7 +192,6 @@ void lowerForallIntentsAtResolution(ForallStmt* fs) {
   }
 }
 
-#if !lfiResolve
 // Also need to resolve IB, DB after we have set them up above.
 void resolveShadowVarsIfNeeded(DefExpr* def); //wass to .h
 void resolveShadowVarsIfNeeded(DefExpr* def) {
@@ -243,7 +208,6 @@ void resolveShadowVarsIfNeeded(DefExpr* def) {
     resolveBlockStmt(svar->deinitBlock());
   }
 }
-#endif
 
 
 /////////// forwards ///////////
