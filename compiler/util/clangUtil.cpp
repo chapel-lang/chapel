@@ -1581,8 +1581,8 @@ void runClang(const char* just_parse_filename) {
     if (strncmp(backend_arch, "arm-", 4) == 0) {
       backend_arch += 4;
     }
-    march += CHPL_TARGET_BACKEND_ARCH;
-    if (strcmp(CHPL_TARGET_BACKEND_ARCH, "thunderx2") == 0) {
+    march += backend_arch;
+    if (strcmp(backend_arch, "thunderx2") == 0) {
       march += "t99";
     }
     args.push_back(march);
