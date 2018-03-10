@@ -632,11 +632,11 @@ static bool findStandaloneOrLeader(ForallStmt* pfs, CallExpr* iterCall)
   return gotSA;
 }
 
-static void addParIdxVarsAndRestructLI(ForallStmt* fs, bool gotSA) {
+static void addParIdxVarsAndRestruct(ForallStmt* fs, bool gotSA) {
   if (gotSA) {
     // No need to restructure anything. Leaving it as-is for simplicity.
 
-    VarSymbol* parIdx = fs->singleInductionVar();
+    VarSymbol* parIdx = parIdxVar(fs);
 
     // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
     parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
@@ -749,7 +749,7 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
   return result;
 }
 
-static void buildLeaderLoopBodyLI(ForallStmt* pfs, Expr* iterExpr) {
+static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
   if (CallExpr* buildTup = toCallExpr(iterExpr)) {
@@ -890,7 +890,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   // ex. resolving the par iter failed and 'pfs' is under "if chpl__tryToken"
   if (tryFailure == false)
   {
-    addParIdxVarsAndRestructLI(pfs, gotSA);
+    addParIdxVarsAndRestruct(pfs, gotSA);
 
     implementForallIntentsNew(pfs, iterCall);
 
@@ -904,7 +904,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
         removeOrigIterCall(origSE);
       }
     } else {
-      buildLeaderLoopBodyLI(pfs, rebuildIterableCall(pfs, iterCall, origSE));
+      buildLeaderLoopBody(pfs, rebuildIterableCall(pfs, iterCall, origSE));
     }
 
     INT_ASSERT(iterCall == pfs->firstIteratedExpr());        // still here?
