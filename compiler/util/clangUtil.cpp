@@ -1578,6 +1578,9 @@ void runClang(const char* just_parse_filename) {
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
     std::string march = "-march=";
     march += CHPL_TARGET_BACKEND_ARCH;
+    if (strcmp(CHPL_TARGET_BACKEND_ARCH, "arm-thunderx2") == 0) {
+      march += "t99";
+    }
     args.push_back(march);
   }
 
