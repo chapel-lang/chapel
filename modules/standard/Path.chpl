@@ -421,4 +421,70 @@ proc file.realPath(): string throws {
   return result;
   }
 
+  /* Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and 
+   `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
+   containing symbolic links.  Similar to :proc:`normCase`, on Windows will replace
+   forward slashes.
+
+   :arg name: a potential path to collapse, possibly destroying the meaning of the
+             path if symbolic links were included.
+   :type name: `string`
+
+   :return: the collapsed version of `name`
+   :rtype: `string`
+  */
+
+  proc normPath(name: string): string{
+
+  if name.isEmptyString() {
+      return name;
+  }
+
+  //stores the result string
+  var result = name;
+
+  if result.find("//") then
+    result = result.replace("//", "/", -1);
+
+  if result.find("/./") then
+    result = result.replace("/./", "/", -1);
+    
+  if result.find("/../"){
+
+    var i = result.find("/../");
+    var j = i-1;
+
+    while(result(j) != "/"){
+
+      //checks if "/./../" is present 
+      if result.this(j) == "." then
+        j = j-2; 
+      else 
+        j = j-1;
+    }
+
+    result = result.replace(result[j..i+3], "/", -1);
+    
+    
+  }
+
+  const len: int = result.length ;
+
+  //removes "/" if present at the end of string if "./" not present at end
+  if (result.this(len) == "/" && len-1>0 && result.this(len-1) != "." ){
+    result = result[1..len-1];
+  }
+  
+  //calls normPath till required result is not achieved
+  if(name == result) then 
+    return result;
+  
+  else 
+    result = normPath(result);
+
+  
+  return result;
+
+}
+
 }
