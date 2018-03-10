@@ -228,7 +228,6 @@ public:
       if (isTaskFun(calledFn)) {
         expandTaskFn(this, node, calledFn);
       } else if (calledFn == gChplPropagateError) {
-        void handleChplPropagateErrorCall(CallExpr* call); //wass - in .h
         handleChplPropagateErrorCall(node);
       }
     }
