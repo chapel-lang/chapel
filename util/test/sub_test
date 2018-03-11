@@ -165,6 +165,14 @@ atexit.register(elapsed_sub_test_time)
 #
 class ReadTimeoutException(Exception): pass
 
+
+def bytes_to_str(byte_string):
+    if sys.version_info[0] >= 3 and not isinstance(byte_string, str):
+        return str(byte_string, 'utf-8')
+    else:
+        return byte_string
+
+
 def SetNonBlock(stream):
     flags = fcntl.fcntl(stream.fileno(), fcntl.F_GETFL)
     flags |= os.O_NONBLOCK
@@ -298,6 +306,7 @@ def DiffFiles(f1, f2):
     p = subprocess.Popen(['diff',f1,f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    myoutput = bytes_to_str(myoutput)
     if p.returncode != 0:
         sys.stdout.write(trim_output(myoutput))
     return p.returncode
@@ -307,6 +316,7 @@ def DiffBinaryFiles(f1, f2):
     p = subprocess.Popen(['diff', '-a', f1,f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    myoutput = bytes_to_str(myoutput)
     if p.returncode != 0:
         sys.stdout.write(trim_output(myoutput))
     return p.returncode
@@ -318,6 +328,7 @@ def DiffBadFiles(f1, f2):
     p = subprocess.Popen([utildir+'/test/diff-ignoring-module-line-numbers', f1, f2],
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
+    myoutput = bytes_to_str(myoutput)
     if p.returncode != 0:
         sys.stdout.write(myoutput)
     return p.returncode
@@ -534,7 +545,7 @@ def runSkipIf(skipifName):
 #
 
 if len(sys.argv)!=2:
-    print 'usage: sub_test COMPILER'
+    print('usage: sub_test COMPILER')
     sys.exit(0)
 
 # Find the base installation
@@ -605,6 +616,7 @@ if useTimedExec:
 
 # HW platform
 platform=subprocess.Popen([utildir+'/chplenv/chpl_platform.py', '--target'], stdout=subprocess.PIPE).communicate()[0]
+platform = bytes_to_str(platform)
 platform = platform.strip()
 # sys.stdout.write('platform='+platform+'\n')
 
@@ -632,13 +644,13 @@ if os.getenv('CHPL_TEST_UNIQUIFY_EXE') != None:
     uniquifyTests = True
 
 # Get the current directory (normalize for MacOS case-sort-of-sensitivity)
-localdir = string.replace(os.path.normpath(os.getcwd()), testdir, '.')
+localdir = os.path.normpath(os.getcwd()).replace(testdir, '.')
 # sys.stdout.write('localdir=%s\n'%(localdir))
 
 if localdir.find('./') == 0:
     # strip off the leading './'
-    localdir = string.lstrip(localdir, '.')
-    localdir = string.lstrip(localdir, '/')
+    localdir = localdir.lstrip('.')
+    localdir = localdir.lstrip('/')
 # sys.stdout.write('localdir=%s\n'%(localdir))
 
 # CHPL_COMM
@@ -809,7 +821,7 @@ else:
 # Misc set up
 #
 
-testfutures=string.atoi(os.getenv('CHPL_TEST_FUTURES','0'))
+testfutures=int(os.getenv('CHPL_TEST_FUTURES','0'))
 # sys.stdout.write('testfutures=%s\n'%(testfutures))
 
 testnotests=os.getenv('CHPL_TEST_NOTESTS')
@@ -1355,7 +1367,8 @@ for testname in testsrc:
                                   execname,complog,compiler],
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
-            sys.stdout.write(p.communicate()[0])
+            out = bytes_to_str(out)
+            sys.stdout.write(out)
             sys.stdout.flush()
 
         if precomp:
@@ -1434,7 +1447,7 @@ for testname in testsrc:
         if useTimedExec:
             wholecmd = cmd+' '+' '.join(map(ShellEscape, args))
             p = subprocess.Popen([timedexec, str(comptimeout), wholecmd],
-                                 env=dict(os.environ.items() + testcompenv.items()),
+                                 env=dict(list(os.environ.items()) + list(testcompenv.items())),
                                  stdin=open(compstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -1454,7 +1467,7 @@ for testname in testsrc:
 
         else:
             p = subprocess.Popen([cmd]+args,
-                                 env=dict(os.environ.items() + testcompenv.items()),
+                                 env=dict(list(os.environ.items()) + list(testcompenv.items())),
                                  stdin=open(cmpstdin, 'r'),
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
@@ -1502,10 +1515,11 @@ for testname in testsrc:
                                          stdout=subprocess.PIPE,
                                          stderr=subprocess.STDOUT).communicate()[0]
 
+            output = bytes_to_str(output)
+
             # Sadly these scripts require an actual file
-            complogfile=file(complog, 'w')
-            complogfile.write('%s'%(output))
-            complogfile.close()
+            with open(complog, 'w') as complogfile:
+                complogfile.write('%s'%(output))
 
             if systemPrediff:
                 sys.stdout.write('[Executing system-wide prediff]\n')
@@ -1516,7 +1530,8 @@ for testname in testsrc:
                                       ' '.join(args)],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                out = bytes_to_str(p.communicate()[0])
+                sys.stdout.write(out)
                 sys.stdout.flush()
 
             if globalPrediff:
@@ -1528,7 +1543,8 @@ for testname in testsrc:
                                       ' '.join(args)],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                out = bytes_to_str(p.communicate()[0])
+                sys.stdout.write(out)
                 sys.stdout.flush()
 
             if prediff:
@@ -1540,7 +1556,8 @@ for testname in testsrc:
                                       ' '.join(args)],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
+                out = bytes_to_str(p.communicate()[0])
+                sys.stdout.write(out)
                 sys.stdout.flush()
 
 
@@ -1869,10 +1886,10 @@ for testname in testsrc:
                         if redirectin == None:
                             my_stdin = None
                         else:
-                            my_stdin=file(redirectin, 'r')
+                            my_stdin=open(redirectin, 'r')
                         test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
                         p = subprocess.Popen(test_command,
-                                            env=dict(os.environ.items() + testenv.items()),
+                                            env=dict(list(os.environ.items()) + list(testenv.items())),
                                             stdin=my_stdin,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
@@ -1917,9 +1934,9 @@ for testname in testsrc:
                         if redirectin == None:
                             my_stdin = sys.stdin
                         else:
-                            my_stdin = file(redirectin, 'r')
+                            my_stdin = open(redirectin, 'r')
                         p = subprocess.Popen([timedexec, str(timeout), wholecmd],
-                                            env=dict(os.environ.items() + testenv.items()),
+                                            env=dict(list(os.environ.items()) + list(testenv.items())),
                                             stdin=my_stdin,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
@@ -1951,9 +1968,9 @@ for testname in testsrc:
                         if redirectin == None:
                             my_stdin = None
                         else:
-                            my_stdin=file(redirectin, 'r')
+                            my_stdin=open(redirectin, 'r')
                         p = subprocess.Popen([cmd]+args,
-                                            env=dict(os.environ.items() + testenv.items()),
+                                            env=dict(list(os.environ.items()) + list(testenv.items())),
                                             stdin=my_stdin,
                                             stdout=subprocess.PIPE,
                                             stderr=subprocess.STDOUT)
