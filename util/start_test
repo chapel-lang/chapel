@@ -32,7 +32,10 @@ try:
     import argcomplete
 except ImportError:
     argcomplete = None
-import subprocess32 as subprocess
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 # PROGRAM ENTRY POINT
 def main():
@@ -58,6 +61,13 @@ def main():
     cleanup()
 
     finish()
+
+
+def check_output(*args, **kwargs):
+    out = subprocess.check_output(*args, **kwargs)
+    if sys.version_info[0] >= 3 and not isinstance(out, str):
+        out = str(out, 'utf-8')
+    return out
 
 
 def run_tests(tests):
@@ -246,7 +256,7 @@ def test_directory(test, test_type):
                 skip_file_name = os.path.normpath(skip_file_name)
                 if os.path.isfile(skip_file_name):
                     try:
-                        prune_if = subprocess.check_output(
+                        prune_if = check_output(
                                 [test_env, skip_file_name]).strip()
                         # check output and skip if true
                         if prune_if == "1" or prune_if == "True":
@@ -263,7 +273,7 @@ def test_directory(test, test_type):
                 skip_test = False
                 if os.path.isfile("SKIPIF"):
                     try:
-                        skip_test = subprocess.check_output(
+                        skip_test = check_output(
                                 [test_env, "SKIPIF"]).strip()
                         # check output and skip if true
                         if skip_test == "1" or skip_test == "True":
@@ -422,9 +432,9 @@ def clean(test=False):
         if test: # single test
             logger.write("[Starting {0} {1} {2}]"
                     .format(sub_clean, test, date_str))
-            out = subprocess.check_output([sub_clean, test])
+            out = check_output([sub_clean, test])
         else:
-            out = subprocess.check_output([sub_clean])
+            out = check_output([sub_clean])
         logger.write(out)
     except:
         logger.write("[Error: sub_clean error]")
@@ -496,7 +506,7 @@ def compiler_performance():
     # combine smaller .dat files
     try:
         logger.write("[Combining dat files now]")
-        out = subprocess.check_output([combine_comp_perf, "--tempDatDir", 
+        out = check_output([combine_comp_perf, "--tempDatDir",
             temp_dat_dir,"--elapsedTestTime", str(elapsed), "--outDir",
             comp_perf_dir])
         logger.write(out)
@@ -772,14 +782,14 @@ def set_up_general():
         logger.write("[valgrind: ON]")
         try: 
             # get first line of output
-            binary = subprocess.check_output(
+            binary = check_output(
                     ["which", "valgrind"]).split("\n")[0]
         except:
             logger.write("[Error: Could not find valgrind.]")
             finish()
         # get first line of output
         try:
-            version = subprocess.check_output(
+            version = check_output(
                     ["valgrind", "--version"]).split("\n")[0]
         except:
             pass
@@ -953,7 +963,7 @@ def set_up_performance_testing_B():
         sha_out_name = os.path.join(chpl_test_tmp_dir, "sha.exec.out.tmp")
         with open(sha_out_name, "w") as sha_out:
             try:
-                output = subprocess.check_output(["git", "rev-parse", "HEAD"])
+                output = check_output(["git", "rev-parse", "HEAD"])
                 sha_out.write("sha " + output)
             except:
                 pass
@@ -966,7 +976,7 @@ def set_up_performance_testing_B():
                 .format(sha_dat_file_path))
         try:
             cmd = os.path.join(util_dir, "test", "computePerfStats")
-            out = subprocess.check_output([cmd, sha_dat_file_name, dat_dir, 
+            out = check_output([cmd, sha_dat_file_name, dat_dir,
                 sha_pef_keys_name, sha_out_name])
             logger.write(out)
         except:
@@ -1085,7 +1095,7 @@ def auto_generate_tests():
                         "spectests.exec.out.tmp")
                 with open(tmp_file_path, "w") as tmp_file:
                     try:
-                        out = subprocess.check_output(["make", "spectests"])
+                        out = check_output(["make", "spectests"])
                         tmp_file.write(out)
                     except:
                         logger.write("[Error: Failed to generate Spec tests.  "
@@ -1104,7 +1114,7 @@ def auto_generate_tests():
                         try:
                             cmd = os.path.join(util_dir, "test", 
                                     "computePerfStats")
-                            out = subprocess.check_output([cmd, "spectests", 
+                            out = check_output([cmd, "spectests",
                                 dat_dir, os.path.join(home, "test",
                                 "spectests.perfkeys"), tmp_file_path])
                             temp_perf_file.write(out)
@@ -1132,7 +1142,7 @@ def print_chapel_environment():
     logger.write()
     logger.write("### Chapel Environment ###")
     try:
-        out = subprocess.check_output(os.path.join(util_dir, "printchplenv"))
+        out = check_output(os.path.join(util_dir, "printchplenv"))
         logger.write(out)
     except:
         pass
@@ -1243,7 +1253,7 @@ def jUnit():
             "convert_start_test_log_to_junit_xml.py")]
 
     try:
-        out = subprocess.check_output(cmd + junit_args)
+        out = check_output(cmd + junit_args)
         return output
     except:
         return ""
@@ -1494,6 +1504,8 @@ def printout(so):
         line = so.readline()
         if not line:
             break
+        if sys.version_info[0] >= 3 and not isinstance(line, str):
+            line = str(line, 'utf-8')
         logger.write(line) # strip default newline
         logger.flush()
 

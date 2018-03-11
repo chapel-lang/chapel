@@ -180,7 +180,7 @@ def OutputTest(lineno, currTestName):
             sys.stdout.write('>>> Opening %s\n'%(testName+'.prediff'))
         fh = open(testName+'.prediff', 'w')
         WriteTestFile(fh, chapelprediff)
-        os.chmod(testName+'.prediff', 0755)
+        os.chmod(testName+'.prediff', 0o755)
 
     # write out .good files
     if len(chapeloutput) > 0 or len(chapelprintoutput) > 0:
@@ -356,9 +356,9 @@ for infile in args:
             elif line.find('execopts}', pos) == pos:
                 printToOutfile = True
                 current = chapelexecopts;
-	    elif line.find('prediff}', pos) == pos:
-		printToOutfile = True
-		current = chapelprediff;
+            elif line.find('prediff}', pos) == pos:
+                printToOutfile = True
+                current = chapelprediff;
 
             elif line.find('output}', pos) == pos:
                 printToOutfile = True
