@@ -631,7 +631,7 @@ pragma "no doc"
 private proc _expBySquaring(x: ?t, n): t {
     // TODO -- _expBySquaring(pinv(x), -n);
     if n < 0  then halt("Negative powers not yet supported");
-    else if n == 0  then return eye(x.domain);
+    else if n == 0  then return eye(x.domain, x.eltType);
     else if n == 1  then return x;
     else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
     else return dot(x, _expBySquaring(dot(x, x), (n - 1) / 2));
@@ -1570,6 +1570,17 @@ module Sparse {
   pragma "no doc"
   proc _array.div(A) where isCSArr(this) && isCSArr(A) {
     compilerError("Matrix division not yet supported for sparse matrices */");
+  }
+
+  /* Return an identity matrix over sparse domain ``Dom`` */
+  proc eye(Dom, type eltType=real) where isCSDom(Dom) {
+    const (m,n) = Dom.shape;
+    var D = CSRDomain(m,n);
+    const nn = if m < n then m else n;
+    for ii in 1..#nn do D += (ii,ii);
+    var A = CSRMatrix(D, eltType);
+    A = 1;
+    return A;
   }
 
   //
