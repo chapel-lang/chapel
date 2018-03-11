@@ -1791,7 +1791,7 @@ for testname in testsrc:
             args=list()
             if timer and timereal:
                 cmd='./'+execname
-                os.environ['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
+                testenv['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
             elif timer:
                 cmd=timer
                 args+=['./'+execname]
