@@ -139,7 +139,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     use Search;
 
     // without _new_, record functions throw null deref
-    var comp = new Owned(new TargetLocaleComparator());
+    var comp = new TargetLocaleComparator();
 
     if !dataSorted then sort(inds, comparator=comp);
 
