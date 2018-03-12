@@ -119,9 +119,9 @@ proc main() {
     const opRateToTarget = opRatePerSource * numSources;
 
     writeln('numOps = ', numOpsTotal);
-    writeln('Execution time per source = ', timeTotal / numSources);
+    writeln('Execution time = ', timeTotal / numSources);
     writeln('Performance (mOps/sec/source) = ', opRatePerSource);
-    writeln('Performance (mOps/sec to target) = ', opRateToTarget);
+    writeln('Performance (mOps/sec) = ', opRateToTarget);
   }
 
   if printCommDiags {

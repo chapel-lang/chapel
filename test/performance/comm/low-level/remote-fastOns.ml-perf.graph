@@ -1,4 +1,4 @@
-perfkeys: Performance (mOps/sec to target) =
+perfkeys: Performance (mOps/sec) =
 files: many-to-one-fastOns.dat
 graphkeys: FastExecuteOns to 1 node
 graphtitle: Remote FastExecuteOn Performance

@@ -1,4 +1,4 @@
-perfkeys: Performance (mOps/sec to target) =
+perfkeys: Performance (mOps/sec) =
 files: many-to-one-puts.dat
 graphkeys: PUTs to 1 node
 graphtitle: Remote PUT Performance
