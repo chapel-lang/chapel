@@ -480,7 +480,6 @@ static void convertIteratorForLoopexpr(ForallStmt* fs) {
         }
 }
 
-void lowerForallStmts2(); //wass - to .h; where to place it?
 void lowerForallStmts2() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
@@ -876,8 +875,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
-    void lowerForallIntentsAtResolution(ForallStmt* fs); //wass
-    lowerForallIntentsAtResolution(pfs);
+    lowerForallIntents(pfs);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -957,13 +955,7 @@ void static populateIterRecSetup(ForallStmt* fs)
 }
 
 
-// lowerForallStmts() removes each ForallStmt from AST,
-// replacing it with explicit loop(s) etc.
-// Currently this is done towards the end of resolution.
-// Our goal is to push it to a later pass, ideally all the way
-// to lowerIterators.
-
-void lowerForallStmts() {
+void lowerForallStmts1() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;

@@ -692,7 +692,7 @@ void implementForallIntents1(DefExpr* defChplIter)
     return;
 
   if (!beforeLoweringForallStmts) {
-    // We got here due to resolveBlockStmt(PARBlock) in lowerForallStmts().
+    // We got here due to resolveBlockStmt(PARBlock) in lowerForallStmts1().
     BlockStmt* forallBlock = toBlockStmt(defChplIter->parentExpr);
     INT_ASSERT(forallBlock && !forallBlock->forallIntents);
     // If so, forall intents must have been already handled.

@@ -33,7 +33,7 @@ so we may be blurring const and non-const intents.
 We DO need to preserve some const properties to enable optimizations.
 */
 
-/////////// lowerForallIntentsAtResolution : RP for AS ///////////
+/////////// lowerForallIntents : RP for AS ///////////
 
 static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
 {
@@ -73,7 +73,7 @@ static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
 }
 
 
-/////////// lowerForallIntentsAtResolution : setup IB, DB ///////////
+/////////// lowerForallIntents : setup IB, DB ///////////
 
 static void insertInitialization(BlockStmt* destBlock,
                                  Symbol* destVar, Symbol* srcVar) {
@@ -123,18 +123,17 @@ static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
   insertDeinitialization(DB, AS);
 }
 
-// This should be static. Making it extern for now while it is unused.
-void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
-                        BlockStmt* IB, BlockStmt* DB);
-void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
-                        BlockStmt* IB, BlockStmt* DB) {
+/* For upcoming task-private variables:
+static void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
+                        BlockStmt* IB, BlockStmt* DB)
+{
   // IB already comes from PV's declaration in the with-clause.
-
   insertDeinitialization(DB, PV);
 }
+*/
 
 
-/////////// lowerForallIntentsAtResolution ///////////
+/////////// lowerForallIntents ///////////
 
 /*
 wass update this comment
@@ -149,8 +148,7 @@ i.e. before resolving the forall loop body.
 
 // Creates TFI_REDUCE_OP svars. Resolves TFI_REDUCE and TFI_REDUCE_OP svar types.
 // Invoked from resolveForallHeader().
-void lowerForallIntentsAtResolution(ForallStmt* fs); //wass to header
-void lowerForallIntentsAtResolution(ForallStmt* fs) {
+void lowerForallIntents(ForallStmt* fs) {
   for_shadow_vars(svar, temp, fs)
   {
     SET_LINENO(svar);

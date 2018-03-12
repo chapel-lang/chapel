@@ -7231,7 +7231,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
-  lowerForallStmts();
+  lowerForallStmts1();
 
   insertReturnTemps();
 
@@ -7252,7 +7252,7 @@ void resolve() {
     printUnusedFunctions();
 
   pruneResolvedTree();
-  extern void lowerForallStmts2(); //wass
+
   lowerForallStmts2();
 
   freeCache(defaultsCache);
