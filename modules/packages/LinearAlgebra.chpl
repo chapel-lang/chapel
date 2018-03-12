@@ -1575,11 +1575,15 @@ module Sparse {
   /* Return an identity matrix over sparse domain ``Dom`` */
   proc eye(Dom, type eltType=real) where isCSDom(Dom) {
     const (m,n) = Dom.shape;
-    var D = CSRDomain(m,n);
-    const nn = if m < n then m else n;
-    for ii in 1..#nn do D += (ii,ii);
+    var D = CSRDomain(Dom.parentDom);
+    const idx = if m <= n then 1 else 2;
+    for i in Dom.parentDom.dim(idx) {
+      D += (i,i);
+    }
     var A = CSRMatrix(D, eltType);
-    A = 1;
+    for i in Dom.parentDom.dim(idx) {
+      A[i,i] = 1 : eltType;
+    }
     return A;
   }
 
