@@ -736,6 +736,13 @@ void chpl_task_init(void)
         }
     }
 
+    /*
+      Note: Not all schedulers will invoke these callbacks as currently only
+      'nemesis' and 'distrib' schedulers have them appropriately implemented.
+      Hence it should be noted that using anything other than this may result
+      in memory leakage for idle threads without work due to them not being
+      able to invoke any checkpoints.
+    */
     qthread_registerOnPark(chpl_task_threadOnPark);
     qthread_registerOnUnpark(chpl_task_threadOnUnpark);
 }

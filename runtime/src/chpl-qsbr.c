@@ -30,6 +30,11 @@
 #define CHPL_QSBR_PROFILE 0
 #endif
 
+// Correctness checks...
+#ifndef CHPL_QSBR_CHECK
+#define CHPL_QSBR_CHECK 0
+#endif
+
 #if CHPL_QSBR_PROFILE
 static atomic_uint_least64_t nParked = 0;
 static atomic_uint_least64_t nUnparked = 0;
@@ -86,6 +91,11 @@ pthread_once_t chpl_qsbr_once_flag = PTHREAD_ONCE_INIT;
 // RMW operations, all loads of the list must also be atomic.
 static inline struct tls_node *get_tls_list(void);
 static inline struct tls_node *get_tls_list(void) {
+  #if CHPL_QSBR_CHECK
+  if (chpl_qsbr_tls_list == NULL) {
+    chpl_internal_error("'chpl_qsbr_tls_list' is NULL!\n");
+  }
+  #endif
   return (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list);
 }
 
@@ -136,7 +146,14 @@ static inline uint64_t is_parked(struct tls_node *node) {
 
 static inline void park(struct tls_node *node);
 static inline void park(struct tls_node *node) {
+  #if CHPL_QSBR_CHECK
+  if (is_parked(node)) {
+    chpl_warning("Called park when already parked...\n", 0, 0);
+  }
+  #endif
+
   atomic_store_uint_least64_t(&node->parked, 1);
+  
   #if CHPL_QSBR_PROFILE
   atomic_fetch_add_uint_least64_t(&nParked, 1);
   #endif
@@ -144,7 +161,14 @@ static inline void park(struct tls_node *node) {
 
 static inline void unpark(struct tls_node *node);
 static inline void unpark(struct tls_node *node) {
+  #if CHPL_QSBR_CHECK
+  if (!is_parked(node)) {
+    chpl_warning("Called unpark when not parked...\n", 0, 0);
+  }
+  #endif
+
   atomic_store_uint_least64_t(&node->parked, 0);
+  
   #if CHPL_QSBR_PROFILE
   atomic_fetch_add_uint_least64_t(&nUnparked, 1);
   #endif
@@ -158,6 +182,15 @@ static inline void acquire_spinlock(struct tls_node *node, uintptr_t value) {
     // we will end up calling the checkpoint.
     while (true) {
       uint64_t spinlock = atomic_load_uint_least64_t(&node->spinlock);
+      
+      #if CHPL_QSBR_CHECK
+      // Occurs if current task gets preempted while we hold spinlock
+      // or if we attempted to recurse on a spinlock/forgot to release 
+      if (spinlock == value) {
+        chpl_internal_error("Attempt to acquire spinlock when already acquired...\n");
+      }
+      #endif
+
       if (spinlock == 0 
         && atomic_compare_exchange_weak_uint_least64_t(&node->spinlock, 0, value)) {
         break;
@@ -168,6 +201,12 @@ static inline void acquire_spinlock(struct tls_node *node, uintptr_t value) {
 
 static inline void release_spinlock(struct tls_node *node);
 static inline void release_spinlock(struct tls_node *node) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&node->spinlock) != (uintptr_t) node) {
+    chpl_internal_error("Attempt to release spinlock when not held by us...");
+  }
+  #endif
+
   atomic_store_uint_least64_t(&node->spinlock, 0);
 }
 
@@ -180,6 +219,12 @@ static inline struct defer_node *get_defer_list(struct tls_node *node) {
 // Requires spinlock. Pops all items less than or equal to 'epoch'.
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch);
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&node->spinlock) != (uintptr_t) node) {
+    chpl_internal_error("Attempt to mutate data without holding spinlock...");
+  }
+  #endif
+
   struct defer_node *dnode = node->deferList, *prev = NULL;
   while (dnode != NULL) {
     if (epoch >= dnode->targetEpoch) {
@@ -209,6 +254,12 @@ static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint
 // Requires spinlock.
 static inline struct defer_node *pop_all_defer_list(struct tls_node *node);
 static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&node->spinlock) != (uintptr_t) node) {
+    chpl_internal_error("Attempt to mutate data without holding spinlock...");
+  }
+  #endif
+
   struct defer_node *head = node->deferList;
   node->deferList = NULL;
   return head;
@@ -217,6 +268,12 @@ static inline struct defer_node *pop_all_defer_list(struct tls_node *node) {
 // Requires spinlock.
 static inline void push_defer_list(struct tls_node *node, struct defer_node *dnode);
 static inline void push_defer_list(struct tls_node *node, struct defer_node *dnode) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&node->spinlock) != (uintptr_t) node) {
+    chpl_internal_error("Attempt to mutate data without holding spinlock...");
+  }
+  #endif
+
   dnode->next = node->deferList;
   node->deferList = dnode;
 }
@@ -293,6 +350,12 @@ static uint64_t safe_epoch(void) {
 // Requires spinlock.
 static inline void handle_deferred_data(struct tls_node *node);
 static inline void handle_deferred_data(struct tls_node *node) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&node->spinlock) != (uintptr_t) node) {
+    chpl_internal_error("Attempt to mutate data without holding spinlock...");
+  }
+  #endif
+
   // Acquire all data that can be deleted.
   uint64_t epoch = safe_epoch();
   struct defer_node *list = pop_bulk_defer_list(node, epoch);
@@ -314,12 +377,18 @@ static inline void handle_deferred_data(struct tls_node *node) {
 // Requires spinlock for both tls_nodes. Transfers deferred deletion from giver to receiver
 static inline void give_deferred(struct tls_node *giver, struct tls_node *receiver);
 static inline void give_deferred(struct tls_node *giver, struct tls_node *receiver) {
+  #if CHPL_QSBR_CHECK
+  if (atomic_load_uint_least64_t(&giver->spinlock) != (uintptr_t) giver
+    || atomic_load_uint_least64_t(&receiver->spinlock) != (uintptr_t) giver) {
+    chpl_internal_error("Attempt to transfer data without holding both spinlocks...");
+  }
+  #endif
   struct defer_node *list = pop_all_defer_list(giver);
   
   if (receiver->deferList == NULL) {
     receiver->deferList = list;
   } else {
-    // Sort list
+    // Merge both lists in order of decreasing targetEpoch
     struct defer_node *newHead = NULL;
     struct defer_node *newTail = NULL;
     while (list != NULL && receiver->deferList != NULL) {
@@ -350,6 +419,20 @@ static inline void give_deferred(struct tls_node *giver, struct tls_node *receiv
       receiver->deferList = NULL;
     }
 
+    #if CHPL_QSBR_CHECK
+    {
+      struct defer_node *prev = NULL;
+      struct defer_node *curr = newHead;
+
+      while (curr != NULL) {
+        if (prev != NULL && prev->targetEpoch > curr->targetEpoch) {
+          chpl_internal_error("Merged list is not in sorted order!");
+        }
+        prev = curr;
+        curr = curr->next;
+      }
+    }
+    #endif
     receiver->deferList = newHead;
   }
 }
@@ -487,7 +570,7 @@ void chpl_qsbr_enable(void) {
 
 void chpl_qsbr_exit(void) {
     #if CHPL_QSBR_PROFILE
-    printf("nParks: %lu, nUnparks: %lu, nCheckpoints: %lu", 
+    printf("nParks: %lu, nUnparks: %lu, nCheckpoints: %lu\n", 
       atomic_load_uint_least64_t(&nParked), atomic_load_uint_least64_t(&nUnparked), atomic_load_uint_least64_t(&nCheckpoints));
     #endif
 

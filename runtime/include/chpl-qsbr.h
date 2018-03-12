@@ -101,9 +101,6 @@ struct tls_node {
 
 extern CHPL_TLS_DECL(struct tls_node *, chpl_qsbr_tls);
 
-#define chpl_qsbr_likely(x)       __builtin_expect((x),1)
-#define chpl_qsbr_unlikely(x)     __builtin_expect((x),0)
-
 extern void chpl_qsbr_init_tls(void);
 extern int chpl_qsbr_is_enabled;
 extern pthread_once_t chpl_qsbr_once_flag;
@@ -123,7 +120,7 @@ static inline chpl_bool chpl_qsbr_enabled(void) {
 // Performs a check to ensure that the current thread is registered
 // for QSBR, and if not then it will handle registration. On average takes ~1 nanosecond.
 static inline void chpl_qsbr_quickcheck(void) {
-  if (chpl_qsbr_enabled() && chpl_qsbr_unlikely(CHPL_TLS_GET(chpl_qsbr_tls) == NULL)) {
+  if (chpl_qsbr_enabled() && CHPL_TLS_GET(chpl_qsbr_tls) == NULL) {
     chpl_qsbr_init_tls();
   }
 }
