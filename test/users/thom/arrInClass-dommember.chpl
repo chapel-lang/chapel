@@ -5,7 +5,6 @@ class StoreSomeInts {
   proc init(m_someints: [] int) {
     intsDom = m_someints.domain;
     this.m_someints = m_someints;
-    super.init();
   }
 }
 

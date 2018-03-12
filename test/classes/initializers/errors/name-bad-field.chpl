@@ -5,7 +5,6 @@ record R {
 
   proc init() {
     a = 1; writeln(b);
-    super.init();
   }
 }
 

@@ -5,7 +5,6 @@ class Foo {
   proc init(xVal) {
     x = xVal;
     y = bar(x); // This should be allowed
-    super.init();
   }
 }
 

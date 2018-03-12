@@ -329,7 +329,6 @@ module Barriers {
      */
     proc init(n: int) {
       count = n;
-      super.init();
     }
 
     proc reset(nTasks: int) {

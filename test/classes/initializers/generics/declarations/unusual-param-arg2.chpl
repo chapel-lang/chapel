@@ -11,12 +11,10 @@ class Foo {
 
   proc init(param pVal: int) where (pVal <= 10) {
     p = 10;
-    super.init();
   }
 
   proc init(param pVal: int) where (pVal > 10) {
     p = pVal;
-    super.init();
   }
 }
 

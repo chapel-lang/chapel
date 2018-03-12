@@ -3,7 +3,6 @@ class C {
   proc init() {
     var notaparam = 77;
     p = notaparam;
-    super.init();
   }
 }
 

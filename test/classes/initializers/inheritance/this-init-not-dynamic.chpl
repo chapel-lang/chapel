@@ -20,7 +20,6 @@ class Base {
 
   proc init(x : int, y : int) {
     writeln('Base.init(x, y)');
-    super.init();
   }
 }
 

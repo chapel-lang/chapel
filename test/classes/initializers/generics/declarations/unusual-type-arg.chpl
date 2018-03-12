@@ -7,12 +7,10 @@ class Foo {
 
   proc init(type tVal) where (isIntegralType(tVal)) { // true for int, uint
     t = int;
-    super.init();
   }
 
   proc init(type tVal) where (!isIntegralType(tVal)) { // everything else
     t = tVal;
-    super.init();
   }
 }
 

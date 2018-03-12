@@ -18,7 +18,6 @@ class myNumaDomain : myAbstractLocaleModel {
 
   proc init() {
     name = "test";
-    super.init();
   }
 }
 

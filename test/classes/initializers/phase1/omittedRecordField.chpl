@@ -6,7 +6,6 @@ class Foo {
 
   proc init(bVal: int) {
     b = bVal;
-    super.init();
   }
 }
 

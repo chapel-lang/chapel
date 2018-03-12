@@ -3,7 +3,6 @@ class Foo {
 
   proc init(val) {
     badCall(arg=this, val);
-    super.init();
   }
 }
 

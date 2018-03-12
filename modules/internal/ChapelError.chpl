@@ -54,7 +54,6 @@ module ChapelError {
     /* Construct an Error */
     proc init() {
       _next = nil;
-      super.init();
     }
 
     /* Override this method to provide an error message
@@ -91,18 +90,15 @@ module ChapelError {
     var info: string;
 
     proc init() {
-      super.init();
     }
 
     proc init(info: string) {
       this.info = info;
-      super.init();
     }
 
     proc init(formal: string, info: string) {
       this.formal = formal;
       this.info   = info;
-      super.init();
     }
 
     proc message() {
@@ -220,13 +216,11 @@ module ChapelError {
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: Error) {
       _head = err;
-      super.init();
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
     proc init() {
       _head = nil;
-      super.init();
     }
 
     /* Iterate over the errors contained in this :class:`TaskErrors`.

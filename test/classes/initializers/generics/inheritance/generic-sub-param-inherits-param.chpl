@@ -7,7 +7,6 @@ class Parent {
   proc init(param pVal: int) {
     p = pVal;
     x = pVal + 4;
-    super.init();
   }
 }
 
@@ -16,9 +15,9 @@ class Child : Parent {
   var y: int;
 
   proc init(yVal: int, param pVal: int) {
+    super.init(pVal);
     p2 = pVal > 10;
     y = yVal;
-    super.init(pVal);
   }
 }
 

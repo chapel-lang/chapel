@@ -1,7 +1,0 @@
-feature request: inheritance from generic classes with initializers
-
-Initializers on subclasses when the parent class is generic currently run into
-issues.  When the subclass is concrete, we get an assertion error during
-initializerResolution.  When the subclass is generic, we get an issue with an
-argument being generic when we don't expect it to be.  These are both
-resolvable issues, but I haven't taken the time to fix them yet.

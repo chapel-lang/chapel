@@ -5,7 +5,6 @@ class hasInit {
 
   proc init(xVal) {
     x = xVal;
-    super.init();
   }
 }
 
@@ -16,6 +15,7 @@ class hasConstruct {
     this.x = x;
   }
 }
+
 
 var hi: hasConstruct(int) = new hasInit(10);
 writeln(hi);
