@@ -353,74 +353,104 @@ proc realPath(out error: syserr, name: string): string {
 
    Will throw an error if one occurs.
 
-   :arg name: A path to resolve.  If the path does not refer to a valid file
-              or directory, an error will occur.
-   :type name: `string`
+  /* Returns the parent directory of the file name provided.  For instance,
+     in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
+     would a call with `/foo/bar/` as the argument.
 
-   :return: A canonical version of the argument.
-   :rtype: `string`
-*/
-proc realPath(name: string): string throws {
-  var err: syserr = ENOERR;
-  var ret = realPath(err, name);
-  if err != ENOERR then try ioerror(err, "realPath", name);
-  return ret;
-}
-
-pragma "no doc"
-proc file.realPath(out error: syserr): string {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
-
-  var res: c_string;
-
-  if (is_c_nil(_file_internal)) {
-    // This file is referencing a null file.  We'll get a segfault if we
-    // continue.
-    error = EBADF;
-    return "";
+     :arg name: a string file name.  Note that this string does not have to be
+                a valid file name, as the file itself will not be affected.
+     :type name: `string`
+  */
+  proc dirname(name: string): string{
+    return splitPath(name)[1];
   }
-  error = chpl_fs_realpath_file(_file_internal, res);
-  return new string(res, needToCopy=false);
-}
 
-/* Determines the canonical path referenced by the :type:`~IO.file` record
-   performing this operation.  This resolves and removes any :data:`curDir` and
-   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
-   result
+  /* Represents generally the parent directory */
+  const parentDir = "..";
+  /* Denotes the separator between a directory and its child. */
+  const pathSep = "/";
 
    Will throw an error if one occurs.
 
-   :return: A canonical path to the file referenced by this :type:`~IO.file`
-            record.  If the :type:`~IO.file` record is not valid, an error will
-            occur
-   :rtype: `string`
-*/
-proc file.realPath(): string throws {
-  var err: syserr = ENOERR;
-  var ret = realPath(err);
-  if err != ENOERR then try ioerror(err, "in file.realPath");
-  return ret;
-}
+     Will halt with an error message if one is detected.
 
-/* Split name into a tuple that is equivalent to (:proc:`dirname`,
-   :proc:`basename`).  The second part of the tuple will never contain a slash.
-   Examples:
+     :arg name: A path to resolve.  If the path does not refer to a valid file
+                or directory, an error will occur.
+     :type name: `string`
 
-   `splitPath("foo/bar")` will yield `("foo", "bar")`
+     :return: A canonical version of the argument.
+     :rtype: `string`
+  */
+  proc realPath(name: string): string throws {
+    extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
-   `splitPath("bar")` will yield `("", "bar")`
+    var res: c_string;
+    var err = chpl_fs_realpath(name.localize().c_str(), res);
+    if err then try ioerror(err, "realPath", name);
+    return new string(res, needToCopy=false);
+  }
 
-   `splitPath("foo/")` will yield `("foo", "")`
+  pragma "no doc"
+  proc realPath(out error: syserr, name: string): string {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    var ret: string;
+    try {
+      ret = realPath(name);
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
+    return ret;
+  }
 
-   `splitPath("")` will yield `("", "")`
+  /* Determines the canonical path referenced by the :type:`~IO.file` record
+     performing this operation.  This resolves and removes any :data:`curDir` and
+     :data:`parentDir` uses present, as well as any symbolic links.  Returns the
+     result
 
-   `splitPath("/")` will yield `("/", "")`
+     Will halt with an error message if one is detected.
+
+     :return: A canonical path to the file referenced by this :type:`~IO.file`
+              record.  If the :type:`~IO.file` record is not valid, an error will
+              occur
+     :rtype: `string`
+  */
+  proc file.realPath(): string throws {
+    extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
+
+    var res: c_string;
+    if (is_c_nil(_file_internal)) {
+      // This file is referencing a null file.  We'll get a segfault if we
+      // continue.
+      throw SystemError.fromSyserr(EBADF);
+    }
+    var err = chpl_fs_realpath_file(_file_internal, res);
+    if err then try ioerror(err, "in file.realPath");
+    return new string(res, needToCopy=false);
+  }
+
+  pragma "no doc"
+  proc file.realPath(out error: syserr): string {
+    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    var ret: string;
+    try {
+      ret = this.realPath();
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
+    }
+    return ret;
+  }
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
    with the path separator character, either explicitly:
 
-   `dirname` + "/" + `basename`
+  /*
+  Returns the parent directory of the :type:`~IO.file` record.  For instance,
+  a file with path `/foo/bar/baz` would return `/foo/bar`
 
    or by calling :proc:`joinPath`:
 
