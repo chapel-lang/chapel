@@ -10,7 +10,6 @@ class SoManyParams {
     otherField = otherFieldVal;
     // the above is used to make the initializer actually do something.  The
     // other two fields should be given their appropriate default value.
-    super.init();
   }
 }
 

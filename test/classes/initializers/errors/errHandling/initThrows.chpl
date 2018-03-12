@@ -5,7 +5,6 @@ class Foo {
 
   proc init() throws {
     x = 10;
-    super.init();
   }
 }
 

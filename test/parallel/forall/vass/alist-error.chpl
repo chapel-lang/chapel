@@ -9,7 +9,6 @@ class A {
     this.X = [x in 1..N] x;
     var Y = [x in this.X] R.getNext();
     delete R;
-    super.init();
   }
 }
 var a = new A(100);

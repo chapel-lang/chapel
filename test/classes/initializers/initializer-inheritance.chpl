@@ -14,8 +14,8 @@ class base {
 class sub : base {
   var _j:int;
   proc init(i:int, j = -2) {
-    _j = j;
     super.init(i);
+    _j = j;
   }
 }
 

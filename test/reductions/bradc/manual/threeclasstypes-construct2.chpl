@@ -19,7 +19,6 @@ class mysumreduce {
     this.intype = intype;
     this.statetype = statetype;
     this.outtype = outtype;
-    super.init();
   }
 }
 

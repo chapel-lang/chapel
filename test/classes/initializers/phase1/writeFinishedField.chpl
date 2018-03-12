@@ -4,7 +4,6 @@ class Foo {
   proc init(xVal) {
     x = xVal;
     writeln(x); // This should be allowed
-    super.init();
   }
 }
 

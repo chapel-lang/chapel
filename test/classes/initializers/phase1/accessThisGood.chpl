@@ -3,7 +3,6 @@ class ThisEarly {
 
   proc init(r: real) {
     this.r = r; // This is the only accepted use of this
-    super.init();
   }
 }
 

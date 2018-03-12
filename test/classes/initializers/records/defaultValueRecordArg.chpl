@@ -11,7 +11,6 @@ class DefaultArg {
 
   proc init(yVal = new Foo(3)) {
     y = yVal;
-    super.init();
   }
 }
 

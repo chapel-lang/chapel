@@ -11,7 +11,6 @@ class Circle {
   {
     this.rank = myRank;
     this.r=h;
-    super.init();
   }
 }
 
@@ -22,8 +21,8 @@ proc Circle.area() return 3.14159*2**2;
 class Oval: Circle{
   var r2: real;
   proc init(h1,h2,param myRank=h1.size) {
-    r2=h2;
     super.init(h1, myRank);
+    r2=h2;
   }
 }
 
