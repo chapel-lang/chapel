@@ -27,7 +27,7 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
 # Test performance of lowering ForallStmt at lowerIterators
 GITHUB_USER=vasslitvinov
-GITHUB_BRANCH=li
+GITHUB_BRANCH=lower-ForallStmt
 SHORT_NAME=lower-ForallStmt
 START_DATE=03/07/18
 
