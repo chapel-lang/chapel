@@ -434,6 +434,13 @@ module DateTime {
     return str;
   }
 
+  /* Read or write a date value from channel `f` */
+  proc date.readWriteThis(f) {
+    var dash = new ioLiteral("-");
+    f <~> new ioLiteral("{") <~> chpl_year <~> dash <~> chpl_month <~> dash
+      <~> chpl_day <~> new ioLiteral("}");
+  }
+
 
   /* Operators on date values */
   pragma "no doc"
@@ -549,7 +556,6 @@ module DateTime {
 
   pragma "no doc"
   proc time.deinit() {
-    // delete tzinfo if needed
   }
 
   /* Methods on time values */
@@ -657,6 +663,15 @@ module DateTime {
 
     return str;
   }
+
+  /* Read or write a time value from channel `f` */
+  proc time.readWriteThis(f) {
+    var colon = new ioLiteral(":");
+    f <~> new ioLiteral("{") <~> chpl_hour <~> colon <~> chpl_minute <~> colon
+      <~> chpl_second <~> new ioLiteral(".") <~> chpl_microsecond
+      <~> new ioLiteral("}");
+  }
+
 
   /* Operators on time values */
 
@@ -1159,6 +1174,19 @@ module DateTime {
   proc datetime.ctime() {
     return this.strftime("%a %b %e %T %Y");
   }
+
+  /* Read or write a datetime value from channel `f` */
+  proc datetime.readWriteThis(f) {
+    var dash  = new ioLiteral("-"),
+        colon = new ioLiteral(":");
+    f <~> new ioLiteral("{") <~> chpl_date.chpl_year <~> dash
+      <~> chpl_date.chpl_month <~> dash <~> chpl_date.chpl_day
+      <~> new ioLiteral(" ") <~> chpl_time.chpl_hour <~> colon
+      <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+      <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond
+      <~> new ioLiteral("}");
+  }
+
 
   // TODO: Add a datetime.timestamp() method
 
