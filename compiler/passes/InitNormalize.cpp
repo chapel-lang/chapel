@@ -251,7 +251,9 @@ void InitNormalize::completePhase1(CallExpr* initStmt) {
   }
 
   // Allow users to treat 'this' as the initialized type
-  initStmt->insertAfter(new CallExpr(PRIM_SETCID, new SymExpr(mFn->_this)));
+  if (type()->isClass()) {
+    initStmt->insertAfter(new CallExpr(PRIM_SETCID, new SymExpr(mFn->_this)));
+  }
 
   mPhase = cPhase2;
 }
