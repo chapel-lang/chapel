@@ -23,6 +23,5 @@ module B {
     writeln("In secondary initializer of class Foo");
     x = xVal;
     y = xVal > 5;
-    super.init();
   }
 }

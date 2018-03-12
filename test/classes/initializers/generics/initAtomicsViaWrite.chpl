@@ -5,7 +5,6 @@ class C {
   proc init() {
     head.write(0);
     tail.write(0);
-    super.init();
   }
 }
 

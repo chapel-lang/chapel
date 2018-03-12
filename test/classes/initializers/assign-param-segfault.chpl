@@ -18,7 +18,6 @@ class Bar {
       when Foo.Foo3 do this.baz = Baz.Baz3;
       otherwise this.baz = Baz.Baz0;
       }
-    super.init();
   }
 }
 var bar = new Bar(Foo.Foo1);

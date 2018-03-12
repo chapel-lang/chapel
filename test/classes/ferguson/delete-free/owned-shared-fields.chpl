@@ -63,7 +63,6 @@ class C3 {
   proc init(a:MyClass, b:MyClass) {
     fo = new Owned(a);
     fs = new Shared(b);
-    super.init();
   }
 }
 

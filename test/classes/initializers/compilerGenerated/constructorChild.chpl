@@ -3,9 +3,9 @@ class Parent {
 
   proc init() {
     x = 10;
-    super.init();
   }
 }
+
 
 class Child: Parent {
   var y: int;

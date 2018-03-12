@@ -13,7 +13,6 @@ class A {
     // I removed the argument and explicit setting of field t, to show that
     // omitted type fields work just fine.
     this.x = xVal;
-    super.init();
   }
 }
 

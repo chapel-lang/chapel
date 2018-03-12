@@ -5,7 +5,6 @@ class Foo {
     coforall val in a do
       writeln(val);
     x = 10;
-    super.init();
   }
 }
 

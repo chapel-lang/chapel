@@ -13,7 +13,6 @@ class Foo {
     t1 = t1Val;
     t2 = t2Val;
 
-    super.init();
   }
 }
 

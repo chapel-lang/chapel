@@ -864,7 +864,6 @@ module DefaultRectangular {
       this.stridable = stridable;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-      super.init();
     }
 
     // These functions must always be called locally, because the lock

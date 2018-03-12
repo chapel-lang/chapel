@@ -97,7 +97,6 @@ module MatrixMarket {
          fd = open(fname, iomode.cw, iokind.native);
          fout = fd.writer(start=0);
          headers_written=false;
-         super.init();
       }
 
       proc write_headers(nrows, ncols, nnz=-1) {
@@ -199,7 +198,6 @@ class MMReader {
    proc init(const fname:string) {
       fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
       fin = fd.reader(start=0, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
-      super.init();
    }
 
    proc read_header() {

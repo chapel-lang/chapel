@@ -7,7 +7,6 @@ class Foo {
       total += i;
     }
     sum = total;
-    super.init();
   }
 }
 

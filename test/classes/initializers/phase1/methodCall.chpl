@@ -7,7 +7,6 @@ class MethodTooEarly {
 
     i = iVal;
 
-    super.init();
   }
 
   // This method demonstrates why it would be bad to access a method
