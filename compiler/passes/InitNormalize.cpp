@@ -1494,16 +1494,18 @@ static bool isMethodCall(CallExpr* call) {
 static bool typeHasMethod(AggregateType* type, const char* methodName) {
   bool retval = false;
 
-  forv_Vec(FnSymbol, method, type->methods) {
-    if (strcmp(method->name, methodName) == 0) {
-      retval = true;
-      break;
-    }
-  }
+  INT_ASSERT(type != NULL);
 
-  if (retval == false) {
-    AggregateType* parent = type->dispatchParents.v[0];
-    if (parent != NULL && parent != dtObject) {
+  if (type != dtObject) {
+    forv_Vec(FnSymbol, method, type->methods) {
+      if (strcmp(method->name, methodName) == 0) {
+        retval = true;
+        break;
+      }
+    }
+
+    if (retval == false) {
+      AggregateType* parent = type->dispatchParents.v[0];
       retval = typeHasMethod(parent, methodName);
     }
   }
@@ -1573,7 +1575,10 @@ void InitNormalize::processThisUses(CallExpr* call) {
         }
       }
     } else {
-      if (type()->isRecord()) {
+      if (isPhase0()) {
+        USR_FATAL_CONT(call, "cannot pass \"this\" to a function before calling super.init() or this.init()");
+        numErrors += 1;
+      } else if (type()->isRecord()) {
         USR_FATAL_CONT(call, "cannot pass \"this\" to a function in phase 1 of initialization");
         numErrors += 1;
       } else if (use->isPrimitive(PRIM_CAST) || use->isNamed("_cast")) {
