@@ -300,14 +300,34 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
+
   // The body contains zero or more instances of this.initDone()
   // A super.init is not present because the state is phase one, so we need to
   // insert one.
   } else if (state.isPhase1() == true) {
-    InitNormalize finalState = preNormalize(at, fn->body, state);
+    Expr* startStmt = fn->body->body.head;
+
+    CallExpr* dummy = new CallExpr("init", gMethodToken, fn->_this);
+    fn->insertAtHead(dummy);
+    state.makeThisAsParent(dummy);
+    dummy->remove();
+
+    // Call with 'startStmt' to avoid processing the 'this as parent' setup
+    InitNormalize finalState = preNormalize(at, fn->body, state, startStmt);
     finalState.initializeFieldsAtTail(fn->body);
 
     addSuperInit(fn);
+
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
 
   } else {
     INT_ASSERT(false);
@@ -425,7 +445,7 @@ static InitNormalize preNormalize(AggregateType* at,
                 "initializers for now");
 
     } else if (isDefExpr(stmt) == true) {
-      state.checkAndEmitErrors(stmt);
+      state.processThisUses(stmt);
 
       stmt = stmt->next;
 
@@ -458,6 +478,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
           } else {
             transformSuperInit(callExpr);
+            state.makeThisAsParent(callExpr);
           }
 
           stmt = next;
@@ -557,7 +578,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // No action required
       } else {
-        state.checkAndEmitErrors(stmt);
+        state.processThisUses(stmt);
 
         stmt = stmt->next;
       }
