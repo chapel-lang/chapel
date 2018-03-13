@@ -5719,12 +5719,12 @@ static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
                                               CallExpr*      call,
                                               VarSymbol*     newTmp);
 
-static SymExpr* resolveNewTypeExpr(CallExpr* call);
+static SymExpr* resolveNewFindTypeExpr(CallExpr* call);
 
 static void     resolveNewHalt(CallExpr* call);
 
 static void resolveNew(CallExpr* call) {
-  if (SymExpr* typeExpr = resolveNewTypeExpr(call)) {
+  if (SymExpr* typeExpr = resolveNewFindTypeExpr(call)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
         if (resolveNewHasInitializer(at) == false) {
@@ -5796,7 +5796,7 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 static void resolveNewHandleConstructor(CallExpr* call) {
   SET_LINENO(call);
 
-  SymExpr*       typeExpr = resolveNewTypeExpr(call);
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
 
   if (FnSymbol* atInit = at->defaultInitializer) {
@@ -6083,7 +6083,7 @@ static void fixupArgDefaultWhenRecordInit(AggregateType* at,
 }
 
 // Find the SymExpr that captures the type
-static SymExpr* resolveNewTypeExpr(CallExpr* call) {
+static SymExpr* resolveNewFindTypeExpr(CallExpr* call) {
   Expr*    arg1   = call->get(1);
   SymExpr* retval = NULL;
 
