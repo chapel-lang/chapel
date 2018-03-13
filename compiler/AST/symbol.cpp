@@ -945,7 +945,7 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && intent != TFI_REDUCE && intent != TFI_IN_OVAR)
+  if (!iteratorsLowered && intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR)
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -1013,7 +1013,7 @@ bool ShadowVarSymbol::isConstant() const {
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
-    case TFI_IN_OVAR:
+    case TFI_IN_OUTERVAR:
     case TFI_REDUCE_OP:
       return true;
     case TFI_IN:
@@ -1035,15 +1035,15 @@ bool ShadowVarSymbol::isConstValWillNotChange() {
 // describes the intent (for use in an English sentence)
 const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
-    case TFI_DEFAULT:   return "default intent";
-    case TFI_CONST:     return "'const' intent";
-    case TFI_IN_OVAR:   return "in-ovar intent";
-    case TFI_IN:        return "'in' intent";
-    case TFI_CONST_IN:  return "'const in' intent";
-    case TFI_REF:       return "'ref' intent";
-    case TFI_CONST_REF: return "'const ref' intent";
-    case TFI_REDUCE:    return "'reduce' intent";
-    case TFI_REDUCE_OP: return "reduceOp intent";
+    case TFI_DEFAULT:     return "default intent";
+    case TFI_CONST:       return "'const' intent";
+    case TFI_IN_OUTERVAR: return "outer-var intent";
+    case TFI_IN:          return "'in' intent";
+    case TFI_CONST_IN:    return "'const in' intent";
+    case TFI_REF:         return "'ref' intent";
+    case TFI_CONST_REF:   return "'const ref' intent";
+    case TFI_REDUCE:      return "'reduce' intent";
+    case TFI_REDUCE_OP:   return "reduceOp intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
@@ -1064,7 +1064,7 @@ ShadowVarSymbol* ShadowVarSymbol::SOforSI() const {
   const ShadowVarSymbol* SI = this;
   DefExpr* soDef = toDefExpr(SI->defPoint->prev);
   ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
-  INT_ASSERT(SO->intent == TFI_IN_OVAR);
+  INT_ASSERT(SO->intent == TFI_IN_OUTERVAR);
   return SO;
 }
 

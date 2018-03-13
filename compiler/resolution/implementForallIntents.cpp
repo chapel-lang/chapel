@@ -1128,7 +1128,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
         // For these intents, OK to go without a new shadow variable.
         return svar;
 
-      case TFI_IN_OVAR:
+      case TFI_IN_OUTERVAR:
       case TFI_IN:
       case TFI_REDUCE:
       case TFI_REDUCE_OP:
@@ -1853,7 +1853,7 @@ IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
     case TFI_REF:       return INTENT_REF;
     case TFI_CONST_REF: return INTENT_CONST_REF;
     case TFI_REDUCE_OP: return INTENT_CONST_IN;  // the reduce op class
-    case TFI_IN_OVAR:
+    case TFI_IN_OUTERVAR:
     case TFI_REDUCE:
       INT_ASSERT(false);    // don't know what to return
       return INTENT_BLANK;  // dummy
@@ -1889,7 +1889,7 @@ static void resolveSVarIntent(ShadowVarSymbol* svar) {
       svar->intent = forallIntentForArgIntent(
                        concreteIntent(INTENT_CONST, svar->type->getValType()));
       break;
-    case TFI_IN_OVAR:
+    case TFI_IN_OUTERVAR:
     case TFI_IN:
     case TFI_CONST_IN:
     case TFI_REF:

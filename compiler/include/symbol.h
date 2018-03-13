@@ -79,18 +79,27 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 // ForallIntentTag: a task- or forall-intent tag
 //
 enum ForallIntentTag {
-  TFI_DEFAULT,    // aka TFI_BLANK
+  TFI_DEFAULT,      // aka TFI_BLANK
   TFI_CONST,
-  TFI_IN_OVAR,    // added by compiler
+  TFI_IN_OUTERVAR,  // see below
   TFI_IN,
   TFI_CONST_IN,
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
-  TFI_REDUCE_OP,  // added by compiler
+  TFI_REDUCE_OP,    // see below
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
+
+/* ForallIntentTag enum:
+
+TFI_IN_OUTERVAR shadow var is added by compiler as a placeholders
+for the outer variable of the corresponding [const] in shadow var.
+
+TFI_REDUCE_OP shadow var is added by compiler. It is the reduce op
+for the TFI_REDUCE shadow var, which is the accumulation state.
+*/
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForIntent(IntentTag intent);

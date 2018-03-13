@@ -37,7 +37,7 @@ We DO need to preserve some const properties to enable optimizations.
 
 static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
 {
-  ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OVAR,
+  ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OUTERVAR,
                                             astr("SO_", SI->name), NULL);
   SO->addFlag(FLAG_CONST);  // make it be like 'const in'
   SO->qual = QUAL_CONST_VAL;
@@ -171,7 +171,7 @@ void lowerForallIntents(ForallStmt* fs) {
                            setupForR_AS(fs, svar, ovar, IB, DB);  break; }
 
       // We placed such svar earlier in the list - it should not come up here.
-      case TFI_IN_OVAR:
+      case TFI_IN_OUTERVAR:
       case TFI_REDUCE_OP:  INT_ASSERT(false);                     break;
 
       // No abstract intents, please.
@@ -427,7 +427,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_IN_OVAR:     // helper svar - nothing to do
+    case TFI_IN_OUTERVAR:     // helper svar - nothing to do
       break;
 
     case TFI_IN:          // in intents
@@ -555,7 +555,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_IN_OVAR:
+    case TFI_IN_OUTERVAR:
       // The outer var for IB of the corresponding in-intent svar.
       map.put(svar, svar->SIforSO()->outerVarSym());
       break;
