@@ -1514,13 +1514,6 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   int strLength = unescapeString(str, castCall).length();
 
-  CallExpr *ctor = new CallExpr("_construct_string",
-      castTemp,
-      new_IntSymbol(strLength),   // length
-      new_IntSymbol(strLength ? strLength+1 : 0), // size, empty string needs 0
-      gFalse);                    // owned = false
-  ctor->insertAtTail(gFalse);     // needToCopy = false
-
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1531,7 +1524,19 @@ VarSymbol *new_StringSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(stringLitDef);
 
-  CallExpr* ctorCall = new CallExpr(PRIM_MOVE, new SymExpr(s), ctor);
+  VarSymbol* initTemp = newTemp("str_literal_init_tmp", dtString);
+  DefExpr* initTempDef = new DefExpr(initTemp);
+
+  CallExpr *initCall = new CallExpr("init",
+      gMethodToken,
+      initTemp,
+      castTemp,
+      new_IntSymbol(strLength),   // length
+      new_IntSymbol(strLength ? strLength+1 : 0)); // size, empty string needs 0
+  initCall->insertAtTail(gFalse); // owned = false
+  initCall->insertAtTail(gFalse); // needToCopy = false
+
+  CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initTemp);
 
   if (initStringLiterals == NULL) {
     createInitStringLiterals();
@@ -1544,7 +1549,9 @@ VarSymbol *new_StringSymbol(const char *str) {
   insertPt->insertBefore(cptrCall);
   insertPt->insertBefore(new DefExpr(castTemp));
   insertPt->insertBefore(castCall);
-  insertPt->insertBefore(ctorCall);
+  insertPt->insertBefore(initTempDef);
+  insertPt->insertBefore(initCall);
+  insertPt->insertBefore(moveCall);
 
   s->immediate = new Immediate;
   *s->immediate = imm;
