@@ -1248,7 +1248,7 @@ static void setupModule()
   targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
 
   if (ffloatOpt) {
-    // see also FastMathFlags FM.setUnsafeAlgebra etc
+    // see also FastMathFlags FM.setAllowReassoc etc
     targetOptions.UnsafeFPMath = 1;
     targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
     targetOptions.NoNaNsFPMath = 1;
@@ -1439,7 +1439,13 @@ void prepareCodegenLLVM()
     FM.setNoInfs();
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
+#if HAVE_LLVM_VER < 6
     FM.setUnsafeAlgebra();
+#else
+    FM.setAllowContract(true);
+    FM.setApproxFunc();
+    FM.setAllowReassoc();
+#endif
     info->irBuilder->setFastMathFlags(FM);
   }
 
@@ -1571,7 +1577,15 @@ void runClang(const char* just_parse_filename) {
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
     std::string march = "-march=";
-    march += CHPL_TARGET_BACKEND_ARCH;
+    const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
+    if (strncmp(backend_arch, "arm-", 4) == 0) {
+      backend_arch += 4;
+      march = "-mcpu=";
+    }
+    march += backend_arch;
+    if (strcmp(backend_arch, "thunderx2") == 0) {
+      march += "t99";
+    }
     args.push_back(march);
   }
 

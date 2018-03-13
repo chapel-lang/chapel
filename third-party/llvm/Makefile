@@ -82,7 +82,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	     --disable-clang-rewriter \
 	     --disable-docs \
 	     --disable-zlib \
-	     --enable-targets=host,x86,x86_64 $(CHPL_LLVM_CONFIGURE_DEBUG) ; \
+	     --enable-targets=host,x86,x86_64,aarch64 $(CHPL_LLVM_CONFIGURE_DEBUG) ; \
 	  cd $(LLVM_BUILD_DIR) && make clean ; \
 	fi
 # note: automake llvm builds don't create nested Makefiles
