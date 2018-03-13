@@ -220,9 +220,10 @@ module DistributedDeque {
     pragma "no doc"
     var _rc : Shared(DistributedDequeRC(eltType));
 
-    proc DistDeque(type eltType, cap = -1, targetLocales = Locales) {
-      _pid = (new DistributedDequeImpl(eltType, cap, targetLocales)).pid;
-      _rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
+    proc init(type eltType, cap = -1, targetLocales = Locales) {
+      this.eltType = eltType;
+      this._pid = (new DistributedDequeImpl(eltType, cap, targetLocales)).pid;
+      this._rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
     }
 
     pragma "no doc"
@@ -1061,7 +1062,7 @@ module DistributedDeque {
       return elt;
     }
 
-    proc ~LocalDeque() {
+    proc deinit() {
       var curr = head;
 
       while curr != nil {
