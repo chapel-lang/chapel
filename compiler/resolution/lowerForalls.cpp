@@ -35,7 +35,7 @@ We DO need to preserve some const properties to enable optimizations.
 
 /////////// lowerForallIntents : RP for AS ///////////
 
-static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
+static ShadowVarSymbol* create_IN_OUTERVAR(ForallStmt* fs, ShadowVarSymbol* SI)
 {
   ShadowVarSymbol* SO = new ShadowVarSymbol(TFI_IN_OUTERVAR,
                                             astr("SO_", SI->name), NULL);
@@ -50,7 +50,7 @@ static ShadowVarSymbol* createSOforSI(ForallStmt* fs, ShadowVarSymbol* SI)
   return SO;
 }
 
-static ShadowVarSymbol* createRPforAS(ForallStmt* fs, ShadowVarSymbol* AS)
+static ShadowVarSymbol* create_REDUCE_OP(ForallStmt* fs, ShadowVarSymbol* AS)
 {
   SymExpr* gOpSE = toSymExpr(AS->reduceOpExpr()->remove());
   Symbol*  gOp   = gOpSE->symbol();
@@ -93,9 +93,11 @@ static void insertDeinitialization(BlockStmt* destBlock,
   destBlock->insertAtTail("chpl__autoDestroy(%S)", destVar);
 }
 
-static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* SO,
+static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI,
                        BlockStmt* IB, BlockStmt* DB) {
   INT_ASSERT(!SI->isRef());
+
+  ShadowVarSymbol* SO = create_IN_OUTERVAR(fs, SI);
 
   insertInitialization(IB, SI, SO);
   insertDeinitialization(DB, SI);
@@ -105,8 +107,8 @@ static void setupForREF(ForallStmt* fs, ShadowVarSymbol* SR, Symbol* gR,
                         BlockStmt* IB, BlockStmt* DB) {
 }  // nothing for a REF intent
 
-static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
-                         BlockStmt* IB, BlockStmt* DB) {
+static void setupForReduce_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
+                              BlockStmt* IB, BlockStmt* DB) {
   IB->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
                    RP, gMethodToken, gOp);
 
@@ -114,13 +116,21 @@ static void setupForR_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
   DB->insertAtTail("chpl__cleanupLocalOp(%S,%S)", gOp, RP); // deletes RP
 }
 
-static void setupForR_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
-                         BlockStmt* IB, BlockStmt* DB) {
+static void setupForReduce_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
+                              BlockStmt* IB, BlockStmt* DB) {
   ShadowVarSymbol* RP = AS->RPforAS();
   insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
 
   DB->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, RP, AS);
   insertDeinitialization(DB, AS);
+}
+
+static void setupForReduce(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* AS_ovar,
+                           BlockStmt* IB, BlockStmt* DB) {
+  ShadowVarSymbol* RP = create_REDUCE_OP(fs, AS);
+  setupForReduce_OP(fs, RP, RP->outerVarSym(),
+                    RP->initBlock(), RP->deinitBlock());
+  setupForReduce_AS(fs, AS, AS_ovar, IB, DB);
 }
 
 /* For upcoming task-private variables:
@@ -159,16 +169,12 @@ void lowerForallIntents(ForallStmt* fs) {
     switch (svar->intent)
     {
       case TFI_IN:
-      case TFI_CONST_IN: { ShadowVarSymbol* SO = createSOforSI(fs, svar);
-                           setupForIN(fs, svar, SO, IB, DB);      break; }
+      case TFI_CONST_IN:   setupForIN(fs, svar, IB, DB);      break;
 
       case TFI_REF:
       case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);   break;
 
-      case TFI_REDUCE: {   ShadowVarSymbol* RP = createRPforAS(fs, svar);
-                           setupForR_OP(fs, RP, RP->outerVarSym(),
-                                        RP->initBlock(), RP->deinitBlock());
-                           setupForR_AS(fs, svar, ovar, IB, DB);  break; }
+      case TFI_REDUCE:     setupForReduce(fs, svar, ovar, IB, DB); break;
 
       // We placed such svar earlier in the list - it should not come up here.
       case TFI_IN_OUTERVAR:
