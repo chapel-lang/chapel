@@ -2734,7 +2734,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_back(val: this.eltType) {
+    proc push_back(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -2744,6 +2744,9 @@ module ChapelArray {
 
       reallocateArray(newRange, debugMsg="push_back reallocate");
 
+      // This could "move" from val to the array element, but
+      // we'd have to either destroy what was there already or
+      // use uninitialized memory for the extra space.
       this[this.domain.high] = val;
     }
 
@@ -2811,7 +2814,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_front(val: this.eltType) {
+    proc push_front(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("push_front");
@@ -2887,7 +2890,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc insert(pos: this.idxType, val: this.eltType) {
+    proc insert(pos: this.idxType, in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
