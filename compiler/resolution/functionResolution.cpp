@@ -5100,6 +5100,8 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
+
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
@@ -5112,9 +5114,10 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true  &&
-             isSyncType(srcType)               == false &&
-             isSingleType(srcType)             == false)  {
+  } else if (isRecordWithInitializers(srcType) == true &&
+             isParamString == false &&
+             isSyncType(srcType) == false &&
+             isSingleType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
