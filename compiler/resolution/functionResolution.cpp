@@ -5762,6 +5762,18 @@ static void resolveNewAT(CallExpr* call) {
   } else {
     resolveNewHandleGenericInitializer(call);
   }
+
+  if (at->isClass()            == true &&
+      at->hasPostInitializer() == true) {
+    CallExpr* moveStmt = toCallExpr(call->parentExpr);
+    SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
+    Symbol*   moveDest = moveLHS->symbol();
+
+    INT_ASSERT(moveStmt                         != NULL);
+    INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
+
+    moveStmt->insertAfter(new CallExpr("postInit", gMethodToken, moveDest));
+  }
 }
 
 static bool resolveNewHasInitializer(AggregateType* at) {
