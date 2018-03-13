@@ -5705,17 +5705,11 @@ static bool     resolveNewHasInitializer(AggregateType* at);
 
 static void     resolveNewHandleConstructor(CallExpr* call);
 
-static void     resolveNewHandleNonGenericInitializer(CallExpr*      call,
-                                                      AggregateType* at,
-                                                      SymExpr*       typeExpr);
+static void     resolveNewHandleNonGenericInitializer(CallExpr* call);
 
-static void     resolveNewHandleInstantiatedInit(CallExpr*      call,
-                                                 AggregateType* at,
-                                                 SymExpr*       typeExpr);
+static void     resolveNewHandleInstantiatedInit(CallExpr* call);
 
-static void     resolveNewHandleGenericInitializer(CallExpr*      call,
-                                                   AggregateType* at,
-                                                   SymExpr*       typeExpr);
+static void     resolveNewHandleGenericInitializer(CallExpr* call);
 
 static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
                                               CallExpr*      call,
@@ -5760,13 +5754,13 @@ static void resolveNewAT(CallExpr* call) {
 
   } else if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
              at->instantiatedFrom              == NULL) {
-    resolveNewHandleNonGenericInitializer(call, at, typeExpr);
+    resolveNewHandleNonGenericInitializer(call);
 
   } else if (at->instantiatedFrom              != NULL) {
-    resolveNewHandleInstantiatedInit(call, at, typeExpr);
+    resolveNewHandleInstantiatedInit(call);
 
   } else {
-    resolveNewHandleGenericInitializer(call, at, typeExpr);
+    resolveNewHandleGenericInitializer(call);
   }
 }
 
@@ -5839,13 +5833,13 @@ static void resolveNewHandleConstructor(CallExpr* call) {
   }
 }
 
-static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
-                                                  AggregateType* at,
-                                                  SymExpr*       typeExpr) {
+static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   SET_LINENO(call);
 
-  VarSymbol* newTmp = newTemp("new_temp", at);
-  DefExpr*   def    = new DefExpr(newTmp);
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
+  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  VarSymbol*     newTmp   = newTemp("new_temp", at);
+  DefExpr*       def      = new DefExpr(newTmp);
 
   if (isCallExpr(call->get(1))) {
     // Happens when the type on which we are calling new is a nested type.
@@ -5911,19 +5905,17 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 // provided an instantiation instead of the generic version.  We should
 // ensure that we can resolve the call as if it were generic, and then
 // double check that the type we were given matches the provided type.
-static void resolveNewHandleInstantiatedInit(CallExpr*      call,
-                                             AggregateType* at,
-                                             SymExpr*       typeExpr) {
+static void resolveNewHandleInstantiatedInit(CallExpr* call) {
   SET_LINENO(call);
 
+  SymExpr*       typeExpr   = resolveNewFindTypeExpr(call);
+  AggregateType* at         = toAggregateType(resolveTypeAlias(typeExpr));
   AggregateType* genericSrc = at->instantiatedFrom;
 
   // Go back until we are at the base generic type.
   while (genericSrc->instantiatedFrom != NULL) {
     genericSrc = genericSrc->instantiatedFrom;
   }
-
-  INT_ASSERT(genericSrc->symbol->hasFlag(FLAG_GENERIC));
 
   // Resolve the _new call as if we were provided a fully generic type.
   VarSymbol* new_temp = newTemp("new_temp", genericSrc);
@@ -6005,14 +5997,14 @@ static void resolveNewHandleInstantiatedInit(CallExpr*      call,
   }
 }
 
-static void resolveNewHandleGenericInitializer(CallExpr*      call,
-                                               AggregateType* at,
-                                               SymExpr*       typeExpr) {
+static void resolveNewHandleGenericInitializer(CallExpr* call) {
   SET_LINENO(call);
 
-  VarSymbol* new_temp = newTemp("new_temp", at);
-  DefExpr*   def      = new DefExpr(new_temp);
-  FnSymbol*  initFn   = NULL;
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
+  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  VarSymbol*     new_temp = newTemp("new_temp", at);
+  DefExpr*       def      = new DefExpr(new_temp);
+  FnSymbol*      initFn   = NULL;
 
   new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
