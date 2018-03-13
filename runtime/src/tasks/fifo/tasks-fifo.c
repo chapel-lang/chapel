@@ -1201,6 +1201,7 @@ thread_begin(void* ptask_void) {
     if (blockreport)
       progress_cnt++;
 
+    chpl_qsbr_quickcheck();
     chpl_qsbr_unblocked();
 
     //

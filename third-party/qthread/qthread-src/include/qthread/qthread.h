@@ -1670,3 +1670,4 @@ extern "C++" {
 // meaning when they would be spinning on an empty queue without work.
 void qthread_registerOnPark(void (*_onPark)(void));
 void qthread_registerOnUnpark(void (*_onUnpark)(void));
+
