@@ -5709,9 +5709,9 @@ static void     resolveNewHandleNonGenericInitializer(CallExpr*      call,
                                                       AggregateType* at,
                                                       SymExpr*       typeExpr);
 
-static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
-                                                    AggregateType* at,
-                                                    SymExpr*       typeExpr);
+static void     resolveNewHandleInstantiatedInit(CallExpr*      call,
+                                                 AggregateType* at,
+                                                 SymExpr*       typeExpr);
 
 static void     resolveNewHandleGenericInitializer(CallExpr*      call,
                                                    AggregateType* at,
@@ -5763,7 +5763,7 @@ static void resolveNewAT(CallExpr* call) {
     resolveNewHandleNonGenericInitializer(call, at, typeExpr);
 
   } else if (at->instantiatedFrom              != NULL) {
-    resolveNewHandleInstantiatedGenericInit(call, at, typeExpr);
+    resolveNewHandleInstantiatedInit(call, at, typeExpr);
 
   } else {
     resolveNewHandleGenericInitializer(call, at, typeExpr);
@@ -5911,14 +5911,15 @@ static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
 // provided an instantiation instead of the generic version.  We should
 // ensure that we can resolve the call as if it were generic, and then
 // double check that the type we were given matches the provided type.
-static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
-                                                    AggregateType* at,
-                                                    SymExpr*       typeExpr) {
+static void resolveNewHandleInstantiatedInit(CallExpr*      call,
+                                             AggregateType* at,
+                                             SymExpr*       typeExpr) {
   SET_LINENO(call);
 
   AggregateType* genericSrc = at->instantiatedFrom;
+
+  // Go back until we are at the base generic type.
   while (genericSrc->instantiatedFrom != NULL) {
-    // Go back until we are at the base generic type.
     genericSrc = genericSrc->instantiatedFrom;
   }
 
