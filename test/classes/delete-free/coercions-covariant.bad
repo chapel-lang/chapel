@@ -1,3 +1,4 @@
-coercions-covariant.chpl:16: In function 'test4':
-coercions-covariant.chpl:19: error: unresolved call 'acceptOwnedMyClass(Owned(SubClass))'
-coercions-covariant.chpl:12: note: candidates are: acceptOwnedMyClass(own: Owned(MyClass))
+coercions-covariant.chpl:19: In function 'test1':
+coercions-covariant.chpl:21: error: Cannot coerce argument for const ref intent
+coercions-covariant.chpl:25: In function 'test3':
+coercions-covariant.chpl:27: error: Cannot coerce argument for const ref intent

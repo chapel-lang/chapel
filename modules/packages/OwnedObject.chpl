@@ -204,7 +204,7 @@ module OwnedObject {
 
   pragma "no doc"
   inline proc _cast(type t, in x) where t:Owned && x:Owned && x.t:t.t {
-    var ret = new Owned(x.release());
+    var ret = new Owned(x.release():t.t);
     return ret;
   }
 }

@@ -1,0 +1,1 @@
+coerce-const-ref.chpl:16: error: Cannot coerce argument for const ref intent

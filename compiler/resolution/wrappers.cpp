@@ -1390,7 +1390,7 @@ static bool needToAddCoercion(Type*      actualType,
   } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
     retval =  true;
 
-  } else if (isDispatchParent(actualType, formalType)         == true) {
+  } else if (isDispatchParent(actualType, formalType->getValType()) == true) {
     retval =  true;
 
   } else {
@@ -1404,17 +1404,13 @@ static IntentTag getIntent(ArgSymbol* formal) {
   IntentTag retval = formal->intent;
 
   if (retval == INTENT_BLANK || retval == INTENT_CONST) {
-    // Why did we previously exclude iterator records?
-    //if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-      retval = concreteIntentForArg(formal);
-    //}
+    retval = concreteIntentForArg(formal);
   }
 
   return retval;
 }
 
-static bool argumentCanModifyActual(ArgSymbol* formal) {
-  IntentTag intent = getIntent(formal);
+static bool argumentCanModifyActual(IntentTag intent) {
   switch (intent) {
     case INTENT_CONST:
     case INTENT_BLANK:
@@ -1435,8 +1431,25 @@ static bool argumentCanModifyActual(ArgSymbol* formal) {
   return false;
 }
 
-static void issueErrorValueTemporaryToRef(CallExpr* call, ArgSymbol* formal) {
-  USR_FATAL_CONT(call, "value from coercion passed to ref formal '%s'", formal->name);
+static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
+  IntentTag intent = getIntent(formal);
+
+  if (argumentCanModifyActual(intent)) {
+    // Error for coerce->value passed to ref / out / etc
+    USR_FATAL_CONT(call,
+                   "value from coercion passed to ref formal '%s'",
+                   formal->name);
+  } else {
+    // Error for coerce->value passed to 'const ref' (ref case handled above).
+    // Note that coercing SubClass to ParentClass is theoretically
+    // OK with a 'const ref' but right now there are errors at C
+    // compilation time if this error is left out.
+    bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
+
+    if (formalIsRef) {
+      USR_FATAL_CONT(call, "Cannot coerce argument for const ref intent");
+    }
+  }
 }
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
@@ -1493,25 +1506,16 @@ static void addArgCoercion(FnSymbol*  fn,
     checkAgain = true;
     castCall   = new CallExpr("readFE", gMethodToken, prevActual);
 
-    if (argumentCanModifyActual(formal))
-      issueErrorValueTemporaryToRef(call, formal);
-
   } else if (isSingleType(ats->getValType()) == true) {
     checkAgain = true;
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
-
-    if (argumentCanModifyActual(formal))
-      issueErrorValueTemporaryToRef(call, formal);
 
   } else if (isManagedPtrType(ats->getValType()) == true &&
              !isManagedPtrType(formal->getValType())) {
     checkAgain = true;
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
-
-    if (argumentCanModifyActual(formal))
-      issueErrorValueTemporaryToRef(call, formal);
 
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
@@ -1592,6 +1596,12 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 
   resolveCall(castMove);
+
+  // Check for coercions resulting in a value that
+  // they are not passed by ref or const ref.
+  if (!castTemp->isRef()) {
+    errorIfValueCoercionToRef(call, formal);
+  }
 }
 
 /************************************* | **************************************
