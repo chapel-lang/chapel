@@ -5699,6 +5699,8 @@ bool isDispatchParent(Type* t, Type* pt) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void     resolveNewAT(CallExpr* call);
+
 static bool     resolveNewHasInitializer(AggregateType* at);
 
 static void     resolveNewHandleConstructor(CallExpr* call);
@@ -5726,21 +5728,8 @@ static void     resolveNewHalt(CallExpr* call);
 static void resolveNew(CallExpr* call) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(call)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
-      if (AggregateType* at = toAggregateType(type)) {
-        if (resolveNewHasInitializer(at) == false) {
-          resolveNewHandleConstructor(call);
-
-        } else if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-          if (at->instantiatedFrom != NULL) {
-            resolveNewHandleInstantiatedGenericInit(call, at, typeExpr);
-
-          } else {
-            resolveNewHandleNonGenericInitializer(call, at, typeExpr);
-          }
-
-        } else {
-          resolveNewHandleGenericInitializer(call, at, typeExpr);
-        }
+      if (isAggregateType(type) == true) {
+        resolveNewAT(call);
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
         const char* name = pt->symbol->name;
@@ -5759,6 +5748,25 @@ static void resolveNew(CallExpr* call) {
 
   } else {
     resolveNewHalt(call);
+  }
+}
+
+static void resolveNewAT(CallExpr* call) {
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
+  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+
+  if (resolveNewHasInitializer(at) == false) {
+    resolveNewHandleConstructor(call);
+
+  } else if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
+             at->instantiatedFrom              == NULL) {
+    resolveNewHandleNonGenericInitializer(call, at, typeExpr);
+
+  } else if (at->instantiatedFrom              != NULL) {
+    resolveNewHandleInstantiatedGenericInit(call, at, typeExpr);
+
+  } else {
+    resolveNewHandleGenericInitializer(call, at, typeExpr);
   }
 }
 
