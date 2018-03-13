@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <pmi.h>
 #include <pthread.h>
 #include <stddef.h>
@@ -501,7 +502,7 @@ static size_t hugepage_size;
 
 typedef struct {
   uint64_t         addr;
-  uint64_t         len;
+  uint64_t         len;  // includes reg. status; see mrtl_encode() etc. below
   gni_mem_handle_t mdh;
 } mem_region_t;
 
@@ -511,6 +512,34 @@ typedef struct {
 } mem_region_table_t;
 
 static mem_region_table_t mem_regions;
+
+//
+// The high bit of the 'len' member of a mem_region_t in the table
+// indicates whether the region is registered.  mrtl_encode() and
+// its siblings deal with such encoded 'len' member values.
+//
+#define _MRTL_LENBITS  (sizeof(uint64_t) * CHAR_BIT - 1)
+#define _MRTL_LENMASK  ((1UL << _MRTL_LENBITS) - 1UL)
+
+static inline
+uint64_t mrtl_encode(uint64_t len, chpl_bool reg) {
+  return ((reg ? 1UL : 0UL) << _MRTL_LENBITS) | (len & _MRTL_LENMASK);
+}
+
+static inline
+void mrtl_setReg(uint64_t *p_len) {
+  *p_len |= 1UL << _MRTL_LENBITS;
+}
+
+static inline
+uint64_t mrtl_len(uint64_t len) {
+  return len & _MRTL_LENMASK;
+}
+
+static inline
+chpl_bool mrtl_isReg(uint64_t len) {
+  return ((len >> _MRTL_LENBITS) == 0UL) ? false : true;
+}
 
 //
 // Used to serialize access to critical sections in the dynamic registration
@@ -2214,8 +2243,7 @@ void register_memory(void)
   uint64_t  addr;
   uint64_t  len;
   char      pathname[100];
-  void*     mem_reg_addr;
-  size_t    mem_reg_size;
+  void*     gnr_addr;
   int       have_hugepage_module
               = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
 
@@ -2237,7 +2265,7 @@ void register_memory(void)
   // have a hugepage module loaded, only record the guaranteed
   // NIC-registered segment.
   //
-  chpl_comm_mem_reg_tell(&mem_reg_addr, &mem_reg_size);
+  chpl_comm_mem_reg_tell(&gnr_addr, NULL);
 
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
@@ -2252,7 +2280,7 @@ void register_memory(void)
     //   - if we have hugepages, anything that has a path (isn't
     //     anonymous) but isn't a device other than /dev/zero.
     //
-    if (! (addr == (uint64_t) (intptr_t) mem_reg_addr
+    if (! (addr == (uint64_t) (intptr_t) gnr_addr
            || (have_hugepage_module
                && strlen(pathname) > 0
                && (strncmp(pathname, "/dev/", 5) != 0
@@ -2266,19 +2294,19 @@ void register_memory(void)
     // decreasing size.
     //
     for (i = mem_regions.mreg_cnt;
-         i > 0 && len > mem_regions.mregs[i - 1].len;
+         i > 0 && len > mrtl_len(mem_regions.mregs[i - 1].len);
          i--) {
       if (i < MAX_MEM_REGIONS) {
         mem_regions.mregs[i] = mem_regions.mregs[i - 1];
       }
     }
 
-    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) mem_reg_addr)
+    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) gnr_addr)
       i--;
 
     if (i < MAX_MEM_REGIONS) {
       mem_regions.mregs[i].addr = addr;
-      mem_regions.mregs[i].len = len;
+      mem_regions.mregs[i].len = mrtl_encode(len, false);
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
         (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
@@ -2305,9 +2333,8 @@ void register_memory(void)
   //
   {
     void* p;
-    size_t s;
 
-    chpl_comm_mem_reg_tell(&p, &s);
+    chpl_comm_mem_reg_tell(&p, NULL);
 
     for (int i = 0; i < mem_regions.mreg_cnt; i++) {
       if ((void*) (intptr_t) mem_regions.mregs[i].addr == p) {
@@ -2446,12 +2473,13 @@ void register_mem_region(mem_region_t* mr)
 
   DBG_P_L(DBGF_MEMREG,
           "GNI_MemRegister[%d](%#" PRIx64 ", %#" PRIx64 ")",
-          (int) (mr - &mem_regions.mregs[0]), mr->addr, mr->len);
-  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mr->len,
+          (int) (mr - &mem_regions.mregs[0]), mr->addr, mrtl_len(mr->len));
+  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mrtl_len(mr->len),
                                 NULL, flags, -1, &mr->mdh))
       != GNI_RC_SUCCESS) {
     GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
   }
+  mrtl_setReg(&mr->len);
 }
 
 
@@ -2480,7 +2508,9 @@ mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
 
   mr = tab->mregs;
   for (int i = 0; i < tab->mreg_cnt; i++, mr++) {
-    if (addr_ui >= mr->addr && addr_ui < mr->addr + mr->len)
+    if (addr_ui >= mr->addr
+        && addr_ui < mr->addr + mrtl_len(mr->len)
+        && mrtl_isReg(mr->len))
       return mr;
   }
 
@@ -2497,7 +2527,8 @@ mem_region_t* mreg_for_local_addr(void* addr)
   PERFSTATS_TSTAMP(pstStart);
   if (mr == NULL
       || (uint64_t) addr < mr->addr
-      || (uint64_t) addr >= mr->addr + mr->len) {
+      || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
+      || !mrtl_isReg(mr->len)) {
     mr = mreg_for_addr(addr, &mem_regions);
     PERFSTATS_ADD(local_mreg_cmps,
                   ((mr == NULL)
@@ -2524,7 +2555,8 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
   PERFSTATS_TSTAMP(pstStart);
   if ((mr = mrs[locale]) == NULL
       || (uint64_t) addr < mr->addr
-      || (uint64_t) addr >= mr->addr + mr->len) {
+      || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
+      || !mrtl_isReg(mr->len)) {
     mr = mrs[locale] = mreg_for_addr(addr, &mem_regions_map[locale]);
     PERFSTATS_ADD(remote_mreg_cmps,
                   ((mr == NULL)
@@ -2932,6 +2964,19 @@ void set_hugepage_info(void)
     hugepage_size = gethugepagesize();
   }
 
+  //
+  // With HUGETLB_NO_RESERVE=yes, we want to report out-of-memory in
+  // response to SIGBUS signals resulting from (as best we can tell)
+  // being unable to acquire hugepages at fault-in time.
+  //
+  {
+    char const *ev;
+
+    if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
+        && strcasecmp(ev, "yes") == 0) {
+    }
+  }
+
   hugepage_info_set = 1;
   atomic_thread_fence(memory_order_release);
 
@@ -3026,7 +3071,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
 
   mr = &mem_regions.mregs[mr_i];
   mr->addr = (uint64_t) (uintptr_t) p;
-  mr->len = 1;
+  mr->len = mrtl_encode(size, false);
 
   //
   // Adjust the region count, if necessary.
@@ -3080,18 +3125,14 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // Find the memory region table entry for this memory.
   //
   for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
-       mr_i >= 0 && mr->addr != (uint64_t) p;
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
 
   if (mr_i < 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
 
-  //
-  // Fill in the length, which we set to 1 earlier to avoid lookups
-  // for transfers from matching this entry.
-  //
-  mr->len = (uint64_t) size;
+  assert(!mrtl_isReg(mr->len));
 
   //
   // If we're in early setup and can't register memory yet then we're
@@ -3153,12 +3194,14 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Is this memory in our table?
   //
   for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
-       mr_i >= 0 && (mr->addr != (uint64_t) p || mr->len != size);
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
 
   if (mr_i < 0)
     return false;
+
+  assert(mrtl_isReg(mr->len));
 
   PERFSTATS_INC(regMemFree_cnt);
 
