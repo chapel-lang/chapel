@@ -5,6 +5,8 @@ class MethodTooEarly {
     myMethod();   // *** Invalid.  Still in phase1
     myMethod(20); // *** Invalid.  Still in phase1
 
+    super.init();
+
     i = iVal;
 
   }
