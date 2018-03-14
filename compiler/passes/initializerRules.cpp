@@ -1326,7 +1326,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
 
   forv_Vec(FnSymbol, method, at->methods) {
     if (method->isPostInitializer()) {
-      found = true;
+      if (method->where == NULL) {
+        found = true;
+      }
       if (method->formals.length > 2) {
         // Only accept method token and 'this'
         ret += 1;
