@@ -36,6 +36,11 @@ static bool     isUnacceptableTry(Expr* stmt);
 
 static void     preNormalizeInit(FnSymbol* fn);
 
+static void     unifyConditionalBranchLastField(AggregateType* at,
+                                                CondStmt*      cond,
+                                                InitNormalize* stateThen,
+                                                InitNormalize* stateElse);
+
 static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* expr);
 static DefExpr* toLocalFieldInit(AggregateType* at, CallExpr* expr);
 
@@ -635,9 +640,8 @@ static InitNormalize preNormalize(AggregateType* at,
                       "or this.initDone() in phase 1");
 
           } else if (stateThen.currField() != stateElse.currField()) {
-            USR_FATAL(cond,
-                      "Both arms of a conditional must initialize the same "
-                      "fields in phase 1");
+            unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
+            state.merge(stateThen);
 
           } else {
             state.merge(stateThen);
@@ -669,6 +673,52 @@ static InitNormalize preNormalize(AggregateType* at,
   }
 
   return state;
+}
+
+void unifyConditionalBranchLastField(AggregateType* at,
+                                     CondStmt*      cond,
+                                     InitNormalize* stateThen,
+                                     InitNormalize* stateElse) {
+  DefExpr* thenFieldDef = stateThen->currField();
+  DefExpr* elseFieldDef = stateElse->currField();
+  int thenFieldPos = -1;
+  int elseFieldPos = -1;
+
+  if (thenFieldDef != NULL) {
+    thenFieldPos = at->getFieldPosition(thenFieldDef->name());
+  }
+
+  if (elseFieldDef != NULL) {
+    elseFieldPos = at->getFieldPosition(elseFieldDef->name());
+  }
+
+  if (thenFieldPos != -1 && elseFieldPos != -1) {
+    // Both branches still have fields left to initialize
+    if (thenFieldPos > elseFieldPos) {
+      // The then branch is further along, so update the else branch
+      stateElse->initializeFieldsThroughField(cond->elseStmt,
+                                              thenFieldDef);
+
+    } else if (elseFieldPos > thenFieldPos) {
+      // The else branch is further along, so update the then branch
+      stateThen->initializeFieldsThroughField(cond->thenStmt,
+                                              elseFieldDef);
+
+    } else {
+      // Should never happen, as this function should only be called with
+      // different field positions.
+      INT_ASSERT(false);
+    }
+  } else if (thenFieldPos == -1) {
+    // The then branch initialized the last field, update the else branch
+    stateElse->initializeFieldsThroughField(cond->elseStmt,
+                                            thenFieldDef);
+  } else {
+    // elseFieldPos == -1
+    // The else branch initialized the last field, update the then branch
+    stateThen->initializeFieldsThroughField(cond->thenStmt,
+                                            elseFieldDef);
+  }
 }
 
 /************************************* | **************************************
