@@ -75,6 +75,7 @@ static void        normalizeYields(FnSymbol* fn);
 
 static bool        isCallToConstructor(CallExpr* call);
 static void        normalizeCallToConstructor(CallExpr* call);
+static void        fixStringLiteralInit(FnSymbol* fn);
 
 static bool        isCallToTypeConstructor(CallExpr* call);
 static void        normalizeCallToTypeConstructor(CallExpr* call);
@@ -519,8 +520,9 @@ static void normalizeBase(BaseAST* base) {
       DefExpr* defExpr = var->defPoint;
 
       if (FnSymbol* fn = toFnSymbol(defExpr->parentSymbol)) {
-        if (fn                 != stringLiteralModule->initFn &&
-            fn->isNormalized() == false) {
+        if (fn == stringLiteralModule->initFn) {
+          fixStringLiteralInit(fn);
+        } else if (fn->isNormalized() == false) {
           Expr* type = defExpr->exprType;
           Expr* init = defExpr->init;
 
@@ -1223,6 +1225,25 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   if (exprModToken != NULL) {
     newNew->insertAtHead(exprMod);
     newNew->insertAtHead(exprModToken);
+  }
+}
+
+static void fixStringLiteralInit(FnSymbol* fn) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_NEW)) {
+      Expr* newFirst = call->get(1);
+      if (SymExpr* se = toSymExpr(newFirst)) {
+        INT_ASSERT(se->symbol() == dtString->symbol);
+      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(newFirst)) {
+        INT_ASSERT(strcmp(use->unresolved, "string") == 0);
+        use->replace(new SymExpr(dtString->symbol));
+      } else {
+        INT_ASSERT(false);
+      }
+    }
   }
 }
 
