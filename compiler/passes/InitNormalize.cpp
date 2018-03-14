@@ -86,14 +86,9 @@ InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
   mFn            = curr.mFn;
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
-  mBlockType     = cBlockCond;
+  mPrevBlockType = curr.mPrevBlockType;
+  mBlockType     = curr.mBlockType;
   mThisAsParent  = curr.mThisAsParent;
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
@@ -188,10 +183,6 @@ bool InitNormalize::inLoopBody() const {
   return mBlockType == cBlockLoop;
 }
 
-bool InitNormalize::inCondStmt() const {
-  return mBlockType == cBlockCond;
-}
-
 bool InitNormalize::inParallelStmt() const {
   return mBlockType == cBlockBegin   ||
          mBlockType == cBlockCobegin  ;
@@ -211,10 +202,6 @@ bool InitNormalize::inOn() const {
 
 bool InitNormalize::inOnInLoopBody() const {
   return inOn() && mPrevBlockType == cBlockLoop;
-}
-
-bool InitNormalize::inOnInCondStmt() const {
-  return inOn() && mPrevBlockType == cBlockCond;
 }
 
 bool InitNormalize::inOnInParallelStmt() const {
@@ -1796,10 +1783,6 @@ void InitNormalize::describe(int offset) const {
   switch (mBlockType) {
     case cBlockNormal:
       printf("normal\n");
-      break;
-
-    case cBlockCond:
-      printf("cond\n");
       break;
 
     case cBlockLoop:
