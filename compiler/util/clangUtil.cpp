@@ -1439,7 +1439,7 @@ void prepareCodegenLLVM()
     FM.setNoInfs();
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
-#if HAVE_LLVM_VER < 6
+#if HAVE_LLVM_VER < 60
     FM.setUnsafeAlgebra();
 #else
     FM.setAllowContract(true);
