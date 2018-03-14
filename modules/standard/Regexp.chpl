@@ -406,25 +406,6 @@ class BadRegexpError : Error {
   }
 }
 
-pragma "no doc"
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
-
-  if CHPL_REGEXP == "none" {
-    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
-  }
-
-  var err: syserr;
-  var ret = compile(pattern, err, utf8, posix, literal, nocapture, ignorecase,
-                    multiline, dotnl, nongreedy);
-
-  if err {
-    var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
-    throw new BadRegexpError(err_msg);
-  }
-  return ret;
-}
-
 /*
    Compile a regular expression. If the optional error argument is provided,
    this routine will return an error code if compilation failed. Otherwise, it
@@ -436,8 +417,6 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
                  Chapel string literals
-   :arg error: (optional) if provided, return an error code instead of halting
-               if an error is encountered
    :arg utf8: (optional, default true) set to `true` to create a regular
                expression matching UTF-8; `false` for binary or ASCII only.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
@@ -467,7 +446,12 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
                    ``(?U)``.
 
  */
-proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
+
+  if CHPL_REGEXP == "none" {
+    compilerError("Cannot use Regexp with CHPL_REGEXP=none");
+  }
+
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
   opts.utf8 = utf8;
@@ -479,15 +463,28 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
   opts.dotnl = dotnl;
   opts.nongreedy = nongreedy;
 
-  var ret:regexp;
+  var ret: regexp;
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.length, opts, ret._regexp);
-
-  if qio_regexp_ok(ret._regexp) {
-    error = ENOERR;
-  } else {
-    error = qio_format_error_bad_regexp();
+  if !qio_regexp_ok(ret._regexp) {
+    var err_str = qio_regexp_error(ret._regexp);
+    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    throw new BadRegexpError(err_msg);
   }
+  return ret;
+}
 
+pragma "no doc"
+proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
+  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret: regexp;
+  try {
+    ret = compile(pattern, utf8, posix, literal, nocapture, ignorecase,
+                  multiline, dotnl, nongreedy);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 
