@@ -1,5 +1,5 @@
 class IfInit {
-  var f1: bool;
+  param f1: bool;
   param f2: int;
 
   proc init(param val: int) {
@@ -15,9 +15,9 @@ class IfInit {
 }
 
 proc main() {
-  var c1 : IfInit(3) = new IfInit(3);
+  var c1 : IfInit(true, 0) = new IfInit(3);
 
-  writeln(c1);
+  writeln(c1.type: string);
 
   delete c1;
 }

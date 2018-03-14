@@ -56,19 +56,19 @@ public:
   void            completePhase1(CallExpr* insertBefore);
   void            completePhase0(CallExpr* initStmt);
 
-  void            initializeFieldsAtTail(BlockStmt* block);
-  void            initializeFieldsBefore(Expr*      insertBefore);
+  void            initializeFieldsAtTail(BlockStmt*          block);
+  void            initializeFieldsThroughField(BlockStmt*    block,
+                                               DefExpr*      field);
+  void            initializeFieldsBefore(Expr*               insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
   bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
   bool            inLoopBody()                                           const;
-  bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
   bool            inCoforall()                                           const;
   bool            inForall()                                             const;
   bool            inOn()                                                 const;
   bool            inOnInLoopBody()                                       const;
-  bool            inOnInCondStmt()                                       const;
   bool            inOnInParallelStmt()                                   const;
   bool            inOnInCoforall()                                       const;
   bool            inOnInForall()                                         const;
@@ -91,7 +91,6 @@ public:
 private:
   enum BlockType {
     cBlockNormal,
-    cBlockCond,
     cBlockLoop,
     cBlockBegin,
     cBlockCobegin,
