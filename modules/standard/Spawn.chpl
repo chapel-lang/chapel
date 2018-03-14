@@ -723,12 +723,13 @@ module Spawn {
     try _throw_on_launch_error();
 
     if buffer {
-      this.communicate(error);
+      try this.communicate();
       return;
     }
 
+    var err: syserr = this.spawn_error;
     if !running {
-      if this.spawn_error then try ioerror(err, "in subprocess.wait");
+      if err then try ioerror(err, "in subprocess.wait");
       return;
     }
 
@@ -737,7 +738,6 @@ module Spawn {
     //   - use catch { } to continue despite an Error
     //   - extract a syserr if a SystemError is caught
     // - at the end, throw an error if err is set
-    var err: syserr = ENOERR;
     on home {
       // Close stdin.
       if this.stdin_pipe {
@@ -783,7 +783,7 @@ module Spawn {
 
   // documented in the throws version
   pragma "no doc"
-  proc subprocess.wait(buffer=true) {
+  proc subprocess.wait(out error:syserr, buffer=true) {
     compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
     try {
       this.wait(buffer);

@@ -423,7 +423,7 @@ proc realPath(out error: syserr, name: string): string {
     if (is_c_nil(_file_internal)) {
       // This file is referencing a null file.  We'll get a segfault if we
       // continue.
-      throw SystemError.fromSyserr(EBADF);
+      try ioerror(EBADF:syserr, "in file.realPath");
     }
     var err = chpl_fs_realpath_file(_file_internal, res);
     if err then try ioerror(err, "in file.realPath");

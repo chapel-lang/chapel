@@ -2,14 +2,17 @@ use Spawn;
 
 var sub = spawn(["./junk"]);
 
-var error:syserr;
-sub.wait(error=error);
+try {
+  sub.wait();
+} catch {
+  assert(sub.running == false);
 
-assert(sub.running == false);
+  // Different systems report this kind of error
+  // at different times. On Mac OS X, error != 0,
+  // but on Linux, exit_status != 0.
+  assert(sub.exit_status != 0);
 
-// Different systems report this kind of error
-// at different times. On Mac OS X, error != 0,
-// but on Linux, exit_status != 0.
-assert(error != 0 || sub.exit_status != 0);
+  writeln("successfully handled error");
+}
 
 sub.close();
