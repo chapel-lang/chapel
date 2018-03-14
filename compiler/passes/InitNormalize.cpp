@@ -284,7 +284,7 @@ void InitNormalize::initializeFieldsThroughField(BlockStmt* block,
 
   block->insertAtTail(insertBefore);
 
-  Expr* endCondition = ((field == NULL)? NULL : field->next);
+  Expr* endCondition = ((field == NULL)? NULL : field);
 
   while (mCurrField != NULL && mCurrField != endCondition) {
     DefExpr* field = mCurrField;
