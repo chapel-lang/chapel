@@ -5129,6 +5129,13 @@ static void resolveInitVar(CallExpr* call) {
       call->primitive = primitives[PRIM_MOVE];
 
       resolveMove(call);
+    } else if (rhs->symbol()->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // Don't need to copy string literals
+      dst->type       = src->type;
+
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveMove(call);
 
     } else if (findCopyInit(ct) != NULL) {
       dst->type = src->type;
