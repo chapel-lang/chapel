@@ -2,5 +2,7 @@
 
 import os
 
+# test is long running, but no need to validate it outside of normal
+# perf testing.
 print(os.getenv('CHPL_TEST_PERF') == 'on' and
       os.getenv('CHPL_LAUNCHER') != 'none')
