@@ -641,6 +641,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
+            stateThen.merge(stateElse);
             state.merge(stateThen);
 
           } else {
