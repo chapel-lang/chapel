@@ -2,7 +2,10 @@
 
 import os
 
-# test is long running, but no need to validate it outside of normal
-# perf testing.
+"""
+This test measures performance writes, where we only care about on-node
+performance, so we skip performance testing when launching onto another
+node
+"""
 print(os.getenv('CHPL_TEST_PERF') == 'on' and
       os.getenv('CHPL_LAUNCHER') != 'none')
