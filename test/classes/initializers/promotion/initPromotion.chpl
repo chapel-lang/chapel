@@ -8,7 +8,6 @@ class GenericClass {
   proc init(type i, param r : int) {
     this.idxType = i;
     this.rank = r;
-    super.init();
   }
 
   iter these() {

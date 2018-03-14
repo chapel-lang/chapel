@@ -1559,7 +1559,6 @@ class Matrix {
       this.m = m;
       this.n = n;
       aDom = {1..m, 1..n};
-      super.init();
    }
 
    /* Construct an m-by-n constant matrix.
@@ -1573,7 +1572,6 @@ class Matrix {
       this.n = n;
       aDom = {1..m, 1..n};
       A = s;
-      super.init();
    }
 
    /* Construct a matrix from a 2-D array.
@@ -1618,7 +1616,6 @@ class Matrix {
       this.n = n;
       this.aDom = {1..m, 1..n};
       this.A = A(this.aDom);
-      super.init();
    }
 
    /* Construct a matrix from a one-dimensional packed array

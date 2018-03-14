@@ -37,7 +37,6 @@ class MasonError : Error {
   var msg:string;
   proc init(msg:string) {
     this.msg = msg;
-    super.init();
   }
   proc message() {
     return msg;

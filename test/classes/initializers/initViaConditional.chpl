@@ -5,7 +5,6 @@ class C {
 
   proc init(flag: bool) {
     x = if flag then 1.2 else 3.4;
-    super.init();
   }
 }
 

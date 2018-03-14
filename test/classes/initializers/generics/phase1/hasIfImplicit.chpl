@@ -11,7 +11,6 @@ class IfInit {
 
     // Error f2 is only initialized if f1 is false
 
-    super.init();
   }
 }
 

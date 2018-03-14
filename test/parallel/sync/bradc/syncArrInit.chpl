@@ -3,7 +3,6 @@ class C {
 
   proc init(v1: int) {
     irng = v1..v1;
-    super.init();
   }
 }
 

@@ -7,7 +7,6 @@ class Foo {
 
   proc init() {
     t = int;
-    super.init();
   }
 }
 

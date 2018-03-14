@@ -5,7 +5,7 @@ class Foo {
     x = xVal + yVal;
     cobegin {
       on xVal.locale {
-        super.init();
+        this.initDone();
       }
       writeln("in cobegin, whee!");
     }

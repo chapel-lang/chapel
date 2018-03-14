@@ -3,7 +3,7 @@ class Foo {
 
   proc init() {
     p = 2;
-    super.init();
+
   }
 }
 
@@ -13,7 +13,7 @@ class Bar : Foo {
   proc init(xVal) {
     x = xVal;
     p = 6;
-    super.init();
+
   }
 }
 

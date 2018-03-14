@@ -7,7 +7,6 @@ class Foo {
 
   proc init(xVal: tAlias) {
     x = xVal;
-    super.init();
   }
 }
 

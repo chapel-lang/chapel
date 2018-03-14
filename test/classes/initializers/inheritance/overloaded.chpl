@@ -3,7 +3,6 @@ class Parent {
 
   proc init() {
     covered = 4;
-    super.init();
   }
 }
 
@@ -12,7 +11,6 @@ class Child: Parent {
 
   proc init(val) {
     covered = val;
-    super.init();
   }
 }
 

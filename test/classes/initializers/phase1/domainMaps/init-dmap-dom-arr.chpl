@@ -7,7 +7,6 @@ class VDistArray {
   proc init(val0: int, min: int, max: int) {
     this.C = new dmap(new Cyclic(min));
     this.D = {min..max};
-    super.init();
   }
 }
 

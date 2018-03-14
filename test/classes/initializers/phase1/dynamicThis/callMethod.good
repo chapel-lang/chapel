@@ -1,0 +1,29 @@
+----- implicit super.init -----
+Parent.init()
+phase one
+Parent.parentOnly()
+Parent.inheritedMethod()
+phase two
+Child.inheritedMethod()
+implicit = {a = 1, b = 5.0, x = 5, y = -5.0}
+
+----- explicit super.init -----
+Parent.init(a, b)
+phase one
+Parent.parentOnly()
+Parent.inheritedMethod()
+phase two
+Child.inheritedMethod()
+explicit = {a = 1, b = 10.0, x = 100, y = 1000.0}
+
+----- this.init -----
+Child this.init()
+Parent.init(a, b)
+phase one
+Parent.parentOnly()
+Parent.inheritedMethod()
+phase two
+Child.inheritedMethod()
+phase two
+Child.inheritedMethod()
+thisInit = {a = 1, b = 1.0, x = 1, y = 1.0}

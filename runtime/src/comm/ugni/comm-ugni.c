@@ -39,6 +39,10 @@
 #include <gni_pub.h>    // <stddef.h> and <stdint.h> must come first
 #include <hugetlbfs.h>  // <sys/types.h> must come first
 
+#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS                                 \
+          (defined(GNI_VERSION_FMA_CHAIN_TRANSACTIONS)                  \
+           && GNI_VERSION >= GNI_VERSION_FMA_CHAIN_TRANSACTIONS)
+
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
@@ -1465,8 +1469,10 @@ static chpl_bool reacquire_comm_dom(int);
 static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
 static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
                                    chpl_bool);
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
+#endif
 static void      local_yield(void);
 
 
@@ -4090,7 +4096,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 
 #define PPDI_NEXT(_i) (((_i) + 1) & (PPDESCS_CNT - 1))
 
-    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = { 0 };
+    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = {{ 0 }};
     static int last_ppdi = 0;
     int ppdi;
 
@@ -4834,14 +4840,15 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
                      void** tgt_addr_v, size_t* size_v,
                      mem_region_t** remote_mr_v, drpg_may_proxy_t may_proxy)
 {
-  int vi, ci = -1;
-  mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
-  gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
-
-  DBG_P_LP(DBGF_GETPUT, "DoRemPut(%d) %p -> %d:%p (%#zx), proxy %c",
+  DBG_P_LP(DBGF_GETPUT, "DoRemPutV(%d) %p -> %d:%p (%#zx), proxy %c",
            v_len, src_addr_v[0], (int) locale_v[0], tgt_addr_v[0], size_v[0],
            may_proxy ? 'y' : 'n');
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is new enough to support chained transactions.
+  //
 
   //
   // If there are more than we can handle at once, block them up.
@@ -4860,10 +4867,15 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
     return;
 
   //
-  // Do all these PUTs in one chained transaction.  Except: if we can
-  // proxy these PUTs then defer to the scalar PUT routine for any that
-  // refer to unregistered memory on the remote side.
+  // Do all these PUTs in one chained transaction.  Except: if we have to
+  // proxy any of these PUTs because they refer to unregistered memory on
+  // the remote side then defer to the scalar PUT routine for that.
   //
+  int vi, ci = -1;
+  mem_region_t* remote_mr;
+  gni_post_descriptor_t pd;
+  gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
+
   for (vi = 0, ci = -1; vi < v_len; vi++) {
     remote_mr = ((remote_mr_v == NULL)
                  ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
@@ -4914,6 +4926,19 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
 
   if (ci != -1)
     post_fma_ct_and_wait(locale_v, &pd);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is too old to support chained transactions.  Just do
+  // normal ones.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
+                  (remote_mr_v == NULL) ? NULL : remote_mr_v[vi], may_proxy);
+  }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 
@@ -7253,6 +7278,8 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 }
 
 
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
 static
 inline
 int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
@@ -7320,6 +7347,8 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 
   CQ_CNT_DEC(&comm_doms[cdi]);
 }
+
+#endif
 
 
 static

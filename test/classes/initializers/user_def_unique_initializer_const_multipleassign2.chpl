@@ -7,7 +7,6 @@ class C {
     x = y + z;
     x = 1;
 
-    super.init();
   }
 }
 

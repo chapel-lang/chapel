@@ -7,7 +7,6 @@ class Foo {
   proc init() {
     x = 10;
     throw new Error();
-    super.init();
   }
 }
 

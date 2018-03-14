@@ -30,13 +30,6 @@
 #include "type.h"
 #include "typeSpecifier.h"
 
-enum InitStyle {
-  STYLE_NONE          = 0,
-  STYLE_SUPER_INIT    = 1,
-  STYLE_THIS_INIT     = 2,
-  STYLE_THIS_INITDONE = 4
-};
-
 static bool     isInitStmt (CallExpr* stmt);
 
 static bool     isUnacceptableTry(Expr* stmt);
@@ -55,7 +48,6 @@ static void     transformSuperInit(CallExpr* initCall);
 static bool     isStringLiteral(Expr* expr, const char* name);
 static bool     isSymbolThis(Expr* expr);
 
-static int      findInitStyle(BlockStmt* block);
 static void     addSuperInit(FnSymbol* fn);
 
 /************************************* | **************************************
@@ -308,16 +300,34 @@ static void preNormalizeInitClass(FnSymbol* fn) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
     finalState.initializeFieldsAtTail(fn->body);
 
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
+
   // The body contains zero or more instances of this.initDone()
-  // If there isn't a super.init or this.init anywhere, we need to insert
-  // a super.init call.
-  //
-  // INIT TODO: Don't we always need to insert a super.init?
+  // A super.init is not present because the state is phase one, so we need to
+  // insert one.
   } else if (state.isPhase1() == true) {
-    InitNormalize finalState = preNormalize(at, fn->body, state);
+    Expr* startStmt = fn->body->body.head;
+
+    CallExpr* dummy = new CallExpr("init", gMethodToken, fn->_this);
+    fn->insertAtHead(dummy);
+    state.makeThisAsParent(dummy);
+    dummy->remove();
+
+    // Call with 'startStmt' to avoid processing the 'this as parent' setup
+    InitNormalize finalState = preNormalize(at, fn->body, state, startStmt);
     finalState.initializeFieldsAtTail(fn->body);
 
     addSuperInit(fn);
+
+    // If an initDone was not encountered, we need to set the class ID on our
+    // way out of this initializer.
+    if (finalState.isPhase1() == true) {
+      fn->insertAtTail(new CallExpr(PRIM_SETCID, fn->_this));
+    }
 
   } else {
     INT_ASSERT(false);
@@ -428,14 +438,6 @@ static InitNormalize preNormalize(AggregateType* at,
   // This sub-block may have a different phase than the parent
   state.checkPhase(block);
 
-  // INIT TODO: Temporary workaround to allow field initialization before
-  // phase one, which aids transition process by reducing diff sizes.
-  bool hasThisInit = false;
-  if (state.isPhase0()) {
-    int foundInit = findInitStyle(block);
-    hasThisInit = foundInit & STYLE_THIS_INIT;
-  }
-
   while (stmt != NULL) {
     if (isUnacceptableTry(stmt) == true) {
       USR_FATAL(stmt,
@@ -443,7 +445,7 @@ static InitNormalize preNormalize(AggregateType* at,
                 "initializers for now");
 
     } else if (isDefExpr(stmt) == true) {
-      state.checkAndEmitErrors(stmt);
+      state.processThisUses(stmt);
 
       stmt = stmt->next;
 
@@ -476,6 +478,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
           } else {
             transformSuperInit(callExpr);
+            state.makeThisAsParent(callExpr);
           }
 
           stmt = next;
@@ -496,11 +499,9 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is simple/compound assignment to a local field
       } else if (DefExpr* field = toLocalFieldInit(state.type(), callExpr)) {
-        // INIT TODO: Emit error for local field initialization before
-        // super.init() as well as this.init()
-        if (state.isPhase0() == true && hasThisInit == true) {
+        if (state.isPhase0() == true) {
           USR_FATAL(stmt,
-                    "field initialization not allowed before this.init()");
+                    "field initialization not allowed before super.init() or this.init()");
 
         } else if (state.isPhase2() == true) {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
@@ -577,7 +578,7 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // No action required
       } else {
-        state.checkAndEmitErrors(stmt);
+        state.processThisUses(stmt);
 
         stmt = stmt->next;
       }
@@ -1049,48 +1050,6 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
   normalize(fn);
 
   return fn;
-}
-
-/************************************* | **************************************
-* Returns an integer encoding the types of initializers found in the block.   *
-* The possible values are the union of the values in InitStyle.               *
-*                                                                             *
-* For example, to determine if a super.init was found:                        *
-*   bool foundSuper = findInitStyle(fn->body) & STYLE_SUPER_INIT:             *
-*                                                                             *
-************************************** | *************************************/
-
-static int findInitStyle(BlockStmt* block) {
-  Expr* stmt = block->body.head;
-  int retval = STYLE_NONE;
-
-  while (stmt != NULL && retval == STYLE_NONE) {
-    if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if (isSuperInit(callExpr) == true) {
-        retval = STYLE_SUPER_INIT;
-      } else if (isThisInit(callExpr) == true) {
-        retval = STYLE_THIS_INIT;
-      }
-
-    } else if (CondStmt* cond = toCondStmt(stmt)) {
-      if (cond->elseStmt == NULL) {
-        retval = findInitStyle(cond->thenStmt);
-
-      } else {
-        retval = findInitStyle(cond->thenStmt) | findInitStyle(cond->elseStmt);
-      }
-
-    } else if (BlockStmt* block = toBlockStmt(stmt)) {
-      retval = findInitStyle(block);
-
-    } else if (ForallStmt* block = toForallStmt(stmt)) {
-      retval = findInitStyle(block->loopBody());
-    }
-
-    stmt = stmt->next;
-  }
-
-  return retval;
 }
 
 static void addSuperInit(FnSymbol* fn) {

@@ -3,7 +3,7 @@ proc printer(args...) {
   for a in args do writeln(a);
 }
 
-class C {
+record C {
   var x : int;
   var y : real;
 

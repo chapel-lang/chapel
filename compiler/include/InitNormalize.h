@@ -85,8 +85,10 @@ public:
 
   void            describe(int offset = 0)                               const;
 
-  void            checkAndEmitErrors(Expr* expr);
-  void            checkAndEmitErrors(CallExpr* call);
+  void            processThisUses(Expr* expr);
+  void            processThisUses(CallExpr* call);
+
+  void            makeThisAsParent(CallExpr* initCall);
 
 private:
   enum BlockType {
@@ -158,6 +160,7 @@ private:
   InitPhase       mPhase;
   BlockType       mBlockType;
   BlockType       mPrevBlockType;
+  VarSymbol*      mThisAsParent;
 
   std::set<DefExpr*> mImplicitFields;
 };

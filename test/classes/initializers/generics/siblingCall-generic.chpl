@@ -9,7 +9,6 @@ class Foo {
   proc init(type tVal, xVal) {
     t = tVal;
     x = xVal;
-    super.init();
   }
 }
 
