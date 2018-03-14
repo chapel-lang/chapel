@@ -4,7 +4,7 @@ proc testReadWrite(dt) {
   var dt2: dt.type;
   var mem = openmem();
   var writer = mem.writer();
-  writer.write(dt:string);
+  writer.writef("%jt", dt);
   var reader = mem.reader();
 
   reader.readf("%jt", dt2);
