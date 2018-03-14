@@ -39,9 +39,12 @@
 #include <gni_pub.h>    // <stddef.h> and <stdint.h> must come first
 #include <hugetlbfs.h>  // <sys/types.h> must come first
 
-#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS                                 \
-          (defined(GNI_VERSION_FMA_CHAIN_TRANSACTIONS)                  \
-           && GNI_VERSION >= GNI_VERSION_FMA_CHAIN_TRANSACTIONS)
+#if defined(GNI_VERSION_FMA_CHAIN_TRANSACTIONS) \
+      && GNI_VERSION >= GNI_VERSION_FMA_CHAIN_TRANSACTIONS
+#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 1
+#else
+#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 0
+#endif
 
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
