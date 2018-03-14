@@ -610,6 +610,8 @@ static InitNormalize preNormalize(AggregateType* at,
 
           if (stateThen.currField() != state.currField()) {
             cond->elseStmt = new BlockStmt();
+            insert_help(cond->elseStmt, cond, cond->parentSymbol);
+
             state.initializeFieldsThroughField(cond->elseStmt,
                                                stateThen.currField());
             INT_ASSERT(stateThen.currField() == state.currField());
