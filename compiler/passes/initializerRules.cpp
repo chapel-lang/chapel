@@ -1327,6 +1327,11 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   forv_Vec(FnSymbol, method, at->methods) {
     if (method->isPostInitializer()) {
       found = true;
+      if (method->formals.length > 2) {
+        // Only accept method token and 'this'
+        ret += 1;
+        USR_FATAL_CONT(method, "postInit must have zero arguments");
+      }
       if (at->isClass() == true && insertSuper == true) {
         insertSuperPostInit(method);
       }
