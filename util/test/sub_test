@@ -2054,8 +2054,7 @@ for testname in testsrc:
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0]
+                                                          stderr=subprocess.STDOUT).communicate()[0]
                         sys.stdout.write(bytes_to_str(systemPrediffBytes))
 
                     if globalPrediff:
@@ -2067,8 +2066,7 @@ for testname in testsrc:
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0]
+                                                          stderr=subprocess.STDOUT).communicate()[0]
                         sys.stdout.write(bytes_to_str(globalPrediffBytes))
 
                     if prediff:
@@ -2080,8 +2078,7 @@ for testname in testsrc:
                                                           ' '+compopts,
                                                           ' '.join(args)],
                                                           stdout=subprocess.PIPE,
-                                                          stderr=subprocess.STDOUT).
-                                        communicate()[0]
+                                                          stderr=subprocess.STDOUT).communicate()[0]
                         sys.stdout.write(bytes_to_str(prediffBytes))
 
                     if not perftest:
