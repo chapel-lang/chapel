@@ -30,7 +30,7 @@
 class ForallStmt : public Stmt
 {
 public:
-  bool       zippered()       const; // 'zip' keyword used or just 1 index var
+  bool       zippered()       const; // 'zip' keyword used and >1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
