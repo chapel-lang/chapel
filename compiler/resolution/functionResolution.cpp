@@ -5859,8 +5859,6 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-  VarSymbol*     newTmp   = newTemp("new_temp", at);
-  DefExpr*       def      = new DefExpr(newTmp);
 
   if (isCallExpr(call->get(1)) == true) {
     // Happens when the type on which we are calling new is a nested type.
@@ -5873,16 +5871,39 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   }
 
   if (at->isClass() == true) {
+    // Convert PRIM_NEW(...) to _new(...)
     call->setUnresolvedFunction("_new");
 
     if (isBlockStmt(call->parentExpr) == true) {
+      // Either
+      //   1) a statement that is a standalone new expr
+      //   2) the typeExpr/initExpr for a formal
+      //
+      // Introduce a tmp and wrap the call to _new() in a move to that tmp
+      //
+
+      VarSymbol* newTmp = newTemp("new_temp", at);
+      DefExpr*   def    = new DefExpr(newTmp);
+      CallExpr*  move   = NULL;
+
       call->insertBefore(def);
 
-    } else {
-      call->parentExpr->insertBefore(def);
+      // Remove the _new() call from the tree and wrap it in a move
+      move = new CallExpr(PRIM_MOVE, newTmp, call->remove());
+
+      // Insert the move back in the correct position
+      def->insertAfter(move);
+
+      // If this is formal default then the block must end with the tmp
+      if (isArgSymbol(call->parentSymbol) == true) {
+        move->insertAfter(new SymExpr(newTmp));
+      }
     }
 
   } else {
+    VarSymbol* newTmp = newTemp("new_temp", at);
+    DefExpr*   def    = new DefExpr(newTmp);
+
     call->setUnresolvedFunction("init");
 
     if (isBlockStmt(call->parentExpr) == true) {
