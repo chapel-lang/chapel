@@ -1070,8 +1070,24 @@ module Math {
      }
     return a;
   }
-
-
+  /*If given three numbers x, y and p, it computes (x^y) % p.*/
+proc modularexp(in x: int,in n: int,in m: int):int
+	{
+		var y:int=0; 
+			if(n==0)
+		{
+			return 1;
+		}
+			else if(n%2==0)
+		{
+			y=modularexp(x,n/2,m);
+			return (y*y)%m;
+		}
+			else
+		{
+			return ((x%m)*modularexp(x,n-1,m))%m;
+		}
+		}
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   extern "j0f" proc j0(x: real(32)): real(32);
