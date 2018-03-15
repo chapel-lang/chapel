@@ -1,0 +1,6 @@
+record-borrows.chpl:54: In function 'badReturnRefLocalRec':
+record-borrows.chpl:56: error: Reference to scoped variable cannot be returned
+record-borrows.chpl:55: note: consider scope of r
+record-borrows.chpl:84: In function 'bad':
+record-borrows.chpl:87: error: Scoped variable globalRA would outlive the value it is set to
+record-borrows.chpl:85: note: consider scope of c

@@ -90,11 +90,13 @@ module SharedObject {
     type t;              // contained type (class type)
 
     pragma "no doc"
+    pragma "owned"
     var p:t;             // contained pointer (class type)
 
     forwarding p;
 
     pragma "no doc"
+    pragma "owned"
     var pn:ReferenceCount; // reference counter
 
     /*

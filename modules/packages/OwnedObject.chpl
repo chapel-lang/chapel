@@ -64,6 +64,7 @@ module OwnedObject {
     type t;                // contained type (class type)
 
     pragma "no doc"
+    pragma "owned"
     var p:t;               // contained pointer (class type)
 
     forwarding p;
@@ -166,6 +167,7 @@ module OwnedObject {
   // for problems with generic initializers
   pragma "init copy fn"
   pragma "no doc"
+  pragma "unsafe"
   proc chpl__initCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
@@ -179,6 +181,7 @@ module OwnedObject {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "erroneous autocopy"
+  pragma "unsafe"
   proc chpl__autoCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;

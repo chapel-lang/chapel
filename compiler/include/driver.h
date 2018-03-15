@@ -137,6 +137,7 @@ extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
 extern bool fUserDefaultInitializers;
+extern bool fLifetimeChecking;
 extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
