@@ -5699,25 +5699,23 @@ bool isDispatchParent(Type* t, Type* pt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void           resolveNewAT(CallExpr* call);
+static void     resolveNewAT(CallExpr* call);
 
-static bool           resolveNewHasInitializer(AggregateType* at);
+static bool     resolveNewHasInitializer(AggregateType* at);
 
-static void           resolveNewHandleConstructor(CallExpr* call);
+static void     resolveNewHandleConstructor(CallExpr* call);
 
-static void           resolveNewHandleNonGenericInitializer(CallExpr* call);
+static void     resolveNewHandleNonGenericInitializer(CallExpr* call);
 
-static void           resolveNewHandleGenericInitializer(CallExpr* call);
+static void     resolveNewHandleGenericInitializer(CallExpr* call);
 
-static AggregateType* resolveNewOriginalGenericType(CallExpr* call);
+static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
+                                              CallExpr*      call,
+                                              VarSymbol*     newTmp);
 
-static void           fixupArgDefaultWhenRecordInit(AggregateType* at,
-                                                    CallExpr*      call,
-                                                    VarSymbol*     newTmp);
+static SymExpr* resolveNewFindTypeExpr(CallExpr* call);
 
-static SymExpr*       resolveNewFindTypeExpr(CallExpr* call);
-
-static void           resolveNewHalt(CallExpr* call);
+static void     resolveNewHalt(CallExpr* call);
 
 static void resolveNew(CallExpr* call) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(call)) {
@@ -5916,7 +5914,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-  AggregateType* tmpType  = resolveNewOriginalGenericType(call);
+  AggregateType* tmpType  = at->getRootInstantiation();
   VarSymbol*     newTmp   = newTemp("new_temp", tmpType);
   DefExpr*       def      = new DefExpr(newTmp);
   FnSymbol*      initFn   = NULL;
@@ -6003,23 +6001,6 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
   }
 }
 
-// If the type was instantiated then determine the original generic type
-static AggregateType* resolveNewOriginalGenericType(CallExpr* call) {
-  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-  AggregateType* retval   = at;
-
-  if (at->instantiatedFrom != NULL) {
-    retval = at->instantiatedFrom;
-
-    while (retval->instantiatedFrom != NULL) {
-      retval = retval->instantiatedFrom;
-    }
-  }
-
-  return retval;
-}
-
 // Provide the return type for new expressions in default arguments to other
 // parts of resolution. (Because the `new` expression is top level for argument
 // symbols, we would fail to insert the temporary needed for argument analysis
@@ -6079,6 +6060,7 @@ static void resolveNewHalt(CallExpr* call) {
 
   if (name == NULL) {
     USR_FATAL(call, "invalid use of 'new'");
+
   } else {
     USR_FATAL(call, "invalid use of 'new' on %s", name);
   }
