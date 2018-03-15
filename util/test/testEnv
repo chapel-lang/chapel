@@ -2,9 +2,9 @@
 
 use Cwd 'abs_path';
 
-# Find the test util directory -- set this in start_test to permit
-# a version of start_test other than the one in CHPL_HOME to be used
-my $utildir = $ENV{"CHPL_TEST_UTIL_DIR"};
+# If CHPL_TEST_UTIL_DIR is set, use that as the directory from which
+# to run printchplenv.  If it's not set, use $CHPL_HOME/util.
+my $utildir = defined($ENV{"CHPL_TEST_UTIL_DIR"}) ? $ENV{"CHPL_TEST_UTIL_DIR"} : "$ENV{'CHPL_HOME'}/util";
 
 #
 # Set standard CHPL_* environment variables, if they are not already set.
