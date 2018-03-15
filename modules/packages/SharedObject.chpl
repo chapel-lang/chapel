@@ -85,6 +85,7 @@ module SharedObject {
      This is currently implemented with task-safe reference counting.
 
    */
+  pragma "managed pointer"
   record Shared {
     pragma "no doc"
     type t;              // contained type (class type)
@@ -229,5 +230,11 @@ module SharedObject {
     lhs.clear();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
+  }
+
+  // This is a workaround
+  pragma "no doc"
+  proc chpl__autoDestroy(x: Shared) {
+    __primitive("call destructor", x);
   }
 }
