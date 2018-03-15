@@ -1,0 +1,5 @@
+A.init
+B.init
+Start of B.postInit
+A.postInit
+End of B.postInit

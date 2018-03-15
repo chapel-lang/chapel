@@ -1273,6 +1273,10 @@ static bool isDerivedType(Type* type, Flag flag)
   return retval;
 }
 
+bool isManagedPtrType(const Type* t) {
+  return t->symbol->hasFlag(FLAG_MANAGED_POINTER);
+}
+
 bool isSyncType(const Type* t) {
   return t->symbol->hasFlag(FLAG_SYNC);
 }

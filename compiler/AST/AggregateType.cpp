@@ -508,7 +508,7 @@ bool AggregateType::setNextGenericField() {
 *   3) A generic derived class with a concrete parent                         *
 *                                                                             *
 *   4) A generic derived class with purely     concrete local fields          *
-*   5) A generic dervied class with additional generic  local fields          *
+*   5) A generic derived class with additional generic  local fields          *
 *                                                                             *
 * The first three cases are effectively equivalent; this code needs to bind   *
 * the local fields and find/create an instantiated type.                      *
@@ -562,11 +562,11 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
   return retval;
 }
 
-// Find or create an instantation that has the provided parent as its parent
+// Find or create an instantiation that has the provided parent as its parent
 AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
   AggregateType* retval = NULL;
 
-  // Scan the current instantations
+  // Scan the current instantiations
   for (size_t i = 0; i < instantiations.size() && retval == NULL; i++) {
     AggregateType* at = instantiations[i];
 
@@ -576,7 +576,7 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
     }
   }
 
-  // If nothing was found then create a new instantation
+  // If nothing was found then create a new instantiation
   if (retval == NULL) {
     const char* parentName  = parent->symbol->name;
     const char* parentCname = parent->symbol->cname;
@@ -2030,6 +2030,10 @@ bool AggregateType::needsConstructor() {
   // We don't want a default constructor if the type has been explicitly marked
   if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
     return false;
+
+  if (hasPostInitializer() == true) {
+    return false;
+  }
 
   ModuleSymbol* mod = getModule();
 

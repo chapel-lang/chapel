@@ -1413,6 +1413,32 @@ static IntentTag getIntent(ArgSymbol* formal) {
   return retval;
 }
 
+static bool argumentCanModifyActual(ArgSymbol* formal) {
+  IntentTag intent = getIntent(formal);
+  switch (intent) {
+    case INTENT_CONST:
+    case INTENT_BLANK:
+    case INTENT_PARAM:
+    case INTENT_TYPE:
+      INT_FATAL("Should never be reached");
+      return false;
+    case INTENT_IN:
+    case INTENT_CONST_IN:
+    case INTENT_CONST_REF:
+      return false;
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_REF:
+    case INTENT_REF_MAYBE_CONST: // this is conservative
+      return true;
+  }
+  return false;
+}
+
+static void issueErrorValueTemporaryToRef(CallExpr* call, ArgSymbol* formal) {
+  USR_FATAL_CONT(call, "value from coercion passed to ref formal '%s'", formal->name);
+}
+
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
 static void addArgCoercion(FnSymbol*  fn,
@@ -1467,14 +1493,37 @@ static void addArgCoercion(FnSymbol*  fn,
     checkAgain = true;
     castCall   = new CallExpr("readFE", gMethodToken, prevActual);
 
+    if (argumentCanModifyActual(formal))
+      issueErrorValueTemporaryToRef(call, formal);
+
   } else if (isSingleType(ats->getValType()) == true) {
     checkAgain = true;
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
 
+    if (argumentCanModifyActual(formal))
+      issueErrorValueTemporaryToRef(call, formal);
+
+  } else if (isManagedPtrType(ats->getValType()) == true &&
+             !isManagedPtrType(formal->getValType())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
+    if (argumentCanModifyActual(formal))
+      issueErrorValueTemporaryToRef(call, formal);
+
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
                formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+
+    // MPF: I'm adding this assert in order to reduce my level
+    // of concern about this code.
+    AggregateType* at = toAggregateType(ats->getValType());
+    if (isUserDefinedRecord(at))
+      if (propagateNotPOD(at))
+        INT_FATAL("would add problematic deref");
+
     //
     // dereference a reference actual
     //
