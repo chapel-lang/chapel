@@ -39,7 +39,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:ssize_t);
+        chan.readBytes(buf, cap);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
