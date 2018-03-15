@@ -1,6 +1,4 @@
 
-config const flag = true;
-
 class A {
   var a : int;
   proc init() {
@@ -28,5 +26,10 @@ class B : A {
   }
 }
 
-var b = new B(flag);
-delete b;
+var t = new B(true);
+delete t;
+
+writeln();
+
+var f = new B(false);
+delete f;
