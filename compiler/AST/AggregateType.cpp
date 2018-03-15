@@ -2031,6 +2031,10 @@ bool AggregateType::needsConstructor() {
   if (symbol->hasFlag(FLAG_USE_DEFAULT_INIT))
     return false;
 
+  if (hasPostInitializer() == true) {
+    return false;
+  }
+
   ModuleSymbol* mod = getModule();
 
   // For now, always generate a default constructor for types in the internal

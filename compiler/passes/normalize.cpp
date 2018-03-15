@@ -136,6 +136,7 @@ void normalize() {
         isRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
+    preNormalizePostInit(at);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
