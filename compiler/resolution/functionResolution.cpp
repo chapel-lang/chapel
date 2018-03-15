@@ -5709,10 +5709,6 @@ static void     resolveNewHandleNonGenericInitializer(CallExpr* call);
 
 static void     resolveNewHandleGenericInitializer(CallExpr* call);
 
-static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
-                                              CallExpr*      call,
-                                              VarSymbol*     newTmp);
-
 static SymExpr* resolveNewFindTypeExpr(CallExpr* call);
 
 static void     resolveNewHalt(CallExpr* call);
@@ -5850,7 +5846,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   VarSymbol*     newTmp   = newTemp("new_temp", at);
   DefExpr*       def      = new DefExpr(newTmp);
 
-  if (isCallExpr(call->get(1))) {
+  if (isCallExpr(call->get(1)) == true) {
     // Happens when the type on which we are calling new is a nested type.
     // In that case, the second argument to that inner call should be used as
     // the "outer" argument to the _new or init function.
@@ -5860,7 +5856,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     call->insertAtHead(typeExpr);
   }
 
-  if (isClass(at) == true) {
+  if (at->isClass() == true) {
     // Convert the PRIM_NEW to a normal call
     call->primitive = NULL;
     call->baseExpr  = new UnresolvedSymExpr("_new");
@@ -5874,8 +5870,6 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
       call->parentExpr->insertBefore(def);
     }
 
-    resolveExpr(call);
-
   } else {
     // Convert the PRIM_NEW to a normal call
     call->primitive = NULL;
@@ -5883,7 +5877,14 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 
     parent_insert_help(call, call->baseExpr);
 
-    fixupArgDefaultWhenRecordInit(at, call, newTmp);
+    if (at->isClass() == false) {
+      if (isBlockStmt(call->parentExpr) == true) {
+        if (isArgSymbol(call->parentSymbol)          == true  &&
+            toBlockStmt(call->parentExpr)->body.tail == call) {
+          call->insertAfter(new SymExpr(newTmp));
+        }
+      }
+    }
 
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
@@ -5904,9 +5905,9 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     // Invoking an instance method
     call->insertAtHead(new SymExpr(newTmp));
     call->insertAtHead(new SymExpr(gMethodToken));
-
-    resolveExpr(call);
   }
+
+  resolveCall(call);
 }
 
 static void resolveNewHandleGenericInitializer(CallExpr* call) {
@@ -5929,7 +5930,14 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   parent_insert_help(call, call->baseExpr);
 
-  fixupArgDefaultWhenRecordInit(at, call, newTmp);
+  if (at->isClass() == false) {
+    if (isBlockStmt(call->parentExpr) == true) {
+      if (isArgSymbol(call->parentSymbol)          == true  &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
+    }
+  }
 
   if (isBlockStmt(call->parentExpr) == true) {
     call->insertBefore(def);
@@ -5969,12 +5977,12 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
     } else {
       // If it isn't, error
       USR_FATAL_CONT(call,
-                   "Best initializer match doesn't work for generic "
+                     "Best initializer match doesn't work for generic "
                      "instantiation %s",
                      at->symbol->name);
 
       USR_PRINT(initFn,
-              "Best initializer match was defined here, and generated "
+                "Best initializer match was defined here, and generated "
                 "instantiation %s",
                 initFn->_this->type->symbol->name);
 
@@ -5998,23 +6006,6 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
     resolveFunction(initFn);
 
     def->remove();
-  }
-}
-
-// Provide the return type for new expressions in default arguments to other
-// parts of resolution. (Because the `new` expression is top level for argument
-// symbols, we would fail to insert the temporary needed for argument analysis
-// to appropriately determine the type without inserting this SymExpr directly)
-static void fixupArgDefaultWhenRecordInit(AggregateType* at,
-                                          CallExpr*      call,
-                                          VarSymbol*     newTmp) {
-  if (at->isClass() == false) {
-    if (isBlockStmt(call->parentExpr) == true) {
-      if (isArgSymbol(call->parentSymbol) &&
-          toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(newTmp));
-      }
-    }
   }
 }
 
