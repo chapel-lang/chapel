@@ -806,6 +806,16 @@ bool AggregateType::isInstantiatedFrom(const AggregateType* base) const {
   return retval;
 }
 
+AggregateType* AggregateType::getRootInstantiation() {
+  AggregateType* retval = this;
+
+  while (retval->instantiatedFrom != NULL) {
+    retval = retval->instantiatedFrom;
+  }
+
+  return retval;
+}
+
 int AggregateType::getFieldPosition(const char* name, bool fatal) {
   Vec<Type*> next, current;
   Vec<Type*>* next_p = &next, *current_p = &current;
