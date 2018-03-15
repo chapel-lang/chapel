@@ -5926,23 +5926,31 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   parent_insert_help(call, call->baseExpr);
 
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
+  if (at->isClass() == true) {
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
 
-    if (at->isClass() == false) {
+    } else {
+      call->parentExpr->insertBefore(def);
+    }
+
+
+  } else {
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(def);
+
       if (isArgSymbol(call->parentSymbol)          == true  &&
           toBlockStmt(call->parentExpr)->body.tail == call) {
         call->insertAfter(new SymExpr(newTmp));
       }
-    }
 
-  } else {
-    Expr* parent = call->parentExpr;
+    } else {
+      Expr* parent = call->parentExpr;
 
-    parent->insertBefore(def);
+      call->parentExpr->insertBefore(def);
 
-    if (at->isClass() == false) {
       call->replace(new SymExpr(newTmp));
+
       parent->insertBefore(call);
     }
   }
