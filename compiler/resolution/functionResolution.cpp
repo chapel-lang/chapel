@@ -5857,11 +5857,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   }
 
   if (at->isClass() == true) {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("_new");
-
-    parent_insert_help(call, call->baseExpr);
+    call->setUnresolvedFunction("_new");
 
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
@@ -5871,11 +5867,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     }
 
   } else {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("init");
-
-    parent_insert_help(call, call->baseExpr);
+    call->setUnresolvedFunction("init");
 
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
@@ -5918,13 +5910,9 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   newTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
-  typeExpr->replace(new UnresolvedSymExpr("init"));
+  call->setUnresolvedFunction("init");
 
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
+  call->get(1)->remove();
 
   if (at->isClass() == true) {
     if (isBlockStmt(call->parentExpr) == true) {
