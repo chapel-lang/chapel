@@ -94,7 +94,7 @@ class LicenseCommenter(object):
             #  */
             # <blank line>
             license_lines = commentate_lines(' *', self.comment_text_lines)
-            comment_lines = ['/*'] + license_lines + [' */', '\n']
+            comment_lines = ['/*'] + list(license_lines) + [' */', '\n']
             return '\n'.join(comment_lines)
         else:
             raise ValueError('Cannot figure out comment style for: {0}'.format(source_filename))
