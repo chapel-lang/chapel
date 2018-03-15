@@ -5877,17 +5877,13 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 
     parent_insert_help(call, call->baseExpr);
 
-    if (at->isClass() == false) {
-      if (isBlockStmt(call->parentExpr) == true) {
-        if (isArgSymbol(call->parentSymbol)          == true  &&
-            toBlockStmt(call->parentExpr)->body.tail == call) {
-          call->insertAfter(new SymExpr(newTmp));
-        }
-      }
-    }
-
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
+
+      if (isArgSymbol(call->parentSymbol)          == true  &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
 
     } else {
       Expr* parent = call->parentExpr;
@@ -5930,17 +5926,15 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   parent_insert_help(call, call->baseExpr);
 
-  if (at->isClass() == false) {
-    if (isBlockStmt(call->parentExpr) == true) {
+  if (isBlockStmt(call->parentExpr) == true) {
+    call->insertBefore(def);
+
+    if (at->isClass() == false) {
       if (isArgSymbol(call->parentSymbol)          == true  &&
           toBlockStmt(call->parentExpr)->body.tail == call) {
         call->insertAfter(new SymExpr(newTmp));
       }
     }
-  }
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
 
   } else {
     Expr* parent = call->parentExpr;
