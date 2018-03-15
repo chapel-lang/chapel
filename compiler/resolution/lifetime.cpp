@@ -42,7 +42,7 @@
    The checker emits errors for several cases:
 
      * reachability of a symbol is greater than its lifetime
-     * setting a symbol to another value with longer lifetime
+     * setting a symbol to another value with a shorter lifetime
      * returning a symbol with non-infinite and non-return lifetime
        (e.g. reference arguments are marked with return lifetime)
 
@@ -62,10 +62,10 @@
    Records are subject to lifetime checking if they contain
    fields that are subject to lifetime checking.
 
-   Assumption: = operator overloads for records or classes
-   handle lifetimes as if by-value. But note, ownership
-   operations with Shared or Owned records count as "by value"
-   here.
+   Assumption: the initial version assumes that the = overload
+   for a record does something reasonable and doesn't leave
+   pointers aliasing each other. This can be tidied up once the
+   type system differentiates between owned, raw, and borrowed pointers.
 
 
    TODO:
@@ -97,6 +97,16 @@ const bool debugOutputOnError = false;
 
 namespace {
 
+  /* A Lifetime describes the limits on when a variable is
+     usable. It might be infinite (e.g. referring to / borrowing
+     a global). It might represent an argument that has
+     return scope set on it. Beyond those flags, the key information
+     here is fromSymbolReachability - that points to the
+     symbol that the analysis inferred as the value the
+     variable could point to that has the least scope.
+     In other words, the lexical scope of fromSymbolReachability
+     determines the lifetime.
+   */
   struct Lifetime {
     // if non-NULL, the scope of this symbol represents the lifetime
     Symbol* fromSymbolReachability;
@@ -108,6 +118,10 @@ namespace {
     bool returnScope;
   };
 
+  /* A ScopeLifetime simply stores the combination of a ref
+     ref lifetime and a borrow lifetime. The lifetime analysis
+     for refs and borrows is slightly different and so both
+     lifetimes are tracked simultaneously in a ScopeLifetime. */
   struct ScopeLifetime {
     // referent lifetime is the scope of what a ref variable might refer to
     Lifetime referent;
@@ -183,92 +197,102 @@ void printScopeLifetime(ScopeLifetime lt);
 void printLifetimeState(LifetimeState* state);
 static void handleDebugOutputOnError(Expr* e, LifetimeState* state);
 static bool shouldCheckLifetimesInFn(FnSymbol* fn);
+static void markArgumentsReturnScope(FnSymbol* fn);
+static void checkLifetimesInFunction(FnSymbol* fn);
 
 void checkLifetimes(void) {
-
   // Mark all arguments with FLAG_SCOPE or FLAG_RETURN_SCOPE.
-  // Default for methods is to mark 'this' argument with return scope.
-  // Default for everything else is to mark all arguments with return scope.
+  // This needs to be done for all functions before the next
+  // loop since it affects how calls are handled.
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    bool anyReturnScope = false;
-    // Figure out if any arguments have FLAG_RETURN_SCOPE on them.
-    // If not, we default to putting it on all of them.
-    // If so, we put FLAG_SCOPE on the rest.
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_RETURN_SCOPE))
-        anyReturnScope = true;
-    }
-
-    if (fn->isMethod() && fn->_this != NULL && !anyReturnScope) {
-      // Methods default to 'this' return scope
-      fn->_this->addFlag(FLAG_RETURN_SCOPE);
-      anyReturnScope = true;
-    }
-
-    for_formals(formal, fn) {
-      if (formal->hasFlag(FLAG_SCOPE) ||
-          formal->hasFlag(FLAG_RETURN_SCOPE)) {
-        // OK
-      } else {
-        // Set it to the default
-        if (anyReturnScope)
-          formal->addFlag(FLAG_SCOPE);
-        else
-          formal->addFlag(FLAG_RETURN_SCOPE);
-      }
-    }
-
-    for_formals(formal, fn) {
-      INT_ASSERT(formal->hasFlag(FLAG_SCOPE) ||
-                 formal->hasFlag(FLAG_RETURN_SCOPE));
-    }
+    markArgumentsReturnScope(fn);
   }
 
-
+  // Perform lifetime checking on each function
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-
-    if (shouldCheckLifetimesInFn(fn)) {
-      bool debugging = debuggingLifetimesForFn(fn);
-
-      if (debugging) {
-        printf("Visiting function %s id %i\n", fn->name, fn->id);
-        nprint_view(fn);
-        gdbShouldBreakHere();
-      }
-
-      LifetimeState state;
-
-      // Gather temps that are just aliases for something else
-      GatherRefTempsVisitor gather;
-      gather.lifetimes = &state;
-      fn->accept(&gather);
-
-      // Infer lifetimes
-      InferLifetimesVisitor infer;
-      infer.lifetimes = &state;
-      // Find minimum lifetime for all variables
-      // Uses repeated iteration in order to avoid problems
-      // such as where a lifetime for a temporary is incorrectly inferred
-      // to be infinite, because only settings of a variable have
-      // been infinite so far.
-      do {
-        infer.changed = false;
-        fn->accept(&infer);
-      } while (infer.changed == true);
-
-      if (debugging) {
-        printLifetimeState(&state);
-      }
-
-      // Emit errors
-      EmitLifetimeErrorsVisitor emit;
-      emit.lifetimes = &state;
-      fn->accept(&emit);
-      emit.emitErrors();
-    }
+    checkLifetimesInFunction(fn);
   }
 }
+
+static void checkLifetimesInFunction(FnSymbol* fn) {
+  if (shouldCheckLifetimesInFn(fn)) {
+    bool debugging = debuggingLifetimesForFn(fn);
+
+    if (debugging) {
+      printf("Visiting function %s id %i\n", fn->name, fn->id);
+      nprint_view(fn);
+      gdbShouldBreakHere();
+    }
+
+    LifetimeState state;
+
+    // Gather temps that are just aliases for something else
+    GatherRefTempsVisitor gather;
+    gather.lifetimes = &state;
+    fn->accept(&gather);
+
+    // Infer lifetimes
+    InferLifetimesVisitor infer;
+    infer.lifetimes = &state;
+    // Find minimum lifetime for all variables
+    // Uses repeated iteration in order to avoid problems
+    // such as where a lifetime for a temporary is incorrectly inferred
+    // to be infinite, because only settings of a variable have
+    // been infinite so far.
+    do {
+      infer.changed = false;
+      fn->accept(&infer);
+    } while (infer.changed == true);
+
+    if (debugging) {
+      printLifetimeState(&state);
+    }
+
+    // Emit errors
+    EmitLifetimeErrorsVisitor emit;
+    emit.lifetimes = &state;
+    fn->accept(&emit);
+    emit.emitErrors();
+  }
+}
+
+static void markArgumentsReturnScope(FnSymbol* fn) {
+  // Default for methods is to mark 'this' argument with return scope.
+  // Default for everything else is to mark all arguments with return scope.
+  bool anyReturnScope = false;
+  // Figure out if any arguments have FLAG_RETURN_SCOPE on them.
+  // If not, we default to putting it on all of them.
+  // If so, we put FLAG_SCOPE on the rest.
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_RETURN_SCOPE))
+      anyReturnScope = true;
+  }
+
+  if (fn->isMethod() && fn->_this != NULL && !anyReturnScope) {
+    // Methods default to 'this' return scope
+    fn->_this->addFlag(FLAG_RETURN_SCOPE);
+    anyReturnScope = true;
+  }
+
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_SCOPE) ||
+        formal->hasFlag(FLAG_RETURN_SCOPE)) {
+      // OK
+    } else {
+      // Set it to the default
+      if (anyReturnScope)
+        formal->addFlag(FLAG_SCOPE);
+      else
+        formal->addFlag(FLAG_RETURN_SCOPE);
+    }
+  }
+
+  for_formals(formal, fn) {
+    INT_ASSERT(formal->hasFlag(FLAG_SCOPE) ||
+               formal->hasFlag(FLAG_RETURN_SCOPE));
+  }
+}
+
 
 static bool shouldCheckLifetimesInFn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_UNSAFE))
@@ -397,10 +421,6 @@ bool LifetimeState::setLifetimeForSymbolToMin(Symbol* sym, ScopeLifetime lt) {
   // variable has no meaningful scope.
   // It would be reasonable to update callers to avoid this situation, too.
   if (!sym->isRef())
-    lt.referent = infiniteLifetime();
-  if (sym->isRef() &&
-      (lt.referent.fromSymbolReachability == reach.fromSymbolReachability ||
-       isLifetimeShorter(reach, lt.referent)))
     lt.referent = infiniteLifetime();
 
   if (!sym->isRef() &&
@@ -1344,7 +1364,7 @@ static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
 }
 
 /* Consider two variables/arguments a and b.
-   Is the lifetime of a within the lifetime for b?
+   Is the lifetime of a strictly within the lifetime for b?
       - e.g. if a is declared in a block nested inside the lifetime of b
  */
 static bool isLifetimeShorter(Lifetime a, Lifetime b) {
