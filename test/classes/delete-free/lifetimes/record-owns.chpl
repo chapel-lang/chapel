@@ -7,7 +7,6 @@ record Rint {
   var x:int;
   proc init(x:int) {
     this.x = x;
-    super.init();
   }
 }
 
@@ -17,7 +16,6 @@ class SubClass {
   proc init(x:int, in r:Rint) {
     this.x = x;
     this.r = r;
-    super.init();
   }
 }
 
@@ -25,7 +23,6 @@ class MyClass {
   var sub:Owned(SubClass);
   proc init(in sub:Owned(SubClass)) {
     this.sub = sub;
-    super.init();
   }
 }
 
@@ -33,11 +30,9 @@ record RMyClass {
   var c:Owned(MyClass);
   proc init() {
     this.c = new Owned(nil:MyClass);
-    super.init();
   }
   proc init(in c:Owned(MyClass)) {
     this.c = c;
-    super.init();
   }
 }
 

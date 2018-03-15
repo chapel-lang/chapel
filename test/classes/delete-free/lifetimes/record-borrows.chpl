@@ -1,11 +1,12 @@
 pragma "safe"
 module l5 {
 
+use OwnedObject;
+
 record Rint {
   var x:int;
   proc init(x:int) {
     this.x = x;
-    super.init();
   }
 }
 
@@ -15,7 +16,6 @@ class SubClass {
   proc init(x:int, in r:Rint) {
     this.x = x;
     this.r = r;
-    super.init();
   }
 }
 
@@ -23,7 +23,6 @@ class MyClass {
   var sub:SubClass;
   proc init(sub:SubClass) {
     this.sub = sub;
-    super.init();
   }
 }
 
@@ -31,11 +30,9 @@ record RMyClass {
   var c:MyClass;
   proc init() {
     this.c = nil;
-    super.init();
   }
   proc init(c:MyClass) {
     this.c = c;
-    super.init();
   }
 }
 
@@ -87,7 +84,7 @@ var globalRA:RA;
 proc bad() {
   var c = new Owned(new MyClassA(1));
   var subr = new SubRA(c.borrow());
-  globalR = buildR(subr);
+  globalRA = buildR(subr);
 }
 
 
