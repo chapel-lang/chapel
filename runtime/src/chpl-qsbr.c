@@ -211,10 +211,10 @@ static inline void release_spinlock(struct tls_node *node) {
 }
 
 // Requires spinlock.
-static inline struct defer_node *get_defer_list(struct tls_node *node);
+/*static inline struct defer_node *get_defer_list(struct tls_node *node);
 static inline struct defer_node *get_defer_list(struct tls_node *node) {
   return node->deferList;
-}
+}*/
 
 // Requires spinlock. Pops all items less than or equal to 'epoch'.
 static inline struct defer_node *pop_bulk_defer_list(struct tls_node *node, uint64_t epoch);
