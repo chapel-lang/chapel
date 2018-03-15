@@ -56,6 +56,7 @@
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-env.h"
+#include "chplexit.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
 #include "chplsys.h"
@@ -613,6 +614,9 @@ struct {
   int ln;
   int32_t fn;
 } mr_mregs_supplement[MAX_MEM_REGIONS];  // parallels mem_regions.mregs[]
+
+static chpl_bool exit_without_cleanup = false;
+
 
 //
 // Declarations common to memory pools.
@@ -3047,7 +3051,9 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
                     "Out of memory allocating \"%s\"",
                     chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
       write(fileno(stderr), buf, strlen(buf));
-      exit(1);
+      exit_without_cleanup = true;
+      atomic_thread_fence(memory_order_release);
+      chpl_exit_any(1);
     }
   }
 
@@ -3546,12 +3552,13 @@ void chpl_comm_barrier(const char *msg)
 
 void chpl_comm_pre_task_exit(int all)
 {
+  if (exit_without_cleanup)
+    return;
 
   if (chpl_numNodes == 1)
     return;
 
   if (all) {
-
     if (chpl_nodeID == 0) {
       int i;
       for (i = 0; i < chpl_numNodes; i++) {
@@ -3628,6 +3635,9 @@ void chpl_comm_pre_task_exit(int all)
 
 void chpl_comm_exit(int all, int status)
 {
+  if (exit_without_cleanup)
+    return;
+
 #ifdef DEBUG
   debug_exiting = true;
 #endif
