@@ -3031,7 +3031,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   //
   // Do we have room for another registered memory region?
   //
-  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 0) {
+  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 1) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
     static atomic_int_least8_t spoke;
