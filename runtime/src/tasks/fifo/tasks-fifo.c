@@ -1,15 +1,15 @@
 /*
  * Copyright 2004-2018 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,7 @@
 #include "chpl-tasks-callbacks-internal.h"
 #include "chplsys.h"
 #include "chpl-linefile-support.h"
+#include "chpl-qsbr.h"
 #include "error.h"
 #include <stdio.h>
 #include <string.h>
@@ -187,7 +188,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
           timed_out = chpl_thread_sync_suspend(s, &deadline);
         else
           chpl_thread_yield();
-        
+
         if (s->is_full != want_full && !timed_out)
           gettimeofday(&now, NULL);
       } while (s->is_full != want_full
@@ -418,12 +419,12 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   }
 
   stack_size  = chpl_thread_getCallStackSize();
-  
+
   if(chpl_alloc_stack_in_heap){
     stack = chpl_alloc_pthread_stack(stack_size);
     if(stack == NULL)
       chpl_internal_error("chpl_alloc_pthread_stack main failed");
-  
+
     rc = pthread_attr_setstack(&attr, stack, stack_size);
     if( rc != 0 ) {
       chpl_internal_error("pthread_attr_setstack main failed");
@@ -449,7 +450,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if(chpl_alloc_stack_in_heap){
     chpl_free_pthread_stack(stack);
   }
-  
+
   pthread_attr_destroy(&attr);
 }
 
@@ -782,7 +783,14 @@ char* chpl_task_idToString(char* buff, size_t size, chpl_taskID_t id) {
     return NULL;
 }
 
-void chpl_task_yield(void) {
+static __thread uint64_t nYields = 0;
+
+void chpl_task_yield(void)
+{
+  if (nYields++ % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
+    chpl_qsbr_checkpoint();
+  }
+
   chpl_thread_yield();
 }
 
@@ -1133,6 +1141,12 @@ thread_begin(void* ptask_void) {
     // wait for a task to be present in the task pool
     //
 
+    // If it is empty, we might be here for a while so
+    // unregister ourselves.
+    if (!task_pool_head) {
+      chpl_qsbr_blocked();
+    }
+
     // In revision 22137, we investigated whether it was beneficial to
     // implement this while loop in a hybrid style, where depending on
     // the number of tasks available, idle threads would either yield or
@@ -1169,7 +1183,7 @@ thread_begin(void* ptask_void) {
 
       unset_block_loc();
     }
- 
+
     //
     // Just now the pool had at least one task in it.  Lock and see if
     // there's something still there.
@@ -1186,6 +1200,9 @@ thread_begin(void* ptask_void) {
 
     if (blockreport)
       progress_cnt++;
+
+    chpl_qsbr_quickcheck();
+    chpl_qsbr_unblocked();
 
     //
     // start new task; remove task from pool also add to task to task-table
@@ -1217,6 +1234,7 @@ thread_begin(void* ptask_void) {
 
     (ptask->bundle.requested_fn)(&ptask->bundle);
 
+    // Decrement # of tasks
     chpl_task_do_callbacks(chpl_task_cb_event_kind_end,
                            ptask->bundle.requested_fid,
                            ptask->bundle.filename,
