@@ -94,8 +94,8 @@ const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 /* ForallIntentTag enum:
 
-TFI_IN_OUTERVAR shadow var is added by compiler as a placeholders
-for the outer variable of the corresponding [const] in shadow var.
+TFI_IN_OUTERVAR shadow var is added by compiler as a placeholder
+for the TFI_IN/TFI_CONST_IN shadow var's outer variable.
 
 TFI_REDUCE_OP shadow var is added by compiler. It is the reduce op
 for the TFI_REDUCE shadow var, which is the accumulation state.
@@ -412,12 +412,12 @@ public:
   BlockStmt* initBlock()   const { return svInitBlock; }
   BlockStmt* deinitBlock() const { return svDeinitBlock; }
 
-  // Convert between IN and IN_OVAR svars.
-  ShadowVarSymbol* SOforSI() const;
-  ShadowVarSymbol* SIforSO() const;
-  // Convert between Reduce-oP and Accumulation State svars.
-  ShadowVarSymbol* RPforAS() const;
-  ShadowVarSymbol* ASforRP() const;
+  // Convert between TFI_[CONST]_IN and TFI_IN_OUTERVAR svars.
+  ShadowVarSymbol* OutervarForIN() const;
+  ShadowVarSymbol* INforOutervar() const;
+  // Convert between TFI_REDUCE and TFI_REDUCE_OP svars.
+  ShadowVarSymbol* ReduceOpForAccumState() const;
+  ShadowVarSymbol* AccumStateForReduceOp() const;
 
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();

@@ -31,7 +31,6 @@
 #include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "view.h" //wass
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
@@ -260,11 +259,12 @@ bool astUnderFI(const Expr* ast, ForallIntents* fi) {
   return false;
 }  
 
-/////////////////////////////////
-//                             //
-//    ForallStmt resolution    //
-//                             //
-/////////////////////////////////
+
+/////////////////////////////////////////////////////
+//                                                 //
+// ForallStmt pre-lowering: resolveForallHeader()  //
+//                                                 //
+/////////////////////////////////////////////////////
 
 // resolveForallHeader() resolves key parts of ForallStmt:
 //
@@ -454,45 +454,6 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail(followBody);
 
   return followBlock;
-}
-
-//
-// Handle the case where the leader iterator is _iterator_for_loopexpr.
-// Not doing so confuses ReturnByRef and lowering of ForallStmts.
-//
-// Tests:
-//   library/packages/Collection/CollectionCounter.chpl
-//   library/standard/Random/deitz/test1D2D.chpl
-//   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
-//
-static void convertIteratorForLoopexpr(ForallStmt* fs) {
-  if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
-    if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
-      if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
-        if (!strncmp(calleeFn->name, "_iterator_for_loopexpr", 22)) {
-          // In this case, we have a _toLeader call and no side effects.
-          // Just use the iterator corresponding to the iterator record.
-          FnSymbol* iterator = getTheIteratorFnFromIR(calleeFn->retType);
-          SET_LINENO(calleeSE);
-          calleeSE->replace(new SymExpr(iterator));
-          if (calleeFn->firstSymExpr() == NULL)
-            calleeFn->defPoint->remove(); // not needed any more
-        }
-}
-
-void lowerForallStmts2() {
-  forv_Vec(ForallStmt, fs, gForallStmts) {
-    if (!fs->inTree() || !fs->getFunction()->isResolved())
-      continue;
-
-    // formerly nonLeaderParCheckInt()
-    FnSymbol* parent = fs->getFunction();
-    // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
-    if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
-      USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
-    
-    convertIteratorForLoopexpr(fs);
-  }
 }
 
 // Return NULL if the def is not found or is uncertain.
@@ -875,7 +836,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
     resolveParallelIteratorAndIdxVar(pfs, iterCall, origIterFn, gotSA);
 
-    lowerForallIntents(pfs);
+    setupShadowVariables(pfs);
 
     if (gotSA) {
       if (origSE->qualType().type()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
@@ -894,9 +855,10 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   return retval;
 }
 
+
 ///////////////////////////////
 //                           //
-//    ForallStmt lowering    //
+//   ForallStmt lowering 1   //
 //                           //
 ///////////////////////////////
 
@@ -954,11 +916,57 @@ void static populateIterRecSetup(ForallStmt* fs)
   initIterRec->remove();
 }
 
-
-void lowerForallStmts1() {
+void resolveForallStmts1() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
     populateIterRecSetup(fs);
+  }
+}
+
+
+///////////////////////////////
+//                           //
+//   ForallStmt lowering 2   //
+//                           //
+///////////////////////////////
+
+//
+// Handle the case where the leader iterator is _iterator_for_loopexpr.
+// Not doing so confuses ReturnByRef and lowering of ForallStmts.
+//
+// Tests:
+//   library/packages/Collection/CollectionCounter.chpl
+//   library/standard/Random/deitz/test1D2D.chpl
+//   reductions/deitz/test_maxloc_reduce_wmikanik_bug2.chpl
+//
+static void convertIteratorForLoopexpr(ForallStmt* fs) {
+  if (CallExpr* iterCall = toCallExpr(fs->iteratedExpressions().head))
+    if (SymExpr* calleeSE = toSymExpr(iterCall->baseExpr))
+      if (FnSymbol* calleeFn = toFnSymbol(calleeSE->symbol()))
+        if (!strncmp(calleeFn->name, "_iterator_for_loopexpr", 22)) {
+          // In this case, we have a _toLeader call and no side effects.
+          // Just use the iterator corresponding to the iterator record.
+          FnSymbol* iterator = getTheIteratorFnFromIteratorRec(calleeFn->retType);
+          SET_LINENO(calleeSE);
+          calleeSE->replace(new SymExpr(iterator));
+          if (calleeFn->firstSymExpr() == NULL)
+            calleeFn->defPoint->remove(); // not needed any more
+        }
+}
+
+// Todo: can we merge this with resolveForallStmts1() ?
+void resolveForallStmts2() {
+  forv_Vec(ForallStmt, fs, gForallStmts) {
+    if (!fs->inTree() || !fs->getFunction()->isResolved())
+      continue;
+
+    // formerly nonLeaderParCheckInt()
+    FnSymbol* parent = fs->getFunction();
+    // If isTaskFun(parent), error is still reported in nonLeaderParCheckInt.
+    if (parent->isIterator() && !parent->hasFlag(FLAG_INLINE_ITERATOR))
+      USR_FATAL_CONT(fs, "invalid use of parallel construct in serial iterator");
+    
+    convertIteratorForLoopexpr(fs);
   }
 }

@@ -907,7 +907,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Expr*         rhs       = call->get(3)->remove();
     Expr*         lhs       = call->get(2)->remove();
     ShadowVarSymbol*   svar = toShadowVarSymbol(toSymExpr(lhs)->symbol());
-    Symbol*       globalOp  = svar->RPforAS();
+    Symbol*       globalOp  = svar->ReduceOpForAccumState();
 
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));
     INT_ASSERT(svar->isReduce());

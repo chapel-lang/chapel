@@ -24,7 +24,6 @@
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
-#include "view.h" //wass
 #include "wellknown.h"
 
 /*
@@ -33,7 +32,13 @@ so we may be blurring const and non-const intents.
 We DO need to preserve some const properties to enable optimizations.
 */
 
-/////////// lowerForallIntents : RP for AS ///////////
+
+///////////                                       ///////////
+/////////// Set up shadow variables at resolve(). ///////////
+///////////                                       ///////////
+
+
+/////////// create helper SVars ///////////
 
 static ShadowVarSymbol* create_IN_OUTERVAR(ForallStmt* fs, ShadowVarSymbol* SI)
 {
@@ -45,7 +50,7 @@ static ShadowVarSymbol* create_IN_OUTERVAR(ForallStmt* fs, ShadowVarSymbol* SI)
 
   // It goes on the shadow variable list right before SI.
   SI->defPoint->insertBefore(new DefExpr(SO));
-  INT_ASSERT(SI->SOforSI() == SO);  // ensure SOforSI() works
+  INT_ASSERT(SI->OutervarForIN() == SO);  // ensure OutervarForIN() works
 
   return SO;
 }
@@ -67,13 +72,12 @@ static ShadowVarSymbol* create_REDUCE_OP(ForallStmt* fs, ShadowVarSymbol* AS)
 
   // It goes on the shadow variable list right before AS.
   AS->defPoint->insertBefore(new DefExpr(RP));
-  INT_ASSERT(AS->RPforAS() == RP);  // ensure RPforAS() works
+  INT_ASSERT(AS->ReduceOpForAccumState() == RP);  // ensure ReduceOpForAccumState() works
 
   return RP;
 }
 
-
-/////////// lowerForallIntents : setup IB, DB ///////////
+/////////// set up one SVar ///////////
 
 static void insertInitialization(BlockStmt* destBlock,
                                  Symbol* destVar, Symbol* srcVar) {
@@ -93,7 +97,7 @@ static void insertDeinitialization(BlockStmt* destBlock,
   destBlock->insertAtTail("chpl__autoDestroy(%S)", destVar);
 }
 
-static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI,
+static void setupForIN(ForallStmt* fs, ShadowVarSymbol* SI, Symbol* dum,
                        BlockStmt* IB, BlockStmt* DB) {
   INT_ASSERT(!SI->isRef());
 
@@ -107,6 +111,7 @@ static void setupForREF(ForallStmt* fs, ShadowVarSymbol* SR, Symbol* gR,
                         BlockStmt* IB, BlockStmt* DB) {
 }  // nothing for a REF intent
 
+// Set up the SVar for the ReduceOp class.
 static void setupForReduce_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
                               BlockStmt* IB, BlockStmt* DB) {
   IB->insertAtTail("'move'(%S, clone(%S,%S))", // initialization
@@ -116,9 +121,10 @@ static void setupForReduce_OP(ForallStmt* fs, ShadowVarSymbol* RP, Symbol* gOp,
   DB->insertAtTail("chpl__cleanupLocalOp(%S,%S)", gOp, RP); // deletes RP
 }
 
-static void setupForReduce_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* ignored,
+// Set up the SVar for the Accumulation State.
+static void setupForReduce_AS(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* dum,
                               BlockStmt* IB, BlockStmt* DB) {
-  ShadowVarSymbol* RP = AS->RPforAS();
+  ShadowVarSymbol* RP = AS->ReduceOpForAccumState();
   insertInitialization(IB, AS, new_Expr("identity(%S,%S)", gMethodToken, RP));
 
   DB->insertAtTail("accumulate(%S,%S,%S)", gMethodToken, RP, AS);
@@ -142,23 +148,18 @@ static void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
 }
 */
 
+/////////// driver function ///////////
 
-/////////// lowerForallIntents ///////////
-
-/*
-wass update this comment
-Set up shadow variables and task startup/teardown blocks during resolution.
-* Create TFI_REDUCE_OP shadow variables.
-* Populate task and top startup/teardown blocks.
-* Resolve all the operations and the types of the shadow variables.
-
-Note that this is done during resolveForallHeader,
-i.e. before resolving the forall loop body.
-*/
-
-// Creates TFI_REDUCE_OP svars. Resolves TFI_REDUCE and TFI_REDUCE_OP svar types.
-// Invoked from resolveForallHeader().
-void lowerForallIntents(ForallStmt* fs) {
+//
+// Set up shadow variables during resolution:
+// * Create helper shadow variables: TFI_REDUCE_OP, TFI_IN_OUTERVAR.
+// * Populate task startup/teardown blocks.
+//
+// Note that this is done during resolveForallHeader,
+// i.e. before resolving the forall loop body.
+//
+void setupShadowVariables(ForallStmt* fs)
+{
   for_shadow_vars(svar, temp, fs)
   {
     SET_LINENO(svar);
@@ -169,43 +170,59 @@ void lowerForallIntents(ForallStmt* fs) {
     switch (svar->intent)
     {
       case TFI_IN:
-      case TFI_CONST_IN:   setupForIN(fs, svar, IB, DB);      break;
+      case TFI_CONST_IN:   setupForIN(fs, svar, ovar, IB, DB);      break;
 
       case TFI_REF:
-      case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);   break;
+      case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);     break;
 
-      case TFI_REDUCE:     setupForReduce(fs, svar, ovar, IB, DB); break;
+      case TFI_REDUCE:     setupForReduce(fs, svar, ovar, IB, DB);  break;
 
-      // We placed such svar earlier in the list - it should not come up here.
+      // We place such svars earlier in the list.
+      // They should not come up here.
       case TFI_IN_OUTERVAR:
-      case TFI_REDUCE_OP:  INT_ASSERT(false);                     break;
+      case TFI_REDUCE_OP:  INT_ASSERT(false);  break;
 
       // No abstract intents, please.
       case TFI_DEFAULT:
-      case TFI_CONST:      INT_ASSERT(false);                     break;
+      case TFI_CONST:      INT_ASSERT(false);  break;
     }
   }
 }
 
-// Also need to resolve IB, DB after we have set them up above.
-void resolveShadowVarsIfNeeded(DefExpr* def); //wass to .h
-void resolveShadowVarsIfNeeded(DefExpr* def) {
-  ForallStmt* efs = NULL;
-  if (AList* list = def->list)
-    if (ForallStmt* fs = toForallStmt(list->parent))
-      if (list == &fs->shadowVariables())
-        if (def == list->tail)
-          efs = fs;
-  if (efs == NULL) return;
 
-  for_shadow_vars(svar, temp, efs) {
+/////////// Resolve shadow variables at resolve(). ///////////
+
+//
+// Resolve svars' IB, DB after we have set them up above.
+//
+static void resolveShadowVarsForForallStmt(ForallStmt* fs)
+{
+  for_shadow_vars(svar, temp, fs) {
     resolveBlockStmt(svar->initBlock());
     resolveBlockStmt(svar->deinitBlock());
   }
 }
 
+//
+// Resolve shadow variables of a ForallStmt.
+//
+// Do this only if 'def' is the ForallStmt's last shadow variable def.
+// This complication is due to the resolution order guided by getNextExpr().
+//
+void resolveShadowVarsIfNeeded(DefExpr* def)
+{
+  if (AList* list = def->list)
+    if (ForallStmt* fs = toForallStmt(list->parent))
+      if (list == &fs->shadowVariables())
+        if (def == list->tail)
+          resolveShadowVarsForForallStmt(fs);
+}
 
-/////////// forwards ///////////
+
+///////////                                                      ///////////
+/////////// Lower ForallStmts by inlining the parallel iterator. ///////////
+///////////                                                      ///////////
+
 
 class ExpandVisitor;
 static void expandYield( ExpandVisitor* EV, CallExpr* yield);
@@ -283,19 +300,33 @@ static Symbol* removeParIterReturn(BlockStmt* cloneBody, bool moreRefs) {
 
 /////////// standardized svar actions ///////////
 
-static VarSymbol* createCurrSI(ShadowVarSymbol* SI) {
+// When ForallStmt::loopBody() is inlined upon encountering a yield
+// in the parallel iterator, each shadow variable within this loopBody
+// is replaced by a newly-created VarSymbol, or possibly other things -
+// depending on its TFI_ tag etc.
+//
+// No ShadowVarSymbols remain in the AST after a ForallStmt
+// is lowered by inlining the parallel iterator.
+//
+// The following functions create the VarSymbol that will replace the
+// shadow variable...
+
+// ... of [const] in intent
+static VarSymbol* createCurrIN(ShadowVarSymbol* SI) {
   INT_ASSERT(!SI->isRef());
   VarSymbol* currSI = new VarSymbol(SI->name, SI->type);
   currSI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
   return currSI;
 }
 
-static VarSymbol* createCurrRP(ShadowVarSymbol* RP) {
+// ... for the ReduceOp class of a reduce intent
+static VarSymbol* createCurrROp(ShadowVarSymbol* RP) {
   VarSymbol* currRP = new VarSymbol(astr("RP_", RP->name), RP->type);
   currRP->qual = QUAL_CONST_VAL;
   return currRP;
 }
 
+// ... for the Accumulation State of a reduce intent
 static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   VarSymbol* currAS = new VarSymbol(astr("AS_", AS->name), AS->type);
   currAS->qual = QUAL_VAL;
@@ -309,7 +340,7 @@ static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
   map.put(svar, currVar);
 }
 
-static void addCloneOfIB(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar) {
+static void addCloneOfInitBlock(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar) {
   //
   // We have to clone IB as a whole. This is to ensure that the uses
   // of any symbols that the original IB defines (via DefExprs
@@ -321,7 +352,7 @@ static void addCloneOfIB(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar) {
   copyIB->flattenAndRemove();
 }
 
-static void addCloneOfDB(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
+static void addCloneOfDeinitBlock(Expr* aFini, SymbolMap& map, ShadowVarSymbol* svar) {
   BlockStmt* copyDB = svar->deinitBlock()->copy(&map);
   aFini->insertAfter(copyDB);
   // Let's drop the BlockStmt wrapper, to simplify the AST.
@@ -363,15 +394,15 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 
 /////////// expandTaskFn ///////////
 
-/*
-At this point in compilation, in certain cases an in-intent formal is
-represented as a ref-intent formal + copy construction into a "formal temp".
-See insertFormalTemps(). As a result, in-intent formals are treated
-as PODs, with argument passing implemented as memcopy,
-
-So we need to mimick that here. Otherwise we miss copy-construction
-from the actual into the formal.
-*/
+//
+// At this point in compilation, in certain cases an in-intent formal is
+// represented as a ref-intent formal + copy construction into a "formal temp".
+// See insertFormalTemps(). As a result, in-intent formals are treated
+// as PODs, with argument passing implemented as memcopy,
+//
+// So, we need to mimick that here. Otherwise we miss copy-construction
+// from the actual into the formal.
+//
 static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
                                     SymbolMap& map, ShadowVarSymbol* SI)
 {
@@ -382,17 +413,17 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   if (!formalRequiresTemp(eFormal, cloneTaskFn))
     return; // not that case
 
-  VarSymbol* currSI = createCurrSI(SI);
+  VarSymbol* currSI = createCurrIN(SI);
   aInit->insertBefore(new DefExpr(currSI));
 
   // map(SI) = currSI; map(SO) = eFormal
   e->value = currSI;
-  map.put(SI->SOforSI(), eFormal);
+  map.put(SI->OutervarForIN(), eFormal);
 
   eFormal->intent = INTENT_CONST_REF;
   // non-ref type is ok for eFormal
 
-  addCloneOfIB(aInit, map, SI);
+  addCloneOfInitBlock(aInit, map, SI);
 }
 
 //
@@ -433,7 +464,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
   SET_LINENO(svar);
   switch (svar->intent)
   {
-    case TFI_IN_OUTERVAR:     // helper svar - nothing to do
+    case TFI_IN_OUTERVAR: // helper svar - nothing to do
       break;
 
     case TFI_IN:          // in intents
@@ -441,7 +472,7 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, ix);
       addFormalTempSIifNeeded(cloneTaskFn, aInit, map, svar);
-      addCloneOfDB(aFini, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_REF:         // ref intents
@@ -454,15 +485,15 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
     case TFI_REDUCE_OP:   // reduction op class
       addArgAndMap(cloneTaskFn, callToTFn, numOrigAct, iMap,
                    map, svar, ix, svar->outerVarSym());
-      addDefAndMap(aInit, map, svar, createCurrRP(svar));
-      addCloneOfIB(aInit, map, svar);
-      addCloneOfDB(aFini, map, svar);
+      addDefAndMap(aInit, map, svar, createCurrROp(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_REDUCE:      // accumulation state
       addDefAndMap(aInit, map, svar, createCurrAS(svar));
-      addCloneOfIB(aInit, map, svar);
-      addCloneOfDB(aFini, map, svar);
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_DEFAULT:    // no abstract intents, please
@@ -563,14 +594,14 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
   {
     case TFI_IN_OUTERVAR:
       // The outer var for IB of the corresponding in-intent svar.
-      map.put(svar, svar->SIforSO()->outerVarSym());
+      map.put(svar, svar->INforOutervar()->outerVarSym());
       break;
 
     case TFI_IN:
     case TFI_CONST_IN:
-      addDefAndMap(aInit, map, svar, createCurrSI(svar));
-      addCloneOfIB(aInit, map, svar);
-      addCloneOfDB(aFini, map, svar);
+      addDefAndMap(aInit, map, svar, createCurrIN(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_REF:
@@ -588,8 +619,8 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
 
     case TFI_REDUCE:
       addDefAndMap(aInit, map, svar, createCurrAS(svar));
-      addCloneOfIB(aInit, map, svar);
-      addCloneOfDB(aFini, map, svar);
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     // No abstract intents, please.
@@ -621,14 +652,14 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
 /////////// recursive iterators ///////////
 
-/*
-If 'fs' has only ref intents, or none at all,
-revert to old iterator-record-based implementation.
-If so, do what the original buildStandaloneForallLoopStmt()
-did during parsing, with modifications.
-
-Remove 'fs' and replace it with a ForLoop.
-*/
+//
+// If 'fs' has only ref intents, or none at all,
+// revert to old iterator-record-based implementation.
+// If so, do what the original buildStandaloneForallLoopStmt()
+// did during parsing, with modifications.
+//
+// Remove 'fs' and replace it with a ForLoop.
+//
 static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
@@ -787,42 +818,7 @@ static void handleIteratorForwarders(ForallStmt* fs,
 }
 
 
-/////////// main driver ///////////
-
-// Remove supporting references in ShadowVarSymbols.
-// Otherwise flattenNestedFunction() will try to propagate them.
-static void clearUpRefsInShadowVars() {
-  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
-    if (svar->inTree())
-      INT_ASSERT(false); // was: svar->removeSupportingReferences(); // wass - remove removeSupportingReferences()
-}
-
-/*
-We have created some nested task functions in expandTaskFn().
-Flatten them because the compiler will crash otherwise.
-
-Implementation considerations:
-* For some task functions, we create them explicitly in expandTaskFn().
-* Some others are created implicitly when we clone iterators that
-  contain such task functions.
-* The way flattenNestedFunctions() works as of this writing,
-  it is faster to flatten all task fns at once, rather than one by one.
-*/
-// Or we could do it for all iterators in or near removeUncalledIterators().
-static void removeDeadIters() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (!fn->inTree()) continue;
-
-    if (fn->firstSymExpr() == NULL)
-    {
-      if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
-        // Got a parallel iterator or task function with no uses. Remove.
-        fn->defPoint->remove();
-    }
-    else
-      INT_ASSERT(isGlobal(fn)); // we flatten all task functions right away
-  }
-}
+/////////// handle one ForallStmt ///////////
 
 static void lowerOneForallStmt(ForallStmt* fs) {
   if (fs->id == breakOnResolveID) gdbShouldBreakHere();
@@ -878,21 +874,31 @@ static void lowerOneForallStmt(ForallStmt* fs) {
     parIterFn->defPoint->remove();
 }
 
-///////////
+
+/////////// main driver ///////////
+
+static void removeDeadIters() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!fn->inTree()) continue;
+
+    if (fn->firstSymExpr() == NULL)
+    {
+      if (fn->hasFlag(FLAG_INLINE_ITERATOR) || isTaskFun(fn))
+        // Got a parallel iterator or task function with no uses. Remove.
+        fn->defPoint->remove();
+    }
+    else
+      INT_ASSERT(isGlobal(fn)); // We flatten all task functions right away.
+  }
+}
 
 void lowerForallStmtsInline()
 {
-  gdbShouldBreakHere(); //wass
-
   forv_Vec(ForallStmt, fs, gForallStmts)
     if (fs->inTree())
       lowerOneForallStmt(fs);
 
   USR_STOP();
 
-  clearUpRefsInShadowVars();
-
   removeDeadIters();
-
-  gdbShouldBreakHere(); //wass
 }

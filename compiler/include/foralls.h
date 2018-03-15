@@ -55,9 +55,9 @@ public:
 };
 
 bool astUnderFI(const Expr* ast, ForallIntents* fi);
-void lowerForallStmts1();
-void lowerForallStmts2();
-void lowerForallIntents(ForallStmt* fs);
+void setupShadowVariables(ForallStmt* fs);
+void resolveForallStmts1();
+void resolveForallStmts2();
 
 #define for_riSpecs_vector(VAL, FI) \
   for_vector_allowing_0s(Expr, VAL, (FI)->riSpecs)

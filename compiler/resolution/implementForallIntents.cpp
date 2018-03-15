@@ -692,7 +692,7 @@ void implementForallIntents1(DefExpr* defChplIter)
     return;
 
   if (!beforeLoweringForallStmts) {
-    // We got here due to resolveBlockStmt(PARBlock) in lowerForallStmts1().
+    // We got here due to resolveBlockStmt(PARBlock) in resolveForallStmts1().
     BlockStmt* forallBlock = toBlockStmt(defChplIter->parentExpr);
     INT_ASSERT(forallBlock && !forallBlock->forallIntents);
     // If so, forall intents must have been already handled.
@@ -2208,7 +2208,7 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
       svar->qual = QUAL_REF;
       svar->type = dtUnknown;
     }
-/* TPV todo
+/* For upcoming task-private variables:
     else if (svar->isTPV())
     {
       IntentTag tiIntent = INTENT_BLANK;
@@ -2392,7 +2392,7 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
                     numShadowVars, needToReplace); // updates needToReplace
 
   if (needToReplace) {
-    INT_ASSERT(fs->numShadowVars() > 0); // wass remove after testing
+    INT_ASSERT(fs->numShadowVars() > 0);  // avoid unnecessary work
     replaceVarUsesNew(forallBody1, outer2shadow);
   }
 }

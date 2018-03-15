@@ -37,6 +37,7 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "implementForallIntents.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -6572,7 +6573,6 @@ Expr* resolveExpr(Expr* expr) {
     }
 
     if (ForLoop* forLoop = toForLoop(block)) {
-      Expr* replaceForWithForallIfNeeded(ForLoop* forLoop); //wass in .h
       retval = replaceForWithForallIfNeeded(forLoop);
     } else {
       retval = expr;
@@ -6585,7 +6585,6 @@ Expr* resolveExpr(Expr* expr) {
 
     retval = foldTryCond(postFold(expr));
 
-    void resolveShadowVarsIfNeeded(DefExpr* def); //wass
     resolveShadowVarsIfNeeded(def);
 
   } else if (SymExpr* se = toSymExpr(expr)) {
@@ -7231,7 +7230,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
-  lowerForallStmts1();
+  resolveForallStmts1();
 
   insertReturnTemps();
 
@@ -7253,7 +7252,7 @@ void resolve() {
 
   pruneResolvedTree();
 
-  lowerForallStmts2();
+  resolveForallStmts2();
 
   freeCache(defaultsCache);
 

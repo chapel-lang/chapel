@@ -30,7 +30,7 @@
 class ForallStmt : public Stmt
 {
 public:
-  bool       zippered()       const; // was 'zip' keyword used or 1 idxvar
+  bool       zippered()       const; // 'zip' keyword used or just 1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
@@ -54,7 +54,6 @@ public:
   virtual Expr*       getNextExpr(Expr* expr);
 
   // for the parser
-
   static BlockStmt* build(Expr* indices, Expr* iterator, CallExpr* intents,
                           BlockStmt* body, bool zippered = false);
 
@@ -66,10 +65,10 @@ public:
   int numIteratedExprs()  const;
   int numShadowVars()     const;
 
-  Expr*             firstIteratedExpr()     const;
+  Expr* firstIteratedExpr() const;
 
-  int        reduceIntentIdx(Symbol* var);
-  void       setNotZippered();
+  int   reduceIntentIdx(Symbol* var);
+  void  setNotZippered();
 
 private:
   bool           fZippered;

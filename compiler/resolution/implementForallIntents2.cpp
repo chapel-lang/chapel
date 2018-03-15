@@ -141,6 +141,7 @@ static void removeWithEnclosing(Expr* expr) {
   return;
 }
 
+// Is this being moved to 'origIndexOfInterest' ?
 static bool isMoveToOIOI(SymExpr* se) {
   if (CallExpr* parent1 = toCallExpr(se->parentExpr))
     if (parent1->isPrimitive(PRIM_GET_MEMBER_VALUE))
@@ -227,10 +228,10 @@ static ForallStmt* replaceEflopiWithForall(EflopiInfo& eInfo)
   return dest;
 }
 
-// Just replace the loop.
-Expr* replaceForWithForallIfNeeded(ForLoop* forLoop); //wass to .h
+// Replace a parallel ForLoop with a ForallStmt.
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
   EflopiInfo eflopiInfo;
+
   if (!findCallToParallelIterator(forLoop, eflopiInfo))
     // Not a parallel for-loop. Leave it unchanged.
     return forLoop;
@@ -238,11 +239,14 @@ Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
   // Yes, it is a parallel for-loop. Replace it.
   // findCallToParallelIterator() filled out eflopiInfo.
   ForallStmt* fs = replaceEflopiWithForall(eflopiInfo);
+
   fs->fFromResolvedForLoop = true;
   // If >1 iterated exprs, how to call resolveForallHeader?
   INT_ASSERT(fs->numIteratedExprs() == 1);
   SymExpr* itExpr = toSymExpr(fs->iteratedExpressions().head);
+
   resolveForallHeader(fs, itExpr);
+
   return fs;
 }
 

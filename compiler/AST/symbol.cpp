@@ -1060,7 +1060,7 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
   return specBlock->body.head;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::SOforSI() const {
+ShadowVarSymbol* ShadowVarSymbol::OutervarForIN() const {
   const ShadowVarSymbol* SI = this;
   DefExpr* soDef = toDefExpr(SI->defPoint->prev);
   ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
@@ -1068,7 +1068,7 @@ ShadowVarSymbol* ShadowVarSymbol::SOforSI() const {
   return SO;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::SIforSO() const {
+ShadowVarSymbol* ShadowVarSymbol::INforOutervar() const {
   const ShadowVarSymbol* SO = this;
   DefExpr* siDef = toDefExpr(SO->defPoint->next);
   ShadowVarSymbol* SI = toShadowVarSymbol(siDef->sym);
@@ -1076,7 +1076,7 @@ ShadowVarSymbol* ShadowVarSymbol::SIforSO() const {
   return SI;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::RPforAS() const {
+ShadowVarSymbol* ShadowVarSymbol::ReduceOpForAccumState() const {
   const ShadowVarSymbol* AS = this;
   DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
   ShadowVarSymbol* RP = toShadowVarSymbol(rpDef->sym);
@@ -1084,7 +1084,7 @@ ShadowVarSymbol* ShadowVarSymbol::RPforAS() const {
   return RP;
 }
 
-ShadowVarSymbol* ShadowVarSymbol::ASforRP() const {
+ShadowVarSymbol* ShadowVarSymbol::AccumStateForReduceOp() const {
   const ShadowVarSymbol* RP = this;
   DefExpr* asDef = toDefExpr(RP->defPoint->next);
   ShadowVarSymbol* AS = toShadowVarSymbol(asDef->sym);

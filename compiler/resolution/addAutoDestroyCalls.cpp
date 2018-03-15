@@ -149,10 +149,14 @@ static void gatherIgnoredVariablesForYield(
     Expr* stmt,
     std::set<VarSymbol*>& ignoredVariables);
 
-/* A ForallStmt index variable does not have a DefExprs in the loop body.
-   Yet, it needs to be autoDestroyed at the end of the block.
-   For that to happen, we add it to 'scope'. */
-static void addFSindexVarToScope(AutoDestroyScope* scope, ForallStmt* forall) {
+//
+// A ForallStmt index variable does not have a DefExprs in the loop body.
+// Yet, it needs to be autoDestroyed at the end of the block.
+// For that to happen, we add it to 'scope'.
+//
+static void addForallIndexVarToScope(AutoDestroyScope* scope,
+                                     ForallStmt* forall)
+{
   VarSymbol* idx = parIdxVar(forall);
   if (isAutoDestroyedVariable(idx)) {
     INT_ASSERT(!idx->isRef()); // no destruction for ref iterators
@@ -171,7 +175,7 @@ static void walkBlock(FnSymbol*         fn,
   bool             isDeadCode = false;
 
   if (pfs != NULL)
-    addFSindexVarToScope(&scope, pfs);
+    addForallIndexVarToScope(&scope, pfs);
 
   // Updating the variableToExclude is a good start, but an iterator
   // can have multiple yields in it. If each yield consumes the value,

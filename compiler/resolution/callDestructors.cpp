@@ -72,10 +72,14 @@ public:
 private:
   typedef std::map<int, ReturnByRef*> RefMap;
   typedef std::set<FnSymbol*>         FnSet;
-  typedef enum { TF_NONE, TF_FULL, TF_ASGN } TFkind;
+  typedef enum {
+    TF_NONE,  // do not transform
+    TF_FULL,  // transform fully
+    TF_ASGN   // run only updateAssignments()
+  } TransformationKind;  // how to transform a function
 
   static void             returnByRefCollectCalls(RefMap& calls, FnSet& fns);
-  static TFkind           transformableFunctionKind(FnSymbol* fn);
+  static TransformationKind transformableFunctionKind(FnSymbol* fn);
   static void             transformFunction(FnSymbol* fn);
   static ArgSymbol*       addFormal(FnSymbol* fn);
   static void             insertAssignmentToFormal(FnSymbol*  fn,
@@ -127,7 +131,7 @@ void ReturnByRef::apply()
       for (int j = 0; j < numFns; j++)
       {
         FnSymbol* fn = virtualMethodTable.v[i].value->v[j];
-        TFkind tfKind = transformableFunctionKind(fn);
+        TransformationKind tfKind = transformableFunctionKind(fn);
 
         if (tfKind == TF_FULL)
           transformFunction(fn);
@@ -158,7 +162,7 @@ void ReturnByRef::returnByRefCollectCalls(RefMap& calls, FnSet& fns)
       // The common case is a user-level call to a resolved function
       // Also handle the PRIMOP for a virtual method call
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-       TFkind tfKind = transformableFunctionKind(fn);
+       TransformationKind tfKind = transformableFunctionKind(fn);
        if (tfKind == TF_FULL)
        {
         RefMap::iterator iter = calls.find(fn->id);
@@ -192,7 +196,7 @@ static inline bool isParIterOrForwarder(FnSymbol* fn) {
 
   if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     // This is a forwarder. Query the iterator itself.
-    return getTheIteratorFnFromIR(fn->retType)
+    return getTheIteratorFnFromIteratorRec(fn->retType)
              ->hasFlag(FLAG_INLINE_ITERATOR);
 
   // Otherwise, no.
@@ -267,9 +271,9 @@ Its return value, which is an iterator record, is irrelevant.
 The return-by-ref transformation adds clutter, so skip it in this case.
 
 A parallel iterator can also be used in a for-loop.
-Such a for-loop is converted into a forall using replaceEflopiWithForall()
-if the loop body contains a yield statement. Otherwise it remains
-a for-loop. (Todo: convert in this case as well?)
+Such a for-loop is converted into a forall during resolution using
+replaceEflopiWithForall() - only if the loop body contains a yield statement.
+Otherwise it remains a for-loop. (Todo: convert in this case as well?)
 
 Another double-use scenario is in an _iterator_for_loopexprNN via _toLeader.
 Todo: replace _iterator_for_loopexprNN with a ForallStmt.
@@ -278,39 +282,32 @@ When the same parallel iterator is used both ways,
 we need to split the uses into two so that each category
 is treated appropriately.
 */
-static bool doNotTransformForForall(FnSymbol* fn) {
-  bool forForall = false;
-  bool otherUse  = false;
-
+static void detectParIterUses(FnSymbol* fn, bool& forForall, bool& otherUse) {
   for_SymbolSymExprs(use, fn) {
     if (feedsIntoForallIterableExpr(fn, use))
       forForall = true;
     else
       otherUse = true;
   }
-
-  if (forForall && otherUse) {
-    // This is the case where we need to split the uses.
-    // Let the caller transform 'fn' for "otherUses".
-    // Redirect forall statements to a clone.
-    SET_LINENO(fn);
-    FnSymbol* clone = fn->copy();
-    fn->defPoint->insertAfter(new DefExpr(clone));
-
-    for_SymbolSymExprs(use, fn)
-      if (feedsIntoForallIterableExpr(fn, use)) {
-        // go ahead redirect
-        SET_LINENO(use);
-        use->replace(new SymExpr(clone));
-      }
-  }
-
-  // Return true - meaning "do not transform" -
-  // only when 'fn' is not used outside ForallStmts.
-  return !otherUse;
 }
 
-ReturnByRef::TFkind ReturnByRef::transformableFunctionKind(FnSymbol* fn)
+// Redirect uses of 'fn' in ForallStmts to fn's clone
+// so it does not undergo the ReturnByRef transformation.
+static void splitParIterUses(FnSymbol* fn) {
+  SET_LINENO(fn);
+  FnSymbol* clone = fn->copy();
+  fn->defPoint->insertAfter(new DefExpr(clone));
+
+  for_SymbolSymExprs(use, fn)
+    if (feedsIntoForallIterableExpr(fn, use)) {
+      // go ahead redirect
+      SET_LINENO(use);
+      use->replace(new SymExpr(clone));
+    }
+}
+
+ReturnByRef::TransformationKind
+ReturnByRef::transformableFunctionKind(FnSymbol* fn)
 {
   bool retval = false;
   bool asgn   = false;
@@ -349,8 +346,19 @@ ReturnByRef::TFkind ReturnByRef::transformableFunctionKind(FnSymbol* fn)
       retval = true;
   }
 
-  if (retval && isParIterOrForwarder(fn) && doNotTransformForForall(fn))
-    asgn = true;
+  if (retval && isParIterOrForwarder(fn)) {
+    bool forForall = false;
+    bool otherUses = false;
+    // compute forForall and otherUses
+    detectParIterUses(fn, forForall, otherUses);
+
+    if (forForall && otherUses)
+      splitParIterUses(fn);
+
+    if (!otherUses)
+      // Do not transform the returns.
+      asgn = true;
+  }
 
   if (asgn)
     return TF_ASGN;

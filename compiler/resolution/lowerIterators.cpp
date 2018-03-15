@@ -82,11 +82,11 @@ FnSymbol* getTheIteratorFn(Type* icType)
     Type* irType = getIterFn->getFormal(1)->type;
     INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
-    return getTheIteratorFnFromIR(irType);
+    return getTheIteratorFnFromIteratorRec(irType);
   }
 }
 
-FnSymbol* getTheIteratorFnFromIR(Type* irType)
+FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType)
 {
     AggregateType* irTypeAgg = toAggregateType(irType);
     INT_ASSERT(irTypeAgg->iteratorInfo);
@@ -251,7 +251,8 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
   forv_Vec(CallExpr, call, *fn->calledBy)
   {
     // Extract the symbol representing the calling function.
-    FnSymbol* caller = findNonShadowVarParent(call);      
+    FnSymbol* caller = findNonShadowVarParent(call);
+    INT_ASSERT(caller == call->getFunction()); // VASS replace findNonShadowVarParent() if this succeeds
 
     // If the caller is the same as the iterator we started with,
     // it calls itself recursively.  Further searching is unnecessary.
