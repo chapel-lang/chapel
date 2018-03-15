@@ -4208,13 +4208,22 @@ proc channel.readBytes(x, len:ssize_t, out error:syserr) {
 
 /*
   Read `numBytes` bytes from this channel into the memory location
-  referred to by `loc`.
+  associated with `loc`.
 */
 proc channel.readBytes(ref loc, numBytes: integral) throws {
+  this.readBytes(c_ptrTo(loc), numBytes);
+}
+
+/*
+  Read `numBytes` bytes from this channel into the memory location
+  pointed to by `ptr`.
+*/
+ proc channel.readBytes(ptr: c_ptr, numBytes: integral) throws {
   var e:syserr = ENOERR;
-  this.readBytes(c_ptrTo(loc), numBytes.safeCast(ssize_t), error=e);
+  this.readBytes(ptr, numBytes.safeCast(ssize_t), error=e);
   if e then try this._ch_ioerror(e, "in channel.readBytes");
 }
+
 
 /*
 proc channel.modifyStyle(f:func(iostyle, iostyle))
