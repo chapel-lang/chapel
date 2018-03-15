@@ -12,8 +12,6 @@ proc test1() {
   var instance = new MyClass(1);
 }
 
-/* One day this should work...
-   But an error is OK for now*/
 proc test2() {
   var instance:MyClass = new Owned(new MyClass(1));
 }
