@@ -27,6 +27,7 @@
 #include <limits.h>
 #include <pmi.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -56,6 +57,7 @@
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-atomics.h"
@@ -599,6 +601,18 @@ static mem_region_table_t** mem_regions_map_addr_map;
 //
 static mem_region_t* gnr_mreg;
 static mem_region_t* gnr_mreg_map;
+
+//
+// These data objects support catching SIGBUS signals due to hugepage
+// fault-in failures, and reporting out-of-memory in response.
+//
+static struct sigaction previous_SIGBUS_sigact;
+
+struct {
+  chpl_mem_descInt_t desc;
+  int ln;
+  int32_t fn;
+} mr_mregs_supplement[MAX_MEM_REGIONS];  // parallels mem_regions.mregs[]
 
 //
 // Declarations common to memory pools.
@@ -1436,6 +1450,7 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
+static void      SIGBUS_handler(int, siginfo_t *, void *);
 static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
@@ -2974,6 +2989,13 @@ void set_hugepage_info(void)
 
     if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
         && strcasecmp(ev, "yes") == 0) {
+      struct sigaction act;
+
+      act.sa_flags = SA_RESTART | SA_SIGINFO;
+      act.sa_sigaction = SIGBUS_handler;
+      if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
+        CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+      }
     }
   }
 
@@ -2983,6 +3005,59 @@ void set_hugepage_info(void)
   DBG_P_L(DBGF_HUGEPAGES,
           "setting hugepage info: use hugepages %s, sz %#zx",
           (hugepage_size > 0) ? "YES" : "NO", hugepage_size);
+}
+
+
+static
+void SIGBUS_handler(int signo, siginfo_t *info, void *context)
+{
+  //
+  // See if this was within an as-yet-unregistered region where we may
+  // be faulting in pages as a side effect of initialization.  If so,
+  // report allocation failure and exit.  Note that we're not holding
+  // the dynamic registration mutex and thus mem_regions.mreg_cnt may
+  // vary while we're executing this loop.  However, if the SIGBUS is
+  // the result of a fault-in failure on some region in the table, that
+  // count won't drop below the index of that region because we can't
+  // remove the region until after it's registered and we can't finish
+  // registering it without faulting in all its pages.
+  // 
+  // Also note that although we replicate the format of the "official"
+  // message chpl_memhook_check_post() produces, we can't just call it
+  // directly or use the same functions as it does, because they're not
+  // signal-safe.
+  //
+  if (info->si_code == BUS_ADRERR) {
+    uint64_t addr = (uint64_t) (intptr_t) info->si_addr;
+
+    int mr_i;
+    mem_region_t* mr;
+
+    for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+         mr_i >= 0 && (addr < mr->addr
+                       || addr >= mr->addr + mrtl_len(mr->len)
+                       || mrtl_isReg(mr->len));
+         mr_i--, mr--)
+      ;
+
+    if (mr_i >= 0) {
+      char buf[1024];
+      chpl_error_vs(buf, sizeof(buf),
+                    mr_mregs_supplement[mr_i].ln, mr_mregs_supplement[mr_i].fn,
+                    "Out of memory allocating \"%s\"",
+                    chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
+      write(fileno(stderr), buf, strlen(buf));
+      exit(1);
+    }
+  }
+
+  //
+  // This was not due to allocation failure on a hugepage we were trying
+  // to fault in.  Restore the previous handler and re-raise the SIGBUS.
+  // It should get dealt with as it would have without our handler.
+  //
+  (void) sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL);
+  raise(SIGBUS);
 }
 
 
@@ -3017,7 +3092,8 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 static __thread uint64_t defaultInit_ts;
 #endif
 
-void* chpl_comm_impl_regMemAlloc(size_t size)
+void* chpl_comm_impl_regMemAlloc(size_t size,
+                                 chpl_mem_descInt_t desc, int ln, int32_t fn)
 {
   int mr_i;
   mem_region_t* mr;
@@ -3072,6 +3148,10 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   mr = &mem_regions.mregs[mr_i];
   mr->addr = (uint64_t) (uintptr_t) p;
   mr->len = mrtl_encode(size, false);
+
+  mr_mregs_supplement[mr_i].desc = desc;
+  mr_mregs_supplement[mr_i].ln = ln;
+  mr_mregs_supplement[mr_i].fn = fn;
 
   //
   // Adjust the region count, if necessary.
