@@ -434,6 +434,29 @@ module DateTime {
     return str;
   }
 
+  /* Read or write a date value from channel `f` */
+  proc date.readWriteThis(f) {
+    const dash = new ioLiteral("-");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
 
   /* Operators on date values */
   pragma "no doc"
@@ -549,7 +572,6 @@ module DateTime {
 
   pragma "no doc"
   proc time.deinit() {
-    // delete tzinfo if needed
   }
 
   /* Methods on time values */
@@ -657,6 +679,30 @@ module DateTime {
 
     return str;
   }
+
+  /* Read or write a time value from channel `f` */
+  proc time.readWriteThis(f) {
+    const colon = new ioLiteral(":");
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
+        <~> new ioLiteral(".") <~> chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
 
   /* Operators on time values */
 
@@ -1159,6 +1205,34 @@ module DateTime {
   proc datetime.ctime() {
     return this.strftime("%a %b %e %T %Y");
   }
+
+  /* Read or write a datetime value from channel `f` */
+  proc datetime.readWriteThis(f) {
+    const dash  = new ioLiteral("-"),
+          colon = new ioLiteral(":");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
+        <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
+        <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+        <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
 
   // TODO: Add a datetime.timestamp() method
 

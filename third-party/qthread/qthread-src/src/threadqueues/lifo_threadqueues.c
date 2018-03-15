@@ -22,6 +22,17 @@
 #endif /* QTHREAD_USE_EUREKAS */
 #include "qt_subsystems.h"
 
+// Our onPark and onUnpark callbacks
+static void (*onPark)(void);
+static void (*onUnpark)(void);
+
+void qthread_registerOnPark(void (*_onPark)(void)) {
+    onPark = _onPark;
+}
+void qthread_registerOnUnpark(void (*_onUnpark)(void)) {
+    onUnpark = _onUnpark;
+}
+
 /* Note: this queue is SAFE to use with multiple de-queuers, with the caveat
  * that if you have multiple dequeuer's, you'll need to solve the ABA problem.
  * (single dequeuer == no ABA problem) Also, yielding changes behavior a bit in

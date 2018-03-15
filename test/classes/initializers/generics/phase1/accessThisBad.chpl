@@ -6,7 +6,7 @@ class ThisTooEarly {
 
     r = rVal;
 
-    this.initDone();
+    super.init();
 
     foo(this); // OK!
   }

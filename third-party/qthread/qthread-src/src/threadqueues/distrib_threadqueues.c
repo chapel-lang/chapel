@@ -28,6 +28,17 @@
 #include "qt_expect.h"
 #include "qt_subsystems.h"
 
+// Our onPark and onUnpark callbacks
+static void (*onPark)(void);
+static void (*onUnpark)(void);
+
+void qthread_registerOnPark(void (*_onPark)(void)) {
+    onPark = _onPark;
+}
+void qthread_registerOnUnpark(void (*_onUnpark)(void)) {
+    onUnpark = _onUnpark;
+}
+
 // Non portable
 typedef uint8_t cacheline[CACHELINE_WIDTH];
 
@@ -351,9 +362,15 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
   qt_threadqueue_node_t *node = NULL;
   qthread_t* t;
   qthread_shepherd_t *my_shepherd = qthread_internal_getshep();
+  int empty = 0;
 
   for(int numwaits = 0; !node; numwaits ++){
     node = qt_threadqueue_dequeue_tail(qe);
+
+    if (node == NULL && onPark) {
+      empty = 1;
+      onPark();
+    }
 
     // If we've done QT_STEAL_RATIO waits on local queue, try to steal 
     if(!node && steal_ratio > 0 && numwaits % steal_ratio == 0) {
@@ -361,6 +378,9 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
         qt_threadqueue_t *victim_queue = qlib->shepherds[i].ready;
         node = qt_threadqueue_dequeue_head(victim_queue);
         if (node){
+          if (empty == 1) {
+            onUnpark();
+          }
           t = node->value;
           free_tqnode(node);
           return t;
@@ -371,6 +391,9 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
     if(!node && qthread_worker(NULL) == 0 && mccoy){
       qthread_t *t = mccoy;
       mccoy = NULL;
+      if (empty == 1) {
+        onUnpark();
+      }
       return t; 
     } else if(!node){
       if(numwaits > condwait_backoff && !finalizing){
@@ -385,6 +408,9 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *qe,
         SPINLOCK_BODY();
       }
     }
+  }
+  if (empty == 1) {
+    onUnpark();
   }
   t = node->value;
   free_tqnode(node);

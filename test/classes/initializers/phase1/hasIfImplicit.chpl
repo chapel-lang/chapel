@@ -20,4 +20,8 @@ proc main() {
   writeln(c1);
 
   delete c1;
+
+  var c2 = new IfInit(7);
+  writeln(c2);
+  delete c2;
 }

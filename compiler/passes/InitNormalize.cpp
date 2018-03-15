@@ -86,14 +86,9 @@ InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
   mFn            = curr.mFn;
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
-  mBlockType     = cBlockCond;
+  mPrevBlockType = curr.mPrevBlockType;
+  mBlockType     = curr.mBlockType;
   mThisAsParent  = curr.mThisAsParent;
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
@@ -188,10 +183,6 @@ bool InitNormalize::inLoopBody() const {
   return mBlockType == cBlockLoop;
 }
 
-bool InitNormalize::inCondStmt() const {
-  return mBlockType == cBlockCond;
-}
-
 bool InitNormalize::inParallelStmt() const {
   return mBlockType == cBlockBegin   ||
          mBlockType == cBlockCobegin  ;
@@ -211,10 +202,6 @@ bool InitNormalize::inOn() const {
 
 bool InitNormalize::inOnInLoopBody() const {
   return inOn() && mPrevBlockType == cBlockLoop;
-}
-
-bool InitNormalize::inOnInCondStmt() const {
-  return inOn() && mPrevBlockType == cBlockCond;
 }
 
 bool InitNormalize::inOnInParallelStmt() const {
@@ -276,6 +263,72 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
 
     noop->remove();
   }
+}
+
+void InitNormalize::initializeFieldsThroughField(BlockStmt* block,
+                                                 DefExpr*   field) {
+  Expr* insertBefore = new CallExpr(PRIM_NOOP);
+
+  block->insertAtTail(insertBefore);
+
+  Expr* endCondition = ((field == NULL)? NULL : field);
+
+  while (mCurrField != NULL && mCurrField != endCondition) {
+    DefExpr* field = mCurrField;
+
+    if (isOuterField(field) == true) {
+      // The outer field is a compiler generated field.  Handle it specially.
+      makeOuterArg();
+
+    } else {
+      if (field->exprType == NULL && field->init == NULL) {
+        USR_FATAL_CONT(insertBefore,
+                       "can't omit initialization of field \"%s\", "
+                       "no type or default value provided",
+                       field->sym->name);
+
+      } else if (field->sym->hasFlag(FLAG_PARAM)         == true ||
+                 field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        if        (field->exprType != NULL && field->init == NULL) {
+          genericFieldInitTypeWoutInit (insertBefore, field);
+
+        } else if (field->exprType != NULL && field->init != NULL) {
+          genericFieldInitTypeWithInit (insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else if (field->exprType == NULL && field->init != NULL) {
+          genericFieldInitTypeInference(insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else if (field->init != NULL) {
+        Expr* initCopy    = field->init->copy();
+        bool  isTypeKnown = mCurrField->sym->type != dtUnknown;
+
+        if (isTypeKnown == true) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else if (field->exprType != NULL) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else {
+          fieldInitTypeInference(insertBefore, field, initCopy);
+        }
+
+      } else {
+        fieldInitTypeWoutInit(insertBefore, field);
+      }
+    }
+
+    mCurrField = toDefExpr(mCurrField->next);
+  }
+
+  insertBefore->remove();
 }
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
@@ -1733,10 +1786,6 @@ void InitNormalize::describe(int offset) const {
   switch (mBlockType) {
     case cBlockNormal:
       printf("normal\n");
-      break;
-
-    case cBlockCond:
-      printf("cond\n");
       break;
 
     case cBlockLoop:

@@ -136,6 +136,7 @@ void normalize() {
         isRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
+    preNormalizePostInit(at);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -847,6 +848,9 @@ static void insertUseForExplicitModuleCalls() {
 *  This is a dummy record type that must be replaced.  The call to            *
 *  chpl__buildDistValue() performs this task, returning _newDistribution(x),  *
 *  where x is a distribution.                                                 *
+*                                                                             *
+*    1. supports e.g.  var x = new dmap(new Block(...));                      *
+*    2. supports e.g.  var y = space dmapped Block (...);                     *
 *                                                                             *
 ************************************** | *************************************/
 

@@ -475,7 +475,7 @@ module ZMQ {
       this.initDone();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in ContextClass(): %s\n", errmsg);
+        halt("Error in ContextClass.init(): %s\n", errmsg);
       }
     }
 
@@ -484,7 +484,7 @@ module ZMQ {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~ContextClass(): %s\n", errmsg);
+          halt("Error in ContextClass.deinit(): %s\n", errmsg);
         }
       }
     }
@@ -570,7 +570,7 @@ module ZMQ {
       this.initDone();
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in SocketClass(): %s\n", errmsg);
+        halt("Error in SocketClass.init(): %s\n", errmsg);
       }
     }
 
@@ -579,7 +579,7 @@ module ZMQ {
         var ret = zmq_close(socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~SocketClass(): %s\n", errmsg);
+          halt("Error in SocketClass.deinit(): %s\n", errmsg);
         }
         socket = c_nil;
       }

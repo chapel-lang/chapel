@@ -1574,6 +1574,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   ArgSymbol* thisSymbol = new ArgSymbol(INTENT_BLANK, "this", ct);
 
   thisMethod->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+  thisMethod->addFlag(FLAG_COMPILER_GENERATED);
 
   thisMethod->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",
@@ -1898,6 +1899,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
 
     rtGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
     rtGetter->addFlag(FLAG_INLINE);
+    rtGetter->addFlag(FLAG_COMPILER_GENERATED);
     rtGetter->retTag = RET_TYPE;
     rtGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",
@@ -1936,6 +1938,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
 
     atGetter->addFlag(FLAG_NO_IMPLICIT_COPY);
     atGetter->addFlag(FLAG_INLINE);
+    atGetter->addFlag(FLAG_COMPILER_GENERATED);
     atGetter->retTag = RET_TYPE;
     atGetter->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                "_mt",
@@ -1988,6 +1991,7 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
   FnSymbol* parent_method = new FnSymbol("this");
 
   parent_method->addFlag(FLAG_FIRST_CLASS_FUNCTION_INVOCATION);
+  parent_method->addFlag(FLAG_COMPILER_GENERATED);
 
   parent_method->insertFormalAtTail(new ArgSymbol(INTENT_BLANK,
                                                   "_mt",

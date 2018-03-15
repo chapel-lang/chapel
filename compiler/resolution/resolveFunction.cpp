@@ -701,6 +701,7 @@ static FnSymbol* makeGetIterator(AggregateType* iClass,
 
   retval->addFlag(FLAG_AUTO_II);
   retval->addFlag(FLAG_INLINE);
+  retval->addFlag(FLAG_UNSAFE);
 
   retval->retType = iClass;
 

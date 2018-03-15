@@ -240,9 +240,10 @@ module DistributedBag {
     var _rc : Shared(DistributedBagRC(eltType));
 
     pragma "no doc"
-    proc DistBag(type eltType, targetLocales = Locales) {
-      _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
-      _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
+    proc init(type eltType, targetLocales = Locales) {
+      this.eltType = eltType;
+      this._pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
+      this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 
     pragma "no doc"
@@ -310,7 +311,7 @@ module DistributedBag {
     }
 
     pragma "no doc"
-    proc ~DistributedBagImpl() {
+    proc deinit() {
       delete bag;
     }
 
@@ -671,22 +672,24 @@ module DistributedBag {
       return elt;
     }
 
-    proc BagSegmentBlock(type eltType, capacity) {
+    proc init(type eltType, capacity) {
+      this.eltType = eltType;
       if capacity == 0 {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      cap = capacity;
-      elems = c_malloc(eltType, capacity);
+      this.elems = c_malloc(eltType, capacity);
+      this.cap = capacity;
     }
 
-    proc BagSegmentBlock(type eltType, ptr, capacity) {
-      cap = capacity;
-      elems = ptr;
-      size = cap;
+    proc init(type eltType, ptr, capacity) {
+      this.eltType = eltType;
+      this.elems = ptr;
+      this.cap = capacity;
+      this.size = cap;
     }
 
-    proc ~BagSegmentBlock() {
+    proc deinit() {
       c_free(elems);
     }
   }
@@ -945,11 +948,12 @@ module DistributedBag {
       return (startIdxDeq.fetchAdd(1) % here.maxTaskPar : uint) : int;
     }
 
-    proc Bag(type eltType, parentHandle) {
+    proc init(type eltType, parentHandle) {
+      this.eltType = eltType;
       this.parentHandle = parentHandle;
     }
 
-    proc ~Bag() {
+    proc deinit() {
       forall segment in segments {
         var block = segment.headBlock;
         while block != nil {

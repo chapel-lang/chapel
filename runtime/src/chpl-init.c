@@ -29,6 +29,7 @@
 #include "chpl-init.h"
 #include "chpl-mem.h"
 #include "chplmemtrack.h"
+#include "chpl-qsbr.h"
 #include "chpl-privatization.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
@@ -187,6 +188,11 @@ void chpl_rt_init(int argc, char* argv[]) {
   // Initialize the task management layer.
   //
   chpl_task_init();
+
+  //
+  // Initialize Quiescent State-Based Reclamation Pseudo-Garbage Collector.
+  //
+  chpl_qsbr_init();
 
   // Initialize privatization, needs to happen before hitting module init
   chpl_privatization_init();

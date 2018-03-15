@@ -46,9 +46,11 @@
 #include "chpl-linefile-support.h"
 #include "chpl-tasks.h"
 #include "chpl-tasks-callbacks-internal.h"
+#include "chpl-qsbr.h"
 #include "tasks-qthreads.h"
 
 #include "qthread.h"
+#include "qthread/qthread.h"
 #include "qthread/qtimer.h"
 #include "qthread-chapel.h"
 
@@ -181,14 +183,20 @@ chpl_qthread_tls_t chpl_qthread_comm_task_tls = {
 
 static syncvar_t exit_ret = SYNCVAR_STATIC_EMPTY_INITIALIZER;
 
+static __thread uint64_t nYields = 0;
+
 void chpl_task_yield(void)
 {
-    PROFILE_INCR(profile_task_yield,1);
-    if (qthread_shep() == NO_SHEPHERD) {
-        sched_yield();
-    } else {
-        qthread_yield();
-    }
+  if (nYields++ % CHPL_QSBR_ITERATIONS_PER_CHECKPOINT == 0) {
+    chpl_qsbr_checkpoint();
+  }
+
+  PROFILE_INCR(profile_task_yield,1);
+  if (qthread_shep() == NO_SHEPHERD) {
+      sched_yield();
+  } else {
+      qthread_yield();
+  }
 }
 
 // Sync variables
@@ -727,6 +735,16 @@ void chpl_task_init(void)
             perror("Could not register SIGINT handler");
         }
     }
+
+    /*
+      Note: Not all schedulers will invoke these callbacks as currently only
+      'nemesis' and 'distrib' schedulers have them appropriately implemented.
+      Hence it should be noted that using anything other than this may result
+      in memory leakage for idle threads without work due to them not being
+      able to invoke any checkpoints.
+    */
+    qthread_registerOnPark(chpl_task_threadOnPark);
+    qthread_registerOnUnpark(chpl_task_threadOnUnpark);
 }
 
 void chpl_task_exit(void)
@@ -779,6 +797,8 @@ static aligned_t main_wrapper(void *arg)
     chpl_qthread_tls_t         pv = {.bundle = bundle};
 
     *tls = pv;
+
+    chpl_qsbr_quickcheck();
 
     wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
 
