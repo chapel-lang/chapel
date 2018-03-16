@@ -6,8 +6,8 @@ class C {
   var A : [1..4] int = 5;
   var s = "hello world";
 
-  proc postInit() {
-    writeln("C.postInit");
+  proc postinit() {
+    writeln("C.postinit");
   }
 }
 

@@ -1,7 +1,7 @@
 
 record R {
-  proc postInit(x:int) {
-    writeln("R.postInit");
+  proc postinit(x:int) {
+    writeln("R.postinit");
   }
 }
 

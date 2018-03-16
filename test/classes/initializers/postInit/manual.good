@@ -1,5 +1,5 @@
 A.init
 B.init
-Start of B.postInit
-A.postInit
-End of B.postInit
+Start of B.postinit
+A.postinit
+End of B.postinit

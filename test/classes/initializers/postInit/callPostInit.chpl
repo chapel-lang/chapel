@@ -6,11 +6,11 @@ class C {
     writeln("C.init");
   }
 
-  proc postInit() {
-    writeln("C.postInit");
+  proc postinit() {
+    writeln("C.postinit");
   }
 }
 
 var c = new C();
-c.postInit();
+c.postinit();
 delete c;

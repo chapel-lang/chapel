@@ -5,8 +5,8 @@ class Grandparent {
   proc init() {
     writeln("Grandparent.init");
   }
-  proc postInit() {
-    writeln("Grandparent.postInit");
+  proc postinit() {
+    writeln("Grandparent.postinit");
   }
 }
 
@@ -19,8 +19,8 @@ class Parent : Grandparent {
     writeln("Parent.init");
   }
 
-  proc postInit() where eltType == int {
-    writeln("Special Parent.postInit");
+  proc postinit() where eltType == int {
+    writeln("Special Parent.postinit");
   }
 }
 
@@ -31,8 +31,8 @@ class Child : Parent {
     super.init(t);
     writeln("Child.init");
   }
-  proc postInit() {
-    writeln("Child(",eltType:string,").postInit");
+  proc postinit() {
+    writeln("Child(",eltType:string,").postinit");
   }
 }
 

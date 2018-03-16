@@ -19,8 +19,8 @@ record MyRecord {
 
   }
 
-  proc postInit() {
-    writeln('    MyRecord.postInit()');
+  proc postinit() {
+    writeln('    MyRecord.postinit()');
   }
 
   proc deinit() {

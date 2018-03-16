@@ -1,5 +1,5 @@
 
-// Parent does not have postInit, but child does
+// Parent does not have postinit, but child does
 
 class Y {
   var y : int;
@@ -16,8 +16,8 @@ class Z : Y {
     writeln("Z.init");
   }
 
-  proc postInit() {
-    writeln("Z.postInit");
+  proc postinit() {
+    writeln("Z.postinit");
   }
 }
 
@@ -25,7 +25,7 @@ var z = new Z();
 delete z;
 writeln();
 
-// Parent does not have postInit, but child and grandparent do
+// Parent does not have postinit, but child and grandparent do
 
 class A {
   var a : int;
@@ -34,8 +34,8 @@ class A {
     writeln("A.init");
   }
 
-  proc postInit() {
-    writeln("A.postInit");
+  proc postinit() {
+    writeln("A.postinit");
   }
 }
 
@@ -54,8 +54,8 @@ class C : B {
     writeln("C.init");
   }
 
-  proc postInit() {
-    writeln("C.postInit");
+  proc postinit() {
+    writeln("C.postinit");
   }
 }
 
@@ -63,7 +63,7 @@ var c = new C();
 delete c;
 writeln();
 
-// Parent has postInit, but child does not
+// Parent has postinit, but child does not
 
 class Parent {
   var p : int;
@@ -72,8 +72,8 @@ class Parent {
     writeln("Parent.init");
   }
 
-  proc postInit() {
-    writeln("Parent.postInit");
+  proc postinit() {
+    writeln("Parent.postinit");
   }
 }
 
