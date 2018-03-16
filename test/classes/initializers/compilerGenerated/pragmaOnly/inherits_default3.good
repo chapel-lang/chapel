@@ -1,0 +1,2 @@
+inherits_default3.chpl:12: In function 'main':
+inherits_default3.chpl:13: error: could not generate default initializer for type 'Child', please define one

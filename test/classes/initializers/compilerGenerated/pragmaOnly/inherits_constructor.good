@@ -1,0 +1,1 @@
+inherits_constructor.chpl:14: error: Cannot create default initializer on type 'Child', which inherits from type 'Parent' that defines a constructor
