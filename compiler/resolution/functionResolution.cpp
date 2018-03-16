@@ -5948,6 +5948,10 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     // Invoking an instance method
     call->insertAtHead(new SymExpr(newTmp));
     call->insertAtHead(new SymExpr(gMethodToken));
+
+    if (at->hasPostInitializer() == true) {
+      call->insertAfter(new CallExpr("postInit", gMethodToken, newTmp));
+    }
   }
 
   resolveCall(call);
@@ -6001,6 +6005,11 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
   temporaryInitializerFixup(call);
 
   resolveGenericActuals(call);
+
+  if (at->isRecord()           == true &&
+      at->hasPostInitializer() == true) {
+    call->insertAfter(new CallExpr("postInit", gMethodToken, initTmp));
+  }
 
   initFn = resolveInitializer(call);
 
@@ -7191,6 +7200,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
+
   lowerForallStmts();
 
   insertReturnTemps();
