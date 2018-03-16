@@ -227,13 +227,6 @@ static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
 }
 
 
-static FnSymbol* findNonShadowVarParent(Expr* expr) {
-  Symbol* result = expr->parentSymbol;
-  while (isShadowVarSymbol(result))
-    result = result->defPoint->parentSymbol;
-  return toFnSymbol(result);
-}
-
 // Traverse all callers of this function, to see if it calls the base iterator recursively.
 // Return true if so; false otherwise.
 // This version uses a depth-first search.
@@ -251,8 +244,7 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
   forv_Vec(CallExpr, call, *fn->calledBy)
   {
     // Extract the symbol representing the calling function.
-    FnSymbol* caller = findNonShadowVarParent(call);
-    INT_ASSERT(caller == call->getFunction()); // VASS replace findNonShadowVarParent() if this succeeds
+    FnSymbol* caller = call->getFunction();
 
     // If the caller is the same as the iterator we started with,
     // it calls itself recursively.  Further searching is unnecessary.
