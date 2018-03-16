@@ -21,6 +21,7 @@
 // Shared code for different mem implementations in mem-*/chpl_*_mem.c
 //
 #include "chplrt.h"
+
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"

@@ -25,7 +25,6 @@
 #include "chpl-comm.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
-#include "chpl-qsbr.h"
 #include "error.h"
 
 #include <inttypes.h>
@@ -208,12 +207,3 @@ size_t chpl_task_getDefaultCallStackSize(void)
 
   return deflt;
 }
-
-void chpl_task_threadOnPark(void) {
-  chpl_qsbr_blocked();
-}
-
-void chpl_task_threadOnUnpark(void) {
-  chpl_qsbr_unblocked();
-}
-
