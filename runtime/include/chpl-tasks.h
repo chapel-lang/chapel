@@ -243,10 +243,7 @@ char* chpl_task_idToString(
                chpl_taskID_t); //Task ID
 
 //
-// Yields the current thread to another task. Will conditionally invoke
-// a QSBR checkpoint periodically via a thread-local counter. As a checkpoint
-// is invoked, it is not safe to access QSBR-protected data obtained prior to
-// calling this function. 
+// Yield.
 //
 void chpl_task_yield(void);
 
@@ -254,19 +251,6 @@ void chpl_task_yield(void);
 // Suspend.
 //
 void chpl_task_sleep(double);
-
-//
-// (Optional) Invoked by a thread that may be idle for an
-// indefinite amount of time. Currently used by tasking layers
-// which detect that the work queue has been depleted for a while.
-//
-void chpl_task_threadOnPark(void);
-
-//
-// (Optional) Invoked by a thread that invoked 'chpl_task_threadOnPark' 
-// after they are no longer idle.
-//
-void chpl_task_threadOnUnpark(void);
 
 // The type for task private data, chpl_task_prvData_t,
 // is defined in chpl-tasks-prvdata.h in order to support

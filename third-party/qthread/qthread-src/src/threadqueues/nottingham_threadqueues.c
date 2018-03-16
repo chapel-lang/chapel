@@ -25,17 +25,6 @@
 # define NOINLINE __attribute__ ((noinline))
 #endif
 
-// Our onPark and onUnpark callbacks
-static void (*onPark)(void);
-static void (*onUnpark)(void);
-
-void qthread_registerOnPark(void (*_onPark)(void)) {
-    onPark = _onPark;
-}
-void qthread_registerOnUnpark(void (*_onUnpark)(void)) {
-    onUnpark = _onUnpark;
-}
-
 /* Data Structures */
 struct uint128 {
     uint64_t lo;
@@ -490,8 +479,6 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 
     int id = qthread_worker_unique(NULL);
 
-    int empty = 0;
-
     assert(q != NULL);
 
     rwlock_rdlock(rwlock, id);
@@ -508,16 +495,8 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
             if (active) {
                 t = qt_threadqueue_dequeue_helper(q);
                 if (t != NULL) {
-                    if (empty == 1) {
-                        onUnpark();
-                    }   
                     cas_profile_update(id, cycles - 1);
                     return(t);
-                }
-
-                if (empty == 0) {
-                    empty = 1;
-                    onPark();
                 }
             }
             rwlock_rdlock(rwlock, id);
@@ -540,17 +519,9 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                         if (active) {
                             t = qt_threadqueue_dequeue_helper(q);
                             if (t != NULL) {
-                                if (empty == 1) {
-                                    onUnpark();
-                                }
                                 cas_profile_update(id, cycles - 1);
                                 return(t);
                             }
-                        }
-
-                        if (empty == 0) {
-                            empty = 1;
-                            onPark();
                         }
                         rwlock_rdlock(rwlock, id);
                         oldtop.sse = q->top;
@@ -573,10 +544,6 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
 
             if(lastchance.entry.counter != oldtop.entry.counter) {
                 oldtop.entry = lastchance.entry;
-                if (empty == 0) {
-                    empty = 1;
-                    onPark();
-                }
                 continue;
             }
 
@@ -585,9 +552,6 @@ qthread_t INTERNAL *qt_scheduler_get_thread(qt_threadqueue_t         *q,
                 rwlock_rdunlock(rwlock, id);
                 assert(t != NULL);
                 cas_profile_update(id, cycles - 1);
-                if (empty == 1) {
-                    onUnpark();
-                }
                 return (t);
             }
         }
