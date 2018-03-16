@@ -397,13 +397,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
       // it up completely...
       instantiateBody(newFn);
 
-      FnSymbol* initFn = findCopyInit(ct);
-
-      if (initFn == NULL) {
-        // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-
-      } else {
+      if (FnSymbol* initFn = findCopyInit(ct)) {
         Symbol*   thisTmp  = newTemp(ct);
         DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
@@ -435,6 +429,10 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
 
         // Set the RVV to the copy
         newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
+
+      } else {
+        // No copy-initializer could be found
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       }
 
       retval = true;
