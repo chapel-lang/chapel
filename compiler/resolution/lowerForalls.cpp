@@ -927,7 +927,12 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   FnSymbol* parIterFn = parIterCall->resolvedFunction();
 
-  // Make sure it is a parallel iterator.
+  if (isVirtualIterator(parIterFn->retType->symbol)) {
+    USR_FATAL_CONT(fs, "virtual parallel iterators are not yet supported (see issue #6998)");
+    return;
+  }
+
+  // Make sure it is a parallel iterator, not a forwarder.
   if (!parIterFn->hasFlag(FLAG_INLINE_ITERATOR))
     // This updates parIterCall, parIterFn.
     handleIteratorForwarders(fs, parIterCall, parIterFn);
@@ -936,7 +941,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   if (parIterFn->hasFlag(FLAG_RECURSIVE_ITERATOR)) {
     handleRecursiveIter(fs, parIterFn, parIterCall);
-    // It is probably OK to lower other foralls meanwhile.
+
+    // It is probably OK to lower other foralls even if we can't this one.
     return;
   }
 

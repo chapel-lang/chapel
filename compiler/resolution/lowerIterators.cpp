@@ -143,7 +143,7 @@ static void nonLeaderParCheck()
   USR_STOP();
 }
 
-static bool isVirtualIterator(Symbol* iterator) {
+bool isVirtualIterator(Symbol* iterator) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(iterator->type)) {
@@ -161,20 +161,6 @@ static bool isVirtualIterator(Symbol* iterator) {
   }
 
   return retval;
-}
-
-static void parallelIterVirtualCheck() {
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (isAlive(block) && block->isForLoop()) {
-      ForLoop* forLoop = toForLoop(block);
-      Symbol* iterator = toSymExpr(forLoop->iteratorGet())->symbol();
-      FnSymbol* ifn = getTheIteratorFn(iterator);
-      if (ifn->hasFlag(FLAG_INLINE_ITERATOR) && isVirtualIterator(iterator)) {
-        USR_FATAL_CONT(forLoop, "virtual parallel iterators are not yet supported (see issue #6998)");
-      }
-    }
-  }
-  USR_STOP();
 }
 
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
@@ -2464,7 +2450,6 @@ static void removeUncalledIterators()
 
 void lowerIterators() {
   nonLeaderParCheck();
-  parallelIterVirtualCheck();
 
   computeRecursiveIteratorSet();
 
