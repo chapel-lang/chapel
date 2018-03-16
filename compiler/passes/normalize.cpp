@@ -2282,7 +2282,7 @@ static void insertPostInit(Symbol* var, CallExpr* anchor) {
   AggregateType* at = toAggregateType(var->type);
 
   if (at->hasPostInitializer() == true) {
-    anchor->insertAfter(new CallExpr("postInit", gMethodToken, var));
+    anchor->insertAfter(new CallExpr("postinit", gMethodToken, var));
   }
 }
 

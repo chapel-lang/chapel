@@ -407,7 +407,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
         def->insertAfter(initCall);
 
         if (ct->hasPostInitializer() == true) {
-          CallExpr* post = new CallExpr("postInit", gMethodToken, thisTmp);
+          CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
 
           initCall->insertAfter(post);
         }
@@ -5122,7 +5122,7 @@ static void resolveInitVar(CallExpr* call) {
       call->insertAtHead(gMethodToken);
 
       if (ct->hasPostInitializer() == true) {
-        call->insertAfter(new CallExpr("postInit", gMethodToken, dst));
+        call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
       }
 
       resolveCall(call);
@@ -5823,7 +5823,7 @@ static void resolveNewAT(CallExpr* call) {
     INT_ASSERT(moveStmt                         != NULL);
     INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
 
-    moveStmt->insertAfter(new CallExpr("postInit", gMethodToken, moveDest));
+    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
   }
 }
 
@@ -5950,7 +5950,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     call->insertAtHead(new SymExpr(gMethodToken));
 
     if (at->hasPostInitializer() == true) {
-      call->insertAfter(new CallExpr("postInit", gMethodToken, newTmp));
+      call->insertAfter(new CallExpr("postinit", gMethodToken, newTmp));
     }
   }
 
@@ -6008,7 +6008,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   if (at->isRecord()           == true &&
       at->hasPostInitializer() == true) {
-    call->insertAfter(new CallExpr("postInit", gMethodToken, initTmp));
+    call->insertAfter(new CallExpr("postinit", gMethodToken, initTmp));
   }
 
   initFn = resolveInitializer(call);

@@ -1264,7 +1264,7 @@ static bool isSuperPostInit(CallExpr* stmt) {
   if (CallExpr* call = toCallExpr(stmt->baseExpr)) {
     if (call->numActuals()                        ==    2 &&
         call->isNamedAstr(astrSdot)               == true &&
-        isStringLiteral(call->get(2), "postInit") == true) {
+        isStringLiteral(call->get(2), "postinit") == true) {
       if (CallExpr* subExpr = toCallExpr(call->get(1))) {
         if (subExpr->numActuals()                     == 2    &&
             subExpr->isNamedAstr(astrSdot)            == true &&
@@ -1329,19 +1329,19 @@ static void insertSuperPostInit(FnSymbol* fn) {
     tmp->addFlag(FLAG_SUPER_TEMP);
 
     // Adding at head therefore add in reverse order
-    body->insertAtHead(new CallExpr("postInit", gMethodToken, tmp));
+    body->insertAtHead(new CallExpr("postinit", gMethodToken, tmp));
     body->insertAtHead(new CallExpr(PRIM_MOVE,  tmp,          superGet));
     body->insertAtHead(new DefExpr(tmp));
   }
 }
 
 //
-// Creates a method named "postInit" on 'at'. A call to "super.postInit" is
+// Creates a method named "postinit" on 'at'. A call to "super.postinit" is
 // added if 'at' is a class.
 //
 static void buildPostInit(AggregateType* at) {
   SET_LINENO(at);
-  FnSymbol* fn     = new FnSymbol("postInit");
+  FnSymbol* fn     = new FnSymbol("postinit");
   ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
 
@@ -1386,7 +1386,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
       if (method->formals.length > 2) {
         // Only accept method token and 'this'
         ret += 1;
-        USR_FATAL_CONT(method, "postInit must have zero arguments");
+        USR_FATAL_CONT(method, "postinit must have zero arguments");
       }
       if (at->isClass() == true && insertSuper == true) {
         insertSuperPostInit(method);
