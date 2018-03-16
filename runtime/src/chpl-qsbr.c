@@ -96,7 +96,7 @@ static inline struct tls_node *get_tls_list(void) {
     chpl_internal_error("'chpl_qsbr_tls_list' is NULL!\n");
   }
   #endif
-  return (struct tls_node *) atomic_load_uintptr_t((uintptr_t *) &chpl_qsbr_tls_list);
+  return (struct tls_node *) atomic_load_uintptr_t((atomic_uintptr_t *) (void *) &chpl_qsbr_tls_list);
 }
 
 static inline uint64_t get_epoch(struct tls_node *node);
@@ -326,7 +326,7 @@ void chpl_qsbr_init_tls(void) {
     old_head = chpl_qsbr_tls_list;
     node->next = old_head;
   } while (!atomic_compare_exchange_weak_uintptr_t(
-      (uintptr_t *) &chpl_qsbr_tls_list, (uintptr_t) old_head, (uintptr_t) node)
+      (atomic_uintptr_t *) (void *) &chpl_qsbr_tls_list, (uintptr_t) old_head, (uintptr_t) node)
     );
 
   CHPL_TLS_SET(chpl_qsbr_tls, node);
