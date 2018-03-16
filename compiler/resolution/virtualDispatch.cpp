@@ -45,8 +45,11 @@ static child type could end up calling something in the parent.
 
 #include "virtualDispatch.h"
 
+#include "astutil.h"
 #include "baseAST.h"
+#include "callInfo.h"
 #include "driver.h"
+#include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
 #include "resolution.h"
@@ -238,6 +241,20 @@ static void collectMethods(FnSymbol*               pfn,
   while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
       if (cfn->instantiatedFrom == NULL) {
+        // if pfn is a filled in vararg function then cfn needs its
+        // vararg stamped out here too.
+        if (pfn->hasFlag(FLAG_EXPANDED_VARARGS)) {
+          compute_fn_call_sites(pfn);
+          forv_Vec(CallExpr, call, *pfn->calledBy) {
+            CallInfo info;
+            if (info.isWellFormed(call)) {
+              cfn = expandIfVarArgs(cfn, info);
+              break;
+            } else {
+              INT_FATAL("expected CallExpr to be well formed at this point");
+            }
+          }
+        }
         if (possibleSignatureMatch(pfn, cfn) == true) {
           methods.push_back(cfn);
         }
