@@ -2,10 +2,14 @@
 
 use Cwd 'abs_path';
 
+# If CHPL_TEST_UTIL_DIR is set, use that as the directory from which
+# to run printchplenv.  If it's not set, use $CHPL_HOME/util.
+my $utildir = defined($ENV{"CHPL_TEST_UTIL_DIR"}) ? $ENV{"CHPL_TEST_UTIL_DIR"} : "$ENV{'CHPL_HOME'}/util";
+
 #
 # Set standard CHPL_* environment variables, if they are not already set.
 #
-my $env = `$ENV{CHPL_HOME}/util/printchplenv --all --internal --simple --no-tidy`;
+my $env = `$utildir/printchplenv --all --internal --simple --no-tidy`;
 my @lines = split(/\n/, $env);
 for my $line (@lines) {
   $line =~ s/export\s+//;
