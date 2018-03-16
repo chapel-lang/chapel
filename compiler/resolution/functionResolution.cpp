@@ -406,6 +406,12 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
 
         def->insertAfter(initCall);
 
+        if (ct->hasPostInitializer() == true) {
+          CallExpr* post = new CallExpr("postInit", gMethodToken, thisTmp);
+
+          initCall->insertAfter(post);
+        }
+
         // Replace the other setting of the return-value-variable
         // with what we have now...
 
@@ -415,7 +421,7 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
         // Remove other PRIM_MOVEs to the RVV
         for_alist(stmt, newFn->body->body) {
           if (CallExpr* callStmt = toCallExpr(stmt)) {
-            if (callStmt->isPrimitive(PRIM_MOVE)) {
+            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
               SymExpr* se = toSymExpr(callStmt->get(1));
 
               INT_ASSERT(se);
@@ -5073,7 +5079,6 @@ static void resolveInitField(CallExpr* call) {
 * and then resolves the PRIM_MOVE.                                            *
 *                                                                             *
 ************************************** | *************************************/
-
 
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
