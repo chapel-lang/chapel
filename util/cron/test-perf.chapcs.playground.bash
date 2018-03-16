@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of branch that uses RCU for privatization
-GITHUB_USER=LouisJenkinsCS
-GITHUB_BRANCH=RCU-Privatization
-SHORT_NAME=RCU-Privatization
-START_DATE=01/30/18
+# Test performance of lowering ForallStmt at lowerIterators
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=lower-ForallStmt
+SHORT_NAME=lower-ForallStmt
+START_DATE=03/07/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

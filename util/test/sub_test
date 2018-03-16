@@ -1258,12 +1258,12 @@ for testname in testsrc:
     chpldoc_opts_filename = test_filename + chpldocsuffix
     if test_is_chpldoc and os.access(chpldoc_opts_filename, os.R_OK):
         compoptslist = ReadFileWithComments(chpldoc_opts_filename, False)
-        if not compoptslist:
+        if os.stat(chpldoc_opts_filename).st_size == 0:
             sys.stdout.write('[Warning: ignoring an empty chpldocopts file %s]\n' %
                              (test_filename+compoptssuffix))
     elif os.access(test_filename+compoptssuffix, os.R_OK):
         compoptslist = ReadFileWithComments(test_filename+compoptssuffix, False)
-        if not compoptslist:
+        if os.stat(test_filename+compoptssuffix).st_size == 0:
             # cf. for execoptslist no warning is issued
             sys.stdout.write('[Warning: ignoring an empty compopts file %s]\n'%(test_filename+compoptssuffix))
 
@@ -1791,7 +1791,7 @@ for testname in testsrc:
             args=list()
             if timer and timereal:
                 cmd='./'+execname
-                os.environ['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
+                testenv['CHPL_LAUNCHER_REAL_WRAPPER'] = timer
             elif timer:
                 cmd=timer
                 args+=['./'+execname]
@@ -1900,6 +1900,8 @@ for testname in testsrc:
                         elif (re.search(r'\d+ Killed', output) and re.search('/var/spool/PBS/mom_priv/jobs', output)):
                             launcher_error = 'Jira 324 -- PBS job killed for'
                         elif re.search('Fatal MPP reservation error on confirm', output, re.IGNORECASE) != None:
+                            launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
+                        elif re.search('Fatal MPP reservation error on create', output, re.IGNORECASE) != None:
                             launcher_error = 'Jira 329 -- Fatal MPP reservation error for'
                         elif (re.search('PBS: job killed: walltime', output, re.IGNORECASE) != None or
                               re.search('slurm.* CANCELLED .* DUE TO TIME LIMIT', output, re.IGNORECASE) != None):

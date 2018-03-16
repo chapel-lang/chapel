@@ -3,7 +3,6 @@ record MyRec {
 
   proc init(param p) {
     field = p + 2;
-    super.init();
   }
 }
 var rec: MyRec(5) = new MyRec(3);

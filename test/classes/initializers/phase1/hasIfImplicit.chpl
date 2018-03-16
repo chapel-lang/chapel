@@ -11,7 +11,6 @@ class IfInit {
 
     // Error f2 is only initialized if f1 is false
 
-    super.init();
   }
 }
 
@@ -21,4 +20,8 @@ proc main() {
   writeln(c1);
 
   delete c1;
+
+  var c2 = new IfInit(7);
+  writeln(c2);
+  delete c2;
 }

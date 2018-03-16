@@ -9,7 +9,6 @@ class Foo {
     proc nested() {
       field = -field; // because this modifies a field
     }
-    super.init();
   }
 }
 

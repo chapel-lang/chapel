@@ -8,13 +8,11 @@ module Bar {
     x = other.x;
     y = other.y;
     z = other.z;
-    super.init();
   }
   proc R.init(a,b,c) {
     x = a;
     y = b;
     z = c;
-    super.init();
   }
 
   proc getter() {

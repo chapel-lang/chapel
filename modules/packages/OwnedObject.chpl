@@ -59,11 +59,13 @@ module OwnedObject {
    */
   pragma "no copy"
   pragma "copy mutates"
+  pragma "managed pointer"
   record Owned {
     pragma "no doc"
     type t;                // contained type (class type)
 
     pragma "no doc"
+    pragma "owned"
     var p:t;               // contained pointer (class type)
 
     forwarding p;
@@ -90,7 +92,6 @@ module OwnedObject {
         compilerError("Owned only works with classes");
 
       this.p = p;
-      //super.init();
     }
 
     /*
@@ -167,6 +168,7 @@ module OwnedObject {
   // for problems with generic initializers
   pragma "init copy fn"
   pragma "no doc"
+  pragma "unsafe"
   proc chpl__initCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
@@ -180,14 +182,29 @@ module OwnedObject {
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "erroneous autocopy"
+  pragma "unsafe"
   proc chpl__autoCopy(ref src: Owned) {
     var ret = new Owned(src);
     return ret;
+  }
+  // This is a workaround - compiler was resolving
+  // chpl__autoDestroy(x:object) from internal coercions.
+  proc chpl__autoDestroy(x: Owned) {
+    __primitive("call destructor", x);
   }
 
   // Don't print out 'p' when printing an Owned, just print class pointer
   pragma "no doc"
   proc Owned.readWriteThis(f) {
     f <~> this.p;
+  }
+
+  // Note, coercion from Owned -> Owned.t is directly
+  // supported in the compiler via a call to borrow().
+
+  pragma "no doc"
+  inline proc _cast(type t, in x) where t:Owned && x:Owned && x.t:t.t {
+    var ret = new Owned(x.release());
+    return ret;
   }
 }

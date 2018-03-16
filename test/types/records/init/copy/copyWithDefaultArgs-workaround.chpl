@@ -2,11 +2,13 @@ record R {
   var x: int;
 
   proc init(x: int, y: bool = true) {
+    this.initDone();
     if y then
       this.x = x;
   }
 
   proc init(r: R, y: bool) {
+    this.initDone();
     if y then
       this.x = r.x;
   }

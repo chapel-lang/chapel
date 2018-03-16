@@ -8,7 +8,6 @@ class Foo {
     //   in Phase 1
     coforall val in a do
       x = val;
-    super.init();
   }
 }
 

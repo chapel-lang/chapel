@@ -7,13 +7,11 @@ class Foo {
 
   proc init(type tVal) {
     t = tVal;
-    super.init();
   }
 
   proc init(xVal) {
     t = xVal.type;
     x = xVal;
-    super.init();
   }
 }
 

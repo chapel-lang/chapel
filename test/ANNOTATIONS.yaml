@@ -297,6 +297,13 @@ all:
   02/22/18:
     - text: Put the main process to sleep while waiting to shutdown (#8533)
       config: 16 node XC
+  03/03/18:
+    - text: add error handling to casts from string #8547
+      config: chapcs
+  03/04/18:
+    - text: system update
+      config: 16 node XC
+
 
 AllCompTime:
   11/09/14:
@@ -616,6 +623,8 @@ jacobi:
     - refactoring of rectangular IO (#5157)
   08/02/17:
     - Remove handling of references from copyPropagation (#6779)
+  03/13/18:
+    - Enable phase one dynamic dispatch (#8790)
 
 knucleotide:
   10/17/15:
@@ -793,6 +802,8 @@ memleaksfull:
     - Rewrite default argument handling (#7858)
   01/23/18:
     - Fix memory leak introduced in PR #8073 (#8268)
+  03/14/15:
+    - Convert RecordParser over from constructors to initializers (#8810)
 
 meteor:
   12/18/13:
@@ -999,6 +1010,8 @@ revcomp:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
+  03/15/17:
+    - Update to test (#8815)
 
 sad:
   05/03/16:

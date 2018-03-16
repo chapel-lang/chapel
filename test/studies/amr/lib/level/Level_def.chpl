@@ -91,7 +91,6 @@ class Level {
     //---------------------------------------------------------------
 
     possible_ghost_cells = possible_cells.expand(2*n_ghost_cells);
-    super.init();
 
   }
   // /|''''''''''''''''''''/|
@@ -326,6 +325,7 @@ class SiblingGhostRegion {
     level: Level,
     grid:  Grid)
   {
+    this.initDone();
     for sibling in level.grids 
     {
       if sibling != grid 

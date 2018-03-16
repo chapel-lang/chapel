@@ -1,0 +1,6 @@
+C.init
+C.postInit
+c = {x = 5, y = 5.0}
+
+R.init
+R.postInit

@@ -123,6 +123,7 @@ module Crypto {
 
     */
     proc init(s: string) {
+      this.initDone();
       this._len = s.length;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -144,6 +145,7 @@ module Crypto {
 
     */
     proc init(s: [] uint(8)) {
+      this.initDone();
       this._len = s.size;
       if (this._len == 0) {
         halt("Enter an array with size greater than 0 in order to create a buffer");
@@ -247,6 +249,7 @@ module Crypto {
 
     */
     proc init(keyLen: int) {
+      this.initDone();
       if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
         halt("RSAKey: Invalid key length.");
       }
@@ -297,6 +300,7 @@ module Crypto {
 
     */
     proc init(iv: CryptoBuffer, encSymmKey: [] CryptoBuffer, encSymmValue: CryptoBuffer) {
+      this.initDone();
       this.keyDomain = encSymmKey.domain;
       for i in this.keyDomain do {
         this.keys[i] = encSymmKey[i];
@@ -408,6 +412,7 @@ module Crypto {
 
     */
     proc init(digestName: string) {
+      this.initDone();
       select digestName {
         when "MD5"        do this.hashLen = 16;
         when "SHA1"       do this.hashLen = 20;
@@ -568,7 +573,6 @@ module Crypto {
       }
       this.cipher = tmpCipher;
       this.byteLen = bits/8;
-      super.init();
     }
 
     /* This function returns the size in bytes of the key-length/variant of
@@ -758,7 +762,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
         otherwise do halt("The desired variant of Blowfish cipher does not exist.");
       }
       this.cipher = tmpCipher;
-      super.init();
     }
 
     /* This is the 'Blowfish' encrypt routine that encrypts the user supplied message buffer
@@ -932,7 +935,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       this.byteLen = byteLen;
       this.iterCount = iterCount;
       this.hashName = digest.getDigestName();
-      super.init();
     }
 
     /* This function represents Password-Based KDF 2. It generates a secure-key

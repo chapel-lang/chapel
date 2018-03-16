@@ -37,7 +37,6 @@ class MasonError : Error {
   var msg:string;
   proc init(msg:string) {
     this.msg = msg;
-    super.init();
   }
   proc message() {
     return msg;
@@ -111,7 +110,6 @@ record VersionInfo {
   }
 
   proc init(str:string) {
-    super.init();
     const s : [1..3] string = str.split(".");
     assert(s.size == 3);
 

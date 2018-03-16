@@ -472,10 +472,10 @@ module ZMQ {
     proc init() {
       this.ctx = zmq_ctx_new();
       this.home = here;
-      super.init();
+      this.initDone();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in ContextClass(): %s\n", errmsg);
+        halt("Error in ContextClass.init(): %s\n", errmsg);
       }
     }
 
@@ -484,7 +484,7 @@ module ZMQ {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~ContextClass(): %s\n", errmsg);
+          halt("Error in ContextClass.deinit(): %s\n", errmsg);
         }
       }
     }
@@ -503,12 +503,13 @@ module ZMQ {
       Create a ZMQ context.
      */
     proc init() {
+      this.initDone();
       acquire(new ContextClass());
     }
 
     pragma "no doc"
     proc init(c: Context) {
-      super.init();
+      this.initDone();
       this.acquire(c.classRef);
     }
 
@@ -566,10 +567,10 @@ module ZMQ {
     proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       this.home = here;
-      super.init();
+      this.initDone();
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in SocketClass(): %s\n", errmsg);
+        halt("Error in SocketClass.init(): %s\n", errmsg);
       }
     }
 
@@ -578,7 +579,7 @@ module ZMQ {
         var ret = zmq_close(socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~SocketClass(): %s\n", errmsg);
+          halt("Error in SocketClass.deinit(): %s\n", errmsg);
         }
         socket = c_nil;
       }
@@ -603,14 +604,14 @@ module ZMQ {
 
     pragma "no doc"
     proc init(s: Socket) {
-      super.init();
+      this.initDone();
       this.acquire(s.classRef);
     }
 
     pragma "no doc"
     proc init(ctx: Context, sockType: int) {
       context = ctx;
-      super.init();
+      this.initDone();
       on ctx.classRef.home do
         acquire(new SocketClass(ctx, sockType));
     }

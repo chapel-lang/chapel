@@ -14,7 +14,6 @@ class A {
   var x:t;
   proc init(type t) {
     this.t = t;
-    super.init();
   }
   // initializer for class 'A' requires a generic argument called 't'
 }
@@ -34,7 +33,6 @@ class B {
   param p;
   proc init(param p) {
     this.p = p;
-    super.init();
   }
   // initializer for class 'B' requires a generic argument called 'p'
 }
@@ -53,7 +51,6 @@ class C {
   const cst;
   proc init(cst) {
     this.cst = cst;
-    super.init();
   }
   // initializer for class 'C' requires a generic argument called 'cst'
 }
@@ -74,7 +71,6 @@ class D {
   var vbl;
   proc init(vbl) {
     this.vbl = vbl;
-    super.init();
   }
   // initializer for class 'D' requires a generic argument called 'vbl'
 }

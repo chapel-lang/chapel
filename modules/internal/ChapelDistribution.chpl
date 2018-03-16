@@ -780,7 +780,7 @@ module ChapelDistribution {
     proc dsiPostReallocate() {
     }
 
-    proc ~BaseArrOverRectangularDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -792,7 +792,7 @@ module ChapelDistribution {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
 
-    proc ~BaseRectangularArr() {
+    proc deinit() {
       // this is a bug workaround
     }
   }

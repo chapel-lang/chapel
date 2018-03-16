@@ -11,12 +11,10 @@ class Foo {
 
   proc init(vVal) where (isIntegralType(vVal.type)) {
     v = 10;
-    super.init();
   }
 
   proc init(vVal) where (!isIntegralType(vVal.type)) {
     v = vVal;
-    super.init();
   }
 }
 

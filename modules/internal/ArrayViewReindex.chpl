@@ -449,7 +449,6 @@ module ArrayViewReindex {
     //
     // accessors
     //
-
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }

@@ -8,7 +8,6 @@ class Parent {
   // generated child initializer.
   proc init() {
     a = 11;
-    super.init();
   }
 }
 

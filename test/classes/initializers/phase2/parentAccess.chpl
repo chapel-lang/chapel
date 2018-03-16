@@ -1,5 +1,9 @@
 class Parent {
   var f1 = 4.27;
+
+  proc init(val:real) {
+    this.f1 = val;
+  }
 }
 
 class Child : Parent {
@@ -10,8 +14,6 @@ class Child : Parent {
     // Omitted field relies on parent field value.
     super.init(parentFieldVal);
     f2 = f1 - 3.2;
-    // overwrites the default value of f2.  If that was costly, we could noinit
-    // the field in Phase 1
   }
 }
 

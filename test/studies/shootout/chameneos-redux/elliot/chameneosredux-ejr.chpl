@@ -59,7 +59,6 @@ record Population {
   proc init(colors: [] Color) {
     chamSpace = colors.domain;
     chameneos = new Chameneos(1..colors.size, colors);
-    super.init();
   }
 
   //
@@ -239,6 +238,7 @@ class MeetingPlace {
   // Initialize the number of meetings that should take place
   //
   proc init(numMeetings) {
+    this.initDone();
     state.write(numMeetings << bitsPerChameneosID);
   }
 

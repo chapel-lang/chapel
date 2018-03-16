@@ -4,7 +4,6 @@ class Foo {
 
   proc init(yVal) {
     y = yVal;
-    super.init();
   }
 
   proc xTimes3() {

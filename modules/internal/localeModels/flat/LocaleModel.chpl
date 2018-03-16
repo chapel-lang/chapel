@@ -69,7 +69,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      super.init();
+      this.initDone();
 
       setup();
     }
@@ -78,9 +78,12 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
-      _node_id = chpl_nodeID: int;
 
       super.init(parent_loc);
+
+      _node_id = chpl_nodeID: int;
+
+      this.initDone();
 
       setup();
     }

@@ -77,6 +77,7 @@ module DefaultRectangular {
   pragma "locale private"
   var defaultDist = new dmap(new DefaultDist());
 
+  pragma "unsafe"
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
@@ -864,7 +865,6 @@ module DefaultRectangular {
       this.stridable = stridable;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-      super.init();
     }
 
     // These functions must always be called locally, because the lock

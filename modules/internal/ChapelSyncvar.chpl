@@ -115,7 +115,6 @@ module ChapelSyncvar {
       ensureFEType(valType);
       this.valType = valType;
       this.wrapped = new (getSyncClassType(valType))(valType);
-      super.init();
     }
 
     //
@@ -133,7 +132,6 @@ module ChapelSyncvar {
       this.valType = other.valType;
       this.wrapped = other.wrapped;
       this.isOwned = false;
-      super.init();
     }
 
     proc deinit() {
@@ -358,7 +356,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       chpl_sync_initAux(syncAux);
     }
 
@@ -497,7 +495,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -632,7 +630,6 @@ module ChapelSyncvar {
       ensureFEType(valType);
       this.valType = valType;
       wrapped = new _singlecls(valType);
-      super.init();
     }
 
     //
@@ -650,7 +647,6 @@ module ChapelSyncvar {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
-      super.init();
     }
 
     proc deinit() {
@@ -774,7 +770,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      super.init();
+      this.initDone();
       chpl_single_initAux(singleAux);
     }
 

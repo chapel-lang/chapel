@@ -4,7 +4,6 @@ record R {
 
   proc init(param stridable) {
     this.stridable = stridable;
-    super.init();
   }
 }
 

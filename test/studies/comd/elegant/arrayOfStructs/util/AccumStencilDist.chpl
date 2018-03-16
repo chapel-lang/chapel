@@ -481,7 +481,6 @@ proc LocAccumStencil.init(param rank: int,
     }
     myChunk = {(...inds)};
   }
-  super.init();
 }
 
 proc AccumStencilDom.dsiMyDist() return dist;

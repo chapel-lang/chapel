@@ -871,7 +871,6 @@ class GenericClass {
     this.classDomain = {1..elements};
     // all generic and const fields must be initialized in "phase 1" prior
     // to a call to the superclass initializer.
-    super.init(); 
   }
 
 // Copy-style initializer.
@@ -882,7 +881,7 @@ class GenericClass {
             type classType = other.classType) {
     this.classType = classType;
     this.classDomain = other.classDomain;
-    super.init();
+    this.initDone();
     // Copy and cast
     for idx in this.classDomain do this[idx] = other[idx] : classType;
   }

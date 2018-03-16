@@ -11,7 +11,6 @@ class C {
 
   proc init(y: real) {
     x = y;
-    super.init();
   }
 }
 

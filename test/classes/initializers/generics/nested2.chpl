@@ -8,7 +8,6 @@ class C {
   proc init() {
     rank = 2;
     x = new D();
-    super.init();
   }
 }
 

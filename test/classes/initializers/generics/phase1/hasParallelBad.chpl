@@ -7,7 +7,6 @@ class InParallel {
       a = x;
       b = y;
     }
-    super.init();
   }
 }
 

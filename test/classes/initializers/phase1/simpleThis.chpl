@@ -7,7 +7,6 @@ record MyRecord {
     x = xVal;
     y = 1 + this.x;
 
-    super.init();
   }
 }
 
