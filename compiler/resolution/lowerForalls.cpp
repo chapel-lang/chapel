@@ -27,9 +27,104 @@
 #include "wellknown.h"
 
 /*
-At this point we are mostly not concerned about const-ness,
+
+This file provides parts of the implementation of forall loops
+and forall intents, specifically:
+
+* Setting up shadow variables and other things - during resolution.
+This part 
+
+* Lowering forall loops by inlining the corresponding parallel
+iterators - during lowerIterators.
+
+During lowerIterators we are mostly not concerned about const-ness,
 so we may be blurring const and non-const intents.
 We DO need to preserve some const properties to enable optimizations.
+
+---------------------------------
+
+Jargon:
+
+* svar, SV - a shadow variable, or ShadowVarSymbol
+
+* ovar - the outer variable, or ShadowVarSymbol::outerVarSym()
+
+* "current variable" - what a given shadow variable becomes
+  in a particular task; it is a VarSymbol or ArgSymbol
+
+---------------------------------
+
+To lower a forall statement:
+
+* The parallel iterator is inlined, like it is a regular call.
+
+* Each yield statement is replaced by a clone of the forall loop body.
+  While cloning, The shadow variables in the loop body are replaced
+  with "current variables" that are in effect for that yield.
+  The shadow variables themselves do not remain in the AST.
+
+* The inlined body of the parallel iterator is traversed using ExpandVisitor.
+  "Current variables" are created and additional code is inserted
+  in certain key places.
+
+  The SymbolMap in ExpandVisitor::svar2clonevar records
+  the current variables to be used when a yield statement
+  or a ForallStmt is encountered.
+
+* The key places during the tranversal are:
+
+ - The start of the iterator body.
+ - A task-parallel construct i.e. a call to a task function.
+ - A forall loop.
+ - A yield statement.
+
+---------------------------------
+
+Key fields of ShadowVarSymbol used here:
+
+* the outer variable:  ShadowVarSymbol::outerVarSym()
+* the init block:      ShadowVarSymbol::initBlock()
+* the deinit block:    ShadowVarSymbol::deinitBlock()
+
+The init/deinit blocks specify how the shadow variable
+is initialized or destructed. For example:
+
+* [const] in: the shadow variable is copy-initialized
+  from its outer variable at start of the task
+  and deinitialized at end of the task.
+  For a class variable, it is a pointer assignment
+  and a no-op, respectively.
+
+* [const] ref: a pointer assignment and a no-op.
+
+* ReduceOp pointer: initialized by clone()
+  on the parent task's ReduceOp. At the end of the task,
+  it is combine()-ed into the parent ReduceOp, then delete-ed.
+
+* Accumulation State for a reduction: initialized
+  by calling identity on the corresponding ReduceOp.
+  accumulate()-ed into the ReduceOp before deinitialization.
+
+The init/deinit blocks have to be set up during resolution
+because some of their code would not resolve afterwards.
+Ditto ForallStmt::iterRecSetup().
+This is because unused functions are pruned at the end of resolution.
+
+---------------------------------
+
+Further key todos:
+
+* Not all forall-like things in Chapel code get transformed
+into ForallStmt nodes. Some forall intents are implemented
+in implementForallIntents1(), implementForallIntents2().
+Todo: switch those to this "modern" implementation.
+
+* When a global is passed by [const] ref intent,
+replace references to the corresponding shadow variable
+in loop body with the global itself.
+Note: be aware that, in the loop body, the compiler adds derefs
+from such a shadow variable - because it is a "ref".
+
 */
 
 
