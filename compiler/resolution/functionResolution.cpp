@@ -5940,12 +5940,14 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+
   AggregateType* tmpType  = at->getRootInstantiation();
-  VarSymbol*     newTmp   = newTemp("new_temp", tmpType);
-  DefExpr*       def      = new DefExpr(newTmp);
+  VarSymbol*     initTmp  = newTemp("initTemp", tmpType);
+  DefExpr*       initDef  = new DefExpr(initTmp);
+
   FnSymbol*      initFn   = NULL;
 
-  newTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+  initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
   call->setUnresolvedFunction("init");
 
@@ -5953,35 +5955,35 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   if (at->isClass() == true) {
     if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
+      call->insertBefore(initDef);
 
     } else {
-      call->parentExpr->insertBefore(def);
+      call->parentExpr->insertBefore(initDef);
     }
 
 
   } else {
     if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
+      call->insertBefore(initDef);
 
       if (isArgSymbol(call->parentSymbol)          == true  &&
           toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(newTmp));
+        call->insertAfter(new SymExpr(initTmp));
       }
 
     } else {
       Expr* parent = call->parentExpr;
 
-      call->parentExpr->insertBefore(def);
+      call->parentExpr->insertBefore(initDef);
 
-      call->replace(new SymExpr(newTmp));
+      call->replace(new SymExpr(initTmp));
 
       parent->insertBefore(call);
     }
   }
 
   // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(newTmp)));
+  call->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
   call->insertAtHead(new SymExpr(gMethodToken));
 
   temporaryInitializerFixup(call);
@@ -5991,7 +5993,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
   initFn = resolveInitializer(call);
 
   if (at->instantiatedFrom == NULL) {
-    newTmp->type = initFn->_this->type;
+    initTmp->type = initFn->_this->type;
 
   } else {
     // We've resolved the initializer.  Verify that the type we got
@@ -5999,7 +6001,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
     // TODO: What about coercion?
     if (initFn->_this->type == at) {
-      newTmp->type = initFn->_this->type;
+      initTmp->type = initFn->_this->type;
 
     } else {
       // If it isn't, error
@@ -6021,7 +6023,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
     // use the allocator instead of directly calling the init method
     // Need to convert the call into the right format
     call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-    call->get(1)->replace(new SymExpr(newTmp->type->symbol));
+    call->get(1)->replace(new SymExpr(initTmp->type->symbol));
     call->get(2)->remove();
 
     // Need to resolve _new() even if it has not been built yet
@@ -6032,7 +6034,7 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
     resolveFunction(initFn);
 
-    def->remove();
+    initDef->remove();
   }
 }
 
