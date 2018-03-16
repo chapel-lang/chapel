@@ -5100,9 +5100,9 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true &&
-             isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+  } else if (isRecordWithInitializers(srcType) == true  &&
+             isSyncType(srcType)               == false &&
+             isSingleType(srcType)             == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5120,6 +5120,10 @@ static void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      if (ct->hasPostInitializer() == true) {
+        call->insertAfter(new CallExpr("postInit", gMethodToken, dst));
+      }
 
       resolveCall(call);
 
@@ -5146,9 +5150,9 @@ static void resolveInitVar(CallExpr* call) {
 // This resolution will be attempted at just before scope in the AST.
 static FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
-  return copyInit;
+  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+
+  return resolveUninsertedCall(at, call, false);
 }
 
 /************************************* | **************************************
@@ -7585,8 +7589,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve destructor
   if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false &&
+    if (at->symbol->hasFlag(FLAG_REF)             == false &&
+        isTupleContainingOnlyReferences(at)       == false &&
         // autoDestroy for iterator record filled in callDestructors
         at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
 
