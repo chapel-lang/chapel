@@ -1975,7 +1975,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
           argExpr->insertAtHead(modToken);
         }
 
-        // Add a call to postInit() if present
+        // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
       } else {
@@ -2046,7 +2046,7 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
 
     defExpr->insertAfter(init);
 
-    // Add a call to postInit() if present
+    // Add a call to postinit() if present
     insertPostInit(var, init);
 
   } else {
@@ -2104,7 +2104,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       defExpr->insertAfter(initCall);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
@@ -2124,7 +2124,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(var, argExpr);
     }
 
@@ -2161,7 +2161,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
       argExpr->insertAtHead(gMethodToken);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
 
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);

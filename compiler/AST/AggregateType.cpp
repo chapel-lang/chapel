@@ -422,7 +422,7 @@ bool AggregateType::hasInitializers() const {
 bool AggregateType::hasPostInitializer() const {
   bool retval = false;
 
-  // If there is postInit() it is defined on the defining type
+  // If there is postinit() it is defined on the defining type
   if (instantiatedFrom == NULL) {
     int size = methods.n;
 

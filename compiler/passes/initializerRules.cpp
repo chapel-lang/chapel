@@ -1224,10 +1224,10 @@ static bool isSymbolThis(Expr* expr) {
 
 //
 // Builds the list of AggregateTypes in the hierarchy of `at` that have or
-// require a postInit.
+// require a postinit.
 //
 // Let's say we have a series of classes named from A through Z, where Z
-// inherits from Y and so on. If class Q has a postInit, this function will
+// inherits from Y and so on. If class Q has a postinit, this function will
 // add AggregateTypes to 'chain' from Q through Z with 'Q' at the head.
 //
 static bool buildPostInitChain(AggregateType* at,
@@ -1310,9 +1310,9 @@ static bool hasSuperPostInit(BlockStmt* block) {
 }
 
 //
-// Inserts a call to super.postInit if none exists anywhere in 'fn'
+// Inserts a call to super.postinit if none exists anywhere in 'fn'
 //
-// TODO: what should we do with super.postInits in conditionals?
+// TODO: what should we do with super.postinits in conditionals?
 // TODO: merge with addSuperInit
 //
 static void insertSuperPostInit(FnSymbol* fn) {
@@ -1368,8 +1368,8 @@ static void buildPostInit(AggregateType* at) {
 }
 
 //
-// Inserts a zero-arg where-less postInit for `at` unless one already exists.
-// Also inserts a super.postInit for any postInit if omitted.
+// Inserts a zero-arg where-less postinit for `at` unless one already exists.
+// Also inserts a super.postinit for any postinit if omitted.
 //
 // Returns number of errors found.
 //
@@ -1401,21 +1401,21 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   return ret;
 }
 
-static std::set<AggregateType*> postInitCache;
+static std::set<AggregateType*> postinitCache;
 
 //
-// Inserts postInit methods and calls to super.postInit as needed.
+// Inserts postinit methods and calls to super.postinit as needed.
 //
-// If an ancestor of 'at' has a postInit, then every aggregate between 'at' and
-// that ancestor must have a postInit as well.
+// If an ancestor of 'at' has a postinit, then every aggregate between 'at' and
+// that ancestor must have a postinit as well.
 //
-// If postInits on a type have a where clause, insert a where-less postInit
+// If postinits on a type have a where clause, insert a where-less postinit
 // so the ancestors will always be called.
 //
 void preNormalizePostInit(AggregateType* at) {
   // Cache results to avoid extra work and to avoid looking for various forms
-  // of super.postInit.
-  if (postInitCache.find(at) != postInitCache.end()) {
+  // of super.postinit.
+  if (postinitCache.find(at) != postinitCache.end()) {
     return;
   }
 
@@ -1425,14 +1425,14 @@ void preNormalizePostInit(AggregateType* at) {
 
   int errors = 0;
   for_vector(AggregateType, cur, chain) {
-    if (postInitCache.find(cur) == postInitCache.end()) {
+    if (postinitCache.find(cur) == postinitCache.end()) {
       if (cur->hasInitializers() == false) {
         cur->symbol->addFlag(FLAG_USE_DEFAULT_INIT);
       }
       // Don't insert a super.init for the highest ancestor
       bool insertSuper = cur != chain.front();
       errors += insertPostInit(cur, insertSuper);
-      postInitCache.insert(cur);
+      postinitCache.insert(cur);
     }
   }
 
