@@ -3485,6 +3485,7 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
+      r.readBytes(buf, offset);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -6827,7 +6828,6 @@ private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):str
   } catch {
     error = EINVAL;
   }
-    
 
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
