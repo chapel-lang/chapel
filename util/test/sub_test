@@ -273,7 +273,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
 
             # execute the file and grab its output
             cmd = subprocess.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
-            mylines = bytes_to_string(cmd.communicate()[0].splitlines())
+            mylines = bytes_to_str(cmd.communicate()[0]).splitlines()
 
         except OSError as e:
             global localdir
@@ -1175,12 +1175,12 @@ for testname in testsrc:
 
         elif (suffix=='.lastcompopts' and os.access(f, os.R_OK)):
             lastcompoptsBytes = subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0]
-            lastcompopts+=lastcompoptsBytes.strip().split()
+            lastcompopts+=bytes_to_str(lastcompoptsBytes).strip().split()
             # sys.stdout.write("lastcompopts=%s\n"%(lastcompopts))
 
         elif (suffix=='.lastexecopts' and os.access(f, os.R_OK)):
             lastexecoptsBytes = subprocess.Popen(['cat', f], stdout=subprocess.PIPE).communicate()[0]
-            lastexecopts+=lastexecoptsBytes.strip().split()
+            lastexecopts+=bytes_to_str(lastexecoptsBytes).strip().split()
             # sys.stdout.write("lastexecopts=%s\n"%(lastexecopts))
 
         elif (suffix==PerfSfx('numlocales') and os.access(f, os.R_OK)):
