@@ -1551,22 +1551,19 @@ module DefaultRectangular {
       // byte order is set to native or its equivalent.
       pragma "no prototype"
       extern proc sizeof(type x): size_t;
-      const elemSize = sizeof(arr.eltType);
+
+      const size = dom.dsiNumIndices:uint * sizeof(arr.eltType):uint;
       if boundsChecking {
         var rw = if f.writing then "write" else "read";
-        assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(ssize_t):uint,
+        assert(size <= max(ssize_t):uint,
                "length of array to ", rw, " is greater than ssize_t can hold");
       }
 
-      const len = dom.dsiNumIndices;
-      const src = arr.theData;
-      const idx = arr.getDataIndex(dom.dsiLow);
-      const size = len:ssize_t*elemSize:ssize_t;
       try {
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(arr.dsiAccess(dom.dsiLow), size);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBytes(arr.dsiAccess(dom.dsiLow), size);
         }
       } catch e: SystemError {
         f.setError(e.err);
