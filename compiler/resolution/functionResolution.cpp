@@ -376,11 +376,12 @@ FnSymbol* getUnalias(Type* t) {
 // This function is called by generic instantiation
 // for the default initCopy function in ChapelBase.chpl.
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
-  ArgSymbol* arg = newFn->getFormal(1);
+  ArgSymbol* arg    = newFn->getFormal(1);
+  bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) &&
-        ct->initializerStyle == DEFINES_INITIALIZER) {
+    if (isUserDefinedRecord(ct) == true &&
+        ct->initializerStyle    == DEFINES_INITIALIZER) {
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //
@@ -396,17 +397,21 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
       // it up completely...
       instantiateBody(newFn);
 
-      FnSymbol* initFn = findCopyInit(ct);
-
-      if (initFn == NULL) {
-        // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-      } else {
-        Symbol* thisTmp = newTemp(ct);
-        DefExpr* def = new DefExpr(thisTmp);
+      if (FnSymbol* initFn = findCopyInit(ct)) {
+        Symbol*   thisTmp  = newTemp(ct);
+        DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+
         newFn->insertBeforeEpilogue(def);
+
         def->insertAfter(initCall);
+
+        if (ct->hasPostInitializer() == true) {
+          CallExpr* post = new CallExpr("postInit", gMethodToken, thisTmp);
+
+          initCall->insertAfter(post);
+        }
+
         // Replace the other setting of the return-value-variable
         // with what we have now...
 
@@ -415,22 +420,32 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
 
         // Remove other PRIM_MOVEs to the RVV
         for_alist(stmt, newFn->body->body) {
-          if (CallExpr* callStmt = toCallExpr(stmt))
-            if (callStmt->isPrimitive(PRIM_MOVE)) {
+          if (CallExpr* callStmt = toCallExpr(stmt)) {
+            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
               SymExpr* se = toSymExpr(callStmt->get(1));
+
               INT_ASSERT(se);
-              if (se->symbol() == retSym)
+
+              if (se->symbol() == retSym) {
                 stmt->remove();
+              }
             }
+          }
         }
 
         // Set the RVV to the copy
         newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
+
+      } else {
+        // No copy-initializer could be found
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       }
-      return true;
+
+      retval = true;
     }
   }
-  return false;
+
+  return retval;
 }
 
 
@@ -653,6 +668,16 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
                                                              formalType)) {
         retval = t;
         break;
+      }
+    }
+
+    if (retval == NULL) {
+      // Handle e.g. Owned(GenericClass) passed to a formal of type GenericClass
+      if (isManagedPtrType(at) && isClass(formalType)) {
+        Type* classType = actualType->getField("t")->type;
+        if (canInstantiate(classType, formalType)) {
+          retval = classType;
+        }
       }
     }
   }
@@ -1094,6 +1119,12 @@ bool canCoerce(Type*     actualType,
     // sync can't store an array or a param, so no need to
     // propagate promotes / paramNarrows
     return canDispatch(baseType, NULL, formalType, fn);
+  }
+
+  if (isManagedPtrType(actualType)) {
+    Type* baseType = actualType->getField("t")->type;
+    return canDispatch(baseType, NULL, formalType, fn,
+                       promotes, paramNarrows);
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -5049,7 +5080,6 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
   Symbol*  dst     = dstExpr->symbol();
@@ -5070,9 +5100,9 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true &&
-             isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+  } else if (isRecordWithInitializers(srcType) == true  &&
+             isSyncType(srcType)               == false &&
+             isSingleType(srcType)             == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5090,6 +5120,10 @@ static void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      if (ct->hasPostInitializer() == true) {
+        call->insertAfter(new CallExpr("postInit", gMethodToken, dst));
+      }
 
       resolveCall(call);
 
@@ -5116,9 +5150,9 @@ static void resolveInitVar(CallExpr* call) {
 // This resolution will be attempted at just before scope in the AST.
 static FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
-  return copyInit;
+  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+
+  return resolveUninsertedCall(at, call, false);
 }
 
 /************************************* | **************************************
@@ -5707,13 +5741,7 @@ static void     resolveNewHandleConstructor(CallExpr* call);
 
 static void     resolveNewHandleNonGenericInitializer(CallExpr* call);
 
-static void     resolveNewHandleInstantiatedInit(CallExpr* call);
-
 static void     resolveNewHandleGenericInitializer(CallExpr* call);
-
-static void     fixupArgDefaultWhenRecordInit(AggregateType* at,
-                                              CallExpr*      call,
-                                              VarSymbol*     newTmp);
 
 static SymExpr* resolveNewFindTypeExpr(CallExpr* call);
 
@@ -5749,15 +5777,38 @@ static void resolveNewAT(CallExpr* call) {
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
 
+  // Either
+  //   1) a statement that is a standalone new expr
+  //   2) the typeExpr/initExpr for a formal
+  //
+  if (isBlockStmt(call->parentExpr) == true) {
+    if (at->isClass() == true) {
+      // Introduce a tmp and wrap the call to _new() in a move to that tmp
+      VarSymbol* newTmp = newTemp("new_temp");
+      DefExpr*   def    = new DefExpr(newTmp);
+      CallExpr*  move   = NULL;
+
+      call->insertBefore(def);
+
+      // Remove the _new() call from the tree and wrap it in a move
+      move = new CallExpr(PRIM_MOVE, newTmp, call->remove());
+
+      // Insert the move back in the correct position
+      def->insertAfter(move);
+
+      // If this is formal default then the block must end with the tmp
+      if (isArgSymbol(call->parentSymbol) == true) {
+        move->insertAfter(new SymExpr(newTmp));
+      }
+    }
+  }
+
   if (resolveNewHasInitializer(at) == false) {
     resolveNewHandleConstructor(call);
 
   } else if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
              at->instantiatedFrom              == NULL) {
     resolveNewHandleNonGenericInitializer(call);
-
-  } else if (at->instantiatedFrom              != NULL) {
-    resolveNewHandleInstantiatedInit(call);
 
   } else {
     resolveNewHandleGenericInitializer(call);
@@ -5852,10 +5903,8 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-  VarSymbol*     newTmp   = newTemp("new_temp", at);
-  DefExpr*       def      = new DefExpr(newTmp);
 
-  if (isCallExpr(call->get(1))) {
+  if (isCallExpr(call->get(1)) == true) {
     // Happens when the type on which we are calling new is a nested type.
     // In that case, the second argument to that inner call should be used as
     // the "outer" argument to the _new or init function.
@@ -5865,33 +5914,23 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     call->insertAtHead(typeExpr);
   }
 
-  if (isClass(at) == true) {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("_new");
-
-    parent_insert_help(call, call->baseExpr);
-
-    if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
-
-    } else {
-      call->parentExpr->insertBefore(def);
-    }
-
-    resolveExpr(call);
+  if (at->isClass() == true) {
+    // Convert PRIM_NEW(...) to _new(...)
+    call->setUnresolvedFunction("_new");
 
   } else {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("init");
+    VarSymbol* newTmp = newTemp("new_temp", at);
+    DefExpr*   def    = new DefExpr(newTmp);
 
-    parent_insert_help(call, call->baseExpr);
-
-    fixupArgDefaultWhenRecordInit(at, call, newTmp);
+    call->setUnresolvedFunction("init");
 
     if (isBlockStmt(call->parentExpr) == true) {
       call->insertBefore(def);
+
+      if (isArgSymbol(call->parentSymbol)          == true  &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(newTmp));
+      }
 
     } else {
       Expr* parent = call->parentExpr;
@@ -5910,106 +5949,12 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     call->insertAtHead(new SymExpr(newTmp));
     call->insertAtHead(new SymExpr(gMethodToken));
 
-    resolveExpr(call);
-  }
-}
-
-// Similar to resolveNewHandleGenericInitializer, except we have been
-// provided an instantiation instead of the generic version.  We should
-// ensure that we can resolve the call as if it were generic, and then
-// double check that the type we were given matches the provided type.
-static void resolveNewHandleInstantiatedInit(CallExpr* call) {
-  SET_LINENO(call);
-
-  SymExpr*       typeExpr   = resolveNewFindTypeExpr(call);
-  AggregateType* at         = toAggregateType(resolveTypeAlias(typeExpr));
-  AggregateType* genericSrc = at->instantiatedFrom;
-
-  // Go back until we are at the base generic type.
-  while (genericSrc->instantiatedFrom != NULL) {
-    genericSrc = genericSrc->instantiatedFrom;
-  }
-
-  // Resolve the _new call as if we were provided a fully generic type.
-  VarSymbol* newTmp = newTemp("new_temp", genericSrc);
-  DefExpr*   def    = new DefExpr(newTmp);
-  FnSymbol*  initFn = NULL;
-
-  newTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  typeExpr->replace(new UnresolvedSymExpr("init"));
-
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
-
-  fixupArgDefaultWhenRecordInit(at, call, newTmp);
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
-
-  } else {
-    Expr* parent = call->parentExpr;
-
-    parent->insertBefore(def);
-
-    if (at->isClass() == false) {
-      call->replace(new SymExpr(newTmp));
-      parent->insertBefore(call);
+    if (at->hasPostInitializer() == true) {
+      call->insertAfter(new CallExpr("postInit", gMethodToken, newTmp));
     }
   }
 
-  // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(newTmp)));
-  call->insertAtHead(new SymExpr(gMethodToken));
-
-  temporaryInitializerFixup(call);
-
-  resolveGenericActuals(call);
-
-  initFn = resolveInitializer(call);
-
-  // We've resolved the initializer.  Verify that the type we got
-  // back was the type we were originally looking for
-
-  // TODO: What about coercion?
-  if (call->resolvedFunction()->_this->type == at) {
-    newTmp->type = at;
-
-  } else {
-    // If it isn't, error
-    USR_FATAL_CONT(call,
-                   "Best initializer match doesn't work for generic "
-                   "instantiation %s",
-                   at->symbol->name);
-
-    USR_PRINT(initFn,
-              "Best initializer match was defined here, and generated "
-              "instantiation %s",
-              call->resolvedFunction()->_this->type->symbol->name);
-
-    USR_STOP();
-  }
-
-  if (at->isClass() == true) {
-    // use the allocator instead of directly calling the init method
-    // Need to convert the call into the right format
-    call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-    call->get(1)->replace(new SymExpr(newTmp->type->symbol));
-    call->get(2)->remove();
-
-    // Need to resolve _new() even if it has not been built yet
-    if (tryResolveCall(call) == NULL) {
-      buildClassAllocator(initFn);
-      resolveCall(call);
-    }
-
-    resolveFunction(call->resolvedFunction());
-
-    def->remove();
-  }
+  resolveCall(call);
 }
 
 static void resolveNewHandleGenericInitializer(CallExpr* call) {
@@ -6017,56 +5962,90 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-  VarSymbol*     newTmp   = newTemp("new_temp", at);
-  DefExpr*       def      = new DefExpr(newTmp);
+
+  AggregateType* tmpType  = at->getRootInstantiation();
+  VarSymbol*     initTmp  = newTemp("initTemp", tmpType);
+  DefExpr*       initDef  = new DefExpr(initTmp);
+
   FnSymbol*      initFn   = NULL;
 
-  newTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  typeExpr->replace(new UnresolvedSymExpr("init"));
-
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
-
-  fixupArgDefaultWhenRecordInit(at, call, newTmp);
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
+  if (at->isClass() == true) {
+    call->parentExpr->insertBefore(initDef);
 
   } else {
-    Expr* parent = call->parentExpr;
+    if (isBlockStmt(call->parentExpr) == true) {
+      call->insertBefore(initDef);
 
-    parent->insertBefore(def);
+      if (isArgSymbol(call->parentSymbol)          == true  &&
+          toBlockStmt(call->parentExpr)->body.tail == call) {
+        call->insertAfter(new SymExpr(initTmp));
+      }
 
-    if (at->isClass() == false) {
-      call->replace(new SymExpr(newTmp));
+    } else {
+      Expr* parent = call->parentExpr;
+
+      call->parentExpr->insertBefore(initDef);
+
+      call->replace(new SymExpr(initTmp));
+
       parent->insertBefore(call);
     }
   }
 
+  initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+  call->setUnresolvedFunction("init");
+
+  call->get(1)->remove();
+
   // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(newTmp)));
+  call->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
   call->insertAtHead(new SymExpr(gMethodToken));
 
   temporaryInitializerFixup(call);
 
   resolveGenericActuals(call);
 
+  if (at->isRecord()           == true &&
+      at->hasPostInitializer() == true) {
+    call->insertAfter(new CallExpr("postInit", gMethodToken, initTmp));
+  }
+
   initFn = resolveInitializer(call);
 
-  // Because initializers determine the type they utilize based on the
-  // execution of Phase 1, if the type is generic we will need to update
-  // the type of the actual we are sending in for the this arg
-  newTmp->type = call->resolvedFunction()->_this->type;
+  if (at->instantiatedFrom == NULL) {
+    initTmp->type = initFn->_this->type;
+
+  } else {
+    // We've resolved the initializer.  Verify that the type we got
+    // back was the type we were originally looking for
+
+    // TODO: What about coercion?
+    if (initFn->_this->type == at) {
+      initTmp->type = initFn->_this->type;
+
+    } else {
+      // If it isn't, error
+      USR_FATAL_CONT(call,
+                     "Best initializer match doesn't work for generic "
+                     "instantiation %s",
+                     at->symbol->name);
+
+      USR_PRINT(initFn,
+                "Best initializer match was defined here, and generated "
+                "instantiation %s",
+                initFn->_this->type->symbol->name);
+
+      USR_STOP();
+    }
+  }
 
   if (at->isClass() == true) {
     // use the allocator instead of directly calling the init method
     // Need to convert the call into the right format
     call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-    call->get(1)->replace(new SymExpr(newTmp->type->symbol));
+
+    call->get(1)->replace(new SymExpr(initTmp->type->symbol));
     call->get(2)->remove();
 
     // Need to resolve _new() even if it has not been built yet
@@ -6075,26 +6054,9 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
       resolveCall(call);
     }
 
-    resolveFunction(call->resolvedFunction());
+    resolveFunction(initFn);
 
-    def->remove();
-  }
-}
-
-// Provide the return type for new expressions in default arguments to other
-// parts of resolution. (Because the `new` expression is top level for argument
-// symbols, we would fail to insert the temporary needed for argument analysis
-// to appropriately determine the type without inserting this SymExpr directly)
-static void fixupArgDefaultWhenRecordInit(AggregateType* at,
-                                          CallExpr*      call,
-                                          VarSymbol*     newTmp) {
-  if (at->isClass() == false) {
-    if (isBlockStmt(call->parentExpr) == true) {
-      if (isArgSymbol(call->parentSymbol) &&
-          toBlockStmt(call->parentExpr)->body.tail == call) {
-        call->insertAfter(new SymExpr(newTmp));
-      }
-    }
+    initDef->remove();
   }
 }
 
@@ -6140,6 +6102,7 @@ static void resolveNewHalt(CallExpr* call) {
 
   if (name == NULL) {
     USR_FATAL(call, "invalid use of 'new'");
+
   } else {
     USR_FATAL(call, "invalid use of 'new' on %s", name);
   }
@@ -7237,6 +7200,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
+
   lowerForallStmts();
 
   insertReturnTemps();
@@ -7635,8 +7599,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve destructor
   if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false &&
+    if (at->symbol->hasFlag(FLAG_REF)             == false &&
+        isTupleContainingOnlyReferences(at)       == false &&
         // autoDestroy for iterator record filled in callDestructors
         at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
 

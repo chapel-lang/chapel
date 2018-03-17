@@ -507,6 +507,7 @@
   ],
   "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-internal.h",
+    "runtime/src/comm/ofi/comm-ofi-oob.c",
     "runtime/src/comm/ofi/comm-ofi.c"
   ],
   "0502b256-07ea-11e8-bed3-10ddb1d4c3d5": [

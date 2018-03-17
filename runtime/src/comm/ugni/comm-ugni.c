@@ -1304,7 +1304,7 @@ mpool_idx_base_t amo_res_next_pool_i(void)
 // and release flags to be set.
 //
 // Since we do a vector/chained put, make the number of children based
-// on the max chained put length. Any smaller and we'd be unnessarily
+// on the max chained put length. Any smaller and we'd be unnecessarily
 // adding locales and thus extra 1-way network delays (each additional
 // layer in a tree-based spawn adds at least the cost of a network trip
 // (plus the time for the child's task to wake up). Any larger and the

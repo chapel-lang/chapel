@@ -113,6 +113,8 @@ public:
   bool                        isInstantiatedFrom(const AggregateType* base)
                                                                          const;
 
+  AggregateType*              getRootInstantiation();
+
   DefExpr*                    toLocalField(const char* name)             const;
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;

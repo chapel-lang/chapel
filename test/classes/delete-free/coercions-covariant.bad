@@ -1,0 +1,3 @@
+coercions-covariant.chpl:16: In function 'test4':
+coercions-covariant.chpl:19: error: unresolved call 'acceptOwnedMyClass(Owned(SubClass))'
+coercions-covariant.chpl:12: note: candidates are: acceptOwnedMyClass(own: Owned(MyClass))

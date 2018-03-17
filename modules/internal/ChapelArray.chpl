@@ -331,6 +331,7 @@ module ChapelArray {
     }
   }
 
+  pragma "unsafe"
   pragma "no copy return"
   proc _newArray(value) {
     if _isPrivatized(value) then
@@ -347,6 +348,7 @@ module ChapelArray {
       return new _array(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe"
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
@@ -361,6 +363,7 @@ module ChapelArray {
       return new _domain(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe" // value assumed to be borrow but it's ownership xfer
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
@@ -868,6 +871,7 @@ module ChapelArray {
   pragma "no doc"
   record _distribution {
     var _pid:int;  // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
@@ -1012,6 +1016,7 @@ module ChapelArray {
   pragma "ignore noinit"
   record _domain {
     var _pid:int; // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDom
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
@@ -1069,6 +1074,7 @@ module ChapelArray {
     }
 
     /* Return the domain map that implements this domain */
+    pragma "return not owned"
     proc dist return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
@@ -2044,6 +2050,7 @@ module ChapelArray {
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
@@ -2102,6 +2109,7 @@ module ChapelArray {
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
@@ -3963,6 +3971,7 @@ module ChapelArray {
   // Used to implement the copy-out language semantics
   // Relies on the return types being different to detect an ArrayView at
   // compile-time
+  //pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
@@ -3971,6 +3980,7 @@ module ChapelArray {
     return ret;
   }
 
+  //pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   proc chpl__unref(ir: _iteratorRecord) {
