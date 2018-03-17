@@ -3312,10 +3312,6 @@ inline proc channel.readwrite(ref x) where !this.writing {
     return !error;
   }
 
-/*
-  Write `numBytes` bytes from the memory location referred to by `loc`
-  into this channel.
-*/
 proc channel.writeBytes(ref loc, numBytes: integral) throws {
     var e:syserr = ENOERR;
     this.writeBytes(c_ptrTo(loc), numBytes.safeCast(ssize_t), error=e);
@@ -3478,8 +3474,6 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      // TODO: Need to update this call:
-      r.readBytes(buf, offset:ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -4201,9 +4195,15 @@ proc channel.isclosed() {
 // in the call to qio_channel_read_amt.
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t, out error:syserr) {
-  error = ENOERR;
-  if here != this.home then halt("bad remote channel.readBytes");
-  error = qio_channel_read_amt(false, _channel_internal, x, len);
+  compilerWarning("This version of readBytes() is deprecated; " +
+                  "please switch to a throw-ing version.");
+  try {
+    this.readBytes(x, len, error);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /*
@@ -4219,9 +4219,12 @@ proc channel.readBytes(ref loc, numBytes: integral) throws {
   pointed to by `ptr`.
 */
  proc channel.readBytes(ptr: c_ptr, numBytes: integral) throws {
-  var e:syserr = ENOERR;
-  this.readBytes(ptr, numBytes.safeCast(ssize_t), error=e);
-  if e then try this._ch_ioerror(e, "in channel.readBytes");
+  var err: syserr = ENOERR;
+  // TODO: This halt() should be changed into a throw -- what error to use?
+  if here != this.home then halt("bad remote channel.readBytes");
+  err = qio_channel_read_amt(false, _channel_internal, ptr,
+                             numBytes.safeCast(ssize_t));
+  if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
 
 
