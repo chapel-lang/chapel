@@ -41,6 +41,9 @@ proc masonRun(args) {
       else if arg == '--show' {
         show = true;
       }
+      else if arg == 'run' {
+        continue;
+      }
       else {
         execopts.push_back(arg);
       }
