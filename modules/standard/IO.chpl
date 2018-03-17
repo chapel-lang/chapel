@@ -2231,12 +2231,13 @@ proc channel.offset():int(64) {
    :proc:`channel._mark` and :proc:`channel._revert`.
  */
 proc channel.advance(amount:int(64)) throws {
+  var err:syserr = ENOERR;
   on this.home {
     try! this.lock();
-    var err = qio_channel_advance(false, _channel_internal, amount);
-    if err then try this._ch_ioerror(err, "in advance");
+    err = qio_channel_advance(false, _channel_internal, amount);
     this.unlock();
   }
+  if err then try this._ch_ioerror(err, "in advance");
 }
 
 // documented with the throws version
@@ -2252,28 +2253,31 @@ proc channel.advance(amount:int(64), ref error:syserr) {
   }
 }
 
-pragma "no doc"
-proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
-  on this.home {
-    try! this.lock();
-    error = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
-    this.unlock();
-  }
-}
-
 /*
    Reads until ``byte`` is found and then leave the channel offset
    just after it. If that byte is never found, raises an EOFError.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
+  var err:syserr = ENOERR;
   on this.home {
     try! this.lock();
-    var err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
-    if err then try this._ch_ioerror(err, "in advanceToByte");
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
     this.unlock();
   }
+  if err then try this._ch_ioerror(err, "in advanceToByte");
 }
 
+pragma "no doc"
+proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
+  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
+  try {
+    this.advancePastByte(byte);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+}
 
 /*
    *mark* a channel - that is, save the current offset of the channel
@@ -7055,28 +7059,26 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
     :arg m: a :record:`Regexp.reMatch` storing a location that matched
     :arg arg: an argument to retrieve the match into. If it is not a string,
               the string match will be cast to arg.type.
-    :arg error: optional argument to capture an error code. If this argument
-                is not provided and an error is encountered, this function
-                will halt with an error message.
  */
+proc channel.extractMatch(m:reMatch, ref arg) throws {
+  var err:syserr = ENOERR;
+  on this.home {
+    try! this.lock();
+    _extractMatch(m, arg, err);
+    this.unlock();
+  }
+  if err {
+    try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
+                              arg.type:string + ")");
+  }
+}
+
+// documented in throws version
+pragma "no doc"
 proc channel.extractMatch(m:reMatch, ref arg, ref error:syserr) {
   on this.home {
     try! this.lock();
     _extractMatch(m, arg, error);
-    this.unlock();
-  }
-}
-// documented in error= version
-pragma "no doc"
-proc channel.extractMatch(m:reMatch, ref arg) throws {
-  on this.home {
-    try! this.lock();
-    var err:syserr = ENOERR;
-    _extractMatch(m, arg, err);
-    if err {
-      try this._ch_ioerror(err, "in channel.extractMatch(m:reMatch, ref " +
-                                arg.type:string + ")");
-    }
     this.unlock();
   }
 }
@@ -7156,42 +7158,37 @@ proc channel.search(re:regexp):reMatch throws
     :arg captures: an optional variable number of arguments in which to
                    store the regions of the file matching the capture groups
                    in the regular expression.
-    :arg error: optional argument to capture an error code. If this argument
-                is not provided and an error is encountered, this function
-                will halt with an error message.
     :returns: the region of the channel that matched
  */
-
-proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
+proc channel.search(re:regexp, ref captures ...?k): reMatch throws
 {
   var m:reMatch;
+  var err:syserr = ENOERR;
   on this.home {
     try! this.lock();
     var nm = captures.size + 1;
     var matches = _ddata_allocate(qio_regexp_string_piece_t, nm);
-    error = qio_channel_mark(false, _channel_internal);
-    if ! error {
-      error = qio_regexp_channel_match(re._regexp,
-                                       false, _channel_internal, max(int(64)),
-                                       QIO_REGEXP_ANCHOR_UNANCHORED,
-                                       /* can_discard */ true,
-                                       /* keep_unmatched */ false,
-                                       /* keep_whole_pattern */ true,
-                                       matches, nm);
+    err = qio_channel_mark(false, _channel_internal);
+    if ! err {
+      err = qio_regexp_channel_match(re._regexp,
+                                     false, _channel_internal, max(int(64)),
+                                     QIO_REGEXP_ANCHOR_UNANCHORED,
+                                     /* can_discard */ true,
+                                     /* keep_unmatched */ false,
+                                     /* keep_whole_pattern */ true,
+                                     matches, nm);
     }
-    // Don't report "didn't match" errors
-    if error == EFORMAT || error == EEOF then error = ENOERR;
-    if !error {
+    if !err {
       m = _to_reMatch(matches[0]);
       if m.matched {
         // Extract the capture groups.
-        _ch_handle_captures(matches, nm, captures, error);
+        _ch_handle_captures(matches, nm, captures, err);
 
         // Advance to the match.
         qio_channel_revert_unlocked(_channel_internal);
         var cur = qio_channel_offset_unlocked(_channel_internal);
         var target = m.offset;
-        error = qio_channel_advance(false, _channel_internal, target - cur);
+        err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
         // If we didn't match... leave the channel position at EOF
         qio_channel_commit_unlocked(_channel_internal);
@@ -7200,16 +7197,24 @@ proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch
     _ddata_free(matches, nm);
     this.unlock();
   }
+
+  if err && err != EFORMAT && err != EEOF then
+    try this._ch_ioerror(err, "in channel.search");
   return m;
 }
 
 // documented in the error= version
 pragma "no doc"
-proc channel.search(re:regexp, ref captures ...?k):reMatch throws
-{
-  var e:syserr = ENOERR;
-  var ret = this.search(re, (...captures), error=e);
-  if e then try this._ch_ioerror(e, "in channel.search");
+proc channel.search(re:regexp, ref captures ...?k, ref error:syserr):reMatch {
+  compilerWarning("'ref error: syserr' pattern has been deprecated, use 'throws' function instead");
+  var ret:reMatch;
+  try {
+    ret = this.search(re, (...captures));
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
   return ret;
 }
 
