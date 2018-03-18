@@ -168,7 +168,11 @@ class ReadTimeoutException(Exception): pass
 
 def bytes_to_str(byte_string):
     if sys.version_info[0] >= 3 and not isinstance(byte_string, str):
-        return str(byte_string, 'utf-8')
+        try:
+            return str(byte_string, 'utf-8')
+        except UnicodeDecodeError as e:
+            pass
+        return byte_string
     else:
         return byte_string
 
@@ -2052,9 +2056,19 @@ for testname in testsrc:
                                   stderr=subprocess.STDOUT).communicate()[0]
 
                 # Sadly the scripts used below require an actual file
-                with open(execlog, 'w') as execlogfile:
-                    execlogfile.write(pre_exec_output)
-                    execlogfile.write(output)
+                open_mode = 'w' if isinstance(output, str) else 'wb'
+                with open(execlog, open_mode) as execlogfile:
+                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(pre_exec_output, bytes):
+                        pre_exec_output_content = bytes(pre_exec_output, 'utf-8')
+                    else:
+                        pre_exec_output_content = pre_exec_output
+                    execlogfile.write(pre_exec_output_content)
+
+                    if sys.version_info[0] >= 3 and open_mode == 'wb' and not isinstance(output, bytes):
+                        output_content = bytes(output, 'utf-8')
+                    else:
+                        output_content = output
+                    execlogfile.write(output_content)
 
                 if not exectimeout and not launcher_error:
                     if systemPrediff:
