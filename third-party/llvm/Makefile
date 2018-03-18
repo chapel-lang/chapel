@@ -56,7 +56,7 @@ $(LLVM_SRC_FILE):
 
 $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
-	if ./cmake-ok.sh $(CMAKE); then \
+	@if ./cmake-ok.sh $(CMAKE); then \
 	  cd $(LLVM_BUILD_DIR) && cmake \
 	    -DCMAKE_INSTALL_PREFIX=$(LLVM_INSTALL_DIR) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
@@ -73,17 +73,8 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
-	  cd $(LLVM_BUILD_DIR) && $(LLVM_SRC_DIR)/configure \
-	     CC='$(CC)' CXX='$(CXX)' \
-	     LDFLAGS='$(LDFLAGS)' --prefix=$(LLVM_INSTALL_DIR) \
-	     --enable-optimized \
-	     --disable-clang-arcmt \
-	     --disable-clang-static-analyzer \
-	     --disable-clang-rewriter \
-	     --disable-docs \
-	     --disable-zlib \
-	     --enable-targets=host,x86,x86_64,aarch64 $(CHPL_LLVM_CONFIGURE_DEBUG) ; \
-	  cd $(LLVM_BUILD_DIR) && make clean ; \
+	  echo Error: LLVM requres cmake 3.4.3 or later to build; \
+	  exit 1; \
 	fi
 # note: automake llvm builds don't create nested Makefiles
 # that is what the make clean above accomplishes
