@@ -423,8 +423,8 @@ proc file.realPath(): string throws {
 
   /* Collapse paths such as `foo//bar`, `foo/bar/`, `foo/./bar`, and 
    `foo/baz/../bar` into `foo/bar`.  Warning: may alter meaning of paths
-   containing symbolic links.  Similar to :proc:`normCase`, on Windows will replace
-   forward slashes.
+   containing symbolic links.  Similar to :proc:`normCase`, on Windows this should replace
+   forward slashes but this support is not yet implemented.
 
    :arg name: a potential path to collapse, possibly destroying the meaning of the
              path if symbolic links were included.
@@ -434,56 +434,58 @@ proc file.realPath(): string throws {
    :rtype: `string`
   */
 
-  proc normPath(name: string): string {
+  //removes ".." from given string
+  proc remove(inout result: string): void {
+  
+    var i = result.find("/..");
+    if i {
 
-  if name.isEmptyString() {
-      return name;
-  }
+      var j = i - 1;
+      if j > 0 {
 
-  //stores the result string
-  var result = name;
+        while(result(j) != "/") {
 
-  if result.find("//") then
-    result = result.replace("//", "/", -1);
+        //checks if "./.." is present 
+        if result.this(j) == "." then
+          j = j - 2; 
+        else 
+          j = j - 1;
+        }
+ 
+      result = result.replace(result[j..i + 2], "", -1);
+      }
+      else {
+        var len = result.length;
+        result = "/" + result[4..len];
+      }
 
-  if result.find("/./") then
-    result = result.replace("/./", "/", -1);
-    
-  if result.find("/../") {
-
-    var i = result.find("/../");
-    var j = i-1;
-
-    while(result(j) != "/") {
-
-      //checks if "/./../" is present 
-      if result.this(j) == "." then
-        j = j-2; 
-      else 
-        j = j-1;
+      remove(result);
     }
-
-    result = result.replace(result[j..i+3], "/", -1);
-    
   }
 
-  const len: int = result.length ;
+  proc normPath(name: string): string {
+ 
+   if name.isEmptyString() {
+       return name;
+   }
+ 
+   //stores the result string
+   var result = name;
+ 
+   if result.find("//") then
+     result = result.replace("//", "/", -1);
 
-  //removes "/" if present at the end of string if "./" not present at end
-  if (result.this(len) == "/" && len-1>0 && result.this(len-1) != "." ) {
-    result = result[1..len-1];
+   remove(result);  
+
+   if result.find("/.") then
+     result = result.replace("/.", "", -1);
+
+   if result.endsWith("/") {
+    var len: int = result.length ;
+    result = result[1..len - 1];
+   }
+
+   return result;
   }
-  
-  //calls normPath till required result is not achieved
-  if(name == result) then 
-    return result;
-  
-  else 
-    result = normPath(result);
-
-  
-  return result;
-
-}
 
 }
