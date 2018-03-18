@@ -1553,12 +1553,6 @@ module DefaultRectangular {
       extern proc sizeof(type x): size_t;
 
       const size = dom.dsiNumIndices:uint * sizeof(arr.eltType):uint;
-      if boundsChecking {
-        var rw = if f.writing then "write" else "read";
-        assert(size <= max(ssize_t):uint,
-               "length of array to ", rw, " is greater than ssize_t can hold");
-      }
-
       try {
         if f.writing {
           f.writeBytes(arr.dsiAccess(dom.dsiLow), size);
