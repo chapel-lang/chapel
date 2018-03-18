@@ -76,8 +76,6 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	  echo Error: LLVM requres cmake 3.4.3 or later to build; \
 	  exit 1; \
 	fi
-# note: automake llvm builds don't create nested Makefiles
-# that is what the make clean above accomplishes
 
 
 $(LLVM_HEADER_FILE):
