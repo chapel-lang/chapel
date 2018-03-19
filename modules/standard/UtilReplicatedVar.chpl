@@ -20,6 +20,8 @@
 /*
 Support for user-level replicated variables.
 
+.. warning:: Deprecated. Use the module :mod:`ReplicatedVar` instead.
+
 A "replicated" variable is a variable for which there is a copy on each locale.
 Referencing a replicated variable
 (in a stylized way, see :ref:`below <basic-usage>`)
