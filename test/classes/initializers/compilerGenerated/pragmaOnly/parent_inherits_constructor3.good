@@ -1,0 +1,3 @@
+parent_inherits_constructor3.chpl:23: In function 'main':
+parent_inherits_constructor3.chpl:24: error: unresolved call 'Parent.init(Parent, int(64), int(64))'
+parent_inherits_constructor3.chpl:14: note: candidates are: Parent.init(a: int(64), b: int(64))
