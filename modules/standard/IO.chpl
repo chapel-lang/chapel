@@ -2266,11 +2266,10 @@ inline proc channel._offset():int(64) {
   return ret;
 }
 
-
 /*
-   *mark* a channel - that is, save the current offset of the channel on its
-   *mark stack*. This function should only be called on a channel that is
-   already locked with with :proc:`channel.lock`.
+   *mark* a channel - that is, save the current offset of the channel
+   on its *mark stack*. This function can only be called on a channel
+   with ``locking==false``.
 
    The *mark stack* stores several channel offsets. For any channel offset that
    is between the minimum and maximum value in the *mark stack*, I/O operations
@@ -2278,17 +2277,14 @@ inline proc channel._offset():int(64) {
    those operations can be un-done. As a result, it is possible to perform *I/O
    transactions* on a channel. The basic steps for an *I/O transaction* are:
 
-    * lock the channel with :proc:`channel.lock`
-      (or work on an already-locked channel)
-    * *mark* the current position with :proc:`channel._mark`
+    * *mark* the current position with :proc:`channel.mark`
     * do something speculative (e.g. try to read 200 bytes of anything followed
       by a 'B')
     * if the speculative operation was successful,  commit the changes by
-      calling :proc:`channel._commit`
+      calling :proc:`channel.commit`
     * if the speculative operation was not successful, go back to the *mark* by
-      calling :proc:`channel._revert`. Subsequent I/O operations will work
+      calling :proc:`channel.revert`. Subsequent I/O operations will work
       as though nothing happened.
-    * unlock the channel with :proc:`channel.unlock` if necessary
 
   .. note::
 
@@ -2300,31 +2296,68 @@ inline proc channel._offset():int(64) {
   :returns: an error code, if an error was encountered.
 
  */
+inline proc channel.mark():syserr where this.locking == false {
+  return qio_channel_mark(false, _channel_internal);
+}
+
+/*
+   This routine is identical to :proc:`channel.mark` except that it
+   can be called on channels with ``locking==true`` and should be
+   called only once the channel has been locked with
+   :proc:`channel.lock`.  The channel should not be unlocked with
+   :proc:`channel.unlock` until after the mark has been committed with
+   :proc:`channel._commit` or reverted with :proc:`channel._revert`.
+
+   See :proc:`channel.mark` for details other than the locking
+   discipline.
+
+  :returns: an error code, if an error was encountered.
+
+ */
 // TODO - use the out error= style and otherwise halt on error, for consistency
 inline proc channel._mark():syserr {
   return qio_channel_mark(false, _channel_internal);
 }
 
 /*
+   Abort an *I/O transaction*. See :proc:`channel.mark`. This function
+   will pop the last element from the *mark stack* and then leave the
+   previous channel offset unchanged.  This function can only be
+   called on a channel with ``locking==false`.
+*/
+inline proc channel.revert() where this.locking == false {
+  qio_channel_revert_unlocked(_channel_internal);
+}
 
-   Abort an *I/O transaction*. See :proc:`channel._mark`. This function should
-   only be called on a channel that has already been locked and marked.  This
-   function will pop the last element from the *mark stack* and then leave the
-   previous channel offset unchanged.
-
- */
+/*
+   Abort an *I/O transaction*. See :proc:`channel._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   leave the previous channel offset unchanged.  This function should
+   only be called on a channel that has already been locked and
+   marked.
+*/
 inline proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
+   Commit an *I/O transaction*. See :proc:`channel.mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the channel offset to the popped offset.  This function can
+   only be called on a channel with ``locking==false`.
 
-   Commit an *I/O transaction*. See :proc:`channel._mark`. This function should
-   only be called on a channel that has already been locked and marked.  This
-   function will pop the last element from the *mark stack* and then set the
-   channel offset to the popped offset.
+*/
+inline proc channel.commit() where this.locking == false {
+  qio_channel_commit_unlocked(_channel_internal);
+}
 
- */
+/*
+   Commit an *I/O transaction*. See :proc:`channel._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the channel offset to the popped offset.  This function should
+   only be called on a channel that has already been locked and
+   marked.
+*/
 inline proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
