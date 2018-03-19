@@ -3078,7 +3078,19 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
     CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
   }
-  raise(SIGBUS);
+
+  {
+    sigset_t sigbus_set;
+
+    if (sigemptyset(&sigbus_set) != 0
+        || sigaddset(&sigbus_set, SIGBUS) != 0
+        || pthread_sigmask(SIG_UNBLOCK, &sigbus_set, NULL) != 0
+        || raise(SIGBUS) != 0
+        || pthread_sigmask(SIG_BLOCK, &sigbus_set, NULL) != 0) {
+      CHPL_INTERNAL_ERROR("cannot re-raise SIGBUS");
+    }
+  }
+
   install_SIGBUS_handler();
 }
 
