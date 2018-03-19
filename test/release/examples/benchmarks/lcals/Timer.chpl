@@ -73,7 +73,7 @@ module Timer {
     var was_run: bool;
 
     proc init(timerType: TimerType = defaultTimerType) {
-      this.initDone();
+      this.complete();
       if timerType == TimerType.Chapel {
         t = new ChapelTimer();
       } else if timerType == TimerType.Clock then {

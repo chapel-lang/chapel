@@ -1,6 +1,6 @@
 class Base {
   proc init() {
-    initDone();
+    complete();
   }
 }
 
@@ -12,7 +12,7 @@ class Child1 {
     t1 = _t1;
     p1 = _p1;
 
-    initDone();
+    complete();
   }
 }
 
@@ -24,7 +24,7 @@ class Child2 : Child1 {
 
     t2 = _t2;
 
-    initDone();
+    complete();
   }
 }
 

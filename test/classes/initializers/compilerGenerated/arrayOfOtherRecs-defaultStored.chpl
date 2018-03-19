@@ -7,7 +7,7 @@ record StoresR {
 
   proc init(arr: [1..3] R = [new R(2), new R(3), new R(4)]) {
     x = arr;
-    this.initDone();
+    this.complete();
   }
 }
 

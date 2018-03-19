@@ -184,7 +184,7 @@ class FTree {
 
         this.order = order;
         this.coeffDom = {0..order-1};
-        this.initDone();
+        this.complete();
 
         coforall loc in Locales do
             on loc do tree[loc.id] = new LocTree(coeffDom);

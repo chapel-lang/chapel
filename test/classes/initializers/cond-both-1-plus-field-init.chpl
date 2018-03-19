@@ -18,7 +18,7 @@ record MyRec {
     if a < 10 then {
       x = 22;
       y = 33;
-      this.initDone();
+      this.complete();
     } else {
       this.init();
     }

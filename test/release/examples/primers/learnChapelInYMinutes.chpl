@@ -881,7 +881,7 @@ class GenericClass {
             type classType = other.classType) {
     this.classType = classType;
     this.classDomain = other.classDomain;
-    this.initDone();
+    this.complete();
     // Copy and cast
     for idx in this.classDomain do this[idx] = other[idx] : classType;
   }
