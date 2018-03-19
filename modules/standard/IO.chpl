@@ -4235,20 +4235,6 @@ proc channel.readBytes(ptr: c_ptr, numBytes: integral) throws {
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
 
-/* TODO: This overload exists to serve the call to readBytes() with
-   DefaultRectangular.chpl, which passes in a _ddata(eltType).  It
-   seems we have no way to convert a _ddata(eltType) to a
-   c_ptr(eltType)? :(  If we did, we should just cast that call. */
-pragma "no doc"
-proc channel.readBytes(ptr: _ddata, numBytes: integral) throws {
-  var err: syserr = ENOERR;
-  // TODO: This halt() should be changed into a throw -- what error to use?
-  if here != this.home then halt("bad remote channel.readBytes");
-  err = qio_channel_read_amt(false, _channel_internal, ptr,
-                             numBytes.safeCast(ssize_t));
-  if err then try this._ch_ioerror(err, "in channel.readBytes");
-}
-
 
 /*
 proc channel.modifyStyle(f:func(iostyle, iostyle))
