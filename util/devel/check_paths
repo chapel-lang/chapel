@@ -18,8 +18,12 @@
 # limitations under the License.
 
 
-# Try to identify references to non-existent files, e.g. doc/foo
-# instead of doc/rst/foo
+"""Try to identify references to non-existent files, e.g. doc/foo
+instead of doc/rst/foo.  This script recognizes potential file
+references by recognizing certain strings as likely to be the prefix
+of a path in the Chapel repository, e.g., "doc/" or "modules/" or
+"test/".
+"""
 
 import os.path
 import argparse
@@ -27,7 +31,7 @@ import argparse
 def check_path(p):
     """returns True if p exists, False if it doesn't"""
 
-    # These are common written-out alternatives
+    # These are common written-out alternatives, not paths
     if p == "compiler/runtime":
         return True
     if p == "compiler/module":
@@ -142,7 +146,7 @@ def check_file(fn):
         print("Can't open: {fn}".format(fn=fn))
 
 def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-l", "--line") # For testing of this script
     parser.add_argument("-f", "--file")
     args = parser.parse_args()
