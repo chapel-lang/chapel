@@ -20,7 +20,7 @@ class InterpolationObject {
     this.dx = dx;
     this.invDx = 1.0/dx;
     this.nSpace = -1..n+1;
-    this.initDone();
+    this.complete();
 
     var nSpaceInner : domain(1) = 0..n-1;
 

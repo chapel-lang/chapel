@@ -9,7 +9,7 @@ class C {
 
   proc init() {
     t = new R();
-    this.initDone();
+    this.complete();
     v = new R();
   }
 }

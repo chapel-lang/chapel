@@ -17,7 +17,7 @@ class Ticker {
   var times : int;
 
   proc init(const in tName : string) {
-    this.initDone();
+    this.complete();
     name = tName;
     tick = new Timer();
     tick.clear();

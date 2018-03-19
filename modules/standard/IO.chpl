@@ -1938,7 +1938,7 @@ proc channel.init(x: channel) {
   this.home = x.home;
   this._channel_internal = x._channel_internal;
   _readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.initDone();
+  this.complete();
   on x.home {
     qio_channel_retain(x._channel_internal);
   }
@@ -1969,7 +1969,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  this.initDone();
+  this.complete();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {

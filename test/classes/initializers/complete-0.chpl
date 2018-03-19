@@ -7,7 +7,7 @@ class MyClass {
 
     y = val;
 
-    initDone();
+    complete();
   }
 }
 

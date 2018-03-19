@@ -89,7 +89,7 @@ class Function {
         if debug then writeln("  initializing tridiagonal derivative operator");
         dcDom = {0..k-1, 0..k-1};
 
-        this.initDone();
+        this.complete();
 
         [(i,j) in hgDom] hgT[i,j] = hg[j,i];
 

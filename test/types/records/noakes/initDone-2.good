@@ -1,2 +1,0 @@
-initDone-2.chpl:5: In initializer:
-initDone-2.chpl:10: error: cannot update a const field, "y", in phase 2

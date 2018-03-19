@@ -315,7 +315,7 @@ module DistributedDeque {
       this.nSlots        = here.maxTaskPar * targetLocales.size;
       this.slotSpace     = {0..#this.nSlots};
 
-      initDone();
+      complete();
 
       // Initialize each slot. We use a round-robin algorithm.
       var idx : atomic int;
@@ -358,7 +358,7 @@ module DistributedDeque {
       this.slotSpace = {0..#this.nSlots};
       slots = other.slots;
 
-      initDone();
+      complete();
     }
 
     pragma "no doc"
