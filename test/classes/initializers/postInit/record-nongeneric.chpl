@@ -1,4 +1,4 @@
-// Verify that postInit() is called correctly when the new
+// Verify that postinit() is called correctly when the new
 // expression is a statement i.e. has a lock statement as
 // its parent.
 //
@@ -25,8 +25,8 @@ record MyRec {
     writeln('MyRec.init value');
   }
 
-  proc postInit() {
-    writeln('MyRec.postInit');
+  proc postinit() {
+    writeln('MyRec.postinit');
     writeln();
   }
 }

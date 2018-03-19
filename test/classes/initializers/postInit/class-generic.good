@@ -1,7 +1,7 @@
 MyCls.init
-MyCls.postInit
+MyCls.postinit
 
 MyCls.init
-MyCls.postInit
+MyCls.postinit
 {x = 20}
 

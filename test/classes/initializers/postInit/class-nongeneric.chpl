@@ -1,4 +1,4 @@
-// Verify that postInit() is called correctly when the new
+// Verify that postinit() is called correctly when the new
 // expression is a statement i.e. has a lock statement as
 // its parent.
 //
@@ -19,8 +19,8 @@ class MyCls {
     writeln('MyCls.init');
   }
 
-  proc postInit() {
-    writeln('MyCls.postInit');
+  proc postinit() {
+    writeln('MyCls.postinit');
   }
 }
 

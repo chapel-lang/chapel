@@ -5,8 +5,8 @@ class A {
   proc init() {
     writeln("A.init");
   }
-  proc postInit() {
-    writeln("A.postInit");
+  proc postinit() {
+    writeln("A.postinit");
   }
 }
 
@@ -16,10 +16,10 @@ class B : A {
   proc init() {
     writeln("B.init");
   }
-  proc postInit() {
-    writeln("Start of B.postInit");
-    super.postInit();
-    writeln("End of B.postInit");
+  proc postinit() {
+    writeln("Start of B.postinit");
+    super.postinit();
+    writeln("End of B.postinit");
   }
 }
 

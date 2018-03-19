@@ -3,26 +3,26 @@ MyRec.init type
 
 MyRec.init type
 MyRec.init value
-MyRec.postInit
+MyRec.postinit
 
 (x = 20)
 
 MyRec.init value
-MyRec.postInit
+MyRec.postinit
 
 (x = 30)
 
 MyRec.init value
-MyRec.postInit
+MyRec.postinit
 
 (x = 40)
 
 MyRec.init value
-MyRec.postInit
+MyRec.postinit
 
 
 MyRec.init value
-MyRec.postInit
+MyRec.postinit
 
 foo (x = 20)
 
