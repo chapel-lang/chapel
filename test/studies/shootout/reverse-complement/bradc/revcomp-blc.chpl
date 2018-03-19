@@ -43,8 +43,7 @@ proc main(args: [] string) {
         input._revert();
 
         // Read until nextDescOffset into the data array.
-        input.readBytes(c_ptrTo(data[descOffset]),
-                        (nextDescOffset-descOffset):ssize_t);
+        input.readBytes(data[descOffset], nextDescOffset-descOffset);
 
         // '2' to skip over '\n' + 1 to skip over '>' if not yet at eof
         begin process(data, seqOffset, nextDescOffset-(2+!eof));
