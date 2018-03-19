@@ -376,11 +376,12 @@ FnSymbol* getUnalias(Type* t) {
 // This function is called by generic instantiation
 // for the default initCopy function in ChapelBase.chpl.
 bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
-  ArgSymbol* arg = newFn->getFormal(1);
+  ArgSymbol* arg    = newFn->getFormal(1);
+  bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) &&
-        ct->initializerStyle == DEFINES_INITIALIZER) {
+    if (isUserDefinedRecord(ct) == true &&
+        ct->initializerStyle    == DEFINES_INITIALIZER) {
       // If the user has defined any initializer,
       // initCopy function should call the copy-initializer.
       //
@@ -396,17 +397,21 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
       // it up completely...
       instantiateBody(newFn);
 
-      FnSymbol* initFn = findCopyInit(ct);
-
-      if (initFn == NULL) {
-        // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-      } else {
-        Symbol* thisTmp = newTemp(ct);
-        DefExpr* def = new DefExpr(thisTmp);
+      if (FnSymbol* initFn = findCopyInit(ct)) {
+        Symbol*   thisTmp  = newTemp(ct);
+        DefExpr*  def      = new DefExpr(thisTmp);
         CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+
         newFn->insertBeforeEpilogue(def);
+
         def->insertAfter(initCall);
+
+        if (ct->hasPostInitializer() == true) {
+          CallExpr* post = new CallExpr("postInit", gMethodToken, thisTmp);
+
+          initCall->insertAfter(post);
+        }
+
         // Replace the other setting of the return-value-variable
         // with what we have now...
 
@@ -415,22 +420,32 @@ bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
 
         // Remove other PRIM_MOVEs to the RVV
         for_alist(stmt, newFn->body->body) {
-          if (CallExpr* callStmt = toCallExpr(stmt))
-            if (callStmt->isPrimitive(PRIM_MOVE)) {
+          if (CallExpr* callStmt = toCallExpr(stmt)) {
+            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
               SymExpr* se = toSymExpr(callStmt->get(1));
+
               INT_ASSERT(se);
-              if (se->symbol() == retSym)
+
+              if (se->symbol() == retSym) {
                 stmt->remove();
+              }
             }
+          }
         }
 
         // Set the RVV to the copy
         newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
+
+      } else {
+        // No copy-initializer could be found
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
       }
-      return true;
+
+      retval = true;
     }
   }
-  return false;
+
+  return retval;
 }
 
 
@@ -5065,7 +5080,6 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
   Symbol*  dst     = dstExpr->symbol();
@@ -5086,9 +5100,9 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true &&
-             isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+  } else if (isRecordWithInitializers(srcType) == true  &&
+             isSyncType(srcType)               == false &&
+             isSingleType(srcType)             == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5106,6 +5120,10 @@ static void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      if (ct->hasPostInitializer() == true) {
+        call->insertAfter(new CallExpr("postInit", gMethodToken, dst));
+      }
 
       resolveCall(call);
 
@@ -5132,9 +5150,9 @@ static void resolveInitVar(CallExpr* call) {
 // This resolution will be attempted at just before scope in the AST.
 static FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
-  return copyInit;
+  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+
+  return resolveUninsertedCall(at, call, false);
 }
 
 /************************************* | **************************************
@@ -5930,6 +5948,10 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
     // Invoking an instance method
     call->insertAtHead(new SymExpr(newTmp));
     call->insertAtHead(new SymExpr(gMethodToken));
+
+    if (at->hasPostInitializer() == true) {
+      call->insertAfter(new CallExpr("postInit", gMethodToken, newTmp));
+    }
   }
 
   resolveCall(call);
@@ -5983,6 +6005,11 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
   temporaryInitializerFixup(call);
 
   resolveGenericActuals(call);
+
+  if (at->isRecord()           == true &&
+      at->hasPostInitializer() == true) {
+    call->insertAfter(new CallExpr("postInit", gMethodToken, initTmp));
+  }
 
   initFn = resolveInitializer(call);
 
@@ -7173,6 +7200,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
+
   lowerForallStmts();
 
   insertReturnTemps();
@@ -7571,8 +7599,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve destructor
   if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false &&
+    if (at->symbol->hasFlag(FLAG_REF)             == false &&
+        isTupleContainingOnlyReferences(at)       == false &&
         // autoDestroy for iterator record filled in callDestructors
         at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
 

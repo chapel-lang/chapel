@@ -1,0 +1,28 @@
+MyRec.init type
+(x = 0)
+
+MyRec.init type
+MyRec.init value
+MyRec.postInit
+
+(x = 20)
+
+MyRec.init value
+MyRec.postInit
+
+(x = 30)
+
+MyRec.init value
+MyRec.postInit
+
+(x = 40)
+
+MyRec.init value
+MyRec.postInit
+
+
+MyRec.init value
+MyRec.postInit
+
+foo (x = 20)
+
