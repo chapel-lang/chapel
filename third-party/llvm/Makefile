@@ -7,16 +7,13 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 # decide whether to do a debug or no-debug build
 ifdef CHPL_LLVM_DEVELOPER
-CHPL_LLVM_CONFIGURE_DEBUG = --enable-debug-runtime --enable-debug-symbols --enable-assertions
 CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Debug -DLLVM_OPTIMIZED_TABLEGEN=1
 else
-CHPL_LLVM_CONFIGURE_DEBUG = --disable-assertions --enable-optimized
 CHPL_LLVM_DEBUG = -DCMAKE_BUILD_TYPE=Release
 endif
 
 LLVM_SRC_FILE := llvm/CMakeLists.txt
 LLVM_CMAKE_FILE := $(LLVM_BUILD_DIR)/CMakeCache.txt
-LLVM_CONFIGURE_FILE := $(LLVM_BUILD_DIR)/config.status
 LLVM_CONFIGURED_HEADER_FILE := $(LLVM_BUILD_DIR)/include/llvm/Config/llvm-config.h
 LLVM_HEADER_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
 LLVM_SUPPORT_FILE := $(LLVM_INSTALL_DIR)/lib/libLLVMSupport.a
@@ -41,9 +38,6 @@ clobber: FORCE
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
-# Note that the configured-clang-sysroot-arguments could possibly be added
-# to LLVM as configure options (--with-clang-resource-dir,
-# --with-c-include-dirs, --with-default-sysroot)
 #
 # used to have equivalent of -DLLVM_ENABLE_ZLIB=0
 # could include
@@ -79,38 +73,19 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 
 
 $(LLVM_HEADER_FILE):
-	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
-	  cd $(LLVM_BUILD_DIR) && make install-local ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
-	fi
+	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers
 
 # note: the conditional below allows parallel make to continue
 # if cmake us also using Make.
 $(LLVM_SUPPORT_FILE):
-	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
-	  cd $(LLVM_BUILD_DIR)/lib/Support && $(MAKE) ; \
-	  cd $(LLVM_BUILD_DIR)/lib/Support && $(MAKE) install ; \
-	elif [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) LLVMSupport ; \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-LLVMSupport ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
-	fi
+	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
+	cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
+	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport
 
 $(LLVM_CONFIG_FILE):
-	if [ -f $(LLVM_CONFIGURE_FILE) ]; then \
-	  cd $(LLVM_BUILD_DIR)/tools/llvm-config && $(MAKE) ; \
-	  cd $(LLVM_BUILD_DIR)/tools/llvm-config && $(MAKE) install ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
-	  mkdir -p $(LLVM_INSTALL_DIR)/bin ; \
-	  cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config ; \
-	fi
+	cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
+	mkdir -p $(LLVM_INSTALL_DIR)/bin ; \
+	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config ;
 
 # note: install target for config doesn't seem to exist
 #cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-config
