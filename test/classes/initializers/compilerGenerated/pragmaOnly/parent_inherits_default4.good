@@ -1,0 +1,4 @@
+parent_inherits_default4.chpl:18: In function 'main':
+parent_inherits_default4.chpl:19: error: unresolved call '_new(type Child, 4, 2, 1)'
+parent_inherits_default4.chpl:5: note: candidates are: _new(type chpl_t, a: int(64))
+deleted module lines
