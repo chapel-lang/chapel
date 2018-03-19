@@ -119,8 +119,10 @@ void chpl_comm_mem_reg_init(void)
 //
 void chpl_comm_mem_reg_tell(void** space_p, size_t* size_p)
 {
-  *space_p = reg_mem_space;
-  *size_p = reg_mem_size;
+  if (space_p != NULL)
+    *space_p = reg_mem_space;
+  if (size_p != NULL)
+    *size_p = reg_mem_size;
 }
 
 
