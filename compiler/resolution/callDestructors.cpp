@@ -1031,7 +1031,10 @@ static void insertReferenceTemps() {
 
 void insertReferenceTemps(CallExpr* call) {
   for_formals_actuals(formal, actual, call) {
-    if (formal->type == actual->typeInfo()->refType) {
+    if (formal->type == actual->typeInfo()->refType &&
+        // spare ref formals
+        !(formal->intent & INTENT_FLAG_REF))
+    {
       SET_LINENO(call);
 
       VarSymbol* tmp    = newTemp("_ref_tmp_", formal->qualType());
