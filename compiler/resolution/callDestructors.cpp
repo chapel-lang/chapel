@@ -210,7 +210,7 @@ bool ReturnByRef::isTransformableFunction(FnSymbol* fn)
 
   // Task functions within iterators can yield and so also need
   // this transformation.
-  // Reasonable alternative: update insertYieldTemps to handle
+  // Reasonable alternative: update insertCopiesForYields to handle
   // yielding a PRIM_DEREF or yielding a reference argument.
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN)) {
     if (isUserDefinedRecord(fn->iteratorInfo->yieldedType))
@@ -952,7 +952,7 @@ static void insertDestructorCalls() {
 //
 // Note that for parallel iterators, yields can occur in task
 // functions (that aren't iterators themselves).
-static void insertYieldTemps()
+static void insertCopiesForYields()
 {
   // Examine all calls.
   forv_Vec(CallExpr, call, gCallExprs)
@@ -1228,7 +1228,7 @@ void callDestructors() {
 
   ReturnByRef::apply();
 
-  insertYieldTemps();
+  insertCopiesForYields();
 
   checkLifetimes();
 
