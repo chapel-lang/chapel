@@ -2996,6 +2996,9 @@ void set_hugepage_info(void)
       struct sigaction act;
 
       act.sa_flags = SA_RESTART | SA_SIGINFO;
+      if (sigemptyset(&act.sa_mask) != 0) {
+        CHPL_INTERNAL_ERROR("sigemptyset() failed");
+      }
       act.sa_sigaction = SIGBUS_handler;
       if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
         CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
