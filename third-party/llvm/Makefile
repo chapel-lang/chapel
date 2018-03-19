@@ -38,6 +38,9 @@ clobber: FORCE
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
+# Note that the configured-clang-sysroot-arguments could possibly be added
+# to LLVM as cmake options (--with-clang-resource-dir,
+# --with-c-include-dirs, --with-default-sysroot)
 #
 # used to have equivalent of -DLLVM_ENABLE_ZLIB=0
 # could include
@@ -67,7 +70,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
 	else \
-	  echo Error: LLVM requres cmake 3.4.3 or later to build; \
+	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
 	  exit 1; \
 	fi
 
@@ -78,14 +81,20 @@ $(LLVM_HEADER_FILE):
 # note: the conditional below allows parallel make to continue
 # if cmake us also using Make.
 $(LLVM_SUPPORT_FILE):
-	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
-	cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
-	cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport
+	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) LLVMSupport ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-LLVMSupport ; \
+	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
+	fi
 
 $(LLVM_CONFIG_FILE):
 	cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
 	mkdir -p $(LLVM_INSTALL_DIR)/bin ; \
-	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config ;
+	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config
 
 # note: install target for config doesn't seem to exist
 #cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-config
