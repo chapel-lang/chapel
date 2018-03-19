@@ -1,6 +1,0 @@
-bug: compiler crashes when passing subclass to superclass ref formal
-
-The compiler needs to report an error in this case.
-Instead it fails verification.
-Without --verify, it generates illegal C code.
-(Reported by a user.)
