@@ -1415,7 +1415,7 @@ void AggregateType::buildConstructor() {
           // defines an initializer - we should not be creating a default
           // constructor in that case, it won't know what to do with it.
           if (at->initializerStyle == DEFINES_INITIALIZER ||
-              at->parentDefinesInitializer() == true) {
+              at->wantsDefaultInitializer() == true) {
             // at->defaultInitializer will still be NULL
             USR_FATAL(this,
                       "Cannot create default constructor on type '%s', which "
@@ -2084,23 +2084,6 @@ bool AggregateType::needsConstructor() {
 
   // Otherwise, we need a default constructor.
   return true;
-}
-
-bool AggregateType::parentDefinesInitializer() const {
-  bool retval = false;
-
-  if (dispatchParents.n > 0) {
-    if (AggregateType* pt = dispatchParents.v[0]) {
-      if (pt->initializerStyle == DEFINES_INITIALIZER) {
-        retval = true;
-
-      } else {
-        retval = pt->parentDefinesInitializer();
-      }
-    }
-  }
-
-  return retval;
 }
 
 // Returns true for the cases where we want to generate a default initializer.
