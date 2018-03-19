@@ -1434,19 +1434,24 @@ static bool argumentCanModifyActual(IntentTag intent) {
 static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   IntentTag intent = getIntent(formal);
 
-  if (argumentCanModifyActual(intent)) {
+  if (formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+    // Ignore this class of error for tuples since the
+    // compiler is currently producing this pattern for chpl__unref.
+    // This is a workaround and a better solution would be preferred.
+  } else if (argumentCanModifyActual(intent)) {
     // Error for coerce->value passed to ref / out / etc
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
-  } else if(formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
-    // Ignore this class of error for tuples since the
-    // compiler is currently producing this pattern for chpl__unref.
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
     // OK with a 'const ref' but right now there are errors at C
     // compilation time if this error is left out.
+    // Additionally, if a new value is created for this kind of
+    // coercion, it disrupts the desired semantics (a value passed
+    // by const ref could be modified during the call & the change
+    // visible).
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
     if (formalIsRef) {
