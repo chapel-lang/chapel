@@ -192,7 +192,7 @@ class CholeskyDecomposition {
       //L = new double[n,n];
       isspd = (Arg.getColumnDimension() == n);
 
-      this.initDone();
+      this.complete();
 
       // Main loop.
       //for (int j = 0; j < n; j++) {
@@ -1173,7 +1173,7 @@ class EigenvalueDecomposition {
       dDom = {1..n};
       eDom = {1..n};
       vDom = {1..n,1..n};
-      this.initDone();
+      this.complete();
 
       var j = 1;
       while( (j < n) & issymmetric ) {
@@ -1309,7 +1309,7 @@ class LUDecomposition {
 
       pivDom = {1..m};
       piv = pivDom;
-      this.initDone();
+      this.complete();
 
       var lurowiDom = {1..n};
       var LUrowi : [lurowiDom] real;
@@ -1589,7 +1589,7 @@ class Matrix {
       }
 
       this.aDom = {1..m, 1..n};
-      this.initDone();
+      this.complete();
 
       for i in 1..m {
          if (this.aDom.high(2) != n) {
@@ -1627,7 +1627,7 @@ class Matrix {
       this.m = m;
       n = if(m != 0) then vals.domain.high/m else 0;
       aDom = {1..m, 1..n};
-      this.initDone();
+      this.complete();
       if (m*n != vals.domain.high) {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
@@ -2315,7 +2315,7 @@ class QRDecomposition {
       qrDom = {1..m, 1..n}; 
       QR = A.getArrayCopy();
       rdiagDom = {1..n};
-      this.initDone();
+      this.complete();
 
       // Main loop.
       for k in rdiagDom {
@@ -2555,7 +2555,7 @@ class SingularValueDecomposition {
       uDom = {1..m, 1..nu};
       vDom = {1..n, 1..n};
 
-      this.initDone();
+      this.complete();
 
       ref S = s.reindex({0..min(m+1,n)-1}); // chapel aliases saved the day!
       ref UU = U[uDom].reindex({0..m-1,0..nu-1});

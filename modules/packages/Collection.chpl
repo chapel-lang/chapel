@@ -66,7 +66,7 @@ module Collection {
     proc init(type eltType) {
       this.eltType = eltType;
 
-      initDone();
+      complete();
     }
 
     /*

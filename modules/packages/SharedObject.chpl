@@ -63,7 +63,7 @@ module SharedObject {
     // count should be initialized to 1 in default initializer.
     proc init() {
       // Want this:      count = 1;
-      this.initDone();
+      this.complete();
       count.write(1);
     }
 
@@ -134,7 +134,7 @@ module SharedObject {
       this.p = p;
       this.pn = rc;
 
-      this.initDone();
+      this.complete();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the
@@ -152,7 +152,7 @@ module SharedObject {
       this.p = src.p;
       this.pn = src.pn;
 
-      this.initDone();
+      this.complete();
 
       if this.pn != nil then
         this.pn.retain();
