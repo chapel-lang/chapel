@@ -218,8 +218,6 @@ static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
-static FnSymbol* findCopyInit(AggregateType* ct);
-
 /************************************* | **************************************
 *                                                                             *
 * Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
@@ -373,88 +371,12 @@ FnSymbol* getUnalias(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-// This function is called by generic instantiation
-// for the default initCopy function in ChapelBase.chpl.
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
-  ArgSymbol* arg    = newFn->getFormal(1);
-  bool       retval = false;
-
-  if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) == true &&
-        ct->initializerStyle    == DEFINES_INITIALIZER) {
-      // If the user has defined any initializer,
-      // initCopy function should call the copy-initializer.
-      //
-      // If no copy-initializer exists, we should make initCopy
-      // be a dummy function that generates an error
-      // if it remains in the AST after callDestructors. We do
-      // that since callDestructors can remove some initCopy calls
-      // and we'd like types that cannot be copied to survive
-      // compilation until callDestructors has a chance to
-      // remove those calls.
-
-      // Go ahead and instantiate the body now so we can fix
-      // it up completely...
-      instantiateBody(newFn);
-
-      if (FnSymbol* initFn = findCopyInit(ct)) {
-        Symbol*   thisTmp  = newTemp(ct);
-        DefExpr*  def      = new DefExpr(thisTmp);
-        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
-
-        newFn->insertBeforeEpilogue(def);
-
-        def->insertAfter(initCall);
-
-        if (ct->hasPostInitializer() == true) {
-          CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
-
-          initCall->insertAfter(post);
-        }
-
-        // Replace the other setting of the return-value-variable
-        // with what we have now...
-
-        // find the RVV
-        Symbol* retSym = newFn->getReturnSymbol();
-
-        // Remove other PRIM_MOVEs to the RVV
-        for_alist(stmt, newFn->body->body) {
-          if (CallExpr* callStmt = toCallExpr(stmt)) {
-            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
-              SymExpr* se = toSymExpr(callStmt->get(1));
-
-              INT_ASSERT(se);
-
-              if (se->symbol() == retSym) {
-                stmt->remove();
-              }
-            }
-          }
-        }
-
-        // Set the RVV to the copy
-        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
-
-      } else {
-        // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-      }
-
-      retval = true;
-    }
-  }
-
-  return retval;
-}
-
-
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
       fn->hasFlag(FLAG_CONSTRUCTOR)              || // _construct__tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
@@ -5166,12 +5088,17 @@ static void resolveInitVar(CallExpr* call) {
   }
 }
 
-// Detect if there is a copy initializer by attempting to resolve
-//   tmpAt.init(tmpAt, tmpAt);
-// where tmpAt is a temp of type at.
-//
-// This resolution will be attempted at just before scope in the AST.
-static FnSymbol* findCopyInit(AggregateType* at) {
+/************************************* | **************************************
+*                                                                             *
+* Detect if there is a copy initializer by attempting to resolve              *
+*                                                                             *
+*    tmpAt.init(tmpAt, tmpAt);                                                *
+*                                                                             *
+* where tmpAt is a temp of type at.                                           *
+*                                                                             *
+************************************** | *************************************/
+
+FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
 

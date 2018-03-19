@@ -128,9 +128,10 @@ bool canDispatch(Type*     actualType,
                  bool*     paramNarrows= NULL,
                  bool      paramCoerce = false);
 
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
+
+FnSymbol* findCopyInit(AggregateType* ct);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
