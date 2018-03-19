@@ -1454,6 +1454,7 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
+static void      install_SIGBUS_handler(void);
 static void      SIGBUS_handler(int, siginfo_t *, void *);
 static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
@@ -2993,16 +2994,7 @@ void set_hugepage_info(void)
 
     if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
         && strcasecmp(ev, "yes") == 0) {
-      struct sigaction act;
-
-      act.sa_flags = SA_RESTART | SA_SIGINFO;
-      if (sigemptyset(&act.sa_mask) != 0) {
-        CHPL_INTERNAL_ERROR("sigemptyset() failed");
-      }
-      act.sa_sigaction = SIGBUS_handler;
-      if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
-        CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
-      }
+      install_SIGBUS_handler();
     }
   }
 
@@ -3012,6 +3004,22 @@ void set_hugepage_info(void)
   DBG_P_L(DBGF_HUGEPAGES,
           "setting hugepage info: use hugepages %s, sz %#zx",
           (hugepage_size > 0) ? "YES" : "NO", hugepage_size);
+}
+
+
+static
+void install_SIGBUS_handler(void)
+{
+  struct sigaction act;
+
+  act.sa_flags = SA_RESTART | SA_SIGINFO;
+  if (sigemptyset(&act.sa_mask) != 0) {
+    CHPL_INTERNAL_ERROR("sigemptyset() failed");
+  }
+  act.sa_sigaction = SIGBUS_handler;
+  if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
+    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+  }
 }
 
 
@@ -3063,10 +3071,15 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   //
   // This was not due to allocation failure on a hugepage we were trying
   // to fault in.  Restore the previous handler and re-raise the SIGBUS.
-  // It should get dealt with as it would have without our handler.
+  // It should get dealt with as it would have without our handler.  If
+  // the old handler returns and execution continues, install our new
+  // handler again.
   //
-  (void) sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL);
+  if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
+    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
+  }
   raise(SIGBUS);
+  install_SIGBUS_handler();
 }
 
 
