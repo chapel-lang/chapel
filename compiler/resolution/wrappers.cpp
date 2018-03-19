@@ -1439,6 +1439,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     USR_FATAL_CONT(call,
                    "value from coercion passed to ref formal '%s'",
                    formal->name);
+  } else if(formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+    // Ignore this class of error for tuples since the
+    // compiler is currently producing this pattern for chpl__unref.
   } else {
     // Error for coerce->value passed to 'const ref' (ref case handled above).
     // Note that coercing SubClass to ParentClass is theoretically
