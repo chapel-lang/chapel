@@ -1455,7 +1455,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
     bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
 
     if (formalIsRef) {
-      USR_FATAL_CONT(call, "Cannot coerce argument for const ref intent");
+      USR_FATAL_CONT(call,
+                     "value from coercion passed to const ref formal '%s'",
+                     formal->name);
     }
   }
 }
