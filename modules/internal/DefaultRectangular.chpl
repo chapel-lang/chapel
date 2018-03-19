@@ -1553,6 +1553,7 @@ module DefaultRectangular {
       extern proc sizeof(type x): size_t;
 
       const size = dom.dsiNumIndices:uint * sizeof(arr.eltType):uint;
+      if size == 0 then return;
       try {
         if f.writing {
           f.writeBytes(arr.dsiAccess(dom.dsiLow), size);
