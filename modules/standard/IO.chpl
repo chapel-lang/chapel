@@ -2251,22 +2251,6 @@ proc channel.advancePastByte(byte:uint(8)) throws {
 }
 
 
-// These begin with an _ to indicated that
-// you should have a lock before you use these... there is probably
-// a better name for them...
-
-/*
-   For a channel locked with :proc:`channel.lock`, return the offset
-   of that channel.
- */
-inline proc channel._offset():int(64) {
-  var ret:int(64);
-  on this.home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
-}
-
 /*
    *mark* a channel - that is, save the current offset of the channel
    on its *mark stack*. This function can only be called on a channel
@@ -2302,6 +2286,43 @@ inline proc channel.mark():syserr where this.locking == false {
 }
 
 /*
+   Abort an *I/O transaction*. See :proc:`channel.mark`. This function
+   will pop the last element from the *mark stack* and then leave the
+   previous channel offset unchanged.  This function can only be
+   called on a channel with ``locking==false``.
+*/
+inline proc channel.revert() where this.locking == false {
+  qio_channel_revert_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`channel.mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the channel offset to the popped offset.  This function can
+   only be called on a channel with ``locking==false``.
+
+*/
+inline proc channel.commit() where this.locking == false {
+  qio_channel_commit_unlocked(_channel_internal);
+}
+
+// These begin with an _ to indicated that
+// you should have a lock before you use these... there is probably
+// a better name for them...
+
+/*
+   For a channel locked with :proc:`channel.lock`, return the offset
+   of that channel.
+ */
+inline proc channel._offset():int(64) {
+  var ret:int(64);
+  on this.home {
+    ret = qio_channel_offset_unlocked(_channel_internal);
+  }
+  return ret;
+}
+
+/*
    This routine is identical to :proc:`channel.mark` except that it
    can be called on channels with ``locking==true`` and should be
    called only once the channel has been locked with
@@ -2321,16 +2342,6 @@ inline proc channel._mark():syserr {
 }
 
 /*
-   Abort an *I/O transaction*. See :proc:`channel.mark`. This function
-   will pop the last element from the *mark stack* and then leave the
-   previous channel offset unchanged.  This function can only be
-   called on a channel with ``locking==false``.
-*/
-inline proc channel.revert() where this.locking == false {
-  qio_channel_revert_unlocked(_channel_internal);
-}
-
-/*
    Abort an *I/O transaction*. See :proc:`channel._mark`.  This
    function will pop the last element from the *mark stack* and then
    leave the previous channel offset unchanged.  This function should
@@ -2339,17 +2350,6 @@ inline proc channel.revert() where this.locking == false {
 */
 inline proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
-}
-
-/*
-   Commit an *I/O transaction*. See :proc:`channel.mark`.  This
-   function will pop the last element from the *mark stack* and then
-   set the channel offset to the popped offset.  This function can
-   only be called on a channel with ``locking==false``.
-
-*/
-inline proc channel.commit() where this.locking == false {
-  qio_channel_commit_unlocked(_channel_internal);
 }
 
 /*
