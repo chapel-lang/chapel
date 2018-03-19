@@ -550,11 +550,13 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             FnSymbol*  unrefFn   = NULL;
 
             if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              // This warning can go away after 1.17 if it gets annoying.
-              // In the meantime, it helps to identify cases that have
-              // different behavior between 1.16 and 1.17.
-              USR_WARN(call, "proc returns an iterator that will be "
-                             "immediately converted to an array");
+              if (fWarnUnstable) {
+                // This warning can go away after 1.17 if it gets annoying.
+                // In the meantime, it helps to identify cases that have
+                // different behavior between 1.16 and 1.17.
+                USR_WARN(call, "proc returns an iterator that will be "
+                               "immediately converted to an array");
+              }
             }
 
             // Used by callDestructors to catch assignment from
