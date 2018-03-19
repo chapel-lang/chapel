@@ -399,7 +399,7 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
   } else if (isThisInit(callExpr) == true) {
     initName = "this.init()";
   } else if (isInitDone(callExpr) == true) {
-    initName = "this.initDone()";
+    initName = "this.complete()";
   }
 
   if (initName == NULL) {
@@ -637,7 +637,7 @@ static InitNormalize preNormalize(AggregateType* at,
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
             USR_FATAL(cond,
                       "Both arms of a conditional must use this.init() "
-                      "or this.initDone() in phase 1");
+                      "or this.complete() in phase 1");
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
@@ -821,14 +821,14 @@ bool isInitDone(CallExpr* callExpr) {
 
   if (callExpr->numActuals() == 0) {
     if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(callExpr->baseExpr)) {
-      if (strcmp(usym->unresolved, "initDone") == 0) {
+      if (strcmp(usym->unresolved, "complete") == 0) {
         retval = true;
       }
 
     } else if (CallExpr* subCall = toCallExpr(callExpr->baseExpr)) {
       if (subCall->numActuals()                        ==    2 &&
           subCall->isNamedAstr(astrSdot)               == true &&
-          isStringLiteral(subCall->get(2), "initDone") == true) {
+          isStringLiteral(subCall->get(2), "complete") == true) {
 
         if (isSymbolThis(subCall->get(1)) == true) {
           retval = true;
