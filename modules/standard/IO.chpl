@@ -197,7 +197,8 @@ multiple tasks. When creating a channel, it is possible to disable the lock
 Some channel methods - in particular those beginning with the underscore -
 should only be called on locked channels.  With these methods, it is possible
 to get or set the channel style, or perform I/O "transactions" (see
-:proc:`channel._mark`). To use these methods, first lock the channel with
+:proc:`channel.mark` and :proc:`channel._mark`). To use these methods, 
+first lock the channel with
 channel.lock(), call the methods you need, and then unlock the channel with
 channel.unlock(). Note that in the future, we may move to alternative ways of
 calling these functions that guarantee that they are not called on a channel
@@ -2323,7 +2324,7 @@ inline proc channel._mark():syserr {
    Abort an *I/O transaction*. See :proc:`channel.mark`. This function
    will pop the last element from the *mark stack* and then leave the
    previous channel offset unchanged.  This function can only be
-   called on a channel with ``locking==false`.
+   called on a channel with ``locking==false``.
 */
 inline proc channel.revert() where this.locking == false {
   qio_channel_revert_unlocked(_channel_internal);
@@ -2344,7 +2345,7 @@ inline proc channel._revert() {
    Commit an *I/O transaction*. See :proc:`channel.mark`.  This
    function will pop the last element from the *mark stack* and then
    set the channel offset to the popped offset.  This function can
-   only be called on a channel with ``locking==false`.
+   only be called on a channel with ``locking==false``.
 
 */
 inline proc channel.commit() where this.locking == false {
