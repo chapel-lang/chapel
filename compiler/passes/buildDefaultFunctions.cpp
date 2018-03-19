@@ -371,7 +371,7 @@ static void build_accessor(AggregateType* ct, Symbol* field,
             new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                          ct->symbol,
                          new_CStringSymbol(field->name))),
-          new CallExpr("halt", new_CStringSymbol("illegal union access"))));
+          new CallExpr("halt", new_StringSymbol("illegal union access"))));
     }
   }
 

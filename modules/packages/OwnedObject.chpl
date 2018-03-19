@@ -202,9 +202,15 @@ module OwnedObject {
   // Note, coercion from Owned -> Owned.t is directly
   // supported in the compiler via a call to borrow().
 
+  // This cast supports coercion from Owned(SubClass) to Owned(ParentClass)
+  // (i.e. when class SubClass : ParentClass ).
+  // It only works in a value context (i.e. when the result of the
+  // coercion is a value, not a reference).
   pragma "no doc"
   inline proc _cast(type t, in x) where t:Owned && x:Owned && x.t:t.t {
-    var ret = new Owned(x.release());
+    // the :t.t cast in the next line is what actually changes the
+    // returned value to have type t; otherwise it'd have type Owned(x.type).
+    var ret = new Owned(x.release():t.t);
     return ret;
   }
 }

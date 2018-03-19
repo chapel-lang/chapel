@@ -1122,9 +1122,32 @@ bool canCoerce(Type*     actualType,
   }
 
   if (isManagedPtrType(actualType)) {
-    Type* baseType = actualType->getField("t")->type;
-    return canDispatch(baseType, NULL, formalType, fn,
-                       promotes, paramNarrows);
+    Type* actualBaseType = actualType->getField("t")->type;
+    AggregateType* actualOwnedShared = toAggregateType(actualType);
+    while (actualOwnedShared && actualOwnedShared->instantiatedFrom != NULL)
+      actualOwnedShared = actualOwnedShared->instantiatedFrom;
+
+    Type* formalBaseType = NULL;
+    AggregateType* formalOwnedShared = toAggregateType(formalType);
+    bool formalIsClass = false;
+    if (isManagedPtrType(formalType)) {
+      formalBaseType = formalType->getField("t")->type;
+      while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
+        formalOwnedShared = formalOwnedShared->instantiatedFrom;
+    } else if (AggregateType* formalAt = toAggregateType(formalType)) {
+      formalIsClass = formalAt->isClass();
+    }
+
+    if (isManagedPtrType(formalType) &&
+        actualOwnedShared == formalOwnedShared) {
+      // e.g. Owned(Child) coerces to Owned(Parent)
+      return canDispatch(actualBaseType, NULL, formalBaseType, fn,
+                         promotes, paramNarrows);
+    } else if (formalIsClass) {
+      // e.g. Owned(SomeClass) to SomeClass (borrow type)
+      return canDispatch(actualBaseType, NULL, formalType, fn,
+                         promotes, paramNarrows);
+    }
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
