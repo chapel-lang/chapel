@@ -1440,6 +1440,7 @@ to get the path to a file.
 proc file.path : string throws {
   try check();
 
+  var ret: string;
   var err:syserr = ENOERR;
   on this.home {
     var tmp:c_string;
@@ -1450,11 +1451,11 @@ proc file.path : string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      return new string(tmp2, needToCopy=false);
+      ret = new string(tmp2, needToCopy=false);
     }
   }
-
-  try ioerror(err, "in file.path");
+  if err then try ioerror(err, "in file.path");
+  return ret;
 }
 
 /*
@@ -1867,7 +1868,7 @@ proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   var ret:file;
   try {
-    ret = openmem(err, style);
+    ret = openmem(style);
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -2491,8 +2492,8 @@ proc openreader(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(false, kind, locking) throws {
 
-  var fl_style = try fl._style;
   var fl:file = try open(path, iomode.r, url=url);
+  var fl_style = try fl._style;
   return try fl.reader(kind, locking, start, end, hints, fl_style);
 
   // TODO
@@ -2558,9 +2559,9 @@ proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) throws {
 
-  var fl_style = try fl._style;
   var fl:file = try open(path, iomode.cw, url=url);
-  return try fl.writer(error=error, kind, locking, start, end, hints, fl_style);
+  var fl_style = try fl._style;
+  return try fl.writer(kind, locking, start, end, hints, fl_style);
 
   // TODO
   // If we decrement the ref count after we open this channel, ref_cnt fl == 1.
@@ -2687,9 +2688,9 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                 in local_style:iostyle = this._style) {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret:ItemReader(string, kind, locking);
+  var ret:ItemReader(string, iokind.dynamic, locking);
   try {
-    ret = this.lines(err, locking, start, end, hints, style);
+    ret = this.lines(locking, start, end, hints, local_style);
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -3675,7 +3676,7 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     throw new IllegalArgumentError("start, amount, arg[]", "start+amount go out of arg.domain bounds");
 
   var err:syserr = ENOERR;
-  var _got: int;
+  var got_copy: int;
   on this.home {
     try! this.lock();
     param newLineChar = 0x0A;
@@ -3690,16 +3691,16 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     }
     numRead = i - start;
     if got < 0 then err = (-got):syserr;
-    _got = got;
+    got_copy = got;
     this.unlock();
   }
 
-  if !e && got {
+  if !err && got_copy != 0 {
     return true;
-  } else if e == EEOF || !got {
+  } else if err == EEOF || got_copy == 0 {
     return false;
   } else {
-    try this._ch_ioerror(e, "in channel.readline(arg : [] uint(8))");
+    try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
     return false;
   }
 }
@@ -4078,9 +4079,9 @@ inline proc channel.write(const args ...?k):bool throws {
     }
     this.unlock();
   }
-  if err then try this._ch_ioerror(e, "in channel.write(" +
-                                      _args_to_proto((...args), preArg="") +
-                                      ")");
+  if err then try this._ch_ioerror(err, "in channel.write(" +
+                                        _args_to_proto((...args), preArg="") +
+                                        ")");
   return true;
 }
 
@@ -4245,7 +4246,6 @@ proc channel.assertEOF() throws {
     var tmp:uint(8);
     var notEOF = try this.read(tmp);
     if notEOF then try this._ch_ioerror("not at EOF");
-    }
   }
 }
 
@@ -4486,7 +4486,7 @@ pragma "no doc"
 proc unlink(path:string, out error:syserr) {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   try {
-    unlink(path, err);
+    unlink(path);
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -6249,7 +6249,7 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
    :arg fmt: the format string
    :arg args: the arguments to write
  */
-proc channel.writef(fmtStr: string): bool throws {
+proc channel.writef(fmtStr: string, const args ...?k): bool throws {
   if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err: syserr = ENOERR;
@@ -6396,14 +6396,13 @@ proc channel.writef(fmtStr: string): bool throws {
   return true;
 }
 
-
-// documented in fmtStr version
+// documented in varargs version
 pragma "no doc"
-proc channel.writef(fmtStr:string, out error:syserr):bool {
+proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   error = ENOERR;
   try {
-    return this.writef(fmtStr);
+    return this.writef(fmtStr, (...args));
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -6412,8 +6411,8 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
   return false;
 }
 
-// documented in fmtStr version
-proc channel.writef(fmtStr:string, const args ...?k): bool throws {
+// documented in varargs version
+proc channel.writef(fmtStr:string): bool throws {
   if !writing then compilerError("writef on read-only channel");
   var err:syserr = ENOERR;
   on this.home {
@@ -6458,13 +6457,13 @@ proc channel.writef(fmtStr:string, const args ...?k): bool throws {
   return true;
 }
 
-// documented in fmtStr version
+// documented in varargs version
 pragma "no doc"
-proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
+proc channel.writef(fmtStr:string, out error:syserr):bool {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
   error = ENOERR;
   try {
-    return this.writef(fmtStr, (...args));
+    return this.writef(fmtStr);
   } catch e: SystemError {
     error = e.err;
   } catch {
@@ -6482,8 +6481,7 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
              false on EOF. If the format did not match the input, returns
-             false with error=EFORMAT or halts if no error argument was
-             provided.
+             false with error=EFORMAT.
  */
 proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   if writing then compilerError("readf on write-only channel");
@@ -6726,7 +6724,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   }
 }
 
-// documented in fmtStr, varargs version
+// documented in varargs version
 pragma "no doc"
 proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
@@ -6741,9 +6739,9 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
   return false;
 }
 
-// documented in fmtStr, varargs version
+// documented in varargs version
 pragma "no doc"
-proc channel.readf(fmt:string) throws {
+proc channel.readf(fmtStr:string) throws {
   if writing then compilerError("readf on write-only channel");
   var err:syserr = ENOERR;
   on this.home {
