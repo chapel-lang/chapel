@@ -1555,9 +1555,7 @@ module DefaultRectangular {
       const size = dom.dsiNumIndices:uint * sizeof(arr.eltType):uint;
       try {
         if f.writing {
-          const src = arr.theData,
-                idx = arr.getDataIndex(dom.dsiLow);
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(arr.dsiAccess(dom.dsiLow), size);
         } else {
           f.readBytes(arr.dsiAccess(dom.dsiLow), size);
         }

@@ -924,6 +924,7 @@ private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):syserr;
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):syserr;
+ private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr: c_ptr, len:ssize_t):syserr;
 pragma "no doc"
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):syserr;
@@ -3317,12 +3318,12 @@ inline proc channel.readwrite(ref x) where !this.writing {
      Write `numBytes` bytes to this channel from the memory location
      associated with `val`..
    */
-  proc channel.writeBytes(val, numBytes: integral): bool throws {
+  proc channel.writeBytes(ref val, numBytes: integral): bool throws {
     var err: syserr = ENOERR;
     var retval = true;
     on this.home {
       try! this.lock();
-      err = qio_channel_write_amt(false, _channel_internal, val,
+      err = qio_channel_write_amt(false, _channel_internal, c_ptrTo(val),
                                   numBytes.safeCast(ssize_t));
       this.unlock();
       if err {
