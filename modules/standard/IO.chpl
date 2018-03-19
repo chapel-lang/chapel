@@ -914,20 +914,11 @@ private extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):sy
 private extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):syserr;
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):syserr;
-pragma "no doc"
-// A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):syserr;
-// and for c_ptr
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:c_ptr, len:ssize_t):syserr;
 private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):syserr;
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):syserr;
  private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr: c_ptr, len:ssize_t):syserr;
-pragma "no doc"
-// A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):syserr;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
