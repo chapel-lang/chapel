@@ -1199,10 +1199,12 @@ static void build_record_copy_function(AggregateType* ct) {
     toReturn = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
     // If it has a user-defined copy initializer, it's not POD
     ct->symbol->addFlag(FLAG_NOT_POD);
-  } else if (ct->symbol->hasFlag(FLAG_EXTERN)) {
+
+  } else if (ct->symbol->hasFlag(FLAG_EXTERN) == true) {
     // Extern records/classes should only get trivial initCopy fns
     // (at least if no other init method was defined).
     toReturn = new SymExpr(arg);
+
   } else {
     CallExpr* call = new CallExpr(ct->defaultInitializer);
 
@@ -1220,26 +1222,6 @@ static void build_record_copy_function(AggregateType* ct) {
       // We need to convert the constructor call into a method call.
       if (strcmp(tmp->name, "outer") == 0) {
         call->insertAtHead(gMethodToken);
-      }
-    }
-
-    if (ct->symbol->hasFlag(FLAG_EXTERN)) {
-      int actualsNeeded = ct->defaultInitializer->formals.length;
-      int actualsGiven  = call->argList.length;
-
-      // This code assumes that in the case where an extern has not been fully
-      // specified in Chapel code, its default constructor will require one
-      // more actual than the fields specified: another object of that extern
-      // type whose contents can be used.
-      if (actualsNeeded == actualsGiven + 1) {
-        call->insertAtTail(arg);
-      } else if (actualsNeeded != actualsGiven) {
-        // The user didn't partially specify the type in Chapel code, but the
-        // number of actuals provided didn't match the expected number.
-        // This is an internal error.
-        INT_FATAL(arg,
-                  "Extern type's constructor call didn't create "
-                  "expected # of actuals");
       }
     }
 
