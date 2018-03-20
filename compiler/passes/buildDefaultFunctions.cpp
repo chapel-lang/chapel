@@ -1179,16 +1179,6 @@ static void build_record_copy_function(AggregateType* ct) {
         foundUserDefinedCopy = true;
       }
     }
-
-  } else if (isGenericRecordWithInitializers(ct) == true) {
-    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
-      foundUserDefinedCopy = true;
-    } else {
-      // Don't try to use the compiler-generated default init fn if
-      // there isn't one. A compiler-generated default init fn is only
-      // created if there are no user initializer defined.
-      return;
-    }
   }
 
   // if no copy-init function existed...
@@ -1214,21 +1204,7 @@ static void build_record_copy_function(AggregateType* ct) {
     // (at least if no other init method was defined).
     toReturn = new SymExpr(arg);
   } else {
-    CallExpr* call = NULL;
-    // generate the default copy initializer in chpl__initCopy for now
-    // which is currently implemented to call the compiler-generated initializer
-
-    // MPF 2016-11-03: It would be better to move all of the logic below
-    // into the construction of a compiler-generated initializer. However,
-    // at the moment, compiler-generated initializers follow a very different
-    // code path from initializers.
-    // In addition, we could entirely remove chpl__initCopy and instead
-    // rely on the copy initializer.
-    if (ct->initializerStyle == DEFINES_INITIALIZER) {
-      call = new CallExpr("init");
-    } else {
-      call = new CallExpr(ct->defaultInitializer);
-    }
+    CallExpr* call = new CallExpr(ct->defaultInitializer);
 
     for_fields(tmp, ct) {
       // Weed out implicit alias and promotion type fields.
@@ -1267,15 +1243,6 @@ static void build_record_copy_function(AggregateType* ct) {
       }
     }
 
-    if (ct->initializerStyle == DEFINES_INITIALIZER ||
-        strcmp(ct->defaultInitializer->name, "init") == 0) {
-      // We want the initializer to take in the memory it will initialize
-      VarSymbol* meme = newTemp("meme_tmp", ct);
-
-      fn->insertAtHead(new DefExpr(meme));
-
-      call->insertAtTail(new NamedExpr("meme", new SymExpr(meme)));
-    }
     toReturn = call;
   }
 
