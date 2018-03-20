@@ -399,7 +399,7 @@ static void checkInvalidInit(InitNormalize& state, CallExpr* callExpr) {
   } else if (isThisInit(callExpr) == true) {
     initName = "this.init()";
   } else if (isInitDone(callExpr) == true) {
-    initName = "this.initDone()";
+    initName = "this.complete()";
   }
 
   if (initName == NULL) {
@@ -637,7 +637,7 @@ static InitNormalize preNormalize(AggregateType* at,
           if (stateThen.isPhase2() != stateElse.isPhase2()) {
             USR_FATAL(cond,
                       "Both arms of a conditional must use this.init() "
-                      "or this.initDone() in phase 1");
+                      "or this.complete() in phase 1");
 
           } else if (stateThen.currField() != stateElse.currField()) {
             unifyConditionalBranchLastField(at, cond, &stateThen, &stateElse);
@@ -821,14 +821,14 @@ bool isInitDone(CallExpr* callExpr) {
 
   if (callExpr->numActuals() == 0) {
     if (UnresolvedSymExpr* usym = toUnresolvedSymExpr(callExpr->baseExpr)) {
-      if (strcmp(usym->unresolved, "initDone") == 0) {
+      if (strcmp(usym->unresolved, "complete") == 0) {
         retval = true;
       }
 
     } else if (CallExpr* subCall = toCallExpr(callExpr->baseExpr)) {
       if (subCall->numActuals()                        ==    2 &&
           subCall->isNamedAstr(astrSdot)               == true &&
-          isStringLiteral(subCall->get(2), "initDone") == true) {
+          isStringLiteral(subCall->get(2), "complete") == true) {
 
         if (isSymbolThis(subCall->get(1)) == true) {
           retval = true;
@@ -1224,10 +1224,10 @@ static bool isSymbolThis(Expr* expr) {
 
 //
 // Builds the list of AggregateTypes in the hierarchy of `at` that have or
-// require a postInit.
+// require a postinit.
 //
 // Let's say we have a series of classes named from A through Z, where Z
-// inherits from Y and so on. If class Q has a postInit, this function will
+// inherits from Y and so on. If class Q has a postinit, this function will
 // add AggregateTypes to 'chain' from Q through Z with 'Q' at the head.
 //
 static bool buildPostInitChain(AggregateType* at,
@@ -1264,7 +1264,7 @@ static bool isSuperPostInit(CallExpr* stmt) {
   if (CallExpr* call = toCallExpr(stmt->baseExpr)) {
     if (call->numActuals()                        ==    2 &&
         call->isNamedAstr(astrSdot)               == true &&
-        isStringLiteral(call->get(2), "postInit") == true) {
+        isStringLiteral(call->get(2), "postinit") == true) {
       if (CallExpr* subExpr = toCallExpr(call->get(1))) {
         if (subExpr->numActuals()                     == 2    &&
             subExpr->isNamedAstr(astrSdot)            == true &&
@@ -1310,9 +1310,9 @@ static bool hasSuperPostInit(BlockStmt* block) {
 }
 
 //
-// Inserts a call to super.postInit if none exists anywhere in 'fn'
+// Inserts a call to super.postinit if none exists anywhere in 'fn'
 //
-// TODO: what should we do with super.postInits in conditionals?
+// TODO: what should we do with super.postinits in conditionals?
 // TODO: merge with addSuperInit
 //
 static void insertSuperPostInit(FnSymbol* fn) {
@@ -1329,19 +1329,19 @@ static void insertSuperPostInit(FnSymbol* fn) {
     tmp->addFlag(FLAG_SUPER_TEMP);
 
     // Adding at head therefore add in reverse order
-    body->insertAtHead(new CallExpr("postInit", gMethodToken, tmp));
+    body->insertAtHead(new CallExpr("postinit", gMethodToken, tmp));
     body->insertAtHead(new CallExpr(PRIM_MOVE,  tmp,          superGet));
     body->insertAtHead(new DefExpr(tmp));
   }
 }
 
 //
-// Creates a method named "postInit" on 'at'. A call to "super.postInit" is
+// Creates a method named "postinit" on 'at'. A call to "super.postinit" is
 // added if 'at' is a class.
 //
 static void buildPostInit(AggregateType* at) {
   SET_LINENO(at);
-  FnSymbol* fn     = new FnSymbol("postInit");
+  FnSymbol* fn     = new FnSymbol("postinit");
   ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", at);
 
@@ -1368,8 +1368,8 @@ static void buildPostInit(AggregateType* at) {
 }
 
 //
-// Inserts a zero-arg where-less postInit for `at` unless one already exists.
-// Also inserts a super.postInit for any postInit if omitted.
+// Inserts a zero-arg where-less postinit for `at` unless one already exists.
+// Also inserts a super.postinit for any postinit if omitted.
 //
 // Returns number of errors found.
 //
@@ -1386,7 +1386,7 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
       if (method->formals.length > 2) {
         // Only accept method token and 'this'
         ret += 1;
-        USR_FATAL_CONT(method, "postInit must have zero arguments");
+        USR_FATAL_CONT(method, "postinit must have zero arguments");
       }
       if (at->isClass() == true && insertSuper == true) {
         insertSuperPostInit(method);
@@ -1401,21 +1401,21 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   return ret;
 }
 
-static std::set<AggregateType*> postInitCache;
+static std::set<AggregateType*> postinitCache;
 
 //
-// Inserts postInit methods and calls to super.postInit as needed.
+// Inserts postinit methods and calls to super.postinit as needed.
 //
-// If an ancestor of 'at' has a postInit, then every aggregate between 'at' and
-// that ancestor must have a postInit as well.
+// If an ancestor of 'at' has a postinit, then every aggregate between 'at' and
+// that ancestor must have a postinit as well.
 //
-// If postInits on a type have a where clause, insert a where-less postInit
+// If postinits on a type have a where clause, insert a where-less postinit
 // so the ancestors will always be called.
 //
 void preNormalizePostInit(AggregateType* at) {
   // Cache results to avoid extra work and to avoid looking for various forms
-  // of super.postInit.
-  if (postInitCache.find(at) != postInitCache.end()) {
+  // of super.postinit.
+  if (postinitCache.find(at) != postinitCache.end()) {
     return;
   }
 
@@ -1425,14 +1425,14 @@ void preNormalizePostInit(AggregateType* at) {
 
   int errors = 0;
   for_vector(AggregateType, cur, chain) {
-    if (postInitCache.find(cur) == postInitCache.end()) {
+    if (postinitCache.find(cur) == postinitCache.end()) {
       if (cur->hasInitializers() == false) {
         cur->symbol->addFlag(FLAG_USE_DEFAULT_INIT);
       }
       // Don't insert a super.init for the highest ancestor
       bool insertSuper = cur != chain.front();
       errors += insertPostInit(cur, insertSuper);
-      postInitCache.insert(cur);
+      postinitCache.insert(cur);
     }
   }
 

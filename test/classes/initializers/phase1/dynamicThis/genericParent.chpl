@@ -29,7 +29,7 @@ class Child : Parent {
     super.init(t);
     inheritedMethod();
     foobar(this);
-    initDone();
+    complete();
     inheritedMethod();
   }
 

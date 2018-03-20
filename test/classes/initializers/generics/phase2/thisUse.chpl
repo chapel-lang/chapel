@@ -5,7 +5,7 @@ class ThisPhase2 {
   proc init(val: complex, param genVal: bool) {
     someField = val;
     genField = genVal;
-    this.initDone();
+    this.complete();
     outsideFunc(this);
     // Verifies that we can utilize "this" in Phase 2
   }

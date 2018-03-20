@@ -21,7 +21,7 @@ module Deque {
     var d: deque_t;
     proc init(type eltType) {
       this.eltType = eltType;
-      this.initDone();
+      this.complete();
       deque_init(sizeof(eltType), d, 0);
     }
     proc deinit() {

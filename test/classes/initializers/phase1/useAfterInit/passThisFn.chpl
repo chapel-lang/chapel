@@ -13,7 +13,7 @@ record R {
 
     // Ensure compiler catches method calls nested inside other calls
     printer(this.foo());
-    this.initDone();
+    this.complete();
   }
 
   proc foo() {

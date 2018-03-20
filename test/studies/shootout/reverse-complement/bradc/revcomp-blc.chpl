@@ -17,14 +17,14 @@ proc main(args: [] string) {
   sync { // wait for all process() tasks to complete before continuing
     if len {  // make sure the file is not empty
       do {
-        const descOffset = input._offset();
+        const descOffset = input.offset();
 
         // Mark where we start scanning (keep bytes in I/O buffer in input)
-        input._mark();
+        input.mark();
 
         // Scan forward until we get to '\n' (end of description)
         input.advancePastByte(ascii("\n"));
-        const seqOffset = input._offset();
+        const seqOffset = input.offset();
 
         // Scan forward until we get to '>' (end of sequence) or EOF
         const (eof, nextDescOffset) = findNextDesc();
@@ -36,15 +36,14 @@ proc main(args: [] string) {
           } catch (e:EOFError) {
             return (true, len);
           }
-          return (false, input._offset());
+          return (false, input.offset());
         }
 
         // Go back to the point we marked
-        input._revert();
+        input.revert();
 
         // Read until nextDescOffset into the data array.
-        input.readBytes(c_ptrTo(data[descOffset]),
-                        (nextDescOffset-descOffset):ssize_t);
+        input.read(data[descOffset..nextDescOffset-1]);
 
         // '2' to skip over '\n' + 1 to skip over '>' if not yet at eof
         begin process(data, seqOffset, nextDescOffset-(2+!eof));

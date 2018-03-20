@@ -8,7 +8,7 @@ class ConcreteClass {
 
   proc init(x:int) {
     this.x = x;
-    this.initDone();
+    this.complete();
     const foo = 1 + this;
     writeln("ConcreteClass foo = ", foo);
   }
@@ -29,7 +29,7 @@ class GenericClass {
   proc init(type t, val) {
     this.t = t;
     this.x = val;
-    this.initDone();
+    this.complete();
     const foo = 1 + this;
     writeln("GenericClass foo = ", foo);
   }

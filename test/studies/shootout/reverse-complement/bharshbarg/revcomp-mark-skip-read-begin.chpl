@@ -17,29 +17,29 @@ proc main(args: [] string) {
   sync { // wait for all process() tasks to complete before continuing
 
     while true {
-      const descOffset = input._offset();
+      const descOffset = input.offset();
       var nextDescOffset = descOffset;
       var seqOffset = descOffset;
       var eof = false;
 
       // Mark where we start scanning (keep bytes in I/O buffer in input)
-      input._mark();
+      input.mark();
 
       // Scan forward until we get to the \n (end of description)
       input.advancePastByte(ascii("\n"));
-      seqOffset = input._offset();
+      seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
         input.advancePastByte(ascii(">"));
-        nextDescOffset = input._offset();
+        nextDescOffset = input.offset();
       } catch e:EOFError {
         eof = true;
         nextDescOffset = len;
       }
 
       // Go back to the point we marked
-      input._revert();
+      input.revert();
 
       // Read until nextDescOffset into the data array.
       input.readBytes(c_ptrTo(data[descOffset]),

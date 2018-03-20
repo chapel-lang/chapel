@@ -9,8 +9,8 @@ class C {
     this.y = 1.0;
   }
 
-  proc postInit() {
-    writeln("C.postInit");
+  proc postinit() {
+    writeln("C.postinit");
     y *= x;
   }
 }
@@ -27,8 +27,8 @@ record R {
     writeln("R.init");
   }
 
-  proc postInit() {
-    writeln("R.postInit");
+  proc postinit() {
+    writeln("R.postinit");
   }
 }
 

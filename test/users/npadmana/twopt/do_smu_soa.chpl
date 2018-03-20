@@ -51,7 +51,7 @@ class Particle3D {
   var _n1, _ndx : [Dpart] int;
 
   proc init(npart1 : int, random : bool = false) {
-    this.initDone();
+    this.complete();
     npart = npart1;
     Darr = {ParticleAttrib, 0.. #npart};
     Dpart = {0.. #npart};

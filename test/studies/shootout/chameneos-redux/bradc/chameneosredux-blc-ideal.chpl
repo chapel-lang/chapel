@@ -233,7 +233,7 @@ class MeetingPlace {
   // Initialize the number of meetings that should take place
   //
   proc init(numMeetings) {
-    this.initDone();
+    this.complete();
     state.write(numMeetings << bitsPerChameneosID);
   }
 

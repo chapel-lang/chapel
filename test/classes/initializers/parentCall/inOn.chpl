@@ -4,7 +4,7 @@ class Foo {
   proc init(xVal) {
     x = xVal;
     on xVal {
-      this.initDone();
+      this.complete();
     }
   }
 }

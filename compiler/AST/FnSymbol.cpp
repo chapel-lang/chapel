@@ -881,7 +881,7 @@ bool FnSymbol::isInitializer() const {
 }
 
 bool FnSymbol::isPostInitializer() const {
-  return isMethod() == true && strcmp(name, "postInit") == 0;
+  return isMethod() == true && strcmp(name, "postinit") == 0;
 }
 
 // This function or method is an iterator (as opposed to a procedure).
