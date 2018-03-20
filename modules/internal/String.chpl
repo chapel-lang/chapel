@@ -48,8 +48,8 @@
 
   .. warning::
 
-    Casts from ``string`` to the following types will throw an error if they
-    are invalid:
+    Casts from :record:`string` to the following types will throw an error
+    if they are invalid:
 
       - ``int``
       - ``uint``
