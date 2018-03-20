@@ -83,7 +83,7 @@ proc realPath(out error: syserr, name: string): string {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result
 
-   Will halt with an error message if one is detected.
+   Will throw an error if one occurs.
 
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
@@ -120,7 +120,7 @@ proc file.realPath(out error: syserr): string {
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result
 
-   Will halt with an error message if one is detected.
+   Will throw an error if one occurs.
 
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
@@ -214,7 +214,7 @@ proc file.realPath(): string throws {
  Returns the parent directory of the :type:`~IO.file` record.  For instance,
  a file with path `/foo/bar/baz` would return `/foo/bar`
 
- Will halt with an error message if one is detected.
+ Will throw an error if one occurs.
 
   :return: The parent directory of the file
   :rtype: `string`
