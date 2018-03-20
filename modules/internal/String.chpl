@@ -46,6 +46,19 @@
   The :mod:`Regexp` module also provides some routines for searching
   within strings.
 
+  Casts from ``string`` to the following types will throw an error if they
+  are invalid:
+
+    - ``int``
+    - ``uint``
+    - ``real``
+    - ``imag``
+    - ``complex``
+    - ``enum``
+
+  To learn more about handling this error, see the
+  :ref:`Error Handling technical note <readme-errorHandling>`.
+
   .. warning::
 
     While :record:`string` is intended to be a Unicode string, there is much
