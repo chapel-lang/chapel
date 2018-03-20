@@ -112,11 +112,14 @@ using namespace llvm;
 #include "llvmDumpIR.h"
 
 // These are headers internal to clang. Need to be able to:
-// 1. Get the LLVM type for a C typedef (say)  -- not needed after LLVM 5
+// 1. Get the LLVM type for a C typedef (say)
+//    (not needed after LLVM 5)
 // 2. Get the GEP offset for a field in a C record by name
+//    (not needed after LLVM 6)
+#if HAVE_LLVM_VER < 60
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
-//#include "CGDebugInfo.h"
+#endif
 
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
@@ -1924,8 +1927,13 @@ GenRet codegenCValue(const ValueDecl *vd)
 
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
-    // TODO: should be in clang::CodeGenerator API
-    llvm::Type* type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
+    llvm::Type* type = NULL;
+#if HAVE_LLVM_VER >= 50
+    type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
+#else
+    type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
+#endif
+
     ret.val = ConstantInt::get(type, v);
     ret.isLVPtr = GEN_VAL;
   } else {
@@ -2230,8 +2238,13 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName)
     }
   }
   INT_ASSERT(field);
-  // TODO: should be in clang::CodeGenerator API
+
+#if HAVE_LLVM_VER >= 60
+  ret = clang::CodeGen::getLLVMFieldNumber(cCodeGen->CGM(), rec, field);
+#else
   ret = cCodeGen->CGM().getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
+#endif
+
   return ret;
 }
 
