@@ -1159,7 +1159,7 @@ static void build_record_copy_function(AggregateType* ct) {
     return;
   }
 
-  if (isNonGenericRecordWithInitializers(ct) == true) {
+  if (isRecordWithInitializers(ct) == true) {
     if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
       ct->symbol->addFlag(FLAG_NOT_POD);
     }
