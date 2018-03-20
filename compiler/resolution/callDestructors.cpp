@@ -604,11 +604,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // Noakes 2017/03/04
   // Cannot use the qualified-type here.  The formal may be still a _ref(type)
   // and using a qualified-type generates yet another temp.
-  Symbol*   tmpVar    = newTemp("ret_tmp",             useLhs->type);
-#define OVASS 0
-#if OVASS
-  Symbol*   refVar    = newTemp("ret_to_arg_ref_tmp_", useLhs->type->refType);
-#endif
+  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->type);
 
   FnSymbol* unaliasFn = NULL;
 
@@ -658,27 +654,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
     }
   }
 
-#if OVASS
-  // Introduce a tmpVar and a reference to the tmpVar
-  CallExpr* addrOfTmp = new CallExpr(PRIM_ADDR_OF, tmpVar);
-
-  moveExpr->insertBefore(new DefExpr(tmpVar));
-  moveExpr->insertBefore(new DefExpr(refVar));
-  moveExpr->insertBefore(new CallExpr(PRIM_MOVE, refVar, addrOfTmp));
-#else
-  moveExpr->insertBefore(new DefExpr(tmpVar));
-#endif
-
   // Convert the by-value call to a void call with an additional formal
   moveExpr->replace(callExpr->remove());
 
-  callExpr->insertAtTail(
-#if OVASS
-                         refVar
-#else
-                         tmpVar
-#endif
-                               );
+  callExpr->insertAtTail(tmpVar);
+
+  callExpr->insertBefore(new DefExpr(tmpVar));
   callExpr->insertAfter(new CallExpr(PRIM_MOVE, useLhs, tmpVar));
 
   // Possibly reduce a copy operation to a simple move
@@ -696,13 +677,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
       // bad AST if I simply did this:
       //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
       VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
-      CallExpr*  unaliasCall = new CallExpr(unaliasFn,
-#if OVASS
-                                                       refVar
-#else
-                                                       tmpVar
-#endif
-                                                             );
+      CallExpr*  unaliasCall = new CallExpr(unaliasFn, tmpVar);
 
       callExpr->insertBefore(new DefExpr(unaliasTemp));
       callExpr->insertAfter(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
