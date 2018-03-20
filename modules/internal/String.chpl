@@ -1320,9 +1320,6 @@ module String {
   } // end record string
 
 
-  // We'd like this to be by ref, but doing so leads to an internal
-  // compiler error.  See
-  // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
