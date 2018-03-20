@@ -1162,66 +1162,63 @@ static void build_union_assignment_function(AggregateType* ct) {
 
 static bool hasUserDefinedConstructor(AggregateType* at);
 
-static void build_record_copy_function(AggregateType* ct) {
-  if (function_exists("chpl__initCopy", ct) != NULL) {
-    return;
-  }
-
-  if (isRecordWithInitializers(ct) == true) {
-    if (function_exists("init", dtMethodToken, ct, ct) != NULL) {
-      ct->symbol->addFlag(FLAG_NOT_POD);
-    }
-
-    return;
-  }
-
-  // if no copy-init function existed...
-  FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
-  DefExpr*   def = new DefExpr(fn);
-  ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", ct);
-
-  arg->addFlag(FLAG_MARKED_GENERIC);
-
-  fn->addFlag(FLAG_INIT_COPY_FN);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-
-  fn->insertFormalAtTail(arg);
-
-  if (hasUserDefinedConstructor(ct) == true) {
-    CallExpr* call = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
-
-    ct->symbol->addFlag(FLAG_NOT_POD);
-
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
-
-  } else if (ct->symbol->hasFlag(FLAG_EXTERN) == true) {
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
-
-  } else {
-    CallExpr* call = new CallExpr(ct->defaultInitializer);
-
-    for_fields(tmp, ct) {
-      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) == false) {
-        CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
-
-        call->insertAtTail(new NamedExpr(tmp->name, init));
-
-        // Calls for nested records need to be methods
-        if (strcmp(tmp->name, "outer") == 0) {
-          call->insertAtHead(gMethodToken);
-        }
+static void build_record_copy_function(AggregateType* at) {
+  if (function_exists("chpl__initCopy", at) == NULL) {
+    if (isRecordWithInitializers(at) == true) {
+      if (function_exists("init", dtMethodToken, at, at) != NULL) {
+        at->symbol->addFlag(FLAG_NOT_POD);
       }
+
+    } else {
+      FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
+      DefExpr*   def = new DefExpr(fn);
+      ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", at);
+
+      arg->addFlag(FLAG_MARKED_GENERIC);
+
+      fn->addFlag(FLAG_INIT_COPY_FN);
+      fn->addFlag(FLAG_COMPILER_GENERATED);
+      fn->addFlag(FLAG_LAST_RESORT);
+
+      fn->insertFormalAtTail(arg);
+
+      if (hasUserDefinedConstructor(at) == true) {
+        CallExpr* call = new CallExpr(PRIM_NEW, at->symbol, new SymExpr(arg));
+
+        at->symbol->addFlag(FLAG_NOT_POD);
+
+        fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
+      } else if (at->symbol->hasFlag(FLAG_EXTERN) == true) {
+        fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
+
+      } else {
+        CallExpr* call = new CallExpr(at->defaultInitializer);
+
+        for_fields(tmp, at) {
+          if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) == false) {
+            Symbol*   sym  = new_CStringSymbol(tmp->name);
+            CallExpr* init = new CallExpr(".", arg, sym);
+
+            call->insertAtTail(new NamedExpr(tmp->name, init));
+
+            // Calls for nested records need to be methods
+            if (strcmp(tmp->name, "outer") == 0) {
+              call->insertAtHead(gMethodToken);
+            }
+          }
+        }
+
+        fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+      }
+
+      at->symbol->defPoint->insertBefore(def);
+
+      reset_ast_loc(def, at->symbol);
+
+      normalize(fn);
     }
-
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
-
-  ct->symbol->defPoint->insertBefore(def);
-
-  reset_ast_loc(def, ct->symbol);
-
-  normalize(fn);
 }
 
 static bool hasUserDefinedConstructor(AggregateType* at) {
