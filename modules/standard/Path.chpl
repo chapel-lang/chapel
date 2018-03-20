@@ -276,8 +276,10 @@ const pathSep = "/";
 
 /* Determines whether the path specified is an absolute path.
 
-   Note: this is currently only implemented in a Unix environment.  It will not
-   behave correctly in a non-Unix environment.
+   .. note::
+
+      This is currently only implemented in a Unix environment.  It will not
+      behave correctly in a non-Unix environment.
 
    :arg name: the path to be checked.
    :type name: `string`
@@ -415,9 +417,13 @@ proc file.realPath(): string throws {
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
-   with the path separator character:
+   with the path separator character, either explicitly:
 
    `dirname` + "/" + `basename`
+
+   or by calling :proc:`joinPath`:
+
+   `joinPath(dirname, basename)`
 
    :arg name: path to be split
    :type name: `string`
