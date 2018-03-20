@@ -50,243 +50,6 @@ use SysError;
    return splitPath(name)[2];
  }
 
-/* Represents generally the current directory */
-const curDir = ".";
-
-/* Returns the parent directory of the file name provided.  For instance,
-   in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
-   would a call with `/foo/bar/` as the argument.
-
-   :arg name: a string file name.  Note that this string does not have to be
-              a valid file name, as the file itself will not be affected.
-   :type name: `string`
-*/
- proc dirname(name: string): string{
-   return splitPath(name)[1];
- }
-
-/* Represents generally the parent directory */
-const parentDir = "..";
-/* Denotes the separator between a directory and its child. */
-const pathSep = "/";
-
-pragma "no doc"
-proc realPath(out error: syserr, name: string): string {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
-
-  var res: c_string;
-  error = chpl_fs_realpath(name.localize().c_str(), res);
-  return new string(res, needToCopy=false);
-}
-
-/* Given a path `name`, attempts to determine the canonical path referenced.
-   This resolves and removes any :data:`curDir` and :data:`parentDir` uses
-   present, as well as any symbolic links.  Returns the result
-
-   Will throw an error if one occurs.
-
-   :arg name: A path to resolve.  If the path does not refer to a valid file
-              or directory, an error will occur.
-   :type name: `string`
-
-   :return: A canonical version of the argument.
-   :rtype: `string`
-*/
-proc realPath(name: string): string throws {
-  var err: syserr = ENOERR;
-  var ret = realPath(err, name);
-  if err != ENOERR then try ioerror(err, "realPath", name);
-  return ret;
-}
-
-pragma "no doc"
-proc file.realPath(out error: syserr): string {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
-
-  var res: c_string;
-
-  if (is_c_nil(_file_internal)) {
-    // This file is referencing a null file.  We'll get a segfault if we
-    // continue.
-    error = EBADF;
-    return "";
-  }
-  error = chpl_fs_realpath_file(_file_internal, res);
-  return new string(res, needToCopy=false);
-}
-
-/* Determines the canonical path referenced by the :type:`~IO.file` record
-   performing this operation.  This resolves and removes any :data:`curDir` and
-   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
-   result
-
-   Will throw an error if one occurs.
-
-   :return: A canonical path to the file referenced by this :type:`~IO.file`
-            record.  If the :type:`~IO.file` record is not valid, an error will
-            occur
-   :rtype: `string`
-*/
-proc file.realPath(): string throws {
-  var err: syserr = ENOERR;
-  var ret = realPath(err);
-  if err != ENOERR then try ioerror(err, "in file.realPath");
-  return ret;
-}
-
-/* Split name into a tuple that is equivalent to (:proc:`dirname`,
-   :proc:`basename`).  The second part of the tuple will never contain a slash.
-   Examples:
-
-   `splitPath("foo/bar")` will yield `("foo", "bar")`
-
-   `splitPath("bar")` will yield `("", "bar")`
-
-   `splitPath("foo/")` will yield `("foo", "")`
-
-   `splitPath("")` will yield `("", "")`
-
-   `splitPath("/")` will yield `("/", "")`
-
-   With the exception of a path of the empty string or just "/", the original
-   path can be recreated from this function's returned parts by joining them
-   with the path separator character:
-
-   `dirname` + "/" + `basename`
-
-   :arg name: path to be split
-   :type name: `string`
-*/
- proc splitPath(name: string): (string, string) {
-   var rLoc, lLoc, prev: int = name.rfind(pathSep);
-   if (prev != 0) {
-     do {
-       prev = lLoc;
-       lLoc = name.rfind(pathSep, 1..prev-1);
-     } while (lLoc + 1 == prev && lLoc > 1);
-
-     if (prev == 1) {
-       // This happens when the only instance of pathSep in the string is
-       // the first character
-       return (name[prev..rLoc], name[rLoc+1..]);
-     } else if (lLoc == 1 && prev == 2) {
-       // This happens when there is a line of pathSep instances at the
-       // start of the string
-       return (name[..rLoc], name[rLoc+1..]);
-     } else if (prev != rLoc) {
-       // If prev wasn't the first character, then we want to skip all those
-       // duplicate pathSeps
-       return (name[..prev-1], name[rLoc+1..]);
-     } else {
-       // The last instance of pathSep in the string was on its own, so just
-       // snip it out.
-       return (name[..rLoc-1], name[rLoc+1..]);
-     }
-   } else {
-     return ("", name);
-   }
- }
-
- /*
-
- Returns the parent directory of the :type:`~IO.file` record.  For instance,
- a file with path `/foo/bar/baz` would return `/foo/bar`
-
-  :return: The parent directory of the file
-  :rtype: `string`
-
- */
- pragma "no doc"
- proc file.getParentName(out error:syserr): string {
-   check(error);
-
-   var ret: string = "unknown";
-   if !error {
-     var tmp: string;
-     tmp = this.realPath(error);
-     if !error then
-       ret = dirname(new string(tmp));
-   }
-   return ret;
- }
-
- /*
- Returns the parent directory of the :type:`~IO.file` record.  For instance,
- a file with path `/foo/bar/baz` would return `/foo/bar`
-
- Will throw an error if one occurs.
-
-  :return: The parent directory of the file
-  :rtype: `string`
- */
- proc file.getParentName(): string throws {
-   var err: syserr = ENOERR;
-   var ret = getParentName(err);
-   if err != ENOERR then try ioerror(err, "in file.getParentName");
-   return ret;
- }
-
-/* Join and return one or more paths, putting precedent on the last absolute
-   path seen.  Return value is the concatenation of the paths with one
-   directory separator following each non-empty argument except the last.
-   Examples:
-
-   `joinPath("/foo/bar", "/baz")` will yield `"/baz"`
-
-   `joinPath("/foo", "./baz")` will yield `"/foo/./baz"`
-
-   `joinPath("/foo/", "", "./baz")` will also yield `"/foo/./baz"`
-
-   :arg paths: Any number of paths
-   :type paths: `string`
-
-   :return: The concatenation of the last absolute path with everything following
-            it, or all the paths provided if no absolute path is present
-   :rtype: `string`
-*/
-  proc joinPath(paths: string ...?n): string {
-    var result : string = paths(1); // result variable stores final answer
-   // loop to iterate over all the paths
-    for i in 2..n {
-      var temp : string = paths(i);
-      if temp.startsWith('/') {
-        result = temp;
-      }
-      else if result.endsWith('/') {
-        result = result + temp;
-      }
-      else {
-        result = result + "/" + temp;
-      }
-    }
-   return result;
- }
-
-/* Determines whether the path specified is an absolute path.
-
-   Note: this is currently only implemented in a Unix environment.  It will not
-   behave correctly in a non-Unix environment.
-
-   :arg name: the path to be checked.
-   :type name: `string`
-
-   :return: `true` if `name` is an absolute path, `false` otherwise
-   :rtype: `bool`
-*/
-
-  proc isAbsPath(name: string): bool {
-    if name.isEmptyString() {
-      return false;
-    }
-    const len: int = name.length;
-    var str: string = name[1];
-    if (str == '/') {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
   /* Determines and returns the longest common path prefix of
    all the string pathnames provided.
 
@@ -421,4 +184,240 @@ proc file.realPath(): string throws {
   return result;
   }
 
+/* Represents generally the current directory */
+const curDir = ".";
+
+/* Returns the parent directory of the file name provided.  For instance,
+   in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
+   would a call with `/foo/bar/` as the argument.
+
+   :arg name: a string file name.  Note that this string does not have to be
+              a valid file name, as the file itself will not be affected.
+   :type name: `string`
+*/
+ proc dirname(name: string): string{
+   return splitPath(name)[1];
+ }
+
+ /*
+
+ Returns the parent directory of the :type:`~IO.file` record.  For instance,
+ a file with path `/foo/bar/baz` would return `/foo/bar`
+
+  :return: The parent directory of the file
+  :rtype: `string`
+
+ */
+ pragma "no doc"
+ proc file.getParentName(out error:syserr): string {
+   check(error);
+
+   var ret: string = "unknown";
+   if !error {
+     var tmp: string;
+     tmp = this.realPath(error);
+     if !error then
+       ret = dirname(new string(tmp));
+   }
+   return ret;
+ }
+
+ /*
+ Returns the parent directory of the :type:`~IO.file` record.  For instance,
+ a file with path `/foo/bar/baz` would return `/foo/bar`
+
+ Will throw an error if one occurs.
+
+  :return: The parent directory of the file
+  :rtype: `string`
+ */
+ proc file.getParentName(): string throws {
+   var err: syserr = ENOERR;
+   var ret = getParentName(err);
+   if err != ENOERR then try ioerror(err, "in file.getParentName");
+   return ret;
+ }
+
+/* Determines whether the path specified is an absolute path.
+
+   Note: this is currently only implemented in a Unix environment.  It will not
+   behave correctly in a non-Unix environment.
+
+   :arg name: the path to be checked.
+   :type name: `string`
+
+   :return: `true` if `name` is an absolute path, `false` otherwise
+   :rtype: `bool`
+*/
+
+  proc isAbsPath(name: string): bool {
+    if name.isEmptyString() {
+      return false;
+    }
+    const len: int = name.length;
+    var str: string = name[1];
+    if (str == '/') {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+/* Join and return one or more paths, putting precedent on the last absolute
+   path seen.  Return value is the concatenation of the paths with one
+   directory separator following each non-empty argument except the last.
+   Examples:
+
+   `joinPath("/foo/bar", "/baz")` will yield `"/baz"`
+
+   `joinPath("/foo", "./baz")` will yield `"/foo/./baz"`
+
+   `joinPath("/foo/", "", "./baz")` will also yield `"/foo/./baz"`
+
+   :arg paths: Any number of paths
+   :type paths: `string`
+
+   :return: The concatenation of the last absolute path with everything following
+            it, or all the paths provided if no absolute path is present
+   :rtype: `string`
+*/
+  proc joinPath(paths: string ...?n): string {
+    var result : string = paths(1); // result variable stores final answer
+   // loop to iterate over all the paths
+    for i in 2..n {
+      var temp : string = paths(i);
+      if temp.startsWith('/') {
+        result = temp;
+      }
+      else if result.endsWith('/') {
+        result = result + temp;
+      }
+      else {
+        result = result + "/" + temp;
+      }
+    }
+   return result;
+ }
+
+/* Represents generally the parent directory */
+const parentDir = "..";
+/* Denotes the separator between a directory and its child. */
+const pathSep = "/";
+
+pragma "no doc"
+proc realPath(out error: syserr, name: string): string {
+  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
+
+  var res: c_string;
+  error = chpl_fs_realpath(name.localize().c_str(), res);
+  return new string(res, needToCopy=false);
+}
+
+/* Given a path `name`, attempts to determine the canonical path referenced.
+   This resolves and removes any :data:`curDir` and :data:`parentDir` uses
+   present, as well as any symbolic links.  Returns the result
+
+   Will throw an error if one occurs.
+
+   :arg name: A path to resolve.  If the path does not refer to a valid file
+              or directory, an error will occur.
+   :type name: `string`
+
+   :return: A canonical version of the argument.
+   :rtype: `string`
+*/
+proc realPath(name: string): string throws {
+  var err: syserr = ENOERR;
+  var ret = realPath(err, name);
+  if err != ENOERR then try ioerror(err, "realPath", name);
+  return ret;
+}
+
+pragma "no doc"
+proc file.realPath(out error: syserr): string {
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
+
+  var res: c_string;
+
+  if (is_c_nil(_file_internal)) {
+    // This file is referencing a null file.  We'll get a segfault if we
+    // continue.
+    error = EBADF;
+    return "";
+  }
+  error = chpl_fs_realpath_file(_file_internal, res);
+  return new string(res, needToCopy=false);
+}
+
+/* Determines the canonical path referenced by the :type:`~IO.file` record
+   performing this operation.  This resolves and removes any :data:`curDir` and
+   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
+   result
+
+   Will throw an error if one occurs.
+
+   :return: A canonical path to the file referenced by this :type:`~IO.file`
+            record.  If the :type:`~IO.file` record is not valid, an error will
+            occur
+   :rtype: `string`
+*/
+proc file.realPath(): string throws {
+  var err: syserr = ENOERR;
+  var ret = realPath(err);
+  if err != ENOERR then try ioerror(err, "in file.realPath");
+  return ret;
+}
+
+/* Split name into a tuple that is equivalent to (:proc:`dirname`,
+   :proc:`basename`).  The second part of the tuple will never contain a slash.
+   Examples:
+
+   `splitPath("foo/bar")` will yield `("foo", "bar")`
+
+   `splitPath("bar")` will yield `("", "bar")`
+
+   `splitPath("foo/")` will yield `("foo", "")`
+
+   `splitPath("")` will yield `("", "")`
+
+   `splitPath("/")` will yield `("/", "")`
+
+   With the exception of a path of the empty string or just "/", the original
+   path can be recreated from this function's returned parts by joining them
+   with the path separator character:
+
+   `dirname` + "/" + `basename`
+
+   :arg name: path to be split
+   :type name: `string`
+*/
+ proc splitPath(name: string): (string, string) {
+   var rLoc, lLoc, prev: int = name.rfind(pathSep);
+   if (prev != 0) {
+     do {
+       prev = lLoc;
+       lLoc = name.rfind(pathSep, 1..prev-1);
+     } while (lLoc + 1 == prev && lLoc > 1);
+
+     if (prev == 1) {
+       // This happens when the only instance of pathSep in the string is
+       // the first character
+       return (name[prev..rLoc], name[rLoc+1..]);
+     } else if (lLoc == 1 && prev == 2) {
+       // This happens when there is a line of pathSep instances at the
+       // start of the string
+       return (name[..rLoc], name[rLoc+1..]);
+     } else if (prev != rLoc) {
+       // If prev wasn't the first character, then we want to skip all those
+       // duplicate pathSeps
+       return (name[..prev-1], name[rLoc+1..]);
+     } else {
+       // The last instance of pathSep in the string was on its own, so just
+       // snip it out.
+       return (name[..rLoc-1], name[rLoc+1..]);
+     }
+   } else {
+     return ("", name);
+   }
+ }
 }
