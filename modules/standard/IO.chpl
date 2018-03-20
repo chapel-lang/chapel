@@ -915,19 +915,11 @@ private extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):sy
 private extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t, ref amt_read:ssize_t):syserr;
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:ssize_t):syserr;
-pragma "no doc"
-// A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:ssize_t):syserr;
-// and for c_ptr
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:c_ptr, len:ssize_t):syserr;
 private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t):int(32);
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t, ref amt_written:ssize_t):syserr;
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:ssize_t):syserr;
-pragma "no doc"
-// A specialization is needed for _ddata as the value is the pointer its memory
-private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:ssize_t):syserr;
+ private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr: c_ptr, len:ssize_t):syserr;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):syserr;
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -3334,27 +3326,37 @@ inline proc channel.readwrite(ref x) where !this.writing {
     }
   }
 
-  /*
-     Write a sequence of bytes.
-   */
+  pragma "no doc"
   proc channel.writeBytes(x, len:ssize_t, out error:syserr):bool {
-    on this.home {
-      try! this.lock();
-      error = qio_channel_write_amt(false, _channel_internal, x, len);
-      this.unlock();
+    compilerWarning("This version of writeBytes() is deprecated; " +
+                    "please switch to a throwing version");
+    try {
+      this.writeBytes(x, len);
+    } catch e: SystemError {
+      error = e.err;
+    } catch {
+      error = EINVAL;
     }
-    return !error;
   }
 
-  pragma "no doc"
-  proc channel.writeBytes(x, len:ssize_t):bool throws {
-    var e:syserr = ENOERR;
-    this.writeBytes(x, len, error=e);
-    if !e then return true;
-    else {
-      try this._ch_ioerror(e, "in channel.writeBytes()");
-      return false;
+  /*
+     Write `numBytes` bytes to this channel from the memory location
+     associated with `val`..
+   */
+  proc channel.writeBytes(ref val, numBytes: integral): bool throws {
+    var err: syserr = ENOERR;
+    var retval = true;
+    on this.home {
+      try! this.lock();
+      err = qio_channel_write_amt(false, _channel_internal, c_ptrTo(val),
+                                  numBytes.safeCast(ssize_t));
+      this.unlock();
+      if err {
+        try this._ch_ioerror(err, "in channel.writeBytes");
+        retval = false;
+      }
     }
+    return retval;
   }
 
 
@@ -3509,7 +3511,7 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      r.readBytes(buf, offset:ssize_t);
+      r.readBytes(buf, offset);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -4225,23 +4227,40 @@ proc channel.isclosed() {
   return ret;
 }
 
-// TODO -- we should probably have separate c_ptr ddata and ref versions
-// in this function for it to become user-facing. Right now, errors
-// in the type of the argument will only be caught by a type mismatch
-// in the call to qio_channel_read_amt.
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t, out error:syserr) {
-  error = ENOERR;
-  if here != this.home then halt("bad remote channel.readBytes");
-  error = qio_channel_read_amt(false, _channel_internal, x, len);
+  compilerWarning("This version of readBytes() is deprecated; " +
+                  "please switch to a throwing version.");
+  try {
+    this.readBytes(x, len);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
-pragma "no doc"
-proc channel.readBytes(x, len:ssize_t) throws {
-  var e:syserr = ENOERR;
-  this.readBytes(x, len, error=e);
-  if e then try this._ch_ioerror(e, "in channel.readBytes");
+/*
+  Read `numBytes` bytes from this channel into the memory location
+  associated with `loc`.
+*/
+proc channel.readBytes(ref loc, numBytes: integral) throws {
+  this.readBytes(c_ptrTo(loc), numBytes);
 }
+
+/*
+  Read `numBytes` bytes from this channel into the memory location
+  pointed to by `ptr`.
+*/
+proc channel.readBytes(ptr: c_ptr, numBytes: integral) throws {
+  var err: syserr = ENOERR;
+  // TODO: This halt() should be changed into a throw -- what error to use?
+  if here != this.home then halt("bad remote channel.readBytes");
+  err = qio_channel_read_amt(false, _channel_internal, ptr,
+                             numBytes.safeCast(ssize_t));
+  if err then try this._ch_ioerror(err, "in channel.readBytes");
+}
+
 
 /*
 proc channel.modifyStyle(f:func(iostyle, iostyle))
@@ -6814,7 +6833,13 @@ private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):str
   }
 
 
-  r.readBytes(buf, offset:ssize_t, error=error);
+  try {
+    r.readBytes(buf, offset:ssize_t);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
