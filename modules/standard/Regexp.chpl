@@ -986,17 +986,20 @@ record regexp {
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
-    var err:syserr = ENOERR;
-    if(f.read(error=err, litOne, pattern, litTwo)) {
-      on this.home {
-        var localPattern = pattern.localize();
-        var opts:qio_regexp_options_t;
-        qio_regexp_init_default_options(opts);
-        qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+    try {
+      if (f.read(litOne, pattern, litTwo)) {
+        on this.home {
+          var localPattern = pattern.localize();
+          var opts:qio_regexp_options_t;
+          qio_regexp_init_default_options(opts);
+          qio_regexp_create_compile(localPattern.c_str(), localPattern.length, opts, this._regexp);
+        }
       }
+    } catch e: SystemError {
+      f.setError(e.err);
+    } catch {
+      f.setError(EINVAL:syserr);
     }
-    if err then
-      f.setError(err);
   }
 }
 

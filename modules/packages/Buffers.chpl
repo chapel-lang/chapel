@@ -407,12 +407,8 @@ module Buffers {
     } else {
       var dst_locale = here;
       var dst_len:int(64) = range.len;
-      delete ret;
       ret = new bytes(dst_len, error=err);
-      if err then {
-        delete ret;
-        try ioerror(err, "in buffer.flatten");
-      }
+      if err then try ioerror(err, "in buffer.flatten");
 
       var dst_addr = qbytes_data(ret._bytes_internal);
       on this.home {

@@ -1298,7 +1298,8 @@ proc file.check() throws {
 // documented in throws version
 pragma "no doc"
 proc file.check(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.check() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     this.check();
   } catch e: SystemError {
@@ -1383,7 +1384,8 @@ proc file.close() throws {
 // documented in throws version
 pragma "no doc"
 proc file.close(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.close() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     this.close();
   } catch e: SystemError {
@@ -1416,7 +1418,8 @@ proc file.fsync() throws {
 // documented in the throws version
 pragma "no doc"
 proc file.fsync(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.fsync() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     this.fsync();
   } catch e: SystemError {
@@ -1475,7 +1478,8 @@ proc file.tryGetPath() : string {
 // documented in file.path
 pragma "no doc"
 proc file.getPath(out error:syserr) : string {
-  compilerWarning("file.getPath(out error: syserr) has been deprecated, use file.path or file.tryGetPath()");
+  compilerWarning("This version of file.getPath() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     return this.path;
   } catch e: SystemError {
@@ -1643,7 +1647,8 @@ proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
 pragma "no doc"
 proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""):file {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of open() is deprecated; " +
+                  "please switch to a throwing version");
   var err: syserr = ENOERR;
   var ret: file;
   try {
@@ -1711,7 +1716,8 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
 // documented in the error= version
 pragma "no doc"
 proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of openfd() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:file;
   try {
     ret = openfd(fd, hints, style);
@@ -1770,7 +1776,8 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
 // documented in the throws version
 pragma "no doc"
 proc openfp(fp: _file, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of openfp() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:file;
   try {
     ret = openfp(fp, hints, style);
@@ -1820,7 +1827,8 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file t
 // documented in the throws version
 pragma "no doc"
 proc opentmp(out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of opentmp() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:file;
   try {
     var ret = opentmp(hints, style);
@@ -1865,7 +1873,8 @@ proc openmem(style:iostyle = defaultIOStyle()):file throws {
 // documented in the throws version
 pragma "no doc"
 proc openmem(out error:syserr, style:iostyle = defaultIOStyle()) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of openmem() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:file;
   try {
     ret = openmem(style);
@@ -2180,7 +2189,8 @@ inline proc channel.lock() throws {
 // documented in throws version
 pragma "no doc"
 inline proc channel.lock(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.lock() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     this.lock();
   } catch e: SystemError {
@@ -2508,7 +2518,8 @@ pragma "no doc"
 proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(false, kind, locking) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of openreader() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     return openreader(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
   } catch e: SystemError {
@@ -2575,7 +2586,8 @@ pragma "no doc"
 proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
     url:string=""): channel(true, kind, locking) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of openwriter() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     return openwriter(path=path, kind=kind, locking=locking, start=start, end=end, hints=hints, url=url);
   } catch e: SystemError {
@@ -2648,7 +2660,8 @@ pragma "no doc"
 proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(false, kind, locking) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.reader() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     return this.reader(kind, locking, start, end, hints, style);
   } catch e: SystemError {
@@ -2687,7 +2700,8 @@ pragma "no doc"
 proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                 in local_style:iostyle = this._style) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.lines() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:ItemReader(string, iokind.dynamic, locking);
   try {
     ret = this.lines(locking, start, end, hints, local_style);
@@ -2766,7 +2780,8 @@ pragma "no doc"
 proc file.writer(out error:syserr, param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
                  style:iostyle = this._style): channel(true,kind,locking) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of file.writer() is deprecated; " +
+                  "please switch to a throwing version");
   var ret:channel(true, kind, locking);
   try {
     ret = this.writer(kind, locking, start, end, hints, style);
@@ -3382,7 +3397,8 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   pragma "no doc"
   proc channel.writeBytes(x, len:ssize_t, out error:syserr):bool {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    compilerWarning("This version of channel.writeBytes() is deprecated; " +
+                    "please switch to a throwing version");
     try {
       return this.writeBytes(x, len);
     } catch e: SystemError {
@@ -3573,14 +3589,15 @@ inline proc channel.read(ref args ...?k):bool throws {
   } else {
     try this._ch_ioerror(err, "in channel.read(" +
                               _args_to_proto((...args), preArg="ref ") + ")");
-    return false;
   }
+  return false;
 }
 
 // documented in the throws version
 pragma "no doc"
 inline proc channel.read(ref args ...?k, out error:syserr): bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.read() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.read((...args));
@@ -3629,11 +3646,11 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(e, "in channel.read(" +
-                            _args_to_proto((...args), preArg="ref ") +
-                            "style:iostyle)");
-    return false;
+    try this._ch_ioerror(err, "in channel.read(" +
+                              _args_to_proto((...args), preArg="ref ") +
+                              "style:iostyle)");
   }
+  return false;
 }
 
 // documented in the throws version
@@ -3641,7 +3658,8 @@ pragma "no doc"
 proc channel.read(ref args ...?k,
                   style:iostyle,
                   out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.read() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.read((...args), style=style);
@@ -3701,8 +3719,8 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
-    return false;
   }
+  return false;
 }
 
 // documented in the throws version
@@ -3710,7 +3728,8 @@ pragma "no doc"
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
                       amount = arg.domain.high - start + 1, out error:syserr) : bool
                       where arg.rank == 1 && isRectangularArr(arg) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readline() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readline(arg, numRead, start, amount);
@@ -3749,18 +3768,19 @@ proc channel.readline(ref arg:string):bool throws {
 
   if !err {
     return true;
-  } else if e == EEOF {
+  } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(e, "in channel.readline(ref arg:string)");
-    return false;
+    try this._ch_ioerror(err, "in channel.readline(ref arg:string)");
   }
+  return false;
 }
 
 // documented in throws version
 pragma "no doc"
 proc channel.readline(ref arg:string, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readline() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readline(arg);
@@ -3829,15 +3849,15 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readstring(ref str_out:string, len:int(64))");
-    return false;
   }
-  return !error;
+  return false;
 }
 
 // documented in the throws version
 pragma "no doc"
 proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readstring() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readstring(str_out, len);
@@ -3861,23 +3881,25 @@ inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "readbits nbits=" + nbits + " > bits in v:" + v.type:string);
+      throw new IllegalArgumentError("v, nbits", "readbits nbits=" + nbits +
+                                                 " > bits in v:" + v.type:string);
     // Error if reading negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "readbits nbits=", nbits, " < 0");
+      throw new IllegalArgumentError("nbits", "readbits nbits=" + nbits + " < 0");
   }
 
   var tmp:ioBits;
   tmp.nbits = nbits:int(8);
+  var ret = try this.read(tmp);
   v = tmp.v:v.type;
-
-  return try this.read(tmp);
+  return ret;
 }
 
 // documented in the throws version
 pragma "no doc"
 inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readbits() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readbits(v, nbits);
@@ -3900,10 +3922,11 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
-      throw new IllegalArgumentError("v, nbits", "writebits nbits=", nbits, " > bits in v:", v.type:string);
+      throw new IllegalArgumentError("v, nbits", "writebits nbits=" + nbits +
+                                                 " > bits in v:" + v.type:string);
     // Error if writing negative number of bits
     if isIntType(nbits.type) && nbits < 0 then
-      throw new IllegalArgumentError("nbits", "writebits nbits=", nbits, " < 0");
+      throw new IllegalArgumentError("nbits", "writebits nbits=" + nbits + " < 0");
   }
 
   return try this.write(new ioBits(v:uint(64), nbits:int(8)));
@@ -3912,7 +3935,8 @@ proc channel.writebits(v:integral, nbits:integral):bool throws {
 // documented in the throws version
 pragma "no doc"
 inline proc channel.writebits(v:integral, nbits:integral, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writebits() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.writebits(v, nbits);
@@ -3934,7 +3958,8 @@ proc channel.readln():bool throws {
 // documented in the style= error= version
 pragma "no doc"
 proc channel.readln(out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readln() is deprecated; " +
+                  "please switch to a throwing version");
   var nl = new ioNewline();
   return this.read(nl, error=error);
 }
@@ -3950,7 +3975,8 @@ proc channel.readln(ref args ...?k):bool throws {
 pragma "no doc"
 proc channel.readln(ref args ...?k,
                     out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readln() is deprecated; " +
+                  "please switch to a throwing version");
   var nl = new ioNewline();
   return this.read((...args), nl, error=error);
 }
@@ -3983,7 +4009,8 @@ pragma "no doc"
 proc channel.readln(ref args ...?k,
                     style:iostyle,
                     out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readln() is deprecated; " +
+                  "please switch to a throwing version");
   var nl = new ioNewline();
   return this.read((...args), nl, style=style, error=error);
 }
@@ -4088,7 +4115,8 @@ inline proc channel.write(const args ...?k):bool throws {
 // documented in style= error= version
 pragma "no doc"
 inline proc channel.write(const args ...?k, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.write() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.write((...args));
@@ -4131,16 +4159,17 @@ proc channel.write(const args ...?k, style:iostyle):bool throws {
     this.unlock();
   }
 
-  if err then try this._ch_ioerror(e, "in channel.write(" +
-                                      _args_to_proto((...args), preArg="") +
-                                      "style:iostyle)");
+  if err then try this._ch_ioerror(err, "in channel.write(" +
+                                        _args_to_proto((...args), preArg="") +
+                                        "style:iostyle)");
   return true;
 }
 
 // documented in style= error= version
 pragma "no doc"
 proc channel.write(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.write() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.write((...args), style=style);
@@ -4161,7 +4190,8 @@ proc channel.writeln():bool throws {
 // documented in style= error= version
 pragma "no doc"
 proc channel.writeln(out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writeln() is deprecated; " +
+                  "please switch to a throwing version");
   return this.write(new ioNewline(), error=error);
 }
 
@@ -4174,7 +4204,8 @@ proc channel.writeln(const args ...?k):bool throws {
 // documented in style= error= version
 pragma "no doc"
 proc channel.writeln(const args ...?k, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writeln() is deprecated; " +
+                  "please switch to a throwing version");
   return this.write((...args), new ioNewline(), error=error);
 }
 
@@ -4203,7 +4234,8 @@ proc channel.writeln(const args ...?k, style:iostyle):bool throws {
 // documented in style= error= version
 pragma "no doc"
 proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writeln() is deprecated; " +
+                  "please switch to a throwing version");
   return this.write((...args), new ioNewline(), style=style, error=error);
 }
 
@@ -4220,7 +4252,7 @@ proc channel.flush() throws {
   on this.home {
     err = qio_channel_flush(locking, _channel_internal);
   }
-  if err then try this._ch_ioerror(e, "in channel.flush");
+  if err then try this._ch_ioerror(err, "in channel.flush");
 }
 // documented in error= version
 pragma "no doc"
@@ -4245,7 +4277,7 @@ proc channel.assertEOF() throws {
   } else {
     var tmp:uint(8);
     var notEOF = try this.read(tmp);
-    if notEOF then try this._ch_ioerror("not at EOF");
+    if notEOF then try this._ch_ioerror("assert failed", "- Not at EOF");
   }
 }
 
@@ -4268,7 +4300,8 @@ proc channel.close() throws {
 
 pragma "no doc"
 proc channel.close(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.close() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     this.close();
@@ -4304,7 +4337,8 @@ proc channel.readBytes(x, len:ssize_t) throws {
 
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t, out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readBytes() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     this.readBytes(x, len);
@@ -4348,7 +4382,8 @@ record ItemReader {
   }
   /* read a single item, returning an error */
   proc read(out arg:ItemType, out error:syserr):bool {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    compilerWarning("This version of ItemReader.read() is deprecated; " +
+                    "please switch to a throwing version");
     return ch.read(arg, error=error);
   }
 
@@ -4390,7 +4425,8 @@ record ItemWriter {
   }
   /* write a single item, returning an error */
   proc write(arg:ItemType, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+    compilerWarning("This version of ItemWriter.write() is deprecated; " +
+                    "please switch to a throwing version");
     return ch.write(arg, error=error);
   }
 }
@@ -4478,13 +4514,14 @@ proc read(type t ...?numTypes) throws {
 proc unlink(path:string) throws {
   extern proc sys_unlink(path:c_string):err_t;
   var err = sys_unlink(path.localize().c_str());
-  if err then try ioerror(err, "in unlink", path);
+  if err then try ioerror(err:syserr, "in unlink", path);
 }
 
 // documented in the error= version
 pragma "no doc"
 proc unlink(path:string, out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of unlink() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     unlink(path);
   } catch e: SystemError {
@@ -6368,7 +6405,8 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
             err = _write_one_internal(_channel_internal, iokind.dynamic, args(i), origLocale);
           } otherwise {
             // Unhandled argument type!
-            throw new IllegalArgumentError("i", "readf/writef internal error " + argType(i));
+            throw new IllegalArgumentError("args(" + i + ")",
+                                           "writef internal error " + argType(i));
           }
         }
       }
@@ -6399,7 +6437,8 @@ proc channel.writef(fmtStr: string, const args ...?k): bool throws {
 // documented in varargs version
 pragma "no doc"
 proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writef() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.writef(fmtStr, (...args));
@@ -6460,7 +6499,8 @@ proc channel.writef(fmtStr:string): bool throws {
 // documented in varargs version
 pragma "no doc"
 proc channel.writef(fmtStr:string, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.writef() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.writef(fmtStr);
@@ -6545,7 +6585,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
             when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
               var (t,ok) = _toSigned(args(i));
               if ! ok {
-                error = qio_format_error_arg_mismatch(i);
+                err = qio_format_error_arg_mismatch(i);
               } else {
                 var ti:int;
                 if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
@@ -6657,7 +6697,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
               if r == nil {
                 err = qio_format_error_bad_regexp();
               } else {
-                _match_regexp_if_needed(cur, len, error, style, r);
+                _match_regexp_if_needed(cur, len, err, style, r);
                 // Set args(i) to the capture at capturei.
                 if r.capturei >= r.ncaptures {
                   err = qio_format_error_bad_regexp();
@@ -6677,7 +6717,8 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
                 }
               }
             } otherwise {
-              throw new IllegalArgumentError("Internal error in readf/writef");
+              throw new IllegalArgumentError("args(" + i + ")",
+                                             "readf internal error " + argType(i));
             }
           }
         }
@@ -6695,7 +6736,7 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
       if ! err {
         if cur < len {
           // Mismatched number of arguments!
-          error = qio_format_error_too_few_args();
+          err = qio_format_error_too_few_args();
         }
       }
 
@@ -6717,17 +6758,19 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
 
   if !err {
     return true;
-  } else if e == EEOF {
+  } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(e, "in channel.readf(fmt:string, ...)");
+    try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
   }
+  return false;
 }
 
 // documented in varargs version
 pragma "no doc"
 proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readf() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readf(fmtStr, (...args));
@@ -6801,7 +6844,8 @@ proc channel.readf(fmtStr:string) throws {
 // documented in fmtStr, varargs version
 pragma "no doc"
 proc channel.readf(fmtStr:string, out error:syserr):bool {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.readf() is deprecated; " +
+                  "please switch to a throwing version");
   error = ENOERR;
   try {
     return this.readf(fmtStr);
@@ -6869,7 +6913,8 @@ proc channel.skipField() throws {
 
 pragma "no doc"
 proc channel.skipField(out error:syserr) {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
+  compilerWarning("This version of channel.skipField() is deprecated; " +
+                  "please switch to a throwing version");
   try {
     this.skipField();
   } catch e: SystemError {
