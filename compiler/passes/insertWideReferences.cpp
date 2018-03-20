@@ -2337,6 +2337,7 @@ void handleIsWidePointer() {
 //   (move ret_to_arg_ref_tmp (. base member)
 //
 static void createRetargTemps() {
+#if 0 //VASS
   forv_Vec(CallExpr, call, gCallExprs) {
     FnSymbol* fn = call->resolvedFunction();
     if (fn != NULL && fn->hasFlag(FLAG_FN_RETARG)) {
@@ -2385,6 +2386,7 @@ static void createRetargTemps() {
       }
     }
   }
+#endif //vass
 }
 
 //
