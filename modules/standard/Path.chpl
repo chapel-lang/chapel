@@ -32,10 +32,39 @@
    Operations which occur on the files or directories referred to by these paths
    may be found in :mod:`FileSystem` (for operations *on* the file) or :mod:`IO`
    (for operations *within* the file).
+
+   Path Computations
+   -----------------
+   :proc:`commonPath`
+   :proc:`realPath`
+   :proc:`file.realPath`
+
+   Path Manipulations
+   ------------------
+   :proc:`joinPath`
+   :proc:`splitPath`
+
+   Path Properties
+   ---------------
+   :proc:`basename`
+   :proc:`dirname`
+   :proc:`file.getParentName`
+   :proc:`isAbsPath`
+
+   Constant and Function Definitions
+   ---------------------------------
 */
 module Path {
 
 use SysError;
+
+/* Represents generally the current directory */
+const curDir = ".";
+
+/* Represents generally the parent directory */
+const parentDir = "..";
+/* Denotes the separator between a directory and its child. */
+const pathSep = "/";
 
 /* Returns the basename of the file name provided.  For instance, in the
    name `/foo/bar/baz`, this function would return `baz`, while `/foo/bar/`
@@ -194,9 +223,6 @@ use SysError;
    return result;
  }
 
-/* Represents generally the current directory */
-const curDir = ".";
-
 /* Returns the parent directory of the file name provided.  For instance,
    in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
    would a call with `/foo/bar/` as the argument.
@@ -308,11 +334,6 @@ const curDir = ".";
     }
    return result;
  }
-
-/* Represents generally the parent directory */
-const parentDir = "..";
-/* Denotes the separator between a directory and its child. */
-const pathSep = "/";
 
 pragma "no doc"
 proc realPath(out error: syserr, name: string): string {
