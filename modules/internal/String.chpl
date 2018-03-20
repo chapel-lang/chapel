@@ -48,8 +48,23 @@
 
   .. warning::
 
+    Casts from :record:`string` to the following types will throw an error
+    if they are invalid:
+
+      - ``int``
+      - ``uint``
+      - ``real``
+      - ``imag``
+      - ``complex``
+      - ``enum``
+
+    To learn more about handling these errors, see the
+    :ref:`Error Handling technical note <readme-errorHandling>`.
+
+  .. note::
+
     While :record:`string` is intended to be a Unicode string, there is much
-    left to do. As of Chapel 1.13, only ASCII strings can be expected to work
+    left to do. As of Chapel 1.17, only ASCII strings can be expected to work
     correctly with all functions.
 
     Future work involves support for both ASCII and unicode strings, and
