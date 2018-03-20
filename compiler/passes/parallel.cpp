@@ -1172,8 +1172,10 @@ needHeapVars() {
 // refVec.
 static void findBlockRefActuals(Vec<Symbol*>& refSet, Vec<Symbol*>& refVec)
 {
+  if (!needHeapVars()) return; // nothing to do
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON) && needHeapVars()) {
+    if (fn->hasFlag(FLAG_ON) && !fn->hasFlag(FLAG_LOCAL_ON)) {
       for_formals(formal, fn) {
         if (formal->isRef()) {
           refSet.set_add(formal);
