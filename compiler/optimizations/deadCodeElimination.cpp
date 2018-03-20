@@ -344,15 +344,24 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   Expr*      stmt5 = stmt6 ? stmt6->prev : NULL;  // move ref_tmp, addrOf(..)
   Expr*      stmt4 = stmt5 ? stmt5->prev : NULL;  // ref  ref_tmp
   Expr*      stmt3 = stmt4 ? stmt4->prev : NULL;  // var  ret_tmp
+#define OVASS 0
+#if OVASS
   Expr*      stmt2 = stmt3 ? stmt3->prev : NULL;  // move call_tmp, cast(..)
   Expr*      stmt1 = stmt2 ? stmt2->prev : NULL;  // var  call_tmp
+#endif
 
   // Simple sanity checks
+#if OVASS
   INT_ASSERT(isDefExpr (stmt1));
   INT_ASSERT(isCallExpr(stmt2));
   INT_ASSERT(isDefExpr (stmt3));
   INT_ASSERT(isDefExpr (stmt4));
   INT_ASSERT(isCallExpr(stmt5));
+#else
+  INT_ASSERT(isDefExpr (stmt3));
+  INT_ASSERT(isCallExpr(stmt4));
+  INT_ASSERT(isDefExpr (stmt5));
+#endif
   INT_ASSERT(isCallExpr(stmt6));
   INT_ASSERT(isCallExpr(stmt7));
 
@@ -361,8 +370,10 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   stmt5->remove();
   stmt4->remove();
   stmt3->remove();
+#if OVASS
   stmt2->remove();
   stmt1->remove();
+#endif
 
   defExpr->remove();
 }
