@@ -1,5 +1,5 @@
---- llvm-src/lib/Analysis/ValueTracking.cpp
-+++ llvm-src/lib/Analysis/ValueTracking.cpp
+--- llvm/lib/Analysis/ValueTracking.cpp
++++ llvm/lib/Analysis/ValueTracking.cpp
 @@ -3064,7 +3064,7 @@ Value *llvm::GetPointerBaseWithConstantOffset(Value *Ptr, int64_t &Offset,
        if (!GEP->accumulateConstantOffset(DL, GEPOffset))
          break;

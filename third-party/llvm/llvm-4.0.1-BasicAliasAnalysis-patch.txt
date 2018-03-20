@@ -1,4 +1,4 @@
---- llvm-src/lib/Analysis/BasicAliasAnalysis.cpp	2017-01-27 11:16:33.000000000 -0500
+--- llvm/lib/Analysis/BasicAliasAnalysis.cpp	2017-01-27 11:16:33.000000000 -0500
 +++ ../BasicAliasAnalysis.cpp	2017-09-24 08:14:45.995366393 -0400
 @@ -340,9 +340,12 @@
  /// particular for 32b programs with negative indices that rely on two's

@@ -33,10 +33,8 @@ clean: FORCE
 cleanall: FORCE
 	rm -rf build
 
-# Note llvm is the old source dir, and llvm-src is the new one.
-# For now, clear them both to help people migrate.
 clobber: FORCE
-	rm -rf build install llvm llvm-src
+	rm -rf build install llvm
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.

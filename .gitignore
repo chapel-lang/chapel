@@ -416,7 +416,7 @@ tags
 # Third party ignores.
 /third-party/**/build
 /third-party/**/install
-/third-party/llvm/llvm-src
+/third-party/llvm/llvm
 
 /third-party/gmp/gmp-src/doc/gmp.info.*
 
