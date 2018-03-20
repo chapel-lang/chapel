@@ -1154,6 +1154,14 @@ static void build_union_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool hasUserDefinedConstructor(AggregateType* at);
+
 static void build_record_copy_function(AggregateType* ct) {
   if (function_exists("chpl__initCopy", ct) != NULL) {
     return;
@@ -1165,20 +1173,6 @@ static void build_record_copy_function(AggregateType* ct) {
     }
 
     return;
-  }
-
-  // if there is a copy-initializer for this record type, use that.
-  const char* copyCtorName         = astr("_construct_", ct->symbol->name);
-  bool        foundUserDefinedCopy = false;
-
-  // as an optimization, the below conditionals use ct->initializerStyle
-  if (ct->initializerStyle == DEFINES_CONSTRUCTOR) {
-    if (FnSymbol* ctor = function_exists(copyCtorName, ct)) {
-      // note: default ctor has 1 arg, meme
-      if (!ctor->getFormal(1)->hasFlag(FLAG_IS_MEME)) {
-        foundUserDefinedCopy = true;
-      }
-    }
   }
 
   // if no copy-init function existed...
@@ -1195,7 +1189,7 @@ static void build_record_copy_function(AggregateType* ct) {
 
   Expr* toReturn = NULL;
 
-  if (foundUserDefinedCopy) {
+  if (hasUserDefinedConstructor(ct) == true) {
     toReturn = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
     // If it has a user-defined copy initializer, it's not POD
     ct->symbol->addFlag(FLAG_NOT_POD);
@@ -1239,6 +1233,27 @@ static void build_record_copy_function(AggregateType* ct) {
   normalize(fn);
 }
 
+static bool hasUserDefinedConstructor(AggregateType* at) {
+  bool retval = false;
+
+  if (at->initializerStyle == DEFINES_CONSTRUCTOR) {
+    const char* copyCtorName = astr("_construct_", at->symbol->name);
+
+    if (FnSymbol* ctor = function_exists(copyCtorName, at)) {
+      if (ctor->getFormal(1)->hasFlag(FLAG_IS_MEME) == false) {
+        retval = true;
+      }
+    }
+  }
+
+  return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static void build_record_hash_function(AggregateType *ct) {
   if (function_exists("chpl__defaultHash", ct))
