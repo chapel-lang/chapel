@@ -1294,6 +1294,13 @@ makeHeapAllocations() {
         // in mind, do we need to do something here if the actual is not a ref,
         // or can we just skip that case?
         //INT_ASSERT(se->symbol()->isRef());
+        if (arg->intent & INTENT_FLAG_REF) {
+          // Same as PRIM_ADDR_OF case below.
+          if (!se->isRef() && !varSet.set_in(se->symbol())) {
+            varSet.set_add(se->symbol());
+            varVec.add(se->symbol());
+          }
+        } else
         if (se->symbol()->isRef() && !refSet.set_in(se->symbol())) {
           refSet.set_add(se->symbol());
           refVec.add(se->symbol());
