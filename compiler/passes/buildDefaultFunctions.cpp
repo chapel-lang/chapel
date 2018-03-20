@@ -1177,54 +1177,45 @@ static void build_record_copy_function(AggregateType* ct) {
 
   // if no copy-init function existed...
   FnSymbol*  fn  = new FnSymbol("chpl__initCopy");
+  DefExpr*   def = new DefExpr(fn);
   ArgSymbol* arg = new ArgSymbol(INTENT_CONST, "x", ct);
+
+  arg->addFlag(FLAG_MARKED_GENERIC);
 
   fn->addFlag(FLAG_INIT_COPY_FN);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
-  arg->addFlag(FLAG_MARKED_GENERIC);
-
   fn->insertFormalAtTail(arg);
 
-  Expr* toReturn = NULL;
-
   if (hasUserDefinedConstructor(ct) == true) {
-    toReturn = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
-    // If it has a user-defined copy initializer, it's not POD
+    CallExpr* call = new CallExpr(PRIM_NEW, ct->symbol, new SymExpr(arg));
+
     ct->symbol->addFlag(FLAG_NOT_POD);
 
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
+
   } else if (ct->symbol->hasFlag(FLAG_EXTERN) == true) {
-    // Extern records/classes should only get trivial initCopy fns
-    // (at least if no other init method was defined).
-    toReturn = new SymExpr(arg);
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(arg)));
 
   } else {
     CallExpr* call = new CallExpr(ct->defaultInitializer);
 
     for_fields(tmp, ct) {
-      // Weed out implicit alias and promotion type fields.
-      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-        continue;
-      }
+      if (tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) == false) {
+        CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
 
-      CallExpr* init = new CallExpr(".", arg, new_CStringSymbol(tmp->name));
+        call->insertAtTail(new NamedExpr(tmp->name, init));
 
-      call->insertAtTail(new NamedExpr(tmp->name, init));
-
-      // Special handling for nested record types:
-      // We need to convert the constructor call into a method call.
-      if (strcmp(tmp->name, "outer") == 0) {
-        call->insertAtHead(gMethodToken);
+        // Calls for nested records need to be methods
+        if (strcmp(tmp->name, "outer") == 0) {
+          call->insertAtHead(gMethodToken);
+        }
       }
     }
 
-    toReturn = call;
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
   }
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, toReturn));
-
-  DefExpr* def = new DefExpr(fn);
 
   ct->symbol->defPoint->insertBefore(def);
 
