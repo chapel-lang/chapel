@@ -14,30 +14,41 @@ New Dependences / Configuration Changes
 
 File / Directory Structure
 --------------------------
+* changed the generated executable's name from the main module to its filename
+* moved Chapel's website from http://chapel.cray.com to https://chapel-lang.org
 
 New Tools / Tool Changes
 ------------------------
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* changed the alignment of a non-stridable range from 0 to its low bound
 
 Syntactic / Naming Changes
 --------------------------
 
 New Features
 ------------
+* extended 'delete' to accept arrays and list of expressions to delete
+* added support for strided Block-sparse domains and arrays
+* added support for querying the stridability of sparse domains
 
 Feature Improvements
 --------------------
+* added the ability for sparse CS domains to have a sparse parent domain
+* improved support for casting arrays to strings
 
 Known Feature Slips
 -------------------
 
 Removed Features
 ----------------
+* removed 'ReplicatedDist' which was replaced by 'Replicated' in Chapel 1.16
 
 Standard Modules/Library
 ------------------------
+* made the 'Buffers' module into a package module
+* added versions of channel.mark(), commit(), revert() when locking==false
 
 Package Modules
 ---------------
@@ -53,12 +64,19 @@ Performance Optimizations/Improvements
 
 Memory Improvements
 -------------------
+* closed memory leaks due to:
+  - LocRadCaches
+  - distributed sparse domains and arrays
+  - rectangular arrays whose domains were clear()ed
+* optimized alignment-related fields out of non-stridable ranges
 
 Compiler Flags
 --------------
 
 Documentation
 -------------
+* added a color-coded version selection menu to the online documentation
+* linked the current release documentation to https://chapel-lang.org/docs
 
 Example Codes
 -------------
@@ -80,12 +98,18 @@ Syntax Highlighting
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved an error message for a missing module / enum to name the symbol
+* improved error messages for bad entries in config files
 
-Runtime Error Checks
---------------------
+Execution-time Checks
+---------------------
+* added bounds checking for indices as they're added to default sparse domains
 
 Bug Fixes
 ---------
+* fixed a bug in clear() for rectangular domains
+* fixed a segfault when casting an empty string to a real
+* fixed a bug in enum->int casts for enums with nontrivial value expressions
 
 Launchers
 ---------
@@ -101,12 +125,17 @@ Third-Party Software Changes
 
 Testing System
 --------------
+* added support for a -futures-only flag to 'paratest'
+* improved testing system's ability to run from a non-CHPL_HOME util/ directory
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* converted most internal/standard/package module objects to use '[de]init()'
+  - 'Sys', 'Sort', 'ChapelError', 'locRADCache', 'BigInteger', 'GMP', 'channel', 'Random', 'Barriers', 'MatrixMarket', 'Futures', 'LinearAlgebraJama', 'DateTime', 'ZMQ', 'Buffers', 'SharedObject', 'DistributedBag', 'DistributedDeque', 'RecordParser'
+*  from internal, standard, package modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
