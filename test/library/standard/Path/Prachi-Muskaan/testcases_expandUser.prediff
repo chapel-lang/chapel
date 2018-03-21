@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+import os
+
+f= open('testcases_expandUser.good','w')
+f.write(os.path.expanduser('~user/') + '\n')
+f.write(os.path.expanduser('~USER/') + '\n')
+f.write(os.path.expanduser('~/') + '\n')
+f.write(os.path.expanduser('user/') + '\n')
+f.write(os.path.expanduser('~') + '\n')
+f.close()
