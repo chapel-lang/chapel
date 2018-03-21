@@ -756,7 +756,8 @@ module Buffers {
      :returns: a buffer iterator storing the position immediately after
                the written value.
   */
-  proc buffer.copyin(it:buffer_iterator, value):buffer_iterator throws {
+  proc buffer.copyin(it:buffer_iterator, value: ?T): buffer_iterator
+                     throws where isNumericType(T) {
     var ret:buffer_iterator;
     var err:syserr = ENOERR;
     ret.home = this.home;

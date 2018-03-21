@@ -1478,8 +1478,8 @@ proc file.tryGetPath() : string {
 // documented in file.path
 pragma "no doc"
 proc file.getPath(out error:syserr) : string {
-  compilerWarning("This version of file.getPath() is deprecated; " +
-                  "please switch to a throwing version");
+  compilerWarning("file.getPath() is deprecated; " +
+                  "please switch to file.tryGetPath()");
   try {
     return this.path;
   } catch e: SystemError {
@@ -1554,9 +1554,7 @@ to create a channel to actually perform I/O operations
 :returns: an open file to the requested resource. If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
-
 */
-
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""): file throws {
 
@@ -1693,7 +1691,6 @@ The system file descriptor will be closed when the Chapel file is closed.
           If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
-
 */
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1753,7 +1750,6 @@ that once the file is open, you will need to use a :proc:`file.reader` or
           If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
-
  */
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1811,7 +1807,6 @@ that is, a new file is created that supports both writing and reading.
 :returns: an open temporary file. If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
-
  */
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1856,7 +1851,6 @@ The resulting file supports both reading and writing.
 :returns: an open memory file. If the ``error=`` argument
           was provided and the file was not opened because of an error, returns
           the default :record:`file` value.
-
  */
 proc openmem(style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -2316,7 +2310,6 @@ proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
     using this feature, for example by *marking* at offset=0 and then
     advancing to the end of the file. It is important to be aware of these
     memory space requirements.
-
  */
 inline proc channel.mark():syserr where this.locking == false {
   return qio_channel_mark(false, _channel_internal);
@@ -2371,7 +2364,6 @@ inline proc channel._offset():int(64) {
    discipline.
 
   :returns: an error code, if an error was encountered.
-
  */
 // TODO - use the out error= style and otherwise halt on error, for consistency
 inline proc channel._mark():syserr {
@@ -2635,7 +2627,6 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
-
  */
 // It is the responsibility of the caller to release the returned channel
 // if the error code is nonzero.
@@ -2754,7 +2745,6 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    :arg style: provide a :record:`iostyle` to use with this channel. The
                default value will be the :record:`iostyle` associated with
                this file.
-
  */
 // It is the responsibility of the caller to retain and release the returned
 // channel.
@@ -3232,7 +3222,6 @@ proc channel.writeIt(x) {
    For a writing channel, writes as with :proc:`channel.write`.
    For a reading channel, reads as with :proc:`channel.read`.
    Stores any error encountered in the channel. Does not return anything.
-
  */
 inline proc channel.readwrite(x) where this.writing {
   this.writeIt(x);
@@ -3622,7 +3611,6 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the read succeeded, and `false` on error or end of file.
-
  */
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
   if writing then compilerError("read on write-only channel");
@@ -3996,7 +3984,6 @@ proc channel.readln(ref args ...?k,
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the read succeeded, and `false` on error or end of file.
-
  */
 proc channel.readln(ref args ...?k,
                     style:iostyle):bool throws {
@@ -4140,7 +4127,6 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
-
  */
 proc channel.write(const args ...?k, style:iostyle):bool throws {
   if !writing then compilerError("write on read-only channel");
@@ -4225,7 +4211,6 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
                If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the write succeeded
-
  */
 proc channel.writeln(const args ...?k, style:iostyle):bool throws {
   return try this.write((...args), new ioNewline(), style=style);
@@ -6520,8 +6505,8 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
    :arg fmt: the format string
    :arg args: the arguments to read
    :returns: true if all arguments were read according to the format string,
-             false on EOF. If the format did not match the input, returns
-             false with error=EFORMAT.
+             false on EOF. If the format did not match the input, a
+             SystemError is thrown with EFORMAT.
  */
 proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
   if writing then compilerError("readf on write-only channel");
@@ -6996,7 +6981,6 @@ proc format(fmt:string, args ...?k):string {
   :arg this: the format string
   :arg args: the arguments to format
   :returns: the resulting string
-
  */
 proc string.format(args ...?k):string throws {
   var err:syserr = ENOERR;
@@ -7327,7 +7311,6 @@ proc channel.match(re:regexp):reMatch throws
                is not provided and an error is encountered, this function
                will halt with an error message.
    :returns: the region of the channel that matched
-
  */
 
 proc channel.match(re:regexp, ref captures ...?k, ref error:syserr):reMatch
@@ -7408,7 +7391,6 @@ proc channel.match(re:regexp, ref captures ...?k):reMatch throws
    :arg maxmatches: the maximum number of matches to report.
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
-
  */
 iter channel.matches(re:regexp, param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
