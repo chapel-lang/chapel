@@ -997,12 +997,12 @@ methods to opt-in to support for bulk-transfers:
 
 Each method shares these arguments:
 
-* ``myDom:domain`` - the indices used when transferring to/from ``this``
+* ``myDom:domain`` - the indices to be transferred to/from ``this``
 
 * ``otherClass`` - a class inheriting from ``BaseArr`` that represents the
   other array in the assignment
 
-* ``otherDom:domain`` - the indices used when transferring to/from ``otherClass``
+* ``otherDom:domain`` - the indices to be transferred to/from ``otherClass``
 
 These arguments have the following guarantees:
 
