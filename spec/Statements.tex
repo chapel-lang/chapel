@@ -636,7 +636,7 @@ label-statement:
   `label' identifier statement
 \end{syntax}
 
-Break-statements cannot be used to exit parallel loops.
+A \chpl{break} statement cannot be used to exit a parallel loop \rsec{Forall}.
 
 \begin{rationale}
 Breaks are not permitted in parallel loops because the execution order
