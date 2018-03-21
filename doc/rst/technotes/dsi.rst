@@ -1062,7 +1062,7 @@ When Does a Bulk-Transfer Occur?
 There are a number of conditions that need to be true for a bulk-transfer to
 occur:
 
-* The config-param ``useBulkTransfer`` must be true
+* The config param ``useBulkTransfer`` must be true
 
 * The element types of the arrays must be identical
 
@@ -1078,6 +1078,13 @@ The element type is restricted in order to preserve copy semantics of each
 element. For example, ``integral`` types can be bit-copied and so have no
 side-effects. But a record with a copy-initializer may have side effects that
 should not be eliminated by the bulk-transfer optimization.
+
+The ``useBulkTransfer`` config param is ``true`` by default but can be disabled
+at compilation time. For example:
+
+.. code-block:: bash
+
+  chpl myProgram.chpl -suseBulkTransfer=false
 
 Transfers for Aliasing Domain Maps
 ----------------------------------
