@@ -82,3 +82,30 @@ Flags                   Description
 ``--help-settings``     lists the current setting of each command-line
                         flag
 =====================   ======================================================
+
+
+----------------------------
+Tab Autocompletion for Flags
+----------------------------
+
+Bash users can source the script ``$CHPL_HOME/util/chpl-completion.bash`` to
+enable tab-autocompletion for chpl options.  After sourcing the
+chpl-completion.bash script tab autocompletion can be used:
+
+  .. code-block:: sh
+
+     % chpl --ca<tab><tab>
+
+Will print the options that start with "--ca".
+
+  .. code-block:: sh
+
+     --cache-remote --cast-checks
+
+Adding one more letter to differentiate and pressing tab again will
+autocomplete the option and add a space, ready for the next option.
+
+  .. code-block:: sh
+
+     % chpl --cac<tab>
+     % chpl --cache-remote 
