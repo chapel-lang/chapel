@@ -2762,7 +2762,10 @@ infs
 inparens
 ipra
 maino
+mcpu
 qunused
+reassoc
+thunderx
 tlii
 wmissing
 wstrict
@@ -4216,6 +4219,7 @@ FILEID: 9e8a4742-0c12-11e7-980e-10ddb1d4c3d5
 nbobjs
 
 FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
+adrerr
 blockhere
 cmps
 cmpval
@@ -4237,7 +4241,10 @@ gdata
 iadd
 iptag
 kpage
+lenbits
+lenmask
 mdhs
+mrtl
 nbdi
 nbdp
 nopnd
@@ -4247,6 +4254,7 @@ ppdi
 psvv
 pszm
 rfdpp
+sigact
 tdiff
 telapsed
 tget
@@ -4303,9 +4311,11 @@ rview
 
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
 adom
+arange
 atype
 azero
 bdom
+brange
 bulu
 bzero
 cdom
@@ -4317,11 +4327,13 @@ eigvals
 geev
 gemm
 gemv
+indptr
 matmat
 nzcur
 nznew
 pinv
 potrf
+smmp
 vlcplx
 vrcplx
 xdom
@@ -4531,6 +4543,10 @@ tostr
 FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
 ctxs
 readfrom
+
+FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
+detemp
+detemps
 
 NATURAL:
 abcd
@@ -4862,6 +4878,7 @@ cpubind
 cpus
 cpuset
 cpython
+craig
 craype
 crays
 creoleparser
@@ -5019,6 +5036,7 @@ doren
 dotfile
 dotfiles
 dotnl
+douglas
 downarr
 downcasts
 downdist
@@ -6164,6 +6182,8 @@ postblit
 postfields
 postfieldsize
 postfixed
+postinit
+postinits
 postorder
 postprocess
 postquote
@@ -6248,6 +6268,7 @@ raii
 ralph
 randclear
 randinit
+randolph
 randseed
 randstate
 randstream
@@ -6262,6 +6283,7 @@ rcvd
 rdma
 rdonly
 rdwr
+reachability
 reacqs
 readahead
 readargsfrom
@@ -6452,15 +6474,18 @@ showpointzero
 sidelnik
 siek
 sigabrt
+sigaddset
 sigalrm
 sigbus
 sigchld
 sigcont
+sigemptyset
 sigfpe
 sighup
 sigill
 sigint
 sigkill
+sigmask
 signum
 sigpipe
 sigplan
@@ -6468,6 +6493,7 @@ sigpoll
 sigprof
 sigquit
 sigsegv
+sigset
 sigstop
 sigsys
 sigterm
@@ -6916,6 +6942,7 @@ xcode
 xcodebuild
 xdigit
 xeon
+xfer
 xhtml
 xopen
 xterm

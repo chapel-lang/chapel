@@ -185,6 +185,9 @@
   "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents2.cpp"
   ],
+  "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
+    "compiler/resolution/lifetime.cpp"
+  ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
