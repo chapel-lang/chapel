@@ -39,7 +39,7 @@ Mason can be configured by setting the following environment variables:
   ``name`` is a local name for the registry at ``location``. Defaults to
   ``mason-registry|https://github.com/chapel-lang/mason-registry``. If the
   ``name|`` part of a pair is omitted it is inferred to be the word following
-  the final slash in ``location``.
+  the final slash in ``location`` with any ".git" suffix removed.
 
 The ``mason env`` command will print the inferred or set values of these
 environment variables. If a variable was set by the user, an asterisk will be
@@ -282,16 +282,19 @@ starting with Bricks for ``ProjectA`` and ``ProjectB`` which were created with
 ``/path/to/my/projects/Project[AB]``. It is expected that mason will be
 extended to simplify and handle more of this process.
 
-First create commit, and tag the projects that will be in the registry:
+First create, commit, and tag the projects that will be in the registry:
 
 .. code-block:: sh
 
+   # Create ProjectA
    cd /path/to/my/projects
    mason new ProjectA
    cd ProjectA
    git add Mason.toml src/ProjectA.chpl
    git commit
    git tag -a v0.1.0 -m "Tag version 0.1.0"
+
+   # Create ProjectB
    cd ..
    mason new ProjectB
    cd ProjectB
@@ -303,18 +306,22 @@ Next, create a local registry:
 
 .. code-block:: sh
 
+   # Create the local registry
    mkdir /path/to/local/registry
    cd /path/to/local/registry
    mkdir -p Bricks/ProjectA Bricks/ProjectB
+
+   # Add bricks for ProjectA and ProjectB
    cp /path/to/my/projects/ProjectA/Mason.toml Bricks/ProjectA/0.1.0.toml
    cp /path/to/my/projects/ProjectB/Mason.toml Bricks/ProjectB/0.1.0.toml
 
-   <edit Bricks/ProjectA/0.1.0.toml to add>
+   # Edit Bricks/ProjectA/0.1.0.toml to add:
    source = "/path/to/my/projects/ProjectA"
 
-   <edit Bricks/ProjectB/0.1.0.toml to add>
+   # Edit Bricks/ProjectB/0.1.0.toml to add:
    source = "/path/to/my/projects/ProjectB"
 
+   # Initialize and check everything in to the git repository
    git init
    git add Bricks/ProjectA/0.1.0.toml Bricks/ProjectB/0.1.0.toml
    git commit
