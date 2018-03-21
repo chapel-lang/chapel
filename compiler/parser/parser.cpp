@@ -425,8 +425,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 
             if (mod == NULL) {
               INT_FATAL("Trying to rename a standard module that's part of\n"
-                        "a file defining multiple\nmodules doesn't work yet;\n"
-                        "see b2397b0052 and a94694b2aa for details");
+                        "a file defining multiple\nmodules doesn't work yet");
             }
 
             mod->name      = astr("chpl_", modName);
