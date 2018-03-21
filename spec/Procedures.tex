@@ -537,7 +537,8 @@ how tuples should be handled with respect to \chpl{const} intents.
 
 \begin{craychapel}
 The current implementation uses the following mapping:
-
+% TODO: does this really need to be about the "current implementation"?
+% Couldn't it just be about "the current language"?
 \begin{center}
 \begin{tabular}[c]{|l|c|}
 \hline
@@ -551,6 +552,7 @@ type & of \chpl{const} \\
 \chpl{real}    & \chpl{const in}  \\
 \chpl{imag}    & \chpl{const in}  \\
 \chpl{complex} & \chpl{const in}  \\
+\chpl{range}   & \chpl{const in}  \\
 \chpl{string}  & \chpl{const ref} \\
 \chpl{sync}    & \chpl{const ref} \\
 \chpl{single}  & \chpl{const ref} \\
@@ -592,6 +594,7 @@ type & default intent \\
 \chpl{real}    & \chpl{const} \\
 \chpl{imag}    & \chpl{const} \\
 \chpl{complex} & \chpl{const} \\
+\chpl{range}   & \chpl{const} \\
 \chpl{string}  & \chpl{const} \\
 \chpl{sync}    & \chpl{ref}   \\
 \chpl{single}  & \chpl{ref}   \\
