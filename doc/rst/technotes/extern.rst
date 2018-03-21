@@ -683,15 +683,18 @@ it in inline assembly.
 --------
 
 The extern block functionality allows simple #defines to be used from Chapel
-code. Simple defines take no arguments and define an integer value or use
-another #define. For example:
+code. Simple defines take no arguments and define an integer, string, or
+real value or use another #define that does so. Simple casts are also
+supported, as are macros that are simply an alternative name for another
+C variable. For example:
 
 .. code-block:: chapel
 
   extern {
    #define NEG_ONE (-1)
-   #define MY_NUMBER (NEG_ONE)
+   #define MY_NUMBER ((unsigned int)NEG_ONE)
   }
+  writeln(NEG_ONE);
   writeln(MY_NUMBER);
 
 However, it is easy to create #defines that are not supported because the
