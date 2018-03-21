@@ -61,7 +61,6 @@ use Sys;
 
 /* Represents generally the current directory */
 const curDir = ".";
-
 /* Represents generally the parent directory */
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
@@ -76,153 +75,153 @@ const pathSep = "/";
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
- proc basename(name: string): string {
-   return splitPath(name)[2];
- }
+proc basename(name: string): string {
+  return splitPath(name)[2];
+}
 
- /* Determines and returns the longest common path prefix of
-    all the string pathnames provided.
+/* Determines and returns the longest common path prefix of
+   all the string pathnames provided.
 
-    :arg paths: Any number of paths
-    :type paths: `string`
+   :arg paths: Any number of paths
+   :type paths: `string`
 
-    :return: The longest common path prefix
-    :rtype: `string`
- */
+   :return: The longest common path prefix
+   :rtype: `string`
+*/
 
- proc commonPath(paths: string ...?n): string {
+proc commonPath(paths: string ...?n): string {
 
-   var result: string = "";    // result string
-   var inputLength = n;   // size of input array
-   var firstPath = paths(1);
-   var flag: int = 0;
+  var result: string = "";    // result string
+  var inputLength = n;   // size of input array
+  var firstPath = paths(1);
+  var flag: int = 0;
 
-   // if input is empty, return empty string.
-   // if input is just one string, return that string as longest common prefix
-   // path.
+  // if input is empty, return empty string.
+  // if input is just one string, return that string as longest common prefix
+  // path.
 
-   if inputLength == 0 then {
-     return result;
-   } else if inputLength == 1 then{
-     return firstPath;
-   }
+  if inputLength == 0 then {
+    return result;
+  } else if inputLength == 1 then{
+    return firstPath;
+  }
 
-   var prefixArray = firstPath.split(pathSep, -1, false);
-   // array of resultant prefix string
+  var prefixArray = firstPath.split(pathSep, -1, false);
+  // array of resultant prefix string
 
-   var pos = prefixArray.size;   // rightmost index of common prefix
-   var minPathLength = prefixArray.size;
+  var pos = prefixArray.size;   // rightmost index of common prefix
+  var minPathLength = prefixArray.size;
 
-   for i in 2..n do {
+  for i in 2..n do {
 
-     var tempArray = paths(i).split(pathSep, -1, false);
-     // temporary array storing the current path under consideration
+    var tempArray = paths(i).split(pathSep, -1, false);
+    // temporary array storing the current path under consideration
 
-     var minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixArray.size, tempArray.size);
 
-     if minimum < minPathLength then {
-       minPathLength = minimum;
-     }
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
 
-     for itr in 1..minimum do {
-       if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
-         pos = itr;
-         flag=1;   // indicating that pos was changed
-         break;
-       }
-     }
-   }
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag=1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
 
-   if (flag == 1) {
-     prefixArray.remove(pos..prefixArray.size);
-   } else {
-     prefixArray.remove(minPathLength+1..prefixArray.size);
-     // in case all paths are subsets of the longest path thus pos was never
-     // updated
-   }
+  if (flag == 1) {
+    prefixArray.remove(pos..prefixArray.size);
+  } else {
+    prefixArray.remove(minPathLength+1..prefixArray.size);
+    // in case all paths are subsets of the longest path thus pos was never
+    // updated
+  }
 
-   result = pathSep.join(prefixArray);
+  result = pathSep.join(prefixArray);
 
-   return result;
- }
+  return result;
+}
 
- /* Determines and returns the longest common path prefix of
-    all the string pathnames provided.
+/* Determines and returns the longest common path prefix of
+   all the string pathnames provided.
 
-    :arg paths: Any number of paths as an array
-    :type paths: `array`
+   :arg paths: Any number of paths as an array
+   :type paths: `array`
 
-    :return: The longest common path prefix
-    :rtype: `string`
- */
+   :return: The longest common path prefix
+   :rtype: `string`
+*/
 
- proc commonPath(paths: []): string {
+proc commonPath(paths: []): string {
 
-   var result: string = "";    // result string
-   var inputLength = paths.size;   // size of input array
-   if inputLength == 0 then {     // if input is empty, return empty string.
-     return result;
-   }
-  
-   var start: int = paths.domain.first;
-   var end: int = paths.domain.last;
-   var firstPath = paths[start];
-   var delimiter: string;
-   var flag: int = 0;
+  var result: string = "";    // result string
+  var inputLength = paths.size;   // size of input array
+  if inputLength == 0 then {     // if input is empty, return empty string.
+    return result;
+  }
 
-   // if input is just one string, return that string as longest common prefix
-   // path.
+  var start: int = paths.domain.first;
+  var end: int = paths.domain.last;
+  var firstPath = paths[start];
+  var delimiter: string;
+  var flag: int = 0;
 
-   if inputLength == 1 then{
-     return firstPath;
-   }
+  // if input is just one string, return that string as longest common prefix
+  // path.
 
-   // finding delimiter to split the paths.
+  if inputLength == 1 then{
+    return firstPath;
+  }
 
-   if firstPath.find("\\", 1..firstPath.length) == 0 then {
-     delimiter = "/";
-   } else {
-     delimiter = "\\";
-   }
+  // finding delimiter to split the paths.
 
-   var prefixArray = firstPath.split(delimiter, -1, false);
-   // array of resultant prefix string
+  if firstPath.find("\\", 1..firstPath.length) == 0 then {
+    delimiter = "/";
+  } else {
+    delimiter = "\\";
+  }
 
-   var pos = prefixArray.size;   // rightmost index of common prefix
-   var minPathLength = prefixArray.size;
+  var prefixArray = firstPath.split(delimiter, -1, false);
+  // array of resultant prefix string
 
-   for i in (start+1)..end do {
+  var pos = prefixArray.size;   // rightmost index of common prefix
+  var minPathLength = prefixArray.size;
 
-     var tempArray = paths[i].split(delimiter, -1, false);
-     // temporary array storing the current path under consideration
+  for i in (start+1)..end do {
 
-     var minimum = min(prefixArray.size, tempArray.size);
+    var tempArray = paths[i].split(delimiter, -1, false);
+    // temporary array storing the current path under consideration
 
-     if minimum < minPathLength then {
-       minPathLength = minimum;
-     }
+    var minimum = min(prefixArray.size, tempArray.size);
 
-     for itr in 1..minimum do {
-       if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
-         pos = itr;
-         flag = 1;   // indicating that pos was changed
-         break;
-       }
-     }
-   }
+    if minimum < minPathLength then {
+      minPathLength = minimum;
+    }
 
-   if (flag == 1) {
-     prefixArray.remove(pos..prefixArray.size);
-   } else {
-     prefixArray.remove(minPathLength+1..prefixArray.size);
-     // in case all paths are subsets of the longest path thus pos was never
-     // updated
-   }
+    for itr in 1..minimum do {
+      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+        pos = itr;
+        flag = 1;   // indicating that pos was changed
+        break;
+      }
+    }
+  }
 
-   result = delimiter.join(prefixArray);
+  if (flag == 1) {
+    prefixArray.remove(pos..prefixArray.size);
+  } else {
+    prefixArray.remove(minPathLength+1..prefixArray.size);
+    // in case all paths are subsets of the longest path thus pos was never
+    // updated
+  }
 
-   return result;
- }
+  result = delimiter.join(prefixArray);
+
+  return result;
+}
 
 /* Returns the parent directory of the file name provided.  For instance,
    in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
@@ -232,48 +231,42 @@ const pathSep = "/";
               a valid file name, as the file itself will not be affected.
    :type name: `string`
 */
- proc dirname(name: string): string{
-   return splitPath(name)[1];
- }
+proc dirname(name: string): string {
+  return splitPath(name)[1];
+}
 
- /*
+/*
+  Returns the parent directory of the :type:`~IO.file` record.  For instance,
+  a file with path `/foo/bar/baz` would return `/foo/bar`
 
-   Returns the parent directory of the :type:`~IO.file` record.  For instance,
-   a file with path `/foo/bar/baz` would return `/foo/bar`
+  Will throw an error if one occurs.
 
-   :return: The parent directory of the file
-   :rtype: `string`
+  :return: The parent directory of the file
+  :rtype: `string`
+*/
+proc file.getParentName(): string throws {
+  try check();
 
- */
- pragma "no doc"
- proc file.getParentName(out error:syserr): string {
-   check(error);
+  try {
+    return dirname(new string(this.realPath()));
+  } catch {
+    return "unknown";
+  }
+}
 
-   var ret: string = "unknown";
-   if !error {
-     var tmp: string;
-     tmp = this.realPath(error);
-     if !error then
-       ret = dirname(new string(tmp));
-   }
-   return ret;
- }
-
- /*
-   Returns the parent directory of the :type:`~IO.file` record.  For instance,
-   a file with path `/foo/bar/baz` would return `/foo/bar`
-
-   Will throw an error if one occurs.
-
-   :return: The parent directory of the file
-   :rtype: `string`
- */
- proc file.getParentName(): string throws {
-   var err: syserr = ENOERR;
-   var ret = getParentName(err);
-   if err != ENOERR then try ioerror(err, "in file.getParentName");
-   return ret;
- }
+pragma "no doc"
+proc file.getParentName(out error:syserr): string {
+  compilerWarning("This version of file.getParentName() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return this.getParentName();
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+  return "unknown";
+}
 
 /* Determines whether the path specified is an absolute path.
 
@@ -289,18 +282,18 @@ const pathSep = "/";
    :rtype: `bool`
 */
 
-  proc isAbsPath(name: string): bool {
-    if name.isEmptyString() {
-      return false;
-    }
-    const len: int = name.length;
-    var str: string = name[1];
-    if (str == '/') {
-      return true;
-    } else {
-      return false;
-    }
+proc isAbsPath(name: string): bool {
+  if name.isEmptyString() {
+    return false;
   }
+  const len: int = name.length;
+  var str: string = name[1];
+  if (str == '/') {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 /* Join and return one or more paths, putting precedent on the last absolute
    path seen.  Return value is the concatenation of the paths with one
@@ -320,137 +313,117 @@ const pathSep = "/";
             it, or all the paths provided if no absolute path is present
    :rtype: `string`
 */
-  proc joinPath(paths: string ...?n): string {
-    var result : string = paths(1); // result variable stores final answer
-    // loop to iterate over all the paths
-    for i in 2..n {
-      var temp : string = paths(i);
-      if temp.startsWith('/') {
-        result = temp;
-      }
-      else if result.endsWith('/') {
-        result = result + temp;
-      }
-      else {
-        result = result + "/" + temp;
-      }
+proc joinPath(paths: string ...?n): string {
+  var result : string = paths(1); // result variable stores final answer
+  // loop to iterate over all the paths
+  for i in 2..n {
+    var temp : string = paths(i);
+    if temp.startsWith('/') {
+      result = temp;
     }
-   return result;
- }
-
-pragma "no doc"
-proc realPath(out error: syserr, name: string): string {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
-
-  var res: c_string;
-  error = chpl_fs_realpath(name.localize().c_str(), res);
-  return new string(res, needToCopy=false);
+    else if result.endsWith('/') {
+      result = result + temp;
+    }
+    else {
+      result = result + "/" + temp;
+    }
+  }
+  return result;
 }
 
 /* Given a path `name`, attempts to determine the canonical path referenced.
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
-   present, as well as any symbolic links.  Returns the result
+   present, as well as any symbolic links.  Returns the result.
 
    Will throw an error if one occurs.
 
-  /* Returns the parent directory of the file name provided.  For instance,
-     in the name `/foo/bar/baz`, this function would return `/foo/bar`, as
-     would a call with `/foo/bar/` as the argument.
+   :arg name: A path to resolve.  If the path does not refer to a valid file
+              or directory, an error will occur.
+   :type name: `string`
 
-     :arg name: a string file name.  Note that this string does not have to be
-                a valid file name, as the file itself will not be affected.
-     :type name: `string`
-  */
-  proc dirname(name: string): string{
-    return splitPath(name)[1];
+   :return: A canonical version of the argument.
+   :rtype: `string`
+*/
+proc realPath(name: string): string throws {
+  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
+
+  var res: c_string;
+  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  if err then try ioerror(err, "realPath", name);
+  return new string(res, needToCopy=false);
+}
+
+pragma "no doc"
+proc realPath(out error: syserr, name: string): string {
+  compilerWarning("This version of realPath() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return realPath(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
+  return "";
+}
 
-  /* Represents generally the parent directory */
-  const parentDir = "..";
-  /* Denotes the separator between a directory and its child. */
-  const pathSep = "/";
+/* Determines the canonical path referenced by the :type:`~IO.file` record
+   performing this operation.  This resolves and removes any :data:`curDir` and
+   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
+   result
 
    Will throw an error if one occurs.
 
-     Will halt with an error message if one is detected.
+   :return: A canonical path to the file referenced by this :type:`~IO.file`
+            record.  If the :type:`~IO.file` record is not valid, an error will
+            occur
+   :rtype: `string`
+*/
+proc file.realPath(): string throws {
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
-     :arg name: A path to resolve.  If the path does not refer to a valid file
-                or directory, an error will occur.
-     :type name: `string`
+  if (is_c_nil(_file_internal)) then
+    try ioerror(EBADF:syserr, "in file.realPath");
 
-     :return: A canonical version of the argument.
-     :rtype: `string`
-  */
-  proc realPath(name: string): string throws {
-    extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
+  var res: c_string;
+  var err = chpl_fs_realpath_file(_file_internal, res);
+  if err then try ioerror(err, "in file.realPath");
+  return new string(res, needToCopy=false);
+}
 
-    var res: c_string;
-    var err = chpl_fs_realpath(name.localize().c_str(), res);
-    if err then try ioerror(err, "realPath", name);
-    return new string(res, needToCopy=false);
+pragma "no doc"
+proc file.realPath(out error: syserr): string {
+  compilerWarning("This version of realPath() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return realPath();
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
   }
+  return "";
+}
 
-  pragma "no doc"
-  proc realPath(out error: syserr, name: string): string {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    var ret: string;
-    try {
-      ret = realPath(name);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
+/* Split name into a tuple that is equivalent to (:proc:`dirname`,
+   :proc:`basename`).  The second part of the tuple will never contain a slash.
+   Examples:
 
-  /* Determines the canonical path referenced by the :type:`~IO.file` record
-     performing this operation.  This resolves and removes any :data:`curDir` and
-     :data:`parentDir` uses present, as well as any symbolic links.  Returns the
-     result
+   `splitPath("foo/bar")` will yield `("foo", "bar")`
 
-     Will halt with an error message if one is detected.
+   `splitPath("bar")` will yield `("", "bar")`
 
-     :return: A canonical path to the file referenced by this :type:`~IO.file`
-              record.  If the :type:`~IO.file` record is not valid, an error will
-              occur
-     :rtype: `string`
-  */
-  proc file.realPath(): string throws {
-    extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
+   `splitPath("foo/")` will yield `("foo", "")`
 
-    var res: c_string;
-    if (is_c_nil(_file_internal)) {
-      // This file is referencing a null file.  We'll get a segfault if we
-      // continue.
-      try ioerror(EBADF:syserr, "in file.realPath");
-    }
-    var err = chpl_fs_realpath_file(_file_internal, res);
-    if err then try ioerror(err, "in file.realPath");
-    return new string(res, needToCopy=false);
-  }
+   `splitPath("")` will yield `("", "")`
 
-  pragma "no doc"
-  proc file.realPath(out error: syserr): string {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    var ret: string;
-    try {
-      ret = this.realPath();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-    return ret;
-  }
+   `splitPath("/")` will yield `("/", "")`
 
    With the exception of a path of the empty string or just "/", the original
    path can be recreated from this function's returned parts by joining them
    with the path separator character, either explicitly:
 
-  /*
-  Returns the parent directory of the :type:`~IO.file` record.  For instance,
-  a file with path `/foo/bar/baz` would return `/foo/bar`
+   `dirname` + "/" + `basename`
 
    or by calling :proc:`joinPath`:
 
@@ -502,7 +475,7 @@ proc realPath(out error: syserr, name: string): string {
                 their values
    :rtype: `string`
 */
-  proc expandVars(path: string): string{
+  proc expandVars(path: string): string {
     var path_p:string = path;
     var varChars:string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
     var res:string = "";

@@ -1647,16 +1647,15 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
           style:iostyle = defaultIOStyle(), url:string=""):file {
   compilerWarning("This version of open() is deprecated; " +
                   "please switch to a throwing version");
-  var err: syserr = ENOERR;
+  error = ENOERR;
   var ret: file;
   try {
     ret = open(path, mode, hints, style, url);
   } catch e: SystemError {
-    err = e.err;
+    error = e.err;
   } catch {
-    err = EINVAL;
+    error = EINVAL;
   }
-  error = err;
   return ret;
 }
 
