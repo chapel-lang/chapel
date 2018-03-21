@@ -1276,6 +1276,10 @@ def parser_setup():
     # executing options
     parser.add_argument("-execopts", "--execopts", action="append", 
             dest="execopts", help="set options for executing tests")
+    # lame hack to prevent abbreviations from not getting preprocessed in
+    # preprocess_options() (makes things like --execop ambiguous)
+    parser.add_argument("-execopts ", "--execopts ", action="append",
+            dest="execopts", help=argparse.SUPPRESS)
     # compiler
     parser.add_argument("-compiler", "--compiler", action="store",
             dest="compiler", help=help_all("set alternate compiler"))
@@ -1286,6 +1290,10 @@ def parser_setup():
     # compiler options
     parser.add_argument("-compopts", "--compopts", action="append",
             dest="compopts", help="set options for the compiler")
+    # lame hack to prevent abbreviations from not getting preprocessed in
+    # preprocess_options() (makes things like --compop ambiguous)
+    parser.add_argument("-compopts ", "--compopts ", action="append",
+            dest="compopts", help=argparse.SUPPRESS)
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
