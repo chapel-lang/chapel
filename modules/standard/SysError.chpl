@@ -436,7 +436,7 @@ proc ioerror(errstr:string, msg:string, path:string, offset:int(64)) throws
 
 /* Convert a syserr code to a human-readable string describing the error.
 
-   :arg errstr: the error string
+   :arg error: the error code
    :returns: a string describing the error
  */
 proc errorToString(error:syserr):string
