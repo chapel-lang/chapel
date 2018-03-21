@@ -37,9 +37,9 @@ use SysBasic;
 
 /*
 
-   :class:`SystemError` is a base class for ``Errors`` generated from
-   ``syserr``. It provides factory methods to create different subtypes based
-   on the ``syserr`` that is passed.
+   :class:`SystemError` is a base class for :class:`ChapelError.Error` s
+   generated from ``syserr``. It provides factory methods to create different
+   subtypes based on the ``syserr`` that is passed.
 
 */
 class SystemError : Error {
