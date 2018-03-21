@@ -35,11 +35,18 @@ An implicit conversion occurs at each of the following program locations:
       to the type of the corresponding formal argument, if the formal's
       intent is \chpl{in} or \chpl{const in} or an abstract intent
       (\rsec{Abstract Intents}) with the semantics of
-      \chpl{in} or \chpl{const in}.
+      \chpl{in} or \chpl{const in}. This conversion does not occur
+      for \chpl{type} arguments~(\rsec{Formal_Type_Arguments} even
+      if they specify a concrete type. It does not occur for generic
+      arguments~(\rsec{Generic_Functions}). It does
+      occur for param arguments~(\rsec{Formal_Parameter_Arguments})
+      with a specified type.
 
-\item The formal argument of a function call is converted
-      to the type of the corresponding actual argument, if the formal's
-      intent is \chpl{out}.
+% MPF: I don't see how this rule can be type correct
+%      and it also doesn't seem to be implemented right now
+%\item The formal argument of a function call is converted
+%      to the type of the corresponding actual argument, if the formal's
+%      intent is \chpl{out}.
 
 \item The return or yield expression within a function without a \chpl{ref}
       return intent is converted to the return type of that function.
