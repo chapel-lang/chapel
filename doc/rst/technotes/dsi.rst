@@ -975,8 +975,9 @@ How does the bulk-transfer interface work with DSI?
 ---------------------------------------------------
 
 The bulk-transfer interface is an optional interface supported only on array
-descriptors. A descriptor can implement one or more of the following methods to
-indicate support for bulk-transfers:
+descriptors. The following methods are prefixed with ``doi`` for "Domain map
+Optional Interface." An array descriptor can implement one or more of these
+methods to opt-in to support for bulk-transfers:
 
 .. method:: proc GlobalArray.doiBulkTransferToKnown(myDom:domain, otherClass, otherDom:domain) : bool
 
@@ -1028,7 +1029,7 @@ There are two kinds of transfers accounted for in this interface.
 
 The first kind of transfer is a ``Known`` transfer. These are transfers that
 the implementer believes to be optimal. Typically this means that the
-implementor knows the type and internals of the other domain map involved in
+implementer knows the type and internals of the other domain map involved in
 the transfer.
 
 The second kind of transfer is an ``Any`` transfer. These are transfers to/from
@@ -1066,11 +1067,11 @@ occur:
 * The element types of the arrays must be identical
 
 * The element type must be one of the following:
-  * A ``integral``
-  * A ``real``
-  * A ``complex``
-  * A record for which ``isPODType`` returns true
-  * A tuple for which ``isPODType`` returns true
+    * ``integral``
+    * ``real``
+    * ``complex``
+    * record for which ``isPODType`` returns true
+    * tuple for which ``isPODType`` returns true
 
 The element type is restricted in order to preserve copy semantics of each
 element. For example, ``integral`` types can be bit-copied and so have no
