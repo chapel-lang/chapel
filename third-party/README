@@ -117,7 +117,8 @@ qthread/
 
 re2/
   Summary: The RE2 regular expression library used to support regular
-           expression operations described in doc/rst/technotes/regexp.rst
+           expression operations described in
+           doc/rst/modules/standard/Regexp.rst
 
   License: New BSD license (see re2/re2/LICENSE)
 
