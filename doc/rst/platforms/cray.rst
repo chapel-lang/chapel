@@ -471,8 +471,9 @@ use for Chapel tasks (``CHPL_RT_NUM_HARDWARE_THREADS`` in the next
 section).  Usually this is enough, but for highly parallel codes
 that do a lot of remote references, increasing it may help the
 performance.  Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in
-the range 1 to 30.  Values specified outside this range are
-silently increased or reduced so as to fall within it.
+the range 1 to 30 on the Gemini-based Cray XE and XK systems, and 1 to
+120 on the Aries-based Cray XC systems.  Values specified outside this
+range are silently increased or reduced so as to fall within it.
 
 
 ---------------
