@@ -388,7 +388,7 @@ module IO {
       will also apply to class tag numbers once we start encoding types.
     - The Chapel compiler does not currently allow RAII/reference counting
       to work correctly in all cases (bug report 'records containing pointers'
-      and test files in test/users/ferguson/byvalue.chpl;
+      and test files in test/users/ferguson/{byvalue.chpl,refcnt.chpl};
       as a result, current code might need to close channels and files
       explicitly and/or sharing of channels and files between variables might
       not work correctly.
