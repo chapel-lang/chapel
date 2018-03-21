@@ -2,10 +2,12 @@
 .. _readme-mason:
 
 =====
-mason
+Mason
 =====
 
 Mason is Chapel's package manager
+
+.. contents::
 
 
 Installation Instructions
