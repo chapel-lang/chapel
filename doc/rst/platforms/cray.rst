@@ -560,34 +560,6 @@ Known Constraints and Bugs
 
      $CHPL_HOME/third-party/gasnet/gasnet-src/README
 
-* As mentioned in `Controlling the Heap Size`_, with ``CHPL_COMM=ugni``
-  and a hugepage module loaded, large arrays are allocated separately
-  from the heap.  This can change how programs report out-of-memory
-  conditions when creating an array.  With heap allocation, when a
-  program runs out of memory it prints this message and then halts::
-
-    Out of memory allocating "array elements"
-
-  For an array allocated outside the heap, however, the allocation may
-  seem to succeed and then the program will get an interrupt later, when
-  it tries to initialize the memory.  If this happens a ``Bus error``
-  signal will be reported, either like this with a SLURM workload
-  manager::
-
-    srun: error: <nodename>: task <ID>: Bus error
-
-  or like this with a PBS Pro or Moab/Torque workload manager::
-
-    Process died with signal 7: 'Bus error'
-
-  These messages are not perfectly diagnostic because there are other
-  program errors that can cause the same signal, notably misaligned
-  memory references.  However, such errors are not at all common in
-  Chapel by the nature of the language.  So in general, these messages
-  can be taken as indicating that the program ran out of memory when
-  trying to create space for a large array.  We expect to be able to
-  restore the previous behavior in the future.
-
 
 ---------------
 NCCS user notes
