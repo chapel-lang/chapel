@@ -1004,7 +1004,8 @@ Each method shares these arguments:
 
 * ``otherDom:domain`` - the indices to be transferred to/from ``otherClass``
 
-These arguments have the following guarantees:
+Callers of these methods must satisfy the following guarantees for these
+arguments:
 
 * ``this.rank == myDom.rank``
 
