@@ -1020,7 +1020,7 @@ arguments:
   involved in the transfer.
 
 Each method returns a ``bool`` indicating whether the assignment occurred. This
-allows domain maps to default to the Chapel implementation of array assignment
+allows domain maps to resort to the Chapel implementation of array assignment
 if they are incapable or unwilling to perform the assignment themselves.
 
 Known and Any methods
