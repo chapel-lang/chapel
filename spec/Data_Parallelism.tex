@@ -96,10 +96,13 @@ after every iteration has been completely evaluated.  At this point,
 all data accesses within the body of the forall loop will be
 guaranteed to be completed.
 
-The following statements may not be lexically enclosed in forall
-statements: break statements, and return statements.  Yield statement
-may only be lexically enclosed in forall statements in parallel
-iterators~(\rsec{Parallel_Iterators}).
+A \chpl{return} statement may not be lexically enclosed in a forall
+statement. A \chpl{yield} statement may only be lexically enclosed in
+a forall statement that is within a parallel iterator
+\rsec{Parallel_Iterators}.
+A \chpl{break} statement may not be used to exit a forall statement.
+A \chpl{continue} statement skips the rest of the current iteration
+of the forall loop.
 
 \begin{chapelexample}{forallStmt.chpl}
 In the code
