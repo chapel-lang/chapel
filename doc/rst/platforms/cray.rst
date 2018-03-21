@@ -322,42 +322,22 @@ Controlling the Heap Size
 
 The "heap" is an area of memory used for dynamic allocation of
 everything from user data to internal management data structures.
-When running on Cray XC/XE/XK systems using either of 2 particular
-comm layer configurations, the runtime needs to know the maximum
-size the heap will grow to during execution.  One of these is the
-default configuration, with the ugni comm layer::
 
-  CHPL_COMM=ugni
-    with a ``craype-hugepages`` module loaded
+When running on Cray XC/XE/XK systems using the default configuration
+with the ugni comm layer and a ``craype-hugepages`` module loaded, the
+heap is used for all dynamic allocations except for data space for
+arrays larger than 2 hugepages.  (See `Using the ugni Communications
+Layer`_, below, for more about hugepages.)  It is normally extended
+dynamically, as needed.  But if desired, the heap can instead be created
+at a specified fixed size at the beginning of execution.  In some cases
+this will reduce certain internal comm layer overheads and marginally
+improve performance.  However, it can also produce worse NUMA affinity,
+it limits available heap memory to the specified fixed size, and it
+limits memory for arrays to whatever remains after the fixed-size heap
+is created.  If either of the latter are less than what a program needs,
+it will terminate prematurely with an "Out of memory" message.
 
-In this configuration, the heap is used for all dynamic allocations
-except for data space for arrays larger than 2 hugepages.  (See `Using
-the ugni Communications Layer`_, below, for more about hugepages.)  The
-heap can be fairly small, because in nearly all programs that need a lot
-of memory, large arrays will drive the space requirements.  The default
-size of the heap in this case is 16 GiB.
-
-The other configuration is when the gasnet comm layer is used with a
-native substrate::
-
-  CHPL_COMM=gasnet
-    CHPL_COMM_SUBSTRATE=gemini or aries
-    CHPL_GASNET_SEGMENT=fast or large
-
-In this case, the heap is used for all dynamic allocations, arrays and
-otherwise.  By default the heap will occupy as much of the free memory
-on each compute node as the runtime can acquire, less some amount to
-allow for demands from other (system) programs running there.
-
-In either of these configurations, advanced users may want to make the
-heap smaller than the default.  Programs start more quickly with a
-smaller heap, and in the unfortunate event that you need to produce core
-files, those will be written more quickly if the heap is smaller.
-However, note that if you reduce the heap size to less than the amount
-your program actually needs and then run it, it will terminate
-prematurely due to not having enough memory.
-
-To change the heap size, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
+To specify a fixed-size heap, set the ``CHPL_RT_MAX_HEAP_SIZE`` environment
 variable.  Set it to just a number to specify the size of the heap in
 bytes, or to a number with a ``k`` or ``K``, ``m`` or ``M``, or ``g`` or ``G``
 suffix with no intervening spaces to specify the heap size in KiB (2**10
@@ -375,6 +355,26 @@ Note that the value you set in ``CHPL_RT_MAX_HEAP_SIZE`` may get rounded up
 internally to match the page alignment.  How much, if any, this will add
 depends on the hugepage size in any ``craype-hugepage`` module you have
 loaded at the time you execute the program.
+
+In contrast to the ugni comm layer's dynamic heap extension, when the
+gasnet comm layer is used with a native substrate the heap must be of a
+fixed size.  This configuration is::
+
+  CHPL_COMM=gasnet
+    CHPL_COMM_SUBSTRATE=gemini or aries
+    CHPL_GASNET_SEGMENT=fast or large
+
+Here, the heap is used for all dynamic allocations, including arrays.
+By default it will occupy as much of the free memory on each compute
+node as the runtime can acquire, less some amount to allow for demands
+from other (system) programs running there.  Advanced users may want to
+make the heap smaller than the default.  Programs start more quickly
+with a smaller heap, and in the unfortunate event that you need to
+produce core files, those will be written more quickly if the heap is
+smaller.  However, note that as in the ``CHPL_COMM=ugni`` case, if you
+reduce the heap size to less than the amount your program actually needs
+and then run it, it will terminate prematurely due to not having enough
+memory.
 
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is synonymous with
 ``GASNET_MAX_SEGSIZE``, and the former overrides the latter if both are set.
