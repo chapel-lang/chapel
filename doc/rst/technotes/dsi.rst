@@ -1022,7 +1022,7 @@ Each method returns a ``bool`` indicating whether the assignment occurred. This
 allows domain maps to default to the Chapel implementation of array assignment
 if they are incapable or unwilling to perform the assignment themselves.
 
-Known vs. Any methods
+Known and Any methods
 ---------------------
 
 There are two kinds of transfers accounted for in this interface.
@@ -1096,10 +1096,10 @@ It is valid to write a domain map that aliases another domain map's data. For
 example, a user could write their own variant of a Chapel array slice in terms
 of the Domain Map Standard Interface.
 
-When aliasing other domain maps it is recommended to only implement ``Known``
+When aliasing other domain maps it is recommended to only implement `Known <Known and Any Methods_>`_
 transfers that forward to the underlying domain map's bulk-transfer methods.
-By implementing ``Known`` transfers the underlying domain map will have a
-chance to perform a more optimal transfer before the ``Any`` transfers are
+By implementing `Known <Known and Any Methods_>`_ transfers the underlying domain map will have a
+chance to perform a more optimal transfer before the `Any <Known and Any Methods_>`_ transfers are
 attempted.
 
 Transfers for Rank-changes
