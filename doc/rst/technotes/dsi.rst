@@ -962,7 +962,7 @@ assignment, in practice the values are assigned individually:
 
  .. code-block:: chapel
 
-  for (d, s) in zip(dest, src) {
+  for[all] (d, s) in zip(dest, src) {
     d = s;
   }
 
