@@ -725,6 +725,7 @@ as are the expressions \chpl{tuple(1)} and \chpl{(1,)}.
 \section{Return Intents}
 \label{Return_Intent}
 \index{functions!return intent}
+\index{statements!return@\chpl{return}!return intent}
 
 The \sntx{return-intent} specifies how the value is returned from a function,
 and in what contexts that function is allowed to be used.  By default, or if
@@ -939,8 +940,8 @@ procedure defined in the standard Types module.
 
 \section{The Return Statement}
 \label{The_Return_Statement}
-\index{return@\chpl{return}}
-\index{statements!return}
+\index{return@\chpl{return} (see also statements, return)}
+\index{statements!return@\chpl{return}}
 
 The return statement can only appear in a function.  It causes control
 to exit that function, returning it to the point at which that function
@@ -986,7 +987,7 @@ writeln(sum(1, 2, 3));
 
 \section{Return Types}
 \label{Return_Types}
-\index{return@\chpl{return}!types}
+\index{statements!return@\chpl{return}!return type}
 \index{functions!return types}
 
 Every procedure has a return type. The return type is either

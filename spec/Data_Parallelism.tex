@@ -31,14 +31,14 @@ Such accesses are subject to the Memory Consistency Model
 \index{forall@\chpl{forall} (see also statements, forall)}
 \index{loops!forall (see also statements, forall)}
 \index{data parallelism!forall}
-\index{statements!forall}
+\index{statements!forall@\chpl{forall}}
 
 The forall statement is a concurrent variant of the for statement
 described in~\rsec{The_For_Loop}.
 
 \subsection{Syntax}
 \label{forall_syntax}
-\index{statements!forall!syntax}
+\index{statements!forall@\chpl{forall}!syntax}
 
 The syntax of the forall statement is given by
 \begin{syntax}
@@ -59,7 +59,7 @@ the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
 \subsection{Execution and Serializability}
 \label{forall_semantics}
-\index{statements!forall!semantics}
+\index{statements!forall@\chpl{forall}!semantics}
 
 The forall statement evaluates the loop body once for each element
 yielded by the \sntx{iteratable-expression}.  Each instance of the
@@ -126,7 +126,7 @@ writeln(a);
 
 \subsection{Zipper Iteration}
 \label{forall_zipper}
-\index{statements!forall!zipper iteration}
+\index{statements!forall@\chpl{forall}!zipper iteration}
 
 Zipper iteration has the same semantics as described
 in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
@@ -227,6 +227,7 @@ writeln(result);
 \label{Forall_Intents}
 \index{forall intents}
 \index{data parallelism!forall intents}
+\index{statements!forall@\chpl{forall}!forall intents}
 
 If a variable is referenced within the lexical scope of a
 forall statement or expression and is declared outside
