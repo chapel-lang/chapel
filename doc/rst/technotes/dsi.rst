@@ -1067,6 +1067,7 @@ occur:
 * The element types of the arrays must be identical
 
 * The element type must be one of the following:
+
     * ``integral``
     * ``real``
     * ``complex``
