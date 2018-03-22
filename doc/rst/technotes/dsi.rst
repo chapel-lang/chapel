@@ -1034,14 +1034,10 @@ implementer knows the type and internals of the other domain map involved in
 the transfer.
 
 The second kind of transfer is an ``Any`` transfer. These are transfers to/from
-domain maps whose type and internals are **not** known. These transfers rely on
-a common interface, which may involve unnecessary overhead compared to a
-``Known`` transfer. For example, it is likely that many domain maps will
-implement ``Known`` transfers to/from Chapel's default rectangular arrays. It
-is also likely that many domain maps will be implemented using default
-rectangular arrays. Knowing this, implementers of ``Any`` transfers can
-implement in terms of ``Known`` transfers to/from their own default rectangular
-arrays as a common interface.
+domain maps whose type and internals are **not** known. These transfers
+typically rely on attempting to have the unknown domain map transfer to/from
+the internal data of the domain map on which the method is implemented. See
+`Implementing 'Any' Methods`_ for more detail.
 
 This interface recognizes these kinds of transfers because otherwise it is
 difficult to determine which distribution implements the best transfer.
@@ -1056,6 +1052,12 @@ Chapel will call ``Known`` methods before ``Any`` methods if they can be
 resolved. A recommended convention is to implement ``Known`` methods with a
 where-clause that constrains the type of the ``otherClass`` argument. This
 prevents the ``Known`` method from being called with unknown types.
+
+.. note::
+
+  There is no defined preference for ``To`` and ``From`` methods. Domain map
+  authors should not currently rely on a particular direction being attempted
+  first.
 
 When Does a Bulk-Transfer Occur?
 --------------------------------
@@ -1089,6 +1091,42 @@ at compilation time. For example:
 .. code-block:: bash
 
   chpl myProgram.chpl -suseBulkTransfer=false
+
+Implementing 'Any' Methods
+--------------------------
+
+`Any <Known and Any Methods_>`_ methods are generally implemented by
+transferring data of an internal type of ``this`` to/from a subset of indices
+in ``otherClass``. For example, a distribution can be implemented in terms of
+Chapel's default rectangular arrays. An ``Any`` method on that distribution
+could be implemented by attempting to transfer data to/from ``otherClass`` to
+a default rectangular array, like so (in pseudo-chapel):
+
+.. code-block:: none
+
+  // For a single locale's data
+  var localDom = localData.domain[myDom]; // local subset of indices for ``this``
+  var locOther = <translate localDom to otherDom's coordinates>;
+  otherClass.doiBulkTransfer[To|From][Any|Known](locOther, localData, localDom);
+
+Implementers who call these ``doiBulkTransfer`` methods should note that they
+can return ``false``, meaning the caller needs to complete the transfer.
+
+.. warning::
+
+  Beware of implementing bulk-transfers by manually calling other
+  ``doiBulkTransfer`` methods. For example:
+
+  .. code-block:: chapel
+
+    proc GlobalArray.doiBulkTransferFromAny(myDom:domain, otherClass, otherDom:domain) {
+      otherClass.doiBulkTransferToAny(otherDom, this, myDom);
+    }
+
+  This pattern can lead to potential recursion depending on the implementation
+  of the other domain map's bulk-transfer method. Instead of implementing the
+  example method above, the author could have not implemented it at all and
+  let the Chapel internals invoke the ``doiBulkTransferToAny`` directly.
 
 Transfers for Aliasing Domain Maps
 ----------------------------------
