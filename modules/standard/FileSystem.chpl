@@ -150,15 +150,6 @@ extern const S_ISGID: int;
 */
 extern const S_ISVTX: int;
 
-pragma "no doc"
-proc locale.chdir(out error: syserr, name: string) {
-  extern proc chpl_fs_chdir(name: c_string):syserr;
-
-  on this {
-    error = chpl_fs_chdir(name.localize().c_str());
-  }
-}
-
 /* Change the current working directory of the locale in question to the
    specified path `name`.
 
@@ -173,16 +164,26 @@ proc locale.chdir(out error: syserr, name: string) {
    :type name: `string`
 */
 proc locale.chdir(name: string) throws {
+  extern proc chpl_fs_chdir(name: c_string):syserr;
+
   var err: syserr = ENOERR;
-  chdir(err, name);
-  if err != ENOERR then try ioerror(err, "in chdir", name);
+  on this {
+    err = chpl_fs_chdir(name.localize().c_str());
+  }
+  if err then try ioerror(err, "in chdir", name);
 }
 
 pragma "no doc"
-proc chmod(out error: syserr, name: string, mode: int) {
-  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
-
-  error = chpl_fs_chmod(name.localize().c_str(), mode);
+proc locale.chdir(out error: syserr, name: string) {
+  compilerWarning("This version of locale.chdir() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chdir(name);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
@@ -201,17 +202,23 @@ proc chmod(out error: syserr, name: string, mode: int) {
    :type mode: `int`
 */
 proc chmod(name: string, mode: int) throws {
-  var err: syserr = ENOERR;
-  chmod(err, name, mode);
-  if err != ENOERR then try ioerror(err, "in chmod", name);
+  extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
+
+  var err = chpl_fs_chmod(name.localize().c_str(), mode);
+  if err then try ioerror(err, "in chmod", name);
 }
 
-
 pragma "no doc"
-proc chown(out error: syserr, name: string, uid: int, gid: int) {
-  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
-
-  error = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
+proc chmod(out error: syserr, name: string, mode: int) {
+  compilerWarning("This version of chmod() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chmod(name, mode);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Change one or both of the owner and group id of the named file or directory
@@ -230,53 +237,27 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
    :type gid: `int`
 */
 proc chown(name: string, uid: int, gid: int) throws {
-  var err: syserr = ENOERR;
-  chown(err, name, uid, gid);
-  if err != ENOERR then try ioerror(err, "in chown", name);
+  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
+
+  var err = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
+  if err then try ioerror(err, "in chown", name);
+}
+
+pragma "no doc"
+proc chown(out error: syserr, name: string, uid: int, gid: int) {
+  compilerWarning("This version of chown() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    chown(name, uid, gid);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 // FUTURE WORK:
 // When basename and joinPath are supported, enable dest to be a directory.
-pragma "no doc"
-proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
-  var destFile = dest;
-  if (isDir(error, destFile)) {
-    // destFile = joinPath(destFile, basename(src));
-    error = EISDIR;
-    // Supporting a destination directory requires getting the basename from
-    // the src (because we're using the same name) and joining it with the
-    // provided destination directory.  Both of those operations are part of
-    // the string portion, so we aren't supporting it just yet.
-    return;
-  } else {
-    if (error == ENOENT) {
-      // Destination didn't exist before.  We'd be overwriting it anyways, so
-      // we don't care.
-      error = ENOERR;
-    }
-    if error != ENOERR then return;
-  }
-  copyFile(error, src, destFile);
-  if error != ENOERR then return;
-  copyMode(error, src, destFile);
-  if error != ENOERR then return;
-
-  if (metadata) {
-    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
-
-    // Copies the access time, and time of last modification.
-    // Does not copy uid, gid, or mode
-    error = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
-
-    // Get uid and gid from src
-    var uid = getUID(error, src);
-    if error != ENOERR then return;
-    var gid = getGID(error, src);
-    if error != ENOERR then return;
-    // Change uid and gid to that of the src
-    chown(error, destFile, uid, gid);
-  }
-}
 
 /* Copies the contents and permissions of the file indicated by `src` into
    the file or directory `dest`.  If `dest` is a directory, will halt with
@@ -302,21 +283,83 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
    :type metadata: `bool`
 */
 proc copy(src: string, dest: string, metadata: bool = false) throws {
-  var err: syserr = ENOERR;
-  copy(err, src, dest, metadata);
-  if err != ENOERR then try ioerror(err, "in copy(" + src + ", " + dest + ")");
+  var destFile = dest;
+  try {
+    if (isDir(destFile)) {
+      // destFile = joinPath(destFile, basename(src));
+      ioerror(EISDIR:syserr, "in copy(" + src + ", " + dest + ")");
+
+      // Supporting a destination directory requires getting the basename from
+      // the src (because we're using the same name) and joining it with the
+      // provided destination directory.  Both of those operations are part of
+      // the string portion, so we aren't supporting it just yet.
+    }
+  } catch e: FileNotFoundError {
+    // Destination didn't exist before, and we're overwriting it anyways.
+  }
+
+  try copyFile(src, destFile);
+  try copyMode(src, destFile);
+
+  if (metadata) {
+    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): syserr;
+
+    // Copies the access time, and time of last modification.
+    // Does not copy uid, gid, or mode
+    var err = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
+    if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
+
+    // Get uid and gid from src
+    var uid = try getUID(src);
+    var gid = try getGID(src);
+
+    // Change uid and gid to that of the src
+    try chown(destFile, uid, gid);
+  }
 }
 
 pragma "no doc"
-proc copyFile(out error: syserr, src: string, dest: string) {
+proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) {
+  compilerWarning("This version of copy() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    copy(src, dest, metadata);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
+}
+
+/* Copies the contents of the file indicated by `src` into the file indicated
+   by `dest`, replacing `dest`'s contents if it already exists (and is a
+   different file than `src`, i.e. not a symbolic link to `src`).
+
+   If `dest` is not writable, or `src` and `dest` refer to the same file,
+   this function will halt with an error message.  Does not copy metadata.  May
+   halt with other error messages.
+
+   :arg src: The source file whose contents are to be copied.
+   :type src: `string`
+   :arg dest: The intended destination of the contents.
+   :type dest: `string`
+*/
+proc copyFile(src: string, dest: string) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
   // I did not look at the other functions in that file, except for copyfileobj
   // (which copyfile called).
-  var exist = exists(error=error, src);
+  var exist = try exists(src);
   if error then
     return;
+
+  try {
+    exists(src);
+  } catch e: FileNotFoundError {
+    throw e;
+  } catch e:
+
 
   if (!exist) {
     error = ENOENT;
@@ -400,20 +443,8 @@ proc copyFile(out error: syserr, src: string, dest: string) {
   destFile.close(error=error);
 }
 
-/* Copies the contents of the file indicated by `src` into the file indicated
-   by `dest`, replacing `dest`'s contents if it already exists (and is a
-   different file than `src`, i.e. not a symbolic link to `src`).
-
-   If `dest` is not writable, or `src` and `dest` refer to the same file,
-   this function will halt with an error message.  Does not copy metadata.  May
-   halt with other error messages.
-
-   :arg src: The source file whose contents are to be copied.
-   :type src: `string`
-   :arg dest: The intended destination of the contents.
-   :type dest: `string`
-*/
-proc copyFile(src: string, dest: string) throws {
+pragma "no doc"
+proc copyFile(out error: syserr, src: string, dest: string) {
   var err: syserr = ENOERR;
   copyFile(err, src, dest);
   if err != ENOERR then try ioerror(err, "in copyFile(" + src + ", " + dest + ")");
