@@ -9439,8 +9439,20 @@ static void removeMootFields() {
 
 static void removeReturnTypeBlocks() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->retExprType && fn->retExprType->parentSymbol)
+    if (fn->retExprType && fn->retExprType->parentSymbol) {
+      // First, move any defs in the return type block out
+      // (e.g. an array return type creates parloopexpr fns)
+      for_alist(expr, fn->retExprType->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (isFnSymbol(def->sym)) {
+            def->remove();
+            fn->defPoint->insertBefore(def);
+          }
+        }
+      }
+      // Now remove the type block
       fn->retExprType->remove();
+    }
   }
 }
 
