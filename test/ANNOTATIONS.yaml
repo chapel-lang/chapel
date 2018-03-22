@@ -303,15 +303,15 @@ all:
   03/04/18:
     - text: system update
       config: 16 node XC
-  03/14/18:
-    - text: upgrade to LLVM 6 
-      config: chapcs 
   03/16/18:
     - text: QSBR (#8182)
       config: 16 node XC
   03/18/18:
     - text: QSBR reverted (#8841)
       config: 16 node XC
+  03/20/18:
+    - text: upgrade default LLVM to LLVM 6 (#8869)
+      config: chapcs 
 
 
 AllCompTime:
