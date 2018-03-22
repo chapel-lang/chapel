@@ -987,9 +987,7 @@ record regexp {
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    var readable: bool;
     try {
-      readable = f.read(litOne, pattern, litTwo)) {
       if (f.read(litOne, pattern, litTwo)) {
         on this.home {
           var localPattern = pattern.localize();

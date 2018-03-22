@@ -539,13 +539,15 @@ module Spawn {
       // stdin_file will decrement file reference count when it
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
-      var stdin_file = openfd(stdin_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-      ret.stdin_channel = stdin_file.writer(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        var stdin_file = openfd(stdin_fd, hints=QIO_HINT_OWNED);
+        ret.stdin_channel = stdin_file.writer();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
 
       if stdin == QIO_FD_BUFFERED_PIPE {
@@ -562,27 +564,29 @@ module Spawn {
 
     if stdout_pipe {
       ret.stdout_pipe = true;
-      var stdout_file = openfd(stdout_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-
-      ret.stdout_channel = stdout_file.reader(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        var stdout_file = openfd(stdout_fd, hints=QIO_HINT_OWNED);
+        ret.stdout_channel = stdout_file.reader();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
     }
 
     if stderr_pipe {
       ret.stderr_pipe = true;
-      ret.stderr_file = openfd(stderr_fd, error=err, hints=QIO_HINT_OWNED);
-      if err {
-        ret.spawn_error = err; return ret;
-      }
-
-      ret.stderr_channel = ret.stderr_file.reader(error=err);
-      if err {
-        ret.spawn_error = err; return ret;
+      try {
+        ret.stderr_file = openfd(stderr_fd, hints=QIO_HINT_OWNED);
+        ret.stderr_channel = ret.stderr_file.reader();
+      } catch e: SystemError {
+        ret.spawn_error = e.err;
+        return ret;
+      } catch {
+        ret.spawn_error = EINVAL;
+        return ret;
       }
     }
 
