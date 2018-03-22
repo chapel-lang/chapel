@@ -3,7 +3,7 @@
 # Client-side of the parallel testing script, paratest.server.
 # Used remotely by paratest.server to run start_test locally.
 #
-# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind [compopts]
+# Usage: paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]
 #  
 #  id - used to create a file to synchronize with paratest.server
 #  chapeltestdir - root dir of Chapel test infrastructure
@@ -11,7 +11,9 @@
 #  chplenv - Chapel environment variables
 #  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
 #  valgrind - run valgrind (0=no, 1=both compiler and executable, 2=executable only)
+#  memleaks - check for memleaks (1=yes, else no)
 #  compopts - optional Chapel compiler options
+#  execopts - optional test execution options
 #
 # NOTE: Assumes paratest.client is run from $CHPL_HOME/test
 # 
@@ -49,9 +51,9 @@ sub main {
     chomp $node;
     ($node) = split (/\./, $node);
 
-    if ($#ARGV < 5) {
+    if ($#ARGV < 6) {
         fatal("insufficient arguments: '@ARGV'\n" .
-	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts] [execopts]");
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]");
     }
 
     $id = $ARGV[0];
