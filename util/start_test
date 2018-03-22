@@ -1444,10 +1444,11 @@ def preprocess_options():
         index += 1
 
 def escape_next_argument(args, index):
-    next = args[index + 1].strip()
-    if next and next[0] == "-": # single argument, not escaped
-        args[index + 1] = "'{0}'".format(next)
-    print(args)
+    if index + 1 < len(args):
+        next = args[index + 1].strip()
+        if next and next[0] == "-": # single argument, not escaped
+            args[index + 1] = "'{0}'".format(next)
+        print(args)
 
 
 # UTILITY ROUTINES AND CLASSES
