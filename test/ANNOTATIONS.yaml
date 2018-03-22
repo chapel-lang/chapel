@@ -306,6 +306,12 @@ all:
   03/14/18:
     - text: upgrade to LLVM 6 
       config: chapcs 
+  03/16/18:
+    - text: QSBR (#8182)
+      config: 16 node XC
+  03/18/18:
+    - text: QSBR reverted (#8841)
+      config: 16 node XC
 
 
 AllCompTime:
@@ -927,10 +933,6 @@ prk-stencil.ml-perf:
     - Update PR 5296 (#6722)
   12/02/17:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
-  03/16/18:
-    - QSBR (#8182)
-  03/18/18:
-    - QSBR reverted (#8841)
 
 prk-stencil-time:
   05/11/17:
@@ -966,10 +968,6 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
-  03/16/18:
-    - QSBR (#8182)
-  03/18/18:
-    - QSBR reverted (#8841)
 
 ra-atomics.ml-perf:
   10/03/17:
