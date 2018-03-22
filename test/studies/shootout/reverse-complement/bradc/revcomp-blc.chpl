@@ -6,66 +6,71 @@
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
-config const readSize = 16 * 1024;
-
 proc main(args: [] string) {
   const stdin = openfd(0),
         input = stdin.reader(iokind.native, locking=false),
         len = stdin.length();
   var data : [0..#len] uint(8);
 
-  sync { // wait for all process() tasks to complete before continuing
-    if len {  // make sure the file is not empty
-      do {
-        const descOffset = input.offset();
+  // if the file isn't empty, wait for all tasks to complete before continuing
+  if len then sync {
+    do {
+      // capture the starting offset
+      const descOffset = input.offset();
 
-        // Mark where we start scanning (keep bytes in I/O buffer in input)
-        input.mark();
+      // Mark where we start scanning (keep bytes in I/O buffer in input)
+      input.mark();
 
-        // Scan forward until we get to '\n' (end of description)
-        input.advancePastByte(ascii("\n"));
-        const seqOffset = input.offset();
+      // Scan forward until we get to '\n' (end of description)
+      input.advancePastByte(ascii("\n"));
+      const seqOffset = input.offset();
 
-        // Scan forward until we get to '>' (end of sequence) or EOF
-        const (eof, nextDescOffset) = findNextDesc();
+      // Scan forward until we get to '>' (end of sequence) or EOF
+      const (eof, nextDescOffset) = findNextDesc();
 
-        // look for the next description, returning '(eof, its offset)'
-        proc findNextDesc() throws {
-          try {
-            input.advancePastByte(ascii(">"));
-          } catch (e:EOFError) {
-            return (true, len);
-          }
-          return (false, input.offset());
+      // look for the next description, returning '(eof, its offset)'
+      proc findNextDesc() throws {
+        try {
+          input.advancePastByte(ascii(">"));
+        } catch (e:EOFError) {
+          return (true, len-1);
         }
+        return (false, input.offset()-1);
+      }
 
-        // Go back to the point we marked
-        input.revert();
+      // Go back to the point we marked
+      input.revert();
 
-        // Read until nextDescOffset into the data array.
-        input.read(data[descOffset..nextDescOffset-1]);
+      // Read up to the nextDescOffset into the data array.
+      input.read(data[descOffset..nextDescOffset]);
 
-        // '2' to skip over '\n' + 1 to skip over '>' if not yet at eof
-        begin process(data, seqOffset, nextDescOffset-(2+!eof));
-      } while !eof;
-    }
+      // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
+      const rewind = if eof then 1 else 2;
+
+      // fire off a task to process the data between seqOffset and the next 
+      begin process(data[seqOffset..nextDescOffset-rewind]);
+    } while !eof;
   }
 
+  // write the data out to stdout once all tasks have completed
   const stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
   stdoutBin.write(data);
 }
 
-proc process(data, in start, in end) {
+// process a sequence from both ends, replacing each extreme element
+// with the table lookup of the opposite one
+proc process(seq: [?inds]) {
+  var start = inds.low, end = inds.high;
   while start <= end {
-    ref d1 = data[start], d2 = data[end];
+    ref d1 = seq[start], d2 = seq[end];
     (d1, d2) = (table[d2], table[d1]);
     advance(start, 1);
     advance(end, -1);
   }
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == ascii("\n");
+    do { cursor += dir; } while seq[cursor] == ascii("\n");
   }
 }
 
