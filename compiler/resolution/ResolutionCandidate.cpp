@@ -55,6 +55,11 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     retval = isApplicableGeneric (info);
   }
 
+  if (retval && fn->retExprType != NULL) {
+    // Should this only happen for FLAG_GENERIC not set?
+    resolveSpecifiedReturnType(fn);
+  }
+
   return retval;
 }
 
