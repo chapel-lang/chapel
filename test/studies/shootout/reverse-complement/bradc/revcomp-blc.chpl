@@ -1,6 +1,6 @@
 /* The Computer Language Benchmarks Game
    http://benchmarksgame.alioth.debian.org/
-   contributed by Ben Harshbarger
+   contributed by Ben Harshbarger and Brad Chamberlain
    derived from the Rust #2 version by Matt Brubeck
 */
 
@@ -10,7 +10,7 @@ proc main(args: [] string) {
   const stdin = openfd(0),
         input = stdin.reader(iokind.native, locking=false),
         len = stdin.length();
-  var data : [0..#len] uint(8);
+  var data: [0..#len] uint(8);
 
   // if the file isn't empty, wait for all tasks to complete before continuing
   if len then sync {
@@ -47,7 +47,7 @@ proc main(args: [] string) {
       // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
       const rewind = if eof then 1 else 2;
 
-      // fire off a task to process the data between seqOffset and the next 
+      // fire off a task to process the data for this sequence
       begin process(data[seqOffset..nextDescOffset-rewind]);
     } while !eof;
   }
