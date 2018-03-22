@@ -209,6 +209,7 @@ static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
+static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
@@ -8361,6 +8362,8 @@ static void pruneResolvedTree() {
 
   removeMootFields();
 
+  removeReturnTypeBlocks();
+
   expandInitFieldPrims();
 
   cleanupAfterRemoves();
@@ -9431,6 +9434,13 @@ static void removeMootFields() {
         }
       }
     }
+  }
+}
+
+static void removeReturnTypeBlocks() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->retExprType && fn->retExprType->parentSymbol)
+      fn->retExprType->remove();
   }
 }
 
