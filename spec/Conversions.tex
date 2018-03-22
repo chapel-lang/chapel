@@ -42,11 +42,11 @@ An implicit conversion occurs at each of the following program locations:
       occur for param arguments~(\rsec{Formal_Parameter_Arguments})
       with a specified type.
 
-% MPF: I don't see how this rule can be type correct
-%      and it also doesn't seem to be implemented right now
-%\item The formal argument of a function call is converted
-%      to the type of the corresponding actual argument, if the formal's
-%      intent is \chpl{out}.
+% MPF: This rule doesn't seem to be implemented right now,
+%      but rather reflects ideal language design.
+\item The formal argument of a function call is converted
+      to the type of the corresponding actual argument, if the formal's
+      intent is \chpl{out}.
 
 \item The return or yield expression within a function without a \chpl{ref}
       return intent is converted to the return type of that function.
