@@ -89,8 +89,10 @@ For example, a distribution (i.e. a domain map that distributes data across
 multiple locales) will typically define "local descriptor" classes as well.
 
 A domain map author can provide additional functionality to users simply by
-implementing methods on "global descriptor" classes. The ``forwarding``
-language feature will make these methods available to users.
+implementing methods on "global descriptor" classes. When user code contains a
+method call on an array, domain, or distribution that is not handled by one of
+the predefined methods, that call is forwarded to the corresponding global
+descriptor.
 
 
 ======================================
