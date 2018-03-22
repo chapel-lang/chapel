@@ -495,8 +495,9 @@ ugni communication layer.  The relevant configurations are::
     CHPL_GASNET_SEGMENT=fast or large
 
 In these configurations the heap is created with a fixed size at the
-beginning of execution, but it may be worthwhile to adjust its size as
-discussed in the following section.
+beginning of execution.  The default size works well in most cases but
+if it doesn't a different size can be specified, as discussed in the
+following section.
 
 
 gasnet Communication Layer and the Heap
