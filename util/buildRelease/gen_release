@@ -118,6 +118,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "util/README",
        "util/build_configs.py",
        "util/buildRelease/install.sh",
+       "util/chpl-completion.bash",
        "util/printchplenv",
        "util/setchplenv.bash",
        "util/setchplenv.csh",
