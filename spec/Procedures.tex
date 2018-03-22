@@ -509,7 +509,41 @@ local changes affect the actual? & no  & on return & on return & immediately & N
 \index{intents!abstract}
 
 The abstract intents are \chpl{const} and the \emph{default intent}
-(when no intent is specified).
+(when no intent is specified). The following table summarizes what
+these abstract intents mean for each type:
+
+\begin{center}
+\begin{tabular}[c]{|l|l|l|l|}
+\hline
+               & meaning of     &  maning of        & \\
+  type           & const intent &  default intent   &  notes \\
+\hline
+\hline
+  \chpl{bool}    & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{int}     & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{uint}    & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{real}    & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{imag}    & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{complex} & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{range}   & \chpl{const in}  & \chpl{const in}  & \\
+  \chpl{class}   & \chpl{const in}  & \chpl{const in} & \\
+\hline
+  \chpl{atomic}  & \chpl{const ref} & \chpl{ref} & \\
+  \chpl{single}  & \chpl{const ref} & \chpl{ref} & \\
+  \chpl{sync}    & \chpl{const ref} & \chpl{ref} & \\
+\hline
+  \chpl{string}  & \chpl{const ref} & \chpl{const ref} & \\
+  \chpl{record}  & \chpl{const ref} & \chpl{const ref}
+  & for \chpl{this}, see \rsec{The_Default_Intent} \\
+  \chpl{union}   & \chpl{const ref} & \chpl{const ref} & \\
+  \chpl{dmap}    & \chpl{const ref} & \chpl{const ref} & \\
+  \chpl{domain}  & \chpl{const ref} & \chpl{const ref} & \\
+array          & \chpl{const ref} & \chpl{ref} / \chpl{const ref}
+  & see \rsec{The_Default_Intent} \\
+\hline
+\end{tabular}
+\end{center}
+
 
 \subsubsection{The Const Intent}
 \label{The_Const_Intent}
@@ -521,36 +555,9 @@ yet leaves unspecified whether the actual argument will be passed
 by \chpl{const in} or \chpl{const ref} intent.  In general, small
 values, such as scalar types, will be passed by \chpl{const in}; while
 larger values, such as domains and arrays, will be passed
-by \chpl{const ref} intent. Each type has a default \chpl{const} intent,
-according to the following table:
+by \chpl{const ref} intent.  The table in \rsec{Abstract_Intents} lists
+the meaning of the const intent for each type.
 
-\begin{center}
-\begin{tabular}[c]{|l|c|}
-\hline
-     & meaning \\
-type & of \chpl{const} \\
-\hline
-\hline
-\chpl{bool}    & \chpl{const in}  \\
-\chpl{int}     & \chpl{const in}  \\
-\chpl{uint}    & \chpl{const in}  \\
-\chpl{real}    & \chpl{const in}  \\
-\chpl{imag}    & \chpl{const in}  \\
-\chpl{complex} & \chpl{const in}  \\
-\chpl{range}   & \chpl{const in}  \\
-\chpl{string}  & \chpl{const ref} \\
-\chpl{sync}    & \chpl{const ref} \\
-\chpl{single}  & \chpl{const ref} \\
-\chpl{atomic}  & \chpl{const in}  \\
-\chpl{record}  & \chpl{const ref} \\
-\chpl{class}   & \chpl{const in}  \\
-\chpl{union}   & \chpl{const in}  \\
-\chpl{dmap}    & \chpl{const ref} \\
-\chpl{domain}  & \chpl{const ref} \\
-array          & \chpl{const ref} \\
-\hline
-\end{tabular}
-\end{center}
 
 \subsubsection{The Default Intent}
 \label{The_Default_Intent}
@@ -558,44 +565,20 @@ array          & \chpl{const ref} \\
 
 When no intent is specified for a formal argument, the \emph{default
 intent} is applied.  It is designed to take the most natural/least
-surprising action for the argument, based on its type.  The following
-table shows how default intents are interpreted based on the argument's
-type:
+surprising action for the argument, based on its type.  The table
+in \rsec{Abstract_Intents} lists the meaning of the default intent
+for each type.
 
-\begin{center}
-\begin{tabular}[c]{|l|c|}
-\hline
-     & meaning of \\
-type & default intent \\
-\hline
-\hline
-\chpl{bool}    & \chpl{const} \\
-\chpl{int}     & \chpl{const} \\
-\chpl{uint}    & \chpl{const} \\
-\chpl{real}    & \chpl{const} \\
-\chpl{imag}    & \chpl{const} \\
-\chpl{complex} & \chpl{const} \\
-\chpl{range}   & \chpl{const} \\
-\chpl{string}  & \chpl{const} \\
-\chpl{sync}    & \chpl{ref}   \\
-\chpl{single}  & \chpl{ref}   \\
-\chpl{atomic}  & \chpl{ref}   \\
-\chpl{record}  & \chpl{const} (but see below) \\
-\chpl{class}   & \chpl{const} \\
-\chpl{union}   & \chpl{const} \\
-\chpl{dmap}    & \chpl{const} \\
-\chpl{domain}  & \chpl{const} \\
-array          & \chpl{ref} / \chpl{const ref} \\
-\hline
-\end{tabular}
-\end{center}
+The default intent for arrays and for a \chpl{this} argument of record
+type~(see \rsec{Method_receiver_and_this}) is \chpl{ref} or \chpl{const
+ref}. Note that neither of these cause an array or record to be copied by
+default.
 
-The default intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
-that the array is not copied by default. The compiler will choose
-\chpl{ref} or \chpl{const ref} based upon whether or not the formal
-argument is modified inside of the function. The choice between
-\chpl{ref} and \chpl{const ref} is similar to and interacts with
-return intent overloads (see \rsec{Return_Intent_Overloads}).
+In these cases, the compiler will choose \chpl{ref} or \chpl{const ref}
+based upon whether or not the formal argument is modified inside of the
+function.  The choice between \chpl{ref} and \chpl{const ref} is similar
+to and interacts with return intent overloads (see
+\rsec{Return_Intent_Overloads}).
 
 \begin{openissue}
 How tuples should be handled under default intents is an open issue;
