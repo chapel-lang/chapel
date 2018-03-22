@@ -682,11 +682,11 @@ it in inline assembly.
 #defines
 --------
 
-The extern block functionality allows simple #defines to be used from Chapel
-code. Simple defines take no arguments and define an integer, string, or
-real value or use another #define that does so. Simple casts are also
-supported, as are macros that are simply an alternative name for another
-C variable. For example:
+The extern block functionality allows simple #defines to be used from
+Chapel code. Simple defines take no arguments and define an integer,
+string, or real value or use another #define that does so. Casts to
+built-in numeric types are also supported, as are macros that are simply
+an alternative name for another C variable. For example:
 
 .. code-block:: chapel
 
