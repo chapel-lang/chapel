@@ -251,8 +251,8 @@ to the corresponding formal argument of the task function
 or the leader iterator.
 
 Each formal argument of a task function or iterator has the default
-intent by default.  For variables of primitive, enum, class, record
-and union types, this has the effect of capturing the value of the
+intent by default.  For variables of primitive, enum, and class
+types, this has the effect of capturing the value of the
 variable at task creation time.  Within the lexical scope of the
 forall statement or expression, the variable name references the
 captured value instead of the original value.
@@ -264,23 +264,20 @@ the body of the forall loop to modify the corresponding original
 variable or to read its updated value after concurrent modifications.
 The \chpl{in} intent is a way to obtain task-private variables
 in a forall loop.
+A \chpl{reduce} intent can be used to reduce values across iterations
+of a forall or coforall loop.
+Reduce intents are described in the \emph{Reduce Intents} technical note
+in the online documentation:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/technotes/reduceIntents.html}
 
 \begin{rationale}
 A forall statement or expression may create tasks in its implementation.
 Forall intents affect those tasks in the same way that task intents
+\rsec{Task_Intents}
 affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
-
-\begin{craychapel}
-To reduce values across iterations of a forall or coforall loop,
-"reduce" intents can be used.
-They are described in the \emph{Reduce Intents} page
-under \emph{Technical Notes}
-in Cray Chapel online documentation here:
-\\ %formatting
-\mbox{$$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/technotes/reduceIntents.html}
-\end{craychapel}
 
 
 \section{Promotion}
