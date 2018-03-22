@@ -303,6 +303,9 @@ all:
   03/04/18:
     - text: system update
       config: 16 node XC
+  03/14/18:
+    - text: upgrade to LLVM 6 
+      config: chapcs 
 
 
 AllCompTime:
@@ -924,6 +927,10 @@ prk-stencil.ml-perf:
     - Update PR 5296 (#6722)
   12/02/17:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
+  03/16/18:
+    - QSBR (#8182)
+  03/18/18:
+    - QSBR reverted (#8841)
 
 prk-stencil-time:
   05/11/17:
@@ -959,6 +966,10 @@ ra:
 ra.ml-perf:
   09/19/17:
     - machine changes, cannot reproduce old numbers
+  03/16/18:
+    - QSBR (#8182)
+  03/18/18:
+    - QSBR reverted (#8841)
 
 ra-atomics.ml-perf:
   10/03/17:
@@ -1010,8 +1021,8 @@ revcomp:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
-  03/15/17:
-    - Update to test (#8815)
+  03/15/18:
+    - Brad version overhauled, based on mark-skip-read-begin (#8815)
 
 sad:
   05/03/16:
