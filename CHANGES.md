@@ -9,34 +9,54 @@ Twentieth public release of Chapel, April 5, 2018
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
-New Dependences / Configuration Changes
----------------------------------------
+Project-wide Changes
+--------------------
+* moved Chapel's website from http://chapel.cray.com to https://chapel-lang.org
+  (see https://chapel-lang.org)
+
+New Dependencies / Configuration Changes
+----------------------------------------
 
 File / Directory Structure
 --------------------------
-* changed the generated executable's name from the main module to its filename
-* moved Chapel's website from http://chapel.cray.com to https://chapel-lang.org
 
 New Tools / Tool Changes
 ------------------------
+* changed the generated executable's name from the main module to its filename
+  (see the '-o' flag on https://chapel-lang.org/docs/usingchapel/man.html)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * changed the alignment of a non-stridable range from 0 to its low bound
+  (i.e., '(3..5).alignment' is now 3 where it used to be 0)
 
 Syntactic / Naming Changes
 --------------------------
 
 New Features
 ------------
+* added support for 'continue' statements within forall loops
 * extended 'delete' to accept arrays and list of expressions to delete
+  (see "Deleting Class Objects" in the language specification)
 * added support for strided Block-sparse domains and arrays
 * added support for querying the stridability of sparse domains
+  (see https://chapel-lang.org/docs/master/builtins/internal/ChapelArray.html?highlight=stridable#ChapelArray.stridable)
 
 Feature Improvements
 --------------------
 * added the ability for sparse CS domains to have a sparse parent domain
 * improved support for casting arrays to strings
+* made clear() for an array of records call the records' deinitializers
+* added support for invoking recursive parallel iterators via forall loops
+* made string->value casts throw rather than halt() when encountering errors
+* dramatically improved support for user-defined initializers
+  (see https://chapel-lang.org/docs/1.17/technotes/initializers.html)
+  - added support for field initialization within on-clauses
+  - added support for field initializers that use conditionals or loops
+  - added support for generic, single-argument copy initializers
+  - improved support for invoking `new` on the result of type functions
+  - added support for `this.init()` calls within generic record initializers
+  - improved support for field initialization within conditionals
 
 Known Feature Slips
 -------------------
@@ -48,7 +68,14 @@ Removed Features
 Standard Modules/Library
 ------------------------
 * made the 'Buffers' module into a package module
+  (see https://chapel-lang.org/docs/master/modules/packages/Buffers.html)
 * added versions of channel.mark(), commit(), revert() when locking==false
+  (see https://chapel-lang.org/docs/master/modules/standard/IO.html?highlight=mark#IO.channel.mark)
+* added support for using PCG random streams' iterate() in a zippered forall
+  (see https://chapel-lang.org/docs/modules/standard/Random/PCGRandom.html?highlight=iterate#PCGRandom.RandomStream.iterate)
+* updated several modules to use error handling rather than `try!` / `halt()`
+* added support for joinPath(), isAbsPath(), commonPath to the 'Path' module
+  (see https://chapel-lang.org/docs/master/modules/standard/Path.html)
 
 Package Modules
 ---------------
@@ -64,11 +91,9 @@ Performance Optimizations/Improvements
 
 Memory Improvements
 -------------------
-* closed memory leaks due to:
-  - LocRadCaches
-  - distributed sparse domains and arrays
-  - rectangular arrays whose domains were clear()ed
-* optimized alignment-related fields out of non-stridable ranges
+* optimized storage of alignment-related fields out of non-stridable ranges
+* closed a number of memory leaks
+  (see https://chapel-lang.org/perf/chapcs/?startdate=2017/09/23&enddate=2018/04/05&graphs=memoryleaksforalltests)
 
 Compiler Flags
 --------------
@@ -76,13 +101,23 @@ Compiler Flags
 Documentation
 -------------
 * added a color-coded version selection menu to the online documentation
-* linked the current release documentation to https://chapel-lang.org/docs
+  (see the upper-left corner of https://chapel-lang.org/docs/)
+* simplified the URLs for the current release's documentation
+  (see https://chapel-lang.org/docs/)
+* fixed various typos
 
 Example Codes
 -------------
+* fixed a timing bug in our implementation of ISx when using multiple trials
+  (see examples/benchmarks/isx/isx.chpl)
+* updated example codes with respect to initializer changes
+* fixed a bug in the LCALS INNER_PROD loop kernel
+* removed the explicit version of MiniMD from the release
+* converted leader-follower iterators in SSCA#2 into standalone iterators
 
 Locale Models
 -------------
+* converted locale models to use initializers
 
 Portability
 -----------
@@ -100,6 +135,13 @@ Error Messages / Semantic Checks
 --------------------------------
 * improved an error message for a missing module / enum to name the symbol
 * improved error messages for bad entries in config files
+* improved error messages for improper break/continue/return in forall loops
+* improved error messages for unimplemented features in parallel iterators
+* disallowed throwing from within defer statements and deinit() routines
+* improved errors for arguments with inferred types and conditional defaults
+* improved errors for functions returning generic type variables
+* added an error when mixing constructors and initializers in a class hierarchy
+* added a hint for initializers improperly recognized as copy initializers
 
 Execution-time Checks
 ---------------------
@@ -110,6 +152,12 @@ Bug Fixes
 * fixed a bug in clear() for rectangular domains
 * fixed a segfault when casting an empty string to a real
 * fixed a bug in enum->int casts for enums with nontrivial value expressions
+* fixed task intents for const ref variables
+* fixed a bug with chpldoc and general enum documentation comments
+* fixed a bug with enums declared in generic functions
+* fixed a bug with casting an enum's constants to certain types
+* fixed a bug with assignment for opaque domains
+* fixed a bug with arguments whose default value is a 'new' record with init
 
 Launchers
 ---------
@@ -127,6 +175,7 @@ Testing System
 --------------
 * added support for a -futures-only flag to 'paratest'
 * improved testing system's ability to run from a non-CHPL_HOME util/ directory
+* made 'start_test' process files, subdirectories in a deterministic order
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
@@ -135,7 +184,6 @@ Developer-oriented changes: Module changes
 ------------------------------------------
 * converted most internal/standard/package module objects to use '[de]init()'
   - 'Sys', 'Sort', 'ChapelError', 'locRADCache', 'BigInteger', 'GMP', 'channel', 'Random', 'Barriers', 'MatrixMarket', 'Futures', 'LinearAlgebraJama', 'DateTime', 'ZMQ', 'Buffers', 'SharedObject', 'DistributedBag', 'DistributedDeque', 'RecordParser'
-*  from internal, standard, package modules
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -145,6 +193,8 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* simplified the implementation of forall intents
+* some iterators are no longer treated as recursive
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
@@ -200,8 +250,8 @@ Highlights (see subsequent sections for further details)
   - various improvements for the 'ugni' communication layer on Cray systems
   - numerous bug fixes, error message improvements, and third-party updates
 
-New Dependences / Configuration Changes
----------------------------------------
+New Dependencies / Configuration Changes
+----------------------------------------
 * added a new 'configure'/'make install' option for building+installing Chapel
   (see https://chapel-lang.org/docs/1.16/usingchapel/building.html#installing-chapel)
 * users of the LLVM-based front- or back-ends must now have CMake to build
@@ -1449,7 +1499,7 @@ Developer-oriented changes: Module changes
 * made the chpl_here_* routines more generic w.r.t. integral types
 * added a 'PODValAccess' config param that returns POD array elements by value
 * added a method to the 'bytes' type to get a raw pointer to memory
-* adjusted printing within 'DefaultRectangular' to avoid IO dependences
+* adjusted printing within 'DefaultRectangular' to avoid IO dependencies
 * cleaned up the use of '_desync' functions
 * unified the formatting of the 'ChapelSyncVar' module
 
@@ -2460,7 +2510,7 @@ New Interoperability Features
 -----------------------------
 * initial support for Python->Chapel interoperability via PyChapel
   (see http://pychapel.readthedocs.org/ for more details)
-* added a prototype capability to embed external dependences to source via 'use'
+* added a prototype capability to embed external dependencies to source via 'use'
   (e.g., use "foo.h", "-lfoo"; is like adding these to the 'chpl' command-line)
 * added support for passing multidimensional arrays to external routines
   (see doc/technotes/README.extern)
@@ -2562,7 +2612,7 @@ Third-Party Software Changes
 * upgraded the bundled version of dygraphs to version 1.1.0
 * added support for dynamically installing Python packages required by 'chpldoc'
   (see 'chpldoc-venv' in third-party/README)
-* rearchitected scripting framework for third-party dependences
+* rearchitected scripting framework for third-party dependencies
 * made the re2 build do a better job of propagating errors back to the Makefiles
 * changed Qthreads to avoid using guard pages when mprotect() won't work
 * fixed a bug in limiting the maximum size of Qthreads memory pools
@@ -3472,7 +3522,7 @@ Testing System
 
 Makefile Changes
 ----------------
-* made all builds update Makefile dependences, not just developer builds 
+* made all builds update Makefile dependencies, not just developer builds 
 * made Makefiles propagate CFLAGS/CXXFLAGS to third-party builds
 
 Internal/Developer-oriented
@@ -4616,7 +4666,7 @@ Internal
 - the threading layer of the runtime now has its own header file
 - added a --library flag for creation of a standalone Chapel library
 - made normalize_returns() able to be called multiple times
-- fixed a bug related to internal module dependences of depth > 2
+- fixed a bug related to internal module dependencies of depth > 2
 - added capabilities to help debug deleted AST nodes
   (see --break-on-delete-id and --log-deleted-ids-to)
 - removed --runtime flag from compiler
