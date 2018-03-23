@@ -48,7 +48,7 @@ proc main(args: [] string) {
       const rewind = if eof then 1 else 2;
 
       // fire off a task to process the data for this sequence
-      begin process(data[seqOffset..nextDescOffset-rewind]);
+      begin process(data, seqOffset, nextDescOffset-rewind);
     } while !eof;
   }
 
@@ -60,8 +60,7 @@ proc main(args: [] string) {
 
 // process a sequence from both ends, replacing each extreme element
 // with the table lookup of the opposite one
-proc process(seq: [?inds]) {
-  var start = inds.low, end = inds.high;
+proc process(seq, in start, in end) {
   while start <= end {
     ref d1 = seq[start], d2 = seq[end];
     (d1, d2) = (table[d2], table[d1]);
