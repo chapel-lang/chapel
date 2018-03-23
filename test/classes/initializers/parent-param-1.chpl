@@ -4,7 +4,7 @@ class Derived : Base {
   proc init(param _x) {
     super.init(_x);
 
-    initDone();
+    complete();
   }
 }
 
@@ -15,7 +15,7 @@ class Base {
   proc init(param _x) {
     x = _x;
 
-    initDone();
+    complete();
   }
 }
 

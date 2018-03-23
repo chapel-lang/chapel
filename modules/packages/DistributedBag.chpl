@@ -291,7 +291,7 @@ module DistributedBag {
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      initDone();
+      complete();
 
       this.pid           = _newPrivatizedClass(this);
       this.bag           = new Bag(eltType, this);
@@ -305,7 +305,7 @@ module DistributedBag {
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      initDone();
+      complete();
 
       this.bag           = new Bag(eltType, this);
     }

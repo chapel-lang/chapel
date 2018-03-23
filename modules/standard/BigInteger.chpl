@@ -126,14 +126,14 @@ module BigInteger {
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     proc init() {
-      this.initDone();
+      this.complete();
       mpz_init(this.mpz);
 
       this.localeId = chpl_nodeID;
     }
 
     proc init(const ref num: bigint) {
-      this.initDone();
+      this.complete();
       if _local || num.localeId == chpl_nodeID {
         mpz_init_set(this.mpz, num.mpz);
       } else {
@@ -148,21 +148,21 @@ module BigInteger {
     }
 
     proc init(num: int) {
-      this.initDone();
+      this.complete();
       mpz_init_set_si(this.mpz, num.safeCast(c_long));
 
       this.localeId = chpl_nodeID;
     }
 
     proc init(num: uint) {
-      this.initDone();
+      this.complete();
       mpz_init_set_ui(this.mpz, num.safeCast(c_ulong));
 
       this.localeId = chpl_nodeID;
     }
 
     proc init(str: string, base: int = 0) {
-      this.initDone();
+      this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
@@ -176,7 +176,7 @@ module BigInteger {
     }
 
     proc init(str: string, base: int = 0, out error: syserr) {
-      this.initDone();
+      this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 

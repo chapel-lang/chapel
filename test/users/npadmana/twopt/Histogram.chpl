@@ -13,7 +13,7 @@ module Histogram {
 
     proc init(param dim : int, nbins : dim*int, limits : dim*(real,real)) {
       this.dim = dim;
-      this.initDone();
+      this.complete();
       var dd : dim*range;
       this.nbins = nbins;
       for param ii in 1..dim {

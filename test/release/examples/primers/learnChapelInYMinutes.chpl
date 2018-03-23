@@ -881,9 +881,7 @@ class GenericClass {
             type classType = other.classType) {
     this.classType = classType;
     this.classDomain = other.classDomain;
-    this.initDone();
-    // Copy and cast
-    for idx in this.classDomain do this[idx] = other[idx] : classType;
+    this.classArray = for o in other do o: classType;  // copy and cast
   }
 
 // Define bracket notation on a GenericClass

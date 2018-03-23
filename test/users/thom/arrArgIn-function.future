@@ -1,8 +1,0 @@
-semantic: should exprs assignable to arrays be passable to in array args?
-
-This test asks the question whether expressions that are legal to
-assign to arrays should be legal actuals for formal arguments that
-are of array type and in intent.  The argument would be that since
-the array is in intent, the actual needs no lvalue and the argument
-itself suggests an array's worth of storage.  The argument against
-might be related to the reason that it isn't currently working.

@@ -83,7 +83,7 @@ module Barriers {
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
               reusable: bool = (barrierType == BarrierType.Atomic)) {
-      this.initDone();
+      this.complete();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
@@ -229,7 +229,7 @@ module Barriers {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.initDone();
+      this.complete();
       reset(n);
     }
 
@@ -238,7 +238,7 @@ module Barriers {
     proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.initDone();
+      this.complete();
       reset(n);
     }
 

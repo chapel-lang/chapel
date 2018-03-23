@@ -30,6 +30,7 @@
 #include "chpl-tasks.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-comm-locales.h"
+#include "chpl-mem-desc.h"
 
 //
 // Shared interface (implemented in chpl-comm.c)
@@ -277,11 +278,12 @@ size_t chpl_comm_regMemAllocThreshold(void) {
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC
-  #define CHPL_COMM_IMPL_REG_MEM_ALLOC(size) NULL
+#define CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn) NULL
 #endif
 static inline
-void* chpl_comm_regMemAlloc(size_t size) {
-  return CHPL_COMM_IMPL_REG_MEM_ALLOC(size);
+void* chpl_comm_regMemAlloc(size_t size,
+                            chpl_mem_descInt_t desc, int ln, int32_t fn) {
+    return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC

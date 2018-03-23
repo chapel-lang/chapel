@@ -540,7 +540,7 @@ ScopeLifetime LifetimeState::lifetimeForActual(Symbol* actualSym) {
   }
 
   // At a minimum, a potential borrow from a record containing owned
-  // has lifetime = reachibility.
+  // has lifetime = reachability.
   if (!actualSym->isRef() && containsOwnedClass(actualSym->type)) {
     Lifetime reachability = reachabilityForSymbol(actualSym);
     if (isLifetimeShorter(reachability, ret.borrowed))
@@ -1121,7 +1121,7 @@ static bool typeHasInfiniteLifetime(Type* type) {
   if (type->symbol->hasFlag(FLAG_DATA_CLASS))
     return true;
 
-  // Types for C compatability are assumed to have infinite lifetime.
+  // Types for C compatibility are assumed to have infinite lifetime.
   if (type->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       type->symbol->hasFlag(FLAG_EXTERN) ||
       type == dtCVoidPtr ||
@@ -1353,7 +1353,7 @@ static BlockStmt* getDefBlock(Symbol* sym) {
   return NULL;
 }
 
-// This could definately be implemented in a faster way.
+// This could definitely be implemented in a faster way.
 static bool isBlockWithinBlock(BlockStmt* a, BlockStmt* b) {
   Expr* findParent = b;
   for (Expr* cur = a; cur; cur = cur->parentExpr) {

@@ -46,7 +46,7 @@ $(CHPL_VENV_INSTALL_DIR):
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): $(CHPL_VENV_INSTALL_DIR) check-exes
 	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$$PYTHONPATH && \
-	$(EASY_INSTALL) --install-dir=$(CHPL_VENV_INSTALL_DIR) $(shell cat virtualenv.txt)
+	$(EASY_INSTALL) --install-dir=$(CHPL_VENV_INSTALL_DIR) $(CHPL_EASY_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
@@ -73,27 +73,33 @@ create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
 	-U --force-reinstall -r test-requirements.txt && \
 	if [ "$(PYTHON_MAJOR_VERSION)" = "2" ] ; then \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall -r test-requirements-python2.txt ; \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r test-requirements-python2.txt ; \
 	fi && \
+
 	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_TEST_REQS)
 
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall -r chpldoc-requirements.txt && \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chpldoc-requirements.txt && \
+
 	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip $(CHPL_VENV_PIP_FLAGS) install \
-	-U --force-reinstall -r chplspell-requirements.txt && \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chplspell-requirements.txt && \
+
 	$(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_CHPLSPELL_REQS)
 

@@ -1,9 +1,9 @@
 A.init
 B.init
-B.postInit
-A.postInit
+B.postinit
+A.postinit
 
 A.init
 B.init
-A.postInit
-B.postInit
+A.postinit
+B.postinit

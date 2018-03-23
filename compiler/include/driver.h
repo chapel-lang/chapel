@@ -176,6 +176,7 @@ extern bool ignore_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
+extern bool fWarnUnstable;
 
 extern bool fReportOptimizedLoopIterators;
 extern bool fReportInlinedIterators;

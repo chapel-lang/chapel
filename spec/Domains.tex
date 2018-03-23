@@ -958,6 +958,35 @@ D has 0 indices.
 \end{chapelprintoutput}
 \end{chapelexample}
 
+\index{domains!dist@\chpl{dist}}
+\index{predefined functions!dist@\chpl{dist}}
+\begin{protohead}
+proc $Domain$.dist : dmap
+\end{protohead}
+\begin{protobody}
+Returns the domain map that implements this domain
+\end{protobody}
+
+\begin{chapelexample}{getDomainMap}
+In the code
+\begin{chapel}
+use BlockDist;
+proc foo(d : domain) where d.dist : Block {
+  writeln("Block-distributed domain");
+}
+proc foo(d : domain) {
+  writeln("Unknown distribution");
+}
+var D = {1..10} dmapped Block({1..10});
+foo(D);
+\end{chapel}
+\chpl{dist} is used in a where-clause to determine the type of the argument's
+distribution. The output is:
+\begin{chapelprintoutput}{}
+Block-distributed domain
+\end{chapelprintoutput}
+\end{chapelexample}
+
 \index{domains!idxType@\chpl{idxType}}
 \index{predefined functions!idxType@\chpl{idxType}}
 \begin{protohead}

@@ -152,7 +152,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }
@@ -165,7 +165,7 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }

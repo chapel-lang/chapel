@@ -277,7 +277,7 @@ module LocaleModel {
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
 
-      this.initDone();
+      this.complete();
 
       ddr = new MemoryLocale(sid, this);
 
@@ -348,7 +348,7 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }
@@ -361,7 +361,7 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      this.initDone();
+      this.complete();
 
       setup();
     }

@@ -505,68 +505,63 @@ local changes affect the actual? & no  & on return & on return & immediately & N
 
 
 \subsection{Abstract Intents}
-\label{Abstract Intents}
+\label{Abstract_Intents}
 \index{intents!abstract}
 
 The abstract intents are \chpl{const} and the \emph{default intent}
 (when no intent is specified).
+
+
+\subsubsection{Abstract Intents Table}
+\label{Abstract_Intents_Table}
+
+The following table summarizes what these abstract intents mean for each type:
+
+\begin{center}
+\begin{tabular}[c]{|l|l|l|l|}
+\hline
+                 & meaning of          &  meaning of        & \\
+  type           & \chpl{const} intent &  default intent    &  notes \\
+\hline
+\hline
+  \chpl{bool}    & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{int}     & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{uint}    & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{real}    & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{imag}    & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{complex} & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{range}   & \chpl{const in}     & \chpl{const in}  & \\
+  \chpl{class}   & \chpl{const in}     & \chpl{const in} & \\
+\hline
+  \chpl{atomic}  & \chpl{const ref}    & \chpl{ref} & \\
+  \chpl{single}  & \chpl{const ref}    & \chpl{ref} & \\
+  \chpl{sync}    & \chpl{const ref}    & \chpl{ref} & \\
+\hline
+  \chpl{string}  & \chpl{const ref}    & \chpl{const ref} & \\
+  \chpl{record}  & \chpl{const ref}    & \chpl{const ref}
+   & for \chpl{this}, see \hyperref[The_Default_Intent]{"The Default Intent"} \\
+  \chpl{union}   & \chpl{const ref}    & \chpl{const ref} & \\
+  \chpl{dmap}    & \chpl{const ref}    & \chpl{const ref} & \\
+  \chpl{domain}  & \chpl{const ref}    & \chpl{const ref} & \\
+  array          & \chpl{const ref}    & \chpl{ref} / \chpl{const ref}
+   & see \hyperref[The_Default_Intent]{"The Default Intent"} \\
+\hline
+\end{tabular}
+\end{center}
+
 
 \subsubsection{The Const Intent}
 \label{The_Const_Intent}
 \index{intents!const@\chpl{const}}
 
 The \chpl{const} intent specifies the intention that the function will
-not and cannot modify the formal argument within its dynamic scope,
-yet leaves unspecified whether the actual argument will be passed
-by \chpl{const in} or \chpl{const ref} intent.  In general, small
-values, such as scalar types, will be passed by \chpl{const in}; while
-larger values, such as domains and arrays, will be passed
-by \chpl{const ref} intent.  At present, the decision between the two
-mechanisms is implementation-defined.  If a user's function is
-sensitive to which mechanism is used, they should use the desired
-concrete intent to guarantee portability.
-
-\begin{openissue}
-It remains an open issue whether the choice between \chpl{const in}
-and \chpl{const ref} should be defined by the language, either for
-certain types or for all of them.  One area of active debate is
-whether the implementation can choose between \chpl{const in}
-and \chpl{const ref} for records based on size.  Another open issue is
-how tuples should be handled with respect to \chpl{const} intents.
-\end{openissue}
-
-\begin{craychapel}
-The current implementation uses the following mapping:
-
-\begin{center}
-\begin{tabular}[c]{|l|c|}
-\hline
-     & meaning \\
-type & of \chpl{const} \\
-\hline
-\hline
-\chpl{bool}    & \chpl{const in}  \\
-\chpl{int}     & \chpl{const in}  \\
-\chpl{uint}    & \chpl{const in}  \\
-\chpl{real}    & \chpl{const in}  \\
-\chpl{imag}    & \chpl{const in}  \\
-\chpl{complex} & \chpl{const in}  \\
-\chpl{string}  & \chpl{const ref} \\
-\chpl{sync}    & \chpl{const ref} \\
-\chpl{single}  & \chpl{const ref} \\
-\chpl{atomic}  & \chpl{const in}  \\
-\chpl{record}  & \chpl{const ref} \\
-\chpl{class}   & \chpl{const in}  \\
-\chpl{union}   & \chpl{const in}  \\
-\chpl{dmap}    & \chpl{const ref} \\
-\chpl{domain}  & \chpl{const ref} \\
-array          & \chpl{const ref} \\
-\hline
-\end{tabular}
-\end{center}
-
-\end{craychapel}
-
+not and cannot modify the formal argument within its dynamic scope.
+Whether the actual argument will be passed by \chpl{const in} or
+\chpl{const ref} intent depends on its type.  In general, small values,
+such as scalar types, will be passed by \chpl{const in}; while larger
+values, such as domains and arrays, will be passed by \chpl{const ref}
+intent.  The \hyperref[Abstract_Intents_Table]{table} earlier in this
+sub-section lists the meaning of the const intent for each type.
 
 
 \subsubsection{The Default Intent}
@@ -575,54 +570,24 @@ array          & \chpl{const ref} \\
 
 When no intent is specified for a formal argument, the \emph{default
 intent} is applied.  It is designed to take the most natural/least
-surprising action for the argument, based on its type.  The following
-table shows how default intents are interpreted based on the argument's
-type:
+surprising action for the argument, based on its type. The
+\hyperref[Abstract_Intents_Table]{table}
+earlier in this sub-section lists the meaning of the default
+intent for each type.
 
-\begin{center}
-\begin{tabular}[c]{|l|c|}
-\hline
-     & meaning of \\
-type & default intent \\
-\hline
-\hline
-\chpl{bool}    & \chpl{const} \\
-\chpl{int}     & \chpl{const} \\
-\chpl{uint}    & \chpl{const} \\
-\chpl{real}    & \chpl{const} \\
-\chpl{imag}    & \chpl{const} \\
-\chpl{complex} & \chpl{const} \\
-\chpl{string}  & \chpl{const} \\
-\chpl{sync}    & \chpl{ref}   \\
-\chpl{single}  & \chpl{ref}   \\
-\chpl{atomic}  & \chpl{ref}   \\
-\chpl{record}  & \chpl{const} (but see below) \\
-\chpl{class}   & \chpl{const} \\
-\chpl{union}   & \chpl{const} \\
-\chpl{dmap}    & \chpl{const} \\
-\chpl{domain}  & \chpl{const} \\
-array          & \chpl{ref} / \chpl{const ref} \\
-\hline
-\end{tabular}
-\end{center}
-
-The default intent for arrays is \chpl{ref} or \chpl{const ref} - meaning
-that the array is not copied by default. The compiler will choose
-\chpl{ref} or \chpl{const ref} based upon whether or not the formal
-argument is modified inside of the function. The choice between
-\chpl{ref} and \chpl{const ref} is similar to and interacts with
-return intent overloads (see \rsec{Return_Intent_Overloads}).
+The default intent for arrays and for a \chpl{this} argument of record
+type~(see \rsec{Method_receiver_and_this}) is \chpl{ref} or \chpl{const
+ref}. It is \chpl{ref} if the formal argument is modified inside the
+function, otherwise it is \chpl{const ref}.  Note that neither of these
+cause an array or record to be copied by default.  The choice between
+\chpl{ref} and \chpl{const ref} is similar to and interacts with return
+intent overloads (see \rsec{Return_Intent_Overloads}).
 
 \begin{openissue}
 How tuples should be handled under default intents is an open issue;
 particularly for heterogeneous tuples whose components would fall into
 separate categories in the table above.  One proposed approach is to
 apply the default intent to each component of the tuple independently.
-
-Another open issue arises if the meaning of the \chpl{const} intent is
-not defined by the language completely. If so, should the meaning of
-the default intent have that same flexibility? In particular, should the
-default intent for records mean \chpl{const} or \chpl{const in}?
 \end{openissue}
 
 
@@ -725,6 +690,7 @@ as are the expressions \chpl{tuple(1)} and \chpl{(1,)}.
 \section{Return Intents}
 \label{Return_Intent}
 \index{functions!return intent}
+\index{statements!return@\chpl{return}!return intent}
 
 The \sntx{return-intent} specifies how the value is returned from a function,
 and in what contexts that function is allowed to be used.  By default, or if
@@ -939,8 +905,8 @@ procedure defined in the standard Types module.
 
 \section{The Return Statement}
 \label{The_Return_Statement}
-\index{return@\chpl{return}}
-\index{statements!return}
+\index{return@\chpl{return} (see also statements, return)}
+\index{statements!return@\chpl{return}}
 
 The return statement can only appear in a function.  It causes control
 to exit that function, returning it to the point at which that function
@@ -986,7 +952,7 @@ writeln(sum(1, 2, 3));
 
 \section{Return Types}
 \label{Return_Types}
-\index{return@\chpl{return}!types}
+\index{statements!return@\chpl{return}!return type}
 \index{functions!return types}
 
 Every procedure has a return type. The return type is either

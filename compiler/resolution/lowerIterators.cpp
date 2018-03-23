@@ -1170,13 +1170,10 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   forLoop->insertBefore(loopBodyFnCall);
   forLoop->insertBefore(iteratorFnCall);
 
-  BlockStmt* blockStmt = forLoop->copyBody();
-
-  // Replace the ForLoop with a BlockStmt of the body
-  forLoop->replace(blockStmt);
-
-  // The forLoop's body becomes the body of the (new) loop body function.
-  loopBodyFn->insertAtTail(blockStmt->remove());
+  // Copy the body of forLoop into the (new) loop body function
+  // and remove forLoop.
+  loopBodyFn->insertAtTail(forLoop->copyBody());
+  forLoop->remove();
 
   // Now populate the loop body function.
   // Load the index arg.
@@ -1588,14 +1585,12 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             bool           inTaskFn,
                             TaskFnCopyMap& taskFnCopies,
                             bool&          addErrorArgToCall) {
-  std::vector<BaseAST*> asts;
   bool removeReturn = !inTaskFn;
+  std::vector<CallExpr*> bodyCalls;
+  collectCallExprs(ibody, bodyCalls);
 
-  collect_asts(ibody, asts);
-
-  for_vector(BaseAST, ast, asts) {
-
-    if (CallExpr* call = toCallExpr(ast)) {
+  for_vector(CallExpr, call, bodyCalls)
+  {
       if (call->isPrimitive(PRIM_YIELD)) {
         Symbol*    yieldedIndex  = newTemp("_yieldedIndex", index->type);
         Symbol*    yieldedSymbol = toSymExpr(call->get(1))->symbol();
@@ -1730,7 +1725,6 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // Ideally, replace with flattenOneFunction().
         flattenNestedFunction(fcopy);
       }
-    }
   }
 }
 

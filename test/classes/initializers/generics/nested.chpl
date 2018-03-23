@@ -7,7 +7,7 @@ class C {
 
   proc init() {
     rank = 2;
-    this.initDone();
+    this.complete();
     x = new D();
   }
 }

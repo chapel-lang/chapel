@@ -2,7 +2,7 @@ class C {
   type t;
 
   proc init(type t) {
-    this.initDone();
+    this.complete();
     this.t = t;
   }
 }

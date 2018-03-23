@@ -6,7 +6,7 @@ record R
   {
     proc init()
     {
-      this.initDone();
+      this.complete();
       writeln("    in init of C ", outer.id);
     }
 
@@ -23,7 +23,7 @@ record R
   {
     // Note: calling 'new C()' in phase 1 will pass 'this' along, which is
     // generally frowned upon...
-    this.initDone();
+    this.complete();
     writeln("  in init of R");
 
     id = 1;

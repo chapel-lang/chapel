@@ -48,8 +48,23 @@
 
   .. warning::
 
+    Casts from :record:`string` to the following types will throw an error
+    if they are invalid:
+
+      - ``int``
+      - ``uint``
+      - ``real``
+      - ``imag``
+      - ``complex``
+      - ``enum``
+
+    To learn more about handling these errors, see the
+    :ref:`Error Handling technical note <readme-errorHandling>`.
+
+  .. note::
+
     While :record:`string` is intended to be a Unicode string, there is much
-    left to do. As of Chapel 1.13, only ASCII strings can be expected to work
+    left to do. As of Chapel 1.17, only ASCII strings can be expected to work
     correctly with all functions.
 
     Future work involves support for both ASCII and unicode strings, and
@@ -1320,9 +1335,6 @@ module String {
   } // end record string
 
 
-  // We'd like this to be by ref, but doing so leads to an internal
-  // compiler error.  See
-  // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"

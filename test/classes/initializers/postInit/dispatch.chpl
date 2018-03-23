@@ -7,7 +7,7 @@ class C {
     writeln("In C.bar()");
   }
 
-  proc postInit() {
+  proc postinit() {
     foo();
     bar();
     //    baz();  // not possible since C doesn't define it
@@ -33,7 +33,7 @@ class E : C {
     writeln("In E.baz()");
   }
 
-  proc postInit() {
+  proc postinit() {
     foo();
     bar();
     baz();
