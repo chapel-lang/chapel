@@ -23,7 +23,9 @@ C declarations that should be usable from Chapel code.
     This explicit strategy allows for a great deal of manual control over
     how the Chapel compiler views a C function or type. This strategy is
     typically used within the Chapel standard modules for portability
-    reasons.
+    reasons. The :ref:`c2chapel` tool can be used to automatically generate
+    extern declarations from a valid C99 file.
+
  2) The extern block feature provides an implicit strategy, as described in
     the section `Support for Extern Blocks`_ below. This strategy makes
     use of the `clang` parser and so requires a Chapel compiler built with
@@ -217,6 +219,12 @@ passed as c_fn_ptr arguments cannot be overloaded nor generic.
 Support for Extern Declarations
 ===============================
 
+Chapel allows users to refer to external C types, variables, and functions via
+extern declarations. These external declarations are part of the Chapel
+language and can be written alongside pure Chapel in any ".chpl" file. If
+manually writing extern declarations isn't feasible (e.g., for large
+libraries), the :ref:`c2chapel` tool can be used to automatically generate
+extern declarations.
 
 Declaring External C Types
 --------------------------
