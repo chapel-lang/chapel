@@ -624,16 +624,17 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 3.7 through 4.0.
+   Chapel currently supports LLVM 4.0 and 6.0. LLVM 5.0 has a known
+   optimization bug that affects Chapel.
 
    .. note::
 
-       We have had success with these commands to install LLVM 4.0 dependencies
+       We have had success with these commands to install LLVM 6.0 dependencies
 
         .. code-block:: sh
 
             # Ubuntu 16.04
-            apt-get install llvm-4.0-dev llvm-4.0 llvm-4.0-tools clang-4.0 libclang-4.0-dev libedit-dev
+            apt-get install llvm-6.0-dev llvm-6.0 llvm-6.0-tools clang-6.0 libclang-6.0-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
