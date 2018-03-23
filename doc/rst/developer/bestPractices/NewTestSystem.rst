@@ -27,10 +27,10 @@ Outline
  * `Summary of Testing Files`_
  * `So you want to make:`_
 
-   - `an ordinary correctness test`_
+   - `a correctness test`_
 
      - `that relies on outside arguments or settings`_
-     - `that runs in some places but not others`_
+     - `and control how and where it runs`_
 
    - `a performance test`_
    - `a test that tracks a failure`_
@@ -61,7 +61,7 @@ foo.test.c          C test program to compile and run
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
-**optional additional files**
+**Test Settings**
 -------------------------------------------------------------------------------
 foo.compopts        line separated compiler flag configurations
 COMPOPTS            directory-wide compiler flags
@@ -69,6 +69,12 @@ foo.execopts        line separated runtime flag configurations
 EXECOPTS            directory-wide runtime flags
 foo.execenv         line separated list of environment variables settings
 EXECENV             directory-wide environment variables
+foo.numlocales      number of locales to use in multi-locale run
+..
+-------------------------------------------------------------------------------
+**TODO NAME ME**
+-------------------------------------------------------------------------------
+foo.catfiles        files to include when validating the expected output
 foo.prediff         script that is run on the test output, before taking the
                     diff between the output and .good file
 PREDIFF             directory-wide script that is run over test output
@@ -76,17 +82,19 @@ foo.precomp         script that is run prior to compilation of the test program
 PRECOMP             directory-wide script that is run prior to compilation
 foo.preexec         script that is run prior to execution of the test program
 PREEXEC             directory-wide script that is run prior to execution
+..
+-------------------------------------------------------------------------------
+**Testing System Settings**
+-------------------------------------------------------------------------------
+foo.noexec          empty file. Indicates .chpl file should only be compiled,
+                    not executed.
+foo.notest          empty file. Indicates the file should not be run explicitly
+NOTEST              empty file. Indicates the directory should not be run
 foo.skipif          line separated list of conditions under which the test
                     should not be run, or a script to compute the same
 SKIPIF              same as above, but applied to the entire directory
 foo.suppressif      line separated list of conditions under which the test is
                     expected to fail, or a script to compute the same
-foo.noexec          empty file. Indicates .chpl file should only be compiled,
-                    not executed.
-foo.numlocales      number of locales to use in multi-locale run
-foo.catfiles        files to include when validating the expected output
-foo.notest          empty file. Indicates the file should not be run explicitly
-NOTEST              empty file. Indicates the directory should not be run
 foo.timeout         time in seconds after which start_test should stop this test
 ..
 -------------------------------------------------------------------------------
@@ -119,8 +127,8 @@ foo.bad             output generated on a failing test, to track if a known
 So you want to make:
 ====================
 
-an ordinary correctness test
-----------------------------
+a correctness test
+------------------
 
 Though trivial, this test is available at ``$CHPL_HOME/test/Samples/Correctness``
 in the Chapel source repository
@@ -158,7 +166,7 @@ printed to the console and also stored in ``$CHPL_HOME/test/Logs/`` by default.
 
 
 that relies on outside arguments or settings
---------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++
 
 In addition to the simplest form of test shown above, the test system supports a
 number of additional options for creating more complex tests.
@@ -257,19 +265,64 @@ Environment variables
 ~~~~~~~~~~~~~~~~~~~~~
 
 Environment variables can be set for a particular test or directory using a
-``.execenv`` or ``EXECENV`` file.  Multiple environment environment must be
-specified on separate lines, but all will be set for a particular run.  For
-example:
+``.execenv`` or ``EXECENV`` file.  Each environment variable must be specified
+on a separate line, but all will be set for a particular run.
+
+Here is an example ``.execenv`` file:
 
   .. code-block::
 
     CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
+and control how and where it runs
++++++++++++++++++++++++++++++++++
+
+The testing system has a variety of files that can fine tune when a test gets
+run.
+
+If the test should only be compiled and not executed, mark it with an empty file
+with the suffix ``.noexec``, e.g. ``foo.noexec``.  If the test should not be
+compiled or executed on its own (for instance, if it is solely a helper file for
+another test), give an empty file with the suffix ``.notest``.  A directory with
+an empty ``NOTEST`` file will similarly not be run by the testing system (unless
+its contents are explicitly listed in the call to ``start_test``).
+
+Controlling timeouts
+~~~~~~~~~~~~~~~~~~~~
+
+Normally, ``start_test`` will kill a test that has taken longer than 300 seconds
+to execute or has been compiling for longer than four times the execution
+timeout value.
+
+The execution timeout value can be overridden for a test by specifying the
+number of seconds in a ``.timeout`` file.  It can be set either higher than the
+default timeout (for tests that take an unusually long time to run) or lower
+(for tests that are expected to finish very quickly).  The former is used more
+frequently, but the latter is useful when diagnosing a test failure - if the
+test is usually quick but occasionally hangs, a smaller timeout value can help
+speed up the time to run the testing system when the failure mode does occur.
+
+Note that if the value in this file is longer than the global timeout, any
+explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
+`a performance test`_ for more details on the ``-num-trials`` setting).
+
+Different settings, different output
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes a test is only applicable to certain test environments: it might rely
+on multi-locale state, or change its behavior dramatically depending on if
+optimizations are used, for instance.
+
+Behavior in all settings is appropriate, but varies
+***************************************************
+
+If a test is intended to work in all settings but will have slightly different
+behavior in some situations, it is appropriate to add additional ``.good`` files
+for those settings
 
 
 
-     - `that runs in some places but not others`_
-
+    
    - `a performance test`_
    - `a test that tracks a failure`_
 
