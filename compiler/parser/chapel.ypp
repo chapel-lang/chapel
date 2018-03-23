@@ -296,10 +296,10 @@
 %token TFOR TFORALL TFORWARDING
 %token TIF TIN TINDEX TINLINE TINOUT TITER
 %token TLABEL TLAMBDA TLET TLOCAL TMINUSMINUS TMODULE
-%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT
+%token TNEW TNIL TNOINIT TON TONLY TOTHERWISE TOUT TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
-%token TRECORD TREDUCE TREF TREQUIRE TRETURN
-%token TSCAN TSELECT TSERIAL TSINGLE TSPARSE TSUBDOMAIN
+%token TRAW TRECORD TREDUCE TREF TREQUIRE TRETURN
+%token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSUBDOMAIN
 %token TSYNC TTHEN TTHROW TTHROWS TTRY TTRYBANG TTYPE TUNDERSCORE
 %token TUNION TUSE TVAR TWHEN TWHERE TWHILE TWITH TYIELD TZIP
 
@@ -346,6 +346,9 @@
 %right TEXP
 %left TCOLON
 %right TNEW
+%right TOWNED
+%right TRAW
+%right TSHARED
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
@@ -1645,6 +1648,16 @@ io_expr:
 new_expr:
   TNEW expr
     { $$ = new CallExpr(PRIM_NEW, $2); }
+/* These might need to move to type_level_expr */
+| TNEW TOWNED expr
+    { $$ = new CallExpr(PRIM_NEW,
+                        new CallExpr("owned", new CallExpr(PRIM_NEW, $3))); }
+| TNEW TRAW expr
+    { $$ = new CallExpr(PRIM_NEW,
+                        new CallExpr("raw", new CallExpr(PRIM_NEW, $3))); }
+| TNEW TSHARED expr
+    { $$ = new CallExpr(PRIM_NEW,
+                        new CallExpr("shared", new CallExpr(PRIM_NEW, $3))); }
 ;
 
 let_expr:
