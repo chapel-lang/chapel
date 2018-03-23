@@ -1,24 +1,17 @@
 #!/usr/bin/env python
-import optparse
 import sys
 
 from utils import memoize
 
 
 @memoize
-def get(major_only=False):
+def get():
     ver = sys.version_info
-    if not major_only:
-        return '{0}.{1}'.format(ver[0], ver[1])
-    else:
-        return '{0}'.format(ver[0])
+    return '{0}.{1}'.format(ver[0], ver[1])
+
 
 def _main():
-    parser = optparse.OptionParser(usage="usage: %prog [--major-only]")
-    parser.add_option("--major-only", default=False, action='store_true')
-    (options, args) = parser.parse_args()
-
-    python_version_val = get(options.major_only)
+    python_version_val = get()
     sys.stdout.write("{0}\n".format(python_version_val))
 
 
