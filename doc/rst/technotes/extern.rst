@@ -222,7 +222,7 @@ Support for Extern Declarations
 Chapel allows users to refer to external C types, variables, and functions via
 extern declarations. These external declarations are part of the Chapel
 language and can be written alongside pure Chapel in any ".chpl" file. If
-manually writing extern declarations isn't feasible (e.g., for large
+manually writing extern declarations isn't practical (e.g., for large
 libraries), the :ref:`c2chapel` tool can be used to automatically generate
 extern declarations.
 
