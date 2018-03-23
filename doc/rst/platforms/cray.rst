@@ -8,6 +8,10 @@ The following information is assembled to help Chapel users get up and running
 on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|, XK\
 |trade|, and CS\ |trade| series systems.
 
+Support has been added for the Cray XC50\ |trade| system with ARM
+processors. This works the same as other Cray XC\ |trade| systems in
+the instructions below, except that there is no Intel compiler.
+
 .. contents::
 
 
