@@ -83,6 +83,8 @@ include $(CHPL_MAKE_HOME)/runtime/make/Makefile.runtime.include
 # try and wedge in in the name of shorter compiler lines.
 #
 HEADER_CFLAGS = $(RUNTIME_CFLAGS)
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/standard
+HEADER_CFLAGS += -I$(CHPL_MAKE_HOME)/modules/packages
 
 GEN_CFLAGS += $(HEADER_CFLAGS)
 

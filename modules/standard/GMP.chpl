@@ -109,6 +109,15 @@ module GMP {
   use SysError;
   use BigInteger;
 
+  require "GMPHelper/chplgmp.h";
+
+  // Initialize GMP library on all locales
+  coforall loc in Locales {
+    on loc {
+      chpl_gmp_init();
+    }
+  }
+
   /* The GMP ``mp_bitcnt_t`` type */
   extern type mp_bitcnt_t     = c_ulong;
 
