@@ -630,11 +630,15 @@ CHPL_LLVM
 
    .. note::
 
-       We have had success with these commands to install LLVM 6.0 dependencies
+       We have had success with this procedure to install LLVM 6.0
+       dependencies on Ubuntu.
+
+       First, place the appropriate lines from ``https://apt.llvm.org``
+       into ``/etc/apt/sources.list.d/llvm-toolchain.list``, then do
+       the following.
 
         .. code-block:: sh
 
-            # Ubuntu 16.04
             apt-get install llvm-6.0-dev llvm-6.0 llvm-6.0-tools clang-6.0 libclang-6.0-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
