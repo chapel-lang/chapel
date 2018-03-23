@@ -326,7 +326,8 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE TOWNED TRAW TSHARED
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+// %left TOWNED TRAW TSHARED
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -345,6 +346,7 @@
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
+%left TOWNED TRAW TSHARED
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -1509,11 +1511,11 @@ type_level_expr:
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 | TOWNED expr
-    { $$ = new CallExpr( "Owned", $2); }
+    { $$ = buildManagedPointerType( "Owned", $2); }
 | TRAW expr
-    { $$ = new CallExpr( "Raw", $2); }
+    { $$ = buildManagedPointerType( "Raw", $2); }
 | TSHARED expr
-    { $$ = new CallExpr( "Shared", $2); }
+    { $$ = buildManagedPointerType( "Shared", $2); }
 ;
 
 for_expr:

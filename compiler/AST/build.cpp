@@ -3160,3 +3160,18 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b)
   // Either way, continue compiling with ==
   return new CallExpr("==", a, b);
 }
+
+// if expr is a CallExpr, instead of returning
+//  owned(sometype(args,...))
+// we need to return
+//  (owned(sometype))(args,...)
+Expr* buildManagedPointerType(const char* manager, Expr* rest) {
+  if (CallExpr* call = toCallExpr(rest)) {
+    CallExpr* newBase = new CallExpr(manager, call->baseExpr);
+    call->baseExpr = newBase;
+    return rest;
+  } else {
+    return new CallExpr(manager, rest);
+  }
+}
+
