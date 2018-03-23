@@ -425,10 +425,7 @@ static void ensureRequiredStandardModulesAreParsed() {
 
             if (mod == NULL) {
               INT_FATAL("Trying to rename a standard module that's part of\n"
-                        "a file defining multiple\nmodules doesn't work yet;\n"
-                        "see "
-                        "test/modules/bradc/modNamedNewStringBreaks.future "
-                        "for details");
+                        "a file defining multiple\nmodules doesn't work yet");
             }
 
             mod->name      = astr("chpl_", modName);

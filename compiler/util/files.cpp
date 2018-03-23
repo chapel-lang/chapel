@@ -893,7 +893,7 @@ char* dirHasFile(const char *dir, const char *file)
   return real;
 }
 
-// This also exists in runtime/src/sys.c
+// This also exists in runtime/src/qio/sys.c
 // returns 0 on success.
 static int sys_getcwd(char** path_out)
 {
