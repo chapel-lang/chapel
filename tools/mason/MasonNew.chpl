@@ -68,6 +68,8 @@ proc masonNew(args) {
   }
 }
 
+/* Return 'true' for valid identifiers according to Chapel parser/spec,
+   otherwise 'false' */
 proc isIdentifier(name:string) {
 
   // Identifiers can't be empty
