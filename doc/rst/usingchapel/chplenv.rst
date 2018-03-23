@@ -624,8 +624,9 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 4.0 and 6.0. LLVM 5.0 has a known
-   optimization bug that affects Chapel.
+   Chapel currently supports LLVM 6.0.  Earlier versions of LLVM
+   required the use of internal Clang header files.  LLVM 5.0 has a
+   known optimization bug that affects Chapel.
 
    .. note::
 
