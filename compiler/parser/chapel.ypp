@@ -326,7 +326,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE TOWNED TRAW TSHARED
 %left TIN
 %left TALIGN TBY THASH
 %left TOR
@@ -346,9 +346,6 @@
 %right TEXP
 %left TCOLON
 %right TNEW
-%right TOWNED
-%right TRAW
-%right TSHARED
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
 
@@ -1432,6 +1429,9 @@ opt_formal_type:
 | TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
 | TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "Owned"); }
+| TCOLON TRAW               { $$ = new UnresolvedSymExpr( "Raw"); }
+| TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "Shared"); }
 | TCOLON formal_array_type  { $$ = $2; }
 ;
 
@@ -1508,6 +1508,12 @@ type_level_expr:
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
+| TOWNED expr
+    { $$ = new CallExpr( "Owned", $2); }
+| TRAW expr
+    { $$ = new CallExpr( "Raw", $2); }
+| TSHARED expr
+    { $$ = new CallExpr( "Shared", $2); }
 ;
 
 for_expr:
@@ -1648,16 +1654,6 @@ io_expr:
 new_expr:
   TNEW expr
     { $$ = new CallExpr(PRIM_NEW, $2); }
-/* These might need to move to type_level_expr */
-| TNEW TOWNED expr
-    { $$ = new CallExpr(PRIM_NEW,
-                        new CallExpr("owned", new CallExpr(PRIM_NEW, $3))); }
-| TNEW TRAW expr
-    { $$ = new CallExpr(PRIM_NEW,
-                        new CallExpr("raw", new CallExpr(PRIM_NEW, $3))); }
-| TNEW TSHARED expr
-    { $$ = new CallExpr(PRIM_NEW,
-                        new CallExpr("shared", new CallExpr(PRIM_NEW, $3))); }
 ;
 
 let_expr:
