@@ -1554,6 +1554,14 @@ void runClang(const char* just_parse_filename) {
   runtime_includes += "/list-includes-and-defines";
 
   readArgsFromFile(runtime_includes, args);
+
+  std::string dashImodules = "-I";
+  dashImodules += CHPL_HOME;
+  dashImodules += "/modules";
+
+  args.push_back(dashImodules + "/standard");
+  args.push_back(dashImodules + "/packages");
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(args);
 
