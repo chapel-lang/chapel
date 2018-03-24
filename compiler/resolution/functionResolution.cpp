@@ -5697,6 +5697,10 @@ static void           resolveNewHandleGenericRecord(CallExpr* newExpr);
 static void           resolveNewRecordPrologue(CallExpr*  newExpr,
                                                VarSymbol* newTmp);
 
+static void           resolveNewGenericInit(CallExpr*      newExpr,
+                                            AggregateType* at,
+                                            VarSymbol*     initTemp);
+
 static bool           resolveNewIsNonGeneric(CallExpr* newExpr);
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
@@ -5928,52 +5932,14 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr) {
   VarSymbol*     initTmp = newTemp("initTemp", tmpType);
   DefExpr*       initDef = new DefExpr(initTmp);
 
-  FnSymbol*      initFn  = NULL;
-
   newExpr->parentExpr->insertBefore(initDef);
 
-  initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
   newExpr->setUnresolvedFunction("init");
-
   newExpr->get(1)->remove();
 
-  newExpr->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
-  newExpr->insertAtHead(new SymExpr(gMethodToken));
+  resolveNewGenericInit(newExpr, at, initTmp);
 
-  temporaryInitializerFixup(newExpr);
-
-  resolveGenericActuals(newExpr);
-
-  initFn = resolveInitializer(newExpr);
-
-  if (at->instantiatedFrom == NULL) {
-    initTmp->type = initFn->_this->type;
-
-  } else {
-    // We've resolved the initializer.  Verify that the type we got
-    // back was the type we were originally looking for
-
-    // TODO: What about coercion?
-    if (initFn->_this->type == at) {
-      initTmp->type = initFn->_this->type;
-
-    } else {
-      // If it isn't, error
-      USR_FATAL_CONT(newExpr,
-                     "Best initializer match doesn't work for generic "
-                     "instantiation %s",
-                     at->symbol->name);
-
-      USR_PRINT(initFn,
-                "Best initializer match was defined here, and generated "
-                "instantiation %s",
-                initFn->_this->type->symbol->name);
-
-      USR_STOP();
-    }
-  }
-
+#if 0
   // use the allocator instead of directly calling the init method
   // Need to convert the call into the right format
   newExpr->baseExpr->replace(new UnresolvedSymExpr("_new"));
@@ -5987,9 +5953,10 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr) {
     resolveCall(newExpr);
   }
 
-  resolveFunction(initFn);
+  resolveFunction(newExpr->resolvedFunction());
 
   initDef->remove();
+#endif
 
   if (at->hasPostInitializer() == true) {
     CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
@@ -6004,21 +5971,52 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr) {
 }
 
 static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
-  AggregateType* at      = resolveNewFindType(newExpr);
-  AggregateType* tmpType = at->getRootInstantiation();
-  VarSymbol*     initTmp = newTemp("initTemp", tmpType);
+  AggregateType* at       = resolveNewFindType(newExpr);
+  AggregateType* rootType = at->getRootInstantiation();
+  VarSymbol*     initTemp = newTemp("initTemp", rootType);
 
-  FnSymbol*      initFn  = NULL;
+  resolveNewRecordPrologue(newExpr, initTemp);
 
-  resolveNewRecordPrologue(newExpr, initTmp);
+  newExpr->setUnresolvedFunction("init");
+  newExpr->get(1)->remove();
+
+  resolveNewGenericInit(newExpr, at, initTemp);
+
+  if (at->hasPostInitializer() == true) {
+    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, initTemp));
+  }
+}
+
+static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
+  DefExpr* def = new DefExpr(newTmp);
+
+  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+    moveStmt->insertBefore(def);
+    moveStmt->insertBefore(newExpr->remove());
+    moveStmt->insertAtTail(newTmp);
+
+  } else {
+    // The parent is a BlockStmt
+    newExpr->insertBefore(def);
+
+    if (isArgSymbol(newExpr->parentSymbol) == true) {
+      if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
+        newExpr->insertAfter(new SymExpr(newTmp));
+
+      } else {
+        INT_ASSERT(false);
+      }
+    }
+  }
+}
+
+static void resolveNewGenericInit(CallExpr*      newExpr,
+                                  AggregateType* at,
+                                  VarSymbol*     initTmp) {
+  FnSymbol* initFn = NULL;
 
   initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
-  newExpr->setUnresolvedFunction("init");
-
-  newExpr->get(1)->remove();
-
-  // Invoking an instance method
   newExpr->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
   newExpr->insertAtHead(new SymExpr(gMethodToken));
 
@@ -6026,25 +6024,16 @@ static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
 
   resolveGenericActuals(newExpr);
 
-  if (at->hasPostInitializer() == true) {
-    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, initTmp));
-  }
-
   initFn = resolveInitializer(newExpr);
 
   if (at->instantiatedFrom == NULL) {
     initTmp->type = initFn->_this->type;
 
   } else {
-    // We've resolved the initializer.  Verify that the type we got
-    // back was the type we were originally looking for
-
-    // TODO: What about coercion?
     if (initFn->_this->type == at) {
       initTmp->type = initFn->_this->type;
 
     } else {
-      // If it isn't, error
       USR_FATAL_CONT(newExpr,
                      "Best initializer match doesn't work for generic "
                      "instantiation %s",
@@ -6056,27 +6045,6 @@ static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
                 initFn->_this->type->symbol->name);
 
       USR_STOP();
-    }
-  }
-}
-
-static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
-  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
-    moveStmt->insertBefore(new DefExpr(newTmp));
-    moveStmt->insertBefore(newExpr->remove());
-    moveStmt->insertAtTail(newTmp);
-
-  } else {
-    // The parent is a BlockStmt
-    newExpr->insertBefore(new DefExpr(newTmp));
-
-    if (isArgSymbol(newExpr->parentSymbol) == true) {
-      if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
-        newExpr->insertAfter(new SymExpr(newTmp));
-
-      } else {
-        INT_ASSERT(false);
-      }
     }
   }
 }
