@@ -5694,8 +5694,6 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
-static void           resolveNewHalt(CallExpr* newExpr);
-
 static void resolveNew(CallExpr* newExpr) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
@@ -5723,7 +5721,25 @@ static void resolveNew(CallExpr* newExpr) {
     }
 
   } else {
-    resolveNewHalt(newExpr);
+    const char* name = NULL;
+
+    if (Expr* arg = newExpr->get(1)) {
+      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+        name = urse->unresolved;
+
+      } else if (CallExpr* subCall = toCallExpr(arg)) {
+        if (FnSymbol* fn = subCall->resolvedFunction()) {
+          name = fn->name;
+        }
+      }
+    }
+
+    if (name == NULL) {
+      USR_FATAL(newExpr, "invalid use of 'new'");
+
+    } else {
+      USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
+    }
   }
 }
 
@@ -6038,28 +6054,6 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   }
 
   return retval;
-}
-
-static void resolveNewHalt(CallExpr* call) {
-  const char* name = NULL;
-
-  if (Expr* arg = call->get(1)) {
-    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
-      name = urse->unresolved;
-
-    } else if (CallExpr* subCall = toCallExpr(arg)) {
-      if (FnSymbol* fn = subCall->resolvedFunction()) {
-        name = fn->name;
-      }
-    }
-  }
-
-  if (name == NULL) {
-    USR_FATAL(call, "invalid use of 'new'");
-
-  } else {
-    USR_FATAL(call, "invalid use of 'new' on %s", name);
-  }
 }
 
 /************************************* | **************************************
