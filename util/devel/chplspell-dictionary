@@ -3570,6 +3570,7 @@ tttaccct
 
 FILEID: 560979a4-4401-11e6-907f-843835579daa
 atcggctauamkrywwssyrkmvbhddhbvnn
+brubeck
 
 FILEID: d86303d0-4d88-11e6-907f-843835579daa
 ribution
@@ -4544,6 +4545,18 @@ readfrom
 FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
 detemp
 detemps
+
+FILEID: 7626c32a-2f20-11e8-aa67-10ddb1d4c3d5
+condtest
+
+FILEID: 79b61d92-2f20-11e8-aa67-10ddb1d4c3d5
+mywriteln
+
+FILEID: 80066972-2f20-11e8-aa67-10ddb1d4c3d5
+writehalf
+
+FILEID: 84377626-2f20-11e8-aa67-10ddb1d4c3d5
+testmain
 
 NATURAL:
 abcd
@@ -6252,6 +6265,7 @@ pychapel
 pydoc
 pygments
 qioerr
+qsbr
 qsub
 qthreads
 queueing
@@ -6742,6 +6756,7 @@ tokyo
 toml
 tommy
 tonum
+toolchain
 tooltip
 toordinal
 topdown
