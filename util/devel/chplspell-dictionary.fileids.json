@@ -404,9 +404,6 @@
   "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/localeModels/knl/LocaleModel.chpl"
   ],
-  "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/layouts/LayoutCSR.chpl"
-  ],
   "71a525f2-43ff-11e6-907f-843835579daa": [
     "modules/packages/BLAS.chpl"
   ],
