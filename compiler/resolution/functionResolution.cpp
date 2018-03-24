@@ -5694,6 +5694,9 @@ static void           resolveNewHandleGenericClass(CallExpr* newExpr);
 
 static void           resolveNewHandleGenericRecord(CallExpr* newExpr);
 
+static void           resolveNewRecordPrologue(CallExpr*  newExpr,
+                                               VarSymbol* newTmp);
+
 static bool           resolveNewIsNonGeneric(CallExpr* newExpr);
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
@@ -5903,26 +5906,8 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
 static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
   AggregateType* at     = resolveNewFindType(newExpr);
   VarSymbol*     newTmp = newTemp("new_temp", at);
-  DefExpr*       def    = new DefExpr(newTmp);
 
-  if (isBlockStmt(newExpr->parentExpr) == true) {
-    newExpr->insertBefore(def);
-
-    if (isArgSymbol(newExpr->parentSymbol)          == true  &&
-        toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
-      newExpr->insertAfter(new SymExpr(newTmp));
-    }
-
-  } else {
-    Expr* parent = newExpr->parentExpr;
-
-    // NB: This removes the "init" call from the tree
-    newExpr->replace(new SymExpr(newTmp));
-
-    // Insert <def> and then re-insert the "init" call
-    parent->insertBefore(def);
-    parent->insertBefore(newExpr);
-  }
+  resolveNewRecordPrologue(newExpr, newTmp);
 
   newExpr->setUnresolvedFunction("init");
   newExpr->get(1)->remove();
@@ -6019,30 +6004,13 @@ static void resolveNewHandleGenericClass(CallExpr* newExpr) {
 }
 
 static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
-  AggregateType* at       = resolveNewFindType(newExpr);
-  AggregateType* tmpType  = at->getRootInstantiation();
-  VarSymbol*     initTmp  = newTemp("initTemp", tmpType);
-  DefExpr*       initDef  = new DefExpr(initTmp);
+  AggregateType* at      = resolveNewFindType(newExpr);
+  AggregateType* tmpType = at->getRootInstantiation();
+  VarSymbol*     initTmp = newTemp("initTemp", tmpType);
 
-  FnSymbol*      initFn   = NULL;
+  FnSymbol*      initFn  = NULL;
 
-  if (isBlockStmt(newExpr->parentExpr) == true) {
-    newExpr->insertBefore(initDef);
-
-    if (isArgSymbol(newExpr->parentSymbol)          == true  &&
-        toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
-      newExpr->insertAfter(new SymExpr(initTmp));
-    }
-
-  } else {
-    Expr* parent = newExpr->parentExpr;
-
-    newExpr->parentExpr->insertBefore(initDef);
-
-    newExpr->replace(new SymExpr(initTmp));
-
-    parent->insertBefore(newExpr);
-  }
+  resolveNewRecordPrologue(newExpr, initTmp);
 
   initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
@@ -6088,6 +6056,27 @@ static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
                 initFn->_this->type->symbol->name);
 
       USR_STOP();
+    }
+  }
+}
+
+static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
+  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+    moveStmt->insertBefore(new DefExpr(newTmp));
+    moveStmt->insertBefore(newExpr->remove());
+    moveStmt->insertAtTail(newTmp);
+
+  } else {
+    // The parent is a BlockStmt
+    newExpr->insertBefore(new DefExpr(newTmp));
+
+    if (isArgSymbol(newExpr->parentSymbol) == true) {
+      if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
+        newExpr->insertAfter(new SymExpr(newTmp));
+
+      } else {
+        INT_ASSERT(false);
+      }
     }
   }
 }
