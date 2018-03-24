@@ -153,7 +153,7 @@ extern const S_ISVTX: int;
 /* Change the current working directory of the locale in question to the
    specified path `name`.
 
-   Will halt with an error message if one is detected.
+   Will throw an error message if one occurs.
 
    .. warning::
 
@@ -191,7 +191,7 @@ proc locale.chdir(out error: syserr, name: string) {
 /* Set the permissions of the file or directory specified by the argument
    `name` to that indicated by the argument `mode`.
 
-   Will halt with an error message if one is detected
+   Will throw an error message if one occurs.
 
    :arg name: The name of the file or directory whose permissions should be
               altered.
@@ -260,8 +260,8 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
 // When basename and joinPath are supported, enable dest to be a directory.
 
 /* Copies the contents and permissions of the file indicated by `src` into
-   the file or directory `dest`.  If `dest` is a directory, will halt with
-   an error message.  If `metadata` is set to `true`, will also copy the
+   the file or directory `dest`.  If `dest` is a directory, will throw a
+   FileNotFoundError.  If `metadata` is set to `true`, will also copy the
    metadata (uid, gid, time of last access and time of modification) of the
    file to be copied.
 
@@ -336,8 +336,8 @@ proc copy(out error: syserr, src: string, dest: string, metadata: bool = false) 
    different file than `src`, i.e. not a symbolic link to `src`).
 
    If `dest` is not writable, or `src` and `dest` refer to the same file,
-   this function will halt with an error message.  Does not copy metadata.  May
-   halt with other error messages.
+   this function will throw an error.  Does not copy metadata.  May
+   throw other error messages.
 
    :arg src: The source file whose contents are to be copied.
    :type src: `string`
@@ -350,74 +350,72 @@ proc copyFile(src: string, dest: string) throws {
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
   // I did not look at the other functions in that file, except for copyfileobj
   // (which copyfile called).
-  var exist = try exists(src);
-  if error then
-    return;
+
+  if !(try exists(src)) then
+    // Source didn't exist, we can't copy it.
+    try ioerror(ENOENT:syserr, "in copyFile(" + src + ", " + dest + ")");
 
   try {
-    exists(src);
+    if (isDir(src) || isDir(dest)) {
+      // If the source is a directory, the user has made a mistake, so return
+      // an error.  The same is true if the destination is a directory.
+      ioerror(EISDIR:syserr, "in copyFile(" + src + ", " + dest + ")");
+    }
   } catch e: FileNotFoundError {
-    throw e;
-  } catch e:
-
-
-  if (!exist) {
-    error = ENOENT;
-    // Source didn't exist, we can't copy it.
-    return;
-  }
-  if (isDir(error, src) || isDir(error, dest)) {
-    // If the source is a directory, the user has made a mistake, so return an
-    // error.  The same is true if the destination is a directory.
-    error = EISDIR;
-    return;
+    // We don't care if dest did not exist before, we'll create or overwrite
+    // it anyways.  We already know src exists.
   }
 
-  if (error == ENOENT) {
-    error = ENOERR;
-    // We don't care if dest did not exist before, we'll create or overwrite it
-    // anyways.  We already know src exists.
-  } else if (sameFile(error, src, dest)) {
+  if try sameFile(src, dest) {
     // Check if the files are the same, error if yes
+    try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
 
     // Don't need to check if they're the same file when we know dest didn't
-    // exist.
-    error = EINVAL;
-    return;
-    // The second argument is invalid if the two arguments are the same.
+    // exist. The second argument is invalid if the two arguments are the same.
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = open(src, iomode.r, error=error);
-  if error then return;
-  var destFile = open(dest, iomode.cw, error=error);
-  if error {
-    var ignore:syserr;
-    srcFile.close(error=ignore);
-    return;
-  }
-  var srcChnl = srcFile.reader(kind=ionative, locking=false, error=error);
-  if error {
-    var ignore:syserr;
-    destFile.close(error=ignore);
-    srcFile.close(error=ignore);
-    return;
+  var srcFile = try open(src, iomode.r);
+  defer {
+    try {
+      srcFile.close();
+    } catch {
+      // ignore errors
+    }
   }
 
-  var destChnl = destFile.writer(kind=ionative, locking=false, error=error);
-  if error {
-    var ignore:syserr;
-    srcChnl.close(error=ignore);
-    destFile.close(error=ignore);
-    srcFile.close(error=ignore);
-    return;
+  var destFile = try open(dest, iomode.cw);
+  defer {
+    try {
+      destFile.close();
+    } catch {
+      // ignore errors
+    }
   }
 
+  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  defer {
+    try {
+      srcChnl.close();
+    } catch {
+      // ignore errors
+    }
+  }
+
+  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  defer {
+    try {
+      destChnl.close();
+    } catch {
+      // ignore errors
+    }
+  }
 
   // read in, write out.
   var line: [0..1023] uint(8);
   var numRead: int = 0;
-  while (srcChnl.readline(line, numRead=numRead, error=error)) {
+  while (try srcChnl.readline(line, numRead=numRead)) {
+    try destChnl.write(line[0..#numRead]);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -430,36 +428,20 @@ proc copyFile(src: string, dest: string) throws {
     // srcReader.endPeekBuffer
 
     // Some of these routines don't exist with Chapel wrappers now
-
-    destChnl.write(line[0..#numRead], error=error);
-    if error then break;
   }
-  if error == EEOF then error = ENOERR;
-
-  destChnl.close(error=error);
-  srcChnl.close(error=error);
-
-  srcFile.close(error=error);
-  destFile.close(error=error);
 }
 
 pragma "no doc"
 proc copyFile(out error: syserr, src: string, dest: string) {
-  var err: syserr = ENOERR;
-  copyFile(err, src, dest);
-  if err != ENOERR then try ioerror(err, "in copyFile(" + src + ", " + dest + ")");
-}
-
-pragma "no doc"
-proc copyMode(out error: syserr, src: string, dest: string) {
-  // Gets the mode from the source file.
-  var srcMode = getMode(error, src);
-  // If any error occurred, we want to be the one reporting it, so as not
-  // to bleed implementation details.  If we found one when viewing the
-  // source's mode, we should return immediately.
-  if error != ENOERR then return;
-  // Sets the mode of the destination to the source's mode.
-  chmod(error, dest, srcMode);
+  compilerWarning("This version of copyFile() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    copyFile(src, dest);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated
@@ -473,9 +455,27 @@ proc copyMode(out error: syserr, src: string, dest: string) {
    :type dest: `string`
 */
 proc copyMode(src: string, dest: string) throws {
+  try {
+    // Gets the mode from the source file.
+    var srcMode = getMode(src);
+    // Sets the mode of the destination to the source's mode.
+    chmod(dest, srcMode);
+  } catch e: SystemError {
+    // Hide implementation details.
+    try ioerror(err, "in copyMode " + src, dest);
+  }
+}
+
+pragma "no doc"
+proc copyMode(out error: syserr, src: string, dest: string) {
   var err: syserr = ENOERR;
-  copyMode(err, src, dest);
-  if err != ENOERR then try ioerror(err, "in copyMode " + src, dest);
+  try {
+    copyMode(src, dest);
+  } catch e: SystemError {
+    error = e.err;
+  } catch {
+    error = EINVAL;
+  }
 }
 
 private proc copyTreeHelper(out error: syserr, src: string, dest: string, copySymbolically: bool=false) {
