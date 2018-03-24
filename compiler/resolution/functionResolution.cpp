@@ -5927,46 +5927,59 @@ static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
 }
 
 static void resolveNewHandleGenericClass(CallExpr* newExpr) {
-  AggregateType* at      = resolveNewFindType(newExpr);
-  AggregateType* tmpType = at->getRootInstantiation();
-  VarSymbol*     initTmp = newTemp("initTemp", tmpType);
-  DefExpr*       initDef = new DefExpr(initTmp);
+  AggregateType* at       = resolveNewFindType(newExpr);
 
-  newExpr->parentExpr->insertBefore(initDef);
+  CallExpr*      moveStmt = toCallExpr(newExpr->parentExpr);
+  AggregateType* rootType = at->getRootInstantiation();
+  VarSymbol*     initTemp = newTemp("initTemp", rootType);
 
-  newExpr->setUnresolvedFunction("init");
-  newExpr->get(1)->remove();
+  CallExpr*      initCall = new CallExpr("init");
 
-  resolveNewGenericInit(newExpr, at, initTmp);
+  moveStmt->insertAfter(initCall);
+  moveStmt->insertAfter(new DefExpr(initTemp));
 
-#if 0
-  // use the allocator instead of directly calling the init method
-  // Need to convert the call into the right format
-  newExpr->baseExpr->replace(new UnresolvedSymExpr("_new"));
-
-  newExpr->get(1)->replace(new SymExpr(initTmp->type->symbol));
-  newExpr->get(2)->remove();
-
-  // Need to resolve _new() even if it has not been built yet
-  if (tryResolveCall(newExpr) == NULL) {
-    buildClassAllocator(initFn);
-    resolveCall(newExpr);
+  for (int i = newExpr->numActuals(); i > 1; i--) {
+    initCall->insertAtHead(newExpr->get(i)->remove());
   }
 
-  resolveFunction(newExpr->resolvedFunction());
+  resolveNewGenericInit(initCall, at, initTemp);
 
+  SymExpr*   moveDst  = toSymExpr(moveStmt->get(1));
+
+  DefExpr*   initDef  = toDefExpr(moveStmt->next);
+  VarSymbol* initTmp  = toVarSymbol(initDef->sym);
+
+  VarSymbol* sizeTmp  = newTemp("sizeTemp", dtInt[INT_SIZE_64]);
+  DefExpr*   sizeDef  = new DefExpr(sizeTmp);
+
+  Type*      type     = initTmp->type;
+  Symbol*    typeSym  = type->symbol;
+
+  moveStmt->insertBefore(sizeDef);
+
+  moveStmt->get(1)->replace(new SymExpr(sizeTmp));
+
+  newExpr->primitive = primitives[PRIM_SIZEOF];
+  newExpr->get(1)->replace(new SymExpr(typeSym));
+
+  moveDst->symbol()->type = initTmp->type;
+
+  initCall->get(2)->replace(moveDst);
   initDef->remove();
-#endif
+
+  VarSymbol* mdExpr    = newMemDesc(type);
+  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeTmp, mdExpr);
+  SymExpr*   dstCopy   = moveDst->copy();
+  CallExpr*  allocMove = new CallExpr(PRIM_MOVE, dstCopy, allocExpr);
+
+  moveStmt->insertAfter(allocMove);
+
+  resolveFunction(initCall->resolvedFunction());
 
   if (at->hasPostInitializer() == true) {
-    CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
-    SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
-    Symbol*   moveDest = moveLHS->symbol();
+    Symbol* moveDest = moveDst->symbol();
 
-    INT_ASSERT(moveStmt                         != NULL);
-    INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
-
-    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+    initCall->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
   }
 }
 
@@ -6002,9 +6015,6 @@ static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
     if (isArgSymbol(newExpr->parentSymbol) == true) {
       if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
         newExpr->insertAfter(new SymExpr(newTmp));
-
-      } else {
-        INT_ASSERT(false);
       }
     }
   }
