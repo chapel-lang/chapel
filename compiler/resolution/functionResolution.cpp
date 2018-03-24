@@ -5690,6 +5690,8 @@ static void           resolveNewHandleNonGenericInitializer(CallExpr* newExpr);
 
 static void           resolveNewHandleGenericInitializer(CallExpr* newExpr);
 
+static bool           resolveNewIsNonGeneric(CallExpr* newExpr);
+
 static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
@@ -5837,50 +5839,56 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
     newExpr->insertAtHead(typeExpr);
   }
 
-  // Either
-  //   1) a statement that is a standalone new expr
-  //   2) the typeExpr/initExpr for a formal
-  //
-  if (isBlockStmt(newExpr->parentExpr) == true) {
-    if (at->isClass() == true) {
-      // Introduce a tmp and wrap the call to _new() in a move to that tmp
+  if (at->isClass() == true) {
+    if (isBlockStmt(newExpr->parentExpr) == true) {
+      //
+      // The parent is currently a blockStmt
+      //
+      //   1) a statement that is a standalone new expr
+      //   2) the typeExpr/initExpr for a formal
+      //
+      // Wrap the new expr in a move stmt
+      //
       VarSymbol* newTmp = newTemp("new_temp");
       DefExpr*   def    = new DefExpr(newTmp);
       CallExpr*  move   = NULL;
 
       newExpr->insertBefore(def);
 
-      // Remove the _new() call from the tree and wrap it in a move
       move = new CallExpr(PRIM_MOVE, newTmp, newExpr->remove());
 
-      // Insert the move back in the correct position
       def->insertAfter(move);
 
-      // If this is formal default then the block must end with the tmp
       if (isArgSymbol(newExpr->parentSymbol) == true) {
         move->insertAfter(new SymExpr(newTmp));
       }
     }
-  }
 
-  if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
-      at->instantiatedFrom              == NULL) {
-    resolveNewHandleNonGenericInitializer(newExpr);
+    if (resolveNewIsNonGeneric(newExpr) == true) {
+      resolveNewHandleNonGenericInitializer(newExpr);
+
+    } else {
+      resolveNewHandleGenericInitializer(newExpr);
+    }
+
+    if (at->hasPostInitializer() == true) {
+      CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
+      SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
+      Symbol*   moveDest = moveLHS->symbol();
+
+      INT_ASSERT(moveStmt                         != NULL);
+      INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
+
+      moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+    }
 
   } else {
-    resolveNewHandleGenericInitializer(newExpr);
-  }
+    if (resolveNewIsNonGeneric(newExpr) == true) {
+      resolveNewHandleNonGenericInitializer(newExpr);
 
-  if (at->isClass()            == true &&
-      at->hasPostInitializer() == true) {
-    CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
-    SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
-    Symbol*   moveDest = moveLHS->symbol();
-
-    INT_ASSERT(moveStmt                         != NULL);
-    INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
-
-    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+    } else {
+      resolveNewHandleGenericInitializer(newExpr);
+    }
   }
 }
 
@@ -6028,6 +6036,18 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
 
     initDef->remove();
   }
+}
+
+static bool resolveNewIsNonGeneric(CallExpr* newExpr) {
+  AggregateType* at     = resolveNewFindType(newExpr);
+  bool           retval = false;
+
+  if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
+      at->instantiatedFrom              == NULL) {
+    retval = true;
+  }
+
+  return retval;
 }
 
 static AggregateType* resolveNewFindType(CallExpr* newExpr) {
