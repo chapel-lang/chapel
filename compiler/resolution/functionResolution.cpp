@@ -5822,6 +5822,21 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
 
   AggregateType* at = resolveNewFindType(newExpr);
 
+  //
+  // Normalize the allocation for a nested type
+  //
+  //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
+  //
+  if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+    SymExpr* typeExpr = toSymExpr(partial->baseExpr);
+    SymExpr* thisExpr = toSymExpr(partial->get(2));
+
+    partial->remove();
+
+    newExpr->insertAtHead(thisExpr->remove());
+    newExpr->insertAtHead(typeExpr);
+  }
+
   // Either
   //   1) a statement that is a standalone new expr
   //   2) the typeExpr/initExpr for a formal
@@ -5872,16 +5887,6 @@ static void resolveNewWithInitializer(CallExpr* newExpr) {
 static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = resolveNewFindType(call);
-
-  if (isCallExpr(call->get(1)) == true) {
-    // Happens when the type on which we are calling new is a nested type.
-    // In that case, the second argument to that inner call should be used as
-    // the "outer" argument to the _new or init function.
-    CallExpr* partial = toCallExpr(call->get(1)->remove());
-
-    call->insertAtHead(partial->get(2)->remove());
-    call->insertAtHead(typeExpr);
-  }
 
   if (at->isClass() == true) {
     // Convert PRIM_NEW(...) to _new(...)
