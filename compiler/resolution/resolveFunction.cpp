@@ -245,7 +245,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/types/atomic/sungeun/no_atomic_assign.chpl
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
-//   test/studies/shootout/spectral-norm/spectralnorm.chpl
+//   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
 //   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
@@ -1387,7 +1387,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            //  destructor calls delete on any fields.  I think we
            //  probably need a similar change in the INOUT/IN case
            //  above.  See test/types/records/sungeun/destructor3.chpl
-           //  and test/users/recordbug3.chpl.
+           //  and test/users/ferguson/recordbug3.chpl.
            //
            // For records, this problem should go away if/when we
            //  implement 'const ref' intents and make them the default

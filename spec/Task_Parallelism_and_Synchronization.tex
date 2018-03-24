@@ -72,7 +72,7 @@ or task intents, among others.
 \section{The Begin Statement}
 \label{Begin}
 \index{begin@\chpl{begin}}
-\index{statements!begin}
+\index{statements!begin@\chpl{begin}}
 
 The begin statement creates a task to execute a statement.  The syntax
 for the begin statement is given by
@@ -867,6 +867,13 @@ task-intent-list:
 
 where the following intents can be used as a \sntx{formal-intent}:
 \chpl{ref}, \chpl{in}, \chpl{const}, \chpl{const in}, \chpl{const ref}.
+In addition, \chpl{reduce} intents are allowed.
+They are similar to reduce forall intents \rsec{Forall_Intents}
+as described in the \emph{Reduce Intents} technical note
+in the online documentation:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/technotes/reduceIntents.html}
 
 % TODO for task intents:
 % * Introduce a 'task-formal-intent' syntactic rule
@@ -888,8 +895,6 @@ subject to such treatment within nested task constructs, if any.
 
 
 \begin{rationale}
-% Ideally, replace "task intents" throughout the foregoing
-% with a more appropriate name for this feature.
 The primary motivation for task intents is to avoid some races on
 scalar/record variables, which are possible when one task modifies a
 variable and another task reads it. Without task intents,

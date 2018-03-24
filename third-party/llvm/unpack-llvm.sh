@@ -13,7 +13,7 @@ echo Unpacking LLVM
 # Be sure to also update:
 #
 #   Makefile.share-system
-#   doc/usingchapel/chplenv.rst
+#   doc/rst/usingchapel/chplenv.rst
 
 tar xf llvm-6.0.0.src.tar.xz
 tar xf cfe-6.0.0.src.tar.xz

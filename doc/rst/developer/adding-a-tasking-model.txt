@@ -28,24 +28,24 @@ commands to create the copy:
     git add runtime/include/tasks/wonderful
 
     mkdir runtime/src/tasks/wonderful
-    cp runtime/tasks/fifo/tasks-fifo.c  \
-        runtime/tasks/wonderful/tasks-wonderful.c
-    cp runtime/tasks/fifo/Makefile  \
-        runtime/tasks/wonderful/
-    cp runtime/tasks/fifo/Makefile.include  \
-        runtime/tasks/wonderful/
-    cp runtime/tasks/fifo/Makefile.share  \
-        runtime/tasks/wonderful/
-    git add runtime/tasks/wonderful
+    cp runtime/src/tasks/fifo/tasks-fifo.c  \
+        runtime/src/tasks/wonderful/tasks-wonderful.c
+    cp runtime/src/tasks/fifo/Makefile  \
+        runtime/src/tasks/wonderful/
+    cp runtime/src/tasks/fifo/Makefile.include  \
+        runtime/src/tasks/wonderful/
+    cp runtime/src/tasks/fifo/Makefile.share  \
+        runtime/src/tasks/wonderful/
+    git add runtime/src/tasks/wonderful
 
 This will leave you with the following new files:
 
     runtime/include/tasks/wonderful/tasks-wonderful.h
 
-    runtime/tasks/wonderful/tasks-wonderful.c
-                        .../Makefile
-                        .../Makefile.include
-                        .../Makefile.share
+    runtime/src/tasks/wonderful/tasks-wonderful.c
+                            .../Makefile
+                            .../Makefile.include
+                            .../Makefile.share
 
 Then, you need to modify some existing infrastructure files:
 

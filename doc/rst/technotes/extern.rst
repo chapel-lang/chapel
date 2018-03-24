@@ -23,7 +23,9 @@ C declarations that should be usable from Chapel code.
     This explicit strategy allows for a great deal of manual control over
     how the Chapel compiler views a C function or type. This strategy is
     typically used within the Chapel standard modules for portability
-    reasons.
+    reasons. The :ref:`c2chapel` tool can be used to automatically generate
+    extern declarations from a valid C99 file.
+
  2) The extern block feature provides an implicit strategy, as described in
     the section `Support for Extern Blocks`_ below. This strategy makes
     use of the `clang` parser and so requires a Chapel compiler built with
@@ -217,6 +219,12 @@ passed as c_fn_ptr arguments cannot be overloaded nor generic.
 Support for Extern Declarations
 ===============================
 
+Chapel allows users to refer to external C types, variables, and functions via
+extern declarations. These external declarations are part of the Chapel
+language and can be written alongside pure Chapel in any ".chpl" file. If
+manually writing extern declarations isn't practical (e.g., for large
+libraries), the :ref:`c2chapel` tool can be used to automatically generate
+extern declarations.
 
 Declaring External C Types
 --------------------------
@@ -682,16 +690,19 @@ it in inline assembly.
 #defines
 --------
 
-The extern block functionality allows simple #defines to be used from Chapel
-code. Simple defines take no arguments and define an integer value or use
-another #define. For example:
+The extern block functionality allows simple #defines to be used from
+Chapel code. Simple defines take no arguments and define an integer,
+string, or real value or use another #define that does so. Casts to
+built-in numeric types are also supported, as are macros that are simply
+an alternative name for another C variable. For example:
 
 .. code-block:: chapel
 
   extern {
    #define NEG_ONE (-1)
-   #define MY_NUMBER (NEG_ONE)
+   #define MY_NUMBER ((unsigned int)NEG_ONE)
   }
+  writeln(NEG_ONE);
   writeln(MY_NUMBER);
 
 However, it is easy to create #defines that are not supported because the
