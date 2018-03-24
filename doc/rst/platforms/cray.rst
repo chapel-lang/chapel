@@ -488,7 +488,7 @@ silently increased or reduced so as to fall within it.
 gasnet Communication Layer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The GASnet-based communication layer discussed in the
+The GASNet-based communication layer discussed in the
 :ref:`readme-multilocale` page can be used on all Cray systems.  For
 best performance it should be used with native substrates and fixed
 segments, though even then its performance will rarely match that of the
