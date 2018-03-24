@@ -5675,57 +5675,55 @@ bool isDispatchParent(Type* t, Type* pt) {
 * remaining arguments are assumed to be arguments for the constructor or      *
 * initializer call                                                            *
 *                                                                             *
-* Some new expressions are converted in normalize().                          *
-*   For example, a call to  type function is resolved at this point.          *
-*                                                                             *
 * The syntax supports calling the result of a type function as a constructor  *
 * but this is not fully implemented.                                          *
 *                                                                             *
 ************************************** | *************************************/
 
-static void     resolveNewAT(CallExpr* call);
+static void           resolveNewAT(CallExpr* newExpr);
 
-static bool     resolveNewHasInitializer(AggregateType* at);
+static bool           resolveNewHasInitializer(AggregateType* at);
 
-static void     resolveNewHandleConstructor(CallExpr* call);
+static void           resolveNewHandleConstructor(CallExpr* newExpr);
 
-static void     resolveNewHandleNonGenericInitializer(CallExpr* call);
+static void           resolveNewHandleNonGenericInitializer(CallExpr* newExpr);
 
-static void     resolveNewHandleGenericInitializer(CallExpr* call);
+static void           resolveNewHandleGenericInitializer(CallExpr* newExpr);
 
-static SymExpr* resolveNewFindTypeExpr(CallExpr* call);
+static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
-static void     resolveNewHalt(CallExpr* call);
+static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
-static void resolveNew(CallExpr* call) {
-  if (SymExpr* typeExpr = resolveNewFindTypeExpr(call)) {
+static void           resolveNewHalt(CallExpr* newExpr);
+
+static void resolveNew(CallExpr* newExpr) {
+  if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (isAggregateType(type) == true) {
-        resolveNewAT(call);
+        resolveNewAT(newExpr);
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
         const char* name = pt->symbol->name;
 
-        USR_FATAL(call, "invalid use of 'new' on primitive %s", name);
+        USR_FATAL(newExpr, "invalid use of 'new' on primitive %s", name);
 
       } else if (EnumType* et = toEnumType(type)) {
         const char* name = et->symbol->name;
 
-        USR_FATAL(call, "invalid use of 'new' on enum %s", name);
+        USR_FATAL(newExpr, "invalid use of 'new' on enum %s", name);
 
       } else {
-        USR_FATAL(call, "new must be applied to a record or class");
+        USR_FATAL(newExpr, "new must be applied to a record or class");
       }
     }
 
   } else {
-    resolveNewHalt(call);
+    resolveNewHalt(newExpr);
   }
 }
 
 static void resolveNewAT(CallExpr* call) {
-  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  AggregateType* at = resolveNewFindType(call);
 
   // Either
   //   1) a statement that is a standalone new expr
@@ -5812,7 +5810,7 @@ static void resolveNewHandleConstructor(CallExpr* call) {
   SET_LINENO(call);
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  AggregateType* at       = resolveNewFindType(call);
 
   if (FnSymbol* atInit = at->defaultInitializer) {
     Expr* baseExpr = NULL;
@@ -5852,7 +5850,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   SET_LINENO(call);
 
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  AggregateType* at       = resolveNewFindType(call);
 
   if (isCallExpr(call->get(1)) == true) {
     // Happens when the type on which we are calling new is a nested type.
@@ -5910,9 +5908,7 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 static void resolveNewHandleGenericInitializer(CallExpr* call) {
   SET_LINENO(call);
 
-  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
-
+  AggregateType* at       = resolveNewFindType(call);
   AggregateType* tmpType  = at->getRootInstantiation();
   VarSymbol*     initTmp  = newTemp("initTemp", tmpType);
   DefExpr*       initDef  = new DefExpr(initTmp);
@@ -6010,26 +6006,31 @@ static void resolveNewHandleGenericInitializer(CallExpr* call) {
   }
 }
 
-// Find the SymExpr that captures the type
-static SymExpr* resolveNewFindTypeExpr(CallExpr* call) {
-  Expr*    arg1   = call->get(1);
+static AggregateType* resolveNewFindType(CallExpr* newExpr) {
+  SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr);
+  Type*    type     = resolveTypeAlias(typeExpr);
+
+  return toAggregateType(type);
+}
+
+// Find the SymExpr for the type.
+//   1) Common case  :- primNew(Type, arg1, ...);
+//   2) Module scope :- primNew(module=, moduleName, Type, arg1, ...);
+//   3) Nested call  :- primNew(Inner(_mt, this), arg1, ...);
+static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
   SymExpr* retval = NULL;
 
-  // The common case e.g new MyClass(1, 2, 3);
-  if (SymExpr* se = toSymExpr(arg1)) {
+  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
     if (se->symbol() != gModuleToken) {
       retval = se;
 
     } else {
-      retval = toSymExpr(call->get(3));
-      INT_ASSERT(retval != NULL);
+      retval = toSymExpr(newExpr->get(3));
     }
 
-  // 'new' (call (partial) R2 _mt this), call_tmp0, call_tmp1, ...
-  // due to nested classes (i.e. R2 is a nested class type)
-  } else if (CallExpr* subCall = toCallExpr(arg1)) {
-    if (SymExpr* se = toSymExpr(subCall->baseExpr)) {
-      retval = (subCall->partialTag) ? se : NULL;
+  } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* se = toSymExpr(partial->baseExpr)) {
+      retval = partial->partialTag ? se : NULL;
     }
   }
 
