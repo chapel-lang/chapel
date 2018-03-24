@@ -5680,11 +5680,11 @@ bool isDispatchParent(Type* t, Type* pt) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void           resolveNewAT(CallExpr* newExpr);
-
 static bool           resolveNewHasInitializer(AggregateType* at);
 
 static void           resolveNewHandleConstructor(CallExpr* newExpr);
+
+static void           resolveNewWithInitializer(CallExpr* newExpr);
 
 static void           resolveNewHandleNonGenericInitializer(CallExpr* newExpr);
 
@@ -5699,8 +5699,13 @@ static void           resolveNewHalt(CallExpr* newExpr);
 static void resolveNew(CallExpr* newExpr) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
-      if (isAggregateType(type) == true) {
-        resolveNewAT(newExpr);
+      if (AggregateType* at = toAggregateType(type)) {
+        if (resolveNewHasInitializer(at) == false) {
+          resolveNewHandleConstructor(newExpr);
+
+        } else {
+          resolveNewWithInitializer(newExpr);
+        }
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
         const char* name = pt->symbol->name;
@@ -5719,59 +5724,6 @@ static void resolveNew(CallExpr* newExpr) {
 
   } else {
     resolveNewHalt(newExpr);
-  }
-}
-
-static void resolveNewAT(CallExpr* call) {
-  AggregateType* at = resolveNewFindType(call);
-
-  // Either
-  //   1) a statement that is a standalone new expr
-  //   2) the typeExpr/initExpr for a formal
-  //
-  if (isBlockStmt(call->parentExpr) == true) {
-    if (at->isClass() == true) {
-      // Introduce a tmp and wrap the call to _new() in a move to that tmp
-      VarSymbol* newTmp = newTemp("new_temp");
-      DefExpr*   def    = new DefExpr(newTmp);
-      CallExpr*  move   = NULL;
-
-      call->insertBefore(def);
-
-      // Remove the _new() call from the tree and wrap it in a move
-      move = new CallExpr(PRIM_MOVE, newTmp, call->remove());
-
-      // Insert the move back in the correct position
-      def->insertAfter(move);
-
-      // If this is formal default then the block must end with the tmp
-      if (isArgSymbol(call->parentSymbol) == true) {
-        move->insertAfter(new SymExpr(newTmp));
-      }
-    }
-  }
-
-  if (resolveNewHasInitializer(at) == false) {
-    resolveNewHandleConstructor(call);
-
-  } else if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
-             at->instantiatedFrom              == NULL) {
-    resolveNewHandleNonGenericInitializer(call);
-
-  } else {
-    resolveNewHandleGenericInitializer(call);
-  }
-
-  if (at->isClass()            == true &&
-      at->hasPostInitializer() == true) {
-    CallExpr* moveStmt = toCallExpr(call->parentExpr);
-    SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
-    Symbol*   moveDest = moveLHS->symbol();
-
-    INT_ASSERT(moveStmt                         != NULL);
-    INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
-
-    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
   }
 }
 
@@ -5794,61 +5746,114 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 
 // There are three cases
 //
-//     1) new(typeExpr(_mt, this), actual1,  actual2, ...)    method
-//     2) new(typeExpr, actual1,  actual2, ...)               common
-//     3) new(module=, moduleName, typeExpr, actual1, ...)    module-scoped
+//     1) new(Type(_mt, this), arg1, ...)              nested type
+//     2) new(Type, arg1, ...)                         common
+//     3) new(module=, moduleName, Type, arg1, ...)    module-scoped
 //
 // These become
 //
-//     1) "_construct_typeExpr"(_mt, this)(actual1, actual2, ...)
-//     2) "_construct_typeExpr"(actual1, actual2, ...)
-//     3) "_construct_typeExpr"(module=, moduleName, actual1, actual2, ...)
+//     1) "_construct_Type"(_mt, this)(arg1, ...)
+//     2) "_construct_Type"(arg1, ...)
+//     3) "_construct_Type"(module=, moduleName, arg1, ...)
 //
 // respectively
 
-static void resolveNewHandleConstructor(CallExpr* call) {
-  SET_LINENO(call);
+static void resolveNewHandleConstructor(CallExpr* newExpr) {
+  SET_LINENO(newExpr);
 
-  SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
-  AggregateType* at       = resolveNewFindType(call);
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(newExpr);
+  AggregateType* at       = resolveNewFindType(newExpr);
 
   if (FnSymbol* atInit = at->defaultInitializer) {
     Expr* baseExpr = NULL;
 
-    if (isCallExpr(call->get(1)) == true) {
+    // A nested call
+    if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
       typeExpr->replace(new UnresolvedSymExpr(atInit->name));
 
-      baseExpr = call->get(1)->remove();
+      baseExpr = partial->remove();
 
-    } else if (typeExpr == call->get(1) ||
-               typeExpr == call->get(3)) {
-      typeExpr->remove();
-
-      baseExpr = new UnresolvedSymExpr(atInit->name);
-
+    // Non-nested call
     } else {
-      INT_ASSERT(false);
+      if (typeExpr == newExpr->get(1) || typeExpr == newExpr->get(3)) {
+        typeExpr->remove();
+
+        baseExpr = new UnresolvedSymExpr(atInit->name);
+
+      } else {
+        INT_ASSERT(false);
+      }
     }
 
     // Convert the PRIM_NEW to the required call expr and resolve it
-    call->primitive = NULL;
-    call->baseExpr  = baseExpr;
+    newExpr->primitive = NULL;
+    newExpr->baseExpr  = baseExpr;
 
-    parent_insert_help(call, baseExpr);
+    parent_insert_help(newExpr, baseExpr);
 
-    resolveExpr(call);
+    resolveExpr(newExpr);
 
   } else {
-    USR_FATAL(call,
+    USR_FATAL(newExpr,
               "could not generate default initializer for type "
               "'%s', please define one",
               at->symbol->name);
   }
 }
 
-static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
-  SET_LINENO(call);
+static void resolveNewWithInitializer(CallExpr* newExpr) {
+  SET_LINENO(newExpr);
 
+  AggregateType* at = resolveNewFindType(newExpr);
+
+  // Either
+  //   1) a statement that is a standalone new expr
+  //   2) the typeExpr/initExpr for a formal
+  //
+  if (isBlockStmt(newExpr->parentExpr) == true) {
+    if (at->isClass() == true) {
+      // Introduce a tmp and wrap the call to _new() in a move to that tmp
+      VarSymbol* newTmp = newTemp("new_temp");
+      DefExpr*   def    = new DefExpr(newTmp);
+      CallExpr*  move   = NULL;
+
+      newExpr->insertBefore(def);
+
+      // Remove the _new() call from the tree and wrap it in a move
+      move = new CallExpr(PRIM_MOVE, newTmp, newExpr->remove());
+
+      // Insert the move back in the correct position
+      def->insertAfter(move);
+
+      // If this is formal default then the block must end with the tmp
+      if (isArgSymbol(newExpr->parentSymbol) == true) {
+        move->insertAfter(new SymExpr(newTmp));
+      }
+    }
+  }
+
+  if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
+      at->instantiatedFrom              == NULL) {
+    resolveNewHandleNonGenericInitializer(newExpr);
+
+  } else {
+    resolveNewHandleGenericInitializer(newExpr);
+  }
+
+  if (at->isClass()            == true &&
+      at->hasPostInitializer() == true) {
+    CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
+    SymExpr*  moveLHS  = toSymExpr(moveStmt->get(1));
+    Symbol*   moveDest = moveLHS->symbol();
+
+    INT_ASSERT(moveStmt                         != NULL);
+    INT_ASSERT(moveStmt->isPrimitive(PRIM_MOVE) == true);
+
+    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+  }
+}
+
+static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
   SymExpr*       typeExpr = resolveNewFindTypeExpr(call);
   AggregateType* at       = resolveNewFindType(call);
 
@@ -5906,8 +5911,6 @@ static void resolveNewHandleNonGenericInitializer(CallExpr* call) {
 }
 
 static void resolveNewHandleGenericInitializer(CallExpr* call) {
-  SET_LINENO(call);
-
   AggregateType* at       = resolveNewFindType(call);
   AggregateType* tmpType  = at->getRootInstantiation();
   VarSymbol*     initTmp  = newTemp("initTemp", tmpType);
