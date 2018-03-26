@@ -52,8 +52,8 @@ New Tools / Tool Changes
 * added support for multiple mason repositories, including local registries
   (see https://chapel-lang.org/docs/1.17/tools/mason/mason.html#local-registries)
 * added support for `mason help` and `mason version` commands
-* `chpl` now offers suggestions for unfamiliar flags
-  (see `chpl -fast`)
+* `chpl` now offers suggestions for unrecognized flags
+  (see error message for `chpl -fast`)
 * rewrote `printchplenv` and reworked its interface and output
   (see `util/printchplenv --help`)
 * rewrote `compileline`
@@ -80,7 +80,7 @@ New Features
 * added an `isEmpty()` method on domains
 * type and param fields can now be accessed from a type variable
   (see 'Field Accesses' in the 'Classes' chapter of the specification)
-* supported forwarding method calls on arrays, domains, and distributions
+* added support for forwarding methods on arrays, domains, and distributions
   (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#overview)
 * added support for associative domains whose index types contain ranges
 * added support for subtype queries on distributions
@@ -132,8 +132,6 @@ Standard Modules/Library
   (see https://chapel-lang.org/docs/1.17/modules/standard/DateTime.html#DateTime.time.init)
 * array `push*` methods now use `in` intents to improve their use with Owned
   (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html#ChapelArray.push_back)
-* added support for using PCG random streams' iterate() in a zippered forall
-  (see https://chapel-lang.org/docs/1.17/modules/standard/Random/PCGRandom.html#PCGRandom.RandomStream.iterate)
 * added `string.size` overload for `string.length`
   (see https://chapel-lang.org/docs/1.17/builtins/internal/String.html#String.string.size)
 * updated several modules to use error handling rather than `try!` / `halt()`
@@ -275,7 +273,7 @@ Cray-specific Changes
 Platform-specific Changes
 -------------------------
 * fixed a bug causing control-C to hang the compiler on Mac OS X
-* improved portability of re2 for Cygin
+* improved portability of re2 for Cygwin
 
 Syntax Highlighting
 -------------------
@@ -346,6 +344,7 @@ Bug Fixes
 * fixed a bug in which `LinearAlgebra.dot()` did not have sorted indices
 * fixed an incorrect return type in the `Crypto` module
 * fixed a bug where `TOML` module failed to parse quoted values with whitespace
+* fixed a bug regarding zippering PCG random streams' iterate() method
 * fixed a use-after-free error in task counting at program shutdown
 * fixed a bug related to concurrent array creation under ugni
 * fixed an incorrect data type being used in the KNL locale model
@@ -410,7 +409,7 @@ Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added a `--lifetime-checking` flag to enable prototype use-after-free checks
 * added a `--warn-unstable` flag to warn of changing language features
-* added --llvm-print-ir to produce an LLVM module that works with other tools
+* updated `--llvm-print-ir` to produce LLVM modules that work with other tools
 * removed 1-character developer-only flags
 
 Developer-oriented changes: Compiler improvements/changes
