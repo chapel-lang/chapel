@@ -34,6 +34,11 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
+enum ClassKind {
+  CLASS_RAW,
+  CLASS_BORROW,
+  CLASS_OWNED,
+};
 
 enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
@@ -143,11 +148,22 @@ public:
   Symbol*                     getSubstitution(const char* name);
 
 
+  bool                        isRawClass() const;
+  bool                        isBorrowClass() const;
+  bool                        isOwnedClass() const;
+
+  const AggregateType*        getRawClass() const;
+  const AggregateType*        getBorrowClass() const;
+  const AggregateType*        getOwnedClass() const;
+
   //
   // Public fields
   //
 
   AggregateTag                aggregateTag;
+  ClassKind                   classKind;
+  AggregateType*              borrowClass; // for class, what is borrow type?
+  AggregateType*              nextAssociatedClass; // e.g. raw for owned
 
   FnSymbol*                   typeConstructor;
 

@@ -41,6 +41,10 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
+  classKind           = CLASS_RAW;
+  borrowClass         = NULL;
+  nextAssociatedClass = NULL;
+
   typeConstructor     = NULL;
   defaultInitializer  = NULL;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;
@@ -2529,4 +2533,44 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   }
 
   return retval;
+}
+
+bool AggregateType::isRawClass() const {
+  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_RAW;
+}
+
+bool AggregateType::isBorrowClass() const {
+  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_BORROW;
+}
+
+bool AggregateType::isOwnedClass() const {
+  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_OWNED;
+}
+
+const AggregateType* AggregateType::getRawClass() const {
+  for (const AggregateType* t = this->borrowClass;
+       t != NULL;
+       t = t->nextAssociatedClass) {
+    if (t->isRawClass())
+      return t;
+  }
+  return NULL;
+}
+const AggregateType* AggregateType::getBorrowClass() const {
+  for (const AggregateType* t = this->borrowClass;
+       t != NULL;
+       t = t->nextAssociatedClass) {
+    if (t->isBorrowClass())
+      return t;
+  }
+  return NULL;
+}
+const AggregateType* AggregateType::getOwnedClass() const {
+  for (const AggregateType* t = this->borrowClass;
+       t != NULL;
+       t = t->nextAssociatedClass) {
+    if (t->isOwnedClass())
+      return t;
+  }
+  return NULL;
 }
