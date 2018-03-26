@@ -9,7 +9,7 @@ Twentieth public release of Chapel, April 5, 2018
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * tool / configuration highlights:
-  - added support for bash autocompletion for `chpl` compiler options
+  - added support for bash tab completion for `chpl` compiler options
   - `chpl` now offers suggestions for unrecognized flags
   - changed the generated executable's name from the main module to its filename
   - improved support for `chpl`s LLVM back-end
@@ -22,8 +22,8 @@ Highlights (see subsequent sections for further details)
   - `LinearAlgebra` matrices now use 1-based indices by default
   - new Kronecker, Cholesky, eigenvector/value routines in `LinearAlgebra`
   - added the Blowfish cipher to the `Crypto` module
-  - added support for joinPath(), isAbsPath(), commonPath to the `Path` module
-  - added Bessel fucntions to `Math` module
+  - added support for joinPath(), isAbsPath(), commonPath() to the `Path` module
+  - added Bessel functions to `Math` module
   - added new channel.advancePastByte(), mark(), commit(), and revert() methods
   - increased the use of error-handling in standard, package, internal modules
 * performance / benchmark / memory highlights::
@@ -45,8 +45,8 @@ File / Directory Structure
 
 New Tools / Tool Changes
 ------------------------
-* added support for bash autocompletion for `chpl` compiler options
-  (see https://chapel-lang.org/docs/1.17/usingchapel/compiling.html#tab-autocompletion-for-flags)
+* added support for bash tab completion for `chpl` compiler options
+  (see https://chapel-lang.org/docs/1.17/usingchapel/compiling.html#tab-completion-for-flags)
 * changed the generated executable's name from the main module to its filename
   (see the `-o` flag on https://chapel-lang.org/docs/1.17/usingchapel/man.html)
 * added support for multiple mason repositories, including local registries
@@ -118,14 +118,14 @@ Removed Features
 
 Standard Modules/Library
 ------------------------
-* added Bessel fucntions to `Math` module
+* added Bessel functions to `Math` module
   (see https://chapel-lang.org/docs/1.17/modules/standard/Math.html#Math.j0)
-* added support for joinPath(), isAbsPath(), commonPath to the `Path` module
+* added support for joinPath(), isAbsPath(), commonPath() to the `Path` module
   (see https://chapel-lang.org/docs/1.17/modules/standard/Path.html)
 * added support for channel.advancePastByte() to read until a particular byte
   (see https://chapel-lang.org/docs/1.17/modules/standard/IO.html#IO.channel.advancePastByte)
 * added versions of channel.mark(), commit(), revert() when locking==false
-  (see https://chapel-lang.org/docs/1.17/modules/standard/IO.html?highlight=mark#IO.channel.mark)
+  (see https://chapel-lang.org/docs/1.17/modules/standard/IO.html#IO.channel.mark)
 * improved support for I/O on `date`, `time`, and `datetime` types in `DateTime`
   (see https://chapel-lang.org/docs/1.17/modules/standard/DateTime.html#DateTime.date.readWriteThis)
 * made DateTime.time.tzinfo `Shared` for automated memory management
@@ -133,14 +133,14 @@ Standard Modules/Library
 * array `push*` methods now use `in` intents to improve their use with Owned
   (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html#ChapelArray.push_back)
 * added support for using PCG random streams' iterate() in a zippered forall
-  (see https://chapel-lang.org/docs/1.17/modules/standard/Random/PCGRandom.html?highlight=iterate#PCGRandom.RandomStream.iterate)
+  (see https://chapel-lang.org/docs/1.17/modules/standard/Random/PCGRandom.html#PCGRandom.RandomStream.iterate)
 * added `string.size` overload for `string.length`
   (see https://chapel-lang.org/docs/1.17/builtins/internal/String.html#String.string.size)
 * updated several modules to use error handling rather than `try!` / `halt()`
 * made the `Buffers` module into a package module
   (see https://chapel-lang.org/docs/1.17/modules/packages/Buffers.html)
-* made the `UtilReplicatedVar` module into a package module
-  (see https://chapel-lang.org/docs/1.17/modules/standard/UtilReplicatedVar.html)
+* made the `UtilReplicatedVar` module into a package module `ReplicatedVar`
+  (see https://chapel-lang.org/docs/1.17/modules/packages/ReplicatedVar.html)
 
 Package Modules
 ---------------
@@ -167,7 +167,7 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * added the ability for sparse CS domains to have a sparse parent domain
 * added support for querying the stridability of sparse domains
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html?highlight=stridable#ChapelArray.stridable)
+  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html#ChapelArray.stridable)
 * added support for strided Block-sparse domains and arrays
 * redesigned the bulk-transfer interface to reduce its complexity
   (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#phase-4-bulk-transfer-interface)
@@ -333,7 +333,7 @@ Bug Fixes
 * fixed a bug with arguments whose default value is a `new` record with init
 * fixed an internal compiler error with dynamic dispatch of serial iterators
 * fixed a bug in clear() for rectangular domains
-* fixed a number of bugs relaed to sparse matrix-matrix multiplication
+* fixed bugs related to sparse matrix-matrix multiplication
 * fixed a bug with `StencilDist` arrays in which cached values would be printed
 * fixed default values of new array elements added to associative arrays
 * fixed a bug in bounds-checking for the `insert()` method on arrays
