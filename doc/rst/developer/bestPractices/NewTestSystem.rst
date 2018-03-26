@@ -301,8 +301,8 @@ for those settings.  Some of these additional ``.good`` files will be used
 automatically by the testing system, while others will need to be specified
 explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 
-No complete list of the automatically recognized ``.good`` files exists, but
-some known ones include:
+``start_test`` automatically recognizes ``.good`` files with prefixes for
+``--no-local``, communication layer, locale model, and ``chpldoc``.  For example:
 
 - ``.comm-none.good``: used with CHPL_COMM=none (the unqualified ``.good`` file
   will then apply for CHPL_COMM != none)
@@ -646,6 +646,9 @@ There are three situations under which a future will get resolved.
 Invoking start_test for
 =======================
 
+A brief description of flags that can be used with ``start_test`` itself can
+be obtained by calling ``start_test -h``.
+
 correctness testing
 -------------------
 The `simple example <an ordinary correctness test>`_ demonstrates invoking
@@ -684,7 +687,10 @@ Summary of Testing Files
          within this table
 
 The following table serves as a quick reference for the various test files, and
-as a table of contents for this page.
+as a table of contents for this page.  It is not necessarily complete, and not
+all of it has been covered in this document.  Please ask a member of the core
+team for more information on a specific file.
+
 Using file base name, ``foo`` for the filenames in this table.
 
 =================   ===========================================================
@@ -711,7 +717,9 @@ NUMLOCALES          directory-wide number of locales to use in multi-locale run
 -------------------------------------------------------------------------------
 **Helper files**
 -------------------------------------------------------------------------------
-foo.catfiles        files to include when validating the expected output
+foo.catfiles        line separated list of files to include when validating the
+                    expected output
+CATFILES            directory-wide list of files to compare with output
 foo.prediff         script that is run on the test output, before taking the
                     diff between the output and .good file
 PREDIFF             directory-wide script that is run over test output
@@ -723,6 +731,8 @@ PREEXEC             directory-wide script that is run prior to execution
 -------------------------------------------------------------------------------
 **Testing System Settings**
 -------------------------------------------------------------------------------
+foo.cleanfiles      line separated list of files to remove before next test run
+CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.
 foo.notest          empty file. Indicates the file should not be run explicitly
@@ -738,9 +748,13 @@ foo.timeout         time in seconds after which start_test should stop this test
 **performance**
 -------------------------------------------------------------------------------
 foo.perfcompopts    compiler flags, overrides .compopts for --performance
+PERFCOMPOPTS        directory-wide performance compiler flags
 foo.perfexecopts    runtime flags, overrides .execopts for --performance
+PERFEXECOPTS        directory-wide performance runtime flags
 foo.perfexecenv     environment variables, overrides .execenv for --performance
+PERFEXECENV         directory-wide performance environment variables
 foo.perfnumtrials   number of execution trials to run if no timeout specified
+PERFNUMTRIALS       directory-wide number of execution trials to run
 foo.perftimeout     time in seconds after which start_test should stop this test
 foo.perfkeys        keys to search for in the output
 foo.graph           Specifies which data files and perfkeys to graph, and
