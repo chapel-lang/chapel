@@ -19,10 +19,10 @@
 
 /*
 
-   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the deallocation
-   of a class instance. :record:`Shared` is meant to be used when many
-   different references will exist to the object and these references
-   need to keep the object alive.
+   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the
+   deallocation of a class instance. :record:`Shared` is meant to be used when
+   many different references will exist to the object and these references need
+   to keep the object alive.
 
    To use :record:`Shared`, allocate a class instance following this
    pattern:
@@ -48,6 +48,11 @@
        // now mySharedObject is deinitialized, but the MyClass
        // instance is not deleted until globalSharedObject is deinitialized.
      }
+
+   :record:`Shared` supports coercions to the class type as well as
+   coercions from a ``Shared(T)`` to ``Shared(U)`` where ``T`` is a
+   subclass of ``U``. See :record:`~OwnedObject.Owned` for examples
+   of these coercions.
 
  */
 module SharedObject {

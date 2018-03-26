@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Skip this test for SuSE 11 and earlier. It requires an OpenSSL version that
+# is newer than is available on SuSe 11 due to github requirements.
+if [ -f /etc/SuSE-release ] ; then
+  slesVersion=`sed -n -e 's/VERSION = //p' /etc/SuSE-release`
+  if [ $slesVersion -le 11 ] ; then
+    echo True
+  else
+    echo False
+  fi
+else
+  echo False
+fi

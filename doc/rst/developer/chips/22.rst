@@ -1,4 +1,4 @@
-﻿Chapel GPU Language Support
+Chapel GPU Language Support
 ===========================
 
 Status
