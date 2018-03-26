@@ -44,6 +44,9 @@ Outline
      - `Accumulating Performance Data in .dat files`_
      - `Other Performance Testing Options`_
      - `Comparing Multiple Versions`_
+
+       - `Comparing to a C version`_
+
      - `Creating a graph comparing multiple variations`_
      - `Test Your Test Before Submitting`_
 
@@ -68,8 +71,11 @@ So you want to make:
 a correctness test
 ------------------
 
-Though trivial, this test is available at ``$CHPL_HOME/test/Samples/Correctness``
+Though trivial, this test is available at `$CHPL_HOME/test/Samples/Correctness`_
 in the Chapel source repository
+
+.. _`$CHPL_HOME/test/Samples/Correctness`:
+  https://github.com/chapel-lang/chapel/pull/295/commits/8c0aaf04dabc007e061588876082f5a1f95c0cae
 
 A simplest use of the test system is to create a ``.chpl`` file containing
 some Chapel code and a ``.good`` file containing the expected output.  For
@@ -449,14 +455,6 @@ entire testing system because all ``.dat`` files are placed into a single
 directory at the end; the system itself checks for conflicts and
 complains if it finds any).
 
-To compare a C version of a test to a Chapel version, the C version of
-the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
-unique names, the base name for the C test should vary from the Chapel
-equivalent.  For example, I might name the C version of the ``foo.chpl``
-performance test ``foo-c.test.c``.  Like any other test, the C test needs
-a ``.good`` file for correctness testing and a ``.perfkeys`` file for
-performance testing.
-
 To compare a single Chapel test compiled or run in multiple
 configurations, the approach taken is to use multi-line versions of
 the ``.perfcompopts`` OR ``.perfexecopts`` files, where each line represents a
@@ -478,6 +476,21 @@ with ``--n=100`` and the second time with ``--n=10000``.  The first execution
 would use ``bar-100.perfkeys`` for its performance keys and write its
 output to ``bar-100.dat`` while the second would use ``bar-10000.perfkeys``
 and write its output to ``bar-10000.dat``.
+
+Comparing to a C version
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To compare a C version of a test to a Chapel version, the C version of
+the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
+unique names, the base name for the C test should vary from the Chapel
+equivalent.  For example, I might name the C version of the ``foo.chpl``
+performance test ``foo-c.test.c``.  Like any other test, the C test needs
+a ``.good`` file for correctness testing and a ``.perfkeys`` file for
+performance testing.
+
+C versions do not have to be performance tests, but this is their most common
+use case.
+
 
 Creating a graph comparing multiple variations
 ++++++++++++++++++++++++++++++++++++++++++++++
