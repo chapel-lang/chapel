@@ -32,6 +32,12 @@ Outline
      - `that relies on outside arguments or settings`_
      - `and control how and where it runs`_
 
+       - `Controlling timeouts`_
+       - `Different settings, different output`_
+
+         - `Test should be limited to certain settings`_
+         - `Behavior in all settings is appropriate, but varies`_
+
    - `a performance test`_
    - `a test that tracks a failure`_
 
@@ -309,21 +315,93 @@ explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
 Different settings, different output
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Test should be limited to certain settings
+******************************************
+
 Sometimes a test is only applicable to certain test environments: it might rely
 on multi-locale state, or change its behavior dramatically depending on if
-optimizations are used, for instance.
+optimizations are used, for instance.  If a test is only intended to run in
+certain settings, a ``SKIPIF`` or ``.skipif`` file should be used.
+
+A directory-wide ``SKIPIF`` file or a test-specific ``.skipif`` file can take
+two forms.  The first is a line separated list of easily computed conditions,
+any one of which will cause the test not to run in that particular setting.  For
+instance, the following file would only allow ``foo.chpl`` to run in a
+single-locale setting:
+
+``foo.skipif``
+
+  .. code-block::
+
+     CHPL_COMM != none
+
+This is useful when the conditions required to skip a test can be easily
+determined from the environment.
+
+The second form a ``.skipif`` or ``SKIPIF`` file can take is that of a script.
+This form is intended for conditions that require some computation to determine,
+or when the combination of conditions is necessary (i.e. this setting **and**
+this setting are required for the behavior we want to avoid).  The script can be
+in any commonly supported scripting language, usually bash or python.  The
+``.skipif`` or ``SKIPIF`` file must have executable permissions for this form to
+work.  For instance:
+
+``foo.skipif``
+
+  .. code-block::
+
+     #!/usr/bin/env python
+
+     import os
+     print(os.getenv('CHPL_TEST_PERF') == 'on' and
+           os.getenv('CHPL_ATOMICS') == 'locks')
+
+would cause the test to be skipped when performance testing is done with
+CHPL_ATOMICS=locks, but not ordinary performance testing, or correctness
+testing with CHPL_ATOMICS=locks
 
 Behavior in all settings is appropriate, but varies
 ***************************************************
 
 If a test is intended to work in all settings but will have slightly different
 behavior in some situations, it is appropriate to add additional ``.good`` files
-for those settings
+for those settings.  Some of these additional ``.good`` files will be used
+automatically by the testing system, while others will need to be specified
+explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 
+No complete list of the automatically recognized ``.good`` files exists, but
+some known ones include:
 
+- ``.comm-none.good``: used with CHPL_COMM=none (the unqualified ``.good`` file
+  will then apply for CHPL_COMM != none)
+- ``.no-local.good``: used with ``--no-local`` testing
+- ``.lm-numa.good``: used with CHPL_LOCALE_MODEL=numa
+- ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
-    
-   - `a performance test`_
+Requests can be made for supporting additional formats if a common format
+does not appear to be covered automatically.
+
+If only some compilations or executions of a test need a specialized ``.good``
+file, a comment on the same line as the relevant options can be used.  For
+instance:
+
+``foo.execopts``
+
+  .. code-block::
+
+     --x=true # foo.true.good
+     --x=false # foo.false.good
+
+will compare test output to ``foo.true.good`` for the first execution and
+``foo.false.good`` for the second.
+
+Any line that is unlabeled will use the default ``.good`` for that test.
+Undefined behavior will occur when both the ``.compopts`` and ``.execopts``
+files specify a ``.good`` file in this way.
+
+a performance test
+------------------
+
    - `a test that tracks a failure`_
 
      - `that requires Chapel developer effort to fix`_
