@@ -84,13 +84,13 @@ Flags                   Description
 =====================   ======================================================
 
 
-----------------------------
-Tab Autocompletion for Flags
-----------------------------
+------------------------
+Tab Completion for Flags
+------------------------
 
 Bash users can source the script ``$CHPL_HOME/util/chpl-completion.bash`` to
-enable tab-autocompletion for chpl options.  After sourcing the
-chpl-completion.bash script tab autocompletion can be used:
+enable tab-completion for chpl options.  After sourcing the
+chpl-completion.bash script tab completion can be used:
 
   .. code-block:: sh
 
@@ -103,7 +103,7 @@ Will print the options that start with "--ca".
      --cache-remote --cast-checks
 
 Adding one more letter to differentiate and pressing tab again will
-autocomplete the option and add a space, ready for the next option.
+auto-complete the option and add a space, ready for the next option.
 
   .. code-block:: sh
 
