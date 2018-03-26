@@ -39,12 +39,24 @@ Outline
          - `Behavior in all settings is appropriate, but varies`_
 
    - `a performance test`_
+
+     - `Identifying Performance Keys`_
+     - `Validating Performance Test Output`_
+     - `Accumulating Performance Data in .dat files`_
+     - `Other Performance Testing Options`_
+     - `Comparing Multiple Versions`_
+     - `Creating a graph comparing multiple variations`_
+     - `Test Your Test Before Submitting`_
+
    - `a test that tracks a failure`_
 
      - `that requires Chapel developer effort to fix`_
      - `that should fix itself when a dependency updates`_
 
-* `Invoking start_test for correctness testing`_
+* `Invoking start_test for`_
+
+  - `correctness testing`_
+  - `performance testing`_
 
 
 Summary of Testing Files
@@ -402,13 +414,227 @@ files specify a ``.good`` file in this way.
 a performance test
 ------------------
 
+[Files used to illustrate the running example here can be found at
+``$CHPL_HOME/test/Samples/Performance`` in the Chapel source repository]
+
+Identifying Performance Keys
+++++++++++++++++++++++++++++
+Most of the information above pertains to the creation of a
+correctness test, in which the test's output is compared to a ``.good``
+file.  The testing system also supports performance tests in which one
+or more values from a test's output can be tracked on a nightly basis
+and optionally graphed.
+
+Performance tests are specified using a ``.perfkeys`` file, which lists strings
+that the test system should look for in the output serving as prefixes for a
+piece of data to track.  When crawling a directory hierarchy, only tests with
+``.perfkeys`` files will be considered when testing in performance mode.  For
+example, if a test named ``foo.chpl`` generates output in the following format:
+
+  .. code-block:: text
+
+    Time: 194.3 seconds
+    Memory: 24GB
+    Validation: SUCCESS
+
+one could track the two numeric values using a ``.perfkeys`` file as
+follows:
+
+
+``foo.perfkeys``
+
+  .. code-block:: text
+
+    Time:
+    Memory:
+
+As the test system runs, it will look for the specified performance
+keys in the test output and store the string following the key as part
+of the performance test output (described below).  Note that one could
+also track the Validation string in this way, though there are better
+ways to track success/failure conditions, described in the next
+section.
+
+
+Validating Performance Test Output
+++++++++++++++++++++++++++++++++++
+
+In addition to identifying key-value pairs to track, performance
+testing can also do some simple validation of test output using
+regular expression-based matching.  A line starting with
+``verify:[<line#>:]`` (or ``reject:[<line#>:]``) followed by a regular
+expression will ensure that the test output contains (does not
+contain) the given regular expression, and count any surprises as
+failures in the testing results.  The optional line# constrains what
+line number the output must appear on, where a negative number
+indicates that the counting should start at the end of the file.
+
+For example, adding a third line to the ``.perfkeys`` file, we can also
+verify that the last line of output contains the string "SUCCESS":
+
+``foo.perfkeys``
+
+  .. code-block:: text
+
+    Time:
+    Memory:
+    verify:-1: SUCCESS
+
+Accumulating Performance Data in .dat files
++++++++++++++++++++++++++++++++++++++++++++
+
+The values collected during performance testing are stored as a
+tab-delimited ``.dat`` file in the directory specified by
+``$CHPL_TEST_PERF_DIR`` (if undefined, the test system defaults to
+``$CHPL_HOME/test/perfdat/<machineName>``).  The base name for the ``.dat``
+file is taken from the ``.perfkeys`` file.  For example, the output for
+the test above would be stored in a file named ``foo.dat``.  Each time the
+test is run in performance mode, a new line of data is added to the
+``.dat`` file, corresponding to that run.
+
+Note that in practice, most tests are written to be run in both a
+correctness and a performance mode, using a ``bool config const`` to skip
+the printing of nondeterministic data such as the Time (and possibly
+Memory) values above.  We tend to make tests run in performance mode
+by default and use a ``foo.execopts`` file to make the correctness testing
+flip this switch (since end users will typically want the performance
+data on and there's nothing worse than firing off a long run only to
+find you didn't turn on the performance metrics).
+
+Other Performance Testing Options
++++++++++++++++++++++++++++++++++
+
+Like correctness testing, performance testing supports the ability to
+specify different compiler and execution-time options, etc.  This is
+done using files, as in correctness testing, where the filenames tend
+to start with ``PERF*`` or ``.perf*``.  For example, ``foo.perfcompopts`` would
+specify compiler options that should be used when compiling the test
+for performance mode while ``foo.perfexecopts`` specifies execution-time
+options for performance testing.
+
+Comparing Multiple Versions
++++++++++++++++++++++++++++
+
+Most performance tests are most interesting when comparing multiple
+things to one another -- for example, multiple implementations of
+an algorithm, a test compiled in various configurations, a Chapel vs.
+C version, etc.  The approach typically taken here is to have each
+configuration write output to its own ``.dat`` file and then to graph
+columns from various ``.dat`` files against one another.
+
+To compare multiple distinct Chapel tests, the approach is easy;
+simply make each one a performance test with a distinct name.  (In
+fact, Chapel performance tests must have unique names across the
+entire testing system because all ``.dat`` files are placed into a single
+directory at the end; the system itself checks for conflicts and
+complains if it finds any).
+
+To compare a C version of a test to a Chapel version, the C version of
+the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
+unique names, the base name for the C test should vary from the Chapel
+equivalent.  For example, I might name the C version of the ``foo.chpl``
+performance test ``foo-c.test.c``.  Like any other test, the C test needs
+a ``.good`` file for correctness testing and a ``.perfkeys`` file for
+performance testing.
+
+To compare a single Chapel test compiled or run in multiple
+configurations, the approach taken is to use multi-line versions of
+the ``.perfcompopts`` OR ``.perfexecopts`` files, where each line represents a
+different configuration that should be tested.  Each option line
+should be concluded with a ``#`` comment delimiter, after which a
+``.perfkeys`` file should be named.  For example, to compare two
+problem sizes, one might use:
+
+``bar.perfexecopts``
+
+  .. code-block:: text
+
+      --n=100    # bar-100.perfkeys
+      --n=10000  # bar-10000.perfkeys
+
+
+This would cause ``bar.chpl`` to be compiled once and executed twice, one
+with ``--n=100`` and the second time with ``--n=10000``.  The first execution
+would use ``bar-100.perfkeys`` for its performance keys and write its
+output to ``bar-100.dat`` while the second would use ``bar-10000.perfkeys``
+and write its output to ``bar-10000.dat``.
+
+Creating a graph comparing multiple variations
+++++++++++++++++++++++++++++++++++++++++++++++
+Once you are creating multiple ``.dat`` files containing data you would
+like to graph, you'll create a ``.graph`` file indicating which data from
+which ``.dat`` files should be graphed.  For example, to compare the
+timing data from the ``foo.chpl`` and ``foo-c.c`` tests described above, one
+might use the following ``foo.graph`` file (note that the graph file's
+base name need not have any relation to the tests it is graphing since
+they are typically pulling from multiple ``.dat`` files; making the
+filename useful to human readers is the main consideration).
+
+``foo.graph``
+
+  .. code-block:: text
+
+    perfkeys: Time:, Time:
+    files: foo.dat, foo-c.dat
+    graphkeys: Chapel version, C version
+    ylabel: Time (seconds)
+    graphtitle: Sample Performance Test (Bogus)
+
+
+Briefly, the following three entries need to have the same arity,
+corresponding to the lines in the graph:
+
+* ``perfkeys:`` is a comma-separated list of perfkeys to graph from...
+* ``files:`` ...the comma-separated list of .dat files, respectively
+* ``graphkeys:`` this is a comma-separated list of strings to use in the
+  graph's legend.
+
+The following two entries are singletons:
+
+* ``ylabel:`` a label for the graph's y-axis (the x-axis will be time
+  by default)
+* ``graphtitle:`` a title for the graph as a whole
+
+
+Finally, add the ``.graph`` file to ``$CHPL_HOME/test/GRAPHFILES``.  This file
+is separated into a number of suites (indicated by comments) followed
+by graphs that should appear in those suites (a graph may appear in
+multiple suites).  This file determines how graphs are organized on
+the Chapel performance graphing webpages (currently hosted at
+``http://chapel.sourceforge.net/perf/``).
+
+Once the ``.graph`` file exists and is listed in ``GRAPHFILES``, running
+``start_test -performance`` will cause the test system to not only create
+the ``.dat`` files, but also to create a graph as described in the .graph
+file.  To view the graph, point your browser to
+``$CHPL_TEST_PERF_DIR/<machinename>/html/index.html``.  Then select the
+suite(s) in which your graph appears, and you should see data for it.
+(Note that for a new graph with only one day of data, it can be hard
+to see the singleton points at first).
+
+Test Your Test Before Submitting
+++++++++++++++++++++++++++++++++
+
+Before submitting your test for review, be sure that it works under
+both ``start_test`` and ``start_test -performance`` modes when running
+within the directory (or directories) in question.  Nothing is more
+embarrassing than committing a test that doesn't work on day one.
+
+Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
+Chapel repository, they will start showing up on the Chapel public
+pages as well.
+
+
    - `a test that tracks a failure`_
 
      - `that requires Chapel developer effort to fix`_
      - `that should fix itself when a dependency updates`_
 
-Invoking start_test for correctness testing
-===========================================
+Invoking start_test for
+=======================
+
+correctness testing
+-------------------
 The `simple example <an ordinary correctness test>`_ demonstrates invoking
 ``start_test`` on a single explicitly-named file.  More generally,
 ``start_test`` takes a list of test and directory names on the command line and
@@ -423,3 +649,17 @@ stored in the ``typeTests/`` and ``OOPTests/`` subdirectories.
 
 If invoked without any arguments, ``start_test`` will start in the current
 directory and recursively look for tests in subdirectories.
+
+performance testing
+-------------------
+To run performance testing, add the ``--performance`` flag to ``start_test``
+along with the traditional options.  So for example, to run this
+single test in performance mode, one could use:
+
+  ``start_test --performance foo.chpl``
+
+When crawling a directory hierarchy, only tests with ``.perfkeys`` files
+will be considered when testing in performance mode.
+
+All performance tests are compiled with ``--fast`` by default and ``--static``
+when it's not problematic for the target configuration.
