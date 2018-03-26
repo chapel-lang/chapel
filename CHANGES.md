@@ -1,6 +1,135 @@
 Release Changes List
 ====================
 
+version 1.17.0
+==============
+
+Twentieth public release of Chapel, April 5, 2018
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+New Dependences / Configuration Changes
+---------------------------------------
+
+File / Directory Structure
+--------------------------
+
+New Tools / Tool Changes
+------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Known Feature Slips
+-------------------
+
+Removed Features
+----------------
+
+Standard Modules/Library
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations/Improvements
+--------------------------------------
+
+Memory Improvements
+-------------------
+
+Compiler Flags
+--------------
+
+Documentation
+-------------
+
+Example Codes
+-------------
+
+Locale Models
+-------------
+
+Portability
+-----------
+
+Cray-specific Changes
+---------------------
+
+Platform-specific Changes
+-------------------------
+
+Syntax Highlighting
+-------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Runtime Error Checks
+--------------------
+
+Bug Fixes
+---------
+
+Launchers
+---------
+
+Runtime Library Changes
+-----------------------
+
+Generated Code
+--------------
+
+Third-Party Software Changes
+----------------------------
+
+Testing System
+--------------
+
+Developer-oriented changes: Configuration changes
+-------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+
+Developer-oriented changes: Module improvements
+-----------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Third-party improvements
+----------------------------------------------------
+
+
 version 1.16.0
 ==============
 
