@@ -7463,7 +7463,9 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
       propagateNotPOD(at);
     }
 
-    if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
+    if (isPrimitiveType(retType) == false &&
+        (autoDestroyMap.get(retType) == NULL ||
+         isClass(retType))) {
       USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
       serializeFn = NULL;
     } else {
