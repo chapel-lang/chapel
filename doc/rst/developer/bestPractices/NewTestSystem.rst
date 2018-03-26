@@ -24,7 +24,6 @@ through the test directory itself to see how it is used in practice.
 Outline
 =======
 
- * `Summary of Testing Files`_
  * `So you want to make:`_
 
    - `a correctness test`_
@@ -50,96 +49,17 @@ Outline
 
    - `a test that tracks a failure`_
 
-     - `that requires Chapel developer effort to fix`_
-     - `that should fix itself when a dependency updates`_
+     - `Locking in current behavior`_
+     - `Resolving a future`_
 
 * `Invoking start_test for`_
 
   - `correctness testing`_
   - `performance testing`_
 
+* `Summary of Testing Files`_
+* `Planned Changes of Testing System`_
 
-Summary of Testing Files
-========================
-
-.. TODO: When we move these docs to Sphinx, add :ref:'s to other parts of file,
-         within this table
-
-The following table serves as a quick reference for the various test files, and
-as a table of contents for this page.
-Using file base name, ``foo`` for the filenames in this table.
-
-=================   ===========================================================
-File                Contents of file
-=================   ===========================================================
-**correctness**
--------------------------------------------------------------------------------
-foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run
-foo.good            expected output of test program
-..
--------------------------------------------------------------------------------
-**Test Settings**
--------------------------------------------------------------------------------
-foo.compopts        line separated compiler flag configurations
-COMPOPTS            directory-wide compiler flags
-foo.execopts        line separated runtime flag configurations
-EXECOPTS            directory-wide runtime flags
-foo.execenv         line separated list of environment variables settings
-EXECENV             directory-wide environment variables
-foo.numlocales      number of locales to use in multi-locale run
-..
--------------------------------------------------------------------------------
-**TODO NAME ME**
--------------------------------------------------------------------------------
-foo.catfiles        files to include when validating the expected output
-foo.prediff         script that is run on the test output, before taking the
-                    diff between the output and .good file
-PREDIFF             directory-wide script that is run over test output
-foo.precomp         script that is run prior to compilation of the test program
-PRECOMP             directory-wide script that is run prior to compilation
-foo.preexec         script that is run prior to execution of the test program
-PREEXEC             directory-wide script that is run prior to execution
-..
--------------------------------------------------------------------------------
-**Testing System Settings**
--------------------------------------------------------------------------------
-foo.noexec          empty file. Indicates .chpl file should only be compiled,
-                    not executed.
-foo.notest          empty file. Indicates the file should not be run explicitly
-NOTEST              empty file. Indicates the directory should not be run
-foo.skipif          line separated list of conditions under which the test
-                    should not be run, or a script to compute the same
-SKIPIF              same as above, but applied to the entire directory
-foo.suppressif      line separated list of conditions under which the test is
-                    expected to fail, or a script to compute the same
-foo.timeout         time in seconds after which start_test should stop this test
-..
--------------------------------------------------------------------------------
-**performance**
--------------------------------------------------------------------------------
-foo.perfcompopts    compiler flags, overrides .compopts for --performance
-foo.perfexecopts    runtime flags, overrides .execopts for --performance
-foo.perfexecenv     environment variables, overrides .execenv for --performance
-foo.perfnumtrials   number of execution trials to run if no timeout specified
-foo.perftimeout     time in seconds after which start_test should stop this test
-foo.perfkeys        keys to search for in the output
-foo.graph           Specifies which data files and perfkeys to graph, and
-                    contains meta-data associated with labeling data sets,
-                    axis, and graphs
-test/GRAPHFILES     Acts as an index that tracks all .graph that should be
-                    graphed.
-..
--------------------------------------------------------------------------------
-**futures**
--------------------------------------------------------------------------------
-foo.future          Describes the future being tested, following the
-                    newline-separated format of:
-                    *category*, *title*, *issue #*
-foo.bad             output generated on a failing test, to track if a known
-                    failing future begins failing a different way
-..
-=================   ===========================================================
 
 
 So you want to make:
@@ -624,11 +544,104 @@ Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
 pages as well.
 
+a test that tracks a failure
+----------------------------
 
-   - `a test that tracks a failure`_
+The testing system also serves as our current system for tracking code-driven
+bugs and open issues.  When a bug is encountered (either by a user or a
+developer), if it is not quickly resolved then it will be tracked by making what
+is known as a future.
 
-     - `that requires Chapel developer effort to fix`_
-     - `that should fix itself when a dependency updates`_
+When making a new test that is a future, follow the guidelines for making a
+correctness test.  Like normal correctness tests, a future will specify a
+``.good`` file with its intended output.  However, the future is not expected to
+match against the ``.good`` file when the future is filed - developer effort is
+usually required to fix the bug.
+
+Once this test is created (or if a test already exists), add a ``.future`` file
+sharing the same base name as the test to mark it as a future.  For example,
+adding a ``hi.future`` file would make the simple correctness test at the start
+of this document into a future test.
+
+Marking a test as a future causes it to be tested every night, but not to be
+counted against the compiler's success/failure statistics.  If/when the future
+matches its ``.good`` file, developers will be alerted by the testing system.
+
+The format of the ``.future`` file itself is minimally structured. The
+first line should contain the type of future (see list below) followed
+by a brief (one 80-column line) description of the future, which ideally
+reflects the associated GitHub issue title. The next line should contain the
+associated GitHub issue number in the `#issue-number` format, e.g. `#1`.
+
+The rest of the file is optional and free-form. It can be used over the
+future's lifetime to describe in what way the test isn't working or should be
+working, implementation notes, philosophical arguments, etc.
+
+The current categories of futures reflect GitHub labels:
+
+* bug: this test exhibits a bug in the implementation
+
+* error message: this test correctly generates an error message, but
+    the error message needs clarification/improvement
+
+* feature request: a way of filing a request for a particular feature
+  in Chapel
+
+* performance: indicates a performance issue that needs to be addressed
+
+* design:  this test raises a question about Chapel's semantics
+           that we ultimately need to address
+
+* portability: indicates a portability issue that needs to be addressed
+
+* unimplemented feature: this test uses features that are specified, but
+    which have not yet been implemented.
+
+**GitHub and futures**
+
+Currently, it is mandatory to include a GitHub issue number with any new
+futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
+have a description instead of an issue number.
+
+When filing a bug report as an issue, it is considered good practice to
+include a future for the issue tracked on the `GitHub issues page`_.
+
+.. _`GitHub issues page`: https://github.com/chapel-lang/chapel/issues
+
+
+Locking in current behavior
++++++++++++++++++++++++++++
+
+Sometimes a future will change its behavior, but not be resolved.  The future
+should be updated to continue to track the issue as much as possible - to alert
+developers when this happens, it is necessary to track not only the expected
+good output but also the output indicating the current failure.  This is done
+via a ``.bad`` file.  The contents of a ``.bad`` file are similar to a ``.good``
+file and should match the currently generated output of the test.
+
+Tests whose current/``.bad`` output varies based on the compiler version number,
+line numbers of standard modules and such are fragile since these things change
+frequently; in such cases, either a ``.prediff`` should be used to filter the
+output before comparing to ``.bad``, or the ``.bad`` should be omitted.
+Ultimately, our intention is to support a library of common recipes for ``.bad``
+files, but this has not been implemented yet.
+
+Resolving a future
+++++++++++++++++++
+
+There are three situations under which a future will get resolved.
+
+1) A developer explicitly works on resolving the future.
+2) A developer works on another feature or issue and as a consequence the future
+   gets resolved.
+
+   - This could happen if the two issues appeared to be unrelated, or if the
+     existance of the future had been forgotten
+
+3) A developer examines the future and determines the current behavior is correct
+
+   - The developer may then either remove the supporting files for futures, or
+     remove the test entirely.
 
 Invoking start_test for
 =======================
@@ -663,3 +676,112 @@ will be considered when testing in performance mode.
 
 All performance tests are compiled with ``--fast`` by default and ``--static``
 when it's not problematic for the target configuration.
+
+Summary of Testing Files
+========================
+
+.. TODO: When we move these docs to Sphinx, add :ref:'s to other parts of file,
+         within this table
+
+The following table serves as a quick reference for the various test files, and
+as a table of contents for this page.
+Using file base name, ``foo`` for the filenames in this table.
+
+=================   ===========================================================
+File                Contents of file
+=================   ===========================================================
+**correctness**
+-------------------------------------------------------------------------------
+foo.chpl            Chapel test program to compile and run
+foo.test.c          C test program to compile and run
+foo.good            expected output of test program
+..
+-------------------------------------------------------------------------------
+**Test Settings**
+-------------------------------------------------------------------------------
+foo.compopts        line separated compiler flag configurations
+COMPOPTS            directory-wide compiler flags
+foo.execopts        line separated runtime flag configurations
+EXECOPTS            directory-wide runtime flags
+foo.execenv         line separated list of environment variables settings
+EXECENV             directory-wide environment variables
+foo.numlocales      number of locales to use in multi-locale run
+NUMLOCALES          directory-wide number of locales to use in multi-locale run
+..
+-------------------------------------------------------------------------------
+**Helper files**
+-------------------------------------------------------------------------------
+foo.catfiles        files to include when validating the expected output
+foo.prediff         script that is run on the test output, before taking the
+                    diff between the output and .good file
+PREDIFF             directory-wide script that is run over test output
+foo.precomp         script that is run prior to compilation of the test program
+PRECOMP             directory-wide script that is run prior to compilation
+foo.preexec         script that is run prior to execution of the test program
+PREEXEC             directory-wide script that is run prior to execution
+..
+-------------------------------------------------------------------------------
+**Testing System Settings**
+-------------------------------------------------------------------------------
+foo.noexec          empty file. Indicates .chpl file should only be compiled,
+                    not executed.
+foo.notest          empty file. Indicates the file should not be run explicitly
+NOTEST              empty file. Indicates the directory should not be run
+foo.skipif          line separated list of conditions under which the test
+                    should not be run, or a script to compute the same
+SKIPIF              same as above, but applied to the entire directory
+foo.suppressif      line separated list of conditions under which the test is
+                    expected to fail, or a script to compute the same
+foo.timeout         time in seconds after which start_test should stop this test
+..
+-------------------------------------------------------------------------------
+**performance**
+-------------------------------------------------------------------------------
+foo.perfcompopts    compiler flags, overrides .compopts for --performance
+foo.perfexecopts    runtime flags, overrides .execopts for --performance
+foo.perfexecenv     environment variables, overrides .execenv for --performance
+foo.perfnumtrials   number of execution trials to run if no timeout specified
+foo.perftimeout     time in seconds after which start_test should stop this test
+foo.perfkeys        keys to search for in the output
+foo.graph           Specifies which data files and perfkeys to graph, and
+                    contains meta-data associated with labeling data sets,
+                    axis, and graphs
+test/GRAPHFILES     Acts as an index that tracks all .graph that should be
+                    graphed.
+..
+-------------------------------------------------------------------------------
+**futures**
+-------------------------------------------------------------------------------
+foo.future          Describes the future being tested, following the
+                    newline-separated format of:
+                    *category*, *title*, *issue #*
+foo.bad             output generated on a failing test, to track if a known
+                    failing future begins failing a different way
+..
+=================   ===========================================================
+
+.. _extensions:
+
+Planned Changes of Testing System
+=================================
+
+**Migrate to yaml-based system**
+
+It has been proposed to move away from the current system of 1 file per type of
+configurations, and opt for a yaml-based system. This would require a
+significant overhaul of the testing infrastructure, and consequently would take
+a lot of careful planning and development. For the time being, this idea
+remains backlogged on our testing wish list.
+
+**Support performance tracking of third-party codes**
+
+There is a desire to do more comprehensive comparisons of Chapel to other
+languages, particularly in benchmark suites. This system would likely involve
+scripts that would mirror a internal copy of, build, run, and gather timings
+for reference versions. This data could be shown on the performance tracking
+page.
+
+**Documentation Improvements**
+
+There are several aspects of the testing system undocumented.
+See the ``..  TODO`` lines within the raw text of this file to see a few.
