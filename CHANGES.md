@@ -17,7 +17,8 @@ Highlights (see subsequent sections for further details)
 * language highlights:
   - dramatically improved support for user-defined and implicit initializers
   - added support for uninterpreted triple-quoted strings
-  - notable improvements to `Owned(c)` and `Shared(c)`
+  - usability improvements for `Owned(c)` and `Shared(c)`
+  - improved coercions for `enum` and numeric types, particularly `real(32)`
 * standard library/package highlights:
   - `LinearAlgebra` matrices now use 1-based indices by default
   - new Kronecker, Cholesky, eigenvector/value routines in `LinearAlgebra`
@@ -77,11 +78,11 @@ New Features
 * added support for `continue` statements within forall loops
 * extended `delete` to accept arrays and list of expressions to delete
   (see 'Deleting Class Objects' in the 'Classes' chapter of the specification)
-* added an `isEmpty()` method on domains
 * type and param fields can now be accessed from a type variable
   (see 'Field Accesses' in the 'Classes' chapter of the specification)
 * added support for forwarding methods on arrays, domains, and distributions
   (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#overview)
+* added an `isEmpty()` method on domains
 * added support for associative domains whose index types contain ranges
 * added support for subtype queries on distributions
   (see 'Methods on All Domain Types' in the 'Domains' chapter of the spec)
@@ -91,12 +92,12 @@ Feature Improvements
 --------------------
 * dramatically improved support for user-defined initializers
   (see https://chapel-lang.org/docs/1.17/technotes/initializers.html)
-* made `real(32)` variables significantly more usable
+* improved `enum` and numeric coercions, greatly improving `real(32)` usability
   (see 'Implicit Numeric, Bool, and Enumeration Conversions' in the spec)
 * made string->value casts throw rather than halt() when encountering errors
 * `Owned(c)` and `Shared(c)` now coerce to type `c`
   (see https://chapel-lang.org/docs/1.17/modules/packages/OwnedObject.html)
-* `Owned(d)`/`Shared(d)` now coerce to `Owned(c)`/`Shared(c)` for `class d: c`
+* made `Owned(d)` coerce to `Owned(c)` when `c` is a superclass of `d`
   (see https://chapel-lang.org/docs/1.17/modules/packages/OwnedObject.html)
 * writing out an `Owned(c)` now simply prints the `c` object
 * improved support for casting arrays to strings
@@ -386,7 +387,6 @@ Testing System
 * improved test system checks and support for valid valgrind configurations
 * fixed a race in code that limits the number of concurrently executing tests
 * fixed a sporadic error in tests using the high-precision timer option
-* expanded availability of FileCheck testing tool to CHPL_LLVM=system builds
 
 Developer-oriented changes: Configuration changes
 -------------------------------------------------
@@ -2663,7 +2663,7 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added support for task callbacks in the runtime
-* eliminated reliance on __always_inline
+* eliminated reliance on `__always_inline`
 * added chpl_mem_goodAllocSize() to runtime to support minimizing wasted memory
 * added the ability to flag certain memory types to avoid tracking them
 * added a capability to generate a header file #defining CHPL_* variables
