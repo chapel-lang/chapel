@@ -19,7 +19,7 @@ Highlights (see subsequent sections for further details)
   - added support for uninterpreted triple-quoted strings
   - usability improvements for `Owned(c)` and `Shared(c)`
   - improved coercions for `enum` and numeric types, particularly `real(32)`
-* standard library/package highlights:
+* standard library / package highlights:
   - `LinearAlgebra` matrices now use 1-based indices by default
   - new Kronecker, Cholesky, eigenvector/value routines in `LinearAlgebra`
   - added the Blowfish cipher to the `Crypto` module
@@ -117,8 +117,8 @@ Removed Features
 * removed deprecated `LayoutCSR` module in favor of `LayoutCS`
 * removed `ReplicatedDist` in favor of `Replicated`
 
-Standard Modules/Library
-------------------------
+Standard Modules / Library
+--------------------------
 * added Bessel functions to `Math` module
   (see https://chapel-lang.org/docs/1.17/modules/standard/Math.html#Math.j0)
 * added support for joinPath(), isAbsPath(), commonPath() to the `Path` module
@@ -182,11 +182,16 @@ Performance Optimizations/Improvements
 * improved remote value forwarding optimization for types with initializers
 * reduced wide-pointer overhead for domains and distributions
 * re-enabled and improved --llvm-wide-opt optimizations
+* improved the performance of the `Barriers` module by using processor atomics
+* improved execution start up times under `ugni`
+* increased the amount of communication concurrency permitted for `ugni`
+* significantly improved scalability of `coforall ... do on ... {}` under `ugni`
+* increased the rate that on-stmts that can be processed under `ugni`
+* improved performance of puts/gets for GASNet over the `aries` conduit
 
 Memory Improvements
 -------------------
 * closed a number of memory leaks
-  (see https://chapel-lang.org/perf/chapcs/?startdate=2017/09/23&enddate=2018/04/05&graphs=memoryleaksforalltests)
 * significantly improved iterator memory management
 * optimized away storage of alignment-related fields from non-stridable ranges
 * fixed some incorrect memory descriptors
@@ -263,12 +268,8 @@ Cray-specific Changes
   (see https://chapel-lang.org/docs/1.17/platforms/cray.html#ugni-communication-layer-and-the-heap)
 * raised the limit on Aries NIC resource usage for `ugni`
   (see https://chapel-lang.org/docs/1.17/platforms/cray.html#communication-layer-concurrency)
-* significantly improved scalability of `coforall ... do on ... {}` under `ugni`
-* reduced `ugni` active message handler overheads
-* improved the performance of the `Barriers` module by using processor atomics
-* removed `Bus error` messages when array allocation failed for `ugni`
+* improved upon `Bus error` messages when array allocation fails for `ugni`
 * improved backwards compatibility of `ugni` with respect to chained operations
-* improved performance of puts/gets for GASNet over the `aries` conduit
 * improved Cray XC code to pass stricter requirements of Clang
 
 Platform-specific Changes
