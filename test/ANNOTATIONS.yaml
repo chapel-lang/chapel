@@ -303,6 +303,15 @@ all:
   03/04/18:
     - text: system update
       config: 16 node XC
+  03/16/18:
+    - text: QSBR (#8182)
+      config: 16 node XC
+  03/18/18:
+    - text: QSBR reverted (#8841)
+      config: 16 node XC
+  03/20/18:
+    - text: upgrade default LLVM to LLVM 6 (#8869)
+      config: chapcs 
 
 
 AllCompTime:
@@ -1010,8 +1019,8 @@ revcomp:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
-  03/15/17:
-    - Update to test (#8815)
+  03/15/18:
+    - Brad version overhauled, based on mark-skip-read-begin (#8815)
 
 sad:
   05/03/16:
