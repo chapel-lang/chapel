@@ -160,7 +160,6 @@ Package Modules
 * added binaryInsertionSort to the `Sort` module
   (see https://chapel-lang.org/docs/1.17/modules/packages/Sort.html#Sort.binaryInsertionSort)
 * added `--debugTomlReader` flag for `TOML.TomlReader` submodule
-  (see https://chapel-lang.org/docs/1.17/modules/packages/Sort.html#Sort.binaryInsertionSort)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
