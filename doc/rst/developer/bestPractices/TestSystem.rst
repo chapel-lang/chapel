@@ -355,8 +355,7 @@ A Performance Test
 [Files used to illustrate the running example here can be found at
 `$CHPL_HOME/test/Samples/Performance`_ in the Chapel source repository]
 
-.. _`$CHPL_HOME/test/Samples/Performance`:
-https://github.com/chapel-lang/chapel/pull/8971
+.. _`$CHPL_HOME/test/Samples/Performance`: https://github.com/chapel-lang/chapel/pull/8971
 
 Identifying Performance Keys
 ++++++++++++++++++++++++++++
