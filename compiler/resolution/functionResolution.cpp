@@ -5745,14 +5745,26 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
+static bool isManagedPointerInit(SymExpr* typeExpr);
+
+static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, AggregateType* castFromType);
+
 static void resolveNew(CallExpr* newExpr) {
+
+  // handle borrow vs raw
+  AggregateType* castToType = NULL;
+  AggregateType* castFromType = NULL;
+
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
 
-        // Use the canonical class
-        if (isClass(at)) {
-          at = at->getCanonicalClass();
+        AggregateType* useType = resolveNewFindType(newExpr);
+        if (useType && useType != at) {
+          castToType = at;
+          castFromType = useType;
+          typeExpr->setSymbol(useType->symbol);
+          at = useType;
         }
 
         if (resolveNewHasInitializer(at) == false) {
@@ -5798,6 +5810,86 @@ static void resolveNew(CallExpr* newExpr) {
       USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
     }
   }
+   resolveNewCasts(newExpr, castToType, castFromType);
+}
+
+static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, AggregateType* castFromType) {
+
+  // cast from borrow back to raw, for 'new raw'
+  if (castToType) {
+    if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+      if (moveStmt->isPrimitive(PRIM_MOVE) ||
+          moveStmt->isPrimitive(PRIM_ASSIGN)) {
+
+        SymExpr* dstSe = toSymExpr(moveStmt->get(1));
+
+        // Un-set the type for the LHS
+        // This is set during normalization in many cases.
+        // It would be better not to set it during normalization in any case.
+        dstSe->symbol()->type = dtUnknown;
+
+        AggregateType* rawT = castFromType->getRawClass();
+        INT_ASSERT(rawT);
+
+        // Store the pointer we built into new_cast_temp
+        Symbol* dstSym = dstSe->symbol();
+        VarSymbol* tmp = newTemp("new_cast_tmp", castFromType);
+        moveStmt->insertBefore(new DefExpr(tmp));
+        dstSe->setSymbol(tmp);
+
+        // Cast it to a raw pointer
+        VarSymbol* tmpRaw = newTemp("new_cast_raw", rawT);
+        DefExpr* defRaw = new DefExpr(tmpRaw);
+        moveStmt->insertAfter(defRaw);
+        CallExpr* moveRaw = new CallExpr(PRIM_MOVE, tmpRaw,
+                              new CallExpr(PRIM_CAST, rawT->symbol, tmp));
+        defRaw->insertAfter(moveRaw);
+
+        CallExpr* addedNew = NULL;
+        CallExpr* moveFinal = NULL;
+        // Now move it to dstSym, possibly constructing a managed ptr
+        if (castToType == rawT) {
+          moveFinal = new CallExpr(PRIM_MOVE, dstSym, tmpRaw);
+        } else {
+          INT_ASSERT(isManagedPtrType(castToType));
+          addedNew = new CallExpr(PRIM_NEW, castToType->symbol, tmpRaw);
+          moveFinal = new CallExpr(PRIM_MOVE, dstSym, addedNew);
+        }
+        moveRaw->insertAfter(moveFinal);
+
+        resolveCall(moveStmt);
+        resolveCall(moveRaw);
+        if (addedNew) resolveCall(addedNew);
+        resolveCall(moveFinal);
+      }
+    }
+  }
+}
+
+static bool isManagedPointerInit(SymExpr* typeExpr) {
+
+  // Managed pointer init methods are:
+  //  - accepting a single raw class pointer
+  //  - accepting a single managed class pointer
+
+  // everything else is forwarded
+
+  if (typeExpr->next == NULL)
+    return false;
+
+  if (typeExpr->next->next != NULL)
+    return false;
+
+  Type* singleArgumentType = typeExpr->next->getValType();
+
+  if (isManagedPtrType(singleArgumentType))
+    return true;
+
+  if (AggregateType* at = toAggregateType(singleArgumentType))
+    if (at->isRawClass())
+      return true;
+
+  return false;
 }
 
 static bool resolveNewHasInitializer(AggregateType* at) {
@@ -5941,20 +6033,6 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
 
   newExpr->setUnresolvedFunction("_new");
 
-  // handle borrow vs raw
-  Type* castToType = NULL;
-
-  if (isClass(at)) {
-    SymExpr* se = toSymExpr(newExpr->get(1));
-    if (se->symbol() == gModuleToken)
-      se = toSymExpr(newExpr->get(3));
-
-    if (at->symbol != se->symbol()) {
-      castToType = se->typeInfo();
-      se->setSymbol(at->symbol);
-    }
-  }
-
   resolveCall(newExpr);
 
   if (at->hasPostInitializer() == true) {
@@ -5962,22 +6040,6 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
     Symbol*   moveDest = toSymExpr(moveStmt->get(1))->symbol();
 
     moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
-  }
-
-  // cast from borrow back to raw, for 'new raw'
-  if (castToType) {
-    if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
-      if (moveStmt->isPrimitive(PRIM_MOVE) ||
-          moveStmt->isPrimitive(PRIM_ASSIGN)) {
-        SymExpr* dstSe = toSymExpr(moveStmt->get(1));
-        Symbol* dstSym = dstSe->symbol();
-        VarSymbol* tmp = newTemp("new_cast_tmp", at);
-        moveStmt->insertBefore(new DefExpr(tmp));
-        dstSe->setSymbol(tmp);
-        moveStmt->insertAfter(new CallExpr(PRIM_MOVE, dstSym,
-              new CallExpr(PRIM_CAST, castToType->symbol, tmp)));
-      }
-    }
   }
 }
 
@@ -6151,10 +6213,14 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
 
   AggregateType* at = toAggregateType(type);
 
-  if (isClass(at)) {
-    // Use the canonical class
+  // Use the canonical class
+  if (at->isRawClass()) {
     at = at->getCanonicalClass();
+  } else if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
+    at = toAggregateType(at->getField("t")->type);
   }
+  INT_ASSERT(at);
+
   return at;
 }
 
