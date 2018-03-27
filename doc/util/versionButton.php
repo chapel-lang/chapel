@@ -84,7 +84,7 @@ var chplTitle = "<?php echo "$chplTitle";?>";
 
 // Note: assumes second element is most-recent release
 var chplVersions = [
-  "1.17 pre-release",
+  "1.17",   // post-release
   "1.16",
   "1.15",
   "1.14",
