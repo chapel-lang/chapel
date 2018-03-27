@@ -479,9 +479,9 @@ The compiler generated definition has no observable effect.
 
 A user may override this method and customize the behavior.  In
 release 1.17.0, defining an overload of the ``postinit`` method is
-sufficient to suppress the default record constructors.  This implies
-that it is not possible to initialize instances of this type without
-including one or more user-defined ``init`` methods.
+sufficient to suppress the default record constructors and trigger
+the generation of the default record initializer (if no explicit
+initializer is provided).
 
 In release 1.17.0 there is little advantage to customizing the
 ``postinit`` method for a record compared to performing these
