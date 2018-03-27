@@ -5946,6 +5946,9 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
 
   if (isClass(at)) {
     SymExpr* se = toSymExpr(newExpr->get(1));
+    if (se->symbol() == gModuleToken)
+      se = toSymExpr(newExpr->get(3));
+
     if (at->symbol != se->symbol()) {
       castToType = se->typeInfo();
       se->setSymbol(at->symbol);
