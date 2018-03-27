@@ -41,8 +41,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
-  classKind           = CLASS_RAW;
-  borrowClass         = NULL;
+  classKind           = CLASS_BORROW;
+  defaultClass        = NULL;
   nextAssociatedClass = NULL;
 
   typeConstructor     = NULL;
@@ -2539,16 +2539,28 @@ bool AggregateType::isRawClass() const {
   return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_RAW;
 }
 
-bool AggregateType::isBorrowClass() const {
+bool AggregateType::isBorrowedClass() const {
   return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_BORROW;
 }
 
+/*
 bool AggregateType::isOwnedClass() const {
   return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_OWNED;
+} */
+
+bool AggregateType::isCanonicalClass() const {
+  return (this->defaultClass == NULL ||
+         this->defaultClass == this);
 }
 
-const AggregateType* AggregateType::getRawClass() const {
-  for (const AggregateType* t = this->borrowClass;
+
+AggregateType* AggregateType::getRawClass() {
+  if (isRawClass())
+    return this;
+
+  generateRawBorrowClassTypes();
+
+  for (AggregateType* t = this->defaultClass;
        t != NULL;
        t = t->nextAssociatedClass) {
     if (t->isRawClass())
@@ -2556,21 +2568,77 @@ const AggregateType* AggregateType::getRawClass() const {
   }
   return NULL;
 }
-const AggregateType* AggregateType::getBorrowClass() const {
-  for (const AggregateType* t = this->borrowClass;
+AggregateType* AggregateType::getBorrowedClass() {
+  if (isBorrowedClass())
+    return this;
+
+  generateRawBorrowClassTypes();
+
+  for (AggregateType* t = this->defaultClass;
        t != NULL;
        t = t->nextAssociatedClass) {
-    if (t->isBorrowClass())
+    if (t->isBorrowedClass())
       return t;
   }
   return NULL;
 }
-const AggregateType* AggregateType::getOwnedClass() const {
-  for (const AggregateType* t = this->borrowClass;
+/*
+AggregateType* AggregateType::getOwnedClass() {
+  if (isOwnedClass())
+    return this;
+
+  generateRawBorrowClassTypes();
+
+  for (AggregateType* t = this->defaultClass;
        t != NULL;
        t = t->nextAssociatedClass) {
     if (t->isOwnedClass())
       return t;
   }
   return NULL;
+}*/
+AggregateType* AggregateType::getCanonicalClass() {
+  generateRawBorrowClassTypes();
+
+  if (aggregateTag == AGGREGATE_CLASS) {
+    INT_ASSERT(this->defaultClass);
+    return this->defaultClass;
+  }
+
+  return NULL;
+}
+
+
+void AggregateType::generateRawBorrowClassTypes() {
+  AggregateType* at = this;
+  if (aggregateTag == AGGREGATE_CLASS && at->defaultClass == NULL) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate raw and owned class types
+    AggregateType* raw = new AggregateType(AGGREGATE_CLASS);
+    //AggregateType* own = new AggregateType(AGGREGATE_CLASS);
+
+    at->classKind = CLASS_BORROW;
+    raw->classKind = CLASS_RAW;
+    ////raw->instantiatedFrom = dtRaw;
+    //own->classKind = CLASS_OWNED;
+    ////own->instantiatedFrom = dtOwned;
+
+    at->defaultClass = at;
+    raw->defaultClass = at;
+    //own->defaultClass = at;
+    at->nextAssociatedClass = raw;
+    //raw->nextAssociatedClass = own;
+
+
+    TypeSymbol* tsRaw = new TypeSymbol(astr("raw ", at->symbol->name), raw);
+    tsRaw->addFlag(FLAG_NO_OBJECT);
+    //TypeSymbol* tsOwn = new TypeSymbol(astr("own ", at->symbol->name), own);
+    //tsOwn->addFlag(FLAG_NO_OBJECT);
+
+    DefExpr* defRaw = new DefExpr(tsRaw);
+    //DefExpr* defOwn = new DefExpr(tsOwn);
+
+    at->symbol->defPoint->insertBefore(defRaw);
+    //at->symbol->defPoint->insertBefore(defOwn);
+  }
 }

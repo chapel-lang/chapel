@@ -37,7 +37,7 @@ enum AggregateTag {
 enum ClassKind {
   CLASS_RAW,
   CLASS_BORROW,
-  CLASS_OWNED,
+  //CLASS_OWNED,
 };
 
 enum InitializerStyle {
@@ -149,12 +149,16 @@ public:
 
 
   bool                        isRawClass() const;
-  bool                        isBorrowClass() const;
-  bool                        isOwnedClass() const;
+  bool                        isBorrowedClass() const;
+  //bool                        isOwnedClass() const;
+  bool                        isCanonicalClass() const;
 
-  const AggregateType*        getRawClass() const;
-  const AggregateType*        getBorrowClass() const;
-  const AggregateType*        getOwnedClass() const;
+  AggregateType*              getRawClass();
+  AggregateType*              getBorrowedClass();
+  //AggregateType*              getOwnedClass();
+  AggregateType*              getCanonicalClass();
+
+  void generateRawBorrowClassTypes();
 
   //
   // Public fields
@@ -162,7 +166,7 @@ public:
 
   AggregateTag                aggregateTag;
   ClassKind                   classKind;
-  AggregateType*              borrowClass; // for class, what is borrow type?
+  AggregateType*              defaultClass; // borrow type usually
   AggregateType*              nextAssociatedClass; // e.g. raw for owned
 
   FnSymbol*                   typeConstructor;

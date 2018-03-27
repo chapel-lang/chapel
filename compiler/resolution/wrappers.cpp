@@ -1468,6 +1468,20 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   }
 }
 
+static bool isRawClass(Type* t) {
+  if (AggregateType* at = toAggregateType(t)) {
+    return at->isRawClass();
+  }
+  return NULL;
+}
+static bool isBorrowClass(Type* t) {
+  if (AggregateType* at = toAggregateType(t)) {
+    return at->isBorrowedClass();
+  }
+  return NULL;
+}
+
+
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
 static void addArgCoercion(FnSymbol*  fn,
@@ -1532,6 +1546,12 @@ static void addArgCoercion(FnSymbol*  fn,
     checkAgain = true;
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
+  } else if (isRawClass(ats->getValType()) &&
+             isBorrowClass(formal->getValType())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr(PRIM_CAST, formal->getValType()->symbol, prevActual);
 
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&

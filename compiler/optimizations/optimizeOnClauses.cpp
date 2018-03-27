@@ -264,6 +264,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TYPE_TO_STRING:
   case PRIM_ENUM_MIN_BITS:
   case PRIM_ENUM_IS_SIGNED:
+  case PRIM_IS_CLASS_TYPE:
   case PRIM_IS_EXTERN_CLASS_TYPE:
   case PRIM_IS_RECORD_TYPE:
   case PRIM_IS_UNION_TYPE:
@@ -320,6 +321,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TRY_EXPR:
   case PRIM_TRYBANG_EXPR:
   case PRIM_CHECK_ERROR:
+  case PRIM_GET_RAW_TYPE:
+  //case PRIM_GET_OWNED_TYPE:
+  case PRIM_GET_BORROWED_TYPE:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 

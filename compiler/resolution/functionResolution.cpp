@@ -180,7 +180,7 @@ static Expr* foldTryCond(Expr* expr);
 
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
-static void generateRawClassTypes();
+//static void generateRawClassTypes();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
@@ -666,6 +666,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
+    if (formalType == dtRaw && atActual->isRawClass())
+      return true;
+    //if (formalType == dtOwned && atActual->isOwnedClass())
+    //  return true;
+
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
       if (canInstantiate(atFrom, formalType) == true) {
         return true;
@@ -1077,6 +1082,18 @@ bool canCoerce(Type*     actualType,
       return canDispatch(actualBaseType, NULL, formalType, fn,
                          promotes, paramNarrows);
     }
+  }
+
+  // Handle coercions from raw/owned -> borrow
+  if (isClass(actualType) && isClass(formalType)) {
+    AggregateType* actualAt = toAggregateType(actualType);
+    AggregateType* formalAt = toAggregateType(formalType);
+    AggregateType* actualC = actualAt->getCanonicalClass();
+    AggregateType* formalC = formalAt->getCanonicalClass();
+    if (formalAt->isBorrowedClass())
+      if (actualAt->isRawClass()) // || actualAt->isOwnedClass())
+        if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
+          return true;
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -5735,6 +5752,12 @@ static void resolveNew(CallExpr* newExpr) {
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
+
+        // Use the canonical class
+        if (isClass(at)) {
+          at = at->getCanonicalClass();
+        }
+
         if (resolveNewHasInitializer(at) == false) {
           resolveNewHandleConstructor(newExpr);
 
@@ -5921,6 +5944,17 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
 
   newExpr->setUnresolvedFunction("_new");
 
+  // handle borrow vs raw
+  Type* castToType = NULL;
+
+  if (isClass(at)) {
+    SymExpr* se = toSymExpr(newExpr->get(1));
+    if (at->symbol != se->symbol()) {
+      castToType = se->typeInfo();
+      se->setSymbol(at->symbol);
+    }
+  }
+
   resolveCall(newExpr);
 
   if (at->hasPostInitializer() == true) {
@@ -5928,6 +5962,22 @@ static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
     Symbol*   moveDest = toSymExpr(moveStmt->get(1))->symbol();
 
     moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+  }
+
+  // cast from borrow back to raw, for 'new raw'
+  if (castToType) {
+    if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+      if (moveStmt->isPrimitive(PRIM_MOVE) ||
+          moveStmt->isPrimitive(PRIM_ASSIGN)) {
+        SymExpr* dstSe = toSymExpr(moveStmt->get(1));
+        Symbol* dstSym = dstSe->symbol();
+        VarSymbol* tmp = newTemp("new_cast_tmp", at);
+        moveStmt->insertBefore(new DefExpr(tmp));
+        dstSe->setSymbol(tmp);
+        moveStmt->insertAfter(new CallExpr(PRIM_MOVE, dstSym,
+              new CallExpr(PRIM_CAST, castToType->symbol, tmp)));
+      }
+    }
   }
 }
 
@@ -6099,7 +6149,13 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
   SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr);
   Type*    type     = resolveTypeAlias(typeExpr);
 
-  return toAggregateType(type);
+  AggregateType* at = toAggregateType(type);
+
+  if (isClass(at)) {
+    // Use the canonical class
+    at = at->getCanonicalClass();
+  }
+  return at;
 }
 
 // Find the SymExpr for the type.
@@ -7189,7 +7245,7 @@ void resolve() {
     }
   }
 
-  generateRawClassTypes();
+  //generateRawClassTypes();
 
   unmarkDefaultedGenerics();
 
@@ -8601,6 +8657,8 @@ static void removeUnusedTypes() {
         type->hasFlag(FLAG_REF)                == false &&
         type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
       if (AggregateType* at = toAggregateType(type->type)) {
+        if (at->id == 668311)
+          gdbShouldBreakHere();
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
@@ -8631,7 +8689,8 @@ static void removeUnusedTypes() {
   }
 }
 
-static bool isUnusedClass(AggregateType* ct) {
+// TODO - rename to isUnusedAggregateType and argument to at
+static bool do_isUnusedClass(AggregateType* ct) {
   bool retval = true;
 
   // Special case for global types.
@@ -8675,6 +8734,25 @@ static bool isUnusedClass(AggregateType* ct) {
         break;
       }
     }
+
+  }
+
+  return retval;
+}
+
+static bool isUnusedClass(AggregateType* ct) {
+  bool retval = true;
+
+  // don't prune classes that have another variant used
+  if (isClass(ct)) {
+    if (AggregateType* r = ct->getRawClass())
+      retval &= do_isUnusedClass(r);
+    if (AggregateType* b = ct->getBorrowedClass())
+      retval &= do_isUnusedClass(b);
+    //if (AggregateType* o = ct->getOwnedClass())
+    //  retval &= do_isUnusedClass(o);
+  } else {
+    retval = do_isUnusedClass(ct);
   }
 
   return retval;
@@ -9637,7 +9715,7 @@ DisambiguationState::DisambiguationState() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-static void generateRawClassTypes() {
+/*static void generateRawClassTypes() {
   forv_Vec(AggregateType, at, gAggregateTypes) {
     if (isClass(at) && at->borrowClass == NULL) {
       if (at->symbol->hasFlag(FLAG_EXTERN)) {
@@ -9654,8 +9732,8 @@ static void generateRawClassTypes() {
         at->nextAssociatedClass = raw;
         raw->nextAssociatedClass = own;
 
-        TypeSymbol* tsRaw = new TypeSymbol(at->symbol->name, raw);
-        TypeSymbol* tsOwn = new TypeSymbol(at->symbol->name, own);
+        TypeSymbol* tsRaw = new TypeSymbol(astr("raw ", at->symbol->name), raw);
+        TypeSymbol* tsOwn = new TypeSymbol(astr("own ", at->symbol->name), own);
 
         DefExpr* defRaw = new DefExpr(tsRaw);
         DefExpr* defOwn = new DefExpr(tsOwn);
@@ -9665,4 +9743,4 @@ static void generateRawClassTypes() {
       }
     }
   }
-}
+}*/

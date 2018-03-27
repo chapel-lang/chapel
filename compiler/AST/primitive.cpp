@@ -409,6 +409,46 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
   return t;
 }
 
+static QualifiedType
+returnInfoToRaw(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (AggregateType* raw = at->getRawClass())
+        t = raw;
+    }
+  }
+  return QualifiedType(t, QUAL_VAL);
+}
+
+/*
+static QualifiedType
+returnInfoToOwned(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (AggregateType* own = at->getOwnedClass())
+        t = own;
+    }
+  }
+  return QualifiedType(t, QUAL_VAL);
+}
+*/
+
+static QualifiedType
+returnInfoToBorrowed(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (AggregateType* own = at->getBorrowedClass())
+        t = own;
+    }
+  }
+  return QualifiedType(t, QUAL_VAL);
+}
+
+
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -739,6 +779,7 @@ initPrimitive() {
   prim_def(PRIM_CLASS_NAME_BY_ID, "class name by id", returnInfoStringC);
 
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
+  prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_CLASS_TYPE, "is extern class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
@@ -774,6 +815,10 @@ initPrimitive() {
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
+
+  prim_def(PRIM_GET_RAW_TYPE, "get raw type", returnInfoToRaw, false, false);
+  //prim_def(PRIM_GET_OWNED_TYPE, "get owned type", returnInfoToOwned, false, false);
+  prim_def(PRIM_GET_BORROWED_TYPE, "get borrowed type", returnInfoToBorrowed, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

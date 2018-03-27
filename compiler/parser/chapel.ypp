@@ -1431,9 +1431,9 @@ opt_formal_type:
 | TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
 | TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
-| TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "Owned"); }
-| TCOLON TRAW               { $$ = new UnresolvedSymExpr( "Raw"); }
-| TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "Shared"); }
+| TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "_owned"); }
+| TCOLON TRAW               { $$ = new UnresolvedSymExpr( "_raw"); }
+| TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "_shared"); }
 | TCOLON formal_array_type  { $$ = $2; }
 ;
 
@@ -1511,11 +1511,11 @@ type_level_expr:
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 | TOWNED expr
-    { $$ = buildManagedPointerType( "Owned", $2); }
+    { $$ = buildManagedPointerType( "_owned", $2); }
 | TRAW expr
-    { $$ = buildManagedPointerType( "Raw", $2); }
+    { $$ = buildManagedPointerType( "_to_raw", $2); }
 | TSHARED expr
-    { $$ = buildManagedPointerType( "Shared", $2); }
+    { $$ = buildManagedPointerType( "_shared", $2); }
 ;
 
 for_expr:

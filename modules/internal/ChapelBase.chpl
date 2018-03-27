@@ -1745,9 +1745,7 @@ module ChapelBase {
   }
 
 
-  proc isClassType(type t) param where t:object return true;
-  proc isClassType(type t) param where t == _nilType return true;
-  proc isClassType(type t) param return false;
+  proc isClassType(type t) param return __primitive("is class type", t);
 
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
@@ -1870,7 +1868,9 @@ module ChapelBase {
 
   // Classes
   pragma "no doc"
-  inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+  inline proc _defaultOf(type t) where isClassType(t) {
+    return __primitive("cast", t, nil);
+  }
 
   // Various types whose default value is known
   pragma "no doc"
@@ -1882,11 +1882,44 @@ module ChapelBase {
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
 
-  pragma "no doc"
+  /*pragma "no doc"
   inline proc _defaultOf(type t) where t: _ddata
-    return __primitive("cast", t, nil);
+    return __primitive("cast", t, nil);*/
 
   // There used to be a catch-all _defaultOf that return nil:t, but that
   // was the nexus of several tricky resolution bugs.
 
+  // type constructor for raw pointers
+  proc _to_raw(type t) type {
+    type rt = __primitive("get raw type", t).type;
+    return rt;
+  }
+  proc _to_borrowed(type t) type {
+    type rt = __primitive("get borrowed type", t).type;
+    return rt;
+  }
+  /*
+  proc _to_owned(type t) type {
+    type rt = __primitive("get owned type", t).type;
+    return rt;
+  }
+  pragma "no nil check"
+  proc _owned.borrow() {
+    return __primitive("cast", _to_borrowed(this.type), this);
+  }
+
+  inline proc _cast(type t, x) where t:_owned && x:_nilType {
+    return __primitive("cast", t, x);
+  }
+  inline proc _cast(type t, x) where t:object && x:_owned {
+    return __primitive("cast", t, x);
+  }*/
+
+  inline proc _cast(type t, x) where t:_raw && x:_nilType {
+    return __primitive("cast", t, x);
+  }
+
+  inline proc _cast(type t, x) where t:object && x:_raw {
+    return __primitive("cast", t, x);
+  }
 }
