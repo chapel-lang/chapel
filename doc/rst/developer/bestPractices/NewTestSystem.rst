@@ -24,20 +24,26 @@ through the test directory itself to see how it is used in practice.
 Outline
 =======
 
- * `So you want to make:`_
+ * `How to Make`_
 
-   - `a correctness test`_
+   - `A Correctness Test`_
 
-     - `that relies on outside arguments or settings`_
-     - `and control how and where it runs`_
+     - `With Outside Arguments <Outside Arguments or Settings>`_
 
-       - `Controlling timeouts`_
-       - `Different settings, different output`_
+       - `Compile-time Arguments`_
+       - `Execution-time Arguments`_
+       - `Environment Variables`_
 
-         - `Test should be limited to certain settings`_
-         - `Behavior in all settings is appropriate, but varies`_
+     - `Controlling How It Runs`_
 
-   - `a performance test`_
+       - `Limiting Time Taken`_
+
+     - `With Varying Output <Tests With Varying Output>`_
+
+       - `Test Not Applicable In All Settings <Limiting Where the Test Runs>`_
+       - `Testing Different Behavior in Different Settings`_
+
+   - `A Performance Test`_
 
      - `Identifying Performance Keys`_
      - `Validating Performance Test Output`_
@@ -50,25 +56,26 @@ Outline
      - `Creating a graph comparing multiple variations`_
      - `Test Your Test Before Submitting`_
 
-   - `a test that tracks a failure`_
+   - `A Test That Tracks A Failure`_
 
-     - `Locking in current behavior`_
-     - `Resolving a future`_
+     - `Github Issues`_
+     - `Tracking Current Failure Mode`_
+     - `Resolving a Future`_
 
-* `Invoking start_test for`_
+* `Invoking start_test For <Invoking start_test>`_
 
-  - `correctness testing`_
-  - `performance testing`_
+  - `Correctness Testing`_
+  - `Performance Testing`_
 
 * `Summary of Testing Files`_
 * `Planned Changes of Testing System`_
 
 
 
-So you want to make:
-====================
+How to Make
+===========
 
-a correctness test
+A Correctness Test
 ------------------
 
 Though trivial, this test is available at `$CHPL_HOME/test/Samples/Correctness`_
@@ -108,9 +115,12 @@ The concatenation of the compiler and executable output will then be compared
 against the ``.good`` file.  A transcript of the test system's actions is
 printed to the console and also stored in ``$CHPL_HOME/test/Logs/`` by default.
 
+For more information on using ``start_test``, see the `relevant section
+<Invoking start_test>`_.
 
-that relies on outside arguments or settings
-++++++++++++++++++++++++++++++++++++++++++++
+
+Outside Arguments or Settings
++++++++++++++++++++++++++++++
 
 In addition to the simplest form of test shown above, the test system supports a
 number of additional options for creating more complex tests.
@@ -122,7 +132,7 @@ directory are named in upper case, e.g. ``COMPOPTS``, or ``PERFNUMTRIALS``.
 They can be overriden or augumented with test-specific settings using the same
 name but in lower case, e.g. ``foo.compopts``.
 
-Compile-time arguments
+Compile-time Arguments
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To specify arguments to the compiler, provide a ``COMPOPTS`` or ``.compopts``
@@ -149,7 +159,7 @@ dynamically, the file would look like this:
      --static
      --dynamic
 
-Execution-time arguments
+Execution-time Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Specification of arguments for execution time is performed similarly, using
@@ -205,7 +215,7 @@ will be compiled twice, and executed four times by ``start_test``:
 
     ``./multiple-options --x=false``
 
-Environment variables
+Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
 
 Environment variables can be set for a particular test or directory using a
@@ -218,8 +228,8 @@ Here is an example ``.execenv`` file:
 
     CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
-and control how and where it runs
-+++++++++++++++++++++++++++++++++
+Controlling How It Runs
++++++++++++++++++++++++
 
 The testing system has a variety of files that can fine tune when a test gets
 run.
@@ -231,8 +241,8 @@ another test), give an empty file with the suffix ``.notest``.  A directory with
 an empty ``NOTEST`` file will similarly not be run by the testing system (unless
 its contents are explicitly listed in the call to ``start_test``).
 
-Controlling timeouts
-~~~~~~~~~~~~~~~~~~~~
+Limiting Time Taken
+~~~~~~~~~~~~~~~~~~~
 
 Normally, ``start_test`` will kill a test that has taken longer than 300 seconds
 to execute or has been compiling for longer than four times the execution
@@ -248,13 +258,14 @@ speed up the time to run the testing system when the failure mode does occur.
 
 Note that if the value in this file is longer than the global timeout, any
 explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
-`a performance test`_ for more details on the ``-num-trials`` setting).
+`the performance test section <A Performance Test>`_ for more details on the
+``-num-trials`` setting).
 
-Different settings, different output
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tests With Varying Output
++++++++++++++++++++++++++
 
-Test should be limited to certain settings
-******************************************
+Limiting Where the Test Runs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sometimes a test is only applicable to certain test environments: it might rely
 on multi-locale state, or change its behavior dramatically depending on if
@@ -298,8 +309,8 @@ would cause the test to be skipped when performance testing is done with
 CHPL_ATOMICS=locks, but not ordinary performance testing, or correctness
 testing with CHPL_ATOMICS=locks
 
-Behavior in all settings is appropriate, but varies
-***************************************************
+Testing Different Behavior in Different Settings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a test is intended to work in all settings but will have slightly different
 behavior in some situations, it is appropriate to add additional ``.good`` files
@@ -337,7 +348,7 @@ Any line that is unlabeled will use the default ``.good`` for that test.
 Undefined behavior will occur when both the ``.compopts`` and ``.execopts``
 files specify a ``.good`` file in this way.
 
-a performance test
+A Performance Test
 ------------------
 
 [Files used to illustrate the running example here can be found at
@@ -348,11 +359,13 @@ https://github.com/chapel-lang/chapel/pull/8971
 
 Identifying Performance Keys
 ++++++++++++++++++++++++++++
-Most of the information above pertains to the creation of a
-correctness test, in which the test's output is compared to a ``.good``
-file.  The testing system also supports performance tests in which one
-or more values from a test's output can be tracked on a nightly basis
-and optionally graphed.
+
+Most of the information above pertains to the creation of a correctness test, in
+which the test's output is compared to a ``.good`` file.  The testing system
+also supports performance tests in which one or more values from a test's output
+can be tracked on a nightly basis and optionally graphed.  Information about
+running a performance test can be found in `this section <Performance
+Testing>`_.
 
 Performance tests are specified using a ``.perfkeys`` file, which lists strings
 that the test system should look for in the output serving as prefixes for a
@@ -497,6 +510,7 @@ use case.
 
 Creating a graph comparing multiple variations
 ++++++++++++++++++++++++++++++++++++++++++++++
+
 Once you are creating multiple ``.dat`` files containing data you would
 like to graph, you'll create a ``.graph`` file indicating which data from
 which ``.dat`` files should be graphed.  For example, to compare the
@@ -560,7 +574,7 @@ Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
 pages as well.
 
-a test that tracks a failure
+A Test That Tracks A Failure
 ----------------------------
 
 The testing system also serves as our current system for tracking code-driven
@@ -595,24 +609,26 @@ working, implementation notes, philosophical arguments, etc.
 
 The current categories of futures reflect GitHub labels:
 
-* bug: this test exhibits a bug in the implementation
+* **bug**: this test exhibits a bug in the implementation
 
-* error message: this test correctly generates an error message, but the error
-  message needs clarification/improvement
+* **error message**: this test correctly generates an error message, but the
+  error message needs clarification/improvement
 
-* feature request: a way of filing a request for a particular feature in Chapel
+* **feature request**: a way of filing a request for a particular feature in
+  Chapel
 
-* performance: indicates a performance issue that needs to be addressed
+* **performance**: indicates a performance issue that needs to be addressed
 
-* design: this test raises a question about Chapel's semantics that we
+* **design**: this test raises a question about Chapel's semantics that we
   ultimately need to address
 
-* portability: indicates a portability issue that needs to be addressed
+* **portability**: indicates a portability issue that needs to be addressed
 
-* unimplemented feature: this test uses features that are specified, but which
-  have not yet been implemented.
+* **unimplemented feature**: this test uses features that are specified, but
+  which have not yet been implemented.
 
-**GitHub and futures**
+GitHub Issues
++++++++++++++
 
 Currently, it is mandatory to include a GitHub issue number with any new
 futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
@@ -624,8 +640,8 @@ include a future for the issue tracked on the `GitHub issues page`_.
 .. _`GitHub issues page`: https://github.com/chapel-lang/chapel/issues
 
 
-Locking in current behavior
-+++++++++++++++++++++++++++
+Tracking Current Failure Mode
++++++++++++++++++++++++++++++
 
 Sometimes a future will change its behavior, but not be resolved.  The future
 should be updated to continue to track the issue as much as possible - to alert
@@ -641,7 +657,7 @@ output before comparing to ``.bad``, or the ``.bad`` should be omitted.
 Ultimately, our intention is to support a library of common recipes for ``.bad``
 files, but this has not been implemented yet.
 
-Resolving a future
+Resolving a Future
 ++++++++++++++++++
 
 There are three situations under which a future will get resolved.
@@ -658,19 +674,20 @@ There are three situations under which a future will get resolved.
    - The developer may then either remove the supporting files for futures, or
      remove the test entirely.
 
-Invoking start_test for
-=======================
+Invoking start_test
+===================
 
 A brief description of flags that can be used with ``start_test`` itself can
 be obtained by calling ``start_test -h``.
 
-correctness testing
+Correctness Testing
 -------------------
-The `simple example <an ordinary correctness test>`_ demonstrates invoking
-``start_test`` on a single explicitly-named file.  More generally,
-``start_test`` takes a list of test and directory names on the command line and
-will run all tests explicitly named or contained within the directories (or
-their subdirectories).  For example:
+
+The `simple example <A Correctness Test>`_ demonstrates invoking ``start_test``
+on a single explicitly-named file.  More generally, ``start_test`` takes a list
+of test and directory names on the command line and will run all tests
+explicitly named or contained within the directories (or their subdirectories).
+For example:
 
   ``start_test foo.chpl bar/baz.chpl typeTests/ OOPTests/``
 
@@ -681,7 +698,7 @@ stored in the ``typeTests/`` and ``OOPTests/`` subdirectories.
 If invoked without any arguments, ``start_test`` will start in the current
 directory and recursively look for tests in subdirectories.
 
-performance testing
+Performance Testing
 -------------------
 To run performance testing, add the ``--performance`` flag to ``start_test``
 along with the traditional options.  So for example, to run this
@@ -714,17 +731,21 @@ File                Contents of file
 **correctness**
 -------------------------------------------------------------------------------
 foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run
+foo.test.c          C test program to compile and run. See `this section
+                    <Comparing to a C version>`_ for more information
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
 **Test Settings**
 -------------------------------------------------------------------------------
-foo.compopts        line separated compiler flag configurations
+foo.compopts        line separated compiler flag configurations.  See `this
+                    section <Compile-time Arguments>`_ for more information
 COMPOPTS            directory-wide compiler flags
-foo.execopts        line separated runtime flag configurations
+foo.execopts        line separated runtime flag configurations.  See `this
+                    section <Execution-time Arguments>`_ for more information
 EXECOPTS            directory-wide runtime flags
-foo.execenv         line separated list of environment variables settings
+foo.execenv         line separated list of environment variables settings.  See
+                    `this section <Environment Variables>`_ for more information
 EXECENV             directory-wide environment variables
 foo.numlocales      number of locales to use in multi-locale run
 NUMLOCALES          directory-wide number of locales to use in multi-locale run
@@ -749,15 +770,22 @@ PREEXEC             directory-wide script that is run prior to execution
 foo.cleanfiles      line separated list of files to remove before next test run
 CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
-                    not executed.
+                    not executed.  See `this section <Controlling How It Runs>`_
+                    for more information.
 foo.notest          empty file. Indicates the file should not be run explicitly
+                    See `this section <Controlling How It Runs>`_ for more
+                    information.
 NOTEST              empty file. Indicates the directory should not be run
 foo.skipif          line separated list of conditions under which the test
-                    should not be run, or a script to compute the same
+                    should not be run, or a script to compute the same.  See
+                    `this section <Limiting Where the Test Runs>`_ for more
+                    information
 SKIPIF              same as above, but applied to the entire directory
 foo.suppressif      line separated list of conditions under which the test is
                     expected to fail, or a script to compute the same
 foo.timeout         time in seconds after which start_test should stop this test
+                    See `this section <Limiting Time Taken>`_ for more
+                    information
 ..
 -------------------------------------------------------------------------------
 **performance**
@@ -785,7 +813,9 @@ foo.future          Describes the future being tested, following the
                     newline-separated format of:
                     *category*, *title*, *issue #*
 foo.bad             output generated on a failing test, to track if a known
-                    failing future begins failing a different way
+                    failing future begins failing a different way.  See `this
+                    section <Tracking Current Failure Mode>`_ for more
+                    information
 ..
 =================   ===========================================================
 
