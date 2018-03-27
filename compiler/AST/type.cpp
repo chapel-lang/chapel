@@ -930,8 +930,6 @@ void initPrimitiveTypes() {
 
   dtRaw = createInternalType("_raw", "_raw");
   dtRaw->symbol->addFlag(FLAG_GENERIC);
-  //dtOwned = createInternalType("_owned", "_owned");
-  //dtOwned->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
 

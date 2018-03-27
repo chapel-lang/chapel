@@ -421,20 +421,6 @@ returnInfoToRaw(CallExpr* call) {
   return QualifiedType(t, QUAL_VAL);
 }
 
-/*
-static QualifiedType
-returnInfoToOwned(CallExpr* call) {
-  Type* t = call->get(1)->getValType();
-  if (AggregateType* at = toAggregateType(t)) {
-    if (isClass(at)) {
-      if (AggregateType* own = at->getOwnedClass())
-        t = own;
-    }
-  }
-  return QualifiedType(t, QUAL_VAL);
-}
-*/
-
 static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
@@ -817,7 +803,6 @@ initPrimitive() {
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
 
   prim_def(PRIM_GET_RAW_TYPE, "get raw type", returnInfoToRaw, false, false);
-  //prim_def(PRIM_GET_OWNED_TYPE, "get owned type", returnInfoToOwned, false, false);
   prim_def(PRIM_GET_BORROWED_TYPE, "get borrowed type", returnInfoToBorrowed, false, false);
 }
 

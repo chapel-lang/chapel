@@ -180,7 +180,6 @@ static Expr* foldTryCond(Expr* expr);
 
 static void computeStandardModuleSet();
 static void unmarkDefaultedGenerics();
-//static void generateRawClassTypes();
 static void resolveUses(ModuleSymbol* mod);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
@@ -668,8 +667,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   if (AggregateType* atActual = toAggregateType(actualType)) {
     if (formalType == dtRaw && atActual->isRawClass())
       return true;
-    //if (formalType == dtOwned && atActual->isOwnedClass())
-    //  return true;
 
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
       if (canInstantiate(atFrom, formalType) == true) {
@@ -1084,14 +1081,14 @@ bool canCoerce(Type*     actualType,
     }
   }
 
-  // Handle coercions from raw/owned -> borrow
+  // Handle coercions from raw -> borrow
   if (isClass(actualType) && isClass(formalType)) {
     AggregateType* actualAt = toAggregateType(actualType);
     AggregateType* formalAt = toAggregateType(formalType);
     AggregateType* actualC = actualAt->getCanonicalClass();
     AggregateType* formalC = formalAt->getCanonicalClass();
     if (formalAt->isBorrowedClass())
-      if (actualAt->isRawClass()) // || actualAt->isOwnedClass())
+      if (actualAt->isRawClass())
         if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
           return true;
   }
@@ -7245,8 +7242,6 @@ void resolve() {
     }
   }
 
-  //generateRawClassTypes();
-
   unmarkDefaultedGenerics();
 
   resolveExternVarSymbols();
@@ -8657,8 +8652,6 @@ static void removeUnusedTypes() {
         type->hasFlag(FLAG_REF)                == false &&
         type->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
       if (AggregateType* at = toAggregateType(type->type)) {
-        if (at->id == 668311)
-          gdbShouldBreakHere();
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
@@ -8749,8 +8742,6 @@ static bool isUnusedClass(AggregateType* ct) {
       retval &= do_isUnusedClass(r);
     if (AggregateType* b = ct->getBorrowedClass())
       retval &= do_isUnusedClass(b);
-    //if (AggregateType* o = ct->getOwnedClass())
-    //  retval &= do_isUnusedClass(o);
   } else {
     retval = do_isUnusedClass(ct);
   }
@@ -9709,38 +9700,3 @@ DisambiguationState::DisambiguationState() {
   fn1WeakestPreferred= false;
   fn2WeakestPreferred= false;
 }
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-/*static void generateRawClassTypes() {
-  forv_Vec(AggregateType, at, gAggregateTypes) {
-    if (isClass(at) && at->borrowClass == NULL) {
-      if (at->symbol->hasFlag(FLAG_EXTERN)) {
-        at->classKind = CLASS_RAW;
-        at->borrowClass = at;
-      } else {
-        SET_LINENO(at->symbol->defPoint);
-        // Generate raw and owned class types
-        AggregateType* raw = new AggregateType(AGGREGATE_CLASS);
-        AggregateType* own = new AggregateType(AGGREGATE_CLASS);
-        at->borrowClass = at;
-        raw->borrowClass = at;
-        own->borrowClass = at;
-        at->nextAssociatedClass = raw;
-        raw->nextAssociatedClass = own;
-
-        TypeSymbol* tsRaw = new TypeSymbol(astr("raw ", at->symbol->name), raw);
-        TypeSymbol* tsOwn = new TypeSymbol(astr("own ", at->symbol->name), own);
-
-        DefExpr* defRaw = new DefExpr(tsRaw);
-        DefExpr* defOwn = new DefExpr(tsOwn);
-
-        at->symbol->defPoint->insertBefore(defRaw);
-        at->symbol->defPoint->insertBefore(defOwn);
-      }
-    }
-  }
-}*/

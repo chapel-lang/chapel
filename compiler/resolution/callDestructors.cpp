@@ -1386,4 +1386,5 @@ void callDestructors() {
   insertReferenceTemps();
 
   checkForErroneousInitCopies();
+
 }

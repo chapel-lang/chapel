@@ -1894,31 +1894,16 @@ module ChapelBase {
     type rt = __primitive("get raw type", t).type;
     return rt;
   }
+  // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
     type rt = __primitive("get borrowed type", t).type;
     return rt;
   }
-  /*
-  proc _to_owned(type t) type {
-    type rt = __primitive("get owned type", t).type;
-    return rt;
-  }
-  pragma "no nil check"
-  proc _owned.borrow() {
-    return __primitive("cast", _to_borrowed(this.type), this);
-  }
-
-  inline proc _cast(type t, x) where t:_owned && x:_nilType {
-    return __primitive("cast", t, x);
-  }
-  inline proc _cast(type t, x) where t:object && x:_owned {
-    return __primitive("cast", t, x);
-  }*/
-
+  // cast from nil to raw
   inline proc _cast(type t, x) where t:_raw && x:_nilType {
     return __primitive("cast", t, x);
   }
-
+  // cast from raw to borrow
   inline proc _cast(type t, x) where t:object && x:_raw {
     return __primitive("cast", t, x);
   }

@@ -260,8 +260,7 @@ static void insertNilChecks() {
         FnSymbol* fn = call->resolvedFunction();
 
         // Avoid inserting a nil-check if this is a call to a destructor
-        if (fn == NULL ||
-            !(fn->hasFlag(FLAG_DESTRUCTOR) || fn->hasFlag(FLAG_NO_NIL_CHECK))) {
+        if (fn == NULL || fn->hasFlag(FLAG_DESTRUCTOR) == false) {
           Expr* stmt = call->getStmtExpr();
 
           SET_LINENO(stmt);
