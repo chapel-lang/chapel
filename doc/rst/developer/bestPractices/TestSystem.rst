@@ -38,9 +38,9 @@ Outline
 
        - `Limiting Time Taken`_
 
-     - `With Varying Output <Tests With Varying Output>`_
+     - `With Varying Output`_
 
-       - `Test Not Applicable In All Settings <Limiting Where the Test Runs>`_
+       - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
    - `A Performance Test`_
@@ -62,7 +62,7 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
-* `Invoking start_test For <Invoking start_test>`_
+* `Invoking start_test For`_
 
   - `Correctness Testing`_
   - `Performance Testing`_
@@ -71,6 +71,9 @@ Outline
 * `Planned Changes of Testing System`_
 
 .. _With Outside Arguments: `Outside Arguments or Settings`_
+.. _With Varying Output: `Tests With Varying Output`_
+.. _Test Not Applicable In All Settings: `Limiting Where the Test Runs`_
+.. _Invoking start_test For: `Invoking start_test`_
 
 How to Make
 ===========
@@ -115,8 +118,7 @@ The concatenation of the compiler and executable output will then be compared
 against the ``.good`` file.  A transcript of the test system's actions is
 printed to the console and also stored in ``$CHPL_HOME/test/Logs/`` by default.
 
-For more information on using ``start_test``, see the `relevant section
-<Invoking start_test>`_.
+For more information on using ``start_test``, see `Invoking start_test`_.
 
 
 Outside Arguments or Settings
@@ -258,8 +260,7 @@ speed up the time to run the testing system when the failure mode does occur.
 
 Note that if the value in this file is longer than the global timeout, any
 explicit ``-num-trials`` value or ``.perfnumtrials`` file will be ignored (see
-`the performance test section <A Performance Test>`_ for more details on the
-``-num-trials`` setting).
+`A Performance Test`_ for more details on the ``-num-trials`` setting).
 
 Tests With Varying Output
 +++++++++++++++++++++++++
@@ -364,8 +365,7 @@ Most of the information above pertains to the creation of a correctness test, in
 which the test's output is compared to a ``.good`` file.  The testing system
 also supports performance tests in which one or more values from a test's output
 can be tracked on a nightly basis and optionally graphed.  Information about
-running a performance test can be found in `this section <Performance
-Testing>`_.
+running a performance test can be found in `Performance Testing`_.
 
 Performance tests are specified using a ``.perfkeys`` file, which lists strings
 that the test system should look for in the output serving as prefixes for a
@@ -683,7 +683,7 @@ be obtained by calling ``start_test -h``.
 Correctness Testing
 -------------------
 
-The `simple example <A Correctness Test>`_ demonstrates invoking ``start_test``
+The section titled `A Correctness Test`_ demonstrates invoking ``start_test``
 on a single explicitly-named file.  More generally, ``start_test`` takes a list
 of test and directory names on the command line and will run all tests
 explicitly named or contained within the directories (or their subdirectories).
@@ -731,21 +731,21 @@ File                Contents of file
 **correctness**
 -------------------------------------------------------------------------------
 foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run. See `this section
-                    <Comparing to a C version>`_ for more information
+foo.test.c          C test program to compile and run. See `Comparing to a C
+                    version`_ for more information
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
 **Test Settings**
 -------------------------------------------------------------------------------
-foo.compopts        line separated compiler flag configurations.  See `this
-                    section <Compile-time Arguments>`_ for more information
+foo.compopts        line separated compiler flag configurations.  See
+                    `Compile-time Arguments`_ for more information
 COMPOPTS            directory-wide compiler flags
-foo.execopts        line separated runtime flag configurations.  See `this
-                    section <Execution-time Arguments>`_ for more information
+foo.execopts        line separated runtime flag configurations.  See
+                    `Execution-time Arguments`_ for more information
 EXECOPTS            directory-wide runtime flags
 foo.execenv         line separated list of environment variables settings.  See
-                    `this section <Environment Variables>`_ for more information
+                    `Environment Variables`_ for more information
 EXECENV             directory-wide environment variables
 foo.numlocales      number of locales to use in multi-locale run
 NUMLOCALES          directory-wide number of locales to use in multi-locale run
@@ -770,22 +770,19 @@ PREEXEC             directory-wide script that is run prior to execution
 foo.cleanfiles      line separated list of files to remove before next test run
 CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
-                    not executed.  See `this section <Controlling How It Runs>`_
-                    for more information.
-foo.notest          empty file. Indicates the file should not be run explicitly
-                    See `this section <Controlling How It Runs>`_ for more
+                    not executed.  See `Controlling How It Runs`_ for more
                     information.
+foo.notest          empty file. Indicates the file should not be run explicitly
+                    See `Controlling How It Runs`_ for more information.
 NOTEST              empty file. Indicates the directory should not be run
 foo.skipif          line separated list of conditions under which the test
                     should not be run, or a script to compute the same.  See
-                    `this section <Limiting Where the Test Runs>`_ for more
-                    information
+                    `Limiting Where the Test Runs`_ for more information
 SKIPIF              same as above, but applied to the entire directory
 foo.suppressif      line separated list of conditions under which the test is
                     expected to fail, or a script to compute the same
 foo.timeout         time in seconds after which start_test should stop this test
-                    See `this section <Limiting Time Taken>`_ for more
-                    information
+                    See `Limiting Time Taken`_ for more information
 ..
 -------------------------------------------------------------------------------
 **performance**
@@ -813,9 +810,8 @@ foo.future          Describes the future being tested, following the
                     newline-separated format of:
                     *category*, *title*, *issue #*
 foo.bad             output generated on a failing test, to track if a known
-                    failing future begins failing a different way.  See `this
-                    section <Tracking Current Failure Mode>`_ for more
-                    information
+                    failing future begins failing a different way.  See
+                    `Tracking Current Failure Mode`_ for more information
 ..
 =================   ===========================================================
 
