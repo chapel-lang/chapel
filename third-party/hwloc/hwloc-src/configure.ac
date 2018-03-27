@@ -18,7 +18,7 @@
 
 AC_INIT([hwloc],
         [m4_normalize(esyscmd([config/hwloc_get_version.sh VERSION --version]))],
-        [http://www.open-mpi.org/projects/hwloc/], [hwloc])
+        [http://github.com/open-mpi/hwloc/issues], [hwloc])
 AC_PREREQ(2.63)
 AC_CONFIG_AUX_DIR(./config)
 # Note that this directory must *exactly* match what was specified via

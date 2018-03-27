@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2017 Inria.  All rights reserved.
+ * Copyright © 2012-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 	unsigned topodepth;
 	int err;
 
-	putenv("HWLOC_XML_VERBOSE=1");
+	putenv((char *) "HWLOC_XML_VERBOSE=1");
 
 	callname = argv[0];
 	/* skip argv[0], handle options */
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	if (err < 0)
 		goto out;
 
-	putenv("HWLOC_XML_USERDATA_NOT_DECODED=1");
+	putenv((char *) "HWLOC_XML_USERDATA_NOT_DECODED=1");
 	hwloc_topology_set_userdata_import_callback(topology, hwloc_utils_userdata_import_cb);
 	hwloc_topology_set_userdata_export_callback(topology, hwloc_utils_userdata_export_cb);
 

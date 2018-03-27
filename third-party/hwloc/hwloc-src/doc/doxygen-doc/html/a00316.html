@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_backend Struct Reference</title>
+<title>Hardware Locality (hwloc): Object attributes</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -38,171 +38,100 @@ $(function() {
 <div id="main-nav"></div>
 </div><!-- top -->
 <div class="header">
-  <div class="summary">
-<a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_backend Struct Reference<div class="ingroups"><a class="el" href="a00201.html">Components and Plugins: Discovery backends</a></div></div>  </div>
+<div class="title">Object attributes </div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="a00158_source.html">plugins.h</a>&gt;</code></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Data Fields</h2></td></tr>
-<tr class="memitem:aaa8eafe495aadd81c2e3c4ec527c10ba"><td class="memItemLeft" align="right" valign="top">unsigned long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#aaa8eafe495aadd81c2e3c4ec527c10ba">flags</a></td></tr>
-<tr class="separator:aaa8eafe495aadd81c2e3c4ec527c10ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5209e6508c110dcd4c3c296466f07cb3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#a5209e6508c110dcd4c3c296466f07cb3">is_custom</a></td></tr>
-<tr class="separator:a5209e6508c110dcd4c3c296466f07cb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8806f6db077f1bb2e9d63ec99223f7a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#ab8806f6db077f1bb2e9d63ec99223f7a">is_thissystem</a></td></tr>
-<tr class="separator:ab8806f6db077f1bb2e9d63ec99223f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ea5bd36b7f06efdb65b98b32af16c68"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#a2ea5bd36b7f06efdb65b98b32af16c68">private_data</a></td></tr>
-<tr class="separator:a2ea5bd36b7f06efdb65b98b32af16c68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36c4fa86350525b46340c67b802c69c7"><td class="memItemLeft" align="right" valign="top">void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#a36c4fa86350525b46340c67b802c69c7">disable</a> )(struct <a class="el" href="a00316.html">hwloc_backend</a> *backend)</td></tr>
-<tr class="separator:a36c4fa86350525b46340c67b802c69c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeb9e1dcf68853a65355082b359a3a2d7"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#aeb9e1dcf68853a65355082b359a3a2d7">discover</a> )(struct <a class="el" href="a00316.html">hwloc_backend</a> *backend)</td></tr>
-<tr class="separator:aeb9e1dcf68853a65355082b359a3a2d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab3d1836eeda1970a4c51342df186581e"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#ab3d1836eeda1970a4c51342df186581e">get_obj_cpuset</a> )(struct <a class="el" href="a00316.html">hwloc_backend</a> *backend, struct <a class="el" href="a00316.html">hwloc_backend</a> *caller, struct <a class="el" href="a00216.html">hwloc_obj</a> *obj, <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> cpuset)</td></tr>
-<tr class="separator:ab3d1836eeda1970a4c51342df186581e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a4803e23309be318d7cdb641a5f1037"><td class="memItemLeft" align="right" valign="top">int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00316.html#a5a4803e23309be318d7cdb641a5f1037">notify_new_object</a> )(struct <a class="el" href="a00316.html">hwloc_backend</a> *backend, struct <a class="el" href="a00316.html">hwloc_backend</a> *caller, struct <a class="el" href="a00216.html">hwloc_obj</a> *obj)</td></tr>
-<tr class="separator:a5a4803e23309be318d7cdb641a5f1037"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Discovery backend structure. </p>
-<p>A backend is the instantiation of a discovery component. When a component gets enabled for a topology, its instantiate() callback creates a backend.</p>
-<p><a class="el" href="a00201.html#ga330a0b581de4817d0cf1e7401db22436" title="Allocate a backend structure, set good default values, initialize backend-&gt;component and topology...">hwloc_backend_alloc()</a> initializes all fields to default values that the component may change (except "component" and "next") before enabling the backend with <a class="el" href="a00201.html#gaa4edf46c5d88eef53b3b8f572d88b9c5" title="Enable a previously allocated and setup backend. ">hwloc_backend_enable()</a>. </p>
-</div><h2 class="groupheader">Field Documentation</h2>
-<a id="a36c4fa86350525b46340c67b802c69c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36c4fa86350525b46340c67b802c69c7">&#9670;&nbsp;</a></span>disable</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void(* hwloc_backend::disable) (struct <a class="el" href="a00316.html">hwloc_backend</a> *backend)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Callback for freeing the private_data. May be NULL. </p>
-
-</div>
-</div>
-<a id="aeb9e1dcf68853a65355082b359a3a2d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb9e1dcf68853a65355082b359a3a2d7">&#9670;&nbsp;</a></span>discover</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int(* hwloc_backend::discover) (struct <a class="el" href="a00316.html">hwloc_backend</a> *backend)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Main discovery callback. returns &gt; 0 if it modified the topology tree, -1 on error, 0 otherwise. May be NULL if type is <a class="el" href="a00200.html#gga0dceb95fada01e5e4558429912053ca7aaf4d61f8e2c7c28e88cd81bb565695b7" title="OpenCL, Cuda, etc. ">HWLOC_DISC_COMPONENT_TYPE_MISC</a>. </p>
-
-</div>
-</div>
-<a id="aaa8eafe495aadd81c2e3c4ec527c10ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa8eafe495aadd81c2e3c4ec527c10ba">&#9670;&nbsp;</a></span>flags</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned long hwloc_backend::flags</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Backend flags, as an OR'ed set of <a class="el" href="a00201.html#ga21513209613570877b6bfa9898106f2a" title="Backend flags. ">hwloc_backend_flag_e</a>. </p>
-
-</div>
-</div>
-<a id="ab3d1836eeda1970a4c51342df186581e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3d1836eeda1970a4c51342df186581e">&#9670;&nbsp;</a></span>get_obj_cpuset</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int(* hwloc_backend::get_obj_cpuset) (struct <a class="el" href="a00316.html">hwloc_backend</a> *backend, struct <a class="el" href="a00316.html">hwloc_backend</a> *caller, struct <a class="el" href="a00216.html">hwloc_obj</a> *obj, <a class="el" href="a00186.html#gaa3c2bf4c776d603dcebbb61b0c923d84">hwloc_bitmap_t</a> cpuset)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Callback used by the PCI backend to retrieve the locality of a PCI object from the OS/cpu backend. May be NULL. </p>
-
-</div>
-</div>
-<a id="a5209e6508c110dcd4c3c296466f07cb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5209e6508c110dcd4c3c296466f07cb3">&#9670;&nbsp;</a></span>is_custom</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_backend::is_custom</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Backend-specific 'is_custom' property. Shortcut on !strcmp(..-&gt;component-&gt;name, "custom"). Only the custom component should touch this. </p>
-
-</div>
-</div>
-<a id="ab8806f6db077f1bb2e9d63ec99223f7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8806f6db077f1bb2e9d63ec99223f7a">&#9670;&nbsp;</a></span>is_thissystem</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_backend::is_thissystem</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Backend-specific 'is_thissystem' property. Set to 0 or 1 if the backend should enforce the thissystem flag when it gets enabled. Set to -1 if the backend doesn't care (default). </p>
-
-</div>
-</div>
-<a id="a5a4803e23309be318d7cdb641a5f1037"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a4803e23309be318d7cdb641a5f1037">&#9670;&nbsp;</a></span>notify_new_object</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int(* hwloc_backend::notify_new_object) (struct <a class="el" href="a00316.html">hwloc_backend</a> *backend, struct <a class="el" href="a00316.html">hwloc_backend</a> *caller, struct <a class="el" href="a00216.html">hwloc_obj</a> *obj)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Callback called by backends to notify this backend that a new object was added. returns &gt; 0 if it modified the topology tree, 0 otherwise. May be NULL. </p>
-
-</div>
-</div>
-<a id="a2ea5bd36b7f06efdb65b98b32af16c68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ea5bd36b7f06efdb65b98b32af16c68">&#9670;&nbsp;</a></span>private_data</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void* hwloc_backend::private_data</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Backend private data, or NULL if none. </p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00158_source.html">plugins.h</a></li>
-</ul>
-</div><!-- contents -->
+<div class="textblock"><p> 
+<div class="section" id="attributes_normal">
+ </p>
+<h1><a class="anchor" id="attributes_normal"></a>
+Normal attributes</h1>
+<p>hwloc objects have many attributes. The <a class="el" href="a00204.html" title="Structure of a topology object. ">hwloc_obj</a> structure contains a common set of attributes that are available for object types, for instance their <code>type</code> or <code>logical_index</code>.</p>
+<p>Each object also contains an <code>attr</code> field that, if non NULL, points to a union <a class="el" href="a00208.html" title="Object type-specific Attributes. ">hwloc_obj_attr_u</a> of type-specific attribute structures. For instance, a Cache object <code>obj</code> contains cache-specific information in <code>obj-&gt;attr-&gt;cache</code>, such as its size and associativity. See <a class="el" href="a00208.html" title="Object type-specific Attributes. ">hwloc_obj_attr_u</a> for details.</p>
+<p> 
+</div><div class="section" id="attributes_info">
+ </p>
+<h1><a class="anchor" id="attributes_info"></a>
+Custom string infos</h1>
+<p>Aside from the <code>name</code> field of each object, hwloc annotates many objects with string attributes that are made of a key and a value. Each object contains a list of such pairs that may be consulted manually (looking at the object <code>infos</code> array field) or using the <a class="el" href="a00157.html#gab358661a92bb27d8542b255cc9f6f25e" title="Search the given key name in object infos and return the corresponding value. ">hwloc_obj_get_info_by_name()</a>. The user may additionally add new key-value pairs to any object using <a class="el" href="a00157.html#ga7e90c5398a9d77df31d7d45faf0f316b" title="Add the given info name and value pair to the given object. ">hwloc_obj_add_info()</a> or the <a class="el" href="a00310.html#cli_hwloc_annotate">hwloc-annotate</a> program.</p>
+<p>Here is a non-exhaustive list of attributes that may be automatically added by hwloc (with the usual corresponding object in parentheses). Note that these attributes heavily depend on the ability of the operating system to report them. Many of them will therefore be missing on some OS. </p><dl>
+<dt>OSName, OSRelease, OSVersion, HostName, Architecture (Machine object) </dt>
+<dd>The operating system name, release, version, the hostname and the architecture name, as reported by the Unix <code>uname</code> command.  </dd>
+<dt>Backend (Machine object or topology root object) </dt>
+<dd>The name of the hwloc backend/component that filled the topology. If several components were combined, multiple Backend keys may exist, with different values, for instance <code>x86</code>, <code>Linux</code> and <code>pci</code>.  </dd>
+<dt>LinuxCgroup (Machine object) </dt>
+<dd>The name the Linux control group where the calling process is placed.  </dd>
+<dt>SyntheticDescription (topology root object) </dt>
+<dd>The description string that was given to hwloc to build this synthetic topology.  </dd>
+<dt>CPUModel (Package or Machine) </dt>
+<dd>The processor model name. Usually added to Package objects, but can be in Machine instead if hwloc failed to discover any package.  </dd>
+<dt>CPUType (Package) </dt>
+<dd>A Solaris-specific general processor type name, such as "i86pc".  </dd>
+<dt>CPUVendor, CPUModelNumber, CPUFamilyNumber, CPUStepping (Package or Machine) </dt>
+<dd>The processor vendor name, model number, family number, and stepping number. Currently available for x86 and Xeon Phi processors on most systems, and for ia64 processors on Linux (except CPUStepping). Usually added to Package objects, but can be in Machine instead if hwloc failed to discover any package.  </dd>
+<dt>CPURevision (Package) </dt>
+<dd>A POWER/PowerPC-specific general processor revision number, currently only available on Linux.  </dd>
+<dt>PlatformName, PlatformModel, PlatformVendor, PlatformBoardID, PlatformRevision, </dt>
+<dd></dd>
+<dt>SystemVersionRegister, ProcessorVersionRegister (Machine) </dt>
+<dd>Some POWER/PowerPC-specific attributes describing the platform and processor. Currently only available on Linux. Usually added to Package objects, but can be in Machine instead if hwloc failed to discover any package.  </dd>
+<dt>MemoryMode, ClusterMode (topology root object) </dt>
+<dd><p class="startdd">Intel Xeon Phi processor configuration modes. Available if hwloc-dump-hwdata was used (see <a class="el" href="a00323.html#faq_knl_dump">Why do I need hwloc-dump-hwdata for memory on Intel Xeon Phi processor?</a>) or if hwloc managed to guess them from the NUMA configuration.</p>
+<p class="enddd">The memory mode may be <em>Cache</em>, <em>Flat</em>, <em>Hybrid50</em> (half the MCDRAM is used as a cache) or <em>Hybrid25</em> (25% of MCDRAM as cache). The cluster mode may be <em>Quadrant</em>, <em>Hemisphere</em>, <em>All2All</em>, <em>SNC2</em> or <em>SNC4</em>. See doc/examples/get-knl-modes.c in the source directory for an example of retrieving these attributes.  </p>
+</dd>
+<dt>Inclusive (Caches) </dt>
+<dd>The inclusiveness of a cache (1 if inclusive, 0 otherwise). Currently only available on x86 processors.  </dd>
+<dt>SolarisProcessorGroup (Group) </dt>
+<dd>The Solaris kstat processor group name that was used to build this Group object.  </dd>
+<dt>PCIVendor, PCIDevice (PCI devices and bridges) </dt>
+<dd>The vendor and device names of the PCI device.  </dd>
+<dt>PCISlot </dt>
+<dd>The name/number of the physical slot where the PCI device is plugged.  </dd>
+<dt>Vendor, Model, Revision, SerialNumber </dt>
+<dd>The vendor and model names, revision, and serial number of a Block OS device.  </dd>
+<dt>LinuxDeviceID </dt>
+<dd>The major/minor device number such as 8:0 on Linux for a Block OS device.  </dd>
+<dt>CoProcType (Co-Processor OS devices) </dt>
+<dd>The type of co-processor, for instance <code>"MIC"</code>, <code>"CUDA"</code> or <code>"OpenCL"</code>.  </dd>
+<dt>GPUVendor, GPUModel (GPU or Co-Processor OS devices) </dt>
+<dd>The vendor and model names of the GPU device.  </dd>
+<dt>OpenCLDeviceType, OpenCLPlatformIndex, </dt>
+<dd></dd>
+<dt>OpenCLPlatformName, OpenCLPlatformDeviceIndex (OpenCL GPU OS devices) </dt>
+<dd>The type of OpenCL device, the OpenCL platform index and name, and the index of the device within the platform.  </dd>
+<dt>OpenCLComputeUnits, OpenCLGlobalMemorySize </dt>
+<dd>The number of compute units and global memory size (in kB) of a OpenCL device.  </dd>
+<dt>NVIDIAUUID, NVIDIASerial (NVML GPU OS devices) </dt>
+<dd>The UUID and Serial of NVIDIA GPUs.  </dd>
+<dt>CUDAMultiProcessors, CUDACoresPerMP, </dt>
+<dd></dd>
+<dt>CUDAGlobalMemorySize, CUDAL2CacheSize, CUDASharedMemorySizePerMP (CUDA OS devices) </dt>
+<dd>The number of shared multiprocessors, the number of cores per multiprocessor, the global memory size, the (global) L2 cache size, and size of the shared memory in each multiprocessor of a CUDA device. Sizes are in kB.  </dd>
+<dt>MICSerialNumber </dt>
+<dd>The serial number of an Intel Xeon Phi (MIC) coprocessor. hwloc may run either inside the coprocessor itself, or on the host processor. That attribute is set in both cases, so that the exact same coprocessor may be identified from both point of views, even if there are multiple nodes with multiple MICs. When running hwloc on the host, each hwloc OS device object that corresponds to a Xeon Phi gets such an attribute. When running hwloc inside a Xeon Phi coprocessor, the root object of the topology gets this attribute.  </dd>
+<dt>MICFamily, MICSKU, MICActiveCores, MICMemorySize </dt>
+<dd>The family, SKU (model), number of active cores, and memory size (in kB) of an Intel Xeon Phi (MIC) coprocessor.  </dd>
+<dt>DMIBoardVendor, DMIBoardName, etc. (Machine object) </dt>
+<dd>DMI hardware information such as the motherboard and chassis models and vendors, the BIOS revision, etc., as reported by Linux under <code>/sys/class/dmi/id/</code>.  </dd>
+<dt>Address, Port (Network interface OS devices) </dt>
+<dd>The MAC address and the port number of a software network interface, such as <code>eth4</code> on Linux.  </dd>
+<dt>NodeGUID, SysImageGUID, Port1State, Port2LID, Port2LMC, Port3GID1 (OpenFabrics OS devices) </dt>
+<dd>The node GUID and GUID mask, the state of a port #1 (value is 4 when active), the LID and LID mask count of port #2, and GID #1 of port #3.  </dd>
+<dt>Type </dt>
+<dd>A better type name than the usual one. This may be used to specify where Groups come from. For instance Linux S/390 <em>books</em> appear as Groups of type <em>Book</em> (see also <a class="el" href="a00323.html#faq_groups">What are these Group objects in my topology?</a>). Block OS devices may have a Type of "Disk", "Tape", "Removable Media Device" or "Other". The Type attribute value is displayed instead of the default object type name in lstopo.  </dd>
+<dt>Vendor, AssetTag, PartNumber, DeviceLocation, BankLocation (MemoryModule Misc objects) </dt>
+<dd>Information about memory modules (DIMMs) extracted from SMBIOS.  </dd>
+<dt>hwlocVersion </dt>
+<dd>The version number of the hwloc library that was used to generate the topology. If the topology was loaded from XML, this is not the hwloc version that loaded it, but rather the first hwloc instance that exported the topology to XML earlier.  </dd>
+<dt>ProcessName </dt>
+<dd>The name of the process that contains the hwloc library that was used to generate the topology. If the topology was from XML, this is not the hwloc version that loaded it, but rather the first process that exported the topology to XML earlier.  </dd>
+</dl>
+<p>Here is a non-exhaustive list of user-provided info attributes that have a special meaning: </p><dl>
+<dt>lstopoStyle </dt>
+<dd>Enforces the style of an object (background and text colors) in the graphical output of lstopo. See CUSTOM COLORS in the lstopo(1) manpage for details.  </dd>
+</dl>
+</div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
