@@ -597,21 +597,20 @@ The current categories of futures reflect GitHub labels:
 
 * bug: this test exhibits a bug in the implementation
 
-* error message: this test correctly generates an error message, but
-    the error message needs clarification/improvement
+* error message: this test correctly generates an error message, but the error
+  message needs clarification/improvement
 
-* feature request: a way of filing a request for a particular feature
-  in Chapel
+* feature request: a way of filing a request for a particular feature in Chapel
 
 * performance: indicates a performance issue that needs to be addressed
 
-* design:  this test raises a question about Chapel's semantics
-           that we ultimately need to address
+* design: this test raises a question about Chapel's semantics that we
+  ultimately need to address
 
 * portability: indicates a portability issue that needs to be addressed
 
-* unimplemented feature: this test uses features that are specified, but
-    which have not yet been implemented.
+* unimplemented feature: this test uses features that are specified, but which
+  have not yet been implemented.
 
 **GitHub and futures**
 
