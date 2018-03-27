@@ -68,6 +68,7 @@
 #include "comm-ugni-mem.h"
 #include "config.h"
 #include "error.h"
+#include "chpl-qsbr.h"
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -1525,7 +1526,7 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 #endif
-static void      local_yield(void);
+static void      local_yield(); // Should invoke checkpoint prior to invoking...
 
 
 //
@@ -2594,7 +2595,7 @@ void polling_task(void* ignore)
   set_up_for_polling();
 
   polling_task_running = true;
-
+  int64_t spins = 0;
   while (!polling_task_please_exit) {
     gni_cq_entry_t ev;
     gni_return_t   gni_rc;
@@ -2607,14 +2608,22 @@ void polling_task(void* ignore)
     else
       gni_rc = GNI_CqGetEvent(rf_cqh, &ev);
 
-    if (gni_rc == GNI_RC_SUCCESS)
+    if (gni_rc == GNI_RC_SUCCESS) {
+      spins = 0;
       rf_handler(&ev);
-    else if (gni_rc == GNI_RC_NOT_DONE)
+    }
+    else if (gni_rc == GNI_RC_NOT_DONE) {
       sched_yield();
-    else if (gni_rc == GNI_RC_TIMEOUT)
-      ; // no-op
-    else
+      if (spins++ % 1024 == 0) {
+        chpl_qsbr_checkpoint();
+      }
+    }
+    else if (gni_rc == GNI_RC_TIMEOUT) {
+      chpl_qsbr_checkpoint(); // Invoke checkpoint
+    }
+    else {
       GNI_CQ_EV_FAIL(gni_rc, ev, "GNI_Cq*Event(rf_cqh) failed in polling");
+    }
 
     //
     // Process CQ events due to our request responses completing.
@@ -2791,6 +2800,9 @@ void set_up_for_polling(void)
 
     chpl_mem_free(gdata, 0, 0);
   }
+
+  // Register
+  chpl_qsbr_quickcheck();
 }
 
 
@@ -4263,7 +4275,6 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
     static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = {{ 0 }};
     static int last_ppdi = 0;
     int ppdi;
-
     ppdi = last_ppdi;
     while (polling_post_descs[ppdi].post_id != 0) {
       if ((ppdi = PPDI_NEXT(ppdi)) == last_ppdi) {
@@ -7175,7 +7186,6 @@ void acquire_comm_dom(void)
 
   want_cdi = want_cdi_start = comm_dom_free_idx;
   want_cd = &comm_doms[want_cdi];
-
   do {
 #ifdef DEBUG_STATS
     acq_looks++;
@@ -7250,7 +7260,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
 
   want_cdi = want_cdi_start = comm_dom_free_idx;
   want_cd = &comm_doms[want_cdi];
-
+  int spins = 0;
   do {
 #ifdef DEBUG_STATS
     acq_looks++;
@@ -7516,7 +7526,7 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 
 
 static
-void local_yield(void)
+void local_yield()
 {
   //
   // Our task cannot make progress.  Yield, to allow some other task to

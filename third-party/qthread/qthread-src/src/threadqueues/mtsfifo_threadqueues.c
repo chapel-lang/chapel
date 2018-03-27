@@ -25,6 +25,17 @@
 #endif /* QTHREAD_USE_EUREKAS */
 #include "qt_subsystems.h"
 
+// Our onPark and onUnpark callbacks
+static void (*onPark)(void);
+static void (*onUnpark)(void);
+
+void qthread_registerOnPark(void (*_onPark)(void)) {
+    onPark = _onPark;
+}
+void qthread_registerOnUnpark(void (*_onUnpark)(void)) {
+    onUnpark = _onUnpark;
+}
+
 /* Data Structures */
 struct _qt_threadqueue_node {
     struct _qt_threadqueue_node *next;
