@@ -68,7 +68,6 @@ Outline
   - `Performance Testing`_
 
 * `Summary of Testing Files`_
-* `Planned Changes of Testing System`_
 
 .. _With Outside Arguments: `Outside Arguments or Settings`_
 .. _With Varying Output: `Tests With Varying Output`_
@@ -813,29 +812,3 @@ foo.bad             output generated on a failing test, to track if a known
                     `Tracking Current Failure Mode`_ for more information
 ..
 =================   ===========================================================
-
-.. _extensions:
-
-Planned Changes of Testing System
-=================================
-
-**Migrate to yaml-based system**
-
-It has been proposed to move away from the current system of 1 file per type of
-configurations, and opt for a yaml-based system. This would require a
-significant overhaul of the testing infrastructure, and consequently would take
-a lot of careful planning and development. For the time being, this idea
-remains backlogged on our testing wish list.
-
-**Support performance tracking of third-party codes**
-
-There is a desire to do more comprehensive comparisons of Chapel to other
-languages, particularly in benchmark suites. This system would likely involve
-scripts that would mirror a internal copy of, build, run, and gather timings
-for reference versions. This data could be shown on the performance tracking
-page.
-
-**Documentation Improvements**
-
-There are several aspects of the testing system undocumented.
-See the ``..  TODO`` lines within the raw text of this file to see a few.
