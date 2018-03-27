@@ -474,22 +474,15 @@ Post Initialization for Records
 A record type that defines an initializer also implements a
 ``postinit`` method.  This method is invoked when the ``init`` method
 returns i.e. after the record is fully initialized.  The ``postinit``
-method does not accept any formals and it does not return a value.
-The compiler generated definition has no observable effect.
+method does not accept any formals and does not return a value.
+The compiler-generated definition has no observable effect.
 
-A user may override this method and customize the behavior.  In
-release 1.17.0, defining an overload of the ``postinit`` method is
-sufficient to suppress the default record constructors and trigger
-the generation of the default record initializer (if no explicit
-initializer is provided).
-
-In release 1.17.0 there is little advantage to customizing the
-``postinit`` method for a record compared to performing these
-operations within an overload of the ``init`` method.  Once the
-compiler defaults to initializers rather than constructors, the
-``postinit`` method will provide a convenient way to perform final
-updates to an instance of a record when the default all-fields
-initializer is sufficient.
+A user may override this method and customize the behavior.  Writing a
+``postinit`` method provides a way for the record author to leverage
+the default all-fields initializer while also specifying additional
+computation to perform before returning the new object.  When used
+with class hierarchies, the ``postinit`` method offers additional
+benefits (see :ref:`post-init-classes`) below).
 
 
 
@@ -711,6 +704,7 @@ the current type.
 
 
 
+.. _post-init-classes:
 
 The postinit method
 +++++++++++++++++++
