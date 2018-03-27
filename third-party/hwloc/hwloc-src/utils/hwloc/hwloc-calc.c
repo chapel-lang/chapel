@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -213,8 +213,8 @@ int main(int argc, char *argv[])
   struct hwloc_calc_set_context_s scontext;
 
   /* enable verbose backends */
-  putenv("HWLOC_XML_VERBOSE=1");
-  putenv("HWLOC_SYNTHETIC_VERBOSE=1");
+  putenv((char *) "HWLOC_XML_VERBOSE=1");
+  putenv((char *) "HWLOC_SYNTHETIC_VERBOSE=1");
 
   set = hwloc_bitmap_alloc();
 

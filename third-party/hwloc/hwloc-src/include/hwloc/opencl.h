@@ -1,6 +1,6 @@
 /*
  * Copyright © 2012-2017 Inria.  All rights reserved.
- * Copyright © 2013 Université Bordeaux.  All right reserved.
+ * Copyright © 2013, 2018 Université Bordeaux.  All right reserved.
  * See COPYING in top-level directory.
  */
 
@@ -21,8 +21,13 @@
 #include <hwloc/linux.h>
 #endif
 
+#ifdef __APPLE__
+#include <OpenCL/cl.h>
+#include <OpenCL/cl_ext.h>
+#else
 #include <CL/cl.h>
 #include <CL/cl_ext.h>
+#endif
 
 #include <stdio.h>
 
