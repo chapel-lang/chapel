@@ -480,9 +480,7 @@ The compiler-generated definition has no observable effect.
 A user may override this method and customize the behavior.  Writing a
 ``postinit`` method provides a way for the record author to leverage
 the default all-fields initializer while also specifying additional
-computation to perform before returning the new object.  When used
-with class hierarchies, the ``postinit`` method offers additional
-benefits (see :ref:`post-init-classes`) below).
+computation to perform before returning the new object.
 
 
 
@@ -704,7 +702,6 @@ the current type.
 
 
 
-.. _post-init-classes:
 
 The postinit method
 +++++++++++++++++++
