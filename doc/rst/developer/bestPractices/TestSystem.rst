@@ -28,7 +28,7 @@ Outline
 
    - `A Correctness Test`_
 
-     - `With Outside Arguments <Outside Arguments or Settings>`_
+     - `With Outside Arguments`_
 
        - `Compile-time Arguments`_
        - `Execution-time Arguments`_
@@ -70,7 +70,7 @@ Outline
 * `Summary of Testing Files`_
 * `Planned Changes of Testing System`_
 
-
+.. _With Outside Arguments: `Outside Arguments or Settings`_
 
 How to Make
 ===========
