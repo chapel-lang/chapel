@@ -228,7 +228,7 @@ static char _Nbuf[16];
 static char _jbuf[16];
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
-  char *largv[8];
+  char *largv[16];
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";
   int CPUsPerCU;
