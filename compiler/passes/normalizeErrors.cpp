@@ -58,6 +58,10 @@ bool NormalizeTryExprsVisitor::enterCallExpr(CallExpr* call) {
     parentTag = stack.top();
   }
 
+  if (call->id == 192698) {
+    gdbShouldBreakHere();
+  }
+
   if (isTryBang || parentTag == TRY_TAG_IN_TRYBANG) {
     // try! on this expr or a parent always makes it try!
     tag = TRY_TAG_IN_TRYBANG;

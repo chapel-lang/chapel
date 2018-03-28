@@ -6928,7 +6928,7 @@ proc string.format(args ...?k): string throws {
   try {
     return chpl_do_format(this, (...args));
   } catch e: SystemError {
-    try ioerror(err, "in string.format");
+    try ioerror(e.err, "in string.format");
   } catch {
     try ioerror(EINVAL:syserr, "in string.format");
   }
@@ -6988,7 +6988,7 @@ proc string.format(args ...?k, out error:syserr):string {
   try {
     return this.format((...args));
   } catch e: SystemError {
-    try ioerror(err, "in string.format");
+    try ioerror(e.err, "in string.format");
   } catch {
     try ioerror(EINVAL:syserr, "in string.format");
   }

@@ -462,7 +462,7 @@ proc copyMode(src: string, dest: string) throws {
     chmod(dest, srcMode);
   } catch e: SystemError {
     // Hide implementation details.
-    try ioerror(err, "in copyMode " + src, dest);
+    try ioerror(e.err, "in copyMode " + src, dest);
   }
 }
 
@@ -503,7 +503,7 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
     try ioerror(EEXIST:syserr, "in copyTree(" + src + ", " + dest + ")");
-  }
+
   expectedErrorCases = !(try isDir(src));
   if (expectedErrorCases) then
     try ioerror(ENOTDIR:syserr, "in copyTree(" + src + ", " + dest + ")");
@@ -821,7 +821,7 @@ proc getUID(out error: syserr, name: string): int {
     error = EINVAL;
   }
   return false;
-
+}
 
 //
 // This is a helper module used by the various glob() overloads
@@ -1145,16 +1145,19 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
-          if (listlinks || !isLink(error=err, fullpath)) {
-            if (dirs && isDir(error=err, fullpath)) then
-              yield filename;
-            else if (files && isFile(error=err, fullpath)) then
-              yield filename;
-          }
-
-          if err {
-            // TODO: revisit error handling for this method
-            writeln("error in listdir(): ", errorToString(err));
+          // TODO: revisit error handling for this method
+          try {
+            if (listlinks || !isLink(fullpath)) {
+              if (dirs && isDir(fullpath)) then
+                yield filename;
+              else if (files && isFile(fullpath)) then
+                yield filename;
+            }
+          } catch e: SystemError {
+            writeln("error in listdir(): ", errorToString(e.err));
+            break;
+          } catch {
+            writeln("unknown error in listdir()");
             break;
           }
         }
@@ -1356,7 +1359,7 @@ proc rmTree(root: string) throws {
 
   // We need it to be a directory!
   var rootIsDir = try isDir(root);
-  if !rootNotDir then try ioerror(ENOTDIR:syserr, "in rmTree(" + root + ")");
+  if !rootIsDir then try ioerror(ENOTDIR:syserr, "in rmTree(" + root + ")");
 
   var rootPath = try realPath(root);
   try rmTreeHelper(rootPath);
@@ -1456,17 +1459,15 @@ proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): syserr;
 
-  // If one of the files references a null file, exit early to avoid segfault.
+  // If one of the files references a null file, propagate to avoid a segfault.
   try {
     file1.check();
     file2.check();
-  } catch {
-    return false;
   }
 
   var ret:c_int;
   var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " +file1.tryGetPath(),
+  if err then try ioerror(err, "in sameFile " + file1.tryGetPath(),
                           file2.tryGetPath());
   return ret != 0;
 }
