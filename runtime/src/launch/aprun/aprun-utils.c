@@ -211,8 +211,8 @@ char *getNodeListOpt() {
 
   if (nodeList) {
     nodeListOpt = chpl_mem_allocMany(strlen(getNodeListStr()) +
-                                     strlen(nodeList) + 1,
-                                     sizeof(char), 0, 0, 0);
+                                     strlen(nodeList) + 1, sizeof(char),
+                                     CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     strcpy(nodeListOpt, getNodeListStr());
     strcat(nodeListOpt, nodeList);
   }
