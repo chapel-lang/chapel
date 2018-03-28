@@ -210,9 +210,8 @@ char *getNodeListOpt() {
   char *nodeListOpt = NULL;
 
   if (nodeList) {
-    nodeListOpt = chpl_mem_allocMany(strlen(getNodeListStr()) +
-                                     strlen(nodeList) + 1, sizeof(char),
-                                     CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    nodeListOpt = chpl_mem_alloc(strlen(getNodeListStr())+strlen(nodeList)+1,
+                                 CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     strcpy(nodeListOpt, getNodeListStr());
     strcat(nodeListOpt, nodeList);
   }
@@ -230,7 +229,7 @@ static char _Nbuf[16];
 static char _jbuf[16];
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg) {
-  char *largv[16];
+  char *largv[9];  // Count the number of largv[largc++] below and adjust this
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";
   int CPUsPerCU;
