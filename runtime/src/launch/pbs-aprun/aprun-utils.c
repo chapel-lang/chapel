@@ -210,7 +210,9 @@ char *getNodeListOpt() {
   char *nodeListOpt = NULL;
 
   if (nodeList) {
-    nodeListOpt = sys_malloc(strlen(getNodeListStr()) + strlen(nodeList) + 1);
+    nodeListOpt = chpl_mem_allocMany(strlen(getNodeListStr()) +
+                                     strlen(nodeList) + 1,
+                                     sizeof(char), 0, 0, 0);
     strcpy(nodeListOpt, getNodeListStr());
     strcat(nodeListOpt, nodeList);
   }
