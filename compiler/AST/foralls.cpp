@@ -34,15 +34,16 @@
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
-    case TFI_DEFAULT:     return "default";
-    case TFI_CONST:       return "const";
-    case TFI_IN_OUTERVAR: return "in-outervar";
-    case TFI_IN:          return "in";
-    case TFI_CONST_IN:    return "const in";
-    case TFI_REF:         return "ref";
-    case TFI_CONST_REF:   return "const ref";
-    case TFI_REDUCE:      return "reduce";
-    case TFI_REDUCE_OP:   return "reduceOp";
+    case TFI_DEFAULT:       return "default";
+    case TFI_CONST:         return "const";
+    case TFI_IN_OUTERVAR:   return "in-outervar";
+    case TFI_IN:            return "in";
+    case TFI_CONST_IN:      return "const in";
+    case TFI_REF:           return "ref";
+    case TFI_CONST_REF:     return "const ref";
+    case TFI_REDUCE:        return "reduce";
+    case TFI_REDUCE_OP:     return "reduceOp";
+    case TFI_TASK_PRIVATE:  return "task-private";
   }
   INT_ASSERT(false);
   return "";
@@ -353,6 +354,10 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
           " for forall- or for-loops over recursive parallel iterators");
         USR_PRINT(iterFn, "the parallel iterator is here");
         USR_STOP();
+        break;
+
+      case TFI_TASK_PRIVATE:
+        INT_ASSERT(false); // TODO
         break;
     }
     INT_ASSERT(ovar != NULL);

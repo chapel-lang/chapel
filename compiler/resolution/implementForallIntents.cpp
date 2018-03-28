@@ -1132,6 +1132,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
       case TFI_IN:
       case TFI_REDUCE:
       case TFI_REDUCE_OP:
+      case TFI_TASK_PRIVATE:
         // May result in data races or incorrect behavior
         // if we don't handle multiple enclosing foralls.
         USR_FATAL_CONT(yieldCall, "a parallel iterator with a yield nested in two or more enclosing forall statements is not currently implemented in the presence of an 'in' or 'reduce' intent.");
@@ -1845,16 +1846,19 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 // ForallIntentTag <-> IntentTag
 
 IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
-  switch (tfi) {
-    case TFI_DEFAULT:   return INTENT_BLANK;
-    case TFI_CONST:     return INTENT_CONST;
-    case TFI_IN:        return INTENT_IN;
-    case TFI_CONST_IN:  return INTENT_CONST_IN;
-    case TFI_REF:       return INTENT_REF;
-    case TFI_CONST_REF: return INTENT_CONST_REF;
-    case TFI_REDUCE_OP: return INTENT_CONST_IN;  // the reduce op class
+  switch (tfi)
+  {
+    case TFI_DEFAULT:     return INTENT_BLANK;
+    case TFI_CONST:       return INTENT_CONST;
+    case TFI_IN:          return INTENT_IN;
+    case TFI_CONST_IN:    return INTENT_CONST_IN;
+    case TFI_REF:         return INTENT_REF;
+    case TFI_CONST_REF:   return INTENT_CONST_REF;
+    case TFI_REDUCE_OP:   return INTENT_CONST_IN;  // the reduce op class
+
     case TFI_IN_OUTERVAR:
     case TFI_REDUCE:
+    case TFI_TASK_PRIVATE:
       INT_ASSERT(false);    // don't know what to return
       return INTENT_BLANK;  // dummy
   }
@@ -1863,7 +1867,8 @@ IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
 }
 
 static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
-  switch (intent) {
+  switch (intent)
+  {
     case INTENT_IN:        return TFI_IN;
     case INTENT_CONST:     return TFI_CONST;
     case INTENT_CONST_IN:  return TFI_CONST_IN;
@@ -1871,9 +1876,12 @@ static ForallIntentTag forallIntentForArgIntent(IntentTag intent) {
     case INTENT_CONST_REF: return TFI_CONST_REF;
     case INTENT_BLANK:     return TFI_DEFAULT;
     case INTENT_REF_MAYBE_CONST: return TFI_REF; //todo: TFI_REF_MAYBE_CONST ?
-    default:
-      INT_ASSERT(false);   // don't know what to return
-      return TFI_DEFAULT;  // dummy
+
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_PARAM:
+    case INTENT_TYPE:     INT_ASSERT(false);   // don't know what to return
+                          return TFI_DEFAULT;  // dummy
   }
   INT_ASSERT(false);   // unexpected IntentTag; 'intent' contains garbage?
   return TFI_DEFAULT;  // dummy
@@ -1896,6 +1904,7 @@ static void resolveSVarIntent(ShadowVarSymbol* svar) {
     case TFI_CONST_REF:
     case TFI_REDUCE:
     case TFI_REDUCE_OP:
+    case TFI_TASK_PRIVATE:
       // nothing to do
       break;
   }

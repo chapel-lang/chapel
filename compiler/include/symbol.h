@@ -79,15 +79,16 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 // ForallIntentTag: a task- or forall-intent tag
 //
 enum ForallIntentTag {
-  TFI_DEFAULT,      // aka TFI_BLANK
+  TFI_DEFAULT,        // aka TFI_BLANK
   TFI_CONST,
-  TFI_IN_OUTERVAR,  // see below
+  TFI_IN_OUTERVAR,    // see below
   TFI_IN,
   TFI_CONST_IN,
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
-  TFI_REDUCE_OP,    // see below
+  TFI_REDUCE_OP,      // see below
+  TFI_TASK_PRIVATE,   // a task-private variable, TPV
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);

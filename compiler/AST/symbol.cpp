@@ -945,7 +945,8 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR)
+  if (intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR &&
+      intent != TFI_TASK_PRIVATE)
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -966,9 +967,9 @@ void ShadowVarSymbol::verify() {
     INT_ASSERT(pfs);
     INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
-  INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
-  if (!iteratorsLowered && specBlock != NULL)
-    INT_ASSERT(isReduce() || intent == TFI_REDUCE_OP);
+  if (specBlock != NULL)
+    INT_ASSERT(intent == TFI_REDUCE || intent == TFI_REDUCE_OP);
+  INT_ASSERT(!iteratorsLowered); // should be gone at lowerIterators
 }
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {
@@ -1007,19 +1008,25 @@ void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
 }
 
 bool ShadowVarSymbol::isConstant() const {
-  switch (intent) {
+  switch (intent)
+  {
     case TFI_DEFAULT:
       return type->isDefaultIntentConst();
+
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
     case TFI_IN_OUTERVAR:
     case TFI_REDUCE_OP:
       return true;
+
     case TFI_IN:
     case TFI_REF:
     case TFI_REDUCE:
       return false;
+
+    case TFI_TASK_PRIVATE:
+      return VarSymbol::isConstant();
   }
   return false; // dummy
 }
@@ -1035,15 +1042,16 @@ bool ShadowVarSymbol::isConstValWillNotChange() {
 // describes the intent (for use in an English sentence)
 const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
-    case TFI_DEFAULT:     return "default intent";
-    case TFI_CONST:       return "'const' intent";
-    case TFI_IN_OUTERVAR: return "outer-var intent";
-    case TFI_IN:          return "'in' intent";
-    case TFI_CONST_IN:    return "'const in' intent";
-    case TFI_REF:         return "'ref' intent";
-    case TFI_CONST_REF:   return "'const ref' intent";
-    case TFI_REDUCE:      return "'reduce' intent";
-    case TFI_REDUCE_OP:   return "reduceOp intent";
+    case TFI_DEFAULT:       return "default intent";
+    case TFI_CONST:         return "'const' intent";
+    case TFI_IN_OUTERVAR:   return "outer-var intent";
+    case TFI_IN:            return "'in' intent";
+    case TFI_CONST_IN:      return "'const in' intent";
+    case TFI_REF:           return "'ref' intent";
+    case TFI_CONST_REF:     return "'const ref' intent";
+    case TFI_REDUCE:        return "'reduce' intent";
+    case TFI_REDUCE_OP:     return "reduceOp intent";
+    case TFI_TASK_PRIVATE:  return "task-private intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy

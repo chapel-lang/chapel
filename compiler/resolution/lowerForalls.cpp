@@ -265,21 +265,23 @@ void setupShadowVariables(ForallStmt* fs)
     switch (svar->intent)
     {
       case TFI_IN:
-      case TFI_CONST_IN:   setupForIN(fs, svar, ovar, IB, DB);      break;
+      case TFI_CONST_IN:     setupForIN(fs, svar, ovar, IB, DB);      break;
 
       case TFI_REF:
-      case TFI_CONST_REF:  setupForREF(fs, svar, ovar, IB, DB);     break;
+      case TFI_CONST_REF:    setupForREF(fs, svar, ovar, IB, DB);     break;
 
-      case TFI_REDUCE:     setupForReduce(fs, svar, ovar, IB, DB);  break;
+      case TFI_REDUCE:       setupForReduce(fs, svar, ovar, IB, DB);  break;
+
+      case TFI_TASK_PRIVATE: INT_ASSERT(false); break; // TODO
 
       // We place such svars earlier in the list.
       // They should not come up here.
       case TFI_IN_OUTERVAR:
-      case TFI_REDUCE_OP:  INT_ASSERT(false);  break;
+      case TFI_REDUCE_OP:    INT_ASSERT(false);  break;
 
       // No abstract intents, please.
       case TFI_DEFAULT:
-      case TFI_CONST:      INT_ASSERT(false);  break;
+      case TFI_CONST:        INT_ASSERT(false);  break;
     }
   }
 }
@@ -591,6 +593,10 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
+    case TFI_TASK_PRIVATE:
+      INT_ASSERT(false); // TODO
+      break;
+
     case TFI_DEFAULT:    // no abstract intents, please
     case TFI_CONST:
       INT_ASSERT(false);
@@ -716,6 +722,10 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
       addDefAndMap(aInit, map, svar, createCurrAS(svar));
       addCloneOfInitBlock(aInit, map, svar);
       addCloneOfDeinitBlock(aFini, map, svar);
+      break;
+
+    case TFI_TASK_PRIVATE:
+      INT_ASSERT(false); // TODO
       break;
 
     // No abstract intents, please.
