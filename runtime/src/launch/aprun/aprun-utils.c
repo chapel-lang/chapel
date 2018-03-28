@@ -210,7 +210,7 @@ char *getHostListOpt() {
   char *hostListOpt = NULL;
 
   if (hostList) {
-    hostListOpt = malloc(strlen(getHostListStr()) + strlen(hostList) + 1);
+    hostListOpt = sys_malloc(strlen(getHostListStr()) + strlen(hostList) + 1);
     strcpy(hostListOpt, getHostListStr());
     strcat(hostListOpt, hostList);
   }
