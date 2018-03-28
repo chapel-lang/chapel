@@ -302,13 +302,13 @@ proc file.realPath(): string throws {
 */
   proc expandVars(path: string): string{
     var path_p:string = path;
-    var varChars:string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_";
+    var varChars:string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
     var res:string = "";
     var ind:int = 1;
     var pathlen:int = path_p.length;
     while(ind <= pathlen){
         var c:string = path_p(ind);
-        if(c == "$"){
+        if(c == "$" && ind+1<=pathlen){
             if(path_p(ind+1) == "$"){
                 res = res + c;
                 ind += 1;
@@ -338,11 +338,9 @@ proc file.realPath(): string throws {
             else{
                 var env_var:string = "";
                 ind += 1;
-                var c:string = path_p(ind);
-                while(ind <= path_p.length && varChars.find(c)!= 0){
-                    env_var += c;
+                while(ind <= path_p.length && varChars.find(path_p(ind))!= 0){
+                    env_var += path_p(ind);
                     ind += 1;
-                    c = path_p(ind);
                 }
                 var value:string;
                 var value_c:c_string;
