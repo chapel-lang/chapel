@@ -52,7 +52,8 @@ static char const *aprun_arg_strings[aprun_none] = { "-cc",
                                                      "-n",
                                                      "-d",
                                                      "-N",
-                                                     "-j"};
+                                                     "-j",
+                                                     "-L"};
 
 //
 // Return the appropriate integer value for given argument type
@@ -201,6 +202,22 @@ int getCPUsPerCU() {
   return numCPUsPerCU;
 }
 
+const char *getHostListStr() {
+  return getAprunArgStr(aprun_L);
+}
+char *getHostListOpt() {
+  const char *hostList = getenv("CHPL_HOSTLIST");
+  char *hostListOpt = NULL;
+
+  if (hostList) {
+    hostListOpt = malloc(strlen(getHostListStr()) + strlen(hostList) + 1);
+    strcpy(hostListOpt, getHostListStr());
+    strcat(hostListOpt, hostList);
+  }
+
+  return hostListOpt;
+}
+
 //
 // This function allocates and returns a NULL terminated argument list
 // with the aprun command to be run
@@ -215,6 +232,7 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";
   int CPUsPerCU;
+  char *hostListOpt;
 
   initAprunAttributes();
 
@@ -233,6 +251,9 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
     sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
     largv[largc++] = _jbuf;
+  }
+  if ((hostListOpt = getHostListOpt()) != NULL) {
+    largv[largc++] = hostListOpt;
   }
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
