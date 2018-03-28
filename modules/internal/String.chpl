@@ -1878,7 +1878,7 @@ module String {
       for c in 0..#(x.length) {
         locHash = ((locHash << 5) + locHash) ^ x.buff[c];
       }
-      hash = locHash;;
+      hash = locHash;
     }
     return hash;
   }
