@@ -1,0 +1,3 @@
+MyRec.init type
+MyRec.postinit
+(x = 0)
