@@ -431,9 +431,8 @@ public:
   // See also: sv->outerVarSE() and sv->outerVarSym().
   Expr* outerVarRep;
 
-  // For a reduce intent, the reduce expression.
-  // For a task-private variable, the initialization expression.
-  // Either way, wrapped in a block.  Otherwise it is NULL.
+  // For a reduce intent, the reduce expression, wrapped in a block.
+  // Otherwise NULL.
   BlockStmt* specBlock;
 
   // Corresponding actions to be performed at task startup and teardown.

@@ -2217,21 +2217,6 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
       svar->qual = QUAL_REF;
       svar->type = dtUnknown;
     }
-/* For upcoming task-private variables:
-    else if (svar->isTPV())
-    {
-      IntentTag tiIntent = INTENT_BLANK;
-      switch (ovar->qual) {  // qual is set during parsing
-        case QUAL_VAL:        tiIntent = INTENT_IN;         break;
-        case QUAL_CONST_VAL:  tiIntent = INTENT_CONST_IN;   break;
-        case QUAL_REF:        tiIntent = INTENT_REF;        break;
-        case QUAL_CONST_REF:  tiIntent = INTENT_CONST_REF;  break;
-        // parser uses only the above
-        default:              INT_ASSERT(false);            break;
-      }
-      setShadowVarFlagsNew(ovar, svar, tiIntent);
-    }
-*/
     else
     {
       svar->type = ovar->type->getRefType();

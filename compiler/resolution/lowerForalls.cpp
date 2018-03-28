@@ -234,15 +234,6 @@ static void setupForReduce(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* AS_ovar,
   setupForReduce_AS(fs, AS, AS_ovar, IB, DB);
 }
 
-/* For upcoming task-private variables:
-static void setupForTPV(ForallStmt* fs, ShadowVarSymbol* PV, Symbol* ignored,
-                        BlockStmt* IB, BlockStmt* DB)
-{
-  // IB already comes from PV's declaration in the with-clause.
-  insertDeinitialization(DB, PV);
-}
-*/
-
 /////////// driver function ///////////
 
 //
