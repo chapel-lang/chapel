@@ -521,7 +521,9 @@ static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
   AggregateType* ft = toAggregateType(res->fn->_this->getValType());
   AggregateType* at = toAggregateType(info.call->get(2)->getValType());
 
-  if (ft == at || ft->isInstantiatedFrom(at) == true) {
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
     retval = true;
   }
 
@@ -539,6 +541,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
 
   // Exclude initializers on other types before we attempt to resolve the
   // signature.
+  //
+  // TODO: Expand this check for all methods
   if (fn->isInitializer() && isCandidateInit(this, info) == false) {
     return false;
   }
