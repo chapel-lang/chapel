@@ -1,0 +1,11 @@
+associative-of-strings fails on non-zero locales
+
+This test gets either an OOB error or a segfault when running on 2+
+locales.  I believe that the issue relates to using string keys that
+are allocated on locale 0 and then used w.r.t. an associative array on
+locale 1.  Specifically, changing from string keys/values to integers
+makes the error go away, as does storing the `keys` array on the same
+locale as the associtaive domain, as does changing the intents on the
+default associative's dsiAccess() routines to 'const in'.  That said,
+I'm still not quite sure where the blame lies here.
+
