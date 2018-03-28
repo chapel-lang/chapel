@@ -366,7 +366,7 @@ proc copyFile(src: string, dest: string) throws {
     // it anyways.  We already know src exists.
   }
 
-  if try sameFile(src, dest) {
+  if (try sameFile(src, dest)) {
     // Check if the files are the same, error if yes
     try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
 
