@@ -6909,63 +6909,6 @@ proc channel.skipField(out error:syserr) {
 }
 
 
-private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):string {
-  // Open a memory buffer to store the result
-  var f = openmem(error=error);
-  defer {
-    var closeError:syserr;
-    f.close(error=closeError);
-    // Propagate an error on closing only if there wasn't an original error.
-    if !error then
-      error = closeError;
-  }
-
-  if error then return "";
-
-  var offset:int = 0;
-
-  {
-    var w = f.writer(error=error, locking=false);
-    defer {
-      var closeError:syserr;
-      w.close(error=closeError);
-      if !error then
-        error = closeError;
-    }
-
-    // Don't try to write if there was an error creating it
-    if error then return "";
-
-    w.writef(fmt, (...args), error=error);
-
-    offset = w.offset();
-
-    // w should be closed by the defer statement at this point.
-  }
-
-  // Don't try to read if there was an error writing
-  if error then return "";
-
-  var buf = c_malloc(uint(8), offset+1);
-
-  var r = f.reader(error=error, locking=false);
-  defer {
-    var closeError:syserr;
-    r.close(error=closeError);
-    if !error then
-      error = closeError;
-  }
-
-
-  r.readBytes(buf, offset:ssize_t, error=error);
-
-  // Add the terminating NULL byte to make C string conversion easy.
-  buf[offset] = 0;
-
-  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
-}
-
-
 // This function is no longer available.
 pragma "no doc"
 proc format(fmt:string, args ...?k):string {
@@ -6981,17 +6924,75 @@ proc format(fmt:string, args ...?k):string {
   :arg args: the arguments to format
   :returns: the resulting string
  */
-proc string.format(args ...?k):string throws {
-  var err:syserr = ENOERR;
-  var ret = chpl_do_format(this, (...args), error=err);
-  if err then try ioerror(err, "in string.format");
-  return ret;
+proc string.format(args ...?k): string throws {
+  try {
+    return chpl_do_format(this, (...args));
+  } catch e: SystemError {
+    try ioerror(err, "in string.format");
+  } catch {
+    try ioerror(EINVAL:syserr, "in string.format");
+  }
+  return "";
+}
+
+private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
+  // Open a memory buffer to store the result
+  var f = try openmem();
+  defer {
+    try {
+      f.close();
+    } catch {
+      // ignore close errors
+    }
+  }
+
+  var offset:int = 0;
+  {
+    var w = try f.writer(locking=false);
+    defer {
+      try {
+        w.close();
+      } catch {
+        // ignore close errors
+      }
+    }
+    try w.writef(fmt, (...args));
+    offset = w.offset();
+
+    // w should be closed by the defer statement at this point.
+  }
+
+  var buf = c_malloc(uint(8), offset+1);
+  var r = try f.reader(locking=false);
+  defer {
+    try {
+      r.close();
+    } catch {
+      // ignore close errors
+    }
+  }
+
+  try r.readBytes(buf, offset:ssize_t);
+
+  // Add the terminating NULL byte to make C string conversion easy.
+  buf[offset] = 0;
+
+  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
 }
 
 // documented in the throws version
 pragma "no doc"
 proc string.format(args ...?k, out error:syserr):string {
-  return chpl_do_format(this, (...args), error);
+  compilerWarning("This version of string.format() is deprecated; " +
+                  "please switch to a throwing version");
+  try {
+    return this.format((...args));
+  } catch e: SystemError {
+    try ioerror(err, "in string.format");
+  } catch {
+    try ioerror(EINVAL:syserr, "in string.format");
+  }
+  return "";
 }
 
 
