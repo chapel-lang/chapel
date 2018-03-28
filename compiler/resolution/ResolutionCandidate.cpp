@@ -72,7 +72,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
         resolveTypeConstructor(info);
       }
 
-      retval = checkResolveFormalsWhereClauses();
+      retval = checkResolveFormalsWhereClauses(info);
     }
   }
 
@@ -515,14 +515,33 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
   return retval;
 }
 
+static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->_this->getValType());
+  AggregateType* at = toAggregateType(info.call->get(2)->getValType());
+
+  if (ft == at || ft->isInstantiatedFrom(at) == true) {
+    retval = true;
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   int coindex = -1;
+
+  // Exclude initializers on other types before we attempt to resolve the
+  // signature.
+  if (fn->isInitializer() && isCandidateInit(this, info) == false) {
+    return false;
+  }
 
   /*
    * A derived generic type will use the type of its parent,

@@ -63,7 +63,7 @@ private:
 
   void                      resolveTypedefedArgTypes();
 
-  bool                      checkResolveFormalsWhereClauses();
+  bool                      checkResolveFormalsWhereClauses(CallInfo& info);
 
   bool                      checkGenericFormals();
 
