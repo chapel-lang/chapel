@@ -52,7 +52,8 @@ static char const *aprun_arg_strings[aprun_none] = { "-cc",
                                                      "-n",
                                                      "-d",
                                                      "-N",
-                                                     "-j"};
+                                                     "-j",
+                                                     "-L"};
 
 //
 // Return the appropriate integer value for given argument type
@@ -201,6 +202,22 @@ int getCPUsPerCU() {
   return numCPUsPerCU;
 }
 
+const char *getNodeListStr() {
+  return getAprunArgStr(aprun_L);
+}
+char *getNodeListOpt() {
+  const char *nodeList = getenv("CHPL_LAUNCHER_NODELIST");
+  char *nodeListOpt = NULL;
+
+  if (nodeList) {
+    nodeListOpt = sys_malloc(strlen(getNodeListStr()) + strlen(nodeList) + 1);
+    strcpy(nodeListOpt, getNodeListStr());
+    strcat(nodeListOpt, nodeList);
+  }
+
+  return nodeListOpt;
+}
+
 //
 // This function allocates and returns a NULL terminated argument list
 // with the aprun command to be run
@@ -215,6 +232,7 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";
   int CPUsPerCU;
+  char *nodeListOpt;
 
   initAprunAttributes();
 
@@ -233,6 +251,9 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
     sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
     largv[largc++] = _jbuf;
+  }
+  if ((nodeListOpt = getNodeListOpt()) != NULL) {
+    largv[largc++] = nodeListOpt;
   }
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);

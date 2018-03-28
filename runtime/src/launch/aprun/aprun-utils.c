@@ -202,20 +202,20 @@ int getCPUsPerCU() {
   return numCPUsPerCU;
 }
 
-const char *getHostListStr() {
+const char *getNodeListStr() {
   return getAprunArgStr(aprun_L);
 }
-char *getHostListOpt() {
-  const char *hostList = getenv("CHPL_HOSTLIST");
-  char *hostListOpt = NULL;
+char *getNodeListOpt() {
+  const char *nodeList = getenv("CHPL_LAUNCHER_NODELIST");
+  char *nodeListOpt = NULL;
 
-  if (hostList) {
-    hostListOpt = sys_malloc(strlen(getHostListStr()) + strlen(hostList) + 1);
-    strcpy(hostListOpt, getHostListStr());
-    strcat(hostListOpt, hostList);
+  if (nodeList) {
+    nodeListOpt = sys_malloc(strlen(getNodeListStr()) + strlen(nodeList) + 1);
+    strcpy(nodeListOpt, getNodeListStr());
+    strcat(nodeListOpt, nodeList);
   }
 
-  return hostListOpt;
+  return nodeListOpt;
 }
 
 //
@@ -232,7 +232,7 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   int largc = 0;
   const char *ccArg = _ccArg ? _ccArg : "none";
   int CPUsPerCU;
-  char *hostListOpt;
+  char *nodeListOpt;
 
   initAprunAttributes();
 
@@ -252,8 +252,8 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
     sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
     largv[largc++] = _jbuf;
   }
-  if ((hostListOpt = getHostListOpt()) != NULL) {
-    largv[largc++] = hostListOpt;
+  if ((nodeListOpt = getNodeListOpt()) != NULL) {
+    largv[largc++] = nodeListOpt;
   }
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
