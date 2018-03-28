@@ -16,11 +16,11 @@ record MyRec {
 
     if a < 5 {
       writeln('          a <  5');
-      this.initDone();
+      this.complete();
 
     } else if a < 10 {
       writeln('          a < 10');
-      this.initDone();
+      this.complete();
 
     } else {
       this.init();

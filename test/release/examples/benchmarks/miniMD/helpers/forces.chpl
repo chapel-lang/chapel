@@ -48,7 +48,7 @@ class ForceEAM : Force  {
   var funcfl : Funcfl;
 
   proc init(cf : real) {
-    this.initDone();
+    this.complete();
     // use the fluff domain already calculated for communication
     cutforcesq = cf*cf;
     coeff("Cu_u6.eam");
@@ -311,7 +311,7 @@ class ForceEAM : Force  {
 // Lennard-Jones potential
 class ForceLJ : Force {
   proc init(cf : real) {
-    this.initDone();
+    this.complete();
     cutforcesq = cf * cf;
   }
 

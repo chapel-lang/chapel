@@ -28,6 +28,7 @@
 #include <assert.h>
 #include "arg.h"
 #include "chpl-comm.h"
+#include "chpl-mem-desc.h"
 #include "chpl-mem-hook.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
@@ -165,7 +166,8 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize, c_sublocid_t subloc,
     p = NULL;
     *callAgain = false;
     if (chpl_mem_size_justifies_comm_alloc(size)) {
-      p = chpl_comm_regMemAlloc(size);
+      p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                lineno, filename);
       if (p != NULL) {
         *callAgain = true;
         do_localize = (subloc == c_sublocid_all) ? true : false;

@@ -10,7 +10,7 @@ class UsesHelpers {
     // value for it.
     f2 = helper;
     f3 = val;
-    this.initDone();
+    this.complete();
     if (helper > 10) {
       writeln("double digits, woo!");
     }

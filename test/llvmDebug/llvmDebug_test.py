@@ -51,10 +51,8 @@ else:
 #    print 'checking functions --FAIL'
 
 # Verify the struct types
-if 'My_Actor' in output:
-    if 'My_name' in output:
-        if 'My_age' in output:
-            print 'checking types --PASS'
+if ('My_Actor' in output) and ('My_name' in output) and ('My_age' in output):
+    print 'checking types --PASS'
 else:
     print 'checking types --FAIL'
 

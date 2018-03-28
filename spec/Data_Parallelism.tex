@@ -31,14 +31,14 @@ Such accesses are subject to the Memory Consistency Model
 \index{forall@\chpl{forall} (see also statements, forall)}
 \index{loops!forall (see also statements, forall)}
 \index{data parallelism!forall}
-\index{statements!forall}
+\index{statements!forall@\chpl{forall}}
 
 The forall statement is a concurrent variant of the for statement
 described in~\rsec{The_For_Loop}.
 
 \subsection{Syntax}
 \label{forall_syntax}
-\index{statements!forall!syntax}
+\index{statements!forall@\chpl{forall}!syntax}
 
 The syntax of the forall statement is given by
 \begin{syntax}
@@ -59,7 +59,7 @@ the role of \sntx{task-intent-clause} are defined in \rsec{Forall_Intents}.
 
 \subsection{Execution and Serializability}
 \label{forall_semantics}
-\index{statements!forall!semantics}
+\index{statements!forall@\chpl{forall}!semantics}
 
 The forall statement evaluates the loop body once for each element
 yielded by the \sntx{iteratable-expression}.  Each instance of the
@@ -82,9 +82,13 @@ is \emph{leading} the execution of the loop, as is the mapping of
 iterations to tasks.
 
 This concept will be formalized in future drafts of the Chapel
-specification; for now, please refer
-to \chpl{CHPL_HOME/examples/primers/parIters.chpl} for a brief
-introduction or to \emph{User-Defined Parallel Zippered Iterators in
+specification. For now, the primer on parallel iterators
+in the online documentation provides a brief introduction:
+\\ %formatting
+\mbox{$$ $$ $$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/primers/parIters.html}
+\\
+Please also refer to \emph{User-Defined Parallel Zippered Iterators in
 Chapel}, published in the PGAS 2011 workshop.
 
 Control continues with the statement following the forall loop only
@@ -92,10 +96,13 @@ after every iteration has been completely evaluated.  At this point,
 all data accesses within the body of the forall loop will be
 guaranteed to be completed.
 
-The following statements may not be lexically enclosed in forall
-statements: break statements, and return statements.  Yield statement
-may only be lexically enclosed in forall statements in parallel
-iterators~(\rsec{Parallel_Iterators}).
+A \chpl{return} statement may not be lexically enclosed in a forall
+statement. A \chpl{yield} statement may only be lexically enclosed in
+a forall statement that is within a parallel iterator
+\rsec{Parallel_Iterators}.
+A \chpl{break} statement may not be used to exit a forall statement.
+A \chpl{continue} statement skips the rest of the current iteration
+of the forall loop.
 
 \begin{chapelexample}{forallStmt.chpl}
 In the code
@@ -126,7 +133,7 @@ writeln(a);
 
 \subsection{Zipper Iteration}
 \label{forall_zipper}
-\index{statements!forall!zipper iteration}
+\index{statements!forall@\chpl{forall}!zipper iteration}
 
 Zipper iteration has the same semantics as described
 in~\rsec{Zipper_Iteration} and~\rsec{Parallel_Iterators} for parallel
@@ -227,6 +234,7 @@ writeln(result);
 \label{Forall_Intents}
 \index{forall intents}
 \index{data parallelism!forall intents}
+\index{statements!forall@\chpl{forall}!forall intents}
 
 If a variable is referenced within the lexical scope of a
 forall statement or expression and is declared outside
@@ -243,8 +251,8 @@ to the corresponding formal argument of the task function
 or the leader iterator.
 
 Each formal argument of a task function or iterator has the default
-intent by default.  For variables of primitive, enum, class, record
-and union types, this has the effect of capturing the value of the
+intent by default.  For variables of primitive, enum, and class
+types, this has the effect of capturing the value of the
 variable at task creation time.  Within the lexical scope of the
 forall statement or expression, the variable name references the
 captured value instead of the original value.
@@ -256,23 +264,20 @@ the body of the forall loop to modify the corresponding original
 variable or to read its updated value after concurrent modifications.
 The \chpl{in} intent is a way to obtain task-private variables
 in a forall loop.
+A \chpl{reduce} intent can be used to reduce values across iterations
+of a forall or coforall loop.
+Reduce intents are described in the \emph{Reduce Intents} technical note
+in the online documentation:
+\\ %formatting
+\mbox{$$ $$ $$} %indent
+\url{https://chapel-lang.org/docs/technotes/reduceIntents.html}
 
 \begin{rationale}
 A forall statement or expression may create tasks in its implementation.
 Forall intents affect those tasks in the same way that task intents
+\rsec{Task_Intents}
 affect the behavior of a task construct such as a \chpl{coforall} loop.
 \end{rationale}
-
-\begin{craychapel}
-To reduce values across iterations of a forall or coforall loop,
-"reduce" intents can be used.
-They are described in the \emph{Reduce Intents} page
-under \emph{Technical Notes}
-in Cray Chapel online documentation here:
-\\ %formatting
-\mbox{$$ $$ $$} %indent
-\url{https://chapel-lang.org/docs/latest/}
-\end{craychapel}
 
 
 \section{Promotion}

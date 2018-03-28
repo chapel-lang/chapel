@@ -1,6 +1,6 @@
 A.init
 B.init
 C.init
-A.postInit
-B.postInit
-C.postInit
+A.postinit
+B.postinit
+C.postinit

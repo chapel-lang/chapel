@@ -74,8 +74,8 @@ c2chapel: venv
 
 	$(VIRTUAL_ENV) $(VENV_DIR)
 	. $(VENV_DIR)/bin/activate && \
-	  pip install $(INSTALL)/$(TAR) && \
-	  pip install argparse
+	  python $(VENV_DIR)/bin/pip install $(INSTALL)/$(TAR) && \
+	  python $(VENV_DIR)/bin/pip install $(CHPL_PIP_INSTALL_PARAMS) argparse
 
 check:
 	cd test && ./tester.sh

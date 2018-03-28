@@ -245,7 +245,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/types/atomic/sungeun/no_atomic_assign.chpl
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
-//   test/studies/shootout/spectral-norm/spectralnorm.chpl
+//   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
 //   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
@@ -550,11 +550,13 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             FnSymbol*  unrefFn   = NULL;
 
             if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              // This warning can go away after 1.17 if it gets annoying.
-              // In the meantime, it helps to identify cases that have
-              // different behavior between 1.16 and 1.17.
-              USR_WARN(call, "proc returns an iterator that will be "
-                             "immediately converted to an array");
+              if (fWarnUnstable) {
+                // This warning can go away after 1.17 if it gets annoying.
+                // In the meantime, it helps to identify cases that have
+                // different behavior between 1.16 and 1.17.
+                USR_WARN(call, "proc returns an iterator that will be "
+                               "immediately converted to an array");
+              }
             }
 
             // Used by callDestructors to catch assignment from
@@ -1385,7 +1387,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            //  destructor calls delete on any fields.  I think we
            //  probably need a similar change in the INOUT/IN case
            //  above.  See test/types/records/sungeun/destructor3.chpl
-           //  and test/users/recordbug3.chpl.
+           //  and test/users/ferguson/recordbug3.chpl.
            //
            // For records, this problem should go away if/when we
            //  implement 'const ref' intents and make them the default

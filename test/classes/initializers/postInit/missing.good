@@ -1,13 +1,13 @@
 Y.init
 Z.init
-Z.postInit
+Z.postinit
 
 A.init
 B.init
 C.init
-A.postInit
-C.postInit
+A.postinit
+C.postinit
 
 Parent.init
 Child.init
-Parent.postInit
+Parent.postinit

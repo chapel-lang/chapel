@@ -6,7 +6,7 @@ class Derived : Base {
 
     z = _z;
 
-    initDone();
+    complete();
   }
 }
 
@@ -23,7 +23,7 @@ class Base {
     x = _x;
     y = _y;
 
-    initDone();
+    complete();
   }
 }
 

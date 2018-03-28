@@ -37,7 +37,7 @@ record R4 {
   var fo:Owned(MyClass);
   var fs:Shared(MyClass);
   proc init(a:MyClass, b:MyClass) {
-    this.initDone();
+    this.complete();
     fo = new Owned(a);
     fs = new Shared(b);
   }

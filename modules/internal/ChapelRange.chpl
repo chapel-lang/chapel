@@ -185,7 +185,7 @@ module ChapelRange {
     this.stridable   = stridable;
     this._low        = _low;
     this._high       = _high;
-    this.initDone();
+    this.complete();
     if stridable {
       this._stride    = _stride;
       this._alignment = _alignment;
@@ -219,7 +219,7 @@ module ChapelRange {
     this.stridable   = stridable;
     this._low        = _low;
     this._high       = _high;
-    this.initDone();
+    this.complete();
     if stridable then
       compilerError("non-stridable range initializer called with stridable=true");
   }

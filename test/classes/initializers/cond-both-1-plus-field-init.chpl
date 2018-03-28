@@ -1,6 +1,6 @@
 // Confirm that the compiler accepts simple conditional with init in
 // both branches, and allows field initialization before the
-// this.initDone() in phase1.
+// this.complete() in phase1.
 
 record MyRec {
   var x : int = 10;
@@ -18,7 +18,7 @@ record MyRec {
     if a < 10 then {
       x = 22;
       y = 33;
-      this.initDone();
+      this.complete();
     } else {
       this.init();
     }

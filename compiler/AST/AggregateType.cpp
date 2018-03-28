@@ -422,7 +422,7 @@ bool AggregateType::hasInitializers() const {
 bool AggregateType::hasPostInitializer() const {
   bool retval = false;
 
-  // If there is postInit() it is defined on the defining type
+  // If there is postinit() it is defined on the defining type
   if (instantiatedFrom == NULL) {
     int size = methods.n;
 
@@ -1415,6 +1415,7 @@ void AggregateType::buildConstructor() {
           // defines an initializer - we should not be creating a default
           // constructor in that case, it won't know what to do with it.
           if (at->initializerStyle == DEFINES_INITIALIZER ||
+              at->wantsDefaultInitializer() ||
               at->parentDefinesInitializer() == true) {
             // at->defaultInitializer will still be NULL
             USR_FATAL(this,
@@ -2091,7 +2092,8 @@ bool AggregateType::parentDefinesInitializer() const {
 
   if (dispatchParents.n > 0) {
     if (AggregateType* pt = dispatchParents.v[0]) {
-      if (pt->initializerStyle == DEFINES_INITIALIZER) {
+      if (pt->initializerStyle == DEFINES_INITIALIZER ||
+          pt->wantsDefaultInitializer()) {
         retval = true;
 
       } else {

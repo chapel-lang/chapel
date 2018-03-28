@@ -15,7 +15,7 @@ record MyRec {
     writeln('Init(int) Enter');
 
     if a < 10 then
-      this.initDone();
+      this.complete();
     else
       this.init();
 

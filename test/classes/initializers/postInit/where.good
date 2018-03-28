@@ -1,12 +1,12 @@
 Grandparent.init
 Parent.init
 Child.init
-Grandparent.postInit
-Child(real(64)).postInit
+Grandparent.postinit
+Child(real(64)).postinit
 
 Grandparent.init
 Parent.init
 Child.init
-Grandparent.postInit
-Special Parent.postInit
-Child(int(64)).postInit
+Grandparent.postinit
+Special Parent.postinit
+Child(int(64)).postinit

@@ -19,10 +19,10 @@
 
 /*
 
-   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the deallocation
-   of a class instance. :record:`Shared` is meant to be used when many
-   different references will exist to the object and these references
-   need to keep the object alive.
+   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the
+   deallocation of a class instance. :record:`Shared` is meant to be used when
+   many different references will exist to the object and these references need
+   to keep the object alive.
 
    To use :record:`Shared`, allocate a class instance following this
    pattern:
@@ -49,6 +49,11 @@
        // instance is not deleted until globalSharedObject is deinitialized.
      }
 
+   :record:`Shared` supports coercions to the class type as well as
+   coercions from a ``Shared(T)`` to ``Shared(U)`` where ``T`` is a
+   subclass of ``U``. See :record:`~OwnedObject.Owned` for examples
+   of these coercions.
+
  */
 module SharedObject {
 
@@ -63,7 +68,7 @@ module SharedObject {
     // count should be initialized to 1 in default initializer.
     proc init() {
       // Want this:      count = 1;
-      this.initDone();
+      this.complete();
       count.write(1);
     }
 
@@ -134,7 +139,7 @@ module SharedObject {
       this.p = p;
       this.pn = rc;
 
-      this.initDone();
+      this.complete();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the
@@ -152,7 +157,7 @@ module SharedObject {
       this.p = src.p;
       this.pn = src.pn;
 
-      this.initDone();
+      this.complete();
 
       if this.pn != nil then
         this.pn.retain();

@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+# This test only makes sense with comm=ugni and hugepages.
+
+import os
+print(os.getenv('CHPL_COMM') != 'ugni' or
+      os.getenv('HUGETLB_DEFAULT_PAGE_SIZE') == None)
+
