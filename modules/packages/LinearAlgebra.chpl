@@ -937,6 +937,37 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
+/*Fuction to concatenate two arrays*/
+proc concat(A: [?Dom1] ?eltType, B: [?Dom2], axis=1)
+{
+  var dimlist1 = Dom1.dims();
+  param rank = Dom1.rank;
+  var d1 = dimlist1(axis).size;
+  var dimlist2 = Dom2.dims();
+  var d2 = dimlist2(axis).size;
+  const r = 1..d1+d2;
+  dimlist1(axis)=r;
+  dimlist2(axis)=r;
+  //if(dimlist1 != dimlist2) then
+  //writeln("Mismatch in dimensions");
+  var newDomain: domain(rank) = dimlist2;
+  var res: [newDomain] eltType;
+  for ij in Dom1 do
+      res[ij] = A[ij];
+  for ij in Dom2 {
+      var x = ij;
+      x[axis]+= d1;
+      res[x] = B[ij];
+  }
+  return res;
+}
+
+pragma "no doc"
+proc concat(A: [?Dom1] ?eltType, B: [?Dom2], axis=1)
+  where Dom1.rank != Dom2.rank {
+    compilerError("Cannot concatenate arrays of different ranks");
+}
+
 
 /* Perform a Cholesky factorization on matrix ``A``.  ``A`` must be square.
    Argument ``lower`` indicates whether to return the lower or upper
