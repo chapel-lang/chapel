@@ -62,17 +62,17 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
-* `Invoking start_test For`_
+* `Invoking start_test`_
 
   - `Correctness Testing`_
   - `Performance Testing`_
+  - `Sample Output`_
 
 * `Summary of Testing Files`_
 
 .. _With Outside Arguments: `Outside Arguments or Settings`_
 .. _With Varying Output: `Tests With Varying Output`_
 .. _Test Not Applicable In All Settings: `Limiting Where the Test Runs`_
-.. _Invoking start_test For: `Invoking start_test`_
 
 How to Make
 ===========
@@ -160,6 +160,11 @@ dynamically, the file would look like this:
      --static
      --dynamic
 
+Note that sometimes different compilation arguments will result in different
+output.  `Testing Different Behavior in Different Settings`_ provides guidance
+on how to a test could respond to different behavior without modifying the
+output that is generated.
+
 Execution-time Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -215,6 +220,11 @@ will be compiled twice, and executed four times by ``start_test``:
   - Execution 4:
 
     ``./multiple-options --x=false``
+
+Note that sometimes different execution arguments will result in different
+output.  `Testing Different Behavior in Different Settings`_ provides guidance
+on how to a test could respond to different behavior without modifying the
+output that is generated.
 
 Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
@@ -285,7 +295,11 @@ single-locale setting:
      CHPL_COMM != none
 
 This is useful when the conditions required to skip a test can be easily
-determined from the environment.
+determined from the environment.  A condition of ``>=`` indicates that the test
+should be skipped when the environment variable on the left does not contain the
+contents on the right, while ``<=`` indicates the opposite - this is useful for
+imprecise matches, e.g. ``CHPL_HOST_PLATFORM >= cygwin`` would cause the test to
+run on both ``cygwin64`` and ``cygwin32``.
 
 The second form a ``.skipif`` or ``SKIPIF`` file can take is that of a script.
 This form is intended for conditions that require some computation to determine,
@@ -293,7 +307,10 @@ or when the combination of conditions is necessary (i.e. this setting **and**
 this setting are required for the behavior we want to avoid).  The script can be
 in any commonly supported scripting language, usually bash or python.  The
 ``.skipif`` or ``SKIPIF`` file must have executable permissions for this form to
-work.  For instance:
+work.  Printing ``True`` to standard output will result in the test being
+skipped, while printing ``False`` will result in the test being run.
+
+For instance:
 
 ``foo.skipif``
 
@@ -655,6 +672,10 @@ output before comparing to ``.bad``, or the ``.bad`` should be omitted.
 Ultimately, our intention is to support a library of common recipes for ``.bad``
 files, but this has not been implemented yet.
 
+An easy way to obtain this file is to run the future once using ``start_test`` -
+the output for that configuration can then be found in a ``.out.tmp`` file in
+the same directory as the test.
+
 Resolving a Future
 ++++++++++++++++++
 
@@ -709,6 +730,41 @@ will be considered when testing in performance mode.
 
 All performance tests are compiled with ``--fast`` by default and ``--static``
 when it's not problematic for the target configuration.
+
+Sample Output
+-------------
+
+The output from a ``start_test`` run will begin with a list of the settings
+used, following the environment settings as obtained from ``printchplenv`` (see
+`Setting up Your Environment for Chapel`_).  This will be followed by
+information from running the individual tests or directories.
+
+.. _Setting up Your Environment for Chapel: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html
+
+The output from ``start_test`` will end with the location of the log file
+containing all the output from its execution, as well as a summary of all tests
+that failed and any futures that were run.  This will look something like this:
+
+  .. code-block::
+
+     [Test Summary - 180328.134706]
+     [Error matching program output for path/to/failing/correctness/test]
+     Future (bug: description of bug from future file) [Error matching program output for path/to/failing/future]
+     Future (bug: description of bug from future file) [Success matching program output for path/to/passing/future]
+     [Summary: #Successes = 1 | #Failures = 1 | #Futures = 2 | #Warnings = 0 ]
+     [Summary: #Passing Suppressions = 0 | #Passing Futures = 1 ]
+     [END]
+
+Successful tests will not be printed after the line beginning with ``[Test
+Summary`` unless they had a ``.future`` file (see `A Test That Tracks A
+Failure`_ for information about ``.future`` files).
+
+When nightly testing is run, a mail will be sent to
+`chapel-test-results-regressions`_ for every configuration with a new failure,
+warning, passing suppression, and/or passing future.
+
+.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
+
 
 Summary of Testing Files
 ========================
