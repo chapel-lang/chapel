@@ -174,10 +174,9 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
 }
 
 void compute_fn_call_sites(FnSymbol* fn) {
-  if (fn->calledBy)
-    fn->calledBy->clear();
-  else
+  if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
+  }
 
   for_SymbolSymExprs(se, fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -214,6 +213,13 @@ void compute_fn_call_sites(FnSymbol* fn) {
 }
 
 void compute_call_sites() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->calledBy)
+      fn->calledBy->clear();
+    else
+      fn->calledBy = new Vec<CallExpr*>();
+  }
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     compute_fn_call_sites(fn);
   }
