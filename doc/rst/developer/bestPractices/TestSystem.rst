@@ -162,8 +162,8 @@ dynamically, the file would look like this:
 
 Note that sometimes different compilation arguments will result in different
 output.  `Testing Different Behavior in Different Settings`_ provides guidance
-on how to a test could respond to different behavior without modifying the
-output that is generated.
+on how a test could respond to different behavior without modifying the output
+that is generated.
 
 Execution-time Arguments
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -223,8 +223,8 @@ will be compiled twice, and executed four times by ``start_test``:
 
 Note that sometimes different execution arguments will result in different
 output.  `Testing Different Behavior in Different Settings`_ provides guidance
-on how to a test could respond to different behavior without modifying the
-output that is generated.
+on how a test could respond to different behavior without modifying the output
+that is generated.
 
 Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~
