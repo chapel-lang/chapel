@@ -9346,6 +9346,13 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
     resolveCallAndCallee(defOfCall);
 
     retval = foldTryCond(postFold(defOfCall));
+
+    if (at && at->isRecord() && at->hasPostInitializer()) {
+      CallExpr* move = toCallExpr(defOfCall->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr*  var  = toSymExpr(move->get(1));
+      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+    }
   }
 
   return retval;
