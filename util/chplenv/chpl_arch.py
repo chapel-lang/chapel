@@ -314,10 +314,10 @@ class feature_sets(object):
 
         return found
 
-def get_cpuinfo(platform='linux'):
+def get_cpuinfo(platform_val='linux'):
     vendor_string = ''
     feature_string = ''
-    if platform == "darwin":
+    if platform_val == "darwin":
         vendor_string = run_command(['sysctl', '-n', 'machdep.cpu.vendor'])
         feature_string = run_command(['sysctl', '-n', 'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
