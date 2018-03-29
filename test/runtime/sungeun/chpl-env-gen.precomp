@@ -13,7 +13,7 @@ printchplenv = os.path.join(chpl_home, 'util', 'printchplenv')
 printchplenv_cmd = [printchplenv, '--simple', '--runtime', '--no-tidy', '--anonymize']
 
 p = subprocess.Popen(printchplenv_cmd, stdout=subprocess.PIPE).communicate()[0]
-chpl_env = dict(map(lambda l: l.split('='), p.splitlines()))
+chpl_env = dict(map(lambda l: l.split('=', 1), p.splitlines()))
 
 testname = sys.argv[1]
 genfile = testname+'.test.gen.c'

@@ -259,7 +259,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
             # grab the chplenv so it can be stuffed into the subprocess env
             env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
             chpl_env = subprocess.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-            chpl_env = dict(map(lambda l: l.split('='), chpl_env.splitlines()))
+            chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
             file_env = os.environ.copy()
             file_env.update(chpl_env)
 
@@ -1296,15 +1296,15 @@ for testname in testsrc:
         compenv = list()
 
     testenv = {}
-    for var, val in [env.split('=') for env in globalExecenv]:
+    for var, val in [env.split('=', 1) for env in globalExecenv]:
         testenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in execenv]:
+    for var, val in [env.split('=', 1) for env in execenv]:
         testenv[var.strip()] = val.strip()
 
     testcompenv = {}
-    for var, val in [env.split('=') for env in globalCompenv]:
+    for var, val in [env.split('=', 1) for env in globalCompenv]:
         testcompenv[var.strip()] = val.strip()
-    for var, val in [env.split('=') for env in compenv]:
+    for var, val in [env.split('=', 1) for env in compenv]:
         testcompenv[var.strip()] = val.strip()
 
 
