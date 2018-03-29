@@ -1,7 +1,4 @@
 MyRec.init type
-(x = 0)
-
-MyRec.init type
 MyRec.init value
 MyRec.postinit
 

@@ -44,13 +44,6 @@ record MyRec {
 
 
 proc main() {
-  var r1 : MyRec(int);
-
-  writeln(r1);
-  writeln();
-
-
-
   var r2 : MyRec(int) = new MyRec(20);
 
   writeln(r2);

@@ -1,0 +1,2 @@
+bug: postinit skipped for generic records declared with only a type
+#9001
