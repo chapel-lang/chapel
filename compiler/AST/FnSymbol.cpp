@@ -349,8 +349,6 @@ void FnSymbol::finalizeCopy() {
         this->body->insertAtHead(node->remove());
       }
 
-      this->removeFlag(FLAG_EXPANDED_VARARGS);
-
     } else if (this->body->body.length == 0) {
       this->body->replace( COPY_INT(partialCopySource->body) );
     }
