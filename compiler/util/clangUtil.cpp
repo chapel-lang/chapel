@@ -1578,17 +1578,10 @@ void runClang(const char* just_parse_filename) {
   if (specializeCCode &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
-    std::string march = "-march=";
-    const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
-    if (strncmp(backend_arch, "arm-", 4) == 0) {
-      backend_arch += 4;
-      march = "-mcpu=";
-    }
-    march += backend_arch;
-    if (strcmp(backend_arch, "thunderx2") == 0) {
-      march += "t99";
-    }
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
+    std::string march = "-m";
+    march += CHPL_TARGET_BACKEND_ARCH;
     args.push_back(march);
   }
 

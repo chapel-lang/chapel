@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import optparse
 import os
+import platform
 from string import punctuation
 from sys import stderr, stdout
 import sys
@@ -17,82 +18,153 @@ class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
     # equivalent intel arch, but I don't have any good way to do this as of now
     intel = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'corei7',
-        'westmere':    'corei7',
-        'sandybridge': 'corei7-avx',
-        'ivybridge':   'core-avx-i',
-        'haswell':     'core-avx2',
-        'broadwell':   'core-avx2',
-        'knc':         'knc',
-        'k8':          'none',
-        'k8sse3':      'none',
-        'barcelona':   'none',
-        'bdver1':      'none',
-        'bdver2':      'none',
-        'bdver3':      'none',
-        'bdver4':      'none',
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=corei7',
+        'westmere':      'arch=corei7',
+        'sandybridge':   'arch=corei7-avx',
+        'ivybridge':     'arch=core-avx-i',
+        'haswell':       'arch=core-avx2',
+        'broadwell':     'arch=core-avx2',
+        'knc':           'arch=knc',
+        'k8':            'none',
+        'k8sse3':        'none',
+        'barcelona':     'none',
+        'bdver1':        'none',
+        'bdver2':        'none',
+        'bdver3':        'none',
+        'bdver4':        'none',
+        'arm-thunderx':  'none',
+        'arm-thunderx2': 'none',
     }
 
     gcc43 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'core2',
-        'westmere':    'core2',
-        'sandybridge': 'core2',
-        'ivybridge':   'core2',
-        'haswell':     'core2',
-        'broadwell':   'core2',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'barcelona',
-        'bdver2':      'barcelona',
-        'bdver3':      'barcelona',
-        'bdver4':      'barcelona',
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=core2',
+        'westmere':      'arch=core2',
+        'sandybridge':   'arch=core2',
+        'ivybridge':     'arch=core2',
+        'haswell':       'arch=core2',
+        'broadwell':     'arch=core2',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=barcelona',
+        'bdver2':        'arch=barcelona',
+        'bdver3':        'arch=barcelona',
+        'bdver4':        'arch=barcelona',
+        'arm-thunderx':  'none',
+        'arm-thunderx2': 'none',
     }
 
     gcc47 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'corei7',
-        'westmere':    'corei7',
-        'sandybridge': 'corei7-avx',
-        'ivybridge':   'core-avx-i',
-        'haswell':     'core-avx2',
-        'broadwell':   'core-avx2',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'bdver1',
-        'bdver2':      'bdver2',
-        'bdver3':      'bdver2',
-        'bdver4':      'bdver2',
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=corei7',
+        'westmere':      'arch=corei7',
+        'sandybridge':   'arch=corei7-avx',
+        'ivybridge':     'arch=core-avx-i',
+        'haswell':       'arch=core-avx2',
+        'broadwell':     'arch=core-avx2',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver2',
+        'bdver4':        'arch=bdver2',
+        'arm-thunderx':  'none',
+        'arm-thunderx2': 'none',
+    }
+
+    gcc48 = {
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=corei7',
+        'westmere':      'arch=corei7',
+        'sandybridge':   'arch=corei7-avx',
+        'ivybridge':     'arch=core-avx-i',
+        'haswell':       'arch=core-avx2',
+        'broadwell':     'arch=core-avx2',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver2',
+        'bdver4':        'arch=bdver2',
+        'arm-thunderx':  'cpu=generic',
+        'arm-thunderx2': 'cpu=generic',
     }
 
     gcc49 = {
-        'native':      'native',
-        'core2':       'core2',
-        'nehalem':     'nehalem',
-        'westmere':    'westmere',
-        'sandybridge': 'sandybridge',
-        'ivybridge':   'ivybridge',
-        'haswell':     'haswell',
-        'broadwell':   'broadwell',
-        'knc':         'none',
-        'k8':          'k8',
-        'k8sse3':      'k8-sse3',
-        'barcelona':   'barcelona',
-        'bdver1':      'bdver1',
-        'bdver2':      'bdver2',
-        'bdver3':      'bdver3',
-        'bdver4':      'bdver4',
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=nehalem',
+        'westmere':      'arch=westmere',
+        'sandybridge':   'arch=sandybridge',
+        'ivybridge':     'arch=ivybridge',
+        'haswell':       'arch=haswell',
+        'broadwell':     'arch=broadwell',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver3',
+        'bdver4':        'arch=bdver4',
+        'arm-thunderx':  'cpu=generic',
+        'arm-thunderx2': 'cpu=generic',
     }
 
-    clang = gcc47
+    gcc6 = {
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=nehalem',
+        'westmere':      'arch=westmere',
+        'sandybridge':   'arch=sandybridge',
+        'ivybridge':     'arch=ivybridge',
+        'haswell':       'arch=haswell',
+        'broadwell':     'arch=broadwell',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver3',
+        'bdver4':        'arch=bdver4',
+        'arm-thunderx':  'cpu=thunderx',
+        'arm-thunderx2': 'cpu=thunderx',
+    }
+
+    gcc7 = {
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=nehalem',
+        'westmere':      'arch=westmere',
+        'sandybridge':   'arch=sandybridge',
+        'ivybridge':     'arch=ivybridge',
+        'haswell':       'arch=haswell',
+        'broadwell':     'arch=broadwell',
+        'knc':           'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver3',
+        'bdver4':        'arch=bdver4',
+        'arm-thunderx':  'cpu=thunderx',
+        'arm-thunderx2': 'cpu=thunderx2t99',
+    }
+
+    clang = gcc7
 
     @classmethod
     def find(cls, arch, compiler, version):
@@ -115,8 +187,14 @@ class argument_map(object):
             return arch
 
         if compiler in ['gnu', 'mpi-gnu', 'aarch64-gnu']:
-            if version >= CompVersion('4.9'):
+            if version >= CompVersion('7.0'):
+                return cls.gcc7.get(arch, '')
+            elif version >= CompVersion('6.0'):
+                return cls.gcc6.get(arch, '')
+            elif version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
+            elif version >= CompVersion('4.8'):
+                return cls.gcc48.get(arch, '')
             elif version >= CompVersion('4.7'):
                 return cls.gcc47.get(arch, '')
             elif version >= CompVersion('4.3'):
@@ -124,9 +202,13 @@ class argument_map(object):
             return 'none'
         elif compiler == 'intel':
             return cls.intel.get(arch, '')
-        elif compiler == 'clang':
-            return cls.clang.get(arch, '')
-        elif compiler == 'clang-included':
+        elif compiler in ['clang', 'clang-included']:
+            # Clang doesn't know how to do architecture detection for aarch64.
+            if arch == 'native':
+                uname = platform.uname()
+                machine = uname[4]
+                if machine == 'aarch64':
+                    return 'unknown'
             return cls.clang.get(arch, '')
         else:
             stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
@@ -347,11 +429,20 @@ def get(location, map_to_compiler=False, get_lcd=False):
                 except ValueError:
                     stderr.write("Warning: Unknown platform, could not find CPU information\n")
         else:
+            # Clang cannot detect the architecture for aarch64.  Otherwise,
             # let the backend compiler do the actual feature set detection. We
             # could be more aggressive in setting a precise architecture using
             # the double checking code above, but it seems like a waste of time
             # to not use the work the backend compilers have already done
-            arch = 'native'
+            if compiler_val in ['clang', 'clang-included']:
+                uname = platform.uname()
+                machine = uname[4]
+                if machine == 'aarch64':
+                    arch = 'unknown'
+                else:
+                    arch = 'native'
+            else:
+                arch = 'native'
 
 
     if map_to_compiler:
