@@ -64,7 +64,7 @@ module DefaultAssociative {
     var numEntries: atomic_int64;
     var tableLock: atomicbool; // do not access directly, use function below
     var tableSizeNum = 1;
-    var tableSize = chpl__primes(tableSizeNum);
+    var tableSize:int = chpl__primes(tableSizeNum);
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   

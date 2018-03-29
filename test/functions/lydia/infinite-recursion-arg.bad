@@ -1,0 +1,8 @@
+infinite-recursion-arg.chpl:1: internal error: RES0120 chpl version 1.17.0 pre-release (06f19a352b)
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

@@ -9,7 +9,7 @@ class Parent {
   // call in the generated child initializer.
   proc init(x1: int, x2: int) {
     a = x1 + x2;
-    super.init();
+
   }
 }
 

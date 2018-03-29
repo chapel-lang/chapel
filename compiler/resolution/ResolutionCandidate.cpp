@@ -90,8 +90,9 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_IS_MEME) == false) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-          if (formal->instantiatedFrom) {
+          if (formal->instantiatedFrom != NULL) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
+
           } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             typeConstructorCall->insertAtTail(paramMap.get(formal));
           }
@@ -101,7 +102,7 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
               formal->type                  == dtMethodToken) {
             typeConstructorCall->insertAtTail(formal);
 
-          } else if (formal->instantiatedFrom) {
+          } else if (formal->instantiatedFrom != NULL) {
             SymExpr*   se = new SymExpr(formal->type->symbol);
             NamedExpr* ne = new NamedExpr(formal->name, se);
 
@@ -144,9 +145,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
       computeAlignment(info) == true &&
      checkGenericFormals()   == true) {
     // Compute the param/type substitutions for generic arguments.
-    computeSubstitutions();
-
-    if (substitutions.n > 0) {
+    if (computeSubstitutions() > 0) {
       /*
        * Instantiate enough of the generic to get through the rest of the
        * filtering and disambiguation processes.
@@ -155,179 +154,6 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
 
       if (fn != NULL) {
         retval = isApplicable(info);
-      }
-    }
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-bool ResolutionCandidate::isApplicableForInit(CallInfo& info) {
-  bool retval = false;
-
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
-    retval = isApplicableForInitConcrete(info);
-
-  } else {
-    retval = isApplicableForInitGeneric (info);
-  }
-
-  return retval;
-}
-
-bool ResolutionCandidate::isApplicableForInitConcrete(CallInfo& info) {
-  bool retval = false;
-
-  fn = expandIfVarArgs(fn, info);
-
-  if (fn == NULL) {
-    retval = false;
-
-  } else {
-    resolveTypedefedArgTypes();
-
-    if (computeAlignment(info) == false) {
-      retval = false;
-
-    } else {
-      retval = checkResolveFormalsWhereClauses();
-    }
-  }
-
-  return retval;
-}
-
-bool ResolutionCandidate::isApplicableForInitGeneric(CallInfo& info) {
-  bool retval = false;
-
-  fn = expandIfVarArgs(fn, info);
-
-  if (fn == NULL) {
-    retval = false;
-
-  } else if (computeAlignment(info) == false) {
-    retval = false;
-
-  } else if (checkGenericFormals()  == false) {
-    retval = false;
-
-  } else {
-    computeSubstitutions();
-
-    if (substitutions.n > 0) {
-      /*
-       * Instantiate just enough of the generic to get through the
-       * the rest of the filtering and disambiguation processes.
-       */
-      fn = instantiateInitSig(info);
-
-      if (fn != NULL) {
-        retval = isApplicableForInit(info);
-      }
-    }
-  }
-
-  return retval;
-}
-
-FnSymbol* ResolutionCandidate::instantiateInitSig(CallInfo& info) {
-  SymbolMap& subs   = substitutions;
-  FnSymbol*  retval = NULL;
-
-  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, info.call)) {
-    retval = tupleFn;
-
-  } else {
-    form_Map(SymbolMapElem, e, subs) {
-      if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        // This line is modified from instantiateSignature to allow the "this"
-        // arg to remain generic until we have finished resolving the generic
-        // portions of the initializer body's Phase 1.
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC) ==  true &&
-            e->key->hasFlag(FLAG_ARG_THIS)          == false) {
-          INT_FATAL(fn, "illegal instantiation with a generic type");
-
-        } else {
-          TypeSymbol* nts = getNewSubType(fn, e->key, ts);
-
-          if (ts != nts) {
-            e->value = nts;
-          }
-        }
-      }
-    }
-
-    //
-    // determine root function in the case of partial instantiation
-    //
-    FnSymbol* root = determineRootFunc(fn);
-
-    //
-    // determine all substitutions (past substitutions in a partial
-    // instantiation plus the current substitutions) and change the
-    // substitutions to refer to the root function's formal arguments
-    //
-    SymbolMap allSubs;
-
-    determineAllSubs(fn, root, subs, allSubs);
-
-    //
-    // use cached instantiation if possible
-    //
-    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
-      if (cached != (FnSymbol*)gVoid) {
-        checkInfiniteWhereInstantiation(cached);
-
-        retval = cached;
-
-      } else {
-        retval = NULL;
-      }
-
-    } else {
-
-      SET_LINENO(fn);
-
-      //
-      // instantiate function
-      //
-
-      SymbolMap map;
-
-      FnSymbol* newFn = instantiateFunction(fn,
-                                            root,
-                                            allSubs,
-                                            info.call,
-                                            subs,
-                                            map);
-
-      fixupTupleFunctions(fn, newFn, info.call);
-
-      if (newFn->numFormals()       >  1 &&
-          newFn->getFormal(1)->type == dtMethodToken) {
-        newFn->getFormal(2)->type->methods.add(newFn);
-      }
-
-      newFn->tagIfGeneric();
-
-      if (newFn->hasFlag(FLAG_GENERIC) == false &&
-          evaluateWhereClause(newFn)   == false) {
-
-        // where clause evaluates to false so cache gVoid as a function
-        replaceCache(genericsCache, root, (FnSymbol*) gVoid, &allSubs);
-
-        retval = NULL;
-
-      } else {
-        explainAndCheckInstantiation(newFn, fn);
-
-        retval = newFn;
       }
     }
   }
@@ -438,135 +264,143 @@ static Type* getInstantiationType(Type* actualType, Type* formalType);
 
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
-void ResolutionCandidate::computeSubstitutions() {
-  SymbolMap& subs = substitutions;
-  int        i    = 0;
+int ResolutionCandidate::computeSubstitutions() {
+  bool exitForDefault = false;
 
   substitutions.clear();
 
-  for_formals(formal, fn) {
-    if (formal->intent == INTENT_PARAM) {
-      if (formalIdxToActual[i]                != NULL &&
-          formalIdxToActual[i]->isParameter() == true) {
-        if (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-            canInstantiate(formalIdxToActual[i]->type, formal->type))
-          subs.put(formal, formalIdxToActual[i]);
+  for (int i = 1; i <= fn->numFormals() && exitForDefault == false; i++) {
+    ArgSymbol* formal = fn->getFormal(i);
 
-      } else if (formalIdxToActual[i] == NULL && formal->defaultExpr) {
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/paramInClass/weirdParamInit4)
-        if (subs.n > 0) {
-          break;
-        }
+    if (formal->intent                              == INTENT_PARAM ||
+        formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+      if (verifyGenericFormal(formal) == false) {
+        USR_FATAL(formal, "invalid generic type specification on class field");
 
-        resolveBlockStmt(formal->defaultExpr);
+      } else if (Symbol* actual = formalIdxToActual[i - 1]) {
+        computeSubstitution(formal, actual);
 
-        SymExpr* se = toSymExpr(formal->defaultExpr->body.tail);
+      } else if (formal->defaultExpr != NULL) {
+        if (substitutions.n == 0) {
+          computeSubstitution(formal);
 
-        if (se && se->symbol()->isParameter() &&
-            (!formal->type->symbol->hasFlag(FLAG_GENERIC) ||
-             canInstantiate(se->symbol()->type, formal->type))) {
-          subs.put(formal, se->symbol());
         } else {
-          if (!se || !se->symbol()->isParameter()) {
-            USR_FATAL(formal, "default value for param is not a param");
-          } else {
-            USR_FATAL(formal, "type mismatch between declared formal type "
-                              "and default value type");
-          }
-        }
-      }
-
-    } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      //
-      // check for field with specified generic type
-      //
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false &&
-          formal->type                        != dtAny) {
-        if (strcmp(formal->name, "outer")       != 0     &&
-            formal->hasFlag(FLAG_IS_MEME)       == false &&
-            (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
-             fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
-          USR_FATAL(formal,
-                    "invalid generic type specification on class field");
-
-        } else if (fn->isMethod()                       == true  &&
-                   strcmp(fn->name, "init")             == 0     &&
-                   fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
-                   fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
-                   !(formal->hasFlag(FLAG_ARG_THIS)                == true  &&
-                     formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true)) {
-          // This is a compiler generated initializer, so the argument with
-          // a generic type corresponds with a class field.
-          USR_FATAL(formal,
-                    "invalid generic type specification on class field");
-
-        }
-      }
-
-      if (formalIdxToActual[i] != NULL) {
-        Type* actualType = formalIdxToActual[i]->type;
-
-        if (formal->hasFlag(FLAG_ARG_THIS)                == true  &&
-            formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true &&
-            actualType->symbol->hasFlag(FLAG_GENERIC)     == true) {
-
-          // If the "this" arg is generic, we're resolving an initializer, and
-          // the actual being passed is also still generic, don't count this as
-          // a substitution.  Otherwise, we'll end up in an infinite loop if
-          // one of the later generic args has a defaultExpr, as we will always
-          // count the this arg as a substitution and so always approach the
-          // generic arg with a defaultExpr as though a substitution was going
-          // to take place.
-
-        } else if (Type* type = getInstantiationType(actualType,
-                                                     formal->type)) {
-
-          // String literal actuals aligned with non-param generic formals of
-          // type dtAny will result in an instantiation of dtStringC when the
-          // function is extern. In other words, let us write:
-          //   extern proc foo(str);
-          //   foo("bar");
-          // and pass "bar" as a c_string instead of a string
-          if (fn->hasFlag(FLAG_EXTERN)            == true      &&
-              formal->type                        == dtAny     &&
-              formal->hasFlag(FLAG_PARAM)         == false     &&
-
-              type                                == dtString  &&
-
-              actualType                          == dtString  &&
-              formalIdxToActual[i]->isImmediate() == true) {
-            subs.put(formal, dtStringC->symbol);
-          } else {
-            subs.put(formal, type->symbol);
-          }
-        }
-      } else if (formal->defaultExpr) {
-
-        // break because default expression may reference generic
-        // arguments earlier in formal list; make those substitutions
-        // first (test/classes/bradc/genericTypes)
-        if (subs.n > 0) {
-          break;
-        } else {
-
-          resolveBlockStmt(formal->defaultExpr);
-
-          Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
-
-          if (defaultType == dtTypeDefaultToken) {
-            subs.put(formal, dtTypeDefaultToken->symbol);
-
-          } else if (Type* type = getInstantiationType(defaultType,
-                                                       formal->type)) {
-            subs.put(formal, type->symbol);
-          }
+          // break because default expression may reference generic
+          // arguments earlier in formal list; make those substitutions
+          // first (test/classes/bradc/paramInClass/weirdParamInit4)
+          exitForDefault = true;
         }
       }
     }
+  }
 
-    i++;
+  return substitutions.n;
+}
+
+bool ResolutionCandidate::verifyGenericFormal(ArgSymbol* formal) const {
+  bool retval = true;
+
+  if (formal->intent                      != INTENT_PARAM &&
+      formal->hasFlag(FLAG_TYPE_VARIABLE) == false        &&
+      formal->type                        != dtAny) {
+    if (strcmp(formal->name, "outer") != 0     &&
+        formal->hasFlag(FLAG_IS_MEME) == false &&
+        (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true ||
+         fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)    == true)) {
+      retval = false;
+
+    } else if (fn->isMethod()                       == true  &&
+               strcmp(fn->name, "init")             == 0     &&
+               fn->hasFlag(FLAG_COMPILER_GENERATED) == true  &&
+               fn->hasFlag(FLAG_DEFAULT_COPY_INIT)  == false &&
+               (formal->hasFlag(FLAG_ARG_THIS)                == false ||
+                formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == false)) {
+      // This is a compiler generated initializer, so the argument with
+      // a generic type corresponds with a class field.
+      retval = false;
+    }
+  }
+
+  return retval;
+}
+
+void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
+                                              Symbol*    actual) {
+  if (formal->intent == INTENT_PARAM) {
+    if (actual->isParameter() == true) {
+      if (formal->type->symbol->hasFlag(FLAG_GENERIC) == false ||
+          canInstantiate(actual->type, formal->type)  == true) {
+        substitutions.put(formal, actual);
+      }
+    }
+
+  } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    if (actual->type->symbol->hasFlag(FLAG_GENERIC)   == true &&
+        formal->hasFlag(FLAG_ARG_THIS)                == true &&
+        formal->hasFlag(FLAG_DELAY_GENERIC_EXPANSION) == true) {
+      // If the "this" arg is generic, we're resolving an initializer, and
+      // the actual being passed is also still generic, don't count this as
+      // a substitution.  Otherwise, we'll end up in an infinite loop if
+      // one of the later generic args has a defaultExpr, as we will always
+      // count the this arg as a substitution and so always approach the
+      // generic arg with a defaultExpr as though a substitution was going
+      // to take place.
+
+    } else if (Type* type = getInstantiationType(actual->type, formal->type)) {
+      // String literal actuals aligned with non-param generic formals of
+      // type dtAny will result in an instantiation of dtStringC when the
+      // function is extern. In other words, let us write:
+      //   extern proc foo(str);
+      //   foo("bar");
+      // and pass "bar" as a c_string instead of a string
+      if (fn->hasFlag(FLAG_EXTERN)    == true     &&
+          formal->type                == dtAny    &&
+          formal->hasFlag(FLAG_PARAM) == false    &&
+
+          type                        == dtString &&
+
+          actual->type                == dtString &&
+          actual->isImmediate()       == true) {
+        substitutions.put(formal, dtStringC->symbol);
+
+      } else {
+        substitutions.put(formal, type->symbol);
+      }
+    }
+  }
+}
+
+void ResolutionCandidate::computeSubstitution(ArgSymbol* formal) {
+  resolveBlockStmt(formal->defaultExpr);
+
+  if (formal->intent == INTENT_PARAM) {
+    if (SymExpr* se = toSymExpr(formal->defaultExpr->body.tail)) {
+      if (se->symbol()->isParameter() == false) {
+        USR_FATAL(formal, "default value for param is not a param");
+
+      } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)      == true &&
+                 canInstantiate(se->symbol()->type, formal->type) == false) {
+        USR_FATAL(formal,
+                  "type mismatch between declared formal type "
+                  "and default value type");
+
+      } else {
+        substitutions.put(formal, se->symbol());
+      }
+
+    } else {
+      USR_FATAL(formal, "default value for param is not a param");
+    }
+
+  } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    Type* defaultType = formal->defaultExpr->body.tail->typeInfo();
+
+    if (defaultType == dtTypeDefaultToken) {
+      substitutions.put(formal, dtTypeDefaultToken->symbol);
+
+    } else if (Type* type = getInstantiationType(defaultType, formal->type)) {
+      substitutions.put(formal, type->symbol);
+    }
   }
 }
 
@@ -634,25 +468,10 @@ void ResolutionCandidate::resolveTypedefedArgTypes() {
   }
 }
 
-static AggregateType* getRootInstantiation(AggregateType* at) {
-  AggregateType* ret = at;
-
-  while (ret != NULL && ret->instantiatedFrom != NULL) {
-    ret = ret->instantiatedFrom;
-  }
-
-  return ret;
-}
-
 static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
-  AggregateType* ret = NULL;
-  Symbol* sym        = rc->formalIdxToActual[idx];
+  Symbol* sym = rc->formalIdxToActual[idx];
 
-  if (sym != NULL) {
-    ret = toAggregateType(sym->getValType());
-  }
-
-  return ret;
+  return (sym != NULL) ? toAggregateType(sym->getValType()) : NULL;
 }
 
 //
@@ -673,22 +492,27 @@ static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
 // See GitHub Issue #6019.
 //
 static bool looksLikeCopyInit(ResolutionCandidate* rc) {
-  bool ret = false;
+  bool retval = false;
 
   if (rc->fn->isInitializer() && rc->formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
     AggregateType* base  = getActualType(rc, 1);
     AggregateType* other = getActualType(rc, 2);
+
     if (base != NULL && other != NULL) {
       if (base == other) {
-        ret = true;
-      } else if (getRootInstantiation(base) == getRootInstantiation(other)) {
-        ret = true;
+        retval = true;
+
+      } else {
+        AggregateType* baseRoot  = base->getRootInstantiation();
+        AggregateType* otherRoot = other->getRootInstantiation();
+
+        retval = (baseRoot == otherRoot) ? true : false;
       }
     }
   }
 
-  return ret;
+  return retval;
 }
 
 /************************************* | **************************************

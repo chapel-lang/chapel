@@ -1,0 +1,7 @@
+feature request: line numbers for config file errors
+
+#8622
+
+It seems like it would be nice if errors in parsing configuration
+files generated line numbers along with the filename, but this is more
+than I have time to take on today.

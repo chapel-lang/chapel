@@ -3,7 +3,6 @@ record Foo {
 
   proc init() {
     x = 12;
-    super.init();
   }
 }
 

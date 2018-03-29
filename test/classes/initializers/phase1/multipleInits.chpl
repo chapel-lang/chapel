@@ -6,9 +6,8 @@ class LotsOFields {
   proc init(val1, val2, val3) {
     f1 = val1;
     f2 = val2;
-    f2 = val2*3; // uh oh!
+    f2 = val2*3;
     f3 = val3;
-    super.init();
   }
 }
 

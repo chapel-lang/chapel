@@ -1,0 +1,2 @@
+check-returns-bad.chpl:7: In function 'consumeMinusOne':
+check-returns-bad.chpl:7: error: control reaches end of function that returns a value

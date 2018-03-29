@@ -564,6 +564,15 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
       while ((c = getc(f)) != EOF) {
         // The number of threads per core is the total number of bits
         // set in the hex digits of the thread_siblings map.
+        //
+        // The most authoritative source, kernel.org, does not dictate
+        // the formatting of the mask.  However, the following document
+        // indicates that it is either a hex or binary bit mask.  The code
+        // below works in either case.
+        //
+        // https://www.ibm.com/support/knowledgecenter/en/linuxonibm/liaat/liaattunproctop.htm
+        //
+        // Also note that hwloc itself parses the file as a hex bitmap only.
         if (isxdigit(c)) {
           switch (tolower(c)) {
           case '0':

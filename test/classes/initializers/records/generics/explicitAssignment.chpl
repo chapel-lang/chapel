@@ -5,12 +5,10 @@ record Foo {
 
   proc init(xVal: int) {
     x = xVal;
-    super.init();
   }
 
   proc init(xVal: real) {
     x = xVal;
-    super.init();
   }
 }
 

@@ -18,7 +18,6 @@ record MyRec {
 
     z = _z;
 
-    super.init();
 
     writeln('init(_z)   Phase 2');
   }

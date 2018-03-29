@@ -1,0 +1,2 @@
+passMissingFn.chpl:9: In initializer:
+passMissingFn.chpl:11: error: unresolved call 'R.foo()'

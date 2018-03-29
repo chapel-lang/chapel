@@ -400,7 +400,8 @@ OPTIONS
 **-o, --output <filename>**
 
     Specify the name of the compiler-generated executable. Defaults to
-    the main module name if unspecified.
+    the filename of the main module (minus its `.chpl` extension), if
+    unspecified.
 
 **--static**
 

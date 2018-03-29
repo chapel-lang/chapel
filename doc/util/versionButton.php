@@ -84,7 +84,7 @@ var chplTitle = "<?php echo "$chplTitle";?>";
 
 // Note: assumes second element is most-recent release
 var chplVersions = [
-  "1.17 pre-release",
+  "1.17",   // post-release
   "1.16",
   "1.15",
   "1.14",
@@ -106,7 +106,7 @@ function dropSetup() {
   // Choose button color
   if (chplTitle.includes("pre-release")) {
     button.classList.add("preRelease");
-  } else if (chplTitle != chplVersions[1]) {
+  } else if (chplTitle != "1.17") {
     button.classList.add("oldVersion");
   } else {
     button.classList.add("currentVersion");

@@ -83,6 +83,7 @@ module Barriers {
     proc init(numTasks: int,
               barrierType: BarrierType = BarrierType.Atomic,
               reusable: bool = (barrierType == BarrierType.Atomic)) {
+      this.complete();
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
@@ -110,19 +111,11 @@ module Barriers {
       this.init(0);
     }
 
-    // Hack for AllLocalesBarrier
-    pragma "no doc"
-    proc init(numTasks: int, param hackIntoCommBarrier: bool) {
-      bar = new aBarrier(numTasks, reusable=true, hackIntoCommBarrier=true);
-      owned = true;
-    }
-
     /* copy initializer */
     pragma "no doc"
     proc init(b: Barrier) {
       this.bar = b.bar;
       this.owned = false;
-      super.init();
     }
 
     pragma "no doc"
@@ -226,6 +219,7 @@ module Barriers {
     pragma "no doc"
     var done: chpl__processorAtomicType(bool);
 
+    // Hack for AllLocalesBarrier
     pragma "no doc"
     param hackIntoCommBarrier = false;
 
@@ -235,15 +229,16 @@ module Barriers {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      super.init();
+      this.complete();
       reset(n);
     }
 
+    // Hack for AllLocalesBarrier
     pragma "no doc"
     proc init(n: int, param reusable: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      super.init();
+      this.complete();
       reset(n);
     }
 
@@ -334,7 +329,6 @@ module Barriers {
      */
     proc init(n: int) {
       count = n;
-      super.init();
     }
 
     proc reset(nTasks: int) {

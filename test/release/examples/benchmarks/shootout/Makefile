@@ -19,6 +19,7 @@ TARGETS = \
 	regexdna \
 	regexdna-redux \
 	revcomp \
+	revcomp-fast \
 	spectralnorm \
 	threadring
 
@@ -109,6 +110,9 @@ regexdna-redux: regexdna-redux.chpl
 	fi
 
 revcomp: revcomp.chpl
+	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
+
+revcomp-fast: revcomp-fast.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 spectralnorm: spectralnorm.chpl

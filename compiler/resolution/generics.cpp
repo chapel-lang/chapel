@@ -44,6 +44,10 @@ static int             explainInstantiationLine   = -2;
 static ModuleSymbol*   explainInstantiationModule = NULL;
 static Vec<FnSymbol*>  whereStack;
 
+static bool            fixupDefaultInitCopy(FnSymbol* fn,
+                                            FnSymbol* newFn,
+                                            CallExpr* call);
+
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) &&
@@ -412,7 +416,7 @@ FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
  * \param fn   Generic function to finish instantiating
  */
 void instantiateBody(FnSymbol* fn) {
-  if (getPartialCopyData(fn)) {
+  if (getPartialCopyData(fn) != NULL) {
     fn->finalizeCopy();
   }
 }
@@ -433,17 +437,14 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
-  if (FnSymbol* tupleFn = createTupleSignature(fn, subs, call)) {
-    retval = tupleFn;
+
+  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
+    retval = createTupleSignature(fn, subs, call);
 
   } else {
     form_Map(SymbolMapElem, e, subs) {
       if (TypeSymbol* ts = toTypeSymbol(e->value)) {
-        if (ts->type->symbol->hasFlag(FLAG_GENERIC) &&
-            !e->key->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
-          INT_FATAL(fn, "illegal instantiation with a generic type");
-        }
-
         TypeSymbol* nts = getNewSubType(fn, e->key, ts);
 
         if (ts != nts) {
@@ -452,9 +453,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       }
     }
 
-    //
     // determine root function in the case of partial instantiation
-    //
     FnSymbol* root = determineRootFunc(fn);
 
     //
@@ -466,74 +465,56 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
     determineAllSubs(fn, root, subs, allSubs);
 
-    //
     // use cached instantiation if possible
-    //
     if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
       if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
         retval = cached;
-      } else {
-        retval = NULL;
       }
+
     } else {
       SET_LINENO(fn);
 
-      //
       // copy generic class type if this function is a type constructor
-      //
+      SymbolMap      map;
       AggregateType* newType = NULL;
+      FnSymbol*      newFn   = NULL;
 
-      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)) {
-        INT_ASSERT(isAggregateType(fn->retType));
+      if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
         AggregateType* ct = toAggregateType(fn->retType);
 
-        if (ct->initializerStyle != DEFINES_INITIALIZER &&
-            !ct->wantsDefaultInitializer()) {
-          newType = instantiateTypeForTypeConstructor(fn,
-                                                      subs,
-                                                      call,
-                                                      ct);
+        if (ct->initializerStyle          != DEFINES_INITIALIZER &&
+            ct->wantsDefaultInitializer() == false) {
+          newType = instantiateTypeForTypeConstructor(fn, subs, call, ct);
+
         } else {
-          newType = ct->getInstantiationMulti(subs, fn);
+          newType = ct->generateType(subs);
         }
       }
 
-      //
       // instantiate function
-      //
-      SymbolMap map;
-
-      if (newType) {
+      if (newType != NULL) {
         map.put(fn->retType->symbol, newType->symbol);
       }
 
-      FnSymbol* newFn = instantiateFunction(fn,
-                                            root,
-                                            allSubs,
-                                            call,
-                                            subs,
-                                            map);
+      newFn = instantiateFunction(fn, root, allSubs, call, subs, map);
 
-      if (newType) {
-        newType->defaultTypeConstructor = newFn;
-        newFn->retType                  = newType;
+      if (newType != NULL) {
+        newType->typeConstructor = newFn;
+        newFn->retType           = newType;
       }
 
-      bool fixedTuple = fixupTupleFunctions(fn, newFn, call);
-
-      // Fix up chpl__initCopy for user-defined records
-      if (fixedTuple                           == false &&
-          fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
-          fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
-        // Generate the initCopy function based upon initializer
-        fixupDefaultInitCopy(fn, newFn, call);
+      if (fixupTupleFunctions(fn, newFn, call) == false) {
+        // Fix up chpl__initCopy for user-defined records
+        if (fn->hasFlag(FLAG_INIT_COPY_FN)       ==  true &&
+            fn->hasFlag(FLAG_COMPILER_GENERATED) ==  true) {
+          fixupDefaultInitCopy(fn, newFn, call);
+        }
       }
 
       if (newFn->numFormals()       >  1 &&
           newFn->getFormal(1)->type == dtMethodToken) {
-        // MPF: should only visible functions go in to type->methods?
         newFn->getFormal(2)->type->methods.add(newFn);
       }
 
@@ -545,11 +526,90 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     }
   }
 
-  if (retval != NULL && fn->throwsError())
+  if (retval != NULL && fn->throwsError() == true) {
     retval->throwsErrorInit();
+  }
 
   return retval;
 }
+
+// This function is called by generic instantiation
+// for the default initCopy function in ChapelBase.chpl.
+static bool fixupDefaultInitCopy(FnSymbol* fn,
+                                 FnSymbol* newFn,
+                                 CallExpr* call) {
+  ArgSymbol* arg    = newFn->getFormal(1);
+  bool       retval = false;
+
+  if (AggregateType* ct = toAggregateType(arg->type)) {
+    if (isUserDefinedRecord(ct) == true &&
+        ct->initializerStyle    == DEFINES_INITIALIZER) {
+      // If the user has defined any initializer,
+      // initCopy function should call the copy-initializer.
+      //
+      // If no copy-initializer exists, we should make initCopy
+      // be a dummy function that generates an error
+      // if it remains in the AST after callDestructors. We do
+      // that since callDestructors can remove some initCopy calls
+      // and we'd like types that cannot be copied to survive
+      // compilation until callDestructors has a chance to
+      // remove those calls.
+
+      // Go ahead and instantiate the body now so we can fix
+      // it up completely...
+      instantiateBody(newFn);
+
+      if (FnSymbol* initFn = findCopyInit(ct)) {
+        Symbol*   thisTmp  = newTemp(ct);
+        DefExpr*  def      = new DefExpr(thisTmp);
+        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
+
+        newFn->insertBeforeEpilogue(def);
+
+        def->insertAfter(initCall);
+
+        if (ct->hasPostInitializer() == true) {
+          CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
+
+          initCall->insertAfter(post);
+        }
+
+        // Replace the other setting of the return-value-variable
+        // with what we have now...
+
+        // find the RVV
+        Symbol* retSym = newFn->getReturnSymbol();
+
+        // Remove other PRIM_MOVEs to the RVV
+        for_alist(stmt, newFn->body->body) {
+          if (CallExpr* callStmt = toCallExpr(stmt)) {
+            if (callStmt->isPrimitive(PRIM_MOVE) == true) {
+              SymExpr* se = toSymExpr(callStmt->get(1));
+
+              INT_ASSERT(se);
+
+              if (se->symbol() == retSym) {
+                stmt->remove();
+              }
+            }
+          }
+        }
+
+        // Set the RVV to the copy
+        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
+
+      } else {
+        // No copy-initializer could be found
+        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
+      }
+
+      retval = true;
+    }
+  }
+
+  return retval;
+}
+
 
 //
 // determine root function in the case of partial instantiation

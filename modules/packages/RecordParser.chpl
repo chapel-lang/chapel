@@ -125,8 +125,14 @@ class RecordReader {
      :arg t: the record type to read
      :arg myReader: the channel to read from
    */
-  proc RecordReader(type t, myReader) throws {
-    matchRegexp = compile(createRegexp());
+  proc init(type t, myReader) /*throws*/ {
+    this.t = t;
+    this.myReader = myReader;
+    // TODO: remove the following once we can throw from init() calls
+    this.complete();
+    try! {
+      this.matchRegexp = compile(createRegexp());
+    }
   }
 
   /* Create a RecordReader to read using a passed regular expression.
@@ -137,8 +143,14 @@ class RecordReader {
                    currently must be a string, but in the future might be a
                    compiled regular expression.
    */
-  proc RecordReader(type t, myReader, mRegexp) throws {
-    matchRegexp = compile(mRegexp);
+  proc init(type t, myReader, mRegexp) /* throws */ {
+    this.t = t;
+    this.myReader = myReader;
+    // TODO: remove the following once we can throw from init() calls
+    this.complete();
+    try! {
+        this.matchRegexp = compile(mRegexp);
+    }
   }
 
   /* Create a string regular expression for the record type :type:`t` attached to

@@ -67,9 +67,9 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
+      super.init(_parent);
       sid = _sid;
       ndName = "ND"+sid;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -100,9 +100,9 @@ module LocaleModel {
   //
   class LocaleModel : AbstractLocaleModel {
     const _node_id : int;
-    const local_name : string;
+    var local_name : string; // should never be modified after first assignment
 
-    const numSublocales: int;
+    var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
     var childLocales: [childSpace] NumaDomain;
 
@@ -114,6 +114,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -122,6 +126,11 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
+
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -190,8 +199,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      _node_id = chpl_nodeID: int;
-
       helpSetupLocaleNUMA(this, local_name, numSublocales);
     }
     //------------------------------------------------------------------------}

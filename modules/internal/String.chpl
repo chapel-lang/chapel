@@ -48,8 +48,23 @@
 
   .. warning::
 
+    Casts from :record:`string` to the following types will throw an error
+    if they are invalid:
+
+      - ``int``
+      - ``uint``
+      - ``real``
+      - ``imag``
+      - ``complex``
+      - ``enum``
+
+    To learn more about handling these errors, see the
+    :ref:`Error Handling technical note <readme-errorHandling>`.
+
+  .. note::
+
     While :record:`string` is intended to be a Unicode string, there is much
-    left to do. As of Chapel 1.13, only ASCII strings can be expected to work
+    left to do. As of Chapel 1.17, only ASCII strings can be expected to work
     correctly with all functions.
 
     Future work involves support for both ASCII and unicode strings, and
@@ -311,6 +326,11 @@ module String {
       :returns: The number of characters in the string.
       */
     inline proc length return len;
+
+    /*
+      :returns: The number of characters in the string.
+      */
+    inline proc size return len;
 
     /*
        Gets a version of the :record:`string` that is on the currently
@@ -1315,9 +1335,6 @@ module String {
   } // end record string
 
 
-  // We'd like this to be by ref, but doing so leads to an internal
-  // compiler error.  See
-  // $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
   pragma "donor fn"
   pragma "auto copy fn"
   pragma "no doc"
@@ -1853,10 +1870,15 @@ module String {
 
   pragma "no doc"
   inline proc chpl__defaultHash(x : string): uint {
-    // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
-    var hash: int(64) = 5381;
-    for c in 0..#(x.length) {
-      hash = ((hash << 5) + hash) ^ x.buff[c];
+    var hash: int(64);
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+      var locHash: int(64) = 5381;
+      for c in 0..#(x.length) {
+        locHash = ((locHash << 5) + locHash) ^ x.buff[c];
+      }
+      hash = locHash;
     }
     return hash;
   }

@@ -5,7 +5,6 @@ class C {
   proc init(type ctVal, y: ctVal) {
     ct = ctVal;
     x = y;
-    super.init();
   }
 }
 

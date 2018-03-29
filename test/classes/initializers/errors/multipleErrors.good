@@ -1,0 +1,5 @@
+multipleErrors.chpl:10: In initializer:
+multipleErrors.chpl:11: error: Field "x" used before it is initialized
+multipleErrors.chpl:11: error: Field "y" used before it is initialized
+multipleErrors.chpl:11: error: cannot call a method on a record during phase 1 of initialization
+multipleErrors.chpl:11: error: cannot pass "this" to a function in phase 1 of initialization

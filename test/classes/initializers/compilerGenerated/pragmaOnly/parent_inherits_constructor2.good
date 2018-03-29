@@ -1,0 +1,1 @@
+parent_inherits_constructor2.chpl:15: error: Cannot create default initializer on type 'Parent', which inherits from type 'GrandParent' that defines a constructor

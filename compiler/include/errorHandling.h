@@ -27,7 +27,7 @@ class Symbol;
 
 void lowerErrorHandling();
 void lowerCheckErrorPrimitive();
-void lowerTryExprs(BaseAST* ast);
+void normalizeErrorHandling(BaseAST* ast);
 
 bool isCheckErrorStmt(Expr* e);
 Symbol* getErrorSymbolFromCheckErrorStmt(Expr* e);

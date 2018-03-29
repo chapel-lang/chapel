@@ -94,6 +94,7 @@ for f in clean:
     if os.path.isdir(f):
         print 'Cleaning directory: '+f
         dirlist = glob.glob(f+'/*.chpl')+glob.glob(f+'/*.test.c')
+        dirlist.sort()
         for file in dirlist:
             cleanChapelTest(file)
         cleanCleanfiles(f, 'CLEANFILES', True)

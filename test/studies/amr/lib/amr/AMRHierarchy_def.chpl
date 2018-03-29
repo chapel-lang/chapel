@@ -83,7 +83,7 @@ class AMRHierarchy {
     this.max_n_levels      = max_n_levels;
     this.flagger           = flagger;
     this.target_efficiency = target_efficiency;
-    super.init();
+    this.complete();
 
 
     //---- Create the base level ----
@@ -575,6 +575,7 @@ class PhysicalBoundary
   
   proc init ( level: Level ) 
   {
+    this.complete();
     for grid in level.grids {
 
       var boundary_multidomain = new MultiDomain(dimension,stridable=true);

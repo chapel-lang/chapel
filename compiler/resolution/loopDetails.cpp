@@ -146,6 +146,49 @@ Symbol* collapseIndexVarReferences(Symbol* index)
   return index;
 }
 
+/* Return whatever is producing the Symbol iterator.
+   If it was PRIM_MOVE'd from a FLAG_TEMP variable,
+     return whatever produced that variable
+   If it was the result of a call, return that call
+   If it was the result of a simple PRIM_MOVE from a user variable,
+     return a SymExpr for that user variable
+
+   This function handles the post-ReturnByRef variants of
+   call returns.
+ */
+static Expr* findExprProducing(Symbol* iterator) {
+
+  if (isArgSymbol(iterator)) return NULL;
+
+  Expr* initExpr = iterator->getInitialization();
+
+  if (CallExpr* initCall = toCallExpr(initExpr)) {
+    // Handle the PRIM_MOVE case (pre-ReturnByRef / not for a record)
+    if (initCall->isPrimitive(PRIM_MOVE) ||
+        initCall->isPrimitive(PRIM_ASSIGN)) {
+      if (CallExpr* rhsCall = toCallExpr(initCall->get(2))) {
+        return rhsCall;
+      } else if (SymExpr* rhsSe = toSymExpr(initCall->get(2))) {
+
+        SymExpr* lhsSe = toSymExpr(initCall->get(1));
+        // skip a 'ret_tmp'
+        if (rhsSe->symbol()->hasFlag(FLAG_TEMP) &&
+            lhsSe->symbol()->getSingleDef() != NULL) {
+          return findExprProducing(rhsSe->symbol());
+        } else {
+          return rhsSe;
+        }
+      }
+    } else if (initCall->resolvedOrVirtualFunction()) {
+      // Handle the initializer / ReturnByRef RETARG case
+      return initCall;
+    }
+  }
+
+  return NULL;
+}
+
+
 /* Sets detailsVector[i].index if possible
    Handles syntactically unpacked tuples such as
 
@@ -292,10 +335,15 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // i.e. a non-zippered for loop
       // Find the PRIM_MOVE setting iterator
       SymExpr* def = iterator->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-      CallExpr* getIteratorCall = toCallExpr(move->get(2));
-      INT_ASSERT(getIteratorCall);
+      Expr* iterable = NULL;
+      if (def) {
+        CallExpr* move = toCallExpr(def->parentExpr);
+        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+        CallExpr* getIteratorCall = toCallExpr(move->get(2));
+        INT_ASSERT(getIteratorCall);
+        if (getIteratorCall->numActuals() >= 1)
+          iterable = getIteratorCall->get(1);
+      }
 
       // Collapse compiler-introduced copies of references
       // to variables marked "index var"
@@ -303,7 +351,6 @@ void gatherLoopDetails(ForLoop*  forLoop,
       index = collapseIndexVarReferences(index);
 
       // The thing being iterated over is the argument to getIterator
-      Expr* iterable = getIteratorCall->get(1);
       IteratorDetails details;
       details.iterable = iterable;
       details.index = index;
@@ -336,32 +383,24 @@ void gatherLoopDetails(ForLoop*  forLoop,
       //   _iterator = _getIteratorZip(p_followerIterator)
 
       SymExpr* tupleIterator = NULL;
-      SymExpr* def = iterator->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-      CallExpr* call = toCallExpr(move->get(2));
-      INT_ASSERT(call);
-      FnSymbol* calledFn = call->resolvedFunction();
-      if (!calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+      CallExpr* call = toCallExpr(findExprProducing(iterator));
+      FnSymbol* calledFn = call?call->resolvedOrVirtualFunction():NULL;
+      if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
         // expecting call is e.g. _getIteratorZip
         SymExpr* otherSe = toSymExpr(call->get(1));
         INT_ASSERT(otherSe);
-        SymExpr* otherDef = otherSe->symbol()->getSingleDef();
-        if (otherDef) {
-          CallExpr* otherMove = toCallExpr(otherDef->parentExpr);
-          INT_ASSERT(otherMove && otherMove->isPrimitive(PRIM_MOVE));
-          call = toCallExpr(otherMove->get(2));
-
-          calledFn = call->resolvedFunction();
+        CallExpr* otherCall = toCallExpr(findExprProducing(otherSe->symbol()));
+        if (otherCall) {
+          call = otherCall;
+          calledFn = call->resolvedOrVirtualFunction();
           if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             // expecting call is e.g. _toFollowerZip
             SymExpr* anotherSe = toSymExpr(call->get(1));
             INT_ASSERT(anotherSe);
-            SymExpr* anotherDef = anotherSe->symbol()->getSingleDef();
-            if (anotherDef) {
-              CallExpr* anotherMove = toCallExpr(anotherDef->parentExpr);
-              INT_ASSERT(anotherMove && anotherMove->isPrimitive(PRIM_MOVE));
-              call = toCallExpr(anotherMove->get(2));
+            CallExpr* anotherCall =
+              toCallExpr(findExprProducing(anotherSe->symbol()));
+            if (anotherCall) {
+              call = anotherCall;
             } else {
               call = NULL;
               tupleIterator = otherSe;
@@ -377,27 +416,36 @@ void gatherLoopDetails(ForLoop*  forLoop,
       FnSymbol* buildTupleFn   = NULL;
 
       if (buildTupleCall) {
-        buildTupleFn = buildTupleCall->resolvedFunction();
+        buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
       }
 
       if (buildTupleFn && buildTupleFn->hasFlag(FLAG_BUILD_TUPLE)) {
 
         // build up the detailsVector
-        for_actuals(actual, buildTupleCall) {
+        for_formals_actuals(formal, actual, buildTupleCall) {
+          // Ignore the RETARG
+          if (formal->hasFlag(FLAG_RETARG))
+            continue;
+
           SymExpr* actualSe = toSymExpr(actual);
           INT_ASSERT(actualSe); // otherwise not normalized
           // Find the single definition of actualSe->var to find
           // the call to _getIterator.
-          Expr* iterable = NULL;
+          Expr* iterable = actualSe;
           if (actualSe->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
             Symbol* tmpStoringGetIterator = actualSe->symbol();
-            SymExpr* def = tmpStoringGetIterator->getSingleDef();
-            CallExpr* move = toCallExpr(def->parentExpr);
-            CallExpr* getIterator = toCallExpr(move->get(2));
-            // The argument to _getIterator is the iterable
-            iterable = getIterator->get(1);
-          } else {
+            Expr* p = findExprProducing(tmpStoringGetIterator);
+
+            // Look for a call to _getIterator that we can ignore
+            // If we don't find it, leave iterable set to actualSe from above.
             iterable = actualSe;
+            if (p)
+              if (CallExpr* call = toCallExpr(p))
+                if (call->numActuals() >= 1)
+                  if (FnSymbol* fn = call->resolvedOrVirtualFunction())
+                    if (fn->hasFlag(FLAG_FN_RETURNS_ITERATOR) ||
+                        fn->retType->symbol->hasFlag(FLAG_ITERATOR_CLASS))
+                      iterable = call->get(1);
           }
           IteratorDetails details;
           details.iterable = iterable;
@@ -456,26 +504,8 @@ void gatherLoopDetails(ForLoop*  forLoop,
     if (!isLeader) {
       // parallel, non-zippered standalone
       // ie forall using standalone iterator
-      // Find the PRIM_MOVE setting iterator
-      SymExpr* def = chpl_iter->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-
-      Expr* iterable = move->get(2);
-
-      // If the preceding statement is a PRIM_MOVE setting
-      // moveAddr, use its argument as the iterable.
-      if (SymExpr* iterableSe = toSymExpr(iterable)) {
-        CallExpr* prev = toCallExpr(move->prev);
-        if (prev && prev->isPrimitive(PRIM_MOVE))
-          if (SymExpr* lhs = toSymExpr(move->get(1)))
-            if (lhs->symbol() == iterableSe->symbol())
-              if (CallExpr* addrOf = toCallExpr(prev->get(2)))
-                if (addrOf->isPrimitive(PRIM_ADDR_OF) ||
-                    addrOf->isPrimitive(PRIM_SET_REFERENCE))
-                iterable = addrOf->get(1);
-      }
-
+      // Find the call setting iterator
+      Expr* iterable = findExprProducing(chpl_iter);
       INT_ASSERT(iterable);
 
       // Collapse compiler-introduced copies of references
@@ -500,23 +530,24 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
       // Find the iterables
 
-      SymExpr* def = (newIterLF ? newIterLF : chpl_iter)->getSingleDef();
-      CallExpr* move = toCallExpr(def->parentExpr);
-      INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+      Expr* iterable = findExprProducing(newIterLF ? newIterLF : chpl_iter);
+      INT_ASSERT(iterable);
 
       if (!zippered) {
-        Expr* iterable = move->get(2);
-        INT_ASSERT(iterable);
-        // Comes up in non-zippered leader-follower iteration
+        // this is for non-zippered leader-follower iteration
         IteratorDetails details;
         details.iterable = iterable;
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        CallExpr* buildTupleCall = toCallExpr(move->get(2));
-        INT_ASSERT(buildTupleCall);
+        CallExpr* buildTupleCall = toCallExpr(iterable);
+        INT_ASSERT(buildTupleCall && buildTupleCall->resolvedOrVirtualFunction());
         // build up the detailsVector
-        for_actuals(actual, buildTupleCall) {
+        for_formals_actuals(formal, actual, buildTupleCall) {
+          // Ignore the RETARG
+          if (formal->hasFlag(FLAG_RETARG))
+            continue;
+
           SymExpr* actualSe = toSymExpr(actual);
           INT_ASSERT(actualSe); // otherwise not normalized
           // actualSe is the iterable in this case

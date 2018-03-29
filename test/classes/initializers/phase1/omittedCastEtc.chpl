@@ -9,7 +9,6 @@ class Foo {
 
   proc init(zVal: int) {
     z = zVal;
-    super.init();
   }
 }
 

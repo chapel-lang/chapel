@@ -1,0 +1,2 @@
+passThisFn.chpl:10: In initializer:
+passThisFn.chpl:15: error: cannot call a method on a record during phase 1 of initialization

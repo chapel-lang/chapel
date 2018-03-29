@@ -1,0 +1,9 @@
+
+[brick]
+name = "simpleGoodDep"
+version = "0.1.0"
+chplVersion = "1.15..5.0"
+author = "foo"
+source = "foo"
+
+[dependencies]

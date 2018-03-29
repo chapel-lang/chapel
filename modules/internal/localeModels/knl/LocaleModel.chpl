@@ -205,8 +205,11 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
-      sid = _sid: chpl_sublocID_t;
       extern proc chpl_task_getNumSublocales(): int(32);
+
+      super.init(_parent);
+
+      sid = _sid: chpl_sublocID_t;
       const (whichNuma, kind) =
         unpackSublocID(chpl_task_getNumSublocales(), sid);
       var kindstr:string;
@@ -215,7 +218,6 @@ module LocaleModel {
       else if kind == memoryKindMCDRAM() then
         kindstr = "MCDRAM";
       mlName = kindstr+whichNuma;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -233,8 +235,8 @@ module LocaleModel {
   class NumaDomain : AbstractLocaleModel {
     const sid : chpl_sublocID_t;
     const ndName : string; // note: locale provides `proc name`
-    const ddr : MemoryLocale;
-    const hbm : MemoryLocale;
+    var ddr : MemoryLocale; // should never be modified after first assignment
+    var hbm : MemoryLocale; // should never be modified after first assignment
 
     proc chpl_id() return parent.chpl_id(); // top-level node id
     proc chpl_localeid() {
@@ -268,9 +270,15 @@ module LocaleModel {
     proc init(_sid, _parent) {
       extern proc chpl_task_getNumSublocales(): int(32);
       var numSublocales = chpl_task_getNumSublocales();
+
+      super.init(_parent);
+
       sid = packSublocID(numSublocales, _sid, defaultMemoryKind())
               : chpl_sublocID_t;
       ndName = "ND"+_sid;
+
+      this.complete();
+
       ddr = new MemoryLocale(sid, this);
 
       var hbm_available = (hbw_check_available() == 0);
@@ -287,8 +295,6 @@ module LocaleModel {
       hbm = new MemoryLocale(hbm_id, this);
 
       chpl_task_setSubloc(origSubloc);
-
-      super.init(_parent);
     }
 
     proc deinit() {
@@ -324,11 +330,11 @@ module LocaleModel {
   //
   class LocaleModel : AbstractLocaleModel {
     const _node_id : int;
-    const local_name : string;
-    const ddr : MemoryLocale;
-    const hbm : MemoryLocale;
+    var local_name : string; // should never be modified after first assignment
+    var ddr : MemoryLocale; // should never be modified after first assignment
+    var hbm : MemoryLocale; // should never be modified after first assignment
 
-    const numSublocales: int;
+    var numSublocales: int; // should never be modified after first assignment
     var childSpace: domain(1);
     var childLocales: [childSpace] NumaDomain;
 
@@ -340,6 +346,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -348,6 +358,11 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
+
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -419,8 +434,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      _node_id = chpl_nodeID: int;
-
       helpSetupLocaleNUMA(this, local_name, numSublocales);
 
       ddr = new MemoryLocale(c_sublocid_any, this);

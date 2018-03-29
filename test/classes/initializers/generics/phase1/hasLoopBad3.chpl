@@ -1,14 +1,17 @@
-// Alternate version of hasLoopBad2.chpl, where the incorrect loop actions
-// occur after we've already seen the initialization of all fields.
+// Alternate version of hasLoopBad2.chpl, where the loop occurs after all
+// of the fields have been initialized.
+//
+// This used to be invalid behavior, but we eventually allowed reads/writes to
+// initialized fields in phase 1.
+
 class InLoop {
   var highestNum;
 
   proc init(arr: [1..10] int) { // enforcing one's based indexing ...
     highestNum = 4;
     for i in arr.domain {
-      highestNum = arr[i]; // uh oh!
+      highestNum = arr[i];
     }
-    super.init();
   }
 }
 

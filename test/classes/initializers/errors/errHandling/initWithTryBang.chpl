@@ -8,7 +8,7 @@ class Foo {
     try! {
       outerFunc();
     }
-    super.init();
+
   }
 }
 

@@ -10,7 +10,7 @@ record MyRec {
     x = 20;
     y = 30;
 
-    super.init();
+
   }
 
   proc init(a : int) {
@@ -19,7 +19,7 @@ record MyRec {
     if a < 10 then
       writeln('Then does not contain an init');
     else
-      super.init();
+      this.complete();
 
     writeln('Init(int) Done');
     writeln();

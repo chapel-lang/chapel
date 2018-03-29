@@ -21,7 +21,6 @@ class USTimeZone: TZInfo {
     this.reprname = reprname;
     this.stdname = stdname;
     this.dstname = dstname;
-    super.init();
   }
 
   proc __repr__() {
@@ -83,7 +82,6 @@ class FixedOffset: TZInfo {
     this.offset = new timedelta(minutes=offset);
     this.name = name;
     this.dstoffset = new timedelta(minutes=dstoffset);
-    super.init();
   }
 
   proc utcoffset(dt: datetime) {

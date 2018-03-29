@@ -9,7 +9,6 @@ class C {
   
   proc init() {
     x = f(d);
-    super.init();
   }
 }
 

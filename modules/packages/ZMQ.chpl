@@ -472,10 +472,10 @@ module ZMQ {
     proc init() {
       this.ctx = zmq_ctx_new();
       this.home = here;
-      super.init();
+      this.complete();
       if this.ctx == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in ContextClass(): %s\n", errmsg);
+        halt("Error in ContextClass.init(): %s\n", errmsg);
       }
     }
 
@@ -484,7 +484,7 @@ module ZMQ {
         var ret = zmq_ctx_term(this.ctx):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~ContextClass(): %s\n", errmsg);
+          halt("Error in ContextClass.deinit(): %s\n", errmsg);
         }
       }
     }
@@ -503,7 +503,14 @@ module ZMQ {
       Create a ZMQ context.
      */
     proc init() {
+      this.complete();
       acquire(new ContextClass());
+    }
+
+    pragma "no doc"
+    proc init(c: Context) {
+      this.complete();
+      this.acquire(c.classRef);
     }
 
     pragma "no doc"
@@ -546,20 +553,6 @@ module ZMQ {
   } // record Context
 
   pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Context) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Context) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
   proc =(ref lhs: Context, rhs: Context) {
     if lhs.classRef != nil then
       lhs.release();
@@ -574,10 +567,10 @@ module ZMQ {
     proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       this.home = here;
-      super.init();
+      this.complete();
       if this.socket == nil {
         var errmsg = zmq_strerror(errno):string;
-        halt("Error in SocketClass(): %s\n", errmsg);
+        halt("Error in SocketClass.init(): %s\n", errmsg);
       }
     }
 
@@ -586,7 +579,7 @@ module ZMQ {
         var ret = zmq_close(socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
-          halt("Error in ~SocketClass(): %s\n", errmsg);
+          halt("Error in SocketClass.deinit(): %s\n", errmsg);
         }
         socket = c_nil;
       }
@@ -610,9 +603,15 @@ module ZMQ {
     }
 
     pragma "no doc"
+    proc init(s: Socket) {
+      this.complete();
+      this.acquire(s.classRef);
+    }
+
+    pragma "no doc"
     proc init(ctx: Context, sockType: int) {
       context = ctx;
-      super.init();
+      this.complete();
       on ctx.classRef.home do
         acquire(new SocketClass(ctx, sockType));
     }
@@ -927,20 +926,6 @@ module ZMQ {
       throw SystemError.fromSyserr(socket_errno:syserr, errmsg_str);
     }
   } // record Socket
-
-  pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Socket) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "no doc"
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Socket) {
-    x.acquire();
-    return x;
-  }
 
   pragma "no doc"
   proc =(ref lhs: Socket, rhs: Socket) {

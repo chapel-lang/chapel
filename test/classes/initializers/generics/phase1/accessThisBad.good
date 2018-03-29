@@ -1,2 +1,2 @@
 accessThisBad.chpl:4: In initializer:
-accessThisBad.chpl:5: error: can't pass "this" as an actual to a function during phase 1 of initialization
+accessThisBad.chpl:5: error: cannot pass "this" to a function before calling super.init() or this.init()

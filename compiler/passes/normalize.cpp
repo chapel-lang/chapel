@@ -27,9 +27,9 @@
 #include "astutil.h"
 #include "build.h"
 #include "driver.h"
+#include "errorHandling.h"
 #include "ForallStmt.h"
 #include "initializerRules.h"
-#include "lowerTryExprs.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
@@ -136,6 +136,8 @@ void normalize() {
         isRecordWithInitializers(at) == true) {
       preNormalizeFields(at);
     }
+
+    preNormalizePostInit(at);
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -473,8 +475,7 @@ static void normalizeBase(BaseAST* base) {
   //
   // Phase 0
   //
-  lowerTryExprs(base);
-
+  normalizeErrorHandling(base);
 
   //
   // Phase 1
@@ -849,6 +850,9 @@ static void insertUseForExplicitModuleCalls() {
 *  chpl__buildDistValue() performs this task, returning _newDistribution(x),  *
 *  where x is a distribution.                                                 *
 *                                                                             *
+*    1. supports e.g.  var x = new dmap(new Block(...));                      *
+*    2. supports e.g.  var y = space dmapped Block (...);                     *
+*                                                                             *
 ************************************** | *************************************/
 
 static void processSyntacticDistributions(CallExpr* call) {
@@ -1218,7 +1222,7 @@ static void normalizeCallToTypeConstructor(CallExpr* call) {
 
         } else {
           // Transform C ( ... ) into _type_construct_C ( ... )
-          const char* name = at->defaultTypeConstructor->name;
+          const char* name = at->typeConstructor->name;
 
           se->replace(new UnresolvedSymExpr(name));
         }
@@ -1351,10 +1355,9 @@ static void applyGetterTransform(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool  shouldInsertCallTemps(CallExpr* call);
-static void  evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
-static bool  moveMakesTypeAlias(CallExpr* call);
-static Type* typeForNewNonGenericRecord(CallExpr* call);
+static bool shouldInsertCallTemps(CallExpr* call);
+static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
+static bool moveMakesTypeAlias(CallExpr* call);
 
 static void insertCallTemps(CallExpr* call) {
   if (shouldInsertCallTemps(call) == true) {
@@ -1370,7 +1373,7 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 
   stmt->insertBefore(new DefExpr(tmp));
 
-  if (call->isPrimitive(PRIM_NEW)    == true) {
+  if (call->isPrimitive(PRIM_NEW) == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
   } else {
@@ -1403,37 +1406,9 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     tmp->addFlag(FLAG_SUPER_TEMP);
   }
 
-  // Is this a new-expression for a record with an initializer?
-  if (Type* type = typeForNewNonGenericRecord(call)) {
-    // Define the type for the tmp
-    tmp->type = type;
+  call->replace(new SymExpr(tmp));
 
-    // 2017/03/14: call has the form prim_new(MyRec(a, b, c))
-    // Extract the argument to the new expression
-    CallExpr* newArg = toCallExpr(call->get(1));
-
-    // Convert the argument for the new-expression into an init call
-    newArg->setUnresolvedFunction("init");
-
-    // Add _mt and _this (insert at head in reverse order)
-    newArg->insertAtHead(tmp);
-    newArg->insertAtHead(gMethodToken);
-
-    // Add a call to postInit() if present
-    insertPostInit(tmp, newArg);
-
-    // Move the tmp.init(args) expression to before the call
-    stmt->insertBefore(newArg->remove());
-
-    // Replace the degenerate new-expression with a use of the tmp variable
-    call->replace(new SymExpr(tmp));
-
-  // No.  The simple case
-  } else {
-    call->replace(new SymExpr(tmp));
-
-    stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
-  }
+  stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {
@@ -1537,42 +1512,6 @@ static bool moveMakesTypeAlias(CallExpr* call) {
     if (SymExpr* se = toSymExpr(call->get(1))) {
       if (VarSymbol* var = toVarSymbol(se->symbol())) {
         retval = var->isType();
-      }
-    }
-  }
-
-  return retval;
-}
-
-//
-// If this is a new-expression for a non-generic record with an initializer
-// then return the type for the initializer
-//
-// 2017/03/14 This currently runs before new expressions have been
-// normalized.
-//
-// Before normalization, a new expression is usually
-//
-//    prim_new(MyRec(a, b, c))
-//
-// and this is the form that is currently recognized
-//
-//
-// After normalization, it will generally be
-//
-//    prim_new(MyRec, a, b, c);
-
-static Type* typeForNewNonGenericRecord(CallExpr* call) {
-  Type* retval = NULL;
-
-  if (call->isPrimitive(PRIM_NEW) == true && call->numActuals() == 1) {
-    if (CallExpr* arg1 = toCallExpr(call->get(1))) {
-      if (SymExpr* base = toSymExpr(arg1->baseExpr)) {
-        if (TypeSymbol* sym = toTypeSymbol(base->symbol())) {
-          if (isNonGenericRecordWithInitializers(sym->type) == true) {
-            retval = sym->type;
-          }
-        }
       }
     }
   }
@@ -2036,7 +1975,7 @@ static void normVarTypeInference(DefExpr* defExpr) {
           argExpr->insertAtHead(modToken);
         }
 
-        // Add a call to postInit() if present
+        // Add a call to postinit() if present
         insertPostInit(var, argExpr);
 
       } else {
@@ -2100,14 +2039,14 @@ static void normVarTypeWoutInit(DefExpr* defExpr) {
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true &&
-             needsGenericRecordInitializer(type) == false) {
+             needsGenericRecordInitializer(type)      == false) {
     CallExpr* init = new CallExpr("init", gMethodToken, var);
 
     var->type = type;
 
     defExpr->insertAfter(init);
 
-    // Add a call to postInit() if present
+    // Add a call to postinit() if present
     insertPostInit(var, init);
 
   } else {
@@ -2165,7 +2104,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       defExpr->insertAfter(initCall);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
@@ -2185,7 +2124,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(var);
       argExpr->insertAtHead(gMethodToken);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(var, argExpr);
     }
 
@@ -2222,7 +2161,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       argExpr->insertAtHead(new NamedExpr("this", new SymExpr(initExprTemp)));
       argExpr->insertAtHead(gMethodToken);
 
-      // Add a call to postInit() if present
+      // Add a call to postinit() if present
       insertPostInit(initExprTemp, argExpr);
 
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
@@ -2343,7 +2282,7 @@ static void insertPostInit(Symbol* var, CallExpr* anchor) {
   AggregateType* at = toAggregateType(var->type);
 
   if (at->hasPostInitializer() == true) {
-    anchor->insertAfter(new CallExpr("postInit", gMethodToken, var));
+    anchor->insertAfter(new CallExpr("postinit", gMethodToken, var));
   }
 }
 
@@ -3041,22 +2980,22 @@ static void updateConstructor(FnSymbol* fn) {
   // the initializer body is intended to perform this operation on its own.
   CallExpr* call = new CallExpr(ct->defaultInitializer);
 
-  for_formals(defaultTypeConstructorArg, ct->defaultTypeConstructor) {
+  for_formals(typeConstructorArg, ct->typeConstructor) {
     ArgSymbol* arg = NULL;
 
     for_formals(methodArg, fn) {
-      if (defaultTypeConstructorArg->name == methodArg->name) {
+      if (typeConstructorArg->name == methodArg->name) {
         arg = methodArg;
       }
     }
 
     if (arg == NULL) {
-      if (defaultTypeConstructorArg->defaultExpr == NULL) {
+      if (typeConstructorArg->defaultExpr == NULL) {
         USR_FATAL_CONT(fn,
                        "constructor for class '%s' requires a generic "
                        "argument called '%s'",
                        ct->symbol->name,
-                       defaultTypeConstructorArg->name);
+                       typeConstructorArg->name);
       }
     } else {
       call->insertAtTail(new NamedExpr(arg->name, new SymExpr(arg)));

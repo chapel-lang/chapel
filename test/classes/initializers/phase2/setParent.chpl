@@ -9,7 +9,7 @@ class Child : Parent {
   var foo : int;
 
   proc init() {
-    super.init();
+    this.complete();
     parentInt = 5;
   }
 }

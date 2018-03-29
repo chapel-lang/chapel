@@ -3,13 +3,14 @@ class C {
 
   proc init(type t) {
     this.x = t;
-    super.init();
+
   }
 }
 
 class D : C {
   proc init(type t) {
     super.init(t);
+    this.complete();
     this.x = int;
   }
 }

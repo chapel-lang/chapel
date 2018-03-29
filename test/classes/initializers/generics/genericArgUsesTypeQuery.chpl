@@ -3,13 +3,11 @@ class C {
 
   proc init(type t, n) {
     this.t = t;
-    super.init();
   }
 
   proc init(other: C(?otherType),
             type classType = otherType) {
     this.t = other.t;
-    super.init();
   }
 }
 

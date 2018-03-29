@@ -15,7 +15,6 @@ class Scoping {
       c = cVal;
     }
     d = dVal;
-    super.init();
   }
 }
 

@@ -41,12 +41,14 @@ InitNormalize::InitNormalize(FnSymbol* fn) {
   mPhase         = startPhase(fn);
   mBlockType     = cBlockNormal;
   mPrevBlockType = cBlockNormal;
+  mThisAsParent  = NULL;
 }
 
 InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
   mFn            = curr.mFn;
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
+  mThisAsParent  = curr.mThisAsParent;
 
   if (CallExpr* blockInfo = block->blockInfoGet()) {
     if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
@@ -84,13 +86,9 @@ InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
   mFn            = curr.mFn;
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
-  mBlockType     = cBlockCond;
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
+  mPrevBlockType = curr.mPrevBlockType;
+  mBlockType     = curr.mBlockType;
+  mThisAsParent  = curr.mThisAsParent;
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
@@ -98,6 +96,7 @@ InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
   mBlockType     = cBlockLoop;
+  mThisAsParent  = curr.mThisAsParent;
 
   if (mBlockType != curr.mBlockType) {
     mPrevBlockType = curr.mBlockType;
@@ -112,6 +111,7 @@ InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
   mCurrField     = curr.mCurrField;
   mPhase         = curr.mPhase;
   mBlockType     = cBlockForall;
+  mThisAsParent  = curr.mThisAsParent;
 
   if (mBlockType != curr.mBlockType) {
     mPrevBlockType = curr.mBlockType;
@@ -124,6 +124,13 @@ InitNormalize::InitNormalize(ForallStmt* loop, const InitNormalize& curr) {
 void InitNormalize::merge(const InitNormalize& fork) {
   mCurrField = fork.mCurrField;
   mPhase     = fork.mPhase;
+
+  mImplicitFields.insert(fork.mImplicitFields.begin(),
+                         fork.mImplicitFields.end());
+
+  if (this->mThisAsParent == NULL) {
+    this->mThisAsParent = fork.mThisAsParent;
+  }
 }
 
 AggregateType* InitNormalize::type() const {
@@ -176,10 +183,6 @@ bool InitNormalize::inLoopBody() const {
   return mBlockType == cBlockLoop;
 }
 
-bool InitNormalize::inCondStmt() const {
-  return mBlockType == cBlockCond;
-}
-
 bool InitNormalize::inParallelStmt() const {
   return mBlockType == cBlockBegin   ||
          mBlockType == cBlockCobegin  ;
@@ -199,10 +202,6 @@ bool InitNormalize::inOn() const {
 
 bool InitNormalize::inOnInLoopBody() const {
   return inOn() && mPrevBlockType == cBlockLoop;
-}
-
-bool InitNormalize::inOnInCondStmt() const {
-  return inOn() && mPrevBlockType == cBlockCond;
 }
 
 bool InitNormalize::inOnInParallelStmt() const {
@@ -238,7 +237,20 @@ void InitNormalize::completePhase1(CallExpr* initStmt) {
     INT_ASSERT(false);
   }
 
+  // Allow users to treat 'this' as the initialized type
+  if (type()->isClass()) {
+    initStmt->insertAfter(new CallExpr(PRIM_SETCID, new SymExpr(mFn->_this)));
+  }
+
   mPhase = cPhase2;
+}
+
+void InitNormalize::completePhase0(CallExpr* initStmt) {
+  if (isSuperInit(initStmt) == true) {
+    mPhase = cPhase1;
+  } else {
+    INT_FATAL("completePhase0 expected to be called with super.init");
+  }
 }
 
 void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
@@ -251,6 +263,72 @@ void InitNormalize::initializeFieldsAtTail(BlockStmt* block) {
 
     noop->remove();
   }
+}
+
+void InitNormalize::initializeFieldsThroughField(BlockStmt* block,
+                                                 DefExpr*   field) {
+  Expr* insertBefore = new CallExpr(PRIM_NOOP);
+
+  block->insertAtTail(insertBefore);
+
+  Expr* endCondition = ((field == NULL)? NULL : field);
+
+  while (mCurrField != NULL && mCurrField != endCondition) {
+    DefExpr* field = mCurrField;
+
+    if (isOuterField(field) == true) {
+      // The outer field is a compiler generated field.  Handle it specially.
+      makeOuterArg();
+
+    } else {
+      if (field->exprType == NULL && field->init == NULL) {
+        USR_FATAL_CONT(insertBefore,
+                       "can't omit initialization of field \"%s\", "
+                       "no type or default value provided",
+                       field->sym->name);
+
+      } else if (field->sym->hasFlag(FLAG_PARAM)         == true ||
+                 field->sym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        if        (field->exprType != NULL && field->init == NULL) {
+          genericFieldInitTypeWoutInit (insertBefore, field);
+
+        } else if (field->exprType != NULL && field->init != NULL) {
+          genericFieldInitTypeWithInit (insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else if (field->exprType == NULL && field->init != NULL) {
+          genericFieldInitTypeInference(insertBefore,
+                                        field,
+                                        field->init->copy());
+
+        } else {
+          INT_ASSERT(false);
+        }
+
+      } else if (field->init != NULL) {
+        Expr* initCopy    = field->init->copy();
+        bool  isTypeKnown = mCurrField->sym->type != dtUnknown;
+
+        if (isTypeKnown == true) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else if (field->exprType != NULL) {
+          fieldInitTypeWithInit (insertBefore, field, initCopy);
+
+        } else {
+          fieldInitTypeInference(insertBefore, field, initCopy);
+        }
+
+      } else {
+        fieldInitTypeWoutInit(insertBefore, field);
+      }
+    }
+
+    mCurrField = toDefExpr(mCurrField->next);
+  }
+
+  insertBefore->remove();
 }
 
 void InitNormalize::initializeFieldsBefore(Expr* insertBefore) {
@@ -906,7 +984,6 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
 
 bool InitNormalize::isFieldAccessible(Expr* expr) const {
   AggregateType* at      = type();
-  bool           initNew = hasInitDone(mFn->body);
   bool           retval  = true;
 
   if (SymExpr* symExpr = toSymExpr(expr)) {
@@ -916,6 +993,7 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       retval = true;
 
     } else if (DefExpr* field = at->toLocalField(symExpr)) {
+      // INIT TODO: Disallow phase 0 access of local fields.
       if (isFieldInitialized(field) == true) {
         retval = true;
 
@@ -926,13 +1004,12 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      if (initNew == true || isPhase2() == true) {
-        retval = true;
-
-      } else {
+      if (isPhase0() == true) {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
                   field->sym->name);
+      } else {
+        retval = true;
       }
 
     } else {
@@ -951,13 +1028,12 @@ bool InitNormalize::isFieldAccessible(Expr* expr) const {
       }
 
     } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      if (initNew == true || isPhase2() == true) {
-        retval = true;
-
-      } else {
+      if (isPhase0() == true) {
         USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
                   field->sym->name);
+      } else {
+        retval = true;
       }
 
     } else {
@@ -1007,9 +1083,11 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
 
     } else if (DefExpr* field = toSuperField(symExpr)) {
-      bool initNew = hasInitDone(mFn->body);
-
-      if (initNew == true) {
+      if (isPhase0() == true) {
+        USR_FATAL(expr,
+                  "Cannot access parent field \"%s\" before super.init() or this.init()",
+                  field->sym->name);
+      } else {
         SymExpr* _this = new SymExpr(mFn->_this);
         SymExpr* name  = new SymExpr(new_CStringSymbol(sym->name));
 
@@ -1020,11 +1098,6 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
         } else {
           symExpr->replace(new CallExpr(PRIM_GET_MEMBER,       _this, name));
         }
-
-      } else {
-        USR_FATAL(expr,
-                  "Cannot access parent field '%s' during phase 1",
-                  field->sym->name);
       }
     }
 
@@ -1133,11 +1206,9 @@ DefExpr* InitNormalize::toSuperField(SymExpr* expr) const {
 
 DefExpr* InitNormalize::toSuperField(AggregateType* at,
                                      const char*    name) const {
-  forv_Vec(Type, t, at->dispatchParents) {
-    if (AggregateType* pt = toAggregateType(t)) {
-      if (DefExpr* field = pt->toLocalField(name)) {
-        return field;
-      }
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (DefExpr* field = pt->toLocalField(name)) {
+      return field;
     }
   }
 
@@ -1165,6 +1236,10 @@ bool InitNormalize::isFieldInitialized(const DefExpr* field) const {
   return retval;
 }
 
+bool InitNormalize::isFieldImplicitlyInitialized(DefExpr* field) const {
+  return mImplicitFields.find(field) != mImplicitFields.end();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -1177,21 +1252,25 @@ InitNormalize::InitPhase InitNormalize::startPhase(FnSymbol*  fn)    const {
 
 InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
   Expr*     stmt   = block->body.head;
-  InitPhase retval = cPhase2;
+  const InitPhase defaultPhase = cPhase1;
+  InitPhase retval = defaultPhase;
 
-  while (stmt != NULL && retval == cPhase2) {
+  while (stmt != NULL && retval == defaultPhase) {
     if (isDefExpr(stmt) == true) {
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
       if        (isThisInit(callExpr)  == true) {
         retval = cPhase0;
+        break;
 
       } else if (isSuperInit(callExpr) == true) {
-        retval = cPhase1;
+        retval = cPhase0;
+        break;
 
       } else if (isInitDone(callExpr)  == true) {
         retval = cPhase1;
+        break;
 
       } else {
         stmt   = stmt->next;
@@ -1201,7 +1280,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
       if (cond->elseStmt == NULL) {
         InitPhase thenPhase = startPhase(cond->thenStmt);
 
-        if (thenPhase != cPhase2) {
+        if (thenPhase != defaultPhase) {
           retval = thenPhase;
         } else {
           stmt   = stmt->next;
@@ -1216,6 +1295,9 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
 
         } else if (thenPhase == cPhase1 || elsePhase == cPhase1) {
           retval = cPhase1;
+          // We want to keep looking in case there's a super.init further
+          // down.
+          stmt = stmt->next;
 
         } else {
           stmt   = stmt->next;
@@ -1225,7 +1307,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
     } else if (BlockStmt* block = toBlockStmt(stmt)) {
       InitPhase phase = startPhase(block);
 
-      if (phase != cPhase2) {
+      if (phase != defaultPhase) {
         retval = phase;
       } else {
         stmt   = stmt->next;
@@ -1234,7 +1316,7 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
     } else if (ForallStmt* block = toForallStmt(stmt)) {
       InitPhase phase = startPhase(block->loopBody());
 
-      if (phase != cPhase2) {
+      if (phase != defaultPhase) {
         retval = phase;
       } else {
         stmt   = stmt->next;
@@ -1248,12 +1330,45 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
   return retval;
 }
 
+//
+// Catch case a case like:
+//
+// proc init(cond:bool) {
+//   if cond {
+//     this.initDone();
+//   } else {
+//     this.init();
+//   }
+// }
+//
+// The initializer begins in phase zero, which is the state we inherit upon
+// entering the 'then' branch of the conditional statement. This is the
+// incorrect phase though, so we need to re-check the start phase of the
+// 'then' block and use that instead.
+//
+// Note though that we don't want to update the state unless there is an
+// initDone. Otherwise simple conditionals like this would advance the outer
+// phase to phase 1:
+//
+// proc init(cond:bool) {
+//   if cond {
+//     writeln("then");
+//   } else {
+//     writeln("else");
+//   }
+//   super.init();
+// }
+//
+// INIT TODO: Can we restrict this operation to just conditionals?
+//
 void InitNormalize::checkPhase(BlockStmt* block) {
   if (mPhase == cPhase0) {
     InitPhase newPhase = startPhase(block);
 
     if (newPhase == cPhase1) {
-      mPhase = newPhase;
+      if (hasInitDone(block)) {
+        mPhase = newPhase;
+      }
     }
   }
 }
@@ -1305,6 +1420,247 @@ void InitNormalize::makeOuterArg() {
                                  mFn->_outer));
 }
 
+//
+// Initialize the 'mThisAsParent' field
+//
+// mThisAsParent points to the same data as 'this', but has the parent type
+// of 'this'. This method also inserts a call to set the class ID of
+// mThisAsParent (and 'this') so that we only dynamically dispatch methods to
+// the parent.
+//
+void InitNormalize::makeThisAsParent(CallExpr* call) {
+  // type parentType = this.super.type;
+  // var thisAsParent : parentType = (_cast parentType this);
+
+  INT_ASSERT(this->mThisAsParent == NULL);
+
+  VarSymbol* parentType = newTemp();
+  DefExpr*   parentDef  = new DefExpr(parentType);
+  parentType->addFlag(FLAG_TYPE_VARIABLE);
+
+  // Let resolution figure out the type for us
+  // (move parentType (typeof (.v this super)))
+  CallExpr* getSuper = new CallExpr(PRIM_GET_MEMBER_VALUE, mFn->_this, new_CStringSymbol("super"));
+  CallExpr* typeInit = new CallExpr(PRIM_MOVE, parentType,
+                                    new CallExpr(PRIM_TYPEOF, getSuper));
+
+  // Important to use PRIM_CAST here, otherwise resolution will complain about
+  // 'this' having an unknown type if the class is generic.
+  VarSymbol* thisAsParent = newTemp("chpl__thisAsParent");
+  SymExpr*   tapType      = new SymExpr(parentType);
+  CallExpr*  tapInit      = new CallExpr(PRIM_CAST, parentType, new SymExpr(mFn->_this));
+  DefExpr*   tapDef       = new DefExpr(thisAsParent, tapInit, tapType);
+
+  CallExpr* setCID = new CallExpr(PRIM_SETCID, thisAsParent);
+
+  call->insertAfter(setCID);
+  call->insertAfter(tapDef);
+  call->insertAfter(typeInit);
+  call->insertAfter(parentDef);
+
+  this->mThisAsParent = thisAsParent;
+}
+
+static bool isThisDot(CallExpr* call) {
+  bool retval = false;
+
+  if (call->isNamedAstr(astrSdot) == true) {
+    SymExpr* base = toSymExpr(call->get(1));
+    if (base != NULL &&
+        base->symbol()->hasFlag(FLAG_ARG_THIS)) {
+      retval = true;
+    }
+  }
+  
+  return retval;
+}
+
+static void collectThisUses(Expr* expr, std::vector<CallExpr*>& uses) {
+  if (CallExpr* call = toCallExpr(expr)) {
+    if (isAssignment(call) == true) {
+      if (CallExpr* LHS = toCallExpr(call->get(1))) {
+        if (isThisDot(LHS) == true) {
+          if (LHS->square == true) {
+            // this.x[1] = blah;
+            uses.push_back(LHS);
+          }
+        } else {
+          // this.x.foo = blah;
+          collectThisUses(LHS, uses);
+        }
+      }
+      collectThisUses(call->get(2), uses);
+    } else if (isThisDot(call) == true) {
+      uses.push_back(call);
+    } else {
+      // this.foo(1,2,3);
+      collectThisUses(call->baseExpr, uses);
+
+      bool passesThis = false;
+
+      // foo(this.x);
+      for_actuals(actual, call) {
+        SymExpr* actSe = NULL;
+        if (SymExpr* se = toSymExpr(actual)) {
+          actSe = se;
+        } else if (NamedExpr* named = toNamedExpr(actual)) {
+          actSe = toSymExpr(named->actual);
+        }
+        if (actSe && actSe->symbol()->hasFlag(FLAG_ARG_THIS)) {
+          passesThis = true;
+        }
+        collectThisUses(actual, uses);
+      }
+
+      // foo(1,2, this);
+      if (passesThis == true) {
+        uses.push_back(call);
+      }
+    }
+  }
+}
+
+// TODO: split into 'isMethodCall' and 'isMethodException'.
+// TODO: Handle 'c = new C()' where 'C' is a nested type
+static bool isMethodCall(CallExpr* call) {
+  bool retval = false;
+
+  if (CallExpr* parent = toCallExpr(call->parentExpr)) {
+    if (parent->baseExpr == call) {
+      retval = true;
+      if (UnresolvedSymExpr* se = toUnresolvedSymExpr(call->get(2))) {
+        if (strstr(se->unresolved, "_if_fn") != NULL ||
+            strstr(se->unresolved, "_parloopexpr") != NULL) {
+          // Don't consider compiler-inserted loop/conditional functions
+          retval = false;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+//
+// Returns true if 'type' or its parents have a method named 'methodName'
+//
+// Note: Assumes only one entry in dispatchParents.
+//
+static bool typeHasMethod(AggregateType* type, const char* methodName) {
+  bool retval = false;
+
+  INT_ASSERT(type != NULL);
+
+  if (type != dtObject) {
+    forv_Vec(FnSymbol, method, type->methods) {
+      if (strcmp(method->name, methodName) == 0) {
+        retval = true;
+        break;
+      }
+    }
+
+    if (retval == false) {
+      AggregateType* parent = type->dispatchParents.v[0];
+      retval = typeHasMethod(parent, methodName);
+    }
+  }
+
+  return retval;
+}
+
+void InitNormalize::processThisUses(Expr* expr) {
+  if (isPhase2() != true) {
+    if (CallExpr* call = toCallExpr(expr)) {
+      processThisUses(call);
+    } else if (DefExpr* def = toDefExpr(expr)) {
+      processThisUses(def->init);
+    }
+  }
+}
+
+//
+// This method processes uses of 'this' and either:
+// 1) Checks for semantic errors
+// 2) Updates 'this' to be mThisAsParent
+//
+// The errors caught are:
+// 1) use-before-init
+// 2) cast 'this'
+// 3) call child-only method in phase one
+//
+void InitNormalize::processThisUses(CallExpr* call) {
+  std::vector<CallExpr*> uses;
+  collectThisUses(call, uses);
+
+  int numErrors = 0;
+
+  for_vector(CallExpr, use, uses) {
+    if (DefExpr* field = type()->toLocalField(use)) {
+      if (isFieldInitialized(field) == false) {
+        USR_FATAL_CONT(call, "Field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
+    } else if (DefExpr* field = type()->toSuperField(use)) {
+      if (isPhase0() == true) {
+        USR_FATAL_CONT(call, "Parent field \"%s\" used before it is initialized", field->sym->name);
+        numErrors += 1;
+      }
+    } else if (isMethodCall(use)) {
+      if (isPhase0() == true) {
+        USR_FATAL_CONT(call, "cannot call a method before super.init() or this.init()");
+        numErrors += 1;
+      } else if (type()->isRecord()) {
+        USR_FATAL_CONT(call, "cannot call a method on a record during phase 1 of initialization");
+        numErrors += 1;
+      } else {
+        // Check if the called method can be dynamically dispatched, otherwise
+        // it's an error.
+        Immediate* imm = getSymbolImmediate(toSymExpr(use->get(2))->symbol());
+        const char* methodName = imm->string_value();
+        AggregateType* parentType = type()->dispatchParents.v[0];
+        if (typeHasMethod(parentType, methodName) == false) {
+          USR_FATAL_CONT(call, "cannot call method \"%s\" on type \"%s\" in phase one", methodName, type()->symbol->name);
+          USR_PRINT(call, "\"this\" in phase one treated as parent type \"%s\" for method calls", parentType->symbol->name);
+          numErrors += 1;
+        }
+
+        SymExpr* thisSE = toSymExpr(use->get(1));
+        if (thisSE != NULL && thisSE->symbol()->hasFlag(FLAG_ARG_THIS)) {
+          thisSE->replace(new SymExpr(mThisAsParent));
+        }
+      }
+    } else {
+      if (isPhase0()) {
+        USR_FATAL_CONT(call, "cannot pass \"this\" to a function before calling super.init() or this.init()");
+        numErrors += 1;
+      } else if (type()->isRecord()) {
+        USR_FATAL_CONT(call, "cannot pass \"this\" to a function in phase 1 of initialization");
+        numErrors += 1;
+      } else if (use->isPrimitive(PRIM_CAST) || use->isNamed("_cast")) {
+        USR_FATAL_CONT(call, "cannot cast \"this\" in phase one");
+        numErrors += 1;
+      } else {
+        // Find 'this' usage(s) in call and replace them with mThisAsParent
+        for_actuals(actual, use) {
+          SymExpr* actSe = NULL;
+          if (SymExpr* se = toSymExpr(actual)) {
+            actSe = se;
+          } else if (NamedExpr* named = toNamedExpr(actual)) {
+            actSe = toSymExpr(named->actual);
+          }
+          if (actSe != NULL && actSe->symbol()->hasFlag(FLAG_ARG_THIS)) {
+            actSe->replace(new SymExpr(mThisAsParent));
+          }
+        }
+      }
+    }
+  }
+
+  if (numErrors > 0) {
+    USR_STOP();
+  }
+}
+
 Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
                                            CallExpr* initStmt) {
   Expr* retval = NULL;
@@ -1314,15 +1670,13 @@ Expr* InitNormalize::fieldInitFromInitStmt(DefExpr*  field,
 
     while (field != mCurrField) {
       fieldInitFromField(initStmt);
+      mImplicitFields.insert(mCurrField);
 
       mCurrField = toDefExpr(mCurrField->next);
     }
   }
 
-  // Now that omitted fields have been handled, see if RHS is OK
-  if (fieldUsedBeforeInitialized(initStmt) == true) {
-    USR_FATAL(initStmt, "Field used before it is initialized");
-  }
+  processThisUses(initStmt);
 
   retval     = fieldInitFromStmt(initStmt, field);
   mCurrField = toDefExpr(mCurrField->next);
@@ -1411,58 +1765,6 @@ void InitNormalize::fieldInitFromField(Expr* insertBefore) {
   }
 }
 
-bool InitNormalize::fieldUsedBeforeInitialized(Expr* expr) const {
-  bool retval = false;
-
-  if (DefExpr* defExpr = toDefExpr(expr)) {
-    if (defExpr->init != NULL) {
-      retval = fieldUsedBeforeInitialized(defExpr->init);
-    }
-
-  } else if (CallExpr* callExpr = toCallExpr(expr)) {
-    retval = fieldUsedBeforeInitialized(callExpr);
-  }
-
-  return retval;
-}
-
-bool InitNormalize::fieldUsedBeforeInitialized(CallExpr* callExpr) const {
-  bool retval = false;
-
-  if (isAssignment(callExpr) == true) {
-    if (CallExpr* LHS = toCallExpr(callExpr->get(1))) {
-      if (isFieldAccess(LHS)) {
-        // Want to watch out for array-like accesses that appear as field
-        // accesses: x[1] = 1;
-        retval = LHS->square;
-      } else {
-        // Look for expressions like: x.foo = 1;
-        retval = fieldUsedBeforeInitialized(callExpr->get(1));
-      }
-    }
-    retval = retval || fieldUsedBeforeInitialized(callExpr->get(2));
-
-  } else if (DefExpr* field = type()->toLocalField(callExpr)) {
-    retval = isFieldInitialized(field) == true ? false : true;
-
-  } else {
-    // Need to check the baseExpr in cases like:
-    //   myField.set(1)
-    // Because the baseExpr is a field access of 'this.myField'
-    retval = fieldUsedBeforeInitialized(callExpr->baseExpr);
-    if (retval == false) {
-      for_actuals(actual, callExpr) {
-        if (fieldUsedBeforeInitialized(actual) == true) {
-          retval = true;
-          break;
-        }
-      }
-    }
-  }
-
-  return retval;
-}
-
 void InitNormalize::describe(int offset) const {
   char pad[512];
 
@@ -1481,10 +1783,6 @@ void InitNormalize::describe(int offset) const {
   switch (mBlockType) {
     case cBlockNormal:
       printf("normal\n");
-      break;
-
-    case cBlockCond:
-      printf("cond\n");
       break;
 
     case cBlockLoop:

@@ -37,8 +37,6 @@ public:
 
   bool                      isApplicable(CallInfo& info);
 
-  bool                      isApplicableForInit(CallInfo& info);
-
   FnSymbol*                 fn;
   std::vector<Symbol*>      formalIdxToActual;
   std::vector<ArgSymbol*>   actualIdxToFormal;
@@ -52,15 +50,16 @@ private:
 
   bool                      isApplicableGeneric(CallInfo& info);
 
-  bool                      isApplicableForInitConcrete(CallInfo& info);
-
-  bool                      isApplicableForInitGeneric(CallInfo& info);
-
-  FnSymbol*                 instantiateInitSig(CallInfo& info);
-
   bool                      computeAlignment(CallInfo& info);
 
-  void                      computeSubstitutions();
+  int                       computeSubstitutions();
+
+  bool                      verifyGenericFormal(ArgSymbol* formal)       const;
+
+  void                      computeSubstitution(ArgSymbol* formal,
+                                                Symbol*    actual);
+
+  void                      computeSubstitution(ArgSymbol* formal);
 
   void                      resolveTypedefedArgTypes();
 

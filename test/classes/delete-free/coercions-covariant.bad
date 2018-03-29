@@ -1,0 +1,4 @@
+coercions-covariant.chpl:19: In function 'test1':
+coercions-covariant.chpl:21: error: value from coercion passed to const ref formal 'own'
+coercions-covariant.chpl:25: In function 'test3':
+coercions-covariant.chpl:27: error: value from coercion passed to const ref formal 'own'

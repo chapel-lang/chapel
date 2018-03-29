@@ -1007,14 +1007,7 @@ GenRet codegenFieldPtr(
     ret.chplType = fieldSymbol->type;
   }
 
-  if( fLLVMWideOpt && castType && isWide(base) ) {
-    // for fLLVMWideOpt
-    castType = getOrMakeWideTypeDuringCodegen(castType);
-  }
-
   ret.isLVPtr = GEN_PTR;
-  // with LLVMWideOpt, we might return a wide ptr.
-  if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   if (isClass(ct) ) {
     base = codegenValue(base);
@@ -1038,9 +1031,16 @@ GenRet codegenFieldPtr(
     // LLVM codegen
     llvm::Value* baseValue = base.val;
 
+    // with LLVMWideOpt, we might return a wide ptr.
+    if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
+
     // cast if needed
     if (castType) {
-      llvm::Type* castTypeLLVM = castType->codegen().type;
+      Type* useCastType = castType;
+      if (fLLVMWideOpt && isWide(base))
+        useCastType = getOrMakeWideTypeDuringCodegen(castType);
+
+      llvm::Type* castTypeLLVM = useCastType->codegen().type;
       baseValue = convertValueToType(base.val, castTypeLLVM, !base.isUnsigned);
       INT_ASSERT(baseValue);
     }
@@ -4770,6 +4770,11 @@ GenRet CallExpr::codegenPrimitive() {
       } else if (isRecord(typeInfo()) || isUnion(typeInfo())) {
         INT_FATAL("TODO - don't like type-punning record/union");
 
+      } else if (src->symbol->hasFlag(FLAG_WIDE_CLASS) && typeInfo() == dtCVoidPtr) {
+        // Special case: If we are casting a wide-ptr to a c_void_ptr we need to ensure
+        // that we perform the cast on the actual address portion of the wide-ptr. LouisJenkinsCS
+        ret = codegenCast(typeInfo(), codegenRaddr(srcGen));
+      
       } else {
         GenRet v = codegenValue(srcGen);
 

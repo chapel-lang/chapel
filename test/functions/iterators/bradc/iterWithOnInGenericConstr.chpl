@@ -9,7 +9,7 @@ class C {
 
   proc init(type elemType, targetLocales: [?targetLocalesDomain] locale) {
     this.elemType = elemType;
-    super.init();
+    this.complete();
     for locid in LocaleSpace do
       on Locales(locid) do
         dArray(locid) = new D(elemType);

@@ -218,8 +218,6 @@ static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
-static FnSymbol* findCopyInit(AggregateType* ct);
-
 /************************************* | **************************************
 *                                                                             *
 * Invoke resolveFunction(fn) with 'call' on top of 'callStack'.               *
@@ -296,7 +294,7 @@ hasUserAssign(Type* type) {
   // Workaround for problems with resolution finding =
   // for tuples types causing compile failures.
   // See
-  //  modules/sungeun/no-use-enum
+  //  test/modules/sungeun/no-use-enum.chpl
 
   // In the future, hasUserAssign should just return
   // false if the = call does not resolve
@@ -373,73 +371,12 @@ FnSymbol* getUnalias(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-// This function is called by generic instantiation
-// for the default initCopy function in ChapelBase.chpl.
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call) {
-  ArgSymbol* arg = newFn->getFormal(1);
-
-  if (AggregateType* ct = toAggregateType(arg->type)) {
-    if (isUserDefinedRecord(ct) &&
-        ct->initializerStyle == DEFINES_INITIALIZER) {
-      // If the user has defined any initializer,
-      // initCopy function should call the copy-initializer.
-      //
-      // If no copy-initializer exists, we should make initCopy
-      // be a dummy function that generates an error
-      // if it remains in the AST after callDestructors. We do
-      // that since callDestructors can remove some initCopy calls
-      // and we'd like types that cannot be copied to survive
-      // compilation until callDestructors has a chance to
-      // remove those calls.
-
-      // Go ahead and instantiate the body now so we can fix
-      // it up completely...
-      instantiateBody(newFn);
-
-      FnSymbol* initFn = findCopyInit(ct);
-
-      if (initFn == NULL) {
-        // No copy-initializer could be found
-        newFn->addFlag(FLAG_ERRONEOUS_INITCOPY);
-      } else {
-        Symbol* thisTmp = newTemp(ct);
-        DefExpr* def = new DefExpr(thisTmp);
-        CallExpr* initCall = new CallExpr(initFn, gMethodToken, thisTmp, arg);
-        newFn->insertBeforeEpilogue(def);
-        def->insertAfter(initCall);
-        // Replace the other setting of the return-value-variable
-        // with what we have now...
-
-        // find the RVV
-        Symbol* retSym = newFn->getReturnSymbol();
-
-        // Remove other PRIM_MOVEs to the RVV
-        for_alist(stmt, newFn->body->body) {
-          if (CallExpr* callStmt = toCallExpr(stmt))
-            if (callStmt->isPrimitive(PRIM_MOVE)) {
-              SymExpr* se = toSymExpr(callStmt->get(1));
-              INT_ASSERT(se);
-              if (se->symbol() == retSym)
-                stmt->remove();
-            }
-        }
-
-        // Set the RVV to the copy
-        newFn->insertBeforeEpilogue(new CallExpr(PRIM_MOVE, retSym, thisTmp));
-      }
-      return true;
-    }
-  }
-  return false;
-}
-
-
 // Generally speaking, tuples containing refs should be converted
 // to tuples without refs before returning.
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if( fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
       fn->hasFlag(FLAG_CONSTRUCTOR)              || // _construct__tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
@@ -644,7 +581,7 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
   Type* retval = NULL;
 
   if (AggregateType* at = toAggregateType(actualType)) {
-    forv_Vec(Type, parent, at->dispatchParents) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
       if (isInstantiation(parent, formalType) == true) {
         retval = parent;
         break;
@@ -653,6 +590,16 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
                                                              formalType)) {
         retval = t;
         break;
+      }
+    }
+
+    if (retval == NULL) {
+      // Handle e.g. Owned(GenericClass) passed to a formal of type GenericClass
+      if (isManagedPtrType(at) && isClass(formalType)) {
+        Type* classType = actualType->getField("t")->type;
+        if (canInstantiate(classType, formalType)) {
+          retval = classType;
+        }
       }
     }
   }
@@ -1094,6 +1041,35 @@ bool canCoerce(Type*     actualType,
     // sync can't store an array or a param, so no need to
     // propagate promotes / paramNarrows
     return canDispatch(baseType, NULL, formalType, fn);
+  }
+
+  if (isManagedPtrType(actualType)) {
+    Type* actualBaseType = actualType->getField("t")->type;
+    AggregateType* actualOwnedShared = toAggregateType(actualType);
+    while (actualOwnedShared && actualOwnedShared->instantiatedFrom != NULL)
+      actualOwnedShared = actualOwnedShared->instantiatedFrom;
+
+    Type* formalBaseType = NULL;
+    AggregateType* formalOwnedShared = toAggregateType(formalType);
+    bool formalIsClass = false;
+    if (isManagedPtrType(formalType)) {
+      formalBaseType = formalType->getField("t")->type;
+      while (formalOwnedShared && formalOwnedShared->instantiatedFrom != NULL)
+        formalOwnedShared = formalOwnedShared->instantiatedFrom;
+    } else if (AggregateType* formalAt = toAggregateType(formalType)) {
+      formalIsClass = formalAt->isClass();
+    }
+
+    if (isManagedPtrType(formalType) &&
+        actualOwnedShared == formalOwnedShared) {
+      // e.g. Owned(Child) coerces to Owned(Parent)
+      return canDispatch(actualBaseType, NULL, formalBaseType, fn,
+                         promotes, paramNarrows);
+    } else if (formalIsClass) {
+      // e.g. Owned(SomeClass) to SomeClass (borrow type)
+      return canDispatch(actualBaseType, NULL, formalType, fn,
+                         promotes, paramNarrows);
+    }
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -1833,15 +1809,18 @@ static void collectVisibleMethodsNamed(Type*                   t,
     }
 
     size_t maxChildMethods = methods.size();
+
     // Collect also methods from a parent class type
-    forv_Vec(Type, parent, at->dispatchParents) {
+    forv_Vec(AggregateType, parent, at->dispatchParents) {
       collectVisibleMethodsNamed(parent, nameAstr, methods);
     }
+
     // Filter out methods any of the parent methods
     // that have a signature match with the child's methods.
     // Such methods represent overrides with inheritance.
     for (size_t i = maxChildMethods; i < methods.size(); i++) {
       bool remove = false;
+
       for (size_t j = 0; j < maxChildMethods; j++) {
         if (methods[i] != NULL &&
             methods[j] != NULL &&
@@ -1850,8 +1829,10 @@ static void collectVisibleMethodsNamed(Type*                   t,
           break;
         }
       }
-      if (remove)
+
+      if (remove) {
         methods[i] = NULL;
+      }
     }
   }
 }
@@ -1902,14 +1883,17 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
+
   } else if (at->defaultInitializer &&
              at->defaultInitializer->instantiationPoint) {
     // Here for historical reasons
     retval = at->defaultInitializer->instantiationPoint;
-  } else if (at->defaultTypeConstructor &&
-             at->defaultTypeConstructor->instantiationPoint) {
+
+  } else if (at->typeConstructor &&
+             at->typeConstructor->instantiationPoint) {
     // This case can apply to generic types with initializers
-    retval = at->defaultTypeConstructor->instantiationPoint;
+    retval = at->typeConstructor->instantiationPoint;
+
   } else {
     // This case applies to non-generic AggregateTypes and
     // possibly to generic AggregateTypes with default fields.
@@ -3845,11 +3829,11 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   } else if (formal1->instantiatedFrom != dtAny &&
              formal2->instantiatedFrom == dtAny) {
-    prefer1 = STRONG; reason = "generic any vs generic";
+    prefer1 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom == dtAny &&
              formal2->instantiatedFrom != dtAny) {
-    prefer2 = STRONG; reason = "generic any vs generic";
+    prefer2 = STRONG; reason = "generic any vs partially generic/concrete";
 
   } else if (formal1->instantiatedFrom &&
              formal2->instantiatedFrom &&
@@ -5041,7 +5025,6 @@ static void resolveInitField(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-
 static void resolveInitVar(CallExpr* call) {
   SymExpr* dstExpr = toSymExpr(call->get(1));
   Symbol*  dst     = dstExpr->symbol();
@@ -5062,9 +5045,9 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true &&
-             isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+  } else if (isRecordWithInitializers(srcType) == true  &&
+             isSyncType(srcType)               == false &&
+             isSingleType(srcType)             == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5082,6 +5065,10 @@ static void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction("init");
       call->insertAtHead(gMethodToken);
+
+      if (ct->hasPostInitializer() == true) {
+        call->insertAfter(new CallExpr("postinit", gMethodToken, dst));
+      }
 
       resolveCall(call);
 
@@ -5101,16 +5088,21 @@ static void resolveInitVar(CallExpr* call) {
   }
 }
 
-// Detect if there is a copy initializer by attempting to resolve
-//   tmpAt.init(tmpAt, tmpAt);
-// where tmpAt is a temp of type at.
-//
-// This resolution will be attempted at just before scope in the AST.
-static FnSymbol* findCopyInit(AggregateType* at) {
+/************************************* | **************************************
+*                                                                             *
+* Detect if there is a copy initializer by attempting to resolve              *
+*                                                                             *
+*    tmpAt.init(tmpAt, tmpAt);                                                *
+*                                                                             *
+* where tmpAt is a temp of type at.                                           *
+*                                                                             *
+************************************** | *************************************/
+
+FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
-  CallExpr* call = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
-  FnSymbol* copyInit = resolveUninsertedCall(at, call, /*err on fail*/ false);
-  return copyInit;
+  CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
+
+  return resolveUninsertedCall(at, call, false);
 }
 
 /************************************* | **************************************
@@ -5683,70 +5675,84 @@ bool isDispatchParent(Type* t, Type* pt) {
 * remaining arguments are assumed to be arguments for the constructor or      *
 * initializer call                                                            *
 *                                                                             *
-* Some new expressions are converted in normalize().                          *
-*   For example, a call to  type function is resolved at this point.          *
-*                                                                             *
 * The syntax supports calling the result of a type function as a constructor  *
 * but this is not fully implemented.                                          *
 *                                                                             *
 ************************************** | *************************************/
 
-static bool     resolveNewHasInitializer(AggregateType* at);
+static bool           resolveNewHasInitializer(AggregateType* at);
 
-static void     resolveNewHandleConstructor(CallExpr* call);
+static void           resolveNewHandleConstructor(CallExpr* newExpr);
 
-static void     resolveNewHandleNonGenericInitializer(CallExpr*      call,
-                                                      AggregateType* at,
-                                                      SymExpr*       typeExpr);
+static void           resolveNewWithInitializer(CallExpr* newExpr);
 
-static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
-                                                    AggregateType* at,
-                                                    SymExpr*       typeExpr);
+static void           resolveNewHandleNonGenericClass(CallExpr* newExpr);
 
-static void     resolveNewHandleGenericInitializer(CallExpr*      call,
-                                                   AggregateType* at,
-                                                   SymExpr*       typeExpr);
+static void           resolveNewHandleNonGenericRecord(CallExpr* newExpr);
 
-static SymExpr* resolveNewTypeExpr(CallExpr* call);
+static void           resolveNewHandleGenericClass(CallExpr* newExpr);
 
-static void     resolveNewHalt(CallExpr* call);
+static void           resolveNewHandleGenericRecord(CallExpr* newExpr);
 
-static void resolveNew(CallExpr* call) {
-  if (SymExpr* typeExpr = resolveNewTypeExpr(call)) {
+static void           resolveNewRecordPrologue(CallExpr*  newExpr,
+                                               VarSymbol* newTmp);
+
+static void           resolveNewGenericInit(CallExpr*      newExpr,
+                                            AggregateType* at,
+                                            VarSymbol*     initTemp);
+
+static bool           resolveNewIsNonGeneric(CallExpr* newExpr);
+
+static AggregateType* resolveNewFindType(CallExpr* newExpr);
+
+static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
+
+static void resolveNew(CallExpr* newExpr) {
+  if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
         if (resolveNewHasInitializer(at) == false) {
-          resolveNewHandleConstructor(call);
-
-        } else if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
-          if (at->instantiatedFrom != NULL) {
-            resolveNewHandleInstantiatedGenericInit(call, at, typeExpr);
-
-          } else {
-            resolveNewHandleNonGenericInitializer(call, at, typeExpr);
-          }
+          resolveNewHandleConstructor(newExpr);
 
         } else {
-          resolveNewHandleGenericInitializer(call, at, typeExpr);
+          resolveNewWithInitializer(newExpr);
         }
 
       } else if (PrimitiveType* pt = toPrimitiveType(type)) {
         const char* name = pt->symbol->name;
 
-        USR_FATAL(call, "invalid use of 'new' on primitive %s", name);
+        USR_FATAL(newExpr, "invalid use of 'new' on primitive %s", name);
 
       } else if (EnumType* et = toEnumType(type)) {
         const char* name = et->symbol->name;
 
-        USR_FATAL(call, "invalid use of 'new' on enum %s", name);
+        USR_FATAL(newExpr, "invalid use of 'new' on enum %s", name);
 
       } else {
-        USR_FATAL(call, "new must be applied to a record or class");
+        USR_FATAL(newExpr, "new must be applied to a record or class");
       }
     }
 
   } else {
-    resolveNewHalt(call);
+    const char* name = NULL;
+
+    if (Expr* arg = newExpr->get(1)) {
+      if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
+        name = urse->unresolved;
+
+      } else if (CallExpr* subCall = toCallExpr(arg)) {
+        if (FnSymbol* fn = subCall->resolvedFunction()) {
+          name = fn->name;
+        }
+      }
+    }
+
+    if (name == NULL) {
+      USR_FATAL(newExpr, "invalid use of 'new'");
+
+    } else {
+      USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
+    }
   }
 }
 
@@ -5769,329 +5775,331 @@ static bool resolveNewHasInitializer(AggregateType* at) {
 
 // There are three cases
 //
-//     1) new(typeExpr(_mt, this), actual1,  actual2, ...)    method
-//     2) new(typeExpr, actual1,  actual2, ...)               common
-//     3) new(module=, moduleName, typeExpr, actual1, ...)    module-scoped
+//     1) new(Type(_mt, this), arg1, ...)              nested type
+//     2) new(Type, arg1, ...)                         common
+//     3) new(module=, moduleName, Type, arg1, ...)    module-scoped
 //
 // These become
 //
-//     1) "_construct_typeExpr"(_mt, this)(actual1, actual2, ...)
-//     2) "_construct_typeExpr"(actual1, actual2, ...)
-//     3) "_construct_typeExpr"(module=, moduleName, actual1, actual2, ...)
+//     1) "_construct_Type"(_mt, this)(arg1, ...)
+//     2) "_construct_Type"(arg1, ...)
+//     3) "_construct_Type"(module=, moduleName, arg1, ...)
 //
 // respectively
 
-static void resolveNewHandleConstructor(CallExpr* call) {
-  SET_LINENO(call);
+static void resolveNewHandleConstructor(CallExpr* newExpr) {
+  SET_LINENO(newExpr);
 
-  SymExpr*       typeExpr = resolveNewTypeExpr(call);
-  AggregateType* at       = toAggregateType(resolveTypeAlias(typeExpr));
+  SymExpr*       typeExpr = resolveNewFindTypeExpr(newExpr);
+  AggregateType* at       = resolveNewFindType(newExpr);
 
   if (FnSymbol* atInit = at->defaultInitializer) {
     Expr* baseExpr = NULL;
 
-    if (isCallExpr(call->get(1)) == true) {
+    // A nested call
+    if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
       typeExpr->replace(new UnresolvedSymExpr(atInit->name));
 
-      baseExpr = call->get(1)->remove();
+      baseExpr = partial->remove();
 
-    } else if (typeExpr == call->get(1) || typeExpr == call->get(3)) {
-      typeExpr->remove();
-
-      baseExpr = new UnresolvedSymExpr(atInit->name);
-
+    // Non-nested call
     } else {
-      INT_ASSERT(false);
+      if (typeExpr == newExpr->get(1) || typeExpr == newExpr->get(3)) {
+        typeExpr->remove();
+
+        baseExpr = new UnresolvedSymExpr(atInit->name);
+
+      } else {
+        INT_ASSERT(false);
+      }
     }
 
     // Convert the PRIM_NEW to the required call expr and resolve it
-    call->primitive = NULL;
-    call->baseExpr  = baseExpr;
-    parent_insert_help(call, baseExpr);
+    newExpr->primitive = NULL;
+    newExpr->baseExpr  = baseExpr;
 
-    resolveExpr(call);
+    parent_insert_help(newExpr, baseExpr);
+
+    resolveExpr(newExpr);
 
   } else {
-    USR_FATAL(call,
+    USR_FATAL(newExpr,
               "could not generate default initializer for type "
               "'%s', please define one",
               at->symbol->name);
   }
 }
 
-static void resolveNewHandleNonGenericInitializer(CallExpr*      call,
-                                                  AggregateType* at,
-                                                  SymExpr*       typeExpr) {
-  SET_LINENO(call);
+static void resolveNewWithInitializer(CallExpr* newExpr) {
+  SET_LINENO(newExpr);
 
-  VarSymbol* newTmp = newTemp("new_temp", at);
-  DefExpr*   def    = new DefExpr(newTmp);
+  AggregateType* at = resolveNewFindType(newExpr);
 
-  if (isCallExpr(call->get(1))) {
-    // Happens when the type on which we are calling new is a nested type.
-    // In that case, the second argument to that inner call should be used as
-    // the "outer" argument to the _new or init function.
-    CallExpr* partial = toCallExpr(call->get(1)->remove());
+  //
+  // Normalize the allocation for a nested type
+  //
+  //    primNew(Inner(_mt, this), ...) => primNew(Inner, this, ...)
+  //
+  if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+    SymExpr* typeExpr = toSymExpr(partial->baseExpr);
+    SymExpr* thisExpr = toSymExpr(partial->get(2));
 
-    call->insertAtHead(partial->get(2)->remove());
-    INT_ASSERT(partial->baseExpr == typeExpr);
-    call->insertAtHead(typeExpr);
-  }
+    partial->remove();
 
-
-  if (isClass(at) == true) {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("_new");
-    parent_insert_help(call, call->baseExpr);
-
-    if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
-
-    } else {
-      call->parentExpr->insertBefore(def);
-    }
-
-    resolveExpr(call);
-
-  } else {
-    // Convert the PRIM_NEW to a normal call
-    call->primitive = NULL;
-    call->baseExpr  = new UnresolvedSymExpr("init");
-
-    parent_insert_help(call, call->baseExpr);
-
-    if (isBlockStmt(call->parentExpr) == true) {
-      call->insertBefore(def);
-
-    } else {
-      Expr* parent = call->parentExpr;
-
-      // NB: This removes the "init" call from the tree
-      call->replace(new SymExpr(newTmp));
-
-      // Insert <def> and then re-insert the "init" call
-      parent->insertBefore(def);
-      parent->insertBefore(call);
-    }
-
-    typeExpr->remove();
-
-    // Invoking an instance method
-    call->insertAtHead(new SymExpr(newTmp));
-    call->insertAtHead(new SymExpr(gMethodToken));
-
-    resolveExpr(call);
-  }
-}
-
-// Similar to resolveNewHandleGenericInitializer, except we have been
-// provided an instantiation instead of the generic version.  We should
-// ensure that we can resolve the call as if it were generic, and then
-// double check that the type we were given matches the provided type.
-static void resolveNewHandleInstantiatedGenericInit(CallExpr*      call,
-                                                    AggregateType* at,
-                                                    SymExpr*       typeExpr) {
-  SET_LINENO(call);
-
-  AggregateType* genericSrc = at->instantiatedFrom;
-  while (genericSrc->instantiatedFrom != NULL) {
-    // Go back until we are at the base generic type.
-    genericSrc = genericSrc->instantiatedFrom;
-  }
-
-  INT_ASSERT(genericSrc->symbol->hasFlag(FLAG_GENERIC));
-
-  // Resolve the _new call as if we were provided a fully generic type.
-  VarSymbol* new_temp = newTemp("new_temp", genericSrc);
-  DefExpr*   def      = new DefExpr(new_temp);
-  FnSymbol*  initFn   = NULL;
-
-  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  typeExpr->replace(new UnresolvedSymExpr("init"));
-
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
-
-  } else {
-    Expr* parent = call->parentExpr;
-
-    parent->insertBefore(def);
-
-    if (at->isClass() == false) {
-      call->replace(new SymExpr(new_temp));
-      parent->insertBefore(call);
-    }
-  }
-
-  // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
-  call->insertAtHead(new SymExpr(gMethodToken));
-
-  temporaryInitializerFixup(call);
-
-  resolveGenericActuals(call);
-
-  initFn = resolveInitializer(call);
-
-  // We've resolved the initializer.  Verify that the type we got
-  // back was the type we were originally looking for
-
-  // TODO: What about coercion?
-  if (call->resolvedFunction()->_this->type == at) {
-    new_temp->type = at;
-
-  } else {
-    // If it isn't, error
-    USR_FATAL_CONT(call,
-                   "Best initializer match doesn't work for generic "
-                   "instantiation %s",
-                   at->symbol->name);
-    USR_PRINT(initFn,
-              "Best initializer match was defined here, and generated"
-              " instantiation %s",
-              call->resolvedFunction()->_this->type->symbol->name);
-    USR_STOP();
+    newExpr->insertAtHead(thisExpr->remove());
+    newExpr->insertAtHead(typeExpr);
   }
 
   if (at->isClass() == true) {
-    // use the allocator instead of directly calling the init method
-    // Need to convert the call into the right format
-    call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-    call->get(1)->replace(new SymExpr(new_temp->type->symbol));
-    call->get(2)->remove();
+    if (isBlockStmt(newExpr->parentExpr) == true) {
+      //
+      // The parent is currently a blockStmt
+      //
+      //   1) a statement that is a standalone new expr
+      //   2) the typeExpr/initExpr for a formal
+      //
+      // Wrap the new expr in a move stmt
+      //
+      VarSymbol* newTmp = newTemp("new_temp");
+      DefExpr*   def    = new DefExpr(newTmp);
+      CallExpr*  move   = NULL;
 
-    // Need to resolve _new() even if it has not been built yet
-    if (tryResolveCall(call) == NULL) {
-      buildClassAllocator(initFn);
-      resolveCall(call);
+      newExpr->insertBefore(def);
+
+      move = new CallExpr(PRIM_MOVE, newTmp, newExpr->remove());
+
+      def->insertAfter(move);
+
+      if (isArgSymbol(newExpr->parentSymbol) == true) {
+        move->insertAfter(new SymExpr(newTmp));
+      }
     }
 
-    resolveFunction(call->resolvedFunction());
-
-    def->remove();
-  }
-}
-
-static void resolveNewHandleGenericInitializer(CallExpr*      call,
-                                               AggregateType* at,
-                                               SymExpr*       typeExpr) {
-  SET_LINENO(call);
-
-  VarSymbol* new_temp = newTemp("new_temp", at);
-  DefExpr*   def      = new DefExpr(new_temp);
-  FnSymbol*  initFn   = NULL;
-
-  new_temp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
-
-  typeExpr->replace(new UnresolvedSymExpr("init"));
-
-  // Convert the PRIM_NEW to a normal call
-  call->primitive = NULL;
-  call->baseExpr  = call->get(1)->remove();
-
-  parent_insert_help(call, call->baseExpr);
-
-  if (isBlockStmt(call->parentExpr) == true) {
-    call->insertBefore(def);
-
-  } else {
-    Expr* parent = call->parentExpr;
-
-    parent->insertBefore(def);
-
-    if (at->isClass() == false) {
-      call->replace(new SymExpr(new_temp));
-      parent->insertBefore(call);
-    }
-  }
-
-  // Invoking an instance method
-  call->insertAtHead(new NamedExpr("this", new SymExpr(new_temp)));
-  call->insertAtHead(new SymExpr(gMethodToken));
-
-  temporaryInitializerFixup(call);
-
-  resolveGenericActuals(call);
-
-  initFn = resolveInitializer(call);
-
-  // Because initializers determine the type they utilize based on the
-  // execution of Phase 1, if the type is generic we will need to update
-  // the type of the actual we are sending in for the this arg
-  new_temp->type = call->resolvedFunction()->_this->type;
-
-  if (at->isClass() == true) {
-    // use the allocator instead of directly calling the init method
-    // Need to convert the call into the right format
-    call->baseExpr->replace(new UnresolvedSymExpr("_new"));
-    call->get(1)->replace(new SymExpr(new_temp->type->symbol));
-    call->get(2)->remove();
-
-    // Need to resolve _new() even if it has not been built yet
-    if (tryResolveCall(call) == NULL) {
-      buildClassAllocator(initFn);
-      resolveCall(call);
-    }
-
-    resolveFunction(call->resolvedFunction());
-
-    def->remove();
-  }
-}
-
-// Find the SymExpr that captures the type
-static SymExpr* resolveNewTypeExpr(CallExpr* call) {
-  Expr*    arg1   = call->get(1);
-  SymExpr* retval = NULL;
-
-  // The common case e.g new MyClass(1, 2, 3);
-  if (SymExpr* se = toSymExpr(arg1)) {
-    if (se->symbol() != gModuleToken) {
-      retval = se;
+    if (resolveNewIsNonGeneric(newExpr) == true) {
+      resolveNewHandleNonGenericClass(newExpr);
 
     } else {
-      retval = toSymExpr(call->get(3));
-      INT_ASSERT(retval != NULL);
+      resolveNewHandleGenericClass(newExpr);
     }
 
-  // 'new' (call (partial) R2 _mt this), call_tmp0, call_tmp1, ...
-  // due to nested classes (i.e. R2 is a nested class type)
-  } else if (CallExpr* subCall = toCallExpr(arg1)) {
-    if (SymExpr* se = toSymExpr(subCall->baseExpr)) {
-      retval = (subCall->partialTag) ? se : NULL;
+  } else {
+    if (resolveNewIsNonGeneric(newExpr) == true) {
+      resolveNewHandleNonGenericRecord(newExpr);
+
+    } else {
+      resolveNewHandleGenericRecord(newExpr);
     }
+  }
+}
+
+static void resolveNewHandleNonGenericClass(CallExpr* newExpr) {
+  AggregateType* at = resolveNewFindType(newExpr);
+
+  newExpr->setUnresolvedFunction("_new");
+
+  resolveCall(newExpr);
+
+  if (at->hasPostInitializer() == true) {
+    CallExpr* moveStmt = toCallExpr(newExpr->parentExpr);
+    Symbol*   moveDest = toSymExpr(moveStmt->get(1))->symbol();
+
+    moveStmt->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+  }
+}
+
+static void resolveNewHandleNonGenericRecord(CallExpr* newExpr) {
+  AggregateType* at     = resolveNewFindType(newExpr);
+  VarSymbol*     newTmp = newTemp("new_temp", at);
+
+  resolveNewRecordPrologue(newExpr, newTmp);
+
+  newExpr->setUnresolvedFunction("init");
+  newExpr->get(1)->remove();
+
+  newExpr->insertAtHead(new SymExpr(newTmp));
+  newExpr->insertAtHead(new SymExpr(gMethodToken));
+
+  resolveCall(newExpr);
+
+  if (at->hasPostInitializer() == true) {
+    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, newTmp));
+  }
+}
+
+static void resolveNewHandleGenericClass(CallExpr* newExpr) {
+  AggregateType* at       = resolveNewFindType(newExpr);
+
+  CallExpr*      moveStmt = toCallExpr(newExpr->parentExpr);
+  AggregateType* rootType = at->getRootInstantiation();
+  VarSymbol*     initTemp = newTemp("initTemp", rootType);
+
+  CallExpr*      initCall = new CallExpr("init");
+
+  moveStmt->insertAfter(initCall);
+  moveStmt->insertAfter(new DefExpr(initTemp));
+
+  for (int i = newExpr->numActuals(); i > 1; i--) {
+    initCall->insertAtHead(newExpr->get(i)->remove());
+  }
+
+  resolveNewGenericInit(initCall, at, initTemp);
+
+  SymExpr*   moveDst  = toSymExpr(moveStmt->get(1));
+
+  DefExpr*   initDef  = toDefExpr(moveStmt->next);
+  VarSymbol* initTmp  = toVarSymbol(initDef->sym);
+
+  VarSymbol* sizeTmp  = newTemp("sizeTemp", dtInt[INT_SIZE_64]);
+  DefExpr*   sizeDef  = new DefExpr(sizeTmp);
+
+  Type*      type     = initTmp->type;
+  Symbol*    typeSym  = type->symbol;
+
+  moveStmt->insertBefore(sizeDef);
+
+  moveStmt->get(1)->replace(new SymExpr(sizeTmp));
+
+  newExpr->primitive = primitives[PRIM_SIZEOF];
+  newExpr->get(1)->replace(new SymExpr(typeSym));
+
+  moveDst->symbol()->type = initTmp->type;
+
+  initCall->get(2)->replace(moveDst);
+  initDef->remove();
+
+  VarSymbol* mdExpr    = newMemDesc(type);
+  CallExpr*  allocExpr = new CallExpr("chpl_here_alloc", sizeTmp, mdExpr);
+  SymExpr*   dstCopy   = moveDst->copy();
+  CallExpr*  allocMove = new CallExpr(PRIM_MOVE, dstCopy, allocExpr);
+
+  moveStmt->insertAfter(allocMove);
+
+  resolveFunction(initCall->resolvedFunction());
+
+  if (at->hasPostInitializer() == true) {
+    Symbol* moveDest = moveDst->symbol();
+
+    initCall->insertAfter(new CallExpr("postinit", gMethodToken, moveDest));
+  }
+}
+
+static void resolveNewHandleGenericRecord(CallExpr* newExpr) {
+  AggregateType* at       = resolveNewFindType(newExpr);
+  AggregateType* rootType = at->getRootInstantiation();
+  VarSymbol*     initTemp = newTemp("initTemp", rootType);
+
+  resolveNewRecordPrologue(newExpr, initTemp);
+
+  newExpr->setUnresolvedFunction("init");
+  newExpr->get(1)->remove();
+
+  resolveNewGenericInit(newExpr, at, initTemp);
+
+  if (at->hasPostInitializer() == true) {
+    newExpr->insertAfter(new CallExpr("postinit", gMethodToken, initTemp));
+  }
+}
+
+static void resolveNewRecordPrologue(CallExpr* newExpr, VarSymbol* newTmp) {
+  DefExpr* def = new DefExpr(newTmp);
+
+  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+    moveStmt->insertBefore(def);
+    moveStmt->insertBefore(newExpr->remove());
+    moveStmt->insertAtTail(newTmp);
+
+  } else {
+    // The parent is a BlockStmt
+    newExpr->insertBefore(def);
+
+    if (isArgSymbol(newExpr->parentSymbol) == true) {
+      if (toBlockStmt(newExpr->parentExpr)->body.tail == newExpr) {
+        newExpr->insertAfter(new SymExpr(newTmp));
+      }
+    }
+  }
+}
+
+static void resolveNewGenericInit(CallExpr*      newExpr,
+                                  AggregateType* at,
+                                  VarSymbol*     initTmp) {
+  FnSymbol* initFn = NULL;
+
+  initTmp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+  newExpr->insertAtHead(new NamedExpr("this", new SymExpr(initTmp)));
+  newExpr->insertAtHead(new SymExpr(gMethodToken));
+
+  temporaryInitializerFixup(newExpr);
+
+  resolveGenericActuals(newExpr);
+
+  initFn = resolveInitializer(newExpr);
+
+  if (at->instantiatedFrom == NULL) {
+    initTmp->type = initFn->_this->type;
+
+  } else {
+    if (initFn->_this->type == at) {
+      initTmp->type = initFn->_this->type;
+
+    } else {
+      USR_FATAL_CONT(newExpr,
+                     "Best initializer match doesn't work for generic "
+                     "instantiation %s",
+                     at->symbol->name);
+
+      USR_PRINT(initFn,
+                "Best initializer match was defined here, and generated "
+                "instantiation %s",
+                initFn->_this->type->symbol->name);
+
+      USR_STOP();
+    }
+  }
+}
+
+static bool resolveNewIsNonGeneric(CallExpr* newExpr) {
+  AggregateType* at     = resolveNewFindType(newExpr);
+  bool           retval = false;
+
+  if (at->symbol->hasFlag(FLAG_GENERIC) == false &&
+      at->instantiatedFrom              == NULL) {
+    retval = true;
   }
 
   return retval;
 }
 
-static void resolveNewHalt(CallExpr* call) {
-  const char* name = NULL;
+static AggregateType* resolveNewFindType(CallExpr* newExpr) {
+  SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr);
+  Type*    type     = resolveTypeAlias(typeExpr);
 
-  if (Expr* arg = call->get(1)) {
-    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(arg)) {
-      name = urse->unresolved;
+  return toAggregateType(type);
+}
 
-    } else if (CallExpr* subCall = toCallExpr(arg)) {
-      if (FnSymbol* fn = subCall->resolvedFunction()) {
-        name = fn->name;
-      }
+// Find the SymExpr for the type.
+//   1) Common case  :- primNew(Type, arg1, ...);
+//   2) Module scope :- primNew(module=, moduleName, Type, arg1, ...);
+//   3) Nested call  :- primNew(Inner(_mt, this), arg1, ...);
+static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
+  SymExpr* retval = NULL;
+
+  if (SymExpr* se = toSymExpr(newExpr->get(1))) {
+    if (se->symbol() != gModuleToken) {
+      retval = se;
+
+    } else {
+      retval = toSymExpr(newExpr->get(3));
+    }
+
+  } else if (CallExpr* partial = toCallExpr(newExpr->get(1))) {
+    if (SymExpr* se = toSymExpr(partial->baseExpr)) {
+      retval = partial->partialTag ? se : NULL;
     }
   }
 
-  if (name == NULL) {
-    USR_FATAL(call, "invalid use of 'new'");
-  } else {
-    USR_FATAL(call, "invalid use of 'new' on %s", name);
-  }
+  return retval;
 }
 
 /************************************* | **************************************
@@ -6260,7 +6268,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
-      CallExpr*   cc    = new CallExpr(at->defaultTypeConstructor->name);
+      CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
       TypeSymbol* retTS = NULL;
 
       se->replace(cc);
@@ -6834,7 +6842,7 @@ static void resolveExprExpandGenerics(CallExpr* call) {
 
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (FnSymbol* fn = at->defaultTypeConstructor) {
+    if (FnSymbol* fn = at->typeConstructor) {
       if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
@@ -7186,6 +7194,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
+
   lowerForallStmts();
 
   insertReturnTemps();
@@ -7251,7 +7260,7 @@ static void unmarkDefaultedGenerics() {
           SET_LINENO(formal);
 
           AggregateType* formalAt   = toAggregateType(formal->type);
-          FnSymbol*      typeConstr = formalAt->defaultTypeConstructor;
+          FnSymbol*      typeConstr = formalAt->typeConstructor;
 
           formal->type     = dtUnknown;
           formal->typeExpr = new BlockStmt(new CallExpr(typeConstr));
@@ -7584,8 +7593,8 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve destructor
   if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false &&
+    if (at->symbol->hasFlag(FLAG_REF)             == false &&
+        isTupleContainingOnlyReferences(at)       == false &&
         // autoDestroy for iterator record filled in callDestructors
         at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
 
@@ -7763,7 +7772,7 @@ static void resolveRecordInitializers() {
 
       if (init->isPrimitive(PRIM_NO_INIT) == true) {
         AggregateType* rec = toAggregateType(type);
-        FnSymbol*      fn  = rec->defaultTypeConstructor;
+        FnSymbol*      fn  = rec->typeConstructor;
         CallExpr*      res = new CallExpr(fn);
 
         for_formals(formal, fn) {
@@ -8481,7 +8490,7 @@ static void removeUnusedFunctions() {
               removeCopyFns(typeSym->type);
 
               if (AggregateType* at = toAggregateType(refType)) {
-                DefExpr* defPoint = at->defaultTypeConstructor->defPoint;
+                DefExpr* defPoint = at->typeConstructor->defPoint;
 
                 if (defPoint->inTree()) {
                   defPoint->remove();
@@ -8539,7 +8548,7 @@ static void removeUnusedTypes() {
         // If the default type constructor for this ref type is in the tree,
         // it can be removed.
         AggregateType* at2      = toAggregateType(type->type);
-        DefExpr*       defPoint = at2->defaultTypeConstructor->defPoint;
+        DefExpr*       defPoint = at2->typeConstructor->defPoint;
 
         if (defPoint->inTree()) {
           defPoint->remove();
@@ -8575,8 +8584,8 @@ static bool isUnusedClass(AggregateType* ct) {
     retval = false;
 
   // FALSE if the type constructor is used.
-  } else if (ct->defaultTypeConstructor                   != NULL &&
-             ct->defaultTypeConstructor->isResolved()     == true) {
+  } else if (ct->typeConstructor                          != NULL &&
+             ct->typeConstructor->isResolved()            == true) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was
@@ -8586,11 +8595,7 @@ static bool isUnusedClass(AggregateType* ct) {
     retval = false;
 
   } else {
-    forv_Vec(Type, child, ct->dispatchChildren) {
-      AggregateType* childClass = toAggregateType(child);
-
-      INT_ASSERT(childClass);
-
+    forv_Vec(AggregateType, childClass, ct->dispatchChildren) {
       if (isUnusedClass(childClass) == false) {
         retval = false;
         break;
@@ -9366,7 +9371,7 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // If it is generic then try to resolve the default type constructor
   if (retval == true) {
     if (AggregateType* at = toAggregateType(type)) {
-      if (FnSymbol* typeCons = at->defaultTypeConstructor) {
+      if (FnSymbol* typeCons = at->typeConstructor) {
         SET_LINENO(call);
 
         // Swap in a call to the default type constructor and try to resolve it
@@ -9390,7 +9395,7 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
   const char* label = "abstract";
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->defaultTypeConstructor != NULL) {
+    if (at->typeConstructor != NULL) {
       label = "not-fully-instantiated";
     }
   }

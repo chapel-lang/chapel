@@ -7,7 +7,6 @@ record Option {
     this.eltType = eltType;
     this.state   = true;
     this.value   = value;
-    super.init();
   }
 }
 

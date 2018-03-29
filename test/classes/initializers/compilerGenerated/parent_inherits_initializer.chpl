@@ -9,7 +9,6 @@ class Grandparent {
   // generated parent initializer.
   proc init() {
     a = 11;
-    super.init();
   }
 }
 

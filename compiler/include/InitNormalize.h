@@ -20,17 +20,9 @@
 #ifndef _INIT_NORMALIZE_H_
 #define _INIT_NORMALIZE_H_
 
-class AggregateType;
-class BlockStmt;
-class CallExpr;
-class CondStmt;
-class DefExpr;
-class Expr;
-class FnSymbol;
-class ForallStmt;
-class LoopStmt;
-class SymExpr;
-class UnresolvedSymExpr;
+// Need to include 'baseAst' in order to find comparators for std::set
+#include "baseAST.h"
+#include <set>
 
 class InitNormalize {
 public:
@@ -62,19 +54,21 @@ public:
   void            checkPhase(BlockStmt* block);
 
   void            completePhase1(CallExpr* insertBefore);
+  void            completePhase0(CallExpr* initStmt);
 
-  void            initializeFieldsAtTail(BlockStmt* block);
-  void            initializeFieldsBefore(Expr*      insertBefore);
+  void            initializeFieldsAtTail(BlockStmt*          block);
+  void            initializeFieldsThroughField(BlockStmt*    block,
+                                               DefExpr*      field);
+  void            initializeFieldsBefore(Expr*               insertBefore);
 
   bool            isFieldReinitialized(DefExpr* field)                   const;
+  bool            isFieldImplicitlyInitialized(DefExpr* field)           const;
   bool            inLoopBody()                                           const;
-  bool            inCondStmt()                                           const;
   bool            inParallelStmt()                                       const;
   bool            inCoforall()                                           const;
   bool            inForall()                                             const;
   bool            inOn()                                                 const;
   bool            inOnInLoopBody()                                       const;
-  bool            inOnInCondStmt()                                       const;
   bool            inOnInParallelStmt()                                   const;
   bool            inOnInCoforall()                                       const;
   bool            inOnInForall()                                         const;
@@ -87,16 +81,16 @@ public:
   Expr*           fieldInitFromInitStmt(DefExpr*  field,
                                         CallExpr* callExpr);
 
-  bool            fieldUsedBeforeInitialized(Expr*      expr)            const;
-
-  bool            fieldUsedBeforeInitialized(CallExpr* callExpr)         const;
-
   void            describe(int offset = 0)                               const;
+
+  void            processThisUses(Expr* expr);
+  void            processThisUses(CallExpr* call);
+
+  void            makeThisAsParent(CallExpr* initCall);
 
 private:
   enum BlockType {
     cBlockNormal,
-    cBlockCond,
     cBlockLoop,
     cBlockBegin,
     cBlockCobegin,
@@ -163,6 +157,9 @@ private:
   InitPhase       mPhase;
   BlockType       mBlockType;
   BlockType       mPrevBlockType;
+  VarSymbol*      mThisAsParent;
+
+  std::set<DefExpr*> mImplicitFields;
 };
 
 #endif
