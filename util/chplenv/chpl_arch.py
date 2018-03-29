@@ -14,6 +14,12 @@ from compiler_utils import CompVersion, compiler_is_prgenv, get_compiler_version
 from utils import memoize, run_command
 
 
+#
+# Intel architectures are accessed with the -march= flag.
+# ARM architectures are accessed with the -mcpu= flag, except that some
+# compilers can handle -march=native for ARM (and some cannot).
+# Therefore, our translations need to specify which flag is used.
+#
 class argument_map(object):
     # intel does not support amd archs... it may be worth testing setting the
     # equivalent intel arch, but I don't have any good way to do this as of now
