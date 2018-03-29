@@ -253,7 +253,16 @@ class feature_sets(object):
         ('bdver4',    bdver4),
     ]
 
-    combined = intel + amd
+    thunderx = ['fp', 'asimd', 'evtstrm', 'aes', 'pmull',
+                'sha1', 'sha2', 'crc32']
+    thunderx2 = thunderx + ['atomics']
+
+    arm = [
+        ('arm-thunderx',  thunderx),
+        ('arm-thunderx2', thunderx2),
+    ]
+
+    combined = intel + amd + arm
 
     @classmethod
     def subset(sets, a, b):
@@ -293,6 +302,8 @@ class feature_sets(object):
             options = sets.intel
         elif "authenticamd" == vendor.lower():
             options = sets.amd
+        elif "arm" == vendor.lower():
+            options = sets.arm
 
         found = ''
         for name, fset in options:
@@ -314,10 +325,17 @@ def get_cpuinfo(platform='linux'):
     elif os.path.isfile('/proc/cpuinfo'):
         with open('/proc/cpuinfo') as f:
             cpuinfo = f.readlines()
+        # Compensate for missing vendor in ARM /proc/cpuinfo
+        uname = platform.uname()
+        machine = uname[4]
+        if machine == 'aarch64':
+            vendor_string = "arm"
         for line in cpuinfo:
             if 'vendor_id' in line:
                 vendor_string = line.split(':')[1].strip()
             elif 'flags' in line:
+                feature_string = line.split(':')[1].strip()
+            elif line.startswith('Features'):
                 feature_string = line.split(':')[1].strip()
             if vendor_string and feature_string:
                 break
