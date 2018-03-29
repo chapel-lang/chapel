@@ -248,8 +248,10 @@ static void collectMethods(FnSymbol*               pfn,
           forv_Vec(CallExpr, call, *pfn->calledBy) {
             CallInfo info;
             if (info.isWellFormed(call)) {
-              cfn = expandIfVarArgs(cfn, info);
-              break;
+              SET_LINENO(cfn);
+              if (FnSymbol* expCfn = expandIfVarArgs(cfn, info)) {
+                cfn = expCfn;
+              }
             } else {
               INT_FATAL("expected CallExpr to be well formed at this point");
             }
