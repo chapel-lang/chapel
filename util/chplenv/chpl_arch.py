@@ -33,6 +33,8 @@ class argument_map(object):
         'haswell':       'arch=core-avx2',
         'broadwell':     'arch=core-avx2',
         'knc':           'arch=knc',
+        'mic-knl':       'arch=knl',
+        'x86-skylake':   'arch=skylake-avx512',
         'k8':            'none',
         'k8sse3':        'none',
         'barcelona':     'none',
@@ -54,6 +56,8 @@ class argument_map(object):
         'haswell':       'arch=core2',
         'broadwell':     'arch=core2',
         'knc':           'none',
+        'mic-knl':       'none',
+        'x86-skylake':   'none',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -75,6 +79,8 @@ class argument_map(object):
         'haswell':       'arch=core-avx2',
         'broadwell':     'arch=core-avx2',
         'knc':           'none',
+        'mic-knl':       'none',
+        'x86-skylake':   'none',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -96,6 +102,8 @@ class argument_map(object):
         'haswell':       'arch=core-avx2',
         'broadwell':     'arch=core-avx2',
         'knc':           'none',
+        'mic-knl':       'none',
+        'x86-skylake':   'none',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -117,6 +125,31 @@ class argument_map(object):
         'haswell':       'arch=haswell',
         'broadwell':     'arch=broadwell',
         'knc':           'none',
+        'mic-knl':       'none',
+        'x86-skylake':   'none',
+        'k8':            'arch=k8',
+        'k8sse3':        'arch=k8-sse3',
+        'barcelona':     'arch=barcelona',
+        'bdver1':        'arch=bdver1',
+        'bdver2':        'arch=bdver2',
+        'bdver3':        'arch=bdver3',
+        'bdver4':        'arch=bdver4',
+        'arm-thunderx':  'cpu=generic',
+        'arm-thunderx2': 'cpu=generic',
+    }
+
+    gcc5 = {
+        'native':        'arch=native',
+        'core2':         'arch=core2',
+        'nehalem':       'arch=nehalem',
+        'westmere':      'arch=westmere',
+        'sandybridge':   'arch=sandybridge',
+        'ivybridge':     'arch=ivybridge',
+        'haswell':       'arch=haswell',
+        'broadwell':     'arch=broadwell',
+        'knc':           'none',
+        'mic-knl':       'arch=knl',
+        'x86-skylake':   'none',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -138,6 +171,8 @@ class argument_map(object):
         'haswell':       'arch=haswell',
         'broadwell':     'arch=broadwell',
         'knc':           'none',
+        'mic-knl':       'arch=knl',
+        'x86-skylake':   'arch=skylake-avx512',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -159,6 +194,8 @@ class argument_map(object):
         'haswell':       'arch=haswell',
         'broadwell':     'arch=broadwell',
         'knc':           'none',
+        'mic-knl':       'arch=knl',
+        'x86-skylake':   'arch=skylake-avx512',
         'k8':            'arch=k8',
         'k8sse3':        'arch=k8-sse3',
         'barcelona':     'arch=barcelona',
@@ -197,6 +234,8 @@ class argument_map(object):
                 return cls.gcc7.get(arch, '')
             elif version >= CompVersion('6.0'):
                 return cls.gcc6.get(arch, '')
+            elif version >= CompVersion('5.0'):
+                return cls.gcc6.get(arch, '')
             elif version >= CompVersion('4.9'):
                 return cls.gcc49.get(arch, '')
             elif version >= CompVersion('4.8'):
@@ -222,13 +261,17 @@ class argument_map(object):
 
 
 class feature_sets(object):
-    core2 = ['mmx', 'sse', 'sse2', 'sse3', 'ssse3']
+    core2 = ['mmx', 'sse', 'sse2', 'ssse3']
     nehalem = core2 + ['sse41', 'sse42', 'popcnt']
     westmere = nehalem + ['aes', 'pclmulqdq']
     sandybridge = westmere + ['avx']
     ivybridge = sandybridge + ['rdrand', 'f16c']
-    haswell = ivybridge + ['movbe', 'avx2', 'fma', 'bmi', 'bmi2']
+    haswell = ivybridge + ['movbe', 'avx2', 'fma', 'bmi1', 'bmi2']
     broadwell = haswell + ['rdseed', 'adx']
+    knl = broadwell + ['avx512f', 'avx512cd',
+                       'avx512er', 'avx512pf']
+    skylake = broadwell + ['avx512f', 'avx512cd',
+                           'avx512bw', 'avx512dq', 'avx512vl']
 
     intel = [
         ('core2',       core2),
@@ -238,6 +281,8 @@ class feature_sets(object):
         ('ivybridge',   ivybridge),
         ('haswell',     haswell),
         ('broadwell',   broadwell),
+        ('mic-knl',     knl),
+        ('x86-skylake', skylake),
     ]
 
     k8 = ['mmx', 'sse', 'sse2']
@@ -328,6 +373,7 @@ def get_cpuinfo(platform_val='linux'):
         feature_string = run_command(['sysctl', '-n', 'machdep.cpu.features'])
         # osx reports AVX1.0 while linux reports it as AVX
         feature_string = feature_string.replace("AVX1.0", "AVX")
+        feature_string = feature_string.replace("SSE4.", "SSE4")
     elif os.path.isfile('/proc/cpuinfo'):
         with open('/proc/cpuinfo') as f:
             cpuinfo = f.readlines()
@@ -344,6 +390,7 @@ def get_cpuinfo(platform_val='linux'):
             elif line.startswith('Features'):
                 feature_string = line.split(':')[1].strip()
             if vendor_string and feature_string:
+                feature_string = feature_string.replace("sse4_", "sse4")
                 break
     else:
         raise ValueError("Unknown platform, could not find CPU information")
