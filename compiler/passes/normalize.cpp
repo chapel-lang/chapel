@@ -918,7 +918,8 @@ static void processManagedNew(CallExpr* newCall) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
         if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
-          if (!isUnresolvedSymExpr(callClass->baseExpr)) {
+          if (!callClass->isPrimitive() &&
+              !isUnresolvedSymExpr(callClass->baseExpr)) {
             bool israw = callManager->isNamed("_to_raw");
             bool isowned = callManager->isNamed("_owned");
             bool isshared = callManager->isNamed("_shared");
@@ -934,11 +935,7 @@ static void processManagedNew(CallExpr* newCall) {
 
               // Now wrap the raw pointer in an _owned / _shared
               if (isowned || isshared) {
-                const char* manager = NULL;
-                if (isowned) manager = "_owned";
-                if (isshared) manager = "_shared";
-
-                newbody = new CallExpr(PRIM_NEW, new CallExpr(manager, toraw));
+                INT_FATAL("not implemented yet");
               }
 
               newCall->replace(newbody);

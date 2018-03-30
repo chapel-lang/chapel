@@ -5889,7 +5889,7 @@ static bool isManagedPointerInit(SymExpr* typeExpr) {
     return true;
 
   if (AggregateType* at = toAggregateType(singleArgumentType))
-    if (at->isRawClass())
+    if (isClass(at))
       return true;
 
   return false;
