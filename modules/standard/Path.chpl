@@ -498,7 +498,7 @@ proc file.realPath(): string throws {
                     var value:string;
                     var value_c:c_string;
                     var h:int = sys_getenv(env_var.c_str(), value_c);
-                    if(h != 0){
+                    if(h != 1){
                         value = "${" + env_var + "}";
                     }
                     else{
@@ -517,7 +517,7 @@ proc file.realPath(): string throws {
                 var value:string;
                 var value_c:c_string;
                 var h:int = sys_getenv(env_var.c_str(), value_c);
-                if(h != 0){
+                if(h != 1){
                     value = "$" + env_var;
                 }
                 else{
