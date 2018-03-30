@@ -69,17 +69,33 @@ static const char* intDirName        = NULL;
 
 static const int   MAX_CHARS_PER_PID = 32;
 
-void addLibInfo(const char* libName) {
+//
+// Convert a libString of the form "-Lfoo:bar:baz" to entries in libFlag[]
+//
+void addLibInfo(const char* libString) {
   static int libSpace = 0;
+  const char* flag = "";    // do we need a '-L' flag?  (initially, no)
+  char* colon;              // used to refer to ':'s in libString
+  do {
+    colon = strchr(libString, ':'); // are there colon separators?
+    if (colon != NULL) {
+      *colon = '\0';                      // if so, cut the string there
+      colon++;                            // and advance to the next
+    }
 
-  numLibFlags++;
+    numLibFlags++;                        // we have a new '-L' flag
+    
+    if (numLibFlags > libSpace) {         // make space for it if necessary
+      libSpace = 2*numLibFlags;
+      libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
+    }
 
-  if (numLibFlags > libSpace) {
-    libSpace = 2*numLibFlags;
-    libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
-  }
+    // copy it, adding a '-L' if it wasn't the first (which carries a -
+    libFlag[numLibFlags-1] = astr(flag, libString);
 
-  libFlag[numLibFlags-1] = astr(libName);
+    libString = colon;                     // advance libString
+    flag = "-L";                           // add '-L' to any subsequent paths
+  } while (colon != NULL);
 }
 
 void addIncInfo(const char* incDir) {
