@@ -6220,7 +6220,9 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
   if (at->isRawClass()) {
     at = at->getCanonicalClass();
   } else if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-    at = toAggregateType(at->getField("t")->type);
+    Type* subtype = at->getField("t")->type;
+    if (isAggregateType(subtype)) // in particular, not dtUnknown
+      at = toAggregateType(subtype);
   }
   INT_ASSERT(at);
 
