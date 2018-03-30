@@ -91,7 +91,7 @@ module SharedObject {
 
    */
   pragma "managed pointer"
-  record Shared {
+  record _shared {
     pragma "no doc"
     type t;              // contained type (class type)
 
@@ -109,7 +109,7 @@ module SharedObject {
        Default-initialize a :record:`Shared`.
      */
     proc init(type t) {
-      this.t = t;
+      this.t = _to_borrowed(t);
       this.p = nil;
       this.pn = nil;
     }
@@ -123,7 +123,7 @@ module SharedObject {
        :arg p: the class instance to manage. Must be of class type.
      */
     proc init(p) {
-      this.t = p.type;
+      this.t = _to_borrowed(p.type);
 
       // Boost version default-initializes px and pn
       // and then swaps in different values.
@@ -152,7 +152,7 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init(src:Shared(?)) {
+    proc init(src:_shared(?)) {
       this.t = src.t;
       this.p = src.p;
       this.pn = src.pn;
@@ -228,7 +228,7 @@ module SharedObject {
      no other :record:`Shared` referring to it. On return,
      `lhs` will refer to the same object as `rhs`.
    */
-  proc =(ref lhs:Shared, rhs: Shared) {
+  proc =(ref lhs:_shared, rhs: _shared) {
     // retain-release
     if rhs.pn != nil then
       rhs.pn.retain();
@@ -239,13 +239,13 @@ module SharedObject {
 
   // This is a workaround
   pragma "no doc"
-  proc chpl__autoDestroy(x: Shared) {
+  proc chpl__autoDestroy(x: _shared) {
     __primitive("call destructor", x);
   }
 
   // Don't print out 'p' when printing an Shared, just print class pointer
   pragma "no doc"
-  proc Shared.readWriteThis(f) {
+  proc _shared.readWriteThis(f) {
     f <~> this.p;
   }
 
@@ -257,7 +257,7 @@ module SharedObject {
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t, x) where t:Shared && x:Shared && x.t:t.t {
+  inline proc _cast(type t, x) where t:_shared && x:_shared && x.t:t.t {
     var ret:t; // default-init the Shared type to return
     ret.p = x.p:t.t; // cast the class type
     ret.pn = x.pn;
@@ -265,4 +265,6 @@ module SharedObject {
       ret.pn.retain();
     return ret;
   }
+
+  type Shared = _shared;
 }

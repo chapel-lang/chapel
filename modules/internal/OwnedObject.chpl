@@ -101,7 +101,7 @@ module OwnedObject {
   pragma "no copy"
   pragma "copy mutates"
   pragma "managed pointer"
-  record Owned {
+  record _owned {
     pragma "no doc"
     type t;                // contained type (class type)
 
@@ -114,7 +114,7 @@ module OwnedObject {
     /*
        Default-initialize a :record:`Owned`.
      */
-    proc Owned(type t) {
+    proc _owned(type a, type t=_to_borrowed(a)) {
       this.p = nil;
     }
 
@@ -128,7 +128,7 @@ module OwnedObject {
 
        :arg p: the class instance to manage. Must be of class type.
      */
-    proc Owned(p, type t=p.type) {
+    proc _owned(p, type t=_to_borrowed(p.type)) {
       if !isClass(p) then
         compilerError("Owned only works with classes");
 
@@ -140,7 +140,7 @@ module OwnedObject {
        that takes over ownership from `src`. `src` will
        refer to `nil` after this call.
      */
-    proc Owned(ref src:Owned, type t=src.t) {
+    proc _owned(ref src:_owned, type t=src.t) {
       this.p = src.release();
     }
 
@@ -201,17 +201,22 @@ module OwnedObject {
   }
 
   pragma "no doc"
-  proc =(ref lhs:Owned, ref rhs: Owned) {
+  proc =(ref lhs:_owned, ref rhs: _owned) {
     lhs.retain(rhs.release());
   }
+  pragma "no doc"
+  proc =(ref lhs:_owned, rhs:_nilType) {
+    lhs.clear();
+  }
+
 
   // initCopy is defined explicitly as a workaround
   // for problems with generic initializers
   pragma "init copy fn"
   pragma "no doc"
   pragma "unsafe"
-  proc chpl__initCopy(ref src: Owned) {
-    var ret = new Owned(src);
+  proc chpl__initCopy(ref src: _owned) {
+    var ret = new _owned(src);
     return ret;
   }
 
@@ -224,35 +229,37 @@ module OwnedObject {
   pragma "auto copy fn"
   pragma "erroneous autocopy"
   pragma "unsafe"
-  proc chpl__autoCopy(ref src: Owned) {
-    var ret = new Owned(src);
+  proc chpl__autoCopy(ref src: _owned) {
+    var ret = new _owned(src);
     return ret;
   }
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
-  proc chpl__autoDestroy(x: Owned) {
+  proc chpl__autoDestroy(x: _owned) {
     __primitive("call destructor", x);
   }
 
-  // Don't print out 'p' when printing an Owned, just print class pointer
+  // Don't print out 'p' when printing an _owned, just print class pointer
   pragma "no doc"
-  proc Owned.readWriteThis(f) {
+  proc _owned.readWriteThis(f) {
     f <~> this.p;
   }
 
-  // Note, coercion from Owned -> Owned.t is directly
+  // Note, coercion from _owned -> _owned.t is directly
   // supported in the compiler via a call to borrow().
 
-  // This cast supports coercion from Owned(SubClass) to Owned(ParentClass)
+  // This cast supports coercion from _owned(SubClass) to _owned(ParentClass)
   // (i.e. when class SubClass : ParentClass ).
   // It only works in a value context (i.e. when the result of the
   // coercion is a value, not a reference).
   pragma "no doc"
-  inline proc _cast(type t, in x) where t:Owned && x:Owned && x.t:t.t {
+  inline proc _cast(type t, in x) where t:_owned && x:_owned && x.t:t.t {
     // the :t.t cast in the next line is what actually changes the
-    // returned value to have type t; otherwise it'd have type Owned(x.type).
-    var ret = new Owned(x.release():t.t);
+    // returned value to have type t; otherwise it'd have type _owned(x.type).
+    var ret = new _owned(x.release():t.t);
     return ret;
   }
+
+  type Owned = _owned;
 }

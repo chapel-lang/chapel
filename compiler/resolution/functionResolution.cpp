@@ -6008,9 +6008,8 @@ static bool isManagedPointerInit(SymExpr* typeExpr) {
   if (isManagedPtrType(singleArgumentType))
     return true;
 
-  if (AggregateType* at = toAggregateType(singleArgumentType))
-    if (isClass(at))
-      return true;
+  if (isUnmanagedClassType(singleArgumentType))
+    return true;
 
   return false;
 }
