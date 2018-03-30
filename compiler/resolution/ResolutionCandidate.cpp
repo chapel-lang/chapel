@@ -435,12 +435,25 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return st;
   }
 
+  if (AggregateType* actualAt = toAggregateType(actualType)) {
+    AggregateType* canonicalAt = actualAt->getCanonicalClass();
+    if (canonicalAt != actualAt)
+      if (canInstantiate(canonicalAt, formalType))
+        return canonicalAt;
+  }
+
   if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType))
+    if (canInstantiate(vt, formalType)) {
       return vt;
-    else if (Type* st = vt->scalarPromotionType)
+    } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
+    } else if (AggregateType* actualAt = toAggregateType(actualType)) {
+      AggregateType* canonicalAt = actualAt->getCanonicalClass();
+      if (canonicalAt != actualAt)
+        if (canInstantiate(canonicalAt, formalType))
+          return canonicalAt;
+    }
   }
 
   return NULL;
@@ -633,12 +646,16 @@ bool ResolutionCandidate::checkGenericFormals() {
           Type* vt  = actual->getValType();
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          Type* cct = NULL;
+          if (AggregateType* atv = toAggregateType(vt))
+            cct = atv->getCanonicalClass();
 
           if (canInstantiate(actual->type, formal->type) == false &&
 
               (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
               (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
-              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
+              (svt == NULL || canInstantiate(svt, formal->type) == false) &&
+              (cct == NULL || canInstantiate(cct, formal->type) == false)) {
 
             return false;
           }

@@ -1891,12 +1891,12 @@ module ChapelBase {
 
   // type constructor for raw pointers
   proc _to_raw(type t) type {
-    type rt = __primitive("get raw type", t).type;
+    type rt = __primitive("to raw class", t).type;
     return rt;
   }
   // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
-    type rt = __primitive("get borrowed type", t).type;
+    type rt = __primitive("to borrowed class", t).type;
     return rt;
   }
   // cast from nil to raw

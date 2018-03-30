@@ -1358,6 +1358,50 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
   downEndCount->insertBefore(autoDestroyCall);
 }
 
+static void convertRawPointerTypes() {
+  // Anything that has raw pointer type should be using the canonical type
+  // instead.
+
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (AggregateType* at = toAggregateType(var->type)) {
+      if (isClass(at)) {
+        at = at->getCanonicalClass();
+        var->type = at;
+      }
+    }
+  }
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    if (AggregateType* at = toAggregateType(arg->type)) {
+      if (isClass(at)) {
+        at = at->getCanonicalClass();
+        arg->type = at;
+      }
+    }
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      if (isClass(at)) {
+        TypeSymbol* useTS = at->getCanonicalClass()->symbol;
+        if (useTS != ts) {
+          for_SymbolSymExprs(se, ts) {
+            se->setSymbol(useTS);
+          }
+        }
+      }
+    }
+  }
+
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (AggregateType* at = toAggregateType(fn->retType)) {
+      if (isClass(at)) {
+        fn->retType = at->getCanonicalClass();
+      }
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -1387,4 +1431,5 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
+  convertRawPointerTypes();
 }

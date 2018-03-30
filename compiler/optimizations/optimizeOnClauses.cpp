@@ -321,8 +321,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TRY_EXPR:
   case PRIM_TRYBANG_EXPR:
   case PRIM_CHECK_ERROR:
-  case PRIM_GET_RAW_TYPE:
-  case PRIM_GET_BORROWED_TYPE:
+  case PRIM_TO_RAW_CLASS:
+  case PRIM_TO_BORROWED_CLASS:
     INT_FATAL("This primitive should have been removed from the tree by now.");
     break;
 

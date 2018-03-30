@@ -802,8 +802,8 @@ initPrimitive() {
 
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
 
-  prim_def(PRIM_GET_RAW_TYPE, "get raw type", returnInfoToRaw, false, false);
-  prim_def(PRIM_GET_BORROWED_TYPE, "get borrowed type", returnInfoToBorrowed, false, false);
+  prim_def(PRIM_TO_RAW_CLASS, "to raw class", returnInfoToRaw, false, false);
+  prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

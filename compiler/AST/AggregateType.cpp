@@ -2544,44 +2544,46 @@ bool AggregateType::isBorrowedClass() const {
 }
 
 bool AggregateType::isCanonicalClass() const {
-  return (this->defaultClass == NULL ||
-         this->defaultClass == this);
+  return (this->defaultClass == NULL || this->defaultClass == this);
 }
 
 
 AggregateType* AggregateType::getRawClass() {
-  if (isRawClass())
-    return this;
+  if (aggregateTag == AGGREGATE_CLASS) {
+    if (isRawClass())
+      return this;
 
-  generateRawBorrowClassTypes();
+    generateRawBorrowClassTypes();
 
-  for (AggregateType* t = this->defaultClass;
-       t != NULL;
-       t = t->nextAssociatedClass) {
-    if (t->isRawClass())
-      return t;
+    for (AggregateType* t = this->defaultClass;
+         t != NULL;
+         t = t->nextAssociatedClass) {
+      if (t->isRawClass())
+        return t;
+    }
   }
   return NULL;
 }
 AggregateType* AggregateType::getBorrowedClass() {
-  if (isBorrowedClass())
-    return this;
+  if (aggregateTag == AGGREGATE_CLASS) {
+    if (isBorrowedClass())
+      return this;
 
-  generateRawBorrowClassTypes();
+    generateRawBorrowClassTypes();
 
-  for (AggregateType* t = this->defaultClass;
-       t != NULL;
-       t = t->nextAssociatedClass) {
-    if (t->isBorrowedClass())
-      return t;
+    for (AggregateType* t = this->defaultClass;
+         t != NULL;
+         t = t->nextAssociatedClass) {
+      if (t->isBorrowedClass())
+        return t;
+    }
   }
   return NULL;
 }
 
 AggregateType* AggregateType::getCanonicalClass() {
-  generateRawBorrowClassTypes();
-
   if (aggregateTag == AGGREGATE_CLASS) {
+    generateRawBorrowClassTypes();
     INT_ASSERT(this->defaultClass);
     return this->defaultClass;
   }
@@ -2606,7 +2608,10 @@ void AggregateType::generateRawBorrowClassTypes() {
 
 
     TypeSymbol* tsRaw = new TypeSymbol(astr("raw ", at->symbol->name), raw);
+    // The raw type isn't really an object, shouldn't have its own fields
     tsRaw->addFlag(FLAG_NO_OBJECT);
+    // The generated code should just use the canonical class name
+    tsRaw->cname = at->symbol->cname;
 
     DefExpr* defRaw = new DefExpr(tsRaw);
 

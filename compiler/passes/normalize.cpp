@@ -69,6 +69,7 @@ static void        find_printModuleInit_stuff();
 
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
+static void        processManagedNew(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 
@@ -486,6 +487,7 @@ static void normalizeBase(BaseAST* base) {
 
   for_vector(CallExpr, call, calls1) {
     processSyntacticDistributions(call);
+    processManagedNew(call);
   }
 
 
@@ -887,6 +889,67 @@ static void processSyntacticDistributions(CallExpr* call) {
   }
 }
 
+/* Find patterns like
+     (new (call manager (call ClassType init-args)))
+     ... where manager might be _owned _to_raw _shared
+
+   and replace them with
+     (PRIM_TO_RAW_CLASS (new (call ClassType init-args)))
+     ... for _to_raw
+     (new (call Unresolved(manager) (PRIM_TO_RAW_CLASS (new (call ClassType init-args)))))
+     ... for _owned or _shared
+   or
+
+   i.e. transform
+     new raw MyClass(1)
+   into
+     PRIM_TO_RAW_CLASS (new MyClass(1))
+   and
+     new owned MyClass(1)
+   into
+     new _owned(PRIM_TO_RAW_CLASS(new MyClass(1)))
+
+   This happens before call-tmps are added because they
+   would obscure the situation.
+ */
+static void processManagedNew(CallExpr* newCall) {
+  SET_LINENO(newCall);
+  if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
+    if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
+      if (callManager->numActuals() == 1) {
+        if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
+          if (!isUnresolvedSymExpr(callClass->baseExpr)) {
+            bool israw = callManager->isNamed("_to_raw");
+            bool isowned = callManager->isNamed("_owned");
+            bool isshared = callManager->isNamed("_shared");
+
+            if (israw || isowned || isshared) {
+              callClass->remove();
+              callManager->remove();
+
+              Expr* toraw = new CallExpr(PRIM_TO_RAW_CLASS,
+                  new CallExpr(PRIM_NEW, callClass));
+
+              Expr* newbody = toraw;
+
+              // Now wrap the raw pointer in an _owned / _shared
+              if (isowned || isshared) {
+                const char* manager = NULL;
+                if (isowned) manager = "_owned";
+                if (isshared) manager = "_shared";
+
+                newbody = new CallExpr(PRIM_NEW, new CallExpr(manager, toraw));
+              }
+
+              newCall->replace(newbody);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Following normalization, each function contains only one return statement   *
@@ -1146,11 +1209,12 @@ static void fixPrimNew(CallExpr* primNewToFix) {
     }
   }
 
+  Expr* baseExpr = callInNew->baseExpr->remove();
   callInNew->remove();
 
   primNewToFix->replace(newNew);
 
-  newNew->insertAtHead(callInNew->baseExpr);
+  newNew->insertAtHead(baseExpr);
 
   // Move the actuals from the call to the new PRIM_NEW
   for_actuals(actual, callInNew) {

@@ -485,6 +485,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_TO_RAW_CLASS) ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    AggregateType* totype = toAggregateType(call->typeInfo());
+
+    if (isTypeExpr(call->get(1))) {
+      retval = new SymExpr(totype->symbol);
+    } else {
+      retval = new CallExpr(PRIM_CAST, totype->symbol, call->get(1)->copy());
+    }
+
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_IS_EXTERN_CLASS_TYPE)) {
     AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
 

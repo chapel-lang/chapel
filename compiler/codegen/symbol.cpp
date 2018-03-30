@@ -1213,7 +1213,13 @@ void TypeSymbol::codegenAggMetadata() {
 GenRet TypeSymbol::codegen() {
   GenInfo *info = gGenInfo;
   GenRet ret;
-  ret.chplType = typeInfo();
+  ret.chplType = type;
+
+  // Should not be code generating raw pointers
+  if (AggregateType* at = toAggregateType(type))
+    if (isClass(at))
+      INT_ASSERT(at->isCanonicalClass());
+
   if( info->cfile ) {
     ret.c = cname;
   } else {

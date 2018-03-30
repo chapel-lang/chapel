@@ -600,11 +600,14 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
     }
 
     if (retval == NULL) {
-      // Handle e.g. Owned(GenericClass) passed to a formal of type GenericClass
-      if (isManagedPtrType(at) && isClass(formalType)) {
-        Type* classType = actualType->getField("t")->type;
-        if (canInstantiate(classType, formalType)) {
-          retval = classType;
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        // TODO: Why is this here and not in getBasicInstantiationType?
+        if (isManagedPtrType(at)) {
+          Type* classType = actualType->getField("t")->type;
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
         }
       }
     }
@@ -5810,7 +5813,7 @@ static void resolveNew(CallExpr* newExpr) {
       USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
     }
   }
-   resolveNewCasts(newExpr, castToType, castFromType);
+  resolveNewCasts(newExpr, castToType, castFromType);
 }
 
 static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, AggregateType* castFromType) {
@@ -5823,10 +5826,10 @@ static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, Aggreg
 
         SymExpr* dstSe = toSymExpr(moveStmt->get(1));
 
-        // Un-set the type for the LHS
-        // This is set during normalization in many cases.
-        // It would be better not to set it during normalization in any case.
-        dstSe->symbol()->type = dtUnknown;
+	// Un-set the type for the LHS
+	// This is set during normalization in many cases.
+	// It would be better not to set it during normalization in any case.
+	dstSe->symbol()->type = dtUnknown;
 
         AggregateType* rawT = castFromType->getRawClass();
         INT_ASSERT(rawT);

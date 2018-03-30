@@ -1511,11 +1511,11 @@ type_level_expr:
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
 | TOWNED expr
-    { $$ = buildManagedPointerType( "_owned", $2); }
+    { $$ = new CallExpr( "_owned", $2); }
 | TRAW expr
-    { $$ = buildManagedPointerType( "_to_raw", $2); }
+    { $$ = new CallExpr( "_to_raw", $2); }
 | TSHARED expr
-    { $$ = buildManagedPointerType( "_shared", $2); }
+    { $$ = new CallExpr( "_shared", $2); }
 ;
 
 for_expr:
