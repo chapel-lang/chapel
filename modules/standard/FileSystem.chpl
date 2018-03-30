@@ -361,17 +361,14 @@ proc copyFile(src: string, dest: string) throws {
       // an error.  The same is true if the destination is a directory.
       ioerror(EISDIR:syserr, "in copyFile(" + src + ", " + dest + ")");
     }
+
+    if (sameFile(src, dest)) {
+      // Check if the files are the same, error if yes
+      try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
+    }
   } catch e: FileNotFoundError {
     // We don't care if dest did not exist before, we'll create or overwrite
     // it anyways.  We already know src exists.
-  }
-
-  if (try sameFile(src, dest)) {
-    // Check if the files are the same, error if yes
-    try ioerror(EINVAL:syserr, "in copyFile(" + src + ", " + dest + ")");
-
-    // Don't need to check if they're the same file when we know dest didn't
-    // exist. The second argument is invalid if the two arguments are the same.
   }
 
   // Open src for reading, open dest for writing

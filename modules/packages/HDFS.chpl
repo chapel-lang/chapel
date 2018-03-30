@@ -324,8 +324,10 @@ proc hdfsChapelFileSystem_local.hdfs_chapel_open(
   var ret: file;
   try {
     ret = open(path, mode, hints, style, this._internal_);
+  } catch e: SystemError {
+    try ioerror(e.err, "in foreign open", path);
   } catch {
-    try ioerror(err, "in foreign open", path);
+    try ioerror(EINVAL:syserr, "in foreign open", path);
   }
   return ret;
 }

@@ -3671,14 +3671,9 @@ proc channel.read(ref args ...?k,
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
                       amount = arg.domain.high - start + 1) : bool throws
                       where arg.rank == 1 && isRectangularArr(arg) {
-  if arg.size == 0 then
-    throw new IllegalArgumentError("arg[]", "contains no elements");
-  if !arg.domain.member(start) then
-    throw new IllegalArgumentError("arg[]", "domain is empty");
-  if amount <= 0 then
-    throw new IllegalArgumentError("amount", "not greater than zero");
-  if (start + amount - 1 > arg.domain.high)then
-    throw new IllegalArgumentError("start, amount, arg[]", "start+amount go out of arg.domain bounds");
+
+  if arg.size == 0 || !arg.domain.member(start) ||
+     amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;
 
   var err:syserr = ENOERR;
   var got_copy: int;
@@ -4251,23 +4246,26 @@ proc channel.flush(out error:syserr) {
   }
 }
 
-/* Assert that a channel has reached end-of-file.
-   Throws an error if the receiving channel is not currently
-   at EOF.
+/* Returns true if a channel has reached end-of-file, false if not.
+   Throws an error if this is a writing channel, or if there was
+   an error doing the read.
  */
-proc channel.assertEOF() throws {
+proc channel.atEOF(): bool throws {
   if writing {
     try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
   } else {
     var tmp:uint(8);
-    var notEOF = try this.read(tmp);
-    if notEOF then try this._ch_ioerror("assert failed", "- Not at EOF");
+    return !(try this.read(tmp));
   }
 }
 
-proc channel.assertEOF(error: string) throws {
-  compilerWarning("'assertEOF(error: string)' has been deprecated, use 'assertEOF()' instead");
-  try this.assertEOF();
+/* Assert that a channel has reached end-of-file and that there was no error
+   doing the read.
+ */
+proc channel.assertEOF(errStr: string = "- Not at EOF") {
+  var isEOF = try! this.atEOF();
+  if !isEOF then
+    try! this._ch_ioerror("assert failed", errStr);
 }
 
 /*
@@ -6816,12 +6814,11 @@ proc channel.readf(fmtStr:string) throws {
 
   if !err {
     return true;
-  } else if e == EEOF {
-    return false;
-  } else if e == EFORMAT {
+  } else if err == EEOF || err == EFORMAT {
     return false;
   } else {
     try this._ch_ioerror(err, "in channel.readf(fmt:string)");
+    return false;
   }
 }
 
@@ -7205,6 +7202,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
                                      /* keep_whole_pattern */ true,
                                      matches, nm);
     }
+    if err == EFORMAT || err == EEOF then err = ENOERR;
     if !err {
       m = _to_reMatch(matches[0]);
       if m.matched {
@@ -7225,8 +7223,7 @@ proc channel.search(re:regexp, ref captures ...?k): reMatch throws
     this.unlock();
   }
 
-  if err && err != EFORMAT && err != EEOF then
-    try this._ch_ioerror(err, "in channel.search");
+  if err then try this._ch_ioerror(err, "in channel.search");
   return m;
 }
 
