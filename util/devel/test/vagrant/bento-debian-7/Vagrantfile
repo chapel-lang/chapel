@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/debian-9.1"
+  config.vm.box = "bento/debian-7"
 
   config.vm.provision "shell",
     path: "../provision-scripts/apt-get-deps.sh"
