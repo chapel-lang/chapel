@@ -144,8 +144,8 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      if (expr == pfs->iterRecSetup()) {
-        print_on_its_own_line(indent, "iterRecSetup\n");
+      if (expr == pfs->fRecIterIRdef) {
+        printf("fRecIterIRdef");
       } else if (expr == pfs->loopBody()) {
         if (pfs->numShadowVars() == 0)
           print_on_its_own_line(indent, "with() do\n");

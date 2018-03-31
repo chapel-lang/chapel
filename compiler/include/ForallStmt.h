@@ -34,7 +34,6 @@ public:
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   AList&     iteratedExpressions();  // SymExprs, one per iterated expr
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
-  BlockStmt* iterRecSetup()   const; // code to create the iter record
   BlockStmt* loopBody()       const; // the body of the forall loop
   LabelSymbol* continueLabel();      // create it if not already
 
@@ -75,7 +74,6 @@ private:
   AList          fIterVars;
   AList          fIterExprs;
   AList          fShadowVars;  // may be empty
-  BlockStmt*     fIterRecSetup;// always present - for recursive iterators
   BlockStmt*     fLoopBody;    // always present
   bool           fFromForLoop; // see comment below
 
@@ -85,6 +83,12 @@ public:
   LabelSymbol*   fContinueLabel;     // update_symbols() needs the labels
   LabelSymbol*   fErrorHandlerLabel;
   bool           fFromResolvedForLoop;
+
+  // for recursive iterators during lowerIterators
+  DefExpr*       fRecIterIRdef;
+  DefExpr*       fRecIterICdef;
+  CallExpr*      fRecIterGetIterator;
+  CallExpr*      fRecIterFreeIterator;
 };
 
 /* fFromForLoop and its accessors
@@ -101,18 +105,20 @@ to replace fFromForLoop with a HashSet. If so, we need to ensure that the
 set membership is propagated through cloning, if applicable.
 */
 
-// accessor implementations
+/// accessor implementations ///
+
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
 inline AList& ForallStmt::iteratedExpressions()    { return fIterExprs;  }
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
-inline BlockStmt* ForallStmt::iterRecSetup() const { return fIterRecSetup; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
+
 inline bool ForallStmt::iterCallAlreadyTagged() const { return  fFromForLoop; }
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }
 
-// conveniences
+/// conveniences ///
+
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
 inline int   ForallStmt::numIteratedExprs()  const { return fIterExprs.length;}
 inline int   ForallStmt::numShadowVars()     const { return fShadowVars.length;}
@@ -127,10 +133,14 @@ inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
     if (DefExpr* SVD = toDefExpr(TEMP))                \
       if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
 
-// helpers
+/// helpers ///
+
 bool        isForallIterExpr(Expr* expr);
+bool        isForallRecIterHelper(Expr* expr);
 bool        isForallLoopBody(Expr* expr);
 ForallStmt* enclosingForallStmt(Expr* expr);
 VarSymbol*  parIdxVar(ForallStmt* fs);
+
+/// done ///
 
 #endif

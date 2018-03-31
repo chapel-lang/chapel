@@ -1314,8 +1314,8 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
       }
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
-      // Nothing to normalize in iterRecSetup().
-      INT_ASSERT(forall->iterRecSetup()->body.empty());
+      // Nothing to normalize in fRecIter*
+      INT_ASSERT(forall->fRecIterIRdef == NULL);
 
       InitPhase phase = startPhase(forall->loopBody());
 

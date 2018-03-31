@@ -34,16 +34,20 @@
 ForallStmt::ForallStmt(bool zippered, BlockStmt* body):
   Stmt(E_ForallStmt),
   fZippered(zippered),
-  fIterRecSetup(new BlockStmt()),
   fLoopBody(body),
   fFromForLoop(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
-  fFromResolvedForLoop(false)
+  fFromResolvedForLoop(false),
+  fRecIterIRdef(NULL),
+  fRecIterICdef(NULL),
+  fRecIterGetIterator(NULL),
+  fRecIterFreeIterator(NULL)
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
   fShadowVars.parent = this;
+
   gForallStmts.add(this);
 }
 
@@ -56,8 +60,15 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fIterExprs.insertAtTail(COPY_INT(expr));
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
-  for_alist(expr, fIterRecSetup->body)
-    _this->fIterRecSetup->insertAtTail(COPY_INT(expr));
+
+  _this->fFromForLoop = fFromForLoop;
+  _this->fFromResolvedForLoop = fFromResolvedForLoop;
+  // todo: fContinueLabel, fErrorHandlerLabel
+
+  _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
+  _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
+  _this->fRecIterGetIterator  = COPY_INT(fRecIterGetIterator);
+  _this->fRecIterFreeIterator = COPY_INT(fRecIterFreeIterator);
 
   return _this;
 }
@@ -65,8 +76,16 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
 void ForallStmt::replaceChild(Expr* oldAst, Expr* newAst) {
   if (oldAst == fLoopBody)
     fLoopBody = toBlockStmt(newAst);
-  else if (oldAst == fIterRecSetup)
-    fIterRecSetup = toBlockStmt(newAst);
+
+  else if (oldAst == fRecIterIRdef)
+    fRecIterIRdef = toDefExpr(newAst);
+  else if (oldAst == fRecIterICdef)
+    fRecIterICdef = toDefExpr(newAst);
+  else if (oldAst == fRecIterGetIterator)
+    fRecIterGetIterator = toCallExpr(newAst);
+  else if (oldAst == fRecIterFreeIterator)
+    fRecIterFreeIterator = toCallExpr(newAst);
+
   else
     INT_ASSERT(false);
 }
@@ -100,9 +119,20 @@ void ForallStmt::verify() {
     INT_ASSERT(isShadowVarSymbol(svDef->sym));
   }
 
-  INT_ASSERT(fIterRecSetup);
-  verifyParent(fIterRecSetup);
-  verifyNotOnList(fIterRecSetup);
+  // Either all four are present or none.
+  if (fRecIterIRdef != NULL) {
+    INT_ASSERT(fRecIterICdef        != NULL);
+    INT_ASSERT(fRecIterGetIterator  != NULL);
+    INT_ASSERT(fRecIterFreeIterator != NULL);
+    verifyParent(fRecIterIRdef);        verifyNotOnList(fRecIterIRdef);
+    verifyParent(fRecIterICdef);        verifyNotOnList(fRecIterICdef);
+    verifyParent(fRecIterGetIterator);  verifyNotOnList(fRecIterGetIterator);
+    verifyParent(fRecIterFreeIterator); verifyNotOnList(fRecIterFreeIterator);
+  } else {
+    INT_ASSERT(fRecIterICdef        == NULL);
+    INT_ASSERT(fRecIterGetIterator  == NULL);
+    INT_ASSERT(fRecIterFreeIterator == NULL);
+  }
 
   INT_ASSERT(fLoopBody);
   verifyParent(fLoopBody);
@@ -121,15 +151,19 @@ void ForallStmt::verify() {
 }
 
 void ForallStmt::accept(AstVisitor* visitor) {
-  if (visitor->enterForallStmt(this)) {
-    for_alist(expr, inductionVariables())
-      expr->accept(visitor);
-    for_alist(expr, iteratedExpressions())
-      expr->accept(visitor);
-    for_alist(expr, shadowVariables())
-      expr->accept(visitor);
-    fIterRecSetup->accept(visitor);
+  if (visitor->enterForallStmt(this))
+  {
+    for_alist(expr, inductionVariables())  expr->accept(visitor);
+    for_alist(expr, iteratedExpressions()) expr->accept(visitor);
+    for_alist(expr, shadowVariables())     expr->accept(visitor);
+
+    if (fRecIterIRdef)        fRecIterIRdef->accept(visitor);
+    if (fRecIterICdef)        fRecIterICdef->accept(visitor);
+    if (fRecIterGetIterator)  fRecIterGetIterator->accept(visitor);
+    if (fRecIterFreeIterator) fRecIterFreeIterator->accept(visitor);
+    
     fLoopBody->accept(visitor);
+
     visitor->exitForallStmt(this);
   }
 }
@@ -151,14 +185,32 @@ Expr* ForallStmt::getNextExpr(Expr* expr) {
   if (expr == fIterExprs.tail) {
     if (Expr* sv1 = fShadowVars.head)
       return sv1->getFirstExpr();
+    else if (fRecIterIRdef != NULL)
+      return fRecIterIRdef->getFirstExpr();
     else
-      return fIterRecSetup->getFirstExpr();
+      return fLoopBody->getFirstExpr();
   }
 
-  if (expr == fShadowVars.tail)
-    return fIterRecSetup->getFirstExpr();
+  if (expr == fShadowVars.tail) {
+    if (fRecIterIRdef != NULL)
+      return fRecIterIRdef->getFirstExpr();
+    else
+      return fLoopBody->getFirstExpr();
+  }
 
-  if (expr == fIterRecSetup)
+  // Out of these four fields, either all are present or none:
+  //  fRecIterIRdef, fRecIterICdef, fRecIterGetIterator, fRecIterFreeIterator
+
+  if (expr == fRecIterIRdef)
+    return fRecIterICdef->getFirstExpr();
+
+  if (expr == fRecIterICdef)
+    return fRecIterGetIterator->getFirstExpr();
+
+  if (expr ==fRecIterGetIterator)
+    return fRecIterFreeIterator->getFirstExpr();
+
+  if (expr == fRecIterFreeIterator)
     return fLoopBody->getFirstExpr();
 
   if (expr == fLoopBody)
@@ -219,6 +271,18 @@ bool isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return true;
+  return false;
+}
+
+// Is 'expr' one of fs->fRecIter* for some 'fs' ?
+bool isForallRecIterHelper(Expr* expr) {
+  if (expr->list == NULL)
+    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+      if (expr == pfs->fRecIterIRdef ||
+          expr == pfs->fRecIterICdef ||
+          expr == pfs->fRecIterGetIterator ||
+          expr == pfs->fRecIterFreeIterator)
+        return true;
   return false;
 }
 

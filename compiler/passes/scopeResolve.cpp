@@ -286,8 +286,8 @@ static void scopeResolve(BlockStmt*          block,
 static void scopeResolve(ForallStmt*         forallStmt,
                          const ResolveScope* parent)
 {
-  // No need to scopeResolve the iterRecSetup block.
-  INT_ASSERT(forallStmt->iterRecSetup()->body.empty());
+  // Nothing to scopeResolve in fRecIter*
+  INT_ASSERT(forallStmt->fRecIterIRdef == NULL);
 
   BlockStmt* fBody = forallStmt->loopBody();
 

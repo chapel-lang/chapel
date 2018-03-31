@@ -867,21 +867,22 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 //                           //
 ///////////////////////////////
 
+// The fRecIter* fields:
+//   fRecIterIRdef, fRecIterICdef, fRecIterGetIterator, fRecIterFreeIterator
+// are used to fall back to the "old" lowering of ForallStmts
+// based on the iterator record/iterator class.
+// We set them up here so that calls like _getIterator can be resolved.
 //
-// The block iterRecSetup() is used to fall back to the "old",
-// iterator-record-based implementation for the ForallStmt's
-// parallel iterator. We set it up here so that calls like
-// _getIterator can be resolved.
+// This fallback is used only when the parallel iterator is recursive.
+// Otherwise the iterator is simply inlined by
+//   lowerForallStmtsInline() / lowerOneForallStmt()
 //
-// Currently iterRecSetup() is used only when the parallel iterator
-// is recursive. Because otherwise the iterator is simply inlined
-// by lowerForallStmtsInline()/lowerOneForallStmt().
 // Recursive-ness is detected later by
-// computeRecursiveIteratorSet()/find_recursive_caller().
-// Since we do not know the outcome, we do the work here
-// also in the (common) case where it will not be needed.
+//   computeRecursiveIteratorSet() / find_recursive_caller().
+// Since we do not know it here, we do the work
+// even in the (common) case where it will not be needed.
 //
-void static populateIterRecSetup(ForallStmt* fs)
+void static setupRecIterFields(ForallStmt* fs)
 {
   CallExpr* parIterCall = toCallExpr(fs->firstIteratedExpr());
   INT_ASSERT(parIterCall && !parIterCall->next); // expected
@@ -903,29 +904,51 @@ void static populateIterRecSetup(ForallStmt* fs)
   //parIdx->addFlag(FLAG_INDEX_OF_INTEREST);
   parIdx->addFlag(FLAG_INDEX_VAR);
 
-  BlockStmt* holder = fs->iterRecSetup();
+  BlockStmt* holder = new BlockStmt();
+  fs->insertBefore(holder);  // so we can resolve it
 
-  holder->insertAtTail(new DefExpr(iterRec));
-  holder->insertAtTail(new DefExpr(parIter));
-
+  DefExpr*   recIterIRdef = new DefExpr(iterRec);
+  DefExpr*   recIterICdef = new DefExpr(parIter);
+  CallExpr*  recIterGetIterator  = new CallExpr("_getIterator", iterRec);
+  CallExpr*  recIterFreeIterator = new CallExpr("_freeIterator", parIter);
+  
   CallExpr* initIterRec = new CallExpr(PRIM_MOVE, iterRec, parIterCall->copy());
+  CallExpr* initParIter = new CallExpr(PRIM_MOVE, parIter, recIterGetIterator);
+
+  holder->insertAtTail(recIterIRdef);
+  holder->insertAtTail(recIterICdef);
   holder->insertAtTail(initIterRec);
-  holder->insertAtTail("'move'(%S, _getIterator(%S))", parIter, iterRec);
-  holder->insertAtTail("_freeIterator(%S)", parIter);
+  holder->insertAtTail(initParIter);
+  holder->insertAtTail(recIterFreeIterator);
 
   // This may not resolve if postponed until lowerIterators.
   resolveBlockStmt(holder);
 
+  fs->fRecIterIRdef        = recIterIRdef;
+  fs->fRecIterICdef        = recIterICdef;
+  fs->fRecIterGetIterator  = recIterGetIterator;
+  fs->fRecIterFreeIterator = recIterFreeIterator;
+
+  Symbol* PS = fs->parentSymbol;
+  recIterIRdef       ->remove();  insert_help(recIterIRdef,        fs, PS);
+  recIterICdef       ->remove();  insert_help(recIterICdef,        fs, PS);
+  recIterGetIterator ->remove();  insert_help(recIterGetIterator,  fs, PS);
+  recIterFreeIterator->remove();  insert_help(recIterFreeIterator, fs, PS);
+
+  initParIter->remove();
   // This call messes up doNotTransformForForall() in callDestructors.
   // Remove it until we need it, if at all.
   initIterRec->remove();
+
+  INT_ASSERT(holder->body.empty());
+  holder->remove();
 }
 
 void resolveForallStmts1() {
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
-    populateIterRecSetup(fs);
+    setupRecIterFields(fs);
   }
 }
 

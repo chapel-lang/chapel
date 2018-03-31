@@ -107,7 +107,7 @@ is initialized or destructed. For example:
 
 The init/deinit blocks have to be set up during resolution
 because some of their code would not resolve afterwards.
-Ditto ForallStmt::iterRecSetup().
+Ditto ForallStmt::fRecIterGetIterator,fRecIterFreeIterator.
 This is because unused functions are pruned at the end of resolution.
 
 ---------------------------------
@@ -782,19 +782,19 @@ static void handleRecursiveIter(ForallStmt* fs,
   INT_ASSERT(parIterCall == fs->firstIteratedExpr());
   INT_ASSERT(parIterCall && !parIterCall->next);
 
-  BlockStmt* PARBlock = fs->iterRecSetup();
+  BlockStmt* PARBlock = new BlockStmt();
   // Keep 'fs' in the tree for now, for debugging convenience.
-  fs->insertAfter(PARBlock->remove());
+  fs->insertAfter(PARBlock);
 
-  // These come from populateIterRecSetup().
-  DefExpr* iterRecDef = toDefExpr(PARBlock->body.head);
-  DefExpr* parIterDef = toDefExpr(iterRecDef->next);
-  Expr*  callGetIter  = parIterDef->next;
-  Expr*  callFreeIter = callGetIter->next;
+  // These were set in setupRecIterFields().
+  DefExpr* iterRecDef  = fs->fRecIterIRdef;
+  DefExpr* parIterDef  = fs->fRecIterICdef;
+  Expr*   callGetIter  = fs->fRecIterGetIterator;
+  Expr*   callFreeIter = fs->fRecIterFreeIterator;
 
-  VarSymbol* iterRec = toVarSymbol(iterRecDef->sym);
-  VarSymbol* parIter = toVarSymbol(parIterDef->sym);
-  VarSymbol* parIdx  = parIdxVar(fs);
+  VarSymbol* iterRec   = toVarSymbol(iterRecDef->sym);
+  VarSymbol* parIter   = toVarSymbol(parIterDef->sym);
+  VarSymbol* parIdx    = parIdxVar(fs);
   DefExpr*   parIdxDef = parIdx->defPoint;
 
   // Just in case.
@@ -802,8 +802,11 @@ static void handleRecursiveIter(ForallStmt* fs,
   INT_ASSERT(!strcmp(parIter->name, "chpl__parIter"));
   INT_ASSERT(parIdxDef == fs->inductionVariables().head);
 
-  parIterDef->insertAfter(parIdxDef->remove());
-  parIdxDef->insertAfter(new CallExpr(PRIM_MOVE, iterRec, parIterCall->remove()));
+  PARBlock->insertAtTail(iterRecDef->remove());
+  PARBlock->insertAtTail(parIterDef->remove());
+  PARBlock->insertAtTail(parIdxDef->remove());
+  PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, parIterCall->remove()));
+  PARBlock->insertAtTail(new CallExpr(PRIM_MOVE, parIter, callGetIter->remove()));
 
   ForLoop* PARBody = new ForLoop(parIdx, parIter, NULL, /* zippered */ false, /*forall*/ true);
   // not parIterCall, ex.
@@ -822,6 +825,7 @@ static void handleRecursiveIter(ForallStmt* fs,
   // Todo: what to do with this in the presence of error handling?
   // Move callFreeIter and parIterDef outside of PARBlock?
   PARBlock->insertAtTail(callFreeIter->remove());
+
   fs->remove();
 }
 
