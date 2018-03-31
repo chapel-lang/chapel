@@ -73,10 +73,129 @@ To lower a forall statement:
 
 * The key places during the tranversal are:
 
- - The start of the iterator body.
+ - The start and end of the iterator body.
  - A task-parallel construct i.e. a call to a task function.
  - A forall loop.
  - A yield statement.
+
+---------------------------------
+
+The additional code is inserted for each shadow variable SV
+in the order of shadow variables on shadowVariables() list.
+Deinitialization items are inserted in the reverse order.
+
+*** start of the iterator body ***
+
+includes setting up svar2clonevar - the SymbolMap
+  in effect during the traversal, except as indicated
+
+(end) code added after the end of the inlined iterator body
+
+TFI_IN_OUTERVAR
+  nothing - it supports IN intents
+
+TFI_IN, TFI_CONST_IN
+  def currentVar
+  currentVar.init(outerVarSym() of the corresponding TFI_IN_OUTERVAR)
+  svar2clonevar: SV --> currentVar
+
+(end)
+  currentVar.deinit() // for records
+
+TFI_REF, TFI_CONST_REF
+  // use the outer var directly
+  svar2clonevar: SV --> SV->outerVarSym()
+
+TFI_REDUCE_OP
+  // use the reduce op already set up for us
+  svar2clonevar: SV --> SV->outerVarSym()
+
+TFI_REDUCE
+  def currentVar
+  currentVar.init((the corresponding TFI_REDUCE_OP).identity)
+  svar2clonevar: SV --> currentVar
+
+(end)
+  (the corresponding TFI_REDUCE_OP).accumulate(currentVar)
+  currentVar.deinit() // for records
+
+TFI_TASK_PRIVATE
+  TODO
+
+*** call to task function ***
+
+(actual) an actual is added to the call
+and a formal is added to the task function
+
+(in task fn) actions performed there
+  includes setting up a new svar2clonevar map
+  in effect during the traversal of the task fn, except as indicated
+
+(end) deinit actions at the end of the task function
+
+TFI_IN_OUTERVAR
+  nothing - it supports IN intents
+
+TFI_IN, TFI_CONST_IN
+(actual) svar2clonevar(SV)
+
+(in task fn) for POD
+  svar2clonevar: SV --> the corresponding formal
+
+(in task fn) for records
+  def currentVar
+  currentVar.init(the corresponding formal)
+  svar2clonevar: SV --> currentVar
+
+(end) for records
+  currentVar.deinit()
+
+TFI_REF, TFI_CONST_REF
+(actual)     svar2clonevar(SV)
+(in task fn) svar2clonevar: SV --> the corresponding formal
+
+TFI_REDUCE_OP
+(actual) svar2clonevar(SV)
+
+(in task fn)
+  def currentVar
+  currentVar.init((the corresponding formal).clone())
+  svar2clonevar: SV --> currentVar
+
+(end)
+  chpl__reduceCombine((the corresponding formal), currentVar)
+  chpl__cleanupLocalOp((the corresponding formal), currentVar)
+
+TFI_REDUCE
+(actual) none
+
+(in task fn)
+  def currentVar
+  currentVar.init((the corresponding TFI_REDUCE_OP).identity)
+  svar2clonevar: SV --> currentVar
+
+(end)
+  (the corresponding TFI_REDUCE_OP).accumulate(currentVar)
+  currentVar.deinit() // for records
+
+TFI_TASK_PRIVATE
+  TODO
+
+*** nested forall loop ***
+
+For each SV:
+- clone it --> SVclone
+- set SVclone->outerVarSym() to svar2clonevar(SV)
+  which is typically the currentVar created above
+- append SVclone to forall loop's ForallStmt::shadowVariables()
+- set svar2clonevar: SV --> SVclone
+  in effect during the traversal of the ForallStmt
+
+*** yield statement ***
+
+Replace with a clone of the loop body
+(of the ForallStmt being inlined).
+Use the current svar2clonevar map when cloning.
 
 ---------------------------------
 
