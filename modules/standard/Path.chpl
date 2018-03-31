@@ -457,4 +457,78 @@ proc file.realPath(): string throws {
      return ("", name);
    }
  }
+
+/* Returns the argument.  If the argument begins with `~` or `~<user>`, replace
+   that substring with that user's home directory, otherwise returns the
+   argument unchanged.
+
+   :arg path: a file or directory, which may or may not include `~` or `~<user>`
+   :type path: `string`
+
+   :return: the argument, replacing any `~` or `~<user>` with the user's home
+                directory
+   :rtype: `string`
+*/
+proc expandUser(path: string) : string
+  {
+    var i: int = 1;
+    var j: int = 1;
+    var k: int = 1;
+    var lenz: int;
+    var lenp: int = path.length;;
+    var count: int = 0;
+    var x: c_string ;
+    var y: c_string;
+       
+    //If the argument begins with `~` or `~<user>`, it replaces that substring with that user's home directory
+    if path[1] == '~' 
+    {
+      //checks the present directory by PWD
+      x = "PWD";
+      sys_getenv(x,y);
+      var  z = y:string;
+      lenz = z.length;
+
+       while(i <= lenz && count < 2)
+      	 {
+	   if z(i) == '/' then
+      	   count = count + 1;
+      	   i = i + 1;
+         }
+	 
+      	count = 0;
+      	 while(j <= lenz && count < 3)
+      	 {
+	   if z(j) == '/' then
+      	   count = count + 1;
+      	   j = j + 1;
+         }
+
+        //checks if argument begins with '~<user>'
+        if (lenp > 1 && path[2] != '/')
+        {
+         count = 0;
+         while(k <= lenp && count < 2)
+      	 {
+	   if path(k) == '/' then
+      	   count = count + 1;
+      	   k = k + 1;
+         }
+
+         if(z[i..j-2] == path[2..k-2]) then
+       	 return path.replace(path[1..1], z[1..i-1], -1);
+	 else
+	 return path;
+        }
+      
+       // checks if argument begins with '~'
+       else
+        return path.replace(path[1..1], z[1..j-2], -1);
+  
+     }
+
+     //when '~' is not present at the starting of string it returns the given path
+     else
+      return path;
+  } 
 }
