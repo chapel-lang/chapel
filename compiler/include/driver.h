@@ -202,6 +202,8 @@ extern bool preserveInlinedLineNumbers;
 extern int breakOnID;
 extern int breakOnDeleteID;
 
+extern char stopAfterPass[128];
+
 // code generation strings
 extern const char* compileCommand;
 extern char compileVersion[64];

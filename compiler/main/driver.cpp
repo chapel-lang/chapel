@@ -224,6 +224,8 @@ bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
 
+char stopAfterPass[128];
+
 const char* compileCommand = NULL;
 char compileVersion[64];
 
@@ -747,7 +749,6 @@ static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
 
-
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
   printPassesFile = fopen(fileName, "w");
 
@@ -989,6 +990,7 @@ static ArgumentDescription arg_desc[] = {
  {"minimal-modules", ' ', NULL, "Enable [disable] using minimal modules",               "N", &fMinimalModules, "CHPL_MINIMAL_MODULES", NULL},
  {"print-chpl-settings", ' ', NULL, "Print current chapel settings and exit", "F", &fPrintChplSettings, NULL,NULL},
  {"user-constructor-error", ' ', NULL, "Enable [disable] errors for user code constructors", "N", &fNoUserConstructors, NULL, NULL},
+ {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
