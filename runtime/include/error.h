@@ -67,19 +67,23 @@ void chpl_internal_error(const char* message);
   } while (0)
 
 static inline
+void chpl_error_vs(char *restrict, size_t, int32_t, int32_t,
+                   const char *restrict, ...)
+    __attribute__((format(printf, 5, 6)));
+
+static inline
 void chpl_error_vs(char *restrict str, size_t size,
                    int32_t lineno, int32_t filenameIdx,
-                   const char *restrict format, ...)
-       __attribute__((format(printf, 5, 6))) {
+                   const char *restrict format, ...) {
   fflush(stdout);
   fprintf(stderr, "%" PRId32 ":%" PRId32 ": error: ", filenameIdx, lineno);
 
   va_list ap;
-  va_start(ap, filenameIdx);
-  vfprintf(stderr, format, message);
+  va_start(ap, format);
+  vfprintf(stderr, format, ap);
   va_end(ap);
 
-  fprintf("\n", stderr);
+  fprintf(stderr, "\n");
   exit(1);
 }
 

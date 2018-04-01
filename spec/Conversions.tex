@@ -23,6 +23,10 @@ Each location determines the target type.
 The source and target types of an implicit conversion must be allowed.
 They determine whether and how the expression's value changes.
 
+Implicit conversions are not applied when initializing \chpl{ref} or
+\chpl{type} values or for actual arguments passed to \chpl{ref} or
+\chpl{type} formal arguments.
+
 \index{conversions!implicit!occurs at}
 An implicit conversion occurs at each of the following program locations:
 
@@ -33,13 +37,15 @@ An implicit conversion occurs at each of the following program locations:
 
 \item The actual argument of a function call or an operator is converted
       to the type of the corresponding formal argument, if the formal's
-      intent is \chpl{in} or \chpl{const in} or an abstract intent
-      (\rsec{Abstract Intents}) with the semantics of
+      intent is \chpl{param}, \chpl{in}, \chpl{const in}, or an abstract intent
+      (\rsec{Abstract_Intents}) with the semantics of
       \chpl{in} or \chpl{const in}.
 
-\item The formal argument of a function call is converted
-      to the type of the corresponding actual argument, if the formal's
-      intent is \chpl{out}.
+% MPF: This rule doesn't seem to be implemented right now,
+%      but rather reflects ideal language design.
+\item If the formal argument's intent is \chpl{out}, the formal argument
+      is converted to the type of the corresponding actual argument
+      upon function return.
 
 \item The return or yield expression within a function without a \chpl{ref}
       return intent is converted to the return type of that function.

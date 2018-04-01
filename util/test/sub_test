@@ -30,7 +30,7 @@
 # CHPL_HOME: Grabbed from the environment or deduced based on the path to
 #    the compiler.
 # CHPL_TEST_VGRND_COMP: Use valgrind on the compiler
-# CHPL_TEST_VBRND_EXE: Use valgrind on the test program
+# CHPL_TEST_VGRND_EXE: Use valgrind on the test program
 # CHPL_VALGRIND_OPTS: Options to valgrind
 # CHPL_TEST_FUTURES: 2 == test futures only
 #                    1 == test futures and non-futures

@@ -1007,14 +1007,7 @@ GenRet codegenFieldPtr(
     ret.chplType = fieldSymbol->type;
   }
 
-  if( fLLVMWideOpt && castType && isWide(base) ) {
-    // for fLLVMWideOpt
-    castType = getOrMakeWideTypeDuringCodegen(castType);
-  }
-
   ret.isLVPtr = GEN_PTR;
-  // with LLVMWideOpt, we might return a wide ptr.
-  if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   if (isClass(ct) ) {
     base = codegenValue(base);
@@ -1038,9 +1031,16 @@ GenRet codegenFieldPtr(
     // LLVM codegen
     llvm::Value* baseValue = base.val;
 
+    // with LLVMWideOpt, we might return a wide ptr.
+    if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
+
     // cast if needed
     if (castType) {
-      llvm::Type* castTypeLLVM = castType->codegen().type;
+      Type* useCastType = castType;
+      if (fLLVMWideOpt && isWide(base))
+        useCastType = getOrMakeWideTypeDuringCodegen(castType);
+
+      llvm::Type* castTypeLLVM = useCastType->codegen().type;
       baseValue = convertValueToType(base.val, castTypeLLVM, !base.isUnsigned);
       INT_ASSERT(baseValue);
     }
