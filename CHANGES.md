@@ -113,7 +113,7 @@ Feature Improvements
 Removed Features
 ----------------
 * removed the `msg` field from the `Error` class
-* removed deprecated `Barrer` module in favor of `Barriers`
+* removed deprecated `Barrier` module in favor of `Barriers`
 * removed deprecated `LayoutCSR` module in favor of `LayoutCS`
 * removed `ReplicatedDist` in favor of `Replicated`
 
@@ -216,7 +216,7 @@ Documentation
 * documented type arguments with type specifiers
   (see 'Formal Type Arguments' in the 'Generics' chapter of the specification)
 * improved documentation for `-f` configuration file flag
-  (see https://chapel-lang.org/docs/1.17/usingchapel/executing.html#configurationfile)
+  (see https://chapel-lang.org/docs/1.17/usingchapel/executing.html#configuration-file)
 * improved documentation for which domain maps are supported by `LinearAlgebra`
   (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#linear-algebra-interface)
 * added m4 to Chapel's prerequisites list (required for GMP)
