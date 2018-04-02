@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_distances_s Struct Reference</title>
+<title>Hardware Locality (hwloc): hwloc_topology_cpubind_support Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -41,115 +41,208 @@ $(function() {
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_distances_s Struct Reference<div class="ingroups"><a class="el" href="a00164.html">Object Structure and Attributes</a></div></div>  </div>
+<div class="title">hwloc_topology_cpubind_support Struct Reference<div class="ingroups"><a class="el" href="a00154.html">Topology Detection Configuration and Query</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="a00113_source.html">hwloc.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="a00101_source.html">hwloc.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a6fe066eaf62ee448aa05bab8e7217ff7"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a6fe066eaf62ee448aa05bab8e7217ff7">relative_depth</a></td></tr>
-<tr class="separator:a6fe066eaf62ee448aa05bab8e7217ff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ca2af858cebbce7324ec49903d09474"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a4ca2af858cebbce7324ec49903d09474">nbobjs</a></td></tr>
-<tr class="separator:a4ca2af858cebbce7324ec49903d09474"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f70f48d1bfb18e5e2008825da2967c9"><td class="memItemLeft" align="right" valign="top">float *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a0f70f48d1bfb18e5e2008825da2967c9">latency</a></td></tr>
-<tr class="separator:a0f70f48d1bfb18e5e2008825da2967c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aab61bd1d1ae2e121bfe793c973ec829e"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#aab61bd1d1ae2e121bfe793c973ec829e">latency_max</a></td></tr>
-<tr class="separator:aab61bd1d1ae2e121bfe793c973ec829e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a204416418049a272bfb51602fc676342"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a204416418049a272bfb51602fc676342">latency_base</a></td></tr>
-<tr class="separator:a204416418049a272bfb51602fc676342"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9403d51657a4d546b3ea9553a2973a27"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a9403d51657a4d546b3ea9553a2973a27">set_thisproc_cpubind</a></td></tr>
+<tr class="separator:a9403d51657a4d546b3ea9553a2973a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77a09ddd78ee3e9ff5f532a6ac74f7eb"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a77a09ddd78ee3e9ff5f532a6ac74f7eb">get_thisproc_cpubind</a></td></tr>
+<tr class="separator:a77a09ddd78ee3e9ff5f532a6ac74f7eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa166223d1c2a6de7256ab2d8b675a87e"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#aa166223d1c2a6de7256ab2d8b675a87e">set_proc_cpubind</a></td></tr>
+<tr class="separator:aa166223d1c2a6de7256ab2d8b675a87e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae705bc447adc163ead377362c4dfe9f"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#aae705bc447adc163ead377362c4dfe9f">get_proc_cpubind</a></td></tr>
+<tr class="separator:aae705bc447adc163ead377362c4dfe9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57a89a4b5f1f74fa6cfe176f1e8b0798"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a57a89a4b5f1f74fa6cfe176f1e8b0798">set_thisthread_cpubind</a></td></tr>
+<tr class="separator:a57a89a4b5f1f74fa6cfe176f1e8b0798"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80d762e532d677dff262d83cc7bb1c60"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a80d762e532d677dff262d83cc7bb1c60">get_thisthread_cpubind</a></td></tr>
+<tr class="separator:a80d762e532d677dff262d83cc7bb1c60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46fba33e307909ce256624687799dd6d"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a46fba33e307909ce256624687799dd6d">set_thread_cpubind</a></td></tr>
+<tr class="separator:a46fba33e307909ce256624687799dd6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8dd4d8531ed2eebdce1507e7d104154e"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a8dd4d8531ed2eebdce1507e7d104154e">get_thread_cpubind</a></td></tr>
+<tr class="separator:a8dd4d8531ed2eebdce1507e7d104154e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2d5c94b738d92b7d2ede87e4e96321d"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#ad2d5c94b738d92b7d2ede87e4e96321d">get_thisproc_last_cpu_location</a></td></tr>
+<tr class="separator:ad2d5c94b738d92b7d2ede87e4e96321d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2554620148b7992a5093f338f5ae254f"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a2554620148b7992a5093f338f5ae254f">get_proc_last_cpu_location</a></td></tr>
+<tr class="separator:a2554620148b7992a5093f338f5ae254f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6be1f042fdce6bf41b4ea39f6f193808"><td class="memItemLeft" align="right" valign="top">unsigned char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00256.html#a6be1f042fdce6bf41b4ea39f6f193808">get_thisthread_last_cpu_location</a></td></tr>
+<tr class="separator:a6be1f042fdce6bf41b4ea39f6f193808"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Distances between objects. </p>
-<p>One object may contain a distance structure describing distances between all its descendants at a given relative depth. If the containing object is the root object of the topology, then the distances are available for all objects in the machine.</p>
-<p>If the <code>latency</code> pointer is not <code>NULL</code>, the pointed array contains memory latencies (non-zero values), see below.</p>
-<p>In the future, some other types of distances may be considered. In these cases, <code>latency</code> may be <code>NULL</code>. </p>
+<div class="textblock"><p>Flags describing actual PU binding support for this topology. </p>
+<p>A flag may be set even if the feature isn't supported in all cases (e.g. binding to random sets of non-contiguous objects). </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="a0f70f48d1bfb18e5e2008825da2967c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f70f48d1bfb18e5e2008825da2967c9">&#9670;&nbsp;</a></span>latency</h2>
+<a id="aae705bc447adc163ead377362c4dfe9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae705bc447adc163ead377362c4dfe9f">&#9670;&nbsp;</a></span>get_proc_cpubind</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float* hwloc_distances_s::latency</td>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_proc_cpubind</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Matrix of latencies between objects, stored as a one-dimension array. May be <code>NULL</code> if the distances considered here are not latencies. </p>
-<p>Unless defined by the user, this currently contains latencies between NUMA nodes (as reported in the System Locality Distance Information Table (SLIT) in the ACPI specification), which may or may not be accurate. It corresponds to the latency for accessing the memory of one node from a core in another node.</p>
-<p>Values are normalized to get 1.0 as the minimal value in the matrix. Latency from i-th to j-th object is stored in slot i*nbobjs+j. </p>
+<p>Getting the binding of a whole given process is supported. </p>
 
 </div>
 </div>
-<a id="a204416418049a272bfb51602fc676342"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a204416418049a272bfb51602fc676342">&#9670;&nbsp;</a></span>latency_base</h2>
+<a id="a2554620148b7992a5093f338f5ae254f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2554620148b7992a5093f338f5ae254f">&#9670;&nbsp;</a></span>get_proc_last_cpu_location</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float hwloc_distances_s::latency_base</td>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_proc_last_cpu_location</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>The multiplier that should be applied to latency matrix to retrieve the original OS-provided latencies. Usually 10 on Linux since ACPI SLIT uses 10 for local latency. </p>
+<p>Getting the last processors where a whole process ran is supported </p>
 
 </div>
 </div>
-<a id="aab61bd1d1ae2e121bfe793c973ec829e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aab61bd1d1ae2e121bfe793c973ec829e">&#9670;&nbsp;</a></span>latency_max</h2>
+<a id="a77a09ddd78ee3e9ff5f532a6ac74f7eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77a09ddd78ee3e9ff5f532a6ac74f7eb">&#9670;&nbsp;</a></span>get_thisproc_cpubind</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float hwloc_distances_s::latency_max</td>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_thisproc_cpubind</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>The maximal value in the latency matrix. </p>
+<p>Getting the binding of the whole current process is supported. </p>
 
 </div>
 </div>
-<a id="a4ca2af858cebbce7324ec49903d09474"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ca2af858cebbce7324ec49903d09474">&#9670;&nbsp;</a></span>nbobjs</h2>
+<a id="ad2d5c94b738d92b7d2ede87e4e96321d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2d5c94b738d92b7d2ede87e4e96321d">&#9670;&nbsp;</a></span>get_thisproc_last_cpu_location</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned hwloc_distances_s::nbobjs</td>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_thisproc_last_cpu_location</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Number of objects considered in the matrix. It is the number of descendant objects at <code>relative_depth</code> below the containing object. It corresponds to the result of <a class="el" href="a00176.html#ga8874c24e73ba2b04c76ec8b9e54f49f8" title="Return the number of objects at depth depth included in CPU set set. ">hwloc_get_nbobjs_inside_cpuset_by_depth()</a>. </p>
+<p>Getting the last processors where the whole current process ran is supported </p>
 
 </div>
 </div>
-<a id="a6fe066eaf62ee448aa05bab8e7217ff7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fe066eaf62ee448aa05bab8e7217ff7">&#9670;&nbsp;</a></span>relative_depth</h2>
+<a id="a80d762e532d677dff262d83cc7bb1c60"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80d762e532d677dff262d83cc7bb1c60">&#9670;&nbsp;</a></span>get_thisthread_cpubind</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned hwloc_distances_s::relative_depth</td>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_thisthread_cpubind</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<p>Getting the binding of the current thread only is supported. </p>
 
-<p>Relative depth of the considered objects below the object containing this distance information. </p>
+</div>
+</div>
+<a id="a6be1f042fdce6bf41b4ea39f6f193808"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6be1f042fdce6bf41b4ea39f6f193808">&#9670;&nbsp;</a></span>get_thisthread_last_cpu_location</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_thisthread_last_cpu_location</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Getting the last processors where the current thread ran is supported </p>
+
+</div>
+</div>
+<a id="a8dd4d8531ed2eebdce1507e7d104154e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8dd4d8531ed2eebdce1507e7d104154e">&#9670;&nbsp;</a></span>get_thread_cpubind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::get_thread_cpubind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Getting the binding of a given thread only is supported. </p>
+
+</div>
+</div>
+<a id="aa166223d1c2a6de7256ab2d8b675a87e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa166223d1c2a6de7256ab2d8b675a87e">&#9670;&nbsp;</a></span>set_proc_cpubind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::set_proc_cpubind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Binding a whole given process is supported. </p>
+
+</div>
+</div>
+<a id="a9403d51657a4d546b3ea9553a2973a27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9403d51657a4d546b3ea9553a2973a27">&#9670;&nbsp;</a></span>set_thisproc_cpubind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::set_thisproc_cpubind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Binding the whole current process is supported. </p>
+
+</div>
+</div>
+<a id="a57a89a4b5f1f74fa6cfe176f1e8b0798"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57a89a4b5f1f74fa6cfe176f1e8b0798">&#9670;&nbsp;</a></span>set_thisthread_cpubind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::set_thisthread_cpubind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Binding the current thread only is supported. </p>
+
+</div>
+</div>
+<a id="a46fba33e307909ce256624687799dd6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46fba33e307909ce256624687799dd6d">&#9670;&nbsp;</a></span>set_thread_cpubind</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned char hwloc_topology_cpubind_support::set_thread_cpubind</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Binding a given thread only is supported. </p>
 
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00113_source.html">hwloc.h</a></li>
+<li><a class="el" href="a00101_source.html">hwloc.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

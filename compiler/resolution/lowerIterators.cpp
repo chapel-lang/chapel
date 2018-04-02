@@ -1170,13 +1170,10 @@ expandRecursiveIteratorInline(ForLoop* forLoop)
   forLoop->insertBefore(loopBodyFnCall);
   forLoop->insertBefore(iteratorFnCall);
 
-  BlockStmt* blockStmt = forLoop->copyBody();
-
-  // Replace the ForLoop with a BlockStmt of the body
-  forLoop->replace(blockStmt);
-
-  // The forLoop's body becomes the body of the (new) loop body function.
-  loopBodyFn->insertAtTail(blockStmt->remove());
+  // Copy the body of forLoop into the (new) loop body function
+  // and remove forLoop.
+  loopBodyFn->insertAtTail(forLoop->copyBody());
+  forLoop->remove();
 
   // Now populate the loop body function.
   // Load the index arg.
@@ -1588,14 +1585,12 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             bool           inTaskFn,
                             TaskFnCopyMap& taskFnCopies,
                             bool&          addErrorArgToCall) {
-  std::vector<BaseAST*> asts;
   bool removeReturn = !inTaskFn;
+  std::vector<CallExpr*> bodyCalls;
+  collectCallExprs(ibody, bodyCalls);
 
-  collect_asts(ibody, asts);
-
-  for_vector(BaseAST, ast, asts) {
-
-    if (CallExpr* call = toCallExpr(ast)) {
+  for_vector(CallExpr, call, bodyCalls)
+  {
       if (call->isPrimitive(PRIM_YIELD)) {
         Symbol*    yieldedIndex  = newTemp("_yieldedIndex", index->type);
         Symbol*    yieldedSymbol = toSymExpr(call->get(1))->symbol();
@@ -1730,7 +1725,6 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
         // Ideally, replace with flattenOneFunction().
         flattenNestedFunction(fcopy);
       }
-    }
   }
 }
 
@@ -1829,7 +1823,7 @@ isBoundedIterator(FnSymbol* fn) {
 
 static void getIteratorChildren(Vec<Type*>& children, Type* type) {
   if (AggregateType* at = toAggregateType(type)) {
-    forv_Vec(Type, child, at->dispatchChildren) {
+    forv_Vec(AggregateType, child, at->dispatchChildren) {
       if (child != dtObject) {
         children.add_exclusive(child);
         getIteratorChildren(children, child);
@@ -2235,24 +2229,31 @@ static void handlePolymorphicIterators()
 
       // See if the iterator record is polymorphic.
       AggregateType* irecord = fn->iteratorInfo->irecord;
+
       if (irecord->dispatchChildren.n > 0) {
-        // If so, then simulate dynamic dispatch by adding one conditional block
-        // for each possible subtype.
+        // If so, then simulate dynamic dispatch by adding one conditional
+        // block for each possible subtype.
         SET_LINENO(getIterator);
+
         LabelSymbol* label = new LabelSymbol("end");
+
         getIterator->insertBeforeEpilogue(new DefExpr(label));
+
         Symbol* ret = getIterator->getReturnSymbol();
-        forv_Vec(Type, type, irecord->dispatchChildren) {
-          AggregateType* subTypeAgg = toAggregateType(type);
-          VarSymbol* tmp = newTemp(irecord->getField(1)->type);
-          VarSymbol* cid = newTemp(dtBool);
-          BlockStmt* thenStmt = new BlockStmt();
-          VarSymbol* recordTmp = newTemp("recordTmp", type);
-          VarSymbol* classTmp = newTemp("classTmp", subTypeAgg->iteratorInfo->getIterator->retType);
+
+        forv_Vec(AggregateType, subTypeAgg, irecord->dispatchChildren) {
+          VarSymbol* tmp       = newTemp(irecord->getField(1)->type);
+          VarSymbol* cid       = newTemp(dtBool);
+          BlockStmt* thenStmt  = new BlockStmt();
+          VarSymbol* recordTmp = newTemp("recordTmp", subTypeAgg);
+          VarSymbol* classTmp  = newTemp("classTmp", subTypeAgg->iteratorInfo->getIterator->retType);
+
           thenStmt->insertAtTail(new DefExpr(recordTmp));
           thenStmt->insertAtTail(new DefExpr(classTmp));
 
-          AggregateType* ct = toAggregateType(type);
+
+          AggregateType* ct = subTypeAgg;
+
           for_fields(field, ct) {
             VarSymbol* ftmp = newTemp("ftmp", getIterator->getFormal(1)->type->getField(field->name)->type);
             thenStmt->insertAtTail(new DefExpr(ftmp));

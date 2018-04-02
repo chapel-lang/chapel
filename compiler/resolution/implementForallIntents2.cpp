@@ -779,7 +779,7 @@ static void checkFor2ndEnclosingParallelLoop(FIcontext& ctx,
 
   // It is OK if the inner loop is 'for', the second one is 'forall',
   // and there are no 'in' or 'reduce' intents.
-  // Ex. test/modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+  // Ex. test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
   // that exercises the standalone iter walkdirs() in FileSystem module.
   //
   if (efs->createdFromForLoop() && eInfo.eflopiForall != NULL) {
@@ -1074,7 +1074,7 @@ or iterator forwarding procs.
 As of this writing (#7738), caching is needed when the parallel iterator
 is recursive. Specifically, this is needed for iter walkdirs(standalone)
 in the standard module FileSystem, as exercised by the test:
-  modules/standard/FileSystem/filerator/bradc/findfiles-par.chpl
+  test/library/standard/FileSystem/filerator/bradc/findfiles-par.chpl
 */
 
 // This identifies a forall intent for the purposes of comparison.

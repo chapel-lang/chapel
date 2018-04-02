@@ -32,7 +32,6 @@ class GridSolution {
     this.grid = grid;
     old_data =     new GridVariable(grid = grid);
     current_data = new GridVariable(grid = grid);
-    super.init();
   }
   // /|''''''''''''''''''''/|
   //< |    initializer    < |

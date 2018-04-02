@@ -10,7 +10,6 @@ record MyRecord {
 
     id       = globalId;
 
-    super.init();
   }
 
   proc init(other : MyRecord) {
@@ -18,7 +17,6 @@ record MyRecord {
 
     id       = other.id + 1;
 
-    super.init();
   }
 
   proc deinit() {

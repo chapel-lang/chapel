@@ -1,3 +1,1 @@
-returns-for-expr.chpl:1: In function 'foo':
-returns-for-expr.chpl:2: warning: proc returns an iterator that will be immediately converted to an array
 1 2 3 4 5 6 7 8 9 10

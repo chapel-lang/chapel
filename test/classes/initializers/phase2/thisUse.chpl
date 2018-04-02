@@ -3,7 +3,7 @@ class ThisPhase2 {
 
   proc init(val: complex) {
     someField = val;
-    super.init();
+    this.complete();
     outsideFunc(this);
     // Verifies that we can utilize "this" in Phase 2
   }

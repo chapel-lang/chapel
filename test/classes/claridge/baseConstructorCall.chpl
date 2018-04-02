@@ -16,8 +16,8 @@ class DerivedClass: BaseClass {
   var c: int;
 
   proc init(b:int, c:int) {
-    this.c = c;
     super.init(b);
+    this.c = c;
   }
 }
 

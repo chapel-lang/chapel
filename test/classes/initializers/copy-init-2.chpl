@@ -10,7 +10,6 @@ record MyRecord {
 
     id       = globalId;
 
-    super.init();
   }
 
   proc deinit() {

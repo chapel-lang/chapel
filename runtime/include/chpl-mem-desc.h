@@ -58,6 +58,7 @@
   m(COMM_PER_LOC_INFO,    "comm layer per-locale information",        false), \
   m(COMM_PRV_OBJ_ARRAY,   "comm layer private objects array",         false), \
   m(COMM_PRV_BCAST_DATA,  "comm layer private broadcast data",        false), \
+  m(MEM_HEAP_SPACE,       "mem layer heap expansion space",           false), \
   m(GLOM_STRINGS_DATA,    "glom strings data",                        true ), \
   m(STR_COPY_DATA,        "string copy data",                         true ), \
   m(STR_COPY_REMOTE,      "remote string copy",                       true ), \

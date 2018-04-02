@@ -4,7 +4,6 @@ class OmitOne {
 
   proc init(bVal: real) {
     fieldB = bVal;
-    super.init();
   }
 }
 
@@ -15,7 +14,6 @@ class OmitMultiple {
 
   proc init(bVal: bool) {
     fieldB = bVal;
-    super.init();
   }
 }
 

@@ -24,7 +24,6 @@ class blockIndices {
     this.khi = khi;
     this.llo = llo;
     this.lhi = lhi;
-    super.init();
   }
 }
 

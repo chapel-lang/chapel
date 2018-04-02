@@ -7,6 +7,7 @@ record RR {
   var xx, yy: int;
   // the default initializer
   proc init() {
+    this.complete();
     var done$: sync bool;
     on loc {
       this.xx = 555;
@@ -35,6 +36,7 @@ record QQ {
   var aa, bb: int;
   // non-default initializer
   proc init(cc: int, dd: int) {
+    this.complete();
     var done$: sync bool;
     on loc {
       this.aa = cc;

@@ -5,12 +5,10 @@ class Foo {
 
   proc init(xVal:int) where (isInt(xVal)) {
     x = xVal;
-    super.init();
   }
 
   proc init(realVal:real) where (isReal(realVal)) {
     x = floor(realVal):int;
-    super.init();
   }
 }
 

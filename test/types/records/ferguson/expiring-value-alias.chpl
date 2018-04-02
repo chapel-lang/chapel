@@ -330,9 +330,6 @@ proc R.deinit() {
   if debug then writeln("  delete ", getNum(c));
 }
 
-// We'd like this to be by ref, but doing so leads to an internal
-// compiler error.  See
-// $CHPL_HOME/test/types/records/sungeun/recordWithRefCopyFns.future
 pragma "donor fn"
 pragma "auto copy fn"
 proc chpl__autoCopy(arg: R) {

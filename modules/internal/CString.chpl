@@ -116,83 +116,30 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t, x:c_string) where isBoolType(t)
-  {
-    pragma "insert line file info"
-    extern proc c_string_to_chpl_bool(x:c_string) : bool;
-    return c_string_to_chpl_bool((x:string).strip().c_str()) : t;
-  }
+  inline proc _cast(type t, x:c_string) throws where isBoolType(t)
+    return try ((x:string).strip()): t;
 
   //
   // casts from c_string to integer types
   //
-  pragma "insert line file info"
-  extern proc c_string_to_int8_t  (x:c_string) : int(8);
-  pragma "insert line file info"
-  extern proc c_string_to_int16_t (x:c_string) : int(16);
-  pragma "insert line file info"
-  extern proc c_string_to_int32_t (x:c_string) : int(32);
-  pragma "insert line file info"
-  extern proc c_string_to_int64_t (x:c_string) : int(64);
-  pragma "insert line file info"
-  extern proc c_string_to_uint8_t (x:c_string) : uint(8);
-  pragma "insert line file info"
-  extern proc c_string_to_uint16_t(x:c_string) : uint(16);
-  pragma "insert line file info"
-  extern proc c_string_to_uint32_t(x:c_string) : uint(32);
-  pragma "insert line file info"
-  extern proc c_string_to_uint64_t(x:c_string) : uint(64);
-
-  inline proc _cast(type t, x:c_string) where t == int(8)
-    return c_string_to_int8_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == int(16)
-    return c_string_to_int16_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == int(32)
-    return c_string_to_int32_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == int(64)
-    return c_string_to_int64_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == uint(8)
-    return c_string_to_uint8_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == uint(16)
-    return c_string_to_uint16_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == uint(32)
-    return c_string_to_uint32_t((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == uint(64)
-    return c_string_to_uint64_t((x:string).strip().c_str());
+  inline proc _cast(type t, x:c_string) throws where t == int(8) || t == int(16) || t == int(32) || t == int(64)
+    return try ((x:string).strip()): t;
+  inline proc _cast(type t, x:c_string) throws where t == uint(8) || t == uint(16) || t == uint(32) || t == uint(64)
+    return try ((x:string).strip()): t;
 
   //
   // casts from c_string to real/imag types
   //
-  pragma "insert line file info"
-  extern proc c_string_to_real32(x:c_string) : real(32);
-  pragma "insert line file info"
-  extern proc c_string_to_real64(x:c_string) : real(64);
-  pragma "insert line file info"
-  extern proc c_string_to_imag32(x:c_string) : imag(32);
-  pragma "insert line file info"
-  extern proc c_string_to_imag64(x:c_string) : imag(64);
-
-  inline proc _cast(type t, x:c_string) where t == real(32)
-    return c_string_to_real32((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == real(64)
-    return c_string_to_real64((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == imag(32)
-    return c_string_to_imag32((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == imag(64)
-    return c_string_to_imag64((x:string).strip().c_str());
+  inline proc _cast(type t, x:c_string) throws where t == real(32) || t == real(64)
+    return try ((x:string).strip()): t;
+  inline proc _cast(type t, x:c_string) throws where t == imag(32) || t == imag(64)
+    return try ((x:string).strip()): t;
 
   //
   // casts from c_string to complex types
   //
-  pragma "insert line file info"
-  extern proc c_string_to_complex64(x:c_string) : complex(64);
-  pragma "insert line file info"
-  extern proc c_string_to_complex128(x:c_string) : complex(128);
-
-  inline proc _cast(type t, x:c_string) where t == complex(64)
-    return c_string_to_complex64((x:string).strip().c_str());
-  inline proc _cast(type t, x:c_string) where t == complex(128)
-    return c_string_to_complex128((x:string).strip().c_str());
+  inline proc _cast(type t, x:c_string) throws where t == complex(64) || t == complex(128)
+    return try ((x:string).strip()): t;
 
   //
   // casts from complex

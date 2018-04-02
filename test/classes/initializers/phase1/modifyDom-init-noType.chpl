@@ -7,7 +7,6 @@ class C {
   proc init(arr: [] int) {
     D = arr.domain;
     A = arr;
-    super.init();
   }
 }
 

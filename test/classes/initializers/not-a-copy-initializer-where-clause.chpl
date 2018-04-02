@@ -19,7 +19,6 @@ record Foo {
   proc init(genericArg) where genericArg.type != Foo {
     genericArg.someMethod();
     a = true;
-    super.init();
   }
 }
 

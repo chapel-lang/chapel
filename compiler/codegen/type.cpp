@@ -269,7 +269,8 @@ void AggregateType::codegenDef() {
         /* Add a comment to class definitions listing super classes */
         bool first = true;
         fprintf(outfile, " /* : ");
-        forv_Vec(Type, parent, dispatchParents) {
+
+        forv_Vec(AggregateType, parent, dispatchParents) {
           if (parent) {
             if (!first) {
               fprintf(outfile, ", ");

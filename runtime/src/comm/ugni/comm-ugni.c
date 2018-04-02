@@ -24,8 +24,10 @@
 #include <assert.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <pmi.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -39,6 +41,13 @@
 #include <gni_pub.h>    // <stddef.h> and <stdint.h> must come first
 #include <hugetlbfs.h>  // <sys/types.h> must come first
 
+#if defined(GNI_VERSION_FMA_CHAIN_TRANSACTIONS) \
+      && GNI_VERSION >= GNI_VERSION_FMA_CHAIN_TRANSACTIONS
+#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 1
+#else
+#define HAVE_GNI_FMA_CHAIN_TRANSACTIONS 0
+#endif
+
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chplrt.h"
@@ -47,7 +56,9 @@
 #include "chpl-comm-callbacks.h"
 #include "chpl-comm-callbacks-internal.h"
 #include "chpl-env.h"
+#include "chplexit.h"
 #include "chpl-mem.h"
+#include "chpl-mem-desc.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-atomics.h"
@@ -494,7 +505,7 @@ static size_t hugepage_size;
 
 typedef struct {
   uint64_t         addr;
-  uint64_t         len;
+  uint64_t         len;  // includes reg. status; see mrtl_encode() etc. below
   gni_mem_handle_t mdh;
 } mem_region_t;
 
@@ -504,6 +515,34 @@ typedef struct {
 } mem_region_table_t;
 
 static mem_region_table_t mem_regions;
+
+//
+// The high bit of the 'len' member of a mem_region_t in the table
+// indicates whether the region is registered.  mrtl_encode() and
+// its siblings deal with such encoded 'len' member values.
+//
+#define _MRTL_LENBITS  (sizeof(uint64_t) * CHAR_BIT - 1)
+#define _MRTL_LENMASK  ((1UL << _MRTL_LENBITS) - 1UL)
+
+static inline
+uint64_t mrtl_encode(uint64_t len, chpl_bool reg) {
+  return ((reg ? 1UL : 0UL) << _MRTL_LENBITS) | (len & _MRTL_LENMASK);
+}
+
+static inline
+void mrtl_setReg(uint64_t *p_len) {
+  *p_len |= 1UL << _MRTL_LENBITS;
+}
+
+static inline
+uint64_t mrtl_len(uint64_t len) {
+  return len & _MRTL_LENMASK;
+}
+
+static inline
+chpl_bool mrtl_isReg(uint64_t len) {
+  return ((len >> _MRTL_LENBITS) == 0UL) ? false : true;
+}
 
 //
 // Used to serialize access to critical sections in the dynamic registration
@@ -563,6 +602,21 @@ static mem_region_table_t** mem_regions_map_addr_map;
 //
 static mem_region_t* gnr_mreg;
 static mem_region_t* gnr_mreg_map;
+
+//
+// These data objects support catching SIGBUS signals due to hugepage
+// fault-in failures, and reporting out-of-memory in response.
+//
+static struct sigaction previous_SIGBUS_sigact;
+
+struct {
+  chpl_mem_descInt_t desc;
+  int ln;
+  int32_t fn;
+} mr_mregs_supplement[MAX_MEM_REGIONS];  // parallels mem_regions.mregs[]
+
+static chpl_bool exit_without_cleanup = false;
+
 
 //
 // Declarations common to memory pools.
@@ -1297,7 +1351,7 @@ mpool_idx_base_t amo_res_next_pool_i(void)
 // and release flags to be set.
 //
 // Since we do a vector/chained put, make the number of children based
-// on the max chained put length. Any smaller and we'd be unnessarily
+// on the max chained put length. Any smaller and we'd be unnecessarily
 // adding locales and thus extra 1-way network delays (each additional
 // layer in a tree-based spawn adds at least the cost of a network trip
 // (plus the time for the child's task to wake up). Any larger and the
@@ -1400,6 +1454,8 @@ static void      ensure_registered_heap_info_set(void);
 static void      make_registered_heap(void);
 static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
+static void      install_SIGBUS_handler(void);
+static void      SIGBUS_handler(int, siginfo_t *, void *);
 static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
@@ -1465,8 +1521,10 @@ static chpl_bool reacquire_comm_dom(int);
 static int       post_fma(c_nodeid_t, gni_post_descriptor_t*);
 static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
                                    chpl_bool);
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
+#endif
 static void      local_yield(void);
 
 
@@ -2205,8 +2263,7 @@ void register_memory(void)
   uint64_t  addr;
   uint64_t  len;
   char      pathname[100];
-  void*     mem_reg_addr;
-  size_t    mem_reg_size;
+  void*     gnr_addr;
   int       have_hugepage_module
               = (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL);
 
@@ -2228,7 +2285,7 @@ void register_memory(void)
   // have a hugepage module loaded, only record the guaranteed
   // NIC-registered segment.
   //
-  chpl_comm_mem_reg_tell(&mem_reg_addr, &mem_reg_size);
+  chpl_comm_mem_reg_tell(&gnr_addr, NULL);
 
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
@@ -2243,7 +2300,7 @@ void register_memory(void)
     //   - if we have hugepages, anything that has a path (isn't
     //     anonymous) but isn't a device other than /dev/zero.
     //
-    if (! (addr == (uint64_t) (intptr_t) mem_reg_addr
+    if (! (addr == (uint64_t) (intptr_t) gnr_addr
            || (have_hugepage_module
                && strlen(pathname) > 0
                && (strncmp(pathname, "/dev/", 5) != 0
@@ -2257,19 +2314,19 @@ void register_memory(void)
     // decreasing size.
     //
     for (i = mem_regions.mreg_cnt;
-         i > 0 && len > mem_regions.mregs[i - 1].len;
+         i > 0 && len > mrtl_len(mem_regions.mregs[i - 1].len);
          i--) {
       if (i < MAX_MEM_REGIONS) {
         mem_regions.mregs[i] = mem_regions.mregs[i - 1];
       }
     }
 
-    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) mem_reg_addr)
+    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) gnr_addr)
       i--;
 
     if (i < MAX_MEM_REGIONS) {
       mem_regions.mregs[i].addr = addr;
-      mem_regions.mregs[i].len = len;
+      mem_regions.mregs[i].len = mrtl_encode(len, false);
       if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
         mem_regions.mreg_cnt++;
         (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
@@ -2296,9 +2353,8 @@ void register_memory(void)
   //
   {
     void* p;
-    size_t s;
 
-    chpl_comm_mem_reg_tell(&p, &s);
+    chpl_comm_mem_reg_tell(&p, NULL);
 
     for (int i = 0; i < mem_regions.mreg_cnt; i++) {
       if ((void*) (intptr_t) mem_regions.mregs[i].addr == p) {
@@ -2437,12 +2493,13 @@ void register_mem_region(mem_region_t* mr)
 
   DBG_P_L(DBGF_MEMREG,
           "GNI_MemRegister[%d](%#" PRIx64 ", %#" PRIx64 ")",
-          (int) (mr - &mem_regions.mregs[0]), mr->addr, mr->len);
-  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mr->len,
+          (int) (mr - &mem_regions.mregs[0]), mr->addr, mrtl_len(mr->len));
+  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mrtl_len(mr->len),
                                 NULL, flags, -1, &mr->mdh))
       != GNI_RC_SUCCESS) {
     GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
   }
+  mrtl_setReg(&mr->len);
 }
 
 
@@ -2471,7 +2528,9 @@ mem_region_t* mreg_for_addr(void* addr, mem_region_table_t* tab)
 
   mr = tab->mregs;
   for (int i = 0; i < tab->mreg_cnt; i++, mr++) {
-    if (addr_ui >= mr->addr && addr_ui < mr->addr + mr->len)
+    if (addr_ui >= mr->addr
+        && addr_ui < mr->addr + mrtl_len(mr->len)
+        && mrtl_isReg(mr->len))
       return mr;
   }
 
@@ -2488,7 +2547,8 @@ mem_region_t* mreg_for_local_addr(void* addr)
   PERFSTATS_TSTAMP(pstStart);
   if (mr == NULL
       || (uint64_t) addr < mr->addr
-      || (uint64_t) addr >= mr->addr + mr->len) {
+      || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
+      || !mrtl_isReg(mr->len)) {
     mr = mreg_for_addr(addr, &mem_regions);
     PERFSTATS_ADD(local_mreg_cmps,
                   ((mr == NULL)
@@ -2515,7 +2575,8 @@ mem_region_t* mreg_for_remote_addr(void* addr, c_nodeid_t locale)
   PERFSTATS_TSTAMP(pstStart);
   if ((mr = mrs[locale]) == NULL
       || (uint64_t) addr < mr->addr
-      || (uint64_t) addr >= mr->addr + mr->len) {
+      || (uint64_t) addr >= mr->addr + mrtl_len(mr->len)
+      || !mrtl_isReg(mr->len)) {
     mr = mrs[locale] = mreg_for_addr(addr, &mem_regions_map[locale]);
     PERFSTATS_ADD(remote_mreg_cmps,
                   ((mr == NULL)
@@ -2923,12 +2984,114 @@ void set_hugepage_info(void)
     hugepage_size = gethugepagesize();
   }
 
+  //
+  // With HUGETLB_NO_RESERVE=yes, we want to report out-of-memory in
+  // response to SIGBUS signals resulting from (as best we can tell)
+  // being unable to acquire hugepages at fault-in time.
+  //
+  {
+    char const *ev;
+
+    if ((ev = getenv("HUGETLB_NO_RESERVE")) != NULL
+        && strcasecmp(ev, "yes") == 0) {
+      install_SIGBUS_handler();
+    }
+  }
+
   hugepage_info_set = 1;
   atomic_thread_fence(memory_order_release);
 
   DBG_P_L(DBGF_HUGEPAGES,
           "setting hugepage info: use hugepages %s, sz %#zx",
           (hugepage_size > 0) ? "YES" : "NO", hugepage_size);
+}
+
+
+static
+void install_SIGBUS_handler(void)
+{
+  struct sigaction act;
+
+  act.sa_flags = SA_RESTART | SA_SIGINFO;
+  if (sigemptyset(&act.sa_mask) != 0) {
+    CHPL_INTERNAL_ERROR("sigemptyset() failed");
+  }
+  act.sa_sigaction = SIGBUS_handler;
+  if (sigaction(SIGBUS, &act, &previous_SIGBUS_sigact) != 0) {
+    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) failed");
+  }
+}
+
+
+static
+void SIGBUS_handler(int signo, siginfo_t *info, void *context)
+{
+  //
+  // See if this was within an as-yet-unregistered region where we may
+  // be faulting in pages as a side effect of initialization.  If so,
+  // report allocation failure and exit.  Note that we're not holding
+  // the dynamic registration mutex and thus mem_regions.mreg_cnt may
+  // vary while we're executing this loop.  However, if the SIGBUS is
+  // the result of a fault-in failure on some region in the table, that
+  // count won't drop below the index of that region because we can't
+  // remove the region until after it's registered and we can't finish
+  // registering it without faulting in all its pages.
+  // 
+  // Also note that although we replicate the format of the "official"
+  // message chpl_memhook_check_post() produces, we can't just call it
+  // directly or use the same functions as it does, because they're not
+  // signal-safe.
+  //
+  if (info->si_code == BUS_ADRERR) {
+    uint64_t addr = (uint64_t) (intptr_t) info->si_addr;
+
+    int mr_i;
+    mem_region_t* mr;
+
+    for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
+         mr_i >= 0 && (addr < mr->addr
+                       || addr >= mr->addr + mrtl_len(mr->len)
+                       || mrtl_isReg(mr->len));
+         mr_i--, mr--)
+      ;
+
+    if (mr_i >= 0) {
+      char buf[1024];
+      chpl_error_vs(buf, sizeof(buf),
+                    mr_mregs_supplement[mr_i].ln, mr_mregs_supplement[mr_i].fn,
+                    "Out of memory allocating \"%s\"",
+                    chpl_mem_descString(mr_mregs_supplement[mr_i].desc));
+      write(fileno(stderr), buf, strlen(buf));
+      exit_without_cleanup = true;
+      atomic_thread_fence(memory_order_release);
+      chpl_exit_any(1);
+    }
+  }
+
+  //
+  // This was not due to allocation failure on a hugepage we were trying
+  // to fault in.  Restore the previous handler and re-raise the SIGBUS.
+  // It should get dealt with as it would have without our handler.  If
+  // the old handler returns and execution continues, install our new
+  // handler again.
+  //
+  if (sigaction(SIGBUS, &previous_SIGBUS_sigact, NULL) != 0) {
+    CHPL_INTERNAL_ERROR("sigaction(SIGBUS) to reinstall old handler failed");
+  }
+
+  {
+    sigset_t sigbus_set;
+
+    if (sigemptyset(&sigbus_set) != 0
+        || sigaddset(&sigbus_set, SIGBUS) != 0
+        || pthread_sigmask(SIG_UNBLOCK, &sigbus_set, NULL) != 0
+        || raise(SIGBUS) != 0
+        || pthread_sigmask(SIG_BLOCK, &sigbus_set, NULL) != 0) {
+      CHPL_INTERNAL_ERROR("cannot re-raise SIGBUS");
+    }
+  }
+
+  install_SIGBUS_handler();
 }
 
 
@@ -2963,7 +3126,8 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 static __thread uint64_t defaultInit_ts;
 #endif
 
-void* chpl_comm_impl_regMemAlloc(size_t size)
+void* chpl_comm_impl_regMemAlloc(size_t size,
+                                 chpl_mem_descInt_t desc, int ln, int32_t fn)
 {
   int mr_i;
   mem_region_t* mr;
@@ -2977,7 +3141,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
   //
   // Do we have room for another registered memory region?
   //
-  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 0) {
+  if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 1) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
     static atomic_int_least8_t spoke;
@@ -3017,7 +3181,11 @@ void* chpl_comm_impl_regMemAlloc(size_t size)
 
   mr = &mem_regions.mregs[mr_i];
   mr->addr = (uint64_t) (uintptr_t) p;
-  mr->len = 1;
+  mr->len = mrtl_encode(size, false);
+
+  mr_mregs_supplement[mr_i].desc = desc;
+  mr_mregs_supplement[mr_i].ln = ln;
+  mr_mregs_supplement[mr_i].fn = fn;
 
   //
   // Adjust the region count, if necessary.
@@ -3071,18 +3239,14 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // Find the memory region table entry for this memory.
   //
   for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
-       mr_i >= 0 && mr->addr != (uint64_t) p;
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
 
   if (mr_i < 0)
     CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
 
-  //
-  // Fill in the length, which we set to 1 earlier to avoid lookups
-  // for transfers from matching this entry.
-  //
-  mr->len = (uint64_t) size;
+  assert(!mrtl_isReg(mr->len));
 
   //
   // If we're in early setup and can't register memory yet then we're
@@ -3144,12 +3308,14 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   // Is this memory in our table?
   //
   for (mr_i = mem_regions.mreg_cnt - 1, mr = &mem_regions.mregs[mr_i];
-       mr_i >= 0 && (mr->addr != (uint64_t) p || mr->len != size);
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != size);
        mr_i--, mr--)
     ;
 
   if (mr_i < 0)
     return false;
+
+  assert(mrtl_isReg(mr->len));
 
   PERFSTATS_INC(regMemFree_cnt);
 
@@ -3414,12 +3580,13 @@ void chpl_comm_barrier(const char *msg)
 
 void chpl_comm_pre_task_exit(int all)
 {
+  if (exit_without_cleanup)
+    return;
 
   if (chpl_numNodes == 1)
     return;
 
   if (all) {
-
     if (chpl_nodeID == 0) {
       int i;
       for (i = 0; i < chpl_numNodes; i++) {
@@ -3496,6 +3663,9 @@ void chpl_comm_pre_task_exit(int all)
 
 void chpl_comm_exit(int all, int status)
 {
+  if (exit_without_cleanup)
+    return;
+
 #ifdef DEBUG
   debug_exiting = true;
 #endif
@@ -4090,7 +4260,7 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
 
 #define PPDI_NEXT(_i) (((_i) + 1) & (PPDESCS_CNT - 1))
 
-    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = { 0 };
+    static gni_post_descriptor_t polling_post_descs[PPDESCS_CNT] = {{ 0 }};
     static int last_ppdi = 0;
     int ppdi;
 
@@ -4834,14 +5004,15 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
                      void** tgt_addr_v, size_t* size_v,
                      mem_region_t** remote_mr_v, drpg_may_proxy_t may_proxy)
 {
-  int vi, ci = -1;
-  mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
-  gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
-
-  DBG_P_LP(DBGF_GETPUT, "DoRemPut(%d) %p -> %d:%p (%#zx), proxy %c",
+  DBG_P_LP(DBGF_GETPUT, "DoRemPutV(%d) %p -> %d:%p (%#zx), proxy %c",
            v_len, src_addr_v[0], (int) locale_v[0], tgt_addr_v[0], size_v[0],
            may_proxy ? 'y' : 'n');
+
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is new enough to support chained transactions.
+  //
 
   //
   // If there are more than we can handle at once, block them up.
@@ -4860,10 +5031,15 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
     return;
 
   //
-  // Do all these PUTs in one chained transaction.  Except: if we can
-  // proxy these PUTs then defer to the scalar PUT routine for any that
-  // refer to unregistered memory on the remote side.
+  // Do all these PUTs in one chained transaction.  Except: if we have to
+  // proxy any of these PUTs because they refer to unregistered memory on
+  // the remote side then defer to the scalar PUT routine for that.
   //
+  int vi, ci = -1;
+  mem_region_t* remote_mr;
+  gni_post_descriptor_t pd;
+  gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
+
   for (vi = 0, ci = -1; vi < v_len; vi++) {
     remote_mr = ((remote_mr_v == NULL)
                  ? mreg_for_remote_addr(tgt_addr_v[vi], locale_v[vi])
@@ -4914,6 +5090,19 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
 
   if (ci != -1)
     post_fma_ct_and_wait(locale_v, &pd);
+
+#else // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
+  //
+  // This GNI is too old to support chained transactions.  Just do
+  // normal ones.
+  //
+  for (int vi = 0; vi < v_len; vi++) {
+    do_remote_put(src_addr_v[vi], locale_v[vi], tgt_addr_v[vi], size_v[vi],
+                  (remote_mr_v == NULL) ? NULL : remote_mr_v[vi], may_proxy);
+  }
+
+#endif // HAVE_GNI_FMA_CHAIN_TRANSACTIONS
 }
 
 
@@ -7253,6 +7442,8 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 }
 
 
+#if HAVE_GNI_FMA_CHAIN_TRANSACTIONS
+
 static
 inline
 int post_fma_ct(c_nodeid_t* locale_v, gni_post_descriptor_t* post_desc)
@@ -7320,6 +7511,8 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 
   CQ_CNT_DEC(&comm_doms[cdi]);
 }
+
+#endif
 
 
 static

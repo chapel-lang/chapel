@@ -7,7 +7,6 @@ class Foo {
 
   proc init(type tVal = bool) {
     t = tVal;
-    super.init();
   }
 }
 

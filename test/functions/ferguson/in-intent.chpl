@@ -2,12 +2,10 @@ record R {
   var x:int;
   proc init(x:int) {
     this.x = x;
-    super.init();
     writeln("init ", x);
   }
   proc init(r:R) {
     this.x = r.x;
-    super.init();
     writeln("copy init ", x);
   }
   proc deinit() {

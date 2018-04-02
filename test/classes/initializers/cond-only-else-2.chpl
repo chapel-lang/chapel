@@ -1,4 +1,4 @@
-// Confirm that the compiler rejects a conditional with inconsistent
+// Confirm that the compiler allows a conditional with different
 // use of field initializers
 
 record MyRec {
@@ -9,9 +9,9 @@ record MyRec {
     if a < 10 then
       x = 20;
     else
-      writeln('Else does not initialize x');
+      writeln('Else does not explicitly initialize x');
 
-    super.init();
+    this.complete();
   }
 }
 

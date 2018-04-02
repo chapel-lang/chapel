@@ -77,6 +77,7 @@ module DefaultRectangular {
   pragma "locale private"
   var defaultDist = new dmap(new DefaultDist());
 
+  pragma "unsafe"
   proc chpl_defaultDistInitPrivate() {
     if defaultDist._value==nil {
       // FIXME benharsh: Here's what we want to do:
@@ -864,7 +865,6 @@ module DefaultRectangular {
       this.stridable = stridable;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-      super.init();
     }
 
     // These functions must always be called locally, because the lock
@@ -1685,7 +1685,7 @@ module DefaultRectangular {
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
     if Adata.locale.id==here.id {
-      if debugDefaultDistBulkTransfer then //See bug in test/optimizations/bulkcomm/alberto/rafatest2.chpl
+      if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", B.locale.id);
       __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
     } else if Bdata.locale.id==here.id {

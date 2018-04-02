@@ -57,7 +57,7 @@ The remainder of this note considers this proposal in more detail.
 
 * `Class hierarchies`_
 
-* `The postInit() method`_
+* `The postinit() method`_
 
 * `Records`_
 
@@ -451,7 +451,7 @@ rules for inserting omitted initializations and the current
 syntax choices make this problematic in general.
 
 In this proposal we introduce a new method, currently named
-initDone(), that can be inserted by a developer to complete
+complete(), that can be inserted by a developer to complete
 initialization.  The compiler will insert omitted initializations
 as necessary and it is then safe to call methods defined on
 MyClass1 and assign local fields e.g.
@@ -466,7 +466,7 @@ MyClass1 and assign local fields e.g.
                     // Compiler inserts super.init();
        d = r;
                     // Compiler initializes a
-       initDone();
+       complete();
 
        a[2] = 5;
      }
@@ -492,7 +492,7 @@ We turn to a simple hierarchy.
      proc init(r) {
        d = r;
 
-       initDone();
+       complete();
 
        foo();       // This must be MyClass1.foo()
      }
@@ -526,21 +526,21 @@ We turn to a simple hierarchy.
    writeln(c);      // => {d = {1..3}, a = 0 20 30, f = 5}
 
 
-After the call to initDone() in MyClass1.init() the local fields will
+After the call to complete() in MyClass1.init() the local fields will
 be initialized but any fields for a derived class, e.g. MyClass2.f,
 remain uninitialized.  This implies that the subsequent call to method
 foo() must treat 'this' as having type MyClass1, both statically and
 dynamically.
 
 In the following variation the initializer for MyClass2 calls foo()
-twice, once before initDone() and once afterwards.  A different method
+twice, once before complete() and once afterwards.  A different method
 will be invoked for each call.  After the call to super.init() but
-before the call to initDone() it is certain that the fields of
+before the call to complete() it is certain that the fields of
 MyClass1 have been initialized and so we must ensure that the
 call to foo() invokes MyClass1.foo().  Conceptually we treat
 the static type of 'this' as MyClass1 for function resolution
 and ensure that the dynamic type is also MyClass1.  After the
-call to initDone() the local fields of MyClass2 are also initialized
+call to complete() the local fields of MyClass2 are also initialized
 and so we prefer that the call to foo() invokes MyClass2.foo().
 
 .. code-block:: chapel
@@ -568,7 +568,7 @@ and so we prefer that the call to foo() invokes MyClass2.foo().
 
        f = 5;
 
-       initDone();
+       complete();
 
        foo();       // This is MyClass2.foo()
      }
@@ -587,10 +587,10 @@ and so we prefer that the call to foo() invokes MyClass2.foo().
 
 
 
-The postInit() method
+The postinit() method
 +++++++++++++++++++++
 
-This proposal introduces a new method; postInit() e.g.
+This proposal introduces a new method; postinit() e.g.
 
 .. code-block:: chapel
 
@@ -602,7 +602,7 @@ This proposal introduces a new method; postInit() e.g.
        d = r;
      }
 
-     proc postInit() {
+     proc postinit() {
        foo();
      }
 
@@ -643,27 +643,27 @@ acts as if it were equivalent to
    var x = allocate(MyClass1);
 
    x.init(...args...);
-   x.postInit();
+   x.postinit();
 
 i.e. an instance is allocated and then the appropriate overload of the
 MyClass1.init() method is invoked.  When this method returns 'x' is a
-fully initialized instance of MyClass1.  Then the method postInit() is
+fully initialized instance of MyClass1.  Then the method postinit() is
 invoked.  If this call results in method calls with virtual overloads
 then the dispatch will be for objects of type MyClass1.
 
 In the initial view of the new proposal, the init() method was
 primarily responsible for field initialization i.e. to implement
-phase 1, and postInit() was to be primarily responsible for phase 2.
+phase 1, and postinit() was to be primarily responsible for phase 2.
 
 Early efforts to convert existing initializers to the new proposal
-demonstrated that it was important to support initDone().  There
+demonstrated that it was important to support complete().  There
 were many cases in which the phase 2 behavior needed to depend,
 directly or indirectly, on one or more of the actuals to the
-initializer.  This was not well served by relying on postInit()
+initializer.  This was not well served by relying on postinit()
 for phase 2.
 
-Full support for initDone() is likely to reduce the incentive to
-override postInit() for types that override init().  However this
+Full support for complete() is likely to reduce the incentive to
+override postinit() for types that override init().  However this
 method remains a component of the new proposal.  Firstly it provides
 the ability to define an initialization protocol that relies on
 dynamic dispatch to methods based on the final type of the
@@ -685,7 +685,7 @@ implementation of initializers, a record initializer
 invoked super.init() to separate phase 1 and phase 2.
 
 In the new proposal a record initializer that includes
-phase 2 operations will invoke initDone() rather than
+phase 2 operations will invoke complete() rather than
 super.init().  This is consistent with the view that
 records do not define a super field.
 
@@ -703,13 +703,13 @@ initializers who are tracking master.
 
 We must be able to implement types that rely on the new form of
 initializers as soon as we can and without being required to convert
-all existing initalizers as a precondition.  It is also useful if it
+all existing initializers as a precondition.  It is also useful if it
 were reasonably convenient to convert old initializers to new
 initializers and to do so incrementally.
 
 
 During the early phases of the transition we will rely on the
-presence of a call to initDone() to indicate that an initializer
+presence of a call to complete() to indicate that an initializer
 intends to rely on features of the new proposal.
 
 
@@ -732,33 +732,33 @@ is valid as phase 2 but not valid as phase 1. In a few cases
 one initializer impacted multiple tests.  Separately there were
 a few initializers that could be modified to be valid under
 either assumption.  The remaining tests will require the
-insertion of initDone().  A similar effort for classes found
+insertion of complete().  A similar effort for classes found
 approximately 50 tests that required attention.  There were
 just a few initializers in module code that needed attention.
 
 In the new proposal it will be invalid to use super.init() in
 a record initializer; these will be trivially replaced with
-initDone().
+complete().
 
 In the current implementation any class initializer that invokes
 super.init() transitions from phase 1 to phase 2.  This is not true in
 the new proposal.  This is similar in spirit to altering the default
 for an initializer that does not use super.init().  These initializers
-will require the addition of a call to initDone() at an appropriate
+will require the addition of a call to complete() at an appropriate
 point after the existing super.init().  Once again we experimented
 with a compiler change that applied the new rule, and once again there
 were relatively few initializers that needed to be updated in this
 way.
 
 Much of the work to convert the remaining constructors to initializers
-will rely on the new proposal and hence on the use of initDone().  In
-some cases this will require the addition of a call initDone() in
-situations that will not require initDone() once the transition is
+will rely on the new proposal and hence on the use of complete().  In
+some cases this will require the addition of a call complete() in
+situations that will not require complete() once the transition is
 complete.  Note that, post-transition, the superfluous use of
-initDone() is valid but non-ideomatic.  In these cases we will adopt
-the convention of placing initDone() as the final statement in the
+complete() is valid but non-idiomatic.  In these cases we will adopt
+the convention of placing complete() as the final statement in the
 body; this will simplify a process of finding these cases and
-removing the unncessary initDone().
+removing the unnecessary complete().
 
 These updates can be applied to master in any number of stages
 that is most convenient at a cost of just a few hours per issue.
@@ -769,7 +769,7 @@ Summary
 
 We have summarized early experiences with initializers in Chapel and
 have identified a critical oversight in the initial design.  The key
-to addressing this problem is to initialze parent classes before
+to addressing this problem is to initialize parent classes before
 derived classes.  This is a fairly significant change.  We identify
 two modest extensions for initializers that support this
 change.

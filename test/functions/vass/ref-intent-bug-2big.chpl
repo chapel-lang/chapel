@@ -67,6 +67,7 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.init() {
+  this.complete();
   coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
     inf = new LocalInfo(mygx=ix, mygy=iy);
   }
@@ -103,7 +104,7 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.init(nameArg: string) {
   name=nameArg;
-  super.init();
+  this.complete();
   coforall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) do on loc {
     dat = new LocalData(inf);
     // sanity checks

@@ -31,6 +31,8 @@
 #include "llvm/Transforms/Utils/ValueMapper.h"
 #include "llvm/IR/Verifier.h"
 
+#include "llvmUtil.h"
+
 using namespace llvm;
 
 void extractAndPrintFunctionLLVM(Function *func) {
@@ -60,7 +62,7 @@ void extractAndPrintFunctionLLVM(Function *func) {
 
   std::error_code EC;
   // note: could output to a file if we replace "-" with a filename
-  tool_output_file Out("-", EC, sys::fs::F_None);
+  TOOL_OUTPUT_FILE Out("-", EC, sys::fs::F_None);
   if (EC) {    
     errs() << EC.message() << '\n';
     return;

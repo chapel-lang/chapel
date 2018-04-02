@@ -1,1 +1,1 @@
-parent-access.chpl:20: error: Cannot access parent field 'a' during phase 1
+{a = 10, b = 20, x = 10, y = 40}

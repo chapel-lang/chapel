@@ -8,7 +8,6 @@ class MyClass {
     x = _x;
     y = _y;
 
-    super.init();
   }
 
   proc init(_x, _y) {
@@ -17,7 +16,6 @@ class MyClass {
     x = _x;
     y = _y;
 
-    super.init();
   }
 }
 

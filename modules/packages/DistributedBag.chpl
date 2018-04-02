@@ -240,9 +240,10 @@ module DistributedBag {
     var _rc : Shared(DistributedBagRC(eltType));
 
     pragma "no doc"
-    proc DistBag(type eltType, targetLocales = Locales) {
-      _pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
-      _rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
+    proc init(type eltType, targetLocales = Locales) {
+      this.eltType = eltType;
+      this._pid = (new DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
+      this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 
     pragma "no doc"
@@ -284,23 +285,33 @@ module DistributedBag {
     pragma "no doc"
     var bag : Bag(eltType);
 
-    proc DistributedBagImpl(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
-      bag = new Bag(eltType, this);
-      this.targetLocDom = targetLocDom;
+    proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
+      super.init(eltType);
+
+      this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
-      pid = _newPrivatizedClass(this);
+
+      complete();
+
+      this.pid           = _newPrivatizedClass(this);
+      this.bag           = new Bag(eltType, this);
     }
 
     pragma "no doc"
-    proc DistributedBagImpl(other, pid, type eltType = other.eltType) {
-      bag = new Bag(eltType, this);
-      this.targetLocDom = other.targetLocDom;
+    proc init(other, pid, type eltType = other.eltType) {
+      super.init(eltType);
+
+      this.targetLocDom  = other.targetLocDom;
       this.targetLocales = other.targetLocales;
-      this.pid = pid;
+      this.pid           = pid;
+
+      complete();
+
+      this.bag           = new Bag(eltType, this);
     }
 
     pragma "no doc"
-    proc ~DistributedBagImpl() {
+    proc deinit() {
       delete bag;
     }
 
@@ -661,22 +672,24 @@ module DistributedBag {
       return elt;
     }
 
-    proc BagSegmentBlock(type eltType, capacity) {
+    proc init(type eltType, capacity) {
+      this.eltType = eltType;
       if capacity == 0 {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      cap = capacity;
-      elems = c_malloc(eltType, capacity);
+      this.elems = c_malloc(eltType, capacity);
+      this.cap = capacity;
     }
 
-    proc BagSegmentBlock(type eltType, ptr, capacity) {
-      cap = capacity;
-      elems = ptr;
-      size = cap;
+    proc init(type eltType, ptr, capacity) {
+      this.eltType = eltType;
+      this.elems = ptr;
+      this.cap = capacity;
+      this.size = cap;
     }
 
-    proc ~BagSegmentBlock() {
+    proc deinit() {
       c_free(elems);
     }
   }
@@ -935,11 +948,12 @@ module DistributedBag {
       return (startIdxDeq.fetchAdd(1) % here.maxTaskPar : uint) : int;
     }
 
-    proc Bag(type eltType, parentHandle) {
+    proc init(type eltType, parentHandle) {
+      this.eltType = eltType;
       this.parentHandle = parentHandle;
     }
 
-    proc ~Bag() {
+    proc deinit() {
       forall segment in segments {
         var block = segment.headBlock;
         while block != nil {

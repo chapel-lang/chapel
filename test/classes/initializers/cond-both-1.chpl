@@ -9,15 +9,13 @@ record MyRec {
     writeln('  Init()');
     x = 20;
     y = 30;
-
-    super.init();
   }
 
   proc init(a : int) {
     writeln('Init(int) Enter');
 
     if a < 10 then
-      super.init();
+      this.complete();
     else
       this.init();
 

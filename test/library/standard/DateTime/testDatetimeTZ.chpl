@@ -305,8 +305,8 @@ proc test_utctimetuple() {
   class UOFS: DST {
     var uofs: timedelta;
     proc init(uofs, dofs=0) {
-      this.uofs = new timedelta(minutes=uofs);
       super.init(dofs);
+      this.uofs = new timedelta(minutes=uofs);
     }
     proc utcoffset(dt) {
       return uofs;

@@ -11,14 +11,12 @@ class Foo {
     t = tVal;
     x = xVal;
     y = yVal;
-    super.init();
   }
 
   proc init(type tVal, xVal, yVal: bool) {
     t = tVal;
     x = xVal;
     y = yVal;
-    super.init();
   }
 }
 

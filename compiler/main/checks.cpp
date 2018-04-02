@@ -585,16 +585,21 @@ static void checkIsIterator() {
 // Checks that class and record types have a default initializer and a default
 // type constructor.
 //
-static void checkAggregateTypes()
-{
-  for_alive_in_Vec(AggregateType, at, gAggregateTypes)
-  {
-    if (! at->defaultInitializer && at->initializerStyle == DEFINES_CONSTRUCTOR)
-      INT_FATAL(at, "aggregate type did not define an initializer and has no default constructor");
-    if (! at->defaultTypeConstructor &&
-        at->initializerStyle != DEFINES_CONSTRUCTOR)
-      INT_FATAL(at, "aggregate type did not define an initializer and "
+static void checkAggregateTypes() {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    if (at->defaultInitializer == NULL &&
+        at->initializerStyle   == DEFINES_CONSTRUCTOR) {
+      INT_FATAL(at,
+                "aggregate type did not define an initializer "
+                "and has no default constructor");
+    }
+
+    if (at->typeConstructor  == NULL &&
+        at->initializerStyle != DEFINES_CONSTRUCTOR) {
+      INT_FATAL(at,
+                "aggregate type did not define an initializer and "
                 "has no default type constructor");
+    }
   }
 }
 

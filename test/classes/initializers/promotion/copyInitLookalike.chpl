@@ -14,20 +14,20 @@ class C {
   proc init(x : int) {
     this.eltType = int;
     this.x = x;
-    super.init();
+
   }
 
   proc init(r : real) {
     this.eltType = real;
     this.x = r;
-    super.init();
+
   }
 
   proc init(other:C(int)) {
     writeln("copy init for 'int'");
     this.eltType = other.eltType;
     this.x = other.x;
-    super.init();
+
   }
 }
 

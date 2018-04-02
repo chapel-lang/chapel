@@ -11,7 +11,6 @@ record MyRec {
     else
       x = 12;
 
-    super.init();
   }
 }
 

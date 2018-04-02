@@ -333,7 +333,7 @@ static int computeMaxSubclass(TypeSymbol* ts, std::vector<int>& n2) {
     int            myId  = at->classId;
     int            maxN1 = myId;
 
-    forv_Vec(Type, child, at->dispatchChildren) {
+    forv_Vec(AggregateType, child, at->dispatchChildren) {
       if (child != NULL) {
         int subMax = computeMaxSubclass(child->symbol, n2);
 
@@ -2070,10 +2070,36 @@ void codegen(void) {
     if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
 
-  // Set the executable name if it isn't set already.
+  // Set the executable name to the name of the file containing the
+  // main module (minus its path and extension) if it isn't set
+  // already.
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    strncpy(executableFilename, mainMod->name, sizeof(executableFilename));
+    const char* mainModFilename = mainMod->astloc.filename;
+
+    // find the last slash in the filename's path, if there is one
+    const char* lastSlash = strrchr(mainModFilename, '/');
+    if (lastSlash == NULL) {
+      lastSlash = mainModFilename;
+    } else {
+      lastSlash++;
+    }
+
+    // copy from that slash onwards into the executableFilename,
+    // saving space for a `\0` terminator
+    if (strlen(lastSlash) >= sizeof(executableFilename)) {
+      INT_FATAL("input filename exceeds executable filename buffer size");
+    }
+    strncpy(executableFilename, lastSlash, sizeof(executableFilename)-1);
+    executableFilename[sizeof(executableFilename)-1] = '\0';
+
+    // remove the filename extension
+    char* lastDot = strrchr(executableFilename, '.');
+    if (lastDot == NULL) {
+      INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
+                executableFilename);
+    }
+    *lastDot = '\0';
   }
 
   if( llvmCodegen ) {
@@ -2249,6 +2275,7 @@ void codegen(void) {
     codegen_header_addons();
 
     closeCFile(&hdrfile);
+    fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
     closeCFile(&mainfile);
     closeCFile(&defnfile);
     closeCFile(&strconfig);

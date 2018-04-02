@@ -8,7 +8,6 @@ record R2 {
 
   proc init(initR) {
     r = initR;
-    super.init();
   }
 }
 

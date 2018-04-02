@@ -11,7 +11,6 @@ class Doomed {
     // the above is used to make the initializer actually do something.  It
     // should fail to resolve, though, because we have no idea what to do with
     // the param field.
-    super.init();
   }
 }
 
