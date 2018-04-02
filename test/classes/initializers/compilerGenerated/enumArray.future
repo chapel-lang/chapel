@@ -1,0 +1,2 @@
+bug: enum array field not copied appropriately when record has default initializer
+#9032
