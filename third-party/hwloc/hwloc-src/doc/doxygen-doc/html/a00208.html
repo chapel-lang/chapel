@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_obj_memory_s Struct Reference</title>
+<title>Hardware Locality (hwloc): hwloc_obj_attr_u Union Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -42,95 +42,113 @@ $(function() {
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_obj_memory_s Struct Reference<div class="ingroups"><a class="el" href="a00164.html">Object Structure and Attributes</a></div></div>  </div>
+<div class="title">hwloc_obj_attr_u Union Reference<div class="ingroups"><a class="el" href="a00152.html">Object Structure and Attributes</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="a00113_source.html">hwloc.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="a00101_source.html">hwloc.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00212.html">hwloc_obj_memory_page_type_s</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00224.html">hwloc_bridge_attr_s</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00212.html">hwloc_cache_attr_s</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00216.html">hwloc_group_attr_s</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00240.html">hwloc_osdev_attr_s</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00220.html">hwloc_pcidev_attr_s</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a8befd0b3f4f8b695cafed04b31f36a44"><td class="memItemLeft" align="right" valign="top">hwloc_uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#a8befd0b3f4f8b695cafed04b31f36a44">total_memory</a></td></tr>
-<tr class="separator:a8befd0b3f4f8b695cafed04b31f36a44"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aace044c7f3fd9dffe50202296bf1dc5a"><td class="memItemLeft" align="right" valign="top">hwloc_uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#aace044c7f3fd9dffe50202296bf1dc5a">local_memory</a></td></tr>
-<tr class="separator:aace044c7f3fd9dffe50202296bf1dc5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a208c27f4491077d7fb9ba5db8b29cb57"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#a208c27f4491077d7fb9ba5db8b29cb57">page_types_len</a></td></tr>
-<tr class="separator:a208c27f4491077d7fb9ba5db8b29cb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a865eba7b12b986d72dbe7a2cfd97c50d"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00212.html">hwloc_obj_memory_s::hwloc_obj_memory_page_type_s</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#a865eba7b12b986d72dbe7a2cfd97c50d">page_types</a></td></tr>
-<tr class="separator:a865eba7b12b986d72dbe7a2cfd97c50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5a8ae3bf490e6b1071fea53f7382836"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00212.html">hwloc_obj_attr_u::hwloc_cache_attr_s</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#ab5a8ae3bf490e6b1071fea53f7382836">cache</a></td></tr>
+<tr class="separator:ab5a8ae3bf490e6b1071fea53f7382836"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4ba157cc313e2cdd9a82f1c1df7aaa6"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00216.html">hwloc_obj_attr_u::hwloc_group_attr_s</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#ae4ba157cc313e2cdd9a82f1c1df7aaa6">group</a></td></tr>
+<tr class="separator:ae4ba157cc313e2cdd9a82f1c1df7aaa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4203d713ce0f5beaa6ee0e9bdac70828"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00220.html">hwloc_obj_attr_u::hwloc_pcidev_attr_s</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#a4203d713ce0f5beaa6ee0e9bdac70828">pcidev</a></td></tr>
+<tr class="separator:a4203d713ce0f5beaa6ee0e9bdac70828"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adbdf280699dd84c7619cd8d9edc0d958"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00224.html">hwloc_obj_attr_u::hwloc_bridge_attr_s</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#adbdf280699dd84c7619cd8d9edc0d958">bridge</a></td></tr>
+<tr class="separator:adbdf280699dd84c7619cd8d9edc0d958"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a22904c25fe44b323bab5c9bc52660fca"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00240.html">hwloc_obj_attr_u::hwloc_osdev_attr_s</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00208.html#a22904c25fe44b323bab5c9bc52660fca">osdev</a></td></tr>
+<tr class="separator:a22904c25fe44b323bab5c9bc52660fca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Object memory. </p>
+<div class="textblock"><p>Object type-specific Attributes. </p>
 </div><h2 class="groupheader">Field Documentation</h2>
-<a id="aace044c7f3fd9dffe50202296bf1dc5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aace044c7f3fd9dffe50202296bf1dc5a">&#9670;&nbsp;</a></span>local_memory</h2>
+<a id="adbdf280699dd84c7619cd8d9edc0d958"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbdf280699dd84c7619cd8d9edc0d958">&#9670;&nbsp;</a></span>bridge</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">hwloc_uint64_t hwloc_obj_memory_s::local_memory</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Local memory (in bytes) </p>
-
-</div>
-</div>
-<a id="a865eba7b12b986d72dbe7a2cfd97c50d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a865eba7b12b986d72dbe7a2cfd97c50d">&#9670;&nbsp;</a></span>page_types</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct <a class="el" href="a00212.html">hwloc_obj_memory_s::hwloc_obj_memory_page_type_s</a> *  hwloc_obj_memory_s::page_types</td>
+          <td class="memname">struct <a class="el" href="a00224.html">hwloc_obj_attr_u::hwloc_bridge_attr_s</a>  hwloc_obj_attr_u::bridge</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a208c27f4491077d7fb9ba5db8b29cb57"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a208c27f4491077d7fb9ba5db8b29cb57">&#9670;&nbsp;</a></span>page_types_len</h2>
+<a id="ab5a8ae3bf490e6b1071fea53f7382836"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab5a8ae3bf490e6b1071fea53f7382836">&#9670;&nbsp;</a></span>cache</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">unsigned hwloc_obj_memory_s::page_types_len</td>
+          <td class="memname">struct <a class="el" href="a00212.html">hwloc_obj_attr_u::hwloc_cache_attr_s</a>  hwloc_obj_attr_u::cache</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Size of array <code>page_types</code>. </p>
-
 </div>
 </div>
-<a id="a8befd0b3f4f8b695cafed04b31f36a44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8befd0b3f4f8b695cafed04b31f36a44">&#9670;&nbsp;</a></span>total_memory</h2>
+<a id="ae4ba157cc313e2cdd9a82f1c1df7aaa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4ba157cc313e2cdd9a82f1c1df7aaa6">&#9670;&nbsp;</a></span>group</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">hwloc_uint64_t hwloc_obj_memory_s::total_memory</td>
+          <td class="memname">struct <a class="el" href="a00216.html">hwloc_obj_attr_u::hwloc_group_attr_s</a>  hwloc_obj_attr_u::group</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Total memory (in bytes) in this object and its children. </p>
+</div>
+</div>
+<a id="a22904c25fe44b323bab5c9bc52660fca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a22904c25fe44b323bab5c9bc52660fca">&#9670;&nbsp;</a></span>osdev</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="a00240.html">hwloc_obj_attr_u::hwloc_osdev_attr_s</a>  hwloc_obj_attr_u::osdev</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00113_source.html">hwloc.h</a></li>
+<a id="a4203d713ce0f5beaa6ee0e9bdac70828"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4203d713ce0f5beaa6ee0e9bdac70828">&#9670;&nbsp;</a></span>pcidev</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="a00220.html">hwloc_obj_attr_u::hwloc_pcidev_attr_s</a>  hwloc_obj_attr_u::pcidev</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<hr/>The documentation for this union was generated from the following file:<ul>
+<li><a class="el" href="a00101_source.html">hwloc.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

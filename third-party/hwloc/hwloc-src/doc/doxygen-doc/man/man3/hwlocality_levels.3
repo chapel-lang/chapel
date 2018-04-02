@@ -1,4 +1,4 @@
-.TH "hwlocality_levels" 3 "Thu Jan 18 2018" "Version 1.11.9" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_levels" 3 "Tue Mar 20 2018" "Version 1.11.10" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -136,11 +136,15 @@ If \fBHWLOC_OBJ_MISC\fP is given, the function returns \fBHWLOC_TYPE_DEPTH_UNKNO
 .PP
 Returns the depth of objects of type \fCtype\fP or above\&. If no object of this type is present on the underlying architecture, the function returns the depth of the first 'present' object typically containing \fCtype\fP\&.
 .PP
+This function is only meaningful for normal object types\&. If an I/O object type is given, the corresponding virtual depth is always returned (see \fBhwloc_get_type_depth()\fP)\&. If \fBHWLOC_OBJ_MISC\fP is given, the function returns \fBHWLOC_TYPE_DEPTH_UNKNOWN\fP\&.
+.PP
 If some objects of the given type exist in different levels, for instance L1 and L2 caches, the function returns \fBHWLOC_TYPE_DEPTH_MULTIPLE\fP\&. 
 .SS "static int hwloc_get_type_or_below_depth (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Returns the depth of objects of type \fCtype\fP or below\&. If no object of this type is present on the underlying architecture, the function returns the depth of the first 'present' object typically found inside \fCtype\fP\&.
+.PP
+This function is only meaningful for normal object types\&. If an I/O object type is given, the corresponding virtual depth is always returned (see \fBhwloc_get_type_depth()\fP)\&. If \fBHWLOC_OBJ_MISC\fP is given, the function returns \fBHWLOC_TYPE_DEPTH_UNKNOWN\fP\&.
 .PP
 If some objects of the given type exist in different levels, for instance L1 and L2 caches, the function returns \fBHWLOC_TYPE_DEPTH_MULTIPLE\fP\&. 
 .SS "unsigned hwloc_topology_get_depth (\fBhwloc_topology_t\fP restrict topology)"
