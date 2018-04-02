@@ -709,13 +709,23 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
   // add a new entry for the field being instantiated.
   retval->genericFieldMap.copy(genericFieldMap);
 
+  // Add two new entries to retval's genericFieldMap:
+  // 1) Map from this' generic field to the corresponding instantiated thing in
+  //    'retval'
+  // 2) Map from root instantiation's generic field to instantiated thing in
+  //    'retval'
+  //
+  // Case #2 is necessary because expressions may still refer to the root
+  // instantiation's field
   if (field->hasFlag(FLAG_PARAM) == true) {
     retval->genericFieldMap.put(getField(genericField), sym);
+    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), sym);
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
     retval->genericFieldMap.put(getField(genericField), field);
+    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), field);
     retval->substitutions.put(field, sym->typeInfo()->symbol);
     retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
