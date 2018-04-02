@@ -72,10 +72,13 @@ static const int   MAX_CHARS_PER_PID = 32;
 //
 // Convert a libString of the form "-Lfoo:bar:baz" to entries in libFlag[]
 //
-void addLibInfo(const char* libString) {
+void addLibInfo(const char* libStringOrig) {
   static int libSpace = 0;
   const char* flag = "";    // do we need a '-L' flag?  (initially, no)
   char* colon;              // used to refer to ':'s in libString
+  int libStringLen = strlen(libStringOrig)+1;
+  char* libString = (char*)malloc(libStringLen);
+  strncpy(libString, libStringOrig, libStringLen);
   do {
     colon = strchr(libString, ':'); // are there colon separators?
     if (colon != NULL) {
@@ -84,7 +87,7 @@ void addLibInfo(const char* libString) {
     }
 
     numLibFlags++;                        // we have a new '-L' flag
-    
+
     if (numLibFlags > libSpace) {         // make space for it if necessary
       libSpace = 2*numLibFlags;
       libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
