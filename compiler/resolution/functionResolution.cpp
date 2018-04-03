@@ -4692,6 +4692,12 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     AggregateType* at       = toAggregateType(_this->type);
     INT_ASSERT(at);
 
+    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
+    resolveBlock->insertAtTail(tmpMove);
+    resolveBlock->insertAtTail(tmpAssign);
+    call->replace(resolveBlock);
+    resolveBlock->insertAtTail(call);
+
     if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
       INT_ASSERT(false);
     }
@@ -4703,12 +4709,6 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     }
 
     updateFieldsMember(rhs, parentFn, fieldDef);
-
-    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
-    resolveBlock->insertAtTail(tmpMove);
-    resolveBlock->insertAtTail(tmpAssign);
-    call->replace(resolveBlock);
-    resolveBlock->insertAtTail(call);
 
     normalize(resolveBlock);
     resolveBlockStmt(resolveBlock);
@@ -4816,7 +4816,8 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
       }
     }
 
-  } else if (isNamedExpr(expr) == true) {
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    updateFieldsMember(named->actual, fn, currField);
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 

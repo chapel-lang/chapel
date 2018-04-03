@@ -450,11 +450,11 @@ void InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(tmpExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(tmpExpr);
   }
 }
 
@@ -484,9 +484,9 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
     INT_ASSERT(false);
   }
 
-  updateFieldsMember(initExpr);
-
   insertBefore->insertBefore(fieldSet);
+
+  updateFieldsMember(initExpr);
 }
 
 /************************************* | **************************************
@@ -530,11 +530,11 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
 
     } else if (isPrimitiveScalar(type) == true) {
       VarSymbol* tmp      = newTemp("tmp", type);
@@ -553,11 +553,11 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
 
     } else {
       VarSymbol* tmp      = newTemp("tmp");
@@ -576,11 +576,11 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
     }
 
   // e.g.
@@ -616,11 +616,11 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
 
     } else {
       VarSymbol* tmp      = newTemp("tmp");
@@ -639,11 +639,11 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
     }
 
   } else if (isUnresolvedSymExpr(initExpr)) {
@@ -713,11 +713,11 @@ void InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(tmpExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(tmpExpr);
   }
 }
 
@@ -748,11 +748,11 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(initExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
     if (isNewExpr(initExpr) == true) {
@@ -782,9 +782,9 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(argExpr);
-
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(argExpr);
 
     } else {
       VarSymbol* tmp      = newTemp("tmp", type);
@@ -799,11 +799,11 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
     }
 
   } else if (theFn()->hasFlag(FLAG_COMPILER_GENERATED) == true &&
@@ -824,9 +824,9 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(initExpr);
-
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
 
   } else if (field->exprType == NULL) {
     VarSymbol* tmp       = newTemp("tmp", type);
@@ -843,11 +843,11 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(initExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpAssign);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
 
   } else {
     VarSymbol* tmp       = newTemp("tmp", type);
@@ -872,14 +872,14 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(tmpExpr);
-
-    updateFieldsMember(initExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpMove);
     insertBefore->insertBefore(tmpAssign);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(tmpExpr);
+
+    updateFieldsMember(initExpr);
   }
 }
 
@@ -923,11 +923,11 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
 
     } else {
       VarSymbol* tmp      = newTemp("tmp");
@@ -942,11 +942,11 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
         INT_ASSERT(false);
       }
 
-      updateFieldsMember(initExpr);
-
       insertBefore->insertBefore(tmpDefn);
       insertBefore->insertBefore(tmpInit);
       insertBefore->insertBefore(fieldSet);
+
+      updateFieldsMember(initExpr);
     }
 
   // e.g.
@@ -965,11 +965,11 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
       INT_ASSERT(false);
     }
 
-    updateFieldsMember(initExpr);
-
     insertBefore->insertBefore(tmpDefn);
     insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
+
+    updateFieldsMember(initExpr);
 
   } else {
     INT_ASSERT(false);
@@ -1110,7 +1110,8 @@ void InitNormalize::updateFieldsMember(Expr* expr) const {
       }
     }
 
-  } else if (isNamedExpr(expr)         == true) {
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    updateFieldsMember(named->actual);
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 
