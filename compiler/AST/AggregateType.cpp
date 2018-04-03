@@ -194,13 +194,20 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
-      } else if (pt != dtObject) {
-        // Look at grandparent fields
-        if (DefExpr* field = pt->toSuperField(expr)) {
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
           retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
         }
       }
     }
@@ -214,13 +221,20 @@ DefExpr* AggregateType::toSuperField(CallExpr* expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
-      } else if (pt != dtObject) {
-        // Look at grandparent fields
-        if (DefExpr* field = pt->toSuperField(expr)) {
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
           retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
         }
       }
     }
@@ -715,27 +729,11 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
 
   retval->substitutions.copy(substitutions);
 
-  // Copy the generic field map of the previous instantiation (this), and
-  // add a new entry for the field being instantiated.
-  retval->genericFieldMap.copy(genericFieldMap);
-
-  // Add two new entries to retval's genericFieldMap:
-  // 1) Map from this' generic field to the corresponding instantiated thing in
-  //    'retval'
-  // 2) Map from root instantiation's generic field to instantiated thing in
-  //    'retval'
-  //
-  // Case #2 is necessary because expressions may still refer to the root
-  // instantiation's field
   if (field->hasFlag(FLAG_PARAM) == true) {
-    retval->genericFieldMap.put(getField(genericField), sym);
-    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), sym);
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
-    retval->genericFieldMap.put(getField(genericField), field);
-    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), field);
     retval->substitutions.put(field, sym->typeInfo()->symbol);
     retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
@@ -793,9 +791,6 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
   newInstance->symbol->copyFlags(this->symbol);
 
   newInstance->substitutions.copy(this->substitutions);
-
-  // Inherit generic field map from parent
-  newInstance->genericFieldMap.map_union(parentType->genericFieldMap);
 
   Symbol* field = newInstance->getField(1);
   newInstance->substitutions.put(field, parentType->symbol);
@@ -2532,8 +2527,4 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   }
 
   return retval;
-}
-
-SymbolMap& AggregateType::getGenericFieldMap() {
-  return genericFieldMap;
 }

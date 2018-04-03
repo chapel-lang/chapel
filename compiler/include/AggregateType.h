@@ -142,8 +142,6 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  SymbolMap&                  getGenericFieldMap();
-
 
   //
   // Public fields
@@ -260,10 +258,6 @@ private:
   int                         genericField;
 
   bool                        mIsGeneric;
-
-  // Map from fields in the root instantiation to fields in the concrete
-  // instantiation.
-  SymbolMap                   genericFieldMap;
 };
 
 extern AggregateType* dtObject;
