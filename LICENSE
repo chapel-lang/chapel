@@ -85,7 +85,7 @@ The Chapel implementation is composed of two categories of code:
    For packages that are used based on a CHPL_* setting, note that this
    setting may either be explicitly or implicitly set. Additionally,
    some packages are only used if a speculative build was successful.
-   See https://chapel-lang.org/docs/latest/usingchapel/chplenv.html to
+   See https://chapel-lang.org/docs/usingchapel/chplenv.html to
    see which packages are used by default and which ones are built
    speculatively. You can also check your CHPL_* settings by running
    $CHPL_HOME/util/printchplenv after Chapel has been built
