@@ -25,7 +25,7 @@ This is the core image for Chapel. It provides the complete Chapel compiler and 
 
 The Chapel core image (above), rebuilt with `CHPL_COMM=gasnet` and `GASNET_SPAWNFN=L`. Simulates a multilocale Chapel platform within the Docker container.
 
-Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](https://chapel-lang.org/docs/latest/usingchapel/multilocale.html) for details.
+Multilocale Chapel brings additional requirements, unrelated to Docker. The `chpl` compilation produces two binary files (e.g. `hello_real` as well as `hello`). When you run the binary, you need another command line parameter, `-nl #`, to specify the number of locales. Please see [Multilocale Chapel Execution](https://chapel-lang.org/docs/usingchapel/multilocale.html) for details.
 
 # How to use the image
 
@@ -67,7 +67,7 @@ Hello, world!
 
 # Documentation
 
-Chapel's documentation is [available online](https://chapel-lang.org/docs/latest/).
+Chapel's documentation is [available online](https://chapel-lang.org/docs/).
 Documentation for a specific release is also available: [1.16](https://chapel-lang.org/docs/1.16/), [1.15](https://chapel-lang.org/docs/1.15/).
 
 # License

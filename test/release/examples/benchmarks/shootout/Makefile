@@ -75,7 +75,7 @@ pidigits: pidigits.chpl
 	else \
 	echo "";\
 	echo "Can't build pidigits without CHPL_GMP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-gmp"; \
 	echo ""; \
 	fi
 
@@ -85,7 +85,7 @@ pidigits-fast: pidigits-fast.chpl
 	else \
 	echo "";\
 	echo "Can't build pidigits-fast without CHPL_GMP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-gmp"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-gmp"; \
 	echo ""; \
 	fi
 
@@ -95,7 +95,7 @@ regexdna: regexdna.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna without CHPL_REGEXP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regexp"; \
 	echo ""; \
 	fi
 
@@ -105,7 +105,7 @@ regexdna-redux: regexdna-redux.chpl
 	else \
 	echo "";\
 	echo "Can't build regexdna-redux without CHPL_REGEXP being enabled. See for details:"; \
-	echo "https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-regexp"; \
+	echo "https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-regexp"; \
 	echo ""; \
 	fi
 
