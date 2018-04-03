@@ -295,9 +295,9 @@ single-locale setting:
      CHPL_COMM != none
 
 This is useful when the conditions required to skip a test can be easily
-determined from the environment.  A condition of ``>=`` indicates that the test
-should be skipped when the environment variable on the left does not contain the
-contents on the right, while ``<=`` indicates the opposite - this is useful for
+determined from the environment.  A condition of ``<=`` indicates that the test
+should be skipped when the environment variable on the left contains the
+contents on the right, while ``>=`` indicates the opposite - this is useful for
 imprecise matches, e.g. ``CHPL_HOST_PLATFORM >= cygwin`` would cause the test to
 run on both ``cygwin64`` and ``cygwin32``.
 
@@ -562,11 +562,10 @@ The following two entries are singletons:
 
 
 Finally, add the ``.graph`` file to ``$CHPL_HOME/test/GRAPHFILES``.  This file
-is separated into a number of suites (indicated by comments) followed
-by graphs that should appear in those suites (a graph may appear in
-multiple suites).  This file determines how graphs are organized on
-the Chapel performance graphing webpages (currently hosted at
-``http://chapel.sourceforge.net/perf/``).
+is separated into a number of suites (indicated by comments) followed by graphs
+that should appear in those suites (a graph may appear in multiple suites).
+This file determines how graphs are organized on the Chapel performance graphing
+webpages (currently hosted at ``http://chapel-lang.org/perf/``).
 
 Once the ``.graph`` file exists and is listed in ``GRAPHFILES``, running
 ``start_test -performance`` will cause the test system to not only create
