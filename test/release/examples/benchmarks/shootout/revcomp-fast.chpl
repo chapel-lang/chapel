@@ -60,8 +60,8 @@ proc main(args: [] string) {
 
 // process a sequence from both ends, replacing each extreme element
 // with the table lookup of the opposite one
-proc process(seq: [?inds]) {
-  var start = inds.low, end = inds.high;
+proc process(seq) {
+  var start = seq.domain.low, end = seq.domain.high;
   while start <= end {
     ref d1 = seq[start], d2 = seq[end];
     (d1, d2) = (table[d2], table[d1]);
