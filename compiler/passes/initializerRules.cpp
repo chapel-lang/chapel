@@ -551,10 +551,10 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
-        if (state.isPhase2() == false) {
+        if (state.isPhase0() == true) {
           USR_FATAL(stmt,
                     "can't set value of field \"%s\" from parent type "
-                    "during phase 1 of initialization",
+                    "before calling this.init() or super.init()",
                     field->sym->name);
 
         } else {
@@ -883,6 +883,10 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(AggregateType, pt, at->dispatchParents) {
     if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
       return field;
+    } else if (pt != dtObject) {
+      if (DefExpr* field = toSuperFieldInit(pt, callExpr)) {
+        return field;
+      }
     }
   }
 
