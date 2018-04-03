@@ -552,11 +552,11 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-l", libraryFilename));
+ addLibFile(libraryFilename);
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-L", libraryFilename));
+  addLibPath(libraryFilename);
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
