@@ -9,6 +9,9 @@ if [[ ! -f pyzmq-venv/bin/activate ]] ; then
         which virtualenv 2> /dev/null
         if [[ $? -eq 0 ]]; then
             CHPL_VIRTUALENV=virtualenv
+        else
+            # Abort mission if virtualenv not available
+            exit 1
         fi
     fi
 
