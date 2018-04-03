@@ -11,7 +11,7 @@ module Strassen
 
         proc getInstance() : Strassen  // Error message line# wrong
         {
-            return new Strassen(n);
+            return new Strassen("name", false, n);
         }
     }
 

@@ -209,6 +209,7 @@ static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
+static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
@@ -8398,6 +8399,8 @@ static void pruneResolvedTree() {
 
   removeMootFields();
 
+  removeReturnTypeBlocks();
+
   expandInitFieldPrims();
 
   cleanupAfterRemoves();
@@ -9474,6 +9477,25 @@ static void removeMootFields() {
             field->defPoint->remove();
         }
       }
+    }
+  }
+}
+
+static void removeReturnTypeBlocks() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->retExprType && fn->retExprType->parentSymbol) {
+      // First, move any defs in the return type block out
+      // (e.g. an array return type creates parloopexpr fns)
+      for_alist(expr, fn->retExprType->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (isFnSymbol(def->sym)) {
+            def->remove();
+            fn->defPoint->insertBefore(def);
+          }
+        }
+      }
+      // Now remove the type block
+      fn->retExprType->remove();
     }
   }
 }
