@@ -401,9 +401,7 @@ static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
-  IntentTag oldIntent = arg->intent;
   bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
-  ArgSymbol* oldArg   = NULL;
 
   Serializers ser = serializeMap[oldArgType->getValType()];
 
@@ -489,38 +487,16 @@ static void insertSerialization(FnSymbol*  fn,
     // Old argument not passed so we can't destroy the original
     // value in the task function anymore; destroy it just after
     // the serialize call.
-    if (argDestroyCall && !needsRuntimeType) {
+    if (argDestroyCall) {
       FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
       call->insertBefore(new CallExpr(destroyFn, actual->copy()));
     }
 
     actual->replace(new SymExpr(data));
-
-    // Preserve the actual that will be used to create the runtime type within
-    // the on-statement
-    if (needsRuntimeType) {
-      call->insertAtTail(actual);
-    }
-  }
-
-  // We need to keep the RuntimeType around to use as the 'this' formal
-  // for the deserialize call. Add FLAG_NO_RVF to avoid an infinite loop where
-  // we keep trying to serialize a formal we just added.
-  if (needsRuntimeType) {
-    SET_LINENO(fn);
-    oldArg = new ArgSymbol(oldIntent, astr(arg->cname, "_old"), oldArgType);
-    oldArg->addFlag(FLAG_NO_RVF);
-    fn->insertFormalAtTail(oldArg);
   }
 
   // Remove the old auto-destroy call from the task fn.
-  // If we passed oldArg, destroy that instead.
   if (argDestroyCall) {
-    if (needsRuntimeType) {
-      SET_LINENO(argDestroyCall);
-      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
-      argDestroyCall->insertBefore(new CallExpr(destroyFn, oldArg));
-    }
     argDestroyCall->remove();
   }
 
@@ -545,7 +521,6 @@ static void insertSerialization(FnSymbol*  fn,
     INT_ASSERT(runtimeTypeFn != NULL);
     VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
     anchor->insertBefore(new DefExpr(info));
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, info, new CallExpr(runtimeTypeFn, oldArg)));
 
     // Add 'this' actual
     deserializeCall->insertAtHead(new SymExpr(info));
