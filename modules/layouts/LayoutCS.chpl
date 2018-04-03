@@ -114,7 +114,7 @@ class CSDom: BaseSparseDomImpl {
     if parentDom.idxType != idxType then
       compilerError("idxType mismatch in CSDom.init(): " + idxType:string + " != " + parentDom.idxType:string);
 
-    super.init(rank, idxType, parentDom);
+    super.init(rank=rank, idxType=idxType, parentDom=parentDom);
 
     this.compressRows = compressRows;
     this.stridable = stridable;
