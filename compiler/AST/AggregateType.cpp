@@ -197,6 +197,11 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (pt != dtObject) {
+        // Look at grandparent fields
+        if (DefExpr* field = pt->toSuperField(expr)) {
+          retval = field;
+        }
       }
     }
   }
@@ -212,6 +217,11 @@ DefExpr* AggregateType::toSuperField(CallExpr* expr) {
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (pt != dtObject) {
+        // Look at grandparent fields
+        if (DefExpr* field = pt->toSuperField(expr)) {
+          retval = field;
+        }
       }
     }
   }
