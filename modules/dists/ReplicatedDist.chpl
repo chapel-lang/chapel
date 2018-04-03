@@ -175,6 +175,7 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
+pragma "use default init"
 class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)

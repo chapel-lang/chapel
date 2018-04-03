@@ -116,6 +116,7 @@ module ArrayViewRankChange {
   // for rectangular domains (because they're the only ones with
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
@@ -139,8 +140,11 @@ module ArrayViewRankChange {
     }
 
     // the higher-dimensional domain that we're equivalent to
+    //
+    // BHARSH INIT TODO: use 'downrank' instead of 'collapsedDim.rank'
+    //
     var downDomPid:int;
-    var downDomInst: downDomType(downrank, idxType, stridable);
+    var downDomInst: downDomType(collapsedDim.rank, idxType, stridable);
 
     //
     // TODO: If we put this expression into the variable declaration
