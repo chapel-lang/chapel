@@ -7,5 +7,5 @@ if [[ -f pyzmq-venv/bin/activate ]] ; then
     python $pyscript
     deactivate
 else
-    python $pyscript
+    echo "virtualenv failed to build"
 fi
