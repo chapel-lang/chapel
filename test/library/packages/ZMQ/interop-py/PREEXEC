@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+clean_venv() {
+    echo "Aborted virtualenv build due to errors"
+    rm -rf pyzmq-venv
+    exit 1
+}
+
 if [[ ! -f pyzmq-venv/bin/activate ]] ; then
     # Path to Chapel-installed virtualenv
     CHPL_VIRTUALENV=$(python $CHPL_HOME/util/chplenv/chpl_home_utils.py --venv)/../virtualenv
@@ -15,8 +21,8 @@ if [[ ! -f pyzmq-venv/bin/activate ]] ; then
         fi
     fi
 
-    # Exit if anything goes wrong
-    set -e
+    # Set the trap to abort and clean up virtualenv if anything goes wrong
+    trap clean_venv ERR
 
     # Create virtualenv
     ${CHPL_VIRTUALENV} pyzmq-venv
@@ -24,3 +30,5 @@ if [[ ! -f pyzmq-venv/bin/activate ]] ; then
     python -m pip install ${CHPL_PIP_INSTALL_PARAMS} -r requirements.txt
     deactivate
 fi
+
+

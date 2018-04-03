@@ -8,4 +8,5 @@ if [[ -f pyzmq-venv/bin/activate ]] ; then
     deactivate
 else
     echo "virtualenv failed to build"
+    exit 1
 fi
