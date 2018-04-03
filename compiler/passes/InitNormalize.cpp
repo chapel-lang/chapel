@@ -22,6 +22,7 @@
 #include "ForallStmt.h"
 #include "initializerRules.h"
 #include "stmt.h"
+#include "astutil.h"
 
 static bool mightBeSyncSingleExpr(DefExpr* field);
 
@@ -1174,8 +1175,9 @@ void InitNormalize::handleInsertedMethodCall(CallExpr* call) const {
 
       if (matches) {
         CallExpr* replacement = new CallExpr(astrSdot, mFn->_this);
-        replacement->insertAtTail(us);
+        replacement->insertAtTail(us->remove());
         call->baseExpr = replacement;
+        parent_insert_help(call, replacement);
       }
     }
   }
