@@ -43,25 +43,22 @@
 
 
 static inline
-int chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
+void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t typeIndex,
                        int32_t commID, int ln, int32_t fn)
 {
   if (chpl_nodeID == node) {
     chpl_memcpy(addr, raddr, size);
-    return 0;
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
-    return 2;
   } else {
 #ifdef CHPL_TASK_COMM_GET
     chpl_task_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #else
     chpl_comm_get(addr, node, raddr, size, typeIndex, commID, ln, fn);
 #endif
-    return 1;
   }
 }
 
