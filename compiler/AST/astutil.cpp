@@ -173,6 +173,45 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
   AST_CHILDREN_CALL(destNode, reset_ast_loc, astlocArg);
 }
 
+void compute_fn_call_sites(FnSymbol* fn) {
+  if (fn->calledBy == NULL) {
+    fn->calledBy = new Vec<CallExpr*>();
+  }
+
+  for_SymbolSymExprs(se, fn) {
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (call->isEmpty()) {
+        assert(0); // not possible
+
+      } else if (!isAlive(call)) {
+        assert(0); // not possible
+
+      } else if (fn == call->resolvedFunction()) {
+        fn->calledBy->add(call);
+
+      } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
+        // sjd: do we have to do anything special here?
+        //      should this call be added to some function's calledBy list?
+
+      } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+        FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
+        if (vFn == fn) {
+          Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
+
+          fn->calledBy->add(call);
+
+          forv_Vec(FnSymbol, child, *children) {
+            if (!child->calledBy)
+              child->calledBy = new Vec<CallExpr*>();
+
+            child->calledBy->add(call);
+          }
+        }
+      }
+    }
+  }
+}
+
 void compute_call_sites() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
@@ -182,34 +221,7 @@ void compute_call_sites() {
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    for_SymbolSymExprs(se, fn) {
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
-        if (call->isEmpty() == true) {
-          assert(0); // not possible
-
-        } else if (isAlive(call) == false) {
-          assert(0); // not possible
-
-        } else if (fn == call->resolvedFunction()) {
-          fn->calledBy->add(call);
-
-        } else if (call->isPrimitive(PRIM_FTABLE_CALL)) {
-          // sjd: do we have to do anything special here?
-          //      should this call be added to some function's calledBy list?
-
-        } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-          FnSymbol*      vFn       = toFnSymbol(toSymExpr(call->get(1))->symbol());
-          if (vFn == fn) {
-            Vec<FnSymbol*>* children = virtualChildrenMap.get(fn);
-
-            fn->calledBy->add(call);
-
-            forv_Vec(FnSymbol, child, *children)
-              child->calledBy->add(call);
-          }
-        }
-      }
-    }
+    compute_fn_call_sites(fn);
   }
 }
 
