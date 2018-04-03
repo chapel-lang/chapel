@@ -1870,10 +1870,15 @@ module String {
 
   pragma "no doc"
   inline proc chpl__defaultHash(x : string): uint {
-    // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
-    var hash: int(64) = 5381;
-    for c in 0..#(x.length) {
-      hash = ((hash << 5) + hash) ^ x.buff[c];
+    var hash: int(64);
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      // Use djb2 (Dan Bernstein in comp.lang.c), XOR version
+      var locHash: int(64) = 5381;
+      for c in 0..#(x.length) {
+        locHash = ((locHash << 5) + locHash) ^ x.buff[c];
+      }
+      hash = locHash;
     }
     return hash;
   }

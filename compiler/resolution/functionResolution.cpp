@@ -4675,7 +4675,15 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
     // Applies a type to TMP
-    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, fieldDef->exprType->copy());
+    // BHARSH TODO: Why can't we just use the exprType of the formal? Shouldn't
+    // it be the same?
+    Expr*      typeExpr  = fieldDef->exprType->copy();
+    if (ct->isClass()) {
+      // Update symbols
+      update_symbols(typeExpr, &ct->getGenericFieldMap());
+    }
+
+    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
 
     // Set the value for TMP
@@ -4740,11 +4748,6 @@ static bool isFieldAccessible(Expr* expr,
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
-
     } else {
       retval = true;
     }
@@ -4758,11 +4761,6 @@ static bool isFieldAccessible(Expr* expr,
                   "'%s' used before defined (first used here)",
                   field->sym->name);
       }
-
-    } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
 
     } else {
       for_actuals(actual, callExpr) {
@@ -4807,11 +4805,6 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
       }
-
-    } else if (DefExpr* field = _thisType->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
@@ -9346,6 +9339,13 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
     resolveCallAndCallee(defOfCall);
 
     retval = foldTryCond(postFold(defOfCall));
+
+    if (at && at->isRecord() && at->hasPostInitializer()) {
+      CallExpr* move = toCallExpr(defOfCall->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr*  var  = toSymExpr(move->get(1));
+      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+    }
   }
 
   return retval;

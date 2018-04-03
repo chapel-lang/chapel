@@ -17,8 +17,7 @@ hwloc supports the following operating systems:
 
   * Linux (including old kernels not having sysfs topology information, with
  knowledge of cpusets, ScaleMP vSMP and Kerrighed support, etc.) on all
- supported hardware, including Intel Xeon Phi (KNL and KNC, either
- standalone or as a coprocessor) and NumaScale NumaConnect.
+ supported hardware, including Intel Xeon Phi and NumaScale NumaConnect.
   * Solaris (with support for processor sets and logical domains)
   * AIX
   * Darwin / OS X
@@ -31,10 +30,10 @@ hwloc supports the following operating systems:
 
 Since it uses standard Operating System information, hwloc's support is mostly
 independant from the processor type (x86, powerpc, ...) and just relies on the
-Operating System support. The only exception to this is kFreeBSD, which does
-not support topology information, and hwloc thus uses an x86-only CPUID-based
-backend (which can be used for other OSes too, see the Components and plugins
-section).
+Operating System support. The main exception is BSD operating systems (NetBSD,
+FreeBSD, etc.) because they do not provide support topology information, hence
+hwloc uses an x86-only CPUID-based backend (which can be used for other OSes
+too, see the Components and plugins section).
 
 To check whether hwloc works on a particular machine, just try to build it and
 run lstopo or lstopo-no-graphics. If some things do not look right (e.g. bogus

@@ -1,7 +1,7 @@
 
 record X {
   param p = 0;
-  proc initialize() { 
+  proc postinit() {
     writeln("X has p=", p); 
   }
 }

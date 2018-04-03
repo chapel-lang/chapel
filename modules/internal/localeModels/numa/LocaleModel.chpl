@@ -85,14 +85,10 @@ module LocaleModel {
     proc addChild(loc:locale) { halt("Cannot add children to this locale type."); }
     proc getChild(idx:int) : locale { return nil; }
 
-    // This is commented out b/c it leads to an internal error during
-    // the resolveIntents pass.  See
-    // test/functions/iterators/sungeun/iterInClass.future
-    //
-    // iter getChildren() : locale {
-    //  halt("No children to iterate over.");
-    //  yield nil;
-    // }
+    iter getChildren() : locale {
+      halt("No children to iterate over.");
+      yield nil;
+    }
   }
 
   //
