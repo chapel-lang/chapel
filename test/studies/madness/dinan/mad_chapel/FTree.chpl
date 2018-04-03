@@ -35,7 +35,7 @@ class FTree {
                                     // something that has not yet been set.
 
 
-    proc initialize() {
+    proc postinit() {
         if order == 0 then
             halt("FTree must be initialized with an order > 0");
     }

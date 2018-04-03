@@ -9,7 +9,7 @@ class E : C {
   param rank: int;
   var ranges : rank*range(int, BoundedRangeType.bounded, true);
 
-  proc initialize() {
+  proc postinit() {
     for i in 1..rank do
       ranges(i) = 1..i by -1;
   }

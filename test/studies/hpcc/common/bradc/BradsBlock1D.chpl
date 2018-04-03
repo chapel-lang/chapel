@@ -38,10 +38,10 @@ class Block1DDist {
 
   //
   // an associative array of local distribution class descriptors --
-  // set up in initialize() below
+  // set up in postinit() below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the postinit method
   //
   // TODO: Remove second generic parameter -- seems confusing and wrong.  Replace
   // with explicit typing of locid field in LocBlock1DDist class.  Particularly
@@ -49,7 +49,7 @@ class Block1DDist {
   //
   var locDist: [targetLocDom] LocBlock1DDist(glbIdxType, index(targetLocs.domain));
 
-  proc initialize() {
+  proc postinit() {
     for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
         locDist(loc) = new LocBlock1DDist(glbIdxType, locid, this);
@@ -171,14 +171,14 @@ class Block1DDom {
 
   //
   // an associative array of local domain class descriptors -- set up
-  // in initialize() below
+  // in postinit() below
   //
   // TODO: would like this to be const and initialize in-place,
   // removing the initialize method
   //
   var locDom: [dist.targetLocDom] LocBlock1DDom(glbIdxType, lclIdxType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dist.targetLocs do
       on loc do
         locDom(loc) = new LocBlock1DDom(glbIdxType, lclIdxType, this, dist.getChunk(whole));
@@ -315,11 +315,11 @@ class Block1DArr {
   // an associative array of local array classes, indexed by locale
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method
+  // removing the postinit method
   //
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(glbIdxType, lclIdxType, elemType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dom.dist.targetLocs do
       on loc do
         locArr(loc) = new LocBlock1DArr(glbIdxType, lclIdxType, elemType, dom.locDom(loc));
