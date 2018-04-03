@@ -368,6 +368,17 @@ files specify a ``.good`` file in this way.
 A Performance Test
 ------------------
 
+This section covers how to make a performance test, including:
+
+- how to indicate it is a performance test
+- how to specify which parts of the output should be tracked
+- how to validate the output
+- how to specify compilation and execution options that are different from the
+  test's normal run
+- how to track output for multiple tests
+- how to compare against a version written in C
+- how to graph the data that has been tracked
+
 [Files used to illustrate the running example here can be found at
 `$CHPL_HOME/test/Samples/Performance`_ in the Chapel source repository]
 
@@ -440,14 +451,33 @@ verify that the last line of output contains the string "SUCCESS":
 Accumulating Performance Data in .dat files
 +++++++++++++++++++++++++++++++++++++++++++
 
-The values collected during performance testing are stored as a
-tab-delimited ``.dat`` file in the directory specified by
-``$CHPL_TEST_PERF_DIR`` (if undefined, the test system defaults to
-``$CHPL_HOME/test/perfdat/<machineName>``).  The base name for the ``.dat``
-file is taken from the ``.perfkeys`` file.  For example, the output for
-the test above would be stored in a file named ``foo.dat``.  Each time the
-test is run in performance mode, a new line of data is added to the
-``.dat`` file, corresponding to that run.
+The values collected during performance testing are stored in a ``.dat`` file in
+the directory specified by ``$CHPL_TEST_PERF_DIR`` (if undefined, the test
+system defaults to ``$CHPL_HOME/test/perfdat/<machineName>``).  Each time the
+test is run in performance mode, a new line of data is added to the end of the
+``.dat`` file.  The line will start with the date, and the data for each key
+will be tab-separated.  The base name for the ``.dat`` file is taken from the
+``.perfkeys`` file.  For example, the output for the test above would be stored
+in a file named ``foo.dat``.
+
+Here is a sample ``.dat`` file, for the performance test at
+`$CHPL_HOME/test/Samples/Performance`_:
+
+  .. code-block::
+
+     # Date	Time:	Memory:
+     03/26/18 	194.3	24
+     04/02/18 	194.3	24
+
+Because the lines are tab-separated, the key will not necessarily "line up"
+visually with the corresponding header.  Modifying these files by hand is
+inadvisible.
+
+Performance tests submitted to the Chapel repository are run on a nightly basis,
+generating these ``.dat`` files.  Modifications to the ``.perfkeys`` that
+specify them **will** impact the ``.dat`` files that have already been
+generated, so please be careful when updating already existing performance
+tests.
 
 Note that in practice, most tests are written to be run in both a
 correctness and a performance mode, using a ``bool config const`` to skip
@@ -556,8 +586,8 @@ corresponding to the lines in the graph:
 
 The following two entries are singletons:
 
-* ``ylabel:`` a label for the graph's y-axis (the x-axis will be time
-  by default)
+* ``ylabel:`` a label for the graph's y-axis (the x-axis will be the date the
+  test was run by default)
 * ``graphtitle:`` a title for the graph as a whole
 
 
@@ -833,7 +863,9 @@ foo.skipif          line separated list of conditions under which the test
                     `Limiting Where the Test Runs`_ for more information
 SKIPIF              same as above, but applied to the entire directory
 foo.suppressif      line separated list of conditions under which the test is
-                    expected to fail, or a script to compute the same
+                    expected to fail, or a script to compute the same.  Note
+                    that unless otherwise specified, a ``.skipif`` or
+                    ``.future`` is likely more appropriate for the test.
 foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
 ..
