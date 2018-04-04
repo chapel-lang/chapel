@@ -174,6 +174,9 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
 }
 
 void compute_fn_call_sites(FnSymbol* fn) {
+/* If present, fn->calledBy needs to be set up in advance.
+   See the comment in compute_call_sites() */
+
   if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
   }
