@@ -608,7 +608,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
     retval->dispatchParents.add(parent);
     parent->dispatchChildren.add_exclusive(retval);
 
-    retval->symbol->removeFlag(FLAG_GENERIC);
+    if (retval->setFirstGenericField() == false) {
+      retval->symbol->removeFlag(FLAG_GENERIC);
+    }
 
     symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
@@ -803,7 +805,7 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   INT_ASSERT(inserted);
 
-  if (newInstance->symbol->hasFlag(FLAG_GENERIC) == true) {
+  if (newInstance->setFirstGenericField() == false) {
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
 
