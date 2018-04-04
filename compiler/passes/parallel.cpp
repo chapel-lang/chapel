@@ -1283,27 +1283,28 @@ makeHeapAllocations() {
           if (formal == arg)
             se = toSymExpr(actual);
         }
-        INT_ASSERT(se);
+        if (se == NULL) {
+          // The 'se' computation above, equivalently formal_to_actual(),
+          // does not handle the case where 'call' is in 'calledBy' because
+          // 'call' is a virtual method call to a function in a parent class.
+          // Ex. dsiReallocate() in arrays/deitz/jacobi-no-local.chpl.
+          // This case is TODO.
+          continue;
+        }
         // Previous passes mean that we should always get a formal SymExpr
         // to match the ArgSymbol.  And that formal should have the
         // ref flag, since we obtained it through the refVec.
-        //
-        // BHARSH TODO: This INT_ASSERT existed before the switch to qualified
-        // types. After the switch it's now possible to pass a non-ref actual
-        // to a ref formal, and codegen will just take care of it.  With that
-        // in mind, do we need to do something here if the actual is not a ref,
-        // or can we just skip that case?
-        //INT_ASSERT(se->symbol()->isRef());
-        if (arg->intent & INTENT_FLAG_REF) {
-          // Same as PRIM_ADDR_OF case below.
-          if (!se->isRef() && !varSet.set_in(se->symbol())) {
+        INT_ASSERT(arg->intent & INTENT_FLAG_REF);
+        if (se->symbol()->isRef()) {
+         if (!refSet.set_in(se->symbol())) {
+          refSet.set_add(se->symbol());
+          refVec.add(se->symbol());
+         }
+        } else {
+          if (!varSet.set_in(se->symbol())) {
             varSet.set_add(se->symbol());
             varVec.add(se->symbol());
           }
-        } else
-        if (se->symbol()->isRef() && !refSet.set_in(se->symbol())) {
-          refSet.set_add(se->symbol());
-          refVec.add(se->symbol());
         }
         // BHARSH TODO: Need to add to varVec here?
       }
