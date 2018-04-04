@@ -57,6 +57,7 @@
 module Path {
 
 use SysError;
+use Sys;
 
 /* Represents generally the current directory */
 const curDir = ".";
@@ -457,4 +458,83 @@ proc file.realPath(): string throws {
      return ("", name);
    }
  }
+
+
+/* Expands any environment variables in the path of the form `$<name>` or
+   `${<name>}` into their values.  If <name> does not exist, they are left
+   in place. Returns the path which includes these expansions.
+
+   :arg path: a string representation of a path, which may or may not include
+                   `$<name>` or `${<name>}`.
+   :type path: `string`
+
+   :return: `path`, having replaced all references to environment variables with
+                their values
+   :rtype: `string`
+*/
+  proc expandVars(path: string): string{
+    var path_p:string = path;
+    var varChars:string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
+    var res:string = "";
+    var ind:int = 1;
+    var pathlen:int = path_p.length;
+    while(ind <= pathlen){
+        var c:string = path_p(ind);
+        if(c == "$" && ind+1<=pathlen){
+            if(path_p(ind+1) == "$"){
+                res = res + c;
+                ind += 1;
+            }
+            else if(path_p(ind+1) == "{"){
+                path_p = path_p((ind+2)..);
+                pathlen = path_p.length;
+                ind = path_p.find("}");
+                if(ind == 0){
+                    res += "${" +path_p;
+                    ind = pathlen;
+                }
+                else{
+                    var env_var:string = path_p(..(ind-1));
+                    var value:string;
+                    var value_c:c_string;
+                    var h:int = sys_getenv(env_var.c_str(), value_c);
+                    if(h != 1){
+                        value = "${" + env_var + "}";
+                    }
+                    else{
+                        value = value_c:string;
+                    }
+                    res += value;
+                }
+            }
+            else{
+                var env_var:string = "";
+                ind += 1;
+                while(ind <= path_p.length && varChars.find(path_p(ind))!= 0){
+                    env_var += path_p(ind);
+                    ind += 1;
+                }
+                var value:string;
+                var value_c:c_string;
+                var h:int = sys_getenv(env_var.c_str(), value_c);
+                if(h != 1){
+                    value = "$" + env_var;
+                }
+                else{
+                    value = value_c:string;
+                }
+                res += value;
+                if(ind <= path_p.length){
+                    ind -= 1;
+                }
+            }
+        }
+        else{
+            res += c;
+        }
+        ind +=1;
+    }
+    return res;
+  }
 }
+

@@ -173,6 +173,7 @@ static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveGenericActuals(CallExpr* call);
+static void resolveAutoCopyEtc(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -209,6 +210,7 @@ static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
+static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
@@ -4675,7 +4677,15 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
     // Applies a type to TMP
-    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, fieldDef->exprType->copy());
+    // BHARSH TODO: Why can't we just use the exprType of the formal? Shouldn't
+    // it be the same?
+    Expr*      typeExpr  = fieldDef->exprType->copy();
+    if (ct->isClass()) {
+      // Update symbols
+      update_symbols(typeExpr, &ct->getGenericFieldMap());
+    }
+
+    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
 
     // Set the value for TMP
@@ -4740,11 +4750,6 @@ static bool isFieldAccessible(Expr* expr,
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
-
     } else {
       retval = true;
     }
@@ -4758,11 +4763,6 @@ static bool isFieldAccessible(Expr* expr,
                   "'%s' used before defined (first used here)",
                   field->sym->name);
       }
-
-    } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
 
     } else {
       for_actuals(actual, callExpr) {
@@ -4807,11 +4807,6 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
       }
-
-    } else if (DefExpr* field = _thisType->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
@@ -7456,7 +7451,15 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
       USR_FATAL(serializeFn, "chpl__serialize cannot return void");
     }
 
-    if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
+    // Make sure we have resolved autocopy / autodestroy etc
+    if (AggregateType* at = toAggregateType(retType)) {
+      resolveAutoCopyEtc(at);
+      propagateNotPOD(at);
+    }
+
+    if (isPrimitiveType(retType) == false &&
+        (autoDestroyMap.get(retType) == NULL ||
+         isClass(retType))) {
       USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
       serializeFn = NULL;
     } else {
@@ -7561,7 +7564,6 @@ static void resolveSerializers() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void        resolveAutoCopyEtc(AggregateType* at);
 static const char* autoCopyFnForType(AggregateType* at);
 static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
@@ -8404,6 +8406,8 @@ static void pruneResolvedTree() {
   removeWhereClauses();
 
   removeMootFields();
+
+  removeReturnTypeBlocks();
 
   expandInitFieldPrims();
 
@@ -9346,6 +9350,13 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
     resolveCallAndCallee(defOfCall);
 
     retval = foldTryCond(postFold(defOfCall));
+
+    if (at && at->isRecord() && at->hasPostInitializer()) {
+      CallExpr* move = toCallExpr(defOfCall->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr*  var  = toSymExpr(move->get(1));
+      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+    }
   }
 
   return retval;
@@ -9474,6 +9485,25 @@ static void removeMootFields() {
             field->defPoint->remove();
         }
       }
+    }
+  }
+}
+
+static void removeReturnTypeBlocks() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->retExprType && fn->retExprType->parentSymbol) {
+      // First, move any defs in the return type block out
+      // (e.g. an array return type creates parloopexpr fns)
+      for_alist(expr, fn->retExprType->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (isFnSymbol(def->sym)) {
+            def->remove();
+            fn->defPoint->insertBefore(def);
+          }
+        }
+      }
+      // Now remove the type block
+      fn->retExprType->remove();
     }
   }
 }

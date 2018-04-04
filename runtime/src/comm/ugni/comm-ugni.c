@@ -1383,7 +1383,7 @@ static volatile chpl_bool polling_task_running     = false;
 static volatile chpl_bool polling_task_please_exit = false;
 static volatile chpl_bool polling_task_done        = false;
 
-static chpl_bool polling_task_blocking_cq = false;
+static chpl_bool polling_task_blocking_cq;
 
 
 //
@@ -2731,7 +2731,7 @@ void set_up_for_polling(void)
     uint32_t cq_mode = GNI_CQ_NOBLOCK;
 
     polling_task_blocking_cq = chpl_env_rt_get_bool("COMM_UGNI_BLOCKING_CQ",
-                                                    false);
+                                                    true);
 
     if (polling_task_blocking_cq)
       cq_mode = GNI_CQ_BLOCKING;

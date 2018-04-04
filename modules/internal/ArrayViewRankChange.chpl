@@ -47,6 +47,7 @@ module ArrayViewRankChange {
   // rank-change domains and arrays similar to the one that caused
   // it to be created.
   //
+  pragma "use default init"
   class ArrayViewRankChangeDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // lower-dimensional views of

@@ -16,7 +16,7 @@ class GlobalDomain : BaseDom {
 
 class GlobalArray : BaseArr {}
 
-proc GlobalDistribution.GlobalDistribution() {}
+proc GlobalDistribution.init() {}
 
 proc GlobalDistribution.dsiClone(): GlobalDistribution {
   return new GlobalDistribution();

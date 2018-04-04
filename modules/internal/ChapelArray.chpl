@@ -1008,6 +1008,17 @@ module ChapelArray {
   }
 
 
+  record _serialized_domain {
+    param rank;
+    type idxType;
+    param stridable;
+    var dims;
+    param isDefaultRectangular;
+    /* The following will be needed when extending beyond DefaultRectangular
+    var dist;
+    var privdata;*/
+  }
+
   //
   // Domain wrapper record.
   //
@@ -1037,16 +1048,45 @@ module ChapelArray {
     forwarding _value except these;
 
     pragma "no doc"
-    proc chpl__serialize() where this._value.type : DefaultRectangularDom {
-      return this.dims();
+    proc chpl__serialize()
+      where this._value.type : DefaultRectangularDom {
+
+      return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
 
+    /* Here is a draft at what chpl__serialize might look like to
+       support non-DefaultRectangular domains.
+    pragma "no doc"
+    proc chpl__serialize()
+      where (this._value.type : BaseRectangularDom) &&
+            !(this._value.type : DefaultRectangularDom) &&
+            this._value.dsiSupportsPrivatization {
+
+        return new _serialized_domain(rank, idxType, stridable, dims(),
+                                      false, dist, _value.dsiGetPrivatizeData());
+    }*/
+
+
     // TODO: we *SHOULD* be allowed to query param properties from a type....
+    // This function may not use any run-time type information passed to it
+    // in the form of the 'this' argument. Static/param information is OK.
+    // TODO: only consider DR case for now
     pragma "no doc"
     proc type chpl__deserialize(data) {
-      // BHARSH TODO: Is the use of 'this' here documented anywhere?
-      const x : this;
-      return _newDomain(defaultDist.newRectangularDom(x.rank, x.idxType, x.stridable, data));
+      if data.isDefaultRectangular then
+        // DefaultRectangular
+        return _newDomain(defaultDist.newRectangularDom(data.rank,
+                                                        data.idxType,
+                                                        data.stridable,
+                                                        data.dims));
+      else
+        compilerError("chpl__deserialized called for not-DefaultRectangular");
+        /* Here is a sketch
+        return _newDomain(data.dist.newRectangularDom(data.rank,
+                                                      data.idxType,
+                                                      data.stridable,
+                                                      data.dims,
+                                                      data.privdata)); */
     }
 
     proc _do_destroy () {

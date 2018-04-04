@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Interoperability with Intel Xeon Phi (MIC)</title>
+<title>Hardware Locality (hwloc): hwloc_obj_memory_s Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -39,111 +39,99 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">Interoperability with Intel Xeon Phi (MIC)</div>  </div>
+<div class="title">hwloc_obj_memory_s Struct Reference<div class="ingroups"><a class="el" href="a00152.html">Object Structure and Attributes</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
+
+<p><code>#include &lt;<a class="el" href="a00101_source.html">hwloc.h</a>&gt;</code></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ga91bafa51abe81527f72437e24ad5944e"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#ga91bafa51abe81527f72437e24ad5944e">hwloc_intel_mic_get_device_cpuset</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, int idx, <a class="el" href="a00162.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> set)</td></tr>
-<tr class="separator:ga91bafa51abe81527f72437e24ad5944e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabce0465e853de74be84cafcb96dd48ab"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#gabce0465e853de74be84cafcb96dd48ab">hwloc_intel_mic_get_device_osdev_by_index</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned idx)</td></tr>
-<tr class="separator:gabce0465e853de74be84cafcb96dd48ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00200.html">hwloc_obj_memory_page_type_s</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Data Fields</h2></td></tr>
+<tr class="memitem:a8befd0b3f4f8b695cafed04b31f36a44"><td class="memItemLeft" align="right" valign="top">hwloc_uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#a8befd0b3f4f8b695cafed04b31f36a44">total_memory</a></td></tr>
+<tr class="separator:a8befd0b3f4f8b695cafed04b31f36a44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aace044c7f3fd9dffe50202296bf1dc5a"><td class="memItemLeft" align="right" valign="top">hwloc_uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#aace044c7f3fd9dffe50202296bf1dc5a">local_memory</a></td></tr>
+<tr class="separator:aace044c7f3fd9dffe50202296bf1dc5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a208c27f4491077d7fb9ba5db8b29cb57"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#a208c27f4491077d7fb9ba5db8b29cb57">page_types_len</a></td></tr>
+<tr class="separator:a208c27f4491077d7fb9ba5db8b29cb57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a865eba7b12b986d72dbe7a2cfd97c50d"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00200.html">hwloc_obj_memory_s::hwloc_obj_memory_page_type_s</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00196.html#a865eba7b12b986d72dbe7a2cfd97c50d">page_types</a></td></tr>
+<tr class="separator:a865eba7b12b986d72dbe7a2cfd97c50d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>This interface offers ways to retrieve topology information about Intel Xeon Phi (MIC) devices. </p>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ga91bafa51abe81527f72437e24ad5944e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga91bafa51abe81527f72437e24ad5944e">&#9670;&nbsp;</a></span>hwloc_intel_mic_get_device_cpuset()</h2>
+<div class="textblock"><p>Object memory. </p>
+</div><h2 class="groupheader">Field Documentation</h2>
+<a id="aace044c7f3fd9dffe50202296bf1dc5a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aace044c7f3fd9dffe50202296bf1dc5a">&#9670;&nbsp;</a></span>local_memory</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_intel_mic_get_device_cpuset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>idx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">hwloc_uint64_t hwloc_obj_memory_s::local_memory</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the CPU set of logical processors that are physically close to MIC device whose index is <code>idx</code>. </p>
-<p>Return the CPU set describing the locality of the MIC device whose index is <code>idx</code>.</p>
-<p>Topology <code>topology</code> and device index <code>idx</code> must match the local machine. I/O devices detection is not needed in the topology.</p>
-<p>The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see <a class="el" href="a00196.html#gabce0465e853de74be84cafcb96dd48ab" title="Get the hwloc OS device object corresponding to the MIC device for the given index. ">hwloc_intel_mic_get_device_osdev_by_index()</a>.</p>
-<p>This function is currently only implemented in a meaningful way for Linux; other systems will simply get a full cpuset. </p>
+<p>Local memory (in bytes) </p>
 
 </div>
 </div>
-<a id="gabce0465e853de74be84cafcb96dd48ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabce0465e853de74be84cafcb96dd48ab">&#9670;&nbsp;</a></span>hwloc_intel_mic_get_device_osdev_by_index()</h2>
+<a id="a865eba7b12b986d72dbe7a2cfd97c50d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a865eba7b12b986d72dbe7a2cfd97c50d">&#9670;&nbsp;</a></span>page_types</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_intel_mic_get_device_osdev_by_index </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>idx</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">struct <a class="el" href="a00200.html">hwloc_obj_memory_s::hwloc_obj_memory_page_type_s</a> *  hwloc_obj_memory_s::page_types</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Get the hwloc OS device object corresponding to the MIC device for the given index. </p>
-<p>Return the OS device object describing the MIC device whose index is <code>idx</code>. Return NULL if there is none.</p>
-<p>The topology <code>topology</code> does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection must be enabled in the topology.</p>
-<dl class="section note"><dt>Note</dt><dd>The corresponding PCI device object can be obtained by looking at the OS device parent object. </dd></dl>
+</div>
+</div>
+<a id="a208c27f4491077d7fb9ba5db8b29cb57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a208c27f4491077d7fb9ba5db8b29cb57">&#9670;&nbsp;</a></span>page_types_len</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">unsigned hwloc_obj_memory_s::page_types_len</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Size of array <code>page_types</code>. </p>
 
 </div>
 </div>
+<a id="a8befd0b3f4f8b695cafed04b31f36a44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8befd0b3f4f8b695cafed04b31f36a44">&#9670;&nbsp;</a></span>total_memory</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">hwloc_uint64_t hwloc_obj_memory_s::total_memory</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Total memory (in bytes) in this object and its children. </p>
+
+</div>
+</div>
+<hr/>The documentation for this struct was generated from the following file:<ul>
+<li><a class="el" href="a00101_source.html">hwloc.h</a></li>
+</ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

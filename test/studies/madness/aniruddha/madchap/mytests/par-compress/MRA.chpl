@@ -69,7 +69,7 @@ class Function {
     }
 
 
-    proc initialize() {
+    proc postinit() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing two-scale relation coefficients");

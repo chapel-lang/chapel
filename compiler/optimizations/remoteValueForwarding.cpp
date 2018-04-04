@@ -312,13 +312,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     } else {
       retval = false;
     }
-  } else if (arg->intent == INTENT_CONST_IN &&
-      !arg->type->symbol->hasFlag(FLAG_REF)) {
-    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
-    // but it obviously needs to have the 'ref' intent. One example can be seen
-    // for += between strings.
-    retval = true;
-
   } else {
     retval = false;
   }
@@ -363,6 +356,20 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   return retval;
 }
 
+// Now that we changed the formal from ref to value,
+// adjust its intent as well.
+static void adjustArgIntentForDeref(ArgSymbol* arg) {
+  INT_ASSERT(!arg->type->isRef());
+  INT_ASSERT(arg->intent & INTENT_FLAG_REF);
+
+  arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
+
+  // remove ref-specific flags
+  arg->removeFlag(FLAG_REF_TO_IMMUTABLE);
+  arg->removeFlag(FLAG_RETURN_SCOPE);
+  arg->removeFlag(FLAG_SCOPE);
+}
+
 //
 // BHARSH 2017-08-21:
 //
@@ -401,9 +408,7 @@ static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
-  IntentTag oldIntent = arg->intent;
   bool newStyleInIntent = shouldAddFormalTempAtCallSite(arg, fn);
-  ArgSymbol* oldArg   = NULL;
 
   Serializers ser = serializeMap[oldArgType->getValType()];
 
@@ -423,6 +428,7 @@ static void insertSerialization(FnSymbol*  fn,
     dataType = serializeFn->retType;
   }
   arg->type = dataType;
+  adjustArgIntentForDeref(arg);
 
   // If argDestroyCall is set, we'll move the destroy
   // call from the task function to the call sites.
@@ -489,38 +495,16 @@ static void insertSerialization(FnSymbol*  fn,
     // Old argument not passed so we can't destroy the original
     // value in the task function anymore; destroy it just after
     // the serialize call.
-    if (argDestroyCall && !needsRuntimeType) {
+    if (argDestroyCall) {
       FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
       call->insertBefore(new CallExpr(destroyFn, actual->copy()));
     }
 
     actual->replace(new SymExpr(data));
-
-    // Preserve the actual that will be used to create the runtime type within
-    // the on-statement
-    if (needsRuntimeType) {
-      call->insertAtTail(actual);
-    }
-  }
-
-  // We need to keep the RuntimeType around to use as the 'this' formal
-  // for the deserialize call. Add FLAG_NO_RVF to avoid an infinite loop where
-  // we keep trying to serialize a formal we just added.
-  if (needsRuntimeType) {
-    SET_LINENO(fn);
-    oldArg = new ArgSymbol(oldIntent, astr(arg->cname, "_old"), oldArgType);
-    oldArg->addFlag(FLAG_NO_RVF);
-    fn->insertFormalAtTail(oldArg);
   }
 
   // Remove the old auto-destroy call from the task fn.
-  // If we passed oldArg, destroy that instead.
   if (argDestroyCall) {
-    if (needsRuntimeType) {
-      SET_LINENO(argDestroyCall);
-      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
-      argDestroyCall->insertBefore(new CallExpr(destroyFn, oldArg));
-    }
     argDestroyCall->remove();
   }
 
@@ -545,7 +529,6 @@ static void insertSerialization(FnSymbol*  fn,
     INT_ASSERT(runtimeTypeFn != NULL);
     VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
     anchor->insertBefore(new DefExpr(info));
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, info, new CallExpr(runtimeTypeFn, oldArg)));
 
     // Add 'this' actual
     deserializeCall->insertAtHead(new SymExpr(info));
@@ -607,6 +590,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   Type* prevArgType = arg->type;
 
   arg->type = arg->getValType();
+  adjustArgIntentForDeref(arg);
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     // Find actual for arg.

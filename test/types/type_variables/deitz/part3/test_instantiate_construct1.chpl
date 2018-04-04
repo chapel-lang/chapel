@@ -1,7 +1,7 @@
 class foo {
   type t;
   var x : t;
-  proc initialize() {
+  proc postinit() {
     x += 10;
   }
   proc print() {

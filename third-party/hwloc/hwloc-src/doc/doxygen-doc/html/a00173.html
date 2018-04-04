@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Building Custom Topologies</title>
+<title>Hardware Locality (hwloc): Finding I/O objects</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -41,43 +41,99 @@ $(function() {
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Building Custom Topologies</div>  </div>
+<div class="title">Finding I/O objects</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga58220f648a972140865d11940bccec81"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga58220f648a972140865d11940bccec81">hwloc_custom_insert_topology</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> newtopology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> newparent, <a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> oldtopology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> oldroot)</td></tr>
-<tr class="separator:ga58220f648a972140865d11940bccec81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga60c404d4f0544e1070f549af8be6bd73"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga60c404d4f0544e1070f549af8be6bd73">hwloc_custom_insert_group_object_by_parent</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> parent, int groupdepth)</td></tr>
-<tr class="separator:ga60c404d4f0544e1070f549af8be6bd73"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf139bb61375178e90cc3f1835b452ab6"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#gaf139bb61375178e90cc3f1835b452ab6">hwloc_get_non_io_ancestor_obj</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> ioobj)</td></tr>
+<tr class="separator:gaf139bb61375178e90cc3f1835b452ab6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66470dabce9db19a57c5940a909d0baa"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga66470dabce9db19a57c5940a909d0baa">hwloc_get_next_pcidev</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
+<tr class="separator:ga66470dabce9db19a57c5940a909d0baa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacdbaf0db98872e224b7883a84bfb0455"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#gacdbaf0db98872e224b7883a84bfb0455">hwloc_get_pcidev_by_busid</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned domain, unsigned bus, unsigned dev, unsigned func)</td></tr>
+<tr class="separator:gacdbaf0db98872e224b7883a84bfb0455"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga23a978469353134b3104b846fe2efceb"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga23a978469353134b3104b846fe2efceb">hwloc_get_pcidev_by_busidstring</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, const char *busid)</td></tr>
+<tr class="separator:ga23a978469353134b3104b846fe2efceb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8b4584c8949e2c5f1c97ba7fe92b8145"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga8b4584c8949e2c5f1c97ba7fe92b8145">hwloc_get_next_osdev</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
+<tr class="separator:ga8b4584c8949e2c5f1c97ba7fe92b8145"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9dba22a3f4f701f2a46780ba9a0bbbe7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga9dba22a3f4f701f2a46780ba9a0bbbe7">hwloc_get_next_bridge</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
+<tr class="separator:ga9dba22a3f4f701f2a46780ba9a0bbbe7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d92a9462a3d317f29ecb4442a307fb1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga0d92a9462a3d317f29ecb4442a307fb1">hwloc_bridge_covers_pcibus</a> (<a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> bridge, unsigned domain, unsigned bus)</td></tr>
+<tr class="separator:ga0d92a9462a3d317f29ecb4442a307fb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga06442aedfd6414798ed66a68e4e90e44"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00173.html#ga06442aedfd6414798ed66a68e4e90e44">hwloc_get_hostbridge_by_pcibus</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, unsigned domain, unsigned bus)</td></tr>
+<tr class="separator:ga06442aedfd6414798ed66a68e4e90e44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>A custom topology may be initialized by calling <a class="el" href="a00166.html#gad1f15795219e2c3ca6d44ba0db604c4f" title="Prepare the topology for custom assembly. ">hwloc_topology_set_custom()</a> after <a class="el" href="a00165.html#ga03fd4a16d8b9ee1ffc32b25fd2f6bdfa" title="Allocate a topology context. ">hwloc_topology_init()</a>. It may then be modified by inserting objects or entire topologies. Once done assembling, <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a> should be invoked as usual to finalize the topology. </p>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga60c404d4f0544e1070f549af8be6bd73"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga60c404d4f0544e1070f549af8be6bd73">&#9670;&nbsp;</a></span>hwloc_custom_insert_group_object_by_parent()</h2>
+<a id="ga0d92a9462a3d317f29ecb4442a307fb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0d92a9462a3d317f29ecb4442a307fb1">&#9670;&nbsp;</a></span>hwloc_bridge_covers_pcibus()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_custom_insert_group_object_by_parent </td>
+          <td class="memname">static int hwloc_bridge_covers_pcibus </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>bridge</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>bus</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ga06442aedfd6414798ed66a68e4e90e44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga06442aedfd6414798ed66a68e4e90e44">&#9670;&nbsp;</a></span>hwloc_get_hostbridge_by_pcibus()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_hostbridge_by_pcibus </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>parent</em>, </td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>groupdepth</em>&#160;</td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>bus</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -85,48 +141,38 @@ Functions</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Insert a new group object inside a custom topology. </p>
-<p>An object with type <a class="el" href="a00163.html#ggacd37bb612667dc437d66bfb175a8dc55a5269ef95be72f88465559d35c9b7ad56" title="Group objects. Objects which do not fit in the above but are detected by hwloc and are useful to take...">HWLOC_OBJ_GROUP</a> is inserted as a new child of object <code>parent</code>.</p>
-<p><code>groupdepth</code> is the depth attribute to be given to the new object. It may for instance be 0 for top-level groups, 1 for their children, and so on.</p>
-<p>The custom topology <code>newtopology</code> must have been prepared with <a class="el" href="a00166.html#gad1f15795219e2c3ca6d44ba0db604c4f" title="Prepare the topology for custom assembly. ">hwloc_topology_set_custom()</a> and not loaded with <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a> yet.</p>
-<p><code>parent</code> may be either the root of <code>topology</code> or an object that was added earlier through <a class="el" href="a00173.html#ga60c404d4f0544e1070f549af8be6bd73" title="Insert a new group object inside a custom topology. ">hwloc_custom_insert_group_object_by_parent()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>The cpuset and nodeset of the new group object are NULL because these sets are meaningless when assembling multiple topologies.</dd>
-<dd>
-The cpuset and nodeset of the <code>parent</code> object are not modified. </dd></dl>
+<p>Find the hostbridge that covers the given PCI bus. </p>
+<p>This is useful for finding the locality of a bus because it is the hostbridge parent cpuset. </p>
 
 </div>
 </div>
-<a id="ga58220f648a972140865d11940bccec81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga58220f648a972140865d11940bccec81">&#9670;&nbsp;</a></span>hwloc_custom_insert_topology()</h2>
+<a id="ga9dba22a3f4f701f2a46780ba9a0bbbe7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9dba22a3f4f701f2a46780ba9a0bbbe7">&#9670;&nbsp;</a></span>hwloc_get_next_bridge()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int hwloc_custom_insert_topology </td>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_bridge </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>newtopology</em>, </td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>newparent</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>oldtopology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>oldroot</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -134,14 +180,226 @@ The cpuset and nodeset of the <code>parent</code> object are not modified. </dd>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
-<p>Insert an existing topology inside a custom topology. </p>
-<p>Duplicate the existing topology <code>oldtopology</code> inside a new custom topology <code>newtopology</code> as a leaf of object <code>newparent</code>.</p>
-<p>If <code>oldroot</code> is not <code>NULL</code>, duplicate <code>oldroot</code> and all its children instead of the entire <code>oldtopology</code>. Passing the root object of <code>oldtopology</code> in <code>oldroot</code> is equivalent to passing <code>NULL</code>.</p>
-<p>The custom topology <code>newtopology</code> must have been prepared with <a class="el" href="a00166.html#gad1f15795219e2c3ca6d44ba0db604c4f" title="Prepare the topology for custom assembly. ">hwloc_topology_set_custom()</a> and not loaded with <a class="el" href="a00165.html#gabdf58d87ad77f6615fccdfe0535ff826" title="Build the actual topology. ">hwloc_topology_load()</a> yet.</p>
-<p><code>newparent</code> may be either the root of <code>newtopology</code> or an object that was added through <a class="el" href="a00173.html#ga60c404d4f0544e1070f549af8be6bd73" title="Insert a new group object inside a custom topology. ">hwloc_custom_insert_group_object_by_parent()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>The cpuset and nodeset of the <code>newparent</code> object are not modified based on the contents of <code>oldtopology</code>. </dd></dl>
+<p>Get the next bridge in the system. </p>
+<dl class="section return"><dt>Returns</dt><dd>the first bridge if <code>prev</code> is <code>NULL</code>. </dd></dl>
+
+</div>
+</div>
+<a id="ga8b4584c8949e2c5f1c97ba7fe92b8145"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8b4584c8949e2c5f1c97ba7fe92b8145">&#9670;&nbsp;</a></span>hwloc_get_next_osdev()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_osdev </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the next OS device in the system. </p>
+<dl class="section return"><dt>Returns</dt><dd>the first OS device if <code>prev</code> is <code>NULL</code>. </dd></dl>
+
+</div>
+</div>
+<a id="ga66470dabce9db19a57c5940a909d0baa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga66470dabce9db19a57c5940a909d0baa">&#9670;&nbsp;</a></span>hwloc_get_next_pcidev()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_pcidev </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>prev</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the next PCI device in the system. </p>
+<dl class="section return"><dt>Returns</dt><dd>the first PCI device if <code>prev</code> is <code>NULL</code>. </dd></dl>
+
+</div>
+</div>
+<a id="gaf139bb61375178e90cc3f1835b452ab6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf139bb61375178e90cc3f1835b452ab6">&#9670;&nbsp;</a></span>hwloc_get_non_io_ancestor_obj()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_non_io_ancestor_obj </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
+          <td class="paramname"><em>ioobj</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get the first non-I/O ancestor object. </p>
+<p>Given the I/O object <code>ioobj</code>, find the smallest non-I/O ancestor object. This regular object may then be used for binding because its locality is the same as <code>ioobj</code>. </p>
+
+</div>
+</div>
+<a id="gacdbaf0db98872e224b7883a84bfb0455"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacdbaf0db98872e224b7883a84bfb0455">&#9670;&nbsp;</a></span>hwloc_get_pcidev_by_busid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_pcidev_by_busid </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>domain</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>bus</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>dev</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned&#160;</td>
+          <td class="paramname"><em>func</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Find the PCI device object matching the PCI bus id given domain, bus device and function PCI bus id. </p>
+
+</div>
+</div>
+<a id="ga23a978469353134b3104b846fe2efceb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga23a978469353134b3104b846fe2efceb">&#9670;&nbsp;</a></span>hwloc_get_pcidev_by_busidstring()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="a00152.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_pcidev_by_busidstring </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramname"><em>topology</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>busid</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Find the PCI device object matching the PCI bus id given as a string xxxx:yy:zz.t or yy:zz.t. </p>
 
 </div>
 </div>

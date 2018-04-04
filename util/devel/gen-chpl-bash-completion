@@ -2,18 +2,31 @@
 
 template=$CHPL_HOME/util/devel/chpl-bash-completion-template
 
-single=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
-        sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
-        xargs echo`
+single_dev=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
+            sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
+            xargs echo`
 
-positive=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;\[no-\];;' |       \
-          sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+positive_dev=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+              sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;\[no-\];;' |       \
+              sed -e 's;-[A-Za-z],;   ;' | xargs echo`
 
-negative=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep '\[no-\]' |             \
-          tr -d '[' | tr -d ']' | sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+negative_dev=`chpl --devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+              sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep '\[no-\]' |             \
+              tr -d '[' | tr -d ']' | sed -e 's;-[A-Za-z],;   ;' | xargs echo`
 
-sed -e "s/SINGLE_OPTS/$single/"                                           \
-    -e "s/POSITIVE_OPTS/$positive/"                                       \
-    -e "s/NEGATIVE_OPTS/$negative/" $template
+single_nodev=`chpl --no-devel --help | grep -v '^[A-Za-z]' | grep '^.*--' |   \
+            sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
+            xargs echo`
+
+positive_nodev=`chpl --no-devel --help | grep -v '^[A-Za-z]' | grep '^.*--' | \
+              sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;\[no-\];;' |       \
+              sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+
+negative_nodev=`chpl --no-devel --help | grep -v '^[A-Za-z]' | grep '^.*--' | \
+              sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep '\[no-\]' |             \
+              tr -d '[' | tr -d ']' | sed -e 's;-[A-Za-z],;   ;' | xargs echo`
+
+nodev_opts="$single_nodev $positive_nodev $negative_nodev"
+dev_opts="$single_dev $positive_dev $negative_dev"
+
+sed -e "s/OPTS_DEVEL/$dev_opts/" -e "s/OPTS_NODEVEL/$nodev_opts/" $template
