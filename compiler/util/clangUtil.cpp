@@ -1578,7 +1578,8 @@ void runClang(const char* just_parse_filename) {
   if (specializeCCode &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
     std::string march = "-march=";
     const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
     if (strncmp(backend_arch, "arm-", 4) == 0) {
