@@ -1133,6 +1133,12 @@ static bool typeHasInfiniteLifetime(Type* type) {
   if (isSubClass(type, dtLocale))
     return true;
 
+  if (AggregateType* at = toAggregateType(type)) {
+    if (at->isRawClass())
+      // raw class instances have infinite lifetime
+      return true;
+  }
+
   return false;
 }
 
@@ -1332,11 +1338,6 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
     // Global variables have infinite lifetime
     return true;
   }
-
-  /*if (isClass(sym->type) && sym->hasFlag(FLAG_RAW)) {
-    // raw class instances have infinite lifetime
-    return true;
-  }*/
 
   return false;
 }
