@@ -254,6 +254,7 @@ class UserMapAssoc : BaseDist {
 //
 // The global domain class
 //
+pragma "use default init"
 class UserMapAssocDom: BaseAssociativeDom {
   param parSafe: bool=true; // we need this because of the wrapper interface
 
