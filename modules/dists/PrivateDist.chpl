@@ -66,6 +66,7 @@ do not provide some standard domain/array functionality.
 This distribution may perform unnecessary communication
 between locales.
 */
+pragma "use default init"
 class Private: BaseDist {
   proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
     for i in inds do

@@ -80,9 +80,11 @@ class UserMapAssoc : BaseDist {
 
   // CONSTRUCTORS:
 
-  proc UserMapAssoc(type idxType = int(64),
-                    mapper:?t = new DefaultMapper(),
-                    targetLocales: [] locale = Locales) {
+  proc init(type idxType = int(64),
+            mapper:?t = new DefaultMapper(),
+            targetLocales: [] locale = Locales) {
+    this.idxType = idxType;
+    this.mapper = mapper;
     //
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
@@ -102,9 +104,10 @@ class UserMapAssoc : BaseDist {
   //
   // builds up a privatized (replicated copy)
   //
-  proc UserMapAssoc(type idxType = int(64),
-                    mapper,
-                    other: UserMapAssoc(idxType, mapper.type)) {
+  proc init(type idxType = int(64),
+            mapper,
+            other: UserMapAssoc(idxType, mapper.type)) {
+    this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
     targetLocDom = other.targetLocDom;
     this.targetLocales = other.targetLocales;
