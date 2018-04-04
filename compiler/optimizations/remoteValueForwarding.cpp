@@ -312,13 +312,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
     } else {
       retval = false;
     }
-  } else if (arg->intent == INTENT_CONST_IN &&
-      !arg->type->symbol->hasFlag(FLAG_REF)) {
-    // BHARSH TODO: This can currently happen when the arg is the lhs of a +=,
-    // but it obviously needs to have the 'ref' intent. One example can be seen
-    // for += between strings.
-    retval = true;
-
   } else {
     retval = false;
   }
@@ -361,6 +354,20 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
   }
 
   return retval;
+}
+
+// Now that we changed the formal from ref to value,
+// adjust its intent as well.
+static void adjustArgIntentForDeref(ArgSymbol* arg) {
+  INT_ASSERT(!arg->type->isRef());
+  INT_ASSERT(arg->intent & INTENT_FLAG_REF);
+
+  arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
+
+  // remove ref-specific flags
+  arg->removeFlag(FLAG_REF_TO_IMMUTABLE);
+  arg->removeFlag(FLAG_RETURN_SCOPE);
+  arg->removeFlag(FLAG_SCOPE);
 }
 
 //
@@ -421,6 +428,7 @@ static void insertSerialization(FnSymbol*  fn,
     dataType = serializeFn->retType;
   }
   arg->type = dataType;
+  adjustArgIntentForDeref(arg);
 
   // If argDestroyCall is set, we'll move the destroy
   // call from the task function to the call sites.
@@ -582,6 +590,7 @@ static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
   Type* prevArgType = arg->type;
 
   arg->type = arg->getValType();
+  adjustArgIntentForDeref(arg);
 
   forv_Vec(CallExpr, call, *fn->calledBy) {
     // Find actual for arg.
