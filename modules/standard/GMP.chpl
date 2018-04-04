@@ -1120,9 +1120,6 @@ module GMP {
   /* Return the number of limbs in an __mpz_struct */
   private extern proc chpl_gmp_mpz_nlimbs(from: __mpz_struct) : uint(64);
 
-  /* Print out an mpz_t (for debugging) */
-  extern proc chpl_gmp_mpz_print(const ref x: mpz_t);
-
   /* Get an mpz_t as a string */
   extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
 

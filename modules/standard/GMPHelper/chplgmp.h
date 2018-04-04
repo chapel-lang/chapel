@@ -80,11 +80,13 @@ static uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from) {
   return __GMP_ABS ( from._mp_size );
 }
 
+/*
 static void chpl_gmp_mpz_print(mpz_t x) {
   printf("&x=%p\n", x);
   printf("x->_mp_d=%p\n", x[0]._mp_d);
   gmp_printf("x=%Zd\n", x);
 }
+*/
 
 static c_string chpl_gmp_mpz_get_str(int base, mpz_t x) {
   // The number of *digits* in abs(x);
