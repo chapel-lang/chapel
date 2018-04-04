@@ -561,19 +561,19 @@ static InitNormalize preNormalize(AggregateType* at,
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", "
-                      "from parent type outside of this.init() or super.init()",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_PARAM) == true) {
             USR_FATAL(stmt,
                       "cannot update a param field, \"%s\", "
-                      "from parent type outside of this.init() or super.init()",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
             USR_FATAL(stmt,
                       "cannot update a type field, \"%s\", "
-                      "from parent type outside of this.init() or super.init()",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else {
