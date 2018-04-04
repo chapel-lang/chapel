@@ -111,6 +111,34 @@ module GMP {
 
   require "GMPHelper/chplgmp.h";
 
+  export proc chpl_gmp_alloc(size:size_t) : c_void_ptr {
+    pragma "insert line file info"
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
+    return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
+  }
+
+  export proc chpl_gmp_realloc(ptr:c_void_ptr,
+                               old_size:size_t, new_size:size_t) : c_void_ptr {
+    pragma "insert line file info"
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
+    return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
+  }
+
+  export proc chpl_gmp_free(ptr:c_void_ptr, old_size:size_t) {
+    pragma "insert line file info"
+      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    chpl_mem_free(ptr);
+  }
+
+  proc chpl_gmp_init() {
+    extern proc mp_set_memory_functions(alloc:c_fn_ptr, realloc:c_fn_ptr, free:c_fn_ptr);
+    mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
+                            c_ptrTo(chpl_gmp_realloc),
+                            c_ptrTo(chpl_gmp_free));
+  }
+
   // Initialize GMP library on all locales
   coforall loc in Locales {
     on loc {
@@ -1076,7 +1104,7 @@ module GMP {
   //
   // Initialize GMP to use Chapel's allocator
   //
-  private extern proc chpl_gmp_init();
+  //private extern proc chpl_gmp_init();
 
   /* Get an MPZ value stored on another locale */
   extern proc chpl_gmp_get_mpz(ref ret: mpz_t,

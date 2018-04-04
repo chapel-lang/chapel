@@ -27,7 +27,7 @@
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm.h"
-
+/*
 static void* chpl_gmp_alloc(size_t sz) {
   return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, 0, 0);
 }
@@ -43,7 +43,7 @@ static void chpl_gmp_free(void* ptr, size_t old_size) {
 static void chpl_gmp_init(void) {
   mp_set_memory_functions(chpl_gmp_alloc, chpl_gmp_realloc, chpl_gmp_free);
 }
-
+*/
 static void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from) {
   // First, resize our destination appropriately.
   mpz_realloc2(ret, from._mp_alloc * mp_bits_per_limb);
