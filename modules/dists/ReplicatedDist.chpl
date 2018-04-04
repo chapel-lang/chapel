@@ -117,9 +117,11 @@ class Replicated : BaseDist {
 
 // constructor: replicate over the given locales
 // (by default, over all locales)
-proc Replicated.Replicated(targetLocales: [] locale = Locales,
-                 purposeMessage: string = "used to create a Replicated")
+proc Replicated.init(targetLocales: [] locale = Locales,
+                     purposeMessage: string = "used to create a Replicated")
 {
+  this.complete();
+
   for loc in targetLocales {
     this.targetLocDom.add(loc.id);
     this.targetLocales[loc.id] = loc;

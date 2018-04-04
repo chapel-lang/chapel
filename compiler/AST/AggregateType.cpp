@@ -705,11 +705,27 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
 
   retval->substitutions.copy(substitutions);
 
+  // Copy the generic field map of the previous instantiation (this), and
+  // add a new entry for the field being instantiated.
+  retval->genericFieldMap.copy(genericFieldMap);
+
+  // Add two new entries to retval's genericFieldMap:
+  // 1) Map from this' generic field to the corresponding instantiated thing in
+  //    'retval'
+  // 2) Map from root instantiation's generic field to instantiated thing in
+  //    'retval'
+  //
+  // Case #2 is necessary because expressions may still refer to the root
+  // instantiation's field
   if (field->hasFlag(FLAG_PARAM) == true) {
+    retval->genericFieldMap.put(getField(genericField), sym);
+    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), sym);
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
+    retval->genericFieldMap.put(getField(genericField), field);
+    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), field);
     retval->substitutions.put(field, sym->typeInfo()->symbol);
     retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
@@ -767,6 +783,9 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
   newInstance->symbol->copyFlags(this->symbol);
 
   newInstance->substitutions.copy(this->substitutions);
+
+  // Inherit generic field map from parent
+  newInstance->genericFieldMap.map_union(parentType->genericFieldMap);
 
   Symbol* field = newInstance->getField(1);
   newInstance->substitutions.put(field, parentType->symbol);
@@ -1683,9 +1702,10 @@ void AggregateType::buildDefaultInitializer() {
     std::set<const char*> names;
     SymbolMap fieldArgMap;
 
-    fieldToArg(fn, names, fieldArgMap);
+    if (addSuperArgs(fn, names, fieldArgMap) == true) {
+      // Parent fields before child fields
+      fieldToArg(fn, names, fieldArgMap);
 
-    if (addSuperArgs(fn, names) == true) {
       // Replaces field references with argument references
       // NOTE: doesn't handle inherited fields yet!
       update_symbols(fn, &fieldArgMap);
@@ -1703,7 +1723,10 @@ void AggregateType::buildDefaultInitializer() {
       normalize(fn);
 
       methods.add(fn);
+    } else {
+      fieldToArg(fn, names, fieldArgMap);
     }
+
   }
 }
 
@@ -1852,7 +1875,8 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
 }
 
 bool AggregateType::addSuperArgs(FnSymbol*                    fn,
-                                 const std::set<const char*>& names) {
+                                 const std::set<const char*>& names,
+                                 SymbolMap& fieldArgMap) {
   bool retval = true;
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
@@ -1902,6 +1926,10 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
 
               } else {
                 DefExpr* superArg = formal->defPoint->copy();
+
+                VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+                fieldArgMap.put(field, superArg->sym);
+                fieldArgMap.put(formal, superArg->sym);
 
                 fn->insertFormalAtTail(superArg);
 
@@ -2494,4 +2522,8 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   }
 
   return retval;
+}
+
+SymbolMap& AggregateType::getGenericFieldMap() {
+  return genericFieldMap;
 }

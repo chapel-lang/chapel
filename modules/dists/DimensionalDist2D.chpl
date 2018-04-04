@@ -369,7 +369,7 @@ class LocDimensionalArr {
 
 // constructor
 // gotta list all the things we let the user set
-proc DimensionalDist2D.DimensionalDist2D(
+proc DimensionalDist2D.init(
   targetLocales: [] locale,
   di1,
   di2,
@@ -379,12 +379,19 @@ proc DimensionalDist2D.DimensionalDist2D(
   dataParIgnoreRunningTasks: bool = getDataParIgnoreRunningTasks(),
   dataParMinGranularity: int      = getDataParMinGranularity()
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale = if dataParTasksPerLocale==0
                                then here.maxTaskPar
                                else dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity = dataParMinGranularity;
+
+  this.complete();
+
   checkInvariants();
 
   _passLocalLocIDsDist(di1, true, di2, true,
@@ -503,7 +510,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
 
 // constructor of a privatized copy
 // ('dummy' distinguishes it from the user constructor)
-proc DimensionalDist2D.DimensionalDist2D(param dummy: int,
+proc DimensionalDist2D.init(param dummy: int,
   targetLocales: [] locale,
   name,
   type idxType,
@@ -513,10 +520,17 @@ proc DimensionalDist2D.DimensionalDist2D(param dummy: int,
   dataParIgnoreRunningTasks,
   dataParMinGranularity
 ) {
+  this.targetLocales = targetLocales;
+  this.di1 = di1;
+  this.di2 = di2;
   this.name = name;
+  this.idxType = idxType;
   this.dataParTasksPerLocale     = dataParTasksPerLocale;
   this.dataParIgnoreRunningTasks = dataParIgnoreRunningTasks;
   this.dataParMinGranularity     = dataParMinGranularity;
+
+  this.complete();
+
   // should not need it, but run it for now just in case
   checkInvariants();
 }

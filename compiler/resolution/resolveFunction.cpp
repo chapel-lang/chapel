@@ -44,8 +44,6 @@
 
 static void resolveFormals(FnSymbol* fn);
 
-static void resolveSpecifiedReturnType(FnSymbol* fn);
-
 static void markIterator(FnSymbol* fn);
 
 static void insertUnrefForArrayReturn(FnSymbol* fn);
@@ -74,16 +72,14 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 
 void resolveSignature(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_GENERIC) == false) {
+    // Don't resolve formals for concrete functions
+    // more often than necessary.
     static std::set<FnSymbol*> done;
 
     if (done.find(fn) == done.end()) {
       done.insert(fn);
 
       resolveFormals(fn);
-
-      if (fn->retExprType != NULL) {
-        resolveSpecifiedReturnType(fn);
-      }
     }
   }
 }
@@ -292,7 +288,7 @@ static bool recordContainingCopyMutatesField(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveSpecifiedReturnType(FnSymbol* fn) {
+void resolveSpecifiedReturnType(FnSymbol* fn) {
   Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
@@ -329,8 +325,6 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
     } else {
       fn->retType = retType;
     }
-
-    fn->retExprType->remove();
 
     if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
@@ -933,7 +927,7 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
 
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
-// specified explicitly. That one is called from resolveFormals.
+// specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
   bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;

@@ -39,6 +39,7 @@ bool  isStandaloneIterator(FnSymbol* fn);
 // be stored in it.
 void  resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldType);
 void  resolveReturnType(FnSymbol* fn);
+void  resolveSpecifiedReturnType(FnSymbol* fn);
 
 Type* getReturnedTupleType(FnSymbol*      fn,
                            AggregateType* retType);

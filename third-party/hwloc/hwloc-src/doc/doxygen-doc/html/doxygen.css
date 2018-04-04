@@ -24,13 +24,19 @@ div.menu hr.menu {
 	margin-bottom: 0px;
 }
 
+div.title {
+	font: bold normal 2em sans-serif ;
+	margin: 0px;
+	color: #0020a0;
+}
+
 h1 {
-	font: bold normal 2.5em sans-serif ;
+	font: bold normal 1.7em sans-serif ;
 	margin: 0px;
 	color: #0020a0;
 }
 h1.sub {
-	font: bold normal 2em sans-serif ;
+	font: bold normal 1.3em sans-serif ;
 	text-align: right ;
 	color: #0020a0;
 }
@@ -40,7 +46,7 @@ h1 a {
 }
 
 h2 {
-	font: bold normal small-caps 1.5em sans-serif ;
+	font: bold normal small-caps 1.3em sans-serif ;
 	color: #0020a0;
 	margin-top: 8px;
 	margin-bottom: 8px;

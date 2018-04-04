@@ -142,6 +142,8 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
+  SymbolMap&                  getGenericFieldMap();
+
 
   //
   // Public fields
@@ -243,7 +245,8 @@ private:
                                              ArgSymbol* arg);
 
   bool                        addSuperArgs(FnSymbol*                    fn,
-                                           const std::set<const char*>& names);
+                                           const std::set<const char*>& names,
+                                           SymbolMap&                   fieldArgMap);
 
   std::vector<AggregateType*> instantiations;
 
@@ -257,6 +260,10 @@ private:
   int                         genericField;
 
   bool                        mIsGeneric;
+
+  // Map from fields in the root instantiation to fields in the concrete
+  // instantiation.
+  SymbolMap                   genericFieldMap;
 };
 
 extern AggregateType* dtObject;

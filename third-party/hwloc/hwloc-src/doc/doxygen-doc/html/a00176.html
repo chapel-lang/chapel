@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): Finding Objects inside a CPU set</title>
+<title>Hardware Locality (hwloc): Interoperability with Linux libnuma unsigned long masks</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -41,35 +41,30 @@ $(function() {
   <div class="summary">
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
-<div class="title">Finding Objects inside a CPU set</div>  </div>
+<div class="title">Interoperability with Linux libnuma unsigned long masks</div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga547325a4193dbc215d07c23097519d79"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga547325a4193dbc215d07c23097519d79">hwloc_get_first_largest_obj_inside_cpuset</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set)</td></tr>
-<tr class="separator:ga547325a4193dbc215d07c23097519d79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga34ca563fa3a6a4e05268f36a87668511"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga34ca563fa3a6a4e05268f36a87668511">hwloc_get_largest_objs_inside_cpuset</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *restrict objs, int max)</td></tr>
-<tr class="separator:ga34ca563fa3a6a4e05268f36a87668511"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga468b8bef96f9677d6fe04a0d81044c85"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga468b8bef96f9677d6fe04a0d81044c85">hwloc_get_next_obj_inside_cpuset_by_depth</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, unsigned depth, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
-<tr class="separator:ga468b8bef96f9677d6fe04a0d81044c85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gafe859176cf9233f215fea0e87cef47e7"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#gafe859176cf9233f215fea0e87cef47e7">hwloc_get_next_obj_inside_cpuset_by_type</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> prev)</td></tr>
-<tr class="separator:gafe859176cf9233f215fea0e87cef47e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9442c310da87de6d09d3a4b8399ec14f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga9442c310da87de6d09d3a4b8399ec14f">hwloc_get_obj_inside_cpuset_by_depth</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, unsigned depth, unsigned idx)</td></tr>
-<tr class="separator:ga9442c310da87de6d09d3a4b8399ec14f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2edf924e5a0cca9cb22f65cc77c6ddb5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga2edf924e5a0cca9cb22f65cc77c6ddb5">hwloc_get_obj_inside_cpuset_by_type</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type, unsigned idx)</td></tr>
-<tr class="separator:ga2edf924e5a0cca9cb22f65cc77c6ddb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8874c24e73ba2b04c76ec8b9e54f49f8"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga8874c24e73ba2b04c76ec8b9e54f49f8">hwloc_get_nbobjs_inside_cpuset_by_depth</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, unsigned depth)</td></tr>
-<tr class="separator:ga8874c24e73ba2b04c76ec8b9e54f49f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga133c40415de008518608f8bff52a5ab9"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga133c40415de008518608f8bff52a5ab9">hwloc_get_nbobjs_inside_cpuset_by_type</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a> type)</td></tr>
-<tr class="separator:ga133c40415de008518608f8bff52a5ab9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4c3a20d61e9beb06c667b21688c772c5"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga4c3a20d61e9beb06c667b21688c772c5">hwloc_get_obj_index_inside_cpuset</a> (<a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> set, <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> obj)</td></tr>
-<tr class="separator:ga4c3a20d61e9beb06c667b21688c772c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae577962390f84b0b12f503314ab0f972"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#gae577962390f84b0b12f503314ab0f972">hwloc_cpuset_to_linux_libnuma_ulongs</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00150.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a> cpuset, unsigned long *mask, unsigned long *maxnode)</td></tr>
+<tr class="separator:gae577962390f84b0b12f503314ab0f972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga585ccf818d2f217f4e53f9c6506c3128"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga585ccf818d2f217f4e53f9c6506c3128">hwloc_nodeset_to_linux_libnuma_ulongs</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00150.html#ga2f5276235841ad66a79bedad16a5a10c">hwloc_const_nodeset_t</a> nodeset, unsigned long *mask, unsigned long *maxnode)</td></tr>
+<tr class="separator:ga585ccf818d2f217f4e53f9c6506c3128"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e9d051e068940f722f6fdc61814149d"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#ga0e9d051e068940f722f6fdc61814149d">hwloc_cpuset_from_linux_libnuma_ulongs</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a> cpuset, const unsigned long *mask, unsigned long maxnode)</td></tr>
+<tr class="separator:ga0e9d051e068940f722f6fdc61814149d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8491c672eb2594cc5e7b0a026867192"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00176.html#gad8491c672eb2594cc5e7b0a026867192">hwloc_nodeset_from_linux_libnuma_ulongs</a> (<a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a> topology, <a class="el" href="a00150.html#ga37e35730fa7e775b5bb0afe893d6d508">hwloc_nodeset_t</a> nodeset, const unsigned long *mask, unsigned long maxnode)</td></tr>
+<tr class="separator:gad8491c672eb2594cc5e7b0a026867192"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<p>This interface helps converting between Linux libnuma unsigned long masks and hwloc cpusets and nodesets.</p>
+<p>It also offers a consistent behavior on non-NUMA machines or non-NUMA-aware kernels by assuming that the machines have a single NUMA node.</p>
+<dl class="section note"><dt>Note</dt><dd>Topology <code>topology</code> must match the current machine.</dd>
+<dd>
+The behavior of libnuma is undefined if the kernel is not NUMA-aware. (when CONFIG_NUMA is not set in the kernel configuration). This helper and libnuma may thus not be strictly compatible in this case, which may be detected by checking whether numa_available() returns -1. </dd></dl>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="ga547325a4193dbc215d07c23097519d79"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga547325a4193dbc215d07c23097519d79">&#9670;&nbsp;</a></span>hwloc_get_first_largest_obj_inside_cpuset()</h2>
+<a id="ga0e9d051e068940f722f6fdc61814149d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0e9d051e068940f722f6fdc61814149d">&#9670;&nbsp;</a></span>hwloc_cpuset_from_linux_libnuma_ulongs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -78,16 +73,28 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_first_largest_obj_inside_cpuset </td>
+          <td class="memname">static int hwloc_cpuset_from_linux_libnuma_ulongs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00150.html#ga4bbf39b68b6f568fb92739e7c0ea7801">hwloc_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>cpuset</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const unsigned long *&#160;</td>
+          <td class="paramname"><em>mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>maxnode</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -102,59 +109,14 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Get the first largest object included in the given cpuset <code>set</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>the first object that is included in <code>set</code> and whose parent is not.</dd></dl>
-<p>This is convenient for iterating over all largest objects within a CPU set by doing a loop getting the first largest object and clearing its CPU set from the remaining CPU set.</p>
-<dl class="section note"><dt>Note</dt><dd>This function cannot work if the root object does not have a CPU set, e.g. if the topology is made of different machines. </dd></dl>
+<p>Convert the array of unsigned long <code>mask</code> into hwloc CPU set. </p>
+<p><code>mask</code> is a array of unsigned long that will be read. <code>maxnode</code> contains the maximal node number that may be read in <code>mask</code>.</p>
+<p>This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter). </p>
 
 </div>
 </div>
-<a id="ga34ca563fa3a6a4e05268f36a87668511"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga34ca563fa3a6a4e05268f36a87668511">&#9670;&nbsp;</a></span>hwloc_get_largest_objs_inside_cpuset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int hwloc_get_largest_objs_inside_cpuset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> *restrict&#160;</td>
-          <td class="paramname"><em>objs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>max</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Get the set of largest objects covering exactly a given cpuset <code>set</code>. </p>
-<dl class="section return"><dt>Returns</dt><dd>the number of objects returned in <code>objs</code>.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>This function cannot work if the root object does not have a CPU set, e.g. if the topology is made of different machines. </dd></dl>
-
-</div>
-</div>
-<a id="ga8874c24e73ba2b04c76ec8b9e54f49f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8874c24e73ba2b04c76ec8b9e54f49f8">&#9670;&nbsp;</a></span>hwloc_get_nbobjs_inside_cpuset_by_depth()</h2>
+<a id="gae577962390f84b0b12f503314ab0f972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae577962390f84b0b12f503314ab0f972">&#9670;&nbsp;</a></span>hwloc_cpuset_to_linux_libnuma_ulongs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -163,22 +125,28 @@ Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static unsigned hwloc_get_nbobjs_inside_cpuset_by_depth </td>
+          <td class="memname">static int hwloc_cpuset_to_linux_libnuma_ulongs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
+          <td class="paramtype"><a class="el" href="a00150.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
+          <td class="paramname"><em>cpuset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>depth</em>&#160;</td>
+          <td class="paramtype">unsigned long *&#160;</td>
+          <td class="paramname"><em>mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long *&#160;</td>
+          <td class="paramname"><em>maxnode</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -193,15 +161,14 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Return the number of objects at depth <code>depth</code> included in CPU set <code>set</code>. </p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines. </dd></dl>
+<p>Convert hwloc CPU set <code>cpuset</code> into the array of unsigned long <code>mask</code>. </p>
+<p><code>mask</code> is the array of unsigned long that will be filled. <code>maxnode</code> contains the maximal node number that may be stored in <code>mask</code>. <code>maxnode</code> will be set to the maximal node number that was found, plus one.</p>
+<p>This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter. </p>
 
 </div>
 </div>
-<a id="ga133c40415de008518608f8bff52a5ab9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga133c40415de008518608f8bff52a5ab9">&#9670;&nbsp;</a></span>hwloc_get_nbobjs_inside_cpuset_by_type()</h2>
+<a id="gad8491c672eb2594cc5e7b0a026867192"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad8491c672eb2594cc5e7b0a026867192">&#9670;&nbsp;</a></span>hwloc_nodeset_from_linux_libnuma_ulongs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -210,22 +177,28 @@ This function cannot work if objects at the given depth do not have CPU sets or 
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static int hwloc_get_nbobjs_inside_cpuset_by_type </td>
+          <td class="memname">static int hwloc_nodeset_from_linux_libnuma_ulongs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
+          <td class="paramtype"><a class="el" href="a00150.html#ga37e35730fa7e775b5bb0afe893d6d508">hwloc_nodeset_t</a>&#160;</td>
+          <td class="paramname"><em>nodeset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em>&#160;</td>
+          <td class="paramtype">const unsigned long *&#160;</td>
+          <td class="paramname"><em>mask</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned long&#160;</td>
+          <td class="paramname"><em>maxnode</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -240,16 +213,14 @@ This function cannot work if objects at the given depth do not have CPU sets or 
 </table>
 </div><div class="memdoc">
 
-<p>Return the number of objects of type <code>type</code> included in CPU set <code>set</code>. </p>
-<p>If no object for that type exists inside CPU set <code>set</code>, 0 is returned. If there are several levels with objects of that type inside CPU set <code>set</code>, -1 is returned.</p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines. </dd></dl>
+<p>Convert the array of unsigned long <code>mask</code> into hwloc NUMA node set. </p>
+<p><code>mask</code> is a array of unsigned long that will be read. <code>maxnode</code> contains the maximal node number that may be read in <code>mask</code>.</p>
+<p>This function may be used after calling get_mempolicy or any other function that takes an array of unsigned long as output parameter (and possibly a maximal node number as input parameter). </p>
 
 </div>
 </div>
-<a id="ga468b8bef96f9677d6fe04a0d81044c85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga468b8bef96f9677d6fe04a0d81044c85">&#9670;&nbsp;</a></span>hwloc_get_next_obj_inside_cpuset_by_depth()</h2>
+<a id="ga585ccf818d2f217f4e53f9c6506c3128"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga585ccf818d2f217f4e53f9c6506c3128">&#9670;&nbsp;</a></span>hwloc_nodeset_to_linux_libnuma_ulongs()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -258,28 +229,28 @@ This function cannot work if objects of the given type do not have CPU sets or i
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_obj_inside_cpuset_by_depth </td>
+          <td class="memname">static int hwloc_nodeset_to_linux_libnuma_ulongs </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="a00153.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
           <td class="paramname"><em>topology</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
+          <td class="paramtype"><a class="el" href="a00150.html#ga2f5276235841ad66a79bedad16a5a10c">hwloc_const_nodeset_t</a>&#160;</td>
+          <td class="paramname"><em>nodeset</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>depth</em>, </td>
+          <td class="paramtype">unsigned long *&#160;</td>
+          <td class="paramname"><em>mask</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>prev</em>&#160;</td>
+          <td class="paramtype">unsigned long *&#160;</td>
+          <td class="paramname"><em>maxnode</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -294,218 +265,9 @@ This function cannot work if objects of the given type do not have CPU sets or i
 </table>
 </div><div class="memdoc">
 
-<p>Return the next object at depth <code>depth</code> included in CPU set <code>set</code>. </p>
-<p>If <code>prev</code> is <code>NULL</code>, return the first object at depth <code>depth</code> included in <code>set</code>. The next invokation should pass the previous return value in <code>prev</code> so as to obtain the next object in <code>set</code>.</p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines. </dd></dl>
-
-</div>
-</div>
-<a id="gafe859176cf9233f215fea0e87cef47e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gafe859176cf9233f215fea0e87cef47e7">&#9670;&nbsp;</a></span>hwloc_get_next_obj_inside_cpuset_by_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_next_obj_inside_cpuset_by_type </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>prev</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the next object of type <code>type</code> included in CPU set <code>set</code>. </p>
-<p>If there are multiple or no depth for given type, return <code>NULL</code> and let the caller fallback to <a class="el" href="a00176.html#ga468b8bef96f9677d6fe04a0d81044c85" title="Return the next object at depth depth included in CPU set set. ">hwloc_get_next_obj_inside_cpuset_by_depth()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines. </dd></dl>
-
-</div>
-</div>
-<a id="ga4c3a20d61e9beb06c667b21688c772c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4c3a20d61e9beb06c667b21688c772c5">&#9670;&nbsp;</a></span>hwloc_get_obj_index_inside_cpuset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int hwloc_get_obj_index_inside_cpuset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a>&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the logical index among the objects included in CPU set <code>set</code>. </p>
-<p>Consult all objects in the same level as <code>obj</code> and inside CPU set <code>set</code> in the logical order, and return the index of <code>obj</code> within them. If <code>set</code> covers the entire topology, this is the logical index of <code>obj</code>. Otherwise, this is similar to a logical index within the part of the topology defined by CPU set <code>set</code>.</p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set). </dd></dl>
-
-</div>
-</div>
-<a id="ga9442c310da87de6d09d3a4b8399ec14f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga9442c310da87de6d09d3a4b8399ec14f">&#9670;&nbsp;</a></span>hwloc_get_obj_inside_cpuset_by_depth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_obj_inside_cpuset_by_depth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>depth</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>idx</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the (logically) <code>idx</code> -th object at depth <code>depth</code> included in CPU set <code>set</code>. </p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects at the given depth do not have CPU sets or if the topology is made of different machines. </dd></dl>
-
-</div>
-</div>
-<a id="ga2edf924e5a0cca9cb22f65cc77c6ddb5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2edf924e5a0cca9cb22f65cc77c6ddb5">&#9670;&nbsp;</a></span>hwloc_get_obj_inside_cpuset_by_type()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static <a class="el" href="a00164.html#ga79b8ab56877ef99ac59b833203391c7d">hwloc_obj_t</a> hwloc_get_obj_inside_cpuset_by_type </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="a00165.html#ga9d1e76ee15a7dee158b786c30b6a6e38">hwloc_topology_t</a>&#160;</td>
-          <td class="paramname"><em>topology</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00162.html#ga1f784433e9b606261f62d1134f6a3b25">hwloc_const_cpuset_t</a>&#160;</td>
-          <td class="paramname"><em>set</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="a00163.html#gacd37bb612667dc437d66bfb175a8dc55">hwloc_obj_type_t</a>&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>idx</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Return the <code>idx</code> -th object of type <code>type</code> included in CPU set <code>set</code>. </p>
-<p>If there are multiple or no depth for given type, return <code>NULL</code> and let the caller fallback to <a class="el" href="a00176.html#ga9442c310da87de6d09d3a4b8399ec14f" title="Return the (logically) idx -th object at depth depth included in CPU set set. ">hwloc_get_obj_inside_cpuset_by_depth()</a>.</p>
-<dl class="section note"><dt>Note</dt><dd>Objects with empty CPU sets are ignored (otherwise they would be considered included in any given set).</dd>
-<dd>
-This function cannot work if objects of the given type do not have CPU sets or if the topology is made of different machines. </dd></dl>
+<p>Convert hwloc NUMA node set <code>nodeset</code> into the array of unsigned long <code>mask</code>. </p>
+<p><code>mask</code> is the array of unsigned long that will be filled. <code>maxnode</code> contains the maximal node number that may be stored in <code>mask</code>. <code>maxnode</code> will be set to the maximal node number that was found, plus one.</p>
+<p>This function may be used before calling set_mempolicy, mbind, migrate_pages or any other function that takes an array of unsigned long and a maximal node number as input parameter. </p>
 
 </div>
 </div>
