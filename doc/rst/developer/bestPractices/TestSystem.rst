@@ -768,7 +768,7 @@ used, following the environment settings as obtained from ``printchplenv`` (see
 `Setting up Your Environment for Chapel`_).  This will be followed by
 information from running the individual tests or directories.
 
-.. _Setting up Your Environment for Chapel: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html
+.. _Setting up Your Environment for Chapel: https://chapel-lang.org/docs/usingchapel/chplenv.html
 
 The output from ``start_test`` will end with the location of the log file
 containing all the output from its execution, as well as a summary of all tests
