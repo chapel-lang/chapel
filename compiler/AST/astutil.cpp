@@ -174,6 +174,9 @@ void reset_ast_loc(BaseAST* destNode, astlocT astlocArg) {
 }
 
 void compute_fn_call_sites(FnSymbol* fn) {
+/* If present, fn->calledBy needs to be set up in advance.
+   See the comment in compute_call_sites() */
+
   if (fn->calledBy == NULL) {
     fn->calledBy = new Vec<CallExpr*>();
   }
@@ -213,6 +216,13 @@ void compute_fn_call_sites(FnSymbol* fn) {
 }
 
 void compute_call_sites() {
+  /* Set up and clear the calledBy vector for all functions.  This cannot
+     be done one function at a time in compute_fn_call_sites(fn) because
+     compute_fn_call_sites(fn) can add calls to the calledBy vector of
+     other functions besides its argument. In particular a virtual method
+     call is considered to be calledBy all of the virtual methods in the
+     inheritance chain.
+   */
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->calledBy)
       fn->calledBy->clear();

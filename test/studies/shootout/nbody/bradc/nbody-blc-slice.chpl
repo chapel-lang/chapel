@@ -64,7 +64,7 @@ inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
 record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
 
-  proc initialize() {
+  proc postinit() {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;

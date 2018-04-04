@@ -55,6 +55,10 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     retval = isApplicableGeneric (info);
   }
 
+  if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
+    resolveSpecifiedReturnType(fn);
+  }
+
   return retval;
 }
 

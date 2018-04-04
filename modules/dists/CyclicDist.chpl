@@ -177,20 +177,25 @@ class Cyclic: BaseDist {
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
 
-  proc Cyclic(startIdx,
-             targetLocales: [] locale = Locales,
-             dataParTasksPerLocale=getDataParTasksPerLocale(),
-             dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-             dataParMinGranularity=getDataParMinGranularity(),
-             param rank: int = _determineRankFromStartIdx(startIdx),
-             type idxType = _determineIdxTypeFromStartIdx(startIdx))
+  proc init(startIdx,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank: int = _determineRankFromStartIdx(startIdx),
+            type idxType = _determineIdxTypeFromStartIdx(startIdx))
     where isTuple(startIdx) || isIntegralType(startIdx.type) {
     var tupleStartIdx: rank*idxType;
     if isTuple(startIdx) then tupleStartIdx = startIdx;
                          else tupleStartIdx(1) = startIdx;
 
+    this.rank = rank;
+    this.idxType = idxType;
+
     // MPF - why isn't it:
     //setupTargetLocalesArray(targetLocDom, targetLocs, targetLocales);
+
+    this.complete();
 
     if rank == 1  {
       targetLocDom = {0..#targetLocales.numElements};
