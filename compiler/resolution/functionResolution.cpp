@@ -4677,14 +4677,7 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
     // Applies a type to TMP
-    // BHARSH TODO: Why can't we just use the exprType of the formal? Shouldn't
-    // it be the same?
     Expr*      typeExpr  = fieldDef->exprType->copy();
-    if (ct->isClass()) {
-      // Update symbols
-      update_symbols(typeExpr, &ct->getGenericFieldMap());
-    }
-
     CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
 
@@ -4701,6 +4694,12 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     AggregateType* at       = toAggregateType(_this->type);
     INT_ASSERT(at);
 
+    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
+    resolveBlock->insertAtTail(tmpMove);
+    resolveBlock->insertAtTail(tmpAssign);
+    call->replace(resolveBlock);
+    resolveBlock->insertAtTail(call);
+
     if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
       INT_ASSERT(false);
     }
@@ -4712,12 +4711,6 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     }
 
     updateFieldsMember(rhs, parentFn, fieldDef);
-
-    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
-    resolveBlock->insertAtTail(tmpMove);
-    resolveBlock->insertAtTail(tmpAssign);
-    call->replace(resolveBlock);
-    resolveBlock->insertAtTail(call);
 
     normalize(resolveBlock);
     resolveBlockStmt(resolveBlock);
@@ -4807,6 +4800,15 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
       }
+    } else if (DefExpr* fieldDef = _thisType->toSuperField(symExpr)) {
+      if (isFieldInitialized(fieldDef, currField) == true) {
+        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  fieldDef->sym->name);
+      }
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
@@ -4816,7 +4818,8 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
       }
     }
 
-  } else if (isNamedExpr(expr) == true) {
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    updateFieldsMember(named->actual, fn, currField);
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 

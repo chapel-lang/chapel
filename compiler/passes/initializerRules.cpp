@@ -551,29 +551,29 @@ static InitNormalize preNormalize(AggregateType* at,
 
       // Stmt is assignment to a super field
       } else if (DefExpr* field = toSuperFieldInit(state.type(), callExpr)) {
-        if (state.isPhase2() == false) {
+        if (state.isPhase0() == true) {
           USR_FATAL(stmt,
                     "can't set value of field \"%s\" from parent type "
-                    "during phase 1 of initialization",
+                    "before calling this.init() or super.init()",
                     field->sym->name);
 
         } else {
           if (field->sym->hasFlag(FLAG_CONST) == true) {
             USR_FATAL(stmt,
                       "cannot update a const field, \"%s\", "
-                      "from parent type in phase 2",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_PARAM) == true) {
             USR_FATAL(stmt,
                       "cannot update a param field, \"%s\", "
-                      "from parent type in phase 2",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else if (field->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
             USR_FATAL(stmt,
                       "cannot update a type field, \"%s\", "
-                      "from parent type in phase 2",
+                      "from parent type in child initializer",
                       field->sym->name);
 
           } else {
@@ -883,6 +883,10 @@ static DefExpr* toSuperFieldInit(AggregateType* at, CallExpr* callExpr) {
   forv_Vec(AggregateType, pt, at->dispatchParents) {
     if (DefExpr* field = toLocalFieldInit(pt, callExpr)) {
       return field;
+    } else if (pt != dtObject) {
+      if (DefExpr* field = toSuperFieldInit(pt, callExpr)) {
+        return field;
+      }
     }
   }
 
