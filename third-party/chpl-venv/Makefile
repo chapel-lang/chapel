@@ -10,7 +10,7 @@ ifneq (,$(findstring cygwin, $(CHPL_MAKE_TARGET_PLATFORM)))
 # pip from cygwin's setuptools is `pip-<MAJOR>.<MINOR>`
 # instead of `pip`. If we can't find pip, look for the
 # versioned one.
-PIP = $(shell which pip 2>/dev/null || which pip-$(PYTHON_VERSION))
+PIP = $(shell which pip 2>/dev/null || which pip$(PYTHON_VERSION))
 else
 PIP = $(shell which pip)
 endif
@@ -46,7 +46,7 @@ $(CHPL_VENV_INSTALL_DIR):
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): $(CHPL_VENV_INSTALL_DIR) check-exes
 	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$$PYTHONPATH && echo $(PYTHONPATH) &&\
-	pip install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
+	$(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
