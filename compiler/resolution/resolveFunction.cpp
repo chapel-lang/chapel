@@ -366,9 +366,6 @@ void resolveFunction(FnSymbol* fn) {
           at->symbol->hasFlag(FLAG_GENERIC) == false) {
         resolvePromotionType(at);
       }
-      if (at->hasDestructor() == false) {
-        resolveDestructor(at);
-      }
     }
 
     if (fn->hasFlag(FLAG_EXTERN) == true) {
