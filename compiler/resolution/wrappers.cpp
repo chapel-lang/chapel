@@ -1043,7 +1043,10 @@ static void formalIsDefaulted(FnSymbol*  fn,
     }
   } else if (strcmp(fn->name, "_new") == 0 ||
              fn->isInitializer()) {
-    temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    if (isSyncType(formal->getValType()) == false &&
+        isSingleType(formal->getValType()) == false) {
+      temp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    }
   }
 }
 
