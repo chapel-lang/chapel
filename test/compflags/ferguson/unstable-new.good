@@ -1,0 +1,15 @@
+unstable-new.chpl:19: In function 'errors':
+unstable-new.chpl:20: warning: new in is unstable - use 'new raw' or 'new owned'
+unstable-new.chpl:21: warning: new in is unstable - use 'new raw' or 'new owned'
+in errors
+{x = 1}
+{y = 1}
+in ok
+{x = 1}
+{y = 1}
+{x = 1}
+{y = 1}
+{x = 1}
+{y = 1}
+(x = 1)
+(y = 1)

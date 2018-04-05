@@ -5790,6 +5790,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
 
 static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix);
 
+static void handleUnstableNewError(CallExpr* newExpr);
+
 static void resolveNew(CallExpr* newExpr) {
 
   if (newExpr->id == breakOnResolveID) {
@@ -5942,6 +5944,9 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
           }
         }
       }
+      if (manager == NULL && fWarnUnstable)
+        // Generate an error on 'new MyClass' with fWarnUnstable
+        handleUnstableNewError(newExpr);
     }
   }
 
@@ -5986,6 +5991,53 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
     // Now adjust the original move dst, src
     // to be move dst, new manager tmpUnmanaged
     srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged));
+  }
+}
+
+static void handleUnstableNewError(CallExpr* newExpr) {
+  INT_ASSERT(newExpr->parentSymbol);
+  Type* newType = newExpr->typeInfo();
+  if (isClass(newType) &&
+      !isReferenceType(newType) &&
+      !newType->symbol->hasFlag(FLAG_DATA_CLASS) &&
+      !newType->symbol->hasFlag(FLAG_NO_OBJECT) &&
+      !newType->symbol->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+
+    SymExpr* checkSe = NULL;
+    if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
+      if (parentCall->isPrimitive(PRIM_MOVE) ||
+          parentCall->isPrimitive(PRIM_ASSIGN))
+        if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+          checkSe = lhsSe;
+
+    if (checkSe) {
+      for_SymbolSymExprs(se, checkSe->symbol()) {
+        // Check that 'new' was used either in
+        // chpl__toraw or in an initialization of Owned/Shared/etc.
+        if (se == checkSe) {
+          // OK
+        } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
+          if (parentCall->isNamed("chpl__toraw") || // TODO -- remove case
+              parentCall->isNamed("chpl__delete") || // TODO -- remove case
+              parentCall->isNamed("chpl__buildDistValue") ||
+              parentCall->isNamed("chpl_fix_thrown_error")) {
+            // OK
+          } else if (parentCall->isPrimitive(PRIM_NEW) &&
+                     parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+            // OK e.g. new Owned(new MyClass())
+          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+            // OK e.g. new raw MyClass() / new owned MyClass()
+          } else {
+            // TODO -- enable warning for internal/standard modules
+            // along with updating them.
+            if (newExpr->getModule()->modTag == MOD_USER) {
+              USR_WARN(newExpr, "new in is unstable - "
+                                "use 'new raw' or 'new owned'");
+            }
+          }
+        }
+      }
+    }
   }
 }
 
