@@ -1969,6 +1969,18 @@ void resolvePromotionType(AggregateType* at) {
   }
 }
 
+void resolveDestructor(AggregateType* at) {
+  VarSymbol* tmp   = newTemp(at);
+  CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
+
+  if (deinitFn != NULL) {
+    resolveFunction(deinitFn);
+    at->setDestructor(deinitFn);
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -4977,6 +4989,9 @@ static void resolveInitField(CallExpr* call) {
     if (ct->scalarPromotionType == NULL) {
       resolvePromotionType(ct);
     }
+    if (ct->hasDestructor() == false) {
+      resolveDestructor(ct);
+    }
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -6836,6 +6851,9 @@ static void resolveExprExpandGenerics(CallExpr* call) {
               if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
                 if (ct->scalarPromotionType == NULL) {
                   resolvePromotionType(ct);
+                }
+                if (ct->hasDestructor() == false) {
+                  resolveDestructor(ct);
                 }
               }
             }
