@@ -366,6 +366,9 @@ void resolveFunction(FnSymbol* fn) {
           at->symbol->hasFlag(FLAG_GENERIC) == false) {
         resolvePromotionType(at);
       }
+      if (developer == false) {
+        fixTypeNames(at);
+      }
     }
 
     if (fn->hasFlag(FLAG_EXTERN) == true) {
@@ -780,7 +783,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      fixTypeNames(AggregateType* at);
 static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
 static FnSymbol* instantiateBase(FnSymbol* fn);
@@ -842,9 +844,9 @@ static void resolveTypeConstructor(FnSymbol* fn) {
   }
 }
 
-static void fixTypeNames(AggregateType* at) {
+void fixTypeNames(AggregateType* at) {
   const char*    domName = "DefaultRectangularDom";
-  AggregateType* from    = at->instantiatedFrom;
+  const int   domNameLen = 21;
 
   if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
       isArrayClass(at)                     ==  true) {
@@ -853,7 +855,7 @@ static void fixTypeNames(AggregateType* at) {
 
     at->symbol->name = astr("[", domainType, "] ", eltType);
 
-  } else if (from != NULL && strcmp(from->symbol->name, domName) == 0) {
+  } else if (strncmp(at->symbol->name, domName, domNameLen) == 0) {
     at->symbol->name = astr("domain", at->symbol->name + strlen(domName));
 
   } else if (isRecordWrappedType(at) == true) {

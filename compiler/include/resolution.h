@@ -263,4 +263,6 @@ void resolvePromotionType(AggregateType* at);
 
 void resolveDestructor(AggregateType* at);
 
+void fixTypeNames(AggregateType* at);
+
 #endif
