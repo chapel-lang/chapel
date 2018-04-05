@@ -4973,9 +4973,10 @@ static void resolveInitField(CallExpr* call) {
 
   // Type was just fully instantiated, let's try to find its promotion type.
   if (wasGeneric                        == true &&
-      ct->symbol->hasFlag(FLAG_GENERIC) == false &&
-      ct->scalarPromotionType           == NULL) {
-    resolvePromotionType(ct);
+      ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+    if (ct->scalarPromotionType == NULL) {
+      resolvePromotionType(ct);
+    }
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -6825,11 +6826,18 @@ static void resolveExprExpandGenerics(CallExpr* call) {
             Symbol*        superField = ct->getField(1);
 
             if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+              bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
               ct              = ct->getInstantiationParent(formalType);
               fn->_this->type = ct;
 
               superField      = ct->getField(1);
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+              if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+                if (ct->scalarPromotionType == NULL) {
+                  resolvePromotionType(ct);
+                }
+              }
             }
           }
         }
