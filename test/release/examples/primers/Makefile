@@ -44,7 +44,7 @@ endif
 
 ifdef CRAY_LIBSCI_PREFIX_DIR
 	TARGETS += LAPACKlib LinearAlgebralib
-	LAPACK_OPTS = -I$(CRAY_LIBSCI_PREFIX_DIR)/include -lgfortran -lsci_gnu -L$(CRAY_LIBSCI_PREFIX_DIR)/lib
+	LAPACK_OPTS = -lgfortran -lsci_gnu
 endif
 
 REALS = $(TARGETS:%=%_real)
