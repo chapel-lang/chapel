@@ -53,9 +53,9 @@ array. */
 proc parseToml(input: string) : Toml {
   var D: domain(string);
   var table: [D] Toml;
-  var rootTable = chpl__toraw(new Toml(table));
-  const source = chpl__toraw(new Source(input));
-  const parser = chpl__toraw(new Parser(source, rootTable));
+  var rootTable = new raw Toml(table);
+  const source = new raw Source(input);
+  const parser = new raw Parser(source, rootTable);
   const tomlData = parser.parseLoop();
   delete parser;
   delete source;
@@ -357,7 +357,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, s: string) {
    if t == nil {
-     t = chpl__toraw(new Toml(s));
+     t = new raw Toml(s);
    } else {
      t.tag = fieldString;
      t.s = s;
@@ -367,7 +367,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, i: int) {
    if t == nil {
-     t = chpl__toraw(new Toml(i));
+     t = new raw Toml(i);
    } else {
      t.tag = fieldInt;
      t.i = i;
@@ -377,7 +377,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, b: bool) {
    if t == nil {
-     t = chpl__toraw(new Toml(b));
+     t = new raw Toml(b);
    } else {
      t.tag = fieldBool;
      t.boo = b;
@@ -387,7 +387,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, r: real) {
    if t == nil {
-     t = chpl__toraw(new Toml(r));
+     t = new raw Toml(r);
    } else {
      t.tag = fieldReal;
      t.re = r;
@@ -397,7 +397,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, dt: datetime) {
    if t == nil {
-     t = chpl__toraw(new Toml(dt));
+     t = new raw Toml(dt);
    } else {
      t.tag = fieldDate;
      t.dt = dt;
@@ -407,7 +407,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, A: [?D] Toml) where isAssociativeDom(D) {
    if t == nil {
-     t = chpl__toraw(new Toml(A));
+     t = new raw Toml(A);
    } else {
      t.tag = fieldToml;
      t.D = D;
@@ -418,7 +418,7 @@ pragma "no doc"
  pragma "no doc"
  proc =(ref t: Toml, arr: [?dom] Toml) where !isAssociativeDom(dom){
    if t == nil {
-     t = chpl__toraw(new Toml(arr));
+     t = new raw Toml(arr);
    } else {
      t.tag = fieldArr;
      t.dom = dom;
@@ -502,11 +502,11 @@ Used to recursively hold tables and respective values
       this.i = root.i;
       this.re = root.re;
       this.dom = root.dom;
-      for idx in root.dom do this.arr[idx] = chpl__toraw(new Toml(root.arr[idx]));
+      for idx in root.dom do this.arr[idx] = new raw Toml(root.arr[idx]);
       this.dt = root.dt;
       this.s = root.s;
       this.D = root.D;
-      for idx in root.D do this.A[idx] = chpl__toraw(new Toml(root.A[idx]));
+      for idx in root.D do this.A[idx] = new raw Toml(root.A[idx]);
       this.tag = root.tag;
     }
 
@@ -844,7 +844,7 @@ module TomlReader {
 
   proc skipLine(source) {
     var emptyArray: [1..0] string;
-    var emptyCurrent = chpl__toraw(new Tokens(emptyArray));
+    var emptyCurrent = new raw Tokens(emptyArray);
     var ptrhold = source.currentLine;
     source.currentLine = emptyCurrent;
     var readNextLine = readLine(source);
@@ -913,7 +913,7 @@ module TomlReader {
           linetokens.push_back(strippedToken);}
       }
       if !linetokens.isEmpty() {
-        var tokens = chpl__toraw(new Tokens(linetokens));
+        var tokens = new raw Tokens(linetokens);
         tokenlist.push_back(tokens);
       }
     }

@@ -91,7 +91,7 @@ module AllLocalesBarriers {
 
   var allLocalesBarrier: AllLocalesBarrier;
 
-  allLocalesBarrier = chpl__toraw(new AllLocalesBarrier(1));
+  allLocalesBarrier = new raw AllLocalesBarrier(1);
 
   pragma "no doc"
   proc deinit() {
