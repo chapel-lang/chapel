@@ -1,1 +1,1 @@
--I foo -I bar -I baz -L bar:foo
+-I foo:bar -L bar:foo
