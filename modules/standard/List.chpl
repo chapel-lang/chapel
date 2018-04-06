@@ -107,10 +107,10 @@ record list {
    */
   proc ref append(e : eltType) {
     if last {
-      last.next = chpl__toraw(new listNode(eltType, e));
+      last.next = new raw listNode(eltType, e);
       last = last.next;
     } else {
-      first = chpl__toraw(new listNode(eltType, e));
+      first = new raw listNode(eltType, e);
       last = first;
     }
     length += 1;
@@ -136,7 +136,7 @@ record list {
     Prepend `e` to the list.
    */
   proc prepend(e : eltType) {
-    first = chpl__toraw(new listNode(eltType, e, first));
+    first = new raw listNode(eltType, e, first);
     if last == nil then
       last = first;
     length += 1;

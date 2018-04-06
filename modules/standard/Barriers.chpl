@@ -87,16 +87,16 @@ module Barriers {
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
-            bar = chpl__toraw(new aBarrier(numTasks, reusable=true));
+            bar = new raw aBarrier(numTasks, reusable=true);
           } else {
-            bar = chpl__toraw(new aBarrier(numTasks, reusable=false));
+            bar = new raw aBarrier(numTasks, reusable=false);
           }
         }
         when BarrierType.Sync {
           if reusable {
             halt("reusable barriers not implemented for ", barrierType);
           } else {
-            bar = chpl__toraw(new sBarrier(numTasks));
+            bar = new raw sBarrier(numTasks);
           }
         }
         otherwise {
