@@ -1,0 +1,4 @@
+constructorParent.chpl:12: In initializer:
+constructorParent.chpl:13: error: unresolved call 'Parent.init(13)'
+constructorParent.chpl:12: note: candidates are: Child.init(yVal)
+deleted module lines

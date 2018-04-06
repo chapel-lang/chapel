@@ -9,7 +9,6 @@ class C {
 proc C.init(d, a) where d: domain(?) {
   this.d = d;
   this.a = a;
-  super.init();
 }
 
 var c1 = new C(d1,a1);

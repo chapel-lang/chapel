@@ -10,6 +10,7 @@ class C {
 
   // This works around overriding the default initializer
   proc init(w: bool) {
+    this.complete();
     writeln("In user defined initializer: x=", x, " y=", y);
   }
 }

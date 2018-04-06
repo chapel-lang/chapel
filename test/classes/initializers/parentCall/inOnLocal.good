@@ -1,2 +1,2 @@
-inOn.chpl:4: In initializer:
-inOn.chpl:7: error: use of super.init() call in an on block
+inOnLocal.chpl:4: In initializer:
+inOnLocal.chpl:7: error: use of this.complete() call in an on block

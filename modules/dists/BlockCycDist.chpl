@@ -189,12 +189,12 @@ class BlockCyclic : BaseDist {
 
   var dataParTasksPerLocale: int; // tasks per locale for forall iteration
 
-  proc BlockCyclic(startIdx,  // ?nd*?idxType
-                   blocksize,     // nd*int
-                   targetLocales: [] locale = Locales, 
-                   dataParTasksPerLocale    = getDataParTasksPerLocale(),
-                   param rank: int          = _determineRankFromArg(startIdx),
-                   type idxType             = _determineIdxTypeFromArg(startIdx))
+  proc init(startIdx,  // ?nd*?idxType
+            blocksize,     // nd*int
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale    = getDataParTasksPerLocale(),
+            param rank: int          = _determineRankFromArg(startIdx),
+            type idxType             = _determineIdxTypeFromArg(startIdx))
   {
     // argument sanity checks, with friendly error messages
     if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
@@ -202,8 +202,12 @@ class BlockCyclic : BaseDist {
     if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
     if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
 
+    this.rank = rank;
+    this.idxType = idxType;
+
     this.lowIdx = _ensureTuple(startIdx);
     this.blocksize = _ensureTuple(blocksize);
+
     if rank == 1 {
       targetLocDom = {0..#targetLocales.numElements}; // 0-based for simplicity
       this.targetLocales = targetLocales;
@@ -216,8 +220,7 @@ class BlockCyclic : BaseDist {
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
       targetLocDom = {(...ranges)};
-      for (loc1, loc2) in zip(this.targetLocales, targetLocales) do
-        loc1 = loc2;
+      this.targetLocales = reshape(targetLocales, targetLocDom);
       if debugBlockCyclicDist {
         writeln(targetLocDom);
         writeln(this.targetLocales);
@@ -239,6 +242,8 @@ class BlockCyclic : BaseDist {
       if debugBlockCyclicDist then writeln(this.targetLocales);
     }
 
+    this.complete();
+
     coforall locid in targetLocDom do
       on this.targetLocales(locid) do
         locDist(locid) = new LocBlockCyclic(rank, idxType, locid, this);
@@ -253,7 +258,9 @@ class BlockCyclic : BaseDist {
   }
 
   // copy constructor for privatization
-  proc BlockCyclic(param rank: int, type idxType, other: BlockCyclic(rank, idxType)) {
+  proc init(param rank: int, type idxType, other: BlockCyclic(rank, idxType)) {
+    this.rank = rank;
+    this.idxType = idxType;
     lowIdx = other.lowIdx;
     blocksize = other.blocksize;
     targetLocDom = other.targetLocDom;

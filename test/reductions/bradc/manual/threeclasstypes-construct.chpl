@@ -19,7 +19,6 @@ class mysumreduce {
     intype = in_t;
     statetype = in_t;
     outtype = in_t;
-    super.init();
   }
 }
 

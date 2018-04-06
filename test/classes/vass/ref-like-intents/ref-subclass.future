@@ -1,4 +1,0 @@
-bug: an error message is not reported when passing a different-class-type argument to a ref formal
-
-Instead, the compiler fails verification or, without --verify,
-the C compiler issues a warning.

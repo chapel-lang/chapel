@@ -3,7 +3,6 @@ record Foo {
 
   proc init(xVal) where !xVal: Foo {
     x = xVal;
-    super.init();
   }
 }
 

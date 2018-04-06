@@ -7,7 +7,6 @@ record Foo {
 
   proc init(type tVal) {
     t = tVal;
-    super.init();
   }
 }
 

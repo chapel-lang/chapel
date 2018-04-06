@@ -5,7 +5,6 @@ class Container {
   proc init() {
     y = new Stored(true);
 
-    super.init();
   }
 
   proc deinit() {
@@ -19,7 +18,6 @@ class Stored {
   proc init(xVal) {
     x = xVal;
 
-    super.init();
   }
 }
 

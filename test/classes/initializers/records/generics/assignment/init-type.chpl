@@ -8,7 +8,6 @@ record A {
   var x:t;
   proc init(type t) {
     this.t = t;
-    super.init();
   }
   // initializer for record 'A' requires a generic argument called 't'
 }

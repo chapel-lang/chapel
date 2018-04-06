@@ -7,7 +7,6 @@ class Foo {
       remoteVal = xVal;
     }
     x = remoteVal;
-    super.init();
   }
 }
 

@@ -22,11 +22,24 @@ proc assertEqual(X, Y, msg) {
 }
 
 
-proc assertEqual(X: [], Y: [], msg) where isArrayValue(X) && isArrayValue(Y)
-{
+proc assertEqual(X: [], Y: [], msg) {
   if !correctness then writeln(msg);
   if X.shape != Y.shape {
     writeFailure(X, Y, msg);
+    return;
+  } else if !X.equals(Y) {
+    writeFailure(X, Y, msg);
+    return;
+  }
+}
+
+proc assertEqual(X: [], Y: [], msg) where isSparseArr(X) && isSparseArr(Y) {
+  if !correctness then writeln(msg);
+  if X.shape != Y.shape {
+    writeFailure(X.shape, Y.shape, msg);
+    return;
+  } else if X.domain != Y.domain {
+    writeFailure(X.domain, Y.domain, msg);
     return;
   } else if !X.equals(Y) {
     writeFailure(X, Y, msg);

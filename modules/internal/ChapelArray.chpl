@@ -331,6 +331,7 @@ module ChapelArray {
     }
   }
 
+  pragma "unsafe"
   pragma "no copy return"
   proc _newArray(value) {
     if _isPrivatized(value) then
@@ -347,6 +348,7 @@ module ChapelArray {
       return new _array(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe"
   proc _newDomain(value) {
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
@@ -361,6 +363,7 @@ module ChapelArray {
       return new _domain(nullPid, value, _unowned=true);
   }
 
+  pragma "unsafe" // value assumed to be borrow but it's ownership xfer
   proc _newDistribution(value) {
     if _isPrivatized(value) then
       return new _distribution(_newPrivatizedClass(value), value);
@@ -868,6 +871,7 @@ module ChapelArray {
   pragma "no doc"
   record _distribution {
     var _pid:int;  // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
     var _unowned:bool; // 'true' for the result of 'getDistribution',
                        // in which case, the record destructor should
@@ -1004,6 +1008,17 @@ module ChapelArray {
   }
 
 
+  record _serialized_domain {
+    param rank;
+    type idxType;
+    param stridable;
+    var dims;
+    param isDefaultRectangular;
+    /* The following will be needed when extending beyond DefaultRectangular
+    var dist;
+    var privdata;*/
+  }
+
   //
   // Domain wrapper record.
   //
@@ -1012,6 +1027,7 @@ module ChapelArray {
   pragma "ignore noinit"
   record _domain {
     var _pid:int; // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDom
     var _unowned:bool; // 'true' for the result of 'getDomain'
                        // in which case, the record destructor should
@@ -1032,16 +1048,45 @@ module ChapelArray {
     forwarding _value except these;
 
     pragma "no doc"
-    proc chpl__serialize() where this._value.type : DefaultRectangularDom {
-      return this.dims();
+    proc chpl__serialize()
+      where this._value.type : DefaultRectangularDom {
+
+      return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
 
+    /* Here is a draft at what chpl__serialize might look like to
+       support non-DefaultRectangular domains.
+    pragma "no doc"
+    proc chpl__serialize()
+      where (this._value.type : BaseRectangularDom) &&
+            !(this._value.type : DefaultRectangularDom) &&
+            this._value.dsiSupportsPrivatization {
+
+        return new _serialized_domain(rank, idxType, stridable, dims(),
+                                      false, dist, _value.dsiGetPrivatizeData());
+    }*/
+
+
     // TODO: we *SHOULD* be allowed to query param properties from a type....
+    // This function may not use any run-time type information passed to it
+    // in the form of the 'this' argument. Static/param information is OK.
+    // TODO: only consider DR case for now
     pragma "no doc"
     proc type chpl__deserialize(data) {
-      // BHARSH TODO: Is the use of 'this' here documented anywhere?
-      const x : this;
-      return _newDomain(defaultDist.newRectangularDom(x.rank, x.idxType, x.stridable, data));
+      if data.isDefaultRectangular then
+        // DefaultRectangular
+        return _newDomain(defaultDist.newRectangularDom(data.rank,
+                                                        data.idxType,
+                                                        data.stridable,
+                                                        data.dims));
+      else
+        compilerError("chpl__deserialized called for not-DefaultRectangular");
+        /* Here is a sketch
+        return _newDomain(data.dist.newRectangularDom(data.rank,
+                                                      data.idxType,
+                                                      data.stridable,
+                                                      data.dims,
+                                                      data.privdata)); */
     }
 
     proc _do_destroy () {
@@ -1069,6 +1114,7 @@ module ChapelArray {
     }
 
     /* Return the domain map that implements this domain */
+    pragma "return not owned"
     proc dist return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
@@ -2044,6 +2090,7 @@ module ChapelArray {
   pragma "default intent is ref if modified"
   record _array {
     var _pid:int;  // only used when privatized
+    pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
@@ -2102,6 +2149,7 @@ module ChapelArray {
     proc eltType type return _value.eltType;
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
+    pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
@@ -2734,7 +2782,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_back(val: this.eltType) {
+    proc push_back(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_back() is only supported on dense 1D arrays");
 
@@ -2744,6 +2792,9 @@ module ChapelArray {
 
       reallocateArray(newRange, debugMsg="push_back reallocate");
 
+      // This could "move" from val to the array element, but
+      // we'd have to either destroy what was there already or
+      // use uninitialized memory for the extra space.
       this[this.domain.high] = val;
     }
 
@@ -2811,7 +2862,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc push_front(val: this.eltType) {
+    proc push_front(in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("push_front() is only supported on dense 1D arrays");
       chpl__assertSingleArrayDomain("push_front");
@@ -2887,7 +2938,7 @@ module ChapelArray {
        The array must be a rectangular 1-D array; its domain must be
        non-stridable and not shared with other arrays.
      */
-    proc insert(pos: this.idxType, val: this.eltType) {
+    proc insert(pos: this.idxType, in val: this.eltType) {
       if (!chpl__isDense1DArray()) then
         compilerError("insert() is only supported on dense 1D arrays");
 
@@ -3960,6 +4011,7 @@ module ChapelArray {
   // Used to implement the copy-out language semantics
   // Relies on the return types being different to detect an ArrayView at
   // compile-time
+  //pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   inline proc chpl__unref(x: []) where chpl__isArrayView(x._value) {
@@ -3968,6 +4020,7 @@ module ChapelArray {
     return ret;
   }
 
+  //pragma "fn returns infinite lifetime"
   pragma "no copy return"
   pragma "unref fn"
   proc chpl__unref(ir: _iteratorRecord) {

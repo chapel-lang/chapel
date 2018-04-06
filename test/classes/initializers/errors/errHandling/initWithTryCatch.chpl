@@ -11,7 +11,6 @@ class Foo {
     } catch {
       writeln("Look ma, I caught an error!");
     }
-    super.init();
   }
 }
 

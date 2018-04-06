@@ -44,8 +44,6 @@
 
 static void resolveFormals(FnSymbol* fn);
 
-static void resolveSpecifiedReturnType(FnSymbol* fn);
-
 static void markIterator(FnSymbol* fn);
 
 static void insertUnrefForArrayReturn(FnSymbol* fn);
@@ -74,16 +72,14 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 
 void resolveSignature(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_GENERIC) == false) {
+    // Don't resolve formals for concrete functions
+    // more often than necessary.
     static std::set<FnSymbol*> done;
 
     if (done.find(fn) == done.end()) {
       done.insert(fn);
 
       resolveFormals(fn);
-
-      if (fn->retExprType != NULL) {
-        resolveSpecifiedReturnType(fn);
-      }
     }
   }
 }
@@ -245,7 +241,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/types/atomic/sungeun/no_atomic_assign.chpl
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
-//   test/studies/shootout/spectral-norm/spectralnorm.chpl
+//   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
 //   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
@@ -292,7 +288,7 @@ static bool recordContainingCopyMutatesField(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveSpecifiedReturnType(FnSymbol* fn) {
+void resolveSpecifiedReturnType(FnSymbol* fn) {
   Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
@@ -329,8 +325,6 @@ static void resolveSpecifiedReturnType(FnSymbol* fn) {
     } else {
       fn->retType = retType;
     }
-
-    fn->retExprType->remove();
 
     if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
@@ -550,11 +544,13 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             FnSymbol*  unrefFn   = NULL;
 
             if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              // This warning can go away after 1.17 if it gets annoying.
-              // In the meantime, it helps to identify cases that have
-              // different behavior between 1.16 and 1.17.
-              USR_WARN(call, "proc returns an iterator that will be "
-                             "immediately converted to an array");
+              if (fWarnUnstable) {
+                // This warning can go away after 1.17 if it gets annoying.
+                // In the meantime, it helps to identify cases that have
+                // different behavior between 1.16 and 1.17.
+                USR_WARN(call, "proc returns an iterator that will be "
+                               "immediately converted to an array");
+              }
             }
 
             // Used by callDestructors to catch assignment from
@@ -701,6 +697,7 @@ static FnSymbol* makeGetIterator(AggregateType* iClass,
 
   retval->addFlag(FLAG_AUTO_II);
   retval->addFlag(FLAG_INLINE);
+  retval->addFlag(FLAG_UNSAFE);
 
   retval->retType = iClass;
 
@@ -865,8 +862,8 @@ static void fixTypeNames(AggregateType* at) {
 }
 
 static void resolveDefaultTypeConstructor(AggregateType* at) {
-  if (at->defaultTypeConstructor != NULL) {
-    resolveSignatureAndFunction(at->defaultTypeConstructor);
+  if (at->typeConstructor != NULL) {
+    resolveSignatureAndFunction(at->typeConstructor);
   }
 }
 
@@ -930,7 +927,7 @@ static void computeReturnTypeParamVectors(BaseAST*      ast,
 
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
-// specified explicitly. That one is called from resolveFormals.
+// specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
   bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
@@ -1384,7 +1381,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            //  destructor calls delete on any fields.  I think we
            //  probably need a similar change in the INOUT/IN case
            //  above.  See test/types/records/sungeun/destructor3.chpl
-           //  and test/users/recordbug3.chpl.
+           //  and test/users/ferguson/recordbug3.chpl.
            //
            // For records, this problem should go away if/when we
            //  implement 'const ref' intents and make them the default

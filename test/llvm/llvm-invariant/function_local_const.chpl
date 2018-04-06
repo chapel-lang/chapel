@@ -7,7 +7,9 @@ record A
   var a : int;
 }
 
-// CHECK: @_construct_A_chpl
+// CHECK: call {{.*}} @_construct_A_chpl
+// CHECK: store
+// CHECK: load
 // CHECK-DAG: call {}* @llvm.invariant.start.p0i8(i64 8, i8* [[CAST:%.*]])
 // CHECK-DAG: [[CAST]] = bitcast %A_chpl* [[PTR:%.*]] to i8*
 // CHECK_DAG: store %A_chpl {{%.*}}, %A_chpl* [[PTR]]

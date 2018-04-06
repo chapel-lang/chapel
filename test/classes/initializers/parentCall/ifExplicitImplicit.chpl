@@ -4,8 +4,8 @@ class ParentCallInIf {
   proc init(param val: int) {
     if (val > 10) {
       f1 = val;
-      super.init();
     } else {
+      this.complete();
       f1 = -val;
       f1 += 3;
       // Because the conditional is param, this section will know it is in Phase

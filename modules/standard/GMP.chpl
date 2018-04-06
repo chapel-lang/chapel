@@ -1093,15 +1093,18 @@ module GMP {
     var state: gmp_randstate_t;
 
     proc init() {
+      this.complete();
       gmp_randinit_default(this.state);
     }
 
     // Creates a Mersenne Twister (probably same as init_default)
     proc init(twister: bool) {
+      this.complete();
       gmp_randinit_mt(this.state);
     }
 
     proc init(a: bigint, c: uint, m2exp: uint) {
+      this.complete();
       // Rely on bigint assignment operator to obtain a local copy
       var a_ = a;
 
@@ -1112,10 +1115,12 @@ module GMP {
     }
 
     proc init(size: uint) {
+      this.complete();
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
     proc init(a: GMPRandom) {
+      this.complete();
       if a.locale == here {
         gmp_randinit_set(this.state, a.state);
       } else {

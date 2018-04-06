@@ -11,6 +11,6 @@ record R {
     this.x = 1;
     this.y = 1.0;
     printType(this);
-    this.initDone();
+    this.complete();
   }
 }

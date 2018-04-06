@@ -22,7 +22,6 @@ class Foo {
     g = blue;
     h = red;
     i = green;
-    super.init();
   }
 }
 

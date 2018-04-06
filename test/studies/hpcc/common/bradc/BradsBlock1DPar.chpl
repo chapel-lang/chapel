@@ -70,7 +70,7 @@ class Block1DDist {
     targetLocDom = {0..#targetLocales.numElements};
     targetLocs = targetLocales;
 
-    super.init();
+    this.complete();
 
     for locid in targetLocDom do
       on targetLocs(locid) do
@@ -220,7 +220,7 @@ class LocBlock1DDist {
       halt("Creating a local distribution class on the wrong locale");
     }
 
-    super.init();
+    this.complete();
     if debugBradsBlock1D then
       writeln(this);
   }
@@ -260,10 +260,10 @@ class Block1DDom {
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
-  // initialize() below
+  // postinit() below
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the postinit method; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
@@ -281,7 +281,7 @@ class Block1DDom {
 
   // CONSTRUCTORS:
 
-  proc initialize() {
+  proc postinit() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
         locDoms(localeIdx) = new LocBlock1DDom(idxType, this, 
@@ -534,7 +534,7 @@ class Block1DArr {
   // DOWN: an array of local array classes
   //
   // TODO: would like this to be const and initialize in-place,
-  // removing the initialize method; would want to be able to use
+  // removing the postinit method; would want to be able to use
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
@@ -542,9 +542,9 @@ class Block1DArr {
   var locArr: [dom.dist.targetLocDom] LocBlock1DArr(idxType, elemType);
 
 
-  // CONSTRUCTORS:
+  // INITIALIZERS:
 
-  proc initialize() {
+  proc postinit() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
         locArr(localeIdx) = new LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));

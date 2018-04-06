@@ -7,7 +7,7 @@ class Parent {
 
   proc init() {
     a = 11;
-    super.init();
+
   }
 }
 

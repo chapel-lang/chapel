@@ -3,7 +3,7 @@ record MyRec {
   var y : int = 1;
 
   proc init() {
-    super.init();
+    this.complete();
     super.init();
   }
 }

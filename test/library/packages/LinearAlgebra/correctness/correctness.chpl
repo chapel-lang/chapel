@@ -659,6 +659,15 @@ use TestUtils;
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
 
+  /* CSR Identity */
+  {
+    var A = eye(IDom);
+    var B: [IDom] real = 1;
+
+    assertEqual(A.domain, B.domain, 'LinearAlgebra.Sparse.eye(IDom) // domain');
+    assertEqual(A, B, 'LinearAlgebra.Sparse.eye(IDom) // array');
+  }
+
   //
   // Simple Ops
   //
@@ -853,5 +862,50 @@ use TestUtils;
     for i in A.domain.dim(1) {
       assertEqual(A[i,1], B[1, i], "transpose(A) values");
     }
+  }
+
+
+  // matPow with sparse matrices
+  {
+    // Real domains
+    var D = CSRDomain(3,3);
+    for ii in 1..#3 do D += (ii,ii);
+
+    var A = CSRMatrix(D, real);
+    for ii in 1..#3 do A[ii,ii] = ii;
+    var B = matPow(A, 3);
+    for ii in 1..#3 do assertEqual(B[ii,ii],(ii**3),
+                                   "Error in matPow with sparse matrices : real");
+  }
+
+  {
+    // Int domains
+    var D = CSRDomain(3,3);
+    for ii in 1..#3 do D += (ii,ii);
+
+    var A = CSRMatrix(D, int);
+    for ii in 1..#3 do A[ii,ii] = ii;
+    var B = matPow(A, 3);
+    for ii in 1..#3 do assertEqual(B[ii,ii],ii**3,
+                                   "Error in matPow with sparse matrices : int");
+  }
+
+  {
+    // Preserve domains
+    /*
+    Sparse.dot() does not yet support offset domains
+    const lo = 10;
+    var D = CSRDomain({lo..#3,lo..#3});
+    for ii in lo..#3 do D += (ii,ii);
+
+    var A = CSRMatrix(D, real);
+    for ii in lo..#3 do A[ii,ii] = ii-lo+1;
+    var B = matPow(A, 3);
+    */
+    /*
+    Domain preservation remains an open question here.
+    for ii in lo..#3 do assertEqual(B[ii,ii],(ii-lo+1)**3,
+                                   "Error in matPow with sparse matrices : non-standard domain");
+     */
   }
 } // LinearAlgebra.Sparse

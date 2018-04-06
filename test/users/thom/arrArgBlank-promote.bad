@@ -1,0 +1,2 @@
+arrArgBlank-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
+arrArgBlank-promote.chpl:1: note: candidates are: writeArr(X: [] real)

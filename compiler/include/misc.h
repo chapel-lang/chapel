@@ -23,7 +23,12 @@
 #include <cstdio>
 #include <cstdlib>
 
+#ifdef HAVE_LLVM
+#define exit(x) clean_exit(x)
+#else
+// This interferes with uses of exit() in LLVM header files.
 #define exit(x) dont_use_exit_use_clean_exit_instead
+#endif
 
 #if defined(__GNUC__) && __GNUC__ >= 3
 #define chpl_noreturn __attribute__((__noreturn__))

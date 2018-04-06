@@ -19,10 +19,10 @@
 
 /*
 
-   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the deallocation
-   of a class instance. :record:`Shared` is meant to be used when many
-   different references will exist to the object and these references
-   need to keep the object alive.
+   :record:`Shared` (along with :record:`~OwnedObject.Owned`) manage the
+   deallocation of a class instance. :record:`Shared` is meant to be used when
+   many different references will exist to the object and these references need
+   to keep the object alive.
 
    To use :record:`Shared`, allocate a class instance following this
    pattern:
@@ -49,6 +49,11 @@
        // instance is not deleted until globalSharedObject is deinitialized.
      }
 
+   :record:`Shared` supports coercions to the class type as well as
+   coercions from a ``Shared(T)`` to ``Shared(U)`` where ``T`` is a
+   subclass of ``U``. See :record:`~OwnedObject.Owned` for examples
+   of these coercions.
+
  */
 module SharedObject {
 
@@ -63,7 +68,7 @@ module SharedObject {
     // count should be initialized to 1 in default initializer.
     proc init() {
       // Want this:      count = 1;
-      super.init();
+      this.complete();
       count.write(1);
     }
 
@@ -85,16 +90,19 @@ module SharedObject {
      This is currently implemented with task-safe reference counting.
 
    */
+  pragma "managed pointer"
   record Shared {
     pragma "no doc"
     type t;              // contained type (class type)
 
     pragma "no doc"
+    pragma "owned"
     var p:t;             // contained pointer (class type)
 
     forwarding p;
 
     pragma "no doc"
+    pragma "owned"
     var pn:ReferenceCount; // reference counter
 
     /*
@@ -104,7 +112,6 @@ module SharedObject {
       this.t = t;
       this.p = nil;
       this.pn = nil;
-      super.init();
     }
 
     /*
@@ -132,7 +139,7 @@ module SharedObject {
       this.p = p;
       this.pn = rc;
 
-      super.init();
+      this.complete();
 
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the
@@ -150,7 +157,7 @@ module SharedObject {
       this.p = src.p;
       this.pn = src.pn;
 
-      super.init();
+      this.complete();
 
       if this.pn != nil then
         this.pn.retain();
@@ -228,5 +235,34 @@ module SharedObject {
     lhs.clear();
     lhs.p = rhs.p;
     lhs.pn = rhs.pn;
+  }
+
+  // This is a workaround
+  pragma "no doc"
+  proc chpl__autoDestroy(x: Shared) {
+    __primitive("call destructor", x);
+  }
+
+  // Don't print out 'p' when printing an Shared, just print class pointer
+  pragma "no doc"
+  proc Shared.readWriteThis(f) {
+    f <~> this.p;
+  }
+
+  // Note, coercion from Shared -> Shared.t is directly
+  // supported in the compiler via a call to borrow().
+
+  // This cast supports coercion from Shared(SubClass) to Shared(ParentClass)
+  // (i.e. when class SubClass : ParentClass ).
+  // It only works in a value context (i.e. when the result of the
+  // coercion is a value, not a reference).
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:Shared && x:Shared && x.t:t.t {
+    var ret:t; // default-init the Shared type to return
+    ret.p = x.p:t.t; // cast the class type
+    ret.pn = x.pn;
+    if ret.pn != nil then
+      ret.pn.retain();
+    return ret;
   }
 }

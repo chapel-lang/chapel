@@ -248,12 +248,14 @@
       <object type="PCIDev" os_index="498" pci_busid="0000:00:1f.2" pci_type="0101 [8086:3a20] [8086:34e2] 00" pci_link_speed="0.000000">
         <object type="OSDev" name="sda" osdev_type="0">
           <info name="LinuxDeviceID" value="8:0"/>
+          <info name="Type" value="Other"/>
         </object>
       </object>
       <object type="PCIDev" os_index="499" pci_busid="0000:00:1f.3" pci_type="0c05 [8086:3a30] [8086:34e2] 00" pci_link_speed="0.000000"/>
       <object type="PCIDev" os_index="501" pci_busid="0000:00:1f.5" pci_type="0101 [8086:3a26] [8086:34e2] 00" pci_link_speed="0.000000">
         <object type="OSDev" name="sr0" osdev_type="0">
           <info name="LinuxDeviceID" value="11:0"/>
+          <info name="Type" value="Other"/>
         </object>
       </object>
     </object>

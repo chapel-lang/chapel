@@ -1,0 +1,2 @@
+fieldBeforeSuper.chpl:5: In initializer:
+fieldBeforeSuper.chpl:6: error: field initialization not allowed before super.init() or this.init()

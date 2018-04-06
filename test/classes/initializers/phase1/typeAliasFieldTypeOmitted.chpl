@@ -6,7 +6,6 @@ class Foo {
   var x: tAlias;
 
   proc init() {
-    super.init();
   }
 }
 

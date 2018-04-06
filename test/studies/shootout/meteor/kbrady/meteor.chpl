@@ -56,7 +56,7 @@ module meteor {
   }
 
   use direction;  // make direction's symbols directly available to this scope
-  
+
   var pieceDef: [0..9][0..3] direction = [
     [  E,  E,   E, SE],
     [ SE,  E,  NE,  E],
@@ -584,7 +584,7 @@ module meteor {
 
   proc main(args: [] string) {
     if args.domain.size > 1 then
-        maxSolutions = args[1]:int;
+        maxSolutions = try! args[1]:int;
     calcPieces();
     calcRows();
     solve(0, 0);

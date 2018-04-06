@@ -4,7 +4,6 @@ record Foo {
   proc init(type idxType, space: range) {
     this.idxType = idxType;
     this.D = space;
-    super.init();
   }
   proc init(type idxType, size: idxType) {
     this.init(idxType, 0..#size);

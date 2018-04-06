@@ -197,7 +197,8 @@ multiple tasks. When creating a channel, it is possible to disable the lock
 Some channel methods - in particular those beginning with the underscore -
 should only be called on locked channels.  With these methods, it is possible
 to get or set the channel style, or perform I/O "transactions" (see
-:proc:`channel._mark`). To use these methods, first lock the channel with
+:proc:`channel.mark` and :proc:`channel._mark`). To use these methods, 
+first lock the channel with
 channel.lock(), call the methods you need, and then unlock the channel with
 channel.unlock(). Note that in the future, we may move to alternative ways of
 calling these functions that guarantee that they are not called on a channel
@@ -1291,10 +1292,12 @@ proc file.check() throws {
 /* Return a syserr through out error if a file is invalid */
 proc file.check(out error:syserr) {
   var err: syserr = ENOERR;
-  try! {
+  try {
     check();
   } catch e: SystemError {
     err = e.err;
+  } catch {
+    err = EINVAL;
   }
   error = err;
 }
@@ -1523,9 +1526,6 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
-:arg error: optional argument to capture an error code. If this argument
-            is not provided and an error is encountered, this function
-            will halt with an error message.
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg iomode: specify whether to open the file for reading or writing and
@@ -1550,10 +1550,10 @@ to create a channel to actually perform I/O operations
 
 */
 
-proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
-    style:iostyle = defaultIOStyle(), url:string=""):file {
+proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""): file throws {
 
-  proc parse_hdfs_path(path:string) {
+  proc parse_hdfs_path(path:string) throws {
     // hdfs://<host>:<port>/<path>
     var host_start = path.find("//") + 2;
     var colon = path.find(":", host_start..);
@@ -1579,98 +1579,77 @@ proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NO
     }
 
     var host = path[host_start..host_end];
-    var port = "";
-    if port_start > 0 then port = path[port_start..port_end];
+    var port_str = "";
+    if port_start > 0 then port_str = path[port_start..port_end];
+
+    var port: int;
+    try {
+      port = port_str: int;
+    } catch {
+      throw SystemError.fromSyserr(EINVAL, "invalid port");
+    }
+
     var file_path = "";
     if path_start > 0 then file_path = path[path_start..];
-    return (host, port:int, file_path);
+    return (host, port, file_path);
   }
 
   var local_style = style;
-  var ret:file;
+  var error: syserr = ENOERR;
+  var ret: file;
   ret.home = here;
   if (url != "") {
     if (url.startsWith("hdfs://")) { // HDFS
-      var (host, port, file_path) = parse_hdfs_path(url);
+      var (host, port, file_path) = try parse_hdfs_path(url);
       var fs:c_void_ptr;
-      error = hdfs_connect(fs, host.c_str(), port);
-      if error then try! ioerror(error, "Unable to connect to HDFS", host);
-      /* TODO: This code is an alternative to the above line, which breaks the
-         function's original invariant of not generating errors within itself.
-         This is better style and should still work, but we can't be certain
-         until we test it and aren't capable of testing HDFS at this point.
-         When further work with HDFS is done, please test and edit this function
-         to behave appropriately by removing the above line and replacing it
-         with the following three. (2015-02-04, lydia)
 
-      if error then return ret;
-      // connect fully specifies the error message so all we'd need to do is
-      // return.
-      */
-      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
       // Since we don't have an auto-destructor for this, we actually need to make
       // the reference count 1 on this FS after we open this file so that we will
       // disconnect once we close this file.
-      hdfs_do_release(fs);
-      if error then try! ioerror(error, "Unable to open file in HDFS", url);
-      /* TODO: The above line breaks the function's original invariant of not
-         generating errors within itself.  It is better style to remove this
-         line.  Doing so should still work, but we can't be certain until we
-         test it and aren't capable of testing HDFS at this point.  When
-         further work with HDFS is done, please test and edit this function to
-         behave appropriately by removing the above line (2015-02-04, lydia)
+      defer hdfs_do_release(fs);
 
-      */
+      error = hdfs_connect(fs, host.c_str(), port);
+      if error then
+        try ioerror(error, "Unable to connect to HDFS", host);
+
+      error = qio_file_open_access_usr(ret._file_internal, file_path.c_str(), _modestring(mode).c_str(), hints, local_style, fs, hdfs_function_struct_ptr);
+      if error then
+        try ioerror(error, "Unable to open file in HDFS", url);
+
     } else if (url.startsWith("http://", "https://", "ftp://", "ftps://", "smtp://", "smtps://", "imap://", "imaps://"))  { // Curl
       error = qio_file_open_access_usr(ret._file_internal, url.c_str(), _modestring(mode).c_str(), hints, local_style, c_nil, curl_function_struct_ptr);
-      if error then try! ioerror(error, "Unable to open URL", url);
-      /* TODO: The above line breaks the function's original invariant of not
-         generating errors within itself.  It is better style to remove this
-         line.  Doing so should still work, but we can't be certain until we
-         test it and aren't capable of regularly testing curl at this point.
-         When further work with auxiliary file systems are done, please test and
-         edit this function to behave appropriately by removing the above line
-         (2015-02-04, lydia)
+      if error then
+        try ioerror(error, "Unable to open URL", url);
 
-      */
     } else {
-      try! ioerror(ENOENT:syserr, "Invalid URL passed to open");
-      /* TODO: This code is an alternative to the above line, which breaks the
-         function's original invariant of not generating errors within itself.
-         This is better style and should still work, but we can't be certain
-         until we test it and aren't capable of testing HDFS at this point.
-         When further work with HDFS is done, please test and edit this function
-         to behave appropriately by removing the above line and replacing it
-         with the following one. (2015-02-04, lydia)
-
-      error = ENOENT:syserr; // Invalid URL provided
-      */
+      try ioerror(ENOENT:syserr, "Invalid URL passed to open");
     }
   } else {
     if (path == "") then
-      try! ioerror(ENOENT:syserr, "in open: Both path and url were blank");
-    /* TODO: The above two lines breaks the function's original invariant of not
-       generating errors within itself.  It is better style to remove these
-       lines.  Doing so should still work, but we can't be certain until we
-       test it and aren't capable of regularly testing auxiliary file systems at
-       this point.  When further work with auxiliary file systems are done,
-       please test and edit this function to behave appropriately by removing
-       the above two lines. (2015-02-04, lydia)
+      try ioerror(ENOENT:syserr, "in open: Both path and url were blank");
 
-    */
     error = qio_file_open_access(ret._file_internal, path.localize().c_str(), _modestring(mode).c_str(), hints, local_style);
+    if error then
+      try ioerror(error, "in open", path);
   }
 
   return ret;
 }
 
-// documented in open(error=) version
+// documented in open() throws version
 pragma "no doc"
-proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE, style:iostyle =
-    defaultIOStyle(), url:string=""):file throws {
-  var err:syserr = ENOERR;
-  var ret = open(err, path, mode, hints, style, url);
-  if err then try ioerror(err, "in open", path);
+proc open(out error:syserr, path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle = defaultIOStyle(), url:string=""):file {
+  var err: syserr = ENOERR;
+  var ret: file;
+  try {
+    ret = open(path, mode, hints, style, url);
+  } catch e: SystemError {
+    err = e.err;
+  } catch {
+    err = EINVAL;
+  }
+  error = err;
   return ret;
 }
 
@@ -1950,7 +1929,6 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  super.init();
 }
 
 pragma "no doc"
@@ -1961,7 +1939,7 @@ proc channel.init(x: channel) {
   this.home = x.home;
   this._channel_internal = x._channel_internal;
   _readWriteThisFromLocale = x._readWriteThisFromLocale;
-  super.init();
+  this.complete();
   on x.home {
     qio_channel_retain(x._channel_internal);
   }
@@ -1983,7 +1961,6 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
   this.home = home;
   this._channel_internal = _channel_internal;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
-  super.init();
 }
 
 pragma "no doc"
@@ -1993,7 +1970,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:f
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
-  super.init();
+  this.complete();
   on f.home {
     this.home = f.home;
     if kind != iokind.dynamic {
@@ -2274,6 +2251,61 @@ proc channel.advancePastByte(byte:uint(8)) throws {
 }
 
 
+/*
+   *mark* a channel - that is, save the current offset of the channel
+   on its *mark stack*. This function can only be called on a channel
+   with ``locking==false``.
+
+   The *mark stack* stores several channel offsets. For any channel offset that
+   is between the minimum and maximum value in the *mark stack*, I/O operations
+   on the channel will keep that region of the file buffered in memory so that
+   those operations can be un-done. As a result, it is possible to perform *I/O
+   transactions* on a channel. The basic steps for an *I/O transaction* are:
+
+    * *mark* the current position with :proc:`channel.mark`
+    * do something speculative (e.g. try to read 200 bytes of anything followed
+      by a 'B')
+    * if the speculative operation was successful,  commit the changes by
+      calling :proc:`channel.commit`
+    * if the speculative operation was not successful, go back to the *mark* by
+      calling :proc:`channel.revert`. Subsequent I/O operations will work
+      as though nothing happened.
+
+  .. note::
+
+    Note that it is possible to request an entire file be buffered in memory
+    using this feature, for example by *marking* at offset=0 and then
+    advancing to the end of the file. It is important to be aware of these
+    memory space requirements.
+
+  :returns: an error code, if an error was encountered.
+
+ */
+inline proc channel.mark():syserr where this.locking == false {
+  return qio_channel_mark(false, _channel_internal);
+}
+
+/*
+   Abort an *I/O transaction*. See :proc:`channel.mark`. This function
+   will pop the last element from the *mark stack* and then leave the
+   previous channel offset unchanged.  This function can only be
+   called on a channel with ``locking==false``.
+*/
+inline proc channel.revert() where this.locking == false {
+  qio_channel_revert_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`channel.mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the channel offset to the popped offset.  This function can
+   only be called on a channel with ``locking==false``.
+
+*/
+inline proc channel.commit() where this.locking == false {
+  qio_channel_commit_unlocked(_channel_internal);
+}
+
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably
 // a better name for them...
@@ -2290,36 +2322,16 @@ inline proc channel._offset():int(64) {
   return ret;
 }
 
-
 /*
-   *mark* a channel - that is, save the current offset of the channel on its
-   *mark stack*. This function should only be called on a channel that is
-   already locked with with :proc:`channel.lock`.
+   This routine is identical to :proc:`channel.mark` except that it
+   can be called on channels with ``locking==true`` and should be
+   called only once the channel has been locked with
+   :proc:`channel.lock`.  The channel should not be unlocked with
+   :proc:`channel.unlock` until after the mark has been committed with
+   :proc:`channel._commit` or reverted with :proc:`channel._revert`.
 
-   The *mark stack* stores several channel offsets. For any channel offset that
-   is between the minimum and maximum value in the *mark stack*, I/O operations
-   on the channel will keep that region of the file buffered in memory so that
-   those operations can be un-done. As a result, it is possible to perform *I/O
-   transactions* on a channel. The basic steps for an *I/O transaction* are:
-
-    * lock the channel with :proc:`channel.lock`
-      (or work on an already-locked channel)
-    * *mark* the current position with :proc:`channel._mark`
-    * do something speculative (e.g. try to read 200 bytes of anything followed
-      by a 'B')
-    * if the speculative operation was successful,  commit the changes by
-      calling :proc:`channel._commit`
-    * if the speculative operation was not successful, go back to the *mark* by
-      calling :proc:`channel._revert`. Subsequent I/O operations will work
-      as though nothing happened.
-    * unlock the channel with :proc:`channel.unlock` if necessary
-
-  .. note::
-
-    Note that it is possible to request an entire file be buffered in memory
-    using this feature, for example by *marking* at offset=0 and then
-    advancing to the end of the file. It is important to be aware of these
-    memory space requirements.
+   See :proc:`channel.mark` for details other than the locking
+   discipline.
 
   :returns: an error code, if an error was encountered.
 
@@ -2330,25 +2342,23 @@ inline proc channel._mark():syserr {
 }
 
 /*
-
-   Abort an *I/O transaction*. See :proc:`channel._mark`. This function should
-   only be called on a channel that has already been locked and marked.  This
-   function will pop the last element from the *mark stack* and then leave the
-   previous channel offset unchanged.
-
- */
+   Abort an *I/O transaction*. See :proc:`channel._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   leave the previous channel offset unchanged.  This function should
+   only be called on a channel that has already been locked and
+   marked.
+*/
 inline proc channel._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
-
-   Commit an *I/O transaction*. See :proc:`channel._mark`. This function should
-   only be called on a channel that has already been locked and marked.  This
-   function will pop the last element from the *mark stack* and then set the
-   channel offset to the popped offset.
-
- */
+   Commit an *I/O transaction*. See :proc:`channel._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the channel offset to the popped offset.  This function should
+   only be called on a channel that has already been locked and
+   marked.
+*/
 inline proc channel._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
@@ -2462,10 +2472,12 @@ proc openreader(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=false, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var reader = fl.reader(error=error, kind, locking, start, end, hints, fl_style);
@@ -2535,10 +2547,12 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
     return new channel(writing=true, kind=kind, locking=locking);
 
   var fl_style: iostyle;
-  try! {
+  try {
     fl_style = fl._style;
   } catch e: SystemError {
     error = e.err;
+  } catch {
+    error = EINVAL;
   }
 
   var writer = fl.writer(error=error, kind, locking, start, end, hints, fl_style);
@@ -3404,7 +3418,7 @@ iter channel.lines() {
   // Set the iostyle back to original state
   this._set_style(saved_style);
 
-  try! this.unlock();
+  this.unlock();
 }
 
 
@@ -3478,12 +3492,13 @@ proc stringify(const args ...?k):string {
     return str;
   } else {
     // otherwise, write it using the I/O system.
-
     try! {
       // Open a memory buffer to store the result
       var f = openmem();
+      defer try! f.close();
 
       var w = f.writer(locking=false);
+      defer try! w.close();
 
       w.write((...args));
 
@@ -3491,18 +3506,12 @@ proc stringify(const args ...?k):string {
 
       var buf = c_malloc(uint(8), offset+1);
 
-      // you might need a flush here if
-      // close went away
-      w.close();
-
       var r = f.reader(locking=false);
+      defer try! r.close();
 
       r.readBytes(buf, offset:ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
-      r.close();
-
-      f.close();
 
       return new string(buf, offset, offset+1, owned=true, needToCopy=false);
     }
@@ -5325,7 +5334,13 @@ proc _toIntegral(x:?t) where isIntegralType(t)
 private inline
 proc _toIntegral(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
 }
 private inline
 proc _toIntegral(x:?t) where !_isIoPrimitiveType(t)
@@ -5362,7 +5377,13 @@ proc _toSigned(x:uint(64))
 private inline
 proc _toSigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
 }
 private inline
 proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
@@ -5400,7 +5421,13 @@ proc _toUnsigned(x:int(64))
 private inline
 proc _toUnsigned(x:?t) where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
-  return (x:uint, true);
+  var ret: (uint, bool);
+  try {
+    ret = (x:uint, true);
+  } catch {
+    ret = (0:uint, false);
+  }
+  return ret;
 }
 private inline
 proc _toUnsigned(x:?t) where !_isIoPrimitiveType(t)
@@ -5417,7 +5444,13 @@ proc _toReal(x:?t) where isRealType(t)
 private inline
 proc _toReal(x:?t) where _isIoPrimitiveType(t) && !isRealType(t)
 {
-  return (x:real, true);
+  var ret: (real, bool);
+  try {
+    ret = (x:real, true);
+  } catch {
+    ret = (0.0, false);
+  }
+  return ret;
 }
 private inline
 proc _toReal(x:?t) where !_isIoPrimitiveType(t)
@@ -5433,7 +5466,13 @@ proc _toImag(x:?t) where isImagType(t)
 private inline
 proc _toImag(x:?t) where _isIoPrimitiveType(t) && !isImagType(t)
 {
-  return (x:imag, true);
+  var ret: (imag, bool);
+  try {
+    ret = (x:imag, true);
+  } catch {
+    ret = (0.0i, false);
+  }
+  return ret;
 }
 private inline
 proc _toImag(x:?t) where !_isIoPrimitiveType(t)
@@ -5450,7 +5489,13 @@ proc _toComplex(x:?t) where isComplexType(t)
 private inline
 proc _toComplex(x:?t) where _isIoPrimitiveType(t) && !isComplexType(t)
 {
-  return (x:complex, true);
+  var ret: (complex, bool);
+  try {
+    ret = (x:complex, true);
+  } catch {
+    ret = (0.0+0.0i, false);
+  }
+  return ret;
 }
 private inline
 proc _toComplex(x:?t) where !_isIoPrimitiveType(t)
@@ -5488,7 +5533,14 @@ private inline
 proc _toNumeric(x:?t) where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
-  return (x:int, true);
+  var ret: (int, bool);
+  try {
+    ret = (x:int, true);
+  } catch {
+    ret = (0, false);
+  }
+  return ret;
+
 }
 private inline
 proc _toNumeric(x:?t) where !_isIoPrimitiveType(t)
@@ -5551,7 +5603,11 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t==bool&&_isIoP
 private inline
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
-  lhs = rhs:t;
+  try {
+    lhs = rhs:t;
+  } catch {
+    return ERANGE;
+  }
   return ENOERR;
 }
 private inline
@@ -6498,7 +6554,11 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                   if _isIoPrimitiveType(args(i).type) {
                     // but only if it's a primitive type
                     // (so that we can avoid problems with string-to-record).
-                    args(i) = r.capArr[r.capturei]:args(i).type;
+                    try {
+                      args(i) = r.capArr[r.capturei]:args(i).type;
+                    } catch {
+                      error = qio_format_error_bad_regexp();
+                    }
                   }
                   r.capturei += 1;
                 }

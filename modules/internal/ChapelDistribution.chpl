@@ -27,6 +27,7 @@ module ChapelDistribution {
   // Abstract distribution class
   //
   pragma "base dist"
+  pragma "use default init"
   class BaseDist {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -780,7 +781,7 @@ module ChapelDistribution {
     proc dsiPostReallocate() {
     }
 
-    proc ~BaseArrOverRectangularDom() {
+    proc deinit() {
       // this is a bug workaround
     }
 
@@ -792,7 +793,7 @@ module ChapelDistribution {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
 
-    proc ~BaseRectangularArr() {
+    proc deinit() {
       // this is a bug workaround
     }
   }

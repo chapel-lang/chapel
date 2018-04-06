@@ -400,7 +400,6 @@ class BadRegexpError : Error {
   var msg:string;
   proc init(msg: string) {
     this.msg = msg;
-    super.init();
   }
   proc message() {
     return msg;
@@ -609,7 +608,12 @@ record regexp {
         captures[i] = m;
       } else {
         if m.matched {
-          captures[i] = text[m]:captures[i].type;
+          try {
+            captures[i] = text[m]:captures[i].type;
+          } catch {
+            var empty:captures[i].type;
+            captures[i] = empty;
+          }
         } else {
           var empty:captures[i].type;
           captures[i] = empty;

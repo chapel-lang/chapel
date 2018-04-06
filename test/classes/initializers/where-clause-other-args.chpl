@@ -7,12 +7,10 @@ class Foo {
   proc init(param xVal, yVal) where (xVal > 10) {
     x = xVal;
     y = yVal;
-    super.init();
   }
 
   proc init(param xVal) where (xVal < 10) {
     x = xVal;
-    super.init();
   }
 }
 

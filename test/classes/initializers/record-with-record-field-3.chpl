@@ -29,7 +29,6 @@ record SubRec {
     a = other.a;
     b = other.b;
 
-    super.init();
   }
 }
 
