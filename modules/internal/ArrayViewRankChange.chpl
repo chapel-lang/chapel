@@ -73,22 +73,22 @@ module ArrayViewRankChange {
     }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
-      var newdom = chpl__toraw(new ArrayViewRankChangeDom(rank=rank,
+      var newdom = new raw ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
                                               idx=idx,
                                               distPid=this.pid,
-                                              distInst=this));
+                                              distInst=this);
       newdom.dsiSetIndices(inds);
       return newdom;
     }
 
     proc dsiClone() {
-      return chpl__toraw(new ArrayViewRankChangeDist(downDistPid=this.downDistPid,
+      return new raw ArrayViewRankChangeDist(downDistPid=this.downDistPid,
                                                        downDistInst=this.downDistInst,
                                                        collapsedDim=collapsedDim,
-                                                       idx=idx));
+                                                       idx=idx);
     }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
@@ -101,10 +101,10 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return chpl__toraw(new ArrayViewRankChangeDist(downDistPid = privatizeData(1),
+      return new raw ArrayViewRankChangeDist(downDistPid = privatizeData(1),
                                          downDistInst = privatizeData(2),
                                          collapsedDim = privatizeData(3),
-                                         idx = privatizeData(4)));
+                                         idx = privatizeData(4));
     }
 
     proc dsiDestroyDist() {
@@ -172,14 +172,14 @@ module ArrayViewRankChange {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
-      return chpl__toraw(new ArrayViewRankChangeArr(eltType  =eltType,
+      return new raw ArrayViewRankChangeArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         collapsedDim=collapsedDim,
                                         idx=idx,
-                                        ownsArrInstance=true));
+                                        ownsArrInstance=true);
     }
 
     proc dsiSetIndices(inds) {
@@ -383,7 +383,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return chpl__toraw(new ArrayViewRankChangeDom(rank = this.rank,
+      return new raw ArrayViewRankChangeDom(rank = this.rank,
                                         idxType = this.idxType,
                                         stridable = this.stridable,
                                         upDom = privatizeData(1),
@@ -392,7 +392,7 @@ module ArrayViewRankChange {
                                         distPid = privatizeData(4),
                                         distInst = privatizeData(5),
                                         downDomPid = privatizeData(6),
-                                        downDomInst = privatizeData(7)));
+                                        downDomInst = privatizeData(7));
     }
 
     proc dsiGetReprivatizeData() {
@@ -684,13 +684,13 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return chpl__toraw(new ArrayViewRankChangeArr(eltType=this.eltType,
+      return new raw ArrayViewRankChangeArr(eltType=this.eltType,
                                         _DomPid=privatizeData(1),
                                         dom=privatizeData(2),
                                         _ArrPid=privatizeData(3),
                                         _ArrInstance=privatizeData(4),
                                         collapsedDim=privatizeData(5),
-                                        idx=privatizeData(6)));
+                                        idx=privatizeData(6));
     }
 
     //

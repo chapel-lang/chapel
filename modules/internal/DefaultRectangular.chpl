@@ -40,19 +40,19 @@ module DefaultRectangular {
   pragma "use default init"
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
-      const dom = chpl__toraw(new DefaultRectangularDom(rank, idxType, stridable, this));
+      const dom = new raw DefaultRectangularDom(rank, idxType, stridable, this);
       dom.dsiSetIndices(inds);
       return dom;
     }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-      return chpl__toraw(new DefaultAssociativeDom(idxType, parSafe, this));
+      return new raw DefaultAssociativeDom(idxType, parSafe, this);
 
     proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
-      return chpl__toraw(new DefaultOpaqueDom(this, parSafe));
+      return new raw DefaultOpaqueDom(this, parSafe);
 
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
-      return chpl__toraw(new DefaultSparseDom(rank, idxType, this, dom));
+      return new raw DefaultSparseDom(rank, idxType, this, dom);
 
     proc dsiIndexToLocale(ind) return this.locale;
 
@@ -596,20 +596,20 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType) {
-      return chpl__toraw(new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                      stridable=stridable, dom=this));
+      return new raw DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
+                                      stridable=stridable, dom=this);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
       var allocRange:range(idxType) = (ranges(1).low)..#allocSize;
-      return chpl__toraw(new DefaultRectangularArr(eltType=eltType,
+      return new raw DefaultRectangularArr(eltType=eltType,
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
                                        dom=this,
                                        data=data,
-                                       dataAllocRange=allocRange));
+                                       dataAllocRange=allocRange);
     }
 
 
@@ -1205,10 +1205,10 @@ module DefaultRectangular {
 
       on this {
         var d = {(...bounds)};
-        var copy = chpl__toraw(new DefaultRectangularArr(eltType=eltType, rank=rank,
+        var copy = new raw DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
-                                            dom=d._value));
+                                            dom=d._value);
 
         // MPF: could this be parallel?
         for i in d((...dom.ranges)) do

@@ -42,8 +42,8 @@ module DefaultSparse {
     }
 
     proc dsiBuildArray(type eltType)
-      return chpl__toraw(new DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=this));
+      return new raw DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
+                                  dom=this);
 
     iter dsiIndsIterSafeForRemoving() {
       for i in 1..nnz by -1 {

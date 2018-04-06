@@ -1257,10 +1257,10 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = chpl__toraw(new ArrayViewRankChangeDist(downDistPid=dist._pid,
+      const rcdist = new raw ArrayViewRankChangeDist(downDistPid=dist._pid,
                                                  downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
-                                                 idx = idx));
+                                                 idx = idx);
       // TODO: Should this be set?
       //rcdist._free_when_no_doms = true;
 
@@ -2295,11 +2295,11 @@ module ChapelArray {
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-      var a = chpl__toraw(new ArrayViewSliceArr(eltType=this.eltType,
+      var a = new raw ArrayViewSliceArr(eltType=this.eltType,
                                     _DomPid=d._pid,
                                     dom=d._instance,
                                     _ArrPid=arrpid,
-                                    _ArrInstance=arr));
+                                    _ArrInstance=arr);
 
       // this doesn't need to lock since we just created the domain d
       d._value.add_arr(a, locking=false);
@@ -2321,7 +2321,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      var a = chpl__toraw(new ArrayViewRankChangeArr(eltType=this.eltType,
+      var a = new raw ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
                                          _ArrPid=arrpid,
@@ -2329,7 +2329,7 @@ module ChapelArray {
                                          // TODO: Should the array really store
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
-                                         idx=rcdom._value.idx));
+                                         idx=rcdom._value.idx);
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
@@ -2545,11 +2545,11 @@ module ChapelArray {
       const updom = {(...newDims)};
 
 
-      const redist = chpl__toraw(new ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
+      const redist = new raw ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
                                               downdomPid = dompid,
-                                              downdomInst = dom));
+                                              downdomInst = dom);
       const redistRec = _newDistribution(redist);
       // redist._free_when_no_doms = true;
       const redomclass = redistRec.newRectangularDom(rank=rank,
@@ -2566,11 +2566,11 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid) = (this._value, this._pid);
 
-      var x = chpl__toraw(new ArrayViewReindexArr(eltType=this.eltType,
+      var x = new raw ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,
-                                      _ArrInstance=arr));
+                                      _ArrInstance=arr);
       // this doesn't need to lock since we just created the domain d
       newDom._value.add_arr(x, locking=false);
       return _newArray(x);
