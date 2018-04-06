@@ -1954,6 +1954,18 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+  if (at->scalarPromotionType == NULL) {
+    resolvePromotionType(at);
+  }
+  if (at->symbol->instantiationPoint == NULL) {
+    at->symbol->instantiationPoint = fn->instantiationPoint;
+  }
+  if (developer == false) {
+    fixTypeNames(at);
+  }
+}
+
 void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
@@ -4991,12 +5003,9 @@ static void resolveInitField(CallExpr* call) {
   // Type was just fully instantiated, let's try to find its promotion type.
   if (wasGeneric                        == true &&
       ct->symbol->hasFlag(FLAG_GENERIC) == false) {
-    if (ct->scalarPromotionType == NULL) {
-      resolvePromotionType(ct);
-    }
-    if (developer == false) {
-      fixTypeNames(ct);
-    }
+
+    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+    resolveTypeWithInitializer(ct, parentFn);
     // BHARSH INIT TODO: Would like to resolve destructor here, but field
     // types are not fully resolved. E.g., "var foo : t"
   }
@@ -6864,12 +6873,7 @@ static void resolveExprExpandGenerics(CallExpr* call) {
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
               if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
-                if (ct->scalarPromotionType == NULL) {
-                  resolvePromotionType(ct);
-                }
-                if (developer == false) {
-                  fixTypeNames(ct);
-                }
+                resolveTypeWithInitializer(ct, fn);
               }
             }
           }

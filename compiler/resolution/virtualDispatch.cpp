@@ -227,6 +227,16 @@ static void addToVirtualMaps(FnSymbol*      pfn,
       }
 
       fn->instantiationPoint = instantiationPoint;
+    } else {
+      //
+      // BHARSH 2018-04-06:
+      //
+      // Essential for arrays to be able to use initializers.
+      //
+      // A smaller test case:
+      //   types/type_variables/deitz/test_point_of_instantiation3.chpl
+      //
+      fn->instantiationPoint = ct->symbol->instantiationPoint;
     }
 
     resolveOverride(pfn, fn);

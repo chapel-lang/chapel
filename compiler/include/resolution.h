@@ -260,6 +260,8 @@ bool isAutoDestroyedVariable(Symbol* sym);
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
+
 void resolvePromotionType(AggregateType* at);
 
 void resolveDestructor(AggregateType* at);
