@@ -659,6 +659,15 @@ use TestUtils;
     assertTrue(isIntType(M.eltType), "CSRMatrix(A, eltType=int)");
   }
 
+  /* CSR Identity */
+  {
+    var A = eye(IDom);
+    var B: [IDom] real = 1;
+
+    assertEqual(A.domain, B.domain, 'LinearAlgebra.Sparse.eye(IDom) // domain');
+    assertEqual(A, B, 'LinearAlgebra.Sparse.eye(IDom) // array');
+  }
+
   //
   // Simple Ops
   //
