@@ -297,6 +297,25 @@ all:
   02/22/18:
     - text: Put the main process to sleep while waiting to shutdown (#8533)
       config: 16 node XC
+  03/03/18:
+    - text: add error handling to casts from string #8547
+      config: chapcs
+  03/04/18:
+    - text: system update
+      config: 16 node XC
+  03/16/18:
+    - text: QSBR (#8182)
+      config: 16 node XC
+  03/18/18:
+    - text: QSBR reverted (#8841)
+      config: 16 node XC
+  03/20/18:
+    - text: upgrade default LLVM to LLVM 6 (#8869)
+      config: chapcs 
+  04/03/18:
+    - text: Reduce contention from ugni's polling thread (#9068)
+      config: 16 node XC
+
 
 AllCompTime:
   11/09/14:
@@ -421,6 +440,11 @@ cg:
   09/22/16:
     - Added overloaded compileErrors for Sort/Search (#4621)
 
+cg-a:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
+
+
 cg-sparse-timecomp:
   09/09/16:
     - disable function resolution optimization (#4476)
@@ -432,6 +456,10 @@ c-ray:
     - Parallelized C-ray and transposed array (#4743)
   11/09/16:
     - Code cleanups in preparation for SC16 (#4830 and others)
+
+create-views:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
 
 dgemm.128:
   09/06/13:
@@ -616,6 +644,8 @@ jacobi:
     - refactoring of rectangular IO (#5157)
   08/02/17:
     - Remove handling of references from copyPropagation (#6779)
+  03/13/18:
+    - Enable phase one dynamic dispatch (#8790)
 
 knucleotide:
   10/17/15:
@@ -793,6 +823,10 @@ memleaksfull:
     - Rewrite default argument handling (#7858)
   01/23/18:
     - Fix memory leak introduced in PR #8073 (#8268)
+  03/14/18:
+    - Convert RecordParser over from constructors to initializers (#8810)
+  04/04/18:
+    - Update a slew of tests with initialize() methods to use postinit() instead (#8988)
 
 meteor:
   12/18/13:
@@ -944,6 +978,8 @@ ra:
       config: Single node XC
   03/21/17:
     - Rank change dom dist view (#5694)
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
 
 ra.ml-perf:
   09/19/17:
@@ -999,6 +1035,10 @@ revcomp:
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
+  03/15/18:
+    - Brad version overhauled, based on mark-skip-read-begin (#8815)
+  03/31/18:
+    - Update revcomp problem size; filenames for fasta-based inputs (#9043)
 
 sad:
   05/03/16:

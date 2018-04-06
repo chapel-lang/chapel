@@ -10,7 +10,7 @@ class Child : Parent {
   param p: bool;
 
   proc init() {
-    super.init();
+    this.complete();
     parentInt = 5;
   }
 }

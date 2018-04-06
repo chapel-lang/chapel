@@ -1,0 +1,2 @@
+# skip if valgrind not present, to ensure reliable behavior.
+CHPL_TEST_VGRND_EXE == off

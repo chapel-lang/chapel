@@ -1,0 +1,1 @@
+modTypeShareName.chpl:14: error: unresolved call 'type Stack.Stack(x=2)'

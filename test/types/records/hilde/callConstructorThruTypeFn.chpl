@@ -11,7 +11,7 @@ record R {
 record S {
   var _i : int;
   var _r : real;
-  proc init(i : int) { _i = i; _r = 3.1416; super.init(); }
+  proc init(i : int) { _i = i; _r = 3.1416; }
 }
 
 proc chooseARecordType(param derived = false) type {

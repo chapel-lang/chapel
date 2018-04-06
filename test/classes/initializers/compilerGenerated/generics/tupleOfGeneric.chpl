@@ -8,7 +8,6 @@ record R {
             param stridable : bool = false) {
     this.idxType   = idxType;
     this.stridable = stridable;
-    super.init();
   }
 }
 

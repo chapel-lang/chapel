@@ -70,4 +70,5 @@ if [ "$numFailures" -eq "0" ]; then
   printf "${GREEN}SUCCESS${NORMAL}\n"
 else
   printf "${RED}$numFailures/$numTotal tests failed${NORMAL}\n"
+  exit 1;
 fi

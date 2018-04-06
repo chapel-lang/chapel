@@ -1,5 +1,6 @@
 proc main() {
   var f = new Foo1();
+  writeln("f = ", f);
 }
 
 class Foo0 {

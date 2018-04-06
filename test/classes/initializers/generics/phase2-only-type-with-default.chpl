@@ -5,6 +5,7 @@ class Foo {
   type t = int;
 
   proc init() {
+    this.complete();
     t = int; // This should fail
   }
 }

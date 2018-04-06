@@ -17,7 +17,6 @@ class Looper {
 
   proc init(best: int) {
     val = best;
-    super.init();
   }
 }
 

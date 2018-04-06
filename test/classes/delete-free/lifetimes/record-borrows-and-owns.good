@@ -1,0 +1,6 @@
+record-borrows-and-owns.chpl:41: In function 'badF1':
+record-borrows-and-owns.chpl:43: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:42: note: consider scope of r
+record-borrows-and-owns.chpl:47: In function 'badF2':
+record-borrows-and-owns.chpl:49: error: Scoped variable cannot be returned
+record-borrows-and-owns.chpl:48: note: consider scope of r

@@ -8,7 +8,6 @@ class Foo {
   proc init(val: Color) {
     a = val;
     b = green;
-    super.init();
   }
 }
 

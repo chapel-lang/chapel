@@ -1390,7 +1390,7 @@ static bool needToAddCoercion(Type*      actualType,
   } else if (canCoerce(actualType, actualSym, formalType, fn) == true) {
     retval =  true;
 
-  } else if (isDispatchParent(actualType, formalType)         == true) {
+  } else if (isDispatchParent(actualType, formalType->getValType()) == true) {
     retval =  true;
 
   } else {
@@ -1404,13 +1404,62 @@ static IntentTag getIntent(ArgSymbol* formal) {
   IntentTag retval = formal->intent;
 
   if (retval == INTENT_BLANK || retval == INTENT_CONST) {
-    // Why did we previously exclude iterator records?
-    //if (formal->type->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
-      retval = concreteIntentForArg(formal);
-    //}
+    retval = concreteIntentForArg(formal);
   }
 
   return retval;
+}
+
+static bool argumentCanModifyActual(IntentTag intent) {
+  switch (intent) {
+    case INTENT_CONST:
+    case INTENT_BLANK:
+    case INTENT_PARAM:
+    case INTENT_TYPE:
+      INT_FATAL("Should never be reached");
+      return false;
+    case INTENT_IN:
+    case INTENT_CONST_IN:
+    case INTENT_CONST_REF:
+      return false;
+    case INTENT_OUT:
+    case INTENT_INOUT:
+    case INTENT_REF:
+    case INTENT_REF_MAYBE_CONST: // this is conservative
+      return true;
+  }
+  return false;
+}
+
+static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
+  IntentTag intent = getIntent(formal);
+
+  if (formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+    // Ignore this class of error for tuples since the
+    // compiler is currently producing this pattern for chpl__unref.
+    // This is a workaround and a better solution would be preferred.
+  } else if (argumentCanModifyActual(intent)) {
+    // Error for coerce->value passed to ref / out / etc
+    USR_FATAL_CONT(call,
+                   "value from coercion passed to ref formal '%s'",
+                   formal->name);
+  } else {
+    // Error for coerce->value passed to 'const ref' (ref case handled above).
+    // Note that coercing SubClass to ParentClass is theoretically
+    // OK with a 'const ref' but right now there are errors at C
+    // compilation time if this error is left out.
+    // Additionally, if a new value is created for this kind of
+    // coercion, it disrupts the desired semantics (a value passed
+    // by const ref could be modified during the call & the change
+    // visible).
+    bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
+
+    if (formalIsRef) {
+      USR_FATAL_CONT(call,
+                     "value from coercion passed to const ref formal '%s'",
+                     formal->name);
+    }
+  }
 }
 
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
@@ -1472,9 +1521,23 @@ static void addArgCoercion(FnSymbol*  fn,
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
 
+  } else if (isManagedPtrType(ats->getValType()) == true &&
+             !isManagedPtrType(formal->getValType())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
                formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
+
+    // MPF: I'm adding this assert in order to reduce my level
+    // of concern about this code.
+    AggregateType* at = toAggregateType(ats->getValType());
+    if (isUserDefinedRecord(at))
+      if (propagateNotPOD(at))
+        INT_FATAL("would add problematic deref");
+
     //
     // dereference a reference actual
     //
@@ -1543,6 +1606,12 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 
   resolveCall(castMove);
+
+  // Check for coercions resulting in a value that
+  // they are not passed by ref or const ref.
+  if (!castTemp->isRef()) {
+    errorIfValueCoercionToRef(call, formal);
+  }
 }
 
 /************************************* | **************************************

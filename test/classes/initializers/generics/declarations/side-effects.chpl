@@ -9,7 +9,6 @@ class Foo {
   proc init(param pVal) {
     p = pVal;
     writeln(pVal);
-    super.init();
   }
 }
 

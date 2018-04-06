@@ -8,7 +8,6 @@ class ParaThis {
 
   proc init(start: int) {
     val = start;
-    super.init();
   }
 }
 

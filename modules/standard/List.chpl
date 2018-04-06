@@ -65,8 +65,10 @@ record list {
    */
   type eltType;
   pragma "no doc"
+  pragma "owned"
   var first: listNode(eltType);
   pragma "no doc"
+  pragma "owned"
   var last: listNode(eltType);
   /*
     The number of nodes in the list.

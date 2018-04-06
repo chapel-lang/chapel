@@ -1,3 +1,0 @@
-bug: an error message is not reported when passing a different-class-type argument to an inout formal
-
-Instead, the compiler fails verification.

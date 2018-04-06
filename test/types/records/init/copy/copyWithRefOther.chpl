@@ -3,12 +3,11 @@ record R {
   
   proc init(x: int) {
     this.x = x;
-    super.init();
   }
 
   proc init(ref src: R) {
     this.x = src.x;
-    super.init();
+    this.complete();
     src.x = 0;
   }
 }

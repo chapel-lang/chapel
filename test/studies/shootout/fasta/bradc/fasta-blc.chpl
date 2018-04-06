@@ -47,7 +47,7 @@ use nucleotide;
 //
 // Sequence to be repeated
 //
-const ALU: [0..286] int(8) = [
+const ALU: [0..286] nucleotide = [
   G, G, C, C, G, G, G, C, G, C, G, G, T, G, G, C, T, C, A, C,
   G, C, C, T, G, T, A, A, T, C, C, C, A, G, C, A, C, T, T, T,
   G, G, G, A, G, G, C, C, G, A, G, G, C, G, G, G, C, G, G, A,
@@ -94,7 +94,7 @@ proc main() {
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n"): int(8);
+param newline = ascii("\n");
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
@@ -103,7 +103,7 @@ proc repeatMake(desc, alu, n) {
   stdout.write(desc);
 
   const r = alu.size,
-        s = [i in 0..(r+lineLength)] alu[i % r];
+        s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
     const lo = i % r + 1,
@@ -162,7 +162,7 @@ proc randomMake(desc, nuclInfo, n) {
           if r >= cumulProb[k] then
             nid += 1;
 
-        myBuff[off] = nuclInfo[nid](nucl);
+        myBuff[off] = nuclInfo[nid](nucl):int(8);
         off += 1;
         col += 1;
 

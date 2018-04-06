@@ -174,7 +174,7 @@ private proc makeZero(param rank : int, type idxType) {
 //
 // AccumStencil constructor for clients of the AccumStencil distribution
 //
-proc AccumStencil.AccumStencil(boundingBox: domain,
+proc AccumStencil.init(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -189,11 +189,17 @@ proc AccumStencil.AccumStencil(boundingBox: domain,
   if idxType != boundingBox.idxType then
     compilerError("specified AccumStencil index type != index type of specified bounding box");
 
+  this.rank = rank;
+  this.idxType = idxType;
+  this.ignoreFluff = ignoreFluff;
+
   this.boundingBox = boundingBox : domain(rank, idxType, stridable=false);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
   this.periodic = periodic && !isZeroTuple(fluff);
+
+  this.complete();
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
@@ -481,7 +487,6 @@ proc LocAccumStencil.init(param rank: int,
     }
     myChunk = {(...inds)};
   }
-  super.init();
 }
 
 proc AccumStencilDom.dsiMyDist() return dist;
@@ -1428,10 +1433,13 @@ inline proc LocAccumStencilArr.this(i) ref {
 //
 // Privatization
 //
-proc AccumStencil.AccumStencil(other: AccumStencil, privateData,
+proc AccumStencil.init(other: AccumStencil, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 param ignoreFluff = other.ignoreFluff) {
+  this.rank = rank;
+  this.idxType = idxType;
+  this.ignoreFluff = ignoreFluff;
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1439,6 +1447,8 @@ proc AccumStencil.AccumStencil(other: AccumStencil, privateData,
   dataParMinGranularity = privateData(5);
   fluff = privateData(6);
   periodic = privateData(7);
+
+  this.complete();
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);

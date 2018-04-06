@@ -9,7 +9,7 @@ x 5 updates until Mar 2017
 
 Debian:
 x 6 (squeeze) LTS EOL Feb 2016
-  7 (wheezy)  LTS EOL May 2018
+- 7 (wheezy)  LTS EOL May 2018
   8 (jessie)  LTS EOL May 2020
   9 (stretch) LTS EOL Jun 2022
 
@@ -18,7 +18,7 @@ OpenSuse:
 x 13.1 EOL Feb 2016 / evergreen in Nov 2016
 x 13.2 EOL Jan 2017
 x 42.1 EOL May 2017
-  42.2 EOL Jan 2018
+x 42.2 EOL Jan 2018
   42.3 EOL Jan 2019
 
 Fedora:
@@ -27,14 +27,15 @@ x 21 EOL Dec 2015
 x 22 EOL Jul 2016 (released May 2015)
 x 23 EOL Dec 2016 (released Nov 2015)
 x 24 EOL Aug 2017 (released June 2016)
-  25 est EOL Dec 2017 (released Nov 2016)
-  26 est EOL Aug 2018 (released Jul 2017)
+x 25 EOL Dec 2017 (released Nov 2016)
+- 26 est EOL Aug 2018 (released Jul 2017)
+  27 est EOL Dec 2018 (released Nov 2017)
 
 FreeBSD:
 
 x 10.2 EOL Dec 2016
-  10.3 EOL Apr 2018
-- 11.0 EOL Oct 2017
+- 10.3 EOL Apr 2018
+x 11.0 EOL Oct 2017
   11.1 est EOL Dec 2019 (released Jul 2017)
 
 Ubuntu:

@@ -10,7 +10,6 @@ class IfInit {
     } else {
       f2 = val;
     }
-    super.init();
   }
 }
 

@@ -128,9 +128,10 @@ bool canDispatch(Type*     actualType,
                  bool*     paramNarrows= NULL,
                  bool      paramCoerce = false);
 
-bool fixupDefaultInitCopy(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
 void parseExplainFlag(char* flag, int* line, ModuleSymbol** module);
+
+FnSymbol* findCopyInit(AggregateType* ct);
 
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
@@ -211,7 +212,7 @@ void      ensureInMethodList(FnSymbol* fn);
 bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 bool      hasAutoCopyForType(Type* type);
-FnSymbol* getAutoCopyForType(Type* type);   // reqiures hasAutoCopyForType()==true
+FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==true
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "

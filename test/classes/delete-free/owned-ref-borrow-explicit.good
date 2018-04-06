@@ -1,0 +1,2 @@
+owned-ref-borrow-explicit.chpl:12: In function 'test':
+owned-ref-borrow-explicit.chpl:15: error: non-lvalue actual is passed to 'ref' formal 'arg' of acceptRef()

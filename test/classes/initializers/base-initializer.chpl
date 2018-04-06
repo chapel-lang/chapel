@@ -20,8 +20,8 @@ proc Circle.area() return 3.14159*r**2;
 class Oval: Circle{
   var r2: real;
   proc init(h1,h2) {
-    r2=h2;
     super.init(h1);
+    r2=h2;
   }
 }
 

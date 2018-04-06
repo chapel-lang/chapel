@@ -23,7 +23,6 @@ class LevelSolution {
     this.level  = level;
     old_data     = new LevelVariable(level = level);
     current_data = new LevelVariable(level = level);
-    super.init();
   }
   // /|''''''''''''''''''''/|
   //< |    initializer    < |

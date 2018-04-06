@@ -6,6 +6,7 @@ record R
   {
     proc init()
     {
+      this.complete();
       writeln("    in init of C ", outer.id);
     }
 
@@ -20,6 +21,9 @@ record R
 
   proc init()
   {
+    // Note: calling 'new C()' in phase 1 will pass 'this' along, which is
+    // generally frowned upon...
+    this.complete();
     writeln("  in init of R");
 
     id = 1;
@@ -34,8 +38,6 @@ record R
     // a compiler generated copy initializer?
     this.id = other.id + 1;
     this.c  = other.c;
-
-    super.init();
   }
 
   proc deinit()

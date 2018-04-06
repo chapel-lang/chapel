@@ -1,0 +1,6 @@
+--name ''          # masonNewBadName.empty.good
+--name=0bad        # masonNewBadName.0bad.good
+--name='bad$tuff'  # masonNewBadName.badstuff.good
+--name=bad-name    # masonNewBadName.bad-name.good
+--name=bad.name    # masonNewBadName.bad.name.good
+--name=existingdir # masonNewBadName.existingdir.good

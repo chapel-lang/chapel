@@ -32,6 +32,7 @@ module ArrayViewReindex {
   // that it creates reindexed views of, and a down-facing and up-facing
   // domain indicating the old and new index sets, respectively.
   //
+  pragma "use default init"
   class ArrayViewReindexDist: BaseDist {
     // a pointer down to the distribution that this class is creating
     // reindexed views of
@@ -449,7 +450,6 @@ module ArrayViewReindex {
     //
     // accessors
     //
-
     inline proc dsiAccess(i: idxType ...rank) ref {
       return dsiAccess(i);
     }

@@ -27,6 +27,7 @@
 #include "stmt.h"
 #include "stlUtil.h"
 #include "TryStmt.h"
+#include "CatchStmt.h"
 
 #include "iterator.h"
 
@@ -184,7 +185,16 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     return 0;
 
   if (TryStmt* tryStmt = toTryStmt(expr))
-    return isDefinedAllPaths(tryStmt->body(), ret, refs);
+  {
+    int result = INT_MAX;
+    for_alist(c, tryStmt->_catches)
+      result = std::min(result, isDefinedAllPaths(c, ret, refs));
+
+    return std::min(result, isDefinedAllPaths(tryStmt->body(), ret, refs));
+  }
+
+  if (CatchStmt* catchStmt = toCatchStmt(expr))
+    return isDefinedAllPaths(catchStmt->body(), ret, refs);
 
   if (BlockStmt* block = toBlockStmt(expr))
   {

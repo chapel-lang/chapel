@@ -55,6 +55,10 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     retval = isApplicableGeneric (info);
   }
 
+  if (retval && fn->retExprType != NULL && fn->retType == dtUnknown) {
+    resolveSpecifiedReturnType(fn);
+  }
+
   return retval;
 }
 
@@ -72,7 +76,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
         resolveTypeConstructor(info);
       }
 
-      retval = checkResolveFormalsWhereClauses();
+      retval = checkResolveFormalsWhereClauses(info);
     }
   }
 
@@ -90,8 +94,9 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
     for_formals(formal, fn) {
       if (formal->hasFlag(FLAG_IS_MEME) == false) {
         if (fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
-          if (formal->instantiatedFrom) {
+          if (formal->instantiatedFrom != NULL) {
             typeConstructorCall->insertAtTail(formal->type->symbol);
+
           } else if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
             typeConstructorCall->insertAtTail(paramMap.get(formal));
           }
@@ -101,7 +106,7 @@ void ResolutionCandidate::resolveTypeConstructor(CallInfo& info) {
               formal->type                  == dtMethodToken) {
             typeConstructorCall->insertAtTail(formal);
 
-          } else if (formal->instantiatedFrom) {
+          } else if (formal->instantiatedFrom != NULL) {
             SymExpr*   se = new SymExpr(formal->type->symbol);
             NamedExpr* ne = new NamedExpr(formal->name, se);
 
@@ -467,25 +472,10 @@ void ResolutionCandidate::resolveTypedefedArgTypes() {
   }
 }
 
-static AggregateType* getRootInstantiation(AggregateType* at) {
-  AggregateType* ret = at;
-
-  while (ret != NULL && ret->instantiatedFrom != NULL) {
-    ret = ret->instantiatedFrom;
-  }
-
-  return ret;
-}
-
 static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
-  AggregateType* ret = NULL;
-  Symbol* sym        = rc->formalIdxToActual[idx];
+  Symbol* sym = rc->formalIdxToActual[idx];
 
-  if (sym != NULL) {
-    ret = toAggregateType(sym->getValType());
-  }
-
-  return ret;
+  return (sym != NULL) ? toAggregateType(sym->getValType()) : NULL;
 }
 
 //
@@ -506,22 +496,42 @@ static AggregateType* getActualType(ResolutionCandidate* rc, int idx) {
 // See GitHub Issue #6019.
 //
 static bool looksLikeCopyInit(ResolutionCandidate* rc) {
-  bool ret = false;
+  bool retval = false;
 
   if (rc->fn->isInitializer() && rc->formalIdxToActual.size() == 3) {
     // First formal/actual is gMethodToken
     AggregateType* base  = getActualType(rc, 1);
     AggregateType* other = getActualType(rc, 2);
+
     if (base != NULL && other != NULL) {
       if (base == other) {
-        ret = true;
-      } else if (getRootInstantiation(base) == getRootInstantiation(other)) {
-        ret = true;
+        retval = true;
+
+      } else {
+        AggregateType* baseRoot  = base->getRootInstantiation();
+        AggregateType* otherRoot = other->getRootInstantiation();
+
+        retval = (baseRoot == otherRoot) ? true : false;
       }
     }
   }
 
-  return ret;
+  return retval;
+}
+
+static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->_this->getValType());
+  AggregateType* at = toAggregateType(info.call->get(2)->getValType());
+
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
+    retval = true;
+  }
+
+  return retval;
 }
 
 /************************************* | **************************************
@@ -530,8 +540,16 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses() {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   int coindex = -1;
+
+  // Exclude initializers on other types before we attempt to resolve the
+  // signature.
+  //
+  // TODO: Expand this check for all methods
+  if (fn->isInitializer() && isCandidateInit(this, info) == false) {
+    return false;
+  }
 
   /*
    * A derived generic type will use the type of its parent,

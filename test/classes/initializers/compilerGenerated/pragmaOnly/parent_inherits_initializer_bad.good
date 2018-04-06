@@ -1,0 +1,6 @@
+parent_inherits_initializer_bad.chpl:25: In function 'main':
+parent_inherits_initializer_bad.chpl:26: error: unresolved call 'GrandParent.init()'
+parent_inherits_initializer_bad.chpl:10: note: candidates are: GrandParent.init(x1: int, x2: int)
+parent_inherits_initializer_bad.chpl:16: note:                 Parent.init(b: int(64))
+parent_inherits_initializer_bad.chpl:21: note:                 Child.init(b: int(64), c: int(64))
+deleted module lines

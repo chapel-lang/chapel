@@ -8,7 +8,6 @@ class GenericClass {
   proc init(type i, param r : int) {
     this.idxType = i;
     this.rank = r;
-    super.init();
   }
 
   iter these() {
@@ -47,7 +46,6 @@ record GenericRecord {
 
   proc init(type t) {
     this.eltType = t;
-    super.init();
   }
 
   proc chpl__promotionType() type {

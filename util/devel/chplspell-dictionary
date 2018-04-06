@@ -2643,6 +2643,8 @@ yystartlineno
 
 FILEID: 5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5
 aargv
+nodashes
+usearg
 
 FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 rungdb
@@ -2760,7 +2762,10 @@ infs
 inparens
 ipra
 maino
+mcpu
 qunused
+reassoc
+thunderx
 tlii
 wmissing
 wstrict
@@ -2924,9 +2929,6 @@ sbac
 
 FILEID: 101dbad0-1f18-11e6-a3a6-10ddb1d4c3d5
 bxor
-
-FILEID: 9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5
-bdomains
 
 FILEID: f8a06e7e-1f18-11e6-a3a6-10ddb1d4c3d5
 arowi
@@ -3568,6 +3570,7 @@ tttaccct
 
 FILEID: 560979a4-4401-11e6-907f-843835579daa
 atcggctauamkrywwssyrkmvbhddhbvnn
+brubeck
 
 FILEID: d86303d0-4d88-11e6-907f-843835579daa
 ribution
@@ -3582,6 +3585,7 @@ ttag
 
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
+libmvec
 tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
@@ -4145,6 +4149,10 @@ scspell
 ukacd
 
 FILEID: 726887c4-bc39-11e6-9740-843835579daa
+knowledgecenter
+liaat
+liaattunproctop
+linuxonibm
 ncpu
 oldact
 vmstat
@@ -4209,10 +4217,12 @@ FILEID: 9e8a4742-0c12-11e7-980e-10ddb1d4c3d5
 nbobjs
 
 FILEID: aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5
+adrerr
 blockhere
 cmps
 cmpval
 cqmode
+critsec
 cswap
 dbgf
 dbgsf
@@ -4228,15 +4238,26 @@ fxor
 gdata
 iadd
 iptag
+kpage
+lenbits
+lenmask
 mdhs
+mrtl
 nbdi
 nbdp
 nopnd
 opnd
 ppdescs
 ppdi
+psvv
+pszm
 rfdpp
+sigact
+tdiff
+telapsed
+tget
 themself
+tstamp
 xchgval
 
 FILEID: c0254978-0c13-11e7-980e-10ddb1d4c3d5
@@ -4288,21 +4309,31 @@ rview
 
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
 adom
+arange
 atype
 azero
 bdom
+brange
 bulu
 bzero
 cdom
+cplx
 csrmatmat
 csrmatvec
 czero
+eigvals
+geev
 gemm
 gemv
+indptr
 matmat
 nzcur
 nznew
 pinv
+potrf
+smmp
+vlcplx
+vrcplx
 xdom
 ydom
 
@@ -4356,8 +4387,12 @@ uhvb
 
 FILEID: 554af092-652a-11e7-88ba-10ddb1d4c3d5
 arglist
+compiletime
 helloworld
+simt
 targetlocale
+vectorizeable
+workgroupsize
 
 FILEID: 26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5
 rtmp
@@ -4487,6 +4522,7 @@ lrint
 strfy
 
 FILEID: f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5
+addrvec
 allocinfo
 appnum
 cqes
@@ -4495,6 +4531,9 @@ freeinfo
 lcpus
 ofichkerr
 ofichkret
+pmichkret
+pmichksuccess
+procid
 rbuf
 rbufs
 tostr
@@ -4502,6 +4541,22 @@ tostr
 FILEID: 0502b256-07ea-11e8-bed3-10ddb1d4c3d5
 ctxs
 readfrom
+
+FILEID: 1873381c-2cbe-11e8-aa67-10ddb1d4c3d5
+detemp
+detemps
+
+FILEID: 7626c32a-2f20-11e8-aa67-10ddb1d4c3d5
+condtest
+
+FILEID: 79b61d92-2f20-11e8-aa67-10ddb1d4c3d5
+mywriteln
+
+FILEID: 80066972-2f20-11e8-aa67-10ddb1d4c3d5
+writehalf
+
+FILEID: 84377626-2f20-11e8-aa67-10ddb1d4c3d5
+testmain
 
 NATURAL:
 abcd
@@ -4621,6 +4676,7 @@ benhavns
 berkeley
 bernstein
 bertolacci
+bessel
 betweenness
 bharshbarg
 bharshbarger
@@ -4832,6 +4888,7 @@ cpubind
 cpus
 cpuset
 cpython
+craig
 craype
 crays
 creoleparser
@@ -4989,6 +5046,7 @@ doren
 dotfile
 dotfiles
 dotnl
+douglas
 downarr
 downcasts
 downdist
@@ -5439,6 +5497,7 @@ infilesize
 infiniband
 infinitum
 initcopy
+initdone
 initialise
 initializer
 initializers
@@ -6133,6 +6192,8 @@ postblit
 postfields
 postfieldsize
 postfixed
+postinit
+postinits
 postorder
 postprocess
 postquote
@@ -6204,6 +6265,7 @@ pychapel
 pydoc
 pygments
 qioerr
+qsbr
 qsub
 qthreads
 queueing
@@ -6217,6 +6279,7 @@ raii
 ralph
 randclear
 randinit
+randolph
 randseed
 randstate
 randstream
@@ -6231,6 +6294,7 @@ rcvd
 rdma
 rdonly
 rdwr
+reachability
 reacqs
 readahead
 readargsfrom
@@ -6421,15 +6485,18 @@ showpointzero
 sidelnik
 siek
 sigabrt
+sigaddset
 sigalrm
 sigbus
 sigchld
 sigcont
+sigemptyset
 sigfpe
 sighup
 sigill
 sigint
 sigkill
+sigmask
 signum
 sigpipe
 sigplan
@@ -6437,6 +6504,7 @@ sigpoll
 sigprof
 sigquit
 sigsegv
+sigset
 sigstop
 sigsys
 sigterm
@@ -6688,6 +6756,7 @@ tokyo
 toml
 tommy
 tonum
+toolchain
 tooltip
 toordinal
 topdown
@@ -6885,6 +6954,7 @@ xcode
 xcodebuild
 xdigit
 xeon
+xfer
 xhtml
 xopen
 xterm

@@ -7,7 +7,6 @@ class Foo {
       // we may allow this later.  But it is better to go from more restrictive
       // to less than vice versa.
     }
-    super.init();
   }
 }
 

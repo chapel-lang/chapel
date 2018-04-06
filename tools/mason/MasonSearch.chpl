@@ -48,24 +48,29 @@ proc masonSearch(origArgs : [] string) {
   // If no query is provided, list all packages in registry
   const query = if args.size > 0 then args.tail().toLower()
                 else ".*";
-
-  const searchDir = MASON_CACHED_REGISTRY + "/Bricks/";
-  const pattern   = compile(query, ignorecase=true);
+  const pattern = compile(query, ignorecase=true);
 
   var results : [1..0] string;
-  for dir in listdir(searchDir, files=false, dirs=true) {
-    const name = dir.replace("/", "");
 
-    if isHidden(name) {
-      if debug {
-        writeln("[DEBUG] found hidden package: ", name);
+  for cached in MASON_CACHED_REGISTRY {
+    const searchDir = cached + "/Bricks/";
+
+    for dir in listdir(searchDir, files=false, dirs=true) {
+      const name = dir.replace("/", "");
+
+      if pattern.search(name) {
+        if isHidden(name) {
+          if debug {
+            writeln("[DEBUG] found hidden package: ", name);
+          }
+        }  else {
+          const ver = findLatest(searchDir + dir);
+          results.push_back(name + " (" + ver.str() + ")");
+        }
       }
     }
-    else if pattern.search(name) {
-      const ver = findLatest(searchDir + dir);
-      results.push_back(name + " (" + ver.str() + ")");
-    }
   }
+
   for r in results.sorted() do writeln(r);
 
   if results.size == 0 {

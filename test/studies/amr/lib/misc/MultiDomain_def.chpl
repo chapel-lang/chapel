@@ -67,7 +67,6 @@ class MultiDomain
     this.rank = rank;
     this.stridable = stridable;
     root = new MDNode( rank, stridable );
-    super.init();
   }
 
 

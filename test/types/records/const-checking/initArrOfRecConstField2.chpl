@@ -9,7 +9,6 @@ class C  {
   proc init() {
     var myR = new R(c=1, v=2);
     A = [myR, myR, myR];
-    super.init();
   }
 }
 

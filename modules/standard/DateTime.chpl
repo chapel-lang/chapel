@@ -273,7 +273,6 @@ module DateTime {
     this.chpl_year = year;
     this.chpl_month = month;
     this.chpl_day = day;
-    super.init();
   }
 
   /* A `date` object representing the current day */
@@ -327,7 +326,7 @@ module DateTime {
     timeStruct.tm_wday = weekday(): int(32);
     timeStruct.tm_yday = (toordinal() - (new date(year, 1, 1)).toordinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
-    return timeStruct; 
+    return timeStruct;
   }
 
   /* Return the number of days since 1-1-0001 this `date` represents */
@@ -433,6 +432,29 @@ module DateTime {
     var str = __primitive("cast", c_string, c_ptrTo(buf)): string;
 
     return str;
+  }
+
+  /* Read or write a date value from channel `f` */
+  proc date.readWriteThis(f) {
+    const dash = new ioLiteral("-");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_year <~> dash <~> chpl_month <~> dash <~> chpl_day;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
   }
 
 
@@ -546,12 +568,10 @@ module DateTime {
     this.chpl_second = second;
     this.chpl_microsecond = microsecond;
     this.chpl_tzinfo = tzinfo;
-    super.init();
   }
 
   pragma "no doc"
   proc time.deinit() {
-    // delete tzinfo if needed
   }
 
   /* Methods on time values */
@@ -659,6 +679,30 @@ module DateTime {
 
     return str;
   }
+
+  /* Read or write a time value from channel `f` */
+  proc time.readWriteThis(f) {
+    const colon = new ioLiteral(":");
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_hour <~> colon <~> chpl_minute <~> colon <~> chpl_second
+        <~> new ioLiteral(".") <~> chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
 
   /* Operators on time values */
 
@@ -870,7 +914,6 @@ module DateTime {
     // Testcase: test/library/standard/DateTime/testTimezone.chpl
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tzinfo);
-    super.init();
   }
 
   /* Return a `datetime` value representing the current time and date */
@@ -1105,7 +1148,7 @@ module DateTime {
 
     // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
     // characters on its own, so do it manually.
-    var year = zeroPad(4, strftime("%Y"):int);
+    var year = zeroPad(4, try! strftime("%Y"):int);
     return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
@@ -1162,6 +1205,34 @@ module DateTime {
   proc datetime.ctime() {
     return this.strftime("%a %b %e %T %Y");
   }
+
+  /* Read or write a datetime value from channel `f` */
+  proc datetime.readWriteThis(f) {
+    const dash  = new ioLiteral("-"),
+          colon = new ioLiteral(":");
+
+    if f.writing {
+      try! {
+        f.write(isoformat());
+      }
+    } else {
+      const binary = f.binary(),
+            arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
+            isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+
+      f <~> chpl_date.chpl_year <~> dash <~> chpl_date.chpl_month <~> dash
+        <~> chpl_date.chpl_day <~> new ioLiteral("T") <~> chpl_time.chpl_hour
+        <~> colon <~> chpl_time.chpl_minute <~> colon <~> chpl_time.chpl_second
+        <~> new ioLiteral(".") <~> chpl_time.chpl_microsecond;
+
+      if isjson then
+        f <~> new ioLiteral('"');
+    }
+  }
+
 
   // TODO: Add a datetime.timestamp() method
 
@@ -1458,7 +1529,6 @@ module DateTime {
 
     if this.days > 999999999 then
       halt("Overflow: days > 999999999");
-    super.init();
   }
 
   /* Create a `timedelta` from a given number of seconds */

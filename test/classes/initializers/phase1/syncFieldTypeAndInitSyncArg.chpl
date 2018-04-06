@@ -4,7 +4,6 @@ class Foo {
   proc init(val: sync int) {
     writeln("inside the initializer");
     s = val;
-    super.init();
   }
 }
 

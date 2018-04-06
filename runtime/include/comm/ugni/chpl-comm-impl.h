@@ -20,6 +20,10 @@
 #ifndef _chpl_comm_impl_h_
 #define _chpl_comm_impl_h_
 
+#include <stdint.h>
+
+#include "chpl-mem-desc.h"
+
 //
 // This is the comm layer sub-interface for dynamic allocation and
 // registration of memory.
@@ -36,11 +40,12 @@ size_t chpl_comm_impl_regMemHeapPageSize(void);
         chpl_comm_impl_regMemAllocThreshold()
 size_t chpl_comm_impl_regMemAllocThreshold(void);
 
-#define CHPL_COMM_IMPL_REG_MEM_ALLOC(size) \
-        chpl_comm_impl_regMemAlloc(size)
-void* chpl_comm_impl_regMemAlloc(size_t size);
+#define CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn) \
+    chpl_comm_impl_regMemAlloc(size, desc, ln, fn)
+void* chpl_comm_impl_regMemAlloc(size_t size,
+                                 chpl_mem_descInt_t desc, int ln, int32_t fn);
 
-#define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size)   \
+#define CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size) \
   chpl_comm_impl_regMemPostAlloc(p, size)
 void chpl_comm_impl_regMemPostAlloc(void* p, size_t size);
 

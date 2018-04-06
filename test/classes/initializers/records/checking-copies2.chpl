@@ -14,7 +14,6 @@ record R {
   proc init(other:R) {
     this.x = other.x;
     this.y = other.y;
-    super.init();
   }
 }
 

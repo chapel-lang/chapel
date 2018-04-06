@@ -112,11 +112,14 @@ using namespace llvm;
 #include "llvmDumpIR.h"
 
 // These are headers internal to clang. Need to be able to:
-// 1. Get the LLVM type for a C typedef (say)  -- not needed after LLVM 5
+// 1. Get the LLVM type for a C typedef (say)
+//    (not needed after LLVM 5)
 // 2. Get the GEP offset for a field in a C record by name
+//    (not needed after LLVM 6)
+#if HAVE_LLVM_VER < 60
 #include "CodeGenModule.h"
 #include "CGRecordLayout.h"
-//#include "CGDebugInfo.h"
+#endif
 
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
@@ -1248,7 +1251,7 @@ static void setupModule()
   targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
 
   if (ffloatOpt) {
-    // see also FastMathFlags FM.setUnsafeAlgebra etc
+    // see also FastMathFlags FM.setAllowReassoc etc
     targetOptions.UnsafeFPMath = 1;
     targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
     targetOptions.NoNaNsFPMath = 1;
@@ -1439,7 +1442,13 @@ void prepareCodegenLLVM()
     FM.setNoInfs();
     FM.setNoSignedZeros();
     FM.setAllowReciprocal();
+#if HAVE_LLVM_VER < 60
     FM.setUnsafeAlgebra();
+#else
+    FM.setAllowContract(true);
+    FM.setApproxFunc();
+    FM.setAllowReassoc();
+#endif
     info->irBuilder->setFastMathFlags(FM);
   }
 
@@ -1569,9 +1578,18 @@ void runClang(const char* just_parse_filename) {
   if (specializeCCode &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
     std::string march = "-march=";
-    march += CHPL_TARGET_BACKEND_ARCH;
+    const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
+    if (strncmp(backend_arch, "arm-", 4) == 0) {
+      backend_arch += 4;
+      march = "-mcpu=";
+    }
+    march += backend_arch;
+    if (strcmp(backend_arch, "thunderx2") == 0) {
+      march += "t99";
+    }
     args.push_back(march);
   }
 
@@ -1910,8 +1928,13 @@ GenRet codegenCValue(const ValueDecl *vd)
 
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
-    // TODO: should be in clang::CodeGenerator API
-    llvm::Type* type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
+    llvm::Type* type = NULL;
+#if HAVE_LLVM_VER >= 50
+    type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
+#else
+    type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
+#endif
+
     ret.val = ConstantInt::get(type, v);
     ret.isLVPtr = GEN_VAL;
   } else {
@@ -2216,8 +2239,13 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName)
     }
   }
   INT_ASSERT(field);
-  // TODO: should be in clang::CodeGenerator API
+
+#if HAVE_LLVM_VER >= 60
+  ret = clang::CodeGen::getLLVMFieldNumber(cCodeGen->CGM(), rec, field);
+#else
   ret = cCodeGen->CGM().getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
+#endif
+
   return ret;
 }
 

@@ -349,8 +349,6 @@ void FnSymbol::finalizeCopy() {
         this->body->insertAtHead(node->remove());
       }
 
-      this->removeFlag(FLAG_EXPANDED_VARARGS);
-
     } else if (this->body->body.length == 0) {
       this->body->replace( COPY_INT(partialCopySource->body) );
     }
@@ -881,7 +879,7 @@ bool FnSymbol::isInitializer() const {
 }
 
 bool FnSymbol::isPostInitializer() const {
-  return isMethod() == true && strcmp(name, "postInit") == 0;
+  return isMethod() == true && strcmp(name, "postinit") == 0;
 }
 
 // This function or method is an iterator (as opposed to a procedure).

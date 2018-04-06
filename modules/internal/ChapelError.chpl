@@ -54,7 +54,6 @@ module ChapelError {
     /* Construct an Error */
     proc init() {
       _next = nil;
-      super.init();
     }
 
     /* Override this method to provide an error message
@@ -87,26 +86,26 @@ module ChapelError {
   }
 
   class IllegalArgumentError : Error {
-    var arg_name: string;
-    var arg_info: string;
+    var formal: string;
+    var info: string;
 
     proc init() {
-      super.init();
     }
 
-    proc init(_arg_name: string) {
-      this.arg_name = _arg_name;
-      super.init();
+    proc init(info: string) {
+      this.info = info;
     }
 
-    proc init(_arg_name: string, _arg_info: string) {
-      this.arg_name = _arg_name;
-      this.arg_info = _arg_info;
-      super.init();
+    proc init(formal: string, info: string) {
+      this.formal = formal;
+      this.info   = info;
     }
 
     proc message() {
-      return "illegal argument '" + arg_name + "': " + arg_info;
+      if formal.isEmptyString() then
+        return info;
+      else
+        return "illegal argument '" + formal + "': " + info;
     }
   }
 
@@ -172,6 +171,7 @@ module ChapelError {
       var cur:Error = group._head;
       group._head = nil;
       _head = nil;
+      this.complete();
 
       // Flatten nested TaskErrors
 
@@ -216,13 +216,11 @@ module ChapelError {
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: Error) {
       _head = err;
-      super.init();
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
     proc init() {
       _head = nil;
-      super.init();
     }
 
     /* Iterate over the errors contained in this :class:`TaskErrors`.
@@ -405,5 +403,17 @@ module ChapelError {
       return err;
     // If err wasn't a taskError, wrap it in one
     return new TaskErrors(err);
+  }
+
+  // The compiler generates functions to cast from strings to enums. This
+  // function helps the compiler throw errors from those generated casts.
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc chpl_enum_cast_error(casted: string, enumName: string) throws {
+    if casted.isEmptyString() then
+      throw new IllegalArgumentError("bad cast from empty string to " + enumName);
+    else
+      throw new IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
 }

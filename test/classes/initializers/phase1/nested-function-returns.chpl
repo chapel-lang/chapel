@@ -8,7 +8,6 @@ class Foo {
       return arg+2;
     }
     field = nested(val);
-    super.init();
   }
 }
 

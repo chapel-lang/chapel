@@ -1,6 +1,6 @@
 class foo {
   var x : int = 12;
-  proc initialize() {
+  proc postinit() {
     x += 10;
   }
 }

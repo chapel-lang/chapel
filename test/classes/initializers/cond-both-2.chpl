@@ -9,8 +9,6 @@ record MyRec {
     writeln('  Init()');
     x = 20;
     y = 30;
-
-    super.init();
   }
 
   proc init(a : int) {
@@ -18,11 +16,11 @@ record MyRec {
 
     if a < 5 {
       writeln('          a <  5');
-      super.init();
+      this.complete();
 
     } else if a < 10 {
       writeln('          a < 10');
-      super.init();
+      this.complete();
 
     } else {
       this.init();

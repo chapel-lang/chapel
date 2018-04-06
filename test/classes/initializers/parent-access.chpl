@@ -19,7 +19,7 @@ class Derived : Base {
   proc init() {
     x = a;
 
-    super.init();
+    this.complete();
   }
 }
 

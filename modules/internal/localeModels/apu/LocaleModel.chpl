@@ -63,9 +63,9 @@ module LocaleModel {
     }
 
     proc init(_sid, _parent) {
+      super.init(_parent);
       sid = _sid;
       name = _parent.chpl_name() + "-CPU" + sid;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -107,9 +107,9 @@ module LocaleModel {
 
 
     proc init(_sid, _parent) {
+      super.init(_parent);
       sid = _sid;
       name = _parent.chpl_name() + "-GPU" + sid;
-      super.init(_parent);
     }
 
     proc writeThis(f) {
@@ -136,9 +136,9 @@ module LocaleModel {
   //
   class LocaleModel : AbstractLocaleModel {
     const _node_id : int;
-    const local_name : string;
+    var local_name : string; // should never be modified after first assignment
 
-    const numSublocales: int;
+    var numSublocales: int; // should never be modified after first assignment
     var GPU: GPULocale;
     var CPU: CPULocale;
 
@@ -150,6 +150,10 @@ module LocaleModel {
       if doneCreatingLocales {
         halt("Cannot create additional LocaleModel instances");
       }
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -158,6 +162,11 @@ module LocaleModel {
         halt("Cannot create additional LocaleModel instances");
       }
       super.init(parent_loc);
+
+      _node_id = chpl_nodeID: int;
+
+      this.complete();
+
       setup();
     }
 
@@ -214,8 +223,6 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      _node_id = chpl_nodeID: int;
-
       helpSetupLocaleAPU(this, local_name, numSublocales);
     }
     //------------------------------------------------------------------------}

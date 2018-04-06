@@ -28,7 +28,7 @@ record buf {
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
 
-    super.init();
+    this.complete();
 
     chan = fi.reader(locking=false);
     numLeft = fi.length();

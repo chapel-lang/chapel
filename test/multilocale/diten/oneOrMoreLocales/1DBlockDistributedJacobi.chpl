@@ -14,7 +14,7 @@ class DistribArray {
   var internalArr: [LocaleSpace] DistribArrayNode(arrType);
   var isLocalize = false;
 
-  proc initialize() {
+  proc postinit() {
     if isLocalize then return;
 
     for loc in LocaleSpace {

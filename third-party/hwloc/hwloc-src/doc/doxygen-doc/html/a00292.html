@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s Struct Reference</title>
+<title>Hardware Locality (hwloc): hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -38,83 +38,97 @@ $(function() {
 <div id="main-nav"></div>
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="a00280.html">hwloc_topology_diff_obj_attr_u</a></li><li class="navelem"><a class="el" href="a00292.html">hwloc_topology_diff_obj_attr_string_s</a></li>  </ul>
+<li class="navelem"><a class="el" href="a00284.html">hwloc_topology_diff_u</a></li><li class="navelem"><a class="el" href="a00292.html">hwloc_topology_diff_obj_attr_s</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s Struct Reference</div>  </div>
+<div class="title">hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s Struct Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
-<p><code>#include &lt;<a class="el" href="a00155_source.html">diff.h</a>&gt;</code></p>
+<p><code>#include &lt;<a class="el" href="a00143_source.html">diff.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr class="memitem:a784ab5827c1bf531b86d1f02f199d04d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00199.html#ga5f2dd099de2cacdc0d0d4858154b971a">hwloc_topology_diff_obj_attr_type_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a784ab5827c1bf531b86d1f02f199d04d">type</a></td></tr>
-<tr class="separator:a784ab5827c1bf531b86d1f02f199d04d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7ef48c66ccddf34d90edb4e4314b41c6"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a7ef48c66ccddf34d90edb4e4314b41c6">name</a></td></tr>
-<tr class="separator:a7ef48c66ccddf34d90edb4e4314b41c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33cc281d4417129064295a6ae7b79818"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a33cc281d4417129064295a6ae7b79818">oldvalue</a></td></tr>
-<tr class="separator:a33cc281d4417129064295a6ae7b79818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75f37f4add21cece50fee2701c3b77db"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a75f37f4add21cece50fee2701c3b77db">newvalue</a></td></tr>
-<tr class="separator:a75f37f4add21cece50fee2701c3b77db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70a118ad288bd98f18c8ce6dc52e2d10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00187.html#ga4b86adb00c8b2d09ebc4ef8f3bfd92b2">hwloc_topology_diff_type_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a70a118ad288bd98f18c8ce6dc52e2d10">type</a></td></tr>
+<tr class="separator:a70a118ad288bd98f18c8ce6dc52e2d10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb9170a8eb3392656d70f7f3ef3e3eed"><td class="memItemLeft" align="right" valign="top">union <a class="el" href="a00284.html">hwloc_topology_diff_u</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#acb9170a8eb3392656d70f7f3ef3e3eed">next</a></td></tr>
+<tr class="separator:acb9170a8eb3392656d70f7f3ef3e3eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa28a121d9e158b1e610fb844ae1c8824"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#aa28a121d9e158b1e610fb844ae1c8824">obj_depth</a></td></tr>
+<tr class="separator:aa28a121d9e158b1e610fb844ae1c8824"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb9f4d414470b6670cde8d90759a6c1c"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#adb9f4d414470b6670cde8d90759a6c1c">obj_index</a></td></tr>
+<tr class="separator:adb9f4d414470b6670cde8d90759a6c1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91f0645f9062e892652357cd141c8ebb"><td class="memItemLeft" align="right" valign="top">union <a class="el" href="a00268.html">hwloc_topology_diff_obj_attr_u</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00292.html#a91f0645f9062e892652357cd141c8ebb">diff</a></td></tr>
+<tr class="separator:a91f0645f9062e892652357cd141c8ebb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>String attribute modification with an optional name. </p>
-</div><h2 class="groupheader">Field Documentation</h2>
-<a id="a7ef48c66ccddf34d90edb4e4314b41c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ef48c66ccddf34d90edb4e4314b41c6">&#9670;&nbsp;</a></span>name</h2>
+<h2 class="groupheader">Field Documentation</h2>
+<a id="a91f0645f9062e892652357cd141c8ebb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91f0645f9062e892652357cd141c8ebb">&#9670;&nbsp;</a></span>diff</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">char* hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s::name</td>
+          <td class="memname">union <a class="el" href="a00268.html">hwloc_topology_diff_obj_attr_u</a> hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::diff</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a75f37f4add21cece50fee2701c3b77db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75f37f4add21cece50fee2701c3b77db">&#9670;&nbsp;</a></span>newvalue</h2>
+<a id="acb9170a8eb3392656d70f7f3ef3e3eed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb9170a8eb3392656d70f7f3ef3e3eed">&#9670;&nbsp;</a></span>next</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">char* hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s::newvalue</td>
+          <td class="memname">union <a class="el" href="a00284.html">hwloc_topology_diff_u</a>* hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::next</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a33cc281d4417129064295a6ae7b79818"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33cc281d4417129064295a6ae7b79818">&#9670;&nbsp;</a></span>oldvalue</h2>
+<a id="aa28a121d9e158b1e610fb844ae1c8824"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa28a121d9e158b1e610fb844ae1c8824">&#9670;&nbsp;</a></span>obj_depth</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">char* hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s::oldvalue</td>
+          <td class="memname">unsigned hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::obj_depth</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a784ab5827c1bf531b86d1f02f199d04d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a784ab5827c1bf531b86d1f02f199d04d">&#9670;&nbsp;</a></span>type</h2>
+<a id="adb9f4d414470b6670cde8d90759a6c1c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb9f4d414470b6670cde8d90759a6c1c">&#9670;&nbsp;</a></span>obj_index</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="a00199.html#ga5f2dd099de2cacdc0d0d4858154b971a">hwloc_topology_diff_obj_attr_type_t</a> hwloc_topology_diff_obj_attr_u::hwloc_topology_diff_obj_attr_string_s::type</td>
+          <td class="memname">unsigned hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::obj_index</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a70a118ad288bd98f18c8ce6dc52e2d10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70a118ad288bd98f18c8ce6dc52e2d10">&#9670;&nbsp;</a></span>type</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="a00187.html#ga4b86adb00c8b2d09ebc4ef8f3bfd92b2">hwloc_topology_diff_type_t</a> hwloc_topology_diff_u::hwloc_topology_diff_obj_attr_s::type</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -122,7 +136,7 @@ Data Fields</h2></td></tr>
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00155_source.html">diff.h</a></li>
+<li><a class="el" href="a00143_source.html">diff.h</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

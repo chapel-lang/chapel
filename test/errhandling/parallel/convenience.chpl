@@ -6,12 +6,10 @@ class MyError : Error {
   proc init(x:int) {
     this.msg = x:string;
     this.x = x;
-    super.init();
   }
   proc init(msg:string) {
     this.msg = msg;
     this.x = 1;
-    super.init();
   }
 }
 

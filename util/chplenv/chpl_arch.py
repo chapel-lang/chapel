@@ -255,7 +255,10 @@ class InvalidLocationError(ValueError):
 # what we have in the module build script.
 def get_module_lcd_arch(platform_val, arch):
     if platform_val == "cray-xc":
-        return "sandybridge"
+        if arch.startswith("arm-"):
+            return "arm-thunderx2"
+        else:
+            return "sandybridge"
     elif platform_val == "cray-xe" or platform_val == "cray-xk":
         return "barcelona"
     elif platform_val == "aarch64":

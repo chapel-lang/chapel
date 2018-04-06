@@ -908,8 +908,8 @@ void ErrorCheckingVisitor::exitDeferStmt(DeferStmt* node) {
 
 static void markImplicitThrows(FnSymbol* fn, std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons)
 {
-  // Currently, only task functions can be implicitly throws.
-  if (!isTaskFun(fn))
+  // Currently, only task functions and if-exprs can be implicitly throws.
+  if (!(isTaskFun(fn) || fn->hasFlag(FLAG_IF_EXPR_FN)))
     return;
 
   // If we already visited this function, don't visit it again.

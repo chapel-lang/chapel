@@ -6,7 +6,7 @@ class C {
   proc init(y, z) {
     // Phase 1
     x = y+z;
-    super.init();
+    this.complete();
     // Phase 2
     x -= 1; // Should fail, can't modify const fields in Phase 2
   }

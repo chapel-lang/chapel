@@ -7,7 +7,7 @@ class Foo {
       writeln("deferred!");
     }
     writeln("should be first");
-    super.init();
+    this.complete();
     writeln("should be second");
   }
 }

@@ -215,7 +215,7 @@ class CMOArr:BaseArr {
     }
   }
 
-  proc initialize() {
+  proc postinit() {
     if noinit_data == true then return;
     for param dim in 1..rank {
       off(dim) = dom.dsiDim(dim).low;
