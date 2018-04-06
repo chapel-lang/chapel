@@ -2085,16 +2085,9 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
 
   {
-    VarSymbol* newTmp = newTemp();
     NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
-    CallExpr* newCall = new CallExpr(PRIM_NEW, riTypeSym, newArg);
-
-    CallExpr* move = new CallExpr(PRIM_MOVE, globalOp,
-                                  new CallExpr("chpl__toraw", newTmp));
-
-    hld->insertAtTail(new DefExpr(newTmp));
-    hld->insertAtTail(new CallExpr(PRIM_MOVE, newTmp, newCall));
-    hld->insertAtTail(move);
+    CallExpr* newCall = makeRawNew(new SymExpr(riTypeSym), newArg);
+    hld->insertAtTail(new CallExpr(PRIM_MOVE, globalOp, newCall));
     //hld->insertAtTail("'move'(%S, 'new'(%S,%E))", globalOp, riTypeSym, new NamedExpr("eltType", eltTypeArg));
   }
 
