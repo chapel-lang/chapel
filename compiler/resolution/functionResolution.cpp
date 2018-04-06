@@ -2513,10 +2513,9 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
       } else if (info.actuals.v[0]                              != NULL   &&
                  info.actuals.v[1]                              != NULL   &&
-                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true   &&
-                 info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         USR_FATAL_CONT(call,
-                       "illegal assignment of value to type");
+                       "illegal assignment to type");
 
       } else if (info.actuals.v[1]->type == dtNil) {
         USR_FATAL_CONT(call,
