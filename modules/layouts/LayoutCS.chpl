@@ -74,11 +74,11 @@ class CS: BaseDist {
   param compressRows: bool = true;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return chpl__toraw(new CSDom(rank, idxType, this.compressRows, dom.stridable, this, dom));
+    return new raw CSDom(rank, idxType, this.compressRows, dom.stridable, this, dom);
   }
 
   proc dsiClone() {
-    return chpl__toraw(new CS(compressRows=this.compressRows));
+    return new raw CS(compressRows=this.compressRows);
   }
 
   proc dsiEqualDMaps(that: CS(this.compressRows)) param {
@@ -139,7 +139,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiBuildArray(type eltType)
-    return chpl__toraw(new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this));
+    return new raw CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
