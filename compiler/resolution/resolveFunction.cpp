@@ -846,7 +846,7 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 
 void fixTypeNames(AggregateType* at) {
   const char*    domName = "DefaultRectangularDom";
-  const int   domNameLen = 21;
+  const int   domNameLen = strlen(domName);
 
   if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
       isArrayClass(at)                     ==  true) {
