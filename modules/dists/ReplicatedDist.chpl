@@ -165,7 +165,7 @@ proc Replicated.dsiPrivatize(privatizeData)
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
 
-  return chpl__toraw(new Replicated(privTargetLocales, "used during privatization"));
+  return new raw Replicated(privTargetLocales, "used during privatization");
 }
 
 
@@ -251,10 +251,10 @@ proc ReplicatedDom.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
 
   var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData(1));
-  return chpl__toraw(new ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
+  return new raw ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
                            dist = privdist,
                            domRep = privatizeData(2),
-                           localDoms = privatizeData(3)));
+                           localDoms = privatizeData(3));
 }
 
 proc ReplicatedDom.dsiGetReprivatizeData() {
@@ -272,7 +272,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 
 proc Replicated.dsiClone(): this.type {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
-  return chpl__toraw(new Replicated(targetLocales));
+  return new raw Replicated(targetLocales);
 }
 
 // create a new domain mapped with this distribution
@@ -286,13 +286,13 @@ proc Replicated.dsiNewRectangularDom(param rank: int,
 
   // Have to call the default initializer because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
-  var result = chpl__toraw(new ReplicatedDom(rank=rank, idxType=idxType,
-                                 stridable=stridable, dist=this));
+  var result = new raw ReplicatedDom(rank=rank, idxType=idxType,
+                                 stridable=stridable, dist=this);
 
   // create local domain objects
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
     on loc do
-      locDom = chpl__toraw(new LocReplicatedDom(rank, idxType, stridable));
+      locDom = new raw LocReplicatedDom(rank, idxType, stridable);
   result.dsiSetIndices(inds);
 
   return result;
@@ -497,7 +497,7 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
   if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
 
   var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData(1));
-  var result = chpl__toraw(new ReplicatedArr(eltType, privdom));
+  var result = new raw ReplicatedArr(eltType, privdom);
   result.localArrs = privatizeData(2);
   return result;
 }
@@ -508,12 +508,12 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
   : ReplicatedArr(eltType, this.type)
 {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
-  var result = chpl__toraw(new ReplicatedArr(eltType, this));
+  var result = new raw ReplicatedArr(eltType, this);
   coforall (loc, locDom, locArr)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
-      locArr = chpl__toraw(new LocReplicatedArr(eltType, rank, idxType, stridable,
-                                    locDom));
+      locArr = new raw LocReplicatedArr(eltType, rank, idxType, stridable,
+                                    locDom);
   return result;
 }
 

@@ -72,7 +72,7 @@ class Private: BaseDist {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return chpl__toraw(new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this));
+    return new raw PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
   }
 
   proc writeThis(x) {
@@ -109,7 +109,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType) {
-    return chpl__toraw(new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this));
+    return new raw PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   }
 
   proc dsiNumIndices return numLocales;
@@ -130,7 +130,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiGetPrivatizeData() return 0;
 
   proc dsiPrivatize(privatizeData) {
-    return chpl__toraw(new PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist));
+    return new raw PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
   }
 
   proc dsiGetReprivatizeData() return 0;
@@ -155,7 +155,7 @@ proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  return chpl__toraw(new PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom));
+  return new raw PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
