@@ -5692,7 +5692,8 @@ class _channel_regexp_info {
 }
 
 pragma "no doc"
-proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr, ref style:iostyle, ref r:Owned(_channel_regexp_info))
+proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
+    ref style:iostyle, ref r:raw _channel_regexp_info)
 {
   if qio_regexp_ok(r.theRegexp) {
     if r.matchedRegexp then return;
@@ -5758,7 +5759,7 @@ pragma "no doc"
 proc channel._format_reader(
     fmt:c_string, ref cur:size_t, len:size_t, ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
-    ref r:Owned(_channel_regexp_info),
+    ref r:raw _channel_regexp_info,
     isReadf:bool)
 {
   if r != nil then r.hasRegexp = false;
@@ -5811,7 +5812,7 @@ proc channel._format_reader(
           error = qio_format_error_write_regexp();
         } else {
           // allocate regexp info if needed
-          if r == nil then r = new Owned(new _channel_regexp_info());
+          if r == nil then r = new raw _channel_regexp_info();
           // clear out old data, if there is any.
           r.clear();
           // Compile a regexp from the format string
@@ -6199,7 +6200,10 @@ proc channel.writef(fmtStr:string, const args ...?k, out error:syserr):bool {
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:Owned(_channel_regexp_info);
+    var r:raw _channel_regexp_info;
+    defer {
+      if r then delete r;
+    }
 
     for i in 1..argType.size {
       argType(i) = QIO_CONV_UNK;
@@ -6344,7 +6348,10 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
     var end:size_t;
     var dummy:c_int;
 
-    var r:Owned(_channel_regexp_info);
+    var r:raw _channel_regexp_info;
+    defer {
+      if r then delete r;
+    }
 
     _format_reader(fmt, cur, len, error,
                    conv, gotConv, style, r,
@@ -6401,7 +6408,10 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
     var end:size_t;
     var argType:(k+5)*c_int;
 
-    var r:Owned(_channel_regexp_info);
+    var r:raw _channel_regexp_info;
+    defer {
+      if r then delete r;
+    }
 
     for i in 1..argType.size {
       argType(i) = QIO_CONV_UNK;
@@ -6533,7 +6543,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 error = qio_format_error_arg_mismatch(i);
               }
               // match it here.
-              if r == nil then r = new Owned(_channel_regexp_info());
+              if r == nil then r = new raw _channel_regexp_info();
               r.clear();
               r.theRegexp = t._regexp;
               r.hasRegexp = true;
@@ -6633,7 +6643,10 @@ proc channel.readf(fmtStr:string, out error:syserr):bool {
     var end:size_t;
     var dummy:c_int;
 
-    var r:Owned(_channel_regexp_info);
+    var r:raw _channel_regexp_info;
+    defer {
+      if r then delete r;
+    }
 
     error = qio_channel_mark(false, _channel_internal);
     if !error {
