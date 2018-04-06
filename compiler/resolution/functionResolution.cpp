@@ -5750,25 +5750,27 @@ static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
 static bool isManagedPointerInit(SymExpr* typeExpr);
 
-static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, AggregateType* castFromType);
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix);
+
+static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix);
 
 static void resolveNew(CallExpr* newExpr) {
 
-  // handle borrow vs raw
-  AggregateType* castToType = NULL;
-  AggregateType* castFromType = NULL;
+  if (newExpr->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
+  // If it's a managed new, detect the manager and remove it
+  // The following variables allow the latter half of this function
+  // to construct the AST for initializing the manager itself.
+  Type* manager = NULL;
+  CallExpr* managedMoveToFix = NULL;
+
+  resolveNewSetupManaged(newExpr, manager, managedMoveToFix);
 
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
-
-        AggregateType* useType = resolveNewFindType(newExpr);
-        if (useType && useType != at) {
-          castToType = at;
-          castFromType = useType;
-          typeExpr->setSymbol(useType->symbol);
-          at = useType;
-        }
 
         if (resolveNewHasInitializer(at) == false) {
           resolveNewHandleConstructor(newExpr);
@@ -5813,59 +5815,138 @@ static void resolveNew(CallExpr* newExpr) {
       USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
     }
   }
-  resolveNewCasts(newExpr, castToType, castFromType);
+
+  if (manager)
+    resolveNewManaged(newExpr, manager, managedMoveToFix);
 }
 
-static void resolveNewCasts(CallExpr* newExpr, AggregateType* castToType, AggregateType* castFromType) {
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix) {
 
-  // cast from borrow back to raw, for 'new raw'
-  if (castToType) {
-    if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
-      if (moveStmt->isPrimitive(PRIM_MOVE) ||
-          moveStmt->isPrimitive(PRIM_ASSIGN)) {
-
-        SymExpr* dstSe = toSymExpr(moveStmt->get(1));
-
-        // Un-set the type for the LHS
-        // This is set during normalization in many cases.
-        // It would be better not to set it during normalization in any case.
-        dstSe->symbol()->type = dtUnknown;
-
-        AggregateType* rawT = castFromType->getRawClass();
-        INT_ASSERT(rawT);
-
-        // Store the pointer we built into new_cast_temp
-        Symbol* dstSym = dstSe->symbol();
-        VarSymbol* tmp = newTemp("new_cast_tmp", castFromType);
-        moveStmt->insertBefore(new DefExpr(tmp));
-        dstSe->setSymbol(tmp);
-
-        // Cast it to a raw pointer
-        VarSymbol* tmpRaw = newTemp("new_cast_raw", rawT);
-        DefExpr* defRaw = new DefExpr(tmpRaw);
-        moveStmt->insertAfter(defRaw);
-        CallExpr* moveRaw = new CallExpr(PRIM_MOVE, tmpRaw,
-                              new CallExpr(PRIM_CAST, rawT->symbol, tmp));
-        defRaw->insertAfter(moveRaw);
-
-        CallExpr* addedNew = NULL;
-        CallExpr* moveFinal = NULL;
-        // Now move it to dstSym, possibly constructing a managed ptr
-        if (castToType == rawT) {
-          moveFinal = new CallExpr(PRIM_MOVE, dstSym, tmpRaw);
-        } else {
-          INT_ASSERT(isManagedPtrType(castToType));
-          addedNew = new CallExpr(PRIM_NEW, castToType->symbol, tmpRaw);
-          moveFinal = new CallExpr(PRIM_MOVE, dstSym, addedNew);
-        }
-        moveRaw->insertAfter(moveFinal);
-
-        resolveCall(moveStmt);
-        resolveCall(moveRaw);
-        if (addedNew) resolveCall(addedNew);
-        resolveCall(moveFinal);
+  for_actuals(expr, newExpr) {
+    if (NamedExpr* ne = toNamedExpr(expr)) {
+      if (0 == strcmp("_chpl_manager", ne->name)) {
+        manager = ne->actual->typeInfo();
+        expr->remove();
       }
     }
+  }
+  // adjust the type to initialize for managed new cases
+  if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
+    if (Type* type = resolveTypeAlias(typeExpr)) {
+
+      // set manager for new t(1,2,3)
+      // where t is e.g Owned(MyClass)
+      // or for t is raw(MyClass)
+      if (manager == NULL) {
+        if (isManagedPtrType(type))
+          manager = type;
+
+        if (AggregateType* at = toAggregateType(type))
+          if (at->isRawClass())
+            manager = dtRaw;
+      }
+
+      // if manager is set, and we're not calling the manager's init function,
+      // use the canonical class type instead of the managed type, since
+      // the rest of the compiler (e.g. initializer resolution) uses
+      // only the canonical class types.
+      if (manager) {
+        AggregateType* at = toAggregateType(type);
+
+        // Use the class type inside a owned/shared/etc
+        // unless we are initializing Owned/Shared itself
+        if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
+          Type* subtype = at->getField("t")->type;
+          if (isAggregateType(subtype)) // in particular, not dtUnknown
+            at = toAggregateType(subtype);
+        }
+
+        // Use the canonical class to simplify the rest of initializer
+        // resolution
+        if (isClass(at)) {
+          at = at->getCanonicalClass();
+        // For records, just ignore the manager
+        // e.g. to support 'new owned MyRecord'
+        } else if (isRecord(at)) {
+          manager = NULL;
+        }
+
+        if (manager) {
+
+          if (at != type)
+            // Set the type to initialize
+            typeExpr->setSymbol(at->symbol);
+
+          // Introduce a temporary to initialize instead of the requested var
+          if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+            if (moveStmt->isPrimitive(PRIM_MOVE) ||
+                moveStmt->isPrimitive(PRIM_ASSIGN)) {
+              SymExpr* dstSe = toSymExpr(moveStmt->get(1));
+              Symbol* finalResult = dstSe->symbol();
+
+              // Store the pointer we built into new_cast_temp
+              VarSymbol* initedClass = newTemp("new_cast_tmp");
+              moveStmt->insertBefore(new DefExpr(initedClass));
+              dstSe->setSymbol(initedClass);
+              // This PRIM_MOVE setting finalResult is added here
+              // but it's really just a placeholder for where
+              // the casting or owned/etc construction should take place.
+              managedMoveToFix = new CallExpr(PRIM_MOVE,
+                                              finalResult, initedClass);
+              moveStmt->insertAfter(managedMoveToFix);
+
+              // Un-set the type for the LHS
+              // This is set during normalization in many cases,
+              // but it is wrong for managed inits.
+              finalResult->type = dtUnknown;
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+
+static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix) {
+
+  // Resolve the move enclosing newExpr because we'll need the
+  // type information. This appears to be necessary only for
+  // types with constructors.
+  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr))
+    resolveCall(moveStmt);
+
+  // convert 'new MyClass(1,2,3)' to 'new manager( new MyClass(1,2,3) )'
+
+  INT_ASSERT(manager);
+  INT_ASSERT(managedMoveToFix && managedMoveToFix->isPrimitive(PRIM_MOVE));
+  SymExpr* srcSe = toSymExpr(managedMoveToFix->get(2));
+  Symbol* initedClass = srcSe->symbol();
+
+  AggregateType* classT = toAggregateType(initedClass->typeInfo());
+  INT_ASSERT(classT && isClass(classT));
+  AggregateType* rawT = classT->getRawClass();
+  INT_ASSERT(rawT);
+
+  if (!isManagedPtrType(manager)) {
+    // it is constructing a raw ptr
+    srcSe->replace(new CallExpr(PRIM_CAST, rawT->symbol, initedClass));
+  } else {
+    // it is constructing an owned/shared/etc
+
+    // Cast the constructed pointer into a raw pointer
+    // That way, owned/shared/etc constructors can start from
+    // a raw pointer rather than a borrow.
+    VarSymbol* tmpRaw = newTemp("new_cast_raw", rawT);
+    DefExpr* defRaw = new DefExpr(tmpRaw);
+    managedMoveToFix->insertBefore(defRaw);
+    CallExpr* moveRaw = new CallExpr(PRIM_MOVE, tmpRaw,
+                          new CallExpr(PRIM_CAST, rawT->symbol, initedClass));
+    managedMoveToFix->insertBefore(moveRaw);
+
+    // Now adjust the original move dst, src
+    // to be move dst, new manager tmpraw
+    srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpRaw));
   }
 }
 
@@ -6214,19 +6295,7 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr) {
   SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr);
   Type*    type     = resolveTypeAlias(typeExpr);
 
-  AggregateType* at = toAggregateType(type);
-
-  // Use the canonical class
-  if (at->isRawClass()) {
-    at = at->getCanonicalClass();
-  } else if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
-    Type* subtype = at->getField("t")->type;
-    if (isAggregateType(subtype)) // in particular, not dtUnknown
-      at = toAggregateType(subtype);
-  }
-  INT_ASSERT(at);
-
-  return at;
+  return toAggregateType(type);
 }
 
 // Find the SymExpr for the type.

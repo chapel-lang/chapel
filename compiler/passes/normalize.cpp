@@ -894,20 +894,8 @@ static void processSyntacticDistributions(CallExpr* call) {
      ... where manager might be _owned _to_raw _shared
 
    and replace them with
-     (PRIM_TO_RAW_CLASS (new (call ClassType init-args)))
-     ... for _to_raw
-     (new (call Unresolved(manager) (PRIM_TO_RAW_CLASS (new (call ClassType init-args)))))
-     ... for _owned or _shared
+     (new (call ClassType init-args _chpl_manager=manager)))
    or
-
-   i.e. transform
-     new raw MyClass(1)
-   into
-     PRIM_TO_RAW_CLASS (new MyClass(1))
-   and
-     new owned MyClass(1)
-   into
-     new _owned(PRIM_TO_RAW_CLASS(new MyClass(1)))
 
    This happens before call-tmps are added because they
    would obscure the situation.
@@ -928,17 +916,19 @@ static void processManagedNew(CallExpr* newCall) {
               callClass->remove();
               callManager->remove();
 
-              Expr* toraw = new CallExpr(PRIM_TO_RAW_CLASS,
-                  new CallExpr(PRIM_NEW, callClass));
+              Expr* replace = new CallExpr(PRIM_NEW,
+                  callClass);
 
-              Expr* newbody = toraw;
-
-              // Now wrap the raw pointer in an _owned / _shared
-              if (isowned || isshared) {
-                INT_FATAL("not implemented yet");
+              Expr* manager = NULL;
+              if (israw) {
+                manager = new SymExpr(dtRaw->symbol);
+              } else {
+                manager = callManager->baseExpr->copy();
               }
 
-              newCall->replace(newbody);
+              callClass->insertAtTail(new NamedExpr("_chpl_manager", manager));
+
+              newCall->replace(replace);
             }
           }
         }
