@@ -186,6 +186,7 @@ static void resolveEnumTypes();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveSerializers();
+static void resolveDestructors();
 static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
@@ -219,6 +220,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+
+static bool isUnusedClass(AggregateType* ct);
 
 /************************************* | **************************************
 *                                                                             *
@@ -1966,6 +1969,20 @@ void resolvePromotionType(AggregateType* at) {
     INT_ASSERT(promoFn->retTag == RET_TYPE);
 
     at->scalarPromotionType = promoFn->retType;
+  }
+}
+
+void resolveDestructor(AggregateType* at) {
+  SET_LINENO(at);
+
+  VarSymbol* tmp   = newTemp(at);
+  CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
+
+  if (deinitFn != NULL) {
+    resolveFunction(deinitFn);
+    at->setDestructor(deinitFn);
   }
 }
 
@@ -4977,6 +4994,8 @@ static void resolveInitField(CallExpr* call) {
     if (ct->scalarPromotionType == NULL) {
       resolvePromotionType(ct);
     }
+    // BHARSH INIT TODO: Would like to resolve destructor here, but field
+    // types are not fully resolved. E.g., "var foo : t"
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -7197,6 +7216,8 @@ void resolve() {
 
   resolveSerializers();
 
+  resolveDestructors();
+
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
@@ -7567,6 +7588,23 @@ static void resolveSerializers() {
   }
 
   resolveAutoCopies();
+}
+
+static void resolveDestructors() {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->inTree()                                       &&
+        ts->hasFlag(FLAG_REF)                    == false  &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->hasDestructor()   == false &&
+            at->hasInitializers() == true  &&
+            isUnusedClass(at)     == false) {
+          resolveDestructor(at);
+        }
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -8532,8 +8570,6 @@ static void removeUnusedFunctions() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isUnusedClass(AggregateType* ct);
 
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
