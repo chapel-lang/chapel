@@ -436,10 +436,12 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
   }
 
   if (AggregateType* actualAt = toAggregateType(actualType)) {
-    AggregateType* canonicalAt = actualAt->getCanonicalClass();
-    if (canonicalAt != actualAt)
-      if (canInstantiate(canonicalAt, formalType))
-        return canonicalAt;
+    if (isClass(actualAt)) {
+      AggregateType* canonicalAt = actualAt->getCanonicalClass();
+      if (canonicalAt != actualAt)
+        if (canInstantiate(canonicalAt, formalType))
+          return canonicalAt;
+    }
   }
 
   if (Type* vt = actualType->getValType()) {
@@ -448,11 +450,13 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
-    } else if (AggregateType* actualAt = toAggregateType(actualType)) {
-      AggregateType* canonicalAt = actualAt->getCanonicalClass();
-      if (canonicalAt != actualAt)
-        if (canInstantiate(canonicalAt, formalType))
-          return canonicalAt;
+    } else if (AggregateType* actualAt = toAggregateType(vt)) {
+      if (isClass(actualAt)) {
+        AggregateType* canonicalAt = actualAt->getCanonicalClass();
+        if (canonicalAt != actualAt)
+          if (canInstantiate(canonicalAt, formalType))
+            return canonicalAt;
+      }
     }
   }
 
