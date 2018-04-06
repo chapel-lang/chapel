@@ -491,8 +491,15 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
     retval = true;
 
   } else if (AggregateType* at = toAggregateType(sub)) {
-    for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
-      retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
+    AggregateType* useAt = at;
+    Type* useSuper = super;
+    if (isClass(at) && isClass(super) &&
+        sameRawBorrowKind(at, toAggregateType(super))) {
+      useAt = at->getCanonicalClass();
+      useSuper = toAggregateType(super)->getCanonicalClass();
+    }
+    for (int i = 0; i < useAt->dispatchParents.n && retval == false; i++) {
+      retval = isSubTypeOrInstantiation(useAt->dispatchParents.v[i], useSuper);
     }
 
     if (retval == false) {

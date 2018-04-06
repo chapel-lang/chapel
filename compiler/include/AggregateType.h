@@ -283,4 +283,6 @@ extern AggregateType* dtString;
 
 DefExpr* defineObjectClass();
 
+bool sameRawBorrowKind(AggregateType* a, AggregateType* b);
+
 #endif

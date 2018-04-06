@@ -1184,7 +1184,11 @@ bool doCanDispatch(Type*     actualType,
 
   } else {
     if (AggregateType* at = toAggregateType(actualType)) {
+      bool israw = at->isRawClass();
+      if (israw) at = at->getCanonicalClass();
+
       forv_Vec(AggregateType, parent, at->dispatchParents) {
+        if (israw) parent = parent->getRawClass();
         if (parent == formalType ||
             doCanDispatch(parent,
                           NULL,
@@ -5696,6 +5700,13 @@ static void moveFinalize(CallExpr* call) {
 
 bool isDispatchParent(Type* t, Type* pt) {
   bool retval = false;
+
+  // Use the canonical class type
+  if (isClass(t) && isClass(pt) &&
+      sameRawBorrowKind(toAggregateType(t), toAggregateType(pt))) {
+    t = toAggregateType(t)->getCanonicalClass();
+    pt = toAggregateType(pt)->getCanonicalClass();
+  }
 
   if (AggregateType* at = toAggregateType(t)) {
     forv_Vec(AggregateType, p, at->dispatchParents) {

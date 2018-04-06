@@ -1047,6 +1047,9 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:object && x:t
     return __primitive("cast", t, x);
 
+  inline proc _cast(type t, x) where t:raw object && x:t
+    return __primitive("cast", t, x);
+
   inline proc _cast(type t, x) where t:object && x:_nilType
     return __primitive("cast", t, x);
 

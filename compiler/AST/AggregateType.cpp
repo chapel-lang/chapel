@@ -2618,3 +2618,9 @@ void AggregateType::generateRawBorrowClassTypes() {
     at->symbol->defPoint->insertBefore(defRaw);
   }
 }
+
+bool sameRawBorrowKind(AggregateType* a, AggregateType* b) {
+  if (!a || !b) return false;
+
+  return a->classKind == b->classKind;
+}
