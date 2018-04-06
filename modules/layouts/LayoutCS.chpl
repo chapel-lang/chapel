@@ -576,6 +576,7 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
+pragma "use default init"
 class CSArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {

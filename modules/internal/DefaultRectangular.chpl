@@ -1051,7 +1051,7 @@ module DefaultRectangular {
 
     // change name to setup and call after constructor call sites
     // we want to get rid of all initialize functions everywhere
-    proc initialize() {
+    proc postinit() {
       if noinit_data == true then return;
       for param dim in 1..rank {
         off(dim) = dom.dsiDim(dim).alignedLow;
