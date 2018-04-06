@@ -767,7 +767,7 @@ writeln(toThisArray);
 Classes
 -------
 */
-
+use OwnedObject;
 // Classes are similar to those in C++ and Java, allocated on the heap.
 class MyClass {
 
