@@ -164,6 +164,7 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
 
     // no default to get compiler warning if other intents are added
   }
+  INT_FATAL("unknown intent");
   return QUAL_UNKNOWN;
 }
 
@@ -870,9 +871,8 @@ const char* ArgSymbol::intentDescrString() {
     case INTENT_PARAM: return "'param'";
     case INTENT_TYPE: return "'type'";
   }
-
   INT_FATAL(this, "unknown intent");
-  return "unknown intent";
+  return "<unknown intent>";
 }
 
 // describes the given intent (for use in an English sentence)
@@ -889,8 +889,9 @@ const char* intentDescrString(IntentTag intent) {
     case INTENT_REF:       return "'ref' intent";
     case INTENT_PARAM:     return "'param' intent";
     case INTENT_TYPE:      return "'type' intent";
-    default:               return "<unknown intent>";
   }
+  INT_FATAL("unknown intent");
+  return "<unknown intent>";
 }
 
 void ArgSymbol::accept(AstVisitor* visitor) {
