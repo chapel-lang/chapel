@@ -2406,7 +2406,6 @@ stdin
 strd
 strdup
 strerror
-stridability
 stridelevel
 stridelevels
 stridelvl
@@ -3250,6 +3249,7 @@ desync
 getcid
 hepl
 illumos
+libmvec
 librt
 memkind
 nomail
@@ -4289,6 +4289,7 @@ FILEID: 5010068a-0c15-11e7-980e-10ddb1d4c3d5
 arrpid
 emptyrange
 isview
+privdata
 rcdist
 rcdom
 rcdomclass
@@ -4558,6 +4559,13 @@ writehalf
 FILEID: 84377626-2f20-11e8-aa67-10ddb1d4c3d5
 testmain
 
+FILEID: a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5
+dabc
+
+FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
+abcdefghijklmnopqrstuvwxyz
+pathlen
+
 NATURAL:
 abcd
 abcdefg
@@ -4588,6 +4596,7 @@ alice
 alioth
 alist
 allgather
+allinea
 alloced
 allocs
 alnum
@@ -4678,6 +4687,7 @@ bernstein
 bertolacci
 bessel
 betweenness
+bhardwaj
 bharshbarg
 bharshbarger
 biesack
@@ -5106,6 +5116,7 @@ ehostunreach
 ehren
 eidrm
 eigenvectors
+eigvals
 eilseq
 einprogress
 eintr
@@ -5767,6 +5778,7 @@ logfiles
 login
 logtmp
 loisel
+london
 longlong
 lookahead
 lookups
@@ -6001,6 +6013,7 @@ niak
 nicholas
 nightlytesting
 nikhil
+nimit
 nist
 nixos
 noakes
@@ -6146,6 +6159,7 @@ parameterizable
 parameterization
 parameterized
 paratest
+parekh
 parens
 parenthesization
 parsable
@@ -6160,8 +6174,10 @@ pctflag
 percentfound
 perfcompopts
 perfdat
+perfexecenv
 perfexecopts
 perfkeys
+perfnumtrials
 performant
 perfstats
 perftimeout
@@ -6228,7 +6244,9 @@ princeton
 printchplenv
 printcmp
 printf
+prithvi
 privatebugs
+priy
 prng
 procs
 profilability
@@ -6264,6 +6282,7 @@ pwritev
 pychapel
 pydoc
 pygments
+qian
 qioerr
 qsbr
 qsub
@@ -6602,6 +6621,7 @@ strcmp
 strcmps
 strerror
 strftime
+stridability
 stridable
 strided
 stringify
@@ -6654,6 +6674,7 @@ superclass
 superclasses
 superuser
 suppressif
+surya
 suse
 svec
 sverbose
@@ -6824,6 +6845,7 @@ universitet
 unlinking
 unlocal
 unmutated
+unnati
 unnormalize
 unnormalized
 unpadded
@@ -6931,6 +6953,7 @@ workgroup
 workgroups
 workitem
 workitems
+worktree
 wpointer
 wrappee
 writeable
