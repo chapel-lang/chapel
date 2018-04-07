@@ -113,7 +113,7 @@ Feature Improvements
 Removed Features
 ----------------
 * removed the `msg` field from the `Error` class
-* removed deprecated `Barrer` module in favor of `Barriers`
+* removed deprecated `Barrier` module in favor of `Barriers`
 * removed deprecated `LayoutCSR` module in favor of `LayoutCS`
 * removed `ReplicatedDist` in favor of `Replicated`
 
@@ -216,7 +216,7 @@ Documentation
 * documented type arguments with type specifiers
   (see 'Formal Type Arguments' in the 'Generics' chapter of the specification)
 * improved documentation for `-f` configuration file flag
-  (see https://chapel-lang.org/docs/1.17/usingchapel/executing.html#configurationfile)
+  (see https://chapel-lang.org/docs/1.17/usingchapel/executing.html#configuration-file)
 * improved documentation for which domain maps are supported by `LinearAlgebra`
   (see https://chapel-lang.org/docs/1.17/modules/packages/LinearAlgebra.html#linear-algebra-interface)
 * added m4 to Chapel's prerequisites list (required for GMP)
@@ -2684,7 +2684,7 @@ Fourteenth public release of Chapel, April 2, 2015
 Highlights
 ----------
 * revamped 'chpldoc' and used it to create web docs for all standard modules
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * added a new FileSystem standard module supporting operations on files/dirs
   (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * added a new FFTW standard module supporting key FFTW routines
@@ -2878,7 +2878,7 @@ Third-Party Software Changes
 Documentation
 -------------
 * added web-based docs for all standard modules and removed from spec/READMEs
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
 * removed an outdated distinction between function calls using () vs. [] in spec

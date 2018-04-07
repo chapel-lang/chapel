@@ -77,7 +77,7 @@ class DimensionalDomain {
   var dist:Dimensional(nDims, idxType);
   var locDoms: [dist.localeDomain] LocDimensionalDomain(nDims, idxType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dist.localeDomain {
       on dist.localeArray(loc) {
         var locDist = dist.getLocRanges(loc);
@@ -133,7 +133,7 @@ class DimensionalArray {
   var dom: DimensionalDomain(nDims, idxType);
   var locArrs: [dom.dist.localeDomain] LocDimensionalArray(nDims, idxType, eltType);
 
-  proc initialize() {
+  proc postinit() {
     for loc in dom.dist.localeDomain {
       on loc {
         locArrs(loc) = new LocDimensionalArray(nDims, idxType, eltType, this, dom.locDoms(loc));

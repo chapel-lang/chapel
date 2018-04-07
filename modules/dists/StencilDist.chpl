@@ -383,26 +383,32 @@ private proc makeZero(param rank : int, type idxType) {
 //
 // Stencil constructor for clients of the Stencil distribution
 //
-proc Stencil.Stencil(boundingBox: domain,
-                targetLocales: [] locale = Locales,
-                dataParTasksPerLocale=getDataParTasksPerLocale(),
-                dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
-                dataParMinGranularity=getDataParMinGranularity(),
-                param rank = boundingBox.rank,
-                type idxType = boundingBox.idxType,
-                fluff: rank*idxType = makeZero(rank, idxType),
-                periodic: bool = false,
-                param ignoreFluff = false) {
+proc Stencil.init(boundingBox: domain,
+                  targetLocales: [] locale = Locales,
+                  dataParTasksPerLocale=getDataParTasksPerLocale(),
+                  dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+                  dataParMinGranularity=getDataParMinGranularity(),
+                  param rank = boundingBox.rank,
+                  type idxType = boundingBox.idxType,
+                  fluff: rank*idxType = makeZero(rank, idxType),
+                  periodic: bool = false,
+                  param ignoreFluff = false) {
   if rank != boundingBox.rank then
     compilerError("specified Stencil rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
     compilerError("specified Stencil index type != index type of specified bounding box");
+
+  this.rank = rank;
+  this.idxType = idxType;
+  this.ignoreFluff = ignoreFluff;
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable=false);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
   this.periodic = periodic && !isZeroTuple(fluff);
+
+  this.complete();
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
@@ -1590,10 +1596,13 @@ inline proc LocStencilArr.this(i) ref {
 //
 // Privatization
 //
-proc Stencil.Stencil(other: Stencil, privateData,
-                param rank = other.rank,
-                type idxType = other.idxType,
-                param ignoreFluff = other.ignoreFluff) {
+proc Stencil.init(other: Stencil, privateData,
+                  param rank = other.rank,
+                  type idxType = other.idxType,
+                  param ignoreFluff = other.ignoreFluff) {
+  this.rank = rank;
+  this.idxType = idxType;
+  this.ignoreFluff = ignoreFluff;
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
@@ -1601,6 +1610,8 @@ proc Stencil.Stencil(other: Stencil, privateData,
   dataParMinGranularity = privateData(5);
   fluff = privateData(6);
   periodic = privateData(7);
+
+  this.complete();
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);

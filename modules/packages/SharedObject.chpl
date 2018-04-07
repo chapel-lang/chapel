@@ -242,4 +242,27 @@ module SharedObject {
   proc chpl__autoDestroy(x: Shared) {
     __primitive("call destructor", x);
   }
+
+  // Don't print out 'p' when printing an Shared, just print class pointer
+  pragma "no doc"
+  proc Shared.readWriteThis(f) {
+    f <~> this.p;
+  }
+
+  // Note, coercion from Shared -> Shared.t is directly
+  // supported in the compiler via a call to borrow().
+
+  // This cast supports coercion from Shared(SubClass) to Shared(ParentClass)
+  // (i.e. when class SubClass : ParentClass ).
+  // It only works in a value context (i.e. when the result of the
+  // coercion is a value, not a reference).
+  pragma "no doc"
+  inline proc _cast(type t, x) where t:Shared && x:Shared && x.t:t.t {
+    var ret:t; // default-init the Shared type to return
+    ret.p = x.p:t.t; // cast the class type
+    ret.pn = x.pn;
+    if ret.pn != nil then
+      ret.pn.retain();
+    return ret;
+  }
 }

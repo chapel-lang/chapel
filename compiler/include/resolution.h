@@ -262,4 +262,6 @@ SymExpr* findSourceOfYield(CallExpr* yield);
 
 void resolvePromotionType(AggregateType* at);
 
+void resolveDestructor(AggregateType* at);
+
 #endif

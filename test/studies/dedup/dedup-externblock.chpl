@@ -14,7 +14,7 @@ require "-lcrypto", "-lssl";
 // scope. Functions, variables, and types are supported - including
 // inline functions. Macros have limited support.
 // See
-//   https://chapel-lang.org/docs/latest/technotes/extern.html
+//   https://chapel-lang.org/docs/technotes/extern.html
 extern {
   #include <openssl/sha.h>
 }

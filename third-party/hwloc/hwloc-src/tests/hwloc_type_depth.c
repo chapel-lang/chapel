@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -53,10 +53,18 @@ int main(void)
   assert(hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_CACHE) == HWLOC_TYPE_DEPTH_MULTIPLE);
 
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_BRIDGE) == HWLOC_TYPE_DEPTH_BRIDGE);
+  assert(hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_BRIDGE) == HWLOC_TYPE_DEPTH_BRIDGE);
+  assert(hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_BRIDGE) == HWLOC_TYPE_DEPTH_BRIDGE);
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_PCI_DEVICE) == HWLOC_TYPE_DEPTH_PCI_DEVICE);
+  assert(hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_PCI_DEVICE) == HWLOC_TYPE_DEPTH_PCI_DEVICE);
+  assert(hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_PCI_DEVICE) == HWLOC_TYPE_DEPTH_PCI_DEVICE);
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_OS_DEVICE) == HWLOC_TYPE_DEPTH_OS_DEVICE);
+  assert(hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_OS_DEVICE) == HWLOC_TYPE_DEPTH_OS_DEVICE);
+  assert(hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_OS_DEVICE) == HWLOC_TYPE_DEPTH_OS_DEVICE);
 
   assert(hwloc_get_type_depth(topology, HWLOC_OBJ_MISC) == HWLOC_TYPE_DEPTH_UNKNOWN);
+  assert(hwloc_get_type_or_above_depth(topology, HWLOC_OBJ_MISC) == HWLOC_TYPE_DEPTH_UNKNOWN);
+  assert(hwloc_get_type_or_below_depth(topology, HWLOC_OBJ_MISC) == HWLOC_TYPE_DEPTH_UNKNOWN);
 
   assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_BRIDGE) == HWLOC_OBJ_BRIDGE);
   assert(hwloc_get_depth_type(topology, HWLOC_TYPE_DEPTH_PCI_DEVICE) == HWLOC_OBJ_PCI_DEVICE);

@@ -243,7 +243,8 @@ private:
                                              ArgSymbol* arg);
 
   bool                        addSuperArgs(FnSymbol*                    fn,
-                                           const std::set<const char*>& names);
+                                           const std::set<const char*>& names,
+                                           SymbolMap&                   fieldArgMap);
 
   std::vector<AggregateType*> instantiations;
 

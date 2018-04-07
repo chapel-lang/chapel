@@ -174,6 +174,7 @@ static void resolveNew(CallExpr* call);
 static void temporaryInitializerFixup(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveGenericActuals(CallExpr* call);
+static void resolveAutoCopyEtc(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -186,6 +187,7 @@ static void resolveEnumTypes();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveSerializers();
+static void resolveDestructors();
 static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
@@ -210,6 +212,7 @@ static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
 static void removeInitFields();
 static void removeMootFields();
+static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
@@ -218,6 +221,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+
+static bool isUnusedClass(AggregateType* ct);
 
 /************************************* | **************************************
 *                                                                             *
@@ -1968,6 +1973,20 @@ void resolvePromotionType(AggregateType* at) {
   }
 }
 
+void resolveDestructor(AggregateType* at) {
+  SET_LINENO(at);
+
+  VarSymbol* tmp   = newTemp(at);
+  CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
+
+  if (deinitFn != NULL) {
+    resolveFunction(deinitFn);
+    at->setDestructor(deinitFn);
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -2512,10 +2531,9 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
       } else if (info.actuals.v[0]                              != NULL   &&
                  info.actuals.v[1]                              != NULL   &&
-                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true   &&
-                 info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         USR_FATAL_CONT(call,
-                       "illegal assignment of value to type");
+                       "illegal assignment to type");
 
       } else if (info.actuals.v[1]->type == dtNil) {
         USR_FATAL_CONT(call,
@@ -4676,7 +4694,8 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
     // Applies a type to TMP
-    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, fieldDef->exprType->copy());
+    Expr*      typeExpr  = fieldDef->exprType->copy();
+    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
 
     // Set the value for TMP
@@ -4692,6 +4711,12 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     AggregateType* at       = toAggregateType(_this->type);
     INT_ASSERT(at);
 
+    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
+    resolveBlock->insertAtTail(tmpMove);
+    resolveBlock->insertAtTail(tmpAssign);
+    call->replace(resolveBlock);
+    resolveBlock->insertAtTail(call);
+
     if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
       INT_ASSERT(false);
     }
@@ -4703,12 +4728,6 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     }
 
     updateFieldsMember(rhs, parentFn, fieldDef);
-
-    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
-    resolveBlock->insertAtTail(tmpMove);
-    resolveBlock->insertAtTail(tmpAssign);
-    call->replace(resolveBlock);
-    resolveBlock->insertAtTail(call);
 
     normalize(resolveBlock);
     resolveBlockStmt(resolveBlock);
@@ -4741,11 +4760,6 @@ static bool isFieldAccessible(Expr* expr,
                   field->sym->name);
       }
 
-    } else if (DefExpr* field = at->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
-
     } else {
       retval = true;
     }
@@ -4759,11 +4773,6 @@ static bool isFieldAccessible(Expr* expr,
                   "'%s' used before defined (first used here)",
                   field->sym->name);
       }
-
-    } else if (DefExpr* field = at->toSuperField(callExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
 
     } else {
       for_actuals(actual, callExpr) {
@@ -4808,11 +4817,15 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
       }
-
-    } else if (DefExpr* field = _thisType->toSuperField(symExpr)) {
-      USR_FATAL(expr,
-                "Cannot access parent field '%s' during phase 1",
-                field->sym->name);
+    } else if (DefExpr* fieldDef = _thisType->toSuperField(symExpr)) {
+      if (isFieldInitialized(fieldDef, currField) == true) {
+        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  fieldDef->sym->name);
+      }
     }
 
   } else if (CallExpr* callExpr = toCallExpr(expr)) {
@@ -4822,7 +4835,8 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
       }
     }
 
-  } else if (isNamedExpr(expr) == true) {
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    updateFieldsMember(named->actual, fn, currField);
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 
@@ -4976,9 +4990,12 @@ static void resolveInitField(CallExpr* call) {
 
   // Type was just fully instantiated, let's try to find its promotion type.
   if (wasGeneric                        == true &&
-      ct->symbol->hasFlag(FLAG_GENERIC) == false &&
-      ct->scalarPromotionType           == NULL) {
-    resolvePromotionType(ct);
+      ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+    if (ct->scalarPromotionType == NULL) {
+      resolvePromotionType(ct);
+    }
+    // BHARSH INIT TODO: Would like to resolve destructor here, but field
+    // types are not fully resolved. E.g., "var foo : t"
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -6836,11 +6853,18 @@ static void resolveExprExpandGenerics(CallExpr* call) {
             Symbol*        superField = ct->getField(1);
 
             if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+              bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
               ct              = ct->getInstantiationParent(formalType);
               fn->_this->type = ct;
 
               superField      = ct->getField(1);
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+              if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+                if (ct->scalarPromotionType == NULL) {
+                  resolvePromotionType(ct);
+                }
+              }
             }
           }
         }
@@ -7200,6 +7224,8 @@ void resolve() {
 
   resolveSerializers();
 
+  resolveDestructors();
+
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
@@ -7466,7 +7492,15 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
       USR_FATAL(serializeFn, "chpl__serialize cannot return void");
     }
 
-    if (isPrimitiveType(retType) == false && autoDestroyMap.get(retType) == NULL) {
+    // Make sure we have resolved autocopy / autodestroy etc
+    if (AggregateType* at = toAggregateType(retType)) {
+      resolveAutoCopyEtc(at);
+      propagateNotPOD(at);
+    }
+
+    if (isPrimitiveType(retType) == false &&
+        (autoDestroyMap.get(retType) == NULL ||
+         isClass(retType))) {
       USR_FATAL_CONT(serializeFn, "chpl__serialize must return a type that can be automatically memory managed (e.g. a record)");
       serializeFn = NULL;
     } else {
@@ -7565,13 +7599,29 @@ static void resolveSerializers() {
   resolveAutoCopies();
 }
 
+static void resolveDestructors() {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->inTree()                                       &&
+        ts->hasFlag(FLAG_REF)                    == false  &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->hasDestructor()   == false &&
+            at->hasInitializers() == true  &&
+            isUnusedClass(at)     == false) {
+          resolveDestructor(at);
+        }
+      }
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-static void        resolveAutoCopyEtc(AggregateType* at);
 static const char* autoCopyFnForType(AggregateType* at);
 static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
@@ -8420,6 +8470,8 @@ static void pruneResolvedTree() {
 
   removeMootFields();
 
+  removeReturnTypeBlocks();
+
   expandInitFieldPrims();
 
   cleanupAfterRemoves();
@@ -8532,8 +8584,6 @@ static void removeUnusedFunctions() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isUnusedClass(AggregateType* ct);
 
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
@@ -9361,6 +9411,13 @@ static Expr* resolvePrimInit(CallExpr* call, Type* type) {
     resolveCallAndCallee(defOfCall);
 
     retval = foldTryCond(postFold(defOfCall));
+
+    if (at && at->isRecord() && at->hasPostInitializer()) {
+      CallExpr* move = toCallExpr(defOfCall->parentExpr);
+      INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+      SymExpr*  var  = toSymExpr(move->get(1));
+      move->insertAfter(new CallExpr("postinit", gMethodToken, var->copy()));
+    }
   }
 
   return retval;
@@ -9489,6 +9546,25 @@ static void removeMootFields() {
             field->defPoint->remove();
         }
       }
+    }
+  }
+}
+
+static void removeReturnTypeBlocks() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->retExprType && fn->retExprType->parentSymbol) {
+      // First, move any defs in the return type block out
+      // (e.g. an array return type creates parloopexpr fns)
+      for_alist(expr, fn->retExprType->body) {
+        if (DefExpr* def = toDefExpr(expr)) {
+          if (isFnSymbol(def->sym)) {
+            def->remove();
+            fn->defPoint->insertBefore(def);
+          }
+        }
+      }
+      // Now remove the type block
+      fn->retExprType->remove();
     }
   }
 }

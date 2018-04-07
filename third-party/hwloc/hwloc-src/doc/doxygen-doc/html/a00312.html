@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Hardware Locality (hwloc): hwloc_disc_component Struct Reference</title>
+<title>Hardware Locality (hwloc): CPU and Memory Binding Overview</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.9</span>
+   &#160;<span id="projectnumber">1.11.10</span>
    </div>
   </td>
  </tr>
@@ -38,119 +38,28 @@ $(function() {
 <div id="main-nav"></div>
 </div><!-- top -->
 <div class="header">
-  <div class="summary">
-<a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<div class="title">hwloc_disc_component Struct Reference<div class="ingroups"><a class="el" href="a00200.html">Components and Plugins: Discovery components</a></div></div>  </div>
+<div class="title">CPU and Memory Binding Overview </div>  </div>
 </div><!--header-->
 <div class="contents">
-
-<p><code>#include &lt;<a class="el" href="a00158_source.html">plugins.h</a>&gt;</code></p>
-<table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
-Data Fields</h2></td></tr>
-<tr class="memitem:ad070350354cbd665803fc86fe48cdb3d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="a00200.html#ga5c6112c1a7497e5f481b9634059d47b1">hwloc_disc_component_type_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00312.html#ad070350354cbd665803fc86fe48cdb3d">type</a></td></tr>
-<tr class="separator:ad070350354cbd665803fc86fe48cdb3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4064c3b5d9213027e87caebef380a840"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00312.html#a4064c3b5d9213027e87caebef380a840">name</a></td></tr>
-<tr class="separator:a4064c3b5d9213027e87caebef380a840"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34144f4d59bf46524e4875194652412b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00312.html#a34144f4d59bf46524e4875194652412b">excludes</a></td></tr>
-<tr class="separator:a34144f4d59bf46524e4875194652412b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab8390b4bc16e44d5dfcbc35f38065eb7"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="a00316.html">hwloc_backend</a> *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00312.html#ab8390b4bc16e44d5dfcbc35f38065eb7">instantiate</a> )(struct <a class="el" href="a00312.html">hwloc_disc_component</a> *component, const void *data1, const void *data2, const void *data3)</td></tr>
-<tr class="separator:ab8390b4bc16e44d5dfcbc35f38065eb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae86d283c272c5ae24073a235efbf6b59"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="a00312.html#ae86d283c272c5ae24073a235efbf6b59">priority</a></td></tr>
-<tr class="separator:ae86d283c272c5ae24073a235efbf6b59"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Discovery component structure. </p>
-<p>This is the major kind of components, taking care of the discovery. They are registered by generic components, either statically-built or as plugins. </p>
-</div><h2 class="groupheader">Field Documentation</h2>
-<a id="a34144f4d59bf46524e4875194652412b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34144f4d59bf46524e4875194652412b">&#9670;&nbsp;</a></span>excludes</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned hwloc_disc_component::excludes</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Component types to exclude, as an OR'ed set of <a class="el" href="a00200.html#ga0dceb95fada01e5e4558429912053ca7" title="Discovery component type. ">hwloc_disc_component_type_e</a>. </p>
-<p>For a GLOBAL component, this usually includes all other types (~0).</p>
-<p>Other components only exclude types that may bring conflicting topology information. MISC components should likely not be excluded since they usually bring non-primary additional information. </p>
-
-</div>
-</div>
-<a id="ab8390b4bc16e44d5dfcbc35f38065eb7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab8390b4bc16e44d5dfcbc35f38065eb7">&#9670;&nbsp;</a></span>instantiate</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct <a class="el" href="a00316.html">hwloc_backend</a>*(* hwloc_disc_component::instantiate) (struct <a class="el" href="a00312.html">hwloc_disc_component</a> *component, const void *data1, const void *data2, const void *data3)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Instantiate callback to create a backend from the component. Parameters data1, data2, data3 are NULL except for components that have special enabling routines such as <a class="el" href="a00166.html#ga879439b7ee99407ee911b3ac64e9a25e" title="Enable XML-file based topology. ">hwloc_topology_set_xml()</a>. </p>
-
-</div>
-</div>
-<a id="a4064c3b5d9213027e87caebef380a840"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4064c3b5d9213027e87caebef380a840">&#9670;&nbsp;</a></span>name</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char* hwloc_disc_component::name</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Name. If this component is built as a plugin, this name does not have to match the plugin filename. </p>
-
-</div>
-</div>
-<a id="ae86d283c272c5ae24073a235efbf6b59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae86d283c272c5ae24073a235efbf6b59">&#9670;&nbsp;</a></span>priority</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned hwloc_disc_component::priority</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Component priority. Used to sort topology-&gt;components, higher priority first. Also used to decide between two components with the same name. </p>
-<p>Usual values are 50 for native OS (or platform) components, 45 for x86, 40 for no-OS fallback, 30 for global components (xml/synthetic/custom), 20 for pci, 10 for other misc components (opencl etc.). </p>
-
-</div>
-</div>
-<a id="ad070350354cbd665803fc86fe48cdb3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad070350354cbd665803fc86fe48cdb3d">&#9670;&nbsp;</a></span>type</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="a00200.html#ga5c6112c1a7497e5f481b9634059d47b1">hwloc_disc_component_type_t</a> hwloc_disc_component::type</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Discovery component type. </p>
-
-</div>
-</div>
-<hr/>The documentation for this struct was generated from the following file:<ul>
-<li><a class="el" href="a00158_source.html">plugins.h</a></li>
+<div class="textblock"><p> 
+<div class="section">
+</p>
+<p>Some operating systems do not systematically provide separate functions for CPU and memory binding. This means that CPU binding functions may have have effects on the memory binding policy. Likewise, changing the memory binding policy may change the CPU binding of the current thread. This is often not a problem for applications, so by default hwloc will make use of these functions when they provide better binding support.</p>
+<p>If the application does not want the CPU binding to change when changing the memory policy, it needs to use the <a class="el" href="a00159.html#ggab00475fd98815bf4fb9aaf752030e7d2aad6b9eaf2ee324ca58dc8f58094b9997" title="Avoid any effect on CPU binding. ">HWLOC_MEMBIND_NOCPUBIND</a> flag to prevent hwloc from using OS functions which would change the CPU binding. Additionally, <a class="el" href="a00158.html#gga217dc8d373f8958cc93c154ebce1c71ca41ce440443cc3087caed95ab60edcad6" title="Avoid any effect on memory binding. ">HWLOC_CPUBIND_NOMEMBIND</a> can be passed to CPU binding function to prevent hwloc from using OS functions would change the memory binding policy. Of course, using these flags will reduce hwloc's overall support for binding, so their use is discouraged.</p>
+<p>One can avoid using these flags but still closely control both memory and CPU binding by allocating memory, touching each page in the allocated memory, and then changing the CPU binding. The already-really-allocated memory will then be "locked" to physical memory and will not be migrated. Thus, even if the memory binding policy gets changed by the CPU binding order, the already-allocated memory will not change with it. When binding and allocating further memory, the CPU binding should be performed again in case the memory binding altered the previously-selected CPU binding.</p>
+<p>Not all operating systems support the notion of a "current" memory binding policy for the current process, but such operating systems often still provide a way to allocate data on a given node set. Conversely, some operating systems support the notion of a "current" memory binding policy and do not permit allocating data on a specific node set without changing the current policy and allocate the data. To provide the most powerful coverage of these facilities, hwloc provides:</p>
+<ul>
+<li>
+functions that set/get the current memory binding policies (if supported): hwloc_set/get_membind_*() and hwloc_set/get_proc_membind() </li>
+<li>
+functions that allocate memory bound to specific node set without changing the current memory binding policy (if supported): <a class="el" href="a00159.html#ga04736461780fadcf193af218c0122273" title="Allocate some memory on NUMA memory nodes specified by set. ">hwloc_alloc_membind()</a> and <a class="el" href="a00159.html#ga0ff3076f7f3633637699b809bcceceb1" title="Allocate some memory on NUMA memory nodes specified by nodeset. ">hwloc_alloc_membind_nodeset()</a>. </li>
+<li>
+helpers which, if needed, change the current memory binding policy of the process in order to obtain memory binding: <a class="el" href="a00159.html#gab1b77b8408bacaf03c7e8878f7577922" title="Allocate some memory on NUMA memory nodes specified by set. ">hwloc_alloc_membind_policy()</a> and <a class="el" href="a00159.html#ga7d473e80f11d774421688e36e9926136" title="Allocate some memory on NUMA memory nodes specified by nodeset. ">hwloc_alloc_membind_policy_nodeset()</a> </li>
 </ul>
-</div><!-- contents -->
+<p>An application can thus use the two first sets of functions if it wants to manage separately the global process binding policy and directed allocation, or use the third set of functions if it does not care about the process memory binding policy.</p>
+<p>See <a class="el" href="a00158.html">CPU binding</a> and <a class="el" href="a00159.html">Memory binding</a> for hwloc's API functions regarding CPU and memory binding, respectively. There are some examples under doc/examples/ in the source tree. </p>
+</div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

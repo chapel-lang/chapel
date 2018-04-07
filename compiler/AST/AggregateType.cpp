@@ -194,9 +194,21 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
+          retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
+        }
       }
     }
   }
@@ -209,9 +221,21 @@ DefExpr* AggregateType::toSuperField(CallExpr* expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
+          retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
+        }
       }
     }
   }
@@ -608,7 +632,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
     retval->dispatchParents.add(parent);
     parent->dispatchChildren.add_exclusive(retval);
 
-    retval->symbol->removeFlag(FLAG_GENERIC);
+    if (retval->setFirstGenericField() == false) {
+      retval->symbol->removeFlag(FLAG_GENERIC);
+    }
 
     symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
@@ -784,7 +810,7 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   INT_ASSERT(inserted);
 
-  if (newInstance->symbol->hasFlag(FLAG_GENERIC) == true) {
+  if (newInstance->setFirstGenericField() == false) {
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
 
@@ -1683,9 +1709,10 @@ void AggregateType::buildDefaultInitializer() {
     std::set<const char*> names;
     SymbolMap fieldArgMap;
 
-    fieldToArg(fn, names, fieldArgMap);
+    if (addSuperArgs(fn, names, fieldArgMap) == true) {
+      // Parent fields before child fields
+      fieldToArg(fn, names, fieldArgMap);
 
-    if (addSuperArgs(fn, names) == true) {
       // Replaces field references with argument references
       // NOTE: doesn't handle inherited fields yet!
       update_symbols(fn, &fieldArgMap);
@@ -1703,7 +1730,10 @@ void AggregateType::buildDefaultInitializer() {
       normalize(fn);
 
       methods.add(fn);
+    } else {
+      fieldToArg(fn, names, fieldArgMap);
     }
+
   }
 }
 
@@ -1852,7 +1882,8 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
 }
 
 bool AggregateType::addSuperArgs(FnSymbol*                    fn,
-                                 const std::set<const char*>& names) {
+                                 const std::set<const char*>& names,
+                                 SymbolMap& fieldArgMap) {
   bool retval = true;
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
@@ -1902,6 +1933,10 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
 
               } else {
                 DefExpr* superArg = formal->defPoint->copy();
+
+                VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+                fieldArgMap.put(field, superArg->sym);
+                fieldArgMap.put(formal, superArg->sym);
 
                 fn->insertFormalAtTail(superArg);
 
