@@ -1521,6 +1521,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in r do yield i;
   }
 
+  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+                              stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
@@ -1530,6 +1536,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+                              param stride: integral) {
+    if (stride == 1) {
+      const r = low..high;
+      for i in r do yield i;
+    } else {
+      for i in chpl_direct_range_iter(low, high, stride) do yield i;
+    }
   }
 
 
