@@ -105,56 +105,6 @@ module ChapelRange {
    */
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
-  pragma "no doc"
-  /*private*/ proc chpl__rangeIdxTypeError(type idxType) {
-    compilerError("ranges don't support '", idxType:string, "' as their idxType");
-  }
-
-  pragma "no doc"
-  /*private*/ proc chpl__rangeStrideType(type idxType) type {
-    if isIntegralType(idxType) {
-      return chpl__signedType(idxType);
-    } else if isEnumType(idxType) {
-      return int;
-    } else {
-      chpl__rangeIdxTypeError(idxType);
-    }
-  }
-
-  pragma "no doc"
-  /*private*/ proc chpl__rangeAlignType(type idxType) type {
-    if isIntegralType(idxType) {
-      return idxType;
-    } else if isEnumType(idxType) {
-      // TODO: ultimately, this should be an int of the same width as the enum
-      return int;
-    } else {
-      chpl__rangeIdxTypeError(idxType);
-    }
-  }
-
-  pragma "no doc"
-  /*private*/ proc chpl__defaultLowBound(type idxType) {
-    if isIntegralType(idxType) {
-      return 1:idxType;
-    } else if isEnumType(idxType) {
-      return 2:idxType;
-    } else {
-      chpl__rangeTypeError(idxType);
-    }
-  }
-
-  pragma "no doc"
-  /*private*/ proc chpl__defaultHighBound(type idxType) {
-    if isIntegralType(idxType) {
-      return 0:idxType;
-    } else if isEnumType(idxType) {
-      return 1:idxType;
-    } else {
-      chpl__rangeTypeError(idxType);
-    }
-  }
-
   //
   // range type
   //
@@ -2353,4 +2303,48 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc chpl__extendedEuclid(u:int(64), v:int(64))
   { return chpl__extendedEuclidHelper(u,v); }
 
+  private proc chpl__rangeIdxTypeError(type idxType) {
+    compilerError("ranges don't support '", idxType:string, "' as their idxType");
+  }
+
+  private proc chpl__rangeStrideType(type idxType) type {
+    if isIntegralType(idxType) {
+      return chpl__signedType(idxType);
+    } else if isEnumType(idxType) {
+      return int;
+    } else {
+      chpl__rangeIdxTypeError(idxType);
+    }
+  }
+
+  private proc chpl__rangeAlignType(type idxType) type {
+    if isIntegralType(idxType) {
+      return idxType;
+    } else if isEnumType(idxType) {
+      // TODO: ultimately, this should be an int of the same width as the enum
+      return int;
+    } else {
+      chpl__rangeIdxTypeError(idxType);
+    }
+  }
+
+  private proc chpl__defaultLowBound(type idxType) {
+    if isIntegralType(idxType) {
+      return 1:idxType;
+    } else if isEnumType(idxType) {
+      return 2:idxType;
+    } else {
+      chpl__rangeTypeError(idxType);
+    }
+  }
+
+  private proc chpl__defaultHighBound(type idxType) {
+    if isIntegralType(idxType) {
+      return 0:idxType;
+    } else if isEnumType(idxType) {
+      return 1:idxType;
+    } else {
+      chpl__rangeTypeError(idxType);
+    }
+  }
 }
