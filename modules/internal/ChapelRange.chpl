@@ -207,48 +207,7 @@ module ChapelRange {
     proc chpl__promotionType() type {
       return idxType;
     }
-
-    /*
-    // copy initializer
-    pragma "no doc"
-    proc init(other: range) /*where (this.idxType == other.idxType &&
-                                   this.boundedType == other.boundedType &&
-                                   this.stridable == other.stridable)*/ {
-      this._low = other._low;
-      this._high = other._high;
-      if this.stridable {
-        this._stride = other._stride;
-        this._alignment = other._alignment;
-        this._aligned = other._aligned;
-      }
-    }
-    */
   }
-
-  /*
-  proc chpl__initCopy(const ref rhs: range(?t, ?b, ?s)) {
-    var ret: range(t, b, s);
-    ret._low = rhs._low;
-    ret._high = rhs._high;
-    if rhs.stridable {
-      ret._stride = rhs._stride;
-      ret._alignment = rhs._alignment;
-      ret._aligned = rhs._aligned;
-    }
-    return ret;
-  }
-  proc chpl__autoCopy(const ref rhs: range(?t, ?b, ?s)) {
-    var ret: range(t, b, s);
-    ret._low = rhs._low;
-    ret._high = rhs._high;
-    if rhs.stridable {
-      ret._stride = rhs._stride;
-      ret._alignment = rhs._alignment;
-      ret._aligned = rhs._aligned;
-    }
-    return ret;
-  }
-  */
 
   //################################################################################
   //# Initializers
