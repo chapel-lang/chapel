@@ -4818,12 +4818,12 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
     AggregateType* _thisType = toAggregateType(_this->symbol()->getValType());
     INT_ASSERT(_thisType);
 
+    DefExpr* foundField = NULL;
+
+    // BHARSH INIT TODO: are these errors ever triggered?
     if (DefExpr* fieldDef = _thisType->toLocalField(symExpr)) {
       if (isFieldInitialized(fieldDef, currField) == true) {
-        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
-
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
-
+        foundField = fieldDef;
       } else {
         USR_FATAL(expr,
                   "'%s' used before defined (first used here)",
@@ -4831,12 +4831,21 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
       }
     } else if (DefExpr* fieldDef = _thisType->toSuperField(symExpr)) {
       if (isFieldInitialized(fieldDef, currField) == true) {
-        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
+        foundField = fieldDef;
       } else {
         USR_FATAL(expr,
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
+      }
+    }
+
+    if (foundField != NULL) {
+      SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+      if (foundField->sym->hasFlag(FLAG_PARAM) ||
+          foundField->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, field));
+      } else {
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
       }
     }
 
