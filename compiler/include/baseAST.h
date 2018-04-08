@@ -647,6 +647,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, shadowVariables(),     call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterIRdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterICdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterGetIterator,   call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterFreeIterator,  call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
     break;                                                                    \
   case E_ModuleSymbol:                                                  \
@@ -657,10 +661,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ShadowVarSymbol:                                               \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep, call, __VA_ARGS__);\
-    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,   call, __VA_ARGS__);\
-    break;                                                              \
+  case E_ShadowVarSymbol:                                                   \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,     call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);  \
+    break;                                                                  \
   case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \

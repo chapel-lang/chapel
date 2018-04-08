@@ -37,6 +37,7 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "implementForallIntents.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
@@ -5428,7 +5429,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
     Type*   rhsType = rhs->typeInfo();
 
-    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR));
+    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+               // non-zip forall over a standalone iterator
+               rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
 
     // ... and not of a reference type
     // ... and not an array (arrays are always yielded by reference)
@@ -6559,7 +6562,11 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
 
-    retval = expr;
+    if (ForLoop* forLoop = toForLoop(block)) {
+      retval = replaceForWithForallIfNeeded(forLoop);
+    } else {
+      retval = expr;
+    }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
@@ -6567,6 +6574,8 @@ Expr* resolveExpr(Expr* expr) {
     }
 
     retval = foldTryCond(postFold(expr));
+
+    resolveShadowVarsIfNeeded(def);
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -7220,8 +7229,7 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
-
-  lowerForallStmts();
+  resolveForallStmts1();
 
   insertReturnTemps();
 
@@ -7242,6 +7250,8 @@ void resolve() {
     printUnusedFunctions();
 
   pruneResolvedTree();
+
+  resolveForallStmts2();
 
   freeCache(defaultsCache);
 
@@ -7959,7 +7969,9 @@ static void insertReturnTemps() {
   // because we do not support sync/singles for minimal modules.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
+    if (call->inTree()) {
+      if (call->list == NULL && isForallRecIterHelper(call))
+        continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
@@ -7976,6 +7988,9 @@ static void insertReturnTemps() {
           }
 
           Expr* parent = contextCallOrCall->parentExpr;
+
+          if (isForallIterExpr(contextCallOrCall))
+            continue; // not really a top-level expression
 
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?

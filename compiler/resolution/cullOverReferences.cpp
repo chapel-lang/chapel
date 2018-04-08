@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
 #include "loopDetails.h"
@@ -747,12 +748,27 @@ void cullOverReferences() {
       // information to resolve. These can be added to the revisitGraph.
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
 
+        bool foundLoop = false;
+        bool isForall = false;
+        IteratorDetails leaderDetails;
+        ForLoop* followerForLoop = NULL;
+        std::vector<IteratorDetails> detailsVector;
+
+        if (isForallIterExpr(call)) {
+          ForallStmt* pfs = toForallStmt(call->parentExpr);
+          gatherLoopDetails(pfs, isForall, leaderDetails,
+                            followerForLoop, detailsVector);
+          foundLoop = true;
+        }
+
+        // Otherwise, look for a ForLoop / old style forall
+
         // Check if sym is iterated over. In that case, what's the
         // index variable?
         //
         // It's important that this case run before the check
         // for build_tuple.
-        {
+        else {
           // Find enclosing PRIM_MOVE
           CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
           if (!move->isPrimitive(PRIM_MOVE))
@@ -763,6 +779,8 @@ void cullOverReferences() {
             SymExpr* lhs = toSymExpr(move->get(1));
             Symbol* iterator = lhs->symbol();
             ForLoop* forLoop = NULL;
+            ForallStmt*   fs = NULL;
+            // Todo expand isChplIterOrLoopIterator to watch for ForallStmt?
 
             // marked with chpl__iter or with type iterator class?
             if (isChplIterOrLoopIterator(iterator, forLoop)) {
@@ -771,21 +789,19 @@ void cullOverReferences() {
 
               if (!forLoop) {
                 Expr* e = move;
-                while (e && !isForLoop(e)) {
+                while (e) {
+                  if ( (forLoop = toForLoop(e)) )
+                    break;
+                  if ( (fs = toForallStmt(e)) )
+                    break;
                   e = e->next;
                 }
-                forLoop = toForLoop(e);
               }
 
               if (forLoop) {
                 // Gather the loop details to understand the
                 // correspondence between what was iterated over
                 // and the index variables.
-
-                bool isForall = false;
-                IteratorDetails leaderDetails;
-                ForLoop* followerForLoop = NULL;
-                std::vector<IteratorDetails> detailsVector;
 
                 /*
                 printf("print working on node %i %i\n",
@@ -796,7 +812,20 @@ void cullOverReferences() {
 
                 gatherLoopDetails(forLoop, isForall, leaderDetails,
                                   followerForLoop, detailsVector);
+                foundLoop = true;
+              }
+              else if (fs) {
+                // Ditto if it is a ForallStmt.
 
+                gatherLoopDetails(fs, isForall, leaderDetails,
+                                  followerForLoop, detailsVector);
+                foundLoop = true;
+              }
+            }
+          }
+        }
+
+        if (foundLoop) {
                 bool handled = false;
 
                 for (size_t i = 0; i < detailsVector.size(); i++) {
@@ -859,9 +888,6 @@ void cullOverReferences() {
 
                 if (handled)
                   continue; // continue outer loop
-              }
-            }
-          }
         }
 
         if (FnSymbol* calledFn = call->resolvedFunction()) {
@@ -1185,7 +1211,7 @@ void cullOverReferences() {
   // Now, lower ContextCalls
   forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
     // Some ContextCallExprs have already been removed above
-    if (cc->parentExpr == NULL)
+    if (!cc->inTree())
       continue;
 
     CallExpr* move = toCallExpr(cc->parentExpr);
