@@ -11,9 +11,9 @@ use StencilDist;
 
 // Definitions of NPB parameters etc
 enum NPB {S,A,B,C}; // TODO : Make complete.
-const ProblemSizes : [NPB.S..NPB.C] int = [32, 256, 256, 512],
-      ProblemIters : [NPB.S..NPB.C] int = [4, 4, 20, 20],
-      ExpectedResids : [NPB.S..NPB.C] real = [0.5307707005735e-04,
+const ProblemSizes : [NPB.S:int..NPB.C:int] int = [32, 256, 256, 512],
+      ProblemIters : [NPB.S:int..NPB.C:int] int = [4, 4, 20, 20],
+      ExpectedResids : [NPB.S:int..NPB.C:int] real = [0.5307707005735e-04,
                                               0.2433365309069e-05,
                                               0.1800564401355e-05,
                                               0.5706732285705e-06],

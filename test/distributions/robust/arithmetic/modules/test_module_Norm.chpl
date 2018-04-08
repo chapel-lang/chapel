@@ -12,7 +12,7 @@ rng.fillRandom(R1D);
 rng.fillRandom(R2D);
 rng.fillRandom(R2D32);
 
-var saved: [1..3][normType.norm1..normType.normFrob] int;
+var saved: [1..3][normType.norm1:int..normType.normFrob:int] int;
 
 proc iNorm(val, sigfigs=10) {
   return (val*(10**sigfigs):val.type):int;
