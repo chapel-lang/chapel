@@ -561,7 +561,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
     AggregateType* parent = dispatchParents.v[0];
 
     // Is the parent generic?
-    if (parent->typeConstructor->numFormals() > 0) {
+    if (parent->typeConstructor != NULL &&
+        parent->typeConstructor->numFormals() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs);
 
       retval = instantiationWithParent(instantiatedParent);
