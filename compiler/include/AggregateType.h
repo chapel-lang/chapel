@@ -35,7 +35,7 @@ enum AggregateTag {
 };
 
 enum ClassKind {
-  CLASS_RAW,
+  CLASS_UNMANAGED,
   CLASS_BORROW,
 };
 
@@ -162,9 +162,15 @@ public:
   //
 
   AggregateTag                aggregateTag;
+
+  // These fields support differentiating between unmanaged class
+  // pointers and borrows.
   ClassKind                   classKind;
-  AggregateType*              defaultClass; // borrow type usually
-  AggregateType*              nextAssociatedClass; // e.g. raw for owned
+  // The next two fields, canonicalClass and nextAssociatedClass,
+  // form a linked list, where canonicalClass is the head, of
+  // the unmanaged/borrow class types.
+  AggregateType*              canonicalClass; // borrow type usually
+  AggregateType*              nextAssociatedClass;
 
   FnSymbol*                   typeConstructor;
 

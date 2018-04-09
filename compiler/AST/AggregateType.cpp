@@ -42,7 +42,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   aggregateTag        = initTag;
   classKind           = CLASS_BORROW;
-  defaultClass        = NULL;
+  canonicalClass      = NULL;
   nextAssociatedClass = NULL;
 
   typeConstructor     = NULL;
@@ -2536,7 +2536,7 @@ Symbol* AggregateType::getSubstitution(const char* name) {
 }
 
 bool AggregateType::isUnmanagedClass() const {
-  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_RAW;
+  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_UNMANAGED;
 }
 
 bool AggregateType::isBorrowedClass() const {
@@ -2544,7 +2544,7 @@ bool AggregateType::isBorrowedClass() const {
 }
 
 bool AggregateType::isCanonicalClass() const {
-  return (this->defaultClass == NULL || this->defaultClass == this);
+  return (this->canonicalClass == NULL || this->canonicalClass == this);
 }
 
 
@@ -2555,7 +2555,7 @@ AggregateType* AggregateType::getUnmanagedClass() {
 
     generateUnmanagedBorrowClassTypes();
 
-    for (AggregateType* t = this->defaultClass;
+    for (AggregateType* t = this->canonicalClass;
          t != NULL;
          t = t->nextAssociatedClass) {
       if (t->isUnmanagedClass())
@@ -2571,7 +2571,7 @@ AggregateType* AggregateType::getBorrowedClass() {
 
     generateUnmanagedBorrowClassTypes();
 
-    for (AggregateType* t = this->defaultClass;
+    for (AggregateType* t = this->canonicalClass;
          t != NULL;
          t = t->nextAssociatedClass) {
       if (t->isBorrowedClass())
@@ -2581,11 +2581,17 @@ AggregateType* AggregateType::getBorrowedClass() {
   return NULL;
 }
 
+/*
+
+ A plain class name represents a borrow. The borrow forms the canonical class
+ representation, which is used for most purposes within the compiler.
+
+ */
 AggregateType* AggregateType::getCanonicalClass() {
   if (aggregateTag == AGGREGATE_CLASS) {
     generateUnmanagedBorrowClassTypes();
-    INT_ASSERT(this->defaultClass);
-    return this->defaultClass;
+    INT_ASSERT(this->canonicalClass);
+    return this->canonicalClass;
   }
 
   return NULL;
@@ -2594,16 +2600,16 @@ AggregateType* AggregateType::getCanonicalClass() {
 
 void AggregateType::generateUnmanagedBorrowClassTypes() {
   AggregateType* at = this;
-  if (aggregateTag == AGGREGATE_CLASS && at->defaultClass == NULL) {
+  if (aggregateTag == AGGREGATE_CLASS && at->canonicalClass == NULL) {
     SET_LINENO(at->symbol->defPoint);
     // Generate unmanaged and owned class types
     AggregateType* unmanaged = new AggregateType(AGGREGATE_CLASS);
 
-    at->classKind = CLASS_BORROW;
-    unmanaged->classKind = CLASS_RAW;
+    INT_ASSERT(at->classKind == CLASS_BORROW);
+    unmanaged->classKind = CLASS_UNMANAGED;
 
-    at->defaultClass = at;
-    unmanaged->defaultClass = at;
+    at->canonicalClass = at;
+    unmanaged->canonicalClass = at;
     at->nextAssociatedClass = unmanaged;
 
 
@@ -2615,7 +2621,7 @@ void AggregateType::generateUnmanagedBorrowClassTypes() {
 
     DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
 
-    at->symbol->defPoint->insertBefore(defUnmanaged);
+    at->symbol->defPoint->insertAfter(defUnmanaged);
   }
 }
 
