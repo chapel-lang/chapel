@@ -5812,7 +5812,7 @@ proc channel._format_reader(
           error = qio_format_error_write_regexp();
         } else {
           // allocate regexp info if needed
-          if r == nil then r = new raw _channel_regexp_info();
+          if r == nil then r = new unmanaged _channel_regexp_info();
           // clear out old data, if there is any.
           r.clear();
           // Compile a regexp from the format string
@@ -6543,7 +6543,7 @@ proc channel.readf(fmtStr:string, ref args ...?k, out error:syserr):bool {
                 error = qio_format_error_arg_mismatch(i);
               }
               // match it here.
-              if r == nil then r = new raw _channel_regexp_info();
+              if r == nil then r = new unmanaged _channel_regexp_info();
               r.clear();
               r.theRegexp = t._regexp;
               r.hasRegexp = true;

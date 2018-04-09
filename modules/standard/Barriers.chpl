@@ -87,16 +87,16 @@ module Barriers {
       select barrierType {
         when BarrierType.Atomic {
           if reusable {
-            bar = new raw aBarrier(numTasks, reusable=true);
+            bar = new unmanaged aBarrier(numTasks, reusable=true);
           } else {
-            bar = new raw aBarrier(numTasks, reusable=false);
+            bar = new unmanaged aBarrier(numTasks, reusable=false);
           }
         }
         when BarrierType.Sync {
           if reusable {
             halt("reusable barriers not implemented for ", barrierType);
           } else {
-            bar = new raw sBarrier(numTasks);
+            bar = new unmanaged sBarrier(numTasks);
           }
         }
         otherwise {
