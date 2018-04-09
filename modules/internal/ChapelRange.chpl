@@ -2348,6 +2348,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if isIntegralType(idxType) {
       return 1:idxType;
     } else if isEnumType(idxType) {
+      // TODO: This is only correct for default-numbered enums; need
+      // to generalize
       return 2:idxType;
     } else {
       chpl__rangeTypeError(idxType);
@@ -2358,6 +2360,8 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if isIntegralType(idxType) {
       return 0:idxType;
     } else if isEnumType(idxType) {
+      // TODO: This is only correct for default-numbered enums; need
+      // to generalize
       return 1:idxType;
     } else {
       chpl__rangeTypeError(idxType);
