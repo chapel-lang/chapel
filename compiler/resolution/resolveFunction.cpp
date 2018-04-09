@@ -856,7 +856,7 @@ void fixTypeNames(AggregateType* at) {
     at->symbol->name = astr("[", domainType, "] ", eltType);
 
   } else if (strncmp(at->symbol->name, domName, domNameLen) == 0) {
-    at->symbol->name = astr("domain", at->symbol->name + strlen(domName));
+    at->symbol->name = astr("domain", at->symbol->name + domNameLen);
 
   } else if (isRecordWrappedType(at) == true) {
     at->symbol->name = at->getField("_instance")->type->symbol->name;
