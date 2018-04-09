@@ -246,7 +246,7 @@ class BlockCyclic : BaseDist {
 
     coforall locid in targetLocDom do
       on this.targetLocales(locid) do
-        locDist(locid) = new raw LocBlockCyclic(rank, idxType, locid, this);
+        locDist(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, this);
 
     if dataParTasksPerLocale == 0 then
       this.dataParTasksPerLocale = here.maxTaskPar;
@@ -270,7 +270,7 @@ class BlockCyclic : BaseDist {
   }
 
   proc dsiClone() {
-    return new raw BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
+    return new unmanaged BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
   }
 
   proc dsiDestroyDist() {
@@ -319,7 +319,7 @@ proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("BlockCyclic domain rank does not match distribution's");
 
-  var dom = new raw BlockCyclicDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -579,7 +579,7 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockCyclicDom.dsiBuildArray(type eltType) {
-  var arr = new raw BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
   arr.setup();
   return arr;
 }
@@ -628,7 +628,7 @@ proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       if (locDoms(localeIdx) == nil) then
-        locDoms(localeIdx) = new raw LocBlockCyclicDom(rank, idxType, stridable, this,
+        locDoms(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, this,
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
@@ -655,8 +655,8 @@ proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = new raw BlockCyclic(rank, idxType, dist);
-  var c = new raw BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  var privateDist = new unmanaged BlockCyclic(rank, idxType, dist);
+  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
   c.whole = whole;
   return c;
@@ -811,7 +811,7 @@ proc BlockCyclicArr.dsiGetBaseDom() return dom;
 proc BlockCyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      locArr(localeIdx) = new raw LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
+      locArr(localeIdx) = new unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
     }
@@ -832,7 +832,7 @@ proc BlockCyclicArr.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  var c = new raw BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then

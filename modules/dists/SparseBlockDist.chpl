@@ -76,7 +76,7 @@ class SparseBlockDom: BaseSparseDomImpl {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
-         locDoms(localeIdx) = new raw LocSparseBlockDom(rank, idxType, stridable,
+         locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
              sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
         }
@@ -201,7 +201,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   // how to allocate a new array over this domain
   //
   proc dsiBuildArray(type eltType) {
-    var arr = new raw SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
+    var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
         stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
     arr.setup();
     return arr;
@@ -290,7 +290,7 @@ class LocSparseBlockDom {
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = new raw sparseLayoutType; //unresolved call workaround
+  var sparseDist = new unmanaged sparseLayoutType; //unresolved call workaround
   var mySparseBlock: sparse subdomain(parentDom) dmapped new dmap(sparseDist);
 
   proc dsiAdd(ind: rank*idxType) {
@@ -354,7 +354,7 @@ class SparseBlockArr: BaseSparseArr {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new raw LocSparseBlockArr(eltType, rank, idxType,
+        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank, idxType,
             stridable, sparseLayoutType, locDom);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
@@ -703,7 +703,7 @@ proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new raw SparseBlockDom(rank=rank, idxType=idxType,
+  var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
                              stridable=parentDom.stridable, dist=privdist,
                              whole=whole,
@@ -728,7 +728,7 @@ proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
 
 proc SparseBlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
-  var c = new raw SparseBlockArr(sparseLayoutType=sparseLayoutType,
+  var c = new unmanaged SparseBlockArr(sparseLayoutType=sparseLayoutType,
       eltType=eltType, rank=rank, idxType=idxType, stridable=stridable,
       dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {

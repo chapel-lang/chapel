@@ -130,7 +130,7 @@ proc BlockCyclicDim.dsiGetPrivatizeData1d() {
 }
 
 proc BlockCyclicDim.dsiPrivatize1d(privatizeData) {
-  return new raw BlockCyclicDim(lowIdx = privatizeData(1),
+  return new unmanaged BlockCyclicDim(lowIdx = privatizeData(1),
                    blockSize = privatizeData(2),
                    numLocales = privatizeData(3),
                    name = privatizeData(4));
@@ -146,7 +146,7 @@ proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
 
 proc BlockCyclic1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new raw BlockCyclic1dom(idxType   = this.idxType,
+  return new unmanaged BlockCyclic1dom(idxType   = this.idxType,
                   stoIndexT = this.stoIndexT,
                   stridable = this.stridable,
                   name            = privatizeData(5),
@@ -259,7 +259,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
   _checkFitsWithin(adjLowIdx, idxType);
 
-  const result = new raw BlockCyclic1dom(idxType = idxType,
+  const result = new unmanaged BlockCyclic1dom(idxType = idxType,
                   stoIndexT = stoIndexT,
                   stridable = stridable,
                   adjLowIdx = adjLowIdx: idxType,
@@ -274,7 +274,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new raw BlockCyclic1locdom(idxType = this.idxType,
+  const result = new unmanaged BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;

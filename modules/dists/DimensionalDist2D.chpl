@@ -437,7 +437,7 @@ proc newDimensionalDist2D(
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
   ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
-  return new raw DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
+  return new unmanaged DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
@@ -515,7 +515,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                        di2new, di2.dsiSupportsPrivatization1d(),
                        privTargetLocales, false, plliddDummy);
 
-  return new raw DimensionalDist2D(targetLocales = privTargetLocales,
+  return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
                              name          = privatizeData(2),
                              idxType       = this.idxType,
                              di1           = di1new,
@@ -688,7 +688,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   if dom2orig.dsiSupportsPrivatization1d() then
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
-  const result = new raw DimensionalDom(rank      = this.rank,
+  const result = new unmanaged DimensionalDom(rank      = this.rank,
                                     idxType   = this.idxType,
                                     stridable = this.stridable,
                                     dist = privdist,
@@ -808,7 +808,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
-  const result = new raw DimensionalDom(rank=rank, idxType=idxType,
+  const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
                                     stridable=stridable, dist=this,
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
@@ -819,7 +819,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   coforall (loc, locIds, locDdesc)
    in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
-      locDdesc = new raw LocDimensionalDom(result.stoDomainT,
+      locDdesc = new unmanaged LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
   result.dsiSetIndices(inds);
@@ -911,7 +911,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new raw DimensionalArr(rank     = this.rank,
+  const result = new unmanaged DimensionalArr(rank     = this.rank,
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
@@ -952,7 +952,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new raw DimensionalArr(rank = rank,
+  const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
@@ -961,7 +961,7 @@ proc DimensionalDom.dsiBuildArray(type eltType)
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
-      locAdesc = new raw LocDimensionalArr(eltType, locDdesc);
+      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
 
   assert(!result.isAlias);
   return result;
