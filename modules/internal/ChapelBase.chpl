@@ -1279,10 +1279,10 @@ module ChapelBase {
   }
 
   /*
-  inline proc chpl__toraw(ref arg:Owned) {
+  inline proc chpl__tounmanaged(ref arg:Owned) {
     return arg.release();
   }
-  inline proc chpl__toraw(arg) where arg:object {
+  inline proc chpl__tounmanaged(arg) where arg:object {
     return arg;
   }*/
 
@@ -1916,7 +1916,7 @@ module ChapelBase {
     type rt = __primitive("to unmanaged class", t).type;
     return rt;
   }
-  inline proc _to_raw(arg) {
+  inline proc _to_unmanaged(arg) {
     var ret = __primitive("to unmanaged class", arg);
     return ret;
   }

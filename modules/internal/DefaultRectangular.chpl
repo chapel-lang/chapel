@@ -40,27 +40,27 @@ module DefaultRectangular {
   pragma "use default init"
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
-      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_raw(this));
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this));
       dom.dsiSetIndices(inds);
       return dom;
     }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-      return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_raw(this));
+      return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_unmanaged(this));
 
     proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
-      return new unmanaged DefaultOpaqueDom(_to_raw(this), parSafe);
+      return new unmanaged DefaultOpaqueDom(_to_unmanaged(this), parSafe);
 
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
-      return new unmanaged DefaultSparseDom(rank, idxType, _to_raw(this), dom);
+      return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
     proc dsiIndexToLocale(ind) return this.locale;
 
     // Right now, the default distribution acts like a singleton.
     // So we don't have to copy it when a clone is requested.
-    proc dsiClone() return _to_raw(this);
+    proc dsiClone() return _to_unmanaged(this);
 
-    proc dsiAssign(other: raw this.type) { }
+    proc dsiAssign(other: unmanaged this.type) { }
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
@@ -93,7 +93,7 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    var dist: raw DefaultDist;
+    var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
     proc linksDistribution() param return false;
@@ -597,7 +597,7 @@ module DefaultRectangular {
 
     proc dsiBuildArray(type eltType) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                      stridable=stridable, dom=_to_raw(this));
+                                      stridable=stridable, dom=_to_unmanaged(this));
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -607,7 +607,7 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
-                                       dom=_to_raw(this),
+                                       dom=_to_unmanaged(this),
                                        data=data,
                                        dataAllocRange=allocRange);
     }
@@ -888,7 +888,7 @@ module DefaultRectangular {
 
     type idxSignedType = chpl__signedType(idxType);
 
-    var dom : raw DefaultRectangularDom(rank=rank, idxType=idxType,
+    var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
     var off: rank*idxType;
     var blk: rank*idxType;
