@@ -1541,10 +1541,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   iter chpl_direct_range_iter(low: enumerated, high: enumerated,
                               param stride: integral) {
     if (stride == 1) {
+        // Optimize for the stride == 1 case because I anticipate it'll be
+        // better supported for enum ranges than the strided case (if we
+        // ever support the latter)
       const r = low..high;
       for i in r do yield i;
     } else {
-      for i in chpl_direct_range_iter(low, high, stride) do yield i;
+      // I'm guessing we won't be able to optimize the param stride case
+      // for (general) enums in the short-term, so call to the non-param
+      // stride case
+      const r = low..high by stride;
+      for i in r do yield i;
     }
   }
 
