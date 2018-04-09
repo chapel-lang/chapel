@@ -18,48 +18,129 @@
  */
 
 module Dataframes {
+  use Sort;
+
   class Index {
     type idxType;
     var set: domain(idxType);
     var map: [set] int;
 
-    proc init(idx: [?D] int) {
+    var rev_set: domain(1);
+    var rev_map: [rev_set] idxType;
+
+    // TODO: domain of rev_idx must be domain(1)
+    proc init(rev_idx: [?D] ?I) {
       super.init();
-      idxType = D.idxType;
-      set = D;
-      map = idx;
+      idxType = I;
+      this.rev_set = D;
+      this.rev_map = rev_idx;
+      this.complete();
+
+      for (ord, i) in zip(1.., rev_idx) {
+        set.add(i);
+        map[i] = ord;
+      }
     }
+
+    iter these() {
+      for i in rev_map do
+        yield i;
+    }
+
+    iter items() {
+      for tup in zip(rev_map, rev_set) do
+        yield tup;
+    }
+
+    proc this(i: idxType) {
+      return map[i];
+    }
+
+    proc set(i: idxType, o: int) throws {
+      if o > set.size then
+        throw new IllegalArgumentError("o", "ordinal [%d] > Index size [%d]".format(o, set.size));
+
+      if set.member(i) {
+        map[i] = o;
+        rev_map[o] = i;
+      } else {
+        this._add(i, o);
+      }
+    }
+
+    proc add(i: idxType) {
+      var new_size: int = set.size + 1;
+      this._add(i, new_size);
+    }
+
+    pragma "no doc"
+    proc _add(i: idxType, o: int) {
+      set += i;
+      map[i] = o;
+
+      rev_set += o;
+      rev_map[o] = i;
+    }
+
+    proc add(other: Index(idxType)) {
+      for i in other do
+        this.add(i);
+    }
+
+    // TODO: adding items needs to be well-managed
   }
 
   class Series {
   }
 
   class TypedSeries : Series {
-    type eltType;
     type idxType;
+    type eltType;
 
-    var ordSet: domain(int);
-    var data: [ordSet] eltType;
     var idx: Index(idxType);
+    // TODO: ord_set dmap Block
+    var ord_set: domain(1);
+    var data: [ord_set] eltType;
 
-    proc init(data: [?D] ?T) {
+    proc init(data: [] ?T) {
       super.init();
-      eltType = T;
       idxType = int;
+      eltType = T;
 
-      ordSet = D;
+      ord_set = 1..data.size;
       this.data = data;
     }
 
-    proc init(data: [?D] ?T, idx: [?I] int) {
+    proc init(idx: [] ?I, data: [] ?T) {
+      // TODO: verify |idx| = |D|
       // TODO: verify (i in idx) iff (i in D)
       super.init();
+      idxType = I;
       eltType = T;
-      idxType = I.idxType;
 
-      ordSet = D;
-      this.data = data;
       this.idx = new Index(idx);
+      ord_set = 1..data.size;
+
+      // TODO: throw error/write message if data is not rectangular 1D
+      this.data = data;
+    }
+
+    iter these() {
+      for t in data do
+        yield t;
+    }
+
+    iter items() {
+      for tup in zip(idx, data) do
+        yield tup;
+    }
+
+    proc this(i: idxType) {
+      return data[idx[i]];
+    }
+
+    proc at(ord: int) {
+      return data[ord];
     }
 
     proc writeThis(f) {
