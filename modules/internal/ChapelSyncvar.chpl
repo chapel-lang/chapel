@@ -114,7 +114,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      this.wrapped = new raw (getSyncClassType(valType))(valType);
+      this.wrapped = new unmanaged (getSyncClassType(valType))(valType);
     }
 
     //
@@ -629,7 +629,7 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      wrapped = new raw _singlecls(valType);
+      wrapped = new unmanaged _singlecls(valType);
     }
 
     //

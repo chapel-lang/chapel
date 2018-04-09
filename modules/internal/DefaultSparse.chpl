@@ -42,7 +42,7 @@ module DefaultSparse {
     }
 
     proc dsiBuildArray(type eltType)
-      return new raw DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
+      return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
                                   dom=this);
 
     iter dsiIndsIterSafeForRemoving() {

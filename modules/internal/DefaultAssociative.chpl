@@ -99,7 +99,7 @@ module DefaultAssociative {
     // Standard Internal Domain Interface
     //
     proc dsiBuildArray(type eltType) {
-      return new raw DefaultAssociativeArr(eltType=eltType, idxType=idxType,
+      return new unmanaged DefaultAssociativeArr(eltType=eltType, idxType=idxType,
                                        parSafeDom=parSafe, dom=this);
     }
   

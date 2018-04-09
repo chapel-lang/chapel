@@ -73,7 +73,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
-      var newdom = new raw ArrayViewRankChangeDom(rank=rank,
+      var newdom = new unmanaged ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
                                               collapsedDim=collapsedDim,
@@ -85,7 +85,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiClone() {
-      return new raw ArrayViewRankChangeDist(downDistPid=this.downDistPid,
+      return new unmanaged ArrayViewRankChangeDist(downDistPid=this.downDistPid,
                                                        downDistInst=this.downDistInst,
                                                        collapsedDim=collapsedDim,
                                                        idx=idx);
@@ -101,7 +101,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewRankChangeDist(downDistPid = privatizeData(1),
+      return new unmanaged ArrayViewRankChangeDist(downDistPid = privatizeData(1),
                                          downDistInst = privatizeData(2),
                                          collapsedDim = privatizeData(3),
                                          idx = privatizeData(4));
@@ -172,7 +172,7 @@ module ArrayViewRankChange {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
-      return new raw ArrayViewRankChangeArr(eltType  =eltType,
+      return new unmanaged ArrayViewRankChangeArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
@@ -383,7 +383,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewRankChangeDom(rank = this.rank,
+      return new unmanaged ArrayViewRankChangeDom(rank = this.rank,
                                         idxType = this.idxType,
                                         stridable = this.stridable,
                                         upDom = privatizeData(1),
@@ -684,7 +684,7 @@ module ArrayViewRankChange {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewRankChangeArr(eltType=this.eltType,
+      return new unmanaged ArrayViewRankChangeArr(eltType=this.eltType,
                                         _DomPid=privatizeData(1),
                                         dom=privatizeData(2),
                                         _ArrPid=privatizeData(3),

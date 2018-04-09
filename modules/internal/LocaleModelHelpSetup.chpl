@@ -68,7 +68,7 @@ module LocaleModelHelpSetup {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      const node = new raw LocaleModel(dst);
+      const node = new unmanaged LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -81,7 +81,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new raw LocaleModel(dst);
+      const node = new unmanaged LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -94,7 +94,7 @@ module LocaleModelHelpSetup {
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_any);
-      const node = new raw LocaleModel(dst);
+      const node = new unmanaged LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
@@ -155,7 +155,7 @@ module LocaleModelHelpSetup {
       for i in dst.childSpace {
         // allocate the structure on the proper sublocale
         chpl_task_setSubloc(i:chpl_sublocID_t);
-        dst.childLocales[i] = new raw NumaDomain(i:chpl_sublocID_t, dst);
+        dst.childLocales[i] = new unmanaged NumaDomain(i:chpl_sublocID_t, dst);
         dst.childLocales[i].nPUsPhysAcc = nPUsPhysAccPerSubloc;
         dst.childLocales[i].nPUsPhysAll = nPUsPhysAllPerSubloc;
         dst.childLocales[i].nPUsLogAcc = nPUsLogAccPerSubloc;
@@ -185,11 +185,11 @@ module LocaleModelHelpSetup {
     const origSubloc = chpl_task_getRequestedSubloc();
 
     chpl_task_setSubloc(0:chpl_sublocID_t);
-    dst.CPU = new raw CPULocale(0:chpl_sublocID_t, dst);
+    dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
 
     chpl_task_setSubloc(1:chpl_sublocID_t);
 
-    dst.GPU = new raw GPULocale(1:chpl_sublocID_t, dst);
+    dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
     chpl_task_setSubloc(origSubloc);
   }
 }

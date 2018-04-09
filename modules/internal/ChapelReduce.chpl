@@ -104,7 +104,7 @@ module ChapelReduce {
       value += x.value;
     }
     proc generate() return value;
-    proc clone() return new raw SumReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
   class ProductReduceScanOp: ReduceScanOp {
@@ -122,7 +122,7 @@ module ChapelReduce {
       value *= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw ProductReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged ProductReduceScanOp(eltType=eltType);
   }
 
   class MaxReduceScanOp: ReduceScanOp {
@@ -140,7 +140,7 @@ module ChapelReduce {
       value = max(value, x.value);
     }
     proc generate() return value;
-    proc clone() return new raw MaxReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged MaxReduceScanOp(eltType=eltType);
   }
 
   class MinReduceScanOp: ReduceScanOp {
@@ -176,7 +176,7 @@ module ChapelReduce {
       value &&= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw LogicalAndReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged LogicalAndReduceScanOp(eltType=eltType);
   }
 
   class LogicalOrReduceScanOp: ReduceScanOp {
@@ -194,7 +194,7 @@ module ChapelReduce {
       value ||= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw LogicalOrReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged LogicalOrReduceScanOp(eltType=eltType);
   }
 
   class BitwiseAndReduceScanOp: ReduceScanOp {
@@ -212,7 +212,7 @@ module ChapelReduce {
       value &= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw BitwiseAndReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged BitwiseAndReduceScanOp(eltType=eltType);
   }
 
   class BitwiseOrReduceScanOp: ReduceScanOp {
@@ -230,7 +230,7 @@ module ChapelReduce {
       value |= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw BitwiseOrReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged BitwiseOrReduceScanOp(eltType=eltType);
   }
 
   class BitwiseXorReduceScanOp: ReduceScanOp {
@@ -248,7 +248,7 @@ module ChapelReduce {
       value ^= x.value;
     }
     proc generate() return value;
-    proc clone() return new raw BitwiseXorReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged BitwiseXorReduceScanOp(eltType=eltType);
   }
 
   class maxloc: ReduceScanOp {
@@ -273,7 +273,7 @@ module ChapelReduce {
       }
     }
     proc generate() return value;
-    proc clone() return new raw maxloc(eltType=eltType);
+    proc clone() return new unmanaged maxloc(eltType=eltType);
   }
 
   class minloc: ReduceScanOp {
@@ -298,7 +298,7 @@ module ChapelReduce {
       }
     }
     proc generate() return value;
-    proc clone() return new raw minloc(eltType=eltType);
+    proc clone() return new unmanaged minloc(eltType=eltType);
   }
 
 }

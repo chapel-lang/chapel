@@ -1916,11 +1916,20 @@ module ChapelBase {
     type rt = __primitive("to unmanaged class", t).type;
     return rt;
   }
+  inline proc _to_raw(arg) {
+    var ret = __primitive("to unmanaged class", arg);
+    return ret;
+  }
   // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
     type rt = __primitive("to borrowed class", t).type;
     return rt;
   }
+  inline proc _to_borrowed(arg) {
+    var ret = __primitive("to borrowed class", arg);
+    return ret;
+  }
+
   // cast from nil to unmanaged
   inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
     return __primitive("cast", t, x);

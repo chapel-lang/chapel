@@ -32,7 +32,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _doms: list(BaseDom);     // domains declared over this distribution
+    var _doms: list(raw BaseDom);     // domains declared over this distribution
     var _domsLock: atomicbool;    //   and lock for concurrent access
     var _free_when_no_doms: bool; // true when the original _distribution
                                   // has been destroyed
@@ -71,7 +71,7 @@ module ChapelDistribution {
     }
 
     // Returns true if the distribution should be removed.
-    inline proc remove_dom(x:BaseDom): bool {
+    inline proc remove_dom(x:raw BaseDom): bool {
       var count = -1;
       on this {
         var cnt = -1;
@@ -172,7 +172,7 @@ module ChapelDistribution {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
     // atomics are available
-    var _arrs: list(BaseArr);  // arrays declared over this domain
+    var _arrs: list(raw BaseArr);  // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
@@ -186,7 +186,7 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    proc dsiMyDist(): BaseDist {
+    proc dsiMyDist(): raw BaseDist {
       halt("internal error: dsiMyDist is not implemented");
       return nil;
     }
@@ -195,13 +195,13 @@ module ChapelDistribution {
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
     pragma "dont disable remote value forwarding"
-    proc remove() : (BaseDom, BaseDist) {
+    proc remove() : (raw BaseDom, raw BaseDist) {
 
       // TODO -- remove dsiLinksDistribution
       assert( dsiMyDist().dsiTrackDomains() == dsiLinksDistribution() );
 
-      var ret_dom:BaseDom = nil;
-      var ret_dist:BaseDist = nil;
+      var ret_dom:raw BaseDom = nil;
+      var ret_dist:raw BaseDist = nil;
       var dist = dsiMyDist();
       var free_dom = false;
       var remove_dist = false;
@@ -223,19 +223,19 @@ module ChapelDistribution {
           if dsiLinksDistribution() {
             // Remove the domain from the distribution
             // and find out if the distribution should be removed.
-            remove_dist = dist.remove_dom(this);
+            remove_dist = dist.remove_dom(_to_raw(this));
           }
         }
       }
       if free_dom then
-        ret_dom = this; // caller will delete this
+        ret_dom = _to_raw(this); // caller will delete this
       if remove_dist then
         ret_dist = dist; // caller will remove dist
       return (ret_dom, ret_dist);
     }
 
     // returns true if the domain should be removed
-    inline proc remove_arr(x:BaseArr): bool {
+    inline proc remove_arr(x:raw BaseArr): bool {
       var count = -1;
       on this {
         var cnt = -1;
@@ -254,7 +254,7 @@ module ChapelDistribution {
       return (count==0);
     }
 
-    inline proc add_arr(x:BaseArr, param locking=true) {
+    inline proc add_arr(x:raw BaseArr, param locking=true) {
       on this {
         if locking then
           _lock_arrs();
@@ -264,7 +264,7 @@ module ChapelDistribution {
       }
     }
 
-    inline proc remove_containing_arr(x:BaseArr): int {
+    inline proc remove_containing_arr(x:raw BaseArr): int {
       var count = -1;
       on this {
         _lock_arrs();
@@ -276,7 +276,7 @@ module ChapelDistribution {
       return count;
     }
 
-    inline proc add_containing_arr(x:BaseArr) {
+    inline proc add_containing_arr(x:raw BaseArr) {
       on this {
         _lock_arrs();
         _arrs_containing_dom += 1;
@@ -670,7 +670,7 @@ module ChapelDistribution {
 
     proc dsiStaticFastFollowCheck(type leadType) param return false;
 
-    proc dsiGetBaseDom(): BaseDom {
+    proc dsiGetBaseDom(): raw BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
       return nil;
     }
@@ -681,13 +681,13 @@ module ChapelDistribution {
     pragma "dont disable remote value forwarding"
     proc remove() {
       var ret_arr = this; // this array is always deleted
-      var ret_dom:BaseDom = nil;
+      var ret_dom:raw BaseDom = nil;
       var rm_dom = false;
 
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      rm_dom = dom.remove_arr(this);
+      rm_dom = dom.remove_arr(_to_raw(this));
 
       if rm_dom then
         ret_dom = dom;
@@ -969,7 +969,7 @@ module ChapelDistribution {
   // that does something else.
   // lhs is a subclass of BaseRectangularDom
   proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
-    where t:BaseRectangularDom
+    where _to_borrowed(t):BaseRectangularDom
   {
     type arrType = lhs.getBaseArrType();
     param rank = lhs.rank;
@@ -1009,7 +1009,9 @@ module ChapelDistribution {
 
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
-    where t:BaseSparseDom || t:BaseAssociativeDom || t:BaseOpaqueDom
+    where _to_borrowed(t):BaseSparseDom ||
+          _to_borrowed(t):BaseAssociativeDom ||
+          _to_borrowed(t):BaseOpaqueDom
   {
     //
     // BLC: It's tempting to do a clear + add here, but because

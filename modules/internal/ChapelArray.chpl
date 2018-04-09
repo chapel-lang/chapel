@@ -420,20 +420,20 @@ module ChapelArray {
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseRectangularDom
+   where _to_borrowed(dom._value.type):BaseRectangularDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseAssociativeDom
+   where _to_borrowed(dom._value.type):BaseAssociativeDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseOpaqueDom
+   where _to_borrowed(dom._value.type):BaseOpaqueDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseSparseDom
+   where _to_borrowed(dom._value.type):BaseSparseDom
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -845,7 +845,7 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
-  proc chpl__buildDistType(type t) type where t: BaseDist {
+  proc chpl__buildDistType(type t) type where _to_borrowed(t): BaseDist {
     var x: t;
     var y = _newDistribution(x);
     return y.type;
@@ -855,7 +855,7 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x) where x: BaseDist {
+  proc chpl__buildDistValue(x) where _to_borrowed(x.type): BaseDist {
     return _newDistribution(x);
   }
 
@@ -1257,7 +1257,7 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new raw ArrayViewRankChangeDist(downDistPid=dist._pid,
+      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
                                                  downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
@@ -2295,7 +2295,7 @@ module ChapelArray {
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-      var a = new raw ArrayViewSliceArr(eltType=this.eltType,
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
                                     _DomPid=d._pid,
                                     dom=d._instance,
                                     _ArrPid=arrpid,
@@ -2321,7 +2321,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      var a = new raw ArrayViewRankChangeArr(eltType=this.eltType,
+      var a = new unmanaged ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
                                          _ArrPid=arrpid,
@@ -2545,7 +2545,7 @@ module ChapelArray {
       const updom = {(...newDims)};
 
 
-      const redist = new raw ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
+      const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
                                               downdomPid = dompid,
@@ -2566,7 +2566,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid) = (this._value, this._pid);
 
-      var x = new raw ArrayViewReindexArr(eltType=this.eltType,
+      var x = new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,

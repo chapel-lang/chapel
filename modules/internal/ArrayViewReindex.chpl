@@ -50,7 +50,7 @@ module ArrayViewReindex {
     }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
-      var newdom = new raw ArrayViewReindexDom(rank=rank,
+      var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
                                            //                                           stridable=true,
                                            stridable=stridable,
@@ -63,7 +63,7 @@ module ArrayViewReindex {
     }
 
     proc dsiClone() {
-      return new raw ArrayViewReindexDist(downDistPid=downDistPid,
+      return new unmanaged ArrayViewReindexDist(downDistPid=downDistPid,
                                                     downDistInst=downDistInst,
                                                     updom=updom,
                                                     downdomPid=downdomPid,
@@ -80,7 +80,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewReindexDist(downDistPid = privatizeData(1),
+      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(1),
                                       downDistInst = privatizeData(2),
                                       updom = privatizeData(3),
                                       downdomPid = privatizeData(4),
@@ -143,7 +143,7 @@ module ArrayViewReindex {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
-      return new raw ArrayViewReindexArr(eltType  =eltType,
+      return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = this,
                                         _ArrPid=downarr._pid,
@@ -290,7 +290,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewReindexDom(rank = this.rank,
+      return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
                                      updom = privatizeData(1),
@@ -572,7 +572,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new raw ArrayViewReindexArr(eltType=this.eltType,
+      return new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                      _DomPid=privatizeData(1),
                                      dom=privatizeData(2),
                                      _ArrPid=privatizeData(3),
