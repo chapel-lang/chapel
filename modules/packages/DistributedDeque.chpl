@@ -222,7 +222,7 @@ module DistributedDeque {
 
     proc init(type eltType, cap = -1, targetLocales = Locales) {
       this.eltType = eltType;
-      this._pid = (new raw DistributedDequeImpl(eltType, cap, targetLocales)).pid;
+      this._pid = (new unmanaged DistributedDequeImpl(eltType, cap, targetLocales)).pid;
       this._rc = new Shared(new DistributedDequeRC(eltType, _pid = _pid));
     }
 
@@ -322,7 +322,7 @@ module DistributedDeque {
       for 0 .. #here.maxTaskPar {
         for loc in targetLocales do on loc {
           var i = idx.fetchAdd(1);
-          slots[i] = new raw LocalDeque(eltType);
+          slots[i] = new unmanaged LocalDeque(eltType);
         }
       }
 
@@ -331,9 +331,9 @@ module DistributedDeque {
       while countersLeftToAlloc > 0 {
         for loc in targetLocales do on loc {
           select countersLeftToAlloc {
-            when 3 do globalHead = new raw DistributedDequeCounter();
-            when 2 do globalTail = new raw DistributedDequeCounter();
-            when 1 do queueSize = new raw DistributedDequeCounter();
+            when 3 do globalHead = new unmanaged DistributedDequeCounter();
+            when 2 do globalTail = new unmanaged DistributedDequeCounter();
+            when 1 do queueSize = new unmanaged DistributedDequeCounter();
           }
 
           countersLeftToAlloc -= 1;
@@ -363,7 +363,7 @@ module DistributedDeque {
 
     pragma "no doc"
     proc dsiPrivatize(privData) {
-        return new raw DistributedDequeImpl(this, privData);
+        return new unmanaged DistributedDequeImpl(this, privData);
     }
 
     pragma "no doc"
@@ -897,7 +897,7 @@ module DistributedDeque {
       }
 
       // Create a new one...
-      return new raw LocalDequeNode(eltType);
+      return new unmanaged LocalDequeNode(eltType);
     }
 
     inline proc retireNode(node) {

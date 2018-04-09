@@ -242,7 +242,7 @@ module DistributedBag {
     pragma "no doc"
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
-      this._pid = (new raw DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
+      this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       this._rc = new Shared(new DistributedBagRC(eltType, _pid = _pid));
     }
 
@@ -294,7 +294,7 @@ module DistributedBag {
       complete();
 
       this.pid           = _newPrivatizedClass(this);
-      this.bag           = new raw Bag(eltType, this);
+      this.bag           = new unmanaged Bag(eltType, this);
     }
 
     pragma "no doc"
@@ -307,7 +307,7 @@ module DistributedBag {
 
       complete();
 
-      this.bag           = new raw Bag(eltType, this);
+      this.bag           = new unmanaged Bag(eltType, this);
     }
 
     pragma "no doc"
@@ -317,7 +317,7 @@ module DistributedBag {
 
     pragma "no doc"
     proc dsiPrivatize(pid) {
-      return new raw DistributedBagImpl(this, pid);
+      return new unmanaged DistributedBagImpl(this, pid);
     }
 
     pragma "no doc"
@@ -802,14 +802,14 @@ module DistributedBag {
         var block = tailBlock;
         // Empty? Create a new one of initial size
         if block == nil then {
-          tailBlock = new raw BagSegmentBlock(eltType, distributedBagInitialBlockSize);
+          tailBlock = new unmanaged BagSegmentBlock(eltType, distributedBagInitialBlockSize);
           headBlock = tailBlock;
           block = tailBlock;
         }
 
         // Full? Create a new one double the previous size
         if block.isFull {
-          block.next = new raw BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
+          block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
           tailBlock = block.next;
           block = block.next;
         }
@@ -885,14 +885,14 @@ module DistributedBag {
 
       // Empty? Create a new one of initial size
       if block == nil then {
-        tailBlock = new raw BagSegmentBlock(eltType, distributedBagInitialBlockSize));
+        tailBlock = new unmanaged BagSegmentBlock(eltType, distributedBagInitialBlockSize);
         headBlock = tailBlock;
         block = tailBlock;
       }
 
       // Full? Create a new one double the previous size
       if block.isFull {
-        block.next = new raw BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
+        block.next = new unmanaged BagSegmentBlock(eltType, min(distributedBagMaxBlockSize, block.cap * 2));
         tailBlock = block.next;
         block = block.next;
       }
