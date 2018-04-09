@@ -423,8 +423,15 @@ static bool isSubType(Type* sub, Type* super) {
     retval = true;
 
   } else if (AggregateType* atSub = toAggregateType(sub)) {
-    forv_Vec(AggregateType, parent, atSub->dispatchParents) {
-      if (isSubType(parent, super) == true) {
+    AggregateType* useAtSub = atSub;
+    Type* useSuper = super;
+    if (isClass(atSub) && isClass(super) &&
+        sameRawBorrowKind(atSub, toAggregateType(super))) {
+      useAtSub = atSub->getCanonicalClass();
+      useSuper = toAggregateType(super)->getCanonicalClass();
+    }
+    forv_Vec(AggregateType, parent, useAtSub->dispatchParents) {
+      if (isSubType(parent, useSuper) == true) {
         retval = true;
         break;
       }
