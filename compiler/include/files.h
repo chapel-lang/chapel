@@ -76,7 +76,8 @@ bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename);
 const char* nthFilename(int i);
-void addLibInfo(const char* filename);
+void addLibPath(const char* filename);
+void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);
