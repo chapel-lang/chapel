@@ -2779,9 +2779,9 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run the linker. We always use clang++ because some third-party
-  // libraries are written in C++. With the C backend, this switcheroo
-  // is accomplished in the Makefiles somewhere
+  // Run the linker. We always use a C++ compiler because some third-party
+  // libraries are written in C++. Here we use clang++ or possibly a
+  // linker override specified by the Makefiles (e.g. setting it to mpicxx)
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
