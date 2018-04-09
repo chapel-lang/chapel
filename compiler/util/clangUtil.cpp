@@ -1620,7 +1620,7 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // libFlag and ldflags are handled during linking later.
+  // library directories/files and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
 
@@ -2798,9 +2798,13 @@ void makeBinaryLLVM(void) {
   // Put user-requested libraries at the end of the compile line,
   // they should at least be after the .o files and should be in
   // order where libraries depend on libraries to their right.
-  for (int i=0; i<numLibFlags; i++) {
-    command += " ";
-    command += libFlag[i];
+  forv_Vec(const char*, dirName, libDirs) {
+    command += " -L";
+    command += dirName;
+  }
+  forv_Vec(const char*, libName, libFiles) {
+    command += " -l";
+    command += libName;
   }
 
   if( printSystemCommands ) {

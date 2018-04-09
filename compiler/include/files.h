@@ -32,8 +32,8 @@ extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
 extern Vec<const char*> incDirs;
-extern int numLibFlags;
-extern const char** libFlag;
+extern Vec<const char*> libDirs;
+extern Vec<const char*> libFiles;
 
 struct fileinfo {
   FILE* fptr;

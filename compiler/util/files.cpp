@@ -59,9 +59,9 @@ char               saveCDir[FILENAME_MAX + 1]           = "";
 std::string ccflags;
 std::string ldflags;
 
-Vec<const char*>   libFiles;
-Vec<const char*>   libDirs;
 Vec<const char*>   incDirs;
+Vec<const char*>   libDirs;
+Vec<const char*>   libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
 static const char* intDirName        = NULL;
