@@ -2660,9 +2660,23 @@ void makeBinaryLLVM(void) {
     readArgsFromCommand(gather_prgenv, clangLDArgs);
   }
 
+  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
+  runtime_ld_override += "/";
+  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
+  runtime_ld_override += "/override-ld";
+
+  std::vector<std::string> ldOverride;
+  readArgsFromFile(runtime_ld_override, ldOverride);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(ldOverride);
 
   std::string clangCC = clangInfo->clangCC;
   std::string clangCXX = clangInfo->clangCXX;
+  std::string useLinkCXX = clangCXX;
+
+  if (ldOverride.size() > 0)
+    useLinkCXX = ldOverride[0];
+
 
   std::vector<std::string> dotOFiles;
 
@@ -2765,10 +2779,10 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run the linker. We always use clang++ because some third-party
-  // libraries are written in C++. With the C backend, this switcheroo
-  // is accomplished in the Makefiles somewhere
-  std::string command = clangCXX + " " + options + " " +
+  // Run the linker. We always use a C++ compiler because some third-party
+  // libraries are written in C++. Here we use clang++ or possibly a
+  // linker override specified by the Makefiles (e.g. setting it to mpicxx)
+  std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
