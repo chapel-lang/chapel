@@ -1399,6 +1399,13 @@ static void convertRawPointerTypes() {
         fn->retType = at->getCanonicalClass();
       }
     }
+    if (fn->iteratorInfo) {
+      if (AggregateType* at = toAggregateType(fn->iteratorInfo->yieldedType)) {
+        if (isClass(at)) {
+          fn->iteratorInfo->yieldedType = at->getCanonicalClass();
+        }
+      }
+    }
   }
 }
 
