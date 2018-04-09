@@ -1410,5 +1410,5 @@ new_Expr(const char* format, va_list vl) {
 CallExpr* makeRawNew(Expr* typeArg, Expr* arg) {
   return new CallExpr(PRIM_NEW, typeArg, arg,
                       new NamedExpr("_chpl_manager",
-                                    new SymExpr(dtRaw->symbol)));
+                                    new SymExpr(dtUnmanaged->symbol)));
 }
