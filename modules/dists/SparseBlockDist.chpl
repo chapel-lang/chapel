@@ -342,7 +342,7 @@ class SparseBlockArr: BaseSparseArr {
 
   proc init(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
-    super.init(eltType=eltType, rank=rank, idxType=idxType);
+    super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
     this.stridable = stridable;
     this.sparseLayoutType = sparseLayoutType;
     locArrDom = dom.dist.targetLocDom;
