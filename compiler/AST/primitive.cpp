@@ -410,12 +410,12 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 }
 
 static QualifiedType
-returnInfoToRaw(CallExpr* call) {
+returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (AggregateType* raw = at->getRawClass())
-        t = raw;
+      if (AggregateType* unmanaged = at->getUnmanagedClass())
+        t = unmanaged;
     }
   }
   return QualifiedType(t, QUAL_VAL);
@@ -802,7 +802,7 @@ initPrimitive() {
 
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
 
-  prim_def(PRIM_TO_RAW_CLASS, "to raw class", returnInfoToRaw, false, false);
+  prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
   prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
 }
 

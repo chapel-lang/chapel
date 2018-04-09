@@ -485,7 +485,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (call->isPrimitive(PRIM_TO_RAW_CLASS) ||
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
              call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
     AggregateType* totype = toAggregateType(call->typeInfo());
 

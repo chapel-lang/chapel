@@ -1047,7 +1047,7 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:object && x:t
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t, x) where t:raw object && x:t
+  inline proc _cast(type t, x) where t:unmanaged object && x:t
     return __primitive("cast", t, x);
 
   inline proc _cast(type t, x) where t:object && x:_nilType
@@ -1893,8 +1893,8 @@ module ChapelBase {
   // was the nexus of several tricky resolution bugs.
 
   // type constructor for raw pointers
-  proc _to_raw(type t) type {
-    type rt = __primitive("to raw class", t).type;
+  proc _to_unmanaged(type t) type {
+    type rt = __primitive("to unmanaged class", t).type;
     return rt;
   }
   // type constructor for converting to a borrow
@@ -1903,11 +1903,11 @@ module ChapelBase {
     return rt;
   }
   // cast from nil to raw
-  inline proc _cast(type t, x) where t:_raw && x:_nilType {
+  inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
     return __primitive("cast", t, x);
   }
   // cast from raw to borrow
-  inline proc _cast(type t, x) where t:object && x:_raw {
+  inline proc _cast(type t, x) where t:object && x:_unmanaged {
     return __primitive("cast", t, x);
   }
 }

@@ -7,9 +7,9 @@ class MyDomain : Domain {
 config const which = true;
 proc makeit() {
   if which then
-    return new raw MyDomain(1);
+    return new unmanaged MyDomain(1);
   else
-    return new raw Domain();
+    return new unmanaged Domain();
 }
 
 proc test() {

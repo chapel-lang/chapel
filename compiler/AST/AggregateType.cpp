@@ -2535,7 +2535,7 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-bool AggregateType::isRawClass() const {
+bool AggregateType::isUnmanagedClass() const {
   return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_RAW;
 }
 
@@ -2548,17 +2548,17 @@ bool AggregateType::isCanonicalClass() const {
 }
 
 
-AggregateType* AggregateType::getRawClass() {
+AggregateType* AggregateType::getUnmanagedClass() {
   if (aggregateTag == AGGREGATE_CLASS) {
-    if (isRawClass())
+    if (isUnmanagedClass())
       return this;
 
-    generateRawBorrowClassTypes();
+    generateUnmanagedBorrowClassTypes();
 
     for (AggregateType* t = this->defaultClass;
          t != NULL;
          t = t->nextAssociatedClass) {
-      if (t->isRawClass())
+      if (t->isUnmanagedClass())
         return t;
     }
   }
@@ -2569,7 +2569,7 @@ AggregateType* AggregateType::getBorrowedClass() {
     if (isBorrowedClass())
       return this;
 
-    generateRawBorrowClassTypes();
+    generateUnmanagedBorrowClassTypes();
 
     for (AggregateType* t = this->defaultClass;
          t != NULL;
@@ -2583,7 +2583,7 @@ AggregateType* AggregateType::getBorrowedClass() {
 
 AggregateType* AggregateType::getCanonicalClass() {
   if (aggregateTag == AGGREGATE_CLASS) {
-    generateRawBorrowClassTypes();
+    generateUnmanagedBorrowClassTypes();
     INT_ASSERT(this->defaultClass);
     return this->defaultClass;
   }
@@ -2592,34 +2592,34 @@ AggregateType* AggregateType::getCanonicalClass() {
 }
 
 
-void AggregateType::generateRawBorrowClassTypes() {
+void AggregateType::generateUnmanagedBorrowClassTypes() {
   AggregateType* at = this;
   if (aggregateTag == AGGREGATE_CLASS && at->defaultClass == NULL) {
     SET_LINENO(at->symbol->defPoint);
-    // Generate raw and owned class types
-    AggregateType* raw = new AggregateType(AGGREGATE_CLASS);
+    // Generate unmanaged and owned class types
+    AggregateType* unmanaged = new AggregateType(AGGREGATE_CLASS);
 
     at->classKind = CLASS_BORROW;
-    raw->classKind = CLASS_RAW;
+    unmanaged->classKind = CLASS_RAW;
 
     at->defaultClass = at;
-    raw->defaultClass = at;
-    at->nextAssociatedClass = raw;
+    unmanaged->defaultClass = at;
+    at->nextAssociatedClass = unmanaged;
 
 
-    TypeSymbol* tsRaw = new TypeSymbol(astr("raw ", at->symbol->name), raw);
-    // The raw type isn't really an object, shouldn't have its own fields
-    tsRaw->addFlag(FLAG_NO_OBJECT);
+    TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
+    // The unmanaged type isn't really an object, shouldn't have its own fields
+    tsUnmanaged->addFlag(FLAG_NO_OBJECT);
     // The generated code should just use the canonical class name
-    tsRaw->cname = at->symbol->cname;
+    tsUnmanaged->cname = at->symbol->cname;
 
-    DefExpr* defRaw = new DefExpr(tsRaw);
+    DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
 
-    at->symbol->defPoint->insertBefore(defRaw);
+    at->symbol->defPoint->insertBefore(defUnmanaged);
   }
 }
 
-bool sameRawBorrowKind(AggregateType* a, AggregateType* b) {
+bool sameUnmanagedBorrowKind(AggregateType* a, AggregateType* b) {
   if (!a || !b) return false;
 
   return a->classKind == b->classKind;

@@ -426,7 +426,7 @@ static bool isSubType(Type* sub, Type* super) {
     AggregateType* useAtSub = atSub;
     Type* useSuper = super;
     if (isClass(atSub) && isClass(super) &&
-        sameRawBorrowKind(atSub, toAggregateType(super))) {
+        sameUnmanagedBorrowKind(atSub, toAggregateType(super))) {
       useAtSub = atSub->getCanonicalClass();
       useSuper = toAggregateType(super)->getCanonicalClass();
     }

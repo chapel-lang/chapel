@@ -668,7 +668,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
-    if (formalType == dtRaw && atActual->isRawClass())
+    if (formalType == dtUnmanaged && atActual->isUnmanagedClass())
       return true;
 
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
@@ -1084,14 +1084,14 @@ bool canCoerce(Type*     actualType,
     }
   }
 
-  // Handle coercions from raw -> borrow
+  // Handle coercions from unmanaged -> borrow
   if (isClass(actualType) && isClass(formalType)) {
     AggregateType* actualAt = toAggregateType(actualType);
     AggregateType* formalAt = toAggregateType(formalType);
     AggregateType* actualC = actualAt->getCanonicalClass();
     AggregateType* formalC = formalAt->getCanonicalClass();
     if (formalAt->isBorrowedClass())
-      if (actualAt->isRawClass())
+      if (actualAt->isUnmanagedClass())
         if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
           return true;
   }
@@ -1184,11 +1184,11 @@ bool doCanDispatch(Type*     actualType,
 
   } else {
     if (AggregateType* at = toAggregateType(actualType)) {
-      bool israw = at->isRawClass();
-      if (israw) at = at->getCanonicalClass();
+      bool isunmanaged = at->isUnmanagedClass();
+      if (isunmanaged) at = at->getCanonicalClass();
 
       forv_Vec(AggregateType, parent, at->dispatchParents) {
-        if (israw) parent = parent->getRawClass();
+        if (isunmanaged) parent = parent->getUnmanagedClass();
         if (parent == formalType ||
             doCanDispatch(parent,
                           NULL,
@@ -5703,7 +5703,7 @@ bool isDispatchParent(Type* t, Type* pt) {
 
   // Use the canonical class type
   if (isClass(t) && isClass(pt) &&
-      sameRawBorrowKind(toAggregateType(t), toAggregateType(pt))) {
+      sameUnmanagedBorrowKind(toAggregateType(t), toAggregateType(pt))) {
     t = toAggregateType(t)->getCanonicalClass();
     pt = toAggregateType(pt)->getCanonicalClass();
   }
@@ -5847,14 +5847,14 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
 
       // set manager for new t(1,2,3)
       // where t is e.g Owned(MyClass)
-      // or for t is raw(MyClass)
+      // or for t is unmanaged(MyClass)
       if (manager == NULL) {
         if (isManagedPtrType(type))
           manager = type;
 
         if (AggregateType* at = toAggregateType(type))
-          if (at->isRawClass())
-            manager = dtRaw;
+          if (at->isUnmanagedClass())
+            manager = dtUnmanaged;
       }
 
       // if manager is set, and we're not calling the manager's init function,
@@ -5936,35 +5936,35 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
 
   AggregateType* classT = toAggregateType(initedClass->typeInfo());
   INT_ASSERT(classT && isClass(classT));
-  AggregateType* rawT = classT->getRawClass();
-  INT_ASSERT(rawT);
+  AggregateType* unmanagedT = classT->getUnmanagedClass();
+  INT_ASSERT(unmanagedT);
 
   if (!isManagedPtrType(manager)) {
-    // it is constructing a raw ptr
-    srcSe->replace(new CallExpr(PRIM_CAST, rawT->symbol, initedClass));
+    // it is constructing a unmanaged ptr
+    srcSe->replace(new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
   } else {
     // it is constructing an owned/shared/etc
 
-    // Cast the constructed pointer into a raw pointer
+    // Cast the constructed pointer into a unmanaged pointer
     // That way, owned/shared/etc constructors can start from
-    // a raw pointer rather than a borrow.
-    VarSymbol* tmpRaw = newTemp("new_cast_raw", rawT);
-    DefExpr* defRaw = new DefExpr(tmpRaw);
-    managedMoveToFix->insertBefore(defRaw);
-    CallExpr* moveRaw = new CallExpr(PRIM_MOVE, tmpRaw,
-                          new CallExpr(PRIM_CAST, rawT->symbol, initedClass));
-    managedMoveToFix->insertBefore(moveRaw);
+    // a unmanaged pointer rather than a borrow.
+    VarSymbol* tmpUnmanaged = newTemp("new_cast_unmanaged", unmanagedT);
+    DefExpr* defUnmanaged = new DefExpr(tmpUnmanaged);
+    managedMoveToFix->insertBefore(defUnmanaged);
+    CallExpr* moveUnmanaged = new CallExpr(PRIM_MOVE, tmpUnmanaged,
+                          new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
+    managedMoveToFix->insertBefore(moveUnmanaged);
 
     // Now adjust the original move dst, src
-    // to be move dst, new manager tmpraw
-    srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpRaw));
+    // to be move dst, new manager tmpUnmanaged
+    srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged));
   }
 }
 
 static bool isManagedPointerInit(SymExpr* typeExpr) {
 
   // Managed pointer init methods are:
-  //  - accepting a single raw class pointer
+  //  - accepting a single unmanaged class pointer
   //  - accepting a single managed class pointer
 
   // everything else is forwarded
@@ -8892,8 +8892,8 @@ static bool isUnusedClass(AggregateType* ct) {
 
   // don't prune classes that have another variant used
   if (isClass(ct)) {
-    if (AggregateType* r = ct->getRawClass())
-      retval &= do_isUnusedClass(r);
+    if (AggregateType* u = ct->getUnmanagedClass())
+      retval &= do_isUnusedClass(u);
     if (AggregateType* b = ct->getBorrowedClass())
       retval &= do_isUnusedClass(b);
   } else {

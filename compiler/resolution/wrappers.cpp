@@ -1468,9 +1468,9 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   }
 }
 
-static bool isRawClass(Type* t) {
+static bool isUnmanagedClass(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
-    return at->isRawClass();
+    return at->isUnmanagedClass();
   }
   return NULL;
 }
@@ -1547,7 +1547,7 @@ static void addArgCoercion(FnSymbol*  fn,
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
 
-  } else if (isRawClass(ats->getValType()) &&
+  } else if (isUnmanagedClass(ats->getValType()) &&
              isBorrowClass(formal->getValType())) {
     checkAgain = true;
 

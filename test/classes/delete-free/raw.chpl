@@ -1,6 +1,6 @@
 class Node {
   var data: real;
-  var next: raw Node;
+  var next: unmanaged Node;
   proc init(arg:real) {
     this.data = arg;
     this.next = nil;
@@ -10,10 +10,10 @@ class Node {
 config const n = 5;
 
 proc test1() {
-  var head    = new raw Node(0);
+  var head    = new unmanaged Node(0);
   var current = head;
   for i in 1..n-1 {
-    current.next = new raw Node(i);
+    current.next = new unmanaged Node(i);
     current      = current.next;
   }
 
@@ -37,7 +37,7 @@ proc makeit(type t) {
 }
 
 proc test2() {
-  var x = makeit(raw MyClass);
+  var x = makeit(unmanaged MyClass);
   writeln(x);
 }
 

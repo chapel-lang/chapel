@@ -264,7 +264,7 @@ enum PrimitiveTag {
 
   PRIM_CHECK_ERROR, // used in error-handling conditional. args: error variable
 
-  PRIM_TO_RAW_CLASS,
+  PRIM_TO_UNMANAGED_CLASS,
   PRIM_TO_BORROWED_CLASS,
 
   NUM_KNOWN_PRIMS

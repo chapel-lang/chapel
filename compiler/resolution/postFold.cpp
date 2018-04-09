@@ -494,7 +494,7 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
     AggregateType* useAt = at;
     Type* useSuper = super;
     if (isClass(at) && isClass(super) &&
-        sameRawBorrowKind(at, toAggregateType(super))) {
+        sameUnmanagedBorrowKind(at, toAggregateType(super))) {
       useAt = at->getCanonicalClass();
       useSuper = toAggregateType(super)->getCanonicalClass();
     }

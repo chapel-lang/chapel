@@ -1134,8 +1134,8 @@ static bool typeHasInfiniteLifetime(Type* type) {
     return true;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRawClass())
-      // raw class instances have infinite lifetime
+    if (at->isUnmanagedClass())
+      // unmanaged class instances have infinite lifetime
       return true;
   }
 

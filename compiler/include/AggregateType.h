@@ -147,15 +147,15 @@ public:
   Symbol*                     getSubstitution(const char* name);
 
 
-  bool                        isRawClass() const;
+  bool                        isUnmanagedClass() const;
   bool                        isBorrowedClass() const;
   bool                        isCanonicalClass() const;
 
-  AggregateType*              getRawClass();
+  AggregateType*              getUnmanagedClass();
   AggregateType*              getBorrowedClass();
   AggregateType*              getCanonicalClass();
 
-  void generateRawBorrowClassTypes();
+  void generateUnmanagedBorrowClassTypes();
 
   //
   // Public fields
@@ -283,6 +283,6 @@ extern AggregateType* dtString;
 
 DefExpr* defineObjectClass();
 
-bool sameRawBorrowKind(AggregateType* a, AggregateType* b);
+bool sameUnmanagedBorrowKind(AggregateType* a, AggregateType* b);
 
 #endif

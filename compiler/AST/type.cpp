@@ -928,8 +928,8 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
-  dtRaw = createInternalType("_raw", "_raw");
-  dtRaw->symbol->addFlag(FLAG_GENERIC);
+  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtMethodToken = createInternalType ("_MT", "_MT");
 
