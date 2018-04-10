@@ -407,7 +407,7 @@ static BlockStmt* buildUseList(BaseAST* module, BlockStmt* list) {
 bool processStringInRequireStmt(const char* str, bool parseTime) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
-      addLibInfo(str);
+      addLibFile(str+2); // skip past '-l'
       return true;
     }
   } else {

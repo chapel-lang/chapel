@@ -35,7 +35,7 @@ class Function {
     var   d = new FTree(order=k);
 
     // FIXME: Ideally all of these matrices should be const as well but they
-    //        can't be presently since they must be assigned in initialize()
+    //        can't be presently since they must be assigned in postinit()
 
     // Two-Scale relationship matrices
     const hgDom = {0..2*k-1, 0..2*k-1};
@@ -63,7 +63,7 @@ class Function {
         delete d;
     }
 
-    proc initialize() {
+    proc postinit() {
         if debug then writeln("Creating Function: k=", k, " thresh=", thresh);
 
         if debug then writeln("  initializing quadrature coefficients");

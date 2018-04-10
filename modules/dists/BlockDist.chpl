@@ -422,7 +422,7 @@ class LocBlockArr {
 //
 // Block constructor for clients of the Block distribution
 //
-proc Block.Block(boundingBox: domain,
+proc Block.init(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -430,6 +430,8 @@ proc Block.Block(boundingBox: domain,
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
                 type sparseLayoutType = DefaultDist) {
+  this.rank = rank;
+  this.idxType = idxType;
   if rank != boundingBox.rank then
     compilerError("specified Block rank != rank of specified bounding box");
   if idxType != boundingBox.idxType then
@@ -441,6 +443,10 @@ proc Block.Block(boundingBox: domain,
     halt("Block() requires a non-empty boundingBox");
 
   this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+
+  this.sparseLayoutType = sparseLayoutType;
+
+  this.complete();
 
   setupTargetLocalesArray(targetLocDom, this.targetLocales, targetLocales);
 
@@ -1193,15 +1199,20 @@ inline proc LocBlockArr.this(i) ref {
 //
 // Privatization
 //
-proc Block.Block(other: Block, privateData,
+proc Block.init(other: Block, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 type sparseLayoutType = other.sparseLayoutType) {
+  this.rank = rank;
+  this.idxType = idxType;
   boundingBox = {(...privateData(1))};
   targetLocDom = {(...privateData(2))};
   dataParTasksPerLocale = privateData(3);
   dataParIgnoreRunningTasks = privateData(4);
   dataParMinGranularity = privateData(5);
+  this.sparseLayoutType = sparseLayoutType;
+
+  this.complete();
 
   for i in targetLocDom {
     targetLocales(i) = other.targetLocales(i);

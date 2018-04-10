@@ -1078,6 +1078,9 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
     return (x.re, x.im):t;
 
+  inline proc _cast(type t, x: enumerated) where isComplexType(t)
+    return (x:int, 0):t;
+
   //
   // casts to imag
   //
@@ -1098,6 +1101,9 @@ module ChapelBase {
 
   inline proc _cast(type t, x: complex(?w)) where isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
+
+  inline proc _cast(type t, x: enumerated) where isImagType(t)
+    return x:int:imag;
 
   //
   // casts from complex

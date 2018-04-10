@@ -115,6 +115,13 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
+// lowerIterators.cpp, lowerForalls.cpp
+void lowerForallStmtsInline();
+void handleChplPropagateErrorCall(CallExpr* call);
+void fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller);
+void addDummyErrorArgumentToCall(CallExpr* call);
+bool isVirtualIterator(Symbol* iterator);
+
 // normalize.cpp
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);

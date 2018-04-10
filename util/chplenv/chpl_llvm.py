@@ -7,7 +7,7 @@ chplenv_dir = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
 import chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_home
+from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 
 
@@ -17,9 +17,9 @@ def get():
     if not llvm_val:
         host_platform = chpl_platform.get('host')
         host_compiler = chpl_compiler.get('host')
-        chpl_home = get_chpl_home()
+        chpl_third_party = get_chpl_third_party()
         llvm_target_dir = '{0}-{1}'.format(host_platform, host_compiler)
-        llvm_subdir = os.path.join(chpl_home, 'third-party', 'llvm', 'install',
+        llvm_subdir = os.path.join(chpl_third_party, 'llvm', 'install',
                                    llvm_target_dir)
         llvm_header = os.path.join(llvm_subdir, 'include', 'llvm',
                                    'PassSupport.h')

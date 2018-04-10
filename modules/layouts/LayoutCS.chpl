@@ -69,6 +69,7 @@ This domain map is a layout, i.e. it maps all indices to the current locale.
 All elements of a CS-distributed array are stored
 on the locale where the array variable is declared.
 */
+pragma "use default init"
 class CS: BaseDist {
   param compressRows: bool = true;
 

@@ -557,34 +557,6 @@ chpl_bool mrtl_isReg(uint64_t len) {
 static pthread_mutex_t mem_regions_mutex = PTHREAD_MUTEX_INITIALIZER;
 static __thread chpl_bool allow_task_yield = true;
 
-#ifdef PERFSTATS_COMM_UGNI
-static _PSV_C_TYPE critsec_ts;
-#endif
-
-static inline
-void mem_regions_lock(void) {
-  PERFSTATS_TSTAMP(pstStart);
-  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
-  PERFSTATS_TGET(critsec_ts);
-  PERFSTATS_ADD(regMem_lock_nsecs, PERFSTATS_TDIFF(critsec_ts, pstStart));
-  PERFSTATS_INC(regMem_locks);
-  allow_task_yield = false;
-}
-
-static inline
-void mem_regions_unlock(void) {
-  PERFSTATS_ADD(regMem_critsec_nsecs, PERFSTATS_TELAPSED(critsec_ts));
-  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
-    CHPL_INTERNAL_ERROR("cannot release mem region lock");
-  allow_task_yield = true;
-}
-
-static inline
-chpl_bool can_task_yield(void) {
-  return allow_task_yield;
-}
-
 static chpl_bool can_register_memory = false;
 
 static uint32_t mreg_cnt_max;
@@ -1383,7 +1355,7 @@ static volatile chpl_bool polling_task_running     = false;
 static volatile chpl_bool polling_task_please_exit = false;
 static volatile chpl_bool polling_task_done        = false;
 
-static chpl_bool polling_task_blocking_cq = false;
+static chpl_bool polling_task_blocking_cq;
 
 
 //
@@ -1456,6 +1428,8 @@ static size_t    get_hugepage_size(void);
 static void      set_hugepage_info(void);
 static void      install_SIGBUS_handler(void);
 static void      SIGBUS_handler(int, siginfo_t *, void *);
+static void      regMemLock(void);
+static void      regMemUnlock(void);
 static void      regMemBroadcast(int, int, chpl_bool);
 static void      exit_all(int);
 static void      exit_any(int);
@@ -1525,6 +1499,7 @@ static void      post_fma_and_wait(c_nodeid_t, gni_post_descriptor_t*,
 static int       post_fma_ct(c_nodeid_t*, gni_post_descriptor_t*);
 static void      post_fma_ct_and_wait(c_nodeid_t*, gni_post_descriptor_t*);
 #endif
+static chpl_bool can_task_yield(void);
 static void      local_yield(void);
 
 
@@ -2731,7 +2706,7 @@ void set_up_for_polling(void)
     uint32_t cq_mode = GNI_CQ_NOBLOCK;
 
     polling_task_blocking_cq = chpl_env_rt_get_bool("COMM_UGNI_BLOCKING_CQ",
-                                                    false);
+                                                    true);
 
     if (polling_task_blocking_cq)
       cq_mode = GNI_CQ_BLOCKING;
@@ -3166,7 +3141,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
     return NULL;
   }
 
-  mem_regions_lock();
+  regMemLock();
 
   //
   // Find an entry to use and fill it in.  There must be one available,
@@ -3196,7 +3171,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
       mreg_cnt_max = mem_regions.mreg_cnt;
   }
 
-  mem_regions_unlock();
+  regMemUnlock();
 
   DBG_P_LP(DBGF_MEMREG,
            "chpl_regMemAlloc(%#" PRIx64 "): "
@@ -3260,7 +3235,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   register_mem_region(mr);
   PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
 
-  mem_regions_lock();
+  regMemLock();
 
   //
   // Update the copies of our memory regions on all nodes.  If this
@@ -3292,7 +3267,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
                     true /*send_mreg_cnt*/);
   }
 
-  mem_regions_unlock();
+  regMemUnlock();
 }
 
 
@@ -3335,7 +3310,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   deregister_mem_region(mr);
   PERFSTATS_ADD(regMem_dereg_nsecs, PERFSTATS_TELAPSED(dereg_ts));
 
-  mem_regions_lock();
+  regMemLock();
 
   mr->addr = 0;
   mr->len = 0;
@@ -3377,7 +3352,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
   }
 
-  mem_regions_unlock();
+  regMemUnlock();
 
   atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
@@ -3386,6 +3361,31 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_ADD(regMem_free_nsecs, PERFSTATS_TELAPSED(free_ts));
 
   return true;
+}
+
+
+#ifdef PERFSTATS_COMM_UGNI
+static _PSV_C_TYPE critsec_ts;
+#endif
+
+static inline
+void regMemLock(void) {
+  PERFSTATS_TSTAMP(pstStart);
+  if (pthread_mutex_lock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot acquire mem region lock");
+  PERFSTATS_TGET(critsec_ts);
+  PERFSTATS_ADD(regMem_lock_nsecs, PERFSTATS_TDIFF(critsec_ts, pstStart));
+  PERFSTATS_INC(regMem_locks);
+  allow_task_yield = false;
+}
+
+
+static inline
+void regMemUnlock(void) {
+  PERFSTATS_ADD(regMem_critsec_nsecs, PERFSTATS_TELAPSED(critsec_ts));
+  if (pthread_mutex_unlock(&mem_regions_mutex) != 0)
+    CHPL_INTERNAL_ERROR("cannot release mem region lock");
+  allow_task_yield = true;
 }
 
 
@@ -7513,6 +7513,12 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
 }
 
 #endif
+
+
+static inline
+chpl_bool can_task_yield(void) {
+  return allow_task_yield;
+}
 
 
 static
