@@ -1215,7 +1215,7 @@ GenRet TypeSymbol::codegen() {
   GenRet ret;
   ret.chplType = type;
 
-  // Should not be code generating raw pointers
+  // Should not be code generating non-canonical class pointers
   if (AggregateType* at = toAggregateType(type))
     if (isClass(at))
       INT_ASSERT(at->isCanonicalClass());

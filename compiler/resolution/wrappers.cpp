@@ -1472,13 +1472,13 @@ static bool isUnmanagedClass(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
     return at->isUnmanagedClass();
   }
-  return NULL;
+  return false;
 }
 static bool isBorrowClass(Type* t) {
   if (AggregateType* at = toAggregateType(t)) {
     return at->isBorrowedClass();
   }
-  return NULL;
+  return false;
 }
 
 

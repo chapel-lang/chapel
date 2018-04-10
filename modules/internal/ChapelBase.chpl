@@ -1874,6 +1874,7 @@ module ChapelBase {
   inline proc _defaultOf(type t) where isClassType(t) {
     return __primitive("cast", t, nil);
   }
+  // Note: the above case includes _ddata and unmanaged class types
 
   // Various types whose default value is known
   pragma "no doc"
@@ -1885,14 +1886,10 @@ module ChapelBase {
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
 
-  /*pragma "no doc"
-  inline proc _defaultOf(type t) where t: _ddata
-    return __primitive("cast", t, nil);*/
-
   // There used to be a catch-all _defaultOf that return nil:t, but that
   // was the nexus of several tricky resolution bugs.
 
-  // type constructor for raw pointers
+  // type constructor for unmanaged pointers
   proc _to_unmanaged(type t) type {
     type rt = __primitive("to unmanaged class", t).type;
     return rt;
@@ -1902,11 +1899,11 @@ module ChapelBase {
     type rt = __primitive("to borrowed class", t).type;
     return rt;
   }
-  // cast from nil to raw
+  // cast from nil to unmanaged
   inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
     return __primitive("cast", t, x);
   }
-  // cast from raw to borrow
+  // cast from unmanaged to borrow
   inline proc _cast(type t, x) where t:object && x:_unmanaged {
     return __primitive("cast", t, x);
   }

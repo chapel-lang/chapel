@@ -1358,53 +1358,47 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
   downEndCount->insertBefore(autoDestroyCall);
 }
 
-static void convertRawPointerTypes() {
-  // Anything that has raw pointer type should be using the canonical type
-  // instead.
+static void convertClassTypeToCanonical(Type** typePtr) {
+  Type* t = *typePtr;
+  // If it's a class, get the canonical class type,
+  // and set the type to that if it's different.
+  if (isClass(t)) {
+    AggregateType* at = toAggregateType(t);
+    at = at->getCanonicalClass();
+    if (at != t)
+      *typePtr = at;
+  }
+  // Otherwise, leave the type as-is.
+}
+
+static void convertClassTypesToCanonical() {
+  // Anything that has unmanaged pointer type should be using the canonical
+  // type instead.
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
-    if (AggregateType* at = toAggregateType(var->type)) {
-      if (isClass(at)) {
-        at = at->getCanonicalClass();
-        var->type = at;
-      }
-    }
+    convertClassTypeToCanonical(&var->type);
   }
 
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    if (AggregateType* at = toAggregateType(arg->type)) {
-      if (isClass(at)) {
-        at = at->getCanonicalClass();
-        arg->type = at;
-      }
-    }
+    convertClassTypeToCanonical(&arg->type);
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (AggregateType* at = toAggregateType(ts->type)) {
-      if (isClass(at)) {
-        TypeSymbol* useTS = at->getCanonicalClass()->symbol;
-        if (useTS != ts) {
-          for_SymbolSymExprs(se, ts) {
-            se->setSymbol(useTS);
-          }
+    if (isClass(ts->type)) {
+      AggregateType* at = toAggregateType(ts->type);
+      TypeSymbol* useTS = at->getCanonicalClass()->symbol;
+      if (useTS != ts) {
+        for_SymbolSymExprs(se, ts) {
+          se->setSymbol(useTS);
         }
       }
     }
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (AggregateType* at = toAggregateType(fn->retType)) {
-      if (isClass(at)) {
-        fn->retType = at->getCanonicalClass();
-      }
-    }
+    convertClassTypeToCanonical(&fn->retType);
     if (fn->iteratorInfo) {
-      if (AggregateType* at = toAggregateType(fn->iteratorInfo->yieldedType)) {
-        if (isClass(at)) {
-          fn->iteratorInfo->yieldedType = at->getCanonicalClass();
-        }
-      }
+      convertClassTypeToCanonical(&fn->iteratorInfo->yieldedType);
     }
   }
 }
@@ -1438,5 +1432,5 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
-  convertRawPointerTypes();
+  convertClassTypesToCanonical();
 }

@@ -12,7 +12,7 @@ module rawOK {
     var tmp:MyClass;
 
     proc makeClass() {
-      var c = new raw MyClass();
+      var c = new unmanaged MyClass();
       return c;
     }
   }

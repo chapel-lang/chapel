@@ -891,7 +891,7 @@ static void processSyntacticDistributions(CallExpr* call) {
 
 /* Find patterns like
      (new (call manager (call ClassType init-args)))
-     ... where manager might be _owned _to_raw _shared
+     ... where manager might be _owned _to_unmanaged _shared
 
    and replace them with
      (new (call ClassType init-args _chpl_manager=manager)))
