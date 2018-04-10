@@ -168,9 +168,6 @@ proc isPODType(type t) param {
 pragma "no doc"
 proc chpl__unsignedType(type t) type 
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return uint(numBits(t));
 }
 
@@ -179,9 +176,6 @@ proc chpl__unsignedType(type t) type
 pragma "no doc"
 proc chpl__signedType(type t) type 
 {
-  if ! isIntegralType(t) then
-    compilerError("range idxType is non-integral: ", t:string);
-
   return int(numBits(t));
 }
 

@@ -164,6 +164,7 @@ static Qualifier qualifierForArgIntent(IntentTag intent)
 
     // no default to get compiler warning if other intents are added
   }
+  INT_FATAL("unknown intent");
   return QUAL_UNKNOWN;
 }
 
@@ -870,9 +871,8 @@ const char* ArgSymbol::intentDescrString() {
     case INTENT_PARAM: return "'param'";
     case INTENT_TYPE: return "'type'";
   }
-
   INT_FATAL(this, "unknown intent");
-  return "unknown intent";
+  return "<unknown intent>";
 }
 
 // describes the given intent (for use in an English sentence)
@@ -889,8 +889,9 @@ const char* intentDescrString(IntentTag intent) {
     case INTENT_REF:       return "'ref' intent";
     case INTENT_PARAM:     return "'param' intent";
     case INTENT_TYPE:      return "'type' intent";
-    default:               return "<unknown intent>";
   }
+  INT_FATAL("unknown intent");
+  return "<unknown intent>";
 }
 
 void ArgSymbol::accept(AstVisitor* visitor) {
@@ -925,6 +926,8 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   // For task-private variables, set 'outerVarRep' to NULL.
   outerVarRep(outerVar),
   specBlock(NULL),
+  svInitBlock(new BlockStmt()),
+  svDeinitBlock(new BlockStmt()),
   reduceGlobalOp(NULL),
   pruneit(false)
 {
@@ -943,7 +946,8 @@ void ShadowVarSymbol::verify() {
   Symbol::verify();
   if (astTag != E_ShadowVarSymbol)
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
-  if (!iteratorsLowered && !isReduce())
+  if (intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR &&
+      intent != TFI_TASK_PRIVATE)
     INT_ASSERT(outerVarRep);
   if (outerVarRep && outerVarRep->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
@@ -964,9 +968,9 @@ void ShadowVarSymbol::verify() {
     INT_ASSERT(pfs);
     INT_ASSERT(defPoint->list == &(pfs->shadowVariables()));
   }
-  INT_ASSERT(isReduce() == (intent == TFI_REDUCE));
-  if (!iteratorsLowered && specBlock != NULL)
-    INT_ASSERT(isReduce());
+  if (specBlock != NULL)
+    INT_ASSERT(intent == TFI_REDUCE || intent == TFI_REDUCE_OP);
+  INT_ASSERT(!iteratorsLowered); // should be gone at lowerIterators
 }
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {
@@ -982,7 +986,10 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
                                             COPY_INT(outerVarRep), NULL);
   ss->type = type;
   ss->qual = qual;
-  ss->specBlock   = COPY_INT(specBlock);
+  ss->specBlock     = COPY_INT(specBlock);
+  ss->svInitBlock   = COPY_INT(svInitBlock);
+  ss->svDeinitBlock = COPY_INT(svDeinitBlock);
+
   ss->copyFlags(this);
   ss->cname = cname;
   return ss;
@@ -993,22 +1000,34 @@ void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
     outerVarRep = toSymExpr(newAst);
   else if (oldAst == specBlock)
     specBlock = toBlockStmt(newAst);
+  else if (oldAst == svInitBlock)
+    svInitBlock = toBlockStmt(newAst);
+  else if (oldAst == svDeinitBlock)
+    svDeinitBlock = toBlockStmt(newAst);
   else
     INT_FATAL(this, "Unexpected case in ShadowVarSymbol::replaceChild");
 }
 
 bool ShadowVarSymbol::isConstant() const {
-  switch (intent) {
+  switch (intent)
+  {
     case TFI_DEFAULT:
       return type->isDefaultIntentConst();
+
     case TFI_CONST:
     case TFI_CONST_IN:
     case TFI_CONST_REF:
+    case TFI_IN_OUTERVAR:
+    case TFI_REDUCE_OP:
       return true;
+
     case TFI_IN:
     case TFI_REF:
     case TFI_REDUCE:
       return false;
+
+    case TFI_TASK_PRIVATE:
+      return VarSymbol::isConstant();
   }
   return false; // dummy
 }
@@ -1024,13 +1043,16 @@ bool ShadowVarSymbol::isConstValWillNotChange() {
 // describes the intent (for use in an English sentence)
 const char* ShadowVarSymbol::intentDescrString() const {
   switch (intent) {
-    case TFI_DEFAULT:   return "default intent";
-    case TFI_CONST:     return "'const' intent";
-    case TFI_IN:        return "'in' intent";
-    case TFI_CONST_IN:  return "'const in' intent";
-    case TFI_REF:       return "'ref' intent";
-    case TFI_CONST_REF: return "'const ref' intent";
-    case TFI_REDUCE:    return "'reduce' intent";
+    case TFI_DEFAULT:       return "default intent";
+    case TFI_CONST:         return "'const' intent";
+    case TFI_IN_OUTERVAR:   return "outer-var intent";
+    case TFI_IN:            return "'in' intent";
+    case TFI_CONST_IN:      return "'const in' intent";
+    case TFI_REF:           return "'ref' intent";
+    case TFI_CONST_REF:     return "'const ref' intent";
+    case TFI_REDUCE:        return "'reduce' intent";
+    case TFI_REDUCE_OP:     return "reduceOp intent";
+    case TFI_TASK_PRIVATE:  return "task-private intent";
   }
   INT_FATAL(this, "unknown intent");
   return "unknown intent"; //dummy
@@ -1047,9 +1069,43 @@ Expr* ShadowVarSymbol::reduceOpExpr() const {
   return specBlock->body.head;
 }
 
+ShadowVarSymbol* ShadowVarSymbol::OutervarForIN() const {
+  const ShadowVarSymbol* SI = this;
+  DefExpr* soDef = toDefExpr(SI->defPoint->prev);
+  ShadowVarSymbol* SO = toShadowVarSymbol(soDef->sym);
+  INT_ASSERT(SO->intent == TFI_IN_OUTERVAR);
+  return SO;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::INforOutervar() const {
+  const ShadowVarSymbol* SO = this;
+  DefExpr* siDef = toDefExpr(SO->defPoint->next);
+  ShadowVarSymbol* SI = toShadowVarSymbol(siDef->sym);
+  INT_ASSERT(SI->intent == TFI_IN || SI->intent == TFI_CONST_IN);
+  return SI;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::ReduceOpForAccumState() const {
+  const ShadowVarSymbol* AS = this;
+  DefExpr* rpDef = toDefExpr(AS->defPoint->prev);
+  ShadowVarSymbol* RP = toShadowVarSymbol(rpDef->sym);
+  INT_ASSERT(RP->intent == TFI_REDUCE_OP);
+  return RP;
+}
+
+ShadowVarSymbol* ShadowVarSymbol::AccumStateForReduceOp() const {
+  const ShadowVarSymbol* RP = this;
+  DefExpr* asDef = toDefExpr(RP->defPoint->next);
+  ShadowVarSymbol* AS = toShadowVarSymbol(asDef->sym);
+  INT_ASSERT(AS->intent == TFI_REDUCE);
+  return AS;
+}
+
 void ShadowVarSymbol::removeSupportingReferences() {
-  if (outerVarRep) outerVarRep->remove();
-  if (specBlock)   specBlock->remove();
+  if (outerVarRep)   outerVarRep->remove();
+  if (specBlock)     specBlock->remove();
+  if (svInitBlock)   svInitBlock->remove();
+  if (svDeinitBlock) svDeinitBlock->remove();
 }
 
 bool isOuterVarOfShadowVar(Expr* expr) {

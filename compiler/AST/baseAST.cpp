@@ -649,9 +649,13 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     }
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
-    if (forall->fContinueLabel)
+    if (forall->fContinueLabel) {
       if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
           forall->fContinueLabel = y;
+    } else if (forall->fErrorHandlerLabel) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
+          forall->fErrorHandlerLabel = y;
+    }
 
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);

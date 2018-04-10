@@ -59,31 +59,46 @@ char               saveCDir[FILENAME_MAX + 1]           = "";
 std::string ccflags;
 std::string ldflags;
 
-int                numLibFlags                          = 0;
-const char**       libFlag                              = NULL;
-
 Vec<const char*>   incDirs;
+Vec<const char*>   libDirs;
+Vec<const char*>   libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
 static const char* intDirName        = NULL;
 
 static const int   MAX_CHARS_PER_PID = 32;
 
-void addLibInfo(const char* libName) {
-  static int libSpace = 0;
+static void addPath(const char* pathVar, Vec<const char*>* pathvec) {
+  char* dirString = strdup(pathVar);
 
-  numLibFlags++;
+  char* colon;              // used to refer to ':'s in dirString
 
-  if (numLibFlags > libSpace) {
-    libSpace = 2*numLibFlags;
-    libFlag = (const char**)realloc(libFlag, libSpace*sizeof(char*));
-  }
+  do {
+    colon = strchr(dirString, ':'); // are there colon separators?
+    if (colon != NULL) {
+      *colon = '\0';                      // if so, cut the string there
+      colon++;                            // and advance to the next
+    }
 
-  libFlag[numLibFlags-1] = astr(libName);
+    pathvec->add(astr(dirString));
+
+    dirString = colon;                     // advance dirString
+  } while (colon != NULL);
+}
+
+//
+// Convert a libString of the form "foo:bar:baz" to entries in libDirs
+//
+void addLibPath(const char* libString) {
+  addPath(libString, &libDirs);
+}
+
+void addLibFile(const char* libFile) {
+  libFiles.add(libFile);
 }
 
 void addIncInfo(const char* incDir) {
-  incDirs.add(astr(incDir));
+  addPath(incDir, &incDirs);
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
@@ -724,8 +739,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");
-  for (int i=0; i<numLibFlags; i++)
-    fprintf(makefile.fptr, " %s", libFlag[i]);
+  forv_Vec(const char*, dirName, libDirs)
+    fprintf(makefile.fptr, " -L%s", dirName);
+  forv_Vec(const char*, libName, libFiles)
+    fprintf(makefile.fptr, " -l%s", libName);
   if (fLinkStyle==LS_STATIC)
       fprintf(makefile.fptr, " $(LIBMVEC)" );
   fprintf(makefile.fptr, "\n");

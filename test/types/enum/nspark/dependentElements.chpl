@@ -4,5 +4,5 @@ enum numbers {
   three = one + two
 };
 
-for n in numbers.one..numbers.three do
-  writeln(n);
+for n in numbers do
+  writeln(n:int);
