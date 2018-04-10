@@ -21,113 +21,106 @@ module Dataframes {
   use Sort;
 
   class Index {
-    type idxType;
-    var set: domain(idxType);
-    var map: [set] int;
-
-    var rev_set: domain(1);
-    var rev_map: [rev_set] idxType;
-
-    // TODO: domain of rev_idx must be domain(1)
-    proc init(rev_idx: [?D] ?I) {
-      super.init();
-      idxType = I;
-      this.rev_set = D;
-      this.rev_map = rev_idx;
-      this.complete();
-
-      for (ord, i) in zip(1.., rev_idx) {
-        set.add(i);
-        map[i] = ord;
-      }
-    }
-
+    // TODO:
+    // how do I get these generic things to work?
     iter these() {
-      for i in rev_map do
-        yield i;
+      return;
     }
 
     iter items() {
-      for tup in zip(rev_map, rev_set) do
-        yield tup;
+      return;
     }
 
-    proc this(i: idxType) {
-      return map[i];
+    proc this(lab) ref {
+      return nil;
     }
+  }
 
-    proc set(i: idxType, o: int) throws {
-      if o > set.size then
-        throw new IllegalArgumentError("o", "ordinal [%d] > Index size [%d]".format(o, set.size));
+  class TypedIndex : Index {
+    type idxType;
 
-      if set.member(i) {
-        map[i] = o;
-        rev_map[o] = i;
-      } else {
-        this._add(i, o);
+    // TODO: implement as binary tree
+    // - sorted on ords
+    // - allow duplicates
+    // - in order traversal
+    var ords: domain(1);
+    var ordToLabel: [ords] idxType;
+
+    // TODO: implement as hash table
+    // - keys: labels
+    // - values: ords
+    var labels: domain(idxType);
+    var labelToOrd: [labels] int;
+
+    // TODO: verify that D is rectangular domain(1)
+    proc init(rev_idx: [?D] ?I) {
+      super.init();
+      idxType = I;
+      ords = D;
+      ordToLabel = rev_idx;
+
+      this.complete();
+      for (ord, lab) in zip(ords, ordToLabel) {
+        labels.add(lab);
+        labelToOrd[lab] = ord;
       }
     }
 
-    proc add(i: idxType) {
-      var new_size: int = set.size + 1;
-      this._add(i, new_size);
+    iter these() {
+      for lab in ordToLabel do
+        yield lab;
     }
 
-    pragma "no doc"
-    proc _add(i: idxType, o: int) {
-      set += i;
-      map[i] = o;
-
-      rev_set += o;
-      rev_map[o] = i;
+    iter items() {
+      for tup in zip(ordToLabel, ords) do
+        yield tup;
     }
 
-    proc add(other: Index(idxType)) {
-      for i in other do
-        this.add(i);
+    proc this(lab: idxType) ref {
+      return labelToOrd[lab];
     }
 
-    // TODO: adding items needs to be well-managed
+    // TODO: label mutation (insert, drop)
+    // TODO: ordinal mutation (delete)
+    // TODO: label concatenation (append)
+    // TODO: ordinal de-duplication (drop_duplicates)
   }
 
   class Series {
+    // TODO: dynamic dispatch on arithmetic
+    // i.e. proc +(lhs, rhs), return left.add(right);
   }
 
   class TypedSeries : Series {
-    type idxType;
     type eltType;
 
-    var idx: Index(idxType);
-    // TODO: ord_set dmap Block
-    var ord_set: domain(1);
-    var data: [ord_set] eltType;
+    // TODO: ords dmap Block
+    var idx: Index;
+    var ords: domain(1);
+    var data: [ords] eltType;
 
     proc init(data: [] ?T) {
       super.init();
-      idxType = int;
       eltType = T;
 
-      ord_set = 1..data.size;
+      ords = 1..data.size;
       this.data = data;
     }
 
-    proc init(idx: [] ?I, data: [] ?T) {
-      // TODO: verify |idx| = |D|
-      // TODO: verify (i in idx) iff (i in D)
+    // TODO: verify |idx| = data.size
+    // TODO: verify that data is rectangular domain(1)
+    proc init(rev_idx: [], data: [] ?T) {
       super.init();
-      idxType = I;
       eltType = T;
 
-      this.idx = new Index(idx);
-      ord_set = 1..data.size;
-
-      // TODO: throw error/write message if data is not rectangular 1D
+      this.idx = new TypedIndex(rev_idx);
+      ords = 1..data.size;
       this.data = data;
     }
 
     iter these() {
-      for t in data do
-        yield t;
+      for d in data do
+        yield d;
     }
 
     iter items() {
@@ -135,8 +128,8 @@ module Dataframes {
         yield tup;
     }
 
-    proc this(i: idxType) {
-      return data[idx[i]];
+    proc this(lab) {
+      return data[idx[lab]];
     }
 
     proc at(ord: int) {

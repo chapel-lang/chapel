@@ -3,9 +3,9 @@ use Dataframes;
 var I = ["A", "B", "C", "D", "E"];
 var A = ["a", "b", "c", "d", "e"];
 
-var letters: TypedSeries(string, string) = new TypedSeries(I, A);
+var letters: TypedSeries(string) = new TypedSeries(I, A);
 
-for i in letters.idx.set do
+for i in letters.idx do
   writeln(i);
 
 writeln();
