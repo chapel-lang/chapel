@@ -64,7 +64,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
 
-  proc initialize() {
+  proc postinit() {
     setup();
     //    writeln("Exiting initialize");
   }

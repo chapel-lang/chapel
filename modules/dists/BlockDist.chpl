@@ -337,6 +337,7 @@ class LocBlock {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "use default init"
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
   const dist: Block(rank, idxType, sparseLayoutType);

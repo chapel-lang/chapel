@@ -279,6 +279,7 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "use default init"
 class StencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: Stencil(rank, idxType, ignoreFluff);

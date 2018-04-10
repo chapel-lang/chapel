@@ -11,6 +11,7 @@ class MyDist : BaseDist {
   proc dsiClone() return new MyDist();
 }
 
+pragma "use default init"
 class MyDom : BaseRectangularDom {
   const dist: MyDist;
 

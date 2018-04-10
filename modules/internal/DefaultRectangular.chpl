@@ -101,7 +101,8 @@ module DefaultRectangular {
 
     proc isDefaultRectangular() param return true;
 
-    proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
+    proc init(param rank, type idxType, param stridable, dist) {
+      super.init(rank=rank, idxType=idxType, stridable=stridable);
       this.dist = dist;
     }
 

@@ -109,6 +109,16 @@ module ArrayViewRankChange {
     }
   }
 
+  private proc downDomType(param rank : int,
+                           type idxType,
+                           param stridable : bool,
+                           dist) type {
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
+                                                 stridable=stridable, ranges);
+      return a.type;
+  }
+
   //
   // This class represents the domain of a rank-change slice of an
   // array.  Like other domain class implementations, it supports the
@@ -116,6 +126,7 @@ module ArrayViewRankChange {
   // for rectangular domains (because they're the only ones with
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
@@ -139,19 +150,11 @@ module ArrayViewRankChange {
     }
 
     // the higher-dimensional domain that we're equivalent to
+    //
+    // BHARSH INIT TODO: use 'downrank' instead of 'collapsedDim.size'
+    //
     var downDomPid:int;
-    var downDomInst: downDomType(downrank, idxType, stridable);
-
-    //
-    // TODO: If we put this expression into the variable declaration
-    // above, we get a memory leak.  File a future against this?
-    //
-    proc downDomType(param rank: int, type idxType, param stridable: bool) type {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
-                                                 stridable=stridable, ranges);
-      return a.type;
-    }
+    var downDomInst: downDomType(collapsedDim.size, idxType, stridable, distInst);
 
     proc downrank param {
       return collapsedDim.size;

@@ -442,6 +442,7 @@ class LocCyclic {
 }
 
 
+pragma "use default init"
 class CyclicDom : BaseRectangularDom {
   const dist: Cyclic(rank, idxType);
 

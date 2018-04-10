@@ -98,6 +98,7 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);

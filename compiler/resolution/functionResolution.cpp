@@ -4994,6 +4994,9 @@ static void resolveInitField(CallExpr* call) {
     if (ct->scalarPromotionType == NULL) {
       resolvePromotionType(ct);
     }
+    if (developer == false) {
+      fixTypeNames(ct);
+    }
     // BHARSH INIT TODO: Would like to resolve destructor here, but field
     // types are not fully resolved. E.g., "var foo : t"
   }
@@ -6863,6 +6866,9 @@ static void resolveExprExpandGenerics(CallExpr* call) {
               if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
                 if (ct->scalarPromotionType == NULL) {
                   resolvePromotionType(ct);
+                }
+                if (developer == false) {
+                  fixTypeNames(ct);
                 }
               }
             }
