@@ -18,3 +18,7 @@ writeln(D.sorted());
 
 D.clear();
 writeln(D.sorted());
+
+proc <(x:E, y: E) {
+  return (x:int < y:int);
+}
