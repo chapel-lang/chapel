@@ -2819,7 +2819,7 @@ void make_registered_heap(void)
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.  (If it's to be dynamically extensible, that's handled
-  // separately through chpl_comm_regMem*().)
+  // separately through chpl_comm_impl_regMem*().)
   //
   const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
   const size_t nic_max_mem = nic_max_pages * page_size;
@@ -3204,10 +3204,11 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   PERFSTATS_INC(regMemPostAlloc_cnt);
 
   if (get_hugepage_size() == 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostAlloc(): "
+                        "this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemPostAlloc(%p, %#" PRIx64 ")",
+           "chpl_comm_impl_regMemPostAlloc(%p, %#" PRIx64 ")",
            p, size);
 
   //
@@ -3219,7 +3220,8 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     ;
 
   if (mr_i < 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostAlloc(): "
+                        "can't find the memory");
 
   assert(!mrtl_isReg(mr->len));
 
@@ -3250,7 +3252,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   //
   if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemPostAlloc(): entry %d, bcast",
+            "chpl_comm_impl_regMemPostAlloc(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
@@ -3258,7 +3260,8 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemPostAlloc(): entry %d, bcast %d-%d and cnt %d",
+            "chpl_comm_impl_regMemPostAlloc(): "
+            "entry %d, bcast %d-%d and cnt %d",
             mr_i,
             (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
             (int) mem_regions.mreg_cnt);
@@ -3295,7 +3298,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_INC(regMemFree_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
+           "chpl_comm_impl_regMemFree(%p, %#" PRIx64 "): [%d]",
            p, size, mr_i);
 
   //
@@ -3340,13 +3343,13 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   //
   if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
+            "chpl_comm_impl_regMemFree(): entry %d, bcast cnt %d",
             mr_i, (int) mem_regions.mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
   } else {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast",
+            "chpl_comm_impl_regMemFree(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
