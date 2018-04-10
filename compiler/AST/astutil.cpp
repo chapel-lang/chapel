@@ -26,6 +26,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "expr.h"
+#include "ManagedClassType.h"
 #include "passes.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"

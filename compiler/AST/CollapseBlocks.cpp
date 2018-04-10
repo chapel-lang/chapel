@@ -214,6 +214,16 @@ void CollapseBlocks::exitAggrType(AggregateType* node)
 
 }
 
+bool CollapseBlocks::enterManagedClassType(ManagedClassType* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitManagedClassType(ManagedClassType* node)
+{
+
+}
+
 bool CollapseBlocks::enterEnumType(EnumType* node)
 {
   return false;

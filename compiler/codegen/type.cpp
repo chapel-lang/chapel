@@ -166,10 +166,6 @@ int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
 //
 const char* AggregateType::classStructName(bool standalone) {
 
-  if (aggregateTag == AGGREGATE_CLASS) {
-    INT_ASSERT(isCanonicalClass());
-  }
-
   if (standalone) {
     const char* basename = symbol->cname;
     if (aggregateTag == AGGREGATE_CLASS) {

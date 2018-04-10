@@ -53,6 +53,9 @@ foreach_ast(decl_members);
   virtual bool   enterAggrType       (AggregateType*     node);
   virtual void   exitAggrType        (AggregateType*     node);
 
+  virtual bool   enterManagedClassType(ManagedClassType* node);
+  virtual void   exitManagedClassType (ManagedClassType* node);
+
   virtual bool   enterEnumType       (EnumType*          node);
   virtual void   exitEnumType        (EnumType*          node);
 

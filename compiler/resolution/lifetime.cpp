@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "loopDetails.h"
+#include "ManagedClassType.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -1133,8 +1134,8 @@ static bool typeHasInfiniteLifetime(Type* type) {
   if (isSubClass(type, dtLocale))
     return true;
 
-  if (AggregateType* at = toAggregateType(type)) {
-    if (at->isUnmanagedClass())
+  if (ManagedClassType* mt = toManagedClassType(type)) {
+    if (mt->isUnmanagedClass())
       // unmanaged class instances have infinite lifetime
       return true;
   }

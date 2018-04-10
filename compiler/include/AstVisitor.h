@@ -21,6 +21,7 @@
 #define _AST_VISITOR_H_
 
 class AggregateType;
+class ManagedClassType;
 class EnumType;
 class PrimitiveType;
 
@@ -76,6 +77,9 @@ public:
   //
   virtual bool   enterAggrType       (AggregateType*     node) = 0;
   virtual void   exitAggrType        (AggregateType*     node) = 0;
+
+  virtual bool   enterManagedClassType(ManagedClassType*     node) = 0;
+  virtual void   exitManagedClassType (ManagedClassType*     node) = 0;
 
   virtual bool   enterEnumType       (EnumType*          node) = 0;
   virtual void   exitEnumType        (EnumType*          node) = 0;

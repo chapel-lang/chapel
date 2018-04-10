@@ -33,6 +33,7 @@ AST_SRCS =                                          \
            FnSymbol.cpp                             \
            ForallStmt.cpp                           \
            iterator.cpp                             \
+           ManagedClassType.cpp                     \
            ModuleSymbol.cpp                         \
            PartialCopyData.cpp                      \
            primitive.cpp                            \

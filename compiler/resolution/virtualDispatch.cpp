@@ -52,6 +52,7 @@ static child type could end up calling something in the parent.
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
+#include "ManagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -422,18 +423,19 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (AggregateType* atSub = toAggregateType(sub)) {
-    AggregateType* useAtSub = atSub;
+  } else if (isAggregateType(sub) || isManagedClassType(sub)) {
+    AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
-    if (isClass(atSub) && isClass(super) &&
-        sameUnmanagedBorrowKind(atSub, toAggregateType(super))) {
-      useAtSub = atSub->getCanonicalClass();
-      useSuper = toAggregateType(super)->getCanonicalClass();
+    if (classesWithSameKind(sub, super)) {
+      subAt = toAggregateType(canonicalClassType(sub));
+      useSuper = canonicalClassType(super);
     }
-    forv_Vec(AggregateType, parent, useAtSub->dispatchParents) {
-      if (isSubType(parent, useSuper) == true) {
-        retval = true;
-        break;
+    if (subAt) {
+      forv_Vec(AggregateType, parent, subAt->dispatchParents) {
+        if (isSubType(parent, useSuper) == true) {
+          retval = true;
+          break;
+        }
       }
     }
   }

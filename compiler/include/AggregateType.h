@@ -34,11 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-enum ClassKind {
-  CLASS_UNMANAGED,
-  CLASS_BORROW,
-};
-
 enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
@@ -146,16 +141,9 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
+  ManagedClassType*           getUnmanagedClass();
 
-  bool                        isUnmanagedClass() const;
-  bool                        isBorrowedClass() const;
-  bool                        isCanonicalClass() const;
-
-  AggregateType*              getUnmanagedClass();
-  AggregateType*              getBorrowedClass();
-  AggregateType*              getCanonicalClass();
-
-  void generateUnmanagedBorrowClassTypes();
+  void                        generateUnmanagedBorrowClassTypes();
 
   //
   // Public fields
@@ -165,12 +153,7 @@ public:
 
   // These fields support differentiating between unmanaged class
   // pointers and borrows.
-  ClassKind                   classKind;
-  // The next two fields, canonicalClass and nextAssociatedClass,
-  // form a linked list, where canonicalClass is the head, of
-  // the unmanaged/borrow class types.
-  AggregateType*              canonicalClass; // borrow type usually
-  AggregateType*              nextAssociatedClass;
+  ManagedClassType*           unmanagedClass;
 
   FnSymbol*                   typeConstructor;
 
@@ -288,7 +271,5 @@ extern AggregateType* dtObject;
 extern AggregateType* dtString;
 
 DefExpr* defineObjectClass();
-
-bool sameUnmanagedBorrowKind(AggregateType* a, AggregateType* b);
 
 #endif

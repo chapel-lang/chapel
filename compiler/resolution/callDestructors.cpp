@@ -25,6 +25,7 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "lifetime.h"
+#include "ManagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1362,9 +1363,8 @@ static void convertClassTypeToCanonical(Type** typePtr) {
   Type* t = *typePtr;
   // If it's a class, get the canonical class type,
   // and set the type to that if it's different.
-  if (isClass(t)) {
-    AggregateType* at = toAggregateType(t);
-    at = at->getCanonicalClass();
+  if (ManagedClassType* mt = toManagedClassType(t)) {
+    AggregateType* at = mt->getCanonicalClass();
     if (at != t)
       *typePtr = at;
   }
@@ -1384,9 +1384,8 @@ static void convertClassTypesToCanonical() {
   }
 
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (isClass(ts->type)) {
-      AggregateType* at = toAggregateType(ts->type);
-      TypeSymbol* useTS = at->getCanonicalClass()->symbol;
+    if (ManagedClassType* mt = toManagedClassType(ts->type)) {
+      TypeSymbol* useTS = mt->getCanonicalClass()->symbol;
       if (useTS != ts) {
         for_SymbolSymExprs(se, ts) {
           se->setSymbol(useTS);

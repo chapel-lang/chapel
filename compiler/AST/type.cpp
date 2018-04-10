@@ -1206,6 +1206,10 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
+bool isClassLike(Type* t) {
+  return isClass(t) || isManagedClassType(t);
+}
+
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
@@ -1277,7 +1281,7 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isManagedPtrType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_MANAGED_POINTER);
+  return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
 bool isSyncType(const Type* t) {

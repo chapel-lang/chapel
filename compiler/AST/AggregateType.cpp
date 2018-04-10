@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "ManagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -41,9 +42,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
-  classKind           = CLASS_BORROW;
-  canonicalClass      = NULL;
-  nextAssociatedClass = NULL;
+  unmanagedClass      = NULL;
 
   typeConstructor     = NULL;
   defaultInitializer  = NULL;
@@ -2535,83 +2534,25 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-bool AggregateType::isUnmanagedClass() const {
-  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_UNMANAGED;
-}
-
-bool AggregateType::isBorrowedClass() const {
-  return aggregateTag == AGGREGATE_CLASS && classKind == CLASS_BORROW;
-}
-
-bool AggregateType::isCanonicalClass() const {
-  return (this->canonicalClass == NULL || this->canonicalClass == this);
-}
-
-
-AggregateType* AggregateType::getUnmanagedClass() {
+ManagedClassType* AggregateType::getUnmanagedClass() {
   if (aggregateTag == AGGREGATE_CLASS) {
-    if (isUnmanagedClass())
-      return this;
 
-    generateUnmanagedBorrowClassTypes();
+    if (!unmanagedClass)
+      generateUnmanagedBorrowClassTypes();
 
-    for (AggregateType* t = this->canonicalClass;
-         t != NULL;
-         t = t->nextAssociatedClass) {
-      if (t->isUnmanagedClass())
-        return t;
-    }
+    return unmanagedClass;
   }
   return NULL;
 }
-AggregateType* AggregateType::getBorrowedClass() {
-  if (aggregateTag == AGGREGATE_CLASS) {
-    if (isBorrowedClass())
-      return this;
-
-    generateUnmanagedBorrowClassTypes();
-
-    for (AggregateType* t = this->canonicalClass;
-         t != NULL;
-         t = t->nextAssociatedClass) {
-      if (t->isBorrowedClass())
-        return t;
-    }
-  }
-  return NULL;
-}
-
-/*
-
- A plain class name represents a borrow. The borrow forms the canonical class
- representation, which is used for most purposes within the compiler.
-
- */
-AggregateType* AggregateType::getCanonicalClass() {
-  if (aggregateTag == AGGREGATE_CLASS) {
-    generateUnmanagedBorrowClassTypes();
-    INT_ASSERT(this->canonicalClass);
-    return this->canonicalClass;
-  }
-
-  return NULL;
-}
-
 
 void AggregateType::generateUnmanagedBorrowClassTypes() {
   AggregateType* at = this;
-  if (aggregateTag == AGGREGATE_CLASS && at->canonicalClass == NULL) {
+  if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
     SET_LINENO(at->symbol->defPoint);
-    // Generate unmanaged and owned class types
-    AggregateType* unmanaged = new AggregateType(AGGREGATE_CLASS);
+    // Generate unmanaged class type
+    ManagedClassType* unmanaged = new ManagedClassType(CLASS_UNMANAGED, at);
 
-    INT_ASSERT(at->classKind == CLASS_BORROW);
-    unmanaged->classKind = CLASS_UNMANAGED;
-
-    at->canonicalClass = at;
-    unmanaged->canonicalClass = at;
-    at->nextAssociatedClass = unmanaged;
-
+    at->unmanagedClass = unmanaged;
 
     TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
     // The unmanaged type isn't really an object, shouldn't have its own fields
@@ -2623,10 +2564,4 @@ void AggregateType::generateUnmanagedBorrowClassTypes() {
 
     at->symbol->defPoint->insertAfter(defUnmanaged);
   }
-}
-
-bool sameUnmanagedBorrowKind(AggregateType* a, AggregateType* b) {
-  if (!a || !b) return false;
-
-  return a->classKind == b->classKind;
 }

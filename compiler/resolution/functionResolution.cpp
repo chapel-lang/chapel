@@ -41,6 +41,7 @@
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "ManagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
@@ -222,7 +223,7 @@ static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
 
-static bool isUnusedClass(AggregateType* ct);
+static bool isUnusedClass(Type* ct);
 
 /************************************* | **************************************
 *                                                                             *
@@ -667,9 +668,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtUnmanaged && isManagedClassType(actualType))
+    return true;
+
   if (AggregateType* atActual = toAggregateType(actualType)) {
-    if (formalType == dtUnmanaged && atActual->isUnmanagedClass())
-      return true;
 
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
       if (canInstantiate(atFrom, formalType) == true) {
@@ -1085,15 +1087,14 @@ bool canCoerce(Type*     actualType,
   }
 
   // Handle coercions from unmanaged -> borrow
-  if (isClass(actualType) && isClass(formalType)) {
-    AggregateType* actualAt = toAggregateType(actualType);
-    AggregateType* formalAt = toAggregateType(formalType);
-    AggregateType* actualC = actualAt->getCanonicalClass();
-    AggregateType* formalC = formalAt->getCanonicalClass();
-    if (formalAt->isBorrowedClass())
-      if (actualAt->isUnmanagedClass())
+  if (ManagedClassType* actualMt = toManagedClassType(actualType)) {
+    if (AggregateType* formalC = toAggregateType(formalType)) {
+      if (isClass(formalC) && actualMt->isUnmanagedClass()) {
+        AggregateType* actualC = actualMt->getCanonicalClass();
         if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
           return true;
+      }
+    }
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
@@ -1183,14 +1184,19 @@ bool doCanDispatch(Type*     actualType,
     retval = true;
 
   } else {
-    if (AggregateType* at = toAggregateType(actualType)) {
-      bool isunmanaged = at->isUnmanagedClass();
-      if (isunmanaged) at = at->getCanonicalClass();
+    AggregateType* at = toAggregateType(actualType);
+    bool isunmanaged = false;
+    if (ManagedClassType* mt = toManagedClassType(actualType)) {
+      isunmanaged = true;
+      at = mt->getCanonicalClass();
+    }
 
+    if (at) {
       forv_Vec(AggregateType, parent, at->dispatchParents) {
-        if (isunmanaged) parent = parent->getUnmanagedClass();
-        if (parent == formalType ||
-            doCanDispatch(parent,
+        Type* useParent = parent;
+        if (isunmanaged) useParent = parent->getUnmanagedClass();
+        if (useParent == formalType ||
+            doCanDispatch(useParent,
                           NULL,
                           formalType,
                           fn,
@@ -5702,10 +5708,11 @@ bool isDispatchParent(Type* t, Type* pt) {
   bool retval = false;
 
   // Use the canonical class type
-  if (isClass(t) && isClass(pt) &&
-      sameUnmanagedBorrowKind(toAggregateType(t), toAggregateType(pt))) {
-    t = toAggregateType(t)->getCanonicalClass();
-    pt = toAggregateType(pt)->getCanonicalClass();
+  // If one is managed and the other is not, it's not
+  // a dispatch parent.
+  if (classesWithSameKind(t, pt)) {
+    t = canonicalClassType(t);
+    pt = canonicalClassType(pt);
   }
 
   if (AggregateType* at = toAggregateType(t)) {
@@ -5852,8 +5859,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
         if (isManagedPtrType(type))
           manager = type;
 
-        if (AggregateType* at = toAggregateType(type))
-          if (at->isUnmanagedClass())
+        if (ManagedClassType* mt = toManagedClassType(type))
+          if (mt->isUnmanagedClass())
             manager = dtUnmanaged;
       }
 
@@ -5874,8 +5881,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (isClass(at)) {
-          at = at->getCanonicalClass();
+        if (ManagedClassType* mt = toManagedClassType(type)) {
+          at = mt->getCanonicalClass();
         // For records, just ignore the manager
         // e.g. to support 'new owned MyRecord'
         } else if (isRecord(at)) {
@@ -5936,7 +5943,7 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
 
   AggregateType* classT = toAggregateType(initedClass->typeInfo());
   INT_ASSERT(classT && isClass(classT));
-  AggregateType* unmanagedT = classT->getUnmanagedClass();
+  ManagedClassType* unmanagedT = classT->getUnmanagedClass();
   INT_ASSERT(unmanagedT);
 
   if (!isManagedPtrType(manager)) {
@@ -8809,6 +8816,10 @@ static void removeUnusedTypes() {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
+      } else if(ManagedClassType* mt = toManagedClassType(type->type)) {
+        if (isUnusedClass(mt->getCanonicalClass()) == true) {
+          mt->symbol->defPoint->remove();
+        }
       }
     }
   }
@@ -8836,46 +8847,46 @@ static void removeUnusedTypes() {
   }
 }
 
-// TODO - rename to isUnusedAggregateType and argument to at
-static bool do_isUnusedClass(AggregateType* ct) {
+static bool do_isUnusedClass(Type* t) {
   bool retval = true;
 
+  AggregateType* at = toAggregateType(t);
+
   // Special case for global types.
-  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) == true) {
+  if (t->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) {
     retval = false;
 
   // Runtime types are assumed to be always used.
-  } else if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+  } else if (t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
     retval = false;
 
   // Uses of iterator records get inserted in lowerIterators
-  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)    == true) {
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = false;
 
   // FALSE if iterator class's getIterator is used
   // (this case may not be necessary)
-  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)     == true &&
-             ct->iteratorInfo->getIterator->isResolved()  == true) {
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+             at && at->iteratorInfo->getIterator->isResolved()) {
     retval = false;
 
   // FALSE if initializers are used
-  } else if (ct->defaultInitializer                       != NULL &&
-             ct->defaultInitializer->isResolved()         == true) {
+  } else if (at && at->defaultInitializer &&
+             at->defaultInitializer->isResolved()) {
     retval = false;
 
   // FALSE if the type constructor is used.
-  } else if (ct->typeConstructor                          != NULL &&
-             ct->typeConstructor->isResolved()            == true) {
+  } else if (at && at->typeConstructor && at->typeConstructor->isResolved()) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was
   // resolved
-  } else if (ct->initializerStyle    != DEFINES_CONSTRUCTOR &&
-             ct->initializerResolved == true) {
+  } else if (at && at->initializerStyle != DEFINES_CONSTRUCTOR &&
+             at->initializerResolved) {
     retval = false;
 
-  } else {
-    forv_Vec(AggregateType, childClass, ct->dispatchChildren) {
+  } else if (at) {
+    forv_Vec(AggregateType, childClass, at->dispatchChildren) {
       if (isUnusedClass(childClass) == false) {
         retval = false;
         break;
@@ -8887,17 +8898,21 @@ static bool do_isUnusedClass(AggregateType* ct) {
   return retval;
 }
 
-static bool isUnusedClass(AggregateType* ct) {
+static bool isUnusedClass(Type* t) {
   bool retval = true;
 
-  // don't prune classes that have another variant used
-  if (isClass(ct)) {
-    if (AggregateType* u = ct->getUnmanagedClass())
-      retval &= do_isUnusedClass(u);
-    if (AggregateType* b = ct->getBorrowedClass())
-      retval &= do_isUnusedClass(b);
-  } else {
-    retval = do_isUnusedClass(ct);
+  retval = do_isUnusedClass(t);
+
+  // check other variant
+  //  borrow/class types can have unmanaged class type used
+  //  unmanaged class types can have borrow/canonical class type used
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (ManagedClassType* mt = at->getUnmanagedClass())
+        retval &= do_isUnusedClass(mt);
+    }
+  } else if (ManagedClassType* mt = toManagedClassType(t)) {
+    retval &= do_isUnusedClass(mt->getCanonicalClass());
   }
 
   return retval;

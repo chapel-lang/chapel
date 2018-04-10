@@ -24,6 +24,7 @@
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
+#include "ManagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -435,13 +436,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return st;
   }
 
-  if (AggregateType* actualAt = toAggregateType(actualType)) {
-    if (isClass(actualAt)) {
-      AggregateType* canonicalAt = actualAt->getCanonicalClass();
-      if (canonicalAt != actualAt)
-        if (canInstantiate(canonicalAt, formalType))
-          return canonicalAt;
-    }
+  if (ManagedClassType* actualMt = toManagedClassType(actualType)) {
+    AggregateType* actualC = actualMt->getCanonicalClass();
+    if (canInstantiate(actualC, formalType))
+      return actualC;
   }
 
   if (Type* vt = actualType->getValType()) {
@@ -450,13 +448,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
-    } else if (AggregateType* actualAt = toAggregateType(vt)) {
-      if (isClass(actualAt)) {
-        AggregateType* canonicalAt = actualAt->getCanonicalClass();
-        if (canonicalAt != actualAt)
-          if (canInstantiate(canonicalAt, formalType))
-            return canonicalAt;
-      }
+    } else if (ManagedClassType* actualMt = toManagedClassType(vt)) {
+      AggregateType* actualC = actualMt->getCanonicalClass();
+      if (canInstantiate(actualC, formalType))
+        return actualC;
     }
   }
 
@@ -651,8 +646,8 @@ bool ResolutionCandidate::checkGenericFormals() {
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
           Type* cct = NULL;
-          if (AggregateType* atv = toAggregateType(vt))
-            cct = atv->getCanonicalClass();
+          if (ManagedClassType* mt = toManagedClassType(vt))
+            cct = mt->getCanonicalClass();
 
           if (canInstantiate(actual->type, formal->type) == false &&
 

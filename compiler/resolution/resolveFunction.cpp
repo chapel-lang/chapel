@@ -29,6 +29,7 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "LoopStmt.h"
+#include "ManagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
