@@ -6,15 +6,6 @@ CHPL_MAKE_HOST_TARGET = --host
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
-ifneq (,$(findstring cygwin, $(CHPL_MAKE_TARGET_PLATFORM)))
-# pip from cygwin's setuptools is `pip-<MAJOR>.<MINOR>`
-# instead of `pip`. If we can't find pip, look for the
-# versioned one.
-PIP = $(shell which pip 2>/dev/null || which pip$(PYTHON_VERSION))
-else
-PIP = $(shell which pip)
-endif
-
 default: all
 
 all: test-venv chpldoc-venv
@@ -32,21 +23,21 @@ ifeq ($(wildcard $(PYTHON)),)
 	        and start_test dependencies. See https://www.python.org/)
 endif
 
-check-pip:
-ifeq ($(wildcard $(PIP)),)
-	$(error python and pip are required to install chpldoc \
-	        and start_test dependencies. See https://www.python.org/)
-endif
-
-check-exes: check-python check-pip
+check-exes: check-python
 
 $(CHPL_VENV_INSTALL_DIR):
 	mkdir -p $@
 
+# Install pip to ensure we have an updated version
+$(PIP): $(CHPL_VENV_INSTALL_DIR)
+	(cd install && curl -O https://bootstrap.pypa.io/get-pip.py) &&\
+	export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) &&\
+	python install/get-pip.py --user
+
 # Install virtualenv program.
-$(CHPL_VENV_VIRTUALENV): $(CHPL_VENV_INSTALL_DIR) check-exes
-	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$$PYTHONPATH && echo $(PYTHONPATH) &&\
-	$(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
+$(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
+	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$(PIPLIB):$$PYTHONPATH && echo $(PYTHONPATH) &&\
+	python $(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
