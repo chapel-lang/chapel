@@ -141,9 +141,9 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  ManagedClassType*           getUnmanagedClass();
+  UnmanagedClassType*         getUnmanagedClass();
 
-  void                        generateUnmanagedBorrowClassTypes();
+  void                        generateUnmanagedClassTypes();
 
   //
   // Public fields
@@ -152,8 +152,9 @@ public:
   AggregateTag                aggregateTag;
 
   // These fields support differentiating between unmanaged class
-  // pointers and borrows.
-  ManagedClassType*           unmanagedClass;
+  // pointers and borrows. At the present time, borrows are represented
+  // by plain AggregateType and unmanaged class pointers use this special type.
+  UnmanagedClassType*         unmanagedClass;
 
   FnSymbol*                   typeConstructor;
 

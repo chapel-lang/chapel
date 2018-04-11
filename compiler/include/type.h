@@ -50,7 +50,7 @@ class DefExpr;
 class EnumSymbol;
 class Expr;
 class FnSymbol;
-class ManagedClassType;
+class UnmanagedClassType;
 class Symbol;
 class TypeSymbol;
 class VarSymbol;
@@ -447,7 +447,7 @@ int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t);
 bool isClassOrNil(Type* t);
-bool isClassLike(Type* t); // includes ManagedClassType & ClassType
+bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 

@@ -27,7 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -2534,34 +2534,30 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-ManagedClassType* AggregateType::getUnmanagedClass() {
+UnmanagedClassType* AggregateType::getUnmanagedClass() {
   if (aggregateTag == AGGREGATE_CLASS) {
 
     if (!unmanagedClass)
-      generateUnmanagedBorrowClassTypes();
+      generateUnmanagedClassTypes();
 
     return unmanagedClass;
   }
   return NULL;
 }
 
-void AggregateType::generateUnmanagedBorrowClassTypes() {
+void AggregateType::generateUnmanagedClassTypes() {
   AggregateType* at = this;
   if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
     SET_LINENO(at->symbol->defPoint);
     // Generate unmanaged class type
-    ManagedClassType* unmanaged = new ManagedClassType(CLASS_UNMANAGED, at);
-
+    UnmanagedClassType* unmanaged = new UnmanagedClassType(at);
     at->unmanagedClass = unmanaged;
-
     TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
     // The unmanaged type isn't really an object, shouldn't have its own fields
     tsUnmanaged->addFlag(FLAG_NO_OBJECT);
     // The generated code should just use the canonical class name
     tsUnmanaged->cname = at->symbol->cname;
-
     DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
-
     at->symbol->defPoint->insertAfter(defUnmanaged);
   }
 }

@@ -28,22 +28,17 @@
 * In particular this type is important for unmanaged.                         *
 * Each refers to the AggregateType for the actual class. Because we want      *
 * the AggregateType for each class to store the dispatch parents and other    *
-* important fields, and since each can have multple ManagedClassType variants,*
-* the ManagedClassType is not an AggregateType but rather a Type that         *
+* important fields, and since each can have multple UnmanagedClassType variants,*
+* the UnmanagedClassType is not an AggregateType but rather a Type that         *
 * points to the canonical class type (i.e. the AggregateType).                *
 *                                                                             *
 ************************************** | *************************************/
 
-enum ClassKind {
-  CLASS_UNMANAGED,
-  CLASS_BORROW,
-};
-
-class ManagedClassType : public Type {
+class UnmanagedClassType : public Type {
 
 public:
-                          ManagedClassType(ClassKind kind, AggregateType* cls);
-                          ~ManagedClassType();
+                          UnmanagedClassType(AggregateType* cls);
+                          ~UnmanagedClassType();
 
   void                    accept(AstVisitor* visitor);
   void                    replaceChild(BaseAST* oldAst, BaseAST* newAst);
@@ -51,25 +46,18 @@ public:
   Expr*                   getNextExpr(Expr* expr);
   void                    verify();
   GenRet                  codegen();
-  DECLARE_COPY(ManagedClassType);
+  DECLARE_COPY(UnmanagedClassType);
 
-  bool                    isUnmanagedClass() const;
-  bool                    isBorrowedClass() const;
-
-  //ManagedClassType*       getUnmanagedClass();
-  //ManagedClassType*       getBorrowedClass();
-  ClassKind               getKind();
   AggregateType*          getCanonicalClass();
 
 private:
-  // These fields support differentiating between unmanaged class
-  // pointers and borrows.
-  ClassKind                   classKind;
   // canonicalClass points to the AggregateType for the class
   AggregateType*              canonicalClass;
 };
 
 bool classesWithSameKind(Type* a, Type* b);
 Type* canonicalClassType(Type* a);
+
+void convertClassTypesToCanonical();
 
 #endif

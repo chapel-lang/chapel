@@ -41,7 +41,7 @@
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
@@ -668,7 +668,7 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtUnmanaged && isManagedClassType(actualType))
+  if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
     return true;
 
   if (AggregateType* atActual = toAggregateType(actualType)) {
@@ -1087,9 +1087,9 @@ bool canCoerce(Type*     actualType,
   }
 
   // Handle coercions from unmanaged -> borrow
-  if (ManagedClassType* actualMt = toManagedClassType(actualType)) {
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
     if (AggregateType* formalC = toAggregateType(formalType)) {
-      if (isClass(formalC) && actualMt->isUnmanagedClass()) {
+      if (isClass(formalC)) {
         AggregateType* actualC = actualMt->getCanonicalClass();
         if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
           return true;
@@ -1186,7 +1186,7 @@ bool doCanDispatch(Type*     actualType,
   } else {
     AggregateType* at = toAggregateType(actualType);
     bool isunmanaged = false;
-    if (ManagedClassType* mt = toManagedClassType(actualType)) {
+    if (UnmanagedClassType* mt = toUnmanagedClassType(actualType)) {
       isunmanaged = true;
       at = mt->getCanonicalClass();
     }
@@ -5859,9 +5859,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
         if (isManagedPtrType(type))
           manager = type;
 
-        if (ManagedClassType* mt = toManagedClassType(type))
-          if (mt->isUnmanagedClass())
-            manager = dtUnmanaged;
+        if (isUnmanagedClassType(type))
+          manager = dtUnmanaged;
       }
 
       // if manager is set, and we're not calling the manager's init function,
@@ -5881,7 +5880,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*&
 
         // Use the canonical class to simplify the rest of initializer
         // resolution
-        if (ManagedClassType* mt = toManagedClassType(type)) {
+        if (UnmanagedClassType* mt = toUnmanagedClassType(type)) {
           at = mt->getCanonicalClass();
         // For records, just ignore the manager
         // e.g. to support 'new owned MyRecord'
@@ -5943,7 +5942,7 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
 
   AggregateType* classT = toAggregateType(initedClass->typeInfo());
   INT_ASSERT(classT && isClass(classT));
-  ManagedClassType* unmanagedT = classT->getUnmanagedClass();
+  UnmanagedClassType* unmanagedT = classT->getUnmanagedClass();
   INT_ASSERT(unmanagedT);
 
   if (!isManagedPtrType(manager)) {
@@ -8816,7 +8815,7 @@ static void removeUnusedTypes() {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
         }
-      } else if(ManagedClassType* mt = toManagedClassType(type->type)) {
+      } else if(UnmanagedClassType* mt = toUnmanagedClassType(type->type)) {
         if (isUnusedClass(mt->getCanonicalClass()) == true) {
           mt->symbol->defPoint->remove();
         }
@@ -8908,10 +8907,10 @@ static bool isUnusedClass(Type* t) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (ManagedClassType* mt = at->getUnmanagedClass())
+      if (UnmanagedClassType* mt = at->getUnmanagedClass())
         retval &= do_isUnusedClass(mt);
     }
-  } else if (ManagedClassType* mt = toManagedClassType(t)) {
+  } else if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
     retval &= do_isUnusedClass(mt->getCanonicalClass());
   }
 

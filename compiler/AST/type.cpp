@@ -1207,7 +1207,7 @@ bool isClassOrNil(Type* t) {
 }
 
 bool isClassLike(Type* t) {
-  return isClass(t) || isManagedClassType(t);
+  return isClass(t) || isUnmanagedClassType(t);
 }
 
 bool isRecord(Type* t) {

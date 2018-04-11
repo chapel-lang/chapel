@@ -21,7 +21,7 @@
 
 #include "expr.h"
 #include "iterator.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
@@ -413,12 +413,12 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
 static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
-  if (ManagedClassType* mt = toManagedClassType(t)) {
+  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
     t = mt->getCanonicalClass();
   }
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      if (ManagedClassType* unmanaged = at->getUnmanagedClass())
+      if (UnmanagedClassType* unmanaged = at->getUnmanagedClass())
         t = unmanaged;
     }
   }
@@ -429,7 +429,7 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
   
-  if (ManagedClassType* mt = toManagedClassType(t)) {
+  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
     t = mt->getCanonicalClass();
   }
   // Canonical class type is borrow type

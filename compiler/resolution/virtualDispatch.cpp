@@ -52,7 +52,7 @@ static child type could end up calling something in the parent.
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -423,7 +423,7 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (isAggregateType(sub) || isManagedClassType(sub)) {
+  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;
     if (classesWithSameKind(sub, super)) {

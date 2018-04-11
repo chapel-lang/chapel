@@ -36,11 +36,11 @@ bool AstLogger::enterAggrType(AggregateType* node) {
 void AstLogger::exitAggrType(AggregateType* node) {
 }
 
-bool AstLogger::enterManagedClassType(ManagedClassType* node) {
+bool AstLogger::enterUnmanagedClassType(UnmanagedClassType* node) {
   return true;
 }
 
-void AstLogger::exitManagedClassType(ManagedClassType* node) {
+void AstLogger::exitUnmanagedClassType(UnmanagedClassType* node) {
 }
 
 

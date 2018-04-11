@@ -49,7 +49,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1470,17 +1470,17 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
 }
 
 static bool isUnmanagedClass(Type* t) {
-  if (ManagedClassType* mt = toManagedClassType(t)) {
-    return mt->isUnmanagedClass();
-  }
+  if (isUnmanagedClassType(t))
+    return true;
+
   return false;
 }
 static bool isBorrowClass(Type* t) {
-  if (ManagedClassType* mt = toManagedClassType(t)) {
-    return mt->isBorrowedClass();
-  } else if (isClass(t)) {
+  if (isUnmanagedClassType(t))
+    return false;
+  else if (isClass(t))
     return true;
-  }
+
   return false;
 }
 

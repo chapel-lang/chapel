@@ -39,12 +39,12 @@ void AstVisitorTraverse::exitAggrType(AggregateType* node)
 
 }
 
-bool AstVisitorTraverse::enterManagedClassType(ManagedClassType* node)
+bool AstVisitorTraverse::enterUnmanagedClassType(UnmanagedClassType* node)
 {
   return true;
 }
 
-void AstVisitorTraverse::exitManagedClassType(ManagedClassType* node)
+void AstVisitorTraverse::exitUnmanagedClassType(UnmanagedClassType* node)
 {
 
 }

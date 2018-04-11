@@ -24,7 +24,7 @@
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -436,7 +436,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return st;
   }
 
-  if (ManagedClassType* actualMt = toManagedClassType(actualType)) {
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
     AggregateType* actualC = actualMt->getCanonicalClass();
     if (canInstantiate(actualC, formalType))
       return actualC;
@@ -448,7 +448,7 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
-    } else if (ManagedClassType* actualMt = toManagedClassType(vt)) {
+    } else if (UnmanagedClassType* actualMt = toUnmanagedClassType(vt)) {
       AggregateType* actualC = actualMt->getCanonicalClass();
       if (canInstantiate(actualC, formalType))
         return actualC;
@@ -646,7 +646,7 @@ bool ResolutionCandidate::checkGenericFormals() {
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
           Type* cct = NULL;
-          if (ManagedClassType* mt = toManagedClassType(vt))
+          if (UnmanagedClassType* mt = toUnmanagedClassType(vt))
             cct = mt->getCanonicalClass();
 
           if (canInstantiate(actual->type, formal->type) == false &&

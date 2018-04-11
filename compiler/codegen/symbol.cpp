@@ -1217,7 +1217,7 @@ GenRet TypeSymbol::codegen() {
 
   // Should not be code generating non-canonical class pointers
   // (these are replaced with canonical ones after resolution)
-  if (isManagedClassType(type))
+  if (isUnmanagedClassType(type))
     INT_FATAL("attempting to code generate a managed class type");
 
   if( info->cfile ) {

@@ -22,7 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -491,7 +491,7 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
     // by at->instantiatedFrom
     retval = true;
 
-  } else if (isAggregateType(sub) || isManagedClassType(sub)) {
+  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
     // handle unmanaged / class types
     AggregateType* subAt = toAggregateType(sub);
     Type* useSuper = super;

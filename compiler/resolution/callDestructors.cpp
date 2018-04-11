@@ -25,7 +25,7 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "lifetime.h"
-#include "ManagedClassType.h"
+#include "UnmanagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1357,49 +1357,6 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
   INT_ASSERT(autoDestroyFn);
   CallExpr* autoDestroyCall = new CallExpr(autoDestroyFn, formal);
   downEndCount->insertBefore(autoDestroyCall);
-}
-
-static void convertClassTypeToCanonical(Type** typePtr) {
-  Type* t = *typePtr;
-  // If it's a class, get the canonical class type,
-  // and set the type to that if it's different.
-  if (ManagedClassType* mt = toManagedClassType(t)) {
-    AggregateType* at = mt->getCanonicalClass();
-    if (at != t)
-      *typePtr = at;
-  }
-  // Otherwise, leave the type as-is.
-}
-
-static void convertClassTypesToCanonical() {
-  // Anything that has unmanaged pointer type should be using the canonical
-  // type instead.
-
-  forv_Vec(VarSymbol, var, gVarSymbols) {
-    convertClassTypeToCanonical(&var->type);
-  }
-
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    convertClassTypeToCanonical(&arg->type);
-  }
-
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ManagedClassType* mt = toManagedClassType(ts->type)) {
-      TypeSymbol* useTS = mt->getCanonicalClass()->symbol;
-      if (useTS != ts) {
-        for_SymbolSymExprs(se, ts) {
-          se->setSymbol(useTS);
-        }
-      }
-    }
-  }
-
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    convertClassTypeToCanonical(&fn->retType);
-    if (fn->iteratorInfo) {
-      convertClassTypeToCanonical(&fn->iteratorInfo->yieldedType);
-    }
-  }
 }
 
 /************************************* | **************************************
