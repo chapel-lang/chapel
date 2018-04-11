@@ -904,15 +904,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 3);
-    SymExpr*      rOpIdxSE  = toSymExpr(call->get(1));
-    VarSymbol*    rOpIdxSym = toVarSymbol(rOpIdxSE->symbol());
-    int           rOpIdx    = (int) (rOpIdxSym->immediate->int_value());
     Expr*         rhs       = call->get(3)->remove();
     Expr*         lhs       = call->get(2)->remove();
-    ForallStmt*   fs        = enclosingForallStmt(call);
-    // rOpIdx was computed by reduceIntentIdx()
-    ShadowVarSymbol*   svar = fs->getShadowVar(rOpIdx);
-    Symbol*       globalOp  = toSymExpr(svar->reduceOpExpr())->symbol();
+    ShadowVarSymbol*   svar = toShadowVarSymbol(toSymExpr(lhs)->symbol());
+    Symbol*       globalOp  = svar->ReduceOpForAccumState();
 
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));
     INT_ASSERT(svar->isReduce());

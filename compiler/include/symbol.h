@@ -79,16 +79,28 @@ typedef std::bitset<NUM_FLAGS> FlagSet;
 // ForallIntentTag: a task- or forall-intent tag
 //
 enum ForallIntentTag {
-  TFI_DEFAULT, // aka TFI_BLANK
+  TFI_DEFAULT,        // aka TFI_BLANK
   TFI_CONST,
+  TFI_IN_OUTERVAR,    // see below
   TFI_IN,
   TFI_CONST_IN,
   TFI_REF,
   TFI_CONST_REF,
   TFI_REDUCE,
+  TFI_REDUCE_OP,      // see below
+  TFI_TASK_PRIVATE,   // a task-private variable, TPV
 };
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag);
+
+/* ForallIntentTag enum:
+
+TFI_IN_OUTERVAR shadow var is added by compiler as a placeholder
+for the TFI_IN/TFI_CONST_IN shadow var's outer variable.
+
+TFI_REDUCE_OP shadow var is added by compiler. It is the reduce op
+for the TFI_REDUCE shadow var, which is the accumulation state.
+*/
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForIntent(IntentTag intent);
@@ -397,6 +409,17 @@ public:
   Symbol*  outerVarSym()  const;
   // Returns the EXPR in "with (EXPR reduce x)".
   Expr*    reduceOpExpr() const;
+
+  BlockStmt* initBlock()   const { return svInitBlock; }
+  BlockStmt* deinitBlock() const { return svDeinitBlock; }
+
+  // Convert between TFI_[CONST]_IN and TFI_IN_OUTERVAR svars.
+  ShadowVarSymbol* OutervarForIN() const;
+  ShadowVarSymbol* INforOutervar() const;
+  // Convert between TFI_REDUCE and TFI_REDUCE_OP svars.
+  ShadowVarSymbol* ReduceOpForAccumState() const;
+  ShadowVarSymbol* AccumStateForReduceOp() const;
+
   // Remove no-longer-needed references to outside symbols when lowering.
   void     removeSupportingReferences();
 
@@ -408,10 +431,13 @@ public:
   // See also: sv->outerVarSE() and sv->outerVarSym().
   Expr* outerVarRep;
 
-  // For a reduce intent, the reduce expression.
-  // For a task-private variable, the initialization expression.
-  // Either way, wrapped in a block.  Otherwise it is NULL.
+  // For a reduce intent, the reduce expression, wrapped in a block.
+  // Otherwise NULL.
   BlockStmt* specBlock;
+
+  // Corresponding actions to be performed at task startup and teardown.
+  BlockStmt* svInitBlock;      // always present
+  BlockStmt* svDeinitBlock;    //  "
 
   // A reduction class instance aka "Operator".
   Symbol* reduceGlobalOp;

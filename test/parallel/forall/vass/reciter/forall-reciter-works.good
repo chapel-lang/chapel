@@ -20,18 +20,18 @@ done iii0
 recursing for depth 2
 recursing for depth 1
 myiter start 1
-  101      1      2
-  102    102    103
-  103    204    205
+  101      1
+  102    102
+  103    204
 myiter done  1
 myiter start 2
-  201      1    308
-  202    202    509
-  203    404    711
+  201    307
+  202    508
+  203    710
 myiter done  2
 myiter start 3
-  301      1    914
-  302    302   1215
-  303    604   1517
+  301    913
+  302   1214
+  303   1516
 myiter done  3
-done iii2  1  1820
+done iii1  1819

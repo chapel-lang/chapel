@@ -30,6 +30,7 @@ RESOLUTION_SRCS =                                              \
                   initializerResolution.cpp                    \
                   lifetime.cpp                                 \
                   loopDetails.cpp                              \
+                  lowerForalls.cpp                             \
                   lowerIterators.cpp                           \
                   postFold.cpp                                 \
                   preFold.cpp                                  \
