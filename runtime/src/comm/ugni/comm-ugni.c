@@ -1841,11 +1841,16 @@ void chpl_comm_post_task_init(void)
     return;
 
   //
-  // Now that the memory layer has been set up, we can allocate the various
-  // data we need and fill it in.  Some of this need not be shared and so we
-  // could have allocated it earlier, but the logical flow is clearer if we
-  // do all this in one place.
+  // Now that the memory layer and tasking have been set up, we can
+  // allocate the various data we need and fill it in.  Some of this
+  // need not be shared and so we could have allocated it earlier, but
+  // the logical flow is clearer if we do all this in one place.
   //
+
+  //
+  // Figure out how many comm domains we need.
+  //
+  compute_comm_dom_cnt();
 
   //
   // Get our NIC address and share it around the job.
@@ -1856,7 +1861,8 @@ void chpl_comm_post_task_init(void)
   // do this by gathering (locale, nic_addr) pairs and then scattering
   // the nic_addr values into the map, which is indexed by locale.
   //
-  // While we're at it, also share the barrier info struct addresses
+  // While we're at it, also compute the maximum number of communication
+  // domains on any node and share the barrier info struct addresses
   // around the job.
   //
   {
@@ -1872,20 +1878,25 @@ void chpl_comm_post_task_init(void)
       typedef struct {
         c_nodeid_t nodeID;
         uint32_t nic_addr;
+        uint32_t comm_dom_cnt;
         barrier_info_t* bar_info;
       } gdata_t;
 
-      gdata_t  my_gdata = { chpl_nodeID, nic_addr, &bar_info };
+      gdata_t  my_gdata = { chpl_nodeID, nic_addr, comm_dom_cnt, &bar_info };
       gdata_t* gdata;
 
       gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
                                             0, 0);
       if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-        CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
+        CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map etc.) failed");
+
+      comm_dom_cnt_max = gdata[0].comm_dom_cnt;  // redundant, but safe
 
       for (int i = 0; i < chpl_numNodes; i++) {
         nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
+        if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
+          comm_dom_cnt_max = gdata[i].comm_dom_cnt;
 
         if (gdata[i].nodeID >= bar_min_child
             && gdata[i].nodeID < bar_min_child + bar_num_children)
@@ -1897,8 +1908,6 @@ void chpl_comm_post_task_init(void)
       chpl_mem_free(gdata, 0, 0);
     }
   }
-
-  compute_comm_dom_cnt();
 
   //
   // We now have all the variable values (specifically: number of
@@ -2032,10 +2041,10 @@ static void compute_comm_dom_cnt(void)
   // If the user specified a communication concurrency value then make
   // that many comm domains.  Otherwise, if they specified the number
   // of hardware threads for tasking, make that many.  Otherwise, make
-  // at least enough that every processor PU we could be using can
-  // have one at the same time.  In the unlikely event that none of
-  // this was done or is known, make 16.  In any case, always add one
-  // for the polling task.
+  // as many as the tasking layer's expected maximum useful level of
+  // parallelism.  In the unlikely event that none of this was done or
+  // is known, make 16.  In any case, always add one for the polling
+  // task.
   //
   comm_dom_cnt = 0;
   if (commConcurrency == 0)
@@ -2057,7 +2066,7 @@ static void compute_comm_dom_cnt(void)
     if (comm_dom_cnt == 0) {
       uint32_t num_PUs;
 
-      if ((num_PUs = chpl_getNumLogicalCpus(true)) > 0)
+      if ((num_PUs = chpl_task_getMaxPar()) > 0)
         comm_dom_cnt = num_PUs;
     }
 
@@ -2658,34 +2667,6 @@ void set_up_for_polling(void)
   //
   acquire_comm_dom();
   cd->firmly_bound = true;
-
-  //
-  // Figure out the maximum number of communication domains on any
-  // locale.
-  //
-  {
-    typedef struct {
-      uint32_t comm_dom_cnt;
-    } gdata_t;
-
-    gdata_t  my_gdata = { comm_dom_cnt };
-    gdata_t* gdata;
-
-    gdata =
-      (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                    0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(comm_dom_cnt) failed");
-
-    comm_dom_cnt_max = gdata[0].comm_dom_cnt;
-    for (i = 1; i < chpl_numNodes; i++) {
-      if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
-        comm_dom_cnt_max = gdata[i].comm_dom_cnt;
-    }
-
-    chpl_mem_free(gdata, 0, 0);
-  }
 
   //
   // Make the fork request and acknowledgement space, and communicate
@@ -4510,8 +4491,9 @@ void rf_done_init(void)
 {
   int i, j;
 
-  if (RF_DONE_NUM_PER_POOL < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
-    chpl_warning("(RF_DONE_NUM_PER_POOL "
+  if (RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL
+      < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
+    chpl_warning("(RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL "
                  "< comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
                  "may lead to hangs",
                  0, 0);
