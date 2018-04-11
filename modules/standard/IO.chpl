@@ -3531,8 +3531,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
     err_args += preArg + name + ":" + args(i).type:string;
     if i != k then err_args += ", ";
   }
-  const ret = err_args:string;
-  return ret;
+  return err_args;
 }
 
 // documented in the style= error= version
