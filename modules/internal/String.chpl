@@ -183,7 +183,7 @@ module String {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.owned = owned;
-      this.initDone();
+      this.complete();
       // Don't need to do anything if s is an empty string
       if sLen != 0 {
         this.len = sLen;
@@ -219,7 +219,7 @@ module String {
     proc init(cs: c_string, length: int = cs.length,
                 owned: bool = true, needToCopy:  bool = true) {
       this.owned = owned;
-      this.initDone();
+      this.complete();
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
@@ -238,7 +238,7 @@ module String {
     proc init(buff: bufferType, length: int, size: int,
                 owned: bool = true, needToCopy: bool = true) {
       this.owned = owned;
-      this.initDone();
+      this.complete();
       this.reinitString(buff, length, size, needToCopy);
     }
 
