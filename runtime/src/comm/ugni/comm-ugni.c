@@ -2088,10 +2088,10 @@ static void compute_comm_dom_cnt(void)
     }
 
     if (comm_dom_cnt == 0) {
-      uint32_t num_PUs;
+      uint32_t maxPar;
 
-      if ((num_PUs = chpl_task_getMaxPar()) > 0)
-        comm_dom_cnt = num_PUs;
+      if ((maxPar = chpl_task_getMaxPar()) > 0)
+        comm_dom_cnt = maxPar;
     }
 
     if (comm_dom_cnt == 0)
