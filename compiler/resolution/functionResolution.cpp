@@ -2811,7 +2811,8 @@ static void findVisibleFunctionsAndCandidates(
   if (candidates.n             == 0 &&
       call->numActuals()       >= 1 &&
       call->get(1)->typeInfo() == dtMethodToken) {
-    Type* receiverType = call->get(2)->typeInfo()->getValType();
+    Type* receiverType =
+      canonicalClassType(call->get(2)->typeInfo()->getValType());
 
     if (typeUsesForwarding(receiverType) == true &&
         populateForwardingMethods(info)  == true) {
@@ -3083,7 +3084,7 @@ static bool populateForwardingMethods(CallInfo& info) {
 
     std::vector<FnSymbol*> methods;
 
-    collectVisibleMethodsNamed(delegate->type, methodName, methods);
+    collectVisibleMethodsNamed(canonicalClassType(delegate->type), methodName, methods);
 
     // Compute the type of `this` for use in the forwarding function.
     AggregateType* thisType = at;
@@ -6048,7 +6049,7 @@ static void handleUnstableNewError(CallExpr* newExpr) {
           } else {
             // TODO -- enable warning for internal/standard modules
             // along with updating them.
-            if (newExpr->getModule()->modTag == MOD_USER) {
+            /*if (newExpr->getModule()->modTag == MOD_USER) */{
               USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
               USR_PRINT(newExpr, "use 'new unmanaged %s' "
                                  "'new owned %s' or "
