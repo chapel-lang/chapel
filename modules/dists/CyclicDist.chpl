@@ -171,7 +171,7 @@ class Cyclic: BaseDist {
   var targetLocDom: domain(rank);
   var targetLocs: [targetLocDom] locale;
 
-  var locDist: [targetLocDom] LocCyclic(rank, idxType);
+  var locDist: [targetLocDom] unmanaged LocCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
@@ -345,7 +345,7 @@ proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable:
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Cyclic domain rank does not match distribution's");
-  var dom = new unmanaged CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
+  var dom = new unmanaged CyclicDom(rank=rank, idxType=idxType, dist = _to_unmanaged(this), stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -444,9 +444,9 @@ class LocCyclic {
 
 pragma "use default init"
 class CyclicDom : BaseRectangularDom {
-  const dist: Cyclic(rank, idxType);
+  const dist: unmanaged Cyclic(rank, idxType);
 
-  var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
 }
@@ -657,10 +657,10 @@ proc LocCyclicDom.member(i) return myBlock.member(i);
 pragma "use default init"
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: CyclicDom(rank, idxType, stridable);
+  var dom: unmanaged CyclicDom(rank, idxType, stridable);
 
-  var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
   const SENTINEL = max(rank*idxType);
 }
 
