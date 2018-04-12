@@ -2,7 +2,7 @@ enum numbers {
   one = 1,
   two,
   x = 0x8000000000000000,
-  three = one + two
+  three = one:uint + two:uint
 };
 
 proc is_uint(x:int) {

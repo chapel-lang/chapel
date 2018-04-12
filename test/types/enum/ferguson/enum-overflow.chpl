@@ -18,7 +18,7 @@
 enum myenum {
   a = 0x7fffffffffffffff,
   b,
-  c = b + 2
+  c = b:uint + 2
 }
 
 proc writeint(x:int) {
