@@ -743,9 +743,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   fprintf(makefile.fptr, "\nLIBS =");
   for_vector(const char, dirName, libDirs)
     fprintf(makefile.fptr, " -L%s", dirName);
-  for_vector(const char, libName, libFiles) {
+  for_vector(const char, libName, libFiles)
     fprintf(makefile.fptr, " -l%s", libName);
-  }
   if (fLinkStyle==LS_STATIC)
       fprintf(makefile.fptr, " $(LIBMVEC)" );
   fprintf(makefile.fptr, "\n");
