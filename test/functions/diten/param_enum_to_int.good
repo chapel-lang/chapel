@@ -1,2 +1,6 @@
-param 2
-non-param 2
+param_enum_to_int.chpl:13: error: unresolved call 'foo(color)'
+param_enum_to_int.chpl:3: note: candidates are: foo(param i: int)
+param_enum_to_int.chpl:6: note:                 foo(i: int)
+param_enum_to_int.chpl:14: error: unresolved call 'foo(color)'
+param_enum_to_int.chpl:3: note: candidates are: foo(param i: int)
+param_enum_to_int.chpl:6: note:                 foo(i: int)
