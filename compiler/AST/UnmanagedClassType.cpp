@@ -23,8 +23,8 @@
 #include "symbol.h"
 #include "expr.h"
 #include "iterator.h"
-                          
-UnmanagedClassType::UnmanagedClassType(AggregateType* cls) 
+
+UnmanagedClassType::UnmanagedClassType(AggregateType* cls)
   : Type(E_UnmanagedClassType, NULL) {
 
   canonicalClass = cls;
@@ -121,6 +121,16 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
         se->setSymbol(newTS);
       }
     }
+
+    form_Map(SymbolMapElem, e, ts->type->substitutions) {
+      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+        Type* newT = convert(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          e->value = newTS;
+        }
+      }
+    }
   }
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -131,6 +141,16 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
       Type* newYieldT = convert(fn->iteratorInfo->yieldedType);
       if (newYieldT != fn->iteratorInfo->yieldedType)
         fn->iteratorInfo->yieldedType = newYieldT;
+    }
+
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+        Type* newT = convert(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          e->value = newTS;
+        }
+      }
     }
   }
 }
