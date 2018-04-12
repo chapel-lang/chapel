@@ -2016,6 +2016,10 @@ uint32_t gni_get_nic_address(int device_id)
 }
 
 
+//
+// This may call the tasking layer, so don't call it before that is
+// initialized.
+//
 static void compute_comm_dom_cnt(void)
 {
   int commConcurrency = -1;
