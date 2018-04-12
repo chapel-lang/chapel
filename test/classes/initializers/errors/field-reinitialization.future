@@ -1,0 +1,2 @@
+bug: reinitialization of var fields not detected
+#9178
