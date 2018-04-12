@@ -1,10 +1,10 @@
 enum color {red, green, blue};
 
-proc foo(x: color) {
+proc foo(x: int(64)) {
   writeln("In normal version");
 }
 
-proc foo(param x: color) {
+proc foo(param x: int(64)) {
   writeln("In param version");
 }
 
