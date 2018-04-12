@@ -106,6 +106,8 @@ tags
 /test/Logs
 /test/**/perfdat
 
+/test/LocaleModels/dmk/locale_name.good
+
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs

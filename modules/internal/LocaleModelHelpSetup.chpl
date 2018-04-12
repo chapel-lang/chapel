@@ -112,9 +112,9 @@ module LocaleModelHelpSetup {
     // intended to describe.
     var comm, spawnfn : c_string;
     extern proc chpl_nodeName() : c_string;
-    // sys_getenv returns zero on success.
-    if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
-      sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
+    // sys_getenv returns one on success.
+    if sys_getenv(c"CHPL_COMM", comm) == 1 && comm == c"gasnet" &&
+      sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L"
     then local_name = chpl_nodeName():string + "-" + _node_id:string;
     else local_name = chpl_nodeName():string;
 
