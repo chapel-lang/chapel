@@ -354,7 +354,7 @@ module DateTime {
   proc date.isocalendar() {
     proc findThursday(d: date) {
       var wd = d.weekday();
-      return d + new timedelta(days = (DayOfWeek.Thursday - wd): int);
+      return d + new timedelta(days = (DayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
