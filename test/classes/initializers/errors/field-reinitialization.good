@@ -1,0 +1,1 @@
+field-reinitialization.chpl:6: error: multiple initializations of field "favorite"
