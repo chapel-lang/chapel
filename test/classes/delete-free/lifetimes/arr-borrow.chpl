@@ -7,15 +7,15 @@ class MyClass {
 
 record R {
   pragma "owned"
-  var owned:MyClass;
+  var myowned:MyClass;
 
   proc readOwned() {
-    return owned;
+    return myowned;
   }
 }
 
 proc R.deinit() {
-  delete owned;
+  delete myowned;
 }
 
 proc badReturnBorrowLocalArrayElement() {

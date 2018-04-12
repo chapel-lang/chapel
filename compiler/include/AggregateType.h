@@ -34,7 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-
 enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
@@ -142,12 +141,20 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
+  UnmanagedClassType*         getUnmanagedClass();
+
+  void                        generateUnmanagedClassTypes();
 
   //
   // Public fields
   //
 
   AggregateTag                aggregateTag;
+
+  // These fields support differentiating between unmanaged class
+  // pointers and borrows. At the present time, borrows are represented
+  // by plain AggregateType and unmanaged class pointers use this special type.
+  UnmanagedClassType*         unmanagedClass;
 
   FnSymbol*                   typeConstructor;
 

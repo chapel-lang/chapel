@@ -9,15 +9,15 @@ record R {
   var borrowed:MyClass;
 
   pragma "owned"
-  var owned:MyClass;
+  var myowned:MyClass;
 
   proc readOwned() {
-    return owned;
+    return myowned;
   }
 }
 
 proc R.deinit() {
-  delete owned;
+  delete myowned;
 }
 
 proc makeR(borrow:MyClass) {
@@ -27,27 +27,27 @@ proc makeR(borrow:MyClass) {
 proc makeR2(borrow:MyClass) {
   var r:R;
   r.borrowed = borrow;
-  r.owned = new MyClass(10*borrow.x);
+  r.myowned = new MyClass(10*borrow.x);
   return r;
 }
 
 proc myfun(ref lhs:R, const ref arg:R) {
   var tmp:R;
   tmp = arg;
-  tmp.owned = nil;
+  tmp.myowned = nil;
   lhs = tmp;
 }
 
 proc badF1(borrow:MyClass) {
   var r = makeR(borrow);
-  return r.owned;
-  // r.owned destroyed here.
+  return r.myowned;
+  // r.myowned destroyed here.
 }
 
 proc badF2(borrow:MyClass) {
   var r = makeR(borrow);
   return r.readOwned();
-  // r.owned destroyed here.
+  // r.myowned destroyed here.
 }
 
 proc badF3() {
@@ -65,7 +65,7 @@ proc g() {
   if branch then
     return a;
   else
-    return makeR(a.owned);
+    return makeR(a.myowned);
 }
 
 proc h() {

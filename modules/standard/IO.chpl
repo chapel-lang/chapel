@@ -3513,7 +3513,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+      return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
     }
   }
 }
@@ -6819,7 +6819,7 @@ private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):str
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
 }
 
 

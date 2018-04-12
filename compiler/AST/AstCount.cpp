@@ -60,6 +60,15 @@ foreach_ast(count_members);
   return sum;
 }
 
+bool AstCount::enterUnmanagedClassType(UnmanagedClassType* node) {
+  numUnmanagedClassType++;
+  return true;
+}
+
+void AstCount::exitUnmanagedClassType(UnmanagedClassType* node) {
+}
+
+
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;
   return true;
