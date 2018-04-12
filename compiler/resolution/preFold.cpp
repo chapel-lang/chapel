@@ -474,6 +474,29 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_IS_CLASS_TYPE)) {
+    Type* t = call->get(1)->typeInfo();
+
+    if (isClassLike(t) && !t->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    Type* totype = call->typeInfo();
+
+    if (isTypeExpr(call->get(1))) {
+      retval = new SymExpr(totype->symbol);
+    } else {
+      retval = new CallExpr(PRIM_CAST, totype->symbol, call->get(1)->copy());
+    }
+
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_IS_EXTERN_CLASS_TYPE)) {
     AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
 
@@ -904,15 +927,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_REDUCE_ASSIGN)) {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 3);
-    SymExpr*      rOpIdxSE  = toSymExpr(call->get(1));
-    VarSymbol*    rOpIdxSym = toVarSymbol(rOpIdxSE->symbol());
-    int           rOpIdx    = (int) (rOpIdxSym->immediate->int_value());
     Expr*         rhs       = call->get(3)->remove();
     Expr*         lhs       = call->get(2)->remove();
-    ForallStmt*   fs        = enclosingForallStmt(call);
-    // rOpIdx was computed by reduceIntentIdx()
-    ShadowVarSymbol*   svar = fs->getShadowVar(rOpIdx);
-    Symbol*       globalOp  = toSymExpr(svar->reduceOpExpr())->symbol();
+    ShadowVarSymbol*   svar = toShadowVarSymbol(toSymExpr(lhs)->symbol());
+    Symbol*       globalOp  = svar->ReduceOpForAccumState();
 
     INT_ASSERT(!strcmp(toSymExpr(lhs)->symbol()->name, svar->name));
     INT_ASSERT(svar->isReduce());

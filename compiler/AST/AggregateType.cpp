@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -41,6 +42,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
+  unmanagedClass      = NULL;
+
   typeConstructor     = NULL;
   defaultInitializer  = NULL;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;
@@ -194,9 +197,21 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
+          retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
+        }
       }
     }
   }
@@ -209,9 +224,21 @@ DefExpr* AggregateType::toSuperField(CallExpr* expr) {
 
   if (isClass() == true) {
     forv_Vec(AggregateType, pt, dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
         break;
+      } else if (DefExpr* field = pt->toSuperField(expr)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(expr)) {
+          retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(expr)) {
+          retval = field;
+          break;
+        }
       }
     }
   }
@@ -608,7 +635,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent) {
     retval->dispatchParents.add(parent);
     parent->dispatchChildren.add_exclusive(retval);
 
-    retval->symbol->removeFlag(FLAG_GENERIC);
+    if (retval->setFirstGenericField() == false) {
+      retval->symbol->removeFlag(FLAG_GENERIC);
+    }
 
     symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
@@ -705,27 +734,11 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym) {
 
   retval->substitutions.copy(substitutions);
 
-  // Copy the generic field map of the previous instantiation (this), and
-  // add a new entry for the field being instantiated.
-  retval->genericFieldMap.copy(genericFieldMap);
-
-  // Add two new entries to retval's genericFieldMap:
-  // 1) Map from this' generic field to the corresponding instantiated thing in
-  //    'retval'
-  // 2) Map from root instantiation's generic field to instantiated thing in
-  //    'retval'
-  //
-  // Case #2 is necessary because expressions may still refer to the root
-  // instantiation's field
   if (field->hasFlag(FLAG_PARAM) == true) {
-    retval->genericFieldMap.put(getField(genericField), sym);
-    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), sym);
     retval->substitutions.put(field, sym);
     retval->symbol->renameInstantiatedSingle(sym);
 
   } else {
-    retval->genericFieldMap.put(getField(genericField), field);
-    retval->genericFieldMap.put(getRootInstantiation()->getField(genericField), field);
     retval->substitutions.put(field, sym->typeInfo()->symbol);
     retval->symbol->renameInstantiatedSingle(sym->typeInfo()->symbol);
   }
@@ -784,9 +797,6 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   newInstance->substitutions.copy(this->substitutions);
 
-  // Inherit generic field map from parent
-  newInstance->genericFieldMap.map_union(parentType->genericFieldMap);
-
   Symbol* field = newInstance->getField(1);
   newInstance->substitutions.put(field, parentType->symbol);
   newInstance->symbol->renameInstantiatedFromSuper(parentType->symbol);
@@ -803,7 +813,7 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   INT_ASSERT(inserted);
 
-  if (newInstance->symbol->hasFlag(FLAG_GENERIC) == true) {
+  if (newInstance->setFirstGenericField() == false) {
     newInstance->symbol->removeFlag(FLAG_GENERIC);
   }
 
@@ -2524,6 +2534,30 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   return retval;
 }
 
-SymbolMap& AggregateType::getGenericFieldMap() {
-  return genericFieldMap;
+UnmanagedClassType* AggregateType::getUnmanagedClass() {
+  if (aggregateTag == AGGREGATE_CLASS) {
+
+    if (!unmanagedClass)
+      generateUnmanagedClassTypes();
+
+    return unmanagedClass;
+  }
+  return NULL;
+}
+
+void AggregateType::generateUnmanagedClassTypes() {
+  AggregateType* at = this;
+  if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate unmanaged class type
+    UnmanagedClassType* unmanaged = new UnmanagedClassType(at);
+    at->unmanagedClass = unmanaged;
+    TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
+    // The unmanaged type isn't really an object, shouldn't have its own fields
+    tsUnmanaged->addFlag(FLAG_NO_OBJECT);
+    // The generated code should just use the canonical class name
+    tsUnmanaged->cname = at->symbol->cname;
+    DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
+    at->symbol->defPoint->insertAfter(defUnmanaged);
+  }
 }

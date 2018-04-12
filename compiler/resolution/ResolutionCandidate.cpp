@@ -24,6 +24,7 @@
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -435,12 +436,23 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return st;
   }
 
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
+    AggregateType* actualC = actualMt->getCanonicalClass();
+    if (canInstantiate(actualC, formalType))
+      return actualC;
+  }
+
   if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType))
+    if (canInstantiate(vt, formalType)) {
       return vt;
-    else if (Type* st = vt->scalarPromotionType)
+    } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
+    } else if (UnmanagedClassType* actualMt = toUnmanagedClassType(vt)) {
+      AggregateType* actualC = actualMt->getCanonicalClass();
+      if (canInstantiate(actualC, formalType))
+        return actualC;
+    }
   }
 
   return NULL;
@@ -633,12 +645,16 @@ bool ResolutionCandidate::checkGenericFormals() {
           Type* vt  = actual->getValType();
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          Type* cct = NULL;
+          if (UnmanagedClassType* mt = toUnmanagedClassType(vt))
+            cct = mt->getCanonicalClass();
 
           if (canInstantiate(actual->type, formal->type) == false &&
 
               (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
               (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
-              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
+              (svt == NULL || canInstantiate(svt, formal->type) == false) &&
+              (cct == NULL || canInstantiate(cct, formal->type) == false)) {
 
             return false;
           }

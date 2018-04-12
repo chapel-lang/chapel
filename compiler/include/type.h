@@ -50,6 +50,7 @@ class DefExpr;
 class EnumSymbol;
 class Expr;
 class FnSymbol;
+class UnmanagedClassType;
 class Symbol;
 class TypeSymbol;
 class VarSymbol;
@@ -397,6 +398,7 @@ TYPE_EXTERN PrimitiveType*    dtNil;
 TYPE_EXTERN PrimitiveType*    dtUnknown;
 TYPE_EXTERN PrimitiveType*    dtVoid;
 TYPE_EXTERN PrimitiveType*    dtValue;
+TYPE_EXTERN PrimitiveType*    dtUnmanaged;
 TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType*    dtModuleToken;
@@ -445,6 +447,7 @@ int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t);
 bool isClassOrNil(Type* t);
+bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 

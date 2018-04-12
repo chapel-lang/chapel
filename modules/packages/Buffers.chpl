@@ -695,7 +695,7 @@ module Buffers {
                                 start._bufit_internal, end._bufit_internal,
                                 buf, len);
         value = new string(buff=buf, length=len, size=len+1,
-                             owned=true, needToCopy=false);
+                             isowned=true, needToCopy=false);
         ret = end;
       }
     }

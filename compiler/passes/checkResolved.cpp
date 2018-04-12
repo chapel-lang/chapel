@@ -225,6 +225,9 @@ isDefinedAllPaths(Expr* expr, Symbol* ret, RefSet& refs)
     }
   }
 
+  if (isForallStmt(expr))
+    return 0;
+
   if (isExternBlockStmt(expr))
     return 0;
 

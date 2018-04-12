@@ -1,0 +1,2 @@
+assignTypes.chpl:17: In function '=':
+assignTypes.chpl:18: error: illegal assignment to type

@@ -49,6 +49,7 @@
   macro(PrimitiveType) sep                         \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+  macro(UnmanagedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
   macro(VarSymbol)    sep                          \
@@ -188,7 +189,8 @@ enum AstTag {
 
   E_PrimitiveType,
   E_EnumType,
-  E_AggregateType
+  E_AggregateType,
+  E_UnmanagedClassType
 };
 
 static inline bool isExpr(AstTag tag)
@@ -198,7 +200,7 @@ static inline bool isSymbol(AstTag tag)
 { return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
 
 static inline bool isType(AstTag tag)
-{ return tag >= E_PrimitiveType  && tag <= E_AggregateType; }
+{ return tag >= E_PrimitiveType  && tag <= E_UnmanagedClassType; }
 
 
 //
@@ -381,6 +383,7 @@ def_is_ast(LabelSymbol)
 def_is_ast(PrimitiveType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
+def_is_ast(UnmanagedClassType)
 #undef def_is_ast
 
 bool isLoopStmt(const BaseAST* a);
@@ -430,6 +433,7 @@ def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
+def_to_ast(UnmanagedClassType)
 def_to_ast(Type)
 
 def_to_ast(LoopStmt);
@@ -483,6 +487,7 @@ def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
+def_less_ast(UnmanagedClassType)
 def_less_ast(Type)
 
 def_less_ast(LoopStmt);
@@ -647,6 +652,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, shadowVariables(),     call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterIRdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterICdef,         call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterGetIterator,   call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ForallStmt, fRecIterFreeIterator,  call, __VA_ARGS__); \
     AST_CALL_CHILD(_a, ForallStmt, loopBody(),            call, __VA_ARGS__); \
     break;                                                                    \
   case E_ModuleSymbol:                                                  \
@@ -657,10 +666,12 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, ArgSymbol, defaultExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, ArgSymbol, variableExpr, call, __VA_ARGS__);     \
     break;                                                              \
-  case E_ShadowVarSymbol:                                               \
-    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep, call, __VA_ARGS__);\
-    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,   call, __VA_ARGS__);\
-    break;                                                              \
+  case E_ShadowVarSymbol:                                                   \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, outerVarRep,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, specBlock,     call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svInitBlock,   call, __VA_ARGS__);  \
+    AST_CALL_CHILD(_a, ShadowVarSymbol, svDeinitBlock, call, __VA_ARGS__);  \
+    break;                                                                  \
   case E_TypeSymbol:                                                    \
     AST_CALL_CHILD(_a, Symbol, type, call, __VA_ARGS__);                \
     break;                                                              \
@@ -677,6 +688,8 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, AggregateType, fields, call, __VA_ARGS__);        \
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
+    break;                                                              \
+  case E_UnmanagedClassType:                                              \
     break;                                                              \
   default:                                                              \
     break;                                                              \

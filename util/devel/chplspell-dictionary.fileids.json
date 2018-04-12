@@ -185,6 +185,9 @@
   "5bfd40ae-ca86-11e7-8b8c-10ddb1d4c3d5": [
     "compiler/resolution/implementForallIntents2.cpp"
   ],
+  "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
+    "compiler/resolution/lifetime.cpp"
+  ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
   ],
@@ -400,9 +403,6 @@
   ],
   "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/localeModels/knl/LocaleModel.chpl"
-  ],
-  "9c75ae66-1f18-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/layouts/LayoutCSR.chpl"
   ],
   "71a525f2-43ff-11e6-907f-843835579daa": [
     "modules/packages/BLAS.chpl"
@@ -695,6 +695,7 @@
     "test/release/examples/benchmarks/shootout/regexdna.chpl"
   ],
   "560979a4-4401-11e6-907f-843835579daa": [
+    "test/release/examples/benchmarks/shootout/revcomp-fast.chpl",
     "test/release/examples/benchmarks/shootout/revcomp.chpl"
   ],
   "7fcc0bd0-b85f-11e6-9740-843835579daa": [
@@ -756,6 +757,18 @@
   ],
   "eb249ff0-b850-11e6-9740-843835579daa": [
     "test/release/examples/programs/quicksort.chpl"
+  ],
+  "80066972-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Expressions/condexp.chpl"
+  ],
+  "84377626-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Modules/nested-use.chpl"
+  ],
+  "79b61d92-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Procedures/varargs.chpl"
+  ],
+  "7626c32a-2f20-11e8-aa67-10ddb1d4c3d5": [
+    "test/release/examples/spec/Statements/conditionals.chpl"
   ],
   "a717e780-d45d-11e6-b38c-acbc32c4f96b": [
     "test/release/examples/users-guide/base/typeAliases.chpl"

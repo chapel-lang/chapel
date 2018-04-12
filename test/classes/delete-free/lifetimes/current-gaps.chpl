@@ -34,9 +34,9 @@ proc bad2(arg:MyClass) {
 }
 
 proc test() {
-  var owned = new Owned(new MyClass(1));
+  var myowned = new Owned(new MyClass(1));
 
-  var borrow = owned.borrow();
+  var borrow = myowned.borrow();
   bad1(borrow);
   bad2(borrow);
 }
@@ -49,15 +49,15 @@ record RBorrowAndOwn {
   var borrowed:MyClass;
 
   pragma "owned"
-  var owned:MyClass;
+  var myowned:MyClass;
 
   proc readOwned() {
-    return owned;
+    return myowned;
   }
 }
 
 proc RBorrowAndOwn.deinit() {
-  delete owned;
+  delete myowned;
 }
 
 proc makeR(borrow:MyClass) {

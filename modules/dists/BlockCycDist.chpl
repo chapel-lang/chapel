@@ -477,6 +477,7 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
+pragma "use default init"
 class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
@@ -698,7 +699,11 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1) = {0..#computeFlatInds()};
+  var myFlatInds: domain(1);
+}
+
+proc LocBlockCyclicDom.postinit() {
+  myFlatInds = {0..#computeFlatInds()};
 }
 
 //

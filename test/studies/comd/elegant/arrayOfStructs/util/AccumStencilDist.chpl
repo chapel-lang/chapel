@@ -80,6 +80,7 @@ class LocAccumStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
+pragma "use default init"
 class AccumStencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: AccumStencil(rank, idxType, ignoreFluff);

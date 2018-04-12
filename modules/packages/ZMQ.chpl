@@ -763,8 +763,8 @@ module ZMQ {
         //
         // TODO: If *not crossing locales*, check for ownership and
         // conditionally have ZeroMQ free the memory.
-        var copy = new string(s=data, owned=true);
-        copy.owned = false;
+        var copy = new string(s=data, isowned=true);
+        copy.isowned = false;
 
         // Create the ZeroMQ message from the string buffer
         var msg: zmq_msg_t;
@@ -866,7 +866,7 @@ module ZMQ {
         var len = zmq_msg_size(msg):int;
         var str = new string(buff=zmq_msg_data(msg):c_ptr(uint(8)),
                              length=len, size=len+1,
-                             owned=true, needToCopy=true);
+                             isowned=true, needToCopy=true);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }

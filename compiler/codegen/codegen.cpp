@@ -1650,7 +1650,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      typeSymbol->codegenMetadata();
+      if (!isUnmanagedClassType(typeSymbol->type))
+        typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other
     // type annotations are defined, because there might be cycles.

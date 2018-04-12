@@ -22,6 +22,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include "chplcgfns.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "error.h"
@@ -48,9 +49,9 @@
 static char _nlbuf[16];
 static char** chpl_launch_create_argv(int argc, char* argv[],
                                       int32_t numLocales) {
-  int len = strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 1;
+  int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen("gasnetrun_ibv") + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  sprintf(cmd, "%sgasnetrun_ibv", WRAP_TO_STR(LAUNCH_PATH));
+  sprintf(cmd, "%s/%sgasnetrun_ibv", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH));
 
   const int largc = 9;
   char *largv[largc];
