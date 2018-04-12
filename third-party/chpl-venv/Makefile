@@ -30,14 +30,14 @@ $(CHPL_VENV_INSTALL_DIR):
 
 # Install pip to ensure we have an updated version
 $(PIP): $(CHPL_VENV_INSTALL_DIR)
-	(cd install && curl -O https://bootstrap.pypa.io/get-pip.py) &&\
+	(cd install && curl -O https://bootstrap.pypa.io/get-pip.py &&\
 	export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) &&\
-	python install/get-pip.py --user
+	$(PYTHON) get-pip.py --user)
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
-	export PYTHONPATH=$(CHPL_VENV_INSTALL_DIR):$(PIPLIB):$$PYTHONPATH && echo $(PYTHONPATH) &&\
-	python $(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
+	export PYTHONPATH="$(CHPL_VENV_INSTALL_DIR):$(PIPLIBS):$$PYTHONPATH" &&\
+	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
