@@ -214,7 +214,7 @@ writeln();
 //
 class Node {
   var data: real;
-  var next: raw Node;
+  var next: unmanaged Node;
 }
 
 
@@ -231,13 +231,13 @@ class Node {
 // the next locale.  That way, our execution of ``new`` will create
 // the new object on that "next" locale.
 //
-var head    = new raw Node(0);
+var head    = new unmanaged Node(0);
 
 var current = head;
 
 for i in 1..numLocales-1 do
   on Locales[i] {
-    current.next = new raw Node(i);
+    current.next = new unmanaged Node(i);
     current      = current.next;
   }
 
