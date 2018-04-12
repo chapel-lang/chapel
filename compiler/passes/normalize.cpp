@@ -2185,7 +2185,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
 
     } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
