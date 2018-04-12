@@ -814,47 +814,47 @@ class MyClass {
 } // end MyClass
 
 // Call compiler-generated initializer, using default value for memberBool.
-var myObject = new Owned(new MyClass(10));
-    myObject = new Owned(new MyClass(memberInt = 10)); // Equivalent
-writeln(myObject.getMemberInt());
+{
+  var myObject = new Owned(new MyClass(10));
+      myObject = new Owned(new MyClass(memberInt = 10)); // Equivalent
+  writeln(myObject.getMemberInt());
 
-// Same, but provide a memberBool value explicitly.
-var myDiffObject = new Owned(new MyClass(-1, true));
-    myDiffObject = new Owned(new MyClass(memberInt = -1,
-                                memberBool = true)); // Equivalent
-writeln(myDiffObject);
+  // Same, but provide a memberBool value explicitly.
+  var myDiffObject = new Owned(new MyClass(-1, true));
+      myDiffObject = new Owned(new MyClass(memberInt = -1,
+                                  memberBool = true)); // Equivalent
+  writeln(myDiffObject);
 
-// Similar, but rely on the default value of memberInt, passing in memberBool.
-var myThirdObject = new Owned(new MyClass(memberBool = true));
-writeln(myThirdObject);
+  // Similar, but rely on the default value of memberInt, passing in memberBool.
+  var myThirdObject = new Owned(new MyClass(memberBool = true));
+  writeln(myThirdObject);
 
-// If the user-defined initializer above had been uncommented, we could
-// make the following calls:
-//
-/* .. code-block:: chapel
+  // If the user-defined initializer above had been uncommented, we could
+  // make the following calls:
+  //
+  /* .. code-block:: chapel
 
-      // var myOtherObject = new MyClass(1.95);
-      //     myOtherObject = new MyClass(val = 1.95);
-      // writeln(myOtherObject.getMemberInt());
-*/
+        // var myOtherObject = new MyClass(1.95);
+        //     myOtherObject = new MyClass(val = 1.95);
+        // writeln(myOtherObject.getMemberInt());
+  */
 
-// We can define an operator on our class as well, but
-// the definition has to be outside the class definition.
-proc +(A : MyClass, B : MyClass) : Owned(MyClass) {
-  return
-    new Owned(
-      new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
-                  memberBool = A.getMemberBool() || B.getMemberBool()));
+  // We can define an operator on our class as well, but
+  // the definition has to be outside the class definition.
+  proc +(A : MyClass, B : MyClass) : Owned(MyClass) {
+    return
+      new Owned(
+        new MyClass(memberInt = A.getMemberInt() + B.getMemberInt(),
+                    memberBool = A.getMemberBool() || B.getMemberBool()));
+  }
+
+  var plusObject = myObject + myDiffObject;
+  writeln(plusObject);
+
+  // Destruction of an object: calls the deinit() routine and frees its memory
+  // would use 'delete' but it happens automatically for Owned variables
+  // when they go out of scope.
 }
-
-var plusObject = myObject + myDiffObject;
-writeln(plusObject);
-
-// Destruction of an object: calls the deinit() routine and frees its memory
-delete myObject;
-delete myDiffObject;
-delete myThirdObject;
-delete plusObject;
 
 // Classes can inherit from one or more parent classes
 class MyChildClass : MyClass {
