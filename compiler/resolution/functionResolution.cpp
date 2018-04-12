@@ -211,7 +211,7 @@ static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
 static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
-static void removeInitFields();
+static void removeTypedefParts();
 static void removeMootFields();
 static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
@@ -8700,7 +8700,7 @@ static void pruneResolvedTree() {
 
   removeTypeBlocks();
 
-  removeInitFields();
+  removeTypedefParts();
 
   removeWhereClauses();
 
@@ -9785,16 +9785,26 @@ static void insertRuntimeInitTemps() {
   }
 }
 
-// Remove typedef definitions
-static void removeInitFields()
+// Remove moot parts of AST for type a=b
+static void removeTypedefParts()
 {
   forv_Vec(DefExpr, def, gDefExprs)
   {
     if (! def->inTree()) continue;
-    if (! def->init) continue;
-    if (! (def->sym->hasFlag(FLAG_TYPE_VARIABLE) || def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) continue;
-    def->init->remove();
-    def->init = NULL;
+
+    if (def->init &&
+        (def->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+         def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) {
+      def->init->remove();
+      def->init = NULL;
+    }
+
+    // Also remove DefExprs for generic type variables
+    if (!isPrimitiveType(def->sym->type) &&
+        def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+        def->sym->type->symbol->hasFlag(FLAG_GENERIC)) {
+      def->remove();
+    }
   }
 }
 
