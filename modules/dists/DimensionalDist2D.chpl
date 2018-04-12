@@ -270,6 +270,21 @@ class DimensionalDist2D : BaseDist {
 
 // class LocDimensionalDist - no local distribution descriptor - for now
 
+private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type {
+  type d1type = dom1.dsiNewLocalDom1d(idxType, 0).type;
+  type d2type = dom2.dsiNewLocalDom1d(idxType, 0).type;
+
+  proc strideHelper(dom1d) param {
+    const dummy = dom1d.dsiNewLocalDom1d(idxType, 0).dsiSetLocalIndices1d(dom1d, 0);
+    return dummy.stridable;
+  }
+
+  param str = strideHelper(dom1) || strideHelper(dom2);
+
+  return LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
+}
+
+pragma "use default init"
 class DimensionalDom : BaseRectangularDom {
   // required
   const dist; // not reprivatized
@@ -285,7 +300,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // This is our index set; we store it here so we can get to it easily.
   // Although strictly speaking it is not necessary.
-  var whole: domainT;
+  var whole: domain(rank, idxType, stridable);
 
   // This is the idxType of the "storage index ranges" to be produced
   // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
@@ -311,8 +326,10 @@ class DimensionalDom : BaseRectangularDom {
                                          dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
                                          dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
-  // local domain descriptors
-  var localDdescs: [dist.targetIds] locDdescType; // not reprivatized
+  // local domain descriptors, not reprivatized
+  // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
+  // we clean this up?
+  var localDdescs: [dist.targetIds] locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
 class LocDimensionalDom {

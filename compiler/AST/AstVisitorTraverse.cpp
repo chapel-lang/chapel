@@ -39,6 +39,16 @@ void AstVisitorTraverse::exitAggrType(AggregateType* node)
 
 }
 
+bool AstVisitorTraverse::enterUnmanagedClassType(UnmanagedClassType* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitUnmanagedClassType(UnmanagedClassType* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterEnumType(EnumType* node)
 {
   return true;

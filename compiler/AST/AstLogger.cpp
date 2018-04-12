@@ -36,6 +36,14 @@ bool AstLogger::enterAggrType(AggregateType* node) {
 void AstLogger::exitAggrType(AggregateType* node) {
 }
 
+bool AstLogger::enterUnmanagedClassType(UnmanagedClassType* node) {
+  return true;
+}
+
+void AstLogger::exitUnmanagedClassType(UnmanagedClassType* node) {
+}
+
+
 bool AstLogger::enterEnumType(EnumType* node) {
   return true;
 }

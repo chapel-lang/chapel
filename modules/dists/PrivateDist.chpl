@@ -87,6 +87,7 @@ class Private: BaseDist {
   proc singleton() param return true;
 }
 
+pragma "use default init"
 class PrivateDom: BaseRectangularDom {
   var dist: Private;
 

@@ -49,6 +49,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1468,6 +1469,22 @@ static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
   }
 }
 
+static bool isUnmanagedClass(Type* t) {
+  if (isUnmanagedClassType(t))
+    return true;
+
+  return false;
+}
+static bool isBorrowClass(Type* t) {
+  if (isUnmanagedClassType(t))
+    return false;
+  else if (isClass(t))
+    return true;
+
+  return false;
+}
+
+
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
 static void addArgCoercion(FnSymbol*  fn,
@@ -1532,6 +1549,12 @@ static void addArgCoercion(FnSymbol*  fn,
     checkAgain = true;
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
+  } else if (isUnmanagedClass(ats->getValType()) &&
+             isBorrowClass(formal->getValType())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr(PRIM_CAST, formal->getValType()->symbol, prevActual);
 
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&

@@ -95,6 +95,7 @@ void addLibPath(const char* libString) {
 }
 
 void addLibFile(const char* libFile) {
+  // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 }
 
