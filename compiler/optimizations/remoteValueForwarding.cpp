@@ -457,6 +457,15 @@ static void insertSerialization(FnSymbol*  fn,
 
     Symbol* actualInput = actual->symbol();
 
+/*
+///////////
+2018-04-11 Vass: I am commenting out the following fragment as a temporary
+fix for a read-after-delete bug exposed in these tests:
+    parallel/forall/in-intents/coforall-plus-on
+    # under numa
+    parallel/forall/in-intents/both-arr-dom-const-const
+    parallel/forall/in-intents/both-arr-dom-var-const
+///////////
     // If we're working with a copy added to support an 'in' intent,
     // we don't need that copy anymore since the serialize/deserialize
     // calls will have the same effect. So remove the copy call
@@ -486,6 +495,7 @@ static void insertSerialization(FnSymbol*  fn,
         initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
       }
     }
+*/
 
     VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
     if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
