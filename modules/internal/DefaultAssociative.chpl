@@ -55,7 +55,7 @@ module DefaultAssociative {
     type idxType;
     param parSafe: bool;
   
-    var dist: DefaultDist;
+    var dist: unmanaged DefaultDist;
   
     // The guts of the associative domain
   
@@ -85,7 +85,7 @@ module DefaultAssociative {
   
     proc init(type idxType,
               param parSafe: bool,
-              dist: DefaultDist) {
+              dist: unmanaged DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
@@ -100,7 +100,7 @@ module DefaultAssociative {
     //
     proc dsiBuildArray(type eltType) {
       return new unmanaged DefaultAssociativeArr(eltType=eltType, idxType=idxType,
-                                       parSafeDom=parSafe, dom=this);
+                                       parSafeDom=parSafe, dom=_to_unmanaged(this));
     }
   
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) {
@@ -269,7 +269,7 @@ module DefaultAssociative {
     //
     // Associative Domain Interface
     //
-    proc dsiMyDist() : BaseDist {
+    proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 
@@ -564,7 +564,7 @@ module DefaultAssociative {
     type eltType;
     type idxType;
     param parSafeDom: bool;
-    var dom : DefaultAssociativeDom(idxType, parSafe=parSafeDom);
+    var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
     var data : [dom.tableDom] eltType;
   

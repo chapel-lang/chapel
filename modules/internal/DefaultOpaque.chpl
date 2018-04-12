@@ -63,13 +63,13 @@ module DefaultOpaque {
   class DefaultOpaqueDom: BaseOpaqueDom {
     type idxType = _OpaqueIndex;
     param parSafe: bool;
-    var dist: DefaultDist;
-    var adomain: DefaultAssociativeDom(idxType=_OpaqueIndex, parSafe=parSafe);
+    var dist: unmanaged DefaultDist;
+    var adomain: unmanaged DefaultAssociativeDom(idxType=_OpaqueIndex, parSafe=parSafe);
   
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
   
-    proc init(dist: DefaultDist, param parSafe: bool) {
+    proc init(dist: unmanaged DefaultDist, param parSafe: bool) {
       this.parSafe = parSafe;
       this.dist = dist;
       adomain = new unmanaged DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
@@ -133,7 +133,7 @@ module DefaultOpaque {
     }
   
     proc dsiBuildArray(type eltType) {
-      var ia = new unmanaged DefaultOpaqueArr(eltType=eltType, idxType=idxType, parSafe=parSafe, dom=this);
+      var ia = new unmanaged DefaultOpaqueArr(eltType=eltType, idxType=idxType, parSafe=parSafe, dom=_to_unmanaged(this));
       return ia;
     }
   }
@@ -160,7 +160,7 @@ module DefaultOpaque {
     type idxType;
     param parSafe: bool;
   
-    var dom: DefaultOpaqueDom(idxType=idxType, parSafe=parSafe);
+    var dom: unmanaged DefaultOpaqueDom(idxType=idxType, parSafe=parSafe);
     var anarray = new unmanaged DefaultAssociativeArr(eltType=eltType, idxType=idxType, parSafeDom=parSafe, dom=dom.adomain);
   
     proc deinit() {

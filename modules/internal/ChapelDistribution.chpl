@@ -103,7 +103,7 @@ module ChapelDistribution {
     // due to the creation of distribution and domain objects) than
     // rank-preserving slicing.
     //
-    inline proc add_dom(x:BaseDom) {
+    inline proc add_dom(x:unmanaged BaseDom) {
       on this {
         _lock_doms();
         _doms.append(x);

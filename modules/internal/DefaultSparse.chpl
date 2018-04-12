@@ -26,7 +26,7 @@ module DefaultSparse {
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
-    var dist: DefaultDist;
+    var dist: unmanaged DefaultDist;
 
     pragma "local field"
     var indices: [nnzDom] index(rank, idxType);
@@ -34,7 +34,7 @@ module DefaultSparse {
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
 
-    proc init(param rank, type idxType, dist: DefaultDist,
+    proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
       super.init(rank, idxType, parentDom);
 
@@ -43,7 +43,7 @@ module DefaultSparse {
 
     proc dsiBuildArray(type eltType)
       return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=this);
+                                  dom=_to_unmanaged(this));
 
     iter dsiIndsIterSafeForRemoving() {
       for i in 1..nnz by -1 {
@@ -322,7 +322,7 @@ module DefaultSparse {
       return actualAddCnt;
     }
 
-    proc dsiMyDist() : BaseDist {
+    proc dsiMyDist() : unmanaged BaseDist {
       return dist;
     }
 

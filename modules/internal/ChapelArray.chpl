@@ -350,6 +350,9 @@ module ChapelArray {
 
   pragma "unsafe"
   proc _newDomain(value) {
+    if _to_unmanaged(value.type) != value.type then
+      compilerError("Domain on borrow created");
+
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else
@@ -357,6 +360,9 @@ module ChapelArray {
   }
 
   proc _getDomain(value) {
+    if _to_unmanaged(value.type) != value.type then
+      compilerError("Domain on borrow created");
+
     if _isPrivatized(value) then
       return new _domain(value.pid, value, _unowned=true);
     else
@@ -553,7 +559,7 @@ module ChapelArray {
   // D, we ensure that is kept alive.  See
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
-  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       arr._decEltRefCounts = true;
       var ev: eltType;
@@ -562,7 +568,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       if arr._decEltRefCounts == false then
         halt("Decrementing array's elements' ref counts without having incremented first!");
@@ -683,7 +689,8 @@ module ChapelArray {
   // 'arr' can be a full-fledged array type or a class that inherits from
   // BaseArr
   //
-  proc chpl__isDROrDRView(arr) param where isArray(arr) || arr : BaseArr {
+  proc chpl__isDROrDRView(arr) param
+    where isArray(arr) || _to_borrowed(arr.type) : BaseArr {
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
     param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
@@ -3986,6 +3993,9 @@ module ChapelArray {
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
   inline proc chpl__unalias(x: domain) {
+    if _to_unmanaged(x._instance.type) != x._instance.type then
+      compilerError("Domain on borrow created");
+
     if x._unowned {
       // We could add an autoDestroy here, but it wouldn't do anything for
       // an unowned domain.
