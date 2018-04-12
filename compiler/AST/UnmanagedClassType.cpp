@@ -101,32 +101,6 @@ Type* canonicalClassType(Type* a) {
   return a;
 }
 
-
-static Type* convertClassTypeToCanonical(Type* t) {
-  // If it's a class, get the canonical class type,
-  // and set the type to that if it's different.
-  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
-    AggregateType* at = mt->getCanonicalClass();
-    return at;
-  }
-  // Otherwise, leave the type as-is.
-  return t;
-}
-
-/*
-static Type* convertClassTypeDefaultToBorrow(Type* t) {
-  // If it's a class, get the canonical class type,
-  // and set the type to that if it's different.
-  if (AggregateType* at = toAggregateType(t)) {
-    if (isClass(at)) {
-      return at->getBorrowClass();
-    }
-  }
-  // Otherwise, leave the type as-is.
-  return t;
-}
-*/
-
 static void convertClassTypes(Type* (*convert)(Type*)) {
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -161,15 +135,8 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
   }
 }
 
-/*
-void convertClassTypesDefaultToBorrow() {
-  // AggregateType class types should be borrows by default
-  convertClassTypes(convertClassTypeDefaultToBorrow);
-}
-*/
-
 void convertClassTypesToCanonical() {
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
-  convertClassTypes(convertClassTypeToCanonical);
+  convertClassTypes(canonicalClassType);
 }

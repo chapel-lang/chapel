@@ -890,12 +890,17 @@ static void processSyntacticDistributions(CallExpr* call) {
 }
 
 /* Find patterns like
-     (new (call manager (call ClassType init-args)))
-     ... where manager might be _owned _to_unmanaged _shared
+     (new (call <manager> (call ClassType <init-args>)))
+     ... where <manager> might be _owned _to_unmanaged _shared
 
    and replace them with
-     (new (call ClassType init-args _chpl_manager=manager)))
-   or
+     (new (call ClassType init-args _chpl_manager=<manager>)))
+
+   Here the "manager" indicates to function resolution whether
+   the new pointer should be:
+    * unmanaged
+    * owned
+    * shared
 
    This happens before call-tmps are added because they
    would obscure the situation.

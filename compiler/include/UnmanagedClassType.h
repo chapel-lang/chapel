@@ -42,8 +42,6 @@ public:
 
   void                    accept(AstVisitor* visitor);
   void                    replaceChild(BaseAST* oldAst, BaseAST* newAst);
-  Expr*                   getFirstExpr();
-  Expr*                   getNextExpr(Expr* expr);
   void                    verify();
   GenRet                  codegen();
   DECLARE_COPY(UnmanagedClassType);

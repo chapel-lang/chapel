@@ -5778,9 +5778,13 @@ static void resolveNew(CallExpr* newExpr) {
     gdbShouldBreakHere();
   }
 
-  // If it's a managed new, detect the manager and remove it
+  // If it's a managed new, detect the _chpl_manager named arg and remove it
   // The following variables allow the latter half of this function
-  // to construct the AST for initializing the manager itself.
+  // to construct the AST for initializing the owned/shared if necessary.
+  // Manager is:
+  //  dtUnmanaged for 'new unmanaged'
+  //  owned record for 'new owned'
+  //  shared record for 'new shared'
   Type* manager = NULL;
   CallExpr* managedMoveToFix = NULL;
 
@@ -8875,7 +8879,8 @@ static bool do_isUnusedClass(Type* t) {
     retval = false;
 
   // FALSE if the type constructor is used.
-  } else if (at && at->typeConstructor && at->typeConstructor->isResolved()) {
+  } else if (at && at->typeConstructor &&
+             at->typeConstructor->isResolved()) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was

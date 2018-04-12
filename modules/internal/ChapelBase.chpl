@@ -1890,6 +1890,9 @@ module ChapelBase {
   // was the nexus of several tricky resolution bugs.
 
   // type constructor for unmanaged pointers
+  // this could in principle be just _unmanaged (similar to type
+  // constructor for a record) but that is more challenging because
+  // _unmanaged is a built-in non-record type.
   proc _to_unmanaged(type t) type {
     type rt = __primitive("to unmanaged class", t).type;
     return rt;
