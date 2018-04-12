@@ -502,19 +502,39 @@ uint64_t chpl_sys_availMemoryBytes(void) {
 //
 // Return information about the processors on the system.
 //
-static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
-  //
-  // Currently this is pretty limited -- it only returns the number of
-  // physical and logical (hyperthread, e.g.) CPUs, mostly relies on
-  // /proc/cpuinfo, and only supports homogeneous compute nodes with
-  // the same number of cores and siblings on every physical CPU.  It
-  // will probably need to become more complicated in the future.
-  //
+static struct {
+  int physId, coreId;
+} cpuTab[1024];
+static const int cpuTabSize = sizeof(cpuTab) / sizeof(cpuTab[0]);
+static int cpuTabLen = 0;
+
+
+static void
+add_to_cpuTab(int physId, int coreId) {
+  int i = 0;
+  while (i < cpuTabLen
+         && (physId != cpuTab[i].physId || coreId != cpuTab[i].coreId))
+    i++;
+  if (i >= cpuTabLen) {
+    if (++cpuTabLen >= cpuTabSize) {
+      chpl_internal_error("cpuTab[] full");
+    } else {
+      cpuTab[i].physId = physId;
+      cpuTab[i].coreId = coreId;
+    }
+  }
+}
+
+
+static int numCores, numPUs;
+
+
+static void getCpuInfo_once(void) {
   FILE* f;
   char buf[100];
   int procs = 0;
-  int cpuCores = 0;
-  int siblings = 0;
+  int physId;
+  int coreId;
 
   if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
@@ -526,35 +546,48 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
   //
   assert(f != NULL);
 
+  physId = coreId = -1;
+
   while (!feof(f) && fgets(buf, sizeof(buf), f) != NULL) {
     size_t buf_len = strlen(buf);
     int procTmp;
-    int cpuCoresTmp;
-    int siblingsTmp;
+    int physIdTmp;
+    int coreIdTmp;
 
     if (sscanf(buf, "processor : %i", &procTmp) == 1) {
       procs++;
     }
-    else if (sscanf(buf, "cpu cores : %i", &cpuCoresTmp) == 1) {
-      if (cpuCores == 0)
-        cpuCores = cpuCoresTmp;
-      else if (cpuCoresTmp != cpuCores)
-        chpl_internal_error("varying number of cpu cores");
+    else if (sscanf(buf, "physical id : %i", &physIdTmp) == 1) {
+      if (physId >= 0) {
+        add_to_cpuTab(physId, coreId);
+        coreId = -1;
+      }
+      physId = physIdTmp;
     }
-    else if (sscanf(buf, "siblings : %i", &siblingsTmp) == 1) {
-      if (siblings == 0)
-        siblings = siblingsTmp;
-      else if (siblingsTmp != siblings)
-        chpl_internal_error("varying number of siblings");
+    else if (sscanf(buf, "core id : %i", &coreIdTmp) == 1) {
+      if (coreId >= 0) {
+        add_to_cpuTab(physId, coreId);
+        physId = -1;
+      }
+      coreId = coreIdTmp;
     }
 
     while (buf[buf_len - 1] != '\n' && fgets(buf, sizeof(buf), f) != NULL)
       buf_len = strlen(buf);
   }
 
+  if (physId >= 0 || coreId >= 0) {
+    add_to_cpuTab(physId, coreId);
+  }
+
   fclose(f);
 
-  if (cpuCores == 0 && siblings == 0) {
+  if ((numPUs = procs) <= 0)
+    numPUs = 1;
+
+  if (cpuTabLen > 0) {
+    numCores = cpuTabLen;
+  } else {
     // We have a limited-format /proc/cpuinfo.
     // See if the /sys filesystem has any more information for us.
     int threads_per_core = 0;
@@ -611,18 +644,27 @@ static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
     }
     if (threads_per_core == 0)
       threads_per_core = 1;
-    if ((*p_numPhysCpus = procs / threads_per_core) <= 0)
-      *p_numPhysCpus = 1;
-  } else {
-    if (cpuCores == 0)
-      cpuCores = 1;
-    if (siblings == 0)
-      siblings = 1;
-    if ((*p_numPhysCpus = procs / (siblings / cpuCores)) <= 0)
-      *p_numPhysCpus = 1;
+    if ((numCores = procs / threads_per_core) <= 0)
+      numCores = 1;
   }
-  if ((*p_numLogCpus = procs) <= 0)
-    *p_numLogCpus = 1;
+}
+
+
+static void getCpuInfo(int* p_numPhysCpus, int* p_numLogCpus) {
+#ifdef _POSIX_VERSION
+  {
+    static pthread_once_t onceCtl = PTHREAD_ONCE_INIT;
+
+    if (pthread_once(&onceCtl, getCpuInfo_once) != 0) {
+      chpl_internal_error("pthread_once(getCpuInfo_once) failed");
+    }
+
+    *p_numPhysCpus = numCores;
+    *p_numLogCpus = numPUs;
+  }
+#else
+#error "on __linux__ or __NetBSD__, but !defined(_POSIX_VERSION)"
+#endif
 }
 #endif
 
