@@ -9,52 +9,52 @@ param enumParamEq1000 = numeral.M;
 param enumParamEqFive = numeral.V;
 
 
-int8or32orDefault(enumEq1000, enumEqFive);
+//int8or32orDefault(enumEq1000, enumEqFive);
 int8or32orDefault(1000, 5);
 writeln();
 
-int8vs32(numeral.I);
-int8vs32(numeral.M);
-int8vs32(enumEq1000);
-int8vs32(enumEqFive);
-int8vs32(enumParamEq1000);
-int8vs32(enumParamEqFive);
+/* int8vs32(numeral.I); */
+/* int8vs32(numeral.M); */
+/* int8vs32(enumEq1000); */
+/* int8vs32(enumEqFive); */
+/* int8vs32(enumParamEq1000); */
+/* int8vs32(enumParamEqFive); */
 writeln();
 
 int8paramVsNot(1);
-int8paramVsNot(numeral.I);
-int8paramVsNot(numeral.M);
-int8paramVsNot(enumEq1000);
-int8paramVsNot(enumEqFive);
-int8paramVsNot(enumParamEq1000);
-int8paramVsNot(enumParamEqFive);
+/* int8paramVsNot(numeral.I); */
+/* int8paramVsNot(numeral.M); */
+/* int8paramVsNot(enumEq1000); */
+/* int8paramVsNot(enumEqFive); */
+/* int8paramVsNot(enumParamEq1000); */
+/* int8paramVsNot(enumParamEqFive); */
 writeln();
 
 int16paramVsNot(1);
-int16paramVsNot(numeral.I);
-int16paramVsNot(numeral.M);
-int16paramVsNot(enumEq1000);
-int16paramVsNot(enumEqFive);
-int16paramVsNot(enumParamEq1000);
-int16paramVsNot(enumParamEqFive);
+/* int16paramVsNot(numeral.I); */
+/* int16paramVsNot(numeral.M); */
+/* int16paramVsNot(enumEq1000); */
+/* int16paramVsNot(enumEqFive); */
+/* int16paramVsNot(enumParamEq1000); */
+/* int16paramVsNot(enumParamEqFive); */
 writeln();
 
 int8vs16(1);
-int8vs16(numeral.I);
-int8vs16(numeral.M);
-int8vs16(enumEq1000);
-int8vs16(enumEqFive);
-int8vs16(enumParamEq1000);
-int8vs16(enumParamEqFive);
+/* int8vs16(numeral.I); */
+/* int8vs16(numeral.M); */
+/* int8vs16(enumEq1000); */
+/* int8vs16(enumEqFive); */
+/* int8vs16(enumParamEq1000); */
+/* int8vs16(enumParamEqFive); */
 writeln();
 
 int8vs16vsDefault(1);
-int8vs16vsDefault(numeral.I);
-int8vs16vsDefault(numeral.M);
-int8vs16vsDefault(enumEq1000);
-int8vs16vsDefault(enumEqFive);
-int8vs16vsDefault(enumParamEq1000);
-int8vs16vsDefault(enumParamEqFive);
+/* int8vs16vsDefault(numeral.I); */
+/* int8vs16vsDefault(numeral.M); */
+/* int8vs16vsDefault(enumEq1000); */
+/* int8vs16vsDefault(enumEqFive); */
+/* int8vs16vsDefault(enumParamEq1000); */
+/* int8vs16vsDefault(enumParamEqFive); */
 writeln();
 
 
