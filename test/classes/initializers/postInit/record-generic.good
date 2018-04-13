@@ -1,7 +1,11 @@
 MyRec.init type
+MyRec.postinit
+
 (x = 0)
 
 MyRec.init type
+MyRec.postinit
+
 MyRec.init value
 MyRec.postinit
 
