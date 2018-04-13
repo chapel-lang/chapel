@@ -161,7 +161,9 @@ proc initGreekVars(lxim, lxip, letam, letap, lzetam, lzetap) {
 
 // read/compute the X, Y, Z symmetry planes
 
-enum dim { X = 3, Y = 2, Z = 1 };
+param X = 3,
+      Y = 2,
+      Z = 1;
 
 inline proc initSyms(ref Sym, dir) {
   if (initFromFile) {
@@ -181,15 +183,15 @@ inline proc initSyms(ref Sym, dir) {
 }
 
 inline proc initXSyms(ref XSym) {
-  initSyms(XSym, dim.X);
+  initSyms(XSym, X);
 }
 
 inline proc initYSyms(ref YSym) {
-  initSyms(YSym, dim.Y);
+  initSyms(YSym, Y);
 }
 
 inline proc initZSyms(ref ZSym) {
-  initSyms(ZSym, dim.Z);
+  initSyms(ZSym, Z);
 }
 
 
@@ -201,13 +203,13 @@ inline proc initFreeSurface(ref freeSurface) {
     reader.assertEOF("Input file format error (extra data at EOF)");
   } else {
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.X, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, X, nodesPerEdge-1);
                   
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Y, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, Y, nodesPerEdge-1);
 
     for ij in DimNodeFace do
-      freeSurface += nodeIdx2DTo1D(ij, dim.Z, nodesPerEdge-1);
+      freeSurface += nodeIdx2DTo1D(ij, Z, nodesPerEdge-1);
   }
 
   if debugInit {
