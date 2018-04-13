@@ -691,6 +691,7 @@ module ChapelArray {
   //
   proc chpl__isDROrDRView(arr) param
     where isArray(arr) || _to_borrowed(arr.type) : BaseArr {
+
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
     param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
@@ -719,7 +720,9 @@ module ChapelArray {
     return ret;
   }
 
-  proc chpl__isDROrDRView(dom) param where isDomain(dom) || dom : BaseDom {
+  proc chpl__isDROrDRView(dom) param
+    where isDomain(dom) || _to_borrowed(dom.type) : BaseDom {
+
     const value = if isDomain(dom) then dom._value else dom;
     param isDR  = value.isDefaultRectangular();
     param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
@@ -2464,7 +2467,7 @@ module ChapelArray {
       // change this in the future when we have better syntax for
       // indicating a generic domain map)..
       //
-      if (formalDom.dist._value.type != DefaultDist) {
+      if (formalDom.dist._value.type != unmanaged DefaultDist) {
         //
         // First, at compile-time, check that the domain's types are
         // the same:

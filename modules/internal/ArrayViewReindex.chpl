@@ -57,7 +57,7 @@ module ArrayViewReindex {
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            distPid=this.pid,
-                                           distInst=this);
+                                           distInst=_to_unmanaged(this));
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -103,7 +103,7 @@ module ArrayViewReindex {
  pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
     forwarding updom except these;
 
     // the old original index set that we're equivalent to
