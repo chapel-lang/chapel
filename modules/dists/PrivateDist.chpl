@@ -87,6 +87,7 @@ class Private: BaseDist {
   proc singleton() param return true;
 }
 
+pragma "use default init"
 class PrivateDom: BaseRectangularDom {
   var dist: Private;
 
@@ -138,6 +139,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMyDist() return dist;
 }
 
+pragma "use default init"
 class PrivateArr: BaseRectangularArr {
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;

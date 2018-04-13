@@ -165,6 +165,7 @@ int EnumType::codegenStructure(FILE* outfile, const char* baseoffset) {
 // name the typedef for the struct itself.
 //
 const char* AggregateType::classStructName(bool standalone) {
+
   if (standalone) {
     const char* basename = symbol->cname;
     if (aggregateTag == AGGREGATE_CLASS) {

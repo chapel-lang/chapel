@@ -29,6 +29,7 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "LoopStmt.h"
+#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "passes.h"
 #include "resolution.h"
@@ -362,9 +363,8 @@ void resolveFunction(FnSymbol* fn) {
 
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
-      if (at->scalarPromotionType == NULL &&
-          at->symbol->hasFlag(FLAG_GENERIC) == false) {
-        resolvePromotionType(at);
+      if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
+        resolveTypeWithInitializer(at, fn);
       }
     }
 
@@ -780,7 +780,6 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      fixTypeNames(AggregateType* at);
 static void      resolveDefaultTypeConstructor(AggregateType* at);
 static void      instantiateDefaultConstructor(FnSymbol* fn);
 static FnSymbol* instantiateBase(FnSymbol* fn);
@@ -842,9 +841,9 @@ static void resolveTypeConstructor(FnSymbol* fn) {
   }
 }
 
-static void fixTypeNames(AggregateType* at) {
+void fixTypeNames(AggregateType* at) {
   const char*    domName = "DefaultRectangularDom";
-  AggregateType* from    = at->instantiatedFrom;
+  const int   domNameLen = strlen(domName);
 
   if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
       isArrayClass(at)                     ==  true) {
@@ -853,8 +852,8 @@ static void fixTypeNames(AggregateType* at) {
 
     at->symbol->name = astr("[", domainType, "] ", eltType);
 
-  } else if (from != NULL && strcmp(from->symbol->name, domName) == 0) {
-    at->symbol->name = astr("domain", at->symbol->name + strlen(domName));
+  } else if (strncmp(at->symbol->name, domName, domNameLen) == 0) {
+    at->symbol->name = astr("domain", at->symbol->name + domNameLen);
 
   } else if (isRecordWrappedType(at) == true) {
     at->symbol->name = at->getField("_instance")->type->symbol->name;

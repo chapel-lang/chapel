@@ -1415,7 +1415,8 @@ static uint32_t  GNIT_Cookie(void);
 static void      mem_regions_map_pre_init(void);
 static void      register_memory(void);
 static chpl_bool get_next_rw_memory_range(uint64_t*, uint64_t*, char*, size_t);
-static void      register_mem_region(mem_region_t*);
+static gni_return_t register_mem_region(uint64_t, uint64_t, gni_mem_handle_t*,
+                                        chpl_bool);
 static void      deregister_mem_region(mem_region_t*);
 static mem_region_t* mreg_for_addr(void*, mem_region_table_t*);
 static mem_region_t* mreg_for_local_addr(void*);
@@ -1840,11 +1841,16 @@ void chpl_comm_post_task_init(void)
     return;
 
   //
-  // Now that the memory layer has been set up, we can allocate the various
-  // data we need and fill it in.  Some of this need not be shared and so we
-  // could have allocated it earlier, but the logical flow is clearer if we
-  // do all this in one place.
+  // Now that the memory layer and tasking have been set up, we can
+  // allocate the various data we need and fill it in.  Some of this
+  // need not be shared and so we could have allocated it earlier, but
+  // the logical flow is clearer if we do all this in one place.
   //
+
+  //
+  // Figure out how many comm domains we need.
+  //
+  compute_comm_dom_cnt();
 
   //
   // Get our NIC address and share it around the job.
@@ -1855,7 +1861,8 @@ void chpl_comm_post_task_init(void)
   // do this by gathering (locale, nic_addr) pairs and then scattering
   // the nic_addr values into the map, which is indexed by locale.
   //
-  // While we're at it, also share the barrier info struct addresses
+  // While we're at it, also compute the maximum number of communication
+  // domains on any node and share the barrier info struct addresses
   // around the job.
   //
   {
@@ -1871,20 +1878,25 @@ void chpl_comm_post_task_init(void)
       typedef struct {
         c_nodeid_t nodeID;
         uint32_t nic_addr;
+        uint32_t comm_dom_cnt;
         barrier_info_t* bar_info;
       } gdata_t;
 
-      gdata_t  my_gdata = { chpl_nodeID, nic_addr, &bar_info };
+      gdata_t  my_gdata = { chpl_nodeID, nic_addr, comm_dom_cnt, &bar_info };
       gdata_t* gdata;
 
       gdata = (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
                                             CHPL_RT_MD_COMM_PER_LOC_INFO,
                                             0, 0);
       if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-        CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map) failed");
+        CHPL_INTERNAL_ERROR("PMI_Allgather(nic_addr_map etc.) failed");
+
+      comm_dom_cnt_max = gdata[0].comm_dom_cnt;  // redundant, but safe
 
       for (int i = 0; i < chpl_numNodes; i++) {
         nic_addr_map[gdata[i].nodeID] = gdata[i].nic_addr;
+        if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
+          comm_dom_cnt_max = gdata[i].comm_dom_cnt;
 
         if (gdata[i].nodeID >= bar_min_child
             && gdata[i].nodeID < bar_min_child + bar_num_children)
@@ -1896,8 +1908,6 @@ void chpl_comm_post_task_init(void)
       chpl_mem_free(gdata, 0, 0);
     }
   }
-
-  compute_comm_dom_cnt();
 
   //
   // We now have all the variable values (specifically: number of
@@ -2006,6 +2016,10 @@ uint32_t gni_get_nic_address(int device_id)
 }
 
 
+//
+// This may call the tasking layer, so don't call it before that is
+// initialized.
+//
 static void compute_comm_dom_cnt(void)
 {
   int commConcurrency = -1;
@@ -2031,10 +2045,10 @@ static void compute_comm_dom_cnt(void)
   // If the user specified a communication concurrency value then make
   // that many comm domains.  Otherwise, if they specified the number
   // of hardware threads for tasking, make that many.  Otherwise, make
-  // at least enough that every processor PU we could be using can
-  // have one at the same time.  In the unlikely event that none of
-  // this was done or is known, make 16.  In any case, always add one
-  // for the polling task.
+  // as many as the tasking layer's expected maximum useful level of
+  // parallelism.  In the unlikely event that none of this was done or
+  // is known, make 16.  In any case, always add one for the polling
+  // task.
   //
   comm_dom_cnt = 0;
   if (commConcurrency == 0)
@@ -2054,10 +2068,10 @@ static void compute_comm_dom_cnt(void)
     }
 
     if (comm_dom_cnt == 0) {
-      uint32_t num_PUs;
+      uint32_t maxPar;
 
-      if ((num_PUs = chpl_getNumLogicalCpus(true)) > 0)
-        comm_dom_cnt = num_PUs;
+      if ((maxPar = chpl_task_getMaxPar()) > 0)
+        comm_dom_cnt = maxPar;
     }
 
     if (comm_dom_cnt == 0)
@@ -2265,62 +2279,103 @@ void register_memory(void)
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/maps", NULL);
   DBG_CATF(DBGF_MEMMAPS, debug_file, "/proc/self/numa_maps", NULL);
 
+  //
+  // Register any already-recorded memory regions with uGNI.
+  //
+  for (int i = 0; i < mem_regions.mreg_cnt; i++) {
+    (void) register_mem_region(mem_regions.mregs[i].addr,
+                               mrtl_len(mem_regions.mregs[i].len),
+                               &mem_regions.mregs[i].mdh,
+                               false /*allow_failure*/);
+    mrtl_setReg(&mem_regions.mregs[i].len);
+  }
+
   while (get_next_rw_memory_range(&addr, &len, pathname, sizeof(pathname))) {
     int i;
 
     //
-    // This is slightly easier to understand in the positive sense.
-    // We skip everything except:
-    //   - the guaranteed-registered memory region, if any, or
-    //   - if we have hugepages, anything that has a path (isn't
-    //     anonymous) but isn't a device other than /dev/zero.
+    // Skip this region if we've already seen it.  This happens when we
+    // encounter regions in /proc/self/maps that have already been added
+    // by chpl_comm_impl_regMemAlloc() before we were called.
     //
-    if (! (addr == (uint64_t) (intptr_t) gnr_addr
-           || (have_hugepage_module
-               && strlen(pathname) > 0
-               && (strncmp(pathname, "/dev/", 5) != 0
-                   || (strncmp(pathname, "/dev/zero", 9) == 0
-                       && (pathname[9] == ' '
-                           || pathname[9] == '\0'))))))
+    i = 0;
+    while (i < mem_regions.mreg_cnt
+           && (addr != mem_regions.mregs[i].addr
+               || len != mrtl_len(mem_regions.mregs[i].len))) {
+      i++;
+    }
+    if (i < mem_regions.mreg_cnt)
       continue;
 
     //
-    // Put the memory regions in the table, sorted in order of
+    // We always register the guaranteed-registered memory region, and
+    // if we aren't using hugepages that's all we try to register.  But
+    // if we are using hugepages then we also try to register anything
+    // with a non-empty path, with the exception of device paths that
+    // aren't /dev/zero.
+    //
+    chpl_bool register_this_one = false;
+    if (addr == (uint64_t) (intptr_t) gnr_addr) {
+      register_this_one = true;
+    } else if (have_hugepage_module && strlen(pathname) > 0) {
+      if (strncmp(pathname, "/dev/", 5) != 0
+          || strcmp(pathname, "/dev/zero") == 0
+          || strncmp(pathname, "/dev/zero ", 10) == 0) {
+        register_this_one = true;
+      }
+    }
+
+    if (!register_this_one)
+      continue;
+
+    //
+    // Try to register this segment.  If we can do so then keep it.
+    // Otherwise, if its presence is mandatory then complain and halt,
+    // and if its presence is optional then skip it.  The mandatory
+    // regions are anything on hugepages.  This ends up including at
+    // least the static data segment and all our dynamic allocations.
+    //
+    gni_mem_handle_t mdh;
+    gni_return_t gni_rc;
+    if ((gni_rc = register_mem_region(addr, len, &mdh, true /*allow_failure*/))
+        != GNI_RC_SUCCESS) {
+      if (strstr(pathname, "huge") != NULL) {
+        GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+      } else {
+        DBG_P_L(DBGF_MEMREG,
+                "GNI_MemRegister(%#" PRIx64 ", %#" PRIx64 ", \"%s\") failed "
+                "-- skipping",
+                addr, len, pathname);
+        continue;
+      }
+    }
+
+    //
+    // Put the memory region in the table, keeping it sorted by
     // decreasing size.
     //
+    if (mem_regions.mreg_cnt >= MAX_MEM_REGIONS)
+      CHPL_INTERNAL_ERROR("too many preexisting memory regions");
+
     for (i = mem_regions.mreg_cnt;
          i > 0 && len > mrtl_len(mem_regions.mregs[i - 1].len);
          i--) {
-      if (i < MAX_MEM_REGIONS) {
-        mem_regions.mregs[i] = mem_regions.mregs[i - 1];
-      }
+      mem_regions.mregs[i] = mem_regions.mregs[i - 1];
     }
 
-    if (i == MAX_MEM_REGIONS && addr == (uint64_t) (intptr_t) gnr_addr)
-      i--;
-
-    if (i < MAX_MEM_REGIONS) {
-      mem_regions.mregs[i].addr = addr;
-      mem_regions.mregs[i].len = mrtl_encode(len, false);
-      if (mem_regions.mreg_cnt < MAX_MEM_REGIONS) {
-        mem_regions.mreg_cnt++;
-        (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
-        if (mem_regions.mreg_cnt > mreg_cnt_max)
-          mreg_cnt_max = mem_regions.mreg_cnt;
-      }
-    }
+    mem_regions.mregs[i].addr = addr;
+    mem_regions.mregs[i].len = mrtl_encode(len, true);
+    mem_regions.mregs[i].mdh = mdh;
+    mem_regions.mreg_cnt++;
+    (void) atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1);
   }
 
   if (mem_regions.mreg_cnt == 0) {
     CHPL_INTERNAL_ERROR("no registerable memory regions?");
   }
 
-  //
-  // Now, register the recorded memory regions with uGNI.
-  //
-  for (int i = 0; i < mem_regions.mreg_cnt; i++) {
-    register_mem_region(&mem_regions.mregs[i]);
-  }
+  if (mem_regions.mreg_cnt > mreg_cnt_max)
+    mreg_cnt_max = mem_regions.mreg_cnt;
 
   //
   // Find the memory region associated with guaranteed NIC-registered
@@ -2461,20 +2516,23 @@ chpl_bool get_next_rw_memory_range(uint64_t* addr, uint64_t* len,
 
 static
 inline
-void register_mem_region(mem_region_t* mr)
+gni_return_t register_mem_region(uint64_t addr, uint64_t len,
+                                 gni_mem_handle_t* mdh, chpl_bool allow_failure)
 {
   uint32_t flags = GNI_MEM_READWRITE | GNI_MEM_RELAXED_PI_ORDERING;
   gni_return_t gni_rc;
 
   DBG_P_L(DBGF_MEMREG,
-          "GNI_MemRegister[%d](%#" PRIx64 ", %#" PRIx64 ")",
-          (int) (mr - &mem_regions.mregs[0]), mr->addr, mrtl_len(mr->len));
-  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, mr->addr, mrtl_len(mr->len),
-                                NULL, flags, -1, &mr->mdh))
+          "GNI_MemRegister(%#" PRIx64 ", %#" PRIx64 ")",
+          addr, len);
+  if ((gni_rc = GNI_MemRegister(comm_doms[0].nih, addr, len,
+                                NULL, flags, -1, mdh))
       != GNI_RC_SUCCESS) {
-    GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
+    if (!allow_failure)
+      GNI_FAIL(gni_rc, "GNI_MemRegister() failed");
   }
-  mrtl_setReg(&mr->len);
+
+  return gni_rc;
 }
 
 
@@ -2485,8 +2543,8 @@ void deregister_mem_region(mem_region_t* mr)
   gni_return_t gni_rc;
 
   DBG_P_L(DBGF_MEMREG,
-          "GNI_MemDeregister[%d]",
-          (int) (mr - &mem_regions.mregs[0]));
+          "GNI_MemDeregister(%#" PRIx64 ", %#" PRIx64 ")",
+          mr->addr, mrtl_len(mr->len));
   if ((gni_rc = GNI_MemDeregister(comm_doms[0].nih, &mr->mdh))
       != GNI_RC_SUCCESS) {
     GNI_FAIL(gni_rc, "GNI_MemDeregister() failed");
@@ -2613,34 +2671,6 @@ void set_up_for_polling(void)
   //
   acquire_comm_dom();
   cd->firmly_bound = true;
-
-  //
-  // Figure out the maximum number of communication domains on any
-  // locale.
-  //
-  {
-    typedef struct {
-      uint32_t comm_dom_cnt;
-    } gdata_t;
-
-    gdata_t  my_gdata = { comm_dom_cnt };
-    gdata_t* gdata;
-
-    gdata =
-      (gdata_t*) chpl_mem_allocMany(chpl_numNodes, sizeof(gdata[0]),
-                                    CHPL_RT_MD_COMM_PER_LOC_INFO,
-                                    0, 0);
-    if (PMI_Allgather(&my_gdata, gdata, sizeof(gdata[0])) != PMI_SUCCESS)
-      CHPL_INTERNAL_ERROR("PMI_Allgather(comm_dom_cnt) failed");
-
-    comm_dom_cnt_max = gdata[0].comm_dom_cnt;
-    for (i = 1; i < chpl_numNodes; i++) {
-      if (gdata[i].comm_dom_cnt > comm_dom_cnt_max)
-        comm_dom_cnt_max = gdata[i].comm_dom_cnt;
-    }
-
-    chpl_mem_free(gdata, 0, 0);
-  }
 
   //
   // Make the fork request and acknowledgement space, and communicate
@@ -2819,7 +2849,7 @@ void make_registered_heap(void)
   //
   // The heap is supposed to be of fixed size and on hugepages.  Set
   // it up.  (If it's to be dynamically extensible, that's handled
-  // separately through chpl_comm_regMem*().)
+  // separately through chpl_comm_impl_regMem*().)
   //
   const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
   const size_t nic_max_mem = nic_max_pages * page_size;
@@ -3204,10 +3234,11 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   PERFSTATS_INC(regMemPostAlloc_cnt);
 
   if (get_hugepage_size() == 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): this isn't my memory");
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostAlloc(): "
+                        "this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemPostAlloc(%p, %#" PRIx64 ")",
+           "chpl_comm_impl_regMemPostAlloc(%p, %#" PRIx64 ")",
            p, size);
 
   //
@@ -3219,7 +3250,8 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     ;
 
   if (mr_i < 0)
-    CHPL_INTERNAL_ERROR("chpl_comm_regMemPostAlloc(): can't find the memory");
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostAlloc(): "
+                        "can't find the memory");
 
   assert(!mrtl_isReg(mr->len));
 
@@ -3232,7 +3264,9 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     return;
 
   PERFSTATS_TSTAMP(reg_ts);
-  register_mem_region(mr);
+  (void) register_mem_region(mr->addr, mrtl_len(mr->len), &mr->mdh,
+                             false /*allow_failure*/);
+  mrtl_setReg(&mr->len);
   PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
 
   regMemLock();
@@ -3250,7 +3284,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   //
   if (mr_i < mem_regions_map[chpl_nodeID].mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemPostAlloc(): entry %d, bcast",
+            "chpl_comm_impl_regMemPostAlloc(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
@@ -3258,7 +3292,8 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
     const uint32_t mreg_cnt_public = mem_regions_map[chpl_nodeID].mreg_cnt;
 
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemPostAlloc(): entry %d, bcast %d-%d and cnt %d",
+            "chpl_comm_impl_regMemPostAlloc(): "
+            "entry %d, bcast %d-%d and cnt %d",
             mr_i,
             (int) mreg_cnt_public, (int) mem_regions.mreg_cnt - 1,
             (int) mem_regions.mreg_cnt);
@@ -3295,7 +3330,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_INC(regMemFree_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_regMemFree(%p, %#" PRIx64 "): [%d]",
+           "chpl_comm_impl_regMemFree(%p, %#" PRIx64 "): [%d]",
            p, size, mr_i);
 
   //
@@ -3340,13 +3375,13 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   //
   if (mem_regions.mreg_cnt < mem_regions_map[chpl_nodeID].mreg_cnt) {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast cnt %d",
+            "chpl_comm_impl_regMemFree(): entry %d, bcast cnt %d",
             mr_i, (int) mem_regions.mreg_cnt);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(0, 0, true /*send_mreg_cnt*/);
   } else {
     DBG_P_L(DBGF_MEMREG_BCAST,
-            "chpl_comm_regMemFree(): entry %d, bcast",
+            "chpl_comm_impl_regMemFree(): entry %d, bcast",
             mr_i);
     PERFSTATS_INC(regMem_bCast_cnt);
     regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
@@ -4460,8 +4495,9 @@ void rf_done_init(void)
 {
   int i, j;
 
-  if (RF_DONE_NUM_PER_POOL < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
-    chpl_warning("(RF_DONE_NUM_PER_POOL "
+  if (RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL
+      < comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD)
+    chpl_warning("(RF_DONE_NUM_POOLS * RF_DONE_NUM_PER_POOL "
                  "< comm_dom_cnt_max * FORK_REQ_BUFS_PER_CD) "
                  "may lead to hangs",
                  0, 0);

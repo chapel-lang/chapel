@@ -64,7 +64,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
 
-  proc initialize() {
+  proc postinit() {
     setup();
     //    writeln("Exiting initialize");
   }
@@ -340,8 +340,11 @@ class SparseBlockArr: BaseSparseArr {
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
 
-  proc SparseBlockArr(type eltType, param rank, type idxType, param stridable,
+  proc init(type eltType, param rank, type idxType, param stridable,
       type sparseLayoutType ,dom) {
+    super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
+    this.stridable = stridable;
+    this.sparseLayoutType = sparseLayoutType;
     locArrDom = dom.dist.targetLocDom;
   }
 

@@ -175,6 +175,7 @@ proc Replicated.dsiPrivatize(privatizeData)
 //
 // global domain class
 //
+pragma "use default init"
 class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
@@ -461,8 +462,9 @@ class LocReplicatedArr {
 // 'eltType' and 'dom' as passed explicitly;
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
-proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
-  // initializes the fields 'eltType', 'dom' by name
+proc ReplicatedArr.init(type eltType, dom: ReplicatedDom) {
+  this.eltType = eltType;
+  this.dom = dom;
 }
 
 proc ReplicatedArr.stridable param {

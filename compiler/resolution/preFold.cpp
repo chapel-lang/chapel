@@ -474,6 +474,29 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+  } else if (call->isPrimitive(PRIM_IS_CLASS_TYPE)) {
+    Type* t = call->get(1)->typeInfo();
+
+    if (isClassLike(t) && !t->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+  } else if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+             call->isPrimitive(PRIM_TO_BORROWED_CLASS)) {
+    Type* totype = call->typeInfo();
+
+    if (isTypeExpr(call->get(1))) {
+      retval = new SymExpr(totype->symbol);
+    } else {
+      retval = new CallExpr(PRIM_CAST, totype->symbol, call->get(1)->copy());
+    }
+
+    call->replace(retval);
+
   } else if (call->isPrimitive(PRIM_IS_EXTERN_CLASS_TYPE)) {
     AggregateType* classtype = toAggregateType(call->get(1)->typeInfo());
 

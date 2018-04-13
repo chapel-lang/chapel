@@ -101,7 +101,8 @@ module DefaultRectangular {
 
     proc isDefaultRectangular() param return true;
 
-    proc DefaultRectangularDom(param rank, type idxType, param stridable, dist) {
+    proc init(param rank, type idxType, param stridable, dist) {
+      super.init(rank=rank, idxType=idxType, stridable=stridable);
       this.dist = dist;
     }
 
@@ -1050,7 +1051,7 @@ module DefaultRectangular {
 
     // change name to setup and call after constructor call sites
     // we want to get rid of all initialize functions everywhere
-    proc initialize() {
+    proc postinit() {
       if noinit_data == true then return;
       for param dim in 1..rank {
         off(dim) = dom.dsiDim(dim).alignedLow;

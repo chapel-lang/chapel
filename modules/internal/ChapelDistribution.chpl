@@ -168,6 +168,7 @@ module ChapelDistribution {
   // Abstract domain classes
   //
   pragma "base domain"
+  pragma "use default init"
   class BaseDom {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -363,6 +364,7 @@ module ChapelDistribution {
     //   }
   }
 
+  pragma "use default init"
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
@@ -388,6 +390,7 @@ module ChapelDistribution {
     }
   }
 
+  pragma "use default init"
   class BaseSparseDomImpl : BaseSparseDom {
 
     var nnzDom = {1..nnz};
@@ -548,6 +551,7 @@ module ChapelDistribution {
 
   }
 
+  pragma "use default init"
   class BaseSparseDom : BaseDom {
     // rank and idxType will be moved to BaseDom
     param rank: int;
@@ -606,6 +610,7 @@ module ChapelDistribution {
   } // end BaseSparseDom
 
 
+  pragma "use default init"
   class BaseAssociativeDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -622,6 +627,7 @@ module ChapelDistribution {
 
   }
 
+  pragma "use default init"
   class BaseOpaqueDom : BaseDom {
     proc deinit() {
       // this is a bug workaround
@@ -637,6 +643,7 @@ module ChapelDistribution {
   // Abstract array class
   //
   pragma "base array"
+  pragma "use default init"
   class BaseArr {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -765,6 +772,7 @@ module ChapelDistribution {
      another base class.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
@@ -789,6 +797,7 @@ module ChapelDistribution {
   }
 
   pragma "base array"
+  pragma "use default init"
   class BaseRectangularArr: BaseArrOverRectangularDom {
     /* rank, idxType, stridable are from BaseArrOverRectangularDom */
     type eltType;
@@ -803,6 +812,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseSparseArr: BaseArr {
     type eltType;
     param rank : int;
@@ -827,6 +837,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
+  pragma "use default init"
   class BaseSparseArrImpl: BaseSparseArr {
 
     proc deinit() {
