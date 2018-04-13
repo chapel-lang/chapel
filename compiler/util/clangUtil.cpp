@@ -1607,7 +1607,7 @@ void runClang(const char* just_parse_filename) {
     clangCCArgs.push_back(args[i]);
   }
 
-  forv_Vec(const char*, dirName, incDirs) {
+  for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
@@ -2798,11 +2798,11 @@ void makeBinaryLLVM(void) {
   // Put user-requested libraries at the end of the compile line,
   // they should at least be after the .o files and should be in
   // order where libraries depend on libraries to their right.
-  forv_Vec(const char*, dirName, libDirs) {
+  for_vector(const char, dirName, libDirs) {
     command += " -L";
     command += dirName;
   }
-  forv_Vec(const char*, libName, libFiles) {
+  for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
   }
