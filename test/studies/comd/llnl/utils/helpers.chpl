@@ -45,7 +45,8 @@ class Ticker {
 
 const timers = 19;
 enum timerEnum {TOTAL = 1, INIT, FCREATE, INITGRID, EPILOGUE, REDIST1, F1, LOOP, TIMESTEP, POSITION, VELOCITY, REDIST, ATOMHALO, SORT, FORCE, FORCE1, FORCE2, EAMHALO, COMMREDUCE};
-var tArray : [1..timers] Ticker = 
+const tDomain: domain(timerEnum);
+var tArray : [tDomain] Ticker = 
 (	new Ticker("total              "),
 	new Ticker("init               "),
 	new Ticker("  createForce      "),
