@@ -145,7 +145,7 @@ module ArrayViewReindex {
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
       return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
-                                        dom = this,
+                                        dom = _to_unmanaged(this),
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         ownsArrInstance=true);

@@ -79,7 +79,7 @@ module ArrayViewRankChange {
                                               collapsedDim=collapsedDim,
                                               idx=idx,
                                               distPid=this.pid,
-                                              distInst=this);
+                                              distInst=_to_unmanaged(this));
       newdom.dsiSetIndices(inds);
       return newdom;
     }
@@ -174,7 +174,7 @@ module ArrayViewRankChange {
       const downarr = _newArray(downDom.dsiBuildArray(eltType));
       return new unmanaged ArrayViewRankChangeArr(eltType  =eltType,
                                         _DomPid = this.pid,
-                                        dom = this,
+                                        dom = _to_unmanaged(this),
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         collapsedDim=collapsedDim,
