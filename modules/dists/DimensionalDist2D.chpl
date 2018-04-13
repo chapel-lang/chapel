@@ -281,7 +281,7 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
 
   param str = strideHelper(dom1) || strideHelper(dom2);
 
-  return LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
+  return unmanaged LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
 }
 
 pragma "use default init"
@@ -322,7 +322,7 @@ class DimensionalDom : BaseRectangularDom {
   proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom
-  proc locDdescType type  return LocDimensionalDom(stoDomainT,
+  proc locDdescType type  return unmanaged LocDimensionalDom(stoDomainT,
                                          dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
                                          dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
@@ -956,8 +956,8 @@ proc DimensionalDom.dsiBuildArray(type eltType)
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
-                                    dom      = this,
-                                    allocDom = this);
+                                    dom      = _to_unmanaged(this),
+                                    allocDom = _to_unmanaged(this));
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do

@@ -791,7 +791,8 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 proc BlockDom.dsiBuildArray(type eltType) {
   var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-      stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
+      stridable=stridable, sparseLayoutType=sparseLayoutType,
+      dom=_to_unmanaged(this));
   arr.setup();
   return arr;
 }

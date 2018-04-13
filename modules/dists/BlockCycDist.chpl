@@ -579,7 +579,9 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc BlockCyclicDom.dsiBuildArray(type eltType) {
-  var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
+                                         idxType=idxType, stridable=stridable,
+                                         dom=_to_unmanaged(this));
   arr.setup();
   return arr;
 }

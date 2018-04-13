@@ -476,7 +476,9 @@ proc CyclicDom.dsiDestroyDom() {
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
-  var arr = new unmanaged CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new unmanaged CyclicArr(eltType=eltType, rank=rank,
+                                    idxType=idxType, stridable=stridable,
+                                    dom=_to_unmanaged(this));
   arr.setup();
   return arr;
 }
