@@ -587,66 +587,67 @@ static void getCpuInfo_once(void) {
 
   if (cpuTabLen > 0) {
     numCores = cpuTabLen;
-  } else {
-    // We have a limited-format /proc/cpuinfo.
-    // See if the /sys filesystem has any more information for us.
-    int threads_per_core = 0;
-    if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings",
-                   "r")) != NULL) {
-      int c;
-      while ((c = getc(f)) != EOF) {
-        // The number of threads per core is the total number of bits
-        // set in the hex digits of the thread_siblings map.
-        //
-        // The most authoritative source, kernel.org, does not dictate
-        // the formatting of the mask.  However, the following document
-        // indicates that it is either a hex or binary bit mask.  The code
-        // below works in either case.
-        //
-        // https://www.ibm.com/support/knowledgecenter/en/linuxonibm/liaat/liaattunproctop.htm
-        //
-        // Also note that hwloc itself parses the file as a hex bitmap only.
-        if (isxdigit(c)) {
-          switch (tolower(c)) {
-          case '0':
-            break;
-          case '1':
-          case '2':
-          case '4':
-          case '8':
-            threads_per_core += 1;
-            break;
-          case '3':
-          case '5':
-          case '6':
-          case '9':
-          case 'a':
-          case 'c':
-            threads_per_core += 2;
-            break;
-          case '7':
-          case 'b':
-          case 'd':
-          case 'e':
-            threads_per_core += 3;
-            break;
-          case 'f':
-            threads_per_core += 4;
-            break;
-          }
-        } else if (c != ',' && c != '\n' && tolower(c) != 'x') {
-          // unknown file format -- don't use
-          threads_per_core = 1;
+    return;
+  }
+
+  // We have a limited-format /proc/cpuinfo.
+  // See if the /sys filesystem has any more information for us.
+  int threads_per_core = 0;
+  if ((f = fopen("/sys/devices/system/cpu/cpu0/topology/thread_siblings", "r"))
+      != NULL) {
+    int c;
+    while ((c = getc(f)) != EOF) {
+      // The number of threads per core is the total number of bits
+      // set in the hex digits of the thread_siblings map.
+      //
+      // The most authoritative source, kernel.org, does not dictate
+      // the formatting of the mask.  However, the following document
+      // indicates that it is either a hex or binary bit mask.  The code
+      // below works in either case.
+      //
+      // https://www.ibm.com/support/knowledgecenter/en/linuxonibm/liaat/liaattunproctop.htm
+      //
+      // Also note that hwloc itself parses the file as a hex bitmap only.
+      if (isxdigit(c)) {
+        switch (tolower(c)) {
+        case '0':
+          break;
+        case '1':
+        case '2':
+        case '4':
+        case '8':
+          threads_per_core += 1;
+          break;
+        case '3':
+        case '5':
+        case '6':
+        case '9':
+        case 'a':
+        case 'c':
+          threads_per_core += 2;
+          break;
+        case '7':
+        case 'b':
+        case 'd':
+        case 'e':
+          threads_per_core += 3;
+          break;
+        case 'f':
+          threads_per_core += 4;
           break;
         }
+      } else if (c != ',' && c != '\n' && tolower(c) != 'x') {
+        // unknown file format -- don't use
+        threads_per_core = 1;
+        break;
       }
-      fclose(f);
     }
-    if (threads_per_core == 0)
-      threads_per_core = 1;
-    if ((numCores = procs / threads_per_core) <= 0)
-      numCores = 1;
+    fclose(f);
   }
+  if (threads_per_core == 0)
+    threads_per_core = 1;
+  if ((numCores = procs / threads_per_core) <= 0)
+    numCores = 1;
 }
 
 
