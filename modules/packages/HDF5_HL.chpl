@@ -4,7 +4,7 @@ module HDF5_HL {
   // Header given to c2chapel:
   require "hdf5_hl.h";
 
-  // Note: Generated with fake std headers
+  use HDF5_HL_Macros;
 
   extern proc H5open() : herr_t;
 
@@ -2461,7 +2461,7 @@ module HDF5_HL {
 
   extern record unnamedStruct5 {
     var present : uint(64);
-    var shared : uint(64);
+    var shared1 : uint(64);
   }
 
   extern record H5O_hdr_info_t {
@@ -2824,12 +2824,453 @@ module HDF5_HL {
 
   extern type hsize_t = c_ulonglong;
 
-  extern type hssize_t = signed long long;
+  extern type hssize_t = c_longlong;
 
   extern type htri_t = c_int;
 
   extern record hvl_t {
     var len : size_t;
     var p : c_void_ptr;
+  }
+
+  module HDF5_HL_Macros {
+
+    /* Macros defined in H5public.h */
+    extern const H5_VERS_MAJOR: c_uint;
+    extern const H5_VERS_MINOR: c_uint;
+    extern const H5_VERS_RELEASE: c_uint;
+    extern const H5_VERS_SUBRELEASE: c_string;
+
+    proc H5check() {
+      H5check_version(H5_VERS_MAJOR, H5_VERS_MINOR, H5_VERS_RELEASE);
+    }
+
+    /* Macros defined in H5Fpublic.h */
+
+    proc H5F_ACC_RDONLY {
+      /* absence of rdwr => rd-only */
+      H5check();
+      H5open();
+      return 0x0000: c_uint;
+    }
+
+    proc H5F_ACC_RDWR {
+      /* open for read and write */
+      H5check();
+      H5open();
+      return 0x0001: c_uint;
+    }
+
+    proc H5F_ACC_TRUNC {
+      /* overwrite existing files */
+      H5check();
+      H5open();
+      return 0x0002: c_uint;
+    }
+
+    proc H5F_ACC_EXCL {
+      /* fail if file already exists */
+      H5check();
+      H5open();
+      return 0x0004: c_uint;
+    }
+
+    /* NOTE: 0x0008u was H5F_ACC_DEBUG, now deprecated */
+    proc H5F_ACC_CREAT {
+      /* create non-existing files */
+      H5check();
+      H5open();
+      return 0x0010: c_uint;
+    }
+
+    proc H5F_ACC_SWMR_WRITE {
+      /* indicate that this file is open for writing in a
+       * single-writer/multi-reader (SWMR) scenario.  Note that the
+       * process(es) opening the file for reading must open the file
+       * with RDONLY access, and use the special "SWMR_READ" access flag. */
+      H5check();
+      return 0x0020: c_uint;
+    }
+
+    proc H5F_ACC_SWMR_READ {
+      /* indicate that this file is open for reading in a
+       * single-writer/multi-reader (SWMR) scenario.  Note that the
+       * process(es) opening the file for SWMR reading must also
+       * open the file with the RDONLY flag.  */
+      H5check();
+      return 0x0040: c_uint;
+    }
+
+    /* Value passed to H5Pset_elink_acc_flags to cause flags to be taken from the
+     * parent file. */
+    proc H5F_ACC_DEFAULT {
+      /* ignore setting on lapl */
+      H5check();
+      H5open();
+      return 0xffff: c_uint;
+    }
+
+
+    /* Flags for H5Fget_obj_count() & H5Fget_obj_ids() calls */
+    proc H5F_OBJ_FILE {
+      /* File objects */
+      return 0x0001: c_uint;
+    }
+
+    proc H5F_OBJ_DATASET {
+      /* Dataset objects */
+      return 0x0002: c_uint;
+    }
+
+    proc H5F_OBJ_GROUP {
+      /* Group objects */
+      return 0x0004: c_uint;
+    }
+
+    proc H5F_OBJ_DATATYPE {
+      /* Named datatype objects */
+      return 0x0008: c_uint;
+    }
+
+    proc H5F_OBJ_ATTR {
+      /* Attribute objects */
+      return 0x0010: c_uint;
+    }
+
+    proc H5F_OBJ_ALL {
+      return H5F_OBJ_FILE|H5F_OBJ_DATASET|H5F_OBJ_GROUP|H5F_OBJ_DATATYPE|H5F_OBJ_ATTR;
+    }
+
+    proc H5F_OBJ_LOCAL {
+      /* Restrict search to objects opened through current file ID */
+      /* as opposed to objects opened through any file ID accessing this file */
+
+      return 0x0020: c_uint;
+    }
+
+    proc H5F_FAMILY_DEFAULT {
+      return 0: hsize_t;
+    }
+
+    /* Macros defined in H5Ppublic.h */
+    /*
+     * The library's property list classes
+     */
+
+    proc H5P_ROOT {
+      H5open();
+      return H5P_CLS_ROOT_ID_g;
+    }
+
+    proc H5P_OBJECT_CREATE {
+      H5open();
+      return H5P_CLS_OBJECT_CREATE_ID_g;
+    }
+
+    proc H5P_FILE_CREATE {
+      H5open();
+      return H5P_CLS_FILE_CREATE_ID_g;
+    }
+
+    proc H5P_FILE_ACCESS {
+      H5open();
+      return H5P_CLS_FILE_ACCESS_ID_g;
+    }
+
+    proc H5P_DATASET_CREATE {
+      H5open();
+      return H5P_CLS_DATASET_CREATE_ID_g;
+    }
+
+    proc H5P_DATASET_ACCESS {
+      H5open();
+      return H5P_CLS_DATASET_ACCESS_ID_g;
+    }
+
+    proc H5P_DATASET_XFER {
+      H5open();
+      return H5P_CLS_DATASET_XFER_ID_g;
+    }
+
+    proc H5P_FILE_MOUNT {
+      H5open();
+      return H5P_CLS_FILE_MOUNT_ID_g;
+    }
+
+    proc H5P_GROUP_CREATE {
+      H5open();
+      return H5P_CLS_GROUP_CREATE_ID_g;
+    }
+
+    proc H5P_GROUP_ACCESS {
+      H5open();
+      return H5P_CLS_GROUP_ACCESS_ID_g;
+    }
+
+    proc H5P_DATATYPE_CREATE {
+      H5open();
+      return H5P_CLS_DATATYPE_CREATE_ID_g;
+    }
+
+    proc H5P_DATATYPE_ACCESS {
+      H5open();
+      return H5P_CLS_DATATYPE_ACCESS_ID_g;
+    }
+
+    proc H5P_STRING_CREATE {
+      H5open();
+      return H5P_CLS_STRING_CREATE_ID_g;
+    }
+
+    proc H5P_ATTRIBUTE_CREATE {
+      H5open();
+      return H5P_CLS_ATTRIBUTE_CREATE_ID_g;
+    }
+
+    proc H5P_ATTRIBUTE_ACCESS {
+      H5open();
+      return H5P_CLS_ATTRIBUTE_ACCESS_ID_g;
+    }
+
+    proc H5P_OBJECT_COPY {
+      H5open();
+      return H5P_CLS_OBJECT_COPY_ID_g;
+    }
+
+    proc H5P_LINK_CREATE {
+      H5open();
+      return H5P_CLS_LINK_CREATE_ID_g;
+    }
+
+    proc H5P_LINK_ACCESS {
+      H5open();
+      return H5P_CLS_LINK_ACCESS_ID_g;
+    }
+
+    /* The library's default property lists */
+    proc H5P_FILE_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_FILE_CREATE_ID_g;
+    }
+
+    proc H5P_FILE_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_FILE_ACCESS_ID_g;
+    }
+
+    proc H5P_DATASET_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_DATASET_CREATE_ID_g;
+    }
+
+    proc H5P_DATASET_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_DATASET_ACCESS_ID_g;
+    }
+
+    proc H5P_DATASET_XFER_DEFAULT {
+      H5open();
+      return H5P_LST_DATASET_XFER_ID_g;
+    }
+
+    proc H5P_FILE_MOUNT_DEFAULT {
+      H5open();
+      return H5P_LST_FILE_MOUNT_ID_g;
+    }
+
+    proc H5P_GROUP_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_GROUP_CREATE_ID_g;
+    }
+
+    proc H5P_GROUP_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_GROUP_ACCESS_ID_g;
+    }
+
+    proc H5P_DATATYPE_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_DATATYPE_CREATE_ID_g;
+    }
+
+    proc H5P_DATATYPE_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_DATATYPE_ACCESS_ID_g;
+    }
+
+    proc H5P_ATTRIBUTE_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_ATTRIBUTE_CREATE_ID_g;
+    }
+
+    proc H5P_ATTRIBUTE_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_ATTRIBUTE_ACCESS_ID_g;
+    }
+
+    proc H5P_OBJECT_COPY_DEFAULT {
+      H5open();
+      return H5P_LST_OBJECT_COPY_ID_g;
+    }
+
+    proc H5P_LINK_CREATE_DEFAULT {
+      H5open();
+      return H5P_LST_LINK_CREATE_ID_g;
+    }
+
+    proc H5P_LINK_ACCESS_DEFAULT {
+      H5open();
+      return H5P_LST_LINK_ACCESS_ID_g;
+    }
+
+    /* Common creation order flags (for links in groups and
+     * attributes on objects) */
+    proc H5P_CRT_ORDER_TRACKED {
+      return 0x0001: c_int;
+    }
+
+    proc H5P_CRT_ORDER_INDEXED {
+      return 0x0002: c_int;
+    }
+
+    /* Default value for all property list classes */
+    proc H5P_DEFAULT {
+      return 0: hid_t;
+    }
+
+    /* Macros defined in H5Tpublic.h */
+    /*
+     * The predefined native types. These are the types detected by H5detect and
+     * they violate the naming scheme a little.  Instead of a class name,
+     * precision and byte order as the last component, they have a C-like type
+     * name.  If the type begins with `U' then it is the unsigned version of the
+     * integer type; other integer types are signed.  The type LLONG corresponds
+     * to C's `long long' and LDOUBLE is `long double' (these types might be the
+     * same as `LONG' and `DOUBLE' respectively).
+     */
+
+    /* CHAR_MIN is defined in limits.h */
+    extern const CHAR_MIN: c_int;
+
+    proc H5T_NATIVE_CHAR {
+      return if CHAR_MIN != 0 then H5T_NATIVE_SCHAR else H5T_NATIVE_UCHAR;
+    }
+
+    proc H5T_NATIVE_SCHAR {
+      H5open();
+      return H5T_NATIVE_SCHAR_g;
+    }
+
+    proc H5T_NATIVE_UCHAR {
+      H5open();
+      return H5T_NATIVE_UCHAR_g;
+    }
+
+    proc H5T_NATIVE_SHORT {
+      H5open();
+      return H5T_NATIVE_SHORT_g;
+    }
+
+    proc H5T_NATIVE_USHORT {
+      H5open();
+      return H5T_NATIVE_USHORT_g;
+    }
+
+    proc H5T_NATIVE_INT {
+      H5open();
+      return H5T_NATIVE_INT_g;
+    }
+
+    proc H5T_NATIVE_UINT {
+      H5open();
+      return H5T_NATIVE_UINT_g;
+    }
+
+    proc H5T_NATIVE_LONG {
+      H5open();
+      return H5T_NATIVE_LONG_g;
+    }
+
+    proc H5T_NATIVE_ULONG {
+      H5open();
+      return H5T_NATIVE_ULONG_g;
+    }
+
+    proc H5T_NATIVE_LLONG {
+      H5open();
+      return H5T_NATIVE_LLONG_g;
+    }
+
+    proc H5T_NATIVE_ULLONG {
+      H5open();
+      return H5T_NATIVE_ULLONG_g;
+    }
+
+    proc H5T_NATIVE_FLOAT {
+      H5open();
+      return H5T_NATIVE_FLOAT_g;
+    }
+
+    proc H5T_NATIVE_DOUBLE {
+      H5open();
+      return H5T_NATIVE_DOUBLE_g;
+    }
+
+    //#if H5_SIZEOF_LONG_DOUBLE !=0
+    proc H5T_NATIVE_LDOUBLE {
+      H5open();
+      return H5T_NATIVE_LDOUBLE_g;
+    }
+
+    //#endif
+    proc H5T_NATIVE_B8 {
+      H5open();
+      return H5T_NATIVE_B8_g;
+    }
+
+    proc H5T_NATIVE_B16 {
+      H5open();
+      return H5T_NATIVE_B16_g;
+    }
+
+    proc H5T_NATIVE_B32 {
+      H5open();
+      return H5T_NATIVE_B32_g;
+    }
+
+    proc H5T_NATIVE_B64 {
+      H5open();
+      return H5T_NATIVE_B64_g;
+    }
+
+    proc H5T_NATIVE_OPAQUE {
+      H5open();
+      return H5T_NATIVE_OPAQUE_g;
+    }
+
+    proc H5T_NATIVE_HADDR {
+      H5open();
+      return H5T_NATIVE_HADDR_g;
+    }
+
+    proc H5T_NATIVE_HSIZE {
+      H5open();
+      return H5T_NATIVE_HSIZE_g;
+    }
+
+    proc H5T_NATIVE_HSSIZE {
+      H5open();
+      return H5T_NATIVE_HSSIZE_g;
+    }
+
+    proc H5T_NATIVE_HERR {
+      H5open();
+      return H5T_NATIVE_HERR_g;
+    }
+
+    proc H5T_NATIVE_HBOOL {
+      H5open();
+      return H5T_NATIVE_HBOOL_g;
+    }
   }
 }
