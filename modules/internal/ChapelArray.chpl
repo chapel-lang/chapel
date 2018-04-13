@@ -2358,7 +2358,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
+    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
       var dom = _dom((...r));
@@ -2368,7 +2368,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
+    proc localSlice(d: domain) where _to_borrowed(_value.type): DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
 
