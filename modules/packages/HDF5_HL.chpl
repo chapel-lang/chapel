@@ -3,6 +3,7 @@
 module HDF5_HL {
   // Header given to c2chapel:
   require "hdf5_hl.h";
+  require "-lhdf5", "-lhdf5_hl";
 
   use HDF5_HL_Macros;
 
@@ -531,20 +532,23 @@ module HDF5_HL {
   extern proc H5Aiterate1(loc_id : hid_t, ref attr_num : c_uint, op : H5A_operator1_t, op_data : c_void_ptr) : herr_t;
 
   // Enum: H5C_cache_incr_mode
-  extern const H5C_incr__off :c_int;
-  extern const H5C_incr__threshold :c_int;
+  extern type H5C_cache_incr_mode = c_int;
+  extern const H5C_incr__off :H5C_cache_incr_mode;
+  extern const H5C_incr__threshold :H5C_cache_incr_mode;
 
 
   // Enum: H5C_cache_flash_incr_mode
-  extern const H5C_flash_incr__off :c_int;
-  extern const H5C_flash_incr__add_space :c_int;
+  extern type H5C_cache_flash_incr_mode = c_int;
+  extern const H5C_flash_incr__off :H5C_cache_flash_incr_mode;
+  extern const H5C_flash_incr__add_space :H5C_cache_flash_incr_mode;
 
 
   // Enum: H5C_cache_decr_mode
-  extern const H5C_decr__off :c_int;
-  extern const H5C_decr__threshold :c_int;
-  extern const H5C_decr__age_out :c_int;
-  extern const H5C_decr__age_out_with_threshold :c_int;
+  extern type H5C_cache_decr_mode = c_int;
+  extern const H5C_decr__off :H5C_cache_decr_mode;
+  extern const H5C_decr__threshold :H5C_cache_decr_mode;
+  extern const H5C_decr__age_out :H5C_cache_decr_mode;
+  extern const H5C_decr__age_out_with_threshold :H5C_cache_decr_mode;
 
 
   extern proc H5Dcreate2(loc_id : hid_t, name : c_string, type_id : hid_t, space_id : hid_t, lcpl_id : hid_t, dcpl_id : hid_t, dapl_id : hid_t) : hid_t;
@@ -1796,6 +1800,7 @@ module HDF5_HL {
   extern proc H5LTget_dataset_ndims(loc_id : hid_t, dset_name : c_string, ref rank : c_int) : herr_t;
 
   extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_string, ref dims : hsize_t, ref type_class : H5T_class_t, ref type_size : size_t) : herr_t;
+  extern proc H5LTget_dataset_info(loc_id : hid_t, dset_name : c_string, ref dims : hsize_t, type_class : c_ptr(H5T_class_t), type_size : c_ptr(size_t)) : herr_t;
 
   extern proc H5LTfind_dataset(loc_id : hid_t, name : c_string) : herr_t;
 
