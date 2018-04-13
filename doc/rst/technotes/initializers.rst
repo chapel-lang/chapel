@@ -740,7 +740,7 @@ types use initializers when possible.  Please report any bugs
 encountered using the guidance described at the `bugs`_ page.
 
 .. _bugs:
-   https://chapel-lang.org/docs/latest/usingchapel/bugs.html
+   https://chapel-lang.org/docs/usingchapel/bugs.html
 
 
 
