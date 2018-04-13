@@ -21,18 +21,8 @@ module Dataframes {
   use Sort;
 
   class Index {
-    // TODO:
-    // how do I get these generic things to work?
-    iter these() {
-      return;
-    }
-
-    iter items() {
-      return;
-    }
-
-    proc this(lab) ref {
-      return nil;
+    proc writeThis(f, s: TypedSeries(?) = nil) {
+      halt("cannot writeThis on generic Index");
     }
   }
 
@@ -80,6 +70,15 @@ module Dataframes {
       return labelToOrd[lab];
     }
 
+    proc writeThis(f, s: TypedSeries(?) = nil) {
+      for (i, d) in zip(this, s) {
+        f <~> i;
+        f <~> "\t";
+        f <~> d;
+        f <~> "\n";
+      }
+    }
+
     // TODO: label mutation (insert, drop)
     // TODO: ordinal mutation (delete)
     // TODO: label concatenation (append)
@@ -103,7 +102,7 @@ module Dataframes {
       super.init();
       eltType = T;
 
-      ords = 1..data.size;
+      this.ords = 1..data.size;
       this.data = data;
     }
 
@@ -114,7 +113,7 @@ module Dataframes {
       eltType = T;
 
       this.idx = new TypedIndex(rev_idx);
-      ords = 1..data.size;
+      this.ords = 1..data.size;
       this.data = data;
     }
 
@@ -124,27 +123,33 @@ module Dataframes {
     }
 
     iter items() {
-      for tup in zip(idx, data) do
+      for tup in zip(ords, data) do
         yield tup;
     }
 
-    proc this(lab) {
-      return data[idx[lab]];
+    iter items(type idxType) {
+      if idx {
+        for tup in zip(idx:TypedIndex(idxType), data) do
+          yield tup;
+      }
     }
 
     proc at(ord: int) {
       return data[ord];
     }
 
+    proc this(lab: ?idxType) {
+      return data[(idx:TypedIndex(idxType))[lab]];
+    }
+
     proc writeThis(f) {
       if idx {
-        f <~> "index: ";
-        idx.writeThis(f);
-        f <~> " | ";
+        idx.writeThis(f, this);
+      } else {
+        for (i, d) in this.items() do
+          f <~> i + "\t" + d + "\n";
       }
-      f <~> "data: ";
-      data.writeThis(f);
+      f <~> "dtype: " + eltType:string;
     }
   }
 }
-

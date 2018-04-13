@@ -5,11 +5,11 @@ var A = ["a", "b", "c", "d", "e"];
 
 var letters: TypedSeries(string) = new TypedSeries(I, A);
 
-for i in letters.idx do
+for i in letters.idx:TypedIndex(string) do
   writeln(i);
 
 writeln();
-for i in letters.idx.items() do
+for i in (letters.idx:TypedIndex(string)).items() do
   writeln(i);
 
 writeln();
@@ -17,5 +17,5 @@ for t in letters do
   writeln(t);
 
 writeln();
-for t in letters.items() do
+for t in letters.items(string) do
   writeln(t);

@@ -12,8 +12,3 @@ writeln();
 writeln("1: " + letters.at(1));
 writeln("3: " + letters.at(3));
 writeln("5: " + letters.at(5));
-
-/*
-A["A"] = "aaaa";
-writeln("A: " + letters["A"]);
- */
