@@ -373,7 +373,7 @@ module ChapelDistribution {
     param stridable: bool;
 
     proc getBaseArrType() type {
-      var tmp = new BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
       return tmp.type;
     }
 

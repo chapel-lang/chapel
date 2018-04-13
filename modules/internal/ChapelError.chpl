@@ -338,7 +338,7 @@ module ChapelError {
   proc chpl_fix_thrown_error(err: Error): Error {
     var fixErr: Error = err;
     if fixErr == nil then
-      fixErr = new NilThrownError();
+      fixErr = new unmanaged NilThrownError();
 
     const line = __primitive("_get_user_line");
     const fileId = __primitive("_get_user_file");
@@ -396,7 +396,7 @@ module ChapelError {
     if err:TaskErrors then
       return err;
     // If err wasn't a taskError, wrap it in one
-    return new TaskErrors(err);
+    return new unmanaged TaskErrors(err);
   }
 
   // The compiler generates functions to cast from strings to enums. This
@@ -406,8 +406,8 @@ module ChapelError {
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
     if casted.isEmptyString() then
-      throw new IllegalArgumentError("bad cast from empty string to " + enumName);
+      throw new unmanaged IllegalArgumentError("bad cast from empty string to " + enumName);
     else
-      throw new IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
+      throw new unmanaged IllegalArgumentError("bad cast from string '" + casted + "' to " + enumName);
   }
 }
