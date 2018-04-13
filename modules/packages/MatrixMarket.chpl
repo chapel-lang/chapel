@@ -94,7 +94,7 @@ module MatrixMarket {
 
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
-         fd = open(fname, iomode.cw, iokind.native);
+         fd = open(fname, iomode.cw);
          fout = fd.writer(start=0);
          headers_written=false;
       }
@@ -123,6 +123,11 @@ module MatrixMarket {
       }
 
       proc fake_headers(nrows, ncols, nnz) {
+        // Update the headers written in write_headers
+        // since fout might still have buffered data, flush it
+        // before we try to update it.
+        fout.flush();
+
          var tfout = fd.writer(start=HEADER_LINE.length);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
          tfout.close();

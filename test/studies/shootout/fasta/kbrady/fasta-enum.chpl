@@ -111,7 +111,7 @@ proc addLine(bytes: int) {
     while (lookup[ai].p < r) do
       ai = ai + 1;
 
-    line_buff[i] = lookup[ai].c;
+    line_buff[i] = lookup[ai].c: int(8);
   }
   line_buff[bytes] = 10;
   stdout.write(line_buff[0..bytes]);
@@ -135,7 +135,7 @@ proc repeatMake(desc: string, alu: [], n: int) {
   var r : int = alu.size;
   var s : [0..(r+LINE_LENGTH)] int(8);
   for d in s.domain do 
-    s[d] = alu[d % r];
+    s[d] = alu[d % r]: int(8);
   
   var j : int;
   for i in 0..#(n / LINE_LENGTH) {

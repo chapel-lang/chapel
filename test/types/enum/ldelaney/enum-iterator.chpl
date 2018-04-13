@@ -14,14 +14,12 @@ enum Season {
 
 proc main(){
   for i in Color {
-    var x : int;
-    x = i;
+    var x = i: int;
     writeln(i, ": ", x);
   }
   writeln();
   for i in Season{
-   var x : int;
-    x = i;
+    var x = i: int;
     writeln(i, ": ", x);
   }
   writeln();

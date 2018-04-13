@@ -23,10 +23,10 @@ writeln();
 
 int8paramVsNot(1);
 int8paramVsNot(numeral.I);
-//int8paramVsNot(numeral.M);
-//int8paramVsNot(enumEq1000);
-//int8paramVsNot(enumEqFive);
-//int8paramVsNot(enumParamEq1000);
+int8paramVsNot(numeral.M);
+int8paramVsNot(enumEq1000);
+int8paramVsNot(enumEqFive);
+int8paramVsNot(enumParamEq1000);
 int8paramVsNot(enumParamEqFive);
 writeln();
 

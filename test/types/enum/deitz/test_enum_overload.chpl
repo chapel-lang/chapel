@@ -9,7 +9,7 @@ proc foo(i : int) {
 }
 
 var m : month = month.jan;
-var i : int = m;
+var i = m: int;
 
 writeln("The first month is ", m, " or, as an int, ", i);
 foo(m);

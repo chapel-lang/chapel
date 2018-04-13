@@ -1,3 +1,9 @@
-uint 7fffffffffffffff
-uint 8000000000000000
-uint 8000000000000002
+enum-overflow.chpl:32: error: unresolved call 'writeint(myenum)'
+enum-overflow.chpl:24: note: candidates are: writeint(x: int)
+enum-overflow.chpl:27: note:                 writeint(x: uint)
+enum-overflow.chpl:33: error: unresolved call 'writeint(myenum)'
+enum-overflow.chpl:24: note: candidates are: writeint(x: int)
+enum-overflow.chpl:27: note:                 writeint(x: uint)
+enum-overflow.chpl:34: error: unresolved call 'writeint(myenum)'
+enum-overflow.chpl:24: note: candidates are: writeint(x: int)
+enum-overflow.chpl:27: note:                 writeint(x: uint)

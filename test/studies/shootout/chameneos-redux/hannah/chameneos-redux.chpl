@@ -48,7 +48,7 @@ proc getComplement(myColor : Color, otherColor : Color) {
   if (myColor == otherColor) {
     return myColor;
   }
-  return (3 - myColor - otherColor) : Color;
+  return (3 - myColor:int - otherColor:int) : Color;
 }
 
 class Chameneos {

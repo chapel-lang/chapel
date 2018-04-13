@@ -1,3 +1,9 @@
-uint 1
-uint 9223372036854775808
-uint 3
+dependent-uint.chpl:15: error: unresolved call 'is_uint(numbers)'
+dependent-uint.chpl:8: note: candidates are: is_uint(x: int)
+dependent-uint.chpl:11: note:                 is_uint(x: uint)
+dependent-uint.chpl:16: error: unresolved call 'is_uint(numbers)'
+dependent-uint.chpl:8: note: candidates are: is_uint(x: int)
+dependent-uint.chpl:11: note:                 is_uint(x: uint)
+dependent-uint.chpl:19: error: unresolved call 'is_uint(numbers)'
+dependent-uint.chpl:8: note: candidates are: is_uint(x: int)
+dependent-uint.chpl:11: note:                 is_uint(x: uint)
