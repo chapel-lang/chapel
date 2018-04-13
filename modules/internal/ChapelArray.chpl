@@ -857,7 +857,7 @@ module ChapelArray {
 
   proc chpl__buildDistType(type t) type where _to_borrowed(t): BaseDist {
     var x: t;
-    var y = _newDistribution(x);
+    var y = _newDistribution(_to_unmanaged(x));
     return y.type;
   }
 
@@ -866,7 +866,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistValue(x) where _to_borrowed(x.type): BaseDist {
-    return _newDistribution(x);
+    return _newDistribution(_to_unmanaged(x));
   }
 
   proc chpl__buildDistValue(x) {
