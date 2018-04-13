@@ -128,6 +128,11 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
     if (newT != arg->type) arg->type = newT;
   }
 
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+    Type* newT = convert(sv->type);
+    if (newT != sv->type) sv->type = newT;
+  }
+
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     Type* newT = convert(ts->type);
     if (newT != ts->type) {
