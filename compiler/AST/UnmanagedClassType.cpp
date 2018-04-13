@@ -101,6 +101,21 @@ Type* canonicalClassType(Type* a) {
   return a;
 }
 
+static Type* convertToCanonical(Type* a) {
+
+  if (isReferenceType(a)) {
+    // Convert ref(unmanaged) to ref(canonical)
+    Type* elt = a->getValType();
+    Type* newElt = canonicalClassType(elt);
+    INT_ASSERT(newElt->refType);
+    return newElt->refType;
+  }
+
+  // convert unmanaged to canonical
+  return canonicalClassType(a);
+}
+
+
 static void convertClassTypes(Type* (*convert)(Type*)) {
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -158,12 +173,16 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
 void convertClassTypesToCanonical() {
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
-  convertClassTypes(canonicalClassType);
+  convertClassTypes(convertToCanonical);
 
   // At this point the TypeSymbols for the unmanaged types should
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree() && isUnmanagedClassType(ts->type))
-      ts->defPoint->remove();
+    if (isUnmanagedClassType(ts->type)) {
+      if (ts->inTree())
+        ts->defPoint->remove();
+      if (ts->type->refType && ts->type->refType->symbol->inTree())
+        ts->type->refType->symbol->defPoint->remove();
+    }
   }
 }
