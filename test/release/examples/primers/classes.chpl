@@ -22,7 +22,7 @@ class C {
 // each field in the class.  Once a class has been constructed, its methods
 // can be called.
 //
-var foo = new C(1, 2);
+var foo = new unmanaged C(1, 2);
 foo.printFields();
 
 //
@@ -68,7 +68,7 @@ class D: C {
 // of ``D``.
 //
 delete foo;
-foo = new D(3, 4);
+foo = new unmanaged D(3, 4);
 foo.printFields();
 delete foo;
 
@@ -102,7 +102,7 @@ class ArrayLike {
 // This ``ArrayLike`` object can be indexed like a 4 element array and it
 // can be iterated over in a loop.
 //
-var a = new ArrayLike();
+var a = new unmanaged ArrayLike();
 a(2) = 1; // call to this method
 a(4) = 2; // call to this method
 
