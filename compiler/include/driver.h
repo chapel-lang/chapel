@@ -91,6 +91,7 @@ extern const char* CHPL_ORIG_TARGET_COMPILER;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_RUNTIME_ARCH;
 extern const char* CHPL_TARGET_BACKEND_ARCH;
+extern const char* CHPL_TARGET_BACKEND_ARCH_FLAG;
 extern const char* CHPL_LOCALE_MODEL;
 extern const char* CHPL_COMM;
 extern const char* CHPL_COMM_SUBSTRATE;

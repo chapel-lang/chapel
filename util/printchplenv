@@ -71,6 +71,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_ARCH', INTERNAL),
+    ChapelEnv('CHPL_TARGET_BACKEND_ARCH_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_ARCH', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
@@ -131,12 +132,14 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
     ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
-    ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
+    (target_flag, target_arch) = chpl_arch.get('target')
+    ENV_VALS['CHPL_TARGET_ARCH'] = target_arch
 
     # Use module's LCD architecture in case it was built before
     # Internal, but this value is used in place of CHPL_TARGET_ARCH for --path
-    ENV_VALS['CHPL_RUNTIME_ARCH'] = chpl_arch.get('target',
+    (runtime_flag, runtime_arch) = chpl_arch.get('target',
             get_lcd=chpl_home_utils.using_chapel_module())
+    ENV_VALS['CHPL_RUNTIME_ARCH'] = runtime_arch
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
@@ -165,8 +168,10 @@ def compute_internal_values():
 
     # Maps architecture name that Chapel uses to the name that can be included
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
-    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = chpl_arch.get('target',
-            map_to_compiler=True)
+    (backend_flag, backend_arch) = chpl_arch.get('target',
+                                                 map_to_compiler=True)
+    ENV_VALS['CHPL_TARGET_BACKEND_ARCH_FLAG'] = backend_flag
+    ENV_VALS['CHPL_TARGET_BACKEND_ARCH'] = backend_arch
 
     ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')

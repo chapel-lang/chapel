@@ -15,10 +15,11 @@ from utils import error, memoize, run_command
 #
 @memoize
 def default_uniq_cfg_path():
+    (flag, arch) = chpl_arch.get('target', map_to_compiler=True,
+                                 get_lcd=using_chapel_module())
     return '{0}-{1}-{2}'.format(chpl_platform.get('target'),
                                 chpl_compiler.get('target'),
-                                chpl_arch.get('target', map_to_compiler=True,
-                                              get_lcd=using_chapel_module()))
+                                arch)
 
 #
 # Returns the path to the packages install directory

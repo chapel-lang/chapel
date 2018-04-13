@@ -1576,11 +1576,16 @@ void runClang(const char* just_parse_filename) {
     args.push_back(clang_opt);
 
   if (specializeCCode &&
+      CHPL_TARGET_BACKEND_ARCH_FLAG != NULL &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
+      CHPL_TARGET_BACKEND_ARCH_FLAG[0] != '\0' &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
     std::string march = "-m";
+    march += CHPL_TARGET_BACKEND_ARCH_FLAG;
+    march += "=";
     march += CHPL_TARGET_BACKEND_ARCH;
     args.push_back(march);
   }
