@@ -246,7 +246,7 @@ class BlockCyclic : BaseDist {
 
     coforall locid in targetLocDom do
       on this.targetLocales(locid) do
-        locDist(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, this);
+        locDist(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, _to_unmanaged(this));
 
     if dataParTasksPerLocale == 0 then
       this.dataParTasksPerLocale = here.maxTaskPar;
@@ -258,7 +258,7 @@ class BlockCyclic : BaseDist {
   }
 
   // copy initializer for privatization
-  proc init(param rank: int, type idxType, other: BlockCyclic(rank, idxType)) {
+  proc init(param rank: int, type idxType, other: unmanaged BlockCyclic(rank, idxType)) {
     this.rank = rank;
     this.idxType = idxType;
     lowIdx = other.lowIdx;
@@ -319,7 +319,9 @@ proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("BlockCyclic domain rank does not match distribution's");
 
-  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this), stridable=stridable);
+  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
+                                         dist=_to_unmanaged(this),
+                                         stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -450,7 +452,7 @@ class LocBlockCyclic {
   proc LocBlockCyclic(param rank: int,
                  type idxType, 
                  locid,   // the locale index from the target domain
-                 dist: BlockCyclic(rank, idxType)) { // reference to glob dist
+                 dist: unmanaged BlockCyclic(rank, idxType)) { // reference to glob dist
     if rank == 1 {
       const lo = dist.lowIdx(1) + (locid * dist.blocksize(1));
       const str = dist.blocksize(1) * dist.targetLocDom.numIndices;
