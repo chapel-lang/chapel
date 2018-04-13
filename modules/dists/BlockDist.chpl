@@ -307,11 +307,11 @@ class Block : BaseDist {
   var boundingBox: domain(rank, idxType);
   var targetLocDom: domain(rank);
   var targetLocales: [targetLocDom] locale;
-  var locDist: [targetLocDom] LocBlock(rank, idxType);
+  var locDist: [targetLocDom] unmanaged LocBlock(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType = unmanaged DefaultDist;
 }
 
 //
@@ -340,8 +340,8 @@ class LocBlock {
 pragma "use default init"
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
-  const dist: Block(rank, idxType, sparseLayoutType);
-  var locDoms: [dist.targetLocDom] LocBlockDom(rank, idxType, stridable);
+  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
 }
 
@@ -375,10 +375,10 @@ pragma "use default init"
 class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: BlockDom(rank, idxType, stridable, sparseLayoutType);
-  var locArr: [dom.dist.targetLocDom] LocBlockArr(eltType, rank, idxType, stridable);
+  var dom: unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockArr(eltType, rank, idxType, stridable);
   pragma "local field"
-  var myLocArr: LocBlockArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocBlockArr(eltType, rank, idxType, stridable);
   const SENTINEL = max(rank*idxType);
 }
 
@@ -397,8 +397,8 @@ class LocBlockArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocBlockDom(rank, idxType, stridable);
-  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
@@ -543,7 +543,7 @@ proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  var dom = new unmanaged BlockDom(rank=rank, idxType=idxType, dist=this,
+  var dom = new unmanaged BlockDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this),
       stridable=stridable, sparseLayoutType=sparseLayoutType);
   dom.dsiSetIndices(inds);
   if debugBlockDist {
@@ -557,7 +557,7 @@ proc Block.dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
   return new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
                             stridable=dom.stridable,
-                            dist=this, whole=dom._value.whole,
+                            dist=_to_unmanaged(this), whole=dom._value.whole,
                             parentDom=dom);
 }
 
@@ -1230,7 +1230,7 @@ proc Block.dsiGetPrivatizeData() {
 }
 
 proc Block.dsiPrivatize(privatizeData) {
-  return new unmanaged Block(this, privatizeData);
+  return new unmanaged Block(_to_unmanaged(this), privatizeData);
 }
 
 proc Block.dsiGetReprivatizeData() return boundingBox.dims();

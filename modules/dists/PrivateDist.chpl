@@ -89,7 +89,7 @@ class Private: BaseDist {
 
 pragma "use default init"
 class PrivateDom: BaseRectangularDom {
-  var dist: Private;
+  var dist: unmanaged Private;
 
   iter these() { for i in 0..numLocales-1 do yield i; }
 
@@ -143,7 +143,7 @@ class PrivateDom: BaseRectangularDom {
 
 pragma "use default init"
 class PrivateArr: BaseRectangularArr {
-  var dom: PrivateDom(rank, idxType, stridable);
+  var dom: unmanaged PrivateDom(rank, idxType, stridable);
   var data: eltType;
 }
 

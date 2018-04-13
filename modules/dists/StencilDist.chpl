@@ -248,7 +248,7 @@ class Stencil : BaseDist {
   var boundingBox: domain(rank, idxType);
   var targetLocDom: domain(rank);
   var targetLocales: [targetLocDom] locale;
-  var locDist: [targetLocDom] LocStencil(rank, idxType);
+  var locDist: [targetLocDom] unmanaged LocStencil(rank, idxType);
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
   var dataParMinGranularity: int;
@@ -281,8 +281,8 @@ class LocStencil {
 //
 class StencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
-  const dist: Stencil(rank, idxType, ignoreFluff);
-  var locDoms: [dist.targetLocDom] LocStencilDom(rank, idxType, stridable);
+  const dist: unmanaged Stencil(rank, idxType, ignoreFluff);
+  var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType, stridable);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
   var fluff: rank*idxType;
   var periodic: bool = false;
@@ -327,10 +327,10 @@ pragma "use default init"
 class StencilArr: BaseRectangularArr {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: StencilDom(rank, idxType, stridable, ignoreFluff);
-  var locArr: [dom.dist.targetLocDom] LocStencilArr(eltType, rank, idxType, stridable);
+  var dom: unmanaged StencilDom(rank, idxType, stridable, ignoreFluff);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocStencilArr(eltType, rank, idxType, stridable);
   pragma "local field"
-  var myLocArr: LocStencilArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocStencilArr(eltType, rank, idxType, stridable);
   const SENTINEL = max(rank*idxType);
 }
 
@@ -349,8 +349,8 @@ class LocStencilArr {
   param rank: int;
   type idxType;
   param stridable: bool;
-  const locDom: LocStencilDom(rank, idxType, stridable);
-  var locRAD: LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
+  const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable); // non-nil if doRADOpt=true
   pragma "local field"
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: atomicbool; // This will only be accessed locally
@@ -504,7 +504,7 @@ proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
-  var dom = new unmanaged StencilDom(rank=rank, idxType=idxType, dist=this, stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
+  var dom = new unmanaged StencilDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this), stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff);
   dom.dsiSetIndices(inds);
   if debugStencilDist {
     writeln("Creating new Stencil domain:");
@@ -757,7 +757,7 @@ proc StencilDom.dsiSerialWrite(x) {
 // how to allocate a new array over this domain
 //
 proc StencilDom.dsiBuildArray(type eltType) {
-  var arr = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this, ignoreFluff=this.ignoreFluff);
+  var arr = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this), ignoreFluff=this.ignoreFluff);
   arr.setup();
   return arr;
 }
@@ -1653,7 +1653,7 @@ proc Stencil.dsiGetPrivatizeData() {
 }
 
 proc Stencil.dsiPrivatize(privatizeData) {
-  return new unmanaged Stencil(this, privatizeData);
+  return new unmanaged Stencil(_to_unmanaged(this), privatizeData);
 }
 
 proc Stencil.dsiGetReprivatizeData() return boundingBox.dims();

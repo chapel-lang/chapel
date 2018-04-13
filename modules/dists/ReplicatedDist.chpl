@@ -180,14 +180,14 @@ class ReplicatedDom : BaseRectangularDom {
   // we need to be able to provide the domain map for our domain - to build its
   // runtime type (because the domain map is part of the type - for any domain)
   // (looks like it must be called exactly 'dist')
-  const dist : Replicated; // must be a Replicated
+  const dist : unmanaged Replicated; // must be a Replicated
 
   // this is our index set; we store it here so we can get to it easily
   var domRep: domain(rank, idxType, stridable);
 
   // local domain objects
   // NOTE: if they ever change after the initializer - Reprivatize them
-  var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
+  var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
 
@@ -287,7 +287,7 @@ proc Replicated.dsiNewRectangularDom(param rank: int,
   // Have to call the default initializer because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
   var result = new unmanaged ReplicatedDom(rank=rank, idxType=idxType,
-                                 stridable=stridable, dist=this);
+                                 stridable=stridable, dist=_to_unmanaged(this));
 
   // create local domain objects
   coforall (loc, locDom) in zip(targetLocales, result.localDoms) do
@@ -413,7 +413,7 @@ class ReplicatedArr : BaseArr {
   // the replicated arrays
   // NOTE: 'dom' must be initialized prior to initializing 'localArrs'
   var localArrs: [dom.dist.targetLocDom]
-              LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
+              unmanaged LocReplicatedArr(eltType, dom.rank, dom.idxType, dom.stridable);
 
   //
   // helper function to get the local array safely
@@ -450,7 +450,7 @@ class LocReplicatedArr {
   type idxType;
   param stridable: bool;
 
-  var myDom: LocReplicatedDom(rank, idxType, stridable);
+  var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
   var arrLocalRep: [myDom.domLocalRep] eltType;
 }
 
@@ -460,7 +460,7 @@ class LocReplicatedArr {
 // 'eltType' and 'dom' as passed explicitly;
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
-proc ReplicatedArr.init(type eltType, dom: ReplicatedDom) {
+proc ReplicatedArr.init(type eltType, dom) {
   this.eltType = eltType;
   this.dom = dom;
 }
@@ -505,10 +505,10 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
 
 // create a new array over this domain
 proc ReplicatedDom.dsiBuildArray(type eltType)
-  : ReplicatedArr(eltType, this.type)
+  : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type))
 {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
-  var result = new unmanaged ReplicatedArr(eltType, this);
+  var result = new unmanaged ReplicatedArr(eltType, _to_unmanaged(this));
   coforall (loc, locDom, locArr)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do

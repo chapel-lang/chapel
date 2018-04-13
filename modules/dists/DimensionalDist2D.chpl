@@ -329,7 +329,7 @@ class DimensionalDom : BaseRectangularDom {
   // local domain descriptors, not reprivatized
   // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
   // we clean this up?
-  var localDdescs: [dist.targetIds] locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
+  var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
 class LocDimensionalDom {
@@ -370,7 +370,7 @@ class DimensionalArr : BaseRectangularArr {
   // local array descriptors (from the original array, if this is an alias)
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
-                      LocDimensionalArr(eltType, allocDom.locDdescType);
+                      unmanaged LocDimensionalArr(eltType, allocDom.locDdescType);
 }
 
 class LocDimensionalArr {
@@ -809,7 +809,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   _passLocalLocIDsDom1d(dom2, di2);
 
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
-                                    stridable=stridable, dist=this,
+                                    stridable=stridable, dist=_to_unmanaged(this),
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
 

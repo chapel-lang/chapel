@@ -59,9 +59,9 @@ config param debugSparseBlockDistBulkTransfer = false;
 class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
   param stridable: bool = false;  // TODO: remove default value eventually
-  const dist: Block(rank, idxType, sparseLayoutType);
+  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
   var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
-  var locDoms: [dist.targetLocDom] LocSparseBlockDom(rank, idxType, stridable,
+  var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType, stridable,
       sparseLayoutType);
 
   proc postinit() {
@@ -329,14 +329,14 @@ class LocSparseBlockDom {
 //
 class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
-  type sparseLayoutType = DefaultDist;
+  type sparseLayoutType = unmanaged DefaultDist;
 
   // INIT TODO: Can we address this constructor/initializer issue now?
   // ideally I wanted to have `var locArr: [dom.dist.targetLocDom]`. However,
   // superclass' fields cannot be used in child class' field initializers. See
   // the constructor for the workaround.
   var locArrDom: domain(rank,idxType);
-  var locArr: [locArrDom] LocSparseBlockArr(eltType, rank, idxType, stridable,
+  var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
   var myLocArr: LocSparseBlockArr(eltType, rank, idxType, stridable,
       sparseLayoutType);
@@ -473,7 +473,7 @@ class LocSparseBlockArr {
   type idxType;
   param stridable: bool;
   type sparseLayoutType;
-  const locDom: LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
+  const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc dsiAccess(i) ref {

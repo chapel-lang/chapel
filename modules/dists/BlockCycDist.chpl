@@ -185,7 +185,7 @@ class BlockCyclic : BaseDist {
   const blocksize: rank*int;
   const targetLocDom: domain(rank);
   const targetLocales: [targetLocDom] locale;
-  const locDist: [targetLocDom] LocBlockCyclic(rank, idxType);
+  const locDist: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int; // tasks per locale for forall iteration
 
@@ -227,12 +227,12 @@ class BlockCyclic : BaseDist {
       }
     } else {
       if targetLocales.rank != rank then
-    compilerError("locales array rank must be one or match distribution rank");
+        compilerError("locales array rank must be one or match distribution rank");
 
       var ranges: rank*range;
       for param i in 1..rank do {
-    var thisRange = targetLocales.domain.dim(i);
-    ranges(i) = 0..#thisRange.length; 
+        var thisRange = targetLocales.domain.dim(i);
+        ranges(i) = 0..#thisRange.length;
       }
       
       targetLocDom = {(...ranges)};
@@ -319,7 +319,7 @@ proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
   if rank != this.rank then
     compilerError("BlockCyclic domain rank does not match distribution's");
 
-  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, dist=this, stridable=stridable);
+  var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this), stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -482,13 +482,13 @@ class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
   //
-  const dist: BlockCyclic(rank, idxType);
+  const dist: unmanaged BlockCyclic(rank, idxType);
 
   //
   // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
-  var locDoms: [dist.targetLocDom] LocBlockCyclicDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
   //
   // a domain describing the complete domain
@@ -628,7 +628,7 @@ proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       if (locDoms(localeIdx) == nil) then
-        locDoms(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, this,
+        locDoms(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, _to_unmanaged(this),
                                                    dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
@@ -689,7 +689,7 @@ class LocBlockCyclicDom {
   //
   // UP LINK: a reference to the parent global domain class
   //
-  const globDom: BlockCyclicDom(rank, idxType, stridable);
+  const globDom: unmanaged BlockCyclicDom(rank, idxType, stridable);
 
   //
   // a local domain describing the indices owned by this locale
@@ -793,17 +793,17 @@ class BlockCyclicArr: BaseRectangularArr {
   //
   // LEFT LINK: the global domain descriptor for this array
   //
-  var dom: BlockCyclicDom(rank, idxType, stridable);
+  var dom: unmanaged BlockCyclicDom(rank, idxType, stridable);
 
   //
   // DOWN LINK: an array of local array classes
   //
-  var locArr: [dom.dist.targetLocDom] LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
 
   //
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
-  var myLocArr: LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
 }
 
 proc BlockCyclicArr.dsiGetBaseDom() return dom;
@@ -1003,8 +1003,8 @@ class LocBlockCyclicArr {
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const allocDom: LocBlockCyclicDom(rank, idxType, stridable);
-  const indexDom: LocBlockCyclicDom(rank, idxType, stridable);
+  const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
 
   // STATE:
