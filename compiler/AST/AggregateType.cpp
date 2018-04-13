@@ -564,7 +564,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
     AggregateType* parent = dispatchParents.v[0];
 
     // Is the parent generic?
-    if (parent->typeConstructor->numFormals() > 0) {
+    if (parent->typeConstructor != NULL &&
+        parent->typeConstructor->numFormals() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs);
 
       retval = instantiationWithParent(instantiatedParent);
@@ -1808,8 +1809,10 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
           typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
 
-          arg->typeExpr    = typeExpr;
-          arg->type        = dtAny;
+          arg->typeExpr = typeExpr;
+          if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
+            arg->type = dtAny;
+          }
 
           // set up the ArgSymbol appropriately for the type
           // and initialization from the field declaration.

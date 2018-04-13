@@ -654,6 +654,7 @@ class LocCyclicDom {
 proc LocCyclicDom.member(i) return myBlock.member(i);
 
 
+pragma "use default init"
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
   var dom: CyclicDom(rank, idxType, stridable);

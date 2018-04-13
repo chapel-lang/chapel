@@ -546,6 +546,21 @@ static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
   return retval;
 }
 
+static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->getFormal(1)->getValType());
+  AggregateType* at = toAggregateType(info.call->get(1)->getValType());
+
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
+    retval = true;
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -560,6 +575,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   //
   // TODO: Expand this check for all methods
   if (fn->isInitializer() && isCandidateInit(this, info) == false) {
+    return false;
+  } else if (strcmp(fn->name, "_new") == 0 &&
+             isCandidateNew(this, info) == false) {
     return false;
   }
 

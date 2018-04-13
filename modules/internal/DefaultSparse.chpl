@@ -346,6 +346,7 @@ module DefaultSparse {
   }
 
 
+  pragma "use default init"
   class DefaultSparseArr: BaseSparseArrImpl {
 
     /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/

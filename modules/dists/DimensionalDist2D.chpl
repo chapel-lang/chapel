@@ -354,6 +354,7 @@ class LocDimensionalDom {
   }
 }
 
+pragma "use default init"
 class DimensionalArr : BaseRectangularArr {
   // required
   const dom; // must be a DimensionalDom

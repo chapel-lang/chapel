@@ -139,6 +139,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiMyDist() return dist;
 }
 
+pragma "use default init"
 class PrivateArr: BaseRectangularArr {
   var dom: PrivateDom(rank, idxType, stridable);
   var data: eltType;
