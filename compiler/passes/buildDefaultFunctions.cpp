@@ -953,57 +953,45 @@ static void build_enum_cast_function(EnumType* et) {
 }
 
 
-static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", et, et))
+// Helper function used to create "=", "==", and "!=" for enums
+static void build_enum_binary_op(EnumType* et, const char* op,
+                                 PrimitiveTag prim) {
+  if (FnSymbol* fn = function_exists(op, et, et)) {
+    USR_FATAL_CONT(fn, "Can't override '%s' for enums", op);
     return;
+  }
+  bool isAssign = (prim == PRIM_ASSIGN);
 
-  FnSymbol* fn = new FnSymbol("=");
-  fn->addFlag(FLAG_ASSIGNOP);
+  FnSymbol* fn = new FnSymbol(op);
+  if (prim == PRIM_ASSIGN) {
+    fn->addFlag(FLAG_ASSIGNOP);
+  }
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
+  ArgSymbol* arg1 = new ArgSymbol((isAssign ? INTENT_REF : INTENT_BLANK),
+                                  "_arg1", et);
   ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
-  fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
+  CallExpr* primexpr = new CallExpr(prim, arg1, arg2);
+  if (!isAssign) {
+    primexpr = new CallExpr(PRIM_RETURN, primexpr);
+  }
+  fn->insertAtTail(primexpr);
   DefExpr* def = new DefExpr(fn);
   et->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
 
+
+static void build_enum_assignment_function(EnumType* et) {
+  build_enum_binary_op(et, "=", PRIM_ASSIGN);
+}
+
 static void build_enum_comparison_functions(EnumType* et) {
-  if (!function_exists("==", et, et)) {
-    FnSymbol* fn = new FnSymbol("==");
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_INLINE);
-    ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
-    ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
-    fn->insertFormalAtTail(arg1);
-    fn->insertFormalAtTail(arg2);
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_EQUAL, arg1, arg2)));
-    DefExpr* def = new DefExpr(fn);
-    et->symbol->defPoint->insertBefore(def);
-    reset_ast_loc(def, et->symbol);
-    normalize(fn);
-  }
-  if (!function_exists("!=", et, et)) {
-    FnSymbol* fn = new FnSymbol("!=");
-    fn->addFlag(FLAG_COMPILER_GENERATED);
-    fn->addFlag(FLAG_LAST_RESORT);
-    fn->addFlag(FLAG_INLINE);
-    ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", et);
-    ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
-    fn->insertFormalAtTail(arg1);
-    fn->insertFormalAtTail(arg2);
-    fn->insertAtTail(new CallExpr(PRIM_RETURN, new CallExpr(PRIM_NOTEQUAL, arg1, arg2)));
-    DefExpr* def = new DefExpr(fn);
-    et->symbol->defPoint->insertBefore(def);
-    reset_ast_loc(def, et->symbol);
-    normalize(fn);
-  }
+  build_enum_binary_op(et, "==", PRIM_EQUAL);
+  build_enum_binary_op(et, "!=", PRIM_NOTEQUAL);
 }
 
 
