@@ -220,9 +220,9 @@ class argument_map(object):
     @classmethod
     def find(cls, arch, compiler, version):
         if arch == 'unknown' or arch == '':
-            return 'unknown'
+            return ('none', 'unknown')
         elif arch == 'none':
-            return 'none'
+            return ('none', 'none')
 
         arg_value = cls._get(arch, compiler, version)
         if not arg_value:
@@ -230,7 +230,7 @@ class argument_map(object):
                          'compiler="{1}" version="{2}"\n'.format(arch,
                                                                  compiler,
                                                                  version))
-        return arg_value
+        return arg_value or (None, None)
 
     @classmethod
     def _get(cls, arch, compiler, version):
