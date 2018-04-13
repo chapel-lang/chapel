@@ -2937,7 +2937,7 @@ static bool populateForwardingMethods(CallInfo& info) {
   const char*    calledName = info.name;
   Type*          t          = forCall->get(2)->typeInfo()->getValType();
 
-  AggregateType* at         = toAggregateType(t);
+  AggregateType* at         = toAggregateType(canonicalClassType(t));
   bool           addedAny   = false;
 
   // Currently, only AggregateTypes can forward

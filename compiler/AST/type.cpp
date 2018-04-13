@@ -1470,7 +1470,7 @@ bool needsCapture(Type* t) {
       is_complex_type(t) ||
       is_enum_type(t) ||
       t == dtStringC ||
-      isClass(t) ||
+      isClassLike(t) ||
       isRecord(t) ||
       isUnion(t) ||
       t == dtTaskID || // false?
