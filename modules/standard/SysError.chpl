@@ -75,42 +75,42 @@ class SystemError : Error {
   */
   proc type fromSyserr(err: syserr, details: string = "") {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
-      return new BlockingIOError(details, err);
+      return new unmanaged BlockingIOError(details, err);
     } else if err == ECHILD {
-      return new ChildProcessError(details, err);
+      return new unmanaged ChildProcessError(details, err);
     } else if err == EPIPE || err == ESHUTDOWN {
-      return new BrokenPipeError(details, err);
+      return new unmanaged BrokenPipeError(details, err);
     } else if err == ECONNABORTED {
-      return new ConnectionAbortedError(details, err);
+      return new unmanaged ConnectionAbortedError(details, err);
     } else if err == ECONNREFUSED {
-      return new ConnectionRefusedError(details, err);
+      return new unmanaged ConnectionRefusedError(details, err);
     } else if err == ECONNRESET {
-      return new ConnectionResetError(details, err);
+      return new unmanaged ConnectionResetError(details, err);
     } else if err == EEXIST {
-      return new FileExistsError(details, err);
+      return new unmanaged FileExistsError(details, err);
     } else if err == ENOENT {
-      return new FileNotFoundError(details, err);
+      return new unmanaged FileNotFoundError(details, err);
     } else if err == EINTR {
-      return new InterruptedError(details, err);
+      return new unmanaged InterruptedError(details, err);
     } else if err == EISDIR {
-      return new IsADirectoryError(details, err);
+      return new unmanaged IsADirectoryError(details, err);
     } else if err == ENOTDIR {
-      return new NotADirectoryError(details, err);
+      return new unmanaged NotADirectoryError(details, err);
     } else if err == EACCES || err == EPERM {
-      return new PermissionError(details, err);
+      return new unmanaged PermissionError(details, err);
     } else if err == ESRCH {
-      return new ProcessLookupError(details, err);
+      return new unmanaged ProcessLookupError(details, err);
     } else if err == ETIMEDOUT {
-      return new TimeoutError(details, err);
+      return new unmanaged TimeoutError(details, err);
     } else if err == EEOF {
-      return new EOFError(details, err);
+      return new unmanaged EOFError(details, err);
     } else if err == ESHORT {
-      return new UnexpectedEOFError(details, err);
+      return new unmanaged UnexpectedEOFError(details, err);
     } else if err == EFORMAT {
-      return new BadFormatError(details, err);
+      return new unmanaged BadFormatError(details, err);
     }
 
-    return new SystemError(err, details);
+    return new unmanaged SystemError(err, details);
   }
 
   /*
