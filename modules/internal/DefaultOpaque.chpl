@@ -154,6 +154,7 @@ module DefaultOpaque {
   }
   
   
+  pragma "use default init"
   class DefaultOpaqueArr: BaseArr {
     type eltType;
     type idxType;

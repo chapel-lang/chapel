@@ -1,3 +1,2 @@
 $CHPL_HOME/modules/internal/DefaultAssociative.chpl: error: cannot assign to a record of the type Node using the default assignment operator because it has 'const' field(s)
-$CHPL_HOME/modules/internal/ChapelArray.chpl: In function 'chpl__buildAssociativeArrayExpr':
 $CHPL_HOME/modules/internal/ChapelArray.chpl: error: cannot assign to a record of the type Coeff using the default assignment operator because it has 'const' field(s)

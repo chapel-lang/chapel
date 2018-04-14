@@ -1128,7 +1128,8 @@ TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
     llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
-    doc(NULL)
+    doc(NULL),
+    instantiationPoint(NULL)
 {
   addFlag(FLAG_TYPE_VARIABLE);
   if (!type)
@@ -1155,6 +1156,7 @@ TypeSymbol::copyInner(SymbolMap* map) {
   new_type->addSymbol(new_type_symbol);
   new_type_symbol->copyFlags(this);
   new_type_symbol->cname = cname;
+  new_type_symbol->instantiationPoint = instantiationPoint;
   return new_type_symbol;
 }
 

@@ -21,6 +21,7 @@
 
 #include "expr.h"
 #include "iterator.h"
+#include "UnmanagedClassType.h"
 #include "stringutil.h"
 #include "type.h"
 #include "resolution.h"
@@ -409,6 +410,34 @@ returnInfoIteratorRecordFieldValueByFormal(CallExpr* call) {
   return t;
 }
 
+static QualifiedType
+returnInfoToUnmanaged(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
+    t = mt->getCanonicalClass();
+  }
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (UnmanagedClassType* unmanaged = at->getUnmanagedClass())
+        t = unmanaged;
+    }
+  }
+  return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType
+returnInfoToBorrowed(CallExpr* call) {
+  Type* t = call->get(1)->getValType();
+  
+  if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
+    t = mt->getCanonicalClass();
+  }
+  // Canonical class type is borrow type
+  return QualifiedType(t, QUAL_VAL);
+}
+
+
+
 // print the number of each type of primitive present in the AST
 void printPrimitiveCounts(const char* passName) {
   int primCounts[NUM_KNOWN_PRIMS];
@@ -739,6 +768,7 @@ initPrimitive() {
   prim_def(PRIM_CLASS_NAME_BY_ID, "class name by id", returnInfoStringC);
 
   prim_def(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, "iterator record field value by formal", returnInfoIteratorRecordFieldValueByFormal);
+  prim_def(PRIM_IS_CLASS_TYPE, "is class type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_CLASS_TYPE, "is extern class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
@@ -774,6 +804,9 @@ initPrimitive() {
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 
   prim_def(PRIM_CHECK_ERROR, "check error", returnInfoVoid, false, false);
+
+  prim_def(PRIM_TO_UNMANAGED_CLASS, "to unmanaged class", returnInfoToUnmanaged, false, false);
+  prim_def(PRIM_TO_BORROWED_CLASS, "to borrowed class", returnInfoToBorrowed, false, false);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

@@ -462,8 +462,9 @@ class LocReplicatedArr {
 // 'eltType' and 'dom' as passed explicitly;
 // the fields in the parent class, BaseArr, are initialized to their defaults.
 //
-proc ReplicatedArr.ReplicatedArr(type eltType, dom: ReplicatedDom) {
-  // initializes the fields 'eltType', 'dom' by name
+proc ReplicatedArr.init(type eltType, dom: ReplicatedDom) {
+  this.eltType = eltType;
+  this.dom = dom;
 }
 
 proc ReplicatedArr.stridable param {

@@ -38,7 +38,7 @@ writeln(myClass);
 //
 // Class object TBAA type descriptors:  reference to superclass and each field
 // CHECK-DAG: ![[OBJOBJ:[0-9]+]] = !{!"chpl_object_object", ![[INT32]], i64 0}
-// CHECK-DAG: ![[CLSOBJ:[0-9]+]] = !{!"chpl_MyClass_chpl_object", ![[OBJOBJ]], i64 0, ![[INT]], i64 {{[0-9]+}}, ![[REAL]], i64 {{[0-9]+}}}
+// CHECK-DAG: ![[CLSOBJ:[0-9]+]] = !{!"chpl_MyClass_chpl{{[0-9]*}}_object", ![[OBJOBJ]], i64 0, ![[INT]], i64 {{[0-9]+}}, ![[REAL]], i64 {{[0-9]+}}}
 //
 // Now validate those access tags.
 // The int is not at offset zero because the object superclass comes first.

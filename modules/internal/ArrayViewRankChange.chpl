@@ -409,6 +409,24 @@ module ArrayViewRankChange {
 
  } // end of class ArrayViewRankChangeDom
 
+  private proc buildIndexCacheHelper(arr, dom, collapsedDim, idx) {
+    if chpl__isDROrDRView(arr) {
+      if (chpl__isArrayView(arr)) {
+        if arr.isSliceArrayView() && !arr._containsRCRE() {
+          // Only slices below in the view stack, which won't have built up
+          // an indexCache.
+          return arr._getActualArray().dsiGetRAD().toSlice(arr.dom).toRankChange(dom, collapsedDim, idx);
+        } else {
+          return arr.indexCache.toRankChange(dom, collapsedDim, idx);
+        }
+      } else {
+        return arr.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+      }
+    } else {
+      return false;
+    }
+  }
+
   //
   // The class representing a rank-change slice of an array.  Like
   // other array class implementations, it supports the standard dsi
@@ -442,9 +460,24 @@ module ArrayViewRankChange {
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
-    const indexCache = buildIndexCache();
+    const indexCache;
 
-    const ownsArrInstance = false;
+    const ownsArrInstance;
+
+    proc init(type eltType, const _DomPid, const dom,
+              const _ArrPid, const _ArrInstance,
+              const collapsedDim, const idx,
+              const ownsArrInstance : bool = false) {
+      this.eltType         = eltType;
+      this._DomPid         = _DomPid;
+      this.dom             = dom;
+      this._ArrPid         = _ArrPid;
+      this._ArrInstance    = _ArrInstance;
+      this.collapsedDim    = collapsedDim;
+      this.idx             = idx;
+      this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom, collapsedDim, idx);
+      this.ownsArrInstance = ownsArrInstance;
+    }
 
     // Forward all unhandled methods to underlying privatized array
     forwarding arr except these,

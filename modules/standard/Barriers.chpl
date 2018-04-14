@@ -71,7 +71,7 @@ module Barriers {
     pragma "no doc"
     var bar: BarrierBaseType;
     pragma "no doc"
-    var owned: bool = false;
+    var isowned: bool = false;
 
     /* Construct a new barrier object.
 
@@ -103,7 +103,7 @@ module Barriers {
           halt("unknown barrier type");
         }
       }
-      owned = true;
+      isowned = true;
     }
 
     pragma "no doc"
@@ -115,12 +115,12 @@ module Barriers {
     pragma "no doc"
     proc init(b: Barrier) {
       this.bar = b.bar;
-      this.owned = false;
+      this.isowned = false;
     }
 
     pragma "no doc"
     proc deinit() {
-      if owned && bar != nil {
+      if isowned && bar != nil {
         delete bar;
       }
     }
@@ -379,11 +379,11 @@ module Barriers {
 
   pragma "no doc"
   proc =(ref lhs: Barrier, rhs: Barrier) {
-    if lhs.owned {
+    if lhs.isowned {
       delete lhs.bar;
     }
     lhs.bar = rhs.bar;
-    lhs.owned = false;
+    lhs.isowned = false;
   }
 
 }

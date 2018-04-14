@@ -130,6 +130,7 @@ class LocDimensionalDom {
   var myStorageDom: domain(myBlock.rank, stoSzT, false);
 }
 
+pragma "use default init"
 class DimensionalArr : BaseArr {
   // required
   type eltType;

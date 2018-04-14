@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "UnmanagedClassType.h"
 #include "passes.h"
 #include "scopeResolve.h"
 #include "stlUtil.h"
@@ -41,6 +42,8 @@ AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {
 
   aggregateTag        = initTag;
+  unmanagedClass      = NULL;
+
   typeConstructor     = NULL;
   defaultInitializer  = NULL;
   initializerStyle    = DEFINES_NONE_USE_DEFAULT;
@@ -561,7 +564,8 @@ AggregateType* AggregateType::generateType(SymbolMap& subs) {
     AggregateType* parent = dispatchParents.v[0];
 
     // Is the parent generic?
-    if (parent->typeConstructor->numFormals() > 0) {
+    if (parent->typeConstructor != NULL &&
+        parent->typeConstructor->numFormals() > 0) {
       AggregateType* instantiatedParent = parent->generateType(subs);
 
       retval = instantiationWithParent(instantiatedParent);
@@ -1805,8 +1809,10 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
           typeExpr->insertAtTail(new CallExpr(PRIM_TYPEOF, tmp));
 
-          arg->typeExpr    = typeExpr;
-          arg->type        = dtAny;
+          arg->typeExpr = typeExpr;
+          if (arg->hasFlag(FLAG_TYPE_VARIABLE)) {
+            arg->type = dtAny;
+          }
 
           // set up the ArgSymbol appropriately for the type
           // and initialization from the field declaration.
@@ -2529,4 +2535,32 @@ Symbol* AggregateType::getSubstitution(const char* name) {
   }
 
   return retval;
+}
+
+UnmanagedClassType* AggregateType::getUnmanagedClass() {
+  if (aggregateTag == AGGREGATE_CLASS) {
+
+    if (!unmanagedClass)
+      generateUnmanagedClassTypes();
+
+    return unmanagedClass;
+  }
+  return NULL;
+}
+
+void AggregateType::generateUnmanagedClassTypes() {
+  AggregateType* at = this;
+  if (aggregateTag == AGGREGATE_CLASS && at->unmanagedClass == NULL) {
+    SET_LINENO(at->symbol->defPoint);
+    // Generate unmanaged class type
+    UnmanagedClassType* unmanaged = new UnmanagedClassType(at);
+    at->unmanagedClass = unmanaged;
+    TypeSymbol* tsUnmanaged = new TypeSymbol(astr("unmanaged ", at->symbol->name), unmanaged);
+    // The unmanaged type isn't really an object, shouldn't have its own fields
+    tsUnmanaged->addFlag(FLAG_NO_OBJECT);
+    // The generated code should just use the canonical class name
+    tsUnmanaged->cname = at->symbol->cname;
+    DefExpr* defUnmanaged = new DefExpr(tsUnmanaged);
+    at->symbol->defPoint->insertAfter(defUnmanaged);
+  }
 }

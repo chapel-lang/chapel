@@ -787,6 +787,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
+pragma "use default init"
 class BlockCyclicArr: BaseRectangularArr {
 
   //

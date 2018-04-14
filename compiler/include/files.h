@@ -31,9 +31,9 @@ extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
-extern Vec<const char*> incDirs;
-extern Vec<const char*> libDirs;
-extern Vec<const char*> libFiles;
+extern std::vector<const char*> incDirs;
+extern std::vector<const char*> libDirs;
+extern std::vector<const char*> libFiles;
 
 struct fileinfo {
   FILE* fptr;

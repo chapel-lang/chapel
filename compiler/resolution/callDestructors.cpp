@@ -25,6 +25,7 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "lifetime.h"
+#include "UnmanagedClassType.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1387,4 +1388,5 @@ void callDestructors() {
 
   checkForErroneousInitCopies();
 
+  convertClassTypesToCanonical();
 }

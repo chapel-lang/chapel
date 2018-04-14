@@ -34,6 +34,7 @@
 #include "llvmVer.h"
 #include "misc.h"
 #include "mysystem.h"
+#include "stlUtil.h"
 #include "stringutil.h"
 #include "tmpdirname.h"
 
@@ -59,16 +60,16 @@ char               saveCDir[FILENAME_MAX + 1]           = "";
 std::string ccflags;
 std::string ldflags;
 
-Vec<const char*>   incDirs;
-Vec<const char*>   libDirs;
-Vec<const char*>   libFiles;
+std::vector<const char*>   incDirs;
+std::vector<const char*>   libDirs;
+std::vector<const char*>   libFiles;
 
 // directory for intermediates; tmpdir or saveCDir
 static const char* intDirName        = NULL;
 
 static const int   MAX_CHARS_PER_PID = 32;
 
-static void addPath(const char* pathVar, Vec<const char*>* pathvec) {
+static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
 
   char* colon;              // used to refer to ':'s in dirString
@@ -80,7 +81,7 @@ static void addPath(const char* pathVar, Vec<const char*>* pathvec) {
       colon++;                            // and advance to the next
     }
 
-    pathvec->add(astr(dirString));
+    pathvec->push_back(astr(dirString));
 
     dirString = colon;                     // advance dirString
   } while (colon != NULL);
@@ -94,7 +95,8 @@ void addLibPath(const char* libString) {
 }
 
 void addLibFile(const char* libFile) {
-  libFiles.add(libFile);
+  // use astr() to get a copy of the string that this vector can own
+  libFiles.push_back(astr(libFile));
 }
 
 void addIncInfo(const char* incDir) {
@@ -698,7 +700,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
 
   if (fLibraryCompile && (fLinkStyle==LS_DYNAMIC))
     fprintf(makefile.fptr, " $(SHARED_LIB_CFLAGS)");
-  forv_Vec(const char*, dirName, incDirs) {
+  for_vector(const char, dirName, incDirs) {
     fprintf(makefile.fptr, " -I%s", dirName);
   }
   fprintf(makefile.fptr, " %s\n", ccflags.c_str());
@@ -739,9 +741,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname, bool skip_com
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
   fprintf(makefile.fptr, "\nLIBS =");
-  forv_Vec(const char*, dirName, libDirs)
+  for_vector(const char, dirName, libDirs)
     fprintf(makefile.fptr, " -L%s", dirName);
-  forv_Vec(const char*, libName, libFiles)
+  for_vector(const char, libName, libFiles)
     fprintf(makefile.fptr, " -l%s", libName);
   if (fLinkStyle==LS_STATIC)
       fprintf(makefile.fptr, " $(LIBMVEC)" );

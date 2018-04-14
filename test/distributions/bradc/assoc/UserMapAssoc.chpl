@@ -616,6 +616,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
+pragma "use default init"
 class UserMapAssocArr: BaseArr {
   // GENERICS:
 

@@ -32,6 +32,7 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "log.h"
+#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"

@@ -505,6 +505,8 @@ class TypeSymbol : public Symbol {
 
   const char* doc;
 
+  BlockStmt* instantiationPoint;
+
  private:
   void renameInstantiatedStart();
   void renameInstantiatedIndividual(Symbol* sym);
