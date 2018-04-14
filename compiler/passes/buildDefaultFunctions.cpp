@@ -126,8 +126,7 @@ void buildDefaultFunctions() {
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
-        buildNearScopeEnumFunctions(et);
-        buildFarScopeEnumFunctions(et);
+        buildEnumFunctions(et);
 
       } else {
         // The type is a simple type.
@@ -720,22 +719,17 @@ static void build_record_inequality_function(AggregateType* ct) {
   normalize(fn);
 }
 
-// Builds default enum functions that are defined in the scope in which the
-// enum type is defined
-void buildNearScopeEnumFunctions(EnumType* et) {
-  build_enum_assignment_function(et);
-  build_enum_enumerate_function(et);
-}
-
 // Builds default enum functions that are defined outside of the scope in which
 // the enum type is defined
 // It is necessary to have this separated out, because such functions are not
 // automatically created when the EnumType is copied.
-void buildFarScopeEnumFunctions(EnumType* et) {
+void buildEnumFunctions(EnumType* et) {
   buildStringCastFunction(et);
 
   build_enum_cast_function(et);
+  build_enum_assignment_function(et);
   build_enum_comparison_functions(et);
+  build_enum_enumerate_function(et);
   build_enum_first_function(et);
   build_enum_size_function(et);
 }
@@ -831,7 +825,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
 
-  et->symbol->defPoint->insertAfter(new DefExpr(fn));
+  baseModule->block->insertAtTail(new DefExpr(fn));
 
   // Generate the tuple of enum values for the given enum type
   CallExpr* call = new CallExpr("_construct__tuple");
@@ -979,11 +973,7 @@ static void build_enum_binary_op(EnumType* et, const char* op,
   }
   fn->insertAtTail(primexpr);
   DefExpr* def = new DefExpr(fn);
-  if (isAssign) {
-    et->symbol->defPoint->insertBefore(def);
-  } else {
-    baseModule->block->insertAtTail(def);
-  }
+  baseModule->block->insertAtTail(def);
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 }

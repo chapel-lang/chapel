@@ -163,11 +163,7 @@ BlockStmt::copyInner(SymbolMap* map) {
           // otherwise the EnumType will not have the correct symbol, and the
           // symbol will not be in the tree.
 
-          // Also, NOTE: This does not generate new assignment and enumerate
-          // functions for the enum, as those are already local to the function
-          // being instantiated and so will get copied independently and
-          // updated when we replace the old type reference with the new one.
-          buildFarScopeEnumFunctions(et);
+          buildEnumFunctions(et);
         }
       }
     }
