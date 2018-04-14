@@ -724,7 +724,6 @@ static void build_record_inequality_function(AggregateType* ct) {
 // enum type is defined
 void buildNearScopeEnumFunctions(EnumType* et) {
   build_enum_assignment_function(et);
-  build_enum_comparison_functions(et);
   build_enum_enumerate_function(et);
 }
 
@@ -736,6 +735,7 @@ void buildFarScopeEnumFunctions(EnumType* et) {
   buildStringCastFunction(et);
 
   build_enum_cast_function(et);
+  build_enum_comparison_functions(et);
   build_enum_first_function(et);
   build_enum_size_function(et);
 }
@@ -979,7 +979,11 @@ static void build_enum_binary_op(EnumType* et, const char* op,
   }
   fn->insertAtTail(primexpr);
   DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
+  if (isAssign) {
+    et->symbol->defPoint->insertBefore(def);
+  } else {
+    baseModule->block->insertAtTail(def);
+  }
   reset_ast_loc(def, et->symbol);
   normalize(fn);
 }
