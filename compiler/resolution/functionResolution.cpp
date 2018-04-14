@@ -717,29 +717,6 @@ static bool canParamCoerce(Type*   actualType,
     }
 
     //
-    // If the actual is an enum, check to see if *all* its values
-    // are small enough that they fit into this integer width
-    //
-    /*
-    if (EnumType* etype = toEnumType(actualType)) {
-      ensureEnumTypeResolved(etype);
-
-      // TODO: aren't these redundant with the last check?
-      Type* enumIntType = etype->getIntegerType();
-
-      if (enumIntType == formalType)
-        return true;
-
-      if (get_width(enumIntType) < get_width(formalType))
-        return true;
-
-      if (fits_in_int(get_width(formalType), etype->getMinConstant()) &&
-          fits_in_int(get_width(formalType), etype->getMaxConstant()))
-        return true;
-    }
-    */
-
-    //
     // For smaller integer types, if the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
@@ -753,21 +730,6 @@ static bool canParamCoerce(Type*   actualType,
           }
         }
       }
-
-      /*
-      if (EnumType* etype = toEnumType(actualType)) {
-        ensureEnumTypeResolved(etype);
-
-        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
-          if (Immediate* enumval = enumsym->getImmediate()) {
-            if (fits_in_int(get_width(formalType), enumval)) {
-              *paramNarrows = true;
-              return true;
-            }
-          }
-        }
-      }
-      */
     }
   }
 
@@ -791,28 +753,6 @@ static bool canParamCoerce(Type*   actualType,
     }
 
     //
-    // If the actual is an enum, check to see if *all* its values
-    // are small enough that they fit into this integer width
-    //
-    /*
-    if (EnumType* etype = toEnumType(actualType)) {
-      ensureEnumTypeResolved(etype);
-
-      Type* enumIntType = etype->getIntegerType();
-
-      if (enumIntType == formalType)
-        return true;
-
-      if (get_width(enumIntType) < get_width(formalType))
-        return true;
-
-      if (fits_in_uint(get_width(formalType), etype->getMinConstant()) &&
-          fits_in_uint(get_width(formalType), etype->getMaxConstant()))
-        return true;
-    }
-    */
-
-    //
     // For smaller integer types, if the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
@@ -826,21 +766,6 @@ static bool canParamCoerce(Type*   actualType,
           }
         }
       }
-
-      /*
-      if (EnumType* etype = toEnumType(actualType)) {
-        ensureEnumTypeResolved(etype);
-
-        if (EnumSymbol* enumsym = toEnumSymbol(actualSym)) {
-          if (Immediate* enumval = enumsym->getImmediate()) {
-            if (fits_in_uint(get_width(formalType), enumval)) {
-              *paramNarrows = true;
-              return true;
-            }
-          }
-        }
-      }
-      */
     }
   }
 
