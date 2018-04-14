@@ -77,9 +77,11 @@ module LocaleModelHelpSetup {
 
   proc helpSetupRootLocaleNUMA(dst:RootLocale) {
     var root_accum:chpl_root_locale_accum;
+    // A workaround for not munging identifiers in modules.
+    const chpl_my_sublocid_any = c_sublocid_any;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(chpl_my_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
@@ -90,9 +92,11 @@ module LocaleModelHelpSetup {
 
   proc helpSetupRootLocaleAPU(dst:RootLocale) {
     var root_accum:chpl_root_locale_accum;
+    // A workaround for not munging identifiers in modules.
+    const chpl_my_sublocid_any = c_sublocid_any;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(chpl_my_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
