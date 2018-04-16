@@ -504,7 +504,7 @@ uint64_t chpl_sys_availMemoryBytes(void) {
 //
 static struct {
   int physId, coreId;
-} cpuTab[1024];
+} cpuTab[8192];
 static const int cpuTabSize = sizeof(cpuTab) / sizeof(cpuTab[0]);
 static int cpuTabLen = 0;
 
@@ -583,7 +583,7 @@ static void getCpuInfo_once(void) {
   fclose(f);
 
   if ((numPUs = procs) <= 0)
-    numPUs = 1;
+    numPUs = cpuTabLen;
 
   if (cpuTabLen > 0) {
     numCores = cpuTabLen;
