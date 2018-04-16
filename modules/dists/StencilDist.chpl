@@ -279,7 +279,6 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-pragma "use default init"
 class StencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: Stencil(rank, idxType, ignoreFluff);
@@ -604,6 +603,29 @@ proc LocStencil.LocStencil(param rank: int,
     }
     myChunk = {(...inds)};
   }
+}
+
+//
+// TODO: Remove this and go back to default initializer once task-resetting is
+// implemented.
+//
+// This initializer is introduced to work around a task-resetting performance
+// issue. In the default initializer, locDoms is first initialized then
+// assigned to in parallel. This offsets the tasks just enough to slightly hurt
+// performance.
+//
+proc StencilDom.init(param rank : int,
+                     type idxType,
+                     param stridable : bool,
+                     param ignoreFluff : bool,
+                     dist : Stencil(rank, idxType, ignoreFluff),
+                     fluff : rank*idxType,
+                     periodic : bool = false) {
+  super.init(rank=rank, idxType=idxType, stridable=stridable);
+  this.ignoreFluff = ignoreFluff;
+  this.dist = dist;
+  this.fluff = fluff;
+  this.periodic = periodic;
 }
 
 proc StencilDom.dsiMyDist() return dist;
