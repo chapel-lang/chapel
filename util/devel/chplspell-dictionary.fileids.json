@@ -18,6 +18,9 @@
   "3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/AstToText.cpp"
   ],
+  "641fb78e-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/AST/ForallStmt.cpp"
+  ],
   "77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/baseAST.cpp"
   ],
@@ -101,6 +104,9 @@
   ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
+  ],
+  "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/include/symbol.h"
   ],
   "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/main/arg.cpp"
@@ -187,6 +193,9 @@
   ],
   "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
     "compiler/resolution/lifetime.cpp"
+  ],
+  "9fb5188e-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/lowerForalls.cpp"
   ],
   "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/resolution/lowerIterators.cpp"
@@ -339,6 +348,9 @@
   ],
   "d634896c-70c9-11e6-8028-843835579daa": [
     "doc/rst/usingchapel/usingchapel.rst"
+  ],
+  "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
+    "man/chpl.rst"
   ],
   "1c692a6a-2add-11e6-a3a6-10ddb1d4c3d5": [
     "man/chpldoc.rst"

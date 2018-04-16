@@ -2762,6 +2762,7 @@ inparens
 ipra
 maino
 mcpu
+mpicxx
 qunused
 reassoc
 thunderx
@@ -3586,6 +3587,7 @@ ttag
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chpluserobj
 libmvec
+pathvec
 tofix
 
 FILEID: 22f875dc-4e3e-11e6-907f-843835579daa
@@ -3765,6 +3767,7 @@ srcwide
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 disubprogram
+nfor
 optos
 toctree
 
@@ -4517,6 +4520,7 @@ extd
 
 FILEID: ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5
 skind
+totype
 
 FILEID: c09c5496-ff1f-11e7-bed3-10ddb1d4c3d5
 lrint
@@ -4565,6 +4569,26 @@ dabc
 FILEID: c51f1070-3a21-11e8-af7e-10ddb1d4c3d5
 abcdefghijklmnopqrstuvwxyz
 pathlen
+
+FILEID: 641fb78e-4110-11e8-af7e-10ddb1d4c3d5
+ivsym
+
+FILEID: 7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5
+nfor
+
+FILEID: 9fb5188e-4110-11e8-af7e-10ddb1d4c3d5
+forwardee
+ianch
+iwrap
+mappee
+nfor
+retexpr
+retsym
+vclone
+wmikanik
+
+FILEID: d741a952-4110-11e8-af7e-10ddb1d4c3d5
+ectories
 
 NATURAL:
 abcd
@@ -4786,6 +4810,7 @@ cbrt
 ccflags
 ccopy
 ccwarnings
+cdef
 cdiv
 certinfo
 cfgfile
@@ -4843,6 +4868,7 @@ cleanloop
 clearbit
 cleison
 cloexec
+clonevar
 closefile
 clrbit
 cmdstr
@@ -5572,11 +5598,14 @@ isnan
 isocalendar
 isoformat
 isoweekday
+isowned
+isshared
 isslice
 issubtype
 issuercert
 istr
 isuid
+isunmanaged
 isvtx
 iten
 iterables
@@ -6138,6 +6167,7 @@ ornl
 osmanya
 otoh
 ourself
+outervar
 outfd
 outfile
 outputfile
@@ -6310,6 +6340,7 @@ raytracing
 rcpt
 rcvbuf
 rcvd
+rdef
 rdma
 rdonly
 rdwr
@@ -6676,6 +6707,7 @@ superuser
 suppressif
 surya
 suse
+svars
 svec
 sverbose
 svid
@@ -6764,6 +6796,7 @@ titus
 tmacd
 tmpbinname
 tmpdirname
+tmps
 tmpvar
 tochar
 toctou
@@ -6844,6 +6877,7 @@ universidad
 universitet
 unlinking
 unlocal
+unmanaged
 unmutated
 unnati
 unnormalize
