@@ -28,7 +28,7 @@
 * In particular this type is important for unmanaged.                         *
 * Each refers to the AggregateType for the actual class. Because we want      *
 * the AggregateType for each class to store the dispatch parents and other    *
-* important fields, and since each can have multple UnmanagedClassType variants,*
+* important fields, and since each can have multiple UnmanagedClassType variants,*
 * the UnmanagedClassType is not an AggregateType but rather a Type that         *
 * points to the canonical class type (i.e. the AggregateType).                *
 *                                                                             *
