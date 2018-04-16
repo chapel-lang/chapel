@@ -70,6 +70,10 @@ module Dataframes {
       return labelToOrd[lab];
     }
 
+    proc contains(lab: idxType) {
+      return {lab}.isSubset(labels);
+    }
+
     proc writeThis(f, s: TypedSeries(?) = nil) {
       for (i, d) in zip(this, s) {
         f <~> i;
@@ -86,13 +90,18 @@ module Dataframes {
   }
 
   class Series {
-    // TODO: dynamic dispatch on arithmetic
-    // i.e. proc +(lhs, rhs), return left.add(right);
+    // TODO: overload + on a class for dynamic dispatch?
+    /*
+    proc +(ref lhs: Series, ref rhs: Series) {
+      return lhs.add(rhs);
+    }
+     */
   }
 
   class TypedSeries : Series {
     type eltType;
 
+    // TODO: reconsider nil idx = rectangular 1D
     // TODO: ords dmap Block
     var idx: Index;
     var ords: domain(1);
@@ -140,6 +149,66 @@ module Dataframes {
 
     proc this(lab: ?idxType) {
       return data[(idx:TypedIndex(idxType))[lab]];
+    }
+
+    // TODO: "in" operator
+    proc indexContains(lab: ?idxType) {
+      return (idx:TypedIndex(idxType)).contains(lab);
+    }
+
+    proc add(other: TypedSeries(?T)): TypedSeries(T) where T == eltType {
+      // TODO: check if the index types are the same, throw if not
+      if this.ords.size >= other.ords.size {
+        var sum_ords = 1..this.ords.size;
+        var sum_data: [sum_ords] eltType;
+
+        for (i, d) in this.items() {
+          var sum_d = d;
+          if i <= other.ords.size then
+            sum_d += other.at(i);
+          sum_data[i] = sum_d;
+        }
+        return new TypedSeries(sum_data);
+      } else {
+        var sum_ords = 1..other.ords.size;
+        var sum_data: [sum_ords] eltType;
+
+        for (i, d) in other.items() {
+          var sum_d = d;
+          if i <= this.ords.size then
+            sum_d += other.at(i);
+          sum_data[i] = sum_d;
+        }
+        return new TypedSeries(sum_data);
+      }
+    }
+
+    proc add(other: TypedSeries(?T), type idxType): TypedSeries(T) where T == eltType {
+      // TODO: check if the index types are the same, throw if not
+      var sum_ords = 1..(this.ords.size + other.ords.size);
+      var sum_rev_idx: [sum_ords] idxType;
+      var sum_data: [sum_ords] eltType;
+
+      var curr_ord = 0;
+      for (i, d) in this.items(idxType) {
+        var sum_d = d;
+        if other.indexContains(i) then
+          sum_d += other[i];
+
+        curr_ord += 1;
+        sum_rev_idx[curr_ord] = i;
+        sum_data[curr_ord] = sum_d;
+      }
+
+      for (other_i, other_d) in other.items(idxType) {
+        if !this.indexContains(other_i) {
+          curr_ord += 1;
+          sum_rev_idx[curr_ord] = other_i;
+          sum_data[curr_ord] = other_d;
+        }
+      }
+
+      return new TypedSeries(sum_rev_idx[1..curr_ord], sum_data[1..curr_ord]);
     }
 
     proc writeThis(f) {
