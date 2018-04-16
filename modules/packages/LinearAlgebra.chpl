@@ -396,6 +396,44 @@ proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
   return transpose(this);
 }
 
+/*In place transpose for a matrix*/
+
+proc InplaceTranspose(A: [?D] ?eltType, r: int, c: int)
+{ 
+    var t: eltType;  // holds element to be replaced, eventually becomes next element to move
+    var next: int; // location of 't' to be moved
+    var cycleBegin: int; // holds start of cycle
+    var i: int; // iterator
+    var b: [1..A.size] int; // array to mark moved elements
+ 
+    //A[0] and A[size-1] won't move
+    b[1] = 1;
+    b[A.size] = 1; 
+
+    i = 2; 
+    while (i < A.size )
+    {
+        cycleBegin = i;
+        t = A[i];
+        do
+        {
+	    // i_new = ((i-1))*r)%(N-1)+1
+            next = ((i-1)*r)%(A.size-1)+1;
+            A[next] <=> t ;
+            b[i] = 1;
+            i = next;
+        }
+        while (i != cycleBegin);
+
+	// Search for next move
+        i = 2;
+        while (i <= A.size && b[i] == 1)
+	{
+	i = i+1;
+	}
+    }
+}
+
 /* Add matrices, maintaining dimensions, deprecated for ``_array.plus`` */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
   compilerWarning('matPlus has been deprecated for _array.plus, ' +
