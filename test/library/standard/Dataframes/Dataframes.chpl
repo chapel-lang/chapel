@@ -84,40 +84,8 @@ module Dataframes {
     }
 
     proc contains(lab: idxType) {
-      return labels.member(lab);
+      return {lab}.isSubset(labels);
     }
-
-    // TODO: enforce same index type with another dispatch
-    // TODO: sort Index
-    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType), unifier: SeriesUnifier(lhsType)): TypedSeries(lhsType) where lhsType == rhsType {
-      var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
-      var uni_rev_idx: [uni_ords] idxType;
-      var uni_data: [uni_ords] lhsType;
-
-      var curr_ord = 0;
-      for (lhs_i, lhs_d) in lhs.items(idxType) {
-        curr_ord += 1;
-        uni_rev_idx[curr_ord] = lhs_i;
-
-        if rhs.idx.contains(lhs_i) {
-          uni_data[curr_ord] = unifier.f(lhs_d, rhs[lhs_i]);
-        } else {
-          uni_data[curr_ord] = unifier.f_lhs(lhs_d);
-        }
-      }
-
-      for (rhs_i, rhs_d) in rhs.items(idxType) {
-        if !lhs.idx.contains(rhs_i) {
-          curr_ord += 1;
-          uni_rev_idx[curr_ord] = rhs_i;
-          uni_data[curr_ord] = unifier.f_rhs(rhs_d);
-        }
-      }
-
-      delete unifier;
-      return new TypedSeries(uni_data[1..curr_ord], new TypedIndex(uni_rev_idx[1..curr_ord]));
-    }
-
 
     proc writeThis(f, s: TypedSeries(?) = nil) {
       for (i, d) in zip(this, s) {
@@ -135,47 +103,12 @@ module Dataframes {
   }
 
   class Series {
-    pragma "no doc"
-    proc add(rhs) {
-      halt("generic Series cannot be added");
-      return this;
+    // TODO: overload + on a class for dynamic dispatch?
+    /*
+    proc +(ref lhs: Series, ref rhs: Series) {
+      return lhs.add(rhs);
     }
-
-    pragma "no doc"
-    proc add_scalar(n) {
-      halt("generic Series cannot be added");
-      return this;
-    }
-
-    pragma "no doc"
-    proc subtr(rhs) {
-      halt("generic Series cannot be subtracted");
-      return this;
-    }
-
-    pragma "no doc"
-    proc subtr_scalar(n) {
-      halt("generic Series cannot be added");
-      return this;
-    }
-
-    pragma "no doc"
-    proc mult(rhs) {
-      halt("generic Series cannot be multiplied");
-      return this;
-    }
-
-    pragma "no doc"
-    proc mult_scalar(n) {
-      halt("generic Series cannot be added");
-      return this;
-    }
-
-    pragma "no doc"
-    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
-      halt("generic Series cannot be unioned");
-      return this;
-    }
+     */
   }
 
   class TypedSeries : Series {
@@ -230,58 +163,64 @@ module Dataframes {
       return data[(idx:TypedIndex(idxType))[lab]];
     }
 
-    // TODO: "in" operator for idx.contains(lab)
-
-    proc add(rhs): Series {
-      return rhs.uni(this, new SeriesAdd(eltType));
+    // TODO: "in" operator
+    proc indexContains(lab: ?idxType) {
+      return (idx:TypedIndex(idxType)).contains(lab);
     }
 
-    proc add_scalar(n): Series {
-      var with_scalar = data + n;
-      return new TypedSeries(with_scalar, idx);
+    proc add(other: TypedSeries(?T)): TypedSeries(T) where T == eltType {
+      // TODO: check if the index types are the same, throw if not
+      if this.ords.size >= other.ords.size {
+        var sum_ords = 1..this.ords.size;
+        var sum_data: [sum_ords] eltType;
+
+        for (i, d) in this.items() {
+          var sum_d = d;
+          if i <= other.ords.size then
+            sum_d += other.at(i);
+          sum_data[i] = sum_d;
+        }
+        return new TypedSeries(sum_data);
+      } else {
+        var sum_ords = 1..other.ords.size;
+        var sum_data: [sum_ords] eltType;
+
+        for (i, d) in other.items() {
+          var sum_d = d;
+          if i <= this.ords.size then
+            sum_d += other.at(i);
+          sum_data[i] = sum_d;
+        }
+        return new TypedSeries(sum_data);
+      }
     }
 
-    proc subtr(rhs): Series {
-      return rhs.uni(this, new SeriesSubtr(eltType));
-    }
+    proc add(other: TypedSeries(?T), type idxType): TypedSeries(T) where T == eltType {
+      // TODO: check if the index types are the same, throw if not
+      var sum_ords = 1..(this.ords.size + other.ords.size);
+      var sum_rev_idx: [sum_ords] idxType;
+      var sum_data: [sum_ords] eltType;
 
-    proc subtr_scalar(n): Series {
-      var with_scalar = data - n;
-      return new TypedSeries(with_scalar, idx);
-    }
+      var curr_ord = 0;
+      for (i, d) in this.items(idxType) {
+        var sum_d = d;
+        if other.indexContains(i) then
+          sum_d += other[i];
 
-    proc mult(rhs): Series {
-      return rhs.uni(this, new SeriesMult(eltType));
-    }
+        curr_ord += 1;
+        sum_rev_idx[curr_ord] = i;
+        sum_data[curr_ord] = sum_d;
+      }
 
-    proc mult_scalar(n): Series {
-      var with_scalar = data * n;
-      return new TypedSeries(with_scalar, idx);
-    }
-
-    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
-      if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier);
-
-      var uni_ords = if lhs.ords.size > this.ords.size
-                     then 1..lhs.ords.size
-                     else 1..this.ords.size;
-      var uni_data: [uni_ords] eltType;
-
-      for i in uni_ords {
-        var inLhs = i <= lhs.ords.size;
-        var inThis = i <= this.ords.size;
-        if inLhs && inThis {
-          uni_data[i] = unifier.f(lhs.at(i), this.at(i));
-        } else if inLhs {
-          uni_data[i] = unifier.f_lhs(lhs.at(i));
-        } else if inThis {
-          uni_data[i] = unifier.f_rhs(this.at(i));
+      for (other_i, other_d) in other.items(idxType) {
+        if !this.indexContains(other_i) {
+          curr_ord += 1;
+          sum_rev_idx[curr_ord] = other_i;
+          sum_data[curr_ord] = other_d;
         }
       }
 
-      delete unifier;
-      return new TypedSeries(uni_data);
+      return new TypedSeries(sum_rev_idx[1..curr_ord], sum_data[1..curr_ord]);
     }
 
     proc writeThis(f) {
