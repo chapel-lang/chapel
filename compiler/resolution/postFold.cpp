@@ -22,6 +22,7 @@
 #include "astutil.h"
 #include "build.h"
 #include "expr.h"
+#include "UnmanagedClassType.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
@@ -490,14 +491,25 @@ static bool isSubTypeOrInstantiation(Type* sub, Type* super) {
     // by at->instantiatedFrom
     retval = true;
 
-  } else if (AggregateType* at = toAggregateType(sub)) {
-    for (int i = 0; i < at->dispatchParents.n && retval == false; i++) {
-      retval = isSubTypeOrInstantiation(at->dispatchParents.v[i], super);
+  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+    // handle unmanaged / class types
+    AggregateType* subAt = toAggregateType(sub);
+    Type* useSuper = super;
+
+    if (classesWithSameKind(sub, super)) {
+      subAt = toAggregateType(canonicalClassType(sub));
+      useSuper = canonicalClassType(super);
     }
 
-    if (retval == false) {
-      if (at->instantiatedFrom != NULL) {
-        retval = isSubTypeOrInstantiation(at->instantiatedFrom,   super);
+    if (subAt) {
+      for (int i = 0; i < subAt->dispatchParents.n && retval == false; i++) {
+        retval = isSubTypeOrInstantiation(subAt->dispatchParents.v[i], useSuper);
+      }
+
+      if (retval == false) {
+        if (subAt->instantiatedFrom != NULL) {
+          retval = isSubTypeOrInstantiation(subAt->instantiatedFrom, useSuper);
+        }
       }
     }
   }

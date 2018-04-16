@@ -28,6 +28,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "log.h"
+#include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -106,8 +107,8 @@ void printStatistics(const char* pass) {
     kContextCallExpr + kForallExpr + kNamedExpr;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nAggregateType;
-  int kType = kPrimitiveType+kEnumType+kAggregateType;
+  int nType = nPrimitiveType+nEnumType+nAggregateType+nUnmanagedClassType;
+  int kType = kPrimitiveType+kEnumType+kAggregateType+kUnmanagedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -558,6 +559,10 @@ const char* BaseAST::astTagAsString() const {
     case E_AggregateType:
       retval = "AggregateType";
       break;
+    
+    case E_UnmanagedClassType:
+      retval = "UnmanagedClassType";
+      break;
   }
 
   return retval;
@@ -649,9 +654,13 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
     }
 
   } else if (ForallStmt* forall = toForallStmt(ast)) {
-    if (forall->fContinueLabel)
+    if (forall->fContinueLabel) {
       if (LabelSymbol* y = toLabelSymbol(map->get(forall->fContinueLabel)))
           forall->fContinueLabel = y;
+    } else if (forall->fErrorHandlerLabel) {
+      if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
+          forall->fErrorHandlerLabel = y;
+    }
 
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);

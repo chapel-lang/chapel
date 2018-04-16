@@ -1,0 +1,1 @@
+directEnumRange.chpl:3: error: ranges of enum type are not currently supported

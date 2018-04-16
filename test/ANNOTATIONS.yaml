@@ -315,6 +315,8 @@ all:
   04/03/18:
     - text: Reduce contention from ugni's polling thread (#9068)
       config: 16 node XC
+  04/11/18:
+    - Convert BaseDom and its derived classes to use initializers (#9113)
 
 
 AllCompTime:

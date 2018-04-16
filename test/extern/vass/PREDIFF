@@ -1,7 +1,0 @@
-#!/bin/bash --norc
-
-output=$2
-if grep -i -q -E 'error|warning' $output; then
-  mv -v $output ${output/.comp.out.tmp/.saved.out.tmp}
-  echo 'PREDIFF says: got error(s).' > $output
-fi

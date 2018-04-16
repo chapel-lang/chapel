@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-#include "optimizations.h"
-
 #include "astutil.h"
 #include "CForLoop.h"
 #include "driver.h"
@@ -27,6 +25,7 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "oldCollectors.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveIntents.h"
@@ -83,6 +82,12 @@ FnSymbol* getTheIteratorFn(Type* icType)
     Type* irType = getIterFn->getFormal(1)->type;
     INT_ASSERT(irType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
+    return getTheIteratorFnFromIteratorRec(irType);
+  }
+}
+
+FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType)
+{
     AggregateType* irTypeAgg = toAggregateType(irType);
     INT_ASSERT(irTypeAgg->iteratorInfo);
 
@@ -91,7 +96,6 @@ FnSymbol* getTheIteratorFn(Type* icType)
     INT_ASSERT(result->hasFlag(FLAG_ITERATOR_FN));
 
     return result;
-  }
 }
 
 FnSymbol* debugGetTheIteratorFn(Type* type) {
@@ -139,7 +143,7 @@ static void nonLeaderParCheck()
   USR_STOP();
 }
 
-static bool isVirtualIterator(Symbol* iterator) {
+bool isVirtualIterator(Symbol* iterator) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(iterator->type)) {
@@ -157,20 +161,6 @@ static bool isVirtualIterator(Symbol* iterator) {
   }
 
   return retval;
-}
-
-static void parallelIterVirtualCheck() {
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (isAlive(block) && block->isForLoop()) {
-      ForLoop* forLoop = toForLoop(block);
-      Symbol* iterator = toSymExpr(forLoop->iteratorGet())->symbol();
-      FnSymbol* ifn = getTheIteratorFn(iterator);
-      if (ifn->hasFlag(FLAG_INLINE_ITERATOR) && isVirtualIterator(iterator)) {
-        USR_FATAL_CONT(forLoop, "virtual parallel iterators are not yet supported (see issue #6998)");
-      }
-    }
-  }
-  USR_STOP();
 }
 
 static void nonLeaderParCheckInt(FnSymbol* fn, bool allowYields)
@@ -240,7 +230,7 @@ static bool find_recursive_caller(FnSymbol* fn, FnSymbol* iter, Vec<FnSymbol*>& 
   forv_Vec(CallExpr, call, *fn->calledBy)
   {
     // Extract the symbol representing the calling function.
-    FnSymbol* caller = toFnSymbol(call->parentSymbol);
+    FnSymbol* caller = call->getFunction();
 
     // If the caller is the same as the iterator we started with,
     // it calls itself recursively.  Further searching is unnecessary.
@@ -328,14 +318,6 @@ static void computeRecursiveIteratorSet() {
       }
     }
   }
-}
-
-
-// Remove supporting references in ShadowVarSymbols.
-// Otherwise flattenNestedFunction() will try to propagate them.
-static void clearUpRefsInShadowVars() {
-  forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
-    svar->removeSupportingReferences();
 }
 
 
@@ -1350,7 +1332,7 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 // For task functions, we need an error argument for
 // parallel to process them correctly, but the error
 // is actually passed through the end-count error list.
-static void
+void
 addDummyErrorArgumentToCall(CallExpr* call)
 {
   VarSymbol* errorTmp = newTemp("dummy_error", dtError);
@@ -1388,7 +1370,7 @@ addDummyErrorFormalToFn(FnSymbol* fn)
 // 2. the error variable updated is outside of this function.
 // In both cases, we need to change it to update this function's
 // error_out argument and exit this function.
-static void
+void
 fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
   FnSymbol* fn = toFnSymbol(body->parentSymbol);
   INT_ASSERT(fn);
@@ -1508,6 +1490,19 @@ findFollowingCheckErrorBlock(SymExpr* se, LabelSymbol*& outHandlerLabel,
   }
 
   return false;
+}
+
+void handleChplPropagateErrorCall(CallExpr* call) {
+  SymExpr* errSe = toSymExpr(call->get(1));
+  INT_ASSERT(errSe && errSe->typeInfo() == dtError);
+  LabelSymbol* label = NULL;
+  Symbol* error = NULL;
+  if (findFollowingCheckErrorBlock(errSe, label, error)) {
+    errSe->remove();
+    call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
+    call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
+    call->remove();
+  }
 }
 
 /* When inlining an iterator, the iterator might throw
@@ -1655,18 +1650,8 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
       // Adjust calls to chpl_propagate_error
       if (FnSymbol* calledFn = call->resolvedFunction()) {
-        if (calledFn == gChplPropagateError) {
-          SymExpr* errSe = toSymExpr(call->get(1));
-          INT_ASSERT(errSe && errSe->typeInfo() == dtError);
-          LabelSymbol* label = NULL;
-          Symbol* error = NULL;
-          if (findFollowingCheckErrorBlock(errSe, label, error)) {
-            errSe->remove();
-            call->insertBefore(new CallExpr(PRIM_MOVE, error, errSe));
-            call->insertBefore(new GotoStmt(GOTO_ERROR_HANDLING, label));
-            call->remove();
-          }
-        }
+        if (calledFn == gChplPropagateError)
+          handleChplPropagateErrorCall(call);
       }
 
       // Adjust task functions within the iterator
@@ -2353,7 +2338,11 @@ static void reconstructIRautoCopyAutoDestroy()
   // reconstruct autoCopy and autoDestroy for iterator records
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->numFormals() == 1 && fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (!fn->inTree()) continue;
+
+    if (fn->numFormals() == 1 &&
+        fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))
         reconstructIRAutoCopy(fn);
@@ -2453,17 +2442,15 @@ static void removeUncalledIterators()
   }
 }
 
-
 void lowerIterators() {
   nonLeaderParCheck();
-  parallelIterVirtualCheck();
-
-  clearUpRefsInShadowVars();
 
   computeRecursiveIteratorSet();
 
+  lowerForallStmtsInline();
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->inTree() && fn->isIterator()) {
       fn->collapseBlocks();
 
       removeUnnecessaryGotos(fn);
@@ -2486,7 +2473,7 @@ void lowerIterators() {
   inlineIterators();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->inTree() && fn->isIterator()) {
       fn->collapseBlocks();
       removeUnnecessaryGotos(fn);
     }
@@ -2515,7 +2502,7 @@ void lowerIterators() {
   fragmentLocalBlocks();
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->isIterator()) {
+    if (fn->inTree() && fn->isIterator()) {
       // This collapseBlocks call is required for lowerIterator to inline
       // advance() into zip[1-4]
       fn->collapseBlocks();

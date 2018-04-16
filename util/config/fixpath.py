@@ -6,6 +6,11 @@ from os import getenv
 from sys import argv
 import re
 
+def escape_path(p):
+    if len(argv) >=3 and argv[2] == 'fish':
+        # Suppress splitting of fish so that the path will be treated as a whole
+        return '"{}"'.format(p)
+    return p
 
 def main(env='PATH', delim=':'):
     """
@@ -25,7 +30,7 @@ def main(env='PATH', delim=':'):
     pattern = r'(?<!\\)\:'
 
     # Split path into list separated by non-escaped ':'s, and sieve chpl_home
-    newpath = [p for p in re.split(pattern, path) if chpl_home not in p]
+    newpath = [escape_path(p) for p in re.split(pattern, path) if chpl_home not in p]
 
     # Return path delimited by shell-type (':' vs. ' ')
     return delim.join(newpath)

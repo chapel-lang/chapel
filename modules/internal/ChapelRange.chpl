@@ -105,9 +105,6 @@ module ChapelRange {
    */
   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
-  pragma "no doc"
-  /*private*/ proc indexToStrideType(type idxType) type  return chpl__signedType(idxType);
-
   //
   // range type
   //
@@ -151,16 +148,15 @@ module ChapelRange {
 
     var _low       : idxType;                      // lower bound
     var _high      : idxType;                      // upper bound
-    var _stride    : typeHelper(stridable, indexToStrideType(idxType)); // signed stride
+    var _stride    : typeHelper(stridable, chpl__rangeStrideType(idxType)); // signed stride
     var _alignment : typeHelper(stridable, idxType); // alignment
     var _aligned   : typeHelper(stridable, bool);
 
-    proc strType type  return indexToStrideType(idxType);
+    proc strType type  return chpl__rangeStrideType(idxType);
 
     proc chpl__promotionType() type {
       return idxType;
     }
-
   }
 
   //################################################################################
@@ -175,10 +171,10 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = 1,
-                  _high : idxType = 0,
-                  _stride : indexToStrideType(idxType) = 1,
-                  _alignment : idxType = 0,
+                  _low : idxType = chpl__defaultLowBound(idxType),
+                  _high : idxType = chpl__defaultHighBound(idxType),
+                  _stride : chpl__rangeStrideType(idxType) = 1,
+                  _alignment : chpl__rangeAlignType(idxType) = 0,
                   _aligned : bool = false) {
     this.idxType     = idxType;
     this.boundedType = boundedType;
@@ -207,8 +203,8 @@ module ChapelRange {
   proc range.init(type idxType = int,
                   param boundedType : BoundedRangeType = BoundedRangeType.bounded,
                   param stridable : bool = false,
-                  _low : idxType = 1,
-                  _high : idxType = 0,
+                  _low : idxType = defaultLowBound(idxType),
+                  _high : idxType = defaultHighBound(idxType),
                   _stride,
                   _alignment,
                   _aligned)
@@ -242,6 +238,12 @@ module ChapelRange {
     return new range(int(w), _low=low, _high=high);
   proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
     return new range(uint(w), _low=low, _high=high);
+  proc chpl_build_bounded_range(low: enumerated, high: enumerated) {
+    if (low.type != high.type) then
+      compilerError("ranges of enums must use a single enum type");
+    compilerError("ranges of enum type are not currently supported");
+    return new range(low.type, _low=low, _high=high);
+  }
   proc chpl_build_bounded_range(low, high) {
     compilerError("Bounds of 'low..high' must be integers of compatible types.");
   }
@@ -249,6 +251,10 @@ module ChapelRange {
   // Range builders for low bounded ranges
   proc chpl_build_low_bounded_range(low: integral)
     return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  proc chpl_build_low_bounded_range(low: enumerated) {
+    compilerError("ranges of enum type are not currently supported");
+    return new range(low.type, BoundedRangeType.boundedLow, _low=low);
+  }
   proc chpl_build_low_bounded_range(low) {
     compilerError("Bound of 'low..' must be an integer");
   }
@@ -256,6 +262,10 @@ module ChapelRange {
   // Range builders for high bounded ranges
   proc chpl_build_high_bounded_range(high: integral)
     return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  proc chpl_build_high_bounded_range(high: enumerated) {
+    compilerError("ranges of enum type are not currently supported");
+    return new range(high.type, BoundedRangeType.boundedHigh, _high=high);
+  }
   proc chpl_build_high_bounded_range(high) {
     compilerError("Bound of '..high' must be an integer.");
   }
@@ -969,7 +979,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc +(r: range(?e, ?b, ?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = indexToStrideType(resultType);
+    type strType = chpl__rangeStrideType(resultType);
 
     return new range(resultType, b, s,
                      r._low + i, r._high + i,
@@ -982,7 +992,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc -(r: range(?e,?b,?s), i: integral)
   {
     type resultType = (r._low+i).type;
-    type strType = indexToStrideType(resultType);
+    type strType = chpl__rangeStrideType(resultType);
 
     return new range(resultType, b, s,
                      r._low - i, r._high - i,
@@ -1006,7 +1016,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl_range_check_stride(step, type idxType) {
     chpl_check_step_integral(step);
-    type strType = indexToStrideType(idxType);
+    type strType = chpl__rangeStrideType(idxType);
 
     // At present, step must coerce to range's idxType or strType.
     if numBits(step.type) > numBits(strType) then
@@ -1027,7 +1037,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   inline proc chpl_range_check_stride(param step, type idxType)  {
     chpl_check_step_integral(step);
-    type strType = indexToStrideType(idxType);
+    type strType = chpl__rangeStrideType(idxType);
 
     if step == 0 then
       compilerError("the step argument of the 'by' operator is zero");
@@ -1047,7 +1057,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     const (ald, alt): (bool, i) =
       if r.isAmbiguous() then
         if r.stridable then (false, r.alignment)
-                       else (false, 0:r.idxType)                            
+                       else (false, 0:r.idxType)
       else
         // we could talk about aligned bounds
         if      r.hasLowBound()  && st > 0 then (true, r.alignedLow)
@@ -1345,7 +1355,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       __primitive("chpl_error", c"count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.idxType;
-    type strType = indexToStrideType(resultType);
+    type strType = chpl__rangeStrideType(resultType);
 
     if (count == 0) then
       // Return a degenerate range.
@@ -1413,7 +1423,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                      _aligned = if r.stridable then r.aligned else _void);
   }
 
-  proc #(r:range(?i), count:chpl__signedType(i)) {
+  proc #(r:range(?i), count:chpl__rangeStrideType(i)) {
     return chpl_count_help(r, count);
   }
 
@@ -1511,6 +1521,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     for i in r do yield i;
   }
 
+  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+                              stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
@@ -1520,6 +1536,23 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  iter chpl_direct_range_iter(low: enumerated, high: enumerated,
+                              param stride: integral) {
+    if (stride == 1) {
+        // Optimize for the stride == 1 case because I anticipate it'll be
+        // better supported for enum ranges than the strided case (if we
+        // ever support the latter)
+      const r = low..high;
+      for i in r do yield i;
+    } else {
+      // I'm guessing we won't be able to optimize the param stride case
+      // for (general) enums in the short-term, so call to the non-param
+      // stride case
+      const r = low..high by stride;
+      for i in r do yield i;
+    }
   }
 
 
@@ -1569,6 +1602,16 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: enumerated, count:int(?w)) {
+    const r = low..;
+    for i in r#count do yield i;
+  }
+
+  iter chpl_direct_counted_range_iter(low: enumerated, count:uint(?w)) {
+    const r = low..;
+    for i in r#count do yield i;
   }
 
   iter chpl_direct_counted_range_iter(low: integral, count) {
@@ -1973,7 +2016,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
           assert(false, "hasFirst && hasLast do not imply isBoundedRange");
       }
       if this.stridable || myFollowThis.stridable {
-        var r = 1:idxType .. 0:idxType by 1:indexToStrideType(idxType);
+        var r = 1:idxType .. 0:idxType by 1:chpl__rangeStrideType(idxType);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
@@ -2293,4 +2336,52 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   inline proc chpl__extendedEuclid(u:int(64), v:int(64))
   { return chpl__extendedEuclidHelper(u,v); }
 
+  private proc chpl__rangeIdxTypeError(type idxType) {
+    compilerError("ranges don't support '", idxType:string, "' as their idxType");
+  }
+
+  private proc chpl__rangeStrideType(type idxType) type {
+    if isIntegralType(idxType) {
+      return chpl__signedType(idxType);
+    } else if isEnumType(idxType) {
+      return int;
+    } else {
+      chpl__rangeIdxTypeError(idxType);
+    }
+  }
+
+  private proc chpl__rangeAlignType(type idxType) type {
+    if isIntegralType(idxType) {
+      return idxType;
+    } else if isEnumType(idxType) {
+      // TODO: ultimately, this should be an int of the same width as the enum
+      return int;
+    } else {
+      chpl__rangeIdxTypeError(idxType);
+    }
+  }
+
+  private proc chpl__defaultLowBound(type idxType) {
+    if isIntegralType(idxType) {
+      return 1:idxType;
+    } else if isEnumType(idxType) {
+      // TODO: This is only correct for default-numbered enums; need
+      // to generalize
+      return 2:idxType;
+    } else {
+      chpl__rangeTypeError(idxType);
+    }
+  }
+
+  private proc chpl__defaultHighBound(type idxType) {
+    if isIntegralType(idxType) {
+      return 0:idxType;
+    } else if isEnumType(idxType) {
+      // TODO: This is only correct for default-numbered enums; need
+      // to generalize
+      return 1:idxType;
+    } else {
+      chpl__rangeTypeError(idxType);
+    }
+  }
 }

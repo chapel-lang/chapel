@@ -77,9 +77,11 @@ module LocaleModelHelpSetup {
 
   proc helpSetupRootLocaleNUMA(dst:RootLocale) {
     var root_accum:chpl_root_locale_accum;
+    // A workaround for not munging identifiers in modules.
+    const chpl_my_sublocid_any = c_sublocid_any;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(chpl_my_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
@@ -90,9 +92,11 @@ module LocaleModelHelpSetup {
 
   proc helpSetupRootLocaleAPU(dst:RootLocale) {
     var root_accum:chpl_root_locale_accum;
+    // A workaround for not munging identifiers in modules.
+    const chpl_my_sublocid_any = c_sublocid_any;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      chpl_task_setSubloc(c_sublocid_any);
+      chpl_task_setSubloc(chpl_my_sublocid_any);
       const node = new LocaleModel(dst);
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
@@ -112,9 +116,9 @@ module LocaleModelHelpSetup {
     // intended to describe.
     var comm, spawnfn : c_string;
     extern proc chpl_nodeName() : c_string;
-    // sys_getenv returns zero on success.
-    if sys_getenv(c"CHPL_COMM", comm) == 0 && comm == c"gasnet" &&
-      sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 0 && spawnfn == c"L"
+    // sys_getenv returns one on success.
+    if sys_getenv(c"CHPL_COMM", comm) == 1 && comm == c"gasnet" &&
+      sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L"
     then local_name = chpl_nodeName():string + "-" + _node_id:string;
     else local_name = chpl_nodeName():string;
 

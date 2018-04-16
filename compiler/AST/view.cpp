@@ -32,6 +32,7 @@
 #include "ForLoop.h"
 #include "iterator.h"
 #include "log.h"
+#include "UnmanagedClassType.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -144,11 +145,13 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
   const char* block_explain = NULL;
   if (Expr* expr = toExpr(ast)) {
     if (ForallStmt* pfs = toForallStmt(parentAst)) {
-      if (expr == pfs->loopBody()) {
+      if (expr == pfs->fRecIterIRdef) {
+        printf("fRecIterIRdef");
+      } else if (expr == pfs->loopBody()) {
         if (pfs->numShadowVars() == 0)
-          print_on_its_own_line(indent, "with()");
-        print_on_its_own_line(indent, "do\n", false);
-        printf("\n");
+          print_on_its_own_line(indent, "with() do\n");
+        else
+          print_on_its_own_line(indent, "do\n", false);
         indent -= 2;
       }
     }
@@ -239,7 +242,7 @@ list_ast(BaseAST* ast, BaseAST* parentAst = NULL, int indent = 0) {
         printf("}"); // newline is coming
       else
         printf("}\n");
-      if (isForallLoopBody(expr)) {
+      if (isForallLoopBody(expr) && parentAst != NULL) {
         print_indent(indent);
         printf("        end forall %d", parentAst->id);
       }

@@ -448,10 +448,12 @@ module ChapelLocale {
       // Simple locales barrier, see implementation below for notes
       var b: localesBarrier;
       var flags: [1..#numLocales-1] localesSignal;
+      // A workaround for not munging identifiers in modules.
+      const chpl_my_sublocid_any = c_sublocid_any;
       coforall locIdx in 0..#numLocales /*ref(b)*/ {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(locIdx:chpl_nodeID_t,
-                                          c_sublocid_any)) {
+                                          chpl_my_sublocid_any)) {
           chpl_defaultDistInitPrivate();
           yield locIdx;
           b.wait(locIdx, flags);

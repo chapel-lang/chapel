@@ -108,17 +108,24 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc CSDom(param rank, type idxType, param compressRows, param stridable, dist: CS(compressRows), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param stridable, dist: CS(compressRows), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
       compilerError("idxType mismatch in CSDom.init(): " + idxType:string + " != " + parentDom.idxType:string);
 
+    super.init(rank=rank, idxType=idxType, parentDom=parentDom);
+
+    this.compressRows = compressRows;
+    this.stridable = stridable;
+
     this.dist = dist;
-    this.parentDom = parentDom;
     rowRange = parentDom.dim(1);
     colRange = parentDom.dim(2);
     startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
+
+    this.complete();
+
     nnzDom = {1..nnz};
     dsiClear();
   }
@@ -569,6 +576,7 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
+pragma "use default init"
 class CSArr: BaseSparseArrImpl {
 
   proc dsiAccess(ind: rank*idxType) ref {

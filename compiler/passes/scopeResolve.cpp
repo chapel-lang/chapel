@@ -283,6 +283,34 @@ static void scopeResolve(BlockStmt*          block,
   scopeResolve(block->body,         scope);
 }
 
+static void scopeResolve(ForallStmt*         forallStmt,
+                         const ResolveScope* parent)
+{
+  // Nothing to scopeResolve in fRecIter*
+  INT_ASSERT(forallStmt->fRecIterIRdef == NULL);
+
+  BlockStmt* fBody = forallStmt->loopBody();
+
+  // Or, we could construct ResolveScope specifically for forallStmt.
+  ResolveScope* bodyScope = new ResolveScope(fBody, parent);
+
+  // cf. scopeResolve(FnSymbol*,parent)
+  for_alist(ivdef, forallStmt->inductionVariables()) {
+    Symbol* sym = toDefExpr(ivdef)->sym;
+    // "chpl__tuple_blank" indicates the underscore placeholder for
+    // the induction variable. Do not add it. Because if there are two
+    // (legally) ex. "forall (_,_) in ...", we get an error.
+    if (strcmp(sym->name, "chpl__tuple_blank"))
+      bodyScope->extend(sym);
+  }
+
+  for_shadow_var_defs(svd, temp, forallStmt) {
+    bodyScope->extend(svd->sym);
+  }
+
+  scopeResolve(fBody->body, bodyScope);
+}
+
 static void scopeResolve(FnSymbol*           fn,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(fn, parent);
@@ -424,23 +452,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
       }
 
     } else if (ForallStmt* forallStmt = toForallStmt(stmt)) {
-      BlockStmt* fBody = forallStmt->loopBody();
-      // or, we could construct ResolveScope specifically for forallStmt
-      ResolveScope* bodyScope = new ResolveScope(fBody, scope);
-      // cf. scopeResolve(FnSymbol*,parent)
-      for_alist(ivdef, forallStmt->inductionVariables()) {
-        Symbol* sym = toDefExpr(ivdef)->sym;
-        // "chpl__tuple_blank" indicates the underscore placeholder for
-        // the induction variable. Do not add it. Because if there are two
-        // (legally) ex. "forall (_,_) in ...", we get an error.
-        if (strcmp(sym->name, "chpl__tuple_blank"))
-          bodyScope->extend(sym);
-      }
-      for_shadow_var_defs(svd, temp, forallStmt) {
-        bodyScope->extend(svd->sym);
-      }
-
-      scopeResolve(fBody->body, bodyScope);
+      scopeResolve(forallStmt, scope);
 
     } else if (DeferStmt* deferStmt = toDeferStmt(stmt)) {
       scopeResolve(deferStmt->body(), scope);
@@ -1742,14 +1754,15 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 BaseAST* getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
-    BlockStmt* block = toBlockStmt(expr->parentExpr);
+    Expr*     parent = expr->parentExpr;
+    BlockStmt* block = toBlockStmt(parent);
 
     // SCOPELESS and TYPE blocks do not define scopes
     if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
 
-    } else if (expr->parentExpr) {
-      return getScope(expr->parentExpr);
+    } else if (parent) {
+      return getScope(parent);
 
     } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
       return fn;

@@ -52,6 +52,7 @@ static child type could end up calling something in the parent.
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "iterator.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -227,6 +228,16 @@ static void addToVirtualMaps(FnSymbol*      pfn,
       }
 
       fn->instantiationPoint = instantiationPoint;
+    } else {
+      //
+      // BHARSH 2018-04-06:
+      //
+      // Essential for arrays to be able to use initializers.
+      //
+      // A smaller test case:
+      //   types/type_variables/deitz/test_point_of_instantiation3.chpl
+      //
+      fn->instantiationPoint = ct->symbol->instantiationPoint;
     }
 
     resolveOverride(pfn, fn);
@@ -422,11 +433,19 @@ static bool isSubType(Type* sub, Type* super) {
   if (sub == super) {
     retval = true;
 
-  } else if (AggregateType* atSub = toAggregateType(sub)) {
-    forv_Vec(AggregateType, parent, atSub->dispatchParents) {
-      if (isSubType(parent, super) == true) {
-        retval = true;
-        break;
+  } else if (isAggregateType(sub) || isUnmanagedClassType(sub)) {
+    AggregateType* subAt = toAggregateType(sub);
+    Type* useSuper = super;
+    if (classesWithSameKind(sub, super)) {
+      subAt = toAggregateType(canonicalClassType(sub));
+      useSuper = canonicalClassType(super);
+    }
+    if (subAt) {
+      forv_Vec(AggregateType, parent, subAt->dispatchParents) {
+        if (isSubType(parent, useSuper) == true) {
+          retval = true;
+          break;
+        }
       }
     }
   }

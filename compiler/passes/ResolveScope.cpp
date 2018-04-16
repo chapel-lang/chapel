@@ -256,6 +256,7 @@ void ResolveScope::addBuiltIns() {
 
   extend(dtIteratorRecord->symbol);
   extend(dtIteratorClass->symbol);
+  extend(dtUnmanaged->symbol);
 
   extend(dtMethodToken->symbol);
   extend(gMethodToken);

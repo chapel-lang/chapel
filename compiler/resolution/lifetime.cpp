@@ -24,6 +24,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "loopDetails.h"
+#include "UnmanagedClassType.h"
 #include "stlUtil.h"
 #include "symbol.h"
 #include "view.h"
@@ -1133,6 +1134,11 @@ static bool typeHasInfiniteLifetime(Type* type) {
   if (isSubClass(type, dtLocale))
     return true;
 
+  if (isUnmanagedClassType(type)) {
+    // unmanaged class instances have infinite lifetime
+    return true;
+  }
+
   return false;
 }
 
@@ -1332,11 +1338,6 @@ static bool symbolHasInfiniteLifetime(Symbol* sym) {
     // Global variables have infinite lifetime
     return true;
   }
-
-  /*if (isClass(sym->type) && sym->hasFlag(FLAG_RAW)) {
-    // raw class instances have infinite lifetime
-    return true;
-  }*/
 
   return false;
 }

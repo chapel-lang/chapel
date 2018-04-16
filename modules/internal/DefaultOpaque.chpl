@@ -69,7 +69,8 @@ module DefaultOpaque {
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
   
-    proc DefaultOpaqueDom(dist: DefaultDist, param parSafe: bool) {
+    proc init(dist: DefaultDist, param parSafe: bool) {
+      this.parSafe = parSafe;
       this.dist = dist;
       adomain = new DefaultAssociativeDom(_OpaqueIndex, dist, parSafe=parSafe);
     }
@@ -153,6 +154,7 @@ module DefaultOpaque {
   }
   
   
+  pragma "use default init"
   class DefaultOpaqueArr: BaseArr {
     type eltType;
     type idxType;

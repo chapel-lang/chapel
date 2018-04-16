@@ -14,6 +14,7 @@ class GlobalDomain : BaseDom {
   var ranges: rank * range(idxType);
 }
 
+pragma "use default init"
 class GlobalArray : BaseArr {}
 
 proc GlobalDistribution.init() {}
@@ -30,10 +31,13 @@ proc GlobalDistribution.dsiNewArithmeticDom(param rank: int,
   return new GlobalDomain(rank, idxType, stridable);
 }
 
-proc GlobalDomain.GlobalDomain(param rank: int,
+proc GlobalDomain.init(param rank: int,
                                type idxType,
-                               param stridable: bool)
-{}
+                               param stridable: bool) {
+  this.rank = rank;
+  this.idxType = idxType;
+  this.stridable = stridable;
+}
 
 proc GlobalDomain.dsiSetIndices(arg_ranges: rank * range(idxType)): void {
   ranges = arg_ranges;

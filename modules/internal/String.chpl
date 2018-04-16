@@ -160,34 +160,34 @@ module String {
     pragma "no doc"
     var buff: bufferType = nil;
     pragma "no doc"
-    var owned: bool = true;
+    var isowned: bool = true;
     pragma "no doc"
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
 
     /*
-      Construct a new string from ``s``. If ``owned`` is set to ``true`` then
+      Construct a new string from ``s``. If ``isowned`` is set to ``true`` then
       ``s`` will be fully copied into the new instance. If it is ``false`` a
       shallow copy will be made such that any in-place modifications to the new
       string may appear in ``s``. It is the responsibility of the user to
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc string(s: string, owned: bool = true) {
+    proc string(s: string, isowned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
-      this.owned = owned;
+      this.isowned = isowned;
       // Don't need to do anything if s is an empty string
       if sLen != 0 {
         this.len = sLen;
         if !_local && sRemote {
-          // ignore supplied value of owned for remote strings so we don't leak
-          this.owned = true;
+          // ignore supplied value of isowned for remote strings so we don't leak
+          this.isowned = true;
           this.buff = copyRemoteBuffer(s.locale_id, s.buff, sLen);
           this._size = sLen+1;
         } else {
-          if this.owned {
+          if this.isowned {
             const allocSize = chpl_here_good_alloc_size(sLen+1);
             this.buff = chpl_here_alloc(allocSize,
                                        offset_STR_COPY_DATA): bufferType;
@@ -203,7 +203,7 @@ module String {
     }
 
     /*
-      Construct a new string from the `c_string` `cs`. If `owned` is set to
+      Construct a new string from the `c_string` `cs`. If `isowned` is set to
       true, the backing buffer will be freed when the new record is destroyed.
       If `needToCopy` is set to true, the `c_string` will be copied into the
       record, otherwise it will be used directly. It is the responsibility of
@@ -211,8 +211,8 @@ module String {
       `c_string` is not copied in.
      */
     proc string(cs: c_string, length: int = cs.length,
-                owned: bool = true, needToCopy:  bool = true) {
-      this.owned = owned;
+                isowned: bool = true, needToCopy:  bool = true) {
+      this.isowned = isowned;
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
@@ -221,16 +221,16 @@ module String {
       Construct a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
       the total size of the buffer available, while `len` indicates the current
       length of the string in the buffer (the common case would be `size-1` for
-      a C-style string). If `owned` is set to true, the backing buffer will be
+      a C-style string). If `isowned` is set to true, the backing buffer will be
       freed when the new record is destroyed. If `needToCopy` is set to true,
       the `c_string` will be copied into the record, otherwise it will be used
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
      */
-    // This constructor can cause a leak if owned = false and needToCopy = true
+    // This constructor can cause a leak if isowned = false and needToCopy = true
     proc string(buff: bufferType, length: int, size: int,
-                owned: bool = true, needToCopy: bool = true) {
-      this.owned = owned;
+                isowned: bool = true, needToCopy: bool = true) {
+      this.isowned = isowned;
       this.reinitString(buff, length, size, needToCopy);
     }
 
@@ -239,7 +239,7 @@ module String {
       // Checking for size here isn't sufficient. A string may have been
       // initialized from a c_string allocated from memory but beginning with
       // a null-terminator.
-      if owned && this.buff != nil {
+      if isowned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
@@ -261,14 +261,14 @@ module String {
       if data.locale_id != chpl_nodeID {
         if data.len <= CHPL_SHORT_STRING_SIZE {
           return new string(chpl__getInPlaceBufferData(data.shortData), data.len,
-                            data.size, owned=true, needToCopy=true);
+                            data.size, isowned=true, needToCopy=true);
         } else {
           var localBuff = copyRemoteBuffer(data.locale_id, data.buff, data.len);
           return new string(localBuff, data.len, data.size,
-                            owned=true, needToCopy=false);
+                            isowned=true, needToCopy=false);
         }
       } else {
-        return new string(data.buff, data.len, data.size, owned = false, needToCopy=false);
+        return new string(data.buff, data.len, data.size, isowned = false, needToCopy=false);
       }
     }
 
@@ -279,13 +279,13 @@ module String {
       if this.isEmptyString() && buf == nil then return;
 
       // If the this.buff is longer than buf, then reuse the buffer if we are
-      // allowed to (this.owned == true)
+      // allowed to (this.isowned == true)
       if s_len != 0 {
         if needToCopy {
-          if !this.owned || s_len+1 > this._size {
+          if !this.isowned || s_len+1 > this._size {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
-            if this.owned && !this.isEmptyString() then
+            if this.isowned && !this.isEmptyString() then
               chpl_here_free(this.buff);
             // TODO: should I just allocate 'size' bytes?
             const allocSize = chpl_here_good_alloc_size(s_len+1);
@@ -293,20 +293,20 @@ module String {
                                        offset_STR_COPY_DATA):bufferType;
             this._size = allocSize;
             // We just allocated a buffer, make sure to free it later
-            this.owned = true;
+            this.isowned = true;
           }
           c_memmove(this.buff, buf, s_len);
           this.buff[s_len] = 0;
         } else {
-          if this.owned && !this.isEmptyString() then
+          if this.isowned && !this.isEmptyString() then
             chpl_here_free(this.buff);
           this.buff = buf;
           this._size = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is owned.
-        if this.owned && !this.isEmptyString() then chpl_here_free(this.buff);
+        // need to free the old buffer if 'this' is isowned.
+        if this.isowned && !this.isEmptyString() then chpl_here_free(this.buff);
         this._size = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
@@ -341,7 +341,7 @@ module String {
     */
     inline proc localize() : string {
       if _local || this.locale_id == chpl_nodeID {
-        return new string(this, owned=false);
+        return new string(this, isowned=false);
       } else {
         const x:string = this; // assignment makes it local
         return x;
@@ -434,7 +434,7 @@ module String {
       ret.len = 1;
       ret.buff = chpl_here_alloc(ret._size,
                                 offset_STR_COPY_DATA): bufferType;
-      ret.owned = true;
+      ret.isowned = true;
 
       const remoteThis = this.locale_id != chpl_nodeID;
       if remoteThis {
@@ -1345,7 +1345,7 @@ module String {
     const slen = s.len; // cache the remote copy of len
     if slen != 0 {
       if _local || s.locale_id == chpl_nodeID {
-        if s.owned {
+        if s.isowned {
           ret.buff = chpl_here_alloc(s._size,
                                     offset_STR_COPY_DATA): bufferType;
           c_memcpy(ret.buff, s.buff, s.len);
@@ -1353,10 +1353,10 @@ module String {
         } else {
           ret.buff = s.buff;
         }
-        ret.owned = s.owned;
+        ret.isowned = s.isowned;
       } else {
         ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
-        ret.owned = true;
+        ret.isowned = true;
       }
       ret.len = slen;
       ret._size = slen+1;
@@ -1385,7 +1385,7 @@ module String {
     const slen = s.len; // cache the remote copy of len
     if slen != 0 {
       if _local || s.locale_id == chpl_nodeID {
-        if s.owned {
+        if s.isowned {
           ret.buff = chpl_here_alloc(s._size,
                                     offset_STR_COPY_DATA): bufferType;
           c_memcpy(ret.buff, s.buff, s.len);
@@ -1393,10 +1393,10 @@ module String {
         } else {
           ret.buff = s.buff;
         }
-        ret.owned = s.owned;
+        ret.isowned = s.isowned;
       } else {
         ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
-        ret.owned = true;
+        ret.isowned = true;
       }
       ret.len = slen;
       ret._size = slen+1;
@@ -1468,7 +1468,7 @@ module String {
     ret._size = allocSize;
     ret.buff = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
-    ret.owned = true;
+    ret.isowned = true;
 
     const s0remote = s0.locale_id != chpl_nodeID;
     if s0remote {
@@ -1514,7 +1514,7 @@ module String {
     ret._size = allocSize;
     ret.buff = chpl_here_alloc(allocSize,
                               offset_STR_COPY_DATA): bufferType;
-    ret.owned = true;
+    ret.isowned = true;
 
     const sRemote = s.locale_id != chpl_nodeID;
     if sRemote {
@@ -1651,7 +1651,7 @@ module String {
         const newSize = chpl_here_good_alloc_size(
             max(newLength+1, lhs.len*chpl_stringGrowthFactor):int);
 
-        if lhs.owned {
+        if lhs.isowned {
           lhs.buff = chpl_here_realloc(lhs.buff, newSize,
                                       offset_STR_COPY_DATA):bufferType;
         } else {
@@ -1659,7 +1659,7 @@ module String {
                                        offset_STR_COPY_DATA):bufferType;
           c_memcpy(newBuff, lhs.buff, lhs.len);
           lhs.buff = newBuff;
-          lhs.owned = true;
+          lhs.isowned = true;
         }
 
         lhs._size = newSize;
@@ -1836,7 +1836,7 @@ module String {
     var buffer = chpl_here_alloc(2, offset_STR_COPY_DATA): bufferType;
     buffer[0] = i;
     buffer[1] = 0;
-    var s = new string(buffer, 1, 2, owned=true, needToCopy=false);
+    var s = new string(buffer, 1, 2, isowned=true, needToCopy=false);
     return s;
   }
 
@@ -1859,7 +1859,7 @@ module String {
     ret.buff = if ret.len > 0
       then __primitive("string_copy", cs): bufferType
       else nil;
-    ret.owned = true;
+    ret.isowned = true;
 
     return ret;
   }

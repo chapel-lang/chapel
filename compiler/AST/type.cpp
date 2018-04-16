@@ -928,6 +928,9 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
+  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
+
   dtMethodToken = createInternalType ("_MT", "_MT");
 
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
@@ -1203,6 +1206,10 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
+bool isClassLike(Type* t) {
+  return isClass(t) || isUnmanagedClassType(t);
+}
+
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
@@ -1274,7 +1281,7 @@ static bool isDerivedType(Type* type, Flag flag)
 }
 
 bool isManagedPtrType(const Type* t) {
-  return t->symbol->hasFlag(FLAG_MANAGED_POINTER);
+  return t && t->symbol->hasFlag(FLAG_MANAGED_POINTER);
 }
 
 bool isSyncType(const Type* t) {
