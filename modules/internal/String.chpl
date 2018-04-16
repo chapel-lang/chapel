@@ -179,10 +179,10 @@ module String {
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc init(s: string, owned: bool = true) {
+    proc init(s: string, isowned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
-      this.owned = owned;
+      this.isowned = isowned;
       this.complete();
       // Don't need to do anything if s is an empty string
       if sLen != 0 {
@@ -217,8 +217,8 @@ module String {
       `c_string` is not copied in.
      */
     proc init(cs: c_string, length: int = cs.length,
-                owned: bool = true, needToCopy:  bool = true) {
-      this.owned = owned;
+                isowned: bool = true, needToCopy:  bool = true) {
+      this.isowned = isowned;
       this.complete();
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
@@ -234,10 +234,10 @@ module String {
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
      */
-    // This constructor can cause a leak if owned = false and needToCopy = true
+    // This constructor can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
-                owned: bool = true, needToCopy: bool = true) {
-      this.owned = owned;
+                isowned: bool = true, needToCopy: bool = true) {
+      this.isowned = isowned;
       this.complete();
       this.reinitString(buff, length, size, needToCopy);
     }
