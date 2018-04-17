@@ -4,7 +4,7 @@ class MyDomain : Domain {
   var x;
 }
 class Array {
-  proc foo(arg:unmanaged Domain) {
+  proc foo(in arg:owned Domain) {
     writeln("In parent foo");
   }
   proc bar(arg:Domain) {
@@ -20,10 +20,16 @@ proc baz(arg:Domain) {
 }
 
 proc test() {
-  var arr = new unmanaged MyArray(1);
-  var dom = new unmanaged MyDomain(1);
-  arr.foo(dom);
-  arr.bar(dom);
-  baz(dom);
+  {
+    var arr = new owned MyArray(1);
+    var dom = new owned MyDomain(1);
+    arr.foo(dom); // empties dom
+  }
+  {
+    var arr = new owned MyArray(1);
+    var dom = new owned MyDomain(1);
+    arr.bar(dom);
+    baz(dom);
+  }
 }
 test();
