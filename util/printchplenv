@@ -24,7 +24,7 @@ Options:
   [filter]
   --[no-]tidy   (default) [don't] Omit sub-variables irrelevant to the current
                  configuration
-  --anonymize   Omit machine specific detailss, script location, and CHPL_HOME
+  --anonymize   Omit machine specific details, script location, and CHPL_HOME
   --overrides   Omit variables that have not been user supplied via environment
                  or chplconfig
 
@@ -331,7 +331,7 @@ def parse_args():
         description = 'Print the current Chapel configuration. '
                       '[content] arguments determine what gets printed. '
                       '[filter] arguments determine what gets omitted. '
-                      '[format] arguments deermine how it gets printed. '
+                      '[format] arguments determine how it gets printed. '
                       '[shortcut] arguments are for convenience.')
 
     #[shortcut]
