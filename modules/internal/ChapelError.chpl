@@ -48,7 +48,7 @@ module ChapelError {
     pragma "no doc"
     proc init(_msg:string) {
       _next = nil;
-      compilerError("Error constructor accepting a string is no longer available");
+      compilerError("Error initializer accepting a string is no longer available");
     }
 
     /* Construct an Error */

@@ -184,13 +184,13 @@ When run on 6 locales, the output is:
     3 3 4 4 5 5 3 3
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``DimensionalDist2D`` class constructor is defined as follows:
+The ``DimensionalDist2D`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc DimensionalDist2D.DimensionalDist2D(
+    proc DimensionalDist2D.init(
       targetLocales: [] locale,
       di1,
       di2,
@@ -223,7 +223,7 @@ and arrays.
 **Dimension Specifiers**
 
 Presently, the following dimension specifiers are available
-(shown here with their constructor arguments):
+(shown here with their initializer arguments):
 
 * :class:`ReplicatedDim(numLocales) <ReplicatedDim>`
 * :class:`BlockDim(numLocales, boundingBox, idxType=boundingBox.idxType) <BlockDim>`
@@ -383,9 +383,9 @@ class LocDimensionalArr {
 /// distribution ////////////////////////////////////////////////////////////
 
 
-//== construction, cloning
+//== initialization, cloning
 
-// constructor
+// initializer
 // gotta list all the things we let the user set
 proc DimensionalDist2D.init(
   targetLocales: [] locale,
@@ -418,7 +418,7 @@ proc DimensionalDist2D.init(
 
 //
 // Having targetLocales be a constant means we have to reshape Locales
-// before invoking the constructor. This method does that.
+// before invoking the initializer. This method does that.
 // It also offers the convenience of passing just di1 and di2 and
 // using 'Locales' for targetLocales by default.
 // Recall that di1 and di2 determine the number of locales in each dimension.
@@ -443,7 +443,7 @@ proc newDimensionalDist2D(
 
 
 // Check all restrictions/assumptions that must be satisfied by the user
-// when constructing a DimensionalDist2D.
+// when initializing a DimensionalDist2D.
 proc DimensionalDist2D.checkInvariants(): void {
   proc ensure(param cond:bool, param msg:string) {
     if !cond then compilerError(msg, 3);
@@ -526,8 +526,8 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                              dummy = 0);
 }
 
-// constructor of a privatized copy
-// ('dummy' distinguishes it from the user constructor)
+// initializer of a privatized copy
+// ('dummy' distinguishes it from the user initializer)
 proc DimensionalDist2D.init(param dummy: int,
   targetLocales: [] locale,
   name,

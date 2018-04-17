@@ -88,18 +88,18 @@ referring to the domain or array.
 See the :ref:`primers-replicated` primer for more examples of the Replicated
 distribution.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``Replicated`` class constructor is defined as follows:
+The ``Replicated`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Replicated(
+    proc Replicated.init(
       targetLocales: [] locale = Locales,
       purposeMessage: string = "used to create a Replicated")
 
 The optional ``purposeMessage`` may be useful for debugging
-when the constructor encounters an error.
+when the initializer encounters an error.
 
 
 **Limitations**
@@ -115,7 +115,7 @@ class Replicated : BaseDist {
 }
 
 
-// constructor: replicate over the given locales
+// initializer: replicate over the given locales
 // (by default, over all locales)
 proc Replicated.init(targetLocales: [] locale = Locales,
                      purposeMessage: string = "used to create a Replicated")
@@ -128,7 +128,7 @@ proc Replicated.init(targetLocales: [] locale = Locales,
   }
 
   if traceReplicatedDist then
-    writeln("Replicated constructor over ", targetLocales);
+    writeln("Replicated initializer over ", targetLocales);
 }
 
 proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
@@ -186,6 +186,7 @@ class ReplicatedDom : BaseRectangularDom {
   var domRep: domain(rank, idxType, stridable);
 
   // local domain objects
+  // INIT TODO: Can we address these notes with initializers?
   // NOTE: 'dist' must be initialized prior to 'localDoms'
   // => currently have to use the default constructor
   // NOTE: if they ever change after the constructor - Reprivatize them
@@ -220,7 +221,7 @@ class LocReplicatedDom {
 }
 
 
-// No explicit ReplicatedDom constructor - use the default one.
+// No explicit ReplicatedDom initializer - use the default one.
 // proc ReplicatedDom.ReplicatedDom(...){...}
 
 // Since we piggy-back on (default-mapped) Chapel domains, we can redirect
@@ -286,7 +287,7 @@ proc Replicated.dsiNewRectangularDom(param rank: int,
   if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));
 
-  // Have to call the default constructor because we need to initialize 'dist'
+  // Have to call the default initializer because we need to initialize 'dist'
   // prior to initializing 'localDoms' (which needs a non-nil value for 'dist'.
   var result = new ReplicatedDom(rank=rank, idxType=idxType,
                                  stridable=stridable, dist=this);
@@ -457,7 +458,7 @@ class LocReplicatedArr {
 }
 
 
-// ReplicatedArr constructor.
+// ReplicatedArr initializer.
 // We create our own to make field initializations convenient:
 // 'eltType' and 'dom' as passed explicitly;
 // the fields in the parent class, BaseArr, are initialized to their defaults.

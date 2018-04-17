@@ -331,6 +331,7 @@ class SparseBlockArr: BaseSparseArr {
   param stridable: bool;
   type sparseLayoutType = DefaultDist;
 
+  // INIT TODO: Can we address this constructor/initializer issue now?
   // ideally I wanted to have `var locArr: [dom.dist.targetLocDom]`. However,
   // superclass' fields cannot be used in child class' field initializers. See
   // the constructor for the workaround.

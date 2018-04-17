@@ -172,7 +172,7 @@ module String {
     }
 
     /*
-      Construct a new string from ``s``. If ``isowned`` is set to ``true`` then
+      Initialize a new string from ``s``. If ``isowned`` is set to ``true`` then
       ``s`` will be fully copied into the new instance. If it is ``false`` a
       shallow copy will be made such that any in-place modifications to the new
       string may appear in ``s``. It is the responsibility of the user to
@@ -209,7 +209,7 @@ module String {
     }
 
     /*
-      Construct a new string from the `c_string` `cs`. If `isowned` is set to
+      Initialize a new string from the `c_string` `cs`. If `isowned` is set to
       true, the backing buffer will be freed when the new record is destroyed.
       If `needToCopy` is set to true, the `c_string` will be copied into the
       record, otherwise it will be used directly. It is the responsibility of
@@ -225,7 +225,7 @@ module String {
     }
 
     /*
-      Construct a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
+      Initialize a new string from `buff` ( `c_ptr(uint(8))` ). `size` indicates
       the total size of the buffer available, while `len` indicates the current
       length of the string in the buffer (the common case would be `size-1` for
       a C-style string). If `isowned` is set to true, the backing buffer will be
@@ -234,7 +234,7 @@ module String {
       directly. It is the responsibility of the user to ensure that the
       underlying buffer is not freed if the `c_string` is not copied in.
      */
-    // This constructor can cause a leak if isowned = false and needToCopy = true
+    // This initializer can cause a leak if isowned = false and needToCopy = true
     proc init(buff: bufferType, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
       this.isowned = isowned;
