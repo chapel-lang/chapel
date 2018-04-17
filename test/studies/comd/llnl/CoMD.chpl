@@ -568,7 +568,7 @@ proc createFccLattice(lat : real) : void {
     on locGrid[ijk] {
       const MyDom = Grid[ijk];
       const force = MyDom.force;
-      const name : string   = force.name;
+      const name : string = force.name;
       const mass : real = force.mass;
       const atomicNumber : int  = force.atomicNumber;
 local {

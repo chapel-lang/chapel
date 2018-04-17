@@ -166,6 +166,11 @@ module String {
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
 
+    pragma "no doc"
+    proc init() {
+      // Let compiler insert defaults
+    }
+
     /*
       Construct a new string from ``s``. If ``isowned`` is set to ``true`` then
       ``s`` will be fully copied into the new instance. If it is ``false`` a
@@ -174,10 +179,11 @@ module String {
       ensure that the underlying buffer is not freed while being used as part
       of a shallow copy.
      */
-    proc string(s: string, isowned: bool = true) {
+    proc init(s: string, isowned: bool = true) {
       const sRemote = s.locale_id != chpl_nodeID;
       const sLen = s.len;
       this.isowned = isowned;
+      this.complete();
       // Don't need to do anything if s is an empty string
       if sLen != 0 {
         this.len = sLen;
@@ -210,9 +216,10 @@ module String {
       the user to ensure that the underlying buffer is not freed if the
       `c_string` is not copied in.
      */
-    proc string(cs: c_string, length: int = cs.length,
+    proc init(cs: c_string, length: int = cs.length,
                 isowned: bool = true, needToCopy:  bool = true) {
       this.isowned = isowned;
+      this.complete();
       const cs_len = length;
       this.reinitString(cs:bufferType, cs_len, cs_len+1, needToCopy);
     }
@@ -228,9 +235,10 @@ module String {
       underlying buffer is not freed if the `c_string` is not copied in.
      */
     // This constructor can cause a leak if isowned = false and needToCopy = true
-    proc string(buff: bufferType, length: int, size: int,
+    proc init(buff: bufferType, length: int, size: int,
                 isowned: bool = true, needToCopy: bool = true) {
       this.isowned = isowned;
+      this.complete();
       this.reinitString(buff, length, size, needToCopy);
     }
 
@@ -1334,75 +1342,6 @@ module String {
 
   } // end record string
 
-
-  pragma "donor fn"
-  pragma "auto copy fn"
-  pragma "no doc"
-  proc chpl__autoCopy(s: string) {
-    // This pragma may be unnecessary.
-    pragma "no auto destroy"
-    var ret: string;
-    const slen = s.len; // cache the remote copy of len
-    if slen != 0 {
-      if _local || s.locale_id == chpl_nodeID {
-        if s.isowned {
-          ret.buff = chpl_here_alloc(s._size,
-                                    offset_STR_COPY_DATA): bufferType;
-          c_memcpy(ret.buff, s.buff, s.len);
-          ret.buff[s.len] = 0;
-        } else {
-          ret.buff = s.buff;
-        }
-        ret.isowned = s.isowned;
-      } else {
-        ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
-        ret.isowned = true;
-      }
-      ret.len = slen;
-      ret._size = slen+1;
-    }
-    return ret;
-  }
-
-  /*
-   * NOTES: Just a word on memory allocation in the generated code.
-   * Any function that returns a string copies the returned value
-   * including the c_string via a call to chpl__initCopy().  The
-   * copied value is returned, and the original is destroyed on the
-   * way out.  I'd really like to figure out a way to pass back the
-   * original string without copying it.  I think I might be able to
-   * do it by putting some sort of flag in the string record that is
-   * used by initCopy().
-   * TODO: Check if ^ is still true w/ the new AMM
-   * TODO: Do we need an initCopy for strings?  If not, this clause can be removed.
-   */
-  pragma "init copy fn"
-  pragma "no doc"
-  proc chpl__initCopy(s: string) {
-    // This pragma may be unnecessary.
-    pragma "no auto destroy"
-    var ret: string;
-    const slen = s.len; // cache the remote copy of len
-    if slen != 0 {
-      if _local || s.locale_id == chpl_nodeID {
-        if s.isowned {
-          ret.buff = chpl_here_alloc(s._size,
-                                    offset_STR_COPY_DATA): bufferType;
-          c_memcpy(ret.buff, s.buff, s.len);
-          ret.buff[s.len] = 0;
-        } else {
-          ret.buff = s.buff;
-        }
-        ret.isowned = s.isowned;
-      } else {
-        ret.buff = copyRemoteBuffer(s.locale_id, s.buff, slen);
-        ret.isowned = true;
-      }
-      ret.len = slen;
-      ret._size = slen+1;
-    }
-    return ret;
-  }
 
   //
   // Assignment functions

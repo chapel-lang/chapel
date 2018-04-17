@@ -5100,6 +5100,8 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
+
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
@@ -5112,15 +5114,23 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true  &&
-             isSyncType(srcType)               == false &&
-             isSingleType(srcType)             == false)  {
+  } else if (isRecordWithInitializers(srcType) == true &&
+             isParamString == false &&
+             isSyncType(srcType) == false &&
+             isSingleType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
     // The LHS will "own" the record
     if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
         rhs->symbol()->hasFlag(FLAG_TEMP)                == true) {
+      dst->type       = src->type;
+
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveMove(call);
+    } else if (rhs->symbol()->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // Don't need to copy string literals
       dst->type       = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
