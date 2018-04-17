@@ -1,4 +1,4 @@
-module Shared {
+module TestHelpers {
   use LAPACK;
   param default_epsilon: real = 10.0e-14;  
 
