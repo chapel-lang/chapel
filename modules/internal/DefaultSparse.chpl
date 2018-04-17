@@ -36,7 +36,7 @@ module DefaultSparse {
 
     proc init(param rank, type idxType, dist: DefaultDist,
         parentDom: domain) {
-      super.init(rank=rank, idxType=idxType, parentDom=parentDom);
+      super.init(rank, idxType, parentDom);
 
       this.dist = dist;
     }
