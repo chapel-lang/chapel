@@ -21,14 +21,7 @@ enum myenum {
   c = b:uint + 2
 }
 
-proc writeint(x:int) {
-  writef(" int %xi\n", x);
-}
-proc writeint(x:uint) {
-  writef("uint %xu\n", x);
-}
-
 var t = myenum.a;
-writeint(t);
-writeint(myenum.b);
-writeint(myenum.c);
+writeln(t, " ", t:uint);
+writeln(myenum.b, " ", myenum.b:uint);
+writeln(myenum.c, " ", myenum.c:uint);
