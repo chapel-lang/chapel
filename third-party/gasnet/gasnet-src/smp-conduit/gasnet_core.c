@@ -90,9 +90,9 @@ static void gasnetc_bootstrapBarrier(void) {
 
 static int *gasnetc_fds = NULL;
 
-#define GASNETC_DEFAULT_EXITTIMEOUT_MAX       20.
-#define GASNETC_DEFAULT_EXITTIMEOUT_MIN       10.
-#define GASNETC_DEFAULT_EXITTIMEOUT_FACTOR     0.25
+#define GASNETC_DEFAULT_EXITTIMEOUT_MAX       5.
+#define GASNETC_DEFAULT_EXITTIMEOUT_MIN       1.
+#define GASNETC_DEFAULT_EXITTIMEOUT_FACTOR    0.1
 static double gasnetc_exittimeout = GASNETC_DEFAULT_EXITTIMEOUT_MAX;
 
 static struct gasnetc_exit_data {
