@@ -168,7 +168,6 @@ module ChapelDistribution {
   // Abstract domain classes
   //
   pragma "base domain"
-  pragma "use default init"
   class BaseDom {
     // The common case seems to be local access to this class, so we
     // will use explicit processor atomics, even when network
@@ -180,6 +179,9 @@ module ChapelDistribution {
     var _arrsLock: atomicbool; //   and lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
+
+    proc init() {
+    }
 
     proc deinit() {
     }
