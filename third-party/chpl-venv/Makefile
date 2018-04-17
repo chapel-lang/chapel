@@ -28,16 +28,20 @@ check-exes: check-python
 $(CHPL_VENV_INSTALL_DIR):
 	mkdir -p $@
 
-# Install pip to ensure we have an updated version
+# Install pip via get-pip.py to ensure we have an updated version
 $(PIP): $(CHPL_VENV_INSTALL_DIR)
-	(cd install && curl -O https://bootstrap.pypa.io/get-pip.py &&\
+	if [ -z "$$CHPL_PIP" ]; then\
+	(cd install && curl -O $(GETPIP) &&\
 	export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) &&\
-	$(PYTHON) get-pip.py --user)
+	$(PYTHON) get-pip.py --user)\
+	fi
 
 # Install virtualenv program.
+# This installation overwrites the previous bin/ & lib/ directory of pip
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
 	export PYTHONPATH="$(CHPL_VENV_INSTALL_DIR):$(PIPLIBS):$$PYTHONPATH" &&\
-	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
+	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed \
+	  --target=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
 virtualenv: $(CHPL_VENV_VIRTUALENV)
