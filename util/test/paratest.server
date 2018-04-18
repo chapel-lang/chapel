@@ -103,6 +103,9 @@ sub collect_logs {
     }
 
     systemd ("echo \\[Parallel testing started at $starttime\\] > $fin_log");
+    # Keep the individual logs upon failure.
+    !$? or die "Could not set up final log '$fin_log': $?\n";
+
     print "Collecting logs to $fin_log\n";
     foreach $log (sort @logs) {
         if (-e $log) {
@@ -354,6 +357,8 @@ sub feed_nodes {
       if ($memleaksflag) {
           print "Collecting memleaks logs to $memleaks\n";
           systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+          # Keep the individual logs upon failure.
+          !$? or die "Could not collect memleaks logs: $?\n";
           systemd("rm -f $logdir/tmp.*.memleaks");
       }
     }
