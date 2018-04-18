@@ -37,10 +37,9 @@ $(PIP): $(CHPL_VENV_INSTALL_DIR)
 	fi
 
 # Install virtualenv program.
-# This installation overwrites the previous bin/ & lib/ directory of pip
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
 	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
-	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed \
+	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed  --no-warn-script-location\
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
