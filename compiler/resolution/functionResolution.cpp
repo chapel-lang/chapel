@@ -6017,7 +6017,7 @@ static void handleUnstableNewError(CallExpr* newExpr) {
         if (se == checkSe) {
           // OK
         } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
-          if (parentCall->isNamed("chpl__toraw") || // TODO -- remove case
+          if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
               parentCall->isNamed("chpl__delete") || // TODO -- remove case
               parentCall->isNamed("chpl__buildDistValue") ||
               parentCall->isNamed("chpl_fix_thrown_error")) {
@@ -6031,8 +6031,13 @@ static void handleUnstableNewError(CallExpr* newExpr) {
             // TODO -- enable warning for internal/standard modules
             // along with updating them.
             if (newExpr->getModule()->modTag == MOD_USER) {
-              USR_WARN(newExpr, "new in is unstable - "
-                                "use 'new raw' or 'new owned'");
+              USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
+              USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                                 "'new owned %s' or "
+                                 "'new shared %s'",
+                                 newType->symbol->name,
+                                 newType->symbol->name,
+                                 newType->symbol->name);
             }
           }
         }
