@@ -103,8 +103,8 @@ sub collect_logs {
     }
 
     systemd ("echo \\[Parallel testing started at $starttime\\] > $fin_log");
-    print "Collecting logs to $fin_log\n" if $verbose;
-    foreach $log (@logs) {
+    print "Collecting logs to $fin_log\n";
+    foreach $log (sort @logs) {
         if (-e $log) {
             print "Merging $log\n" if $verbose;
             open GLOG, $log or die "Cannot open log '$log'\n";
@@ -350,7 +350,9 @@ sub feed_nodes {
       }
 
       $endtime = `date`; chomp $endtime;
+      print "\n";
       if ($memleaksflag) {
+          print "Collecting memleaks logs to $memleaks\n";
           systemd("cat $logdir/tmp.*.memleaks > $memleaks");
           systemd("rm -f $logdir/tmp.*.memleaks");
       }
