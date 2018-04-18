@@ -140,7 +140,7 @@ proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
 /* Copy the value of the replicated variable `replicatedVar` on each locale
    into the element of the array `collected` that corresponds to that locale.*/
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
-  where replicatedVar._value.type: ReplicatedArr
+  where _to_borrowed(replicatedVar._value.type): ReplicatedArr
 {
   var targetLocales = _rcTargetLocalesHelper(replicatedVar);
   assert(replicatedVar.domain == rcDomainBase);
