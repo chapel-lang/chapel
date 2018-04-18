@@ -4,8 +4,9 @@ use utilities;
 // + reduce (shape=DIMS) ARR
 
 proc plusPR(DIMS,ARR) throws {
-  const OP = new Owned(new SumReduceScanOp(eltType=ARR.eltType));
-  return ARR.domain.dist.dsiPartialReduce(OP.borrow(), DIMS, ARR);
+  const OP = new unmanaged SumReduceScanOp(eltType=ARR.eltType);
+  defer { delete OP; }
+  return ARR.domain.dist.dsiPartialReduce(OP, DIMS, ARR);
 }
 
 proc DefaultDist.dsiPartialReduce(const reduceOp, const resDimSpec,
@@ -17,10 +18,10 @@ proc DefaultDist.dsiPartialReduce(const reduceOp, const resDimSpec,
   const     srcDims = srcDom.dims();
 
   const (resDom, resDims) =
-    partRedCheckAndCreateResultDimensions(this, resDimSpec, srcArr, srcDims);
+    partRedCheckAndCreateResultDimensions(_to_unmanaged(this), resDimSpec, srcArr, srcDims);
 
   var resArr: [resDom] srcArr.eltType = reduceOp.identity;
-  const resReduceOp = new (reduceOp.type)(eltType=resArr.type);
+  const resReduceOp = new unmanaged (reduceOp.type)(eltType=resArr.type);
 
   forall (srcIdx, srcElm) in zip(srcDom, srcArr)
     with (resReduceOp reduce resArr)
