@@ -1002,7 +1002,7 @@ static int gasnetc_load_settings(void) {
     default: fprintf(stderr,
                      "WARNING: ignoring invalid GASNET_MAX_MTU value %d.\n",
                      i);
-             /* fall through to "auto" case: */ GASNETI_FALLTHROUGH
+             /* fall through to "auto" case: */
   case    0: /* TODO: "automatic" might be more sophisticated than using the maximum */
   case   -1: gasnetc_max_mtu = 0; /* Use port's active_mtu */
              break;

@@ -24,7 +24,6 @@ as follows:
 * Pulled in an upstream fix for a gemini/aries multi-domain initialization bug:
    - https://bitbucket.org/berkeleylab/gasnet/commits/ed2fd98eb
 * Pulled in an upstream performance improvement for InfiniBand:
-   - https://bitbucket.org/berkeleylab/gasnet/commits/79315e5fe
    - https://bitbucket.org/berkeleylab/gasnet/commits/5cb86a7e0
 * Pulled in an upstream fix for slow uncoordinated shutdowns with segment smp:
    - https://bitbucket.org/berkeleylab/gasnet/commits/a636c641d
