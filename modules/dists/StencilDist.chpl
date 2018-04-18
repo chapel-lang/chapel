@@ -621,7 +621,7 @@ proc StencilDom.init(param rank : int,
                      dist : Stencil(rank, idxType, ignoreFluff),
                      fluff : rank*idxType,
                      periodic : bool = false) {
-  super.init(rank=rank, idxType=idxType, stridable=stridable);
+  super.init(rank, idxType, stridable);
   this.ignoreFluff = ignoreFluff;
   this.dist = dist;
   this.fluff = fluff;
