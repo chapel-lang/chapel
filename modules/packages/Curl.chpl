@@ -366,7 +366,6 @@ proc file.perform():bool throws {
    for freeing the slist when they are done with it with :proc:`slist.free`.
 
 */
-pragma "use default init"
 record slist {
   pragma "no doc"
   var home: locale = here;
