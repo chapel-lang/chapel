@@ -206,7 +206,7 @@ class AbstractJob(object):
         :rtype: bool
         :returns: True when testing KNL
         """
-        return chpl_arch.get('target') == 'mic-knl'
+        return chpl_arch.get('target').arch == 'mic-knl'
 
     def _qsub_command_base(self, output_file):
         """Returns base qsub command, without any resource listing.

@@ -23,7 +23,7 @@ chpl_env = p.communicate()[0]
 
 defaultLinkStyle = 'dynamically'
 for l in chpl_env.split('\n'):
-    env = l.split('=')
+    env = l.split('=', 1)
     var = env[0].strip()
     if var != '':
         val = env[1].strip()
