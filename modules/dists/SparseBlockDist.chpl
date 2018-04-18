@@ -202,7 +202,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiBuildArray(type eltType) {
     var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
-        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=this);
+        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=_to_unmanaged(this));
     arr.setup();
     return arr;
   }

@@ -619,7 +619,7 @@ proc StencilDom.init(param rank : int,
                      type idxType,
                      param stridable : bool,
                      param ignoreFluff : bool,
-                     dist : Stencil(rank, idxType, ignoreFluff),
+                     dist : unmanaged Stencil(rank, idxType, ignoreFluff),
                      fluff : rank*idxType,
                      periodic : bool = false) {
   super.init(rank, idxType, stridable);
