@@ -27,21 +27,13 @@
 module List {
 
 pragma "no doc"
+pragma "use default init"
 class listNode {
   type eltType;
   var data: eltType;
   var next: listNode(eltType);
 }
 
-
-  pragma "no doc"
-  pragma "init copy fn"
-  proc chpl__initCopy(l: list(?t)) {
-    var newL: list(t);
-    for i in l do
-      newL.append(i);
-    return newL;
-  }
 
   pragma "no doc"
   proc =(ref l1: list(?t), const ref l2: list(?t2)) {
@@ -74,6 +66,21 @@ record list {
     The number of nodes in the list.
    */
   var length: int;
+
+  pragma "no doc"
+  proc init(type eltType, first : listNode(eltType) = nil, last : listNode(eltType) = nil) {
+    this.eltType = eltType;
+    this.first = first;
+    this.last = last;
+  }
+
+  pragma "no doc"
+  proc init(l : list(?t)) {
+    this.eltType = t;
+    this.complete();
+    for i in l do
+      this.append(i);
+  }
 
   /*
      Synonym for length.
