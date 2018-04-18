@@ -270,7 +270,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 }
 
 
-proc Replicated.dsiClone(): this.type {
+proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
   return new unmanaged Replicated(targetLocales);
 }
