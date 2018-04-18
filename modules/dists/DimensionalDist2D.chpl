@@ -460,12 +460,12 @@ proc DimensionalDist2D.checkInvariants(): void {
   assert(dataParMinGranularity > 0, "DimensionalDist2D-dataParMinGranularity");
 }
 
-proc DimensionalDist2D.dsiClone(): this.type {
+proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
   _traceddd("DimensionalDist2D.dsiClone");
   checkInvariants();
 
   // do this simple thing, until we find out that we need something else
-  return this;
+  return _to_unmanaged(this);
 }
 
 
