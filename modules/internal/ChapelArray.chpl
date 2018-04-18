@@ -792,7 +792,7 @@ module ChapelArray {
   proc isRectangularDom(d: domain) param {
     proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
     proc isRectangularDomClass(dc) param return false;
-    return isRectangularDomClass(d._value);
+    return isRectangularDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if the argument ``a`` is an array with a rectangular
@@ -813,7 +813,7 @@ module ChapelArray {
   proc isAssociativeDom(d: domain) param {
     proc isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
     proc isAssociativeDomClass(dc) param return false;
-    return isAssociativeDomClass(d._value);
+    return isAssociativeDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if ``a`` is an array with an associative domain. Otherwise
@@ -834,7 +834,7 @@ module ChapelArray {
   proc isOpaqueDom(d: domain) param {
     proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
     proc isOpaqueDomClass(dc) param return false;
-    return isOpaqueDomClass(d._value);
+    return isOpaqueDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if ``d`` is a sparse domain. Otherwise return false. */
