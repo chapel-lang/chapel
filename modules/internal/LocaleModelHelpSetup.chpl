@@ -111,10 +111,10 @@ module LocaleModelHelpSetup {
     // current node.  For this reason (as well), the constructor (or
     // at least this setup method) must be run on the node it is
     // intended to describe.
-    var comm, spawnfn : c_string;
+    var spawnfn: c_string;
     extern proc chpl_nodeName() : c_string;
     // sys_getenv returns one on success.
-    if sys_getenv(c"CHPL_COMM", comm) == 1 && comm == c"gasnet" &&
+    if CHPL_COMM == "gasnet" && CHPL_COMM_SUBSTRATE == "udp" &&
       sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L"
     then local_name = chpl_nodeName():string + "-" + _node_id:string;
     else local_name = chpl_nodeName():string;
