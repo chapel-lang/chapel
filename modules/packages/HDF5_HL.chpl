@@ -2484,7 +2484,7 @@ module HDF5_HL {
 
   extern record unnamedStruct5 {
     var present : uint(64);
-    var shared1 : uint(64);
+    var isShared : uint(64);
   }
 
   extern record H5O_hdr_info_t {
@@ -3244,8 +3244,8 @@ module HDF5_HL {
       H5open();
       return H5T_NATIVE_LDOUBLE_g;
     }
-
     //#endif
+
     proc H5T_NATIVE_B8 {
       H5open();
       return H5T_NATIVE_B8_g;
