@@ -5179,7 +5179,15 @@ FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
 
-  return resolveUninsertedCall(at, call, false);
+  FnSymbol* ret = resolveUninsertedCall(at, call, false);
+
+  // ret's instantiationPoint points to the dummy BlockStmt created by
+  // resolveUninsertedCall, so it needs to be updated.
+  if (ret != NULL) {
+    ret->instantiationPoint = at->symbol->instantiationPoint;
+  }
+
+  return ret;
 }
 
 /************************************* | **************************************
