@@ -63,13 +63,15 @@ _chpl ()
       COMPREPLY=( $( compgen -o plusdirs -f -X '!*.chpl' -- "${COMP_WORDS[COMP_CWORD]}" ) )
 
       if [ ${#COMPREPLY[@]} = 1 ]; then
-        if [ -d "$COMPREPLY" ]; then
+        local expanded=$(expandPath $COMPREPLY)
+        if [ -d $expanded ]; then
           LASTCHAR='/'
         fi
-        COMPREPLY=$(printf %q%s "$COMPREPLY" "$LASTCHAR")
+        COMPREPLY=$(printf %s%s "$COMPREPLY" "$LASTCHAR")
       else
         for ((i=0; i < ${#COMPREPLY[@]}; i++)); do
-          if [ -d "${COMPREPLY[$i]}" ]; then
+          local expanded=$(expandPath ${COMPREPLY[$i]})
+          if [ -d $expanded ]; then
             COMPREPLY[$i]=${COMPREPLY[$i]}/
           fi
         done
@@ -77,6 +79,26 @@ _chpl ()
     ;;
   esac
   return 0
+}
+
+expandPath() {
+  case $1 in
+    ~[+-]*)
+      local content content_q
+      printf -v content_q '%q' "${1:2}"
+      eval "content=${1:0:2}${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    ~*)
+      local content content_q
+      printf -v content_q '%q' "${1:1}"
+      eval "content=~${content_q}"
+      printf '%s\n' "$content"
+      ;;
+    *)
+      printf '%s\n' "$1"
+      ;;
+  esac
 }
 
 complete -o nospace -F _chpl chpl
