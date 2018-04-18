@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import collections
 import optparse
 import os
 import platform
@@ -440,6 +441,8 @@ def get_module_lcd_arch(platform_val, arch):
 @memoize
 def get(location, map_to_compiler=False, get_lcd=False):
 
+    arch_tuple = collections.namedtuple('arch_tuple', ['flag', 'arch'])
+
     if not location or location == "host":
         arch = overrides.get('CHPL_HOST_ARCH', '')
     elif location == 'target':
@@ -449,7 +452,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
 
     # fast path out for when the user has set arch=none
     if arch == 'none':
-        return (arch, arch)
+        return arch_tuple('none', arch)
 
     comm_val = chpl_comm.get()
     compiler_val = chpl_compiler.get(location)
@@ -479,15 +482,15 @@ def get(location, map_to_compiler=False, get_lcd=False):
                              "denominator processor type for this platform. "
                              "You may be unable to use the Chapel compiler\n")
         if is_known_arm(arch):
-            return ('cpu', arch)
+            return arch_tuple('cpu', arch)
         else:
-            return ('arch', arch)
+            return arch_tuple('arch', arch)
     elif 'pgi' in compiler_val:
-        return ('none', 'none')
+        return arch_tuple('none', 'none')
     elif 'cray' in compiler_val:
-        return ('none', 'none')
+        return arch_tuple('none', 'none')
     elif 'ibm' in compiler_val:
-        return ('none', 'none')
+        return arch_tuple('none', 'none')
 
     # Only try to do any auto-detection or verification when:
     # comm == none  -- The inverse means that we are probably cross-compiling.
@@ -544,7 +547,7 @@ def get(location, map_to_compiler=False, get_lcd=False):
     else:
         flag = 'none'
 
-    return (flag or 'none', arch or 'unknown')
+    return arch_tuple(flag or 'none', arch or 'unknown')
 
 
 def _main():
