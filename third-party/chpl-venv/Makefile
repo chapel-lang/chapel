@@ -30,16 +30,16 @@ $(CHPL_VENV_INSTALL_DIR):
 
 # Install pip via get-pip.py to ensure we have an updated version
 $(PIP): $(CHPL_VENV_INSTALL_DIR)
-	if [ -z "$$CHPL_PIP" ]; then\
-	  (cd install && curl -O $(GETPIP) &&\
-	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) &&\
-	  $(PYTHON) get-pip.py --user)\
+	if [ -z "$$CHPL_PIP" ]; then \
+	  (cd install && curl -O $(GETPIP) && \
+	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && \
+	  $(PYTHON) get-pip.py --user) \
 	fi
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
-	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed  --no-warn-script-location\
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
+	$(PYTHON) $(PIP) install -U --force-reinstall --ignore-installed \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
@@ -47,7 +47,7 @@ virtualenv: $(CHPL_VENV_VIRTUALENV)
 
 # Create the virtualenv.
 $(CHPL_VENV_VIRTUALENV_DIR): $(CHPL_VENV_VIRTUALENV)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	python $(CHPL_VENV_VIRTUALENV) --python=$(PYTHON) $@
 
 # Phony convenience target for creating virtualenv.
@@ -66,7 +66,7 @@ create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
 #
 # By calling `python .../path/to/pip ...`, this issue is circumvented.
 $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
@@ -75,7 +75,7 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	touch $(CHPL_VENV_TEST_REQS)
 
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
