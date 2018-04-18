@@ -186,9 +186,6 @@ class ReplicatedDom : BaseRectangularDom {
   var domRep: domain(rank, idxType, stridable);
 
   // local domain objects
-  // INIT TODO: Can we address these notes with initializers?
-  // NOTE: 'dist' must be initialized prior to 'localDoms'
-  // => currently have to use the default constructor
   // NOTE: if they ever change after the constructor - Reprivatize them
   var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
 
