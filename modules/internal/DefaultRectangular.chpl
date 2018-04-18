@@ -625,7 +625,7 @@ module DefaultRectangular {
 
     proc dsiLocalSubdomain() {
       if (this.locale == here) {
-        return _getDomain(this);
+        return _getDomain(_to_unmanaged(this));
       } else {
         var a: domain(rank, idxType, stridable);
         return a;
