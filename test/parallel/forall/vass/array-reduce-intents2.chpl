@@ -28,6 +28,7 @@ proc main {
   writeln("histoP = ", histoP);
 }
 
+pragma "use default init"
 class PlusReduceOp: ReduceScanOp {
   type eltType;
   var  value: eltType;
