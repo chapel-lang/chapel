@@ -846,12 +846,15 @@ module ChapelBase {
 
   pragma "end count"
   pragma "no default functions"
-  pragma "use default init"
   class _EndCount : _EndCountBase {
     type iType;
     type taskType;
     var i: iType;
     var taskCnt: taskType;
+    proc init(type iType, type taskType) {
+      this.iType = iType;
+      this.taskType = taskType;
+    }
   }
 
   // This function is called once by the initiating task.  No on
