@@ -72,14 +72,14 @@ class Private: BaseDist {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=this);
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
   }
 
   proc writeThis(x) {
     x <~> "Private Distribution\n";
   }
   // acts like a singleton
-  proc dsiClone() return this;
+  proc dsiClone() return _to_unmanaged(this);
 
   proc trackDomains() param return false;
   proc dsiTrackDomains()    return false;
@@ -109,7 +109,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType) {
-    return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+    return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this));
   }
 
   proc dsiNumIndices return numLocales;
@@ -167,9 +167,9 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
     if boundsChecking then
       if i < 0 || i >= numLocales then
         halt("array index out of bounds: ", i);
-    var privarr = this;
+    var privarr = _to_unmanaged(this);
     on Locales(i) {
-      privarr = chpl_getPrivatizedCopy(this.type, this.pid);
+      privarr = chpl_getPrivatizedCopy(_to_unmanaged(this.type), this.pid);
     }
     return privarr.data;
   }
