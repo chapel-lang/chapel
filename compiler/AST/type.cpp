@@ -1210,6 +1210,11 @@ bool isClassLike(Type* t) {
   return isClass(t) || isUnmanagedClassType(t);
 }
 
+bool isClassLikeOrNil(Type* t) {
+  if (t == dtNil) return true;
+  return isClassLike(t);
+}
+
 bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();

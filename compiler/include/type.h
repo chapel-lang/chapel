@@ -448,6 +448,7 @@ int  get_exponent_width(Type*);
 bool isClass(Type* t);
 bool isClassOrNil(Type* t);
 bool isClassLike(Type* t); // includes UnmanagedClassType & ClassType
+bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUnion(Type* t);
 
