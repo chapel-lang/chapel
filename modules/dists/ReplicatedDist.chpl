@@ -186,7 +186,7 @@ class ReplicatedDom : BaseRectangularDom {
   var domRep: domain(rank, idxType, stridable);
 
   // local domain objects
-  // NOTE: if they ever change after the constructor - Reprivatize them
+  // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] LocReplicatedDom(rank, idxType, stridable);
 
   proc numReplicands return localDoms.numElements;
