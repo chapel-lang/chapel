@@ -5,8 +5,11 @@ use LayoutCS;
 // + reduce (shape=DIMS) ARR
 
 proc plusPR(DIMS,ARR) throws {
-  const OP = new Owned(new SumReduceScanOp(eltType=ARR.eltType));
-  return ARR.domain.dist.dsiPartialReduce(OP.borrow(), DIMS, ARR);
+  const OP = new unmanaged SumReduceScanOp(eltType=ARR.eltType);
+  defer {
+    delete OP;
+  }
+  return ARR.domain.dist.dsiPartialReduce(OP, DIMS, ARR);
 }
 
 // At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()
