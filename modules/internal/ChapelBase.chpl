@@ -838,6 +838,7 @@ module ChapelBase {
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
+  pragma "use default init"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
@@ -850,6 +851,10 @@ module ChapelBase {
     type taskType;
     var i: iType;
     var taskCnt: taskType;
+    proc init(type iType, type taskType) {
+      this.iType = iType;
+      this.taskType = taskType;
+    }
   }
 
   // This function is called once by the initiating task.  No on
@@ -1825,6 +1830,7 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
+  pragma "use default init"
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
