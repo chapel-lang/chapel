@@ -29,5 +29,6 @@ proc DefaultDist.dsiPartialReduce(const reduceOp, const resDimSpec,
     reduceOp.accumulateOntoState(resArr[resIdx], srcElm);
   }
 
+  delete resReduceOp;
   return  resArr;
 }
