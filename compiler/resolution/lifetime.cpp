@@ -562,7 +562,7 @@ ScopeLifetime LifetimeState::lifetimeForCallReturn(CallExpr* call) {
   //  * the result of 'new' is currently user-managed
   //  * ref fields are not supported in classes
   //    so they can't capture a ref argument
-  if (isClass(call->typeInfo()) &&
+  if (isClassLike(call->typeInfo()) &&
       (calledFn->hasFlag(FLAG_CONSTRUCTOR) ||
        0 == strcmp("_new", calledFn->name))) {
     return infiniteScopeLifetime();
@@ -654,7 +654,7 @@ ScopeLifetime LifetimeState::lifetimeForPrimitiveReturn(CallExpr* call) {
       // Use the referent part of the actual's lifetime
       argLifetime.referent = temp.referent;
     }
-    if (returnsRef && isClass(actualSym->getValType())) {
+    if (returnsRef && isClassLike(actualSym->getValType())) {
       // returning a ref to a class field should make the
       // lifetime of the ref == the lifetime of the borrow
       argLifetime.referent = temp.borrowed;
@@ -839,7 +839,7 @@ bool InferLifetimesVisitor::enterCallExpr(CallExpr* call) {
         SymExpr* se = toSymExpr(rhsExpr);
         INT_ASSERT(se);
         // TODO - this doesn't handle records using default =
-        if (call->isPrimitive(PRIM_MOVE) || isClass(se->symbol()->type)) {
+        if (call->isPrimitive(PRIM_MOVE) || isClassLike(se->symbol()->type)) {
           // Propagate lifetime for refs across moves
           // lifetime for classes across any of the options
           lt = lifetimes->lifetimeForSymbol(se->symbol());
@@ -1165,9 +1165,10 @@ static bool isSubjectToRefLifetimeAnalysis(Symbol* sym) {
 static bool recordContainsClassFields(AggregateType* at) {
 
   for_fields(field, at) {
-    if (isClass(field->type) &&
-        !typeHasInfiniteLifetime(field->type) &&
-        !field->hasFlag(FLAG_UNSAFE))
+    if (isClassLike(field->type) &&
+        (field->hasFlag(FLAG_OWNED) ||
+         (!typeHasInfiniteLifetime(field->type) &&
+          !field->hasFlag(FLAG_UNSAFE))))
       return true;
 
     if (isRecord(field->type) &&
@@ -1181,7 +1182,7 @@ static bool recordContainsClassFields(AggregateType* at) {
 static bool recordContainsOwnedClassFields(AggregateType* at) {
 
   for_fields(field, at) {
-    if (isClass(field->type) &&
+    if (isClassLike(field->type) &&
         field->hasFlag(FLAG_OWNED))
       return true;
 
@@ -1196,7 +1197,7 @@ static bool recordContainsOwnedClassFields(AggregateType* at) {
 static bool recordContainsBorrowedClassFields(AggregateType* at) {
 
   for_fields(field, at) {
-    if (isClass(field->type) &&
+    if (isClassLike(field->type) &&
         !typeHasInfiniteLifetime(field->type) &&
         !field->hasFlag(FLAG_UNSAFE) &&
         !field->hasFlag(FLAG_OWNED))
@@ -1222,7 +1223,7 @@ static bool containsOwnedClass(Type* type) {
 static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   type = type->getValType();
 
-  if (!(isRecord(type) || isClass(type)))
+  if (!(isRecord(type) || isClassLike(type)))
     return false;
 
   bool isRecordContainingFieldsSubjectToAnalysis = false;
@@ -1239,7 +1240,7 @@ static bool isSubjectToBorrowLifetimeAnalysis(Type* type) {
   //  - a pointer type
   //  - a record containing refs/class pointers
   //    (or an iterator record)
-  if (!(isClass(type) ||
+  if (!(isClassLike(type) ||
         isRecordContainingFieldsSubjectToAnalysis))
     return false;
 
@@ -1307,8 +1308,8 @@ static bool isAnalyzedMoveOrAssignment(CallExpr* call) {
   // (we assume that a user supplied = function for a class with owned
   //  pointers handles lifetimes in a reasonable manner)
   if (calledFn && 0 == strcmp("=", calledFn->name)) {
-    if (isClassOrNil(call->get(1)->getValType()) &&
-        isClassOrNil(call->get(2)->getValType()))
+    if (isClassLikeOrNil(call->get(1)->getValType()) &&
+        isClassLikeOrNil(call->get(2)->getValType()))
       // Only consider same-type class assignment overloads
       // (or those where one type is nil)
       if (call->get(1)->getValType() == call->get(2)->getValType() ||
