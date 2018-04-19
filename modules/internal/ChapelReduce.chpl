@@ -158,7 +158,7 @@ module ChapelReduce {
       value = min(value, x.value);
     }
     proc generate() return value;
-    proc clone() return new MinReduceScanOp(eltType=eltType);
+    proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
   }
 
   class LogicalAndReduceScanOp: ReduceScanOp {

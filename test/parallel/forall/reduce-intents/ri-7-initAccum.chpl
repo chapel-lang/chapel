@@ -4,7 +4,7 @@ config const n = 3;
 
 var AAA: [1..n] int = 1..n;
 
-const plusOp = new PlusReduceOp(eltType = int);
+const plusOp = new unmanaged PlusReduceOp(eltType = int);
 
 var xPlus = [400, 500];
 var xUser = 600;
@@ -36,5 +36,5 @@ class PlusReduceOp: ReduceScanOp {
   proc initialAccumulate(elm)  { writef("initialAccumulate(%t)\n", elm); accumulate(elm); }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
 }
