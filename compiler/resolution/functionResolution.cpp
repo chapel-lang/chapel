@@ -5553,7 +5553,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     moveFinalize(call);
 
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
-      Type* seType = se->symbol()->type;
+      Type* seType = se->symbol()->getValType();
 
       if (isNonGenericRecordWithInitializers(seType) == true) {
         Expr*     callLhs  = call->get(1)->remove();
