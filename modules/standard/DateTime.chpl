@@ -246,13 +246,13 @@ module DateTime {
   }
 
 
-  /* constructors/factories for date values */
+  /* initializers/factories for date values */
 
   pragma "no doc"
   proc date.init() {
   }
 
-  /* Construct a new `date` value from a `year`, `month`, and `day`. All
+  /* Initialize a new `date` value from a `year`, `month`, and `day`. All
      three arguments are required and must be in valid ranges.  The
      valid ranges are:
 
@@ -548,9 +548,9 @@ module DateTime {
     }
   }
 
-  /* constructors/factories for time values */
+  /* initializers/factories for time values */
 
-  /* Construct a new `time` value from the given `hour`, `minute`, `second`,
+  /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
   proc time.init(hour=0, minute=0, second=0, microsecond=0,
@@ -896,13 +896,13 @@ module DateTime {
     }
   }
 
-  /* Constructors/factories for datetime values */
+  /* initializers/factories for datetime values */
 
   pragma "no doc"
   proc datetime.init() {
   }
 
-  /* Construct a new `datetime` value from the given `year`, `month`, `day`,
+  /* Initialize a new `datetime` value from the given `year`, `month`, `day`,
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
@@ -1489,9 +1489,9 @@ module DateTime {
     }
   }
 
-  /* Constructors/factories for timedelta values */
+  /* initializers/factories for timedelta values */
 
-  /* Construct a `timedelta` object.  All arguments are optional and
+  /* Initialize a `timedelta` object.  All arguments are optional and
      default to 0. Since only `days`, `seconds` and `microseconds` are
      stored, the other arguments are converted to days, seconds
      and microseconds. */

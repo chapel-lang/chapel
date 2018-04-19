@@ -39,18 +39,6 @@ module ChapelError {
     pragma "no doc"
     var thrownFileId:int(32);
 
-    pragma "no doc"
-    proc msg: string {
-      compilerError("msg field in Error is no longer available");
-      return "";
-    }
-
-    pragma "no doc"
-    proc init(_msg:string) {
-      _next = nil;
-      compilerError("Error constructor accepting a string is no longer available");
-    }
-
     /* Construct an Error */
     proc init() {
       _next = nil;

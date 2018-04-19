@@ -48,7 +48,7 @@ use CommDiagnostics;
 config param debugStencilDist = false;
 config param debugStencilDistBulkTransfer = false;
 
-// TODO: part of constructor?
+// TODO: part of initializer?
 config param stencilDistAllowPackedUpdateFluff = true;
 
 // Instructs the _packedUpdate method to only perform the optimized buffer
@@ -133,11 +133,11 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
   distribution.
 
-  The ``Stencil`` class constructor is defined as follows:
+  The ``Stencil`` class initializer is defined as follows:
 
     .. code-block:: chapel
 
-      proc Stencil(
+      proc Stencil.init(
         boundingBox: domain,
         targetLocales: [] locale  = Locales,
         dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
@@ -382,7 +382,7 @@ private proc makeZero(param rank : int, type idxType) {
   return ret;
 }
 //
-// Stencil constructor for clients of the Stencil distribution
+// Stencil initializer for clients of the Stencil distribution
 //
 proc Stencil.init(boundingBox: domain,
                   targetLocales: [] locale = Locales,
