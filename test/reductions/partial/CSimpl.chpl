@@ -1,5 +1,6 @@
 use OwnedObject;
 use utilities;
+use LayoutCS;
 
 // + reduce (shape=DIMS) ARR
 
@@ -8,8 +9,10 @@ proc plusPR(DIMS,ARR) throws {
   return ARR.domain.dist.dsiPartialReduce(OP.borrow(), DIMS, ARR);
 }
 
-proc DefaultDist.dsiPartialReduce(const reduceOp, const resDimSpec,
-                                  const srcArr)
+// At the moment, this is an exact copy of DefaultDist.dsiPartialReduce()
+// except for the receiver class.
+proc CS.dsiPartialReduce(const reduceOp, const resDimSpec,
+                         const srcArr)
   throws
 {
   partRedEnsureArray(srcArr);
