@@ -1060,7 +1060,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc chpl__serialize()
-      where this._value.type : DefaultRectangularDom {
+      where _to_borrowed(this._value.type) : DefaultRectangularDom {
 
       return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
@@ -1069,8 +1069,8 @@ module ChapelArray {
        support non-DefaultRectangular domains.
     pragma "no doc"
     proc chpl__serialize()
-      where (this._value.type : BaseRectangularDom) &&
-            !(this._value.type : DefaultRectangularDom) &&
+      where (_to_borrowed(this._value.type) : BaseRectangularDom) &&
+            !(_to_borrowed(this._value.type) : DefaultRectangularDom) &&
             this._value.dsiSupportsPrivatization {
 
         return new _serialized_domain(rank, idxType, stridable, dims(),
@@ -1767,7 +1767,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
+    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularDom {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
              _value.locale.id, " from locale ", here.id);
