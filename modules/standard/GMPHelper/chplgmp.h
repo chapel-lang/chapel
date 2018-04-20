@@ -44,6 +44,7 @@ static void chpl_gmp_init(void) {
   mp_set_memory_functions(chpl_gmp_alloc, chpl_gmp_realloc, chpl_gmp_free);
 }
 */
+/*
 static void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from) {
   // First, resize our destination appropriately.
   mpz_realloc2(ret, from._mp_alloc * mp_bits_per_limb);
@@ -62,7 +63,9 @@ static void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from) {
                     0,
                     0);
 }
+*/
 
+/*
 static void chpl_gmp_get_randstate(gmp_randstate_t        not_inited_state,
                             int64_t                src_locale,
                             __gmp_randstate_struct from) {
@@ -74,10 +77,45 @@ static void chpl_gmp_get_randstate(gmp_randstate_t        not_inited_state,
   mpz_init(not_inited_state[0]._mp_seed);
 
   chpl_gmp_get_mpz(not_inited_state[0]._mp_seed, src_locale, from._mp_seed[0]);
+}*/
+
+static inline mp_size_t chpl_gmp_mpz_struct_nalloc(__mpz_struct from) {
+  return from._mp_alloc;
 }
 
-static uint64_t chpl_gmp_mpz_nlimbs(__mpz_struct from) {
-  return __GMP_ABS ( from._mp_size );
+static inline mp_size_t chpl_gmp_mpz_struct_sign_size(__mpz_struct from) {
+  return from._mp_size;
+}
+
+static inline mp_limb_t* chpl_gmp_mpz_struct_limbs(__mpz_struct from) {
+  // It's important that this function not dereference the limbs pointer
+  // as it might be stored on another locale.
+  return from._mp_d;
+}
+
+static inline void chpl_gmp_mpz_set_sign_size(mpz_t dst, mp_size_t sign_size) {
+  dst[0]._mp_size = sign_size;
+}
+
+// These functions exists so that we can transfer the state in a gmp_randstate_t
+// across locales. GMP does not currently provide a public API interface to
+// extract the state of a gmp_randstate_t random number generator,
+// other than by accessing the _mp_seed field directly as we do here.
+static
+__mpz_struct chpl_gmp_randstate_read_state(__gmp_randstate_struct state) {
+  return state._mp_seed[0];
+}
+static
+void chpl_gmp_randstate_set_state(gmp_randstate_t state, mpz_t src) {
+  state[0]._mp_seed[0]._mp_alloc = src[0]._mp_alloc;
+  state[0]._mp_seed[0]._mp_size = src[0]._mp_size;
+  state[0]._mp_seed[0]._mp_d = src[0]._mp_d;
+}
+
+static inline
+int chpl_gmp_randstate_same_algorithm(gmp_randstate_t a,
+                                      gmp_randstate_t b) {
+  return a[0]._mp_algdata._mp_lc == b[0]._mp_algdata._mp_lc;
 }
 
 /*

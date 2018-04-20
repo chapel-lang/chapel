@@ -150,7 +150,7 @@ module GMP {
   extern type mp_bitcnt_t     = c_ulong;
 
   /* The GMP ``mp_size_t``   type */
-  extern type mp_size_t       = size_t;
+  extern type mp_size_t       = c_long;
 
   /* The GMP ``mp_limb_t``   type. */
   extern type mp_limb_t       = uint(64);
@@ -169,7 +169,7 @@ module GMP {
   //
   //     typedef struct {
   //       int        _mp_alloc;  // capacity
-  //       int        _mp_size;   // current size
+  //       int        _mp_size;   // current size (sign is sign of the mpz)
   //       mp_limb_t* _mp_d;      // a packed vector of integers
   //     } __mpz_struct;
   //
@@ -236,6 +236,7 @@ module GMP {
 
   extern proc mpz_clear(ref x: mpz_t);
 
+  extern proc _mpz_realloc(ref x: mpz_t, new_alloc: mp_size_t);
   extern proc mpz_realloc2(ref x: mpz_t, n: mp_bitcnt_t);
 
 
@@ -805,6 +806,8 @@ module GMP {
 
   extern proc mpz_size(const ref x: mpz_t): size_t;
 
+  extern proc mpz_limbs_write(ref x: mpz_t, n: mp_size_t): c_ptr(mp_limb_t);
+  extern proc mpz_limbs_finish(ref x: mpz_t, s: mp_size_t);
 
   //
   // Floating-point Functions
@@ -1107,18 +1110,61 @@ module GMP {
   //private extern proc chpl_gmp_init();
 
   /* Get an MPZ value stored on another locale */
-  extern proc chpl_gmp_get_mpz(ref ret: mpz_t,
-                               src_local: int,
-                               from: __mpz_struct);
+  export proc chpl_gmp_get_mpz(ref ret: mpz_t,
+                        src_locale: int,
+                        in from: __mpz_struct,
+                        copy_allocated:bool = false) {
 
-  /* Get a randstate value stored on another locale */
-  private extern
-  proc chpl_gmp_get_randstate(not_inited_state: gmp_randstate_t,
-                              src_locale: int,
-                              from: __gmp_randstate_struct);
+    // Gather information from the source variable
+    var src_nalloc = chpl_gmp_mpz_struct_nalloc(from);
+    var src_sign_size = chpl_gmp_mpz_struct_sign_size(from);
+    var src_limbs_ptr = chpl_gmp_mpz_struct_limbs(from);
 
-  /* Return the number of limbs in an __mpz_struct */
-  private extern proc chpl_gmp_mpz_nlimbs(from: __mpz_struct) : uint(64);
+    // Compute the number of limbs used
+    var src_size:mp_size_t = 0;
+    if src_sign_size < 0 then
+      src_size = (-src_sign_size):mp_size_t;
+    else
+      src_size = src_sign_size:mp_size_t;
+
+    // Compute the size of the number to create & copy
+    var new_size:mp_size_t = src_size;
+    if copy_allocated then
+      new_size = src_nalloc;
+
+    // reallocate the limbs
+    _mpz_realloc(ret, new_size);
+
+    // get a pointer to the limbs
+    var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[1]);
+
+    __primitive("chpl_comm_array_get", dst_limbs_ptr[0],
+                                       src_locale, src_limbs_ptr[0],
+                                       new_size);
+
+    // Update the sign and size of the number
+    chpl_gmp_mpz_set_sign_size(ret, src_sign_size);
+  }
+
+  /* Return the number of limbs allocated in an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_nalloc(from: __mpz_struct) : mp_size_t;
+  /* Return the the number of limbs used with the sign of the mpz number
+     for an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_sign_size(from: __mpz_struct) : mp_size_t;
+  /* Set the sign and number of fields used in an mpz
+     sign taken from sign_size and the number of limbs used is its absolute
+     value. */
+  private extern proc chpl_gmp_mpz_set_sign_size(ref dst:mpz_t, sign_size:mp_size_t);
+  /* Return the pointer to the limbs in an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_limbs(from: __mpz_struct) : c_ptr(mp_limb_t);
+
+  /* Return the mpz struct storing RNG state */
+  private extern proc chpl_gmp_randstate_read_state(src:__gmp_randstate_struct):__mpz_struct;
+  /* Sets the mpz storing the RNG state */
+  private extern proc chpl_gmp_randstate_set_state(ref dst:gmp_randstate_t, state:mpz_t);
+  /* Returns 1 if the two RNGs are using the same algorithm */
+  private extern proc
+  chpl_gmp_randstate_same_algorithm(a:gmp_randstate_t, b:gmp_randstate_t):c_int;
 
   /* Get an mpz_t as a string */
   extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
@@ -1158,7 +1204,82 @@ module GMP {
       if a.locale == here {
         gmp_randinit_set(this.state, a.state);
       } else {
-        chpl_gmp_get_randstate(this.state, a.locale.id, a.state[1]);
+        // Figure out which known algo RNG a.state is using
+        var algo = 0;
+        on a.locale {
+
+          if algo == 0 {
+            var test:gmp_randstate_t;
+            gmp_randinit_default(test);
+            if chpl_gmp_randstate_same_algorithm(test, a.state) then
+              algo = 1;
+            gmp_randclear(test);
+          }
+          if algo == 0 {
+            var test:gmp_randstate_t;
+            gmp_randinit_mt(test);
+            if chpl_gmp_randstate_same_algorithm(test, a.state) then
+              algo = 2;
+            gmp_randclear(test);
+          }
+          if algo == 0 {
+            var test:gmp_randstate_t;
+            var num:mpz_t;
+            mpz_init(num);
+            mpz_set_ui(num, 117);
+            gmp_randinit_lc_2exp(test, num, 17, 7);
+            mpz_clear(num);
+            if chpl_gmp_randstate_same_algorithm(test, a.state) then
+              algo = 3;
+            gmp_randclear(test);
+          }
+          if algo == 0 {
+            var test:gmp_randstate_t;
+            gmp_randinit_lc_2exp_size(test, 17);
+            if chpl_gmp_randstate_same_algorithm(test, a.state) then
+              algo = 4;
+            gmp_randclear(test);
+          }
+          /*
+           This one exists in GMP 6 but isn't constructable from the above
+          if algo == 0 {
+            var test:gmp_randstate_t;
+            gmp_randinit_mt_noseed(test);
+            if chpl_gmp_randstate_same_algorithm(test, a.state) then
+              algo = 5;
+            gmp_randclear(test);
+          }*/
+        }
+
+        var localstate:gmp_randstate_t;
+
+        // Create a corresponding RNG with dummy seed
+        // and then replace its state with the state in a.
+        if algo == 1 {
+          gmp_randinit_default(localstate);
+        } else if algo == 2 {
+          gmp_randinit_mt(localstate);
+        } else if algo == 3 {
+          // The LCG doesn't store alloc_size
+          halt("Cannot copy this GMPRandom LCG across locales");
+        } else if algo == 4 {
+          halt("Cannot copy this GMPRandom LCG across locales");
+        } else {
+          halt("Cannot copy this GMPRandom across locales - unknown algorithm");
+        }
+
+
+        // Now reset the MPZ storing the state to be a local copy
+        // of the state in a.
+        var remoteMpz = chpl_gmp_randstate_read_state(a.state[1]);
+
+        var localMpz:mpz_t;
+        mpz_init(localMpz);
+
+        chpl_gmp_get_mpz(localMpz, a.locale.id, remoteMpz, copy_allocated=true);
+        chpl_gmp_randstate_set_state(localstate, localMpz);
+
+        gmp_randinit_set(this.state, localstate);
       }
     }
 
