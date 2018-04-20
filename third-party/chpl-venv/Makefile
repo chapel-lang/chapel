@@ -43,7 +43,7 @@ $(PIP): $(CHPL_VENV_INSTALL_DIR)
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
 	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
-	python $(PIP) install -U --force-reinstall --ignore-installed \
+	python -S $(PIP) install -U --force-reinstall --ignore-installed \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
