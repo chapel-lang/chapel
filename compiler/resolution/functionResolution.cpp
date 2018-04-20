@@ -4311,6 +4311,9 @@ void lvalueCheck(CallExpr* call) {
 
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
 
+      Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
+      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && calleeFn->isInitializer();
+
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
         INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
@@ -4329,7 +4332,7 @@ void lvalueCheck(CallExpr* call) {
           USR_FATAL_CONT(actual, "illegal lvalue in assignment");
         }
 
-      } else {
+      } else if (isInitParam == false) {
         ModuleSymbol* mod          = calleeFn->getModule();
         char          cn1          = calleeFn->name[0];
         const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
