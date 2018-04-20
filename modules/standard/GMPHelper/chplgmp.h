@@ -27,73 +27,26 @@
 
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm.h"
-/*
-static void* chpl_gmp_alloc(size_t sz) {
-  return chpl_mem_alloc(sz, CHPL_RT_MD_GMP, 0, 0);
-}
 
-static void* chpl_gmp_realloc(void* ptr, size_t old_size, size_t new_size) {
-  return chpl_mem_realloc( ptr, new_size, CHPL_RT_MD_GMP, 0, 0);
-}
-
-static void chpl_gmp_free(void* ptr, size_t old_size) {
-  chpl_mem_free( ptr, 0, 0);
-}
-
-static void chpl_gmp_init(void) {
-  mp_set_memory_functions(chpl_gmp_alloc, chpl_gmp_realloc, chpl_gmp_free);
-}
-*/
-/*
-static void chpl_gmp_get_mpz(mpz_t ret, int64_t src_locale, __mpz_struct from) {
-  // First, resize our destination appropriately.
-  mpz_realloc2(ret, from._mp_alloc * mp_bits_per_limb);
-
-  // Copy the _alloc and _size fields.
-  ret[0]._mp_alloc = from._mp_alloc;
-  ret[0]._mp_size  = from._mp_size;
-
-  // Next, use GASNET to move the pointer data.
-  chpl_gen_comm_get(ret[0]._mp_d,
-                    src_locale,
-                    from._mp_d,
-                    sizeof(mp_limb_t) * ret[0]._mp_alloc,
-                    CHPL_TYPE_uint64_t,
-                    CHPL_COMM_UNKNOWN_ID,
-                    0,
-                    0);
-}
-*/
-
-/*
-static void chpl_gmp_get_randstate(gmp_randstate_t        not_inited_state,
-                            int64_t                src_locale,
-                            __gmp_randstate_struct from) {
-  // Copy the rand state..
-  not_inited_state[0] = from;
-
-  // Clear the seed since it's going to be a local mpz.
-  memset(& not_inited_state[0]._mp_seed, 0, sizeof(mpz_t));
-  mpz_init(not_inited_state[0]._mp_seed);
-
-  chpl_gmp_get_mpz(not_inited_state[0]._mp_seed, src_locale, from._mp_seed[0]);
-}*/
-
-static inline mp_size_t chpl_gmp_mpz_struct_nalloc(__mpz_struct from) {
+static inline
+mp_size_t chpl_gmp_mpz_struct_nalloc(__mpz_struct from) {
   return from._mp_alloc;
 }
 
-static inline mp_size_t chpl_gmp_mpz_struct_sign_size(__mpz_struct from) {
+static inline
+mp_size_t chpl_gmp_mpz_struct_sign_size(__mpz_struct from) {
   return from._mp_size;
 }
 
-static inline mp_limb_t* chpl_gmp_mpz_struct_limbs(__mpz_struct from) {
+static inline
+mp_limb_t* chpl_gmp_mpz_struct_limbs(__mpz_struct from) {
   // It's important that this function not dereference the limbs pointer
   // as it might be stored on another locale.
   return from._mp_d;
 }
 
-static inline void chpl_gmp_mpz_set_sign_size(mpz_t dst, mp_size_t sign_size) {
+static inline
+void chpl_gmp_mpz_set_sign_size(mpz_t dst, mp_size_t sign_size) {
   dst[0]._mp_size = sign_size;
 }
 
@@ -101,11 +54,12 @@ static inline void chpl_gmp_mpz_set_sign_size(mpz_t dst, mp_size_t sign_size) {
 // across locales. GMP does not currently provide a public API interface to
 // extract the state of a gmp_randstate_t random number generator,
 // other than by accessing the _mp_seed field directly as we do here.
-static
+static inline
 __mpz_struct chpl_gmp_randstate_read_state(__gmp_randstate_struct state) {
   return state._mp_seed[0];
 }
-static
+
+static inline
 void chpl_gmp_randstate_set_state(gmp_randstate_t state, mpz_t src) {
   state[0]._mp_seed[0]._mp_alloc = src[0]._mp_alloc;
   state[0]._mp_seed[0]._mp_size = src[0]._mp_size;
@@ -126,7 +80,8 @@ static void chpl_gmp_mpz_print(mpz_t x) {
 }
 */
 
-static c_string chpl_gmp_mpz_get_str(int base, mpz_t x) {
+static
+c_string chpl_gmp_mpz_get_str(int base, mpz_t x) {
   // The number of *digits* in abs(x);
   size_t numDigits = mpz_sizeinbase(x, base);
   char*  str       = (char*) chpl_mem_calloc(1,
