@@ -31,9 +31,9 @@ extern char saveCDir[FILENAME_MAX+1];
 extern std::string ccflags;
 extern std::string ldflags;
 extern bool ccwarnings;
-extern Vec<const char*> incDirs;
-extern int numLibFlags;
-extern const char** libFlag;
+extern std::vector<const char*> incDirs;
+extern std::vector<const char*> libDirs;
+extern std::vector<const char*> libFiles;
 
 struct fileinfo {
   FILE* fptr;
@@ -76,7 +76,8 @@ bool isObjFile(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename);
 const char* nthFilename(int i);
-void addLibInfo(const char* filename);
+void addLibPath(const char* filename);
+void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
 void genIncludeCommandLineHeaders(FILE* outfile);

@@ -953,33 +953,75 @@ static const int maxUniquifyAddedChars = 25;
 static const int maxCNameAddedChars = 20;
 static char* longCNameReplacementBuffer = NULL;
 static Map<const char*, int> uniquifyNameCounts;
-static const char* uniquifyName(const char* name,
-                                std::set<const char*>* set1,
-                                std::set<const char*>* set2 = NULL) {
-  const char* newName = name;
-  if (fMaxCIdentLen > 0 &&
-      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
-  {
-    // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
-    if (!longCNameReplacementBuffer) {
-      longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
-      longCNameReplacementBuffer[prefixLen] = '\0';
+
+// Return the next uniquifying number for 'name'.
+// Cache the lookup result in 'elem' - speed up "call_tmp" etc.
+static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
+                                 const char* name) {
+  if (!elem) {
+    elem = uniquifyNameCounts.get_record(name);
+    if (!elem) {  // The first time we see 'name'.
+      uniquifyNameCounts.put(name, 2);
+      return 2;
     }
-    strncpy(longCNameReplacementBuffer, newName, prefixLen);
-    INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
-    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
-    name = newName = astr(longCNameReplacementBuffer);
   }
-  while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
-    char numberTmp[64];
-    int count = uniquifyNameCounts.get(name);
-    uniquifyNameCounts.put(name, count+1);
-    snprintf(numberTmp, 64, "%d", count+2);
-    newName = astr(name, numberTmp);
+  return ++elem->value;
+}
+
+static void uniquifyName(Symbol* sym,
+                         std::set<const char*>* set1,
+                         std::set<const char*>* set2 = NULL)
+{
+  const char* name = sym->cname;
+  const char* newName = name;
+
+  if (sym->isRenameable())
+  {
+    if (fMaxCIdentLen > 0 &&
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+    {
+      // how much of the name to preserve
+      int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
+      if (!longCNameReplacementBuffer) {
+        longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+        longCNameReplacementBuffer[prefixLen] = '\0';
+      }
+      strncpy(longCNameReplacementBuffer, newName, prefixLen);
+      INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+      longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
+      name = newName = astr(longCNameReplacementBuffer);
+    }
+
+    MapElem<const char*, int>* elem = NULL;
+    while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
+      char numberTmp[64];
+      snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
+      newName = astr(name, numberTmp);
+    }
+
+    sym->cname = newName;
   }
+  else
+  {
+    // If we have already seen this name before, we need to go back
+    // to that earlier-seen symbol, either renaming it or checking
+    // that its type is the same. See also #9299.
+    //
+    // This is currently not implemented. For now, at least detect it
+    // to avoid generating erroneous C code silently.
+    //
+    // Do this only for things local to a function.
+    // We use multiple Symbols for the same extern at the global scope,
+    // be it a (possibly generic) function, type, variable.
+    // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
+    //
+    if (set2 && (set1->find(name) != set1->end()) )
+      INT_FATAL(sym, "name conflict with a non-renameable symbol");
+  }
+
+  // Record the name even if the symbol is not renameable.
+  // This enables detection of like-named symbols encountered later.
   set1->insert(newName);
-  return newName;
 }
 
 static inline bool shouldCodegenAggregate(AggregateType* ct)
@@ -1438,8 +1480,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // mangle type names if they clash with other types
   //
   forv_Vec(TypeSymbol, ts, types) {
-    if (ts->isRenameable())
-      ts->cname = uniquifyName(ts->cname, &cnames);
+    uniquifyName(ts, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1453,7 +1494,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         Symbol* sym = constant->sym;
         legalizeName(sym);
         sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
-        sym->cname = uniquifyName(sym->cname, &cnames);
+        uniquifyName(sym, &cnames);
       }
     }
   }
@@ -1469,7 +1510,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
         std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
           legalizeName(field);
-          field->cname = uniquifyName(field->cname, &fieldNameSet);
+          uniquifyName(field, &fieldNameSet);
         }
         uniquifyNameCounts.clear();
       }
@@ -1481,8 +1522,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // constants, or other global variables
   //
   forv_Vec(VarSymbol, var, globals) {
-    if (var->isRenameable())
-      var->cname = uniquifyName(var->cname, &cnames);
+    uniquifyName(var, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1491,8 +1531,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
   // global variables, or other functions
   //
   for_vector(FnSymbol, fn, functions) {
-    if (fn->isRenameable())
-      fn->cname = uniquifyName(fn->cname, &cnames);
+    uniquifyName(fn, &cnames);
   }
   uniquifyNameCounts.clear();
 
@@ -1505,7 +1544,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
       legalizeName(formal);
-      formal->cname = uniquifyName(formal->cname, &formalNameSet, &cnames);
+      uniquifyName(formal, &formalNameSet, &cnames);
     }
     uniquifyNameCounts.clear();
   }
@@ -1538,7 +1577,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
             def->sym->cname = astr("T");
         }
       }
-      def->sym->cname = uniquifyName(def->sym->cname, &local, &cnames);
+      uniquifyName(def->sym, &local, &cnames);
     }
     uniquifyNameCounts.clear();
   }
@@ -1650,7 +1689,8 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
       }
     }
     forv_Vec(TypeSymbol, typeSymbol, types) {
-      typeSymbol->codegenMetadata();
+      if (!isUnmanagedClassType(typeSymbol->type))
+        typeSymbol->codegenMetadata();
     }
     // Aggregate annotations for class objects must wait until all other
     // type annotations are defined, because there might be cycles.

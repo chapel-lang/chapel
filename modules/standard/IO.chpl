@@ -3513,7 +3513,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+      return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
     }
   }
 }
@@ -3531,8 +3531,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
     err_args += preArg + name + ":" + args(i).type:string;
     if i != k then err_args += ", ";
   }
-  const ret = err_args:string;
-  return ret;
+  return err_args;
 }
 
 // documented in the style= error= version
@@ -6819,7 +6818,7 @@ private inline proc chpl_do_format(fmt:string, args ...?k, out error:syserr):str
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  return new string(buf, offset, offset+1, owned=true, needToCopy=false);
+  return new string(buf, offset, offset+1, isowned=true, needToCopy=false);
 }
 
 

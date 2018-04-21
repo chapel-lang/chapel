@@ -129,13 +129,13 @@ When run on 6 locales, the output is:
     0 0 0 1 1 1 0 0
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``BlockCyclic`` class constructor is defined as follows:
+The ``BlockCyclic`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclic(
+    proc BlockCyclic.init(
       startIdx,
       blocksize,
       targetLocales: [] locale = Locales, 
@@ -197,10 +197,10 @@ class BlockCyclic : BaseDist {
             type idxType             = _determineIdxTypeFromArg(startIdx))
   {
     // argument sanity checks, with friendly error messages
-    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic constructor, startIdx and blocksize must be either both tuples or both integers");
-    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic constructor and startIdx and blocksize are tuples, their sizes must match");
-    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic constructor, startIdx must be an integer or a tuple of integers");
-    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic constructor, blocksize must be an integer or a tuple of integers");
+    if isTuple(startIdx) != isTuple(blocksize) then compilerError("when invoking BlockCyclic initializer, startIdx and blocksize must be either both tuples or both integers");
+    if isTuple(startIdx) && startIdx.size != blocksize.size then compilerError("when invoking BlockCyclic initializer and startIdx and blocksize are tuples, their sizes must match");
+    if !isIntegralType(idxType) then compilerError("when invoking BlockCyclic initializer, startIdx must be an integer or a tuple of integers");
+    if !isIntegralType(_determineIdxTypeFromArg(blocksize)) then compilerError("when invoking BlockCyclic initializer, blocksize must be an integer or a tuple of integers");
 
     this.rank = rank;
     this.idxType = idxType;
@@ -257,7 +257,7 @@ class BlockCyclic : BaseDist {
       for loc in locDist do writeln(loc);
   }
 
-  // copy constructor for privatization
+  // copy initializer for privatization
   proc init(param rank: int, type idxType, other: BlockCyclic(rank, idxType)) {
     this.rank = rank;
     this.idxType = idxType;
@@ -477,6 +477,7 @@ proc LocBlockCyclic.writeThis(x) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
+pragma "use default init"
 class BlockCyclicDom: BaseRectangularDom {
   //
   // LEFT LINK: a pointer to the parent distribution
@@ -698,7 +699,11 @@ class LocBlockCyclicDom {
   // indices back to the local index type.
   //
   var myStarts: domain(rank, idxType, stridable=true);
-  var myFlatInds: domain(1) = {0..#computeFlatInds()};
+  var myFlatInds: domain(1);
+}
+
+proc LocBlockCyclicDom.postinit() {
+  myFlatInds = {0..#computeFlatInds()};
 }
 
 //
@@ -782,6 +787,7 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
+pragma "use default init"
 class BlockCyclicArr: BaseRectangularArr {
 
   //

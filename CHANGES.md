@@ -2684,7 +2684,7 @@ Fourteenth public release of Chapel, April 2, 2015
 Highlights
 ----------
 * revamped 'chpldoc' and used it to create web docs for all standard modules
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * added a new FileSystem standard module supporting operations on files/dirs
   (see https://chapel-lang.org/docs/1.11/modules/standard/FileSystem.html)
 * added a new FFTW standard module supporting key FFTW routines
@@ -2878,7 +2878,7 @@ Third-Party Software Changes
 Documentation
 -------------
 * added web-based docs for all standard modules and removed from spec/READMEs
-  (see https://chapel-lang.org/docs/latest/)
+  (see https://chapel-lang.org/docs/)
 * made some minor improvements to the Quick Reference document
 * added documentation for class and record destructors to the spec
 * removed an outdated distinction between function calls using () vs. [] in spec

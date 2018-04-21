@@ -1,6 +1,11 @@
 use Spawn;
+use FileSystem;
 
 config const spawnClient = true;
+
+// Confirm virtualenv is built
+if !exists('pyzmq-venv') then halt('virtualenv failed to build');
+
 if spawnClient then
   begin {
     var client = spawn(["./wrapper.sh", "client.py"]);

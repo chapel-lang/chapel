@@ -1576,19 +1576,17 @@ void runClang(const char* just_parse_filename) {
     args.push_back(clang_opt);
 
   if (specializeCCode &&
+      CHPL_TARGET_ARCH_FLAG != NULL &&
       CHPL_TARGET_BACKEND_ARCH != NULL &&
+      CHPL_TARGET_ARCH_FLAG[0] != '\0' &&
       CHPL_TARGET_BACKEND_ARCH[0] != '\0' &&
-      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none")) {
-    std::string march = "-march=";
-    const char *backend_arch = CHPL_TARGET_BACKEND_ARCH;
-    if (strncmp(backend_arch, "arm-", 4) == 0) {
-      backend_arch += 4;
-      march = "-mcpu=";
-    }
-    march += backend_arch;
-    if (strcmp(backend_arch, "thunderx2") == 0) {
-      march += "t99";
-    }
+      0 != strcmp(CHPL_TARGET_ARCH_FLAG, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "none") &&
+      0 != strcmp(CHPL_TARGET_BACKEND_ARCH, "unknown")) {
+    std::string march = "-m";
+    march += CHPL_TARGET_ARCH_FLAG;
+    march += "=";
+    march += CHPL_TARGET_BACKEND_ARCH;
     args.push_back(march);
   }
 
@@ -1606,7 +1604,7 @@ void runClang(const char* just_parse_filename) {
     clangCCArgs.push_back(args[i]);
   }
 
-  forv_Vec(const char*, dirName, incDirs) {
+  for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
@@ -1619,7 +1617,7 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // libFlag and ldflags are handled during linking later.
+  // library directories/files and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
 
@@ -2659,9 +2657,23 @@ void makeBinaryLLVM(void) {
     readArgsFromCommand(gather_prgenv, clangLDArgs);
   }
 
+  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
+  runtime_ld_override += "/";
+  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
+  runtime_ld_override += "/override-ld";
+
+  std::vector<std::string> ldOverride;
+  readArgsFromFile(runtime_ld_override, ldOverride);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(ldOverride);
 
   std::string clangCC = clangInfo->clangCC;
   std::string clangCXX = clangInfo->clangCXX;
+  std::string useLinkCXX = clangCXX;
+
+  if (ldOverride.size() > 0)
+    useLinkCXX = ldOverride[0];
+
 
   std::vector<std::string> dotOFiles;
 
@@ -2764,10 +2776,10 @@ void makeBinaryLLVM(void) {
   codegen_makefile(&mainfile, &tmpbinname, true);
   INT_ASSERT(tmpbinname);
 
-  // Run the linker. We always use clang++ because some third-party
-  // libraries are written in C++. With the C backend, this switcheroo
-  // is accomplished in the Makefiles somewhere
-  std::string command = clangCXX + " " + options + " " +
+  // Run the linker. We always use a C++ compiler because some third-party
+  // libraries are written in C++. Here we use clang++ or possibly a
+  // linker override specified by the Makefiles (e.g. setting it to mpicxx)
+  std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino +
                         " -o " + tmpbinname;
   for( size_t i = 0; i < dotOFiles.size(); i++ ) {
@@ -2783,9 +2795,13 @@ void makeBinaryLLVM(void) {
   // Put user-requested libraries at the end of the compile line,
   // they should at least be after the .o files and should be in
   // order where libraries depend on libraries to their right.
-  for (int i=0; i<numLibFlags; i++) {
-    command += " ";
-    command += libFlag[i];
+  for_vector(const char, dirName, libDirs) {
+    command += " -L";
+    command += dirName;
+  }
+  for_vector(const char, libName, libFiles) {
+    command += " -l";
+    command += libName;
   }
 
   if( printSystemCommands ) {

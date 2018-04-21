@@ -101,7 +101,7 @@ module Crypto {
      into a Crypto utility or coming out of it, is a `CryptoBuffer`.
 
      A `CryptoBuffer` can enclose a `string` or a `[] uint(8)` passed to its
-     constructor and provides helper functions to access those values.
+     initializer and provides helper functions to access those values.
 
   */
   class CryptoBuffer {
@@ -112,7 +112,7 @@ module Crypto {
     pragma "no doc"
     var buff: [buffDomain] uint(8);
 
-    /* The `CryptoBuffer` class constructor that initializes the buffer
+    /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `string` is supplied to it.
 
        :arg s: `string` input for buffer conversion.
@@ -134,7 +134,7 @@ module Crypto {
       }
     }
 
-    /* The `CryptoBuffer` class constructor that initializes the buffer
+    /* The `CryptoBuffer` class initializer that initializes the buffer
        when a `[] uint(8)` is supplied to it.
 
        :arg s: `[] uint(8)` input for buffer conversion.
@@ -221,7 +221,7 @@ module Crypto {
      private key or both of them. Hence, the contents of an object of the
      class `RSAKey` may be decided by the user.
 
-     Calling the `RSAKey` constructor without using any key import or export
+     Calling the `RSAKey` initializer without using any key import or export
      functions may result in generation of a single object that contains both the
      keys (public and private).
 
@@ -235,7 +235,7 @@ module Crypto {
     pragma "no doc"
     var keyObj: EVP_PKEY_PTR;
 
-    /* The `RSAKey` class constructor that initializes the `EVP_PKEY` object
+    /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
        of OpenSSL and basically, initializes a set of public and private keys.
 
        It checks for valid RSA key lengths and generates a public key and private
@@ -283,7 +283,7 @@ module Crypto {
     pragma "no doc"
     var value: CryptoBuffer;
 
-    /* The `Envelope` class constructor that encapsulates the IV, AES encrypted
+    /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
        ciphertext buffer and an array of encrypted key buffers.
 
        :arg iv: Initialization Vector.
@@ -397,8 +397,8 @@ module Crypto {
     pragma "no doc"
     var hashSpace: [hashDomain] uint(8);
 
-    /* The `Hash` class constructor that initializes the hashing function
-       to be used. This constructor sets the byte length of the
+    /* The `Hash` class initializer that initializes the hashing function
+       to be used. This initializer sets the byte length of the
        respective hash and allocates a domain for memory allocation
        for hashing. It currently supports the following hashing functions -
        ``MD5``, ``SHA1``, ``SHA224``, ``SHA256``, ``SHA384``, ``SHA512`` and
@@ -546,7 +546,7 @@ module Crypto {
     pragma "no doc"
     var byteLen: int;
 
-    /* The `AES` class constructor that initializes the AES encryption
+    /* The `AES` class initializer that initializes the AES encryption
        algorithm with the right key length and chaining mode.
 
        :arg bits: Number of bits representing the variant of AES based on
@@ -742,7 +742,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     pragma "no doc"
     var byteLen: int;
 
-    /* The `Blowfish` class constructor that initializes the Blowfish encryption
+    /* The `Blowfish` class initializer that initializes the Blowfish encryption
        algorithm with the right key length and chaining mode.
 
        :arg mode: Name of the chaining mode to be used.
@@ -909,7 +909,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     pragma "no doc"
     var hashName: string;
 
-    /* The `KDF` class constructor that initializes the common data used by most
+    /* The `KDF` class initializer that initializes the common data used by most
        of the Key Derivation Functions.
 
        :arg byteLen: Size of the expected key in bytes / key length.
@@ -939,7 +939,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     /* This function represents Password-Based KDF 2. It generates a secure-key
        buffer based on the salt and also on the metadata provided in the `KDF`
-       constructor.
+       initializer.
 
        :arg userKey: User-specified `string` representation of the key.
        :type userKey: `string`

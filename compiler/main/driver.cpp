@@ -69,6 +69,7 @@ const char* CHPL_ORIG_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_RUNTIME_ARCH = NULL;
 const char* CHPL_TARGET_BACKEND_ARCH = NULL;
+const char* CHPL_TARGET_ARCH_FLAG = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -552,11 +553,11 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-l", libraryFilename));
+ addLibFile(libraryFilename);
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibInfo(astr("-L", libraryFilename));
+  addLibPath(libraryFilename);
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
@@ -849,7 +850,7 @@ static ArgumentDescription arg_desc[] = {
  {"ccflags", ' ', "<flags>", "Back-end C compiler flags (can be specified multiple times)", "S", NULL, "CHPL_CC_FLAGS", setCCFlags},
  {"debug", 'g', NULL, "[Don't] Support debugging of generated C code", "N", &debugCCode, "CHPL_DEBUG", setChapelDebug},
  {"dynamic", ' ', NULL, "Generate a dynamically linked binary", "F", &fLinkStyle, NULL, setDynamicLink},
- {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, NULL, handleIncDir},
+ {"hdr-search-path", 'I', "<directory>", "C header search path", "P", incFilename, "CHPL_INCLUDE_PATH", handleIncDir},
  {"ldflags", ' ', "<flags>", "Back-end C linker flags (can be specified multiple times)", "S", NULL, "CHPL_LD_FLAGS", setLDFlags},
  {"lib-linkage", 'l', "<library>", "C library linkage", "P", libraryFilename, "CHPL_LIB_NAME", handleLibrary},
  {"lib-search-path", 'L', "<directory>", "C library search path", "P", libraryFilename, "CHPL_LIB_PATH", handleLibPath},
@@ -1147,6 +1148,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_RUNTIME_ARCH    = envMap["CHPL_RUNTIME_ARCH"];
   CHPL_TARGET_BACKEND_ARCH = envMap["CHPL_TARGET_BACKEND_ARCH"];
+  CHPL_TARGET_ARCH_FLAG = envMap["CHPL_TARGET_ARCH_FLAG"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];

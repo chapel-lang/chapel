@@ -838,6 +838,7 @@ module ChapelBase {
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
   pragma "no default functions"
+  pragma "use default init"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
     var taskList: c_void_ptr = _defaultOf(c_void_ptr);
@@ -850,6 +851,10 @@ module ChapelBase {
     type taskType;
     var i: iType;
     var taskCnt: taskType;
+    proc init(type iType, type taskType) {
+      this.iType = iType;
+      this.taskType = taskType;
+    }
   }
 
   // This function is called once by the initiating task.  No on
@@ -1045,6 +1050,9 @@ module ChapelBase {
     return __primitive("cast", t, x);
 
   inline proc _cast(type t, x) where t:object && x:t
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t, x) where t:unmanaged object && x:t
     return __primitive("cast", t, x);
 
   inline proc _cast(type t, x) where t:object && x:_nilType
@@ -1745,9 +1753,7 @@ module ChapelBase {
   }
 
 
-  proc isClassType(type t) param where t:object return true;
-  proc isClassType(type t) param where t == _nilType return true;
-  proc isClassType(type t) param return false;
+  proc isClassType(type t) param return __primitive("is class type", t);
 
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
@@ -1824,6 +1830,7 @@ module ChapelBase {
   extern const QIO_TUPLE_FORMAT_JSON:int;
 
   // Support for module deinit functions.
+  pragma "use default init"
   class chpl_ModuleDeinit {
     const moduleName: c_string;          // for debugging; non-null, not owned
     const deinitFun:  c_fn_ptr;          // module deinit function
@@ -1870,7 +1877,10 @@ module ChapelBase {
 
   // Classes
   pragma "no doc"
-  inline proc _defaultOf(type t) where (isClassType(t)) return nil:t;
+  inline proc _defaultOf(type t) where isClassType(t) {
+    return __primitive("cast", t, nil);
+  }
+  // Note: the above case includes _ddata and unmanaged class types
 
   // Various types whose default value is known
   pragma "no doc"
@@ -1882,11 +1892,28 @@ module ChapelBase {
   pragma "no doc"
   inline proc _defaultOf(type t) where t: _sync_aux_t return _nullSyncVarAuxFields;
 
-  pragma "no doc"
-  inline proc _defaultOf(type t) where t: _ddata
-    return __primitive("cast", t, nil);
-
   // There used to be a catch-all _defaultOf that return nil:t, but that
   // was the nexus of several tricky resolution bugs.
 
+  // type constructor for unmanaged pointers
+  // this could in principle be just _unmanaged (similar to type
+  // constructor for a record) but that is more challenging because
+  // _unmanaged is a built-in non-record type.
+  proc _to_unmanaged(type t) type {
+    type rt = __primitive("to unmanaged class", t).type;
+    return rt;
+  }
+  // type constructor for converting to a borrow
+  proc _to_borrowed(type t) type {
+    type rt = __primitive("to borrowed class", t).type;
+    return rt;
+  }
+  // cast from nil to unmanaged
+  inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
+    return __primitive("cast", t, x);
+  }
+  // cast from unmanaged to borrow
+  inline proc _cast(type t, x) where t:object && x:_unmanaged {
+    return __primitive("cast", t, x);
+  }
 }

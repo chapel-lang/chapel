@@ -79,7 +79,7 @@
   Usage
   _____
 
-  First, the :record:`DistDeque` must be initialized before use by calling its constructor.
+  First, the :record:`DistDeque` must be initialized before use by calling its initializer.
 
   .. code-block:: chapel
 

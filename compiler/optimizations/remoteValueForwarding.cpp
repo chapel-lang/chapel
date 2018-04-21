@@ -267,15 +267,16 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // This is OK because the array/domain/distribution wrapper
   // records have fields that do not vary.
   // It does not matter if the on-body synchronizes.
-  // (The array class, e.g. DefaultRectangularArr, is what varies,
-  //  and it contains a pointer to the actual data, which might
-  //  be replaced with another pointer).
+  //   It is the fields of the array class, e.g. DefaultRectangularArr,
+  //   that may change. Also, the array class contains a pointer
+  //   to the actual data, which might be replaced with another pointer.
   // An alternative strategy would be to migrate the contents of the
   // array header class into the wrapper record - but that would require
   // quite a lot of code changes, and some other features have entangled
   // designs (including privatization and the DSI interface).
   } else if (isRecordWrappedType(arg->getValType())) {
-    retval = true;
+    // If it is passed by value already, forwarding would add nothing.
+    retval = arg->isRef();
 
   // If this function accesses sync vars and the argument is not
   // const, then we cannot remote value forward the argument due
@@ -364,6 +365,12 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
 
   arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
 
+  // We may get INTENT_REF_MAYBE_CONST
+  // from flattenNestedFunction() during lowerIterators.
+  // If combined with INTENT_FLAG_IN, it gives an invalid intent.
+  // It is unclear whether the result should be const, so just remove it.
+  arg->intent = (IntentTag)(arg->intent & ~INTENT_FLAG_MAYBE_CONST);
+
   // remove ref-specific flags
   arg->removeFlag(FLAG_REF_TO_IMMUTABLE);
   arg->removeFlag(FLAG_RETURN_SCOPE);
@@ -450,6 +457,15 @@ static void insertSerialization(FnSymbol*  fn,
 
     Symbol* actualInput = actual->symbol();
 
+/*
+///////////
+2018-04-11 Vass: I am commenting out the following fragment as a temporary
+fix for a read-after-delete bug exposed in these tests:
+    parallel/forall/in-intents/coforall-plus-on
+    # under numa
+    parallel/forall/in-intents/both-arr-dom-const-const
+    parallel/forall/in-intents/both-arr-dom-var-const
+///////////
     // If we're working with a copy added to support an 'in' intent,
     // we don't need that copy anymore since the serialize/deserialize
     // calls will have the same effect. So remove the copy call
@@ -479,6 +495,7 @@ static void insertSerialization(FnSymbol*  fn,
         initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
       }
     }
+*/
 
     VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
     if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {

@@ -136,6 +136,7 @@ FnSymbol* findCopyInit(AggregateType* ct);
 FnSymbol* getTheIteratorFn(Symbol* ic);
 FnSymbol* getTheIteratorFn(CallExpr* call);
 FnSymbol* getTheIteratorFn(Type* icType);
+FnSymbol* getTheIteratorFnFromIteratorRec(Type* irType);
 
 // forall intents
 CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE);
@@ -259,6 +260,12 @@ bool isAutoDestroyedVariable(Symbol* sym);
 
 SymExpr* findSourceOfYield(CallExpr* yield);
 
+void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);
+
 void resolvePromotionType(AggregateType* at);
+
+void resolveDestructor(AggregateType* at);
+
+void fixTypeNames(AggregateType* at);
 
 #endif

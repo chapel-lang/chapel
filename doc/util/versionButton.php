@@ -107,7 +107,7 @@ function dropSetup() {
   // Choose button color
   if (chplTitle.includes("pre-release")) {
     button.classList.add("preRelease");
-  } else if (chplTitle != "1.16") {
+  } else if (chplTitle != "1.17") {
     button.classList.add("oldVersion");
   } else {
     button.classList.add("currentVersion");

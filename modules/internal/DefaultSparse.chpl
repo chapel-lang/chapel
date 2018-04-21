@@ -34,11 +34,11 @@ module DefaultSparse {
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
 
-    proc DefaultSparseDom(param rank, type idxType, dist: DefaultDist,
+    proc init(param rank, type idxType, dist: DefaultDist,
         parentDom: domain) {
+      super.init(rank, idxType, parentDom);
 
       this.dist = dist;
-      this.parentDom = parentDom;
     }
 
     proc dsiBuildArray(type eltType)
@@ -346,6 +346,7 @@ module DefaultSparse {
   }
 
 
+  pragma "use default init"
   class DefaultSparseArr: BaseSparseArrImpl {
 
     /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/

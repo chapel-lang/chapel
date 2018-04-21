@@ -64,7 +64,7 @@ module DefaultAssociative {
     var numEntries: atomic_int64;
     var tableLock: atomicbool; // do not access directly, use function below
     var tableSizeNum = 1;
-    var tableSize:int = chpl__primes(tableSizeNum);
+    var tableSize : int;
     var tableDom = {0..tableSize-1};
     var table: [tableDom] chpl_TableEntry(idxType);
   
@@ -83,13 +83,16 @@ module DefaultAssociative {
     proc linksDistribution() param return false;
     proc dsiLinksDistribution()     return false;
   
-    proc DefaultAssociativeDom(type idxType,
-                               param parSafe: bool,
-                               dist: DefaultDist) {
+    proc init(type idxType,
+              param parSafe: bool,
+              dist: DefaultDist) {
       if !chpl__validDefaultAssocDomIdxType(idxType) then
         compilerError("Default Associative domains with idxType=",
                       idxType:string, " are not allowed", 2);
+      this.idxType = idxType;
+      this.parSafe = parSafe;
       this.dist = dist;
+      this.tableSize = chpl__primes(tableSizeNum);
     }
   
     //
@@ -556,6 +559,7 @@ module DefaultAssociative {
     }
   }
   
+  pragma "use default init"
   class DefaultAssociativeArr: BaseArr {
     type eltType;
     type idxType;

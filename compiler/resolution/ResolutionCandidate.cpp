@@ -24,6 +24,7 @@
 #include "driver.h"
 #include "expandVarArgs.h"
 #include "expr.h"
+#include "UnmanagedClassType.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "stmt.h"
@@ -435,12 +436,23 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return st;
   }
 
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
+    AggregateType* actualC = actualMt->getCanonicalClass();
+    if (canInstantiate(actualC, formalType))
+      return actualC;
+  }
+
   if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType))
+    if (canInstantiate(vt, formalType)) {
       return vt;
-    else if (Type* st = vt->scalarPromotionType)
+    } else if (Type* st = vt->scalarPromotionType) {
       if (canInstantiate(st, formalType))
         return st;
+    } else if (UnmanagedClassType* actualMt = toUnmanagedClassType(vt)) {
+      AggregateType* actualC = actualMt->getCanonicalClass();
+      if (canInstantiate(actualC, formalType))
+        return actualC;
+    }
   }
 
   return NULL;
@@ -534,6 +546,21 @@ static bool isCandidateInit(ResolutionCandidate* res, CallInfo& info) {
   return retval;
 }
 
+static bool isCandidateNew(ResolutionCandidate* res, CallInfo& info) {
+  bool retval = false;
+
+  AggregateType* ft = toAggregateType(res->fn->getFormal(1)->getValType());
+  AggregateType* at = toAggregateType(info.call->get(1)->getValType());
+
+  if (ft == at) {
+    retval = true;
+  } else if (ft->getRootInstantiation() == at->getRootInstantiation()) {
+    retval = true;
+  }
+
+  return retval;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -549,6 +576,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   // TODO: Expand this check for all methods
   if (fn->isInitializer() && isCandidateInit(this, info) == false) {
     return false;
+  } else if (strcmp(fn->name, "_new") == 0 &&
+             isCandidateNew(this, info) == false) {
+    return false;
   }
 
   /*
@@ -558,6 +588,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   resolveSignature(fn);
 
   bool isCopyInit = looksLikeCopyInit(this);
+  bool isInitCopy = fn->hasFlag(FLAG_INIT_COPY_FN);
 
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {
@@ -573,7 +604,11 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
 
       bool promotes          = false;
 
-      if (actualIsTypeAlias != formalIsTypeAlias) {
+      if (isInitCopy && isString(actual) && formal->getValType() == dtStringC) {
+        // Do not allow an initCopy of a string to find the c_string initCopy,
+        // which is considered first because it is not compiler generated.
+        return false;
+      } else if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
 
       } else if (formalIsTypeAlias &&
@@ -633,12 +668,16 @@ bool ResolutionCandidate::checkGenericFormals() {
           Type* vt  = actual->getValType();
           Type* st  = actual->type->scalarPromotionType;
           Type* svt = (vt) ? vt->scalarPromotionType : NULL;
+          Type* cct = NULL;
+          if (UnmanagedClassType* mt = toUnmanagedClassType(vt))
+            cct = mt->getCanonicalClass();
 
           if (canInstantiate(actual->type, formal->type) == false &&
 
               (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
               (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
-              (svt == NULL || canInstantiate(svt, formal->type) == false)) {
+              (svt == NULL || canInstantiate(svt, formal->type) == false) &&
+              (cct == NULL || canInstantiate(cct, formal->type) == false)) {
 
             return false;
           }

@@ -312,6 +312,11 @@ all:
   03/20/18:
     - text: upgrade default LLVM to LLVM 6 (#8869)
       config: chapcs 
+  04/03/18:
+    - text: Reduce contention from ugni's polling thread (#9068)
+      config: 16 node XC
+  04/11/18:
+    - Convert BaseDom and its derived classes to use initializers (#9113)
 
 
 AllCompTime:
@@ -437,6 +442,11 @@ cg:
   09/22/16:
     - Added overloaded compileErrors for Sort/Search (#4621)
 
+cg-a:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
+
+
 cg-sparse-timecomp:
   09/09/16:
     - disable function resolution optimization (#4476)
@@ -448,6 +458,10 @@ c-ray:
     - Parallelized C-ray and transposed array (#4743)
   11/09/16:
     - Code cleanups in preparation for SC16 (#4830 and others)
+
+create-views:
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
 
 dgemm.128:
   09/06/13:
@@ -811,8 +825,10 @@ memleaksfull:
     - Rewrite default argument handling (#7858)
   01/23/18:
     - Fix memory leak introduced in PR #8073 (#8268)
-  03/14/15:
+  03/14/18:
     - Convert RecordParser over from constructors to initializers (#8810)
+  04/04/18:
+    - Update a slew of tests with initialize() methods to use postinit() instead (#8988)
 
 meteor:
   12/18/13:
@@ -964,6 +980,8 @@ ra:
       config: Single node XC
   03/21/17:
     - Rank change dom dist view (#5694)
+  04/05/18:
+    - Convert BaseDist-inheriting classes to use initializers (#9075)
 
 ra.ml-perf:
   09/19/17:
@@ -1021,6 +1039,8 @@ revcomp:
       config: chapcs
   03/15/18:
     - Brad version overhauled, based on mark-skip-read-begin (#8815)
+  03/31/18:
+    - Update revcomp problem size; filenames for fasta-based inputs (#9043)
 
 sad:
   05/03/16:

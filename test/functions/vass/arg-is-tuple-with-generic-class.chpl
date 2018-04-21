@@ -3,8 +3,10 @@ class TestDom: BaseSparseDom {
   type idxType;
   var parentDom;
 
-  proc TestDom(param rank, type idxType, 
+  proc init(param rank, type idxType,
                                parentDom: domain) {
+    this.rank = rank;
+    this.idxType = idxType;
     this.parentDom = parentDom;
   }
 

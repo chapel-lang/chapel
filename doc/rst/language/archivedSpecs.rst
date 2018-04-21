@@ -44,7 +44,7 @@ Spec *<version>* (Chapel *<release in which specification was made available>*)
 
 
 
-.. _Language Specification:     https://chapel-lang.org/docs/latest/language/spec.html
+.. _Language Specification:     https://chapel-lang.org/docs/language/spec.html
 .. _Spec 0.981 (Chapel 1.13.0): https://chapel-lang.org/docs/1.13/language/spec.html
 .. _Spec 0.98  (Chapel 1.12.0): https://chapel-lang.org/spec/spec-0.98.pdf
 .. _Spec 0.97  (Chapel 1.11.0): https://chapel-lang.org/spec/spec-0.97.pdf

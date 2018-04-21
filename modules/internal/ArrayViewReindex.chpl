@@ -98,6 +98,7 @@ module ArrayViewReindex {
   // for rectangular domains so this is a subclass of
   // BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updom: DefaultRectangularDom(rank, idxType, stridable);
@@ -314,6 +315,24 @@ module ArrayViewReindex {
 
   } // end of class ArrayViewReindexDom
 
+  private proc buildIndexCacheHelper(arr, dom) {
+    if chpl__isDROrDRView(arr) {
+      if (chpl__isArrayView(arr)) {
+        if arr.isSliceArrayView() && !arr._containsRCRE() {
+          // Only slices below in the view stack, which won't have built up
+          // an indexCache.
+          return arr._getActualArray().dsiGetRAD().toSlice(arr.dom).toReindex(dom);
+        } else {
+          return arr.indexCache.toReindex(dom);
+        }
+      } else {
+        return arr.dsiGetRAD().toReindex(dom);
+      }
+    } else {
+      return false;
+    }
+  }
+
   //
   // The class representing a slice of an array.  Like other array
   // class implementations, it supports the standard dsi interface.
@@ -336,9 +355,21 @@ module ArrayViewReindex {
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
-    const indexCache = buildIndexCache();
+    const indexCache;
 
-    const ownsArrInstance = false;
+    const ownsArrInstance;
+
+    proc init(type eltType, const _DomPid, const dom,
+              const _ArrPid, const _ArrInstance,
+              const ownsArrInstance : bool = false) {
+      this.eltType         = eltType;
+      this._DomPid         = _DomPid;
+      this.dom             = dom;
+      this._ArrPid         = _ArrPid;
+      this._ArrInstance    = _ArrInstance;
+      this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
+      this.ownsArrInstance = ownsArrInstance;
+    }
 
     forwarding arr except these,
                       doiBulkTransferFromKnown, doiBulkTransferToKnown,

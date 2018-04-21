@@ -701,6 +701,8 @@ void initStringLiteralModule() {
                                                    MOD_INTERNAL,
                                                    new BlockStmt());
 
+  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard")));
+
   stringLiteralModule->filename = astr("<internal>");
 
   ModuleSymbol::addTopLevelModule(stringLiteralModule);

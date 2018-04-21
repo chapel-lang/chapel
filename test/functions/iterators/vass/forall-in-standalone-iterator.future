@@ -1,3 +1,0 @@
-bug: compiler assertion failure given a forall loop in a parallel iterator
-
-#7159

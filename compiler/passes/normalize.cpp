@@ -69,11 +69,13 @@ static void        find_printModuleInit_stuff();
 
 static void        normalizeBase(BaseAST* base);
 static void        processSyntacticDistributions(CallExpr* call);
+static void        processManagedNew(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
 
 static bool        isCallToConstructor(CallExpr* call);
 static void        normalizeCallToConstructor(CallExpr* call);
+static void        fixStringLiteralInit(FnSymbol* fn);
 
 static bool        isCallToTypeConstructor(CallExpr* call);
 static void        normalizeCallToTypeConstructor(CallExpr* call);
@@ -486,6 +488,7 @@ static void normalizeBase(BaseAST* base) {
 
   for_vector(CallExpr, call, calls1) {
     processSyntacticDistributions(call);
+    processManagedNew(call);
   }
 
 
@@ -517,8 +520,9 @@ static void normalizeBase(BaseAST* base) {
       DefExpr* defExpr = var->defPoint;
 
       if (FnSymbol* fn = toFnSymbol(defExpr->parentSymbol)) {
-        if (fn                 != stringLiteralModule->initFn &&
-            fn->isNormalized() == false) {
+        if (fn == stringLiteralModule->initFn) {
+          fixStringLiteralInit(fn);
+        } else if (fn->isNormalized() == false) {
           Expr* type = defExpr->exprType;
           Expr* init = defExpr->init;
 
@@ -887,6 +891,59 @@ static void processSyntacticDistributions(CallExpr* call) {
   }
 }
 
+/* Find patterns like
+     (new (call <manager> (call ClassType <init-args>)))
+     ... where <manager> might be _owned _to_unmanaged _shared
+
+   and replace them with
+     (new (call ClassType init-args _chpl_manager=<manager>)))
+
+   Here the "manager" indicates to function resolution whether
+   the new pointer should be:
+    * unmanaged
+    * owned
+    * shared
+
+   This happens before call-tmps are added because they
+   would obscure the situation.
+ */
+static void processManagedNew(CallExpr* newCall) {
+  SET_LINENO(newCall);
+  if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
+    if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
+      if (callManager->numActuals() == 1) {
+        if (CallExpr* callClass = toCallExpr(callManager->get(1))) {
+          if (!callClass->isPrimitive() &&
+              !isUnresolvedSymExpr(callClass->baseExpr)) {
+            bool isunmanaged = callManager->isNamed("_to_unmanaged");
+            bool isowned = callManager->isNamed("_owned");
+            bool isshared = callManager->isNamed("_shared");
+
+            if (isunmanaged || isowned || isshared) {
+              callClass->remove();
+              callManager->remove();
+
+              Expr* replace = new CallExpr(PRIM_NEW,
+                  callClass);
+
+              Expr* manager = NULL;
+              if (isunmanaged) {
+                manager = new SymExpr(dtUnmanaged->symbol);
+              } else {
+                manager = callManager->baseExpr->copy();
+              }
+
+              callClass->insertAtTail(new NamedExpr("_chpl_manager", manager));
+
+              newCall->replace(replace);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Following normalization, each function contains only one return statement   *
@@ -1146,11 +1203,12 @@ static void fixPrimNew(CallExpr* primNewToFix) {
     }
   }
 
+  Expr* baseExpr = callInNew->baseExpr->remove();
   callInNew->remove();
 
   primNewToFix->replace(newNew);
 
-  newNew->insertAtHead(callInNew->baseExpr);
+  newNew->insertAtHead(baseExpr);
 
   // Move the actuals from the call to the new PRIM_NEW
   for_actuals(actual, callInNew) {
@@ -1167,6 +1225,25 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   if (exprModToken != NULL) {
     newNew->insertAtHead(exprMod);
     newNew->insertAtHead(exprModToken);
+  }
+}
+
+static void fixStringLiteralInit(FnSymbol* fn) {
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_NEW)) {
+      Expr* newFirst = call->get(1);
+      if (SymExpr* se = toSymExpr(newFirst)) {
+        INT_ASSERT(se->symbol() == dtString->symbol);
+      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(newFirst)) {
+        INT_ASSERT(strcmp(use->unresolved, "string") == 0);
+        use->replace(new SymExpr(dtString->symbol));
+      } else {
+        INT_ASSERT(false);
+      }
+    }
   }
 }
 
@@ -2108,7 +2185,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
-      defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, initExpr));
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
 
     } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();

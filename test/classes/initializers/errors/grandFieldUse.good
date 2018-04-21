@@ -1,0 +1,2 @@
+grandFieldUse.chpl:15: In initializer:
+grandFieldUse.chpl:16: error: Parent field "x" used before it is initialized

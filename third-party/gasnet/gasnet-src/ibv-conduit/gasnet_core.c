@@ -1003,9 +1003,8 @@ static int gasnetc_load_settings(void) {
                      "WARNING: ignoring invalid GASNET_MAX_MTU value %d.\n",
                      i);
              /* fall through to "auto" case: */
-  case    0: /* TODO: "automatic" might be more sophisticated */
-             /* Our historic default is 1k, which is a good latency-vs-bandwidth compromise */
-             gasnetc_max_mtu = IBV_MTU_1024;
+  case    0: /* TODO: "automatic" might be more sophisticated than using the maximum */
+  case   -1: gasnetc_max_mtu = 0; /* Use port's active_mtu */
              break;
   case  256: gasnetc_max_mtu = IBV_MTU_256;
              break;
@@ -1016,8 +1015,6 @@ static int gasnetc_load_settings(void) {
   case 2048: gasnetc_max_mtu = IBV_MTU_2048;
              break;
   case 4096: gasnetc_max_mtu = IBV_MTU_4096;
-             break;
-  case   -1: gasnetc_max_mtu = 0; /* Use port's active_mtu */
              break;
   }
 

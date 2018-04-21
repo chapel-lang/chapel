@@ -34,7 +34,6 @@ enum AggregateTag {
   AGGREGATE_UNION
 };
 
-
 enum InitializerStyle {
   DEFINES_CONSTRUCTOR,
   DEFINES_INITIALIZER,
@@ -142,14 +141,20 @@ public:
 
   Symbol*                     getSubstitution(const char* name);
 
-  SymbolMap&                  getGenericFieldMap();
+  UnmanagedClassType*         getUnmanagedClass();
 
+  void                        generateUnmanagedClassTypes();
 
   //
   // Public fields
   //
 
   AggregateTag                aggregateTag;
+
+  // These fields support differentiating between unmanaged class
+  // pointers and borrows. At the present time, borrows are represented
+  // by plain AggregateType and unmanaged class pointers use this special type.
+  UnmanagedClassType*         unmanagedClass;
 
   FnSymbol*                   typeConstructor;
 
@@ -260,10 +265,6 @@ private:
   int                         genericField;
 
   bool                        mIsGeneric;
-
-  // Map from fields in the root instantiation to fields in the concrete
-  // instantiation.
-  SymbolMap                   genericFieldMap;
 };
 
 extern AggregateType* dtObject;

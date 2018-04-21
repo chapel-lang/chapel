@@ -1,0 +1,102 @@
+// Utility functions available for partial reduction implementations
+// in individual domain maps.
+
+proc partRedEnsureArray(srcArr) {
+  if !isArray(srcArr) then
+    compilerError("partial reductions are currently available only for arrays");
+}
+
+// TODO if resDimSpec is a tuple of singletons and unbounded ranges (..),
+// then we can determine the preserved vs. reduced dimensions at compile
+// time and use fewer conditionals in the generated code.
+
+proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
+  throws
+{
+  if isDomain(resDimSpec)
+  {
+    const ref resDom = resDimSpec;
+    const resDims = resDom.dims();
+
+    partRedHelpCheckNumDimensions(resDims, srcDims);
+    partRedHelpCheckDimensions(resDims, srcDims);
+
+    return (resDom, resDims);
+  }
+  else if isTuple(resDimSpec)
+  {
+    var resDims: resDimSpec.size * srcDims(1).type;
+
+    partRedHelpCheckNumDimensions(resDims, srcDims);
+
+    for param dim in 1..resDims.size {
+      ref specD = resDimSpec(dim);
+      if isIntegral(specD) {
+        resDims(dim) = (specD..specD) : srcDims(1).type;
+      }
+      else if isRange(specD) {
+        if specD.boundedType == BoundedRangeType.bounded then
+          resDims(dim) = specD;
+        else if specD.boundedType == BoundedRangeType.boundedNone then
+          resDims(dim) = srcDims(dim);
+        else
+          compilerError("the range in the the dimension " + dim + " of the shape of the partial reduction is neither fully bounded nor fully unbounded");
+      }
+      else {
+        compilerError("the dimension " + dim + " of the shape of the partial reduction is neither a range nor an individual index");
+      }
+    }
+
+    partRedHelpCheckDimensions(resDims, srcDims);
+
+/* Cannot create a domain for resDims for non-rectangular domain maps:
+    const resDom = if isSubtype(dist.type, DefaultDist)
+      then {(...resDims)}
+      else {(...resDims)} dmapped new dmap(dist);
+*/
+    // For now, the result will always be a dense DR domain/array.
+    // TODO: support distributions like Block.
+    const resDom = {(...resDims)};
+
+    return (resDom, resDims);
+  }
+  else
+    compilerError("the shape of the partial reduction is neither a domain nor a tuple of ranges/indices");
+}
+
+
+proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
+{
+  var resIdx: resDims.size * resDims(1).idxType;
+  //compilerWarning(resIdx.type:string);
+
+  for param dim in 1..resDims.size do
+    if isReducedDim(resDims, srcDims, dim) then
+      resIdx(dim) = resDims(dim).alignedLow;
+    else
+      resIdx(dim) = srcIdx(dim);
+
+  //debug(srcIdx, "  >>  ", resIdx);
+  return resIdx;
+}
+
+proc isReducedDim(const resDims, const srcDims, param dim)
+  return resDims(dim).length == 1;
+
+proc isPreservedDim(const resDims, const srcDims, param dim)
+  return !isReducedDim(resDims, srcDims, dim);
+
+
+proc partRedHelpCheckNumDimensions(resDims, srcDims) {
+  if resDims.size != srcDims.size then
+    compilerError("the shape of the partial reduction has a different number of dimensions than the array being reduced");
+}
+
+proc partRedHelpCheckDimensions(resDims, srcDims) throws {
+  for param dim in 1..resDims.size {
+    if resDims(dim).length == 1 ||   // reduced dimension
+       resDims(dim) == srcDims(dim)  // preserved dimension
+    then ; // OK
+    else throw new IllegalArgumentError("the preserved dimension " + dim + " in the shape of the partial reduction differs from that in the array being reduced");
+  }
+}

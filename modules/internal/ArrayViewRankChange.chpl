@@ -109,6 +109,16 @@ module ArrayViewRankChange {
     }
   }
 
+  private proc downDomType(param rank : int,
+                           type idxType,
+                           param stridable : bool,
+                           dist) type {
+      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
+                                                 stridable=stridable, ranges);
+      return a.type;
+  }
+
   //
   // This class represents the domain of a rank-change slice of an
   // array.  Like other domain class implementations, it supports the
@@ -116,6 +126,7 @@ module ArrayViewRankChange {
   // for rectangular domains (because they're the only ones with
   // rank>1), so this is a subclass of BaseRectangularDom.
   //
+ pragma "use default init"
  class ArrayViewRankChangeDom: BaseRectangularDom {
     // the lower-dimensional index set that we represent upwards
     var upDom: DefaultRectangularDom(rank, idxType, stridable);
@@ -139,19 +150,11 @@ module ArrayViewRankChange {
     }
 
     // the higher-dimensional domain that we're equivalent to
+    //
+    // BHARSH INIT TODO: use 'downrank' instead of 'collapsedDim.size'
+    //
     var downDomPid:int;
-    var downDomInst: downDomType(downrank, idxType, stridable);
-
-    //
-    // TODO: If we put this expression into the variable declaration
-    // above, we get a memory leak.  File a future against this?
-    //
-    proc downDomType(param rank: int, type idxType, param stridable: bool) type {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
-                                                 stridable=stridable, ranges);
-      return a.type;
-    }
+    var downDomInst: downDomType(collapsedDim.size, idxType, stridable, distInst);
 
     proc downrank param {
       return collapsedDim.size;
@@ -406,6 +409,24 @@ module ArrayViewRankChange {
 
  } // end of class ArrayViewRankChangeDom
 
+  private proc buildIndexCacheHelper(arr, dom, collapsedDim, idx) {
+    if chpl__isDROrDRView(arr) {
+      if (chpl__isArrayView(arr)) {
+        if arr.isSliceArrayView() && !arr._containsRCRE() {
+          // Only slices below in the view stack, which won't have built up
+          // an indexCache.
+          return arr._getActualArray().dsiGetRAD().toSlice(arr.dom).toRankChange(dom, collapsedDim, idx);
+        } else {
+          return arr.indexCache.toRankChange(dom, collapsedDim, idx);
+        }
+      } else {
+        return arr.dsiGetRAD().toRankChange(dom, collapsedDim, idx);
+      }
+    } else {
+      return false;
+    }
+  }
+
   //
   // The class representing a rank-change slice of an array.  Like
   // other array class implementations, it supports the standard dsi
@@ -439,9 +460,24 @@ module ArrayViewRankChange {
     // (eventually...), the indexCache provides a mean of directly
     // accessing the array's ddata to avoid indirection overheads
     // through the array field above.
-    const indexCache = buildIndexCache();
+    const indexCache;
 
-    const ownsArrInstance = false;
+    const ownsArrInstance;
+
+    proc init(type eltType, const _DomPid, const dom,
+              const _ArrPid, const _ArrInstance,
+              const collapsedDim, const idx,
+              const ownsArrInstance : bool = false) {
+      this.eltType         = eltType;
+      this._DomPid         = _DomPid;
+      this.dom             = dom;
+      this._ArrPid         = _ArrPid;
+      this._ArrInstance    = _ArrInstance;
+      this.collapsedDim    = collapsedDim;
+      this.idx             = idx;
+      this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom, collapsedDim, idx);
+      this.ownsArrInstance = ownsArrInstance;
+    }
 
     // Forward all unhandled methods to underlying privatized array
     forwarding arr except these,

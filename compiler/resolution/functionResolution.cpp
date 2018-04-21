@@ -37,9 +37,11 @@
 #include "driver.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "implementForallIntents.h"
 #include "initializerResolution.h"
 #include "initializerRules.h"
 #include "iterator.h"
+#include "UnmanagedClassType.h"
 #include "ModuleSymbol.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
@@ -186,6 +188,7 @@ static void resolveEnumTypes();
 static void insertRuntimeTypeTemps();
 static void resolveAutoCopies();
 static void resolveSerializers();
+static void resolveDestructors();
 static void resolveRecordInitializers();
 static Type* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
@@ -208,7 +211,7 @@ static void replaceValuesWithRuntimeTypes();
 static void removeWhereClauses();
 static void replaceReturnedValuesWithRuntimeTypes();
 static void insertRuntimeInitTemps();
-static void removeInitFields();
+static void removeTypedefParts();
 static void removeMootFields();
 static void removeReturnTypeBlocks();
 static void expandInitFieldPrims();
@@ -219,6 +222,8 @@ static void printCallGraph(FnSymbol* startPoint = NULL,
 static void printUnusedFunctions();
 
 static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn);
+
+static bool isUnusedClass(Type* ct);
 
 /************************************* | **************************************
 *                                                                             *
@@ -596,11 +601,14 @@ Type* getConcreteParentForGenericFormal(Type* actualType, Type* formalType) {
     }
 
     if (retval == NULL) {
-      // Handle e.g. Owned(GenericClass) passed to a formal of type GenericClass
-      if (isManagedPtrType(at) && isClass(formalType)) {
-        Type* classType = actualType->getField("t")->type;
-        if (canInstantiate(classType, formalType)) {
-          retval = classType;
+      if (isClass(formalType)) {
+        // Handle e.g. Owned(GenericClass) passed to a formal : GenericClass
+        // TODO: Why is this here and not in getBasicInstantiationType?
+        if (isManagedPtrType(at)) {
+          Type* classType = actualType->getField("t")->type;
+          if (canInstantiate(classType, formalType)) {
+            retval = classType;
+          }
         }
       }
     }
@@ -660,7 +668,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
+    return true;
+
   if (AggregateType* atActual = toAggregateType(actualType)) {
+
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
       if (canInstantiate(atFrom, formalType) == true) {
         return true;
@@ -1074,6 +1086,17 @@ bool canCoerce(Type*     actualType,
     }
   }
 
+  // Handle coercions from unmanaged -> borrow
+  if (UnmanagedClassType* actualMt = toUnmanagedClassType(actualType)) {
+    if (AggregateType* formalC = toAggregateType(formalType)) {
+      if (isClass(formalC)) {
+        AggregateType* actualC = actualMt->getCanonicalClass();
+        if (canDispatch(actualC, NULL, formalC, fn, promotes, paramNarrows))
+          return true;
+      }
+    }
+  }
+
   if (canCoerceTuples(actualType, actualSym, formalType, fn)) {
     return true;
   }
@@ -1161,10 +1184,19 @@ bool doCanDispatch(Type*     actualType,
     retval = true;
 
   } else {
-    if (AggregateType* at = toAggregateType(actualType)) {
+    AggregateType* at = toAggregateType(actualType);
+    bool isunmanaged = false;
+    if (UnmanagedClassType* mt = toUnmanagedClassType(actualType)) {
+      isunmanaged = true;
+      at = mt->getCanonicalClass();
+    }
+
+    if (at) {
       forv_Vec(AggregateType, parent, at->dispatchParents) {
-        if (parent == formalType ||
-            doCanDispatch(parent,
+        Type* useParent = parent;
+        if (isunmanaged) useParent = parent->getUnmanagedClass();
+        if (useParent == formalType ||
+            doCanDispatch(useParent,
                           NULL,
                           formalType,
                           fn,
@@ -1950,6 +1982,18 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
   return call->resolvedFunction();
 }
 
+void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+  if (at->scalarPromotionType == NULL) {
+    resolvePromotionType(at);
+  }
+  if (at->symbol->instantiationPoint == NULL) {
+    at->symbol->instantiationPoint = fn->instantiationPoint;
+  }
+  if (developer == false) {
+    fixTypeNames(at);
+  }
+}
+
 void resolvePromotionType(AggregateType* at) {
   INT_ASSERT(at->scalarPromotionType == NULL);
   INT_ASSERT(at->symbol->hasFlag(FLAG_GENERIC) == false);
@@ -1966,6 +2010,20 @@ void resolvePromotionType(AggregateType* at) {
     INT_ASSERT(promoFn->retTag == RET_TYPE);
 
     at->scalarPromotionType = promoFn->retType;
+  }
+}
+
+void resolveDestructor(AggregateType* at) {
+  SET_LINENO(at);
+
+  VarSymbol* tmp   = newTemp(at);
+  CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
+
+  FnSymbol* deinitFn = resolveUninsertedCall(at, call, false);
+
+  if (deinitFn != NULL) {
+    resolveFunction(deinitFn);
+    at->setDestructor(deinitFn);
   }
 }
 
@@ -2513,10 +2571,9 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
       } else if (info.actuals.v[0]                              != NULL   &&
                  info.actuals.v[1]                              != NULL   &&
-                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true   &&
-                 info.actuals.v[1]->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+                 info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         USR_FATAL_CONT(call,
-                       "illegal assignment of value to type");
+                       "illegal assignment to type");
 
       } else if (info.actuals.v[1]->type == dtNil) {
         USR_FATAL_CONT(call,
@@ -4677,14 +4734,7 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
     // Applies a type to TMP
-    // BHARSH TODO: Why can't we just use the exprType of the formal? Shouldn't
-    // it be the same?
     Expr*      typeExpr  = fieldDef->exprType->copy();
-    if (ct->isClass()) {
-      // Update symbols
-      update_symbols(typeExpr, &ct->getGenericFieldMap());
-    }
-
     CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, typeExpr);
     CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
 
@@ -4701,6 +4751,12 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     AggregateType* at       = toAggregateType(_this->type);
     INT_ASSERT(at);
 
+    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
+    resolveBlock->insertAtTail(tmpMove);
+    resolveBlock->insertAtTail(tmpAssign);
+    call->replace(resolveBlock);
+    resolveBlock->insertAtTail(call);
+
     if (isFieldAccessible(tmpExpr, at, fieldDef) == false) {
       INT_ASSERT(false);
     }
@@ -4712,12 +4768,6 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     }
 
     updateFieldsMember(rhs, parentFn, fieldDef);
-
-    BlockStmt* resolveBlock = new BlockStmt(tmpDefn, BLOCK_SCOPELESS);
-    resolveBlock->insertAtTail(tmpMove);
-    resolveBlock->insertAtTail(tmpAssign);
-    call->replace(resolveBlock);
-    resolveBlock->insertAtTail(call);
 
     normalize(resolveBlock);
     resolveBlockStmt(resolveBlock);
@@ -4796,16 +4846,34 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
     AggregateType* _thisType = toAggregateType(_this->symbol()->getValType());
     INT_ASSERT(_thisType);
 
+    DefExpr* foundField = NULL;
+
+    // BHARSH INIT TODO: are these errors ever triggered?
     if (DefExpr* fieldDef = _thisType->toLocalField(symExpr)) {
       if (isFieldInitialized(fieldDef, currField) == true) {
-        SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
-
-        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
-
+        foundField = fieldDef;
       } else {
         USR_FATAL(expr,
                   "'%s' used before defined (first used here)",
                   fieldDef->sym->name);
+      }
+    } else if (DefExpr* fieldDef = _thisType->toSuperField(symExpr)) {
+      if (isFieldInitialized(fieldDef, currField) == true) {
+        foundField = fieldDef;
+      } else {
+        USR_FATAL(expr,
+                  "'%s' used before defined (first used here)",
+                  fieldDef->sym->name);
+      }
+    }
+
+    if (foundField != NULL) {
+      SymExpr* field = new SymExpr(new_CStringSymbol(sym->name));
+      if (foundField->sym->hasFlag(FLAG_PARAM) ||
+          foundField->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, _this, field));
+      } else {
+        symExpr->replace(new CallExpr(PRIM_GET_MEMBER, _this, field));
       }
     }
 
@@ -4816,7 +4884,8 @@ static void updateFieldsMember(Expr* expr, FnSymbol* fn, DefExpr* currField) {
       }
     }
 
-  } else if (isNamedExpr(expr) == true) {
+  } else if (NamedExpr* named = toNamedExpr(expr)) {
+    updateFieldsMember(named->actual, fn, currField);
 
   } else if (isUnresolvedSymExpr(expr) == true) {
 
@@ -4970,9 +5039,12 @@ static void resolveInitField(CallExpr* call) {
 
   // Type was just fully instantiated, let's try to find its promotion type.
   if (wasGeneric                        == true &&
-      ct->symbol->hasFlag(FLAG_GENERIC) == false &&
-      ct->scalarPromotionType           == NULL) {
-    resolvePromotionType(ct);
+      ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+
+    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+    resolveTypeWithInitializer(ct, parentFn);
+    // BHARSH INIT TODO: Would like to resolve destructor here, but field
+    // types are not fully resolved. E.g., "var foo : t"
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
@@ -5028,6 +5100,8 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
+
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
@@ -5040,15 +5114,23 @@ static void resolveInitVar(CallExpr* call) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
-  } else if (isRecordWithInitializers(srcType) == true  &&
-             isSyncType(srcType)               == false &&
-             isSingleType(srcType)             == false)  {
+  } else if (isRecordWithInitializers(srcType) == true &&
+             isParamString == false &&
+             isSyncType(srcType) == false &&
+             isSingleType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
     // The LHS will "own" the record
     if (rhs->symbol()->hasFlag(FLAG_INSERT_AUTO_DESTROY) == false &&
         rhs->symbol()->hasFlag(FLAG_TEMP)                == true) {
+      dst->type       = src->type;
+
+      call->primitive = primitives[PRIM_MOVE];
+
+      resolveMove(call);
+    } else if (rhs->symbol()->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // Don't need to copy string literals
       dst->type       = src->type;
 
       call->primitive = primitives[PRIM_MOVE];
@@ -5097,7 +5179,15 @@ FnSymbol* findCopyInit(AggregateType* at) {
   VarSymbol* tmpAt = newTemp(at);
   CallExpr*  call  = new CallExpr("init", gMethodToken, tmpAt, tmpAt);
 
-  return resolveUninsertedCall(at, call, false);
+  FnSymbol* ret = resolveUninsertedCall(at, call, false);
+
+  // ret's instantiationPoint points to the dummy BlockStmt created by
+  // resolveUninsertedCall, so it needs to be updated.
+  if (ret != NULL) {
+    ret->instantiationPoint = at->symbol->instantiationPoint;
+  }
+
+  return ret;
 }
 
 /************************************* | **************************************
@@ -5406,7 +5496,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
     Type*   rhsType = rhs->typeInfo();
 
-    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR));
+    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+               // non-zip forall over a standalone iterator
+               rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
 
     // ... and not of a reference type
     // ... and not an array (arrays are always yielded by reference)
@@ -5651,6 +5743,14 @@ static void moveFinalize(CallExpr* call) {
 bool isDispatchParent(Type* t, Type* pt) {
   bool retval = false;
 
+  // Use the canonical class type
+  // If one is managed and the other is not, it's not
+  // a dispatch parent.
+  if (classesWithSameKind(t, pt)) {
+    t = canonicalClassType(t);
+    pt = canonicalClassType(pt);
+  }
+
   if (AggregateType* at = toAggregateType(t)) {
     forv_Vec(AggregateType, p, at->dispatchParents) {
       if (p == pt || isDispatchParent(p, pt) == true) {
@@ -5702,10 +5802,36 @@ static AggregateType* resolveNewFindType(CallExpr* newExpr);
 
 static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
+static bool isManagedPointerInit(SymExpr* typeExpr);
+
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix);
+
+static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix);
+
+static void handleUnstableNewError(CallExpr* newExpr);
+
 static void resolveNew(CallExpr* newExpr) {
+
+  if (newExpr->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
+  // If it's a managed new, detect the _chpl_manager named arg and remove it
+  // The following variables allow the latter half of this function
+  // to construct the AST for initializing the owned/shared if necessary.
+  // Manager is:
+  //  dtUnmanaged for 'new unmanaged'
+  //  owned record for 'new owned'
+  //  shared record for 'new shared'
+  Type* manager = NULL;
+  CallExpr* managedMoveToFix = NULL;
+
+  resolveNewSetupManaged(newExpr, manager, managedMoveToFix);
+
   if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
     if (Type* type = resolveTypeAlias(typeExpr)) {
       if (AggregateType* at = toAggregateType(type)) {
+
         if (resolveNewHasInitializer(at) == false) {
           resolveNewHandleConstructor(newExpr);
 
@@ -5749,6 +5875,218 @@ static void resolveNew(CallExpr* newExpr) {
       USR_FATAL(newExpr, "invalid use of 'new' on %s", name);
     }
   }
+
+  if (manager)
+    resolveNewManaged(newExpr, manager, managedMoveToFix);
+}
+
+static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager, CallExpr*& managedMoveToFix) {
+
+  for_actuals(expr, newExpr) {
+    if (NamedExpr* ne = toNamedExpr(expr)) {
+      if (0 == strcmp("_chpl_manager", ne->name)) {
+        manager = ne->actual->typeInfo();
+        expr->remove();
+      }
+    }
+  }
+  // adjust the type to initialize for managed new cases
+  if (SymExpr* typeExpr = resolveNewFindTypeExpr(newExpr)) {
+    if (Type* type = resolveTypeAlias(typeExpr)) {
+
+      // set manager for new t(1,2,3)
+      // where t is e.g Owned(MyClass)
+      // or for t is unmanaged(MyClass)
+      if (manager == NULL) {
+        if (isManagedPtrType(type))
+          manager = type;
+
+        if (isUnmanagedClassType(type))
+          manager = dtUnmanaged;
+      }
+
+      // if manager is set, and we're not calling the manager's init function,
+      // use the canonical class type instead of the managed type, since
+      // the rest of the compiler (e.g. initializer resolution) uses
+      // only the canonical class types.
+      if (manager) {
+        AggregateType* at = toAggregateType(type);
+
+        // Use the class type inside a owned/shared/etc
+        // unless we are initializing Owned/Shared itself
+        if (isManagedPtrType(at) && !isManagedPointerInit(typeExpr)) {
+          Type* subtype = at->getField("t")->type;
+          if (isAggregateType(subtype)) // in particular, not dtUnknown
+            at = toAggregateType(subtype);
+        }
+
+        // Use the canonical class to simplify the rest of initializer
+        // resolution
+        if (UnmanagedClassType* mt = toUnmanagedClassType(type)) {
+          at = mt->getCanonicalClass();
+        // For records, just ignore the manager
+        // e.g. to support 'new owned MyRecord'
+        } else if (isRecord(at)) {
+          manager = NULL;
+        }
+
+        if (manager) {
+
+          if (at != type)
+            // Set the type to initialize
+            typeExpr->setSymbol(at->symbol);
+
+          // Introduce a temporary to initialize instead of the requested var
+          if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr)) {
+            if (moveStmt->isPrimitive(PRIM_MOVE) ||
+                moveStmt->isPrimitive(PRIM_ASSIGN)) {
+              SymExpr* dstSe = toSymExpr(moveStmt->get(1));
+              Symbol* finalResult = dstSe->symbol();
+
+              // Store the pointer we built into new_cast_temp
+              VarSymbol* initedClass = newTemp("new_cast_tmp");
+              moveStmt->insertBefore(new DefExpr(initedClass));
+              dstSe->setSymbol(initedClass);
+              // This PRIM_MOVE setting finalResult is added here
+              // but it's really just a placeholder for where
+              // the casting or owned/etc construction should take place.
+              managedMoveToFix = new CallExpr(PRIM_MOVE,
+                                              finalResult, initedClass);
+              moveStmt->insertAfter(managedMoveToFix);
+
+              // Un-set the type for the LHS
+              // This is set during normalization in many cases,
+              // but it is wrong for managed inits.
+              finalResult->type = dtUnknown;
+            }
+          }
+        }
+      }
+      if (manager == NULL && fWarnUnstable)
+        // Generate an error on 'new MyClass' with fWarnUnstable
+        handleUnstableNewError(newExpr);
+    }
+  }
+
+}
+
+static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* managedMoveToFix) {
+
+  // Resolve the move enclosing newExpr because we'll need the
+  // type information. This appears to be necessary only for
+  // types with constructors.
+  if (CallExpr* moveStmt = toCallExpr(newExpr->parentExpr))
+    resolveCall(moveStmt);
+
+  // convert 'new MyClass(1,2,3)' to 'new manager( new MyClass(1,2,3) )'
+
+  INT_ASSERT(manager);
+  INT_ASSERT(managedMoveToFix && managedMoveToFix->isPrimitive(PRIM_MOVE));
+  SymExpr* srcSe = toSymExpr(managedMoveToFix->get(2));
+  Symbol* initedClass = srcSe->symbol();
+
+  AggregateType* classT = toAggregateType(initedClass->typeInfo());
+  INT_ASSERT(classT && isClass(classT));
+  UnmanagedClassType* unmanagedT = classT->getUnmanagedClass();
+  INT_ASSERT(unmanagedT);
+
+  if (!isManagedPtrType(manager)) {
+    // it is constructing a unmanaged ptr
+    srcSe->replace(new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
+  } else {
+    // it is constructing an owned/shared/etc
+
+    // Cast the constructed pointer into a unmanaged pointer
+    // That way, owned/shared/etc constructors can start from
+    // a unmanaged pointer rather than a borrow.
+    VarSymbol* tmpUnmanaged = newTemp("new_cast_unmanaged", unmanagedT);
+    DefExpr* defUnmanaged = new DefExpr(tmpUnmanaged);
+    managedMoveToFix->insertBefore(defUnmanaged);
+    CallExpr* moveUnmanaged = new CallExpr(PRIM_MOVE, tmpUnmanaged,
+                          new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
+    managedMoveToFix->insertBefore(moveUnmanaged);
+
+    // Now adjust the original move dst, src
+    // to be move dst, new manager tmpUnmanaged
+    srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged));
+  }
+}
+
+static void handleUnstableNewError(CallExpr* newExpr) {
+  INT_ASSERT(newExpr->parentSymbol);
+  Type* newType = newExpr->typeInfo();
+  if (isClass(newType) &&
+      !isReferenceType(newType) &&
+      !newType->symbol->hasFlag(FLAG_DATA_CLASS) &&
+      !newType->symbol->hasFlag(FLAG_NO_OBJECT) &&
+      !newType->symbol->hasFlag(FLAG_NO_DEFAULT_FUNCTIONS)) {
+
+    SymExpr* checkSe = NULL;
+    if (CallExpr* parentCall = toCallExpr(newExpr->parentExpr))
+      if (parentCall->isPrimitive(PRIM_MOVE) ||
+          parentCall->isPrimitive(PRIM_ASSIGN))
+        if (SymExpr* lhsSe = toSymExpr(parentCall->get(1)))
+          checkSe = lhsSe;
+
+    if (checkSe) {
+      for_SymbolSymExprs(se, checkSe->symbol()) {
+        // Check that 'new' was used either in
+        // chpl__toraw or in an initialization of Owned/Shared/etc.
+        if (se == checkSe) {
+          // OK
+        } else if (CallExpr* parentCall = toCallExpr(se->parentExpr)) {
+          if (parentCall->isNamed("chpl__tounmanaged") || // TODO -- remove case
+              parentCall->isNamed("chpl__delete") || // TODO -- remove case
+              parentCall->isNamed("chpl__buildDistValue") ||
+              parentCall->isNamed("chpl_fix_thrown_error")) {
+            // OK
+          } else if (parentCall->isPrimitive(PRIM_NEW) &&
+                     parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+            // OK e.g. new Owned(new MyClass())
+          } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
+            // OK e.g. new raw MyClass() / new owned MyClass()
+          } else {
+            // TODO -- enable warning for internal/standard modules
+            // along with updating them.
+            if (newExpr->getModule()->modTag == MOD_USER) {
+              USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
+              USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                                 "'new owned %s' or "
+                                 "'new shared %s'",
+                                 newType->symbol->name,
+                                 newType->symbol->name,
+                                 newType->symbol->name);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static bool isManagedPointerInit(SymExpr* typeExpr) {
+
+  // Managed pointer init methods are:
+  //  - accepting a single unmanaged class pointer
+  //  - accepting a single managed class pointer
+
+  // everything else is forwarded
+
+  if (typeExpr->next == NULL)
+    return false;
+
+  if (typeExpr->next->next != NULL)
+    return false;
+
+  Type* singleArgumentType = typeExpr->next->getValType();
+
+  if (isManagedPtrType(singleArgumentType))
+    return true;
+
+  if (isUnmanagedClassType(singleArgumentType))
+    return true;
+
+  return false;
 }
 
 static bool resolveNewHasInitializer(AggregateType* at) {
@@ -6537,7 +6875,11 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
 
-    retval = expr;
+    if (ForLoop* forLoop = toForLoop(block)) {
+      retval = replaceForWithForallIfNeeded(forLoop);
+    } else {
+      retval = expr;
+    }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
     if (def->sym->hasFlag(FLAG_CHPL__ITER) == true) {
@@ -6545,6 +6887,8 @@ Expr* resolveExpr(Expr* expr) {
     }
 
     retval = foldTryCond(postFold(expr));
+
+    resolveShadowVarsIfNeeded(def);
 
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
@@ -6822,11 +7166,16 @@ static void resolveExprExpandGenerics(CallExpr* call) {
             Symbol*        superField = ct->getField(1);
 
             if (superField->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
+              bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
               ct              = ct->getInstantiationParent(formalType);
               fn->_this->type = ct;
 
               superField      = ct->getField(1);
               superField->removeFlag(FLAG_DELAY_GENERIC_EXPANSION);
+
+              if (wasGeneric == true && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
+                resolveTypeWithInitializer(ct, fn);
+              }
             }
           }
         }
@@ -7186,11 +7535,12 @@ void resolve() {
 
   resolveSerializers();
 
+  resolveDestructors();
+
   insertDynamicDispatchCalls();
 
   beforeLoweringForallStmts = false;
-
-  lowerForallStmts();
+  resolveForallStmts1();
 
   insertReturnTemps();
 
@@ -7211,6 +7561,8 @@ void resolve() {
     printUnusedFunctions();
 
   pruneResolvedTree();
+
+  resolveForallStmts2();
 
   freeCache(defaultsCache);
 
@@ -7556,6 +7908,23 @@ static void resolveSerializers() {
   }
 
   resolveAutoCopies();
+}
+
+static void resolveDestructors() {
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->inTree()                                       &&
+        ts->hasFlag(FLAG_REF)                    == false  &&
+        ts->hasFlag(FLAG_GENERIC)                == false  &&
+        ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == false) {
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        if (at->hasDestructor()   == false &&
+            at->hasInitializers() == true  &&
+            isUnusedClass(at)     == false) {
+          resolveDestructor(at);
+        }
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -7911,7 +8280,9 @@ static void insertReturnTemps() {
   // because we do not support sync/singles for minimal modules.
   //
   forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->parentSymbol) {
+    if (call->inTree()) {
+      if (call->list == NULL && isForallRecIterHelper(call))
+        continue;
       if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
         if (fn->retType != dtVoid) {
           ContextCallExpr* contextCall = toContextCallExpr(call->parentExpr);
@@ -7928,6 +8299,9 @@ static void insertReturnTemps() {
           }
 
           Expr* parent = contextCallOrCall->parentExpr;
+
+          if (isForallIterExpr(contextCallOrCall))
+            continue; // not really a top-level expression
 
           if (!isCallExpr(parent) && !isDefExpr(parent)) { // no use
             SET_LINENO(call); // TODO: reset_ast_loc() below?
@@ -8401,7 +8775,7 @@ static void pruneResolvedTree() {
 
   removeTypeBlocks();
 
-  removeInitFields();
+  removeTypedefParts();
 
   removeWhereClauses();
 
@@ -8522,8 +8896,6 @@ static void removeUnusedFunctions() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isUnusedClass(AggregateType* ct);
-
 static void removeUnusedTypes() {
   // Remove unused aggregate types.
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
@@ -8533,6 +8905,10 @@ static void removeUnusedTypes() {
       if (AggregateType* at = toAggregateType(type->type)) {
         if (isUnusedClass(at) == true) {
           at->symbol->defPoint->remove();
+        }
+      } else if(UnmanagedClassType* mt = toUnmanagedClassType(type->type)) {
+        if (isUnusedClass(mt->getCanonicalClass()) == true) {
+          mt->symbol->defPoint->remove();
         }
       }
     }
@@ -8561,50 +8937,73 @@ static void removeUnusedTypes() {
   }
 }
 
-static bool isUnusedClass(AggregateType* ct) {
+static bool do_isUnusedClass(Type* t) {
   bool retval = true;
 
+  AggregateType* at = toAggregateType(t);
+
   // Special case for global types.
-  if (ct->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) == true) {
+  if (t->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) {
     retval = false;
 
   // Runtime types are assumed to be always used.
-  } else if (ct->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+  } else if (t->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
     retval = false;
 
   // Uses of iterator records get inserted in lowerIterators
-  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_RECORD)    == true) {
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = false;
 
   // FALSE if iterator class's getIterator is used
   // (this case may not be necessary)
-  } else if (ct->symbol->hasFlag(FLAG_ITERATOR_CLASS)     == true &&
-             ct->iteratorInfo->getIterator->isResolved()  == true) {
+  } else if (t->symbol->hasFlag(FLAG_ITERATOR_CLASS) &&
+             at && at->iteratorInfo->getIterator->isResolved()) {
     retval = false;
 
   // FALSE if initializers are used
-  } else if (ct->defaultInitializer                       != NULL &&
-             ct->defaultInitializer->isResolved()         == true) {
+  } else if (at && at->defaultInitializer &&
+             at->defaultInitializer->isResolved()) {
     retval = false;
 
   // FALSE if the type constructor is used.
-  } else if (ct->typeConstructor                          != NULL &&
-             ct->typeConstructor->isResolved()            == true) {
+  } else if (at && at->typeConstructor &&
+             at->typeConstructor->isResolved()) {
     retval = false;
 
   // FALSE if the type uses an initializer and that initializer was
   // resolved
-  } else if (ct->initializerStyle    != DEFINES_CONSTRUCTOR &&
-             ct->initializerResolved == true) {
+  } else if (at && at->initializerStyle != DEFINES_CONSTRUCTOR &&
+             at->initializerResolved) {
     retval = false;
 
-  } else {
-    forv_Vec(AggregateType, childClass, ct->dispatchChildren) {
+  } else if (at) {
+    forv_Vec(AggregateType, childClass, at->dispatchChildren) {
       if (isUnusedClass(childClass) == false) {
         retval = false;
         break;
       }
     }
+
+  }
+
+  return retval;
+}
+
+static bool isUnusedClass(Type* t) {
+  bool retval = true;
+
+  retval = do_isUnusedClass(t);
+
+  // check other variant
+  //  borrow/class types can have unmanaged class type used
+  //  unmanaged class types can have borrow/canonical class type used
+  if (AggregateType* at = toAggregateType(t)) {
+    if (isClass(at)) {
+      if (UnmanagedClassType* mt = at->getUnmanagedClass())
+        retval &= do_isUnusedClass(mt);
+    }
+  } else if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
+    retval &= do_isUnusedClass(mt->getCanonicalClass());
   }
 
   return retval;
@@ -9461,16 +9860,26 @@ static void insertRuntimeInitTemps() {
   }
 }
 
-// Remove typedef definitions
-static void removeInitFields()
+// Remove moot parts of AST for type a=b
+static void removeTypedefParts()
 {
   forv_Vec(DefExpr, def, gDefExprs)
   {
     if (! def->inTree()) continue;
-    if (! def->init) continue;
-    if (! (def->sym->hasFlag(FLAG_TYPE_VARIABLE) || def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) continue;
-    def->init->remove();
-    def->init = NULL;
+
+    if (def->init &&
+        (def->sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+         def->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))) {
+      def->init->remove();
+      def->init = NULL;
+    }
+
+    // Also remove DefExprs for generic type variables
+    if (!isPrimitiveType(def->sym->type) &&
+        def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+        def->sym->type->symbol->hasFlag(FLAG_GENERIC)) {
+      def->remove();
+    }
   }
 }
 

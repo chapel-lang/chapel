@@ -1,4 +1,4 @@
-use Shared, LAPACK, LAPACK.ClassicLAPACK;
+use TestHelpers, LAPACK, LAPACK.ClassicLAPACK;
 
 config var verbose_test: bool;
 
