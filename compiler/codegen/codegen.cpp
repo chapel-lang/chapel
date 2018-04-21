@@ -969,56 +969,59 @@ static int uniquifyNameNextCount(MapElem<const char*, int>*& elem,
 }
 
 static void uniquifyName(Symbol* sym,
-                                std::set<const char*>* set1,
-                                std::set<const char*>* set2 = NULL) {
+                         std::set<const char*>* set1,
+                         std::set<const char*>* set2 = NULL)
+{
   const char* name = sym->cname;
   const char* newName = name;
 
-  if (!sym->isRenameable()) {
-    // Record this symbol's name, in case there are renameable symbols
-    // with the same name in the future.
+  if (sym->isRenameable())
+  {
+    if (fMaxCIdentLen > 0 &&
+        (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
+    {
+      // how much of the name to preserve
+      int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
+      if (!longCNameReplacementBuffer) {
+        longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
+        longCNameReplacementBuffer[prefixLen] = '\0';
+      }
+      strncpy(longCNameReplacementBuffer, newName, prefixLen);
+      INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
+      longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
+      name = newName = astr(longCNameReplacementBuffer);
+    }
 
+    MapElem<const char*, int>* elem = NULL;
+    while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
+      char numberTmp[64];
+      snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
+      newName = astr(name, numberTmp);
+    }
+
+    sym->cname = newName;
+  }
+  else
+  {
     // If we have already seen this name before, we need to go back
     // to that earlier-seen symbol, either renaming it or checking
-    // that its type is the same.
+    // that its type is the same. See also #9299.
     //
     // This is currently not implemented. For now, at least detect it
     // to avoid generating erroneous C code silently.
-    // Do this only for things local to a function, as we use
-    // multiple Symbols for the same extern at the global scope,
-    // ex c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
+    //
+    // Do this only for things local to a function.
+    // We use multiple Symbols for the same extern at the global scope,
+    // be it a (possibly generic) function, type, variable.
+    // Ex.: c_pointer_return, qbuffer_ptr_t, QBUFFER_PTR_NULL.
     //
     if (set2 && (set1->find(name) != set1->end()) )
       INT_FATAL(sym, "name conflict with a non-renameable symbol");
-
-    set1->insert(name);
-    return;
   }
 
-  if (fMaxCIdentLen > 0 &&
-      (int)(strlen(newName) + maxCNameAddedChars) > fMaxCIdentLen)
-  {
-    // how much of the name to preserve
-    int prefixLen = fMaxCIdentLen - maxUniquifyAddedChars - maxCNameAddedChars;
-    if (!longCNameReplacementBuffer) {
-      longCNameReplacementBuffer = (char*)malloc(prefixLen+1);
-      longCNameReplacementBuffer[prefixLen] = '\0';
-    }
-    strncpy(longCNameReplacementBuffer, newName, prefixLen);
-    INT_ASSERT(longCNameReplacementBuffer[prefixLen] == '\0');
-    longCNameReplacementBuffer[prefixLen-1] = 'X'; //fyi truncation marker
-    name = newName = astr(longCNameReplacementBuffer);
-  }
-
-  MapElem<const char*, int>* elem = NULL;
-  while ((set1->find(newName)!=set1->end()) || (set2 && (set2->find(newName)!=set2->end()))) {
-    char numberTmp[64];
-    snprintf(numberTmp, 64, "%d", uniquifyNameNextCount(elem, name));
-    newName = astr(name, numberTmp);
-  }
-
+  // Record the name even if the symbol is not renameable.
+  // This enables detection of like-named symbols encountered later.
   set1->insert(newName);
-  sym->cname = newName;
 }
 
 static inline bool shouldCodegenAggregate(AggregateType* ct)
