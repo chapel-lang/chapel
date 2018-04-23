@@ -506,6 +506,7 @@ proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture,
     string.
  */
 pragma "no doc"
+pragma "use default init"
 record stringPart {
   var offset:int;
   var length:int;
@@ -527,6 +528,7 @@ record stringPart {
       if !m then do_something_if_not_matched();
 
  */
+pragma "use default init"
 record reMatch {
   /* true if the regular expression search matched successfully */
   var matched:bool;
@@ -578,6 +580,18 @@ record regexp {
   var home: locale = here;
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
+
+  proc init() {
+  }
+
+  proc init(x: regexp) {
+    this.home = x.home;
+    this._regexp = x._regexp;
+    this.complete();
+    on home {
+      qio_regexp_retain(_regexp);
+    }
+  }
 
   /* did this regular expression compile ? */
   proc ok:bool {
@@ -1013,16 +1027,6 @@ proc =(ref ret:regexp, x:regexp)
 
     qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
   }
-}
-
-// TODO -- shouldn't have to write this this way!
-pragma "no doc"
-pragma "init copy fn"
-proc chpl__initCopy(x: regexp) {
-  on x.home {
-    qio_regexp_retain(x._regexp);
-  }
-  return x;
 }
 
 // Cast regexp to string.

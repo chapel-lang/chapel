@@ -809,6 +809,7 @@ proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 /* Comparators */
 
 /* Default comparator used in sort functions.*/
+pragma "use default init"
 record DefaultComparator {
 
   /*
