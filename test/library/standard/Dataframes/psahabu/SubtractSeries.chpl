@@ -15,8 +15,8 @@ writeln(doubledDigit);
 
 var I2 = ["A", "B", "C"];
 var I3 = ["B", "C", "D", "E"];
-var X: TypedSeries(int) = new TypedSeries(I2, [0, 1, 2]);
-var Y: TypedSeries(int) = new TypedSeries(I3, [10, 20, 0, 0]);
+var X: TypedSeries(int) = new TypedSeries(I2, [5, 1, 2]);
+var Y: TypedSeries(int) = new TypedSeries(I3, [10, 20, 6, 7]);
 var XY = Y.subtr(X, string);
 
 writeln("\nterms:");
