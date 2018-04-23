@@ -267,7 +267,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
       if (st->symbol->hasFlag(FLAG_DISTRIBUTION) && isDistClass(pt)) {
         AggregateType* ag = toAggregateType(st);
 
-        st = ag->getField("_instance")->type;
+        st = canonicalClassType(ag->getField("_instance")->type);
       } else {
         // Try to work around some resolution order issues
         st = resolveTypeAlias(subExpr);

@@ -881,9 +881,15 @@ static void processSyntacticDistributions(CallExpr* call) {
       if (SymExpr* distClass = toSymExpr(distCall->baseExpr)) {
         if (TypeSymbol* ts = expandTypeAlias(distClass)) {
           if (isDistClass(ts->type) == true) {
+            // TODO
+            //CallExpr* newExpr = new CallExpr(PRIM_NEW,
+            //    new CallExpr("_to_unmanaged", distCall->remove()));
             CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
 
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+
+            // TODO
+            //processManagedNew(newExpr);
           }
         }
       }

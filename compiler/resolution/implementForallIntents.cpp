@@ -20,6 +20,7 @@
 #include "implementForallIntents.h"
 
 #include "resolveFunction.h"
+#include "UnmanagedClassType.h"
 
 //
 //-----------------------------------------------------------------------------
@@ -1017,6 +1018,8 @@ void cleanupRedRefs(Expr*& redRef1, Expr*& redRef2) {
 // similar to isArrayClass()
 bool isReduceOp(Type* type) {
   bool retval = false;
+
+  type = canonicalClassType(type);
 
   if (type->symbol->hasFlag(FLAG_REDUCESCANOP) == true) {
     retval = true;

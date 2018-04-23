@@ -950,8 +950,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     //
     SymExpr* se = toSymExpr(call->get(1));
 
-    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) == true &&
-        isClass(type)                         == false) {
+    if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) && !isClassLike(type)) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 

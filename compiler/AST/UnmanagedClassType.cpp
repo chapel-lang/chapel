@@ -23,8 +23,8 @@
 #include "symbol.h"
 #include "expr.h"
 #include "iterator.h"
-                          
-UnmanagedClassType::UnmanagedClassType(AggregateType* cls) 
+
+UnmanagedClassType::UnmanagedClassType(AggregateType* cls)
   : Type(E_UnmanagedClassType, NULL) {
 
   canonicalClass = cls;
@@ -101,6 +101,21 @@ Type* canonicalClassType(Type* a) {
   return a;
 }
 
+static Type* convertToCanonical(Type* a) {
+
+  if (isReferenceType(a)) {
+    // Convert ref(unmanaged) to ref(canonical)
+    Type* elt = a->getValType();
+    Type* newElt = canonicalClassType(elt);
+    INT_ASSERT(newElt->refType);
+    return newElt->refType;
+  }
+
+  // convert unmanaged to canonical
+  return canonicalClassType(a);
+}
+
+
 static void convertClassTypes(Type* (*convert)(Type*)) {
 
   forv_Vec(VarSymbol, var, gVarSymbols) {
@@ -113,12 +128,27 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
     if (newT != arg->type) arg->type = newT;
   }
 
+  forv_Vec(ShadowVarSymbol, sv, gShadowVarSymbols) {
+    Type* newT = convert(sv->type);
+    if (newT != sv->type) sv->type = newT;
+  }
+
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     Type* newT = convert(ts->type);
     if (newT != ts->type) {
       TypeSymbol* newTS = newT->symbol;
       for_SymbolSymExprs(se, ts) {
         se->setSymbol(newTS);
+      }
+    }
+
+    form_Map(SymbolMapElem, e, ts->type->substitutions) {
+      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+        Type* newT = convert(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          e->value = newTS;
+        }
       }
     }
   }
@@ -132,18 +162,32 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
       if (newYieldT != fn->iteratorInfo->yieldedType)
         fn->iteratorInfo->yieldedType = newYieldT;
     }
+
+    form_Map(SymbolMapElem, e, fn->substitutions) {
+      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+        Type* newT = convert(ets->type);
+        if (newT != ets->type) {
+          TypeSymbol* newTS = newT->symbol;
+          e->value = newTS;
+        }
+      }
+    }
   }
 }
 
 void convertClassTypesToCanonical() {
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
-  convertClassTypes(canonicalClassType);
+  convertClassTypes(convertToCanonical);
 
   // At this point the TypeSymbols for the unmanaged types should
   // be removed from the tree. Using these would be an error.
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (ts->inTree() && isUnmanagedClassType(ts->type))
-      ts->defPoint->remove();
+    if (isUnmanagedClassType(ts->type)) {
+      if (ts->inTree())
+        ts->defPoint->remove();
+      if (ts->type->refType && ts->type->refType->symbol->inTree())
+        ts->type->refType->symbol->defPoint->remove();
+    }
   }
 }
