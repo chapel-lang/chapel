@@ -588,6 +588,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
   resolveSignature(fn);
 
   bool isCopyInit = looksLikeCopyInit(this);
+  bool isInitCopy = fn->hasFlag(FLAG_INIT_COPY_FN);
 
   for_formals(formal, fn) {
     if (Symbol* actual = formalIdxToActual[++coindex]) {
@@ -603,7 +604,11 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
 
       bool promotes          = false;
 
-      if (actualIsTypeAlias != formalIsTypeAlias) {
+      if (isInitCopy && isString(actual) && formal->getValType() == dtStringC) {
+        // Do not allow an initCopy of a string to find the c_string initCopy,
+        // which is considered first because it is not compiler generated.
+        return false;
+      } else if (actualIsTypeAlias != formalIsTypeAlias) {
         return false;
 
       } else if (formalIsTypeAlias &&

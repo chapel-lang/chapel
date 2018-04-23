@@ -315,9 +315,18 @@ all:
   04/03/18:
     - text: Reduce contention from ugni's polling thread (#9068)
       config: 16 node XC
+  04/08/18:
+    - move lowering of ForallStmts at resolution (#8785)
   04/11/18:
     - Convert BaseDom and its derived classes to use initializers (#9113)
-
+  04/14/18:
+    - Update BaseArr to use initializers (#9160)
+  04/17/18:
+    - Workaround for StencilDom performance (#9231)
+  04/18/18:
+    - Update strings to use initializers (#9217)
+  04/19/19:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 AllCompTime:
   11/09/14:
@@ -829,6 +838,13 @@ memleaksfull:
     - Convert RecordParser over from constructors to initializers (#8810)
   04/04/18:
     - Update a slew of tests with initialize() methods to use postinit() instead (#8988)
+  04/07/18:
+    - Fix some initializer leaks (#9111)
+  04/10/18:
+    - Partial reduction straw man (#9158)
+  04/19/18:
+    - New test for warn-unstable (#9229)
+    - Partial reductions for LayoutCS (#9269)
 
 meteor:
   12/18/13:

@@ -48,7 +48,7 @@ use CommDiagnostics;
 config param debugStencilDist = false;
 config param debugStencilDistBulkTransfer = false;
 
-// TODO: part of constructor?
+// TODO: part of initializer?
 config param stencilDistAllowPackedUpdateFluff = true;
 
 // Instructs the _packedUpdate method to only perform the optimized buffer
@@ -133,11 +133,11 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
   The indices are partitioned in the same way as the :mod:`Block <BlockDist>`
   distribution.
 
-  The ``Stencil`` class constructor is defined as follows:
+  The ``Stencil`` class initializer is defined as follows:
 
     .. code-block:: chapel
 
-      proc Stencil(
+      proc Stencil.init(
         boundingBox: domain,
         targetLocales: [] locale  = Locales,
         dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
@@ -279,7 +279,6 @@ class LocStencil {
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
-pragma "use default init"
 class StencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: Stencil(rank, idxType, ignoreFluff);
@@ -383,7 +382,7 @@ private proc makeZero(param rank : int, type idxType) {
   return ret;
 }
 //
-// Stencil constructor for clients of the Stencil distribution
+// Stencil initializer for clients of the Stencil distribution
 //
 proc Stencil.init(boundingBox: domain,
                   targetLocales: [] locale = Locales,
@@ -604,6 +603,29 @@ proc LocStencil.LocStencil(param rank: int,
     }
     myChunk = {(...inds)};
   }
+}
+
+//
+// TODO: Remove this and go back to default initializer once task-resetting is
+// implemented.
+//
+// This initializer is introduced to work around a task-resetting performance
+// issue. In the default initializer, locDoms is first initialized then
+// assigned to in parallel. This offsets the tasks just enough to slightly hurt
+// performance.
+//
+proc StencilDom.init(param rank : int,
+                     type idxType,
+                     param stridable : bool,
+                     param ignoreFluff : bool,
+                     dist : Stencil(rank, idxType, ignoreFluff),
+                     fluff : rank*idxType,
+                     periodic : bool = false) {
+  super.init(rank, idxType, stridable);
+  this.ignoreFluff = ignoreFluff;
+  this.dist = dist;
+  this.fluff = fluff;
+  this.periodic = periodic;
 }
 
 proc StencilDom.dsiMyDist() return dist;

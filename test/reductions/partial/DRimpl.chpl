@@ -1,9 +1,9 @@
 use OwnedObject;
 use utilities;
 
-// + reduce (shape=DOM) ARR
+// + reduce (shape=DIMS) ARR
 
-proc pr(DIMS,ARR) throws {
+proc plusPR(DIMS,ARR) throws {
   const OP = new Owned(new SumReduceScanOp(eltType=ARR.eltType));
   return ARR.domain.dist.dsiPartialReduce(OP.borrow(), DIMS, ARR);
 }
@@ -29,5 +29,6 @@ proc DefaultDist.dsiPartialReduce(const reduceOp, const resDimSpec,
     reduceOp.accumulateOntoState(resArr[resIdx], srcElm);
   }
 
+  delete resReduceOp;
   return  resArr;
 }

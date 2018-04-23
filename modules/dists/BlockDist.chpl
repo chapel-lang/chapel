@@ -200,13 +200,13 @@ When run on 6 locales, the output is:
     4 4 4 4 5 5 5 5
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``Block`` class constructor is defined as follows:
+The ``Block`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Block(
+    proc Block.init(
       boundingBox: domain,
       targetLocales: [] locale  = Locales, 
       dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,
@@ -260,7 +260,7 @@ where the updates are made.
 When a ``sparse subdomain`` is declared as a subdomain to a Block-distributed
 domain, the resulting sparse domain will also be Block-distributed. The
 sparse layout used in this sparse subdomain can be controlled with the
-``sparseLayoutType`` constructor argument to Block.
+``sparseLayoutType`` initializer argument to Block.
 
 This example demonstrates a Block-distributed sparse domain and array:
 
@@ -422,7 +422,7 @@ class LocBlockArr {
 }
 
 //
-// Block constructor for clients of the Block distribution
+// Block initializer for clients of the Block distribution
 //
 proc Block.init(boundingBox: domain,
                 targetLocales: [] locale = Locales,
@@ -1251,7 +1251,7 @@ proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  // in constructor we have to pass sparseLayoutType as it has no default value
+  // in initializer we have to pass sparseLayoutType as it has no default value
   var c = new BlockDom(rank=rank, idxType=idxType, stridable=stridable,
       sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do

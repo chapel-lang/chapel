@@ -45,7 +45,7 @@ proc isCSType(type t) param return false;
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
 Column (CSC) implementation for Chapel's sparse domains and arrays.
 
-To declare a CS domain, invoke the ``CS`` constructor in a `dmapped` clause,
+To declare a CS domain, invoke the ``CS`` initializer in a `dmapped` clause,
 specifying CSR vs. CSC format with the ``param compressRows`` argument, which
 defaults to ``true`` if omitted. For example:
 
@@ -114,7 +114,7 @@ class CSDom: BaseSparseDomImpl {
     if parentDom.idxType != idxType then
       compilerError("idxType mismatch in CSDom.init(): " + idxType:string + " != " + parentDom.idxType:string);
 
-    super.init(rank=rank, idxType=idxType, parentDom=parentDom);
+    super.init(rank, idxType, parentDom);
 
     this.compressRows = compressRows;
     this.stridable = stridable;

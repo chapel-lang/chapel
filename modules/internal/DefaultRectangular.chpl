@@ -102,7 +102,7 @@ module DefaultRectangular {
     proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
-      super.init(rank=rank, idxType=idxType, stridable=stridable);
+      super.init(rank, idxType, stridable);
       this.dist = dist;
     }
 
@@ -1049,8 +1049,6 @@ module DefaultRectangular {
       }
     }
 
-    // change name to setup and call after constructor call sites
-    // we want to get rid of all initialize functions everywhere
     proc postinit() {
       if noinit_data == true then return;
       for param dim in 1..rank {
@@ -1063,7 +1061,7 @@ module DefaultRectangular {
       computeFactoredOffs();
       const size = blk(1) * dom.dsiDim(1).length;
 
-      // Allow DR array construction to pass in existing data
+      // Allow DR array initialization to pass in existing data
       if data == nil {
         if !localeModelHasSublocales {
           data = _ddata_allocate(eltType, size);
@@ -1296,7 +1294,7 @@ module DefaultRectangular {
         // Ideally we would like to be able to do something like
         // "for i in first..last by step". However, right now that would
         // result in a strided iterator which isn't as optimized. It would
-        // also add a range constructor, which in tight loops is pretty
+        // also add a range initializer, which in tight loops is pretty
         // expensive. Instead we use a direct range iterator that is
         // optimized for positively strided ranges. It should be just as fast
         // as directly using a "c for loop", but it contains code check for

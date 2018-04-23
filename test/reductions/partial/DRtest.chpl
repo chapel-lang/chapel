@@ -50,11 +50,11 @@ proc d2u(DIMS, param dim) {
 proc test(ARR,DIMS) {
   writeln();
   writeln("DIMS = ", DIMS);
-  var RES1 = pr(DIMS, ARR);
+  var RES1 = plusPR(DIMS, ARR);
   writeln("RES = \n", RES1);
-  var RES2 = pr(d2d(DIMS), ARR);
+  var RES2 = plusPR(d2d(DIMS), ARR);
   assert(RES2 == RES1);
-  var RES3 = pr(d2u(DIMS,1), ARR);
+  var RES3 = plusPR(d2u(DIMS,1), ARR);
   assert(RES3 == RES1);
 }
 

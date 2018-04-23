@@ -100,6 +100,28 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
   return NULL;
 }
 
+/* Given an expression, find the preceding variable
+   declared in the same block that is marked with FLAG_CHPL__ITER,
+   or NULL if no such variable exists.
+ */
+static Symbol* findPreceedingChplIter(Expr* ref)
+{
+  Symbol* chpl_iter = NULL;
+  Expr* e = ref;
+  while (e) {
+    if (DefExpr* d = toDefExpr(e)) {
+      Symbol* var = d->sym;
+      if (var->hasFlag(FLAG_CHPL__ITER)) {
+        chpl_iter = var;
+        break;
+      }
+    }
+    e = e->prev;
+  }
+
+  return chpl_iter;
+}
+
 static Symbol* findNewIterLF(Expr* ref);
 
 /* Given chpl_iter for a "new-style" forall loop ie generated from ForallStmt,
@@ -113,14 +135,13 @@ static Symbol* findNewIterLF(Symbol* chpl_iter) {
 }
 
 static Symbol* findNewIterLF(Expr* ref) {
-  Expr* iprev = ref->prev;
-  if (!iprev) return NULL;
-  DefExpr* defExp = toDefExpr(iprev->prev);
-  if (!defExp) return NULL;
-  Symbol* defSym = defExp->sym;
-  if (!defSym->hasFlag(FLAG_CHPL__ITER)) return NULL;
-  INT_ASSERT(!strcmp(defSym->name, "chpl__iterLF"));
-  return defSym;
+  Symbol* chpl_iter = findPreceedingChplIter(ref);
+
+  if (chpl_iter) {
+    INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterLF"));
+  }
+
+  return chpl_iter;
 }
 
 /* Collapse compiler-introduced copies of references
@@ -305,20 +326,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
   // find the variable marked with "chpl__iter" variable
   // in the loop header.
-  Symbol* chpl_iter = NULL;
-  {
-    Expr* e = forLoop;
-    while (e) {
-      if (DefExpr* d = toDefExpr(e)) {
-        Symbol* var = d->sym;
-        if (var->hasFlag(FLAG_CHPL__ITER)) {
-          chpl_iter = var;
-          break;
-        }
-      }
-      e = e->prev;
-    }
-  }
+  Symbol* chpl_iter = findPreceedingChplIter(forLoop);
 
   bool forall = (chpl_iter != NULL);
   // MPF: should be the same as isLoweredForallLoop but it isn't yet

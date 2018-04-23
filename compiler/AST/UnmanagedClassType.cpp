@@ -139,4 +139,11 @@ void convertClassTypesToCanonical() {
   // Anything that has unmanaged pointer type should be using the canonical
   // type instead.
   convertClassTypes(canonicalClassType);
+
+  // At this point the TypeSymbols for the unmanaged types should
+  // be removed from the tree. Using these would be an error.
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->inTree() && isUnmanagedClassType(ts->type))
+      ts->defPoint->remove();
+  }
 }

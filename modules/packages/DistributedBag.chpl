@@ -82,7 +82,7 @@
   Usage
   _____
 
-  To use :record:`DistBag`, the constructor must be invoked explicitly to
+  To use :record:`DistBag`, the initializer must be invoked explicitly to
   properly initialize the structure. Using the default state without initializing
   will result in a halt.
 

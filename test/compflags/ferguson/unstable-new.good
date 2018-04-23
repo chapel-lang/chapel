@@ -1,0 +1,17 @@
+unstable-new.chpl:19: In function 'errors':
+unstable-new.chpl:20: warning: new MyClass is unstable
+unstable-new.chpl:20: note: use 'new unmanaged MyClass' 'new owned MyClass' or 'new shared MyClass'
+unstable-new.chpl:21: warning: new MyGenericClass is unstable
+unstable-new.chpl:21: note: use 'new unmanaged MyGenericClass' 'new owned MyGenericClass' or 'new shared MyGenericClass'
+in errors
+{x = 1}
+{y = 1}
+in ok
+{x = 1}
+{y = 1}
+{x = 1}
+{y = 1}
+{x = 1}
+{y = 1}
+(x = 1)
+(y = 1)

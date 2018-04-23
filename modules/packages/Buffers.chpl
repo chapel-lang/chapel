@@ -125,7 +125,7 @@ module Buffers {
   }
 
   // bytes methods.
-  /* Construct an empty bytes object */
+  /* Initialize an empty bytes object */
   proc bytes.init() {
     this.home = here;
     this._bytes_internal = QBYTES_PTR_NULL;
@@ -142,7 +142,7 @@ module Buffers {
     return ret;
   }*/
 
-  /* Construct a bytes object by allocating zero-filled memory.
+  /* Initialize a bytes object by allocating zero-filled memory.
 
      :arg len: the number of bytes to allocate
      :arg error: (optional) capture an error that was encountered instead of
@@ -159,8 +159,8 @@ module Buffers {
     this.home = here;
     this.complete();
     var error:syserr = qbytes_create_calloc(this._bytes_internal, len);
-    if error then try! ioerror(error, "in bytes constructor");
-    // The buffer is retained internally on construction, but only on success.
+    if error then try! ioerror(error, "in bytes initializer");
+    // The buffer is retained internally on initialization, but only on success.
   }
 
 
@@ -324,7 +324,7 @@ module Buffers {
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
-    if error then try! ioerror(error, "in buffer constructor");
+    if error then try! ioerror(error, "in buffer initializer");
   }
   pragma "no doc"
   proc buffer.init(x: buffer) {
@@ -393,7 +393,7 @@ module Buffers {
      :arg range: the region of the buffer to copy, for example buffer.all()
      :arg error: (optional) capture an error that was encountered instead of
                  halting on error
-     :returns: a newly constructed bytes object on the current locale
+     :returns: a newly initialized bytes object on the current locale
    */
   proc buffer.flatten(range:buffer_range, out error:syserr) {
   //proc buffer.flatten(range:buffer_range, out error:syserr):bytes {

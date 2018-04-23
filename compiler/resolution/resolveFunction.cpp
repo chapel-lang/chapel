@@ -1651,9 +1651,20 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   lhs->remove();
                   rhs->remove();
 
+                  Expr* newRHS = NULL;
+                  if (isCallExpr(rhs)) {
+                    VarSymbol* tmp = newTemp(rhs->typeInfo());
+                    DefExpr* def = new DefExpr(tmp);
+                    call->insertBefore(def);
+                    call->insertBefore(new CallExpr(PRIM_MOVE, tmp, rhs));
+                    newRHS = new SymExpr(tmp);
+                  } else {
+                    newRHS = rhs;
+                  }
+
                   CallExpr* move = new CallExpr(PRIM_MOVE,
                                                 lhs,
-                                                new CallExpr(PRIM_DEREF, rhs));
+                                                new CallExpr(PRIM_DEREF, newRHS));
 
                   call->replace(move);
 

@@ -105,13 +105,13 @@ When run on 6 locales, the output is:
     2 3 2 3 2 3 2 3
 
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``Cyclic`` class constructor is defined as follows:
+The ``Cyclic`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc Cyclic(
+    proc Cyclic.init(
       startIdx,
       targetLocales: [] locale = Locales,
       dataParTasksPerLocale     = // value of  dataParTasksPerLocale      config const,

@@ -1008,6 +1008,7 @@ module ChapelArray {
   }
 
 
+  pragma "use default init"
   record _serialized_domain {
     param rank;
     type idxType;
@@ -3903,6 +3904,7 @@ module ChapelArray {
   // index for all opaque domains
   //
   pragma "no doc"
+  pragma "use default init"
   record _OpaqueIndex {
     var node:int = 0;
     var i:uint = 0;
