@@ -1,0 +1,4 @@
+genericArgDotType2.chpl:8: error: unresolved call 'foo(color, size)'
+genericArgDotType2.chpl:4: note: candidates are: foo(x, y: x.type )
+genericArgDotType2.chpl:17: error: unresolved call 'bar(int(8), int(64))'
+genericArgDotType2.chpl:10: note: candidates are: bar(x, y: x.type )
