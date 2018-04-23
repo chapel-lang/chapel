@@ -1154,9 +1154,9 @@ bool doCanDispatch(Type*     actualType,
   // autocopy(x) and the autocopy(x: atomic int) (represented as
   // autocopy(x: ref(atomic int)) internally).
   //
-  } else if (actualType                              == dtNil  &&
-             isClass(canonicalClassType(formalType)) == true   &&
-             formalType->symbol->hasFlag(FLAG_REF)   == false) {
+  } else if (actualType == dtNil &&
+             isClass(canonicalClassType(formalType)) &&
+             !formalType->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   } else if (actualType->refType == formalType &&
