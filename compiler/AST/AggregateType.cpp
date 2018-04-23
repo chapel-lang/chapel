@@ -1354,6 +1354,11 @@ void AggregateType::buildConstructor() {
     }
   }
 
+  // Don't use initializers or constructors for tuples.
+  if (symbol->hasFlag(FLAG_TUPLE)) {
+    return;
+  }
+
   // Create the default constructor function symbol,
   FnSymbol* fn = new FnSymbol(astr("_construct_", symbol->name));
 
@@ -1367,13 +1372,6 @@ void AggregateType::buildConstructor() {
 
   if (symbol->hasFlag(FLAG_REF) == true) {
     fn->addFlag(FLAG_REF);
-  }
-
-  if (symbol->hasFlag(FLAG_TUPLE) == true) {
-    fn->addFlag(FLAG_TUPLE);
-    fn->addFlag(FLAG_INLINE);
-
-    gGenericTupleInit = fn;
   }
 
   // And insert it into the class type.

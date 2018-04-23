@@ -47,6 +47,7 @@ struct TupleInfo {
   FnSymbol*   buildTupleType;
   FnSymbol*   buildStarTupleType;
   FnSymbol*   buildTupleTypeNoRef;
+  FnSymbol*   init;
 };
 
 
@@ -215,7 +216,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
 {
   int size = args.size();
   Type *newType = newTypeSymbol->type;
-  FnSymbol *ctor = new FnSymbol("_construct__tuple");
+  FnSymbol *ctor = new FnSymbol(tupleInitName);
 
   // Does "_this" even make sense in this situation?
   VarSymbol* _this = new VarSymbol("this", newType);
@@ -258,8 +259,8 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->addFlag(FLAG_LAST_RESORT);
   ctor->addFlag(FLAG_INLINE);
   ctor->addFlag(FLAG_INVISIBLE_FN);
-  ctor->addFlag(FLAG_DEFAULT_CONSTRUCTOR);
-  ctor->addFlag(FLAG_CONSTRUCTOR);
+  ctor->addFlag(FLAG_TUPLE);
+
   ctor->addFlag(FLAG_PARTIAL_TUPLE);
 
   ctor->retTag = RET_VALUE;
@@ -268,7 +269,6 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->insertAtTail(ret);
   ctor->substitutions.copy(newType->substitutions);
 
-  ctor->instantiatedFrom = gGenericTupleInit;
   ctor->instantiationPoint = instantiationPoint;
 
   tupleModule->block->insertAtTail(new DefExpr(ctor));
@@ -448,13 +448,13 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     // Build the value constructor
-    newType->defaultInitializer = makeConstructTuple(args,
-                                                     typeCtorArgs,
-                                                     newTypeSymbol,
-                                                     tupleModule,
-                                                     instantiationPoint,
-                                                     noref,
-                                                     sizeType);
+    info.init = makeConstructTuple(args,
+                                   typeCtorArgs,
+                                   newTypeSymbol,
+                                   tupleModule,
+                                   instantiationPoint,
+                                   noref,
+                                   sizeType);
 
 
     // Build the value destructor
@@ -1039,10 +1039,8 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
     retval = at->typeConstructor;
 
-  } else if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) == true) {
-    AggregateType* at = toAggregateType(info.typeSymbol->type);
-
-    retval = at->defaultInitializer;
+  } else if (fn->hasFlag(FLAG_TUPLE) == true) {
+    retval = info.init;
 
   } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
     if (fn->hasFlag(FLAG_STAR_TUPLE) == true) {

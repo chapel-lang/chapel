@@ -1639,8 +1639,7 @@ static void lateConstCheck(std::map<BaseAST*, BaseAST*> & reasonNotConst)
 
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
-            (calledFn->hasFlag(FLAG_CONSTRUCTOR) &&
-             calledFn->retType->symbol->hasFlag(FLAG_TUPLE))) {
+            calledFn->hasFlag(FLAG_TUPLE)) {
           error = false;
         }
 

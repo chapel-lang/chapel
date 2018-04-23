@@ -77,7 +77,7 @@ explainInstantiation(FnSymbol* fn) {
         else
           len += sprintf(msg+len, ", ");
         INT_ASSERT(arg);
-        if (strcmp(fn->name, "_construct__tuple"))
+        if (strcmp(fn->name, tupleInitName))
           len += sprintf(msg+len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)

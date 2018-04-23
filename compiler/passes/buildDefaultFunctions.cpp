@@ -832,11 +832,10 @@ static void build_enum_enumerate_function(EnumType* et) {
   et->symbol->defPoint->insertAfter(new DefExpr(fn));
 
   // Generate the tuple of enum values for the given enum type
-  CallExpr* call = new CallExpr("_construct__tuple");
+  CallExpr* call = new CallExpr("_build_tuple");
   for_enums(constant, et) {
     call->insertAtTail(constant->sym);
   }
-  call->insertAtHead(new_IntSymbol(call->numActuals()));
 
   fn->insertAtTail(new CallExpr(PRIM_RETURN, call));
 

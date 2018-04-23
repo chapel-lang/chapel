@@ -65,10 +65,8 @@ FnSymbol* getTheIteratorFn(Type* icType)
   INT_ASSERT(icTypeAgg);
 
   if (icType->symbol->hasFlag(FLAG_TUPLE)) {
-    FnSymbol* getIterFn = icTypeAgg->defaultInitializer;
-    // A tuple of iterator classes -> first argument to
-    // tuple constructor is the iterator class type.
-    Type* firstIcType = getIterFn->getFormal(1)->type;
+    // A tuple of iterator classes -> first field is the iterator class
+    Type* firstIcType = icTypeAgg->getField(1)->type;
     INT_ASSERT(firstIcType->symbol->hasFlag(FLAG_ITERATOR_CLASS));
     AggregateType* firstIcTypeAgg = toAggregateType(firstIcType);
     FnSymbol* result = firstIcTypeAgg->iteratorInfo->getIterator;
