@@ -21,19 +21,11 @@ module Dataframes {
   use Sort;
 
   class Index {
-    pragma "no doc"
     proc contains(lab) {
       halt("generic Index contains no elements");
       return false;
     }
 
-    pragma "no doc"
-    proc uni(lhs: TypedSeries, rhs: TypedSeries, unifier: SeriesUnifier) {
-      halt("generic Index cannot be unioned");
-      return lhs;
-    }
-
-    pragma "no doc"
     proc writeThis(f, s: TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
@@ -84,7 +76,7 @@ module Dataframes {
     }
 
     proc contains(lab: idxType) {
-      return {lab}.isSubset(labels);
+      return labels.member(lab);
     }
 
     proc writeThis(f, s: TypedSeries(?) = nil) {
@@ -103,12 +95,6 @@ module Dataframes {
   }
 
   class Series {
-    // TODO: overload + on a class for dynamic dispatch?
-    /*
-    proc +(ref lhs: Series, ref rhs: Series) {
-      return lhs.add(rhs);
-    }
-     */
   }
 
   class TypedSeries : Series {
@@ -163,10 +149,7 @@ module Dataframes {
       return data[(idx:TypedIndex(idxType))[lab]];
     }
 
-    // TODO: "in" operator
-    proc indexContains(lab: ?idxType) {
-      return (idx:TypedIndex(idxType)).contains(lab);
-    }
+    // TODO: "in" operator for idx.contains(lab)
 
     proc add(other: TypedSeries(eltType)): TypedSeries(eltType) {
       // TODO: check if the index types are the same, throw if not
@@ -204,7 +187,7 @@ module Dataframes {
       var curr_ord = 0;
       for (i, d) in this.items(idxType) {
         var sum_d = d;
-        if other.indexContains(i) then
+        if other.idx.contains(i) then
           sum_d += other[i];
 
         curr_ord += 1;
@@ -213,7 +196,7 @@ module Dataframes {
       }
 
       for (other_i, other_d) in other.items(idxType) {
-        if !this.indexContains(other_i) {
+        if !this.idx.contains(other_i) {
           curr_ord += 1;
           sum_rev_idx[curr_ord] = other_i;
           sum_data[curr_ord] = other_d;
@@ -261,7 +244,7 @@ module Dataframes {
       var curr_ord = 0;
       for (i, d) in this.items(idxType) {
         var diff_d = d;
-        if other.indexContains(i) then
+        if other.idx.contains(i) then
           diff_d -= other[i];
 
         curr_ord += 1;
@@ -270,7 +253,7 @@ module Dataframes {
       }
 
       for (other_i, other_d) in other.items(idxType) {
-        if !this.indexContains(other_i) {
+        if !this.idx.contains(other_i) {
           curr_ord += 1;
           diff_rev_idx[curr_ord] = other_i;
           diff_data[curr_ord] = -other_d;
@@ -319,7 +302,7 @@ module Dataframes {
       var curr_ord = 0;
       for (i, d) in this.items(idxType) {
         var prod_d = 0;
-        if other.indexContains(i) then
+        if other.idx.contains(i) then
           prod_d = d * other[i];
 
         curr_ord += 1;
@@ -328,7 +311,7 @@ module Dataframes {
       }
 
       for (other_i, _) in other.items(idxType) {
-        if !this.indexContains(other_i) {
+        if !this.idx.contains(other_i) {
           curr_ord += 1;
           prod_rev_idx[curr_ord] = other_i;
           prod_data[curr_ord] = 0;
@@ -349,77 +332,10 @@ module Dataframes {
     }
   }
 
-  // TODO: return tuple versions where first element is "None"
-  class SeriesUnifier {
-    type eltType;
-
-    proc f(lhs: eltType, rhs: eltType): eltType {
-      var empty: eltType;
-      return empty;
-    }
-
-    proc f_lhs(lhs: eltType): eltType {
-      return lhs;
-    }
-
-    proc f_rhs(rhs: eltType): eltType {
-      return rhs;
-    }
-  }
-
-  class SeriesAdd : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
-      return lhs + rhs;
-    }
-  }
-
-  class SeriesSubtr : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
-      return lhs - rhs;
-    }
-
-    proc f_rhs(rhs: eltType): eltType {
-      return -rhs;
-    }
-  }
-
-  class SeriesMult : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
-      return lhs * rhs;
-    }
-
-    proc f_lhs(lhs: eltType): eltType {
-      return 0;
-    }
-
-    proc f_rhs(rhs: eltType): eltType {
-      return 0;
-    }
-  }
-
-  proc +(lhs: Series, rhs: Series) {
+  // TODO: overload + on a class for dynamic dispatch?
+  /*
+  proc +(ref lhs: TypedSeries(?T), ref rhs: TypedSeries(T)) {
     return lhs.add(rhs);
   }
-
-  proc +(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.add_scalar(rhs);
-  }
-
-  proc -(lhs: Series, rhs: Series) {
-    return lhs.subtr(rhs);
-  }
-
-  proc -(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.subtr_scalar(rhs);
-  }
-
-  proc *(lhs: Series, rhs: Series) {
-    return lhs.mult(rhs);
-  }
-
-  proc *(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.mult_scalar(rhs);
-  }
-
-
+   */
 }
