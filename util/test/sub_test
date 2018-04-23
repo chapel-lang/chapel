@@ -1025,7 +1025,8 @@ for testname in testsrc:
     # print test_filename_files, dirlist
 
     if (perftest and (test_filename_files.count(PerfTFile(test_filename,'keys'))==0) and
-        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0)):
+        (test_filename_files.count(PerfTFile(test_filename,'execopts'))==0) and
+        (test_filename_files.count(PerfTFile(test_filename,'compopts'))==0)):
         sys.stdout.write('[Skipping noperf test: %s/%s]\n'%(localdir,test_filename))
         continue # on to next test
 
