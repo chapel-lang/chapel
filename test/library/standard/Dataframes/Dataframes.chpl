@@ -176,7 +176,7 @@ module Dataframes {
         for (i, d) in other.items() {
           var sum_d = d;
           if i <= this.ords.size then
-            sum_d += other.at(i);
+            sum_d += this.at(i);
           sum_data[i] = sum_d;
         }
         return new TypedSeries(sum_data);
@@ -211,61 +211,120 @@ module Dataframes {
       return new TypedSeries(sum_rev_idx[1..curr_ord], sum_data[1..curr_ord]);
     }
 
+    // TODO: unmatched items in other should be negative
     proc subtr(other: TypedSeries(eltType)): TypedSeries(eltType)
                                              where isNumericType(eltType) {
       // TODO: check if the index types are the same, throw if not
       if this.ords.size >= other.ords.size {
-        var sum_ords = 1..this.ords.size;
-        var sum_data: [sum_ords] eltType;
+        var diff_ords = 1..this.ords.size;
+        var diff_data: [diff_ords] eltType;
 
         for (i, d) in this.items() {
-          var sum_d = d;
+          var diff_d = d;
           if i <= other.ords.size then
-            sum_d -= other.at(i);
-          sum_data[i] = sum_d;
+            diff_d -= other.at(i);
+          diff_data[i] = diff_d;
         }
-        return new TypedSeries(sum_data);
+        return new TypedSeries(diff_data);
       } else {
-        var sum_ords = 1..other.ords.size;
-        var sum_data: [sum_ords] eltType;
+        var diff_ords = 1..other.ords.size;
+        var diff_data: [diff_ords] eltType;
 
         for (i, d) in other.items() {
-          var sum_d = d;
+          var diff_d = -d;
           if i <= this.ords.size then
-            sum_d -= other.at(i);
-          sum_data[i] = sum_d;
+            diff_d += this.at(i);
+          diff_data[i] = diff_d;
         }
-        return new TypedSeries(sum_data);
+        return new TypedSeries(diff_data);
       }
     }
 
     proc subtr(other: TypedSeries(eltType), type idxType): TypedSeries(eltType)
                                                            where isNumericType(eltType) {
       // TODO: check if the index types are the same, throw if not
-      var sum_ords = 1..(this.ords.size + other.ords.size);
-      var sum_rev_idx: [sum_ords] idxType;
-      var sum_data: [sum_ords] eltType;
+      var diff_ords = 1..(this.ords.size + other.ords.size);
+      var diff_rev_idx: [diff_ords] idxType;
+      var diff_data: [diff_ords] eltType;
 
       var curr_ord = 0;
       for (i, d) in this.items(idxType) {
-        var sum_d = d;
+        var diff_d = d;
         if other.indexContains(i) then
-          sum_d -= other[i];
+          diff_d -= other[i];
 
         curr_ord += 1;
-        sum_rev_idx[curr_ord] = i;
-        sum_data[curr_ord] = sum_d;
+        diff_rev_idx[curr_ord] = i;
+        diff_data[curr_ord] = diff_d;
       }
 
       for (other_i, other_d) in other.items(idxType) {
         if !this.indexContains(other_i) {
           curr_ord += 1;
-          sum_rev_idx[curr_ord] = other_i;
-          sum_data[curr_ord] = other_d;
+          diff_rev_idx[curr_ord] = other_i;
+          diff_data[curr_ord] = -other_d;
         }
       }
 
-      return new TypedSeries(sum_rev_idx[1..curr_ord], sum_data[1..curr_ord]);
+      return new TypedSeries(diff_rev_idx[1..curr_ord], diff_data[1..curr_ord]);
+    }
+
+    // TODO: unmatched items should be 0
+    proc mult(other: TypedSeries(eltType)): TypedSeries(eltType)
+                                            where isNumericType(eltType) {
+      // TODO: check if the index types are the same, throw if not
+      if this.ords.size >= other.ords.size {
+        var prod_ords = 1..this.ords.size;
+        var prod_data: [prod_ords] eltType;
+
+        for (i, d) in this.items() {
+          var prod_d = 0;
+          if i <= other.ords.size then
+            prod_d = d * other.at(i);
+          prod_data[i] = prod_d;
+        }
+        return new TypedSeries(prod_data);
+      } else {
+        var prod_ords = 1..other.ords.size;
+        var prod_data: [prod_ords] eltType;
+
+        for (i, d) in other.items() {
+          var prod_d = 0;
+          if i <= this.ords.size then
+            prod_d = d * this.at(i);
+          prod_data[i] = prod_d;
+        }
+        return new TypedSeries(prod_data);
+      }
+    }
+
+    proc mult(other: TypedSeries(eltType), type idxType): TypedSeries(eltType)
+                                                          where isNumericType(eltType) {
+      // TODO: check if the index types are the same, throw if not
+      var prod_ords = 1..(this.ords.size + other.ords.size);
+      var prod_rev_idx: [prod_ords] idxType;
+      var prod_data: [prod_ords] eltType;
+
+      var curr_ord = 0;
+      for (i, d) in this.items(idxType) {
+        var prod_d = 0;
+        if other.indexContains(i) then
+          prod_d = d * other[i];
+
+        curr_ord += 1;
+        prod_rev_idx[curr_ord] = i;
+        prod_data[curr_ord] = prod_d;
+      }
+
+      for (other_i, _) in other.items(idxType) {
+        if !this.indexContains(other_i) {
+          curr_ord += 1;
+          prod_rev_idx[curr_ord] = other_i;
+          prod_data[curr_ord] = 0;
+        }
+      }
+
+      return new TypedSeries(prod_rev_idx[1..curr_ord], prod_data[1..curr_ord]);
     }
 
     proc writeThis(f) {
