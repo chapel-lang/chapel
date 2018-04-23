@@ -1,23 +1,27 @@
 use Dataframes;
 
-var I = new TypedIndex(["A", "B", "C", "D", "E"]);
+var I = ["A", "B", "C", "D", "E"];
 
-var oneDigit = new TypedSeries([1, 2, 3, 4, 5], I);
-var twoDigit = new TypedSeries([11, 22, 33, 44, 55], I);
+var oneDigit: TypedSeries(int) = new TypedSeries([1, 2, 3, 4, 5], I);
+var twoDigit: TypedSeries(int) = new TypedSeries([11, 22, 33, 44, 55], I);
+var doubledDigit = twoDigit.mult(oneDigit, string);
 
 writeln("factors:");
 writeln(oneDigit);
 writeln(twoDigit);
 
 writeln("\nproduct:");
-writeln(oneDigit * twoDigit);
+writeln(doubledDigit);
 
-var X = new TypedSeries([5, 1, 2], new TypedIndex(["A", "B", "C"]));
-var Y = new TypedSeries([10, 20, 6, 7], new TypedIndex(["B", "C", "D", "E"]));
+var I2 = ["A", "B", "C"];
+var I3 = ["B", "C", "D", "E"];
+var X: TypedSeries(int) = new TypedSeries([5, 1, 2], I2);
+var Y: TypedSeries(int) = new TypedSeries([10, 20, 6, 7], I3);
+var XY = Y.mult(X, string);
 
 writeln("\nfactors:");
 writeln(Y);
 writeln(X);
 
 writeln("\nproduct:");
-writeln(X * Y);
+writeln(XY);

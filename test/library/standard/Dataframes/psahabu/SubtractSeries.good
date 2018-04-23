@@ -32,9 +32,9 @@ C	2
 dtype: int(64)
 
 difference:
-A	5
-B	-9
-C	-18
-D	-6
-E	-7
+B	9
+C	18
+D	6
+E	7
+A	-5
 dtype: int(64)
