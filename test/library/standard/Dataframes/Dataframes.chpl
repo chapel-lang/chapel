@@ -117,7 +117,7 @@ module Dataframes {
 
     // TODO: verify |idx| = data.size
     // TODO: verify that data is rectangular domain(1)
-    proc init(rev_idx: [], data: [] ?T) {
+    proc init(data: [] ?T, rev_idx: []) {
       super.init();
       eltType = T;
 
@@ -208,10 +208,9 @@ module Dataframes {
         }
       }
 
-      return new TypedSeries(sum_rev_idx[1..curr_ord], sum_data[1..curr_ord]);
+      return new TypedSeries(sum_data[1..curr_ord], sum_rev_idx[1..curr_ord]);
     }
 
-    // TODO: unmatched items in other should be negative
     proc subtr(other: TypedSeries(eltType)): TypedSeries(eltType)
                                              where isNumericType(eltType) {
       // TODO: check if the index types are the same, throw if not
@@ -266,7 +265,7 @@ module Dataframes {
         }
       }
 
-      return new TypedSeries(diff_rev_idx[1..curr_ord], diff_data[1..curr_ord]);
+      return new TypedSeries(diff_data[1..curr_ord], diff_rev_idx[1..curr_ord]);
     }
 
     // TODO: unmatched items should be 0
@@ -324,7 +323,7 @@ module Dataframes {
         }
       }
 
-      return new TypedSeries(prod_rev_idx[1..curr_ord], prod_data[1..curr_ord]);
+      return new TypedSeries(prod_data[1..curr_ord], prod_rev_idx[1..curr_ord]);
     }
 
     proc writeThis(f) {
