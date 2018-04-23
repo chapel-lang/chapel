@@ -17,6 +17,7 @@
 // domain used in this declaration has a 1:1 relationship with the array.
 //
 var A: [1..5] int = [i in 1..5] i;
+assert(A.domain == {1..5});
 
 writeln("A was initialized to: ", A);
 
@@ -26,7 +27,9 @@ writeln("A was initialized to: ", A);
 // ``0`` and ``6`` to the array.
 //
 A.push_front(0);
+assert(A.domain == {0..5});
 A.push_back(6);
+assert(A.domain == {0..6});
 
 writeln("After adding to the front and back A is: ", A);
 
@@ -40,7 +43,9 @@ writeln("The first and last elements in A are: ", (A.head(), A.tail()));
 // The domain will become ``{1..5}`` again.
 //
 A.pop_front();
+assert(A.domain == {1..6});
 A.pop_back();
+assert(A.domain == {1..5});
 
 writeln("After popping the two elements pushed previously A is: ", A);
 
@@ -52,6 +57,7 @@ writeln("After popping the two elements pushed previously A is: ", A);
 A.insert(4, 10);
 A.insert(3, 11);
 A.insert(2, 12);
+assert(A.domain == {1..8});
 writeln("After inserting some new values, A is: ", A);
 
 
@@ -79,6 +85,7 @@ else
 //
 A.push_front(5);
 A.push_back(5);
+assert(A.domain == {0..9});
 
 //
 // Count how many times an element is in the array
@@ -98,18 +105,21 @@ writeln("After calling reverse A is: ", A);
 // shifted down.
 //
 A.remove(3);
+assert(A.domain == {0..8});
 writeln("After first remove A is: ", A);
 
 //
 // A range of indices can also be removed
 //
 A.remove(4..6);
+assert(A.domain == {0..5});
 writeln("After second remove A is: ", A);
 
 //
 // A starting index and a count also work
 //
 A.remove(2, 2);
+assert(A.domain == {0..3});
 writeln("After third remove A is: ", A);
 
 //
@@ -131,4 +141,5 @@ writeln("The sum of elements in A is ", + reduce A);
 // bound was ``low`` this sets the domain to ``{low..low-1}``
 //
 A.clear();
+assert(A.domain == {0..-1});
 writeln("After clearing, A is: ", A, " - with ", A.size, " elements");
