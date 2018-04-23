@@ -6,5 +6,5 @@ var letters: TypedSeries(string) = new TypedSeries(A, I);
 
 writeln(letters);
 writeln();
-writeln("contains A: " + letters.indexContains("A"));
-writeln("contains F: " + letters.indexContains("F"));
+writeln("contains A: " + letters.idx.contains("A"));
+writeln("contains F: " + letters.idx.contains("F"));
