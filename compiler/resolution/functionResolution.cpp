@@ -382,8 +382,14 @@ FnSymbol* getUnalias(Type* t) {
 // to tuples without refs before returning.
 // This function returns true for exceptional FnSymbols
 // where tuples containing refs can be returned.
+//
+// The 'FLAG_CONSTRUCTOR' case can prevent additional copies/leaks in the case
+// that a class/field has a tuple field. See the following test:
+//     types/records/ferguson/tuples/class-tuple-record
+//
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
+      fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
       fn->hasFlag(FLAG_TUPLE)                    || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
