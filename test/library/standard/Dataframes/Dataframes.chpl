@@ -242,6 +242,7 @@ module Dataframes {
     }
   }
 
+  // TODO: return tuple versions where first element is "None"
   class SeriesJoiner {
     type eltType;
 
