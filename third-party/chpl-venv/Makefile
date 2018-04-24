@@ -42,7 +42,7 @@ $(PIP): $(CHPL_VENV_INSTALL_DIR)
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
+	export PYTHONPATH="$$CHPL_PYTHONPATH:$(PIPLIBS):$$PYTHONPATH" && \
 	python -S $(PIP) install -U --force-reinstall --ignore-installed \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
@@ -87,7 +87,7 @@ $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
 	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" &&\
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
