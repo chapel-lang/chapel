@@ -958,7 +958,8 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   bool      noChangeTypes  = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
                              fn->retTag                         == RET_TYPE;
 
-  bool      firstArgIsSize = fn->hasFlag(FLAG_INIT_TUPLE)            == true ||
+  bool      firstArgIsSize = fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
+                             isTupleTypeConstructor(fn)         == true ||
                              fn->hasFlag(FLAG_STAR_TUPLE)       == true;
 
 
