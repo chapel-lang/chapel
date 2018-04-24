@@ -114,13 +114,12 @@ module Dataframes {
       this.data = data;
     }
 
-    // TODO: verify |idx| = data.size
     // TODO: verify that data is rectangular domain(1)
-    proc init(data: [] ?T, rev_idx: []) {
+    proc init(data: [] ?T, idx: Index) {
       super.init();
       eltType = T;
 
-      this.idx = new TypedIndex(rev_idx);
+      this.idx = idx;
       this.ords = 1..data.size;
       this.data = data;
     }
@@ -200,7 +199,7 @@ module Dataframes {
       }
 
       delete joiner;
-      return new TypedSeries(join_data[1..curr_ord], join_rev_idx[1..curr_ord]);
+      return new TypedSeries(join_data[1..curr_ord], new TypedIndex(join_rev_idx[1..curr_ord]));
     }
 
     proc add(other: TypedSeries(eltType)): TypedSeries(eltType) {
