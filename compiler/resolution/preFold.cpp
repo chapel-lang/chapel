@@ -715,6 +715,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
               // TODO: Surely there's a better way to test for this pattern
               bool    okName = strcmp(dest->name, "ret")          == 0 ||
+                               strcmp(dest->name, primCoerceTmpName) == 0 ||
                                strcmp(dest->name, arrayUnrefName) == 0;
 
               if (dest->hasFlag(FLAG_TEMP) && okName) {

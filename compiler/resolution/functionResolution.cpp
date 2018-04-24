@@ -99,6 +99,7 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 char                               arrayUnrefName[] = "array_unref_ret_tmp";
+char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
 bool                               tryFailure                = false;
@@ -534,8 +535,9 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
     bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
     TypeSymbol* formalTS = formal->getValType()->symbol;
     bool formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
 
-    if ((actualExprTmp && !formalCopyMutates) ||
+    if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
         (actualConst && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter()) {
       // But ignore for now errors with this argument
@@ -5158,7 +5160,7 @@ static void resolveInitVar(CallExpr* call) {
     INT_ASSERT(targetTypeExpr);
 
     // create a temp variable to store the result of PRIM_COERCE
-    VarSymbol* tmp = newTemp("coerce_tmp", targetType);
+    VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
     tmp->addFlag(FLAG_EXPR_TEMP);
 
     CallExpr* coerce = new CallExpr(PRIM_COERCE,
