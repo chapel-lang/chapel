@@ -23,4 +23,4 @@ print X
 print Y
 print
 print "difference:"
-print X - Y
+print Y - X 
