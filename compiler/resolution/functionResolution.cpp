@@ -9876,10 +9876,10 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
     }
   }
 
-  USR_FATAL(call,
-            "Variables can't be declared using %s generic types like '%s'",
-            label,
-            type->symbol->name);
+  USR_FATAL_CONT(call,
+                 "Cannot default-initialize a variable with generic type");
+  USR_PRINT(call, "'%s' has generic type '%s'", label, type->symbol->name);
+  USR_STOP();
 }
 
 /************************************* | **************************************

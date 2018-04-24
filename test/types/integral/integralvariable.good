@@ -1,1 +1,1 @@
-integralvariable.chpl:1: error: Variables can't be declared using abstract generic types like 'integral'
+3
