@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of implementing strings with initializers
-GITHUB_USER=benharsh
-GITHUB_BRANCH=string-init
-SHORT_NAME=stringinit
-START_DATE=04/15/18
+# Test performance of removing ref temps
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=r
+SHORT_NAME=noreftemps
+START_DATE=04/23/18
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
