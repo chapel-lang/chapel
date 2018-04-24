@@ -169,7 +169,7 @@ proc Tree.writeThis(x)
 {
   var first = true;
 
-  for node in postorder(tree) {
+  for node in postorder(this) {
     if first then
       first = false;
     else
