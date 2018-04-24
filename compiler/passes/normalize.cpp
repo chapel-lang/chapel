@@ -2160,11 +2160,6 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   //
   //      var   x : MyCls   = new MyCls(1, 2);
   //
-  // Noakes 2017/02/25
-  //    Use a temp to compute the value for the init-expression and
-  //    use PRIM_MOVE to initialize x.  This simplifies const checking
-  //    for the first case and supports a current limitation for RVF
-  //
   if (isPrimitiveScalar(type) == true ||
       isNonGenericClass(type) == true) {
     VarSymbol* tmp = newTemp("tmp", type);
@@ -2174,6 +2169,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
 
+    // TODO -- don't assign
+    //defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, type->symbol));
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
@@ -2188,7 +2185,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       insertPostInit(var, initCall);
 
     } else if (isNewExpr(initExpr) == false) {
-      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr));
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, type->symbol));
 
     } else {
       Expr*     arg     = toCallExpr(initExpr)->get(1)->remove();
@@ -2249,6 +2246,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       // Assign the rhs into the lhs.
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
 
+      // TODO -- stop assigning
+
       argExpr->insertAfter(assign);
 
       // Move the result into the original variable.
@@ -2261,6 +2260,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
 
+      // TODO -- don't assign
+
       defExpr ->insertAfter(typeDefn);
       typeDefn->insertAfter(initMove);
       initMove->insertAfter(assign);
@@ -2268,16 +2269,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
     }
 
   } else {
-    VarSymbol* typeTemp = newTemp("type_tmp");
-    DefExpr*   typeDefn = new DefExpr(typeTemp);
-    CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
-    CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
-    CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExpr);
-
-    defExpr ->insertAfter(typeDefn);
-    typeDefn->insertAfter(initMove);
-    initMove->insertAfter(assign);
-    assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, typeExpr));
   }
 }
 

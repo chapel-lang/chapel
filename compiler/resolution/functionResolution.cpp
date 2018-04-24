@@ -5117,10 +5117,61 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  Type* targetType = srcType;
+  SymExpr* targetTypeExpr = NULL;
+  if (call->numActuals() >= 3) {
+    targetTypeExpr = toSymExpr(call->get(3));
+    targetType = targetTypeExpr->symbol()->type;
+    INT_ASSERT(targetType);
+    targetTypeExpr->remove(); // Take it out of the move
+
+    // If the target type is generic, compute the appropriate
+    // instantiation type (just as we would when instantiating
+    // a generic function's argument)
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      Type* useType = getInstantiationType(srcType, targetType);
+
+      if (useType == NULL) {
+        USR_FATAL(call, "Could not coerce %s to %s in initialization",
+                        srcType->symbol->name,
+                        targetType->symbol->name);
+      }
+
+      targetType = useType;
+    }
+
+    // Ignore the target type if it's the same & not a runtime type.
+    if (targetType == srcType &&
+        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      targetType = srcType;
+      targetTypeExpr = NULL;
+    }
+  }
+
   bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
 
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
+  }
+
+  if (targetType != srcType) {
+    INT_ASSERT(targetTypeExpr);
+
+    // create a temp variable to store the result of PRIM_COERCE
+    VarSymbol* tmp = newTemp("coerce_tmp", targetType);
+    tmp->addFlag(FLAG_EXPR_TEMP);
+
+    CallExpr* coerce = new CallExpr(PRIM_COERCE,
+                                    srcExpr->copy(),
+                                    targetTypeExpr);
+    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
+
+    call->insertBefore(new DefExpr(tmp));
+    call->insertBefore(move);
+    resolveCoerce(coerce);
+    resolveMove(move);
+
+    srcExpr->setSymbol(tmp);
   }
 
   if (dst->hasFlag(FLAG_NO_COPY)               == true)  {

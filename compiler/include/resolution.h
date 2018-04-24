@@ -268,4 +268,6 @@ void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
 
+Type* getInstantiationType(Type* actualType, Type* formalType);
+
 #endif

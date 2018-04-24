@@ -528,6 +528,8 @@ initPrimitive() {
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false, true);
   prim_def(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD, "init maybe sync/single field",
            returnInfoVoid, false, true);
+
+  // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
   prim_def(PRIM_NO_INIT,    "no init",    returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
