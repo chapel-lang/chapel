@@ -239,7 +239,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       // Fail if there are too many unnamed actuals.
       if (match == false &&
           (fn->hasFlag(FLAG_GENERIC) == false ||
-           fn->hasFlag(FLAG_TUPLE)   == false)) {
+           fn->hasFlag(FLAG_INIT_TUPLE)   == false)) {
         return false;
       }
     }

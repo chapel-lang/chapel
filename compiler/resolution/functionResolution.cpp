@@ -390,7 +390,7 @@ FnSymbol* getUnalias(Type* t) {
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
   if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
       fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
-      fn->hasFlag(FLAG_TUPLE)                    || // chpl__init_tuple
+      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
       fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples

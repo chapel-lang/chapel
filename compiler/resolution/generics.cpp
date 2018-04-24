@@ -438,7 +438,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
 
-  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+  if (fn->hasFlag(FLAG_INIT_TUPLE)            == true ||
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
     retval = createTupleSignature(fn, subs, call);
 

@@ -259,7 +259,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->addFlag(FLAG_LAST_RESORT);
   ctor->addFlag(FLAG_INLINE);
   ctor->addFlag(FLAG_INVISIBLE_FN);
-  ctor->addFlag(FLAG_TUPLE);
+  ctor->addFlag(FLAG_INIT_TUPLE);
 
   ctor->addFlag(FLAG_PARTIAL_TUPLE);
 
@@ -958,7 +958,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   bool      noChangeTypes  = fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true ||
                              fn->retTag                         == RET_TYPE;
 
-  bool      firstArgIsSize = fn->hasFlag(FLAG_TUPLE)            == true ||
+  bool      firstArgIsSize = fn->hasFlag(FLAG_INIT_TUPLE)            == true ||
                              fn->hasFlag(FLAG_STAR_TUPLE)       == true;
 
 
@@ -1039,7 +1039,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
 
     retval = at->typeConstructor;
 
-  } else if (fn->hasFlag(FLAG_TUPLE) == true) {
+  } else if (fn->hasFlag(FLAG_INIT_TUPLE) == true) {
     retval = info.init;
 
   } else if (fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)    == true) {
