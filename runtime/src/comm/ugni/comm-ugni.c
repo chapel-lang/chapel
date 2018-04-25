@@ -887,12 +887,35 @@ static rf_done_pool_t (*rf_done_pool)[RF_DONE_NUM_PER_POOL];
 static mpool_idx_t rf_done_pool_head[RF_DONE_NUM_POOLS];
 static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
 
-static mpool_idx_t rf_done_pool_i;
+static __thread mpool_idx_base_t rf_done_prt_lo = -1;
+static __thread mpool_idx_base_t rf_done_prt_hi = -1;
 
 static inline
-mpool_idx_base_t rf_done_next_pool_i(void) 
-{
-  return mpool_idx_finc(&rf_done_pool_i) & (RF_DONE_NUM_POOLS - 1);
+void rf_done_ensure_pool_partition(void) {
+#define CEIL_X_DIV_Y(x, y) (1 + ((x) - 1) / (y))
+
+  if (rf_done_prt_lo == -1) {
+    const int_least64_t nPrts = chpl_task_getMaxPar();
+    const int_least64_t prt = my_thread_idx() % nPrts;
+
+    rf_done_prt_lo = ((prt == 0)
+                      ? 0
+                      : CEIL_X_DIV_Y(prt * RF_DONE_NUM_POOLS, nPrts));
+    rf_done_prt_hi = ((prt == nPrts - 1)
+                      ? RF_DONE_NUM_POOLS - 1
+                      : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
+#if 0
+    if (chpl_nodeID == 0) {
+      printf("rf_done_ensure_pool_partition(): "
+             "thr %d, nPrts %d, prt %d, lo %d, hi %d\n",
+             (int) my_thread_idx(), (int) nPrts, (int) prt,
+             (int) rf_done_prt_lo, (int) rf_done_prt_hi);
+      fflush(stdout);
+    }
+#endif
+  }
+
+#undef CEIL_X_DIV_Y
 }
 
 //
@@ -4617,8 +4640,6 @@ void rf_done_init(void)
 
     atomic_init_bool(&rf_done_pool_lock[i], false);
   }
-
-  mpool_idx_init(&rf_done_pool_i, 0);
 }
 
 
@@ -4626,27 +4647,22 @@ static
 inline
 rf_done_t* rf_done_alloc(void)
 {
-  int pool_tries;
-  int i, j;
   rf_done_pool_t* rf_done_p;
 
   //
-  // Cycle through the pools and find one that contains a free rf_done
-  // flag we can use.  We give up when we've looked at all the pools
-  // twice without finding anything.
+  // Cycle through our partition of the pools and find one that contains
+  // a free rf_done flag we can use.
   //
-  // We need a termination test because we can actually run out of
-  // these, if for example RF_DONE_NUM_POOLS*RF_DONE_NUM_IN_POOL tasks
-  // do remote on-stmts all at once, and each of those tries to do
-  // another on-stmt.  If we ever see that happen in a program that
-  // isn't specifically designed to achieve it, we'll have to revisit
-  // how we've approached this.
+  // We don't expect to run out of these in any reasonable program.  If
+  // we ever do, we'll have to revisit how we've approached this.
   //
-  for (pool_tries = 0, i = rf_done_next_pool_i(), rf_done_p = NULL;
-       pool_tries < 2 * RF_DONE_NUM_POOLS && rf_done_p == NULL;
-       pool_tries++, i = (i + 1) % RF_DONE_NUM_POOLS) {
+  rf_done_ensure_pool_partition();
+
+  rf_done_p = NULL;
+  for (int i = rf_done_prt_lo; i <= rf_done_prt_hi && rf_done_p == NULL; i++) {
     if (mpool_idx_load(&rf_done_pool_head[i]) >= 0 &&
         !atomic_exchange_bool(&rf_done_pool_lock[i], true)) {
+      int j;
       if ((j = mpool_idx_load(&rf_done_pool_head[i])) >= 0) {
         rf_done_p = &rf_done_pool[i][j];
         mpool_idx_store(&rf_done_pool_head[i], *rf_done_p);
