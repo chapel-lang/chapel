@@ -1,1 +1,2 @@
-varOverBadGeneric.chpl:12: error: Variables can't be declared using not-fully-instantiated generic types like 'C'
+varOverBadGeneric.chpl:12: error: Cannot default-initialize a variable with generic type
+varOverBadGeneric.chpl:12: note: 'not-fully-instantiated' has generic type 'C'
