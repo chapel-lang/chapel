@@ -412,6 +412,13 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal) {
 static Type* getInstantiationType(Type* actualType, Type* formalType) {
   Type* ret = getBasicInstantiationType(actualType, formalType);
 
+  // If that didn't work, try it again with the value type.
+  if (ret == NULL) {
+    if (Type* vt = actualType->getValType()) {
+      ret = getBasicInstantiationType(vt, formalType);
+    }
+  }
+
   // Now, if formalType is a generic parent type to actualType,
   // we should instantiate the parent actual type
   if (AggregateType* at = toAggregateType(ret)) {
@@ -442,17 +449,10 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return actualC;
   }
 
-  if (Type* vt = actualType->getValType()) {
-    if (canInstantiate(vt, formalType)) {
-      return vt;
-    } else if (Type* st = vt->scalarPromotionType) {
-      if (canInstantiate(st, formalType))
-        return st;
-    } else if (UnmanagedClassType* actualMt = toUnmanagedClassType(vt)) {
-      AggregateType* actualC = actualMt->getCanonicalClass();
-      if (canInstantiate(actualC, formalType))
-        return actualC;
-    }
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    Type* baseType = actualType->getField("valType")->type;
+    if (canInstantiate(baseType, formalType))
+      return baseType;
   }
 
   return NULL;
@@ -665,22 +665,9 @@ bool ResolutionCandidate::checkGenericFormals() {
           return false;
 
         } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
-          Type* vt  = actual->getValType();
-          Type* st  = actual->type->scalarPromotionType;
-          Type* svt = (vt) ? vt->scalarPromotionType : NULL;
-          Type* cct = NULL;
-          if (UnmanagedClassType* mt = toUnmanagedClassType(vt))
-            cct = mt->getCanonicalClass();
-
-          if (canInstantiate(actual->type, formal->type) == false &&
-
-              (vt  == NULL || canInstantiate(vt,  formal->type) == false)  &&
-              (st  == NULL || canInstantiate(st,  formal->type) == false)  &&
-              (svt == NULL || canInstantiate(svt, formal->type) == false) &&
-              (cct == NULL || canInstantiate(cct, formal->type) == false)) {
-
+          Type* t = getInstantiationType(actual->type, formal->type);
+          if (t == NULL)
             return false;
-          }
 
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||

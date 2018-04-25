@@ -174,6 +174,7 @@ extern bool printSearchDirs;
 extern bool printModuleFiles;
 extern bool ignore_warnings;
 extern bool ignore_errors;
+extern bool ignore_user_errors;
 extern bool ignore_errors_for_pass;
 extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
@@ -200,6 +201,8 @@ extern bool preserveInlinedLineNumbers;
 
 extern int breakOnID;
 extern int breakOnDeleteID;
+
+extern char stopAfterPass[128];
 
 // code generation strings
 extern const char* compileCommand;

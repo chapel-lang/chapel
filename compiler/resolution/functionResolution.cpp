@@ -1154,9 +1154,9 @@ bool doCanDispatch(Type*     actualType,
   // autocopy(x) and the autocopy(x: atomic int) (represented as
   // autocopy(x: ref(atomic int)) internally).
   //
-  } else if (actualType                            == dtNil  &&
-             isClass(formalType)                   == true   &&
-             formalType->symbol->hasFlag(FLAG_REF) == false) {
+  } else if (actualType == dtNil &&
+             isClass(canonicalClassType(formalType)) &&
+             !formalType->symbol->hasFlag(FLAG_REF)) {
     retval = true;
 
   } else if (actualType->refType == formalType &&
@@ -2811,7 +2811,8 @@ static void findVisibleFunctionsAndCandidates(
   if (candidates.n             == 0 &&
       call->numActuals()       >= 1 &&
       call->get(1)->typeInfo() == dtMethodToken) {
-    Type* receiverType = call->get(2)->typeInfo()->getValType();
+    Type* receiverType =
+      canonicalClassType(call->get(2)->typeInfo()->getValType());
 
     if (typeUsesForwarding(receiverType) == true &&
         populateForwardingMethods(info)  == true) {
@@ -2936,7 +2937,7 @@ static bool populateForwardingMethods(CallInfo& info) {
   const char*    calledName = info.name;
   Type*          t          = forCall->get(2)->typeInfo()->getValType();
 
-  AggregateType* at         = toAggregateType(t);
+  AggregateType* at         = toAggregateType(canonicalClassType(t));
   bool           addedAny   = false;
 
   // Currently, only AggregateTypes can forward
@@ -3083,7 +3084,7 @@ static bool populateForwardingMethods(CallInfo& info) {
 
     std::vector<FnSymbol*> methods;
 
-    collectVisibleMethodsNamed(delegate->type, methodName, methods);
+    collectVisibleMethodsNamed(canonicalClassType(delegate->type), methodName, methods);
 
     // Compute the type of `this` for use in the forwarding function.
     AggregateType* thisType = at;
@@ -4311,6 +4312,9 @@ void lvalueCheck(CallExpr* call) {
 
       INT_ASSERT(calleeFn == formal->defPoint->parentSymbol); // sanity
 
+      Symbol* actSym = isSymExpr(actual) ? toSymExpr(actual)->symbol() : NULL;
+      bool isInitParam = actSym->hasFlag(FLAG_PARAM) && calleeFn->isInitializer();
+
       if (calleeFn->hasFlag(FLAG_ASSIGNOP)) {
         // This assert is FYI. Perhaps can remove it if it fails.
         INT_ASSERT(callStack.n > 0 && callStack.v[callStack.n - 1] == call);
@@ -4329,7 +4333,7 @@ void lvalueCheck(CallExpr* call) {
           USR_FATAL_CONT(actual, "illegal lvalue in assignment");
         }
 
-      } else {
+      } else if (isInitParam == false) {
         ModuleSymbol* mod          = calleeFn->getModule();
         char          cn1          = calleeFn->name[0];
         const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
@@ -5553,7 +5557,7 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     moveFinalize(call);
 
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
-      Type* seType = se->symbol()->type;
+      Type* seType = se->symbol()->getValType();
 
       if (isNonGenericRecordWithInitializers(seType) == true) {
         Expr*     callLhs  = call->get(1)->remove();

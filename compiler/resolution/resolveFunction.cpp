@@ -842,21 +842,21 @@ static void resolveTypeConstructor(FnSymbol* fn) {
 }
 
 void fixTypeNames(AggregateType* at) {
-  const char*    domName = "DefaultRectangularDom";
-  const int   domNameLen = strlen(domName);
+  const char* drDomName = "DefaultRectangularDom";
+  const int   drDomNameLen = strlen(drDomName);
 
   if (at->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
       isArrayClass(at)                     ==  true) {
-    const char* domainType = at->getField("dom")->type->symbol->name;
+    const char* domainType = canonicalClassType(at->getField("dom")->type)->symbol->name;
     const char* eltType    = at->getField("eltType")->type->symbol->name;
 
     at->symbol->name = astr("[", domainType, "] ", eltType);
 
-  } else if (strncmp(at->symbol->name, domName, domNameLen) == 0) {
-    at->symbol->name = astr("domain", at->symbol->name + domNameLen);
+  } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
+    at->symbol->name = astr("domain", at->symbol->name + drDomNameLen);
 
   } else if (isRecordWrappedType(at) == true) {
-    at->symbol->name = at->getField("_instance")->type->symbol->name;
+    at->symbol->name = canonicalClassType(at->getField("_instance")->type)->symbol->name;
   }
 }
 

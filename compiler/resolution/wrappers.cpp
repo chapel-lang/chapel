@@ -1550,12 +1550,6 @@ static void addArgCoercion(FnSymbol*  fn,
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
 
-  } else if (isUnmanagedClass(ats->getValType()) &&
-             isBorrowClass(formal->getValType())) {
-    checkAgain = true;
-
-    castCall   = new CallExpr(PRIM_CAST, formal->getValType()->symbol, prevActual);
-
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
                formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
@@ -1590,6 +1584,12 @@ static void addArgCoercion(FnSymbol*  fn,
         }
       }
     }
+
+  } else if (isUnmanagedClass(ats->typeInfo()) &&
+             isBorrowClass(formal->typeInfo())) {
+    checkAgain = true;
+
+    castCall   = new CallExpr(PRIM_CAST, formal->getValType()->symbol, prevActual);
 
   } else {
     // There was code to handle the case when the flag *is* present.

@@ -80,6 +80,7 @@ module TomlParser {
   const tabSpace = 4;
 
   pragma "no doc"
+  pragma "use default init"
   class Parser {
 
     var source: Source;

@@ -175,7 +175,9 @@ module Barriers {
 
   /* The BarrierBaseType class provides an abstract base type for barriers
    */
-  pragma "no doc" class BarrierBaseType {
+  pragma "no doc"
+  pragma "use default init"
+  class BarrierBaseType {
     pragma "no doc"
     proc barrier() {
       halt("barrier() not implemented");
