@@ -1610,6 +1610,21 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
 
+/*
+              This code is apparently unnecessary
+              } else if (lhsType->getValType() == dtStringC &&
+                         from->getValType() == dtString &&
+                         from->isImmediate()) {
+                // Coercion from a param string to a c_string
+                // for the non-param case it would require .c_str()
+                // and as a result the regular cast function is not available.
+		VarSymbol*  var       = toVarSymbol(from);
+		const char* str       = var->immediate->v_string;
+		SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
+
+                // Remove the right-hand-side, which is call->get(2)
+                rhs->replace(newActual);
+*/
               } else {
                 // Add a cast if the types don't match
 
@@ -1668,7 +1683,21 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertAtTail(unref);
                   resolveExpr(unref);
 
+                } else if (lhsType->getValType() == dtStringC &&
+                           tmp->getValType() == dtString &&
+                           tmp->isImmediate()) {
+                  // Coercion from a param string to a c_string
+                  // for the non-param case it would require .c_str()
+                  // and as a result the regular cast function is not available.
+                  VarSymbol*  var       = toVarSymbol(tmp);
+                  const char* str       = var->immediate->v_string;
+                  SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
+
+                  // Remove the right-hand-side, which is call->get(2)
+                  call->insertAtTail(newActual);
+
                 } else {
+
                   CallExpr* cast = createCast(tmp, lhsType->symbol);
                   call->insertAtTail(cast);
                   casts.add(cast);
