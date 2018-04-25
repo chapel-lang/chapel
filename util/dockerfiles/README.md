@@ -12,6 +12,7 @@
 ## `chapel/chapel:<version>`
 Supported Chapel versions:
 * [`1.17.1`, `latest` (_1.17.1/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/Dockerfile/)
+* [`1.17.0` (_1.17.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/1.17.0/Dockerfile/)
 * [`1.16.0` (_1.16.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/Dockerfile/)
 * [`1.15.0` (_1.15.0/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.15.0/Dockerfile/)
 
@@ -20,6 +21,7 @@ This is the core image for Chapel. It provides the complete Chapel compiler and 
 ## [`chapel/chapel-gasnet:<version>`](https://hub.docker.com/r/chapel/chapel-gasnet/)
 
 * [`1.17.1`, `latest` (_1.17.1/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/gasnet/Dockerfile/)
+* [`1.17.0` (_1.17.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/release/1.17/util/dockerfiles/1.17.0/gasnet/Dockerfile/)
 * [`1.16.0` (_1.16.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.16.0/gasnet/Dockerfile/)
 * [`1.15.0` (_1.15.0/gasnet/Dockerfile_)](https://github.com/chapel-lang/chapel/blob/master/util/dockerfiles/1.15.0/gasnet/Dockerfile/)
 
