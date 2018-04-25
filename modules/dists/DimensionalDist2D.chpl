@@ -332,6 +332,7 @@ class DimensionalDom : BaseRectangularDom {
   var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
+pragma "use default init"
 class LocDimensionalDom {
   type myStorageDomT;
 
@@ -373,6 +374,7 @@ class DimensionalArr : BaseRectangularArr {
                       unmanaged LocDimensionalArr(eltType, allocDom.locDdescType);
 }
 
+pragma "use default init"
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
