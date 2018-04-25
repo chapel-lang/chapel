@@ -77,7 +77,7 @@ explainInstantiation(FnSymbol* fn) {
         else
           len += sprintf(msg+len, ", ");
         INT_ASSERT(arg);
-        if (strcmp(fn->name, "_construct__tuple"))
+        if (strcmp(fn->name, tupleInitName))
           len += sprintf(msg+len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(e->value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
@@ -438,7 +438,8 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
   // (_build_tuple, tuple type constructor, tuple default constructor)
   //
 
-  if (fn->hasFlag(FLAG_TUPLE)            == true ||
+  if (fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
+      isTupleTypeConstructor(fn)         == true ||
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE) == true) {
     retval = createTupleSignature(fn, subs, call);
 

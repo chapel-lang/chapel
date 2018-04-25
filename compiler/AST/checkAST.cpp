@@ -78,6 +78,8 @@ void checkArgsAndLocals()
 // resolution).
 void checkNoUnresolveds()
 {
+  // BHARSH INIT TODO: Can this be '0' now that the tuple constructor is gone?
+  //
   // TODO: This value should really be cranked down to 0.
   // But in some cases _construct__tuple remains unresolved after
   // resolution ... .

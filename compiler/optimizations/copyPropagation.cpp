@@ -946,8 +946,11 @@ void copyPropagation(void) {
   if (!fNoCopyPropagation) {
     forv_Vec(FnSymbol, fn, gFnSymbols)
     {
+      // BHARSH INIT TODO: Can this be eliminated now that tuples no longer use
+      // constructors?
+      //
       // This test is necessary because extern function stubs may contain
-      // _construct_tuple calls that are unresolved.
+      // _construct__tuple calls that are unresolved.
       if (fn->hasFlag(FLAG_EXTERN))
         continue;
 

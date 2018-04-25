@@ -66,6 +66,8 @@
 #define iterKindStandaloneTagname "standalone"
 #define iterFollowthisArgname     "followThis"
 
+#define tupleInitName "chpl__init_tuple"
+
 class BaseAST;
 
 bool        forceWidePtrsForLocal();
