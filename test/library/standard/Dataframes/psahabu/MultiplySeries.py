@@ -23,4 +23,4 @@ print X
 print Y
 print
 print "product:"
-print Y * X 
+print X * Y

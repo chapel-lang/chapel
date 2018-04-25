@@ -32,9 +32,9 @@ C	2
 dtype: int(64)
 
 product:
+A	0
 B	10
 C	40
 D	0
 E	0
-A	0
 dtype: int(64)
