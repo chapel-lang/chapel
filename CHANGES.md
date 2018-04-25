@@ -17,8 +17,8 @@ Bug Fixes
 Cray-specific Changes
 ---------------------
 * reduced contention for polling threads for CHPL_COMM=ugni
-* fixed a bug w/ unregisterable pre-existing memory segments for CHPL_COMM=ugni
 * fixed a bug in computing the max number of comm domains for CHPL_COMM=ugni
+* improved the handling of unregisterable memory segments for CHPL_COMM=ugni
 * increased conservatism in IPA for CHPL_TARGET_COMPILER=cray-prgenv-cray
 * fixed debug build mode for CHPL_COMM=ugni
 
