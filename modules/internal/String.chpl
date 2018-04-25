@@ -1819,7 +1819,7 @@ module String {
       }
       hash = locHash;
     }
-    return hash;
+    return hash:uint;
   }
 
   //
