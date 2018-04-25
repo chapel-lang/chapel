@@ -21,11 +21,19 @@ module Dataframes {
   use Sort;
 
   class Index {
+    pragma "no doc"
     proc contains(lab) {
       halt("generic Index contains no elements");
       return false;
     }
 
+    pragma "no doc"
+    proc uni(lhs: TypedSeries, rhs: TypedSeries, unifier: SeriesUnifier) {
+      halt("generic Index cannot be unioned");
+      return lhs;
+    }
+
+    pragma "no doc"
     proc writeThis(f, s: TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
@@ -79,6 +87,38 @@ module Dataframes {
       return labels.member(lab);
     }
 
+    // TODO: enforce same index type with another dispatch
+    // TODO: sort Index
+    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType), unifier: SeriesUnifier(lhsType)): TypedSeries(lhsType) where lhsType == rhsType {
+      var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
+      var uni_rev_idx: [uni_ords] idxType;
+      var uni_data: [uni_ords] lhsType;
+
+      var curr_ord = 0;
+      for (lhs_i, lhs_d) in lhs.items(idxType) {
+        curr_ord += 1;
+        uni_rev_idx[curr_ord] = lhs_i;
+
+        if rhs.idx.contains(lhs_i) {
+          uni_data[curr_ord] = unifier.f(lhs_d, rhs[lhs_i]);
+        } else {
+          uni_data[curr_ord] = unifier.f_lhs(lhs_d);
+        }
+      }
+
+      for (rhs_i, rhs_d) in rhs.items(idxType) {
+        if !lhs.idx.contains(rhs_i) {
+          curr_ord += 1;
+          uni_rev_idx[curr_ord] = rhs_i;
+          uni_data[curr_ord] = unifier.f_rhs(rhs_d);
+        }
+      }
+
+      delete unifier;
+      return new TypedSeries(uni_data[1..curr_ord], new TypedIndex(uni_rev_idx[1..curr_ord]));
+    }
+
+
     proc writeThis(f, s: TypedSeries(?) = nil) {
       for (i, d) in zip(this, s) {
         f <~> i;
@@ -95,6 +135,47 @@ module Dataframes {
   }
 
   class Series {
+    pragma "no doc"
+    proc add(rhs) {
+      halt("generic Series cannot be added");
+      return this;
+    }
+
+    pragma "no doc"
+    proc add_scalar(n) {
+      halt("generic Series cannot be added");
+      return this;
+    }
+
+    pragma "no doc"
+    proc subtr(rhs) {
+      halt("generic Series cannot be subtracted");
+      return this;
+    }
+
+    pragma "no doc"
+    proc subtr_scalar(n) {
+      halt("generic Series cannot be added");
+      return this;
+    }
+
+    pragma "no doc"
+    proc mult(rhs) {
+      halt("generic Series cannot be multiplied");
+      return this;
+    }
+
+    pragma "no doc"
+    proc mult_scalar(n) {
+      halt("generic Series cannot be added");
+      return this;
+    }
+
+    pragma "no doc"
+    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
+      halt("generic Series cannot be unioned");
+      return this;
+    }
   }
 
   class TypedSeries : Series {
@@ -151,83 +232,56 @@ module Dataframes {
 
     // TODO: "in" operator for idx.contains(lab)
 
-    proc join(other: TypedSeries(eltType), joiner: SeriesJoiner(eltType)): TypedSeries(eltType) {
-      var join_ords = if this.ords.size > other.ords.size
-                      then 1..this.ords.size
-                      else 1..other.ords.size;
+    proc add(rhs): Series {
+      return rhs.uni(this, new SeriesAdd(eltType));
+    }
 
-      var join_data: [join_ords] eltType;
-      for i in join_ords {
+    proc add_scalar(n): Series {
+      var with_scalar = data + n;
+      return new TypedSeries(with_scalar, idx);
+    }
+
+    proc subtr(rhs): Series {
+      return rhs.uni(this, new SeriesSubtr(eltType));
+    }
+
+    proc subtr_scalar(n): Series {
+      var with_scalar = data - n;
+      return new TypedSeries(with_scalar, idx);
+    }
+
+    proc mult(rhs): Series {
+      return rhs.uni(this, new SeriesMult(eltType));
+    }
+
+    proc mult_scalar(n): Series {
+      var with_scalar = data * n;
+      return new TypedSeries(with_scalar, idx);
+    }
+
+    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
+      if lhs.idx then
+        return lhs.idx.uni(lhs, this, unifier);
+
+      var uni_ords = if lhs.ords.size > this.ords.size
+                     then 1..lhs.ords.size
+                     else 1..this.ords.size;
+      var uni_data: [uni_ords] eltType;
+
+      for i in uni_ords {
+        var inLhs = i <= lhs.ords.size;
         var inThis = i <= this.ords.size;
-        var inOther = i <= other.ords.size;
-        if inThis && inOther {
-          join_data[i] = joiner.f(this.at(i), other.at(i));
+        if inLhs && inThis {
+          uni_data[i] = unifier.f(lhs.at(i), this.at(i));
+        } else if inLhs {
+          uni_data[i] = unifier.f_lhs(lhs.at(i));
         } else if inThis {
-          join_data[i] = joiner.f_lhs(this.at(i));
-        } else if inOther {
-          join_data[i] = joiner.f_rhs(other.at(i));
-        }
-      }
-      delete joiner;
-      return new TypedSeries(join_data);
-    }
-
-    proc join(other: TypedSeries(eltType), type idxType, joiner: SeriesJoiner(eltType)): TypedSeries(eltType) {
-      // TODO: check if the index types are the same, throw if not
-      var join_ords = 1..(this.ords.size + other.ords.size);
-      var join_rev_idx: [join_ords] idxType;
-      var join_data: [join_ords] eltType;
-
-      var curr_ord = 0;
-      for (i, d) in this.items(idxType) {
-        curr_ord += 1;
-        join_rev_idx[curr_ord] = i;
-
-        if other.idx.contains(i) {
-          join_data[curr_ord] = joiner.f(d, other[i]);
-        } else {
-          join_data[curr_ord] = joiner.f_lhs(d);
+          uni_data[i] = unifier.f_rhs(this.at(i));
         }
       }
 
-      for (other_i, other_d) in other.items(idxType) {
-        if !this.idx.contains(other_i) {
-          curr_ord += 1;
-          join_rev_idx[curr_ord] = other_i;
-          join_data[curr_ord] = joiner.f_rhs(other_d);
-        }
-      }
-
-      delete joiner;
-      return new TypedSeries(join_data[1..curr_ord], new TypedIndex(join_rev_idx[1..curr_ord]));
-    }
-
-    proc add(other: TypedSeries(eltType)): TypedSeries(eltType) {
-      return join(other, new SeriesAdd(eltType));
-    }
-
-    proc add(other: TypedSeries(eltType), type idxType): TypedSeries(eltType) {
-      return join(other, idxType, new SeriesAdd(eltType));
-    }
-
-    proc subtr(other: TypedSeries(eltType)): TypedSeries(eltType)
-                                             where isNumericType(eltType) {
-      return join(other, new SeriesSubtr(eltType));
-    }
-
-    proc subtr(other: TypedSeries(eltType), type idxType): TypedSeries(eltType)
-                                                           where isNumericType(eltType) {
-      return join(other, idxType, new SeriesSubtr(eltType));
-    }
-
-    proc mult(other: TypedSeries(eltType)): TypedSeries(eltType)
-                                            where isNumericType(eltType) {
-      return join(other, new SeriesMult(eltType));
-    }
-
-    proc mult(other: TypedSeries(eltType), type idxType): TypedSeries(eltType)
-                                                          where isNumericType(eltType) {
-      return join(other, idxType, new SeriesMult(eltType));
+      delete unifier;
+      return new TypedSeries(uni_data);
     }
 
     proc writeThis(f) {
@@ -242,7 +296,7 @@ module Dataframes {
   }
 
   // TODO: return tuple versions where first element is "None"
-  class SeriesJoiner {
+  class SeriesUnifier {
     type eltType;
 
     proc f(lhs: eltType, rhs: eltType): eltType {
@@ -259,13 +313,13 @@ module Dataframes {
     }
   }
 
-  class SeriesAdd : SeriesJoiner {
+  class SeriesAdd : SeriesUnifier {
     proc f(lhs: eltType, rhs: eltType): eltType {
       return lhs + rhs;
     }
   }
 
-  class SeriesSubtr : SeriesJoiner {
+  class SeriesSubtr : SeriesUnifier {
     proc f(lhs: eltType, rhs: eltType): eltType {
       return lhs - rhs;
     }
@@ -275,7 +329,7 @@ module Dataframes {
     }
   }
 
-  class SeriesMult : SeriesJoiner {
+  class SeriesMult : SeriesUnifier {
     proc f(lhs: eltType, rhs: eltType): eltType {
       return lhs * rhs;
     }
@@ -289,11 +343,29 @@ module Dataframes {
     }
   }
 
-
- // TODO: overload + on a class for dynamic dispatch?
-  /*
-  proc +(ref lhs: TypedSeries(?T), ref rhs: TypedSeries(T)) {
+  proc +(lhs: Series, rhs: Series) {
     return lhs.add(rhs);
   }
-   */
+
+  proc +(lhs: Series, rhs: ?N) where isNumericType(N) {
+    return lhs.add_scalar(rhs);
+  }
+
+  proc -(lhs: Series, rhs: Series) {
+    return lhs.subtr(rhs);
+  }
+
+  proc -(lhs: Series, rhs: ?N) where isNumericType(N) {
+    return lhs.subtr_scalar(rhs);
+  }
+
+  proc *(lhs: Series, rhs: Series) {
+    return lhs.mult(rhs);
+  }
+
+  proc *(lhs: Series, rhs: ?N) where isNumericType(N) {
+    return lhs.mult_scalar(rhs);
+  }
+
+
 }
