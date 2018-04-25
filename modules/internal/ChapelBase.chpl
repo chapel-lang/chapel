@@ -1228,6 +1228,19 @@ module ChapelBase {
     return ret;
   }
 
+  // This function functions similarly to = but it assumes that the LHS
+  // is uninitialized.
+  /*
+  pragma "compiler generated"
+  pragma "no auto destroy args"
+  proc chpl__copyinit(ref dst:?t, in arg:t) {
+    // Assume dst is uninitialized memory, so
+    // we can't call the = overload (since it might access LHS).
+    // Instead, move from the copy (added by 'in' handling)
+    // into the value.
+    __primitive("move", dst, arg);
+  }*/
+
   inline proc chpl__maybeAutoDestroyed(x: numeric) param return false;
   inline proc chpl__maybeAutoDestroyed(x: enumerated) param return false;
   // Uses this spelling to be a peer to the below version

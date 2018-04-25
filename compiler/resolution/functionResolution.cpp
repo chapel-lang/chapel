@@ -5119,6 +5119,12 @@ static void resolveInitVar(CallExpr* call) {
   Symbol*  src     = srcExpr->symbol();
   Type*    srcType = src->type;
 
+  bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   Type* targetType = srcType;
   SymExpr* targetTypeExpr = NULL;
   if (call->numActuals() >= 3) {
@@ -5150,15 +5156,9 @@ static void resolveInitVar(CallExpr* call) {
     }
   }
 
-  bool isParamString = dst->hasFlag(FLAG_PARAM) && isString(srcType);
+  bool addedCoerce = false;
 
-  if (call->id == breakOnResolveID) {
-    gdbShouldBreakHere();
-  }
-
-  if (targetType != srcType) {
-    INT_ASSERT(targetTypeExpr);
-
+  if (targetTypeExpr != NULL) {
     // create a temp variable to store the result of PRIM_COERCE
     VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
     tmp->addFlag(FLAG_EXPR_TEMP);
@@ -5173,10 +5173,15 @@ static void resolveInitVar(CallExpr* call) {
     resolveCoerce(coerce);
     resolveMove(move);
 
+    // Now let the rest of this function proceed using
+    // 'tmp' instead of the original source.
     srcExpr->setSymbol(tmp);
+    srcType = targetType;
+
+    addedCoerce = true;
   }
 
-  if (dst->hasFlag(FLAG_NO_COPY)               == true)  {
+  if (dst->hasFlag(FLAG_NO_COPY) || addedCoerce) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
@@ -5642,39 +5647,32 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
   } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
     moveFinalize(call);
 
-    if (SymExpr* coerceSE = toSymExpr(rhs->get(1))) {
-      Symbol* coerceSym = coerceSE->symbol();
+    if (SymExpr* fromSe = toSymExpr(rhs->get(1))) {
+      Symbol* fromSym = fromSe->symbol();
 
       // This transformation is normally handled in insertCasts
       // but we need to do it earlier for parameters. We can't just
       // call insertCasts here since that would dramatically change the
       // resolution order (and would be apparently harder to get working).
-      if (coerceSym->isParameter()               == true  ||
-          coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      if (fromSym->isParameter()               == true  ||
+          fromSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         // Can we coerce from the argument to the function return type?
         // Note that rhsType here is the function return type
         // (since that is what the primitive returns as its type).
-        Type* coerceType = coerceSym->type;
+        Type* fromType = fromSym->type;
         Type* rhsType    = rhs->typeInfo();
         bool tmpParamNarrows = false;
 
-        if (coerceType                                     == rhsType ||
-            canParamCoerce(coerceType, coerceSym, rhsType, &tmpParamNarrows) == true)   {
+        if (fromType                                     == rhsType ||
+            canParamCoerce(fromType, fromSym, rhsType, &tmpParamNarrows) == true)   {
           SymExpr* lhs = toSymExpr(call->get(1));
 
           call->get(1)->replace(lhs->copy());
-          call->get(2)->replace(new SymExpr(coerceSym));
-
-        } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
-
-          // any case that doesn't param coerce but that does coerce
-          // will be handled in insertCasts.
+          call->get(2)->replace(new SymExpr(fromSym));
 
         } else {
-          USR_FATAL(userCall(call),
-                    "type mismatch in return from %s to %s",
-                    toString(coerceType),
-                    toString(rhsType));
+          // Any other case (including error cases)
+          // will be handled in insertCasts
         }
       }
     }

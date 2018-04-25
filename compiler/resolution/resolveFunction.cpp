@@ -1150,6 +1150,10 @@ void insertFormalTemps(FnSymbol* fn) {
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
 
+      /* if (fn->hasFlag(FLAG_NO_AUTO_DESTROY_ARGS)) {
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+      }*/
+
       formals2vars.put(formal, tmp);
     }
   }
@@ -1527,12 +1531,37 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
               Symbol*  to           = lhs->symbol();
 
+
+              bool involvesRuntimeType = false;
+              {
+                Type* t1 = fromTypeExpr->getValType();
+                Type* t2 = fromExpr->getValType();
+
+                involvesRuntimeType =
+                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+                  t2->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+              }
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
-              if (!typesDiffer) {
+              // If the types are the same but runtime types
+              // are involved, we don't know that the runtime
+              // types are the same until runtime (at least without
+              // some better smarts in the compiler).
+
+              if (!typesDiffer && !involvesRuntimeType) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
+
+                // Call chpl__checkshape
+                /*if (involvesRuntimeType) {
+                  CallExpr* check = new CallExpr("chpl__checkshape",
+                                                 fromTypeExpr->copy(),
+                                                 fromExpr->copy());
+                  call->insertBefore(check);
+                  resolveExpr(check);
+                }*/
 
                 if (rhsType == lhsType) {
                   rhs = new SymExpr(from);
@@ -1550,22 +1579,24 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 casts.add(move);
 
-              } else if (lhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                         rhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ) {
+              } else if (involvesRuntimeType) {
 
-                // Use = if the types differ.  This should cause the 'from'
-                // value to be coerced to 'to' if possible or result in an
-                // compilation error. We use = here (vs _cast) in order to work
-                // better with returning arrays. We could probably use _cast
-                // instead of = if fromType does not have a runtime type.
+                // Here the types differ and we're expecting some
+                // kind of promotion / iterator-array-conversion to apply.
 
-                CallExpr* init     = new CallExpr(PRIM_NO_INIT, fromType);
+                // In the future, it would be nice if this could no-init
+                // a LHS array and then move records into it from the RHS.
+                CallExpr* init     = new CallExpr(PRIM_INIT, fromType);
                 CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
 
                 call->insertBefore(moveInit);
 
-                // By resolving =, we will generate an error if from cannot be
-                // coerced into to.
+                // Since the initialization pattern normally does not
+                // require adding an auto-destroy for a call-expr-temp,
+                // add FLAG_INSERT_AUTO_DESTROY since we're assigning from
+                // it.
+                from->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
                 CallExpr* assign = new CallExpr("=", to, from);
 
                 call->insertBefore(assign);
