@@ -1542,6 +1542,23 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   t2->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
               }
 
+              bool useAssign = involvesRuntimeType;
+
+              // Use assign (to get error) if coercion isn't normally
+              // allowed between these types.
+              // Note this also supports some things like syserr = int.
+              if (!canDispatch(from->type, from, lhsType)) {
+                useAssign = true;
+              }
+
+              // Use assign since no cast is available for
+              // sync / single and their value type.
+              if (typesDiffer &&
+                  (isSyncType(from->getValType()) ||
+                   isSingleType(from->getValType()))) {
+                useAssign = true;
+              }
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
@@ -1550,7 +1567,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // types are the same until runtime (at least without
               // some better smarts in the compiler).
 
-              if (!typesDiffer && !involvesRuntimeType) {
+              if (!typesDiffer && !useAssign) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
@@ -1563,11 +1580,14 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   resolveExpr(check);
                 }*/
 
+                CallExpr* toResolve = NULL;
+
                 if (rhsType == lhsType) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  rhs = new CallExpr(PRIM_DEREF, new SymExpr(from));
+                  toResolve = new CallExpr("chpl__autoCopy", new SymExpr(from));
+                  rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
                   rhs = new CallExpr(PRIM_ADDR_OF, new SymExpr(from));
@@ -1577,9 +1597,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 call->replace(move);
 
+                if (toResolve) resolveExpr(toResolve);
+
                 casts.add(move);
 
-              } else if (involvesRuntimeType) {
+              } else if (useAssign) {
 
                 // Here the types differ and we're expecting some
                 // kind of promotion / iterator-array-conversion to apply.
