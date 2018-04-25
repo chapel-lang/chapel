@@ -5129,7 +5129,8 @@ static void resolveInitVar(CallExpr* call) {
   } else if (isRecordWithInitializers(srcType) == true &&
              isParamString == false &&
              isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+             isSingleType(srcType) == false &&
+             isRecordWrappedType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
