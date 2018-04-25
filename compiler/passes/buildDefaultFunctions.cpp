@@ -957,7 +957,7 @@ static void build_enum_binary_op(EnumType* et, const char* op,
   bool isAssign = (prim == PRIM_ASSIGN);
 
   FnSymbol* fn = new FnSymbol(op);
-  if (prim == PRIM_ASSIGN) {
+  if (isAssign) {
     fn->addFlag(FLAG_ASSIGNOP);
   }
   fn->addFlag(FLAG_COMPILER_GENERATED);
@@ -984,10 +984,9 @@ static void build_enum_assignment_function(EnumType* et) {
 }
 
 static void build_enum_comparison_functions(EnumType* et) {
-  build_enum_binary_op(et, "==", PRIM_EQUAL);
-  build_enum_binary_op(et, "!=", PRIM_NOTEQUAL);
+  //  build_enum_binary_op(et, "==", PRIM_EQUAL);
+  //  build_enum_binary_op(et, "!=", PRIM_NOTEQUAL);
 }
-
 
 static void build_record_assignment_function(AggregateType* ct) {
   if (function_exists("=", ct, ct))
