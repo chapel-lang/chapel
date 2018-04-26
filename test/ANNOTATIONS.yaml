@@ -847,6 +847,8 @@ memleaksfull:
   04/19/18:
     - New test for warn-unstable (#9229)
     - Partial reductions for LayoutCS (#9269)
+  04/20/18:
+    - Adjust partial-reduction tests (#9284)
 
 meteor:
   12/18/13:
