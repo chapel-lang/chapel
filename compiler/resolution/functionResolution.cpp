@@ -5581,10 +5581,10 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
       // todo: differentiate based on ref-ness, not _ref type
       // todo: not all const if it is zippered and one of iterators is var
       if (isReferenceType(rhsType)                == false &&
-	  isTupleContainingAnyReferences(rhsType) == false &&
-	  rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
-	// ... then mark LHS constant.
-	lhsSym->addFlag(FLAG_CONST);
+          isTupleContainingAnyReferences(rhsType) == false &&
+          rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+        // ... then mark LHS constant.
+        lhsSym->addFlag(FLAG_CONST);
       }
     }
   } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
