@@ -12,7 +12,7 @@ Bug Fixes
 * fixed a bug in which postinit() was not called for generic records
 * fixed a bug in which most launchers would not work with 'make install'
 * fixed a portability problem w.r.t. our processing of /proc/cpuinfo
-* fixed a bug in which LinearAlgebra.sparse.eye() would unintentionally promote
+* fixed a bug in which LinearAlgebra.Sparse.eye() would unintentionally promote
 
 Cray-specific Changes
 ---------------------
@@ -29,7 +29,7 @@ Documentation
 
 Packaging Changes
 -----------------
-* converted our use of easy_install for Python packages to pip
+* converted our use of easy_install to pip when installing virtualenv
 
 Third-Party Software Changes
 ----------------------------
