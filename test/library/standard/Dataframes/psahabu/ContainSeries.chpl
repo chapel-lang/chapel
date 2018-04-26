@@ -2,7 +2,7 @@ use Dataframes;
 
 var A = ["a", "b", "c", "d", "e"];
 var I = ["A", "B", "C", "D", "E"];
-var letters: TypedSeries(string) = new TypedSeries(A, new TypedIndex(I));
+var letters = new TypedSeries(A, new TypedIndex(I));
 
 writeln(letters);
 writeln();

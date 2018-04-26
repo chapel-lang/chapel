@@ -34,6 +34,12 @@ module Dataframes {
     }
 
     pragma "no doc"
+    proc map(s: TypedSeries, mapper: SeriesMapper): Series {
+      halt("generic Index cannot be mapped");
+      return s;
+    }
+
+    pragma "no doc"
     proc writeThis(f, s: TypedSeries(?) = nil) {
       halt("cannot writeThis on generic Index");
     }
@@ -118,6 +124,13 @@ module Dataframes {
       return new TypedSeries(uni_data[1..curr_ord], new TypedIndex(uni_rev_idx[1..curr_ord]));
     }
 
+    proc map(s: TypedSeries(?T), mapper: SeriesMapper(T, ?R)): TypedSeries(R) {
+      var mapped: [ords] R;
+      for (i, d) in s.items(idxType) do
+        mapped[this[i]] = mapper.f(d);
+
+      return new TypedSeries(mapped, this);
+    }
 
     proc writeThis(f, s: TypedSeries(?) = nil) {
       for (i, d) in zip(this, s) {
@@ -155,7 +168,7 @@ module Dataframes {
 
     pragma "no doc"
     proc subtr_scalar(n) {
-      halt("generic Series cannot be added");
+      halt("generic Series cannot be subtracted");
       return this;
     }
 
@@ -167,12 +180,24 @@ module Dataframes {
 
     pragma "no doc"
     proc mult_scalar(n) {
-      halt("generic Series cannot be added");
+      halt("generic Series cannot be multiplied");
       return this;
     }
 
     pragma "no doc"
     proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
+      halt("generic Series cannot be unioned");
+      return this;
+    }
+
+    pragma "no doc"
+    proc lt_scalar(n) {
+      halt("generic Series cannot be compared");
+      return this;
+    }
+
+    pragma "no doc"
+    proc map(mapper: SeriesMapper) {
       halt("generic Series cannot be unioned");
       return this;
     }
@@ -284,6 +309,18 @@ module Dataframes {
       return new TypedSeries(uni_data);
     }
 
+    proc lt_scalar(n): Series {
+      return this.map(new SeriesLessThan(n));
+    }
+
+    proc map(mapper: SeriesMapper) {
+      if idx then
+        return idx.map(this, mapper);
+
+      var mapped = [d in data] mapper.f(d);
+      return new TypedSeries(mapped);
+    }
+
     proc writeThis(f) {
       if idx {
         idx.writeThis(f, this);
@@ -343,6 +380,29 @@ module Dataframes {
     }
   }
 
+  pragma "use default init"
+  class SeriesMapper {
+    type eltType;
+    type retType;
+
+    proc f(d: eltType): retType {
+      return d;
+    }
+  }
+
+  class SeriesLessThan : SeriesMapper {
+    var x: eltType;
+
+    proc init(x) {
+      super.init(x.type, bool);
+      this.x = x;
+    }
+
+    proc f(d: eltType): retType {
+      return d < x;
+    }
+  }
+
   proc +(lhs: Series, rhs: Series) {
     return lhs.add(rhs);
   }
@@ -367,5 +427,11 @@ module Dataframes {
     return lhs.mult_scalar(rhs);
   }
 
+  proc <(lhs: Series, rhs: ?N) where isNumericType(N) {
+    return lhs.lt_scalar(rhs);
+  }
 
+  proc >(lhs: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.lt_scalar(lhs);
+  }
 }
