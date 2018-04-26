@@ -5573,7 +5573,8 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
 
     if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
         // non-zip forall over a standalone iterator
-        rhs->symbol()->hasFlag(FLAG_INDEX_VAR)) {
+        (lhsSym->hasFlag(FLAG_TEMP) &&
+         rhs->symbol()->hasFlag(FLAG_INDEX_VAR))) {
 
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
