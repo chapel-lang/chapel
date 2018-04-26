@@ -350,15 +350,8 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
-inline SymExpr* ShadowVarSymbol::outerVarSE() const {
-  if (SymExpr* ovse = toSymExpr(this->outerVarRep))
-    return ovse;
-  else
-    return NULL;
-}
-
 inline Symbol* ShadowVarSymbol::outerVarSym() const {
-  if (SymExpr* ovse = this->outerVarSE())
+  if (SymExpr* ovse = this->outerVarSE)
     return ovse->symbol();
   else
     return NULL;

@@ -215,7 +215,7 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromArgIntent(IntentTag intent,
 {
   ForallIntentTag  fi = argIntentToForallIntent(ovar, intent);
   const char*    name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(fi, name, ovar);
+  return new ShadowVarSymbol(fi, name, NULL);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
@@ -223,7 +223,7 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
 {
   INT_ASSERT(riExpr != NULL);
   const char* name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(TFI_REDUCE, name, ovar, riExpr);
+  return new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
 }
 
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {

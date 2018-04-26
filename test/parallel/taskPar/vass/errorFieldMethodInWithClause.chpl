@@ -1,4 +1,6 @@
 // see also field-in-task-ref-clause.chpl
+// see also parallel/forall/vass/errorFieldMethodInWithClause.chpl
+
 const ITER = 1..3;
 
 class myClass {
@@ -12,12 +14,10 @@ iter ourIter { yield 8; }
 proc something {}
 
 proc myClass.test {
-  forall ITER with (in myField) do
-    something();
-  forall ITER with (in myProcc) do
-    something;
-  forall ITER with (ref ourProc, ref ourIter) do
-    something;
+
+
+  // forall testing moved to parallel/forall/vass
+
 
   cobegin with (in myField) {
     something;

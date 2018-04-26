@@ -1,2 +1,2 @@
-bogusShadowVar.chpl:4: error: 'bogusVar1' undeclared (first use this function)
-bogusShadowVar.chpl:5: error: 'bogusVar2' undeclared (first use this function)
+bogusShadowVar.chpl:4: error: could not find the outer variable for 'bogusVar1'
+bogusShadowVar.chpl:5: error: could not find the outer variable for 'bogusVar2'
