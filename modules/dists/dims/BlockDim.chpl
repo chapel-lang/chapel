@@ -190,7 +190,7 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
     compilerError("The index type ", idxType:string,
                   " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
-  return new unmanaged Block1dom(idxType = idxType, stridable = stridable, pdist = this);
+  return new unmanaged Block1dom(idxType = idxType, stridable = stridable, pdist = _to_unmanaged(this));
 }
 
 proc Block1dom.dsiIsReplicated1d() param return false;
