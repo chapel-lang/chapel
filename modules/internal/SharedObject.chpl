@@ -237,6 +237,14 @@ module SharedObject {
     lhs.pn = rhs.pn;
   }
 
+  /*
+     Swap two :record:`Shared` objects.
+   */
+  proc <=>(ref lhs: _shared, ref rhs: _shared) {
+    lhs.pn <=> rhs.pn;
+    lhs.p <=> rhs.p;
+  }
+
   // This is a workaround
   pragma "no doc"
   proc chpl__autoDestroy(x: _shared) {
