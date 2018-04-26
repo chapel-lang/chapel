@@ -396,11 +396,17 @@ proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
   return transpose(this);
 }
 
-/* Add matrices, maintaining dimensions, deprecated for ``_array.plus`` */
+/*Add matrices, maintaining dimensions. Preferred method at scale */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
-  compilerWarning('matPlus has been deprecated for _array.plus, ' +
-                  'try: A.plus(B)');
-  return A.plus(B);
+  var dom = {A.domain.dim(1),B.domain.dim(2)};
+  var sps = CSRDomain(dom);
+  sps += A.domain;
+  sps += B.domain;
+  var S: [sps] real;
+  for (i,j) in sps {
+    S(i,j) = A(i,j) + B(i,j);
+  }
+  return S;
 }
 
 /* Add matrices, maintaining dimensions */
