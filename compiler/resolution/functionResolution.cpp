@@ -5571,11 +5571,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
     Type*   rhsType = rhs->typeInfo();
 
-    if (lhsSym->hasFlag(FLAG_TEMP)) {
-
-      INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
-                 // non-zip forall over a standalone iterator
-                 rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
+    if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+        // non-zip forall over a standalone iterator
+        rhs->symbol()->hasFlag(FLAG_INDEX_VAR)) {
 
       // ... and not of a reference type
       // ... and not an array (arrays are always yielded by reference)
