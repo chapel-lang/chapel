@@ -110,10 +110,12 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       char        cn1          = calledFn->name[0];
       const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
+      int formalIdx = 0;
 
       // resolved calls
       for_formals_actuals(formal, actual, call) {
         bool error = false;
+        formalIdx++;
 
         if (actual->qualType().isConst() && ! formal->qualType().isConst()) {
           // But... there are exceptions
@@ -152,6 +154,21 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
             error = true;
           }
         }
+
+        // check for a build_tuple call containing e.g. Owned
+
+        if (calledFn->hasFlag(FLAG_BUILD_TUPLE) &&
+            !calledFn->hasFlag(FLAG_ALLOW_REF)) {
+          if (actual->qualType().isConst() &&
+              actual->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES)) {
+            USR_FATAL_CONT(actual,
+                           "argument %i for tuple construction is const "
+                           "but tuple construction takes ownership",
+                           formalIdx
+                          );
+          }
+        }
+
 
         // TODO: check tuple const-ness:
         //   make analysis above more complete
