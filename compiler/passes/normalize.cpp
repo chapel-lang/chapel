@@ -2214,13 +2214,14 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
     if (isGenericRecordWithInitializers(rhsType)) {
       // Create a temporary with the type specified in the lhs declaration
-      VarSymbol* typeTemp = newTemp("type_tmp");
+      /*VarSymbol* typeTemp = newTemp("type_tmp");
       DefExpr*   typeDefn = new DefExpr(typeTemp);
       CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
       CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
 
       defExpr ->insertAfter(typeDefn);
       typeDefn->insertAfter(initMove);
+      */
 
       // Create a temporary to hold the result of the rhs "new" call
       VarSymbol* initExprTemp = newTemp("init_tmp", rhsType);
@@ -2228,7 +2229,8 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       Expr*      arg          = origCall->get(1)->remove();
       CallExpr*  argExpr      = toCallExpr(arg);
 
-      initMove    ->insertAfter(initExprDefn);
+      //initMove    ->insertAfter(initExprDefn);
+      defExpr->insertAfter(initExprDefn);
       initExprDefn->insertAfter(argExpr);
 
       // Modify the "new" call so that it is in the appropriate form for
@@ -2242,6 +2244,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       initExprTemp->addFlag(FLAG_DELAY_GENERIC_EXPANSION);
 
+      /*
       // Assign the rhs into the lhs.
       CallExpr*  assign   = new CallExpr("=",       typeTemp,  initExprTemp);
 
@@ -2251,6 +2254,9 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 
       // Move the result into the original variable.
       assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+       */
+
+      argExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExprTemp, typeExpr));
 
     } else {
       /*VarSymbol* typeTemp = newTemp("type_tmp");
