@@ -1,3 +1,2 @@
 intent-5-error.chpl:3: In function 'foo':
-intent-5-error.chpl:4: error: const actual is passed to 'ref' formal 'a' of =
-note: to formal of type int(64)
+intent-5-error.chpl:4: error: illegal lvalue in assignment
