@@ -5571,19 +5571,22 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
     Type*   rhsType = rhs->typeInfo();
 
-    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
-               // non-zip forall over a standalone iterator
-               rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
+    if (lhsSym->hasFlag(FLAG_TEMP)) {
 
-    // ... and not of a reference type
-    // ... and not an array (arrays are always yielded by reference)
-    // todo: differentiate based on ref-ness, not _ref type
-    // todo: not all const if it is zippered and one of iterators is var
-    if (isReferenceType(rhsType)                == false &&
-        isTupleContainingAnyReferences(rhsType) == false &&
-        rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
-      // ... then mark LHS constant.
-      lhsSym->addFlag(FLAG_CONST);
+      INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+                 // non-zip forall over a standalone iterator
+                 rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
+
+      // ... and not of a reference type
+      // ... and not an array (arrays are always yielded by reference)
+      // todo: differentiate based on ref-ness, not _ref type
+      // todo: not all const if it is zippered and one of iterators is var
+      if (isReferenceType(rhsType)                == false &&
+	  isTupleContainingAnyReferences(rhsType) == false &&
+	  rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+	// ... then mark LHS constant.
+	lhsSym->addFlag(FLAG_CONST);
+      }
     }
   } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
