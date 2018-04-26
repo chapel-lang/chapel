@@ -82,6 +82,8 @@ static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
 
+static void          setupOuterVarsOfShadowVars();
+
 static void          resolveEnumeratedTypes();
 
 static void          destroyModuleUsesCaches();
@@ -173,6 +175,8 @@ void scopeResolve() {
   resolveUnresolvedSymExprs();
 
   resolveEnumeratedTypes();
+
+  setupOuterVarsOfShadowVars();
 
   ResolveScope::destroyAstMap();
 
@@ -942,12 +946,6 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
 //
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE) {
-  // A 'with' clause in a ForallStmt.
-  if (isOuterVarOfShadowVar(exprInAst)) {
-    errorDotInsideWithClause(origUSE, "forall loop");
-    return;
-  }
-
   // A 'with' clause for a task construct.
   if (Expr* parent1 = exprInAst->parentExpr) {
     if (BlockStmt* parent2 = toBlockStmt(parent1->parentExpr)) {
@@ -964,6 +962,50 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
     }
   }
 }
+
+static bool isField(Symbol* sym) {
+  // Copied from insertWideReferences.cpp.
+  // Alas Symbol::isField is private.
+  return isTypeSymbol(sym->defPoint->parentSymbol);
+}
+
+static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
+  // We pull in the relevant pieces of resolveUnresolvedSymExpr().
+  // This is hopefully clearer than generating an UnresolvedSymExpr
+  // and calling resolveUnresolvedSymExpr() on it.
+
+  SET_LINENO(svar);
+
+  if (Symbol* ovar = lookup(svar->name, fs)) {
+    if (isFnSymbol(ovar) || isField(ovar)) {
+      // Create a stand-in to use pre-existing code.
+      UnresolvedSymExpr* standIn = new UnresolvedSymExpr(svar->name);
+      errorDotInsideWithClause(standIn, "forall loop");
+    }
+    else {
+      // The desired case.
+      svar->outerVarSE = new SymExpr(ovar);
+      insert_help(svar->outerVarSE, NULL, svar);
+    }
+  } else {
+    USR_FATAL_CONT(svar,
+                   "could not find the outer variable for '%s'", svar->name);
+  }
+}
+
+static void setupOuterVarsOfShadowVars() {
+  forv_Vec(ForallStmt, fs, gForallStmts)
+    for_shadow_vars(svar, temp, fs)
+      setupOuterVar(fs, svar);
+
+  // Instead of the two nested loops above, we could march through
+  // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
+  // The nested loops group together all shadow variables of a given
+  // ForallStmt, so hopefully have better cache behavior.
+
+  USR_STOP();
+}
+    
 
 /************************************* | **************************************
 *                                                                             *

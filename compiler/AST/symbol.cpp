@@ -919,12 +919,11 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
 ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
                                  const char* name,
-                                 Expr* outerVar,
+                                 SymExpr* outerVar,
                                  Expr* spec):
   VarSymbol(E_ShadowVarSymbol, name, dtUnknown),
   intent(iIntent),
-  // For task-private variables, set 'outerVarRep' to NULL.
-  outerVarRep(outerVar),
+  outerVarSE(outerVar),
   specBlock(NULL),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
@@ -948,16 +947,12 @@ void ShadowVarSymbol::verify() {
     INT_FATAL(this, "Bad ShadowVarSymbol::astTag");
   if (intent != TFI_REDUCE && intent != TFI_IN_OUTERVAR &&
       intent != TFI_TASK_PRIVATE)
-    INT_ASSERT(outerVarRep);
-  if (outerVarRep && outerVarRep->parentSymbol != this)
-    INT_FATAL(this, "Bad ShadowVarSymbol::outerVarRep::parentSymbol");
+    INT_ASSERT(!normalized || outerVarSE); // non-NULL already after scopeResolve
+  if (outerVarSE && outerVarSE->parentSymbol != this)
+    INT_FATAL(this, "Bad ShadowVarSymbol::outerVarSE::parentSymbol");
   if (specBlock && specBlock->parentSymbol != this)
     INT_FATAL(this, "Bad ShadowVarSymbol::specBlock::parentSymbol");
-  if (outerVarRep) {
-    verifyNotOnList(outerVarRep);
-    // this assert holds already after scopeResolve
-    INT_ASSERT(!normalized || isSymExpr(outerVarRep));
-  }
+  verifyNotOnList(outerVarSE);
   // for VarSymbol
   if (!type)
     INT_FATAL(this, "ShadowVarSymbol::type is NULL");
@@ -975,15 +970,15 @@ void ShadowVarSymbol::verify() {
 
 void ShadowVarSymbol::accept(AstVisitor* visitor) {
   visitor->visitVarSym(this);
-  if (outerVarRep)
-    outerVarRep->accept(visitor);
+  if (outerVarSE)
+    outerVarSE->accept(visitor);
   if (specBlock)
     specBlock->accept(visitor);
 }
 
 ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
   ShadowVarSymbol* ss = new ShadowVarSymbol(intent, name,
-                                            COPY_INT(outerVarRep), NULL);
+                                            COPY_INT(outerVarSE), NULL);
   ss->type = type;
   ss->qual = qual;
   ss->specBlock     = COPY_INT(specBlock);
@@ -996,8 +991,8 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
 }
 
 void ShadowVarSymbol::replaceChild(BaseAST* oldAst, BaseAST* newAst) {
-  if (oldAst == outerVarRep)
-    outerVarRep = toSymExpr(newAst);
+  if (oldAst == outerVarSE)
+    outerVarSE = toSymExpr(newAst);
   else if (oldAst == specBlock)
     specBlock = toBlockStmt(newAst);
   else if (oldAst == svInitBlock)
@@ -1102,7 +1097,7 @@ ShadowVarSymbol* ShadowVarSymbol::AccumStateForReduceOp() const {
 }
 
 void ShadowVarSymbol::removeSupportingReferences() {
-  if (outerVarRep)   outerVarRep->remove();
+  if (outerVarSE)    outerVarSE->remove();
   if (specBlock)     specBlock->remove();
   if (svInitBlock)   svInitBlock->remove();
   if (svDeinitBlock) svDeinitBlock->remove();
@@ -1110,7 +1105,7 @@ void ShadowVarSymbol::removeSupportingReferences() {
 
 bool isOuterVarOfShadowVar(Expr* expr) {
   if (ShadowVarSymbol* ss = toShadowVarSymbol(expr->parentSymbol))
-    if (expr == ss->outerVarRep)
+    if (expr == ss->outerVarSE)
       return true;
   return false;
 }

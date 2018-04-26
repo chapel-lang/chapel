@@ -1529,7 +1529,7 @@ buildForallLoopStmt(Expr*      indices,
 
 // Todo: replace with ForallIntents or similar.
 void addTaskIntent(CallExpr* ti, ShadowVarSymbol* svar) {
-  Expr* ovar = svar->outerVarRep;
+  Expr* ovar = new UnresolvedSymExpr(svar->name);
   if (Expr* ri = svar->reduceOpExpr()) {
     // This is a reduce intent. NB 'intent' is undefined.
     ti->insertAtTail(ri);
