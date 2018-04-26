@@ -7,9 +7,9 @@ config const s1 = 2;
 config const s2 = 2;
 setupLocales(s1, s2);
 
-var vdf = new ReplicatedDim(s1);
-var sdf = new BlockDim(s2, 1, 3);
-var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
+var vdf = new unmanaged ReplicatedDim(s1);
+var sdf = new unmanaged BlockDim(s2, 1, 3);
+var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
 const dmbase = {1..3,1..4};
 var dmdom: domain(2) dmapped new dmap(ddf);
 dmdom = dmbase;

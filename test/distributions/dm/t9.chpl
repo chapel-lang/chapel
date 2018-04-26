@@ -11,13 +11,13 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
+var vdf = new unmanaged BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
                               name="D1");
-var sdf = new BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
+var sdf = new unmanaged BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
                               name="D2");
 
 hd("new DimensionalDist2D()");
-var ddf = new DimensionalDist2D(mylocs, vdf, sdf, "ddf");
+var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
 tl();
 
 hd("wrapping ddf in dmap");
