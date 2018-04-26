@@ -2162,15 +2162,14 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
   //
   if (isPrimitiveScalar(type) == true ||
       isNonGenericClass(type) == true) {
-    VarSymbol* tmp = newTemp("tmp", type);
+    /*VarSymbol* tmp = newTemp("tmp", type);
 
     defExpr->insertBefore(new DefExpr(tmp));
     defExpr->insertBefore(new CallExpr("=",      tmp, initExpr));
 
-    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));
+    defExpr->insertAfter(new CallExpr(PRIM_MOVE, var, tmp));*/
 
-    // TODO -- don't assign
-    //defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, type->symbol));
+    defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, type->symbol));
     var->type = type;
 
   } else if (isNonGenericRecordWithInitializers(type) == true) {
