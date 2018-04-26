@@ -1,2 +1,0 @@
-TestMinkWithArg.chpl:8: error: unresolved type specifier 'mink(k=15)'
-../mink.chpl:6: note: candidates are: mink(type eltType)
