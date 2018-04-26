@@ -2253,7 +2253,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       assign ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
 
     } else {
-      VarSymbol* typeTemp = newTemp("type_tmp");
+      /*VarSymbol* typeTemp = newTemp("type_tmp");
       DefExpr*   typeDefn = new DefExpr(typeTemp);
       CallExpr*  initCall = new CallExpr(PRIM_INIT, typeExpr);
       CallExpr*  initMove = new CallExpr(PRIM_MOVE, typeTemp,  initCall);
@@ -2264,7 +2264,9 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
       defExpr ->insertAfter(typeDefn);
       typeDefn->insertAfter(initMove);
       initMove->insertAfter(assign);
-      assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));
+      assign  ->insertAfter(new CallExpr(PRIM_MOVE, var, typeTemp));*/
+
+      defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR, var, initExpr, typeExpr));
     }
 
   } else {
