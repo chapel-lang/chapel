@@ -471,6 +471,8 @@ c-ray:
 create-views:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 dgemm.128:
   09/06/13:
@@ -845,6 +847,8 @@ memleaksfull:
   04/19/18:
     - New test for warn-unstable (#9229)
     - Partial reductions for LayoutCS (#9269)
+  04/20/18:
+    - Adjust partial-reduction tests (#9284)
 
 meteor:
   12/18/13:
@@ -885,6 +889,10 @@ miniMD:
     - Three way refpair (#5561)
   12/05/17:
     - Enforce qualified refs after inlining (#7906)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
+  04/24/18:
+    - Update miniMD problem size (#9296)
 
 miniMD.ml-time:
   09/14/17:
@@ -907,6 +915,8 @@ nbody:
     - revert jemalloc to 4.0.4 (#3477)
   05/28/16:
     - upgrade jemalloc to 4.2.0 (#3919)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 no-op:
   02/24/17:
@@ -1057,6 +1067,8 @@ revcomp:
     - Brad version overhauled, based on mark-skip-read-begin (#8815)
   03/31/18:
     - Update revcomp problem size; filenames for fasta-based inputs (#9043)
+  04/19/18:
+    - Use zero-arg initializer in BaseDom (#9250)
 
 sad:
   05/03/16:
