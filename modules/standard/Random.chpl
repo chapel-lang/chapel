@@ -203,9 +203,9 @@ module Random {
                         param parSafe: bool = true,
                         param algorithm = defaultRNG) {
     if algorithm == RNG.PCG then
-      return new RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new unmanaged RandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else if algorithm == RNG.NPB then
-      return new NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
+      return new unmanaged NPBRandomStream(seed=seed, parSafe=parSafe, eltType=eltType);
     else
       compilerError("Unknown random number generator");
   }

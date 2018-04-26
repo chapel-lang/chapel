@@ -1,1 +1,1 @@
-reductionex_record.chpl:43: error: unresolved call 'Test(16,int(64),int(64)).myhisto(eltType=type uint(64))'
+reductionex_record.chpl:43: error: unresolved call 'Test(16,int(64),int(64)).myhisto'

@@ -190,4 +190,22 @@ void convertClassTypesToCanonical() {
         ts->type->refType->symbol->defPoint->remove();
     }
   }
+
+  // Remove useless casts
+  forv_Vec(CallExpr, move, gCallExprs) {
+    if (move->inTree()) {
+      if (move->isPrimitive(PRIM_MOVE) ||
+          move->isPrimitive(PRIM_ASSIGN)) {
+        SymExpr* lhsSe = toSymExpr(move->get(1));
+        CallExpr* rhsCast = toCallExpr(move->get(2));
+        if (rhsCast && rhsCast->isPrimitive(PRIM_CAST)) {
+          SymExpr* rhsSe = toSymExpr(rhsCast->get(2));
+          if (lhsSe->typeInfo() == rhsSe->typeInfo()) {
+            rhsSe->remove();
+            rhsCast->replace(rhsSe);
+          }
+        }
+      }
+    }
+  }
 }

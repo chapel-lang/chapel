@@ -508,7 +508,7 @@ module ChapelLocale {
         for f in flags do
           f.s.testAndSet();
       } else {
-        var f = new localesSignal();
+        var f = new unmanaged localesSignal();
         // expose my flag to locale 0
         flags[locIdx] = f;
         // wait (locally) for locale 0 to set my flag
@@ -529,7 +529,7 @@ module ChapelLocale {
   // object.
   pragma "no doc"
   proc chpl_init_rootLocale() {
-    origRootLocale = new RootLocale();
+    origRootLocale = new unmanaged RootLocale();
     (origRootLocale:RootLocale).setup();
   }
 
@@ -545,7 +545,7 @@ module ChapelLocale {
     rootLocale = origRootLocale;
     if replicateRootLocale && locIdx!=0 {
       // Create a new local rootLocale
-      var newRootLocale = new RootLocale();
+      var newRootLocale = new unmanaged RootLocale();
       // We don't want to be doing unnecessary ref count updates here
       // as they require additional tasks.  We know we don't need them
       // so tell the compiler to not insert them.
@@ -581,7 +581,7 @@ module ChapelLocale {
   // representative.
   // The dummy locale provides system-default tasking and memory management.
   pragma "no doc"
-  const dummyLocale = new DummyLocale();
+  const dummyLocale = new unmanaged DummyLocale();
 
   pragma "no doc"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;

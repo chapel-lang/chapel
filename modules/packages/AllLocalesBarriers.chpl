@@ -91,7 +91,7 @@ module AllLocalesBarriers {
 
   var allLocalesBarrier: AllLocalesBarrier;
 
-  allLocalesBarrier = new AllLocalesBarrier(1);
+  allLocalesBarrier = new unmanaged AllLocalesBarrier(1);
 
   pragma "no doc"
   proc deinit() {

@@ -281,7 +281,7 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
 
   param str = strideHelper(dom1) || strideHelper(dom2);
 
-  return LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
+  return unmanaged LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
 }
 
 pragma "use default init"
@@ -322,14 +322,14 @@ class DimensionalDom : BaseRectangularDom {
   proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom
-  proc locDdescType type  return LocDimensionalDom(stoDomainT,
+  proc locDdescType type  return unmanaged LocDimensionalDom(stoDomainT,
                                          dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
                                          dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
   // local domain descriptors, not reprivatized
   // INIT TODO: Used to use 'locDdescType' instead of 'locDescTypeHelper'. Can
   // we clean this up?
-  var localDdescs: [dist.targetIds] locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
+  var localDdescs: [dist.targetIds] unmanaged locDescTypeHelper(rank, idxType, dom1, dom2); // locDdescType
 }
 
 class LocDimensionalDom {
@@ -370,7 +370,7 @@ class DimensionalArr : BaseRectangularArr {
   // local array descriptors (from the original array, if this is an alias)
   // NOTE: 'dom' must be initialized prior to initializing 'localAdescs'
   var localAdescs: [dom.targetIds]
-                      LocDimensionalArr(eltType, allocDom.locDdescType);
+                      unmanaged LocDimensionalArr(eltType, allocDom.locDdescType);
 }
 
 class LocDimensionalArr {
@@ -437,7 +437,7 @@ proc newDimensionalDist2D(
   const (nl1, nl2) = (di1.numLocales, di2.numLocales);
   ref reshapedLocales = reshape(targetLocales[0..#nl1*nl2],{0..#nl1,0..#nl2});
 
-  return new DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
+  return new unmanaged DimensionalDist2D(reshapedLocales, di1, di2, name, idxType,
    dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
@@ -460,12 +460,12 @@ proc DimensionalDist2D.checkInvariants(): void {
   assert(dataParMinGranularity > 0, "DimensionalDist2D-dataParMinGranularity");
 }
 
-proc DimensionalDist2D.dsiClone(): this.type {
+proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
   _traceddd("DimensionalDist2D.dsiClone");
   checkInvariants();
 
   // do this simple thing, until we find out that we need something else
-  return this;
+  return _to_unmanaged(this);
 }
 
 
@@ -515,7 +515,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
                        di2new, di2.dsiSupportsPrivatization1d(),
                        privTargetLocales, false, plliddDummy);
 
-  return new DimensionalDist2D(targetLocales = privTargetLocales,
+  return new unmanaged DimensionalDist2D(targetLocales = privTargetLocales,
                              name          = privatizeData(2),
                              idxType       = this.idxType,
                              di1           = di1new,
@@ -688,7 +688,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
   if dom2orig.dsiSupportsPrivatization1d() then
     _passLocalLocIDsDom1d(dom2new, privdist.di2);
 
-  const result = new DimensionalDom(rank      = this.rank,
+  const result = new unmanaged DimensionalDom(rank      = this.rank,
                                     idxType   = this.idxType,
                                     stridable = this.stridable,
                                     dist = privdist,
@@ -808,8 +808,8 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   const dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
-  const result = new DimensionalDom(rank=rank, idxType=idxType,
-                                    stridable=stridable, dist=this,
+  const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
+                                    stridable=stridable, dist=_to_unmanaged(this),
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
 
@@ -819,7 +819,7 @@ proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   coforall (loc, locIds, locDdesc)
    in zip(targetLocales, targetIds, result.localDdescs) do
     on loc do
-      locDdesc = new LocDimensionalDom(result.stoDomainT,
+      locDdesc = new unmanaged LocDimensionalDom(result.stoDomainT,
                        doml1 = dom1.dsiNewLocalDom1d(stoIndexT, locIds(1)),
                        doml2 = dom2.dsiNewLocalDom1d(stoIndexT, locIds(2)));
   result.dsiSetIndices(inds);
@@ -911,7 +911,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
     else chpl_getPrivatizedCopy(objectType = this.allocDom.type,
                                 objectPid  = idAllocDom);
 
-  const result = new DimensionalArr(rank     = this.rank,
+  const result = new unmanaged DimensionalArr(rank     = this.rank,
                                     idxType  = this.idxType,
                                     stridable= this.stridable,
                                     eltType  = this.eltType,
@@ -952,16 +952,16 @@ proc DimensionalDom.dsiBuildArray(type eltType)
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank, " dimensions");
 
-  const result = new DimensionalArr(rank = rank,
+  const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
                                     stridable = stridable,
                                     eltType  = eltType,
-                                    dom      = this,
-                                    allocDom = this);
+                                    dom      = _to_unmanaged(this),
+                                    allocDom = _to_unmanaged(this));
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, result.localAdescs) do
     on loc do
-      locAdesc = new LocDimensionalArr(eltType, locDdesc);
+      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
 
   assert(!result.isAlias);
   return result;

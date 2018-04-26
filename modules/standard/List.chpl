@@ -107,10 +107,10 @@ record list {
    */
   proc ref append(e : eltType) {
     if last {
-      last.next = new listNode(eltType, e);
+      last.next = new unmanaged listNode(eltType, e);
       last = last.next;
     } else {
-      first = new listNode(eltType, e);
+      first = new unmanaged listNode(eltType, e);
       last = first;
     }
     length += 1;
@@ -136,7 +136,7 @@ record list {
     Prepend `e` to the list.
    */
   proc prepend(e : eltType) {
-    first = new listNode(eltType, e, first);
+    first = new unmanaged listNode(eltType, e, first);
     if last == nil then
       last = first;
     length += 1;
