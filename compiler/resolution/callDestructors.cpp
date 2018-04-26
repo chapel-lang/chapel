@@ -24,6 +24,7 @@
 #include "errorHandling.h"
 #include "ForallStmt.h"
 #include "iterator.h"
+#include "lateConstCheck.h"
 #include "lifetime.h"
 #include "UnmanagedClassType.h"
 #include "postFold.h"
@@ -1382,6 +1383,8 @@ void callDestructors() {
   insertYieldTemps();
 
   checkLifetimes();
+
+  lateConstCheck(NULL);
 
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();

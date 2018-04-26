@@ -170,6 +170,13 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
           error = false;
         }
 
+        // A 'const' record should be able to be destroyed
+        if (calledFn->name == astrDeinit ||
+            calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+            calledFn->hasFlag(FLAG_DESTRUCTOR)) {
+          error = false;
+        }
+
         // For now, ignore errors with tuple construction/build_tuple
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
             calledFn->hasFlag(FLAG_INIT_TUPLE)) {
@@ -197,11 +204,22 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         }
 
         if (error) {
+          const char* calledName = calledFn->name;
+
+          if (calledFn->hasFlag(FLAG_AUTO_COPY_FN)) {
+            calledName = "implicit copy initializer";
+            calleeParens = "";
+          }
+          if (calledFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            calledName = "copy initializer";
+            calleeParens = "";
+          }
+
           USR_FATAL_CONT(actual,
                          "const actual is passed to %s formal '%s' of %s%s",
                          formal->intentDescrString(),
                          formal->name,
-                         calledFn->name, calleeParens);
+                         calledName, calleeParens);
 
           BaseAST* lastPrintedReason = NULL;
 
