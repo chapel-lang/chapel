@@ -1275,7 +1275,6 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
     CallExpr* newCall = makeRawNew(reduceOp, newArg);
     CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
     iterRec->defPoint->insertBefore(move);
-    //iterRec->defPoint->insertBefore("'move'(%S, 'new'(%E(%E)))", globalOp, reduceOp, new NamedExpr("eltType", eltType));
   }
   // reduceVar = globalOp.generate(); delete globalOp;
   parLoop->insertAfter("chpl__delete(%S)",
@@ -2074,7 +2073,6 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
   CallExpr* newCall = makeRawNew(opExpr, newArg);
   CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
   fn->insertAtTail(move);
-  //fn->insertAtTail("'move'(%S, 'new'(%E(%E)))", globalOp, opExpr, new NamedExpr("eltType", new SymExpr(eltType)));
 }
 
 static void
@@ -2153,7 +2151,6 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
     CallExpr* newCall = makeRawNew(opExpr->copy(), newArg);
     CallExpr* move = new CallExpr(PRIM_MOVE, localOp, newCall);
     followBlock->insertAtTail(move);
-    //followBlock->insertAtTail("'move'(%S, 'new'(%E(%E)))", localOp, opExpr->copy(), new NamedExpr("eltType", new SymExpr(eltType)));
   }
   followBlock->insertAtTail(followBody);
   followBlock->insertAtTail("chpl__reduceCombine(%S, %S)", globalOp, localOp);

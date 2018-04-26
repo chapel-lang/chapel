@@ -2088,7 +2088,6 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
     NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
     CallExpr* newCall = makeRawNew(new SymExpr(riTypeSym), newArg);
     hld->insertAtTail(new CallExpr(PRIM_MOVE, globalOp, newCall));
-    //hld->insertAtTail("'move'(%S, 'new'(%S,%E))", globalOp, riTypeSym, new NamedExpr("eltType", eltTypeArg));
   }
 
   fs->insertAfter("chpl__delete(%S)", globalOp);

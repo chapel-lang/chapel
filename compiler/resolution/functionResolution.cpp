@@ -6056,17 +6056,13 @@ static void handleUnstableNewError(CallExpr* newExpr) {
           } else if (parentCall->isPrimitive(PRIM_TO_UNMANAGED_CLASS)) {
             // OK e.g. new raw MyClass() / new owned MyClass()
           } else {
-            // TODO -- enable warning for internal/standard modules
-            // along with updating them.
-            /*if (newExpr->getModule()->modTag == MOD_USER) */{
-              USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
-              USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                                 "'new owned %s' or "
-                                 "'new shared %s'",
-                                 newType->symbol->name,
-                                 newType->symbol->name,
-                                 newType->symbol->name);
-            }
+            USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
+            USR_PRINT(newExpr, "use 'new unmanaged %s' "
+                               "'new owned %s' or "
+                               "'new shared %s'",
+                               newType->symbol->name,
+                               newType->symbol->name,
+                               newType->symbol->name);
           }
         }
       }
