@@ -627,8 +627,16 @@ static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,
   e->value = currSI;
   map.put(SI->OutervarForIN(), eFormal);
 
-  eFormal->intent = INTENT_CONST_REF;
+  eFormal->intent         = INTENT_CONST_REF;
+  eFormal->originalIntent = INTENT_CONST_REF;  // (*)
   // non-ref type is ok for eFormal
+
+  // (*) We need this adjustment, otherwise shouldAddFormalTempAtCallSite()
+  // in insertSerialization() / remoteValueForwarding will get confused.
+  // Check these tests for valgrind and memLeaks under --no-local and numa:
+  //   parallel/forall/in-intents/coforall-plus-on
+  //   parallel/forall/in-intents/both-arr-dom-const-const
+  //   parallel/forall/in-intents/both-arr-dom-var-const
 
   addCloneOfInitBlock(aInit, map, SI);
 }
