@@ -904,15 +904,6 @@ void rf_done_ensure_pool_partition(void) {
     rf_done_prt_hi = ((prt == nPrts - 1)
                       ? RF_DONE_NUM_POOLS - 1
                       : CEIL_X_DIV_Y((prt + 1) * RF_DONE_NUM_POOLS, nPrts) - 1);
-#if 0
-    if (chpl_nodeID == 0) {
-      printf("rf_done_ensure_pool_partition(): "
-             "thr %d, nPrts %d, prt %d, lo %d, hi %d\n",
-             (int) my_thread_idx(), (int) nPrts, (int) prt,
-             (int) rf_done_prt_lo, (int) rf_done_prt_hi);
-      fflush(stdout);
-    }
-#endif
   }
 
 #undef CEIL_X_DIV_Y
