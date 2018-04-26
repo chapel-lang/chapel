@@ -1640,9 +1640,9 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // Coercion from a param string to a c_string
                 // for the non-param case it would require .c_str()
                 // and as a result the regular cast function is not available.
-		VarSymbol*  var       = toVarSymbol(from);
-		const char* str       = var->immediate->v_string;
-		SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
+                VarSymbol*  var       = toVarSymbol(from);
+                const char* str       = var->immediate->v_string;
+                SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
 
                 // Remove the right-hand-side, which is call->get(2)
                 rhs->replace(newActual);
