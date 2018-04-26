@@ -149,6 +149,18 @@ module Dataframes {
 
   class Series {
     pragma "no doc"
+    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
+      halt("generic Series cannot be unioned");
+      return this;
+    }
+
+    pragma "no doc"
+    proc map(mapper: SeriesMapper) {
+      halt("generic Series cannot be unioned");
+      return this;
+    }
+
+    pragma "no doc"
     proc add(rhs) {
       halt("generic Series cannot be added");
       return this;
@@ -185,20 +197,32 @@ module Dataframes {
     }
 
     pragma "no doc"
-    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
-      halt("generic Series cannot be unioned");
-      return this;
-    }
-
-    pragma "no doc"
     proc lt_scalar(n) {
       halt("generic Series cannot be compared");
       return this;
     }
 
     pragma "no doc"
-    proc map(mapper: SeriesMapper) {
-      halt("generic Series cannot be unioned");
+    proc gt_scalar(n) {
+      halt("generic Series cannot be compared");
+      return this;
+    }
+
+    pragma "no doc"
+    proc eq_scalar(n) {
+      halt("generic Series cannot be compared");
+      return this;
+    }
+
+    pragma "no doc"
+    proc lteq_scalar(n) {
+      halt("generic Series cannot be compared");
+      return this;
+    }
+
+    pragma "no doc"
+    proc gteq_scalar(n) {
+      halt("generic Series cannot be compared");
       return this;
     }
   }
@@ -257,6 +281,39 @@ module Dataframes {
 
     // TODO: "in" operator for idx.contains(lab)
 
+    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
+      if lhs.idx then
+        return lhs.idx.uni(lhs, this, unifier);
+
+      var uni_ords = if lhs.ords.size > this.ords.size
+                     then 1..lhs.ords.size
+                     else 1..this.ords.size;
+      var uni_data: [uni_ords] eltType;
+
+      for i in uni_ords {
+        var inLhs = i <= lhs.ords.size;
+        var inThis = i <= this.ords.size;
+        if inLhs && inThis {
+          uni_data[i] = unifier.f(lhs.at(i), this.at(i));
+        } else if inLhs {
+          uni_data[i] = unifier.f_lhs(lhs.at(i));
+        } else if inThis {
+          uni_data[i] = unifier.f_rhs(this.at(i));
+        }
+      }
+
+      delete unifier;
+      return new TypedSeries(uni_data);
+    }
+
+    proc map(mapper: SeriesMapper) {
+      if idx then
+        return idx.map(this, mapper);
+
+      var mapped = [d in data] mapper.f(d);
+      return new TypedSeries(mapped);
+    }
+
     proc add(rhs): Series {
       return rhs.uni(this, new SeriesAdd(eltType));
     }
@@ -284,41 +341,24 @@ module Dataframes {
       return new TypedSeries(with_scalar, idx);
     }
 
-    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
-      if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier);
-
-      var uni_ords = if lhs.ords.size > this.ords.size
-                     then 1..lhs.ords.size
-                     else 1..this.ords.size;
-      var uni_data: [uni_ords] eltType;
-
-      for i in uni_ords {
-        var inLhs = i <= lhs.ords.size;
-        var inThis = i <= this.ords.size;
-        if inLhs && inThis {
-          uni_data[i] = unifier.f(lhs.at(i), this.at(i));
-        } else if inLhs {
-          uni_data[i] = unifier.f_lhs(lhs.at(i));
-        } else if inThis {
-          uni_data[i] = unifier.f_rhs(this.at(i));
-        }
-      }
-
-      delete unifier;
-      return new TypedSeries(uni_data);
-    }
-
     proc lt_scalar(n): Series {
       return this.map(new SeriesLessThan(n));
     }
 
-    proc map(mapper: SeriesMapper) {
-      if idx then
-        return idx.map(this, mapper);
+    proc gt_scalar(n): Series {
+      return this.map(new SeriesGreaterThan(n));
+    }
 
-      var mapped = [d in data] mapper.f(d);
-      return new TypedSeries(mapped);
+    proc eq_scalar(n): Series {
+      return this.map(new SeriesEqualTo(n));
+    }
+
+    proc lteq_scalar(n): Series {
+      return this.map(new SeriesLessThanEqualTo(n));
+    }
+
+    proc gteq_scalar(n): Series {
+      return this.map(new SeriesGreaterThanEqualTo(n));
     }
 
     proc writeThis(f) {
@@ -331,6 +371,12 @@ module Dataframes {
       f <~> "dtype: " + eltType:string;
     }
   }
+
+  /*
+   * NOTE: PPS
+   * THERE BE FUNCTION OBJECT DRAGONS HERE.
+   * FIRST CLASS FUNCTION SERENITY NOW.
+   */
 
   // TODO: return tuple versions where first element is "None"
   class SeriesUnifier {
@@ -390,12 +436,18 @@ module Dataframes {
     }
   }
 
-  class SeriesLessThan : SeriesMapper {
+  class SeriesCompareScalar : SeriesMapper {
     var x: eltType;
 
     proc init(x) {
       super.init(x.type, bool);
       this.x = x;
+    }
+  }
+
+  class SeriesLessThan : SeriesCompareScalar {
+    proc init(x) {
+      super.init(x);
     }
 
     proc f(d: eltType): retType {
@@ -403,35 +455,118 @@ module Dataframes {
     }
   }
 
+  class SeriesGreaterThan : SeriesCompareScalar {
+    proc init(x) {
+      super.init(x);
+    }
+
+    proc f(d: eltType): retType {
+      return d > x;
+    }
+  }
+
+  class SeriesEqualTo : SeriesCompareScalar {
+    proc init(x) {
+      super.init(x);
+    }
+
+    proc f(d: eltType): retType {
+      return d == x;
+    }
+  }
+
+  class SeriesLessThanEqualTo : SeriesCompareScalar {
+    proc init(x) {
+      super.init(x);
+    }
+
+    proc f(d: eltType): retType {
+      return d <= x;
+    }
+  }
+
+  class SeriesGreaterThanEqualTo : SeriesCompareScalar {
+    proc init(x) {
+      super.init(x);
+    }
+
+    proc f(d: eltType): retType {
+      return d >= x;
+    }
+  }
+
+  /*
+   * ARITHMETIC AND INEQUALITY OPERATORS
+   */
   proc +(lhs: Series, rhs: Series) {
     return lhs.add(rhs);
   }
 
-  proc +(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.add_scalar(rhs);
+  proc +(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.add_scalar(n);
+  }
+
+  proc +(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.add_scalar(n);
   }
 
   proc -(lhs: Series, rhs: Series) {
     return lhs.subtr(rhs);
   }
 
-  proc -(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.subtr_scalar(rhs);
+  proc -(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.subtr_scalar(n);
   }
 
   proc *(lhs: Series, rhs: Series) {
     return lhs.mult(rhs);
   }
 
-  proc *(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.mult_scalar(rhs);
+  proc *(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.mult_scalar(n);
   }
 
-  proc <(lhs: Series, rhs: ?N) where isNumericType(N) {
-    return lhs.lt_scalar(rhs);
+  proc *(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.mult_scalar(n);
   }
 
-  proc >(lhs: ?N, rhs: Series) where isNumericType(N) {
-    return rhs.lt_scalar(lhs);
+  proc <(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.lt_scalar(n);
+  }
+
+  proc <(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.gt_scalar(n);
+  }
+
+  proc >(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.gt_scalar(n);
+  }
+
+  proc >(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.lt_scalar(n);
+  }
+
+  proc ==(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.eq_scalar(n);
+  }
+
+  proc ==(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.eq_scalar(n);
+  }
+
+  proc <=(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.lteq_scalar(n);
+  }
+
+  proc <=(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.gteq_scalar(n);
+  }
+
+  proc >=(lhs: Series, n: ?N) where isNumericType(N) {
+    return lhs.gteq_scalar(n);
+  }
+
+  proc >=(n: ?N, rhs: Series) where isNumericType(N) {
+    return rhs.lteq_scalar(n);
   }
 }
