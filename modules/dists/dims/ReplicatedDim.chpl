@@ -38,16 +38,17 @@ in the same dimension. This is similar to the Replicated distribution
 in that it always accesses the local replicand, whereas the Replicated
 distribution accesses all replicands in certain cases, as specified there.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``ReplicatedDim`` class constructor is available as follows:
+The ``ReplicatedDim`` class initializer is available as follows:
 
   .. code-block:: chapel
 
-    proc ReplicatedDim.ReplicatedDim(numLocales:int)
+    proc ReplicatedDim.init(numLocales:int)
 
 It creates a dimension specifier for replication over ``numLocales`` locales.
 */
+pragma "use default init"
 class ReplicatedDim {
   // REQ over how many locales
   // todo: can the Dimensional do without this one?
@@ -60,6 +61,7 @@ class ReplicatedDim {
   var localLocIDlegit = false;
 }
 
+pragma "use default init"
 class Replicated1dom {
   // REQ the parameters of our dimension of the domain being created
   type idxType;
@@ -70,7 +72,7 @@ class Replicated1dom {
 //todo-remove?  proc domainT type return domain(1, idxType, stridable);
 
   // our range
-  var wholeR: rangeT;
+  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
 
   // locale ID in our dimension of the locale this instance is on
   var localLocID = invalidLocID;
@@ -80,6 +82,7 @@ class Replicated1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
+pragma "use default init"
 class Replicated1locdom {
   type stoIndexT;
   param stridable;
