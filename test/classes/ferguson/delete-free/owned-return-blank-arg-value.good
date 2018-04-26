@@ -1,2 +1,3 @@
 owned-return-blank-arg-value.chpl:10: In function 'returnByValue':
-owned-return-blank-arg-value.chpl:12: error: implicit copy-initialization invoked for a type that does not allow it
+owned-return-blank-arg-value.chpl:12: error: const actual is passed to 'ref' formal 'src' of implicit copy initializer
+note: to formal of type _owned(C)
