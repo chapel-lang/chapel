@@ -3280,6 +3280,13 @@ static bool populateForwardingMethods(CallInfo& info) {
       VarSymbol* retval = newTemp("ret", dtUnknown);
       retval->addFlag(FLAG_RVV);
 
+      if (fn->retTag == RET_PARAM)
+        retval->addFlag(FLAG_PARAM);
+      if (fn->retTag == RET_TYPE)
+        retval->addFlag(FLAG_TYPE_VARIABLE);
+      if (fn->hasFlag(FLAG_MAYBE_TYPE))
+        retval->addFlag(FLAG_MAYBE_TYPE);
+
       fn->body->insertAtTail(new DefExpr(retval));
       fn->body->insertAtTail(new DefExpr(tgt));
       fn->body->insertAtTail(setTgt);
