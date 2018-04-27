@@ -171,7 +171,7 @@ class Cyclic: BaseDist {
   var targetLocDom: domain(rank);
   var targetLocs: [targetLocDom] locale;
 
-  var locDist: [targetLocDom] LocCyclic(rank, idxType);
+  var locDist: [targetLocDom] unmanaged LocCyclic(rank, idxType);
 
   var dataParTasksPerLocale: int;
   var dataParIgnoreRunningTasks: bool;
@@ -236,7 +236,7 @@ class Cyclic: BaseDist {
 
     coforall locid in targetLocDom {
       on targetLocs(locid) {
-        locDist(locid) = new LocCyclic(rank, idxType, locid, this);
+        locDist(locid) = new unmanaged LocCyclic(rank, idxType, locid, this);
       }
     }
     if debugCyclicDist then
@@ -255,7 +255,7 @@ class Cyclic: BaseDist {
     dataParMinGranularity = other.dataParMinGranularity;
     coforall locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new LocCyclic(rank, idxType, locid, this);
+        locDist(locid) = new unmanaged LocCyclic(rank, idxType, locid, this);
   }
 
   proc dsiEqualDMaps(that: Cyclic(?)) {
@@ -268,7 +268,7 @@ class Cyclic: BaseDist {
   }
 
   proc dsiClone() {
-    return new Cyclic(startIdx, targetLocs,
+    return new unmanaged Cyclic(startIdx, targetLocs,
                       dataParTasksPerLocale,
                       dataParIgnoreRunningTasks,
                       dataParMinGranularity);
@@ -322,7 +322,7 @@ proc Cyclic.dsiSupportsPrivatization() param return true;
 proc Cyclic.dsiGetPrivatizeData() return 0;
 
 proc Cyclic.dsiPrivatize(privatizeData) {
-  return new Cyclic(startIdx, targetLocs,
+  return new unmanaged Cyclic(startIdx, targetLocs,
                     dataParTasksPerLocale,
                     dataParIgnoreRunningTasks,
                     dataParMinGranularity);
@@ -345,7 +345,7 @@ proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable:
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Cyclic domain rank does not match distribution's");
-  var dom = new CyclicDom(rank=rank, idxType=idxType, dist = this, stridable=stridable);
+  var dom = new unmanaged CyclicDom(rank=rank, idxType=idxType, dist = _to_unmanaged(this), stridable=stridable);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -444,9 +444,9 @@ class LocCyclic {
 
 pragma "use default init"
 class CyclicDom : BaseRectangularDom {
-  const dist: Cyclic(rank, idxType);
+  const dist: unmanaged Cyclic(rank, idxType);
 
-  var locDoms: [dist.targetLocDom] LocCyclicDom(rank, idxType, stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType, stridable);
 
   var whole: domain(rank, idxType, stridable);
 }
@@ -456,7 +456,7 @@ proc CyclicDom.setup() {
   if locDoms(dist.targetLocDom.low) == nil {
     coforall localeIdx in dist.targetLocDom {
       on dist.targetLocs(localeIdx) do
-        locDoms(localeIdx) = new LocCyclicDom(rank, idxType, stridable, dist.getChunk(whole, localeIdx));
+        locDoms(localeIdx) = new unmanaged LocCyclicDom(rank, idxType, stridable, dist.getChunk(whole, localeIdx));
     }
   } else {
     coforall localeIdx in dist.targetLocDom {
@@ -476,7 +476,9 @@ proc CyclicDom.dsiDestroyDom() {
 }
 
 proc CyclicDom.dsiBuildArray(type eltType) {
-  var arr = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=this);
+  var arr = new unmanaged CyclicArr(eltType=eltType, rank=rank,
+                                    idxType=idxType, stridable=stridable,
+                                    dom=_to_unmanaged(this));
   arr.setup();
   return arr;
 }
@@ -622,7 +624,7 @@ proc CyclicDom.dsiGetPrivatizeData() return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
-  var c = new CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
+  var c = new unmanaged CyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist);
   c.locDoms = locDoms;
   c.whole = whole;
   return c;
@@ -657,10 +659,10 @@ proc LocCyclicDom.member(i) return myBlock.member(i);
 pragma "use default init"
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: CyclicDom(rank, idxType, stridable);
+  var dom: unmanaged CyclicDom(rank, idxType, stridable);
 
-  var locArr: [dom.dist.targetLocDom] LocCyclicArr(eltType, rank, idxType, stridable);
-  var myLocArr: LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType, stridable);
+  var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable);
   const SENTINEL = max(rank*idxType);
 }
 
@@ -699,8 +701,8 @@ proc CyclicArr.setupRADOpt() {
           myLocArr.locRAD = nil;
         }
         if disableCyclicLazyRAD {
-          myLocArr.locRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
-          myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+          myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+          myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
               myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -715,7 +717,7 @@ proc CyclicArr.setupRADOpt() {
 proc CyclicArr.setup() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
-      locArr(localeIdx) = new LocCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
+      locArr(localeIdx) = new unmanaged LocCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx));
       if this.locale == here then
         myLocArr = locArr(localeIdx);
     }
@@ -737,7 +739,7 @@ proc CyclicArr.dsiGetPrivatizeData() return 0;
 
 proc CyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  var c = new CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  var c = new unmanaged CyclicArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
   c.locArr = locArr;
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then
@@ -779,8 +781,8 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.lockLocRAD();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
-            myLocArr.locCyclicRAD = new LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
+            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+            myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
@@ -828,13 +830,14 @@ iter CyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 }
 
 proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param
-  return leadType == this.type || leadType == this.dom.type;
+  return _to_borrowed(leadType) == _to_borrowed(this.type) ||
+         _to_borrowed(leadType) == _to_borrowed(this.dom.type);
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
-  return lead.domain._value == this.dom;
+  return _to_borrowed(lead.domain._value) == _to_borrowed(this.dom);
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain)
-  return lead._value == this.dom;
+  return _to_borrowed(lead._value) == _to_borrowed(this.dom);
 
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then

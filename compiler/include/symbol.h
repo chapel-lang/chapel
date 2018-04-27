@@ -387,7 +387,7 @@ class ShadowVarSymbol : public VarSymbol {
 public:
   ShadowVarSymbol(ForallIntentTag iIntent,
                   const char* iName,
-                  Expr* outerVar,
+                  SymExpr* outerVar,
                   Expr* iSpec = NULL);
 
   virtual void    verify();
@@ -404,11 +404,11 @@ public:
   static ShadowVarSymbol* buildFromArgIntent(IntentTag intent, Expr* ovar);
   static ShadowVarSymbol* buildFromReduceIntent(Expr* ovar, Expr* riExpr);
 
-  // The corresponding outer var or NULL if not applicable.
-  SymExpr* outerVarSE()   const;
-  Symbol*  outerVarSym()  const;
+  // The outer variable or NULL if not applicable.
+  Symbol* outerVarSym()    const;
+
   // Returns the EXPR in "with (EXPR reduce x)".
-  Expr*    reduceOpExpr() const;
+  Expr*  reduceOpExpr()    const;
 
   BlockStmt* initBlock()   const { return svInitBlock; }
   BlockStmt* deinitBlock() const { return svDeinitBlock; }
@@ -426,10 +426,8 @@ public:
   // The intent for this variable.
   ForallIntentTag intent;
 
-  // Either a SymExpr* (after scopeResolve) or a UnresolvedSymExpr*.
-  // This would be just a SymExpr*, if not for checkIdInsideWithClause().
-  // See also: sv->outerVarSE() and sv->outerVarSym().
-  Expr* outerVarRep;
+  // Reference to the outer variable. NULL for task-private variables.
+  SymExpr* outerVarSE;
 
   // For a reduce intent, the reduce expression, wrapped in a block.
   // Otherwise NULL.

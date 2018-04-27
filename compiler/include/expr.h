@@ -350,15 +350,8 @@ static inline bool needsCapture(FnSymbol* taskFn) {
          taskFn->hasFlag(FLAG_NON_BLOCKING);
 }
 
-inline SymExpr* ShadowVarSymbol::outerVarSE() const {
-  if (SymExpr* ovse = toSymExpr(this->outerVarRep))
-    return ovse;
-  else
-    return NULL;
-}
-
 inline Symbol* ShadowVarSymbol::outerVarSym() const {
-  if (SymExpr* ovse = this->outerVarSE())
+  if (SymExpr* ovse = this->outerVarSE)
     return ovse->symbol();
   else
     return NULL;
@@ -390,6 +383,8 @@ Expr* getNextExpr(Expr* expr);
 
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
+
+CallExpr* makeRawNew(Expr* typeArg, Expr* arg);
 
 #ifdef HAVE_LLVM
 llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);

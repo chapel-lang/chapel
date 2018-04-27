@@ -1081,3 +1081,7 @@ void convertToQualifiedRefs() {
   }
 #undef fixRefSymbols
 }
+
+bool isTupleTypeConstructor(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) && fn->hasFlag(FLAG_TUPLE);
+}

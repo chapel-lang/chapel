@@ -163,7 +163,7 @@ module MatrixMarket {
    }
 
 proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
-   var mw = new MMWriter(T, fname);
+   var mw = new unmanaged MMWriter(T, fname);
    mw.write_headers(-1,-1,-1);
 
    var (ncols, nnz) = (0,0);
@@ -396,7 +396,7 @@ class MMReader {
      :type type eltype
  */
 proc mmread(type eltype, const fname:string) {
-   var mr = new MMReader(fname);
+   var mr = new unmanaged MMReader(fname);
    var toret = mr.read_array_from_file(eltype);
    delete mr;
    return toret;
@@ -407,7 +407,7 @@ proc mmread(type eltype, const fname:string) {
      :type type eltype
  */
 proc mmreadsp(type eltype, const fname:string) {
-   var mr = new MMReader(fname);
+   var mr = new unmanaged MMReader(fname);
    var toret = mr.read_sp_array_from_file(eltype);
    delete mr;
    return toret;

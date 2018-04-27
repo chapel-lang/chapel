@@ -84,7 +84,7 @@ proc Block.changeBoundingBox(newBB) {
   coforall locid in targetLocDom do
     on targetLocales(locid) {
       delete locDist(locid);
-      locDist(locid) = new LocBlock(rank, idxType, locid, boundingBoxDims,
+      locDist(locid) = new unmanaged LocBlock(rank, idxType, locid, boundingBoxDims,
                                     targetLocDomDims);
     }
   // NB at this point privatized copies of 'this' on other locales, if any,
@@ -92,5 +92,5 @@ proc Block.changeBoundingBox(newBB) {
 
   // Replicate across locales, if needed.
   if pid >= 0 then
-    _reprivatize(this);
+    _reprivatize(_to_unmanaged(this));
 }

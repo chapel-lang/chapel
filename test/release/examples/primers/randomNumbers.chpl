@@ -49,8 +49,8 @@ writeln();
 // type of the elements that the instance should generate. If a particular seed
 // is desired, it should be specified upon creation of this instance.
 //
-var randStream:       RandomStream(real) = new RandomStream(real);
-var randStreamSeeded: RandomStream(real) = new RandomStream(real, seed);
+var randStream:       RandomStream(real) = new unmanaged RandomStream(real);
+var randStreamSeeded: RandomStream(real) = new unmanaged RandomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a

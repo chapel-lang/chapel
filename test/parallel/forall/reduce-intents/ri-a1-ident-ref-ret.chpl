@@ -67,7 +67,7 @@ class PlusReduceOpConst: ReduceScanOp {
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOpConst(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOpConst(eltType=eltType);
 }
 
 // uses *Var identity values
@@ -80,5 +80,5 @@ class PlusReduceOpVar: ReduceScanOp {
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new PlusReduceOpVar(eltType=eltType);
+  proc clone()          return new unmanaged PlusReduceOpVar(eltType=eltType);
 }

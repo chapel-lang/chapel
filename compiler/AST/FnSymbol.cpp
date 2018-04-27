@@ -37,7 +37,6 @@ FnSymbol*                 initStringLiterals    = NULL;
 
 FnSymbol*                 gAddModuleFn          = NULL;
 FnSymbol*                 gGenericTupleTypeCtor = NULL;
-FnSymbol*                 gGenericTupleInit     = NULL;
 FnSymbol*                 gGenericTupleDestroy  = NULL;
 
 std::map<FnSymbol*, int>  ftableMap;

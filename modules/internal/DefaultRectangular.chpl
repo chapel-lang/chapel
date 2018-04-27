@@ -40,27 +40,27 @@ module DefaultRectangular {
   pragma "use default init"
   class DefaultDist: BaseDist {
     proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
-      const dom = new DefaultRectangularDom(rank, idxType, stridable, this);
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable, _to_unmanaged(this));
       dom.dsiSetIndices(inds);
       return dom;
     }
 
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
-      return new DefaultAssociativeDom(idxType, parSafe, this);
+      return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_unmanaged(this));
 
     proc dsiNewOpaqueDom(type idxType, param parSafe: bool)
-      return new DefaultOpaqueDom(this, parSafe);
+      return new unmanaged DefaultOpaqueDom(_to_unmanaged(this), parSafe);
 
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
-      return new DefaultSparseDom(rank, idxType, this, dom);
+      return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
     proc dsiIndexToLocale(ind) return this.locale;
 
     // Right now, the default distribution acts like a singleton.
     // So we don't have to copy it when a clone is requested.
-    proc dsiClone() return this;
+    proc dsiClone() return _to_unmanaged(this);
 
-    proc dsiAssign(other: this.type) { }
+    proc dsiAssign(other: unmanaged this.type) { }
 
     proc dsiEqualDMaps(d:DefaultDist) param return true;
     proc dsiEqualDMaps(d) param return false;
@@ -76,7 +76,7 @@ module DefaultRectangular {
   // model initialization
   //
   pragma "locale private"
-  var defaultDist = new dmap(new DefaultDist());
+  var defaultDist = new dmap(new unmanaged DefaultDist());
 
   pragma "unsafe"
   proc chpl_defaultDistInitPrivate() {
@@ -87,13 +87,13 @@ module DefaultRectangular {
       // loses its ref intent in the removeWrapRecords pass.
       //
       // The code below is copied from the contents of the "proc =".
-      const nd = new dmap(new DefaultDist());
+      const nd = new dmap(new unmanaged DefaultDist());
       __primitive("move", defaultDist, chpl__autoCopy(nd.clone()));
     }
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
-    var dist: DefaultDist;
+    var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
     proc linksDistribution() param return false;
@@ -596,18 +596,18 @@ module DefaultRectangular {
     }
 
     proc dsiBuildArray(type eltType) {
-      return new DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
-                                      stridable=stridable, dom=this);
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank, idxType=idxType,
+                                      stridable=stridable, dom=_to_unmanaged(this));
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
       var allocRange:range(idxType) = (ranges(1).low)..#allocSize;
-      return new DefaultRectangularArr(eltType=eltType,
+      return new unmanaged DefaultRectangularArr(eltType=eltType,
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
-                                       dom=this,
+                                       dom=_to_unmanaged(this),
                                        data=data,
                                        dataAllocRange=allocRange);
     }
@@ -625,7 +625,7 @@ module DefaultRectangular {
 
     proc dsiLocalSubdomain() {
       if (this.locale == here) {
-        return _getDomain(this);
+        return _getDomain(_to_unmanaged(this));
       } else {
         var a: domain(rank, idxType, stridable);
         return a;
@@ -888,7 +888,7 @@ module DefaultRectangular {
 
     type idxSignedType = chpl__signedType(idxType);
 
-    var dom : DefaultRectangularDom(rank=rank, idxType=idxType,
+    var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                            stridable=stridable);
     var off: rank*idxType;
     var blk: rank*idxType;
@@ -1205,7 +1205,7 @@ module DefaultRectangular {
 
       on this {
         var d = {(...bounds)};
-        var copy = new DefaultRectangularArr(eltType=eltType, rank=rank,
+        var copy = new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                             idxType=idxType,
                                             stridable=d._value.stridable,
                                             dom=d._value);

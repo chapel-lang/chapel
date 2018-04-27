@@ -44,6 +44,11 @@ module ChapelTuple {
     param size : int;
   }
 
+  pragma "tuple init fn"
+  inline proc chpl__init_tuple(param size : int) {
+    // body inserted during generic instantiation
+  }
+
   //
   // syntactic support for tuples
   //

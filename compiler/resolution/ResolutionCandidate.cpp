@@ -19,6 +19,7 @@
 
 #include "ResolutionCandidate.h"
 
+#include "astutil.h"
 #include "caches.h"
 #include "callInfo.h"
 #include "driver.h"
@@ -237,10 +238,13 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       }
 
       // Fail if there are too many unnamed actuals.
-      if (match == false &&
-          (fn->hasFlag(FLAG_GENERIC) == false ||
-           fn->hasFlag(FLAG_TUPLE)   == false)) {
-        return false;
+      if (match == false) {
+        if (fn->hasFlag(FLAG_GENERIC) == false) {
+          return false;
+        } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false &&
+                   isTupleTypeConstructor(fn)   == false) {
+          return false;
+        }
       }
     }
   }

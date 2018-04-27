@@ -41,5 +41,5 @@
     proc generate()       return value;
 
     /* produce a new instance of this class */
-    proc clone()          return new PlusReduceOp(eltType=eltType);
+    proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
   }

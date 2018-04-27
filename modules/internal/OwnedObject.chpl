@@ -208,6 +208,10 @@ module OwnedObject {
   proc =(ref lhs:_owned, rhs:_nilType) {
     lhs.clear();
   }
+  pragma "no doc"
+  proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
+    lhs.p <=> rhs.p;
+  }
 
 
   // initCopy is defined explicitly as a workaround
@@ -262,8 +266,4 @@ module OwnedObject {
   }
 
   type Owned = _owned;
-
-  proc <=>(ref lhs:_owned(?t), ref rhs:_owned(t)) {
-    lhs.p <=> rhs.p;
-  }
 }

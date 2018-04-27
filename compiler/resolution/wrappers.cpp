@@ -947,7 +947,6 @@ static void updateWrapCall(FnSymbol*  fn,
 
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true  &&
       fn->_this->type->symbol->hasFlag(FLAG_REF) == false &&
-      strcmp(fn->name, "_construct__tuple")      != 0     &&
       formal->hasFlag(FLAG_TYPE_VARIABLE)        == false &&
       paramMap->get(formal)                      == NULL  &&
       formal->type                               != dtMethodToken) {
@@ -1026,8 +1025,7 @@ static void formalIsDefaulted(FnSymbol*  fn,
   // In the future, it would probably be better to initialize the
   // fields in order in favor of calling the default constructor.
   if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)      == true  &&
-      fn->_this->type->symbol->hasFlag(FLAG_REF) == false &&
-      strcmp(fn->name, "_construct__tuple")      != 0) {
+      fn->_this->type->symbol->hasFlag(FLAG_REF) == false) {
     if (formal->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       AggregateType* type = toAggregateType(wrapFn->_this->type);
 

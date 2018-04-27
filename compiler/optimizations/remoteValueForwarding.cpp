@@ -196,6 +196,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
 static bool isSufficientlyConst(ArgSymbol* arg);
 
+static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
+
 static void defaultForwarding(Map<Symbol*, Vec<SymExpr*>*>& useMap,
                               FnSymbol*                     fn,
                               ArgSymbol*                    arg);
@@ -377,6 +379,137 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
   arg->removeFlag(FLAG_SCOPE);
 }
 
+// Update each callsite to invoke the serializer.
+static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
+                       Type* dataType,          CallExpr* argDestroyCall,
+                       FnSymbol* serializeFn,   bool newStyleInIntent)
+{
+  forv_Vec(CallExpr, call, *fn->calledBy) {
+    SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
+    SET_LINENO(actual);
+
+    Symbol* actualInput = actual->symbol();
+
+    // If we're working with a copy added to support an 'in' intent,
+    // we don't need that copy anymore since the serialize/deserialize
+    // calls will have the same effect. So remove the copy call
+    // in that event.
+    if (newStyleInIntent) {
+      Expr* initExpr = actual->symbol()->getInitialization();
+
+      CallExpr* initCall = toCallExpr(initExpr);
+      INT_ASSERT(initCall);
+
+      if (initCall->isPrimitive(PRIM_MOVE) ||
+          initCall->isPrimitive(PRIM_ASSIGN))
+        initCall = toCallExpr(initCall->get(2));
+
+      INT_ASSERT(initCall);
+
+      FnSymbol* initFn = initCall->resolvedFunction();
+      INT_ASSERT(initFn);
+      INT_ASSERT(initFn->hasFlag(FLAG_INIT_COPY_FN) ||
+                 initFn->hasFlag(FLAG_AUTO_COPY_FN));
+
+      SymExpr* initArg = toSymExpr(initCall->get(1));
+      INT_ASSERT(initArg);
+
+      if (initArg->getValType() == actual->getValType()) {
+        actualInput = initArg->symbol();
+        initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
+      }
+    }
+
+    VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
+    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
+      data->addFlag(FLAG_COFORALL_INDEX_VAR);
+    }
+    call->insertBefore(new DefExpr(data));
+
+    if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
+      call->insertBefore(new CallExpr(serializeFn, actualInput, data));
+    } else {
+      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actualInput)));
+    }
+
+    // Old argument not passed so we can't destroy the original
+    // value in the task function anymore; destroy it just after
+    // the serialize call.
+    if (argDestroyCall) {
+      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
+      call->insertBefore(new CallExpr(destroyFn, actual->copy()));
+    }
+
+    actual->replace(new SymExpr(data));
+  }
+}
+
+// Insert and return the temp that will hold the deserialized
+// instace of 'arg'.
+// Replace all references to 'arg' within the task function
+// with local references to that temp.
+static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
+                                Type* oldArgType, FnSymbol* deserializeFn,
+                                bool needsRuntimeType)
+{
+  VarSymbol* deserialized = newTemp(arg->cname, oldArgType->getValType());
+  VarSymbol* dsRef = newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
+  for_SymbolSymExprs(se, arg) {
+    se->setSymbol(dsRef);
+  }
+
+  Expr* anchor = fn->body->body.head;
+  anchor->insertBefore(new DefExpr(deserialized));
+  anchor->insertBefore(new DefExpr(dsRef));
+
+  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
+  CallExpr* callToAdd = NULL;
+
+  if (needsRuntimeType) {
+    FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
+    INT_ASSERT(runtimeTypeFn != NULL);
+    VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
+    anchor->insertBefore(new DefExpr(info));
+
+    // Add 'this' actual
+    deserializeCall->insertAtHead(new SymExpr(info));
+  }
+
+  if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
+    VarSymbol* refTemp = newTemp(deserialized->qualType().toRef());
+    anchor->insertBefore(new DefExpr(refTemp));;
+    anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+    deserializeCall->insertAtTail(new SymExpr(refTemp));
+    callToAdd = deserializeCall;
+  } else {
+    callToAdd = new CallExpr(PRIM_MOVE, deserialized, deserializeCall);
+  }
+  anchor->insertBefore(callToAdd);
+  anchor->insertBefore(new CallExpr(PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
+
+  return deserialized;
+}
+
+// Destroy 'arg' and 'deserialized' before returning from the task function.
+static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
+                             bool newStyleInIntent, VarSymbol* deserialized)
+{
+  CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
+  INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
+
+  FnSymbol* dataDestroyFn = getAutoDestroy(arg->getValType());
+  if (dataDestroyFn != NULL) {
+    lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
+  }
+
+  if (!newStyleInIntent) {
+    FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
+    if (deserializeDestroyFn != NULL) {
+      lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
+    }
+  }
+}
+
 //
 // BHARSH 2017-08-21:
 //
@@ -408,10 +541,9 @@ static void adjustArgIntentForDeref(ArgSymbol* arg) {
 // on-statement. This will change the number of formals for this on-statement
 // unlike traditional RVF.
 //
-// BHARSH TODO: Split this function into more easily-digestible pieces
+// BHARSH TODO: Split this function into better easily-digestible pieces
 // BHARSH TODO: capture the assumptions made here in documentation
 //
-static CallExpr* findDestroyCallForArg(ArgSymbol* arg);
 static void insertSerialization(FnSymbol*  fn,
                                 ArgSymbol* arg) {
   Type* oldArgType    = arg->type;
@@ -450,133 +582,21 @@ static void insertSerialization(FnSymbol*  fn,
   else
     INT_ASSERT(!argDestroyCall);
 
-  // Update each callsite to invoke the serializer
-  forv_Vec(CallExpr, call, *fn->calledBy) {
-    SymExpr* actual = toSymExpr(formal_to_actual(call, arg));
-    SET_LINENO(actual);
-
-    Symbol* actualInput = actual->symbol();
-
-/*
-///////////
-2018-04-11 Vass: I am commenting out the following fragment as a temporary
-fix for a read-after-delete bug exposed in these tests:
-    parallel/forall/in-intents/coforall-plus-on
-    # under numa
-    parallel/forall/in-intents/both-arr-dom-const-const
-    parallel/forall/in-intents/both-arr-dom-var-const
-///////////
-    // If we're working with a copy added to support an 'in' intent,
-    // we don't need that copy anymore since the serialize/deserialize
-    // calls will have the same effect. So remove the copy call
-    // in that event.
-    if (newStyleInIntent) {
-      Expr* initExpr = actual->symbol()->getInitialization();
-
-      CallExpr* initCall = toCallExpr(initExpr);
-      INT_ASSERT(initCall);
-
-      if (initCall->isPrimitive(PRIM_MOVE) ||
-          initCall->isPrimitive(PRIM_ASSIGN))
-        initCall = toCallExpr(initCall->get(2));
-
-      INT_ASSERT(initCall);
-
-      FnSymbol* initFn = initCall->resolvedFunction();
-      INT_ASSERT(initFn);
-      INT_ASSERT(initFn->hasFlag(FLAG_INIT_COPY_FN) ||
-                 initFn->hasFlag(FLAG_AUTO_COPY_FN));
-
-      SymExpr* initArg = toSymExpr(initCall->get(1));
-      INT_ASSERT(initArg);
-
-      if (initArg->getValType() == actual->getValType()) {
-        actualInput = initArg->symbol();
-        initExpr->replace(new CallExpr(PRIM_MOVE, actual->symbol(), actualInput));
-      }
-    }
-*/
-
-    VarSymbol* data = newTemp(astr(arg->cname, "_data"), dataType);
-    if (arg->hasFlag(FLAG_COFORALL_INDEX_VAR)) {
-      data->addFlag(FLAG_COFORALL_INDEX_VAR);
-    }
-    call->insertBefore(new DefExpr(data));
-
-    if (serializeFn->hasFlag(FLAG_FN_RETARG)) {
-      call->insertBefore(new CallExpr(serializeFn, actualInput, data));
-    } else {
-      call->insertBefore(new CallExpr(PRIM_MOVE, data, new CallExpr(serializeFn, actualInput)));
-    }
-
-    // Old argument not passed so we can't destroy the original
-    // value in the task function anymore; destroy it just after
-    // the serialize call.
-    if (argDestroyCall) {
-      FnSymbol* destroyFn = argDestroyCall->resolvedFunction();
-      call->insertBefore(new CallExpr(destroyFn, actual->copy()));
-    }
-
-    actual->replace(new SymExpr(data));
-  }
+  serializeAtCallSites(fn, arg, dataType, argDestroyCall, serializeFn,
+                       newStyleInIntent);
 
   // Remove the old auto-destroy call from the task fn.
   if (argDestroyCall) {
     argDestroyCall->remove();
   }
 
-  // Replace all uses of 'arg' with a local reference to a deserialized
-  // instance of 'arg'
   SET_LINENO(fn);
-  VarSymbol* deserialized = newTemp(arg->cname, oldArgType->getValType());
-  VarSymbol* dsRef = newTemp(arg->cname, QualifiedType(QUAL_REF, oldArgType->getValType()));
-  for_SymbolSymExprs(se, arg) {
-    se->setSymbol(dsRef);
-  }
 
-  Expr* anchor = fn->body->body.head;
-  anchor->insertBefore(new DefExpr(deserialized));
-  anchor->insertBefore(new DefExpr(dsRef));
+  // The deserialized instance.
+  VarSymbol* deserialized = replaceArgWithDeserialized(fn, arg, oldArgType,
+                                             deserializeFn, needsRuntimeType);
 
-  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
-  CallExpr* callToAdd = NULL;
-
-  if (needsRuntimeType) {
-    FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
-    INT_ASSERT(runtimeTypeFn != NULL);
-    VarSymbol* info = new VarSymbol("ds_info", runtimeTypeFn->retType);
-    anchor->insertBefore(new DefExpr(info));
-
-    // Add 'this' actual
-    deserializeCall->insertAtHead(new SymExpr(info));
-  }
-
-  if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
-    VarSymbol* refTemp = newTemp(deserialized->qualType().toRef());
-    anchor->insertBefore(new DefExpr(refTemp));;
-    anchor->insertBefore(new CallExpr(PRIM_MOVE, refTemp, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
-    deserializeCall->insertAtTail(new SymExpr(refTemp));
-    callToAdd = deserializeCall;
-  } else {
-    callToAdd = new CallExpr(PRIM_MOVE, deserialized, deserializeCall);
-  }
-  anchor->insertBefore(callToAdd);
-  anchor->insertBefore(new CallExpr(PRIM_MOVE, dsRef, new CallExpr(PRIM_SET_REFERENCE, deserialized)));
-
-  CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
-  INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
-
-  FnSymbol* dataDestroyFn = getAutoDestroy(arg->getValType());
-  if (dataDestroyFn != NULL) {
-    lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
-  }
-
-  if (!newStyleInIntent) {
-    FnSymbol* deserializeDestroyFn = getAutoDestroy(deserialized->getValType());
-    if (deserializeDestroyFn != NULL) {
-      lastExpr->insertBefore(new CallExpr(deserializeDestroyFn, deserialized));
-    }
-  }
+  destroyArgAndDeserialized(fn, arg, newStyleInIntent, deserialized);
 }
 
 static CallExpr* findDestroyCallForArg(ArgSymbol* arg) {

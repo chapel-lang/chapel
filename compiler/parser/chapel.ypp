@@ -1359,6 +1359,12 @@ opt_type:
                           { $$ = NULL; }
 | TCOLON type_level_expr  { $$ = $2; }
 | TCOLON array_type       { $$ = $2; }
+| TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
+| TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
+| TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
+| TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
+| TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
 | error                   { $$ = NULL; }
 ;
 

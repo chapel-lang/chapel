@@ -74,10 +74,12 @@ class CS: BaseDist {
   param compressRows: bool = true;
 
   proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new CSDom(rank, idxType, this.compressRows, dom.stridable, this, dom);
+    return new unmanaged CSDom(rank, idxType, this.compressRows, dom.stridable, _to_unmanaged(this), dom);
   }
 
-  proc dsiClone() return new CS(compressRows=this.compressRows);
+  proc dsiClone() {
+    return new unmanaged CS(compressRows=this.compressRows);
+  }
 
   proc dsiEqualDMaps(that: CS(this.compressRows)) param {
     return true;
@@ -92,7 +94,7 @@ class CS: BaseDist {
 class CSDom: BaseSparseDomImpl {
   param compressRows;
   param stridable;
-  var dist: CS(compressRows);
+  var dist: unmanaged CS(compressRows);
 
   var rowRange: range(idxType, stridable=stridable);
   var colRange: range(idxType, stridable=stridable);
@@ -108,7 +110,7 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param stridable, dist: CS(compressRows), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param stridable, dist: unmanaged CS(compressRows), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -137,7 +139,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiBuildArray(type eltType)
-    return new CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=this);
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;

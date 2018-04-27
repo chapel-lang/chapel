@@ -205,7 +205,7 @@ and Chapel's ZMQ module intends on providing interfaces and serialization
 protocols suitable for exchanging data between Chapel and non-Chapel programs.
 
 As an example (and test) of Chapel-Python interoperability over ZeroMQ, the
-following sources demonstrate a :const:`PUSH`-:const:`PULL` socket pair between
+following sources demonstrate a :const:`REQ`-:const:`REP` socket pair between
 a Chapel server and a Python client using the
 `PyZMQ Python bindings for ZeroMQ <https://pyzmq.readthedocs.io/en/latest/>`_.
 
@@ -504,7 +504,7 @@ module ZMQ {
      */
     proc init() {
       this.complete();
-      acquire(new ContextClass());
+      acquire(new unmanaged ContextClass());
     }
 
     pragma "no doc"
@@ -613,7 +613,7 @@ module ZMQ {
       context = ctx;
       this.complete();
       on ctx.classRef.home do
-        acquire(new SocketClass(ctx, sockType));
+        acquire(new unmanaged SocketClass(ctx, sockType));
     }
 
     pragma "no doc"

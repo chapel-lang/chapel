@@ -1,6 +1,42 @@
 Release Changes List
 ====================
 
+version 1.17.1
+==============
+
+Update to twentieth public release of Chapel, April 2018
+(see also changes below for 1.17.0)
+
+Bug Fixes
+---------
+* fixed a bug in which postinit() was not called for generic records
+* fixed a bug in which most launchers would not work with 'make install'
+* fixed a portability problem w.r.t. our processing of /proc/cpuinfo
+* fixed a bug in which LinearAlgebra.Sparse.eye() would unintentionally promote
+
+Cray-specific Changes
+---------------------
+* reduced contention for polling threads for CHPL_COMM=ugni
+* fixed a bug in computing the max number of comm domains for CHPL_COMM=ugni
+* improved the handling of unregisterable memory segments for CHPL_COMM=ugni
+* increased conservatism in IPA for CHPL_TARGET_COMPILER=cray-prgenv-cray
+* fixed debug build mode for CHPL_COMM=ugni
+
+Documentation
+-------------
+* simplified URLs to use https://chapel-lang/docs/ rather than .../docs/latest/
+* fixed some typos and broken links in this file
+
+Packaging Changes
+-----------------
+* converted our use of easy_install to pip when installing virtualenv
+
+Third-Party Software Changes
+----------------------------
+* updated hwloc to 1.11.10
+* fix our snapshot of fltk
+
+
 version 1.17.0
 ==============
 
@@ -132,9 +168,9 @@ Standard Modules / Library
 * made DateTime.time.tzinfo `Shared` for automated memory management
   (see https://chapel-lang.org/docs/1.17/modules/standard/DateTime.html#DateTime.time.init)
 * array `push*` methods now use `in` intents to improve their use with Owned
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html#ChapelArray.push_back)
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelArray.html#ChapelArray.push_back)
 * added `string.size` overload for `string.length`
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/String.html#String.string.size)
+  (see https://chapel-lang.org/docs/1.17/builtins/String.html#String.string.size)
 * updated several modules to use error handling rather than `try!` / `halt()`
 * made the `Buffers` module into a package module
   (see https://chapel-lang.org/docs/1.17/modules/packages/Buffers.html)
@@ -165,7 +201,7 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * added the ability for sparse CS domains to have a sparse parent domain
 * added support for querying the stridability of sparse domains
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelArray.html#ChapelArray.stridable)
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelArray.html#ChapelArray.stridable)
 * added support for strided Block-sparse domains and arrays
 * redesigned the bulk-transfer interface to reduce its complexity
   (see https://chapel-lang.org/docs/1.17/technotes/dsi.html#phase-4-bulk-transfer-interface)
@@ -208,7 +244,7 @@ Documentation
 * simplified the URLs for the current release's documentation
   (see https://chapel-lang.org/docs/)
 * documented the built-in Error types
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelError.html)
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelError.html)
 * updated function overload disambiguation rules in the language specification
   (see 'Determining More Specific Functions' in the 'Procedures' chapter)
 * described combining promotion and default arguments in the specification
@@ -222,7 +258,7 @@ Documentation
 * added m4 to Chapel's prerequisites list (required for GMP)
   (see https://chapel-lang.org/docs/1.17/usingchapel/prereqs.html)
 * documented `range.size`
-  (see https://chapel-lang.org/docs/1.17/builtins/internal/ChapelRange.html#ChapelRange.range.size)
+  (see https://chapel-lang.org/docs/1.17/builtins/ChapelRange.html#ChapelRange.range.size)
 * documented `compileline --compile-c++` in the libraries documentation
   (see https://chapel-lang.org/docs/1.17/technotes/libraries.html)
 * added missing documentation for `dsiAssignDomain`

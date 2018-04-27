@@ -1278,6 +1278,15 @@ module ChapelBase {
     __primitive("call destructor", x);
   }
 
+  /*
+  inline proc chpl__tounmanaged(ref arg:Owned) {
+    return arg.release();
+  }
+  inline proc chpl__tounmanaged(arg) where arg:object {
+    return arg;
+  }*/
+
+
   // implements 'delete' statement
   inline proc chpl__delete(arg)
     where isClassType(arg.type) || isExternClassType(arg.type) {
@@ -1907,11 +1916,20 @@ module ChapelBase {
     type rt = __primitive("to unmanaged class", t).type;
     return rt;
   }
+  inline proc _to_unmanaged(arg) {
+    var ret = __primitive("to unmanaged class", arg);
+    return ret;
+  }
   // type constructor for converting to a borrow
   proc _to_borrowed(type t) type {
     type rt = __primitive("to borrowed class", t).type;
     return rt;
   }
+  inline proc _to_borrowed(arg) {
+    var ret = __primitive("to borrowed class", arg);
+    return ret;
+  }
+
   // cast from nil to unmanaged
   inline proc _cast(type t, x) where t:_unmanaged && x:_nilType {
     return __primitive("cast", t, x);

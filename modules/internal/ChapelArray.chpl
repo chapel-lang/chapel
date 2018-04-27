@@ -350,6 +350,9 @@ module ChapelArray {
 
   pragma "unsafe"
   proc _newDomain(value) {
+    if _to_unmanaged(value.type) != value.type then
+      compilerError("Domain on borrow created");
+
     if _isPrivatized(value) then
       return new _domain(_newPrivatizedClass(value), value);
     else
@@ -357,6 +360,9 @@ module ChapelArray {
   }
 
   proc _getDomain(value) {
+    if _to_unmanaged(value.type) != value.type then
+      compilerError("Domain on borrow created");
+
     if _isPrivatized(value) then
       return new _domain(value.pid, value, _unowned=true);
     else
@@ -420,20 +426,20 @@ module ChapelArray {
     return _newDomain(d.newSparseDom(dom.rank, dom._value.idxType, dom));
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseRectangularDom
+   where _to_borrowed(dom._value.type):BaseRectangularDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseAssociativeDom
+   where _to_borrowed(dom._value.type):BaseAssociativeDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseOpaqueDom
+   where _to_borrowed(dom._value.type):BaseOpaqueDom
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where dom._value:BaseSparseDom
+   where _to_borrowed(dom._value.type):BaseSparseDom
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -553,7 +559,7 @@ module ChapelArray {
   // D, we ensure that is kept alive.  See
   // test/users/bugzilla/bug794133/ for more details and examples.
   //
-  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+  proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       arr._decEltRefCounts = true;
       var ev: eltType;
@@ -562,7 +568,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:BaseArr, type eltType) {
+  proc chpl_decRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       if arr._decEltRefCounts == false then
         halt("Decrementing array's elements' ref counts without having incremented first!");
@@ -683,7 +689,9 @@ module ChapelArray {
   // 'arr' can be a full-fledged array type or a class that inherits from
   // BaseArr
   //
-  proc chpl__isDROrDRView(arr) param where isArray(arr) || arr : BaseArr {
+  proc chpl__isDROrDRView(arr) param
+    where isArray(arr) || _to_borrowed(arr.type) : BaseArr {
+
     const value = if isArray(arr) then arr._value else arr;
     param isDR = value.isDefaultRectangular();
     param isDRView = chpl__isArrayView(value) && chpl__getActualArray(value).isDefaultRectangular();
@@ -712,7 +720,9 @@ module ChapelArray {
     return ret;
   }
 
-  proc chpl__isDROrDRView(dom) param where isDomain(dom) || dom : BaseDom {
+  proc chpl__isDROrDRView(dom) param
+    where isDomain(dom) || _to_borrowed(dom.type) : BaseDom {
+
     const value = if isDomain(dom) then dom._value else dom;
     param isDR  = value.isDefaultRectangular();
     param isDRView = chpl__isDomainView(value) && chpl__getActualDomain(value).isDefaultRectangular();
@@ -782,7 +792,7 @@ module ChapelArray {
   proc isRectangularDom(d: domain) param {
     proc isRectangularDomClass(dc: BaseRectangularDom) param return true;
     proc isRectangularDomClass(dc) param return false;
-    return isRectangularDomClass(d._value);
+    return isRectangularDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if the argument ``a`` is an array with a rectangular
@@ -803,7 +813,7 @@ module ChapelArray {
   proc isAssociativeDom(d: domain) param {
     proc isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
     proc isAssociativeDomClass(dc) param return false;
-    return isAssociativeDomClass(d._value);
+    return isAssociativeDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if ``a`` is an array with an associative domain. Otherwise
@@ -824,7 +834,7 @@ module ChapelArray {
   proc isOpaqueDom(d: domain) param {
     proc isOpaqueDomClass(dc: BaseOpaqueDom) param return true;
     proc isOpaqueDomClass(dc) param return false;
-    return isOpaqueDomClass(d._value);
+    return isOpaqueDomClass(_to_borrowed(d._value));
   }
 
   /* Return true if ``d`` is a sparse domain. Otherwise return false. */
@@ -845,9 +855,9 @@ module ChapelArray {
   pragma "syntactic distribution"
   record dmap { }
 
-  proc chpl__buildDistType(type t) type where t: BaseDist {
+  proc chpl__buildDistType(type t) type where _to_borrowed(t): BaseDist {
     var x: t;
-    var y = _newDistribution(x);
+    var y = _newDistribution(_to_unmanaged(x));
     return y.type;
   }
 
@@ -855,8 +865,8 @@ module ChapelArray {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
 
-  proc chpl__buildDistValue(x) where x: BaseDist {
-    return _newDistribution(x);
+  proc chpl__buildDistValue(x) where _to_borrowed(x.type): BaseDist {
+    return _newDistribution(_to_unmanaged(x));
   }
 
   proc chpl__buildDistValue(x) {
@@ -1050,7 +1060,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc chpl__serialize()
-      where this._value.type : DefaultRectangularDom {
+      where _to_borrowed(this._value.type) : DefaultRectangularDom {
 
       return new _serialized_domain(rank, idxType, stridable, dims(), true);
     }
@@ -1059,8 +1069,8 @@ module ChapelArray {
        support non-DefaultRectangular domains.
     pragma "no doc"
     proc chpl__serialize()
-      where (this._value.type : BaseRectangularDom) &&
-            !(this._value.type : DefaultRectangularDom) &&
+      where (_to_borrowed(this._value.type) : BaseRectangularDom) &&
+            !(_to_borrowed(this._value.type) : DefaultRectangularDom) &&
             this._value.dsiSupportsPrivatization {
 
         return new _serialized_domain(rank, idxType, stridable, dims(),
@@ -1257,7 +1267,7 @@ module ChapelArray {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new ArrayViewRankChangeDist(downDistPid=dist._pid,
+      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
                                                  downDistInst=dist._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
@@ -1757,7 +1767,7 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularDom {
+    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularDom {
       if (_value.locale != here) then
         halt("Attempting to take a local slice of a domain on locale ",
              _value.locale.id, " from locale ", here.id);
@@ -2295,7 +2305,7 @@ module ChapelArray {
                               then (this._value.arr, this._value._ArrPid)
                               else (this._value, this._pid);
 
-      var a = new ArrayViewSliceArr(eltType=this.eltType,
+      var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
                                     _DomPid=d._pid,
                                     dom=d._instance,
                                     _ArrPid=arrpid,
@@ -2321,7 +2331,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid)  = (this._value, this._pid);
 
-      var a = new ArrayViewRankChangeArr(eltType=this.eltType,
+      var a = new unmanaged ArrayViewRankChangeArr(eltType=this.eltType,
                                          _DomPid = rcdom._pid,
                                          dom = rcdom._instance,
                                          _ArrPid=arrpid,
@@ -2348,7 +2358,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(r: range(?)... rank) where _value.type: DefaultRectangularArr {
+    proc localSlice(r: range(?)... rank) where _to_borrowed(_value.type): DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...r));
       var dom = _dom((...r));
@@ -2358,7 +2368,7 @@ module ChapelArray {
     pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
-    proc localSlice(d: domain) where _value.type: DefaultRectangularArr {
+    proc localSlice(d: domain) where _to_borrowed(_value.type): DefaultRectangularArr {
       if boundsChecking then
         checkSlice((...d.getIndices()));
 
@@ -2457,7 +2467,7 @@ module ChapelArray {
       // change this in the future when we have better syntax for
       // indicating a generic domain map)..
       //
-      if (formalDom.dist._value.type != DefaultDist) {
+      if (formalDom.dist._value.type != unmanaged DefaultDist) {
         //
         // First, at compile-time, check that the domain's types are
         // the same:
@@ -2545,7 +2555,7 @@ module ChapelArray {
       const updom = {(...newDims)};
 
 
-      const redist = new ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
+      const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
                                               downdomPid = dompid,
@@ -2566,7 +2576,7 @@ module ChapelArray {
       // we do for slices.
       const (arr, arrpid) = (this._value, this._pid);
 
-      var x = new ArrayViewReindexArr(eltType=this.eltType,
+      var x = new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,
@@ -3986,6 +3996,9 @@ module ChapelArray {
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
   inline proc chpl__unalias(x: domain) {
+    if _to_unmanaged(x._instance.type) != x._instance.type then
+      compilerError("Domain on borrow created");
+
     if x._unowned {
       // We could add an autoDestroy here, but it wouldn't do anything for
       // an unowned domain.

@@ -12,7 +12,7 @@ class UserReduceOp: ReduceScanOp {
   proc accumulate(elm)  { value = value + elm; }
   proc combine(other)   { value = value + other.value; }
   proc generate()       return value;
-  proc clone()          return new UserReduceOp(eltType=eltType);
+  proc clone()          return new unmanaged UserReduceOp(eltType=eltType);
 }
 
 proc check(test:string, expected: int, ri: int, re: int) {

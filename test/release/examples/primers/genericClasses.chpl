@@ -32,16 +32,16 @@ class UntypedField {
 // instantiated using the types of the arguments representing the
 // generic fields in the default constructor.
 //
-var taf  = new TypeAliasField(real, 1.0, 2.0);
-var taf2 = new TypeAliasField(int, 3, 4);
+var taf  = new unmanaged TypeAliasField(real, 1.0, 2.0);
+var taf2 = new unmanaged TypeAliasField(int, 3, 4);
 writeln("taf = ", taf, ", taf2 = ", taf2);
 
-var pf  = new ParamField(3);
-var pf2 = new ParamField(2);
+var pf  = new unmanaged ParamField(3);
+var pf2 = new unmanaged ParamField(2);
 writeln("pf = ", pf, ", pf2 = ", pf2);
 
-var uf  = new UntypedField(3.14 + 2.72i);
-var uf2 = new UntypedField(new ParamField(2));
+var uf  = new unmanaged UntypedField(3.14 + 2.72i);
+var uf2 = new unmanaged UntypedField(new unmanaged ParamField(2));
 writeln("uf = ", uf, ", uf2 = ", uf2);
 
 //

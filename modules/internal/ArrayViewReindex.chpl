@@ -50,23 +50,25 @@ module ArrayViewReindex {
     }
 
     proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
-      var newdom = new ArrayViewReindexDom(rank=rank,
+      var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
                                            //                                           stridable=true,
                                            stridable=stridable,
                                            downdomPid=downdomPid,
                                            downdomInst=downdomInst,
                                            distPid=this.pid,
-                                           distInst=this);
+                                           distInst=_to_unmanaged(this));
       newdom.dsiSetIndices(inds);
       return newdom;
     }
 
-    proc dsiClone() return new ArrayViewReindexDist(downDistPid=downDistPid,
+    proc dsiClone() {
+      return new unmanaged ArrayViewReindexDist(downDistPid=downDistPid,
                                                     downDistInst=downDistInst,
                                                     updom=updom,
                                                     downdomPid=downdomPid,
                                                     downdomInst=downdomInst);
+    }
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
@@ -78,7 +80,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexDist(downDistPid = privatizeData(1),
+      return new unmanaged ArrayViewReindexDist(downDistPid = privatizeData(1),
                                       downDistInst = privatizeData(2),
                                       updom = privatizeData(3),
                                       downdomPid = privatizeData(4),
@@ -101,7 +103,7 @@ module ArrayViewReindex {
  pragma "use default init"
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
-    var updom: DefaultRectangularDom(rank, idxType, stridable);
+    var updom: unmanaged DefaultRectangularDom(rank, idxType, stridable);
     forwarding updom except these;
 
     // the old original index set that we're equivalent to
@@ -141,9 +143,9 @@ module ArrayViewReindex {
     proc dsiBuildArray(type eltType) {
       pragma "no auto destroy"
       const downarr = _newArray(downdom.dsiBuildArray(eltType));
-      return new ArrayViewReindexArr(eltType  =eltType,
+      return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
-                                        dom = this,
+                                        dom = _to_unmanaged(this),
                                         _ArrPid=downarr._pid,
                                         _ArrInstance=downarr._instance,
                                         ownsArrInstance=true);
@@ -288,7 +290,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexDom(rank = this.rank,
+      return new unmanaged ArrayViewReindexDom(rank = this.rank,
                                      idxType = this.idxType,
                                      stridable = this.stridable,
                                      updom = privatizeData(1),
@@ -570,7 +572,7 @@ module ArrayViewReindex {
     }
 
     proc dsiPrivatize(privatizeData) {
-      return new ArrayViewReindexArr(eltType=this.eltType,
+      return new unmanaged ArrayViewReindexArr(eltType=this.eltType,
                                      _DomPid=privatizeData(1),
                                      dom=privatizeData(2),
                                      _ArrPid=privatizeData(3),
