@@ -398,23 +398,22 @@ proc _array.T where isDefaultRectangularArr(this) && this.domain.rank == 2
 
 /*Add matrices, maintaining dimensions. Preferred method at scale */
 proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(B) {
-  var dom = {A.domain.dim(1),B.domain.dim(2)};
-  var sps = CSRDomain(dom);
-  sps += A.domain;
-  sps += B.domain;
-  var S: [sps] real;
-  for (i,j) in sps {
-    S(i,j) = A(i,j) + B(i,j);
-  }
-  return S;
+  compilerWarning('matMinus has been deprecated for _array.plus, ' +
+                  'try: A.minus(B)');
+  return A.plus(B);
 }
 
 /* Add matrices, maintaining dimensions */
-proc _array.plus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
-  if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-  if Adom.shape != this.domain.shape then halt("Unmatched shapes");
-  var C: [Adom] eltType = this + A;
-  return C;
+proc _array.plus(A: [?Adom]) where isCSArr(A) && isCSArr(this) {
+  if this.domain.parentDom != Adom.parentDom then halt("Unmatched Shapes");
+  var sps = CSRDomain(Adom.parentDom);
+  sps += this.domain;
+  sps += Adom;
+  var S: [sps] real;
+  forall (i,j) in sps {
+    S(i,j) = this(i,j) + A(i,j);
+  }
+  return S;
 }
 
 /* Subtract matrices, maintaining dimensions, deprecated for ``_array.minus``*/
