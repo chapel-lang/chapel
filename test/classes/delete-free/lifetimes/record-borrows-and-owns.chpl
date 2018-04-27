@@ -6,7 +6,7 @@ class MyClass {
 }
 
 record R {
-  var borrowed:MyClass;
+  var _borrowed:MyClass;
 
   pragma "owned"
   var myowned:MyClass;
@@ -26,7 +26,7 @@ proc makeR(borrow:MyClass) {
 
 proc makeR2(borrow:MyClass) {
   var r:R;
-  r.borrowed = borrow;
+  r._borrowed = borrow;
   r.myowned = new MyClass(10*borrow.x);
   return r;
 }
@@ -54,7 +54,7 @@ proc badF3() {
   var c = new MyClass(1);
   var r = makeR(c);
   {
-    var r2 = makeR(r.borrowed);
+    var r2 = makeR(r._borrowed);
     return r2;
   }
 }
