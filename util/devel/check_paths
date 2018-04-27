@@ -159,9 +159,12 @@ def check_file(fn):
         print("Can't open: {fn}".format(fn=fn))
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    epilog = """For example, to check all files in the doc/ directory,
+    run this shell command:
+       for i in `find doc -type f`; do check_paths -f $i; done"""
+    parser = argparse.ArgumentParser(description=__doc__, epilog=epilog)
     parser.add_argument("-l", "--line") # For testing of this script
-    parser.add_argument("-f", "--file")
+    parser.add_argument("-f", "--file", required=True)
     args = parser.parse_args()
 
     if args.line is not None:
