@@ -919,19 +919,21 @@ static void processManagedNew(CallExpr* newCall) {
           if (!callClass->isPrimitive() &&
               !isUnresolvedSymExpr(callClass->baseExpr)) {
             bool isunmanaged = callManager->isNamed("_to_unmanaged");
+            bool isborrowed = callManager->isNamed("_to_borrowed");
             bool isowned = callManager->isNamed("_owned");
             bool isshared = callManager->isNamed("_shared");
 
-            if (isunmanaged || isowned || isshared) {
+            if (isunmanaged || isborrowed || isowned || isshared) {
               callClass->remove();
               callManager->remove();
 
-              Expr* replace = new CallExpr(PRIM_NEW,
-                  callClass);
+              Expr* replace = new CallExpr(PRIM_NEW, callClass);
 
               Expr* manager = NULL;
               if (isunmanaged) {
                 manager = new SymExpr(dtUnmanaged->symbol);
+              } else if (isborrowed) {
+                manager = new SymExpr(dtBorrowed->symbol);
               } else {
                 manager = callManager->baseExpr->copy();
               }

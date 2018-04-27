@@ -928,6 +928,9 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
+  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed->symbol->addFlag(FLAG_GENERIC);
+
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 

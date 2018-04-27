@@ -677,6 +677,9 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   if (formalType == dtUnmanaged && isUnmanagedClassType(actualType))
     return true;
 
+  if (formalType == dtBorrowed && isClass(actualType))
+    return true;
+
   if (AggregateType* atActual = toAggregateType(actualType)) {
 
     if (AggregateType* atFrom = atActual->instantiatedFrom) {
@@ -5830,6 +5833,7 @@ static void resolveNew(CallExpr* newExpr) {
   // The following variables allow the latter half of this function
   // to construct the AST for initializing the owned/shared if necessary.
   // Manager is:
+  //  dtBorrowed for 'new borrowed'
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
@@ -6000,9 +6004,16 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
   UnmanagedClassType* unmanagedT = classT->getUnmanagedClass();
   INT_ASSERT(unmanagedT);
 
+  bool getBorrow = false;
+  if (manager == dtBorrowed) {
+    manager = dtOwned;
+    getBorrow = true;
+  }
+
   if (!isManagedPtrType(manager)) {
     // it is constructing a unmanaged ptr
     srcSe->replace(new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
+    INT_ASSERT(!getBorrow);
   } else {
     // it is constructing an owned/shared/etc
 
@@ -6016,9 +6027,25 @@ static void resolveNewManaged(CallExpr* newExpr, Type* manager, CallExpr* manage
                           new CallExpr(PRIM_CAST, unmanagedT->symbol, initedClass));
     managedMoveToFix->insertBefore(moveUnmanaged);
 
+    CallExpr* newM = new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged);
+    Expr* replacement = newM;
+
+    if (getBorrow) {
+      VarSymbol* tmpM = newTemp("new_tmp_m");
+      tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      DefExpr* defTmpM = new DefExpr(tmpM);
+      managedMoveToFix->insertBefore(defTmpM);
+      CallExpr* moveM = new CallExpr(PRIM_MOVE, tmpM, newM);
+      managedMoveToFix->insertBefore(moveM);
+
+      resolveExpr(moveUnmanaged);
+
+      replacement = new CallExpr("borrow", gMethodToken, tmpM);
+    }
+
     // Now adjust the original move dst, src
     // to be move dst, new manager tmpUnmanaged
-    srcSe->replace(new CallExpr(PRIM_NEW, manager->symbol, tmpUnmanaged));
+    srcSe->replace(replacement);
   }
 }
 
