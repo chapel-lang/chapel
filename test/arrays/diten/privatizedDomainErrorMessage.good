@@ -1,2 +1,2 @@
-privatizedDomainErrorMessage.chpl:12: error: unresolved call 'foo(BlockDom(1,int(64),false,DefaultDist))'
+privatizedDomainErrorMessage.chpl:12: error: unresolved call 'foo(BlockDom(1,int(64),false,unmanaged DefaultDist))'
 privatizedDomainErrorMessage.chpl:3: note: candidates are: foo(A: C)
