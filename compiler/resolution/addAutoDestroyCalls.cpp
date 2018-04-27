@@ -496,18 +496,9 @@ bool isAutoDestroyedVariable(Symbol* sym) {
   bool retval = false;
 
   if (VarSymbol* var = toVarSymbol(sym)) {
-    if ((var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true &&
-         var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false) ||
-
-        // This logic seems wrong somehow, but if I comment it out,
-        // I get memory leaks in a missing deinit after the assign
-        // in reader_chpl implementing stdinInit()
-
-        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true/*  &&
-         var->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)        == false &&
-         // TODO - can we remove this isRefCountedType?
-         // X
-         isRefCountedType(var->type)                             == false*/)) {
+    if (var->hasFlag(FLAG_NO_AUTO_DESTROY)     == false &&
+        (var->hasFlag(FLAG_INSERT_AUTO_DESTROY) == true ||
+         var->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == true)) {
 
       retval = (var->isType() == false && autoDestroyMap.get(var->type) != 0);
     }
