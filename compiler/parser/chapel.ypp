@@ -289,7 +289,7 @@
 //
 // keywords (alphabetical)
 //
-%token TALIGN TAS TATOMIC TBEGIN TBREAK TBY TCATCH
+%token TALIGN TAS TATOMIC TBEGIN TBREAK TBORROWED TBY TCATCH
 %token TCLASS TCOBEGIN TCOFORALL TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
@@ -346,7 +346,7 @@
 %left TREDUCE TSCAN TDMAPPED
 %right TEXP
 %left TCOLON
-%left TOWNED TUNMANAGED TSHARED
+%left TBORROWED TOWNED TUNMANAGED TSHARED
 %right TNEW
 %left TDOT TLP TRSBR TLCBR
 %nonassoc TPRAGMA
@@ -1362,6 +1362,7 @@ opt_type:
 | TCOLON TDOMAIN          { $$ = new UnresolvedSymExpr("_domain"); }
 | TCOLON TSINGLE          { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC            { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TBORROWED        { $$ = new UnresolvedSymExpr( "_borrowed"); }
 | TCOLON TOWNED           { $$ = new UnresolvedSymExpr( "_owned"); }
 | TCOLON TUNMANAGED       { $$ = new UnresolvedSymExpr( "_unmanaged"); }
 | TCOLON TSHARED          { $$ = new UnresolvedSymExpr( "_shared"); }
@@ -1437,6 +1438,7 @@ opt_formal_type:
 | TCOLON TDOMAIN            { $$ = new UnresolvedSymExpr("_domain"); }
 | TCOLON TSINGLE            { $$ = new UnresolvedSymExpr( "_singlevar"); }
 | TCOLON TSYNC              { $$ = new UnresolvedSymExpr( "_syncvar"); }
+| TCOLON TBORROWED          { $$ = new UnresolvedSymExpr( "_borrowed"); }
 | TCOLON TOWNED             { $$ = new UnresolvedSymExpr( "_owned"); }
 | TCOLON TUNMANAGED         { $$ = new UnresolvedSymExpr( "_unmanaged"); }
 | TCOLON TSHARED            { $$ = new UnresolvedSymExpr( "_shared"); }
@@ -1516,6 +1518,8 @@ type_level_expr:
     { $$ = new CallExpr("chpl__atomicType", $2); }
 | TSYNC expr
     { $$ = new CallExpr( "_syncvar", $2); }
+| TBORROWED expr
+    { $$ = new CallExpr( "_to_borrowed", $2); }
 | TOWNED expr
     { $$ = new CallExpr( "_owned", $2); }
 | TUNMANAGED expr
