@@ -60,7 +60,7 @@ class Memoize:
         self.f = f
         self.memo = {}
     def __call__(self, *args):
-        if not args in self.memo:
+        if args not in self.memo:
             self.memo[args] = self.f(*args)
         return self.memo[args]
 
@@ -153,12 +153,13 @@ def check_file(fn):
     """Check every line in file"""
     try:
         with open(fn, "r") as f:
-            for lineno,line in enumerate(f, 1):
+            for lineno, line in enumerate(f, 1):
                 check_line(fn, lineno, line)
     except:
         print("Can't open: {fn}".format(fn=fn))
 
 def main():
+    """The main routine"""
     epilog = """For example, to check all files in the doc/ directory,
     run this shell command:
        for i in `find doc -type f`; do check_paths -f $i; done"""
