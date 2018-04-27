@@ -1,2 +1,2 @@
-privatizedArrayErrorMessage.chpl:12: error: unresolved call 'foo([BlockDom(1,int(64),false,DefaultDist)] int(64))'
+privatizedArrayErrorMessage.chpl:12: error: unresolved call 'foo([BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64))'
 privatizedArrayErrorMessage.chpl:3: note: candidates are: foo(A: C)

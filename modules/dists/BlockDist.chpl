@@ -431,7 +431,7 @@ proc Block.init(boundingBox: domain,
                 dataParMinGranularity=getDataParMinGranularity(),
                 param rank = boundingBox.rank,
                 type idxType = boundingBox.idxType,
-                type sparseLayoutType = DefaultDist) {
+                type sparseLayoutType = unmanaged DefaultDist) {
   this.rank = rank;
   this.idxType = idxType;
   if rank != boundingBox.rank then
