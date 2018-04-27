@@ -132,6 +132,9 @@ module GMP {
     chpl_mem_free(ptr);
   }
 
+  //
+  // Initialize GMP to use Chapel's allocator
+  //
   proc chpl_gmp_init() {
     extern proc mp_set_memory_functions(alloc:c_fn_ptr, realloc:c_fn_ptr, free:c_fn_ptr);
     mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
@@ -1103,11 +1106,6 @@ module GMP {
 
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
 
-
-  //
-  // Initialize GMP to use Chapel's allocator
-  //
-  //private extern proc chpl_gmp_init();
 
   /* Get an MPZ value stored on another locale */
   export proc chpl_gmp_get_mpz(ref ret: mpz_t,
