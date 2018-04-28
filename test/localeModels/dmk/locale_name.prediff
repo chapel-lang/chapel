@@ -1,5 +1,8 @@
 #! /usr/bin/env bash
-if [ "$CHPL_COMM" = "gasnet" -a "$GASNET_SPAWNFN" = "L" ]; then
+COMM_SUB="$CHPL_COMM-$CHPL_COMM_SUBSTRATE"
+if [ "$COMM_SUB" = "gasnet-udp" -a "$GASNET_SPAWNFN" = "L" ]; then
+    echo "matches nodeName-nodeID" >$1.good
+elif [ "$COMM_SUB" = "gasnet-smp" ]; then
     echo "matches nodeName-nodeID" >$1.good
 else
     echo "matches nodeName" >$1.good
