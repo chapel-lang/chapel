@@ -104,7 +104,7 @@ ForLoop* findFollowerForLoop(BlockStmt* block) {
    declared in the same block that is marked with FLAG_CHPL__ITER,
    or NULL if no such variable exists.
  */
-static Symbol* findPreceedingChplIter(Expr* ref)
+static Symbol* findPrecedingChplIter(Expr* ref)
 {
   Symbol* chpl_iter = NULL;
   Expr* e = ref;
@@ -135,7 +135,7 @@ static Symbol* findNewIterLF(Symbol* chpl_iter) {
 }
 
 static Symbol* findNewIterLF(Expr* ref) {
-  Symbol* chpl_iter = findPreceedingChplIter(ref);
+  Symbol* chpl_iter = findPrecedingChplIter(ref);
 
   if (chpl_iter) {
     INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterLF"));
@@ -326,7 +326,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
 
   // find the variable marked with "chpl__iter" variable
   // in the loop header.
-  Symbol* chpl_iter = findPreceedingChplIter(forLoop);
+  Symbol* chpl_iter = findPrecedingChplIter(forLoop);
 
   bool forall = (chpl_iter != NULL);
   // MPF: should be the same as isLoweredForallLoop but it isn't yet
