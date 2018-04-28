@@ -4501,6 +4501,7 @@ atemp
 centry
 cntx
 cval
+eflopies
 extd
 icontext
 iinfo
@@ -4589,6 +4590,9 @@ wmikanik
 
 FILEID: d741a952-4110-11e8-af7e-10ddb1d4c3d5
 ectories
+
+FILEID: d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5
+stonea
 
 NATURAL:
 abcd
@@ -4921,6 +4925,7 @@ cppreference
 cproj
 cpuaffinity
 cpubind
+cpuinfo
 cpus
 cpuset
 cpython
@@ -6814,7 +6819,9 @@ toolchain
 tooltip
 toordinal
 topdown
+toraw
 toret
+tounmanaged
 traceback
 tradeoff
 tradeoffs
@@ -6873,6 +6880,7 @@ uninstantiated
 uniprocessor
 uniquified
 uniquify
+uniquifying
 universidad
 universitet
 unlinking
@@ -6886,6 +6894,7 @@ unpadded
 unparenthesized
 unpatented
 unpivoted
+unregisterable
 unrelatedly
 unresolveds
 unresolvedsymexpr
