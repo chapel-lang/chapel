@@ -159,10 +159,13 @@ module Dataframes {
 
 
     proc writeThis(f, s: TypedSeries(?) = nil) {
-      for (i, d) in zip(this, s) {
+      for (i, (v, d)) in zip(this, s._these()) {
         f <~> i;
         f <~> "\t";
-        f <~> d;
+        if v then
+          f <~> d;
+        else
+          f <~> "None";
         f <~> "\n";
       }
     }
@@ -256,11 +259,16 @@ module Dataframes {
   class TypedSeries : Series {
     type eltType;
 
-    // TODO: reconsider nil idx = rectangular 1D
     // TODO: ords dmap Block
     var idx: Index;
     var ords: domain(1);
     var data: [ords] eltType;
+    var valid: [ords] bool;
+
+    /*
+     * Initializers
+     */
+    // TODO: verify that data is rectangular domain(1)
 
     proc init(data: [] ?T) {
       super.init();
@@ -268,9 +276,18 @@ module Dataframes {
 
       this.ords = 1..data.size;
       this.data = data;
+      this.valid = true;
     }
 
-    // TODO: verify that data is rectangular domain(1)
+    proc init(data: [] ?T, valid: [] bool) {
+      super.init();
+      eltType = T;
+
+      this.ords = 1..data.size;
+      this.data = data;
+      this.valid = valid;
+    }
+
     proc init(data: [] ?T, idx: Index) {
       super.init();
       eltType = T;
@@ -278,28 +295,77 @@ module Dataframes {
       this.idx = idx;
       this.ords = 1..data.size;
       this.data = data;
+      this.valid = true;
     }
 
+    proc init(data: [] ?T, idx: Index, valid: [] bool) {
+      super.init();
+      eltType = T;
+
+      this.idx = idx;
+      this.ords = 1..data.size;
+      this.data = data;
+      this.valid = valid;
+    }
+
+    /*
+     * Iterators
+     */
+
+    // only yields valid items
     iter these() {
-      for d in data do
-        yield d;
+      for (v, d) in zip(valid, data) do
+        if v then yield d;
     }
 
     iter items() {
-      for tup in zip(ords, data) do
-        yield tup;
+      for (v, o, d) in zip(valid, ords, data) do
+        if v then yield (o, d);
     }
 
     iter items(type idxType) {
       if idx {
-        for tup in zip(idx:TypedIndex(idxType), data) do
-          yield tup;
+        for (v, i, d) in zip(valid, idx:TypedIndex(idxType), data) do
+          if v then yield (i, d);
       }
     }
 
-    proc at(ord: int) {
-      return data[ord];
+    // also yields invalid items
+    iter fast() {
+      for d in data do
+        yield d;
     }
+
+    iter items_fast() {
+      for t in zip(ords, data) do
+        yield t;
+    }
+
+    iter items_fast(type idxType) {
+      if idx {
+        for t in zip(idx:TypedIndex(idxType), data) do
+          yield t;
+      }
+    }
+
+    // yields tuples where the first value is the valid bit
+    pragma "no doc"
+    iter _these() {
+      for t in zip(valid, data) do
+        yield t;
+    }
+
+    pragma "no doc"
+    iter _items(type idxType) {
+      for t in zip(valid, this.items_fast()) do
+        yield t;
+    }
+
+    /*
+     * Accessors
+     */
+    // TODO: throw if out of bounds
+    // TODO: throw if None
 
     proc this(lab: ?idxType) {
       if idx then
@@ -316,6 +382,7 @@ module Dataframes {
         return idx.filter(this, castFilter);
 
       // TODO: needs notion of None to remove items not in range
+      // OR: Series with Index(int)
       var filter_data: [ords] eltType;
       for (i, b) in castFilter.items() {
         if b && i <= data.size then
@@ -324,7 +391,13 @@ module Dataframes {
       return new TypedSeries(filter_data);
     }
 
-    // TODO: "in" operator for idx.contains(lab)
+    proc at(ord: int) {
+      return data[ord];
+    }
+
+    /*
+     * Functional Constructs
+     */
 
     proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
       if lhs.idx then
@@ -359,6 +432,11 @@ module Dataframes {
       delete mapper;
       return new TypedSeries(mapped);
     }
+
+    /*
+     * Operators
+     */
+    // TODO: "in" operator for idx.contains(lab)
 
     proc add(rhs): Series {
       return rhs.uni(this, new SeriesAdd(eltType));
