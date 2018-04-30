@@ -1535,7 +1535,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 involvesRuntimeType =
                   t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                  t2->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                  t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
               }
 
               bool useAssign = involvesRuntimeType;
