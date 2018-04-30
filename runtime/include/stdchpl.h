@@ -65,8 +65,6 @@
 #include "chpl-visual-debug.h"
 #include "error.h"
 
-#include "chplgmp.h"
-
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"
 #include "chpl-mem-consistency.h"

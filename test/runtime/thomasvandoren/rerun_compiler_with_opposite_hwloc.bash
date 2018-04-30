@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 #
-# Run the compiler with CHPL_GMP=<opposite of what is set>, which should
+# Run the compiler with CHPL_HWLOC=<opposite of what is set>, which should
 # generate the runtime error about configuration not having been built.
 
 test_executable=$1
 output=$2
 compiler=$3
 
-current_gmp=$($CHPL_HOME/util/chplenv/chpl_gmp.py)
+current_hwloc=$($CHPL_HOME/util/chplenv/chpl_hwloc.py)
 
-case $current_gmp in
-    gmp|system)
-        export CHPL_GMP=none
+case $current_hwloc in
+    hwloc|system)
+        export CHPL_HWLOC=none
         ;;
     none)
-        export CHPL_GMP=gmp
+        export CHPL_HWLOC=hwloc
         ;;
     *)
-        echo "[Warning: Did not recognize GMP value: ${current_gmp}]"
+        echo "[Warning: Did not recognize HWLOC value: ${current_hwloc}]"
 esac
 
 #main_o=$($CHPL_HOME/util/config/compileline --main.o)

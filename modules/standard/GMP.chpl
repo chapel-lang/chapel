@@ -109,11 +109,51 @@ module GMP {
   use SysError;
   use BigInteger;
 
+  require "GMPHelper/chplgmp.h";
+
+  export proc chpl_gmp_alloc(size:size_t) : c_void_ptr {
+    pragma "insert line file info"
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
+    return chpl_mem_alloc(size, CHPL_RT_MD_GMP);
+  }
+
+  export proc chpl_gmp_realloc(ptr:c_void_ptr,
+                               old_size:size_t, new_size:size_t) : c_void_ptr {
+    pragma "insert line file info"
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    extern const CHPL_RT_MD_GMP:chpl_mem_descInt_t;
+    return chpl_mem_realloc(ptr, new_size, CHPL_RT_MD_GMP);
+  }
+
+  export proc chpl_gmp_free(ptr:c_void_ptr, old_size:size_t) {
+    pragma "insert line file info"
+      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+    chpl_mem_free(ptr);
+  }
+
+  //
+  // Initialize GMP to use Chapel's allocator
+  //
+  proc chpl_gmp_init() {
+    extern proc mp_set_memory_functions(alloc:c_fn_ptr, realloc:c_fn_ptr, free:c_fn_ptr);
+    mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
+                            c_ptrTo(chpl_gmp_realloc),
+                            c_ptrTo(chpl_gmp_free));
+  }
+
+  // Initialize GMP library on all locales
+  coforall loc in Locales {
+    on loc {
+      chpl_gmp_init();
+    }
+  }
+
   /* The GMP ``mp_bitcnt_t`` type */
   extern type mp_bitcnt_t     = c_ulong;
 
   /* The GMP ``mp_size_t``   type */
-  extern type mp_size_t       = size_t;
+  extern type mp_size_t       = c_long;
 
   /* The GMP ``mp_limb_t``   type. */
   extern type mp_limb_t       = uint(64);
@@ -132,7 +172,7 @@ module GMP {
   //
   //     typedef struct {
   //       int        _mp_alloc;  // capacity
-  //       int        _mp_size;   // current size
+  //       int        _mp_size;   // current size (sign is sign of the mpz)
   //       mp_limb_t* _mp_d;      // a packed vector of integers
   //     } __mpz_struct;
   //
@@ -199,6 +239,7 @@ module GMP {
 
   extern proc mpz_clear(ref x: mpz_t);
 
+  extern proc _mpz_realloc(ref x: mpz_t, new_alloc: mp_size_t);
   extern proc mpz_realloc2(ref x: mpz_t, n: mp_bitcnt_t);
 
 
@@ -768,6 +809,8 @@ module GMP {
 
   extern proc mpz_size(const ref x: mpz_t): size_t;
 
+  extern proc mpz_limbs_write(ref x: mpz_t, n: mp_size_t): c_ptr(mp_limb_t);
+  extern proc mpz_limbs_finish(ref x: mpz_t, s: mp_size_t);
 
   //
   // Floating-point Functions
@@ -1064,27 +1107,62 @@ module GMP {
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
 
 
-  //
-  // Initialize GMP to use Chapel's allocator
-  //
-  private extern proc chpl_gmp_init();
-
   /* Get an MPZ value stored on another locale */
-  extern proc chpl_gmp_get_mpz(ref ret: mpz_t,
-                               src_local: int,
-                               from: __mpz_struct);
+  export proc chpl_gmp_get_mpz(ref ret: mpz_t,
+                        src_locale: int,
+                        in from: __mpz_struct,
+                        copy_allocated:bool = false) {
 
-  /* Get a randstate value stored on another locale */
-  private extern
-  proc chpl_gmp_get_randstate(not_inited_state: gmp_randstate_t,
-                              src_locale: int,
-                              from: __gmp_randstate_struct);
+    // Gather information from the source variable
+    var src_nalloc = chpl_gmp_mpz_struct_nalloc(from);
+    var src_sign_size = chpl_gmp_mpz_struct_sign_size(from);
+    var src_limbs_ptr = chpl_gmp_mpz_struct_limbs(from);
 
-  /* Return the number of limbs in an __mpz_struct */
-  private extern proc chpl_gmp_mpz_nlimbs(from: __mpz_struct) : uint(64);
+    // Compute the number of limbs used
+    var src_size:mp_size_t = 0;
+    if src_sign_size < 0 then
+      src_size = (-src_sign_size):mp_size_t;
+    else
+      src_size = src_sign_size:mp_size_t;
 
-  /* Print out an mpz_t (for debugging) */
-  extern proc chpl_gmp_mpz_print(const ref x: mpz_t);
+    // Compute the size of the number to create & copy
+    var new_size:mp_size_t = src_size;
+    if copy_allocated then
+      new_size = src_nalloc;
+
+    // reallocate the limbs
+    _mpz_realloc(ret, new_size);
+
+    // get a pointer to the limbs
+    var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[1]);
+
+    __primitive("chpl_comm_array_get", dst_limbs_ptr[0],
+                                       src_locale, src_limbs_ptr[0],
+                                       new_size);
+
+    // Update the sign and size of the number
+    chpl_gmp_mpz_set_sign_size(ret, src_sign_size);
+  }
+
+  /* Return the number of limbs allocated in an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_nalloc(from: __mpz_struct) : mp_size_t;
+  /* Return the the number of limbs used with the sign of the mpz number
+     for an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_sign_size(from: __mpz_struct) : mp_size_t;
+  /* Set the sign and number of fields used in an mpz
+     sign taken from sign_size and the number of limbs used is its absolute
+     value. */
+  private extern proc chpl_gmp_mpz_set_sign_size(ref dst:mpz_t, sign_size:mp_size_t);
+  /* Return the pointer to the limbs in an __mpz_struct */
+  private extern proc chpl_gmp_mpz_struct_limbs(from: __mpz_struct) : c_ptr(mp_limb_t);
+
+  /* Return the mpz struct storing RNG state */
+  private extern proc chpl_gmp_randstate_read_state(src:__gmp_randstate_struct):__mpz_struct;
+  /* Sets the mpz storing the RNG state */
+  private extern proc chpl_gmp_randstate_set_state(ref dst:gmp_randstate_t, state:mpz_t);
+  /* Returns 1 if the two RNGs are using the same algorithm */
+  private extern proc
+  chpl_gmp_randstate_same_algorithm(a:gmp_randstate_t, b:gmp_randstate_t):c_int;
 
   /* Get an mpz_t as a string */
   extern proc chpl_gmp_mpz_get_str(base: c_int, const ref x: mpz_t) : c_string;
@@ -1117,15 +1195,6 @@ module GMP {
     proc init(size: uint) {
       this.complete();
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
-    }
-
-    proc init(a: GMPRandom) {
-      this.complete();
-      if a.locale == here {
-        gmp_randinit_set(this.state, a.state);
-      } else {
-        chpl_gmp_get_randstate(this.state, a.locale.id, a.state[1]);
-      }
     }
 
     proc deinit() {
