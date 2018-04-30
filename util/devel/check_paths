@@ -26,7 +26,13 @@ of a path in the Chapel repository, e.g., "doc/" or "modules/" or
 """
 
 import os.path
+import sys
 import argparse
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+from utils import memoize
 
 def check_path(p):
     """returns True if p exists, False if it doesn't"""
@@ -52,19 +58,7 @@ def check_path(p):
 
     return os.path.isfile(p) or os.path.isdir(p)
 
-# Memoize will be more useful once the script runs on multiple files
-# in one go.
-# Cribbed from a stackoverflow answer
-class Memoize:
-    def __init__(self, f):
-        self.f = f
-        self.memo = {}
-    def __call__(self, *args):
-        if args not in self.memo:
-            self.memo[args] = self.f(*args)
-        return self.memo[args]
-
-@Memoize
+@memoize
 def check_token(t):
     """If t "looks like" a path but doesn't exist, return False.
     Otherwise, return True."""
