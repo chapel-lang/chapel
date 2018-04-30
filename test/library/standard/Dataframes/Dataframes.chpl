@@ -328,7 +328,7 @@ module Dataframes {
 
     proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): TypedSeries(eltType) {
       if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier);
+        return lhs.idx.uni(lhs, this, unifier):TypedSeries(eltType);
 
       var uni_ords = if lhs.ords.size > this.ords.size
                      then 1..lhs.ords.size
@@ -478,7 +478,7 @@ module Dataframes {
     type retType;
 
     proc f(d: eltType): retType {
-      return d;
+      return d:retType;
     }
   }
 
