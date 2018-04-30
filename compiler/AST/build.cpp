@@ -2602,15 +2602,6 @@ buildFunctionDecl(FnSymbol*   fn,
 
   }
 
-  /*
-  if (fn->hasFlag(FLAG_NO_AUTO_DESTROY)) {
-    // Apply this flag to the arguments and remove it from the function
-    for_formals(formal, fn) {
-      formal->addFlag(FLAG_NO_AUTO_DESTROY);
-    }
-    fn->removeFlag(FLAG_NO_AUTO_DESTROY);
-  }*/
-
   fn->doc = docs;
 
   return buildChapelStmt(new DefExpr(fn));

@@ -1571,15 +1571,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
-                // Call chpl__checkshape
-                /*if (involvesRuntimeType) {
-                  CallExpr* check = new CallExpr("chpl__checkshape",
-                                                 fromTypeExpr->copy(),
-                                                 fromExpr->copy());
-                  call->insertBefore(check);
-                  resolveExpr(check);
-                }*/
-
                 CallExpr* toResolve = NULL;
 
                 if (rhsType == lhsType) {
@@ -1632,21 +1623,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
 
-/*
-              This code is apparently unnecessary
-              } else if (lhsType->getValType() == dtStringC &&
-                         from->getValType() == dtString &&
-                         from->isImmediate()) {
-                // Coercion from a param string to a c_string
-                // for the non-param case it would require .c_str()
-                // and as a result the regular cast function is not available.
-                VarSymbol*  var       = toVarSymbol(from);
-                const char* str       = var->immediate->v_string;
-                SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
-
-                // Remove the right-hand-side, which is call->get(2)
-                rhs->replace(newActual);
-*/
               } else {
                 // Add a cast if the types don't match
 

@@ -3877,12 +3877,6 @@ module ChapelArray {
   }
 
   /*
-  proc chpl__copyinit(ref a: [], b: _desync(a.eltType)) {
-    forall e in a do
-      chpl__copyinit(e, b);
-  }*/
-
-  /*
    * The following procedure is effectively equivalent to:
    *
   inline proc chpl_by(a:domain, b) { ... }
@@ -3958,18 +3952,6 @@ module ChapelArray {
   iter linearize(Xs) {
     for x in Xs do yield x;
   }
-
-  /*
-  proc chpl__checkshape(type a, b: _distribution) {
-  }
-  proc chpl__checkshape(type a, b: _domain) {
-  }
-  proc chpl__checkshape(type a, b: _array) {
-    if boundsChecking {
-      var tmp:a;
-      checkArrayShapesUponAssignment(tmp, b);
-    }
-  }*/
 
   pragma "init copy fn"
   proc chpl__initCopy(a: _distribution) {
