@@ -1150,10 +1150,6 @@ void insertFormalTemps(FnSymbol* fn) {
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
 
-      /* if (fn->hasFlag(FLAG_NO_AUTO_DESTROY_ARGS)) {
-        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
-      }*/
-
       formals2vars.put(formal, tmp);
     }
   }
