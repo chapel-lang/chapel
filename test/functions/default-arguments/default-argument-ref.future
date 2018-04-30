@@ -1,0 +1,2 @@
+bug: Internal compiler error when ref argument has default value
+#7924
