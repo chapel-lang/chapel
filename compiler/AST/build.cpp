@@ -1220,6 +1220,13 @@ buildFollowLoop(VarSymbol* iter,
   return followBlock;
 }
 
+static CallExpr* makeUnmanagedNew(Expr* typeArg, Expr* arg) {
+  return new CallExpr(PRIM_NEW,
+                      new CallExpr(typeArg, arg,
+                        new NamedExpr("_chpl_manager",
+                                      new SymExpr(dtUnmanaged->symbol))));
+}
+
 // Do whatever is needed for a reduce intent.
 // Return the globalOp symbol.
 static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
@@ -1272,7 +1279,7 @@ static void setupOneReduceIntent(VarSymbol* iterRec, BlockStmt* parLoop,
   // globalOp = new raw reduceOp(eltType = ...);
   if (!useThisGlobalOp) {
     NamedExpr* newArg = new NamedExpr("eltType", eltType);
-    CallExpr* newCall = makeRawNew(reduceOp, newArg);
+    CallExpr* newCall = makeUnmanagedNew(reduceOp, newArg);
     CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
     iterRec->defPoint->insertBefore(move);
   }
@@ -2070,7 +2077,7 @@ buildReduceScanPreface2(BlockStmt* fn, Symbol* eltType, Symbol* globalOp,
   fn->insertAtTail(new DefExpr(globalOp));
 
   NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
-  CallExpr* newCall = makeRawNew(opExpr, newArg);
+  CallExpr* newCall = makeUnmanagedNew(opExpr, newArg);
   CallExpr* move = new CallExpr(PRIM_MOVE, globalOp, newCall);
   fn->insertAtTail(move);
 }
@@ -2148,7 +2155,7 @@ CallExpr* buildReduceExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
   // move localOp, new OpExpr(eltType=eltType)
   {
     NamedExpr* newArg = new NamedExpr("eltType", new SymExpr(eltType));
-    CallExpr* newCall = makeRawNew(opExpr->copy(), newArg);
+    CallExpr* newCall = makeUnmanagedNew(opExpr->copy(), newArg);
     CallExpr* move = new CallExpr(PRIM_MOVE, localOp, newCall);
     followBlock->insertAtTail(move);
   }

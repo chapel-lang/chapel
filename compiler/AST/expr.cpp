@@ -1406,9 +1406,3 @@ new_Expr(const char* format, va_list vl) {
   INT_ASSERT(stack.size() == 1);
   return stack.top();
 }
-
-CallExpr* makeRawNew(Expr* typeArg, Expr* arg) {
-  return new CallExpr(PRIM_NEW, typeArg, arg,
-                      new NamedExpr("_chpl_manager",
-                                    new SymExpr(dtUnmanaged->symbol)));
-}
