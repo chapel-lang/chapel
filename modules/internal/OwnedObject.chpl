@@ -231,7 +231,6 @@ module OwnedObject {
   pragma "no doc"
   pragma "donor fn"
   pragma "auto copy fn"
-  pragma "erroneous autocopy"
   pragma "unsafe"
   proc chpl__autoCopy(ref src: _owned) {
     var ret = new _owned(src);
