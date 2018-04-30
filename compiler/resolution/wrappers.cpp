@@ -523,24 +523,32 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
         // _this handled separately
         // add formal if it's not _this
 
-        // Always pass the formal by ref/const ref
+        // Important to use ref / const ref intent always for records.
         IntentTag intent = INTENT_BLANK;
         switch (fnFormal->intent) {
+          case INTENT_BLANK:
           case INTENT_IN:
           case INTENT_CONST:
           case INTENT_CONST_IN:
-          case INTENT_CONST_REF:
-            intent = INTENT_CONST_REF;
+            if (isRecord(fnFormal->typeInfo())) {
+              // always use 'const ref' intent in these cases for records
+              // (even if the record has e.g. in default intent)
+              intent = INTENT_CONST_REF;
+            } else {
+              intent = fnFormal->intent;
+            }
             break;
-          case INTENT_REF_MAYBE_CONST:
           case INTENT_PARAM:
           case INTENT_TYPE:
-          case INTENT_BLANK:
+          case INTENT_CONST_REF:
+          case INTENT_REF_MAYBE_CONST:
+          case INTENT_REF:
+            // These are OK even for records
             intent = fnFormal->intent;
             break;
           case INTENT_OUT:
           case INTENT_INOUT:
-          case INTENT_REF:
+            // Use ref
             intent = INTENT_REF;
             break;
           // intentionally no default

@@ -870,7 +870,8 @@ bool isCallExprTemporary(Expr* initFrom) {
   SymExpr* fromSe = toSymExpr(initFrom);
   INT_ASSERT(fromSe);
   Symbol* fromSym = fromSe->symbol();
-  if (fromSym->hasFlag(FLAG_EXPR_TEMP)) {
+  if (fromSym->hasFlag(FLAG_EXPR_TEMP) ||
+      fromSym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
     // It's from an auto-destroyed value that is an expression temporary
     // storing the result of a function call.
     return true;
