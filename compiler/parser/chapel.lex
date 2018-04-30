@@ -118,6 +118,7 @@ align            return processToken(yyscanner, TALIGN);
 as               return processToken(yyscanner, TAS);
 atomic           return processToken(yyscanner, TATOMIC);
 begin            return processToken(yyscanner, TBEGIN);
+borrowed         return processToken(yyscanner, TBORROWED);
 break            return processToken(yyscanner, TBREAK);
 by               return processToken(yyscanner, TBY);
 catch            return processToken(yyscanner, TCATCH);

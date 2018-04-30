@@ -1,6 +1,6 @@
 class Node {
   var data: real;
-  var next: unmanaged Node;
+  var next: borrowed Node;
   proc init(arg:real) {
     this.data = arg;
     this.next = nil;
@@ -10,10 +10,16 @@ class Node {
 config const n = 5;
 
 proc test1() {
-  var head    = new unmanaged Node(0);
+  var nodes:[1..n] unmanaged Node;
+
+  for i in 1..n {
+    nodes[i] = new unmanaged Node(i);
+  }
+
+  var head:borrowed Node = nodes[1];
   var current = head;
   for i in 1..n-1 {
-    current.next = new unmanaged Node(i);
+    current.next = nodes[i+1];
     current      = current.next;
   }
 
@@ -22,24 +28,11 @@ proc test1() {
     var ptr = current;
     current = current.next;
     writeln(ptr.data);
-    delete ptr;
+  }
+  
+  for i in 1..n {
+    delete nodes[i];
   }
 }
 
 test1();
-
-class MyClass {
-  var x:int;
-}
-
-proc makeit(type t) {
-  return new t(1);
-}
-
-proc test2() {
-  var x = makeit(unmanaged MyClass);
-  writeln(x);
-  delete x;
-}
-
-test2();
