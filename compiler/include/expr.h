@@ -384,8 +384,6 @@ Expr* getNextExpr(Expr* expr);
 Expr* new_Expr(const char* format, ...);
 Expr* new_Expr(const char* format, va_list vl);
 
-CallExpr* makeRawNew(Expr* typeArg, Expr* arg);
-
 #ifdef HAVE_LLVM
 llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createTempVarLLVM(llvm::Type* type);

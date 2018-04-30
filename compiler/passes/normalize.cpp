@@ -912,6 +912,8 @@ static void processSyntacticDistributions(CallExpr* call) {
  */
 static void processManagedNew(CallExpr* newCall) {
   SET_LINENO(newCall);
+  /*if (newCall->id == 190325 || newCall->id == 190284)
+    gdbShouldBreakHere();*/
   if (newCall->inTree() && newCall->isPrimitive(PRIM_NEW)) {
     if (CallExpr* callManager = toCallExpr(newCall->get(1))) {
       if (callManager->numActuals() == 1) {
