@@ -404,7 +404,7 @@ proc matPlus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangular
 }
 
 /* Add matrices, maintaining dimensions */
-proc _array.plus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+proc _array.plus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this + A;
@@ -419,7 +419,7 @@ proc matMinus(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDefaultRectangula
 }
 
 /* Subtract matrices, maintaining dimensions */
-proc _array.minus(A: [?Adom]) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
+proc _array.minus(A: [?Adom] ?eltType) where isDefaultRectangularArr(A) && isDefaultRectangularArr(this) {
   if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
   if Adom.shape != this.domain.shape then halt("Unmatched shapes");
   var C: [Adom] eltType = this - A;
@@ -1595,45 +1595,31 @@ module Sparse {
   proc _array.T where isCSArr(this) { return transpose(this); }
 
   /* Element-wise addition */
-  proc _array.plus(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
-      halt('Cannot add sparse arrays with non-matching parent domains');
-
-    // Create copy of 'this'
-    var BDom = this.domain;
-    var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
-
-    // If domain indices do not match, bulk add A's indices to B
-    if this.domain != A.domain {
-      BDom += A.domain;
+  proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps = CSRDomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] + A[i,j];
     }
-
-    // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] += A[i,j];
-
-    return B;
+    return S;
   }
 
   /* Element-wise subtraction */
-  proc _array.minus(A) where isCSArr(this) && isCSArr(A) {
-    if this.domain._value.parentDom != A.domain._value.parentDom then
-      halt('Cannot add sparse arrays with non-matching parent domains');
-
-    // Create copy of 'this'
-    var BDom = this.domain;
-    var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
-
-    // If domain indices do not match, bulk add A's indices to B
-    if this.domain != A.domain {
-      BDom += A.domain;
+  proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
+    if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    var sps = CSRDomain(Adom.parentDom);
+    sps += this.domain;
+    sps += Adom;
+    var S: [sps] eltType;
+    forall (i,j) in sps {
+      S[i,j] = this[i,j] - A[i,j];
     }
-
-    // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] -= A[i,j];
-
-    return B;
+    return S;
   }
 
   /* Element-wise multiplication */
