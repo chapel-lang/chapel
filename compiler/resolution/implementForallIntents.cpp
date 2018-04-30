@@ -2087,8 +2087,8 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   {
     NamedExpr* newArg = new NamedExpr("eltType", eltTypeArg);
     CallExpr* newCall = new CallExpr(PRIM_NEW, new SymExpr(riTypeSym), newArg,
-			  new NamedExpr("_chpl_manager",
-					new SymExpr(dtUnmanaged->symbol)));
+                                     new NamedExpr("_chpl_manager",
+                                         new SymExpr(dtUnmanaged->symbol)));
     hld->insertAtTail(new CallExpr(PRIM_MOVE, globalOp, newCall));
   }
 
