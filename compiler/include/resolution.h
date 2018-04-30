@@ -52,6 +52,7 @@ extern Vec<CallExpr*>                   inits;
 extern Vec<BlockStmt*>                  standardModuleSet;
 
 extern char                             arrayUnrefName[];
+extern char                             primCoerceTmpName[];
 
 extern Map<Type*,     FnSymbol*>        autoDestroyMap;
 
@@ -267,5 +268,7 @@ void resolvePromotionType(AggregateType* at);
 void resolveDestructor(AggregateType* at);
 
 void fixTypeNames(AggregateType* at);
+
+Type* getInstantiationType(Type* actualType, Type* formalType);
 
 #endif

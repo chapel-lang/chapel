@@ -1,1 +1,2 @@
-integralvariable2.chpl:1: error: Variables can't be declared using abstract generic types like 'integral'
+integralvariable2.chpl:1: error: Cannot default-initialize a variable with generic type
+integralvariable2.chpl:1: note: 'abstract' has generic type 'integral'

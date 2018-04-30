@@ -99,6 +99,7 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //# Global Variables
 //#
 char                               arrayUnrefName[] = "array_unref_ret_tmp";
+char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
 bool                               tryFailure                = false;
@@ -534,8 +535,9 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
     bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
     TypeSymbol* formalTS = formal->getValType()->symbol;
     bool formalCopyMutates = formalTS->hasFlag(FLAG_COPY_MUTATES);
+    bool isInitCoerceTmp = (0 == strcmp(sym->name, primCoerceTmpName));
 
-    if ((actualExprTmp && !formalCopyMutates) ||
+    if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
         (actualConst && !formal->hasFlag(FLAG_ARG_THIS)) ||
         se->symbol()->isParameter()) {
       // But ignore for now errors with this argument
@@ -5126,7 +5128,63 @@ static void resolveInitVar(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  if (dst->hasFlag(FLAG_NO_COPY)               == true)  {
+  Type* targetType = srcType;
+  SymExpr* targetTypeExpr = NULL;
+  if (call->numActuals() >= 3) {
+    targetTypeExpr = toSymExpr(call->get(3));
+    targetType = targetTypeExpr->symbol()->type;
+    INT_ASSERT(targetType);
+    targetTypeExpr->remove(); // Take it out of the move
+
+    // If the target type is generic, compute the appropriate
+    // instantiation type (just as we would when instantiating
+    // a generic function's argument)
+    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+      Type* useType = getInstantiationType(srcType, targetType);
+
+      if (useType == NULL) {
+        USR_FATAL(call, "Could not coerce %s to %s in initialization",
+                        srcType->symbol->name,
+                        targetType->symbol->name);
+      }
+
+      targetType = useType;
+    }
+
+    // Ignore the target type if it's the same & not a runtime type.
+    if (targetType == srcType &&
+        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      targetType = srcType;
+      targetTypeExpr = NULL;
+    }
+  }
+
+  bool addedCoerce = false;
+
+  if (targetTypeExpr != NULL) {
+    // create a temp variable to store the result of PRIM_COERCE
+    VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
+    tmp->addFlag(FLAG_EXPR_TEMP);
+
+    CallExpr* coerce = new CallExpr(PRIM_COERCE,
+                                    srcExpr->copy(),
+                                    targetTypeExpr);
+    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
+
+    call->insertBefore(new DefExpr(tmp));
+    call->insertBefore(move);
+    resolveCoerce(coerce);
+    resolveMove(move);
+
+    // Now let the rest of this function proceed using
+    // 'tmp' instead of the original source.
+    srcExpr->setSymbol(tmp);
+    srcType = targetType;
+
+    addedCoerce = true;
+  }
+
+  if (dst->hasFlag(FLAG_NO_COPY) || addedCoerce) {
     call->primitive = primitives[PRIM_MOVE];
     resolveMove(call);
 
@@ -5516,19 +5574,21 @@ static void resolveMoveForRhsSymExpr(CallExpr* call) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
     Type*   rhsType = rhs->typeInfo();
 
-    INT_ASSERT(lhsSym->hasFlag(FLAG_INDEX_VAR) ||
-               // non-zip forall over a standalone iterator
-               rhs->symbol()->hasFlag(FLAG_INDEX_VAR));
+    if (lhsSym->hasFlag(FLAG_INDEX_VAR) ||
+        // non-zip forall over a standalone iterator
+        (lhsSym->hasFlag(FLAG_TEMP) &&
+         rhs->symbol()->hasFlag(FLAG_INDEX_VAR))) {
 
-    // ... and not of a reference type
-    // ... and not an array (arrays are always yielded by reference)
-    // todo: differentiate based on ref-ness, not _ref type
-    // todo: not all const if it is zippered and one of iterators is var
-    if (isReferenceType(rhsType)                == false &&
-        isTupleContainingAnyReferences(rhsType) == false &&
-        rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
-      // ... then mark LHS constant.
-      lhsSym->addFlag(FLAG_CONST);
+      // ... and not of a reference type
+      // ... and not an array (arrays are always yielded by reference)
+      // todo: differentiate based on ref-ness, not _ref type
+      // todo: not all const if it is zippered and one of iterators is var
+      if (isReferenceType(rhsType)                == false &&
+          isTupleContainingAnyReferences(rhsType) == false &&
+          rhsType->symbol->hasFlag(FLAG_ARRAY)    == false) {
+        // ... then mark LHS constant.
+        lhsSym->addFlag(FLAG_CONST);
+      }
     }
   } else if (rhs->symbol()->hasFlag(FLAG_DELAY_GENERIC_EXPANSION)) {
     Symbol* lhsSym  = toSymExpr(call->get(1))->symbol();
@@ -5592,39 +5652,32 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
   } else if (rhs->isPrimitive(PRIM_COERCE) == true) {
     moveFinalize(call);
 
-    if (SymExpr* coerceSE = toSymExpr(rhs->get(1))) {
-      Symbol* coerceSym = coerceSE->symbol();
+    if (SymExpr* fromSe = toSymExpr(rhs->get(1))) {
+      Symbol* fromSym = fromSe->symbol();
 
       // This transformation is normally handled in insertCasts
       // but we need to do it earlier for parameters. We can't just
       // call insertCasts here since that would dramatically change the
       // resolution order (and would be apparently harder to get working).
-      if (coerceSym->isParameter()               == true  ||
-          coerceSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+      if (fromSym->isParameter()               == true  ||
+          fromSym->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         // Can we coerce from the argument to the function return type?
         // Note that rhsType here is the function return type
         // (since that is what the primitive returns as its type).
-        Type* coerceType = coerceSym->type;
+        Type* fromType = fromSym->type;
         Type* rhsType    = rhs->typeInfo();
         bool tmpParamNarrows = false;
 
-        if (coerceType                                     == rhsType ||
-            canParamCoerce(coerceType, coerceSym, rhsType, &tmpParamNarrows) == true)   {
+        if (fromType                                     == rhsType ||
+            canParamCoerce(fromType, fromSym, rhsType, &tmpParamNarrows) == true)   {
           SymExpr* lhs = toSymExpr(call->get(1));
 
           call->get(1)->replace(lhs->copy());
-          call->get(2)->replace(new SymExpr(coerceSym));
-
-        } else if (canCoerce(coerceType, coerceSym, rhsType, NULL) == true) {
-
-          // any case that doesn't param coerce but that does coerce
-          // will be handled in insertCasts.
+          call->get(2)->replace(new SymExpr(fromSym));
 
         } else {
-          USR_FATAL(userCall(call),
-                    "type mismatch in return from %s to %s",
-                    toString(coerceType),
-                    toString(rhsType));
+          // Any other case (including error cases)
+          // will be handled in insertCasts
         }
       }
     }
@@ -9850,10 +9903,10 @@ static void primInitHaltForUnacceptableGeneric(CallExpr* call, Type* type) {
     }
   }
 
-  USR_FATAL(call,
-            "Variables can't be declared using %s generic types like '%s'",
-            label,
-            type->symbol->name);
+  USR_FATAL_CONT(call,
+                 "Cannot default-initialize a variable with generic type");
+  USR_PRINT(call, "'%s' has generic type '%s'", label, type->symbol->name);
+  USR_STOP();
 }
 
 /************************************* | **************************************

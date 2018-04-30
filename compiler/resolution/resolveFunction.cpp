@@ -1527,18 +1527,54 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
               Symbol*  to           = lhs->symbol();
 
+
+              bool involvesRuntimeType = false;
+              {
+                Type* t1 = fromTypeExpr->getValType();
+                Type* t2 = fromExpr->getValType();
+
+                involvesRuntimeType =
+                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+                  t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+              }
+
+              bool useAssign = involvesRuntimeType;
+
+              // Use assign (to get error) if coercion isn't normally
+              // allowed between these types.
+              // Note this also supports some things like syserr = int.
+              if (!canDispatch(from->type, from, lhsType)) {
+                useAssign = true;
+              }
+
+              // Use assign since no cast is available for
+              // sync / single and their value type.
+              if (typesDiffer &&
+                  (isSyncType(from->getValType()) ||
+                   isSingleType(from->getValType()))) {
+                useAssign = true;
+              }
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
-              if (!typesDiffer) {
+              // If the types are the same but runtime types
+              // are involved, we don't know that the runtime
+              // types are the same until runtime (at least without
+              // some better smarts in the compiler).
+
+              if (!typesDiffer && !useAssign) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
+
+                CallExpr* toResolve = NULL;
 
                 if (rhsType == lhsType) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  rhs = new CallExpr(PRIM_DEREF, new SymExpr(from));
+                  toResolve = new CallExpr("chpl__autoCopy", new SymExpr(from));
+                  rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
                   rhs = new CallExpr(PRIM_ADDR_OF, new SymExpr(from));
@@ -1548,24 +1584,28 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 call->replace(move);
 
+                if (toResolve) resolveExpr(toResolve);
+
                 casts.add(move);
 
-              } else if (lhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                         rhsType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ) {
+              } else if (useAssign) {
 
-                // Use = if the types differ.  This should cause the 'from'
-                // value to be coerced to 'to' if possible or result in an
-                // compilation error. We use = here (vs _cast) in order to work
-                // better with returning arrays. We could probably use _cast
-                // instead of = if fromType does not have a runtime type.
+                // Here the types differ and we're expecting some
+                // kind of promotion / iterator-array-conversion to apply.
 
-                CallExpr* init     = new CallExpr(PRIM_NO_INIT, fromType);
+                // In the future, it would be nice if this could no-init
+                // a LHS array and then move records into it from the RHS.
+                CallExpr* init     = new CallExpr(PRIM_INIT, fromType);
                 CallExpr* moveInit = new CallExpr(PRIM_MOVE, to, init);
 
                 call->insertBefore(moveInit);
 
-                // By resolving =, we will generate an error if from cannot be
-                // coerced into to.
+                // Since the initialization pattern normally does not
+                // require adding an auto-destroy for a call-expr-temp,
+                // add FLAG_INSERT_AUTO_DESTROY since we're assigning from
+                // it.
+                from->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
                 CallExpr* assign = new CallExpr("=", to, from);
 
                 call->insertBefore(assign);
@@ -1637,7 +1677,21 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertAtTail(unref);
                   resolveExpr(unref);
 
+                } else if (lhsType->getValType() == dtStringC &&
+                           tmp->getValType() == dtString &&
+                           tmp->isImmediate()) {
+                  // Coercion from a param string to a c_string
+                  // for the non-param case it would require .c_str()
+                  // and as a result the regular cast function is not available.
+                  VarSymbol*  var       = toVarSymbol(tmp);
+                  const char* str       = var->immediate->v_string;
+                  SymExpr*    newActual = new SymExpr(new_CStringSymbol(str));
+
+                  // Remove the right-hand-side, which is call->get(2)
+                  call->insertAtTail(newActual);
+
                 } else {
+
                   CallExpr* cast = createCast(tmp, lhsType->symbol);
                   call->insertAtTail(cast);
                   casts.add(cast);

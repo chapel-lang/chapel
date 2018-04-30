@@ -260,6 +260,7 @@ proc varInitArgInout(inout arg)
   writeln("   typed variable");
   var v2:R = arg;
   check(v2);
+  writeln("   function epilogue");
 }
 
 

@@ -257,8 +257,12 @@ module SharedObject {
     f <~> this.p;
   }
 
-  // Note, coercion from Shared -> Shared.t is directly
-  // supported in the compiler via a call to borrow().
+  // Note, coercion from _shared -> _shared.t is sometimes directly
+  // supported in the compiler via a call to borrow() and
+  // sometimes uses this cast.
+  inline proc _cast(type t, const ref x:_shared) where t:x.t {
+    return x.borrow();
+  }
 
   // This cast supports coercion from Shared(SubClass) to Shared(ParentClass)
   // (i.e. when class SubClass : ParentClass ).
