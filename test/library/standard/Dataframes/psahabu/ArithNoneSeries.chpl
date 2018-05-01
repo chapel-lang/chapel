@@ -10,8 +10,10 @@ var twoDigitInv = new TypedSeries([10, 20, 30, 40, 50], I, V2);
 
 writeln("oneDigit:");
 writeln(oneDigit);
+
 writeln("\ntwoDigit:");
 writeln(twoDigit);
+
 writeln("\ntwoDigitInv:");
 writeln(twoDigitInv);
 

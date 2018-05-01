@@ -10,13 +10,15 @@ var twoDigitInv = new TypedSeries([10, 20, 30, 40, 50], I, V2);
 
 writeln("oneDigit:");
 writeln(oneDigit);
+
 writeln("\ntwoDigit:");
 writeln(twoDigit);
+
 writeln("\ntwoDigitInv:");
 writeln(twoDigitInv);
 
 writeln("\noneDigit < 3");
-writeln(oneDigit < 3);
+writeln(oneDigit[oneDigit < 3]);
 
 writeln("\ntwoDigit > 30");
-writeln(twoDigit > 30);
+writeln(twoDigit[twoDigit > 30]);
