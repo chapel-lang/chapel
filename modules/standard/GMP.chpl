@@ -136,10 +136,12 @@ module GMP {
   // Initialize GMP to use Chapel's allocator
   //
   proc chpl_gmp_init() {
-    extern proc mp_set_memory_functions(alloc:c_fn_ptr, realloc:c_fn_ptr, free:c_fn_ptr);
-    mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
-                            c_ptrTo(chpl_gmp_realloc),
-                            c_ptrTo(chpl_gmp_free));
+    extern proc chpl_gmp_mp_set_memory_functions(alloc:c_fn_ptr,
+                                                 realloc:c_fn_ptr,
+                                                 free:c_fn_ptr);
+    chpl_gmp_mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
+                                     c_ptrTo(chpl_gmp_realloc),
+                                     c_ptrTo(chpl_gmp_free));
   }
 
   // Initialize GMP library on all locales

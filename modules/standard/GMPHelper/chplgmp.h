@@ -28,6 +28,17 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm.h"
 
+// Need this workaround for some compilers until the Chapel
+// compiler moves away from representing all C fn pointers as void*
+static inline
+void chpl_gmp_mp_set_memory_functions(c_fn_ptr alloc,
+                                      c_fn_ptr realloc,
+                                      c_fn_ptr free) {
+  mp_set_memory_functions((void *(*) (size_t)) alloc,
+                          (void *(*) (void *, size_t, size_t)) realloc,
+                          (void (*) (void *, size_t)) free);
+}
+
 static inline
 mp_size_t chpl_gmp_mpz_struct_nalloc(__mpz_struct from) {
   return from._mp_alloc;
