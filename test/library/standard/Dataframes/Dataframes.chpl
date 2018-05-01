@@ -101,34 +101,41 @@ module Dataframes {
 
     // TODO: enforce same index type with another dispatch
     // TODO: sort Index
-    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType), unifier: SeriesUnifier(lhsType)): TypedSeries(lhsType) where lhsType == rhsType {
+    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType),
+             unifier: SeriesUnifier(lhsType)): TypedSeries(lhsType)
+             where lhsType == rhsType {
       var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
       var uni_data: [uni_ords] lhsType;
+      var uni_valid_bits: [uni_ords] bool;
 
       var curr_ord = 0;
-      for (lhs_i, lhs_d) in lhs.items(idxType) {
+      for (lhs_v, (lhs_i, lhs_d)) in lhs._items(idxType) {
         curr_ord += 1;
         uni_rev_idx[curr_ord] = lhs_i;
 
         if rhs.idx.contains(lhs_i) {
           uni_data[curr_ord] = unifier.f(lhs_d, rhs[lhs_i]);
+          uni_valid_bits[curr_ord] = lhs_v && rhs.valid(lhs_i);
         } else {
           uni_data[curr_ord] = unifier.f_lhs(lhs_d);
+          uni_valid_bits[curr_ord] = lhs_v;
         }
       }
 
-      for (rhs_i, rhs_d) in rhs.items(idxType) {
+      for (rhs_v, (rhs_i, rhs_d)) in rhs._items(idxType) {
         if !lhs.idx.contains(rhs_i) {
           curr_ord += 1;
           uni_rev_idx[curr_ord] = rhs_i;
           uni_data[curr_ord] = unifier.f_rhs(rhs_d);
+          uni_valid_bits[curr_ord] = rhs_v;
         }
       }
 
       delete unifier;
       return new TypedSeries(uni_data[1..curr_ord],
-                             new TypedIndex(uni_rev_idx[1..curr_ord]));
+                             new TypedIndex(uni_rev_idx[1..curr_ord]),
+                             uni_valid_bits[1..curr_ord]);
     }
 
     proc map(s: TypedSeries(?T), mapper: SeriesMapper(T, ?R)): TypedSeries(R) {
@@ -137,12 +144,14 @@ module Dataframes {
         mapped[this[i]] = mapper.f(d);
 
       delete mapper;
-      return new TypedSeries(mapped, this);
+      return new TypedSeries(mapped, this, s.valid_bits);
     }
 
-    proc filter(s: TypedSeries(?T), filterSeries: TypedSeries(bool)): TypedSeries(T) {
+    proc filter(s: TypedSeries(?T), filterSeries: TypedSeries(bool)):
+                TypedSeries(T) {
       var filter_rev_idx: [ords] idxType;
       var filter_data: [ords] T;
+      var filter_valid_bits: [ords] bool;
 
       var curr_ord = 0;
       for (i, b) in filterSeries.items(idxType) {
@@ -150,11 +159,13 @@ module Dataframes {
           curr_ord += 1;
           filter_rev_idx[curr_ord] = i;
           filter_data[curr_ord] = s[i];
+          filter_valid_bits[curr_ord] = s.valid(i);
         }
       }
 
       return new TypedSeries(filter_data[1..curr_ord],
-                             new TypedIndex(filter_rev_idx[1..curr_ord]));
+                             new TypedIndex(filter_rev_idx[1..curr_ord]),
+                             filter_valid_bits[1..curr_ord]);
     }
 
 
@@ -263,7 +274,7 @@ module Dataframes {
     var idx: Index;
     var ords: domain(1);
     var data: [ords] eltType;
-    var valid: [ords] bool;
+    var valid_bits: [ords] bool;
 
     /*
      * Initializers
@@ -276,16 +287,16 @@ module Dataframes {
 
       this.ords = 1..data.size;
       this.data = data;
-      this.valid = true;
+      this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, valid: [] bool) {
+    proc init(data: [] ?T, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
       this.ords = 1..data.size;
       this.data = data;
-      this.valid = valid;
+      this.valid_bits = valid_bits;
     }
 
     proc init(data: [] ?T, idx: Index) {
@@ -295,17 +306,17 @@ module Dataframes {
       this.idx = idx;
       this.ords = 1..data.size;
       this.data = data;
-      this.valid = true;
+      this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, idx: Index, valid: [] bool) {
+    proc init(data: [] ?T, idx: Index, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
       this.idx = idx;
       this.ords = 1..data.size;
       this.data = data;
-      this.valid = valid;
+      this.valid_bits = valid_bits;
     }
 
     /*
@@ -314,18 +325,18 @@ module Dataframes {
 
     // only yields valid items
     iter these() {
-      for (v, d) in zip(valid, data) do
+      for (v, d) in zip(valid_bits, data) do
         if v then yield d;
     }
 
     iter items() {
-      for (v, o, d) in zip(valid, ords, data) do
+      for (v, o, d) in zip(valid_bits, ords, data) do
         if v then yield (o, d);
     }
 
     iter items(type idxType) {
       if idx {
-        for (v, i, d) in zip(valid, idx:TypedIndex(idxType), data) do
+        for (v, i, d) in zip(valid_bits, idx:TypedIndex(idxType), data) do
           if v then yield (i, d);
       }
     }
@@ -349,15 +360,20 @@ module Dataframes {
     }
 
     // yields tuples where the first value is the valid bit
+    pragma "no doc" iter _these() {
+      for t in zip(valid_bits, data) do
+        yield t;
+    }
+
     pragma "no doc"
-    iter _these() {
-      for t in zip(valid, data) do
+    iter _items() {
+      for t in zip(valid_bits, this.items_fast()) do
         yield t;
     }
 
     pragma "no doc"
     iter _items(type idxType) {
-      for t in zip(valid, this.items_fast()) do
+      for t in zip(valid_bits, this.items_fast(idxType)) do
         yield t;
     }
 
@@ -381,18 +397,28 @@ module Dataframes {
       if idx then
         return idx.filter(this, castFilter);
 
-      // TODO: needs notion of None to remove items not in range
-      // OR: Series with Index(int)
+      // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
       for (i, b) in castFilter.items() {
         if b && i <= data.size then
           filter_data[i] = this.at(i);
       }
-      return new TypedSeries(filter_data);
+      return new TypedSeries(filter_data, this.valid_bits);
     }
 
     proc at(ord: int) {
       return data[ord];
+    }
+
+    proc valid(lab: ?idxType) {
+      if idx then
+        return valid_bits[(idx:TypedIndex(idxType))[lab]];
+
+      return false;
+    }
+
+    proc valid_at(ord: int) {
+      return valid_bits[ord];
     }
 
     /*
@@ -407,21 +433,25 @@ module Dataframes {
                      then 1..lhs.ords.size
                      else 1..this.ords.size;
       var uni_data: [uni_ords] eltType;
+      var uni_valid_bits: [uni_ords] bool;
 
       for i in uni_ords {
         var inLhs = i <= lhs.ords.size;
         var inThis = i <= this.ords.size;
         if inLhs && inThis {
           uni_data[i] = unifier.f(lhs.at(i), this.at(i));
+          uni_valid_bits[i] = lhs.valid_at(i) && this.valid_at(i);
         } else if inLhs {
           uni_data[i] = unifier.f_lhs(lhs.at(i));
+          uni_valid_bits[i] = lhs.valid_at(i);
         } else if inThis {
           uni_data[i] = unifier.f_rhs(this.at(i));
+          uni_valid_bits[i] = this.valid_at(i);
         }
       }
 
       delete unifier;
-      return new TypedSeries(uni_data);
+      return new TypedSeries(uni_data, uni_valid_bits);
     }
 
     proc map(mapper: SeriesMapper): Series {
@@ -430,7 +460,7 @@ module Dataframes {
 
       var mapped = [d in data] mapper.f(d);
       delete mapper;
-      return new TypedSeries(mapped);
+      return new TypedSeries(mapped, this.valid_bits);
     }
 
     /*

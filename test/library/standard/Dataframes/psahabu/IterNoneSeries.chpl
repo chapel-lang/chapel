@@ -5,15 +5,6 @@ var I = ["A", "B", "C", "D", "E"];
 var V = [true, false, true, false, true];
 
 var letters = new TypedSeries(A, new TypedIndex(I), V);
-writeln(letters);
-
-/*
-for i in letters.idx:TypedIndex(string) do
-  writeln(i);
-
-writeln();
-for i in (letters.idx:TypedIndex(string)).items() do
-  writeln(i);
 
 writeln();
 for t in letters do
@@ -22,4 +13,19 @@ for t in letters do
 writeln();
 for t in letters.items(string) do
   writeln(t);
- */
+
+writeln();
+for t in letters.fast() do
+  writeln(t);
+
+writeln();
+for t in letters.items_fast(string) do
+  writeln(t);
+
+writeln();
+for t in letters._these() do
+  writeln(t);
+
+writeln();
+for t in letters._items(string) do
+  writeln(t);
