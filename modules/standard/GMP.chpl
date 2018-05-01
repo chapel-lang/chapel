@@ -136,10 +136,12 @@ module GMP {
   // Initialize GMP to use Chapel's allocator
   //
   proc chpl_gmp_init() {
-    extern proc mp_set_memory_functions(alloc:c_fn_ptr, realloc:c_fn_ptr, free:c_fn_ptr);
-    mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
-                            c_ptrTo(chpl_gmp_realloc),
-                            c_ptrTo(chpl_gmp_free));
+    extern proc chpl_gmp_mp_set_memory_functions(alloc:c_fn_ptr,
+                                                 realloc:c_fn_ptr,
+                                                 free:c_fn_ptr);
+    chpl_gmp_mp_set_memory_functions(c_ptrTo(chpl_gmp_alloc),
+                                     c_ptrTo(chpl_gmp_realloc),
+                                     c_ptrTo(chpl_gmp_free));
   }
 
   // Initialize GMP library on all locales
@@ -156,7 +158,8 @@ module GMP {
   extern type mp_size_t       = c_long;
 
   /* The GMP ``mp_limb_t``   type. */
-  extern type mp_limb_t       = uint(64);
+  /* This is normally uint(64) but can depend on configuration. */
+  extern type mp_limb_t;
 
   /* The GMP `mp_bits_per_limb`` constant */
   extern const mp_bits_per_limb: c_int;
@@ -804,8 +807,11 @@ module GMP {
   // 5.16 Special Functions
   //
 
-  extern proc mpz_getlimbn(const ref op: mpz_t,
-                           n: mp_size_t) : mp_limb_t;
+  // This is private because you'd have to use a cast
+  // primitive to actually use the result.
+  // chpl_gmp_mpz_getlimbn might do better.
+  private extern proc mpz_getlimbn(const ref op: mpz_t,
+                                   n: mp_size_t) : mp_limb_t;
 
   extern proc mpz_size(const ref x: mpz_t): size_t;
 
@@ -1136,12 +1142,32 @@ module GMP {
     // get a pointer to the limbs
     var dst_limbs_ptr = chpl_gmp_mpz_struct_limbs(ret[1]);
 
-    __primitive("chpl_comm_array_get", dst_limbs_ptr[0],
-                                       src_locale, src_limbs_ptr[0],
-                                       new_size);
+    __primitive("chpl_comm_get", dst_limbs_ptr[0],
+                                 src_locale, src_limbs_ptr[0],
+                                 (new_size:size_t)*c_sizeof(mp_limb_t));
 
     // Update the sign and size of the number
     chpl_gmp_mpz_set_sign_size(ret, src_sign_size);
+  }
+
+  /* Return the number of limbs used in the number */
+  proc chpl_gmp_mpz_nlimbs(const ref from: mpz_t) : uint(64) {
+    var x = chpl_gmp_mpz_struct_sign_size(from[1]);
+    return (abs(x)):uint(64);
+  }
+
+  /* Return the i'th limb used in the number (counting from 0) */
+  proc chpl_gmp_mpz_getlimbn(const ref from: mpz_t, n:integral) : uint(64) {
+    var i = n.safeCast(mp_size_t);
+    // OK to cast result to maximal uint for two reasons:
+    //  1. GMP always uses unsigned limbs
+    //  2. This function is really "getting the bits" so it would be
+    //     OK to lose the sign
+    // This uses __primitive cast because mp_limb_t is opaque to the Chapel
+    // compiler (because it might vary depending on GMP configuration/platform)
+    var limb = mpz_getlimbn(from, i);
+    var ret = __primitive("cast", uint(64), limb);
+    return ret;
   }
 
   /* Return the number of limbs allocated in an __mpz_struct */
