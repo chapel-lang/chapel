@@ -1,4 +1,4 @@
-use Dataframes;
+use DataFrames;
 
 var I = new TypedIndex(["A", "B", "C", "D", "E"]);
 var initial = new TypedSeries([1, 2, 3, 4, 5], I);

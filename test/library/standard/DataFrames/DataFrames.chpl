@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-module Dataframes {
+module DataFrames {
   use Sort;
 
   class Index {
