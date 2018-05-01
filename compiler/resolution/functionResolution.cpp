@@ -1994,11 +1994,18 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
+  if (at->symbol->instantiationPoint == NULL) {
+    at->symbol->instantiationPoint = fn->instantiationPoint;
+  }
   if (at->scalarPromotionType == NULL) {
     resolvePromotionType(at);
   }
-  if (at->symbol->instantiationPoint == NULL) {
-    at->symbol->instantiationPoint = fn->instantiationPoint;
+  if (at->defaultInitializer == NULL) {
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        fn->hasFlag(FLAG_LAST_RESORT) &&
+        fn->hasFlag(FLAG_DEFAULT_COPY_INIT) == false) {
+      at->defaultInitializer = fn;
+    }
   }
   if (developer == false) {
     fixTypeNames(at);
@@ -2015,6 +2022,7 @@ void resolvePromotionType(AggregateType* at) {
   FnSymbol* promoFn = resolveUninsertedCall(at, promoCall, false);
 
   if (promoFn != NULL) {
+    promoFn->instantiationPoint = at->symbol->instantiationPoint;
     resolveFunction(promoFn);
 
     INT_ASSERT(promoFn->retType != dtUnknown);
@@ -5195,7 +5203,8 @@ static void resolveInitVar(CallExpr* call) {
   } else if (isRecordWithInitializers(srcType) == true &&
              isParamString == false &&
              isSyncType(srcType) == false &&
-             isSingleType(srcType) == false)  {
+             isSingleType(srcType) == false &&
+             isRecordWrappedType(srcType) == false)  {
     AggregateType* ct  = toAggregateType(srcType);
     SymExpr*       rhs = toSymExpr(call->get(2));
 
@@ -5635,7 +5644,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call) {
     if (SymExpr* se = toSymExpr(rhs->get(1))) {
       Type* seType = se->symbol()->getValType();
 
-      if (isNonGenericRecordWithInitializers(seType) == true) {
+      if (isNonGenericRecordWithInitializers(seType) == true &&
+          isRecordWrappedType(seType) == false) {
         Expr*     callLhs  = call->get(1)->remove();
         CallExpr* callInit = new CallExpr("init", gMethodToken, callLhs);
 
@@ -6463,7 +6473,7 @@ static void resolveNewGenericInit(CallExpr*      newExpr,
   initFn = resolveInitializer(newExpr);
 
   if (at->instantiatedFrom == NULL) {
-    initTmp->type = initFn->_this->type;
+    initTmp->type = initFn->_this->getValType();
 
   } else {
     if (initFn->_this->type == at) {
