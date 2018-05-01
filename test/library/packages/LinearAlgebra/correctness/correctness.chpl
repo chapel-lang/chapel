@@ -375,6 +375,13 @@ use TestUtils;
 
   assertEqual(A2, B2, "matPow(A, 2)");
   assertEqual(A3, B3, "matPow(A, 3)");
+
+  var A0 = matPow(A, 0);
+  var A1 = matPow(A, 1);
+  var I3 = eye(3, eltType=real);
+
+  assertEqual(A0, I3, "matPow(A, 0)");
+  assertEqual(A1, A,  "matPow(A, 1)");
 }
 
 

@@ -611,10 +611,18 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+// D is a domain to copy
+pragma "no doc"
+proc _makeMatrix(D, type eltType) {
+  var A:[D] eltType;
+  return A;
+}
 
 /* Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
    integral type. */
 proc matPow(A: [], b) where isNumeric(b) {
+  use BitOps;
+
   // TODO -- flatten recursion into while-loop
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
@@ -622,19 +630,76 @@ proc matPow(A: [], b) where isNumeric(b) {
   if !isSquare(A) then
     halt("Array not square");
 
-  return _expBySquaring(A, b);
-}
+  // Handle simple base cases
+  if b < 0 {
+    halt("Negative powers not yet supported");
+  } else if b == 0 {
+    return eye(A.domain, A.eltType);
+  } else if b == 1 {
+    return A;
+  }
 
+  // topbit is the bit position of the top bit set
+  // 2**topbit is the largest power of 2 in b
+  var topbit = numBits(b.type) - clz(b) - 1;
 
-pragma "no doc"
-/* Exponentiate by squaring recursively */
-private proc _expBySquaring(x: ?t, n): t {
-    // TODO -- _expBySquaring(pinv(x), -n);
-    if n < 0  then halt("Negative powers not yet supported");
-    else if n == 0  then return eye(x.domain, x.eltType);
-    else if n == 1  then return x;
-    else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
-    else return dot(x, _expBySquaring(dot(x, x), (n - 1) / 2));
+  var toPowerTwoD:[1..topbit] A.domain.type;
+
+  // This makes a skyline array of arrays
+  // each array has its own unique domain
+  var toPowerTwoA = for i in 1..topbit do
+                        _makeMatrix(toPowerTwoD[i], A.eltType);
+
+  // Set the base case of the array (A**(2**1) == A**2 == A*A)
+  {
+    // do the multiply
+    var tmp = dot(A,A);
+    // copy domain and array
+    toPowerTwoD[1] = tmp.domain;
+    toPowerTwoA[1] = tmp;
+  }
+
+  // Compute each of the A**(2**i)
+  for i in 2..topbit {
+    // do the multiply
+    var tmp = dot(toPowerTwoA[i-1], toPowerTwoA[i-1]);
+    // copy domain and array
+    toPowerTwoD[i] = tmp.domain;
+    toPowerTwoA[i] = tmp;
+  }
+
+  var resultD: A.domain.type;
+  var resultA: [resultD] A.eltType;
+
+  // Set up resultA based upon the last bit
+  if (b & 1) == 0 {
+    // b is even, so start with identity
+    var tmp = eye(A.domain, A.eltType);
+    // copy domain and array
+    resultD = tmp.domain;
+    resultA = tmp;
+  } else {
+    // b is odd, so start with A
+    // copy domain and array
+    resultD = A.domain;
+    resultA = A;
+  }
+
+  // Now compute the result based on the squares
+  // This does not consider the last bit (handled above)
+  for i in 1..topbit {
+    // toPowerTwoA[i] stores A**(2**i)
+    // does b include 2**i ?
+    if (b >> i) & 1 == 1 {
+      // do the multiply
+      var tmp = dot(resultA, toPowerTwoA[i]);
+      // copy domain and array
+      resultD = tmp.domain;
+      resultA = tmp;
+    }
+  }
+
+  return resultA;
 }
 
 
