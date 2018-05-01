@@ -5151,9 +5151,12 @@ static void resolveInitVar(CallExpr* call) {
       targetType = useType;
     }
 
-    // Ignore the target type if it's the same & not a runtime type.
+    // Ignore the target type if it's the same & not a runtime type
+    // and not sync/single (since sync/single initCopy returns a different type)
     if (targetType == srcType &&
-        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
+        !isSyncType(srcType) &&
+        !isSingleType(srcType)) {
       targetType = srcType;
       targetTypeExpr = NULL;
     }
