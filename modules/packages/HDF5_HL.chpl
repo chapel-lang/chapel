@@ -24,6 +24,7 @@ module HDF5_HL {
   require "-lhdf5", "-lhdf5_hl";
 
   use HDF5_HL_Macros;
+  use HDF5_WAR;
 
   extern proc H5open() : herr_t;
 
@@ -3294,6 +3295,57 @@ module HDF5_HL {
     proc H5T_NATIVE_HBOOL {
       H5open();
       return H5T_NATIVE_HBOOL_g;
+    }
+  }
+
+  /* This module defines some wrappers for HDF5 functions that issue #9324
+     makes difficult/impossible to use otherwise. The workaround wrappers are
+     named the same thing as the original HDF5 name, but with a `_WAR` suffix.
+     Since this uses an `extern` block, LLVM is required. */
+  module HDF5_WAR {
+    extern {
+      #include "hdf5_hl.h"
+
+      /* Forward declarations for workaround wrappers */
+      herr_t H5LTget_dataset_info_WAR(hid_t loc_id,
+                                      const char* dset_name,
+                                      const unsigned long *dims,
+                                      H5T_class_t* type_class,
+                                      size_t* type_size);
+
+      herr_t H5LTmake_dataset_WAR(hid_t loc_id,
+                                  const char* dset_name,
+                                  int rank,
+                                  const unsigned long* dims,
+                                  hid_t type_id,
+                                  void* buffer);
+
+      /* Wrappers for workarounds */
+      herr_t H5LTget_dataset_info_WAR(hid_t loc_id,
+                                      const char* dset_name,
+                                      const unsigned long *dims,
+                                      H5T_class_t* type_class,
+                                      size_t* type_size) {
+        return H5LTget_dataset_info(loc_id,
+                                    dset_name,
+                                    (unsigned long long*)dims,
+                                    type_class,
+                                    type_size);
+      }
+
+      herr_t H5LTmake_dataset_WAR(hid_t loc_id,
+                                  const char* dset_name,
+                                  int rank,
+                                  const unsigned long* dims,
+                                  hid_t type_id,
+                                  void* buffer) {
+        return H5LTmake_dataset(loc_id,
+                                dset_name,
+                                rank,
+                                (unsigned long long*)dims,
+                                type_id,
+                                buffer);
+      }
     }
   }
 }
