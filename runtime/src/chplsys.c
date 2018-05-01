@@ -539,7 +539,7 @@ static void getCpuInfo_once(void) {
 
   const char* fname = chpl_env_rt_get("PROC_CPUINFO_FNAME", "/proc/cpuinfo");
   if ((f = fopen(fname, "r")) == NULL)
-    chpl_internal_error("Cannot open /proc/cpuinfo");
+    chpl_internal_error_v("Cannot open %s", fname);
 
   //
   // If f is NULL, we should have exited by now, but Coverity doesn't
