@@ -29,6 +29,7 @@
 // Other Chapel Header
 #include "chpl-align.h"
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
@@ -536,7 +537,8 @@ static void getCpuInfo_once(void) {
   int physId;
   int coreId;
 
-  if ((f = fopen("/proc/cpuinfo", "r")) == NULL)
+  const char* fname = chpl_env_rt_get("PROC_CPUINFO_FNAME", "/proc/cpuinfo");
+  if ((f = fopen(fname, "r")) == NULL)
     chpl_internal_error("Cannot open /proc/cpuinfo");
 
   //
