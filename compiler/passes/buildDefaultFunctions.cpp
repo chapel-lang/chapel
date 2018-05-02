@@ -1387,7 +1387,7 @@ static void buildInitializerCall(AggregateType* ct,
     } else if (field->defPoint->exprType == NULL &&
                field->defPoint->init     == NULL) {
 
-      buildRecordQueryVarField(fn, arg, call, field, false);
+      buildRecordQueryVarField(fn, arg, call, field, true);
 
     }
   }
