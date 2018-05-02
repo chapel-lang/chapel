@@ -1,4 +1,4 @@
-use Dataframes;
+use DataFrames;
 
 var noIndex = new TypedSeries([1, 2, 3, 4, 5]);
 writeln("noIndex:");

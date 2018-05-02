@@ -1,4 +1,4 @@
-use Dataframes;
+use DataFrames;
 
 var I = new TypedIndex(["A", "B", "C", "D", "E"]);
 

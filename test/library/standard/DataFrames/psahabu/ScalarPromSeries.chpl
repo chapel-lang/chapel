@@ -1,4 +1,4 @@
-use Dataframes;
+use DataFrames;
 
 var oneDigit = new TypedSeries([1, 2, 3, 4, 5],
                                new TypedIndex(["A", "B", "C", "D", "E"]));
