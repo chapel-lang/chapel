@@ -1120,7 +1120,7 @@ module ChapelBase {
     return (x.re, x.im):t;
 
   inline proc _cast(type t, x: enumerated) where isComplexType(t)
-    return (x:int, 0):t;
+    return (x:real, 0):t;
 
   //
   // casts to imag
@@ -1144,7 +1144,7 @@ module ChapelBase {
     return let xim = x.im in __primitive("cast", t, xim);
 
   inline proc _cast(type t, x: enumerated) where isImagType(t)
-    return x:int:imag;
+    return x:real:imag;
 
   //
   // casts from complex

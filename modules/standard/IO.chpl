@@ -3062,7 +3062,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
-      select byteorder:int:iokind {
+      select byteorder:iokind {
         when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
         when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);

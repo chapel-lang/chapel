@@ -125,7 +125,7 @@ module MatrixMarket {
       proc fake_headers(nrows, ncols, nnz) {
         // Update the headers written in write_headers
         // since fout might still have buffered data, flush it
-        // before we try to update it.
+        // before we try to update it with a separate channel.
         fout.flush();
 
          var tfout = fd.writer(start=HEADER_LINE.length);
