@@ -1,3 +1,0 @@
-enumCantOverloadOps.chpl:3: error: Can't override '=' for enums
-enumCantOverloadOps.chpl:7: error: Can't override '==' for enums
-enumCantOverloadOps.chpl:11: error: Can't override '!=' for enums
