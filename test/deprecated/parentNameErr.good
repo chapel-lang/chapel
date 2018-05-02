@@ -1,3 +1,0 @@
-parentNameErr.chpl:4: In function 'main':
-parentNameErr.chpl:8: warning: This version of file.getParentName() is deprecated; please switch to a throwing version
-/Users/psahabu/chapel/chapel/test/deprecated

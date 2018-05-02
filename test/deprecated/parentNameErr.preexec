@@ -8,7 +8,7 @@ f = open('parentNameErr.good', 'w')
 os.chmod("parentNameErr.good", 0777);
 
 f.write("parentNameErr.chpl:4: In function 'main':\n")
-f.write("parentNameErr.chpl:8: warning: 'out error: syserr' pattern has been deprecated, use 'throws' function instead\n")
+f.write("parentNameErr.chpl:8: warning: This version of file.getParentName() is deprecated; please switch to a throwing version\n")
 f.write(parent_path + '\n')
 
 f.close()
