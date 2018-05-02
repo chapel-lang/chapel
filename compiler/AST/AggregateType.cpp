@@ -172,8 +172,49 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+// 1 concrete, -1 generic, 0 unknown
+static int isTypeExprConcreteGeneric(Expr* typeExpr) {
+  // Look in the field declaration for a concrete type
+  Symbol* sym = NULL;
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
+    sym = lookup(urse->unresolved, urse);
+  } else if (SymExpr* se = toSymExpr(typeExpr)) {
+    sym = se->symbol();
+  }
+
+  if (sym) {
+  
+    Type* t = sym->type;
+    if (t == dtUnknown) {
+      // e.g. record R { type t; var x:t; }
+      // the field `x` is not considered generic (but `t` is)
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE))
+        return 1;
+    } else if (AggregateType* at = toAggregateType(t)) {
+      if (at->isGeneric())
+        return -1;
+      else
+        return 1;
+    } else if (t->symbol->hasFlag(FLAG_GENERIC)) {
+      return -1;
+    } else {
+      // e.g. int would fall into this case
+      return 1;
+    }
+  } else {
+    // If it's a call, it can only return a concrete type
+    return 1;
+  }
+
+  return 0;
+}
+
 bool AggregateType::fieldIsGeneric(Symbol* field) const {
   bool retval = false;
+
+  if (field->id == 190118)
+    gdbShouldBreakHere();
 
   if (VarSymbol* var = toVarSymbol(field)) {
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -182,10 +223,20 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       retval = true;
 
-    } else if (var->type == dtUnknown) {
+    } else if (var->type == dtUnknown
+               /* Adding this causes infinite loop  */
+               || (!var->hasFlag(FLAG_SUPER_CLASS) &&
+                   var->type->symbol->hasFlag(FLAG_GENERIC))) {
       DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
+	// if we end up in this case.. the compiler infinite loops 
+	INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
+
+        retval = true;
+      } else if (def->init == NULL &&
+                 def->exprType != NULL &&
+                 isTypeExprConcreteGeneric(def->exprType) == -1) {
         retval = true;
       }
     }
@@ -1322,46 +1373,10 @@ static bool isConcreteTypeExpr(Expr* typeExpr) {
   }
 }*/
 
-// 1 concrete, -1 generic, 0 unknown
-static int isTypeExprConcreteGeneric(Expr* typeExpr) {
-  // Look in the field declaration for a concrete type
-  Symbol* sym = NULL;
 
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
-    sym = lookup(urse->unresolved, urse);
-  } else if (SymExpr* se = toSymExpr(typeExpr)) {
-    sym = se->symbol();
-  }
-
-  if (sym) {
-  
-    Type* t = sym->type;
-    if (t == dtUnknown) {
-      // e.g. record R { type t; var x:t; }
-      // the field `x` is not considered generic (but `t` is)
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE))
-        return 1;
-    } else if (AggregateType* at = toAggregateType(t)) {
-      if (at->isGeneric())
-        return -1;
-      else
-        return 1;
-    } else if (t->symbol->hasFlag(FLAG_GENERIC)) {
-      return -1;
-    } else {
-      // e.g. int would fall into this case
-      return 1;
-    }
-  } else {
-    // If it's a call, it can only return a concrete type
-    return 1;
-  }
-
-  return 0;
-}
 
 // 1 concrete, -1 generic, 0 unknown
-int AggregateType::isFieldConcreteGeneric(Symbol* arg) {
+int AggregateType::isFieldConcreteGeneric(Symbol* arg) const {
   VarSymbol* field = toVarSymbol(arg);
 
   INT_ASSERT(field);

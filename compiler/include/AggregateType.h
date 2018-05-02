@@ -149,8 +149,8 @@ public:
   // returns 1 for concrete
   // returns -1 for generic
   // returns 0 for unknown at this point
-  //   intended to be called during scope resolve
-  int                         isFieldConcreteGeneric(Symbol* field);
+  //   intended to be called during scope resolve and during resolution
+  int                         isFieldConcreteGeneric(Symbol* field) const;
 
   //
   // Public fields

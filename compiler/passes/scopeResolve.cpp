@@ -162,7 +162,7 @@ void scopeResolve() {
     }
   }
  
-  nprint_view(((Symbol*)aid(88514))->defPoint->init);
+  //nprint_view(((Symbol*)aid(88514))->defPoint->init);
 
   //
   // build constructors (type and value versions)

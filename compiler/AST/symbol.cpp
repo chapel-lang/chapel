@@ -233,6 +233,8 @@ bool Symbol::hasFlag(Flag flag) const {
 
 void Symbol::addFlag(Flag flag) {
   CHECK_FLAG(flag);
+  if(id == 874846 && flag == FLAG_GENERIC)
+    gdbShouldBreakHere();
   flags.set(flag);
 }
 
