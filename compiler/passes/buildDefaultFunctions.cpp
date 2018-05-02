@@ -1387,7 +1387,12 @@ static void buildInitializerCall(AggregateType* ct,
     } else if (field->defPoint->exprType == NULL &&
                field->defPoint->init     == NULL) {
 
-      buildRecordQueryVarField(fn, arg, call, field, true);
+      // Can only use a NamedExpr if using a default initializer. Otherwise the
+      // user can use an arbitrary identifier.
+      //
+      // BHARSH INIT TODO: Try to write a test that fails because we cannot
+      // correctly generate a _defaultOf for something with an explicit init.
+      buildRecordQueryVarField(fn, arg, call, field, ct->wantsDefaultInitializer());
 
     }
   }
