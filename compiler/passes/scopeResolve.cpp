@@ -36,6 +36,8 @@
 #include "TryStmt.h"
 #include "visibleFunctions.h"
 
+#include "view.h" // TODO
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -70,8 +72,6 @@ typedef std::pair< std::pair<const char*,int>, const char* >  WFDIWmark;
 static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedForDotInsideWith;
 
 static void          addToSymbolTable();
-
-static void          addToSymbolTable(DefExpr* def);
 
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
@@ -161,13 +161,17 @@ void scopeResolve() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+ 
+  nprint_view(((Symbol*)aid(88514))->defPoint->init);
 
   //
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    ct->createOuterWhenRelevant();
-    ct->buildConstructors();
+    /*if (ct->needsConstructor()) */{
+      ct->createOuterWhenRelevant();
+      ct->buildConstructors();
+    }
   }
 
   resolveGotoLabels();
@@ -177,6 +181,47 @@ void scopeResolve() {
   resolveEnumeratedTypes();
 
   setupShadowVars();
+
+  //nprint_view(((Symbol*)aid(88514))->defPoint->init);
+
+  //
+  // build constructors (type and value versions)
+  //
+/*  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    // This ordering is challenging for regular constructor
+    // ones because of removal of init blocks? Not Sure?
+    if (!ct->needsConstructor()) {
+      ct->createOuterWhenRelevant();
+      ct->buildConstructors();
+    }
+  }*/
+
+  //nprint_view(((Symbol*)aid(88514))->defPoint->init);
+
+  {
+    bool changed;
+    do {
+      changed = false;
+      forv_Vec(AggregateType, at, gAggregateTypes) {
+        // Ignore aggregate types with old-style constructors
+        // since the old constructor code removes the
+        // init expr and the type expr.
+        if (!at->needsConstructor() &&
+            // And don't try to mark generic again
+            !at->isGeneric()) {
+          for_fields(field, at) {
+            if (field->id == 38656)
+              gdbShouldBreakHere();
+            int g = at->isFieldConcreteGeneric(field);
+            if (g < 0) {
+              at->markAsGeneric();
+              changed = true;
+            }
+          }
+        }
+      }
+    } while (changed);
+  }
 
   ResolveScope::destroyAstMap();
 
@@ -244,7 +289,7 @@ void addToSymbolTable(FnSymbol* fn) {
   }
 }
 
-static void addToSymbolTable(DefExpr* def) {
+void addToSymbolTable(DefExpr* def) {
   Symbol* newSym = def->sym;
 
   if (newSym->hasFlag(FLAG_TEMP) == false &&

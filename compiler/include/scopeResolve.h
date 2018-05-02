@@ -21,12 +21,14 @@
 #define _SCOPE_RESOLVE_H_
 
 class BaseAST;
+class DefExpr;
 class FnSymbol;
 class Symbol;
 
 #include <vector>
 
 void     addToSymbolTable(FnSymbol* fn);
+void     addToSymbolTable(DefExpr* def);
 
 Symbol*  lookup(const char*           name,
                 BaseAST*              context);

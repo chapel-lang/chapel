@@ -270,6 +270,10 @@ static void preNormalizeInit(FnSymbol* fn) {
 }
 
 static void preNormalizeInitRecord(FnSymbol* fn) {
+
+  if (fn->id == 628288)
+    gdbShouldBreakHere();
+
   InitNormalize  state(fn);
 
   AggregateType* at    = toAggregateType(fn->_this->type);

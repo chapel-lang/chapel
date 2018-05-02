@@ -9835,7 +9835,17 @@ static bool primInitIsIteratorRecord(Type* type) {
 static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   bool retval = type->symbol->hasFlag(FLAG_GENERIC);
 
+  // Not generic? OK.
+  if (!type->symbol->hasFlag(FLAG_GENERIC))
+    return false;
+
+  gdbShouldBreakHere();
+  // Is it 
+  /*if (canInstantiate()) {
+  }*/
+
   // If it is generic then try to resolve the default type constructor
+  // for better error reporting.
   if (retval == true) {
     if (AggregateType* at = toAggregateType(type)) {
       if (FnSymbol* typeCons = at->typeConstructor) {

@@ -125,6 +125,7 @@ public:
 
   void                        createOuterWhenRelevant();
 
+  // intended to be called during scope resolve
   void                        buildConstructors();
 
   void                        addRootType();
@@ -144,6 +145,12 @@ public:
   UnmanagedClassType*         getUnmanagedClass();
 
   void                        generateUnmanagedClassTypes();
+
+  // returns 1 for concrete
+  // returns -1 for generic
+  // returns 0 for unknown at this point
+  //   intended to be called during scope resolve
+  int                         isFieldConcreteGeneric(Symbol* field);
 
   //
   // Public fields
@@ -238,7 +245,9 @@ private:
 
   void                        buildConstructor();
 
+public:
   bool                        needsConstructor();
+private:
 
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);
 

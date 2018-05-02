@@ -281,10 +281,10 @@ int ResolutionCandidate::computeSubstitutions() {
 
     if (formal->intent                              == INTENT_PARAM ||
         formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
-      if (verifyGenericFormal(formal) == false) {
+      /*if (verifyGenericFormal(formal) == false) {
         USR_FATAL(formal, "invalid generic type specification on class field");
 
-      } else if (Symbol* actual = formalIdxToActual[i - 1]) {
+      } else*/ if (Symbol* actual = formalIdxToActual[i - 1]) {
         computeSubstitution(formal, actual);
 
       } else if (formal->defaultExpr != NULL) {
