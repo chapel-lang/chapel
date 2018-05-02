@@ -43,7 +43,6 @@ static void buildDefaultOfFunction(AggregateType* ct);
 
 static void build_union_assignment_function(AggregateType* ct);
 
-static void build_enum_assignment_function(EnumType* et);
 static void build_enum_cast_function(EnumType* et);
 static void build_enum_first_function(EnumType* et);
 static void build_enum_enumerate_function(EnumType* et);
@@ -125,8 +124,7 @@ void buildDefaultFunctions() {
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
-        buildNearScopeEnumFunctions(et);
-        buildFarScopeEnumFunctions(et);
+        buildEnumFunctions(et);
 
       } else {
         // The type is a simple type.
@@ -719,21 +717,15 @@ static void build_record_inequality_function(AggregateType* ct) {
   normalize(fn);
 }
 
-// Builds default enum functions that are defined in the scope in which the
-// enum type is defined
-void buildNearScopeEnumFunctions(EnumType* et) {
-  build_enum_assignment_function(et);
-  build_enum_enumerate_function(et);
-}
-
 // Builds default enum functions that are defined outside of the scope in which
 // the enum type is defined
 // It is necessary to have this separated out, because such functions are not
 // automatically created when the EnumType is copied.
-void buildFarScopeEnumFunctions(EnumType* et) {
+void buildEnumFunctions(EnumType* et) {
   buildStringCastFunction(et);
 
   build_enum_cast_function(et);
+  build_enum_enumerate_function(et);
   build_enum_first_function(et);
   build_enum_size_function(et);
 }
@@ -829,7 +821,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   fn->insertFormalAtTail(arg);
   fn->where = new BlockStmt(new CallExpr("==", arg, et->symbol));
 
-  et->symbol->defPoint->insertAfter(new DefExpr(fn));
+  baseModule->block->insertAtTail(new DefExpr(fn));
 
   // Generate the tuple of enum values for the given enum type
   CallExpr* call = new CallExpr("_build_tuple");
@@ -947,27 +939,6 @@ static void build_enum_cast_function(EnumType* et) {
   reset_ast_loc(def, et->symbol);
   normalize(fn);
   fn->tagIfGeneric();
-}
-
-
-static void build_enum_assignment_function(EnumType* et) {
-  if (function_exists("=", et, et))
-    return;
-
-  FnSymbol* fn = new FnSymbol("=");
-  fn->addFlag(FLAG_ASSIGNOP);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  fn->addFlag(FLAG_INLINE);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", et);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", et);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-  fn->insertAtTail(new CallExpr(PRIM_ASSIGN, arg1, arg2));
-  DefExpr* def = new DefExpr(fn);
-  et->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, et->symbol);
-  normalize(fn);
 }
 
 
