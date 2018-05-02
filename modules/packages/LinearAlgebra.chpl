@@ -622,21 +622,26 @@ proc matPow(A: [], b) where isNumeric(b) {
   if !isSquare(A) then
     halt("Array not square");
 
-  return _expBySquaring(A, b);
+  return _expBySquaring(A, b).value;
 }
 
+// This is a workaround for undesired use
+// of runtime-type of the input array x below
+// in the return type. See also issue #9438.
+record _wrap {
+  var value;
+}
 
 pragma "no doc"
 /* Exponentiate by squaring recursively */
-private proc _expBySquaring(x: ?t, n): t {
-    // TODO -- _expBySquaring(pinv(x), -n);
-    if n < 0  then halt("Negative powers not yet supported");
-    else if n == 0  then return eye(x.domain, x.eltType);
-    else if n == 1  then return x;
-    else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
-    else return dot(x, _expBySquaring(dot(x, x), (n - 1) / 2));
+private proc _expBySquaring(x: ?t, n): _wrap(t) {
+  // TODO -- _expBySquaring(pinv(x), -n);
+  if n < 0  then halt("Negative powers not yet supported");
+  else if n == 0  then return new _wrap(eye(x.domain, x.eltType));
+  else if n == 1  then return new _wrap(x);
+  else if n%2 == 0  then return _expBySquaring(dot(x, x), n / 2);
+  else return new _wrap(dot(x, _expBySquaring(dot(x, x), (n - 1) / 2).value));
 }
-
 
 /* Return cross-product of 3-element vectors ``A`` and ``B`` with domain of
   ``A`` */
