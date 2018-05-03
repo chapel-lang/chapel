@@ -4,11 +4,11 @@ class C {
 
 proc bar() {
   var x: int = 2;
-  proc foo(c: C) {
+  proc foo(c: unmanaged C) {
     writeln((c, x));
     delete c;
   }
-  foo(new C(x));
+  foo(new unmanaged C(x));
 }
 
 bar();

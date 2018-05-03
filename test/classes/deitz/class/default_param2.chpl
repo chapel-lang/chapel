@@ -6,8 +6,6 @@ class C {
 
 var c: C(int);
 
-c = new C(int);
+c = new borrowed C(int);
 
 writeln("{p = ", c.p, ", x = ", c.x, "}");
-
-delete c;

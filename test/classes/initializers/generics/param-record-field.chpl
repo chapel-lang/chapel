@@ -5,7 +5,5 @@ class C {
   proc init() { }
 }
 
-var c = new C();
+var c = new borrowed C();
 writeln(c);
-delete c;
-
