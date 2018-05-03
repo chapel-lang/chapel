@@ -15,7 +15,7 @@ proc main {
   H5LTread_dataset_int(file_id, c"/dset", data[0]);
 
   /* get the dimensions of the dataset */
-  H5LTget_dataset_info(file_id, c"/dset", dims[0], nil, nil);
+  H5LTget_dataset_info_WAR(file_id, c"/dset", c_ptrTo(dims), nil, nil);
 
   /* print it by rows */
   n_values = (dims[0]*dims[1]): size_t;
