@@ -510,7 +510,18 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
-    if (isTypeVar == true) {
+    if (mFn->isDefaultInit()) {
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      Symbol*    _this    = mFn->_this;
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      insertBefore->insertBefore(fieldSet);
+      updateFieldsMember(initExpr);
+    } else if (isTypeVar == true) {
       VarSymbol* tmp = NULL;
 
       if (type == dtAny) {
