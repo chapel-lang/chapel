@@ -7,4 +7,4 @@
 2 0
 3 1
 4 2
-$CHPL_HOME/modules/internal/ChapelArray.chpl:907: error: attempt to dereference nil
+$CHPL_HOME/modules/internal/ChapelArray.chpl:909: error: attempt to dereference nil
