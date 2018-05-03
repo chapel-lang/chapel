@@ -7,8 +7,6 @@ class C {
   }
 }
 
-var c = new C(3);
+var c = new borrowed C(3);
 
 writeln(c(1,2,3));
-
-delete c;

@@ -17,7 +17,7 @@ class E : C {
   }
 }
 
-var arr: [1..3] C = (new D(1), new D(2), new E(3));
+var arr: [1..3] unmanaged C = (new unmanaged D(1), new unmanaged D(2), new unmanaged E(3));
 
 writeln("arr is: ", arr);
 

@@ -14,23 +14,20 @@ var c: C;
 var d: D;
 var e: E;
 
-c = new C();
+c = new borrowed C();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
-delete c;
 
-c = new D();
+c = new borrowed D();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
-delete c;
 
-c = new E();
+c = new borrowed E();
 d = c:D;
 if d then writeln(d); else writeln("nil value");
 e = c:E;
 if e then writeln(e); else writeln("nil value");
-delete c;

@@ -173,7 +173,7 @@ proc main(){
   var space: [0..1, totalSpaceRange.dim(1), totalSpaceRange.dim(2) ] Cell;
   var timer: Timer;
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new borrowed RandomStream( real, globalSeed, parSafe = false );
 
   forall (x,y) in computationDomain do{
      space[0, x, y] = 0;
@@ -210,8 +210,6 @@ proc main(){
     if verifyResult(space, computationDomain, verbose=false, T ) then writeln( "SUCCESS" );
     else writeln( "FAILURE" );
   }
-
-  delete generator;
 }
 
 

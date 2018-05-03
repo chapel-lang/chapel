@@ -46,11 +46,11 @@ proc foo(C) {
 
 // declare class instances
 
-var myArithC = new ArithC(real);
-var myAssocC = new AssocC(real);
-var myOpaqueC = new OpaqueC(real);
-var mySparseC = new SparseC(real);
-var myEnumC = new EnumC(real);
+var myArithC = new unmanaged ArithC(real);
+var myAssocC = new unmanaged AssocC(real);
+var myOpaqueC = new unmanaged OpaqueC(real);
+var mySparseC = new unmanaged SparseC(real);
+var myEnumC = new unmanaged EnumC(real);
 
 proc deinit() {
   delete myEnumC;

@@ -22,8 +22,8 @@ class B: A {
   }
 }
 
-var a = new A();
-var b = new B();
+var a = new unmanaged A();
+var b = new unmanaged B();
 
 a.foo(3);
 b.foo(2);

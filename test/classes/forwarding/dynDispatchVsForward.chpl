@@ -15,17 +15,17 @@ class D: C {
 }
 
 class E: C {
-  forwarding var myD: D;
+  forwarding var myD: unmanaged D;
   proc deinit() {
     delete myD;
   }
 }
 
 proc E.init() {
-  myD = new D();
+  myD = new unmanaged D();
 }
 
-var myE = new E();
+var myE = new unmanaged E();
 myE.bar();
 myE.foo();
 delete myE;
