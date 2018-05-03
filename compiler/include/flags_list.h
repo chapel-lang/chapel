@@ -92,6 +92,9 @@ symbolFlag( FLAG_CONSTRUCTOR , npr, "constructor" , "constructor (but not type c
 symbolFlag( FLAG_COPY_MUTATES , ypr, "copy mutates" , "the initCopy function / copy initializer takes its argument by ref")
 symbolFlag( FLAG_DATA_CLASS , ypr, "data class" , ncm )
 
+// Flag for temporaries created for default values
+symbolFlag( FLAG_DEFAULT_ACTUAL, npr, "default actual temp", ncm)
+
 // Enable override for default-intent for types defined in terms of record/class
 symbolFlag( FLAG_DEFAULT_INTENT_IS_REF, ypr, "default intent is ref", "The default intent for this type is ref")
 // Default intent should be determined by function body
