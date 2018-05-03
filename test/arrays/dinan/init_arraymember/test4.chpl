@@ -8,7 +8,7 @@ class C {
   var x: [d] real = f(d);
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 writeln(c.x);
 

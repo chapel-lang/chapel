@@ -1,7 +1,7 @@
 class C{};
 class D:C{};
 
-var c = new C();
+var c = new unmanaged C();
 var d = c:D;
 
 writeln(c);

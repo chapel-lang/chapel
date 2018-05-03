@@ -6,8 +6,8 @@ class foo {
   }
 }
 
-var f1 = new foo(int);
-var f2 = new foo(string);
+var f1 = new unmanaged foo(int);
+var f2 = new unmanaged foo(string);
 
 f1.x = 2;
 f2.x = "hello world";

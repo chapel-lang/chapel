@@ -8,7 +8,7 @@ var s: list(C);
 
 writeln(s);
 
-s.append(new C(2));
+s.append(new unmanaged C(2));
 
 writeln(s);
 

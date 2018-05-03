@@ -3,7 +3,7 @@ class Foo {
   var x: t;
 }
 
-var foo = new Foo(int);
+var foo = new unmanaged Foo(int);
 
 writeln(foo.type: string);
 writeln(foo);

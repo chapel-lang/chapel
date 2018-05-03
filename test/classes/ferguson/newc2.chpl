@@ -6,10 +6,10 @@ proc getC() type {
   return C;
 }
 
-var x = new C(10);
+var x = new unmanaged C(10);
 writeln(x);
 
-var y = new getC()(10);
+var y = new unmanaged getC()(10);
 writeln(y);
 
 delete y;

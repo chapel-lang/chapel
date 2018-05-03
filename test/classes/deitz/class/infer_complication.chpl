@@ -6,10 +6,10 @@ class C {
   }
 }
 
-var c = new C(2, 5);
+var c = new unmanaged C(2, 5);
 writeln(c.foo());
 
-var d = new C("hello", "world");
+var d = new unmanaged C("hello", "world");
 writeln(d.foo());
 
 delete c;

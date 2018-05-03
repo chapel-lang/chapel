@@ -10,7 +10,7 @@ class C {
   }
 }
 
-var c : C = new C();
+var c : unmanaged C = new unmanaged C();
 
 writeln(c);
 c.foo();

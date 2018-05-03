@@ -2,7 +2,7 @@ class Foo {
   var v;
 }
 
-var foo = new Foo(7);
+var foo = new unmanaged Foo(7);
 writeln(foo.type: string);
 writeln(foo);
 

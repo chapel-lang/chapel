@@ -3,7 +3,7 @@ class C {
 }
 
 proc main {
-  var c = new C(1,2);
+  var c = new unmanaged C(1,2);
   writeln(c);
   delete c;
 }

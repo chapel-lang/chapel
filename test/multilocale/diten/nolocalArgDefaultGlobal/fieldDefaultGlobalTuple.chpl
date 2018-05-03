@@ -4,9 +4,9 @@ class C {
   var a = t(1);
 }
 
-var c = new C();
+var c = new unmanaged C();
 t(1) = 2;
-var d = new C();
+var d = new unmanaged C();
 
 writeln(c);
 writeln(d);

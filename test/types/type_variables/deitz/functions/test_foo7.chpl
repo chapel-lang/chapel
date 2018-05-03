@@ -3,10 +3,10 @@ class C {
   var x : t;
 }
 
-proc foo(c : C(?u)) {
+proc foo(c : unmanaged C(?u)) {
   var y : u;
   writeln("foo of ", c, " with y = ", y);
   delete c;
 }
 
-foo(new C(int, 2));
+foo(unmanaged new C(int, 2));

@@ -9,7 +9,7 @@ proc bar(f : foo) {
   writeln("function bar ", f.x);
 }
 
-var f : foo = new foo();
+var f : unmanaged foo = new unmanaged foo();
 
 f.bar();
 bar(f);

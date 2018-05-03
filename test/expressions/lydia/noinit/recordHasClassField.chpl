@@ -8,7 +8,7 @@ record foo {
 
 var bar: foo = noinit;
 
-bar.t = new aClass();
+bar.t = new unmanaged aClass();
 
 writeln(bar);
 

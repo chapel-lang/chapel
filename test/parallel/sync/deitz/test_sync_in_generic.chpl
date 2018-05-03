@@ -7,7 +7,7 @@ class C {
 
 type t = sync int;
 
-var c = new C(t);
+var c = new unmanaged C(t);
 
 begin {
   writeln(c.x.readFE());

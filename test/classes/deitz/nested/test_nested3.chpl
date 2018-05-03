@@ -7,10 +7,10 @@ class C {
     proc foo() { bar(); }
   }
   proc bar() { writeln("wrong bar"); }
-  var d = new D();
+  var d = new unmanaged D();
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.d.foo();
 delete c.d;
 delete c;

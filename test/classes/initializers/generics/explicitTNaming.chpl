@@ -6,6 +6,6 @@ class Foo {
   }
 }
 
-var foo = new Foo(t=int);
+var foo = new unmanaged Foo(t=int);
 writeln(foo.type: string);
 delete foo;

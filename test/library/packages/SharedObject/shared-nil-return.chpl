@@ -9,7 +9,7 @@ class D {
   }
 }
 
-var d = new D();
+var d = new unmanaged D();
 d.foo();
 
 delete d;

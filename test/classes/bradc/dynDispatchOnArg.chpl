@@ -17,7 +17,7 @@ proc foo(cOrD:C) {
   writeType(cOrD);
 }
 
-var myD = new D();
+var myD = new unmanaged D();
 
 foo(myD);
 
