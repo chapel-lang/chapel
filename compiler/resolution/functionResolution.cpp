@@ -9755,6 +9755,8 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 }
 
 static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
