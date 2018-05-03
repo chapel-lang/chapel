@@ -230,8 +230,8 @@ module BLAS {
     var m = Cdom.dim(1).size : c_int,
         n = Cdom.dim(2).size : c_int,
         k : c_int;
-    if opA > Op.N then k = Adom.dim(1).size : c_int;
-                  else k = Adom.dim(2).size : c_int;
+    if opA:int > Op.N:int then k = Adom.dim(1).size : c_int;
+                          else k = Adom.dim(2).size : c_int;
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
