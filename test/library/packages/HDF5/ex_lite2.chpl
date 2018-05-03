@@ -9,7 +9,7 @@ proc main {
       i, j, nrow, n_values: size_t;
 
   /* open file from ex_lite1.chpl */
-  file_id = H5Fopen(c"ex_lite1.h5", H5F_ACC_RDONLY, H5P_DEFAULT);
+  file_id = H5Fopen(c"ex_lite2_input.h5", H5F_ACC_RDONLY, H5P_DEFAULT);
 
   /* read the dataset */
   H5LTread_dataset_int(file_id, c"/dset", data[0]);
