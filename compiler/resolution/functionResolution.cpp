@@ -9548,8 +9548,8 @@ static void replaceValuesWithRuntimeTypes()
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type)) {
+            formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->getValType())) {
             Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
                         fn->retType : runtimeTypeMap.get(fn->retType);
             INT_ASSERT(rt);
