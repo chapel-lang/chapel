@@ -36,8 +36,6 @@
 #include "TryStmt.h"
 #include "visibleFunctions.h"
 
-#include "view.h" // TODO
-
 #include <algorithm>
 #include <map>
 #include <set>
@@ -161,11 +159,12 @@ void scopeResolve() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
- 
+
   //nprint_view(((Symbol*)aid(88514))->defPoint->init);
 
   //
   // build constructors (type and value versions)
+  // (initializers are built during normalize)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     ct->createOuterWhenRelevant();
@@ -182,22 +181,7 @@ void scopeResolve() {
 
   setupShadowVars();
 
-  //nprint_view(((Symbol*)aid(88514))->defPoint->init);
-
-  //
-  // build constructors (type and value versions)
-  //
-/*  forv_Vec(AggregateType, ct, gAggregateTypes) {
-    // This ordering is challenging for regular constructor
-    // ones because of removal of init blocks? Not Sure?
-    if (!ct->needsConstructor()) {
-      ct->createOuterWhenRelevant();
-      ct->buildConstructors();
-    }
-  }*/
-
-  //nprint_view(((Symbol*)aid(88514))->defPoint->init);
-
+  // Figure out which types are generic, in a transitive closure manner
   {
     bool changed;
     do {
@@ -210,8 +194,6 @@ void scopeResolve() {
             // And don't try to mark generic again
             !at->isGeneric()) {
           for_fields(field, at) {
-            if (field->id == 38656)
-              gdbShouldBreakHere();
             if (at->fieldIsGeneric(field)) {
               at->markAsGeneric();
               changed = true;
@@ -224,6 +206,7 @@ void scopeResolve() {
 
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     // Build the type constructor now that we know which fields are generic
+    // We do it here only for types with initializers
     if (!ct->needsConstructor()) {
       ct->buildConstructors();
     }
@@ -1105,7 +1088,6 @@ static void setupShadowVars() {
 
   USR_STOP();
 }
-    
 
 /************************************* | **************************************
 *                                                                             *

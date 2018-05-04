@@ -5039,8 +5039,6 @@ static void resolveInitField(CallExpr* call) {
     // instantiation of the overarching type (and replaces references to the
     // fields from the old instantiation
 
-    // TODO -- may differ for (fs->hasFlag(FLAG_TYPE_VARIABLE) &&
-    // isTypeExpr(srcExpr))
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
@@ -5065,10 +5063,10 @@ static void resolveInitField(CallExpr* call) {
       }
     } else {
       // The field is not generic.
-      fs->type = targetType;
 
-      /*
-      if (fs->defPoint->exprType == NULL) {
+      if (targetTypeExpr) {
+        fs->type = targetType;
+      } else if (fs->defPoint->exprType == NULL) {
         fs->type = srcType;
       } else if (fs->defPoint->exprType) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
@@ -5081,7 +5079,7 @@ static void resolveInitField(CallExpr* call) {
         } else {
           fs->type = exprType;
         }
-      }*/
+      }
     }
   }
 

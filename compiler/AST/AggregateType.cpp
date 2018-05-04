@@ -129,8 +129,6 @@ bool AggregateType::isGeneric() const {
 }
 
 void AggregateType::markAsGeneric() {
-  if (this->id == 95758)
-    gdbShouldBreakHere();
   mIsGeneric = true;
 }
 
@@ -228,7 +226,7 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
       DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
-	// if we end up in this case.. the compiler infinite loops 
+	// if we end up in this case.. the compiler infinite loops
 	INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
@@ -851,10 +849,6 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   newInstance->substitutions.copy(this->substitutions);
 
-  if (newInstance->id == 880806)
-    gdbShouldBreakHere();
-
-  // TODO -- try putting substitutions for all fields?
   Symbol* field = newInstance->getField(1);
   newInstance->substitutions.put(field, parentType->symbol);
   newInstance->symbol->renameInstantiatedFromSuper(parentType->symbol);
@@ -1281,102 +1275,6 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
   return retval;
 }
 
-//  1 -- generic
-// -1 -- concrete
-//  0 -- unknown at this point
-/*static int isFieldGeneric(Symbol* field) {
-  Type* t = field->type;
-
-  if (field->id == 88511)
-    gdbShouldBreakHere();
-
-  if (VarSymbol* fieldVar = toVarSymbol(field))
-    if (fieldVar->isType() ||
-        fieldVar->hasFlag(FLAG_PARAM))
-      return 1;
-
-  // Fields with initialization expressions aren't generic because
-  // the field's type is inferred from the initialization expression.
-  if (field->defPoint->init) {
-    return -1;
-  }
-
-  if (field->type == NULL || field->type == dtUnknown) {
-    // Look in the field declaration for a concrete type
-    Expr* typeExpr = field->defPoint->exprType;
-    if (typeExpr) {
-      if (SymExpr* se = toSymExpr(typeExpr)) {
-        t = se->symbol()->type;
-      } else {
-        // Unknown if a call is generic until resolution.
-      }
-    } else {
-      // Unknown type and no type declaration -> generic
-      return 1;
-    }
-  }
-
-  if (t) {
-    if (t->symbol->hasFlag(FLAG_GENERIC))
-      return 1;
-    if (AggregateType* at = toAggregateType(t))
-      if (at->isGeneric())
-        return 1;
-    // e.g. record R { type t; var x:t; }
-    // the field x is not a generic
-    if (t->symbol->hasFlag(FLAG_TYPE_VARIABLE))
-      return -1;
-    if (t == dtUnknown)
-      return 1;
-
-    // Otherwise it's a type we know that should be concrete
-    return -1;
-  }
-
-  return 0;
-}
-*/
-
-/*
-static bool isConcreteTypeExpr(Expr* typeExpr) {
-  // Look in the field declaration for a concrete type
-  if (typeExpr) {
-    Symbol* sym = NULL;
-
-    if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
-      sym = lookup(urse->unresolved, urse);
-    } else if (SymExpr* se = toSymExpr(typeExpr)) {
-      sym = se->symbol();
-    }
-
-    if (sym) {
-      Type* t = sym->type;
-      
-      if (t->symbol->hasFlag(FLAG_GENERIC))
-        return false;
-      if (AggregateType* at = toAggregateType(t))
-        if (at->isGeneric())
-          return false;
-      // e.g. record R { type t; var x:t; }
-      // the field x is not a generic
-      if (t->symbol->hasFlag(FLAG_TYPE_VARIABLE))
-        return true;
-      if (t == dtUnknown)
-        return false;
-
-      // Otherwise it's a type we know that should be concrete
-      return true;
-
-    } else {
-      // If it's a call, it can only return a concrete type
-      return true;
-    }
-  } else {
-    // Unknown type and no type declaration -> generic
-    return false;
-  }
-}*/
-
 void AggregateType::typeConstrSetFields(FnSymbol* fn,
                                         CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
@@ -1403,14 +1301,6 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
       } else {
         fieldNamesSet.set_add(field->name);
 
-        //if (field->id == 189303)
-        //  gdbShouldBreakHere();
-
-        //int generic = isFieldGeneric(field);
-        //INT_ASSERT(generic != -200);
-        //printf("%s %i\n", field->name, generic);
-
-        ///if (generic == 1) {
         if (field->isType()            == true ||
             field->hasFlag(FLAG_PARAM) == true) {
           ArgSymbol* arg = insertGenericArg(fn, field);
@@ -1488,8 +1378,6 @@ ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
   }
 
   fn->insertFormalAtTail(arg);
-
-  //addToSymbolTable(arg->defPoint);
 
   return arg;
 }
