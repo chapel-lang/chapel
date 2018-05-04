@@ -771,6 +771,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     for_formals(formal, iterator) {
+      if (formal->name  == astrTag && formal->type == gFollowerTag->type) {
+        INT_ASSERT("tag already present in PRIM_TO_FOLLOWER");
+        // Could remove it, but would have to figure out what's
+        // happening with followThis and fast too.
+      }
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
       followerCall->insertAtTail(new NamedExpr(formal->name,
@@ -808,8 +813,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
-      leaderCall->insertAtTail(new NamedExpr(formal->name,
-                                             symOrParamExpr(formal)));
+      if (formal->name  == astrTag && formal->type == gLeaderTag->type) {
+        // Leave out the tag since we add it in again below
+      } else {
+        leaderCall->insertAtTail(new NamedExpr(formal->name,
+                                               symOrParamExpr(formal)));
+      }
     }
 
     // "tag" should be placed at the end of the formals in the source code as
@@ -827,8 +836,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     for_formals(formal, iterator) {
       // Note: this can add a use formal outside of its function
       // This is cleaned up in cleanupLeaderFollowerIteratorCalls
-      standaloneCall->insertAtTail(new NamedExpr(formal->name,
-                                                 symOrParamExpr(formal)));
+      if (formal->name  == astrTag && formal->type == gStandaloneTag->type) {
+        // Leave out the tag since we add it in again below
+      } else {
+        standaloneCall->insertAtTail(new NamedExpr(formal->name,
+                                                   symOrParamExpr(formal)));
+      }
     }
 
     // "tag" should be placed at the end of the formals in the source code as
