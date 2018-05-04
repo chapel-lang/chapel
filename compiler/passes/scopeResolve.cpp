@@ -168,8 +168,8 @@ void scopeResolve() {
   // build constructors (type and value versions)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
-    /*if (ct->needsConstructor()) */{
-      ct->createOuterWhenRelevant();
+    ct->createOuterWhenRelevant();
+    if (ct->needsConstructor()) {
       ct->buildConstructors();
     }
   }
@@ -221,6 +221,13 @@ void scopeResolve() {
         }
       }
     } while (changed);
+  }
+
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    // Build the type constructor now that we know which fields are generic
+    if (!ct->needsConstructor()) {
+      ct->buildConstructors();
+    }
   }
 
   ResolveScope::destroyAstMap();

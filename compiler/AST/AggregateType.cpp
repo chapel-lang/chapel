@@ -213,9 +213,6 @@ static int isTypeExprConcreteGeneric(Expr* typeExpr) {
 bool AggregateType::fieldIsGeneric(Symbol* field) const {
   bool retval = false;
 
-  if (field->id == 190118)
-    gdbShouldBreakHere();
-
   if (VarSymbol* var = toVarSymbol(field)) {
     if (var->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       retval = true;
@@ -245,11 +242,12 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
   return retval;
 }
 
-DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
+DefExpr* AggregateType::toSuperField(SymExpr*  expr) const {
   DefExpr* retval = NULL;
 
   if (isClass() == true) {
-    forv_Vec(AggregateType, pt, dispatchParents) {
+    AggregateType* thisNC = const_cast<AggregateType*>(this);
+    forv_Vec(AggregateType, pt, thisNC->dispatchParents) {
       AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
@@ -272,11 +270,12 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
   return retval;
 }
 
-DefExpr* AggregateType::toSuperField(CallExpr* expr) {
+DefExpr* AggregateType::toSuperField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
   if (isClass() == true) {
-    forv_Vec(AggregateType, pt, dispatchParents) {
+    AggregateType* thisNC = const_cast<AggregateType*>(this);
+    forv_Vec(AggregateType, pt, thisNC->dispatchParents) {
       AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
@@ -851,6 +850,10 @@ AggregateType::getInstantiationParent(AggregateType* parentType) {
 
   newInstance->substitutions.copy(this->substitutions);
 
+  if (newInstance->id == 880806)
+    gdbShouldBreakHere();
+
+  // TODO -- try putting substitutions for all fields?
   Symbol* field = newInstance->getField(1);
   newInstance->substitutions.put(field, parentType->symbol);
   newInstance->symbol->renameInstantiatedFromSuper(parentType->symbol);
@@ -2403,7 +2406,7 @@ bool AggregateType::wantsDefaultInitializer() const {
 // Replace implicit references to 'this' in the body of this
 // type constructor with explicit member reference (dot) expressions.
 void AggregateType::insertImplicitThis(FnSymbol*         fn,
-                                       Vec<const char*>& fieldNamesSet) {
+                                       Vec<const char*>& fieldNamesSet) const {
   std::vector<BaseAST*> asts;
 
   collect_asts(fn->body, asts);
@@ -2415,6 +2418,9 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
         // So replace it with a dot expression.
         se->replace(buildDotExpr(fn->_this, se->unresolved));
       }
+    } else if (SymExpr* se = toSymExpr(ast)) {
+      if (this->toLocalField(se) || this->toSuperField(se))
+        se->replace(buildDotExpr(fn->_this, se->symbol()->name));
     }
   }
 }

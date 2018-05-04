@@ -118,8 +118,8 @@ public:
   DefExpr*                    toLocalField(SymExpr*    expr)             const;
   DefExpr*                    toLocalField(CallExpr*   expr)             const;
 
-  DefExpr*                    toSuperField(SymExpr*  expr);
-  DefExpr*                    toSuperField(CallExpr* expr);
+  DefExpr*                    toSuperField(SymExpr*  expr)               const;
+  DefExpr*                    toSuperField(CallExpr* expr)               const;
 
   int                         getMemberGEP(const char* name);
 
@@ -199,8 +199,8 @@ public:
 private:
   static ArgSymbol*           createGenericArg(VarSymbol* field);
 
-  static void                 insertImplicitThis(FnSymbol*         fn,
-                                                 Vec<const char*>& names);
+  void                        insertImplicitThis(FnSymbol*         fn,
+                                                 Vec<const char*>& names) const;
 
 private:
   virtual std::string         docsDirective();

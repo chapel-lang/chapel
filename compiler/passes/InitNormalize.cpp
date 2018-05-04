@@ -479,6 +479,7 @@ void InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
   Symbol*   name     = new_CStringSymbol(field->sym->name);
   Symbol*   _this    = mFn->_this;
 
+  // TODO - coerce, don't cast
   CallExpr* fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, cast);
 
   if (isFieldAccessible(initExpr) == false) {
@@ -762,6 +763,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     updateFieldsMember(initExpr);
   } else if (isPrimitiveScalar(type) == true ||
              isNonGenericClass(type) == true) {
+    // TODO -- use PRIM_INIT_FIELD
     VarSymbol* tmp      = newTemp("tmp", type);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr("=", tmp, initExpr);
@@ -839,6 +841,9 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     // yet.  It is entirely possible that the type will end up as a sync or
     // single and so we need to flag this field initialization for resolution
     // to handle
+
+    // TODO -- is this necessary anymore? It came from PR #7913.
+
     Symbol*   _this    = mFn->_this;
     Symbol*   name     = new_CStringSymbol(field->sym->name);
     CallExpr* fieldSet = new CallExpr(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD,
@@ -858,6 +863,8 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     VarSymbol* tmp       = newTemp("tmp", type);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
+    // TODO -- don't assign, use PRIM_INIT_FIELD
+
     // Set the value for TMP
     CallExpr*  tmpAssign = new CallExpr("=", tmp,  initExpr);
 
@@ -876,36 +883,27 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     updateFieldsMember(initExpr);
 
   } else {
-    VarSymbol* tmp       = newTemp("tmp", type);
+
+    VarSymbol* tmp       = newTemp("tmp");
     DefExpr*   tmpDefn   = new DefExpr(tmp);
-
-    // Applies a type to TMP
-    CallExpr*  tmpExpr   = new CallExpr(PRIM_INIT, field->exprType->copy());
-    CallExpr*  tmpMove   = new CallExpr(PRIM_MOVE, tmp,  tmpExpr);
-
-    // Set the value for TMP
-    CallExpr*  tmpAssign = new CallExpr("=",       tmp,  initExpr);
+    // Applies a type to TMP and sets its value
+    CallExpr*  tmpInit   = new CallExpr(PRIM_INIT_VAR,
+                                        tmp, initExpr, field->exprType->copy());
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
-    CallExpr*  fieldSet  = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
-
-    if (isFieldAccessible(tmpExpr) == false) {
-      INT_ASSERT(false);
-    }
+    // Should this be PRIM_INIT_FIELD ? or just PRIM_SET_MEMBER?
+    CallExpr*  fieldSet  = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
     if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
     }
 
     insertBefore->insertBefore(tmpDefn);
-    insertBefore->insertBefore(tmpMove);
-    insertBefore->insertBefore(tmpAssign);
+    insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
 
-    updateFieldsMember(tmpExpr);
-
-    updateFieldsMember(initExpr);
+    updateFieldsMember(tmpInit);
   }
 }
 
