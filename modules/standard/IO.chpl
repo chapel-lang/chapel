@@ -1354,11 +1354,6 @@ proc file._style:iostyle throws {
    In order to free the resources allocated for a file, it
    must be closed using this method.
 
-   It is an error to perform any I/O operations on a file
-   that has been closed.
-   It is an error to close a file when it has channels that
-   have not been closed.
-
    Closing a file does not guarantee immediate persistence of the performed
    updates, if any. In cases where immediate persistence is important,
    :proc:`file.fsync` should be used for that purpose prior to closing the file.
@@ -1370,6 +1365,10 @@ proc file._style:iostyle throws {
    Files are automatically closed when the file variable
    goes out of scope and all channels using that file are closed. Programs
    may also explicitly close a file using this method.
+
+   A SystemError will be thrown if the file could not be closed.
+   It is an error to perform any I/O operations on a file that has been closed.
+   It is an error to close a file when it has channels that have not been closed.
  */
 proc file.close() throws {
   try check();
@@ -1404,6 +1403,7 @@ Data written to the file by a channel will be committed
 only if the channel has been closed or flushed.
 
 This function will typically call the ``fsync`` system call.
+A SystemError will be thrown if the file could not be synced.
  */
 proc file.fsync() throws {
   try check();
@@ -1439,6 +1439,8 @@ and that this function may not work on all operating systems.
 
 The function :proc:`Path.file.realPath` is an alternative way
 to get the path to a file.
+
+A SystemError will be thrown if the path could not be retrieved.
  */
 proc file.path : string throws {
   try check();
@@ -1479,7 +1481,7 @@ proc file.tryGetPath() : string {
 pragma "no doc"
 proc file.getPath(out error:syserr) : string {
   compilerWarning("file.getPath() is deprecated; " +
-                  "please switch to file.tryGetPath()");
+                  "please switch to file.path or file.tryGetPath()");
   try {
     return this.path;
   } catch e: SystemError {
@@ -1494,6 +1496,7 @@ proc file.getPath(out error:syserr) : string {
 
 Get the current length of an open file. Note that the length can always
 change if other channels, tasks or programs are writing to the file.
+A SystemError will be thrown if the length could not be retrieved.
 
 :returns: the current file length
 
@@ -1533,6 +1536,8 @@ Open a file on a filesystem or stored at a particular URL. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
 to create a channel to actually perform I/O operations
 
+A SystemError will be thrown if the file could not be opened.
+
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg iomode: specify whether to open the file for reading or writing and
@@ -1551,9 +1556,7 @@ to create a channel to actually perform I/O operations
           enabled, this function supports ``url=`` starting with
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
-:returns: an open file to the requested resource. If the ``error=`` argument
-          was provided and the file was not opened because of an error, returns
-          the default :record:`file` value.
+:returns: an open file to the requested resource.
 */
 proc open(path:string="", mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle = defaultIOStyle(), url:string=""): file throws {
@@ -1666,6 +1669,7 @@ the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
 
 The system file descriptor will be closed when the Chapel file is closed.
+A SystemError will be thrown if the file descriptor could not be retrieved.
 
 .. note::
 
@@ -1687,10 +1691,7 @@ The system file descriptor will be closed when the Chapel file is closed.
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
-          If the ``error=`` argument
-          was provided and the file was not opened because of an error, returns
-          the default :record:`file` value.
-*/
+ */
 proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
   var ret:file;
@@ -1709,7 +1710,7 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   return ret;
 }
 
-// documented in the error= version
+// documented in the throws version
 pragma "no doc"
 proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file {
   compilerWarning("This version of openfd() is deprecated; " +
@@ -1730,6 +1731,7 @@ proc openfd(fd: fd_t, out error:syserr, hints:iohints=IOHINT_NONE, style:iostyle
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
 that once the file is open, you will need to use a :proc:`file.reader` or
 :proc:`file.writer` to create a channel to actually perform I/O operations
+A SystemError will be thrown if the C file could not be retrieved.
 
 .. note::
 
@@ -1746,9 +1748,6 @@ that once the file is open, you will need to use a :proc:`file.reader` or
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
-          If the ``error=`` argument
-          was provided and the file was not opened because of an error, returns
-          the default :record:`file` value.
  */
 proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1796,6 +1795,7 @@ deleted upon closing.
 
 Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
 that is, a new file is created that supports both writing and reading.
+A SystemError will be thrown if the temporary file could not be opened.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
@@ -1803,9 +1803,7 @@ that is, a new file is created that supports both writing and reading.
             The provided style will be the default for any channels created for
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
-:returns: an open temporary file. If the ``error=`` argument
-          was provided and the file was not opened because of an error, returns
-          the default :record:`file` value.
+:returns: an open temporary file.
  */
 proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -1843,13 +1841,13 @@ perform I/O operations.
 
 The resulting file supports both reading and writing.
 
+A SystemError will be thrown if the memory buffered file could not be opened.
+
 :arg style: optional argument to specify I/O style associated with this file.
             The provided style will be the default for any channels created for
             on this file, and that in turn will be the default for all I/O
             operations performed with those channels.
-:returns: an open memory file. If the ``error=`` argument
-          was provided and the file was not opened because of an error, returns
-          the default :record:`file` value.
+:returns: an open memory file.
  */
 proc openmem(style:iostyle = defaultIOStyle()):file throws {
   var local_style = style;
@@ -2167,6 +2165,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
 /*
    Acquire a channel's lock.
+   Throws a SystemError if the lock could not be acquired.
  */
 inline proc channel.lock() throws {
   var err:syserr = ENOERR;
@@ -2233,6 +2232,8 @@ proc channel.offset():int(64) {
    For a writing channel, this function will write ``amount`` zeros - or some
    other data if it is stored in the channel's buffer, for example with
    :proc:`channel._mark` and :proc:`channel._revert`.
+
+   Throws a SystemError if the channel offset was not moved.
  */
 proc channel.advance(amount:int(64)) throws {
   var err:syserr = ENOERR;
@@ -2259,7 +2260,7 @@ proc channel.advance(amount:int(64), ref error:syserr) {
 
 /*
    Reads until ``byte`` is found and then leave the channel offset
-   just after it. If that byte is never found, raises an EOFError.
+   just after it. If that byte is never found, throws an EOFError.
  */
 proc channel.advancePastByte(byte:uint(8)) throws {
   var err:syserr = ENOERR;
@@ -2303,6 +2304,8 @@ proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
       calling :proc:`channel.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   Throws a SystemError if the channel was not successfully marked.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -2310,8 +2313,10 @@ proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
     advancing to the end of the file. It is important to be aware of these
     memory space requirements.
  */
-inline proc channel.mark():syserr where this.locking == false {
-  return qio_channel_mark(false, _channel_internal);
+inline proc channel.mark() throws where this.locking == false {
+  var err = qio_channel_mark(false, _channel_internal);
+  if err then
+    throw SystemError.fromSyserr(err);
 }
 
 /*
@@ -2362,11 +2367,12 @@ inline proc channel._offset():int(64) {
    See :proc:`channel.mark` for details other than the locking
    discipline.
 
-  :returns: an error code, if an error was encountered.
+   Throws a SystemError if the channel was not successfully marked.
  */
-// TODO - use the out error= style and otherwise halt on error, for consistency
-inline proc channel._mark():syserr {
-  return qio_channel_mark(false, _channel_internal);
+inline proc channel._mark() throws {
+  var err = qio_channel_mark(false, _channel_internal);
+  if err then
+    throw SystemError.fromSyserr(err);
 }
 
 /*
@@ -2454,6 +2460,8 @@ Open a file at a particular path or URL and return a reading channel for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
+Throws a SystemError if a reading channel could not be returned.
+
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2479,10 +2487,7 @@ This function is equivalent to calling :proc:`open` and then
           enabled, this function supports ``url=`` starting with
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
-:returns: an open reading channel to the requested resource. If the ``error=``
-          argument was provided and the channel was not opened because of an
-          error, returns the default :record:`channel` value.
-
+:returns: an open reading channel to the requested resource.
  */
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
@@ -2527,6 +2532,8 @@ Open a file at a particular path or URL and return a writing channel for it.
 This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
+Throws a SystemError if a writing channel could not be returned.
+
 :arg path: which file to open (for example, "some/file.txt"). This argument
            is required unless the ``url=`` argument is used.
 :arg kind: :type:`iokind` compile-time argument to determine the
@@ -2552,10 +2559,7 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
           enabled, this function supports ``url=`` starting with
           ``http://``, ``https://``, ``ftp://``, ``ftps://``, ``smtp://``,
           ``smtps://``, ``imap://``, or ``imaps://``
-:returns: an open reading channel to the requested resource. If the ``error=``
-          argument was provided and the channel was not opened because of an
-          error, returns the default :record:`channel` value.
-
+:returns: an open reading channel to the requested resource.
 */
 proc openwriter(path:string="", param kind=iokind.dynamic, param locking=true,
     start:int(64) = 0, end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
@@ -2604,6 +2608,8 @@ proc openwriter(out error: syserr, path:string="", param kind=iokind.dynamic, pa
    that file.  Reading beyond the end of the file or beyond the end offset of
    the channel will produce the error ``EEOF`` (and return `false` in many
    cases such as :proc:`channel.read`) to indicate that the end was reached.
+
+   Throws a SystemError if a file reader channel could not be returned.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
@@ -2664,6 +2670,8 @@ proc file.reader(out error:syserr, param kind=iokind.dynamic, param locking=true
 
 /* Iterate over all of the lines in a file.
 
+   Throws a SystemError if an ItemReader could not be returned.
+
    :returns: an object which yields strings read from the file
  */
 proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
@@ -2722,6 +2730,8 @@ proc file.lines(out error:syserr, param locking:bool = true, start:int(64) = 0,
    impacts only the section of the file that this channel can write to. After
    all channels to a file are closed, that file will have a size equal to the
    last position written to by any channel.
+
+   Throws a SystemError if a file writer channel could not be returned.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`channel` type. Defaults
@@ -3371,6 +3381,7 @@ inline proc channel.readwrite(ref x) where !this.writing {
 
   /*
      Write a sequence of bytes.
+     Throws a SystemError if the byte sequence could not be written.
    */
   proc channel.writeBytes(x, len:ssize_t):bool throws {
     var err:syserr = ENOERR;
@@ -3602,6 +3613,8 @@ inline proc channel.read(ref args ...?k, out error:syserr): bool {
    Read values from a channel. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
 
+   Throws a SystemError if the channel could not be read.
+
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
@@ -3661,6 +3674,8 @@ proc channel.read(ref args ...?k,
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   The ``\n`` is returned in the array.
+
+  Throws a SystemError if a line could not be read from the channel.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg numRead: The number of bytes read.
@@ -3728,6 +3743,8 @@ proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
   The ``\n`` is included in the resulting string.
 
+  Throws a SystemError if a string could not be read from the channel.
+
   :arg arg: a string to receive the line
   :returns: `true` if a line was read without error, `false` on error or EOF
 */
@@ -3775,6 +3792,8 @@ proc channel.readline(ref arg:string, out error:syserr):bool {
 }
 
 /* read a given number of bytes from a channel
+
+   Throws a SystemError if the bytes could not be read from the channel.
 
    :arg str_out: The string to be read into
    :arg len: Read up to len bytes from the channel, up until EOF
@@ -3854,6 +3873,8 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 /*
    Read bits with binary I/O
 
+   Throws a SystemError if the bits could not be read from the channel.
+
    :arg v: where to store the read bits. This value will have its *nbits*
            least-significant bits set.
    :arg nbits: how many bits to read
@@ -3895,6 +3916,8 @@ inline proc channel.readbits(out v:integral, nbits:integral, out error:syserr):b
 
 /*
    Write bits with binary I/O
+
+   Throws a SystemError if the bits could not be written to the channel.
 
    :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
@@ -3969,6 +3992,8 @@ proc channel.readln(ref args ...?k,
    newline is reached. The input will be consumed atomically - the
    channel lock will be held while reading all of the passed values.
 
+   Throws a SystemError if a line could not be read from the channel.
+
    :arg args: a list of arguments to read. This routine can be called
               with zero or more such arguments. Basic types are handled
               internally, but for other types this function will call
@@ -3999,6 +4024,8 @@ proc channel.readln(ref args ...?k,
 /*
    Read a value of passed type.
 
+   Throws a SystemError if the type could not be read from the channel.
+
    .. note::
 
      It is difficult to handle errors or to handle reaching the end of
@@ -4026,6 +4053,8 @@ proc channel.read(type t) throws {
    Read a value of passed type followed by a newline.
    Halts if an error is encountered.
 
+   Throws a SystemError if the type could not be read from the channel.
+
    .. note::
 
      It is difficult to handle errors or to handle reaching the end of
@@ -4045,7 +4074,8 @@ proc channel.readln(type t) throws {
 /*
    Read values of passed types followed by a newline
    and return a tuple containing the read values.
-   Halts if an error is encountered.
+
+   Throws a SystemError if the types could not be read from the channel.
 
    :arg t: more than one type to read
    :returns: a tuple of the read values
@@ -4060,7 +4090,8 @@ proc channel.readln(type t ...?numTypes) throws where numTypes > 1 {
 
 /*
    Read values of passed types and return a tuple containing the read values.
-   Halts if an error is encountered.
+
+   Throws a SystemError if the types could not be read from the channel.
 
    :arg t: more than one type to read
    :returns: a tuple of the read values
@@ -4113,6 +4144,8 @@ inline proc channel.write(const args ...?k, out error:syserr):bool {
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
    values.
+
+   Throws a SystemError if the values could not be written to the channel.
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
@@ -4197,6 +4230,8 @@ proc channel.writeln(const args ...?k, out error:syserr):bool {
    produced atomically - the channel lock will be held while writing all of the
    passed values.
 
+   Throws a SystemError if the values could not be written to the channel.
+
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
@@ -4225,6 +4260,7 @@ proc channel.writeln(const args ...?k, style:iostyle, out error:syserr):bool {
   accessing this file concurrently.
   Unlike :proc:`file.fsync`, this does not commit the written data
   to the file's device.
+  Throws a SystemError if the flush fails.
 */
 proc channel.flush() throws {
   var err:syserr = ENOERR;
@@ -4246,19 +4282,6 @@ proc channel.flush(out error:syserr) {
   }
 }
 
-/* Returns true if a channel has reached end-of-file, false if not.
-   Throws an error if this is a writing channel, or if there was
-   an error doing the read.
- */
-proc channel.atEOF(): bool throws {
-  if writing {
-    try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
-  } else {
-    var tmp:uint(8);
-    return !(try this.read(tmp));
-  }
-}
-
 /* Assert that a channel has reached end-of-file and that there was no error
    doing the read.
  */
@@ -4268,9 +4291,27 @@ proc channel.assertEOF(errStr: string = "- Not at EOF") {
     try! this._ch_ioerror("assert failed", errStr);
 }
 
+/* Returns true if a channel has reached end-of-file, false if not.
+   Throws an error if this is a writing channel, or if there was
+   an error doing the read.
+
+   Inherently racy for channels, hence no doc.
+ */
+pragma "no doc"
+proc channel.atEOF(): bool throws {
+  if writing {
+    try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
+  } else {
+    var tmp:uint(8);
+    return !(try this.read(tmp));
+  }
+}
+
 /*
   Close a channel. Implicitly performs the :proc:`channel.flush` operation
   (see :ref:`about-io-channel-synchronization`).
+
+  Throws a SystemError if the channel is not successfully closed.
 */
 proc channel.close() throws {
   var err:syserr = ENOERR;
@@ -4490,6 +4531,8 @@ proc read(type t ...?numTypes) throws {
 /* Delete a file. This function is likely to be replaced
    by :proc:`FileSystem.remove`.
 
+   Throws a SystemError if the file is not successfully deleted.
+
    :arg path: the path to the file to remove
  */
 // TODO -- change to FileSystem.remove
@@ -4546,6 +4589,8 @@ proc file.fstype():int throws {
    chunk might not cover all of the region in question.
 
    Returns (0,0) if no such value exists.
+
+   Throws a SystemError if the chunk is not attained.
 
    :arg start: the file offset (starting from 0) where the region begins
    :arg end: the file offset just after the region
@@ -6265,6 +6310,8 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
    Write arguments according to a format string. See
    :ref:`about-io-formatted-io`.
 
+   Throws a SystemError if the arguments could not be written.
+
    :arg fmt: the format string
    :arg args: the arguments to write
  */
@@ -6498,6 +6545,8 @@ proc channel.writef(fmtStr:string, out error:syserr):bool {
 
    Read arguments according to a format string. See
    :ref:`about-io-formatted-io`.
+
+   Throws a SystemError if the arguments could not be read.
 
    :arg fmt: the format string
    :arg args: the arguments to read
@@ -6870,6 +6919,8 @@ proc readf(fmt:string):bool throws {
    The field skipped includes a field name and value but not a following
    separator. For example, for a JSON format channel, given the input:
 
+   Throws a SystemError if the field could not be skipped.
+
    ::
 
       "fieldName":"fieldValue", "otherField":3
@@ -6905,17 +6956,12 @@ proc channel.skipField(out error:syserr) {
   }
 }
 
-
-// This function is no longer available.
-pragma "no doc"
-proc format(fmt:string, args ...?k):string {
-  compilerError("use string.format(args ...) not format(fmt, args ...)");
-}
-
 /*
 
   Return a new string consisting of values formatted according to a
   format string.  See :ref:`about-io-formatted-io`.
+
+  Throws a SystemError if the string could not be formatted.
 
   :arg this: the format string
   :arg args: the arguments to format
@@ -7080,6 +7126,8 @@ proc channel._extractMatch(m:reMatch, ref arg:?t, ref error:syserr) where t != r
     position to just after the match. Will not do anything
     if error is set.
 
+    Throws a SystemError if a match could not be extracted.
+
     :arg m: a :record:`Regexp.reMatch` storing a location that matched
     :arg arg: an argument to retrieve the match into. If it is not a string,
               the string match will be cast to arg.type.
@@ -7176,6 +7224,8 @@ proc channel.search(re:regexp):reMatch throws
     If there is a match, leaves the channel position at the
     match. If there is no match, the channel position will be
     advanced to the end of the channel (or end of the file).
+
+    Throws a SystemError if an error occurs.
 
     :arg re: a :record:`Regexp.regexp` record representing a compiled
              regular expression.
@@ -7304,9 +7354,6 @@ proc channel.match(re:regexp):reMatch throws
    :arg captures: an optional variable number of arguments in which to
                   store the regions of the file matching the capture groups
                   in the regular expression.
-   :arg error: optional argument to capture an error code. If this argument
-               is not provided and an error is encountered, this function
-               will halt with an error message.
    :returns: the region of the channel that matched
  */
 
