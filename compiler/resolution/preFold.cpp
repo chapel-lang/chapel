@@ -1760,25 +1760,30 @@ static Expr* dropUnnecessaryCast(CallExpr* call) {
   if (!call->isCast())
     INT_FATAL("dropUnnecessaryCasts called on non cast call");
 
-  if (SymExpr* sym = toSymExpr(call->castFrom())) {
-    if (LcnSymbol* var = toLcnSymbol(sym->symbol())) {
+  if (SymExpr* fromSe = toSymExpr(call->castFrom())) {
+    if (LcnSymbol* var = toLcnSymbol(fromSe->symbol())) {
       // Casts of type variables are always required
       // eg. foo.type:string
       if (!var->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (SymExpr* sym = toSymExpr(call->castTo())) {
+        if (SymExpr* toSe = toSymExpr(call->castTo())) {
           Type* oldType = var->type->getValType();
-          Type* newType = sym->symbol()->type->getValType();
+          Type* newType = toSe->symbol()->type->getValType();
 
           if (newType == oldType) {
-            result = new SymExpr(var);
-            call->replace(result);
+            if (isUserDefinedRecord(newType) && !getSymbolImmediate(var)) {
+              result = new CallExpr("chpl__initCopy", var);
+              call->replace(result);
+            } else {
+              result = new SymExpr(var);
+              call->replace(result);
+            }
           }
         }
       }
-    } else if (EnumSymbol* e = toEnumSymbol(sym->symbol())) {
-      if (SymExpr* sym = toSymExpr(call->castTo())) {
+    } else if (EnumSymbol* e = toEnumSymbol(fromSe->symbol())) {
+      if (SymExpr* toSe = toSymExpr(call->castTo())) {
         EnumType* oldType = toEnumType(e->type);
-        EnumType* newType = toEnumType(sym->symbol()->type);
+        EnumType* newType = toEnumType(toSe->symbol()->type);
         if (newType && oldType == newType) {
           result = new SymExpr(e);
           call->replace(result);
