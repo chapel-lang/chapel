@@ -1249,7 +1249,7 @@ CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
   }
 
   if (superTypeCtor->numFormals() > 0) {
-    retval = new CallExpr(parent->symbol->name);
+    retval = new CallExpr(parent->symbol); // parent->symbol->name);
 
     for_formals(formal, superTypeCtor) {
       ArgSymbol* arg = toArgSymbol(formal->copy());
