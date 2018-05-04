@@ -750,7 +750,11 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     // For default-initializers, copy happens at the callsite
     Symbol* _this = mFn->_this;
     Symbol* name = new_CStringSymbol(field->sym->name);
-    CallExpr* fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, initExpr);
+    PrimitiveTag tag = PRIM_SET_MEMBER;
+    if (mightBeSyncSingleExpr(field)) {
+      tag = PRIM_INIT_FIELD;
+    }
+    CallExpr* fieldSet = new CallExpr(tag, _this, name, initExpr);
     if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
     }
