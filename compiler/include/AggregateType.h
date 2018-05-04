@@ -146,11 +146,10 @@ public:
 
   void                        generateUnmanagedClassTypes();
 
-  // returns 1 for concrete
-  // returns -1 for generic
-  // returns 0 for unknown at this point
-  //   intended to be called during scope resolve and during resolution
-  int                         isFieldConcreteGeneric(Symbol* field) const;
+  // Returns true if a field is considered generic
+  // (i.e. it needs a type constructor argument)
+  bool                        fieldIsGeneric(Symbol* field)              const;
+
 
   //
   // Public fields
@@ -206,8 +205,6 @@ private:
   virtual std::string         docsDirective();
 
   std::string                 docsSuperClass();
-
-  bool                        fieldIsGeneric(Symbol* field)              const;
 
   void                        addDeclaration(DefExpr* defExpr);
 

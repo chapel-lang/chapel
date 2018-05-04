@@ -172,8 +172,10 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
-// 1 concrete, -1 generic, 0 unknown
-static int isTypeExprConcreteGeneric(Expr* typeExpr) {
+// Note that a field with generic type where that type has
+// default values for all of its generic fields is considered concrete
+// for the purposes of this function.
+static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
 
@@ -184,30 +186,29 @@ static int isTypeExprConcreteGeneric(Expr* typeExpr) {
   }
 
   if (sym) {
-  
     Type* t = sym->type;
-    if (t == dtUnknown) {
-      // e.g. record R { type t; var x:t; }
-      // the field `x` is not considered generic (but `t` is)
-      if (sym->hasFlag(FLAG_TYPE_VARIABLE))
-        return 1;
-    } else if (AggregateType* at = toAggregateType(t)) {
-      if (at->isGeneric())
-        return -1;
-      else
-        return 1;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->isGeneric()) {
+        // If it's a generic type that has default values
+        // for all of it's generic attributes, it won't
+        // make this type generic.
+        bool foundGenericWithoutInit = false;
+        for_fields(field, at) {
+          if (VarSymbol* var = toVarSymbol(field)) {
+            DefExpr* def = var->defPoint;
+            if (def->init == NULL && at->fieldIsGeneric(field)) {
+              foundGenericWithoutInit = true;
+            }
+          }
+        }
+        return foundGenericWithoutInit;
+      }
     } else if (t->symbol->hasFlag(FLAG_GENERIC)) {
-      return -1;
-    } else {
-      // e.g. int would fall into this case
-      return 1;
+      return true;
     }
-  } else {
-    // If it's a call, it can only return a concrete type
-    return 1;
   }
 
-  return 0;
+  return false;
 }
 
 bool AggregateType::fieldIsGeneric(Symbol* field) const {
@@ -221,7 +222,7 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
       retval = true;
 
     } else if (var->type == dtUnknown
-               /* Adding this causes infinite loop  */
+               /* check for FLAG_SUPER_CLASS avoids infinite loop  */
                || (!var->hasFlag(FLAG_SUPER_CLASS) &&
                    var->type->symbol->hasFlag(FLAG_GENERIC))) {
       DefExpr* def = var->defPoint;
@@ -233,7 +234,7 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
         retval = true;
       } else if (def->init == NULL &&
                  def->exprType != NULL &&
-                 isTypeExprConcreteGeneric(def->exprType) == -1) {
+                 isFieldTypeExprGeneric(def->exprType)) {
         retval = true;
       }
     }
@@ -1376,39 +1377,6 @@ static bool isConcreteTypeExpr(Expr* typeExpr) {
   }
 }*/
 
-
-
-// 1 concrete, -1 generic, 0 unknown
-int AggregateType::isFieldConcreteGeneric(Symbol* arg) const {
-  VarSymbol* field = toVarSymbol(arg);
-
-  INT_ASSERT(field);
-
-  if (field->isType() ||
-      field->hasFlag(FLAG_PARAM) ||
-      field->type->symbol->hasFlag(FLAG_GENERIC)) {
-    return -1; // generic
-
-  } else if (field->hasFlag(FLAG_SUPER_CLASS)) {
-    AggregateType* superAt = toAggregateType(field->type);
-    INT_ASSERT(superAt);
-    if (superAt->isGeneric()) return -1;
-    else return 1;
-
-  } else if (field->defPoint->init) {
-    return 1; // concrete (type inferred)  
-
-  } else if (field->defPoint->exprType) {
-    return isTypeExprConcreteGeneric(field->defPoint->exprType);
-
-  } else {
-    // no type expr
-    // no init expr
-    // --> generic (like record R { var x; })
-    return -1;
-  }
-}
-
 void AggregateType::typeConstrSetFields(FnSymbol* fn,
                                         CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
@@ -1449,8 +1417,8 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
           typeConstrSetField(fn, field, new SymExpr(arg));
 
-        } else if (field->defPoint->exprType &&
-                   isTypeExprConcreteGeneric(field->defPoint->exprType) >= 0) {
+        } else if (field->defPoint->exprType
+                   && !isFieldTypeExprGeneric(field->defPoint->exprType)) {
           Expr* type = field->defPoint->exprType;
           CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   type->copy());
 

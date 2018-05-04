@@ -212,8 +212,7 @@ void scopeResolve() {
           for_fields(field, at) {
             if (field->id == 38656)
               gdbShouldBreakHere();
-            int g = at->isFieldConcreteGeneric(field);
-            if (g < 0) {
+            if (at->fieldIsGeneric(field)) {
               at->markAsGeneric();
               changed = true;
             }

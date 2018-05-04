@@ -5045,7 +5045,7 @@ static void resolveInitField(CallExpr* call) {
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
         (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
-         -1 == ct->isFieldConcreteGeneric(fs))) {
+         ct->fieldIsGeneric(fs))) {
       AggregateType* instantiate = ct->getInstantiation(srcExpr->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
