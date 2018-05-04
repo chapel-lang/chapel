@@ -254,6 +254,9 @@ class AbstractJob(object):
             submit_command.append('-l')
             submit_command.append('{0}={1}'.format(
                 self.processing_elems_per_node_resource, 1))
+        more_l = os.environ.get('CHPL_LAUNCHCMD_QSUB_MORE_L')
+        if more_l:
+            submit_command.append('{0}'.format(more_l))
 
 
         logging.debug('qsub command: {0}'.format(submit_command))
