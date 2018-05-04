@@ -26,21 +26,17 @@ class Derived : Base {
 var b:Base;
 var d:Derived;
 
-b = new Base();
+b = new borrowed Base();
 writeln(b.field);		// Expect "Base"
 writeln(b.sbName);		// Expect "static Base"
 writeln(b.dbName());	// Expect "dynamic Base"
-delete b;
 
-d = new Derived("foo");
+d = new borrowed Derived("foo");
 writeln(d.field);		// Expect "Derived foo"
 writeln(d.sbName);		// Expect "static Derived"
 writeln(d.dbName());	// Expect "dynamic Derived"
-delete d;
 
-b = new Derived("bar");
+b = new borrowed Derived("bar");
 writeln(b.field);		// Expect "Base"
 writeln(b.sbName);		// Expect "static Base"
 writeln(b.dbName());	// Expect "dynamic Derived"
-delete b;
-

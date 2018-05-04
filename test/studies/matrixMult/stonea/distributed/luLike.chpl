@@ -53,9 +53,9 @@ proc luLikeMultiply(
 
     // initialize row and col copies
     coforall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
-        rowCopies[locRow, locCol] = new WrappedArray(
+        rowCopies[locRow, locCol] = new unmanaged WrappedArray(
             (locRow-1)*blkSize+1, 1, blkSize, blkSize);
-        colCopies[locRow, locCol] = new WrappedArray(
+        colCopies[locRow, locCol] = new unmanaged WrappedArray(
             1, (locCol-1)*blkSize+1, blkSize, blkSize);
     }
 
@@ -134,9 +134,9 @@ proc main() {
     }
 
     // Initialize array
-    var A : [myLocales.domain] WrappedArray;
+    var A : [myLocales.domain] unmanaged WrappedArray;
     forall (i,j) in myLocales.domain do on myLocales[i,j] {
-            A[i,j] = new WrappedArray(
+            A[i,j] = new unmanaged WrappedArray(
                 (i-1)*blkSize+1, (j-1)*blkSize+1, blkSize, blkSize);
 
         forall (locRow, locCol) in A[i,j].dom {

@@ -18,9 +18,8 @@ module A {
   }
 
   proc main() {
-    var f = new Foo(true);
+    var f = new borrowed Foo(true);
     writeln(f); // expect 3, true
-    delete f;
   }
 }
 

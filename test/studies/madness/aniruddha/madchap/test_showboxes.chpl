@@ -10,10 +10,10 @@ proc main() {
 
     writeln("Mad Chapel -- Show me the boxes\n");
 
-    var fcn  = new Fn_Test1();
-    var dfcn = new Fn_dTest1();
+    var fcn  = new unmanaged Fn_Test1();
+    var dfcn = new unmanaged Fn_dTest1();
 
-    var F = new Function(k=k, thresh=thresh, f=fcn);
+    var F = new unmanaged Function(k=k, thresh=thresh, f=fcn);
     writeln("F.norm2() = ", F.norm2());
     F.summarize();
     F.evalNPT(npt);

@@ -18,7 +18,7 @@ iter treeNodes(tree: Tree): Tree {
       yield t;
 }
 
-var tree = new Tree(1, new Tree(2), new Tree(3, new Tree(4), new Tree(5)));
+var tree = new unmanaged Tree(1, new unmanaged Tree(2), new unmanaged Tree(3, new unmanaged Tree(4), new unmanaged Tree(5)));
 
 for t in treeNodes(tree) do
   writeln(t.data);

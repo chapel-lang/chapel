@@ -3,8 +3,8 @@ class C {
   var x: t;
 }
 
-var c1 = new C(int);
-var c2 = new C(real);
+var c1 = new unmanaged C(int);
+var c2 = new unmanaged C(real);
 
 proc foo(c: C(?)) {
   writeln(c);

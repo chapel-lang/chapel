@@ -3,8 +3,8 @@ class C {
 }
 
 proc main() {
-  var c = new C(5);
-  var d = new C(4);
+  var c = new unmanaged C(5);
+  var d = new unmanaged C(4);
   var x:int;
 
   on d {

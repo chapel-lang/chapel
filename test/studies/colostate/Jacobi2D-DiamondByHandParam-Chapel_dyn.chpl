@@ -225,7 +225,7 @@ proc verifyResult( space: [] Cell, computationalDomain: domain(2),
   forall (x, y) in computationalDomain do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new borrowed RandomStream( real, globalSeed, parSafe = false );
 
   for (x, y) in computationalDomain do
      space[0, x, y] = generator.getNext();
@@ -253,8 +253,6 @@ proc verifyResult( space: [] Cell, computationalDomain: domain(2),
 
   if passed && verbose then
      writeln( "SUCCESS!" );
-
-  delete generator;
 
   return passed;
 

@@ -11,8 +11,8 @@ class Foo {
   }
 }
 
-var foo1 = new Foo(int, 2);
-var foo2 = new Foo(int, 4);
+var foo1 = new unmanaged Foo(int, 2);
+var foo2 = new unmanaged Foo(int, 4);
 
 writeln(foo1.type == foo2.type);
 writeln(foo1);

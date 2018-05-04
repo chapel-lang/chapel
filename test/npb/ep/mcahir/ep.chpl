@@ -85,7 +85,7 @@ proc gaussPairsBatch(k: int(64), numPairs: int) {
 	
 	var startTime, randTime, gaussTime: real;
 
-	var rs = new NPBRandomStream(real, seed=seed, parSafe=false);
+	var rs = new borrowed NPBRandomStream(real, seed=seed, parSafe=false);
 	//Find starting seed for this batch
 	rs.skipToNth(k * 2*nk + 1);
 
@@ -110,8 +110,6 @@ proc gaussPairsBatch(k: int(64), numPairs: int) {
 			sy += ty;
 		}
 	}
-
-        delete rs;
 
 	return (q, sx, sy);
 }

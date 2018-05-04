@@ -29,7 +29,7 @@ class myseq {
   }
 }
 
-var s : myseq(int) = new myseq(int);
+var s : myseq(int) = new borrowed myseq(int);
 
 s.append(2);
 
@@ -38,6 +38,3 @@ s.print();
 s.append(3);
 
 s.print();
-
-delete s;
-
