@@ -1,4 +1,4 @@
-use Dataframes;
+use DataFrames;
 
 var I = new TypedIndex(["A", "B", "C", "D", "E"]);
 
@@ -14,4 +14,9 @@ writeln("\noneDigit + twoDigit:");
 writeln(oneDigit + twoDigit);
 
 writeln("\noneDigit < 3");
-writeln(oneDigit < 3);
+writeln(oneDigit[oneDigit < 3]);
+
+/*
+var bools = new TypedSeries([true, false, true, false, true], I);
+writeln(bools);
+ */

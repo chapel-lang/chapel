@@ -532,7 +532,6 @@ module DataFrames {
    * FIRST CLASS FUNCTION SERENITY NOW.
    */
 
-  // TODO: return tuple versions where first element is "None"
   class SeriesUnifier {
     type eltType;
 
@@ -550,32 +549,35 @@ module DataFrames {
     }
   }
 
+  // TODO: isNumericType prevents instantiation with bools
+  // would prefer "is summable" type here
   class SeriesAdd : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
+    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) ||
+                                                      isStringType(eltType) {
       return lhs + rhs;
     }
   }
 
   class SeriesSubtr : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
+    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) {
       return lhs - rhs;
     }
 
-    proc f_rhs(rhs: eltType): eltType {
+    proc f_rhs(rhs: eltType): eltType where isNumericType(eltType) {
       return -rhs;
     }
   }
 
   class SeriesMult : SeriesUnifier {
-    proc f(lhs: eltType, rhs: eltType): eltType {
+    proc f(lhs: eltType, rhs: eltType): eltType where isNumericType(eltType) {
       return lhs * rhs;
     }
 
-    proc f_lhs(lhs: eltType): eltType {
+    proc f_lhs(lhs: eltType): eltType where isNumericType(eltType) {
       return 0;
     }
 
-    proc f_rhs(rhs: eltType): eltType {
+    proc f_rhs(rhs: eltType): eltType where isNumericType(eltType) {
       return 0;
     }
   }
