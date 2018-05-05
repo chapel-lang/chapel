@@ -1716,7 +1716,14 @@ static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
   int i = 1;
   for_formals(form, fn) {
     if (form != formal) {
-      copyMap.put(form, toSymExpr(call->get(i))->symbol());
+      Expr* actExpr = call->get(i);
+      SymExpr* actSym = NULL;
+      if (SymExpr* se = toSymExpr(actExpr)) {
+        actSym = se;
+      } else if (NamedExpr* ne = toNamedExpr(actExpr)) {
+        actSym = toSymExpr(ne->actual);
+      }
+      copyMap.put(form, actSym->symbol());
     }
     i++;
   }
