@@ -174,10 +174,12 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
-# Avoid false positive warnings about class member accesses
+# Avoid false positive warnings about class member access and string overflows.
+# The string overflow false positives occur in runtime code unlike gcc 7.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-class-memaccess
+RUNTIME_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
