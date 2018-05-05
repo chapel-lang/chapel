@@ -265,6 +265,36 @@ module DataFrames {
       halt("generic Series cannot be compared");
       return this;
     }
+
+    pragma "no doc"
+    proc sum() {
+      halt("generic Series cannot be summed");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc min() {
+      halt("generic Series does not have a min");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc max() {
+      halt("generic Series does not have a max");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc and() {
+      halt("generic Series cannot be 'and' together");
+      return 0;
+    }
+
+    pragma "no doc"
+    proc or() {
+      halt("generic Series cannot be 'or' together");
+      return 0;
+    }
   }
 
   class TypedSeries : Series {
@@ -513,6 +543,30 @@ module DataFrames {
 
     proc gteq_scalar(n): Series {
       return this.map(new SeriesGreaterThanEqualTo(n));
+    }
+
+    /*
+     * Reductions
+     */
+
+    proc sum(): eltType {
+      return + reduce this.these();
+    }
+
+    proc min(): eltType {
+      return min reduce this.these();
+    }
+
+    proc max(): eltType {
+      return max reduce this.these();
+    }
+
+    proc and() where eltType == bool {
+      return && reduce this.these();
+    }
+
+    proc or() where eltType == bool {
+      return || reduce this.these();
     }
 
     proc writeThis(f) {
