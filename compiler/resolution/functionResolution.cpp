@@ -1861,6 +1861,8 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
+  } else if (at->symbol->instantiationPoint != NULL) {
+    retval = at->symbol->instantiationPoint;
 
   } else if (at->defaultInitializer &&
              at->defaultInitializer->instantiationPoint) {
@@ -1927,8 +1929,13 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
-  if (at->symbol->instantiationPoint == NULL) {
-    at->symbol->instantiationPoint = fn->instantiationPoint;
+  if (at->symbol->instantiationPoint == NULL &&
+      fn->instantiationPoint != NULL) {
+    if (FnSymbol* parentFn = toFnSymbol(fn->instantiationPoint->parentSymbol)) {
+      at->symbol->instantiationPoint = parentFn->body;
+    } else {
+      at->symbol->instantiationPoint = fn->instantiationPoint;
+    }
   }
   if (at->scalarPromotionType == NULL) {
     resolvePromotionType(at);
