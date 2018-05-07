@@ -732,8 +732,8 @@ Used to recursively hold tables and respective values
     /* Return String representation of a value in a node */
     proc toString(val: Toml) : string {
       select val.tag {
-        when fieldBool do return val.boo;
-        when fieldInt do return val.i;
+        when fieldBool do return val.boo:string;
+        when fieldInt do return val.i:string;
         when fieldArr {
           var final: string;
           final += '[';
@@ -748,7 +748,7 @@ Used to recursively hold tables and respective values
           final += ']';
           return final;
         }
-        when fieldReal do return val.re;
+        when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
         when fieldDate do return val.dt.isoformat();

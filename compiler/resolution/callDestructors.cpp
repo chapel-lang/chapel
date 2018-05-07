@@ -24,6 +24,7 @@
 #include "errorHandling.h"
 #include "ForallStmt.h"
 #include "iterator.h"
+#include "lateConstCheck.h"
 #include "lifetime.h"
 #include "UnmanagedClassType.h"
 #include "postFold.h"
@@ -863,7 +864,8 @@ bool isCallExprTemporary(Expr* initFrom) {
   SymExpr* fromSe = toSymExpr(initFrom);
   INT_ASSERT(fromSe);
   Symbol* fromSym = fromSe->symbol();
-  if (fromSym->hasFlag(FLAG_EXPR_TEMP)) {
+  if (fromSym->hasFlag(FLAG_EXPR_TEMP) ||
+      fromSym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
     // It's from an auto-destroyed value that is an expression temporary
     // storing the result of a function call.
     return true;
@@ -1379,6 +1381,8 @@ void callDestructors() {
   insertCopiesForYields();
 
   checkLifetimes();
+
+  lateConstCheck(NULL);
 
   insertGlobalAutoDestroyCalls();
   insertReferenceTemps();

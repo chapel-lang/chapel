@@ -32,6 +32,7 @@ module LocaleModelHelpSetup {
   use ChapelLocale;
   use DefaultRectangular;
   use ChapelNumLocales;
+  use ChapelEnv;
   use Sys;
 
   config param debugLocaleModel = false;
@@ -103,21 +104,35 @@ module LocaleModelHelpSetup {
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
-  proc helpSetupLocaleFlat(dst:LocaleModel, out local_name:string) {
-    const _node_id = chpl_nodeID: int;
+  // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
+  private inline proc localSpawn() {
+    if CHPL_COMM == "gasnet" {
+      var spawnfn: c_string;
+      if (CHPL_COMM_SUBSTRATE == "udp" &&
+         sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L") {
+        return true;
+      } else if (CHPL_COMM_SUBSTRATE == "smp") {
+        return true;
+      }
+    }
+    return false;
+  }
 
+  private inline proc getNodeName() {
     // chpl_nodeName is defined in chplsys.c.
     // It supplies a node name obtained by running uname(3) on the
     // current node.  For this reason (as well), the constructor (or
     // at least this setup method) must be run on the node it is
     // intended to describe.
-    var comm, spawnfn : c_string;
-    extern proc chpl_nodeName() : c_string;
-    // sys_getenv returns one on success.
-    if sys_getenv(c"CHPL_COMM", comm) == 1 && comm == c"gasnet" &&
-      sys_getenv(c"GASNET_SPAWNFN", spawnfn) == 1 && spawnfn == c"L"
-    then local_name = chpl_nodeName():string + "-" + _node_id:string;
-    else local_name = chpl_nodeName():string;
+    extern proc chpl_nodeName(): c_string;
+    const _node_name = chpl_nodeName(): string;
+    const _node_id = (chpl_nodeID: int): string;
+
+    return if localSpawn() then _node_name + "-" + _node_id else _node_name;
+  }
+
+  proc helpSetupLocaleFlat(dst:LocaleModel, out local_name:string) {
+    local_name = getNodeName();
 
     extern proc chpl_task_getCallStackSize(): size_t;
     dst.callStackSize = chpl_task_getCallStackSize();

@@ -12,10 +12,10 @@ for generic types.
 
 A discussion of the original design and rationale is provided in `CHIP 10`_.
 
-Chapel's 1.16.0 release, in October 2017, provided a preview
+Chapel's 1.16 release, in October 2017, provided a preview
 implementation of this feature.
 
-Release 1.17.0 advances this effort.  Bugs have been fixed, features
+Release 1.17 advances this effort.  Bugs have been fixed, features
 have been added, and many components of the internal implementation of
 Chapel have transitioned from explicit constructors to explicit
 initializers.  A discussion of the experiences and concerns from this
@@ -54,7 +54,7 @@ Consider a simple record declaration
    var p2 = new LabeledPoint(txt = 'Seattle');
 
 
-For release 1.17.0 the compiler continues to generate an all-fields
+For release 1.17 the compiler continues to generate an all-fields
 constructor for this program.  As this is a record, rather than a
 class, the compiler also continues to generate a default copy
 constructor and a default assignment operator. These could be written
@@ -140,7 +140,7 @@ required to support classes with inheritance.
 Constructors or Initializers but not both
 -----------------------------------------
 
-In release 1.17.0, a record or class type may include user-defined
+In release 1.17, a record or class type may include user-defined
 constructors or user-defined initializers but not both.  If there are
 no user-defined initializers then the compiler will continue to
 generate the appropriate default constructors.
@@ -562,7 +562,7 @@ Initializers or Constructors
 ++++++++++++++++++++++++++++
 
 A base class can rely on initializers or constructors but not both.
-Release Chapel 1.17.0 continues to rely on constructors as the default
+Release Chapel 1.17 continues to rely on constructors as the default
 i.e. if there are no user-defined initializers then the base class
 relies on constructors.
 
@@ -733,7 +733,7 @@ super.postinit() as the first statement.
 Remaining Work
 --------------
 
-With the 1.17.0 release, support for initializers is mostly stable
+With the 1.17 release, support for initializers is mostly stable
 with a few bugs and some unimplemented features remaining.  It is
 recommended that new applications with user-defined class or record
 types use initializers when possible.  Please report any bugs
@@ -749,7 +749,7 @@ Compiler Generated Initializers
 +++++++++++++++++++++++++++++++
 
 Support for compiler generated initializers is considerably more
-mature than it was for the 1.16.0 release.  With the 1.17.0 release
+mature than it was for the 1.16 release.  With the 1.17 release
 the developer-oriented flag ``--force-initializers`` will attempt to
 generate default initializers for classes and records defined in
 application modules.
@@ -768,7 +768,7 @@ require attention.
 Interaction With Error Handling
 +++++++++++++++++++++++++++++++
 
-Release 1.17.0 has limited support for error handling constructs: an
+Release 1.17 has limited support for error handling constructs: an
 initializer cannot be declared as ``throws``, and only ``try!``
 statements without ``catch`` blocks are allowed in the body.
 

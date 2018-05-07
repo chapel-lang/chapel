@@ -445,7 +445,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
 }
 
 // Insert and return the temp that will hold the deserialized
-// instace of 'arg'.
+// instance of 'arg'.
 // Replace all references to 'arg' within the task function
 // with local references to that temp.
 static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,

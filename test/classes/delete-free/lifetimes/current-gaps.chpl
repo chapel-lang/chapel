@@ -46,7 +46,7 @@ writeln(global);
 
 
 record RBorrowAndOwn {
-  var borrowed:MyClass;
+  var _borrowed:MyClass;
 
   pragma "owned"
   var myowned:MyClass;
@@ -68,7 +68,7 @@ proc badF3() {
   var c = new MyClass(1);
   var r = makeR(c);
   {
-    var r2 = makeR(r.borrowed);
+    var r2 = makeR(r._borrowed);
     return r2;
   }
 }

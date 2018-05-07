@@ -1,2 +1,0 @@
-return-array-promoted.chpl:4: In function 'retit':
-return-array-promoted.chpl:5: error: type mismatch in return from int(64) to [domain(1,int(64),false)] int(64)

@@ -1991,7 +1991,14 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   int version = 1;
   while (filenames.get(filename)) {
     version++;
-    sprintf(filename, "%s%d", lowerFilename, version);
+    int wanted_to_write = snprintf(filename, sizeof(filename), "%s%d",
+                                   lowerFilename, version);
+    if (wanted_to_write < 0) {
+      USR_FATAL("character encoding error while generating file name");
+    } else if ((size_t)wanted_to_write >= sizeof(filename)) {
+      USR_FATAL("module name '%s' is too long to be the basis for a file name",
+                currentModuleName);
+    }
   }
   filenames.put(filename, 1);
 

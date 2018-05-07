@@ -91,6 +91,7 @@ module ChapelBase {
   inline proc =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
   inline proc =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
+  inline proc =(ref a:enumerated, b:enumerated) where (a.type == b.type) {__primitive("=", a, b); }
 
   inline proc =(ref a, b: a.type) where isClassType(a.type)
   { __primitive("=", a, b); }
@@ -124,6 +125,14 @@ module ChapelBase {
   inline proc ==(a: imag(?w), b: imag(w)) return __primitive("==", a, b);
   inline proc ==(a: complex(?w), b: complex(w)) return a.re == b.re && a.im == b.im;
   inline proc ==(a: object, b: object) return __primitive("ptr_eq", a, b);
+  inline proc ==(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive("==", a, b);
+  }
+  pragma "last resort"
+  inline proc ==(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
+    return false;
+  }
 
   inline proc !=(a: bool, b: bool) return __primitive("!=", a, b);
   inline proc !=(a: int(?w), b: int(w)) return __primitive("!=", a, b);
@@ -132,16 +141,24 @@ module ChapelBase {
   inline proc !=(a: imag(?w), b: imag(w)) return __primitive("!=", a, b);
   inline proc !=(a: complex(?w), b: complex(w)) return a.re != b.re || a.im != b.im;
   inline proc !=(a: object, b: object) return __primitive("ptr_neq", a, b);
+  inline proc !=(a: enumerated, b: enumerated) where (a.type == b.type) {
+    return __primitive("!=", a, b);
+  }
+  pragma "last resort"
+  inline proc !=(a: enumerated, b: enumerated) where (a.type != b.type) {
+    compilerError("Comparisons between mixed enumerated types not supported by default");
+    return true;
+  }
 
   inline proc ==(param a: bool, param b: bool) param return __primitive("==", a, b);
   inline proc ==(param a: int(?w), param b: int(w)) param return __primitive("==", a, b);
   inline proc ==(param a: uint(?w), param b: uint(w)) param return __primitive("==", a, b);
-  inline proc ==(param a: enumerated, param b: enumerated) param return __primitive("==", a, b);
+  inline proc ==(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("==", a, b);
 
   inline proc !=(param a: bool, param b: bool) param return __primitive("!=", a, b);
   inline proc !=(param a: int(?w), param b: int(w)) param return __primitive("!=", a, b);
   inline proc !=(param a: uint(?w), param b: uint(w)) param return __primitive("!=", a, b);
-  inline proc !=(param a: enumerated, param b: enumerated) param return __primitive("!=", a, b);
+  inline proc !=(param a: enumerated, param b: enumerated) param where (a.type == b.type) return __primitive("!=", a, b);
 
   //
   // ordered comparison on primitive types
@@ -150,37 +167,53 @@ module ChapelBase {
   inline proc <=(a: uint(?w), b: uint(w)) return __primitive("<=", a, b);
   inline proc <=(a: real(?w), b: real(w)) return __primitive("<=", a, b);
   inline proc <=(a: imag(?w), b: imag(w)) return __primitive("<=", a, b);
+  pragma "last resort"
+  proc <=(a: enumerated, b: enumerated) {
+    compilerError("Ordered comparisons not supported for enumerated types by default");
+    return false;
+  }
 
   inline proc >=(a: int(?w), b: int(w)) return __primitive(">=", a, b);
   inline proc >=(a: uint(?w), b: uint(w)) return __primitive(">=", a, b);
   inline proc >=(a: real(?w), b: real(w)) return __primitive(">=", a, b);
   inline proc >=(a: imag(?w), b: imag(w)) return __primitive(">=", a, b);
+  pragma "last resort"
+  proc >=(a: enumerated, b: enumerated) {
+    compilerError("Ordered comparisons not supported for enumerated types by default");
+    return false;
+  }
 
   inline proc <(a: int(?w), b: int(w)) return __primitive("<", a, b);
   inline proc <(a: uint(?w), b: uint(w)) return __primitive("<", a, b);
   inline proc <(a: real(?w), b: real(w)) return __primitive("<", a, b);
   inline proc <(a: imag(?w), b: imag(w)) return __primitive("<", a, b);
+  pragma "last resort"
+  proc <(a: enumerated, b: enumerated) {
+    compilerError("Ordered comparisons not supported for enumerated types by default");
+    return false;
+  }
 
   inline proc >(a: int(?w), b: int(w)) return __primitive(">", a, b);
   inline proc >(a: uint(?w), b: uint(w)) return __primitive(">", a, b);
   inline proc >(a: real(?w), b: real(w)) return __primitive(">", a, b);
   inline proc >(a: imag(?w), b: imag(w)) return __primitive(">", a, b);
+  pragma "last resort"
+  proc >(a: enumerated, b: enumerated) {
+    compilerError("Ordered comparisons not supported for enumerated types by default");
+    return false;
+  }
 
   inline proc <=(param a: int(?w), param b: int(w)) param return __primitive("<=", a, b);
   inline proc <=(param a: uint(?w), param b: uint(w)) param return __primitive("<=", a, b);
-  inline proc <=(param a: enumerated, param b: enumerated) param return __primitive("<=", a, b);
 
   inline proc >=(param a: int(?w), param b: int(w)) param return __primitive(">=", a, b);
   inline proc >=(param a: uint(?w), param b: uint(w)) param return __primitive(">=", a, b);
-  inline proc >=(param a: enumerated, param b: enumerated) param return __primitive(">=", a, b);
 
   inline proc <(param a: int(?w), param b: int(w)) param return __primitive("<", a, b);
   inline proc <(param a: uint(?w), param b: uint(w)) param return __primitive("<", a, b);
-  inline proc <(param a: enumerated, param b: enumerated) param return __primitive("<", a, b);
 
   inline proc >(param a: int(?w), param b: int(w)) param return __primitive(">", a, b);
   inline proc >(param a: uint(?w), param b: uint(w)) param return __primitive(">", a, b);
-  inline proc >(param a: enumerated, param b: enumerated) param return __primitive(">", a, b);
 
   //
   // unary + and - on primitive types
@@ -1090,6 +1123,9 @@ module ChapelBase {
   inline proc _cast(type t, x: complex(?w)) where isComplexType(t)
     return (x.re, x.im):t;
 
+  inline proc _cast(type t, x: enumerated) where isComplexType(t)
+    return (x:real, 0):t;
+
   //
   // casts to imag
   //
@@ -1110,6 +1146,9 @@ module ChapelBase {
 
   inline proc _cast(type t, x: complex(?w)) where isImagType(t)
     return let xim = x.im in __primitive("cast", t, xim);
+
+  inline proc _cast(type t, x: enumerated) where isImagType(t)
+    return x:real:imag;
 
   //
   // casts from complex

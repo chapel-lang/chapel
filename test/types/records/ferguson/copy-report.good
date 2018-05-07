@@ -4,9 +4,7 @@ VARIABLE INITIALIZATION -- VALUE CALL
    blank return intent, untyped variable
    const return intent, untyped variable
    blank return intent, typed variable
-    assign
    const return intent, typed variable
-    assign
  call in arg / call
  field initialization / value call
    default constructor
@@ -17,7 +15,7 @@ VARIABLE INITIALIZATION -- LOCAL VAR
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  field initialization / local var
    default constructor
     initCopy
@@ -28,14 +26,14 @@ VARIABLE INITIALIZATION -- IN ARG (GLOBAL)
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
 
     initCopy
  variable initialization / const-in-intent arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
 
 VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
  passing in intent arg to in intent arg
@@ -44,59 +42,60 @@ VARIABLE INITIALIZATION -- IN ARG (IN ARG (CALL-EXPR)))
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  passing const in intent arg to const in intent arg
     initCopy
  variable initialization / const-in-intent arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
 
 VARIABLE INITIALIZATION -- OUTER VAR
  variable initialization / outer var
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
 
 VARIABLE INITIALIZATION -- GLOBAL / REF
  variable initialization / global var
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  variable initialization / global ref
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  variable initialization / local ref
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  variable initialization / blank-intent arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  variable initialization / const-ref arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
  variable initialization / ref arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
     initCopy
  variable initialization / inout-intent arg
    untyped variable
     initCopy
    typed variable
-    assign
+    initCopy
+   function epilogue
     assign
  field initialization / global var
    default constructor

@@ -1,0 +1,2 @@
+bug: No error for inout argument with default value and no actual arg
+#7924

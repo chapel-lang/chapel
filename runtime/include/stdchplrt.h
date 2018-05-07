@@ -42,8 +42,4 @@
 #include "chpltypes.h"
 #include "error.h"
 
-#ifndef __cplusplus
-#include "chplgmp.h"
-#endif
-
 #endif

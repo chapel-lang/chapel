@@ -399,8 +399,16 @@ returnInfoVirtualMethodCall(CallExpr* call) {
 }
 
 static QualifiedType
-returnInfoSecondType(CallExpr* call) {
+returnInfoCoerce(CallExpr* call) {
   QualifiedType t = call->get(2)->qualType();
+
+  if (t.type()->symbol->hasFlag(FLAG_GENERIC)) {
+    // Try to figure out what instantiation type we would use
+    // and return that type.
+    Type* iType = getInstantiationType(call->get(1)->typeInfo(),
+                                       t.type());
+    t = QualifiedType(iType, t.getQual());
+  }
   return t;
 }
 
@@ -528,6 +536,8 @@ initPrimitive() {
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false, true);
   prim_def(PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD, "init maybe sync/single field",
            returnInfoVoid, false, true);
+
+  // dst, init-expr, optional declared type
   prim_def(PRIM_INIT_VAR,   "init var",   returnInfoVoid);
   prim_def(PRIM_NO_INIT,    "no init",    returnInfoFirstDeref);
   prim_def(PRIM_TYPE_INIT,  "type init",  returnInfoFirstDeref);
@@ -782,7 +792,7 @@ initPrimitive() {
   // the declared return type is not really known until function
   // resolution.
   // It coerces its first argument to the type stored in the second argument.
-  prim_def(PRIM_COERCE, "coerce", returnInfoSecondType);
+  prim_def(PRIM_COERCE, "coerce", returnInfoCoerce);
 
   prim_def(PRIM_CALL_RESOLVES, "call resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_RESOLVES, "method call resolves", returnInfoBool);

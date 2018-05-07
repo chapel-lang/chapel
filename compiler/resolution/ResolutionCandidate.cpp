@@ -269,8 +269,6 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* getInstantiationType(Type* actualType, Type* formalType);
-
 static Type* getBasicInstantiationType(Type* actualType, Type* formalType);
 
 int ResolutionCandidate::computeSubstitutions() {
@@ -413,7 +411,7 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal) {
   }
 }
 
-static Type* getInstantiationType(Type* actualType, Type* formalType) {
+Type* getInstantiationType(Type* actualType, Type* formalType) {
   Type* ret = getBasicInstantiationType(actualType, formalType);
 
   // If that didn't work, try it again with the value type.
@@ -451,6 +449,12 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
     AggregateType* actualC = actualMt->getCanonicalClass();
     if (canInstantiate(actualC, formalType))
       return actualC;
+  }
+
+  if (isManagedPtrType(actualType)) {
+    Type* actualBaseType = actualType->getField("t")->type;
+    if (canInstantiate(actualBaseType, formalType))
+      return actualBaseType;
   }
 
   if (isSyncType(actualType) || isSingleType(actualType)) {

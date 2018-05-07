@@ -249,7 +249,7 @@ void AstDump::visitSymExpr(SymExpr* node) {
   if (var != 0 && var->immediate != 0) {
     const size_t bufSize = 128;
     char         imm[bufSize];
-    char         buff[bufSize];
+    char         buff[bufSize + 1];
 
     snprint_imm(imm, bufSize, *var->immediate);
     sprintf(buff, "%s%s", imm, is_imag_type(var->type) ? "i" : "");

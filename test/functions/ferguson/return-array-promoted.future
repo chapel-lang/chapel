@@ -1,4 +1,0 @@
-semantic: promotion of scalar value for declared array return type
-
-This test was checked in broken.  I'm futurizing it to prevent noise
-in tonight's testing.

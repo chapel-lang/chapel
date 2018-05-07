@@ -39,6 +39,7 @@ proc makeit(type t) {
 proc test2() {
   var x = makeit(unmanaged MyClass);
   writeln(x);
+  delete x;
 }
 
 test2();

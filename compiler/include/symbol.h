@@ -22,6 +22,7 @@
 
 #include "baseAST.h"
 
+#include "astutil.h"
 #include "flags.h"
 #include "type.h"
 

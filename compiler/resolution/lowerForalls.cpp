@@ -71,7 +71,7 @@ To lower a forall statement:
   the current variables to be used when a yield statement
   or a ForallStmt is encountered.
 
-* The key places during the tranversal are:
+* The key places during the traversal are:
 
  - The start and end of the iterator body.
  - A task-parallel construct i.e. a call to a task function.
@@ -605,9 +605,9 @@ static void expandYield(ExpandVisitor* EV, CallExpr* yieldCall)
 // At this point in compilation, in certain cases an in-intent formal is
 // represented as a ref-intent formal + copy construction into a "formal temp".
 // See insertFormalTemps(). As a result, in-intent formals are treated
-// as PODs, with argument passing implemented as memcopy,
+// as PODs, with argument passing implemented as memcpy,
 //
-// So, we need to mimick that here. Otherwise we miss copy-construction
+// So, we need to mimic that here. Otherwise we miss copy-construction
 // from the actual into the formal.
 //
 static void addFormalTempSIifNeeded(FnSymbol* cloneTaskFn, Expr* aInit,

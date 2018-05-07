@@ -664,13 +664,6 @@ PrimitiveType* EnumType::getIntegerType() {
   return integerType;
 }
 
-Immediate* EnumType::getMinConstant() {
-  return &minConstant;
-}
-Immediate* EnumType::getMaxConstant() {
-  return &maxConstant;
-}
-
 
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {
@@ -927,6 +920,9 @@ void initPrimitiveTypes() {
 
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
+
+  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);

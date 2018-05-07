@@ -88,7 +88,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
-    ChapelEnv('CHPL_GMP', RUNTIME | DEFAULT, 'gmp'),
+    ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER, 'llvm'),

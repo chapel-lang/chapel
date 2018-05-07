@@ -16,15 +16,15 @@ proc main() {
 
   do {
     if (i == (roman.length)) {
-      sum += roman[i]:numeral;
+      sum += roman[i]:numeral:int;
       i += 1;
-    } else if (roman[i]:numeral < roman[i+1]:numeral) {
+    } else if (roman[i]:numeral:int < roman[i+1]:numeral:int) {
       /* If the number to the left is lower than to the right,
          subtract it from the number on the right and add to the total */
-      sum += roman[i+1]:numeral - roman[i]:numeral;
+      sum += roman[i+1]:numeral:int - roman[i]:numeral:int;
       i += 2;
     } else {
-      sum += roman[i]:numeral;
+      sum += roman[i]:numeral:int;
       i += 1;
     }
   } while i <= (roman.length);
