@@ -1,4 +1,4 @@
-reductionex_class.chpl:43: internal error: CAL0124 chpl version 1.18.0 pre-release (02d6b31f68)
+reductionex_class.chpl:44: internal error: CAL0124 chpl version 1.18.0 pre-release (02d6b31f68)
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
 and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
