@@ -188,7 +188,7 @@ module ChapelReduce {
   pragma "use default init"
   class LogicalOrReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = _land_id(eltType);
+    var value = _lor_id(eltType);
 
     proc identity return _lor_id(eltType);
     proc accumulate(x) {
