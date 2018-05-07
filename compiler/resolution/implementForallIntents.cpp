@@ -2097,7 +2097,17 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 
   resolveBlockStmt(hld);
   insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
+
+  AggregateType* reductionClass = toAggregateType(canonicalClassType(globalOp->type));
+  if (reductionClass->symbol->instantiationPoint == hld) {
+    BlockStmt* parentBlock = toBlockStmt(hld->parentExpr);
+    INT_ASSERT(parentBlock != NULL);
+    reductionClass->symbol->instantiationPoint = parentBlock;
+  }
+
   hld->flattenAndRemove();
+
+
 
   // Todo: this replace() is somewhat expensive.
   // Can instead we update fs->riSpecs[i] aka 'riSpec' in-place?

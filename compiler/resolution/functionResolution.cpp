@@ -1931,11 +1931,7 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
   if (at->symbol->instantiationPoint == NULL &&
       fn->instantiationPoint != NULL) {
-    if (FnSymbol* parentFn = toFnSymbol(fn->instantiationPoint->parentSymbol)) {
-      at->symbol->instantiationPoint = parentFn->body;
-    } else {
-      at->symbol->instantiationPoint = fn->instantiationPoint;
-    }
+    at->symbol->instantiationPoint = fn->instantiationPoint;
   }
   if (at->scalarPromotionType == NULL) {
     resolvePromotionType(at);
