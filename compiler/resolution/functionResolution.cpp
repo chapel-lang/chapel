@@ -1858,11 +1858,13 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
+  // BHARSH TODO: Why not use at->symbol->instantiationPoint ?
+  // Some tests failed at the time:
+  //   - library/standard/DateTime/*
+  //   - mason/*
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
-  } else if (at->symbol->instantiationPoint != NULL) {
-    retval = at->symbol->instantiationPoint;
 
   } else if (at->defaultInitializer &&
              at->defaultInitializer->instantiationPoint) {
