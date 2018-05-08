@@ -263,9 +263,8 @@ proc chown(out error: syserr, name: string, uid: int, gid: int) {
    the file or directory `dest`.  If `dest` is a directory, will throw a
    FileNotFoundError.  If `metadata` is set to `true`, will also copy the
    metadata (uid, gid, time of last access and time of modification) of the
-   file to be copied.
-
-   May halt with other error messages.
+   file to be copied. A partially copied file or directory may be present
+   in `dest` if there is an error in copying.
 
    .. note::
 
@@ -376,36 +375,28 @@ proc copyFile(src: string, dest: string) throws {
   defer {
     try {
       srcFile.close();
-    } catch {
-      // ignore errors
-    }
+    } catch { /* ignore errors */ }
   }
 
   var destFile = try open(dest, iomode.cw);
   defer {
     try {
       destFile.close();
-    } catch {
-      // ignore errors
-    }
+    } catch { /* ignore errors */ }
   }
 
   var srcChnl = try srcFile.reader(kind=ionative, locking=false);
   defer {
     try {
       srcChnl.close();
-    } catch {
-      // ignore errors
-    }
+    } catch { /* ignore errors */ }
   }
 
   var destChnl = try destFile.writer(kind=ionative, locking=false);
   defer {
     try {
       destChnl.close();
-    } catch {
-      // ignore errors
-    }
+    } catch { /* ignore errors */ }
   }
 
   // read in, write out.
@@ -426,6 +417,12 @@ proc copyFile(src: string, dest: string) throws {
 
     // Some of these routines don't exist with Chapel wrappers now
   }
+
+  // throws close errors if reading is successful
+  try destChnl.close();
+  try srcChnl.close();
+  try destFile.close();
+  try srcFile.close();
 }
 
 pragma "no doc"
@@ -579,9 +576,7 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = if err
-          then ""
-          else new string(tmp, needToCopy=false);
+    ret = tmp: string;
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
