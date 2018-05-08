@@ -129,7 +129,7 @@ static qioerr setup_actions(
     *hasactions = true;
   } else if( *std__fd == QIO_FD_TO_STDOUT ) {
     // Do nothing.
-    assert(0);
+
   } else {
     // Use a given file descriptor for childfd (e.g. stdin).
     rc = posix_spawn_file_actions_adddup2(actions, *std__fd, childfd);
