@@ -265,36 +265,6 @@ module DataFrames {
       halt("generic Series cannot be compared");
       return this;
     }
-
-    pragma "no doc"
-    proc sum() {
-      halt("generic Series cannot be summed");
-      return 0;
-    }
-
-    pragma "no doc"
-    proc min() {
-      halt("generic Series does not have a min");
-      return 0;
-    }
-
-    pragma "no doc"
-    proc max() {
-      halt("generic Series does not have a max");
-      return 0;
-    }
-
-    pragma "no doc"
-    proc and() {
-      halt("generic Series cannot be 'and' together");
-      return 0;
-    }
-
-    pragma "no doc"
-    proc or() {
-      halt("generic Series cannot be 'or' together");
-      return 0;
-    }
   }
 
   class TypedSeries : Series {
