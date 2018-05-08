@@ -6984,9 +6984,7 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   defer {
     try {
       f.close();
-    } catch {
-      // ignore close errors
-    }
+    } catch { /* ignore deferred close error */ }
   }
 
   var offset:int = 0;
@@ -6995,14 +6993,13 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
     defer {
       try {
         w.close();
-      } catch {
-        // ignore close errors
-      }
+      } catch { /* ignore deferred close error */ }
     }
     try w.writef(fmt, (...args));
     offset = w.offset();
 
-    // w should be closed by the defer statement at this point.
+    // close error is thrown instead of ignored
+    try w.close();
   }
 
   var buf = c_malloc(uint(8), offset+1);
@@ -7010,12 +7007,14 @@ private inline proc chpl_do_format(fmt:string, args ...?k): string throws {
   defer {
     try {
       r.close();
-    } catch {
-      // ignore close errors
-    }
+    } catch { /* ignore deferred close error */ }
   }
 
   try r.readBytes(buf, offset:ssize_t);
+
+  // close errors are thrown instead of ignored
+  try r.close();
+  try f.close();
 
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
