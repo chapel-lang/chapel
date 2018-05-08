@@ -2509,6 +2509,15 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   std::vector<SymExpr*> symExprs;
 
+  //
+  // Only fix array formals with 'in' intent if there was:
+  // - a type query, or
+  // - a domain query, or
+  // - no domain expression
+  //
+  // This 'fixing' makes it difficult to find runtime type information later
+  // when we need it.
+  //
   if (skipFixup(formal, domExpr, eltExpr)) return;
 
   // Replace the type expression with "_array" to make it generic.
