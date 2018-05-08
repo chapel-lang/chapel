@@ -451,6 +451,12 @@ static Type* getBasicInstantiationType(Type* actualType, Type* formalType) {
       return actualC;
   }
 
+  if (isManagedPtrType(actualType)) {
+    Type* actualBaseType = actualType->getField("t")->type;
+    if (canInstantiate(actualBaseType, formalType))
+      return actualBaseType;
+  }
+
   if (isSyncType(actualType) || isSingleType(actualType)) {
     Type* baseType = actualType->getField("valType")->type;
     if (canInstantiate(baseType, formalType))

@@ -43,9 +43,9 @@ class PeriodicGridBC: GridBC {
       var shift: dimension*int;
 
       for d in dimensions {
-        if loc(d) == loc1d.below then
+        if loc(d) == loc1d.below:int then
           shift(d) = 2*grid.n_cells(d);
-        else if loc(d) == loc1d.above then
+        else if loc(d) == loc1d.above:int then
           shift(d) = -2*grid.n_cells(d);
       }
 

@@ -93,8 +93,7 @@ void checkReturnTypesHaveRefTypes();
 
 // buildDefaultFunctions.cpp
 void buildDefaultDestructor(AggregateType* ct);
-void buildNearScopeEnumFunctions(EnumType* et);
-void buildFarScopeEnumFunctions(EnumType* et);
+void buildEnumFunctions(EnumType* et);
 
 // callDestructors.cpp
 void insertReferenceTemps(CallExpr* call);

@@ -579,7 +579,7 @@ enum iostringformat {
             to store in :var:`iostyle.str_style`.
  */
 proc stringStyleTerminated(terminator:uint(8)) {
-  return -(terminator - iostringstyle.data_null);
+  return -(terminator - iostringstyle.data_null:int(64));
 }
 
 /*
@@ -605,7 +605,7 @@ proc stringStyleExactLen(len:int(64)) {
   length as described in :type:`iostringstyle`.
  */
 proc stringStyleWithVariableLength() {
-  return iostringstyle.lenVb_data;
+  return iostringstyle.lenVb_data: int(64);
 }
 
 /*
@@ -761,7 +761,7 @@ extern record iostyle { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = iostringstyle.data_toeof;
+  var str_style:int(64) = iostringstyle.data_toeof: int(64);
 
   // text style choices
   /* When performing text I/O, pad out to this many columns */
@@ -2888,26 +2888,26 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
         return (-got):syserr;
       }
     } else if t == int(16) {
-      return qio_channel_read_int16(false, byteorder, _channel_internal, x);
+      return qio_channel_read_int16(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(16) {
-      return qio_channel_read_uint16(false, byteorder, _channel_internal, x);
+      return qio_channel_read_uint16(false, byteorder:c_int, _channel_internal, x);
     } else if t == int(32) {
-      return qio_channel_read_int32(false, byteorder, _channel_internal, x);
+      return qio_channel_read_int32(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(32) {
-      return qio_channel_read_uint32(false, byteorder, _channel_internal, x);
+      return qio_channel_read_uint32(false, byteorder:c_int, _channel_internal, x);
     } else if t == int(64) {
-      return qio_channel_read_int64(false, byteorder, _channel_internal, x);
+      return qio_channel_read_int64(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(64) {
-      return qio_channel_read_uint64(false, byteorder, _channel_internal, x);
+      return qio_channel_read_uint64(false, byteorder:c_int, _channel_internal, x);
     } else {
       compilerError("Unknown int type in _read_binary_internal ", t:string);
     }
   } else if isFloatType(t) {
     // handles real, imag
     if t == real(32) || t == imag(32) {
-      return qio_channel_read_float32(false, byteorder, _channel_internal, x);
+      return qio_channel_read_float32(false, byteorder:c_int, _channel_internal, x);
     } else if t == real(64) || t == imag(64) {
-      return qio_channel_read_float64(false, byteorder, _channel_internal, x);
+      return qio_channel_read_float64(false, byteorder:c_int, _channel_internal, x);
     } else {
       compilerError("Unknown float type in _read_binary_internal ", t:string);
     }
@@ -2917,14 +2917,14 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     var im:x.im.type;
     var err:syserr = ENOERR;
     if re.type == real(32) {
-      err = qio_channel_read_float32(false, byteorder, _channel_internal, re);
+      err = qio_channel_read_float32(false, byteorder:c_int, _channel_internal, re);
       if ! err {
-        err = qio_channel_read_float32(false, byteorder, _channel_internal, im);
+        err = qio_channel_read_float32(false, byteorder:c_int, _channel_internal, im);
       }
     } else if re.type == real(64) {
-      err = qio_channel_read_float64(false, byteorder, _channel_internal, re);
+      err = qio_channel_read_float64(false, byteorder:c_int, _channel_internal, re);
       if ! err {
-        err = qio_channel_read_float64(false, byteorder, _channel_internal, im);
+        err = qio_channel_read_float64(false, byteorder:c_int, _channel_internal, im);
       }
     } else {
       compilerError("Unknown complex type in _read_binary_internal ", t:string);
@@ -2935,7 +2935,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
     // handle string
     var len:int(64);
     var tx: c_string;
-    var ret = qio_channel_read_string(false, byteorder,
+    var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
     x = new string(tx, length=len, needToCopy=false);
@@ -2961,25 +2961,25 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     if numBytes(t) == 1 {
       return qio_channel_write_byte(false, _channel_internal, x:uint(8));
     } else if t == int(16) {
-      return qio_channel_write_int16(false, byteorder, _channel_internal, x);
+      return qio_channel_write_int16(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(16) {
-      return qio_channel_write_uint16(false, byteorder, _channel_internal, x);
+      return qio_channel_write_uint16(false, byteorder:c_int, _channel_internal, x);
     } else if t == int(32) {
-      return qio_channel_write_int32(false, byteorder, _channel_internal, x);
+      return qio_channel_write_int32(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(32) {
-      return qio_channel_write_uint32(false, byteorder, _channel_internal, x);
+      return qio_channel_write_uint32(false, byteorder:c_int, _channel_internal, x);
     } else if t == int(64) {
-      return qio_channel_write_int64(false, byteorder, _channel_internal, x);
+      return qio_channel_write_int64(false, byteorder:c_int, _channel_internal, x);
     } else if t == uint(64) {
-      return qio_channel_write_uint64(false, byteorder, _channel_internal, x);
+      return qio_channel_write_uint64(false, byteorder:c_int, _channel_internal, x);
     } else {
       compilerError("Unknown int type in _write_binary_internal ", t:string);
     }
   } else if isFloatType(t) {
     if t == real(32) || t == imag(32) {
-      return qio_channel_write_float32(false, byteorder, _channel_internal, x);
+      return qio_channel_write_float32(false, byteorder:c_int, _channel_internal, x);
     } else if t == real(64) || t == imag(64) {
-      return qio_channel_write_float64(false, byteorder, _channel_internal, x);
+      return qio_channel_write_float64(false, byteorder:c_int, _channel_internal, x);
     } else {
       compilerError("Unknown float type in _write_binary_internal ", t:string);
     }
@@ -2989,14 +2989,14 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     var im = x.im;
     var err:syserr = ENOERR;
     if re.type == real(32) {
-      err = qio_channel_write_float32(false, byteorder, _channel_internal, re);
+      err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, re);
       if ! err {
-        err = qio_channel_write_float32(false, byteorder, _channel_internal, im);
+        err = qio_channel_write_float32(false, byteorder:c_int, _channel_internal, im);
       }
     } else if re.type == real(64) {
-      err = qio_channel_write_float64(false, byteorder, _channel_internal, re);
+      err = qio_channel_write_float64(false, byteorder:c_int, _channel_internal, re);
       if ! err {
-        err = qio_channel_write_float64(false, byteorder, _channel_internal, im);
+        err = qio_channel_write_float64(false, byteorder:c_int, _channel_internal, im);
       }
     } else {
       compilerError("Unknown complex type in _write_binary_internal ", t:string);
@@ -3004,7 +3004,7 @@ private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, 
     return err;
   } else if t == string {
     var local_x = x.localize();
-    return qio_channel_write_string(false, byteorder, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), local_x.length: ssize_t);
   } else if isEnumType(t) {
     var i:enum_mintype(t) = x:enum_mintype(t);
     // call the integer version
@@ -3040,7 +3040,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
-      select byteorder {
+      select byteorder:iokind {
         when iokind.big    do e = _read_binary_internal(_channel_internal, iokind.big, x);
         when iokind.little do e = _read_binary_internal(_channel_internal, iokind.little, x);
         otherwise             e = _read_binary_internal(_channel_internal, iokind.native, x);
@@ -3072,7 +3072,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
     if binary {
-      select byteorder {
+      select byteorder:iokind {
         when iokind.big    do e = _write_binary_internal(_channel_internal, iokind.big, x);
         when iokind.little do e = _write_binary_internal(_channel_internal, iokind.little, x);
         otherwise             e = _write_binary_internal(_channel_internal, iokind.native, x);
@@ -3743,7 +3743,7 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1, out error:syserr):
 
     if binary {
       error = qio_channel_read_string(false, byteorder,
-                                      iostringstyle.data_toeof,
+                                      iostringstyle.data_toeof:int(64),
                                       this._channel_internal, tx,
                                       lenread, uselen);
     } else {
@@ -6924,7 +6924,7 @@ proc channel._extractMatch(m:reMatch, ref arg:string, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string;
     error =
-        qio_channel_read_string(false, iokind.native, stringStyleExactLen(len),
+        qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
                                 _channel_internal, ts, gotlen, len: ssize_t);
     s = new string(ts, length=gotlen, needToCopy=false);
   }

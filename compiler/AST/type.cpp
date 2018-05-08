@@ -664,13 +664,6 @@ PrimitiveType* EnumType::getIntegerType() {
   return integerType;
 }
 
-Immediate* EnumType::getMinConstant() {
-  return &minConstant;
-}
-Immediate* EnumType::getMaxConstant() {
-  return &maxConstant;
-}
-
 
 void EnumType::accept(AstVisitor* visitor) {
   if (visitor->enterEnumType(this) == true) {

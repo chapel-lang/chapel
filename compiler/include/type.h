@@ -334,8 +334,6 @@ class EnumType : public Type {
   // This will only really work after the function resolution.
   void sizeAndNormalize();
   PrimitiveType* getIntegerType();
-  Immediate* getMinConstant();
-  Immediate* getMaxConstant();
 
   virtual void printDocs(std::ostream *file, unsigned int tabs);
 

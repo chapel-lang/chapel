@@ -1,5 +1,9 @@
 config param my_start = 1;
 
+proc <(x: enumerated, b: enumerated) {
+  return x:int < b: int;
+}
+
 enum blah { a=1, b=1, c };
 writeln(blah.a < blah.b);
 

@@ -1,0 +1,4 @@
+feature request: domains of enum ranges
+
+This test shows how this could be written cleanly using a 1D domain
+of enums.

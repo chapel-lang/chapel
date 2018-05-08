@@ -106,16 +106,16 @@ class Grid {
     sanityChecks();
 
     var inner_location: dimension*int;
-    for d in dimensions do inner_location(d) = loc1d.inner;
+    for d in dimensions do inner_location(d) = loc1d.inner: int;
 
     var ghost_domain: domain(dimension, stridable=true);
-    for loc in (loc1d.below:int .. loc1d.above by 2)**dimension {
+    for loc in (loc1d.below:int .. loc1d.above:int by 2)**dimension {
       if loc != inner_location {
         for d in dimensions {
-          if loc(d) == loc1d.below {
+          if loc(d) == loc1d.below:int {
             var tmp = ((extended_cells.low(d).. by 2) #n_ghost_cells(d));
             ranges(d) = tmp.alignHigh();
-          } else if loc(d) == loc1d.inner {
+          } else if loc(d) == loc1d.inner:int {
             ranges(d) = cells.dim(d);
           } else {
             // ((..extended_cells.high(d) by 2) #-n_ghost_cells(d)).alignLow();
@@ -186,11 +186,11 @@ class Grid {
     var loc: dimension*int;
 
     for d in dimensions {
-           if idx(d) <  i_low(d)  then loc(d) = loc1d.below;
-      else if idx(d) == i_low(d)  then loc(d) = loc1d.low;
-      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner;
-      else if idx(d) == i_high(d) then loc(d) = loc1d.high;
-      else                             loc(d) = loc1d.above;
+           if idx(d) <  i_low(d)  then loc(d) = loc1d.below: int;
+      else if idx(d) == i_low(d)  then loc(d) = loc1d.low: int;
+      else if idx(d) <  i_high(d) then loc(d) = loc1d.inner: int;
+      else if idx(d) == i_high(d) then loc(d) = loc1d.high: int;
+      else                             loc(d) = loc1d.above: int;
     }
 
     return loc;

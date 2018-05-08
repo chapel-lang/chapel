@@ -4,12 +4,12 @@ var c$: sync color = color.purple;
 
 proc foo(x: int(64)) {
   writeln("In 64-bit foo()");
-  return true;
+  return false;
 }
 
-proc foo(x: int(32)) {
-  writeln("In 32-bit foo()");
-  return false;
+proc foo(x: color) {
+  writeln("In color foo()");
+  return true;
 }
 
 if (foo(c$)) then
