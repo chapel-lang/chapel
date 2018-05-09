@@ -80,6 +80,8 @@ static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
 
+static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
+
 static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
@@ -613,8 +615,6 @@ static void resolveGotoLabels() {
 
 /************************************* | *************************************/
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
-
 static void updateMethod(UnresolvedSymExpr* usymExpr);
 
 static void updateMethod(UnresolvedSymExpr* usymExpr,
@@ -685,6 +685,16 @@ static void resolveUnresolvedSymExprs() {
 
     i++;
   }
+}
+
+void resolveUnresolvedSymExprs(BaseAST* inAst) {
+   std::vector<BaseAST*> asts;
+   collect_asts(inAst, asts);
+
+   for_vector(BaseAST, ast, asts) {
+     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ast))
+       resolveUnresolvedSymExpr(urse);
+   }
 }
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {

@@ -39,4 +39,6 @@ void     lookup(const char*           name,
 
 BaseAST* getScope(BaseAST* ast);
 
+void resolveUnresolvedSymExprs(BaseAST* ast);
+
 #endif
