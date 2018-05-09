@@ -491,6 +491,11 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
         } else {
           newType = ct->generateType(subs);
+
+          // Gather up substitutions for old -> new fields
+          for (int i = 1; i <= newType->fields.length; i++) {
+            map.put(ct->getField(i), newType->getField(i));
+          }
         }
       }
 

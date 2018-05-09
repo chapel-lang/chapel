@@ -1369,7 +1369,7 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
     }
   }
 
-  insertImplicitThis(fn, fieldNamesSet);
+  //insertImplicitThis(fn, fieldNamesSet);
   resolveUnresolvedSymExprs(fn);
 }
 
