@@ -1,0 +1,5 @@
+R.init()
+R.init(R)
+R.deinit
+b = (x = 10)
+R.deinit
