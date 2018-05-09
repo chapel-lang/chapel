@@ -3501,6 +3501,10 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
 
+    if (candidate1->fn->isInitializer()) {
+      forGenericInit = true;
+    }
+
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
     if (notBest[i]) {
