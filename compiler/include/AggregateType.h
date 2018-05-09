@@ -247,7 +247,7 @@ private:
   void                        buildConstructor();
 
 public:
-  bool                        needsConstructor();
+  bool                        needsConstructor() const;
 private:
 
   ArgSymbol*                  moveConstructorToOuter(FnSymbol* fn);

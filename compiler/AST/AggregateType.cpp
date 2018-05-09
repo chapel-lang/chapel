@@ -2158,7 +2158,7 @@ void AggregateType::buildCopyInitializer() {
 // constructor being modified to call the default constructor), and to try to
 // generate default initializers for types where neither an initializer nor a
 // constructor has been defined.
-bool AggregateType::needsConstructor() {
+bool AggregateType::needsConstructor() const {
   // Temporarily only generate default initializers for classes and records
   if (isUnion())
     return true;
@@ -2171,7 +2171,8 @@ bool AggregateType::needsConstructor() {
     return false;
   }
 
-  ModuleSymbol* mod = getModule();
+  AggregateType* thisNC = const_cast<AggregateType*>(this);
+  ModuleSymbol* mod = thisNC->getModule();
 
   // For now, always generate a default constructor for types in the internal
   // and library modules
@@ -2195,7 +2196,7 @@ bool AggregateType::needsConstructor() {
     // neither an initializer nor a constructor.
 
     // Classes that define an initialize() method need a default constructor
-    forv_Vec(FnSymbol, method, methods) {
+    forv_Vec(FnSymbol, method, thisNC->methods) {
       if (method && strcmp(method->name, "initialize") == 0) {
         if (method->numFormals() == 2) {
           return true;
