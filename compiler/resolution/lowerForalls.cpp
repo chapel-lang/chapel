@@ -353,6 +353,12 @@ static void setupForReduce(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* AS_ovar,
   setupForReduce_AS(fs, AS, AS_ovar, IB, DB);
 }
 
+static void setupForTaskPrivate(ForallStmt* fs, ShadowVarSymbol* TPV,
+                                BlockStmt* IB, BlockStmt* DB) {
+  // IB already comes from TPV's declaration in the with-clause.
+  insertDeinitialization(DB, TPV);
+}
+
 /////////// driver function ///////////
 
 //
@@ -382,7 +388,7 @@ void setupShadowVariables(ForallStmt* fs)
 
       case TFI_REDUCE:       setupForReduce(fs, svar, ovar, IB, DB);  break;
 
-      case TFI_TASK_PRIVATE: INT_ASSERT(false); break; // TODO
+      case TFI_TASK_PRIVATE: setupForTaskPrivate(fs, svar, IB, DB);   break;
 
       // We place such svars earlier in the list.
       // They should not come up here.
@@ -523,6 +529,7 @@ static VarSymbol* createCurrIN(ShadowVarSymbol* SI) {
   INT_ASSERT(!SI->isRef());
   VarSymbol* currSI = new VarSymbol(SI->name, SI->type);
   currSI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
+  if (SI->isConstant()) currSI->addFlag(FLAG_CONST);
   return currSI;
 }
 
@@ -539,6 +546,15 @@ static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   currAS->qual = QUAL_VAL;
   return currAS;
  }
+
+// ... for a task-private variable
+static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
+  VarSymbol* currTPV = new VarSymbol(TPV->name, TPV->type);
+  currTPV->qual = TPV->qual;
+  if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
+  if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  return currTPV;
+}
 
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
@@ -711,8 +727,10 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
-    case TFI_TASK_PRIVATE:
-      INT_ASSERT(false); // TODO
+    case TFI_TASK_PRIVATE: // task-private variable
+      addDefAndMap(aInit, map, svar, createCurrTPV(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_DEFAULT:    // no abstract intents, please
@@ -843,7 +861,9 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
       break;
 
     case TFI_TASK_PRIVATE:
-      INT_ASSERT(false); // TODO
+      addDefAndMap(aInit, map, svar, createCurrTPV(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     // No abstract intents, please.
@@ -870,6 +890,89 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
   for_shadow_vars(svar, temp, outerVis->forall)
     expandShadowVarTopLevel(aInit, aFini, map, svar);
+}
+
+
+/////////// reorder shadow variables ///////////
+
+// "Proper" shadow variables i.e. not TPVs should go first,
+// except those for reduce intents.
+static bool shouldGoFirst(ShadowVarSymbol* sv) {
+  switch (sv->intent)
+  {
+  case TFI_DEFAULT:
+  case TFI_CONST:
+  case TFI_IN_OUTERVAR:
+  case TFI_IN:
+  case TFI_CONST_IN:
+  case TFI_REF:
+  case TFI_CONST_REF:
+    return true;
+
+  case TFI_REDUCE:
+  case TFI_REDUCE_OP:
+  case TFI_TASK_PRIVATE:
+    return false;
+  }
+
+  return false; // dummy
+}
+
+//
+// We want all proper shadow variables to be ahead of task-private variables.
+// Explanation: (a) The latter may reference the former - in TPVs initBlocks.
+// (b) We compute+apply SymbolMaps incrementally. (c) When we map a TPV,
+// the proper shadow variables that it references must already be in the map.
+//
+// We do not hoist reduce-intent shadow variables. This is because they
+// should not reference proper shadow variables (right?). So mapping
+// is not an issue. The issue is that we want to preserve the order of
+// initialization of reduction shadow variables w.r.t. task-private variables
+// - because initialization actions may have visible side-effects.
+//
+static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
+  AList& svars = fs->shadowVariables();
+  if (svars.empty()) return; // nothing to reorder
+
+  Expr* currDef = svars.head;
+  Expr* lastReorderedDef = NULL;
+
+  do {
+    Expr* nextDef = currDef->next;
+    ShadowVarSymbol* currSV = toShadowVarSymbol(toDefExpr(currDef)->sym);
+
+    if (shouldGoFirst(currSV)) {
+      if (lastReorderedDef == NULL) {
+        // This is the first time we are seeing a reorderable SV.
+        if (currDef->prev != NULL)
+          // We got some defs before, which are not reorderable.
+          svars.insertAtHead(currDef->remove());
+        else
+          ;// This def is the first one, nothing to reorder.
+      }
+      else {
+        if (lastReorderedDef == currDef->prev)
+          ; // Already properly ordered.
+        else
+          lastReorderedDef->insertAfter(currDef->remove());
+      }
+      // In any case, update the "last" pointer.
+      lastReorderedDef = currDef;
+    }
+    else {
+      // We have !shouldGoFirst(currSV) - nothing to do.
+    }
+
+    currDef = nextDef;
+  } while (currDef != NULL);
+
+  if (fVerify) {
+    bool inSVs = true;
+    for_shadow_vars(sv, temp, fs) {
+      if (shouldGoFirst(sv)) INT_ASSERT(inSVs);
+      else                   inSVs = false;
+    }
+  }
 }
 
 
@@ -955,7 +1058,6 @@ static void handleRecursiveIter(ForallStmt* fs,
 
   fs->remove();
 }
-
 
 
 /////////// iterator forwarders ///////////
@@ -1077,6 +1179,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
     // It is probably OK to lower other foralls even if we can't this one.
     return;
   }
+
+  reorderShadowVsTaskPrivateVars(fs);
 
   // Place to put pre- and post- code.
   SET_LINENO(fs);

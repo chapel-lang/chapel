@@ -210,22 +210,121 @@ static ForallIntentTag argIntentToForallIntent(Expr* ref, IntentTag intent) {
   return TFI_DEFAULT; // dummy
 }
 
-ShadowVarSymbol* ShadowVarSymbol::buildFromArgIntent(IntentTag intent,
-                                                     Expr* ovar)
+static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
+                                            const char* name, Expr* ovar)
 {
-  ForallIntentTag  fi = argIntentToForallIntent(ovar, intent);
-  const char*    name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(fi, name, NULL);
+  ForallIntentTag intent = TFI_DEFAULT; // dummy
+  switch (prefix)
+  {
+  case SVP_CONST:     intent = TFI_CONST;     break;
+  case SVP_IN:        intent = TFI_IN;        break;
+  case SVP_CONST_IN:  intent = TFI_CONST_IN;  break;
+  case SVP_REF:       intent = TFI_REF;       break;
+  case SVP_CONST_REF: intent = TFI_CONST_REF; break;
+  case SVP_VAR:
+    // This keyword is for a TPV.
+    // Whereas the user provided neither a type nor an init.
+    USR_FATAL_CONT(ovar, "a task private variable '%s'"
+                   "requires a type and/or initializing expression", name);
+    break;
+  }
+
+  ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, NULL);
+  new DefExpr(result); // set result->defPoint
+  return result;
 }
+
+static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
+            const char* nameString, Expr* nameExpr, Expr* type, Expr* init)
+{
+
+  // TPV - task-private variable, as we have a type and/or an initializer.
+  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_TASK_PRIVATE,
+                                                nameString, NULL);
+
+  switch (prefix)
+  {
+  case SVP_VAR:        result->qual = QUAL_VAL;       break;
+
+  case SVP_CONST:      result->qual = QUAL_CONST_VAL;
+                       result->addFlag(FLAG_CONST);   break;
+
+  case SVP_REF:        result->qual = QUAL_REF;
+                       result->addFlag(FLAG_REF_VAR); break;
+
+  case SVP_CONST_REF:  result->qual = QUAL_CONST_REF;
+                       result->addFlag(FLAG_CONST);
+                       result->addFlag(FLAG_REF_VAR); break;
+
+  case SVP_IN:
+  case SVP_CONST_IN:                                  break; // error below
+  }
+
+  // Check for type or init in a wrong place.
+  switch (prefix)
+  {
+  // One or both are fine.
+  case SVP_CONST:
+  case SVP_VAR:
+    break;
+
+  // Ref tpvs must have init and not type.
+  case SVP_CONST_REF:
+  case SVP_REF:
+    if (init == NULL)
+      USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable "
+                     "'%s' must have an initializing expression", nameString);
+    if (type != NULL)
+      USR_FATAL_CONT(nameExpr, "a 'ref' or 'const ref' task-private variable "
+                     "'%s' cannot have a type", nameString);
+    break;
+
+  // This keyword combination is not for a TPV.
+  case SVP_IN:
+  case SVP_CONST_IN:
+    USR_FATAL_CONT(nameExpr, "an 'in' or 'const in' intent for '%s' "
+                   "does not allow a type or an initializing expression",
+                   nameString);
+    USR_PRINT(nameExpr, "if you mean to declare a task-private variable,"
+              " use 'var' or 'const'");
+    break;
+  }
+
+  // We will call autoDestroy from deinitBlock() explicitly.
+  result->addFlag(FLAG_NO_AUTO_DESTROY);
+
+  new DefExpr(result, init, type); // set result->defPoint
+
+  return result;
+}
+
+//
+// The returned ShadowVarSymbol comes with a DefExpr in its defPoint.
+//
+ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
+                                    Expr* nameExp, Expr* type, Expr* init)
+{
+  const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
+
+  if (type == NULL && init == NULL)
+    // non-TPV forall intent
+    return buildShadowVariable(prefix, nameString, nameExp);
+  else
+    return buildTaskPrivateVariable(prefix, nameString, nameExp, type, init);
+}
+
 
 ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
   INT_ASSERT(riExpr != NULL);
   const char* name = toUnresolvedSymExpr(ovar)->unresolved;
-  return new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  new DefExpr(result); // set result->defPoint
+  return result;
 }
 
+// old style
 void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   ForallIntentTag tfi = ri ? TFI_REDUCE : argIntentToForallIntent(var, intent);
   fi->fiVars.push_back(var);
@@ -233,8 +332,9 @@ void addForallIntent(ForallIntents* fi, Expr* var, IntentTag intent, Expr* ri) {
   fi->riSpecs.push_back(ri);
 }
 
+// new style
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
-  call->insertAtTail(new DefExpr(svar));
+  call->insertAtTail(svar->defPoint);
 }
 
 //
@@ -357,7 +457,11 @@ static QualifiedType buildIterYieldType(ForallStmt* fs, FnSymbol* iterFn, FnSymb
         break;
 
       case TFI_TASK_PRIVATE:
-        INT_ASSERT(false); // TODO
+        // task-private variables are TODO too.
+        USR_FATAL_CONT(svar, "Tast-private variables are currently not implemented"
+          " for forall- or for-loops over recursive parallel iterators");
+        USR_PRINT(iterFn, "the parallel iterator is here");
+        USR_STOP();
         break;
     }
     INT_ASSERT(ovar != NULL);
@@ -448,11 +552,11 @@ buildFollowLoop(VarSymbol* iter,
 
   // followIdx has a defPoint in the non-fast case
   // and no defPoint in the fast case i.e. for fastFollowIdx.
- if (followIdx->defPoint == NULL) {
-  followBlock->insertAtTail(new DefExpr(followIdx));
- } else {
-  followBlock->insertAtTail(followIdx->defPoint);
- }
+  if (followIdx->defPoint == NULL) {
+    followBlock->insertAtTail(new DefExpr(followIdx));
+  } else {
+    followBlock->insertAtTail(followIdx->defPoint);
+  }
 
   followBlock->insertAtTail("{TYPE 'move'(%S, iteratorIndex(%S)) }", followIdx, followIter);
 

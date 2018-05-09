@@ -1138,7 +1138,7 @@ static Symbol* createShadowVarIfNeeded(ShadowVarSymbol *shadowvar,
       case TFI_TASK_PRIVATE:
         // May result in data races or incorrect behavior
         // if we don't handle multiple enclosing foralls.
-        USR_FATAL_CONT(yieldCall, "a parallel iterator with a yield nested in two or more enclosing forall statements is not currently implemented in the presence of an 'in' or 'reduce' intent.");
+        USR_FATAL_CONT(yieldCall, "a parallel iterator with a yield nested in two or more enclosing forall statements is not currently implemented in the presence of an 'in' or 'reduce' intent or a task-private variable.");
         USR_PRINT(efs, "the immediately enclosing forall statement is here");
         USR_PRINT(efs2, "the next enclosing forall statement is here");
         // If we continue, we may get a const violation on x*_shadowVarReduc.
@@ -1849,21 +1849,19 @@ void implementForallIntents2wrapper(CallExpr* call, CallExpr* eflopiHelper)
 // ForallIntentTag <-> IntentTag
 
 IntentTag argIntentForForallIntent(ForallIntentTag tfi) {
-  switch (tfi)
-  {
-    case TFI_DEFAULT:     return INTENT_BLANK;
-    case TFI_CONST:       return INTENT_CONST;
-    case TFI_IN:          return INTENT_IN;
-    case TFI_CONST_IN:    return INTENT_CONST_IN;
-    case TFI_REF:         return INTENT_REF;
-    case TFI_CONST_REF:   return INTENT_CONST_REF;
-    case TFI_REDUCE_OP:   return INTENT_CONST_IN;  // the reduce op class
+  switch (tfi) {
+    case TFI_DEFAULT:      return INTENT_BLANK;
+    case TFI_CONST:        return INTENT_CONST;
+    case TFI_IN:           return INTENT_IN;
+    case TFI_CONST_IN:     return INTENT_CONST_IN;
+    case TFI_REF:          return INTENT_REF;
+    case TFI_CONST_REF:    return INTENT_CONST_REF;
+    case TFI_REDUCE_OP:    return INTENT_CONST_IN;  // the reduce op class
 
     case TFI_IN_OUTERVAR:
     case TFI_REDUCE:
-    case TFI_TASK_PRIVATE:
-      INT_ASSERT(false);    // don't know what to return
-      return INTENT_BLANK;  // dummy
+    case TFI_TASK_PRIVATE: INT_ASSERT(false);    // don't know what to return
+                           return INTENT_BLANK;  // dummy
   }
   INT_ASSERT(false);    // unexpected ForallIntentTag; 'tfi' contains garbage?
   return INTENT_BLANK;  // dummy
@@ -2157,12 +2155,22 @@ static void handleRISpec(ForallStmt* fs, ShadowVarSymbol* svar)
 
 /////////////////////////////////////////////////////////////////////////////
 
-static void getOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow,
-                            BlockStmt* body)
+// These are additional blocks to look into for outer/shadow variables.
+#define for_additional_blocks(SVAR,BLOCK,TEMP,FORALL) \
+  for_shadow_vars(SVAR,TEMP,FORALL)                   \
+    if (SVAR->isTaskPrivate())                        \
+      if (BlockStmt* BLOCK = SVAR->initBlock())       \
+        if (!BLOCK->body.empty())
+
+static void getOuterVarsNew(ForallStmt* fs, SymbolMap& outer2shadow)
 {
-  if (fs->needToHandleOuterVars())
+  if (fs->needToHandleOuterVars()) {
+    for_additional_blocks(svar, initB, temp, fs)
+      findOuterVarsNew(fs, outer2shadow, initB);
+
     // do the same as in 'if (needsCapture(fn))' in createTaskFunctions()
-    findOuterVarsNew(fs, outer2shadow, body);
+    findOuterVarsNew(fs, outer2shadow, fs->loopBody());
+  }
 
   for_shadow_vars(sv, temp, fs)
     if (sv->isReduce())
@@ -2176,7 +2184,8 @@ static void appendNewShadowVars(ForallStmt* fs, SymbolMap& outer2shadow) {
 }
 
 // Not to be invoked upon a reduce intent.
-// All our shadow variables are expected to be refs.
+// TODO aren't these flags already set?
+// Except for FLAG_CONST_DUE_TO_TASK_FORALL_INTENT.
 static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag intent) {
   // These do not make sense for task/forall intents.
   INT_ASSERT(!(intent & (INTENT_FLAG_PARAM | INTENT_FLAG_TYPE)));
@@ -2209,7 +2218,8 @@ static void setShadowVarFlagsNew(Symbol* ovar, ShadowVarSymbol* svar, IntentTag 
     svar->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 }
 
-static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadowVars)
+// Todo: is now time to get rid of pruning?
+static void processShadowVarsNew(ForallStmt* fs, int& numShadowVars)
 {
   // todo: prune right away, get rid of 'numShadowVars'
 
@@ -2225,6 +2235,10 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
       svar->addFlag(FLAG_REF_VAR);
       svar->qual = QUAL_REF;
       svar->type = dtUnknown;
+    }
+    else if (svar->isTaskPrivate())
+    {
+      // Anything to do here?
     }
     else
     {
@@ -2279,14 +2293,14 @@ static void processShadowVarsNew(ForallStmt* fs, BlockStmt* body, int& numShadow
 //
 // Ideally, we won't prune, so won't need to do this.
 //
-static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
+static void pruneShadowVars(ForallStmt* fs,
                             SymbolMap& outer2shadow, int numInitialVars,
                             int numShadowVars, bool& needToReplace)
 {
   INT_ASSERT(fs->numShadowVars() > numShadowVars); // can be ==; shouldn't be <
 
   // There are two pieces to undo-ing a given shadow variable:
-  //  (a) replace its references within the loop 'body' with its outer variable,
+  //  (a) replace its references within the loop body with its outer variable,
   //  (b) remove its DefExpr.
   //
   // For (a): given that we have not yet performed the outer-to-shadow
@@ -2320,7 +2334,9 @@ static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
 
   if (needToRevert) {
     std::vector<SymExpr*> symExprs;
-    collectSymExprs(body, symExprs);
+    for_additional_blocks(svar, initB, temp, fs)
+      collectSymExprs(initB, symExprs);
+    collectSymExprs(fs->loopBody(), symExprs);
     for_vector(SymExpr, se, symExprs)
       if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol()))
         if (svar->pruneit)
@@ -2330,7 +2346,9 @@ static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
   // otherwise ensure there is nothing to replace
   if (fVerify && !needToRevert) {
     std::vector<SymExpr*> symExprs;
-    collectSymExprs(body, symExprs);
+    for_additional_blocks(svar, initB, temp, fs)
+      collectSymExprs(initB, symExprs);
+    collectSymExprs(fs->loopBody(), symExprs);
     for_vector(SymExpr, se, symExprs)
       if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol()))
         INT_ASSERT(!svar->pruneit);
@@ -2343,9 +2361,11 @@ static void pruneShadowVars(ForallStmt* fs, BlockStmt* body,
 /////////////////////////////////////////////////////////////////////////////
 
 // Same as replaceVarUses() in createTaskFunctions.
-static void replaceVarUsesNew(BlockStmt* body, SymbolMap& outer2shadow) {
+static void replaceVarUsesNew(ForallStmt* fs, SymbolMap& outer2shadow) {
   std::vector<SymExpr*> symExprs;
-  collectSymExprs(body, symExprs);
+  for_additional_blocks(svar, initB, temp, fs)
+    collectSymExprs(initB, symExprs);
+  collectSymExprs(fs->loopBody(), symExprs);
 
   form_Map(SymbolMapElem, e, outer2shadow) {
     if (e->value == markPruned)
@@ -2368,7 +2388,7 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   bool                 needToReplace = false;
   SET_LINENO(forallBody1);
 
-  getOuterVarsNew(fs, outer2shadow, forallBody1);
+  getOuterVarsNew(fs, outer2shadow);
 
   // At this point, fs->shadowVariables() and outer2shadow are disjoint sets.
   //
@@ -2386,17 +2406,17 @@ static void implementForallIntents1New(ForallStmt* fs, CallExpr* parCall) {
   int numInitialVars = (fs->shadowVariables()).length;
   appendNewShadowVars(fs, outer2shadow);
 
-  processShadowVarsNew(fs, forallBody1, numShadowVars); // updates numShadowVars
+  processShadowVarsNew(fs, numShadowVars); // updates numShadowVars
 
   if (fs->numShadowVars() == numShadowVars)
     needToReplace = (outer2shadow.n > 0);
   else
-    pruneShadowVars(fs, forallBody1, outer2shadow, numInitialVars,
+    pruneShadowVars(fs, outer2shadow, numInitialVars,
                     numShadowVars, needToReplace); // updates needToReplace
 
   if (needToReplace) {
     INT_ASSERT(fs->numShadowVars() > 0);  // avoid unnecessary work
-    replaceVarUsesNew(forallBody1, outer2shadow);
+    replaceVarUsesNew(fs, outer2shadow);
   }
 }
 
