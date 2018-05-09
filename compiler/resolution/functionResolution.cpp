@@ -3479,7 +3479,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   return disambiguateByMatch(candidates, DC, ignoreWhere, false, ambiguous);
 }
 
-
+// BHARSH INIT TODO: Do we need 'forGenericInit' anymore?
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
