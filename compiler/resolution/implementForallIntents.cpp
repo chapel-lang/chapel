@@ -2055,6 +2055,28 @@ static void insertFinalGenerate(Expr* ref, Symbol* fiVarSym, Symbol* globalOp) {
   next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
 }
 
+static void moveInstantiationPoint(BlockStmt* to, BlockStmt* from, Type* type) {
+  //
+  // BHARSH 2018-05-08:
+  // Workaround for point of instantiation issue. We resolve some functions
+  // within the block 'hld', which sets the point of instantiation for those
+  // functions to 'hld'. We then flatten and remove 'hld' from the tree, so the
+  // functions have an invalid point of instantiation.
+  //
+  // This snippet updates the instantiation point of the reduction class and
+  // its methods to point to the surviving Block (parent of 'hld').
+  //
+  AggregateType* reductionClass = toAggregateType(canonicalClassType(type));
+  if (reductionClass->symbol->instantiationPoint == from) {
+    reductionClass->symbol->instantiationPoint = to;
+    forv_Vec(FnSymbol, fn, reductionClass->methods) {
+      if (fn->instantiationPoint == from) {
+        fn->instantiationPoint = to;
+      }
+    }
+  }
+}
+
 static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
                                Expr* origRiSpec, TypeSymbol* riTypeSym,
                                Expr* eltTypeArg)
@@ -2098,32 +2120,9 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   resolveBlockStmt(hld);
   insertAndResolveInitialAccumulate(fs, hld, globalOp, fiVarSym);
 
-  //
-  // BHARSH 2018-05-08:
-  // Incredibly ugly workaround for point of instantiation issue. We resolve
-  // some functions within the block 'hld', which sets the point of
-  // instantiation for those functions to 'hld'. We then flatten and remove
-  // 'hld' from the tree, so the functions have an invalid point of
-  // instantiation.
-  //
-  // This snippet updates the instantiation point of the reduction class and
-  // its methods to point to the surviving Block (parent of 'hld').
-  //
-  AggregateType* reductionClass = toAggregateType(canonicalClassType(globalOp->type));
-  if (reductionClass->symbol->instantiationPoint == hld) {
-    BlockStmt* parentBlock = toBlockStmt(hld->parentExpr);
-    INT_ASSERT(parentBlock != NULL);
-    reductionClass->symbol->instantiationPoint = parentBlock;
-    forv_Vec(FnSymbol, fn, reductionClass->methods) {
-      if (fn->instantiationPoint == hld) {
-        fn->instantiationPoint = parentBlock;
-      }
-    }
-  }
+  moveInstantiationPoint(toBlockStmt(hld->parentExpr), hld, globalOp->type);
 
   hld->flattenAndRemove();
-
-
 
   // Todo: this replace() is somewhat expensive.
   // Can instead we update fs->riSpecs[i] aka 'riSpec' in-place?
