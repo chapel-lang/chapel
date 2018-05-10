@@ -7316,9 +7316,27 @@ static void resolveExprExpandGenerics(CallExpr* call) {
   }
 }
 
+static
+void resolveTypeConstructor(AggregateType* at) {
+  // Resolve the parents
+  forv_Vec(AggregateType, pt, at->dispatchParents) {
+    if (pt->typeConstructor)
+      resolveTypeConstructor(pt);
+  }
+
+  // Resolve the current one
+  if (FnSymbol* fn = at->typeConstructor) {
+    if (hasPartialCopyData(fn) == true) {
+      instantiateBody(fn);
+    }
+
+    resolveSignatureAndFunction(fn);
+  }
+}
+
 static void resolveExprTypeConstructor(SymExpr* symExpr) {
   if (AggregateType* at = toAggregateType(symExpr->typeInfo())) {
-    if (FnSymbol* fn = at->typeConstructor) {
+    if (at->typeConstructor) {
       if (at->symbol->hasFlag(FLAG_GENERIC)         == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_CLASS)  == false  &&
           at->symbol->hasFlag(FLAG_ITERATOR_RECORD) == false) {
@@ -7329,11 +7347,10 @@ static void resolveExprTypeConstructor(SymExpr* symExpr) {
             parent->isPrimitive(PRIM_IS_SUBTYPE) == false ||
             sym->hasFlag(FLAG_TYPE_VARIABLE)     == false) {
           if (isStringLiteral(sym) == false) {
-            if (hasPartialCopyData(fn) == true) {
-              instantiateBody(fn);
-            }
 
-            resolveSignatureAndFunction(fn);
+            // Resolve type constructors for this type
+            // as well as any parent types it has.
+            resolveTypeConstructor(at);
           }
         }
       }

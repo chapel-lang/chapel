@@ -421,6 +421,27 @@ void instantiateBody(FnSymbol* fn) {
   }
 }
 
+static
+void gatherFieldSubstitutionsForNewType(AggregateType* oldType,
+                                        AggregateType* newType,
+                                        SymbolMap& map) {
+
+  // Gather the parent fields.
+/* This does not appear to be necessary */
+   if (newType->isClass()) {
+    for(int i = 0; i < newType->dispatchParents.n; i++) {
+      gatherFieldSubstitutionsForNewType(oldType->dispatchParents.v[i],
+                                         newType->dispatchParents.v[i],
+                                         map);
+    }
+  }
+
+  // Gather the current class fields
+  for (int i = 1; i <= newType->fields.length; i++) {
+    map.put(oldType->getField(i), newType->getField(i));
+  }
+}
+
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
  *
@@ -493,9 +514,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
           newType = ct->generateType(subs);
 
           // Gather up substitutions for old -> new fields
-          for (int i = 1; i <= newType->fields.length; i++) {
-            map.put(ct->getField(i), newType->getField(i));
-          }
+          gatherFieldSubstitutionsForNewType(ct, newType, map);
         }
       }
 
