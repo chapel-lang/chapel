@@ -993,7 +993,6 @@ class LocCyclicRADCache /* : LocRADCache */ {
   proc init(param rank: int, type idxType, startIdx, targetLocDom) {
     this.rank = rank;
     this.idxType = idxType;
-    this.startIdx = startIdx;
 
     this.complete();
 
