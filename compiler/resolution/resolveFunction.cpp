@@ -537,6 +537,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           if ((rhsType->symbol->hasFlag(FLAG_ARRAY) == true ||
                rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) &&
               isTypeExpr(call->get(2))             == false) {
+
+            SET_LINENO(call);
             Expr*      rhs       = call->get(2)->remove();
             VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
             CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
