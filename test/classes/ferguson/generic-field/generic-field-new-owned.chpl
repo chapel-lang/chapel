@@ -13,9 +13,11 @@ class GenericClass {
 proc test1() {
   var x = new owned GenericClass(new GenericRecord(1));
   var y:GenericClass = new owned GenericClass(new GenericRecord(1));
+  var z:GenericClass(GenericRecord(int)) = new owned GenericClass(new GenericRecord(1));
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);
+  writeln(z.type:string, " ", z);
   //var x:GenericClass; // no, not possible
 }
 
