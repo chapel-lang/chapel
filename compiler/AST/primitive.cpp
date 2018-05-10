@@ -400,16 +400,15 @@ returnInfoVirtualMethodCall(CallExpr* call) {
 
 static QualifiedType
 returnInfoCoerce(CallExpr* call) {
-  QualifiedType t = call->get(2)->qualType();
+  Type* t = call->get(2)->getValType();
 
-  if (t.type()->symbol->hasFlag(FLAG_GENERIC)) {
+  if (t->symbol->hasFlag(FLAG_GENERIC)) {
     // Try to figure out what instantiation type we would use
     // and return that type.
-    Type* iType = getInstantiationType(call->get(1)->typeInfo(),
-                                       t.type());
-    t = QualifiedType(iType, t.getQual());
+    t = getInstantiationType(call->get(1)->getValType(), t);
   }
-  return t;
+
+  return QualifiedType(t, QUAL_VAL);
 }
 
 static QualifiedType
@@ -436,7 +435,7 @@ returnInfoToUnmanaged(CallExpr* call) {
 static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
-  
+
   if (UnmanagedClassType* mt = toUnmanagedClassType(t)) {
     t = mt->getCanonicalClass();
   }

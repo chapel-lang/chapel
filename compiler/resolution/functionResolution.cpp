@@ -6732,7 +6732,7 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->symbol->hasFlag(FLAG_GENERIC) == true) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) && at->hasGenericDefaults) {
       CallExpr*   cc    = new CallExpr(at->typeConstructor->name);
       TypeSymbol* retTS = NULL;
 
