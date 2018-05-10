@@ -763,10 +763,10 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     updateFieldsMember(initExpr);
   } else if (isPrimitiveScalar(type) == true ||
              isNonGenericClass(type) == true) {
-    // TODO -- use PRIM_INIT_FIELD
     VarSymbol* tmp      = newTemp("tmp", type);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
-    CallExpr*  tmpInit  = new CallExpr("=", tmp, initExpr);
+    CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR,
+                                       tmp, initExpr, type->symbol);
 
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     Symbol*    _this    = mFn->_this;
@@ -843,6 +843,7 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     // to handle
 
     // TODO -- is this necessary anymore? It came from PR #7913.
+    // try the test named syncFieldTypeOnlyTypeFunc2.chpl
 
     Symbol*   _this    = mFn->_this;
     Symbol*   name     = new_CStringSymbol(field->sym->name);
@@ -863,21 +864,20 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     VarSymbol* tmp       = newTemp("tmp", type);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
 
-    // TODO -- don't assign, use PRIM_INIT_FIELD
-
     // Set the value for TMP
-    CallExpr*  tmpAssign = new CallExpr("=", tmp,  initExpr);
+    CallExpr*  tmpInit = new CallExpr(PRIM_INIT_VAR,
+                                      tmp,  initExpr, type->symbol);
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
-    CallExpr*  fieldSet  = new CallExpr(PRIM_SET_MEMBER, _this, name, tmp);
+    CallExpr*  fieldSet  = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
     if (isFieldAccessible(initExpr) == false) {
       INT_ASSERT(false);
     }
 
     insertBefore->insertBefore(tmpDefn);
-    insertBefore->insertBefore(tmpAssign);
+    insertBefore->insertBefore(tmpInit);
     insertBefore->insertBefore(fieldSet);
 
     updateFieldsMember(initExpr);
@@ -892,7 +892,9 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
-    // Should this be PRIM_INIT_FIELD ? or just PRIM_SET_MEMBER?
+    // Calling PRIM_INIT_FIELD here instead of PRIM_SET_MEMBER
+    // helps with classes/ferguson/generic-field - check that
+    // test if it is revisited.
     CallExpr*  fieldSet  = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
     if (isFieldAccessible(initExpr) == false) {
