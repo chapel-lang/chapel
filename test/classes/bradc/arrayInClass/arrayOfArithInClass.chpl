@@ -36,11 +36,11 @@ proc foo(C) {
 
 // declare class instances
 
-var myArithC = new ArithC();
-var myAssocC = new AssocC();
-var myOpaqueC = new OpaqueC();
-var mySparseC = new SparseC();
-var myEnumC = new EnumC();
+var myArithC = new unmanaged ArithC();
+var myAssocC = new unmanaged AssocC();
+var myOpaqueC = new unmanaged OpaqueC();
+var mySparseC = new unmanaged SparseC();
+var myEnumC = new unmanaged EnumC();
 
 // initialize class instances
 

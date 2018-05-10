@@ -15,10 +15,10 @@ proc foo(d: D) {
 }
 
 proc main() {
-  var myC = new C(x=1);
+  var myC = new unmanaged C(x=1);
   foo(myC);
-  var myD = new D();
-  myD.y = new C();
+  var myD = new unmanaged D();
+  myD.y = new unmanaged C();
   myD.y.x = 2;
   foo(myD);
   delete myC;

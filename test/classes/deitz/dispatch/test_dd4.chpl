@@ -21,9 +21,9 @@ class E : D {
   }
 }
 
-(new C()).goo();
-(new D()).goo();
-(new E()).goo();
+(new borrowed C()).goo();
+(new borrowed D()).goo();
+(new borrowed E()).goo();
 
-(new D()).foo();
-(new E()).foo();
+(new borrowed D()).foo();
+(new borrowed E()).foo();

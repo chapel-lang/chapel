@@ -32,9 +32,8 @@ proc main {
 
 proc initialize(B) {
   use Random;
-  var rnd = new RandomStream(eltType=real, seed=randSeed);
+  var rnd = new owned RandomStream(eltType=real, seed=randSeed);
   rnd.fillRandom(B);
-  delete rnd;
 }
 
 proc runTest(D, alpha: real) {
