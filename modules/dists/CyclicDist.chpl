@@ -953,14 +953,6 @@ class LocCyclicArr {
 
   // INIT TODO: using default-init resulted in extra GETs for the tests in
   // distributions/robust/arithmetic/performance/multilocale
-  proc init(type eltType, param rank : int, type idxType, param stridable : bool,
-            locDom : LocCyclicDom(rank, idxType, stridable)) {
-    this.eltType = eltType;
-    this.rank = rank;
-    this.idxType = idxType;
-    this.stridable = stridable;
-    this.locDom = locDom;
-  }
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
