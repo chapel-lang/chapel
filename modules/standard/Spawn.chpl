@@ -739,7 +739,6 @@ module Spawn {
 
     // TODO: rethink this approach, perhaps with an Error list, or var Error
     // - complete all these throwing calls, even if they throw
-    //   - use catch { } to continue despite an Error
     //   - extract a syserr if a SystemError is caught
     // - at the end, throw an error if err is set
     on home {
@@ -750,14 +749,18 @@ module Spawn {
         try {
           this.stdin_channel.close();
         } catch e: SystemError {
-          err = e.err;
-        } catch { }
+          if !err then err = e.err;
+        } catch {
+          if !err then err = EINVAL;
+        }
       }
 
       // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
-      err = qio_waitpid(pid, 1, done, exitcode);
+      var wait_err = qio_waitpid(pid, 1, done, exitcode);
+      if wait_err then err = wait_err;
+
       if done {
         this.running = false;
         this.exit_status = exitcode;
@@ -769,8 +772,10 @@ module Spawn {
         try {
           this.stdout_channel.close();
         } catch e: SystemError {
-          err = e.err;
-        } catch { }
+          if !err then err = e.err;
+        } catch {
+          if !err then err = EINVAL;
+        }
       }
 
       // Close stderr channel.
@@ -778,10 +783,13 @@ module Spawn {
         try {
           this.stderr_channel.close();
         } catch e: SystemError {
-          err = e.err;
-        } catch { }
+          if !err then err = e.err;
+        } catch {
+          if !err then err = EINVAL;
+        }
       }
     }
+
     if err then try ioerror(err, "in subprocess.wait");
   }
 
@@ -871,7 +879,9 @@ module Spawn {
         this.stdin_channel.close();
       } catch e: SystemError {
         err = e.err;
-      } catch { }
+      } catch {
+        err = EINVAL;
+      }
     }
     // Close stdout.
     if this.stdout_pipe {
@@ -879,7 +889,9 @@ module Spawn {
         this.stdout_channel.close();
       } catch e: SystemError {
         err = e.err;
-      } catch { }
+      } catch {
+        err = EINVAL;
+      }
     }
     // Close stderr.
     if this.stderr_pipe {
@@ -887,7 +899,9 @@ module Spawn {
         this.stderr_channel.close();
       } catch e: SystemError {
         err = e.err;
-      } catch { }
+      } catch {
+        err = EINVAL;
+      }
     }
     if err then try ioerror(err, "in subprocess.close");
   }
