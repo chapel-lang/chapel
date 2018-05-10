@@ -736,10 +736,6 @@ module Spawn {
         try ioerror(this.spawn_error, "in subprocess.wait");
     }
 
-    // TODO: rethink this approach, perhaps with an Error list, or var Error
-    // - complete all these throwing calls, even if they throw
-    //   - extract a syserr if a SystemError is caught
-    // - at the end, throw an error if err is set
     var stdin_err:syserr  = ENOERR;
     var wait_err:syserr   = ENOERR;
     var stdout_err:syserr = ENOERR;
