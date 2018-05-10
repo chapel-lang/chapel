@@ -398,7 +398,6 @@ module Buffers {
      :returns: a newly initialized bytes object on the current locale
    */
   proc buffer.flatten(range:buffer_range) throws {
-  //proc buffer.flatten(range:buffer_range):bytes throws {
     var ret: bytes  = new bytes();
     var err: syserr = ENOERR;
 
@@ -582,7 +581,7 @@ module Buffers {
     on this.home {
       err = qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
-    if err then try ioerror(err, "in buffer.append");
+    if err then try ioerror(err, "in buffer.prepend");
   }
 
   pragma "no doc"
