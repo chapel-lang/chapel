@@ -313,7 +313,8 @@ static void insertModuleInit() {
     // If the module has the EXPORT_INIT flag then
     // propagate it to the module's init function
     //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+    if (mod->hasFlag(FLAG_EXPORT_INIT) == true ||
+        (fLibraryCompile == true && mod->modTag == MOD_USER)) {
       mod->initFn->addFlag(FLAG_EXPORT);
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
