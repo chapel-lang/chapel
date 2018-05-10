@@ -12,8 +12,8 @@ class GenericClass {
 
 proc test1() {
   var x = new owned GenericClass(new GenericRecord(1));
-  var y:GenericClass = new owned GenericClass(new GenericRecord(1));
-  var z:GenericClass(GenericRecord(int)) = new owned GenericClass(new GenericRecord(1));
+  var y:owned = new owned GenericClass(new GenericRecord(1));
+  var z:owned GenericClass(GenericRecord(int)) = new owned GenericClass(new GenericRecord(1));
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);
