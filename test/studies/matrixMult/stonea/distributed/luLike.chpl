@@ -43,13 +43,13 @@ class WrappedArray {
 
 proc luLikeMultiply(
     myLocales  : [?localesDom] locale,
-    A          : [localesDom] WrappedArray,
+    A          : [localesDom] unmanaged WrappedArray,
     aLocales   : subdomain(localesDom),
     bLocales   : subdomain(localesDom),
     solLocales : subdomain(localesDom))
 {
-    var rowCopies : [solLocales] WrappedArray;
-    var colCopies : [solLocales] WrappedArray;
+    var rowCopies : [solLocales] unmanaged WrappedArray;
+    var colCopies : [solLocales] unmanaged WrappedArray;
 
     // initialize row and col copies
     coforall (locRow, locCol) in solLocales do on myLocales[locRow,locCol] {
