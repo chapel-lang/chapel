@@ -226,8 +226,8 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
       DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
-	// if we end up in this case.. the compiler infinite loops
-	INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
+        // if we end up in this case.. the compiler infinite loops
+        INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
       } else if (def->init == NULL &&
