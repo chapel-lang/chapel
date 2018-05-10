@@ -1191,11 +1191,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (isRecord(formal->getValType())) {
     // For now, rule out default ctor/init/_new
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-        (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-         fn->hasFlag(FLAG_LAST_RESORT) &&
-         (0 == strcmp(fn->name, "init") ||
-          0 == strcmp(fn->name, "_new"))))
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       return false; // old strategy for old-path in wrapAndCleanUpActuals
     else {
       if (formal->intent == INTENT_IN ||
@@ -1338,7 +1334,14 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         //  typical pattern for follow-on passes)
         tmp->addFlag(FLAG_NO_COPY);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
-        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+        // Default-initializers and '_new' wrappers take ownership
+        // TODO: check for leaks with new wrapper around user init with 'in'
+        // formal
+        if (fn->isDefaultInit() == false &&
+            fn->hasFlag(FLAG_NEW_WRAPPER) == false) {
+          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
       }
       break;
 

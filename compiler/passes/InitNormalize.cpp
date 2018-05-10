@@ -510,7 +510,18 @@ void InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
   if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
-    if (isTypeVar == true) {
+    if (mFn->isDefaultInit()) {
+      Symbol*    name     = new_CStringSymbol(field->sym->name);
+      Symbol*    _this    = mFn->_this;
+      CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, initExpr);
+
+      if (isFieldAccessible(initExpr) == false) {
+        INT_ASSERT(false);
+      }
+
+      insertBefore->insertBefore(fieldSet);
+      updateFieldsMember(initExpr);
+    } else if (isTypeVar == true) {
       VarSymbol* tmp = NULL;
 
       if (type == dtAny) {
@@ -735,8 +746,22 @@ void InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  if (isPrimitiveScalar(type) == true ||
-      isNonGenericClass(type) == true) {
+  if (mFn->isDefaultInit()) {
+    // For default-initializers, copy happens at the callsite
+    Symbol* _this = mFn->_this;
+    Symbol* name = new_CStringSymbol(field->sym->name);
+    PrimitiveTag tag = PRIM_SET_MEMBER;
+    if (mightBeSyncSingleExpr(field)) {
+      tag = PRIM_INIT_FIELD;
+    }
+    CallExpr* fieldSet = new CallExpr(tag, _this, name, initExpr);
+    if (isFieldAccessible(initExpr) == false) {
+      INT_ASSERT(false);
+    }
+    insertBefore->insertBefore(fieldSet);
+    updateFieldsMember(initExpr);
+  } else if (isPrimitiveScalar(type) == true ||
+             isNonGenericClass(type) == true) {
     VarSymbol* tmp      = newTemp("tmp", type);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr("=", tmp, initExpr);
@@ -911,7 +936,16 @@ void InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
   if (SymExpr* initSym = toSymExpr(initExpr)) {
     Type* type = initSym->symbol()->type;
 
-    if (isPrimitiveScalar(type) == true) {
+    if (mFn->isDefaultInit()) {
+      Symbol* _this = mFn->_this;
+      Symbol* name = new_CStringSymbol(field->sym->name);
+      CallExpr* fieldSet = new CallExpr(PRIM_SET_MEMBER, _this, name, initExpr);
+
+      isFieldAccessible(initExpr);
+
+      insertBefore->insertBefore(fieldSet);
+      updateFieldsMember(initExpr);
+    } else if (isPrimitiveScalar(type) == true) {
       VarSymbol*  tmp       = newTemp("tmp", type);
       DefExpr*    tmpDefn   = new DefExpr(tmp);
       CallExpr*   tmpInit   = new CallExpr(PRIM_MOVE, tmp, initExpr);

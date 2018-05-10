@@ -119,6 +119,27 @@ typedef struct DefaultExprFnEntry_s {
 typedef std::map<ArgSymbol*, DefaultExprFnEntry> formalToDefaultExprEntryMap;
 formalToDefaultExprEntryMap formalToDefaultExprEntry;
 
+//
+// Return true if 'innerFn' is an initializer called within a _new wrapper or
+// a default initializer.
+//
+static bool isNestedNewOrDefault(FnSymbol* innerFn, CallExpr* innerCall) {
+  bool ret = false;
+
+  if (FnSymbol* parentFn = toFnSymbol(innerCall->parentSymbol)) {
+    if (innerFn->isInitializer()) {
+      if (parentFn->hasFlag(FLAG_NEW_WRAPPER)) {
+        ret = true;
+      } else if (parentFn->isDefaultInit()) {
+        // Likely a super.init()
+        ret = true;
+      }
+    }
+  }
+
+  return ret;
+}
+
 /************************************* | **************************************
 *                                                                             *
 * The argument actualIdxToFormals[i] stores, for actual i (counting from 0),  *
@@ -127,8 +148,6 @@ formalToDefaultExprEntryMap formalToDefaultExprEntry;
 *                                                                             *
 ************************************** | *************************************/
 
-static bool fnIsDefaultInit(FnSymbol* fn);
-
 FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
                                 CallInfo&                info,
                                 std::vector<ArgSymbol*>  actualIdxToFormal,
@@ -136,11 +155,8 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   int       numActuals = static_cast<int>(actualIdxToFormal.size());
   FnSymbol* retval     = fn;
 
-  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-      fnIsDefaultInit(fn)) {
+  if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR)) {
     // TODO:
-    //  * remove fnIsDefaultInit component of the conditional
-    //    once default init uses 'in' intent to move args to fields.
     //  * remove this branch of the conditional once
     //    initializers have replaced the default constructor
 
@@ -203,13 +219,6 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
   }
 
   return retval;
-}
-
-static bool fnIsDefaultInit(FnSymbol* fn) {
-  return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-         fn->hasFlag(FLAG_LAST_RESORT) &&
-         (0 == strcmp(fn->name, "init") ||
-          0 == strcmp(fn->name, "_new"));
 }
 
 /************************************* | **************************************
@@ -345,7 +354,8 @@ static void addDefaultsAndReorder(FnSymbol *fn,
       newActuals[i] = createDefaultedActual(fn, formal, call, body, copyMap);
     } else if (formal->intent & INTENT_FLAG_IN &&
                formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-               mustUseRuntimeTypeDefault(formal)) {
+               mustUseRuntimeTypeDefault(formal) &&
+               isNestedNewOrDefault(fn, call) == false) {
       // In-intent formals with runtime types need to be handled carefully in
       // order to preserve the correct runtime type.
       Symbol* newDef = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, newActuals[i]);
@@ -612,6 +622,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   // up the return intent for the function. (The return value variable
   // gets special treatment and would be harder to use in this way).
   VarSymbol* temp   = newTemp("temp");
+
+  // Suppress lvalue errors, which are easily encountered with default
+  // wrappers for initializers.
+  temp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   /* The following code is tricky. If it's adjusted, the following
      tests are a good place to start:
@@ -1702,7 +1716,14 @@ static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
   int i = 1;
   for_formals(form, fn) {
     if (form != formal) {
-      copyMap.put(form, toSymExpr(call->get(i))->symbol());
+      Expr* actExpr = call->get(i);
+      SymExpr* actSym = NULL;
+      if (SymExpr* se = toSymExpr(actExpr)) {
+        actSym = se;
+      } else if (NamedExpr* ne = toNamedExpr(actExpr)) {
+        actSym = toSymExpr(ne->actual);
+      }
+      copyMap.put(form, actSym->symbol());
     }
     i++;
   }
@@ -1811,6 +1832,11 @@ static void handleInIntents(FnSymbol* fn,
   // Returning early in that event simplifies the following code.
   if (info.call->numActuals() == 0)
     return;
+  // In intents for initializers called within _new or default init functions
+  // are handled by the _new or default init functions.
+  if (isNestedNewOrDefault(fn, info.call)) {
+    return;
+  }
 
   Expr* anchor = info.call->getStmtExpr();
 
