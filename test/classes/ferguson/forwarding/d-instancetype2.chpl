@@ -34,7 +34,7 @@ record WrapperTwo {
 
 {
   var b = new WrapperTwo(new WrapperOne(new unmanaged D(1.0)));
-  var bb = new D(2.0);
+  var bb = new unmanaged D(2.0);
 
   b.f(bb);
 

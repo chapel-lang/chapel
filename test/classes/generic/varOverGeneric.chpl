@@ -3,5 +3,5 @@ class C {
   var x: t;
 }
 
-var myC: C = new unmanaged C(int, 1);
+var myC: C = new C(int, 1);
 writeln(myC);

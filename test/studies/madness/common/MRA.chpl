@@ -131,7 +131,7 @@ class Function {
     /** Return a deep copy of this Function
      */
     proc copy() {
-        return new Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, f=f, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine, compressed=compressed,
                 sumC=sumC.copy(), diffC=diffC.copy());
     }
@@ -141,7 +141,7 @@ class Function {
      */
     proc skeletonCopy() {
         // Omit: f, compressed, sumC, diffC
-        return new Function(k=k, thresh=thresh, initial_level=initial_level,
+        return new unmanaged Function(k=k, thresh=thresh, initial_level=initial_level,
                 max_level=max_level, autorefine=autorefine);
     }
 

@@ -10,6 +10,7 @@ var globalParent = new borrowed Parent(1);
 var got = f();
 writeln(got);
 
+
 proc f() : Child {
   return globalParent;
 }

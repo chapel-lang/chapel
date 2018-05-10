@@ -83,12 +83,12 @@ module Impl {
     writeln(aa);
 
     var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = new unmanaged ListerParent(rank=1, idxType=int, stridable=false);
+    var d = new borrowed ListerParent(rank=1, idxType=int, stridable=false);
     d.lst.append(a);
 
     test(d);
 
-    delete d, a, aa;
+    delete a, aa;
   }
 }
 

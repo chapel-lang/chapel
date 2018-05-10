@@ -74,7 +74,8 @@ class Block1DDist {
 
     for locid in targetLocDom do
       on targetLocs(locid) do
-        locDist(locid) = new unmanaged LocBlock1DDist(idxType, locid, this);
+        locDist(locid) = new unmanaged LocBlock1DDist(idxType, locid,
+            _to_unmanaged(this));
   }
 
   proc deinit() {
@@ -284,8 +285,9 @@ class Block1DDom {
   proc postinit() {
     for localeIdx in dist.targetLocDom do
       on dist.targetLocs(localeIdx) do
-        locDoms(localeIdx) = new unmanaged LocBlock1DDom(idxType, this, 
-                                           dist.getChunk(whole, localeIdx));
+        locDoms(localeIdx) = new unmanaged LocBlock1DDom(idxType,
+                                            _to_unmanaged(this), 
+                                            dist.getChunk(whole, localeIdx));
     if debugBradsBlock1D then
       [loc in dist.targetLocDom] writeln(loc, " owns ", locDoms(loc));
   }
@@ -394,7 +396,7 @@ class Block1DDom {
   // how to allocate a new array over this domain
   //
   proc newArray(type elemType) {
-    return new unmanaged Block1DArr(idxType, elemType, this);
+    return new unmanaged Block1DArr(idxType, elemType, _to_unmanaged(this));
   }
 
   //

@@ -23,7 +23,7 @@ record WrapperTwo {
 
 {
   var a = new WrapperTwo(new WrapperOne(new unmanaged C(1)));
-  var aa = new C(2);
+  var aa = new unmanaged C(2);
 
   a.f(aa);
 

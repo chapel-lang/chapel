@@ -11,9 +11,9 @@ module torus_graph_generator_utilities {
     use SSCA2_compilation_config_params, Random;
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then 
-                     new borrowed NPBRandomStream (seed = 8737935341)
+                     new unmanaged NPBRandomStream (seed = 8737935341)
 		    else
-		      new borrowed NPBRandomStream ();
+		      new unmanaged NPBRandomStream ();
 
     const n_neighbors = 2*G.dimensions;
     var Unif_Random : [1..n_neighbors] real;
@@ -41,6 +41,8 @@ module torus_graph_generator_utilities {
     //       G.edge_weight = floor ( 1 + Unif_Random * MAX_EDGE_WEIGHT ):int
     // Neither library nor compiler support this yet for tuples.
     // ---------------------------------------------------------------------
+
+    delete Rand_Gen;
   }
 }
 

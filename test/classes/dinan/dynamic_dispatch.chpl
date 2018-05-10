@@ -10,8 +10,8 @@ class B: A {
   }
 }
 
-var a  = new owned A();
-var b  = new owned B();
+var a  = new borrowed A();
+var b  = new borrowed B();
 var ba = b:A;
 
 writeln("a   says: ", a.fcn());

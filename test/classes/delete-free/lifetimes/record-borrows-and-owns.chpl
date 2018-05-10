@@ -9,7 +9,7 @@ record R {
   var _borrowed:MyClass;
 
   pragma "owned"
-  var myowned:unmanaged MyClass;
+  var myowned:MyClass;
 
   proc readOwned() {
     return myowned;
@@ -21,13 +21,13 @@ proc R.deinit() {
 }
 
 proc makeR(borrow:MyClass) {
-  return new R(borrow, new unmanaged MyClass(10*borrow.x));
+  return new R(borrow, new MyClass(10*borrow.x));
 }
 
 proc makeR2(borrow:MyClass) {
   var r:R;
   r._borrowed = borrow;
-  r.myowned = new unmanaged MyClass(10*borrow.x);
+  r.myowned = new MyClass(10*borrow.x);
   return r;
 }
 
@@ -51,7 +51,7 @@ proc badF2(borrow:MyClass) {
 }
 
 proc badF3() {
-  var c = new unmanaged MyClass(1);
+  var c = new MyClass(1);
   var r = makeR(c);
   {
     var r2 = makeR(r._borrowed);
@@ -78,7 +78,7 @@ proc h() {
 
 
 proc test() {
-  var c = new unmanaged MyClass(1);
+  var c = new MyClass(1);
   
   var v1 = makeR(c);
   var v2:R;

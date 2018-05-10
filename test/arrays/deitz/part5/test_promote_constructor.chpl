@@ -5,7 +5,7 @@ class C {
 var A: [1..5] int;
 var B: [1..5] C;
 
-B = new unmanaged C(A);
+B = new C(A);
 
 writeln(B);
 
