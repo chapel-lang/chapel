@@ -731,16 +731,20 @@ module Spawn {
       return;
     }
 
-    var err: syserr = this.spawn_error;
     if !running {
-      if err then try ioerror(err, "in subprocess.wait");
-      return;
+      if this.spawn_error then
+        try ioerror(this.spawn_error, "in subprocess.wait");
     }
 
     // TODO: rethink this approach, perhaps with an Error list, or var Error
     // - complete all these throwing calls, even if they throw
     //   - extract a syserr if a SystemError is caught
     // - at the end, throw an error if err is set
+    var stdin_err:syserr  = ENOERR;
+    var wait_err:syserr   = ENOERR;
+    var stdout_err:syserr = ENOERR;
+    var stderr_err:syserr = ENOERR;
+
     on home {
       // Close stdin.
       if this.stdin_pipe {
@@ -749,18 +753,16 @@ module Spawn {
         try {
           this.stdin_channel.close();
         } catch e: SystemError {
-          if !err then err = e.err;
+          stdin_err = e.err;
         } catch {
-          if !err then err = EINVAL;
+          stdin_err = EINVAL;
         }
       }
 
       // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
-      var wait_err = qio_waitpid(pid, 1, done, exitcode);
-      if wait_err then err = wait_err;
-
+      wait_err = qio_waitpid(pid, 1, done, exitcode);
       if done {
         this.running = false;
         this.exit_status = exitcode;
@@ -772,9 +774,9 @@ module Spawn {
         try {
           this.stdout_channel.close();
         } catch e: SystemError {
-          if !err then err = e.err;
+          stdout_err = e.err;
         } catch {
-          if !err then err = EINVAL;
+          stdout_err = EINVAL;
         }
       }
 
@@ -783,14 +785,22 @@ module Spawn {
         try {
           this.stderr_channel.close();
         } catch e: SystemError {
-          if !err then err = e.err;
+          stderr_err = e.err;
         } catch {
-          if !err then err = EINVAL;
+          stderr_err = EINVAL;
         }
       }
     }
 
-    if err then try ioerror(err, "in subprocess.wait");
+    if wait_err {
+      try ioerror(wait_err, "in subprocess.wait");
+    } else if stdin_err {
+      try ioerror(stdin_err, "in subprocess.wait");
+    } else if stdout_err {
+      try ioerror(stdout_err, "in subprocess.wait");
+    } else if stderr_err {
+      try ioerror(stderr_err, "in subprocess.wait");
+    }
   }
 
   // documented in the throws version
