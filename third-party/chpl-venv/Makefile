@@ -30,8 +30,8 @@ $(CHPL_VENV_INSTALL_DIR):
 
 # Install pip via get-pip.py to ensure we have an updated version
 $(PIP): $(CHPL_VENV_INSTALL_DIR)
-	@echo "Installing local copy of pip with get-pip.py from $(GETPIP)"
 	@if [ -z "$$CHPL_PIP" ]; then \
+	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
 	  (cd install && curl -O $(GETPIP) || \
 	  { echo "Failed on command: curl -O $(GETPIP)."; \
 	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
