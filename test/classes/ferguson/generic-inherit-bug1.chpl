@@ -79,11 +79,11 @@ module Impl {
 
 
   proc main() {
-    var aa = new Child(rank=1, idxType=int, stridable=false, eltType=real);
+    var aa = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=real);
     writeln(aa);
 
-    var a = new Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = new ListerParent(rank=1, idxType=int, stridable=false);
+    var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
+    var d = new unmanaged ListerParent(rank=1, idxType=int, stridable=false);
     d.lst.append(a);
 
     test(d);

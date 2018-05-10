@@ -11,7 +11,7 @@ class MyCircleImpl {
 }
   
 record MyCircle1 {
-  var impl: MyCircleImpl;
+  var impl: unmanaged MyCircleImpl;
 
   proc area() {
     return impl.area();
@@ -22,11 +22,11 @@ record MyCircle1 {
 }
 
 record MyCircle2 {
-  forwarding var impl: MyCircleImpl;
+  forwarding var impl: unmanaged MyCircleImpl;
 }
 
 record MyCircle3 {
-  var impl: MyCircleImpl;
+  var impl: unmanaged MyCircleImpl;
 
   proc getImplOrFail() {
     if impl == nil then
@@ -39,13 +39,13 @@ record MyCircle3 {
 }
 
 record MyCircle4 {
-  var impl: MyCircleImpl;
+  var impl: unmanaged MyCircleImpl;
 
   forwarding impl only area;
 }
 
 record MyCircle5 {
-  var impl: MyCircleImpl;
+  var impl: unmanaged MyCircleImpl;
 
   forwarding impl except circumference;
 }
@@ -53,19 +53,19 @@ record MyCircle5 {
 
 var r = sqrt(1.0/pi);
 
-var x1 = new MyCircle1(new MyCircleImpl(r));
+var x1 = new MyCircle1(new unmanaged MyCircleImpl(r));
 writeln(x1.area());
 
-var x2 = new MyCircle2(new MyCircleImpl(r));
+var x2 = new MyCircle2(new unmanaged MyCircleImpl(r));
 writeln(x2.area());
 
-var x3 = new MyCircle3(new MyCircleImpl(r));
+var x3 = new MyCircle3(new unmanaged MyCircleImpl(r));
 writeln(x3.area());
 
-var x4 = new MyCircle4(new MyCircleImpl(r));
+var x4 = new MyCircle4(new unmanaged MyCircleImpl(r));
 writeln(x4.area());
 
-var x5 = new MyCircle5(new MyCircleImpl(r));
+var x5 = new MyCircle5(new unmanaged MyCircleImpl(r));
 writeln(x5.area());
 
 delete x1.impl;

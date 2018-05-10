@@ -10,15 +10,11 @@ class B: A {
   }
 }
 
-var a  = new A();
-var b  = new B();
+var a  = new owned A();
+var b  = new owned B();
 var ba = b:A;
 
 writeln("a   says: ", a.fcn());
 writeln("b   says: ", b.fcn());
 writeln("b:A says: ", (b:A).fcn());
 writeln("ba  says: ", ba.fcn());
-
-delete b;
-delete a;
-

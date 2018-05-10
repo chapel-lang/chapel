@@ -15,7 +15,7 @@ proc badReturnRefIdentityArg(arg) const ref {
 }
 
 proc test0() {
-  var c = new Owned(new MyClass(1));
+  var c = new Owned(new unmanaged MyClass(1));
   var borrow = c.borrow();
   const ref r = badReturnRefIdentityArg(borrow);
   writeln(r);
@@ -26,7 +26,7 @@ test0();
 
 record R {
   pragma "owned"
-  var c:MyClass;
+  var c:unmanaged MyClass;
 }
 
 proc badReturnRefIdentityArg2(arg) const ref {
@@ -35,7 +35,7 @@ proc badReturnRefIdentityArg2(arg) const ref {
 
 proc test1() {
   pragma "unsafe"
-  var rr = new R(new MyClass(1));
+  var rr = new R(new unmanaged MyClass(1));
 
   var infLifetime = rr.c;
   const ref r = badReturnRefIdentityArg2(infLifetime);
@@ -48,7 +48,7 @@ proc bad(const ref r) const ref {
 }
 
 proc test2() {
-  var r = new Owned(new MyClass(1));
+  var r = new Owned(new unmanaged MyClass(1));
   const ref re = bad(r);
   writeln(re);
 }

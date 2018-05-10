@@ -7,12 +7,12 @@ class D {
     }
   }
   proc make_a_C(i: int = 0) {
-    return new C(i);
+    return new unmanaged C(i);
   }
 }
 
 proc main {
-  var d = new D(1);
+  var d = new unmanaged D(1);
   var c = d.make_a_C();
 
   writeln(d);

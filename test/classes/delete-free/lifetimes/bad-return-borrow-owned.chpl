@@ -6,7 +6,7 @@ class MyClass {
 }
 record Rinit {
   pragma "owned"
-  var c:MyClass;
+  var c:unmanaged MyClass;
   proc init(c:MyClass) {
     this.c = c;
   }
@@ -21,7 +21,7 @@ proc returnBorrowRinit(const ref arg:Rinit):MyClass {
 }
 
 proc badReturnReturnBorrowRinit() {
-  var rr = new Rinit(new MyClass(1));
+  var rr = new Rinit(new unmanaged MyClass(1));
 
   return returnBorrowRinit(rr);
 }
@@ -46,7 +46,7 @@ proc returnBorrow(const ref arg:R):MyClass {
 }
 
 proc badReturnReturnBorrow() {
-  var rr = new R(new MyClass(1));
+  var rr = new R(new unmanaged MyClass(1));
 
   return returnBorrow(rr);
 }
@@ -60,7 +60,7 @@ test2();
 
 
 proc badReturnInnerBorrow() {
-  var rr = new R(new MyClass(1));
+  var rr = new R(new unmanaged MyClass(1));
   proc innerNoArgs() {
     return rr.borrow();
   }

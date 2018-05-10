@@ -18,7 +18,7 @@ record wrapper {
 
     inline proc _value { 
         if instance == nil then
-            instance = new Deque(t);
+            instance = new unmanaged Deque(t);
         return instance;
     }
 

@@ -1,6 +1,6 @@
 class MyClass { var x; }
 
-var a = new MyClass(1);
+var a = new unmanaged MyClass(1);
 writeln(a);
 delete a;
  // OK

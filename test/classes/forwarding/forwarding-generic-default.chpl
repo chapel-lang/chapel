@@ -32,14 +32,14 @@ class C:B{
 }
 
 
-var c1 = new A(new C());
+var c1 = new unmanaged A(new unmanaged C());
 writeln(c1.foo1());
 
-var c2 = new A(new C());
+var c2 = new unmanaged A(new unmanaged C());
 writeln(c2.foo2("Test"));
 
-var c3 = new A(new C());
+var c3 = new unmanaged A(new unmanaged C());
 writeln(c3.foo3("Test", "Test"));
 
-var c4 = new A(new C());
+var c4 = new unmanaged A(new unmanaged C());
 writeln(c4.foo4("Test"));
