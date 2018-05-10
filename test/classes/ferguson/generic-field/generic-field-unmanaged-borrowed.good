@@ -1,0 +1,4 @@
+GenericClassUnmanaged(unmanaged ClassA) {f = {a = 1}}
+GenericClassUnmanaged(unmanaged ClassA) {f = {a = 2}}
+GenericClassBorrowed(ClassA) {f = {a = 1}}
+GenericClassBorrowed(ClassA) {f = {a = 2}}

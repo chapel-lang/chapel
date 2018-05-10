@@ -3,16 +3,10 @@ record GenericRecord {
   var field;
 }
 
+pragma "use default init"
 class GenericClass {
-  // this case happens somewhere else
-  //  default initializer is handled during build default functions
-  //   after scope resolve after normalize but before resolve
   var f:GenericRecord;
-  proc init(arg:GenericRecord) {
-    this.f = arg;
-  }
 }
-
 
 proc test() {
   var x = new GenericClass(new GenericRecord(1));
