@@ -1235,21 +1235,21 @@ static void fixPrimNew(CallExpr* primNewToFix) {
 }
 
 static void fixStringLiteralInit(FnSymbol* fn) {
-  std::vector<CallExpr*> calls;
-  collectCallExprs(fn, calls);
-
-  for_vector(CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_NEW)) {
-      Expr* newFirst = call->get(1);
-      if (SymExpr* se = toSymExpr(newFirst)) {
-        INT_ASSERT(se->symbol() == dtString->symbol);
-      } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(newFirst)) {
-        INT_ASSERT(strcmp(use->unresolved, "string") == 0);
-        use->replace(new SymExpr(dtString->symbol));
-      } else {
-        INT_ASSERT(false);
+  // BHARSH 2018-05-10: Using something like 'collectCallExprs' here resulted
+  // in nontrivial compilation slowdown. We know we're looking for MOVEs from
+  // a NEW, so we can just walk the statements.
+  Expr* first = fn->body->body.head;
+  while (first != NULL) {
+    CallExpr* call = toCallExpr(first);
+    if (call != NULL && call->isPrimitive(PRIM_MOVE)) {
+      CallExpr* rhs = toCallExpr(call->get(2));
+      if (rhs != NULL && rhs->isPrimitive(PRIM_NEW)) {
+        if (UnresolvedSymExpr* use = toUnresolvedSymExpr(rhs->get(1))) {
+          use->replace(new SymExpr(dtString->symbol));
+        }
       }
     }
+    first = first->next;
   }
 }
 
