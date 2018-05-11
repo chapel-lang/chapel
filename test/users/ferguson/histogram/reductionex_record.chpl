@@ -13,6 +13,7 @@
     var max;
     var min;
 
+    pragma "use default init"
     class myhisto: ReduceScanOp {
       type eltType;
       const per = (max - min)/NBUCKETS;

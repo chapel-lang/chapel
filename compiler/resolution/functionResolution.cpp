@@ -1858,6 +1858,10 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
+  // BHARSH TODO: Why not use at->symbol->instantiationPoint ?
+  // Some tests failed at the time:
+  //   - library/standard/DateTime/*
+  //   - mason/*
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
@@ -1927,7 +1931,8 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
-  if (at->symbol->instantiationPoint == NULL) {
+  if (at->symbol->instantiationPoint == NULL &&
+      fn->instantiationPoint != NULL) {
     at->symbol->instantiationPoint = fn->instantiationPoint;
   }
   if (at->scalarPromotionType == NULL) {

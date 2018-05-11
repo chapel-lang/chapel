@@ -27,6 +27,7 @@ writeln("user op:     ", xOp);
 
 delete plusOp;
 
+pragma "use default init"
 class PlusReduceOp: ReduceScanOp {
   type eltType;
   var  value: eltType;
