@@ -2304,19 +2304,18 @@ proc channel.advancePastByte(byte:uint(8), ref error:syserr) {
       calling :proc:`channel.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
-   Throws a SystemError if the channel was not successfully marked.
-
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
     using this feature, for example by *marking* at offset=0 and then
     advancing to the end of the file. It is important to be aware of these
     memory space requirements.
+
+  :returns: an error code, if an error was encountered.
  */
-inline proc channel.mark() throws where this.locking == false {
-  var err = qio_channel_mark(false, _channel_internal);
-  if err then
-    throw SystemError.fromSyserr(err);
+// TODO: update to `throw` on error
+inline proc channel.mark():syserr where this.locking == false {
+  return qio_channel_mark(false, _channel_internal);
 }
 
 /*
@@ -2367,12 +2366,11 @@ inline proc channel._offset():int(64) {
    See :proc:`channel.mark` for details other than the locking
    discipline.
 
-   Throws a SystemError if the channel was not successfully marked.
+  :returns: an error code, if an error was encountered.
  */
-inline proc channel._mark() throws {
-  var err = qio_channel_mark(false, _channel_internal);
-  if err then
-    throw SystemError.fromSyserr(err);
+// TODO: update to `throw` on error
+inline proc channel._mark():syserr {
+  return qio_channel_mark(false, _channel_internal);
 }
 
 /*
@@ -3823,10 +3821,10 @@ proc channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
 
     if binary {
-      error = qio_channel_read_string(false, byteorder,
-                                      iostringstyle.data_toeof:int(64),
-                                      this._channel_internal, tx,
-                                      lenread, uselen);
+      err = qio_channel_read_string(false, byteorder,
+                                    iostringstyle.data_toeof:int(64),
+                                    this._channel_internal, tx,
+                                    lenread, uselen);
     } else {
       var save_style = this._style();
       var style = this._style();
