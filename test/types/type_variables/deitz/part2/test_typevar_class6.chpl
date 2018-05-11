@@ -10,14 +10,11 @@ class foo {
   }
 }
 
-var f1 : foo(t1=int,t2=string) = new foo(t1 = int, t2 = string);
-var f2 : foo(t1=string,t2=int) = new foo(t1 = string, t2 = int, x = "hello", y = 12);
+var f1 : foo(t1=int,t2=string) = new borrowed foo(t1 = int, t2 = string);
+var f2 : foo(t1=string,t2=int) = new borrowed foo(t1 = string, t2 = int, x = "hello", y = 12);
 
 f1.x = 14;
 f1.y = "world";
 
 f1.print();
 f2.print();
-
-delete f2;
-delete f1;

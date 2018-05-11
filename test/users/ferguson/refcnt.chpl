@@ -10,7 +10,7 @@ class RefCount {
 }
 
 record R {
-  var refcnt = new RefCount();
+  var refcnt = new unmanaged RefCount();
   proc retain() {
     refcnt.count += 1;
   }

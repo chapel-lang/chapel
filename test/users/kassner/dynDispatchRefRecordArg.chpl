@@ -31,7 +31,7 @@ class MyClass
 
   proc run()
   {
-    var bar : Foo = new Bar();
+    var bar : Foo = new borrowed Bar();
 
     writeln("run:\t myList.length = " + myList.length);
 
@@ -46,13 +46,13 @@ class MyClass
       writeln("run:\t found '" + item + "' in myList.");
     }
 
-    delete bar;
+
   }
 }
 
 proc main()
 {
-  var c = new MyClass();
+  var c = new unmanaged MyClass();
 
   c.run();
 

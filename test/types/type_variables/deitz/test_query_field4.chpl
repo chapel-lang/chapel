@@ -10,7 +10,7 @@ proc foo(c: C(int, ?tt)) {
   var yy: tt;
   writeln((y, yy));
   writeln(c);
-  delete c;
+
 }
 
 proc foo(c: C(real, ?tt)) {
@@ -18,8 +18,8 @@ proc foo(c: C(real, ?tt)) {
   var yy: tt;
   writeln((y, yy));
   writeln(c);
-  delete c;
+
 }
 
-foo(new C(int, real));
-foo(new C(real, int));
+foo(new borrowed C(int, real));
+foo(new borrowed C(real, int));

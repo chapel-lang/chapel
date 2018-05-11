@@ -17,14 +17,12 @@ proc foo(n:int, ref p:C, ref q:int)
 }
 
 proc doit() {
-  var p = new C(0.0);
+  var p = new borrowed C(0.0);
   var q = 1;
 
   foo(10, p, q);
 
   writeln("p=", p, " q=", q);
-
-  delete p;
 }
 
 proc main() {

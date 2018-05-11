@@ -18,6 +18,6 @@ class c {
   proc init() { this.complete(); if enabled then v = 5; }
 }
 
-var foo = new c();
+var foo = new unmanaged c();
 writeln(foo);
 delete foo;

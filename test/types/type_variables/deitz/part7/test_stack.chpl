@@ -1,13 +1,13 @@
 class stack_elt {
   type eltType;
   var value : eltType;
-  var next : stack_elt(eltType);
+  var next : unmanaged stack_elt(eltType);
 }
 
 record stack {
   type eltType;
 
-  var  top : stack_elt(eltType);
+  var  top : unmanaged stack_elt(eltType);
 
   proc deinit() {
     while top != nil {
@@ -24,7 +24,7 @@ proc stack.empty
   return top == nil;
 
 proc stack.push(v : eltType) {
-  top = new stack_elt(eltType, v, top);
+  top = new unmanaged stack_elt(eltType, v, top);
 }
 
 proc stack.pop() : eltType {
