@@ -4921,6 +4921,8 @@ static void resolveInitField(CallExpr* call) {
   // TODO -- do we need the 4-arg version?
   // Can we just always call PRIM_INIT_VAR with a type?
 
+  INT_ASSERT(call->argList.length == 3);
+
   // PRIM_INIT_FIELD contains three or four args:
   // fn->_this, the name of the field, and the value/type it is to be given
   // Optional fourth argument is the type to coerce to.
@@ -5070,15 +5072,10 @@ static void resolveInitField(CallExpr* call) {
         fs->type = srcType;
       } else if (fs->defPoint->exprType) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
-        if (exprType == dtUnknown) {
-          if (parentFn->isDefaultInit()) {
-            fs->type = srcType;
-          } else {
-            INT_FATAL("Unable to infer type of default init field.");
-          }
-        } else {
+        if (exprType == dtUnknown)
+          fs->type = srcType;
+        else
           fs->type = exprType;
-        }
       }
     }
   }
