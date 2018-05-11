@@ -106,8 +106,6 @@ tags
 /test/Logs
 /test/**/perfdat
 
-/test/LocaleModels/dmk/locale_name.good
-
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
@@ -261,6 +259,10 @@ tags
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
 /test/library/standard/Memory/countMemory/countMemory.*.good
+
+/test/localeModels/dmk/locale_name.good
+
+/test/mason/run/.mason
 
 /test/multilocale/deitz/needMultiLocales/test_remote_file_read_class.txt
 /test/multilocale/numLocales/bradc/testVerboseFlag.good

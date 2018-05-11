@@ -666,12 +666,12 @@ module ArrayViewReindex {
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {
-      const shifted = chpl_reindexConvertDom(destDom.dims(), destDom._value, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(destDom.dims(), privDom.updom, this.dom.dist.downdomInst);
       return chpl__bulkTransferArray(this.arr, shifted, srcClass, srcDom);
     }
 
     proc doiBulkTransferToKnown(srcDom, destClass, destDom) : bool {
-      const shifted = chpl_reindexConvertDom(srcDom.dims(), srcDom._value, this.dom.dist.downdomInst);
+      const shifted = chpl_reindexConvertDomMaybeSlice(srcDom.dims(), privDom.updom, this.dom.dist.downdomInst);
       return chpl__bulkTransferArray(destClass, destDom, this.arr, shifted);
     }
   }
@@ -719,6 +719,41 @@ module ArrayViewReindex {
     for param d in 1..updom.rank {
       // Slicing the ranges preserves the stride
       ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
+    }
+    return {(...ranges)};
+  }
+
+  // Sometimes we want to take a slice of a reindex and translate it into the
+  // downward domain's indices. If the slice is strided, then we have to return
+  // a strided domain. If the downward domain is not strided, then the returned
+  // translation will be of a different type.
+  //
+  // dsiSetIndices on a reindexed domain uses 'chpl_reindexConvertDom' to
+  // resize the downward domain, meaning that the result must be of the same
+  // type. We therefore need this additional, and very similar method to
+  // translate potentially-strided slices.
+  inline proc chpl_reindexConvertDomMaybeSlice(dims, updom, downdom) {
+    if updom.rank != dims.size {
+      compilerError("Called chpl_reindexConvertDomMaybeSlice with incorrect rank. Got " + dims.size:string + ", expecting " + updom.rank:string);
+    }
+
+    var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(1).stridable);
+    var actualLow, actualHigh: downdom.rank*downdom.idxType;
+    for param d in 1..dims.size {
+      if (dims(d).size == 0) {
+        actualLow(d) = downdom.dsiDim(d).low;
+        actualHigh(d) = downdom.dsiDim(d).high;
+      } else {
+        actualLow(d) = chpl_reindexConvertIdxDim(dims(d).first, updom, downdom, d);
+        actualHigh(d) = chpl_reindexConvertIdxDim(dims(d).last, updom, downdom, d);
+      }
+    }
+    for param d in 1..updom.rank {
+      if (downdom.dsiDim(d).stridable || dims(d).stridable) {
+        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
+        // Slicing the ranges preserves the stride
+        ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
+      }
     }
     return {(...ranges)};
   }

@@ -66,6 +66,7 @@ module ChapelReduce {
   }
 
   pragma "ReduceScanOp"
+  pragma "use default init"
   class ReduceScanOp {
     var l: atomicbool; // only accessed locally
 
@@ -85,6 +86,7 @@ module ChapelReduce {
     }
   }
 
+  pragma "use default init"
   class SumReduceScanOp: ReduceScanOp {
     type eltType;
     var value: chpl__sumType(eltType);
@@ -107,6 +109,7 @@ module ChapelReduce {
     proc clone() return new unmanaged SumReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class ProductReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _prod_id(eltType);
@@ -125,6 +128,7 @@ module ChapelReduce {
     proc clone() return new unmanaged ProductReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class MaxReduceScanOp: ReduceScanOp {
     type eltType;
     var value = min(eltType);
@@ -143,6 +147,7 @@ module ChapelReduce {
     proc clone() return new unmanaged MaxReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class MinReduceScanOp: ReduceScanOp {
     type eltType;
     var value = max(eltType);
@@ -161,9 +166,10 @@ module ChapelReduce {
     proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class LogicalAndReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _land_id(eltType);
 
     proc identity return _land_id(eltType);
     proc accumulate(x) {
@@ -179,9 +185,10 @@ module ChapelReduce {
     proc clone() return new unmanaged LogicalAndReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class LogicalOrReduceScanOp: ReduceScanOp {
     type eltType;
-    var value = identity;
+    var value = _lor_id(eltType);
 
     proc identity return _lor_id(eltType);
     proc accumulate(x) {
@@ -197,6 +204,7 @@ module ChapelReduce {
     proc clone() return new unmanaged LogicalOrReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class BitwiseAndReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _band_id(eltType);
@@ -215,6 +223,7 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseAndReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class BitwiseOrReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _bor_id(eltType);
@@ -233,6 +242,7 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseOrReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class BitwiseXorReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _bxor_id(eltType);
@@ -251,6 +261,7 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseXorReduceScanOp(eltType=eltType);
   }
 
+  pragma "use default init"
   class maxloc: ReduceScanOp {
     type eltType;
     var value = min(eltType);
@@ -276,6 +287,7 @@ module ChapelReduce {
     proc clone() return new unmanaged maxloc(eltType=eltType);
   }
 
+  pragma "use default init"
   class minloc: ReduceScanOp {
     type eltType;
     var value = max(eltType);

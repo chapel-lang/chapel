@@ -1751,7 +1751,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
-        ArgSymbol*  arg      = new ArgSymbol(INTENT_BLANK, name, dtUnknown);
+        ArgSymbol*  arg      = new ArgSymbol(INTENT_IN, name, dtUnknown);
 
         names.insert(name);
         fieldArgMap.put(field, arg);
@@ -1764,6 +1764,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         }
 
         if (field->isType() == true) {
+          arg->intent = INTENT_BLANK;
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
 

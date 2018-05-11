@@ -537,6 +537,8 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
           if ((rhsType->symbol->hasFlag(FLAG_ARRAY) == true ||
                rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) &&
               isTypeExpr(call->get(2))             == false) {
+
+            SET_LINENO(call);
             Expr*      rhs       = call->get(2)->remove();
             VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
             CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
@@ -1191,11 +1193,7 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
 bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
   if (isRecord(formal->getValType())) {
     // For now, rule out default ctor/init/_new
-    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR) ||
-        (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
-         fn->hasFlag(FLAG_LAST_RESORT) &&
-         (0 == strcmp(fn->name, "init") ||
-          0 == strcmp(fn->name, "_new"))))
+    if (fn->hasFlag(FLAG_DEFAULT_CONSTRUCTOR))
       return false; // old strategy for old-path in wrapAndCleanUpActuals
     else {
       if (formal->intent == INTENT_IN ||
@@ -1338,7 +1336,16 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         //  typical pattern for follow-on passes)
         tmp->addFlag(FLAG_NO_COPY);
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
-        tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+        // Default-initializers and '_new' wrappers take ownership
+        // Note: FLAG_INSERT_AUTO_DESTROY is blindly applied to any formal
+        // with const-in intent at the start of this function, so we need
+        // to apply FLAG_NO_AUTO_DESTROY to avoid double-frees.
+        if (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isDefaultInit()) {
+          tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+        } else {
+          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        }
       }
       break;
 

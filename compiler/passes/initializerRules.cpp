@@ -1037,6 +1037,7 @@ FnSymbol* buildClassAllocator(FnSymbol* initMethod) {
 
   fn->setMethod(true);
 
+  fn->addFlag(FLAG_NEW_WRAPPER);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
 
