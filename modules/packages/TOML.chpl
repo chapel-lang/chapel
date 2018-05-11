@@ -770,7 +770,7 @@ Used to recursively hold tables and respective values
      Toml[key].toString()
     */
      proc toString() : string {
-       return toString(this);
+       return toString(_to_unmanaged(this));
     }
 
     /* Return Toml type as a string.
