@@ -120,7 +120,12 @@ TFI_REDUCE
   currentVar.deinit() // for records
 
 TFI_TASK_PRIVATE
-  TODO
+  def currentVar
+  svar2clonevar: SV --> currentVar
+  initialize currentVar according to user specification
+
+(end)
+  currentVar.deinit() // for records
 
 *** call to task function ***
 
@@ -179,7 +184,12 @@ TFI_REDUCE
   currentVar.deinit() // for records
 
 TFI_TASK_PRIVATE
-  TODO
+  def currentVar
+  svar2clonevar: SV --> currentVar
+  initialize currentVar according to user specification
+
+(end)
+  currentVar.deinit() // for records
 
 *** nested forall loop ***
 
@@ -196,6 +206,44 @@ For each SV:
 Replace with a clone of the loop body
 (of the ForallStmt being inlined).
 Use the current svar2clonevar map when cloning.
+
+---------------------------------
+
+In more detail - for an IN intent at *** start of the iterator body *** :
+
+ForallStmt::shadowVariables() has DefExprs of two ShadowVarSymbols:
+ TFI_IN_OUTERVAR comes first,
+ TFI_IN or TFI_CONST_IN comes immediately after.
+
+Call them SVO and SVI, respectively.
+ForallStmt::loopBody() references SVI.
+SVI->initBlock() contains SVI.init(SVO), resolved and lowered appropriately.
+
+'currVar' (created below) is the variable to be used for SVI
+when the loop body is executed due to a yield at the top level of the
+iterator body, i.e. a yield that is outside any parallel constructs.
+
+Here are the steps performed by expandTopLevel() / expandShadowVarTopLevel():
+
+* svar2clonevar.put(SVO, SVI->outerVarSym())
+* create currVar
+* svar2clonevar.put(SVI, currVar)
+* add DefExpr(currVar) to start of the cloned iterator body
+* add SVI->initBlock()->copy(svar2clonevar) immediately after
+* add SVI->deinitBlock()->copy(svar2clonevar) at end of iterator body
+
+For a reduce intent, almost the same steps are performed.
+The generated code is somewhat different because:
+* The ShadowVarSymbols in ForallStmt::shadowVariables() are
+TFI_REDUCE_OP then TFI_REDUCE.
+* initBlock() and deinitBlock() contain the sequences needed
+to set up/tear down the reduceOp class and the accumulation state.
+
+For a task-private intent, again these are the same steps,
+except:
+* there is no compiler-introduced "companion" ShadowVarSymbol,
+* initBlock() reflects the variable's type and/or initialization
+expression as specified by the user in the with-clause.
 
 ---------------------------------
 
