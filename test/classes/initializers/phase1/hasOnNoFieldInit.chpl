@@ -10,6 +10,5 @@ class Foo {
   }
 }
 
-var foo = new Foo(3);
+var foo = new owned Foo(3);
 writeln(foo);
-delete foo;

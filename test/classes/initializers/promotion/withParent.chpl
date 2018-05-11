@@ -17,9 +17,9 @@ class HasGenericFields : Parent {
   }
 }
 
-var h = new HasGenericFields(int, false);
+var h = new borrowed HasGenericFields(int, false);
 writeln(h + 1);
-delete h;
+
 
 pragma "use default init"
 class NoGenericFields : Parent {
@@ -31,6 +31,5 @@ class NoGenericFields : Parent {
   }
 }
 
-var n = new NoGenericFields(int);
+var n = new borrowed NoGenericFields(int);
 writeln(n + 1);
-delete n;

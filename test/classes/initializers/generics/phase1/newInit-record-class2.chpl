@@ -3,7 +3,7 @@ record Container {
   var y;
 
   proc init() {
-    y = new Stored(true);
+    y = new unmanaged Stored(true);
   }
 
   proc deinit() {
