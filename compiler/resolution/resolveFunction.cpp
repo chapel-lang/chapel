@@ -1338,10 +1338,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
 
         // Default-initializers and '_new' wrappers take ownership
-        // TODO: check for leaks with new wrapper around user init with 'in'
-        // formal
-        if (fn->isDefaultInit() == false &&
-            fn->hasFlag(FLAG_NEW_WRAPPER) == false) {
+        // Note: FLAG_INSERT_AUTO_DESTROY is blindly applied to any formal
+        // with const-in intent at the start of this function, so we need
+        // to apply FLAG_NO_AUTO_DESTROY to avoid double-frees.
+        if (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isDefaultInit()) {
+          tmp->addFlag(FLAG_NO_AUTO_DESTROY);
+        } else {
           tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         }
       }
