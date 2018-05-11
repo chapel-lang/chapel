@@ -5072,7 +5072,7 @@ static void resolveInitField(CallExpr* call) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
         if (exprType == dtUnknown) {
           if (parentFn->isDefaultInit()) {
-            fs->type = t;
+            fs->type = srcType;
           } else {
             INT_FATAL("Unable to infer type of default init field.");
           }
