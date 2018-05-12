@@ -881,6 +881,12 @@ bool FnSymbol::isPostInitializer() const {
   return isMethod() == true && strcmp(name, "postinit") == 0;
 }
 
+bool FnSymbol::isDefaultInit() const {
+  return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_COPY_INIT) == false &&
+         isInitializer();
+}
+
 // This function or method is an iterator (as opposed to a procedure).
 bool FnSymbol::isIterator() const {
   return hasFlag(FLAG_ITERATOR_FN);

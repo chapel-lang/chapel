@@ -1,3 +1,4 @@
+pragma "use default init"
 class slowSum: ReduceScanOp {
   type eltType = real;
   var exps: domain(int);

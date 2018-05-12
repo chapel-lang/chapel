@@ -170,6 +170,7 @@ endif
 # Avoid false positive warnings about string overflows
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+OPT_CFLAGS += -fno-ipa-cp-clone
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 

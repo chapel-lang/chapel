@@ -313,7 +313,8 @@ static void insertModuleInit() {
     // If the module has the EXPORT_INIT flag then
     // propagate it to the module's init function
     //
-    if (mod->hasFlag(FLAG_EXPORT_INIT) == true) {
+    if (mod->hasFlag(FLAG_EXPORT_INIT) == true ||
+        (fLibraryCompile == true && mod->modTag == MOD_USER)) {
       mod->initFn->addFlag(FLAG_EXPORT);
       mod->initFn->addFlag(FLAG_LOCAL_ARGS);
     }
@@ -2482,6 +2483,22 @@ static void fixupArrayFormals(FnSymbol* fn) {
   }
 }
 
+static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
+  if (formal->intent & INTENT_FLAG_IN) {
+    if (isDefExpr(domExpr) || isDefExpr(eltExpr)) {
+      return false;
+    } else if (SymExpr* se = toSymExpr(domExpr)) {
+      if (se->symbol() == gNil) {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
@@ -2492,6 +2509,17 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
 
   std::vector<SymExpr*> symExprs;
+
+  //
+  // Only fix array formals with 'in' intent if there was:
+  // - a type query, or
+  // - a domain query, or
+  // - no domain expression
+  //
+  // This 'fixing' makes it difficult to find runtime type information later
+  // when we need it.
+  //
+  if (skipFixup(formal, domExpr, eltExpr)) return;
 
   // Replace the type expression with "_array" to make it generic.
   typeExpr->replace(new BlockStmt(new SymExpr(dtArray->symbol), BLOCK_TYPE));

@@ -48,6 +48,7 @@ for ii in 1..k
 
 /*Reduction class*/
 
+pragma "use default init"
 class kmeansReduction : ReduceScanOp{
 
 type eltType;

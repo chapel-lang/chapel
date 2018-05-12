@@ -8,7 +8,7 @@ tmp_file  = out_file + ".prediff.tmp"
 
 with open(out_file) as outf:
     for line in outf:
-        if re.search(r"\.chpl:\d+: error:", line) != None:
+        if re.search(r"\.chpl:\d+:( internal)? error:", line) != None:
             sys.exit(0);
 
 EPSILON = 1e-6

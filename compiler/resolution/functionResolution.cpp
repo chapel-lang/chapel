@@ -1858,6 +1858,10 @@ static Expr*     getInsertPointForTypeFunction(Type* type) {
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 
+  // BHARSH TODO: Why not use at->symbol->instantiationPoint ?
+  // Some tests failed at the time:
+  //   - library/standard/DateTime/*
+  //   - mason/*
   if (at == NULL) {
     // Not an AggregateType
     retval = chpl_gen_main->body;
@@ -1927,7 +1931,8 @@ static FnSymbol* resolveUninsertedCall(Expr* insert, CallExpr* call, bool errorO
 }
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn) {
-  if (at->symbol->instantiationPoint == NULL) {
+  if (at->symbol->instantiationPoint == NULL &&
+      fn->instantiationPoint != NULL) {
     at->symbol->instantiationPoint = fn->instantiationPoint;
   }
   if (at->scalarPromotionType == NULL) {
@@ -4966,6 +4971,9 @@ static void resolveInitField(CallExpr* call) {
 
   bool wasGeneric = ct->symbol->hasFlag(FLAG_GENERIC);
 
+  FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+  INT_ASSERT(parentFn);
+
   if (fs->type == dtUnknown) {
     // Update the type of the field.  If necessary, update to a new
     // instantiation of the overarching type (and replaces references to the
@@ -4976,8 +4984,6 @@ static void resolveInitField(CallExpr* call) {
       AggregateType* instantiate = ct->getInstantiation(rhs->symbol(), index);
       if (instantiate != ct) {
         // TODO: make this set of operations a helper function I can call
-        FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
-        INT_ASSERT(parentFn);
         INT_ASSERT(parentFn->_this);
         parentFn->_this->type = instantiate;
 
@@ -4995,7 +5001,16 @@ static void resolveInitField(CallExpr* call) {
       if (fs->defPoint->exprType == NULL) {
         fs->type = t;
       } else if (fs->defPoint->exprType) {
-        fs->type = fs->defPoint->exprType->typeInfo();
+        Type* exprType = fs->defPoint->exprType->typeInfo();
+        if (exprType == dtUnknown) {
+          if (parentFn->isDefaultInit()) {
+            fs->type = t;
+          } else {
+            INT_FATAL("Unable to infer type of default init field.");
+          }
+        } else {
+          fs->type = exprType;
+        }
       }
     }
   }
@@ -5004,17 +5019,20 @@ static void resolveInitField(CallExpr* call) {
   if (wasGeneric                        == true &&
       ct->symbol->hasFlag(FLAG_GENERIC) == false) {
 
-    FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
     resolveTypeWithInitializer(ct, parentFn);
     // BHARSH INIT TODO: Would like to resolve destructor here, but field
     // types are not fully resolved. E.g., "var foo : t"
+  } else if (developer == false &&
+             ct->symbol->hasFlag(FLAG_BASE_ARRAY) == false &&
+             isArrayClass(ct) &&
+             strcmp(fs->name, "dom") == 0) {
+    fixTypeNames(ct);
   }
 
   if (t != fs->type && t != dtNil && t != dtObject) {
     Symbol*   actual = rhs->symbol();
-    FnSymbol* fn     = toFnSymbol(call->parentSymbol);
 
-    if (canCoerceTuples(t, actual, fs->type, fn)) {
+    if (canCoerceTuples(t, actual, fs->type, parentFn)) {
       // Add a PRIM_MOVE so that insertCasts will take care of it later.
       VarSymbol* tmp = newTemp("coerce_elt", fs->type);
 
@@ -9535,8 +9553,8 @@ static void replaceValuesWithRuntimeTypes()
     if (fn->defPoint && fn->defPoint->parentSymbol) {
       for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
-            formal->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->type)) {
+            formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->getValType())) {
             Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
                         fn->retType : runtimeTypeMap.get(fn->retType);
             INT_ASSERT(rt);
@@ -9755,6 +9773,8 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 }
 
 static Expr* resolvePrimInit(CallExpr* call, Type* type) {
+  if (call->id == breakOnResolveID) gdbShouldBreakHere();
+
   AggregateType* at     = toAggregateType(type);
   Expr*          retval = NULL;
 

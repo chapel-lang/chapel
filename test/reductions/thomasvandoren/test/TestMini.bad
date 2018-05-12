@@ -10,4 +10,4 @@ $CHPL_HOME/modules/internal/ChapelReduce.chpl:223: note:                 Bitwise
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:241: note:                 BitwiseXorReduceScanOp.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:260: note:                 maxloc.accumulate(x)
 $CHPL_HOME/modules/internal/ChapelReduce.chpl:285: note:                 minloc.accumulate(x)
-../mini.chpl:11: note:                 mini.accumulate(t: (eltType, int))
+../mini.chpl:12: note:                 mini.accumulate(t: (eltType, int))
