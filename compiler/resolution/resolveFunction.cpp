@@ -1556,8 +1556,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
               // Use assign since no cast is available for
               // sync / single and their value type.
-              if (typesDiffer &&
-                  (isSyncType(from->getValType()) ||
+              if ((isSyncType(from->getValType()) ||
                    isSingleType(from->getValType()))) {
                 useAssign = true;
               }
