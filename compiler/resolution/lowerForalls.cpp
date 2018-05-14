@@ -924,6 +924,13 @@ static bool shouldGoFirst(ShadowVarSymbol* sv) {
 // (b) We compute+apply SymbolMaps incrementally. (c) When we map a TPV,
 // the proper shadow variables that it references must already be in the map.
 //
+// For example:
+//   forall ... with (in n, var m = n) { ... }
+// To initialize 'm' by cloning its initBlock, we need to have 'n'
+// in the svar2clonevar map.
+// By contrast, the only thing that 'n'-the-ShadowVarSymbol references
+// is its outer variable, never another shadow- or task-private variable.
+//
 // We do not hoist reduce-intent shadow variables. This is because they
 // should not reference proper shadow variables (right?). So mapping
 // is not an issue. The issue is that we want to preserve the order of
@@ -934,6 +941,10 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
   AList& svars = fs->shadowVariables();
   if (svars.empty()) return; // nothing to reorder
 
+  // If the following code proves hard to maintain, it may be easier to
+  // reimplement it by introducing a temporary AList and moving SVs
+  // that shouldGoFirst() from 'svars' to that temp list.
+
   Expr* currDef = svars.head;
   Expr* lastReorderedDef = NULL;
 
@@ -943,9 +954,9 @@ static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
 
     if (shouldGoFirst(currSV)) {
       if (lastReorderedDef == NULL) {
-        // This is the first time we are seeing a reorderable SV.
+        // This is the first time we are seeing a "shouldGoFirst" SV.
         if (currDef->prev != NULL)
-          // We got some defs before, which are not reorderable.
+          // We got some defs before, which are not "shouldGoFirst".
           svars.insertAtHead(currDef->remove());
         else
           ;// This def is the first one, nothing to reorder.
