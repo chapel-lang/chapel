@@ -591,6 +591,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         newFn->insertBeforeEpilogue(def);
 
         def->insertAfter(initCall);
+        // Make sure the copy-init function is resolved, since the
+        // above code adds a call that would be considered already resolved.
+        resolveCallAndCallee(initCall);
 
         if (ct->hasPostInitializer() == true) {
           CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
@@ -741,6 +744,9 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   //
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
+
+    if (formal->type == dtAny)
+      newFormal->addFlag(FLAG_INSTANTIATED_FROM_ANY);
 
     if (Symbol* value = subs.get(formal)) {
       INT_ASSERT(formal->intent == INTENT_PARAM || isTypeSymbol(value));

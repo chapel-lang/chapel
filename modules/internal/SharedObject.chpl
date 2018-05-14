@@ -152,7 +152,7 @@ module SharedObject {
        that refers to the same class instance as `src`.
        These will share responsibility for managing the instance.
      */
-    proc init(src:_shared(?)) {
+    proc init(const ref src:_shared(?)) {
       this.t = src.t;
       this.p = src.p;
       this.pn = src.pn;
@@ -247,6 +247,7 @@ module SharedObject {
 
   // This is a workaround
   pragma "no doc"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: _shared) {
     __primitive("call destructor", x);
   }

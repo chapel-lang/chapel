@@ -260,6 +260,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->addFlag(FLAG_INLINE);
   ctor->addFlag(FLAG_INVISIBLE_FN);
   ctor->addFlag(FLAG_INIT_TUPLE);
+  ctor->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
   ctor->addFlag(FLAG_PARTIAL_TUPLE);
 

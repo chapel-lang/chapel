@@ -118,6 +118,19 @@ static void resolveFormals(FnSymbol* fn) {
         updateIfRefFormal(fn, formal);
       }
     }
+
+    if ((formal->intent == INTENT_BLANK || formal->intent == INTENT_CONST) &&
+        !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+        formal->type->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+        // This is a workaround for problems with owned/shared auto-destroy
+        // (since blank intent for these types == in intent)
+        !fn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
+        !fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+      IntentTag useIntent = concreteIntentForArg(formal);
+      if ((useIntent & INTENT_FLAG_IN))
+        formal->intent = useIntent;
+    }
   }
 }
 
