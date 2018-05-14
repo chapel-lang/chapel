@@ -59,17 +59,28 @@ To lower a forall statement:
 * The parallel iterator is inlined, like it is a regular call.
 
 * Each yield statement is replaced by a clone of the forall loop body.
-  While cloning, The shadow variables in the loop body are replaced
+
+  While cloning, the shadow variables in the loop body are replaced
   with "current variables" that are in effect for that yield.
-  The shadow variables themselves do not remain in the AST.
+  The mapping from shadow variables to current variables is
+  maintained in 'svar2clonevar' - see below.
+
+  The shadow variables themselves do not remain in the AST
+  after lowering.
 
 * The inlined body of the parallel iterator is traversed using ExpandVisitor.
   "Current variables" are created and additional code is inserted
   in certain key places.
 
-  The SymbolMap in ExpandVisitor::svar2clonevar records
-  the current variables to be used when a yield statement
-  or a ForallStmt is encountered.
+  The SymbolMap in ExpandVisitor::svar2clonevar records the current variable
+  for each shadow variable. This map is created at start of the traversal,
+  which corresponds to the start of the iterator body. A new map is created
+  and maintained for traversing into each task function and forall loop
+  of the cloned body of the parallel iterator.
+
+  Cloning, aka copy(), of the loop body uses whatever svar2clonevar map
+  is in effect at the point where the traversal encounters the corresponding
+  yield statement.
 
 * The key places during the traversal are:
 
