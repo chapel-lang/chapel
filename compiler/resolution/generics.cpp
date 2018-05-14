@@ -427,8 +427,7 @@ void gatherFieldSubstitutionsForNewType(AggregateType* oldType,
                                         SymbolMap& map) {
 
   // Gather the parent fields.
-/* This does not appear to be necessary */
-   if (newType->isClass()) {
+  if (newType->isClass()) {
     for(int i = 0; i < newType->dispatchParents.n; i++) {
       gatherFieldSubstitutionsForNewType(oldType->dispatchParents.v[i],
                                          newType->dispatchParents.v[i],

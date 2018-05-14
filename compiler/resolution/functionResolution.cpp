@@ -4644,12 +4644,16 @@ static bool isFieldAccess(CallExpr* callExpr);
 * If this is not the case, then we will expand the call into the normal field *
 * initialization.                                                             *
 *
-* concern for default inits:
+* The concern for default initializers with sync fields is
+* that the compiler will generate this pattern:
 *
-*   make default sync (in default argument handling)
-*   =
-*   deadlock b/c RHS is empty
+*   - create a default-initialized (empty) sync value
+*   - call = to initialize the field from it
+*   -> deadlock because the RHS of = is empty
 *
+* TODO: revisit and decide if PRIM_INIT_MAYBE_SYNC_SINGLE_FIELD
+* is still necessary, now that default initializers should not
+* call = (and instead use in intent at the call site).
 *
 ************************************** | *************************************/
 static void resolveMaybeSyncSingleField(CallExpr* call) {
@@ -4728,7 +4732,7 @@ static void resolveMaybeSyncSingleField(CallExpr* call) {
     call->replace(resolveBlock);
     resolveBlock->insertAtTail(call);
 
-    if (isFieldAccessible(tmpInit, at, fieldDef) == false) {
+    if (!isFieldAccessible(tmpInit, at, fieldDef)) {
       INT_ASSERT(false);
     }
 
@@ -4916,18 +4920,12 @@ static void resolveInitField(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  INT_ASSERT(call->argList.length == 3 ||
-             call->argList.length == 4);
-  // TODO -- do we need the 4-arg version?
-  // Can we just always call PRIM_INIT_VAR with a type?
-
   INT_ASSERT(call->argList.length == 3);
 
-  // PRIM_INIT_FIELD contains three or four args:
+  // PRIM_INIT_FIELD contains three args:
   // fn->_this, the name of the field, and the value/type it is to be given
-  // Optional fourth argument is the type to coerce to.
 
-  SymExpr* srcExpr = toSymExpr(call->get(3)); // the value/type to give the field
+  SymExpr* srcExpr = toSymExpr(call->get(3)); // the value/type to give field
 
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
@@ -4958,62 +4956,6 @@ static void resolveInitField(CallExpr* call) {
   Type* srcType = srcExpr->symbol()->type;
   if (srcType == dtUnknown)
     INT_FATAL(call, "Unable to resolve field type");
-
-  Type* targetType = srcType;
-  SymExpr* targetTypeExpr = NULL;
-  if (call->numActuals() >= 4) {
-    targetTypeExpr = toSymExpr(call->get(4));
-    targetType = targetTypeExpr->symbol()->type;
-    INT_ASSERT(targetType);
-    targetTypeExpr->remove(); // Take it out of the PRIM_INIT_FIELD
-
-    // If the target type is generic, compute the appropriate
-    // instantiation type (just as we would when instantiating
-    // a generic function's argument)
-    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
-      Type* useType = getInstantiationType(srcType, targetType);
-
-      if (useType == NULL) {
-        USR_FATAL(call, "Could not coerce %s to %s in field initialization",
-                        srcType->symbol->name,
-                        targetType->symbol->name);
-      }
-
-      targetType = useType;
-    }
-
-    // Ignore the target type if it's the same & not a runtime type.
-    if (targetType == srcType &&
-        !targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-      targetType = srcType;
-      targetTypeExpr = NULL;
-    }
-  }
-
-  //bool addedCoerce = false;
-
-  if (targetTypeExpr != NULL) {
-    // create a temp variable to store the result of PRIM_COERCE
-    VarSymbol* tmp = newTemp(primCoerceTmpName, targetType);
-    tmp->addFlag(FLAG_EXPR_TEMP);
-
-    CallExpr* coerce = new CallExpr(PRIM_COERCE,
-                                    srcExpr->copy(),
-                                    targetTypeExpr);
-    CallExpr* move = new CallExpr(PRIM_MOVE, tmp, coerce);
-
-    call->insertBefore(new DefExpr(tmp));
-    call->insertBefore(move);
-    resolveCoerce(coerce);
-    resolveMove(move);
-
-    // Now let the rest of this function proceed using
-    // 'tmp' instead of the original source.
-    srcExpr->setSymbol(tmp);
-    srcType = targetType;
-
-    //addedCoerce = true;
-  }
 
   if (fs->hasFlag(FLAG_PARAM)) {
     if (isLegalParamType(srcType) == false) {
@@ -5066,9 +5008,7 @@ static void resolveInitField(CallExpr* call) {
     } else {
       // The field is not generic.
 
-      if (targetTypeExpr) {
-        fs->type = targetType;
-      } else if (fs->defPoint->exprType == NULL) {
+      if (fs->defPoint->exprType == NULL) {
         fs->type = srcType;
       } else if (fs->defPoint->exprType) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
@@ -5093,32 +5033,6 @@ static void resolveInitField(CallExpr* call) {
              strcmp(fs->name, "dom") == 0) {
     fixTypeNames(ct);
   }
-
-  /* The thing is, fs->type might be a generic type of
-     which srcType is an instantiation.
-  if (t != fs->type && t != dtNil && t != dtObject) {
-    Symbol*   actual = rhs->symbol();
-
-    if (canCoerceTuples(t, actual, fs->type, parentFn)) {
-      // Add a PRIM_MOVE so that insertCasts will take care of it later.
-      VarSymbol* tmp = newTemp("coerce_elt", fs->type);
-
-      call->insertBefore(new DefExpr(tmp));
-      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, srcExpr->remove()));
-
-      call->insertAtTail(tmp);
-
-    } else {
-      USR_FATAL_CONT(userCall(call),
-                     "cannot assign expression of type %s to field '%s' of "
-                     "type %s",
-                     toString(srcType),
-                     fs->name,
-                     toString(fs->type));
-      generateCopyInitErrorMsg();
-      USR_STOP();
-    }
-  }*/
 
   call->primitive = primitives[PRIM_SET_MEMBER];
 
