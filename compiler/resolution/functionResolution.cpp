@@ -4997,9 +4997,7 @@ static void resolveInitField(CallExpr* call) {
         SymbolMap fieldTranslate;
         for (int i = 1; i <= instantiate->fields.length; i++) {
           fieldTranslate.put(ct->getField(i), instantiate->getField(i));
-          //instantiate->substitutions.put(ct->getField(i), instantiate->getField(i));
         }
-        // TODO -- do this later?
         update_symbols(parentFn, &fieldTranslate);
 
         ct = instantiate;
