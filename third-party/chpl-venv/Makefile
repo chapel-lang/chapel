@@ -37,7 +37,7 @@ $(PIP): $(CHPL_VENV_INSTALL_DIR)
 	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
 	    exit 1; } && \
 	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && \
-	  python get-pip.py --user) \
+	  python get-pip.py --user --no-warn-conflicts) \
 	fi
 
 # Install virtualenv program.
