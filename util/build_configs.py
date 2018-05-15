@@ -301,7 +301,7 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
 
     make_cmd = chpl_make.get()
     if parallel:
-        def _cpu_count:
+        def _cpu_count():
             """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
             """
             cpus = multiprocessing.cpu_count()
