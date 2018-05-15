@@ -301,7 +301,18 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
 
     make_cmd = chpl_make.get()
     if parallel:
-        make_cmd += ' --jobs={0}'.format(multiprocessing.cpu_count())
+        def _cpu_count:
+            """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
+            """
+            cpus = multiprocessing.cpu_count()
+            try:
+                max = os.getenv('CHPL_MAKE_MAX_CPU_COUNT', '0')
+                if int(max) > 0:
+                    cpus = min(int(max), cpus)
+            except:
+                pass
+            return cpus
+        make_cmd += ' --jobs={0}'.format(_cpu_count())
     logging.debug('Using make command: {0}'.format(make_cmd))
 
     with elapsed_time(build_config):
