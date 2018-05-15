@@ -189,6 +189,11 @@ module DataFrames {
 
   class Series {
     pragma "no doc"
+    proc reindex(idx) {
+      halt("generic Series cannot be reindexed");
+    }
+
+    pragma "no doc"
     proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
       halt("generic Series cannot be unioned");
       return this;
@@ -421,6 +426,10 @@ module DataFrames {
       return valid_bits[ord];
     }
 
+    proc reindex(idx: Index) {
+      this.idx = idx;
+    }
+
     /*
      * Functional Constructs
      */
@@ -547,6 +556,40 @@ module DataFrames {
           f <~> i + "\t" + d + "\n";
       }
       f <~> "dtype: " + eltType:string;
+    }
+  }
+
+  class DataFrame {
+    var labels: domain(string);
+    var columns: [labels] Series;
+    var idx: Index;
+
+    // TODO: init with labels arg
+
+    /* TODO: init with no idx arg
+    proc init(columns: [?D] Series) {
+      this.idx = nil;
+      this.labels = D;
+      this.columns = columns;
+    }
+     */
+
+    proc init(columns: [?D], idx: Index) {
+      this.labels = D;
+      this.columns = columns;
+      this.idx = idx;
+
+      this.complete();
+      for s in this.columns do
+        s.reindex(idx);
+    }
+
+    proc writeThis(f) {
+      for (l, s) in zip(labels, columns) {
+        f <~> l + ":\n";
+        s.writeThis(f);
+        f <~> "\n\n";
+      }
     }
   }
 
