@@ -1,7 +1,7 @@
 proc main() {
   use Crypto;
 
-  var bf = new Blowfish("cbc");
+  var bf = new Blowfish(CryptoChainMode.cbc);
 
   var msg = new CryptoBuffer("hello world");
 
