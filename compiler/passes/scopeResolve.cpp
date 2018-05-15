@@ -1030,16 +1030,12 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
   INT_ASSERT(tpv->initBlock()->body.empty());
   INT_ASSERT(tpv->deinitBlock()->body.empty());
 
-  for_vector(SymExpr, se, symExprs) {
+  for_vector(SymExpr, se, symExprs)
     if (se->symbol()->defPoint->list == &fs->inductionVariables())
       USR_FATAL_CONT(se, "the initialization or type expression"
                      " of the task-private variable '%s'"
                      " references the forall loop induction variable '%s'",
                      tpv->name, se->symbol()->name);
-//const char* debugLoc(BaseAST* ast);
-//printf("tpv %d %s   %s\n", sym->id, sym->name, debugLoc(sym));
-gdbShouldBreakHere();
-  }
 }
 
 static void setupShadowVars() {

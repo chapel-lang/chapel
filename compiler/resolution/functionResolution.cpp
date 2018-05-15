@@ -6582,11 +6582,9 @@ static void resolveCoerce(CallExpr* call) {
   FnSymbol* fn = toFnSymbol(call->parentSymbol);
   Type* toType = call->get(2)->typeInfo();
 
-  INT_ASSERT(fn);
-
   // Adjust tuple reference-level for return if necessary
   if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      !doNotChangeTupleTypeRefLevel(fn, true)) {
+      fn && !doNotChangeTupleTypeRefLevel(fn, true)) {
     AggregateType* tupleType = toAggregateType(toType);
     INT_ASSERT(tupleType);
 
