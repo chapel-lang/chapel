@@ -415,7 +415,9 @@ static void setupForReduce(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* AS_ovar,
 static void setupForTaskPrivate(ForallStmt* fs, ShadowVarSymbol* TPV,
                                 BlockStmt* IB, BlockStmt* DB) {
   // IB already comes from TPV's declaration in the with-clause.
-  insertDeinitialization(DB, TPV);
+  // Need deinitialization for 'var'/'const' only. No deinit for refs.
+  if (!TPV->isRef())
+    insertDeinitialization(DB, TPV);
 }
 
 /////////// driver function ///////////
