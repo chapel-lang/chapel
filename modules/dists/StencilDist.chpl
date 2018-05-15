@@ -300,6 +300,7 @@ class StencilDom: BaseRectangularDom {
 // NeighDom will be a rectangular domain where each dimension is the range
 // -1..1
 //
+pragma "use default init"
 class LocStencilDom {
   param rank: int;
   type idxType;
@@ -344,6 +345,7 @@ class StencilArr: BaseRectangularArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
+pragma "use default init"
 class LocStencilArr {
   type eltType;
   param rank: int;
@@ -578,11 +580,13 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-proc LocStencil.LocStencil(param rank: int,
-                      type idxType, 
-                      locid, // the locale index from the target domain
-                      boundingBox: rank*range(idxType),
-                      targetLocBox: rank*range) {
+proc LocStencil.init(param rank: int,
+                     type idxType,
+                     locid, // the locale index from the target domain
+                     boundingBox: rank*range(idxType),
+                     targetLocBox: rank*range) {
+  this.rank = rank;
+  this.idxType = idxType;
   if rank == 1 {
     const lo = boundingBox(1).low;
     const hi = boundingBox(1).high;
