@@ -3289,7 +3289,6 @@ static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
-                    bool                         forGenericInit,
                     Vec<ResolutionCandidate*>&   ambiguous);
 
 static int  compareSpecificity(ResolutionCandidate*         candidate1,
@@ -3315,7 +3314,7 @@ disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info);
   Vec<ResolutionCandidate*> ambiguous;
 
-  return disambiguateByMatch(candidates, DC, false, true, ambiguous);
+  return disambiguateByMatch(candidates, DC, false, ambiguous);
 }
 
 static int disambiguateByMatch(CallInfo&                  info,
@@ -3471,20 +3470,11 @@ static int disambiguateByMatch(CallInfo&                  info,
   return retval;
 }
 
-static ResolutionCandidate*
-disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
-                    const DisambiguationContext& DC,
-                    bool                         ignoreWhere,
-                    Vec<ResolutionCandidate*>&   ambiguous) {
-  return disambiguateByMatch(candidates, DC, ignoreWhere, false, ambiguous);
-}
 
-// BHARSH INIT TODO: Do we need 'forGenericInit' anymore?
 static ResolutionCandidate*
 disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                     const DisambiguationContext& DC,
                     bool                         ignoreWhere,
-                    bool                         forGenericInit,
                     Vec<ResolutionCandidate*>&   ambiguous) {
   // MPF note: A more straightforwardly O(n) version of this
   // function did not appear to be faster. See history of this comment.
@@ -3501,9 +3491,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
     ResolutionCandidate* candidate1         = candidates.v[i];
     bool                 singleMostSpecific = true;
 
-    if (candidate1->fn->isInitializer()) {
-      forGenericInit = true;
-    }
+    bool forGenericInit = candidate1->fn->isInitializer();
 
     EXPLAIN("%s\n\n", toString(candidate1->fn));
 
