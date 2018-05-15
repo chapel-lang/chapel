@@ -49,11 +49,8 @@ ifdef CHPL_PIP
   PIP = $(CHPL_PIP)
 else
   PIP=$(CHPL_VENV_INSTALL_DIR)/bin/pip
-  # Only add params if locally installed pip was successfully installed
-  ifeq ($(wildcard $(PIP)),)
-  else
-    CHPL_PIP_INSTALL_PARAMS += --no-warn-conflicts --no-warn-script-location
-  endif
+  # This must be separate from global CHPL_PIP_INSTALL_PARAMS
+  LOCAL_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location
 endif
 
 
