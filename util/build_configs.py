@@ -301,7 +301,7 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
 
     make_cmd = chpl_make.get()
     if parallel:
-        make_cmd += ' --jobs={0}'.format(multiprocessing.cpu_count())
+        make_cmd += ' --jobs={0}'.format(min(24, multiprocessing.cpu_count()))
     logging.debug('Using make command: {0}'.format(make_cmd))
 
     with elapsed_time(build_config):
