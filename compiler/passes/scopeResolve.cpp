@@ -82,7 +82,7 @@ static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
 
-static void          setupOuterVarsOfShadowVars();
+static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
 
@@ -176,7 +176,7 @@ void scopeResolve() {
 
   resolveEnumeratedTypes();
 
-  setupOuterVarsOfShadowVars();
+  setupShadowVars();
 
   ResolveScope::destroyAstMap();
 
@@ -1018,11 +1018,38 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
   }
 }
 
-static void setupOuterVarsOfShadowVars() {
+// Issue an error if 'tpv' is one of fs's induction variables.
+static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
+                               ShadowVarSymbol* tpv)
+{
+  std::vector<SymExpr*> symExprs;
+  if (def->init)     collectSymExprs(def->init, symExprs);
+  if (def->exprType) collectSymExprs(def->exprType, symExprs);
+
+  // Ensure we do not need to check IB/DB.
+  INT_ASSERT(tpv->initBlock()->body.empty());
+  INT_ASSERT(tpv->deinitBlock()->body.empty());
+
+  for_vector(SymExpr, se, symExprs) {
+    if (se->symbol()->defPoint->list == &fs->inductionVariables())
+      USR_FATAL_CONT(se, "the initialization or type expression"
+                     " of the task-private variable '%s'"
+                     " references the forall loop induction variable '%s'",
+                     tpv->name, se->symbol()->name);
+//const char* debugLoc(BaseAST* ast);
+//printf("tpv %d %s   %s\n", sym->id, sym->name, debugLoc(sym));
+gdbShouldBreakHere();
+  }
+}
+
+static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
-    for_shadow_vars(svar, temp, fs)
-      if (hasOuterVariable(svar))
+    for_shadow_vars_and_defs(svar, def, temp, fs) {
+       if (hasOuterVariable(svar))
         setupOuterVar(fs, svar);
+      if (svar->isTaskPrivate())
+        checkRefsToIdxVars(fs, def, svar);
+    }
 
   // Instead of the two nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
