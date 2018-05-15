@@ -82,7 +82,7 @@ static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
 
-static void          setupOuterVarsOfShadowVars();
+static void          setupShadowVars();
 
 static void          resolveEnumeratedTypes();
 
@@ -176,7 +176,7 @@ void scopeResolve() {
 
   resolveEnumeratedTypes();
 
-  setupOuterVarsOfShadowVars();
+  setupShadowVars();
 
   ResolveScope::destroyAstMap();
 
@@ -287,32 +287,37 @@ static void scopeResolve(BlockStmt*          block,
   scopeResolve(block->body,         scope);
 }
 
-static void scopeResolve(ForallStmt*         forallStmt,
+static void scopeResolve(ForallStmt*         forall,
                          const ResolveScope* parent)
 {
-  // Nothing to scopeResolve in fRecIter*
-  INT_ASSERT(forallStmt->fRecIterIRdef == NULL);
+  INT_ASSERT(forall->fRecIterIRdef == NULL); //nothing to resolve in fRecIter*
 
-  BlockStmt* fBody = forallStmt->loopBody();
+  BlockStmt*    loopBody     = forall->loopBody();
+  ResolveScope* stmtScope = new ResolveScope(forall, parent);
+  ResolveScope* bodyScope = new ResolveScope(loopBody, stmtScope);
 
-  // Or, we could construct ResolveScope specifically for forallStmt.
-  ResolveScope* bodyScope = new ResolveScope(fBody, parent);
+  // 'stmtScope' contains loop induction variables + shadow variables
+  //             incl. task-private variables.
+  // 'bodyScope' is for the loop body.
 
   // cf. scopeResolve(FnSymbol*,parent)
-  for_alist(ivdef, forallStmt->inductionVariables()) {
+  for_alist(ivdef, forall->inductionVariables()) {
     Symbol* sym = toDefExpr(ivdef)->sym;
     // "chpl__tuple_blank" indicates the underscore placeholder for
     // the induction variable. Do not add it. Because if there are two
     // (legally) ex. "forall (_,_) in ...", we get an error.
     if (strcmp(sym->name, "chpl__tuple_blank"))
-      bodyScope->extend(sym);
+      stmtScope->extend(sym);
   }
 
-  for_shadow_var_defs(svd, temp, forallStmt) {
-    bodyScope->extend(svd->sym);
+  for_shadow_vars_and_defs(svar, sdef, temp, forall) {
+    stmtScope->extend(svar);
+    INT_ASSERT(!isBlockStmt(sdef->init));
+    // If the above assert does not hold, need to do something like
+    //   scopeResolve(toBlockStmt(sdef->init, stmtScope)
   }
 
-  scopeResolve(fBody->body, bodyScope);
+  scopeResolve(loopBody->body, bodyScope);
 }
 
 static void scopeResolve(FnSymbol*           fn,
@@ -963,6 +968,26 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+static bool hasOuterVariable(ShadowVarSymbol* svar) {
+  switch (svar->intent) {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+    case TFI_IN:
+    case TFI_CONST_IN:
+    case TFI_REF:
+    case TFI_CONST_REF:
+    case TFI_REDUCE:        return true;
+
+    case TFI_TASK_PRIVATE:  return false;
+
+    case TFI_IN_OUTERVAR:
+    case TFI_REDUCE_OP:     INT_ASSERT(false); // should not happen
+                            return false;      // dummy
+  }
+  INT_FATAL(svar, "garbage intent");
+  return false;  //dummy
+}
+
 static bool isField(Symbol* sym) {
   // Copied from insertWideReferences.cpp.
   // Alas Symbol::isField is private.
@@ -976,7 +1001,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
 
   SET_LINENO(svar);
 
-  if (Symbol* ovar = lookup(svar->name, fs)) {
+  if (Symbol* ovar = lookup(svar->name, fs->parentExpr)) {
     if (isFnSymbol(ovar) || isField(ovar)) {
       // Create a stand-in to use pre-existing code.
       UnresolvedSymExpr* standIn = new UnresolvedSymExpr(svar->name);
@@ -993,10 +1018,38 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
   }
 }
 
-static void setupOuterVarsOfShadowVars() {
+// Issue an error if 'tpv' is one of fs's induction variables.
+static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
+                               ShadowVarSymbol* tpv)
+{
+  std::vector<SymExpr*> symExprs;
+  if (def->init)     collectSymExprs(def->init, symExprs);
+  if (def->exprType) collectSymExprs(def->exprType, symExprs);
+
+  // Ensure we do not need to check IB/DB.
+  INT_ASSERT(tpv->initBlock()->body.empty());
+  INT_ASSERT(tpv->deinitBlock()->body.empty());
+
+  for_vector(SymExpr, se, symExprs) {
+    if (se->symbol()->defPoint->list == &fs->inductionVariables())
+      USR_FATAL_CONT(se, "the initialization or type expression"
+                     " of the task-private variable '%s'"
+                     " references the forall loop induction variable '%s'",
+                     tpv->name, se->symbol()->name);
+//const char* debugLoc(BaseAST* ast);
+//printf("tpv %d %s   %s\n", sym->id, sym->name, debugLoc(sym));
+gdbShouldBreakHere();
+  }
+}
+
+static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
-    for_shadow_vars(svar, temp, fs)
-      setupOuterVar(fs, svar);
+    for_shadow_vars_and_defs(svar, def, temp, fs) {
+       if (hasOuterVariable(svar))
+        setupOuterVar(fs, svar);
+      if (svar->isTaskPrivate())
+        checkRefsToIdxVars(fs, def, svar);
+    }
 
   // Instead of the two nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
@@ -1802,6 +1855,14 @@ BaseAST* getScope(BaseAST* ast) {
     // SCOPELESS and TYPE blocks do not define scopes
     if (block && block->blockTag == BLOCK_NORMAL) {
       return block;
+
+    } else if (ForallStmt* forall = toForallStmt(parent)) {
+      if (expr->list == &(forall->iteratedExpressions()))
+        // Iterable expressions can rely only on symbols that are outside the
+        // forall. I.e. outside bodyScope in scopeResolve(ForallStmt*,...).
+        return getScope(forall);
+      else
+        return forall;
 
     } else if (parent) {
       return getScope(parent);

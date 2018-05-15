@@ -1,0 +1,3 @@
+# The output is different for multi-locale,
+# so we do not run there.
+CHPL_COMM != none

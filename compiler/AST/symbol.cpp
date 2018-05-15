@@ -1028,11 +1028,28 @@ bool ShadowVarSymbol::isConstant() const {
 }
 
 bool ShadowVarSymbol::isConstValWillNotChange() {
-  //
-  // This is written to only be called post resolveIntents
-  //
-  INT_ASSERT(intent != TFI_DEFAULT && intent != TFI_CONST);
-  return intent == TFI_CONST_IN;
+  switch (intent) {
+    case TFI_DEFAULT:
+    case TFI_CONST:
+      // Caller responsibility - no abstract intents please.
+      INT_ASSERT(false);
+      return false;
+
+    case TFI_CONST_IN:
+    case TFI_IN_OUTERVAR: // should these two be here?
+    case TFI_REDUCE_OP:
+      return true;
+
+    case TFI_CONST_REF:
+    case TFI_IN:
+    case TFI_REF:
+    case TFI_REDUCE:
+      return false;
+
+    case TFI_TASK_PRIVATE:
+      return VarSymbol::isConstValWillNotChange();
+  }
+  return false; // dummy
 }
 
 // describes the intent (for use in an English sentence)

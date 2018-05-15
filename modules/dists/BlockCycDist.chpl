@@ -449,10 +449,15 @@ class LocBlockCyclic {
   // Constructor computes what chunk of index(1) is owned by the
   // current locale
   //
-  proc LocBlockCyclic(param rank: int,
-                 type idxType, 
-                 locid,   // the locale index from the target domain
-                 dist: unmanaged BlockCyclic(rank, idxType)) { // reference to glob dist
+  proc init(param rank: int,
+            type idxType,
+            locid,   // the locale index from the target domain
+            dist: unmanaged BlockCyclic(rank, idxType)) { // reference to glob dist
+    this.rank = rank;
+    this.idxType = idxType;
+
+    this.complete();
+
     if rank == 1 {
       const lo = dist.lowIdx(1) + (locid * dist.blocksize(1));
       const str = dist.blocksize(1) * dist.targetLocDom.numIndices;
@@ -685,6 +690,7 @@ proc BlockCyclicDom.dsiIndexOrder(i) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
+pragma "use default init"
 class LocBlockCyclicDom {
   param rank: int;
   type idxType;
@@ -998,6 +1004,7 @@ iter BlockCyclicDom.dsiLocalSubdomains() {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
+pragma "use default init"
 class LocBlockCyclicArr {
   type eltType;
   param rank: int;

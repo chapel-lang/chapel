@@ -353,6 +353,7 @@ class BlockDom: BaseRectangularDom {
 // stridable: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
+pragma "use default init"
 class LocBlockDom {
   param rank: int;
   type idxType;
@@ -392,6 +393,7 @@ class BlockArr: BaseRectangularArr {
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
+pragma "use default init"
 class LocBlockArr {
   type eltType;
   param rank: int;
@@ -626,11 +628,13 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
   return if rank == 1 then result(1) else result;
 }
 
-proc LocBlock.LocBlock(param rank: int,
-                      type idxType, 
-                      locid, // the locale index from the target domain
-                      boundingBox: rank*range(idxType),
-                      targetLocBox: rank*range) {
+proc LocBlock.init(param rank: int,
+                   type idxType,
+                   locid, // the locale index from the target domain
+                   boundingBox: rank*range(idxType),
+                   targetLocBox: rank*range) {
+  this.rank = rank;
+  this.idxType = idxType;
   if rank == 1 {
     const lo = boundingBox(1).low;
     const hi = boundingBox(1).high;

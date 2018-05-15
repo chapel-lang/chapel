@@ -1,0 +1,44 @@
+curr 1   ret 1   arg 1
+curr 2   ret 2   arg 1
+curr 3   ret 3   arg 10002
+idxVar 666
+global VVV 10001
+1
+2
+3
+1
+10001
+
+curr 4   ret 104   arg 1
+curr 5   ret 105   arg 104
+curr 6   ret 106   arg 10106
+idxVar 1111
+global VVV 10002
+104
+105
+106
+1
+10002
+
+curr 7   ret 207   arg 1
+curr 8   ret 208   arg 207
+curr 9   ret 209   arg 10210
+idxVar 2222
+global VVV 10003
+207
+208
+209
+1
+10003
+
+curr 10   ret 310   arg 1
+curr 11   ret 311   arg 310
+curr 12   ret 312   arg 10314
+idxVar 3333
+global VVV 10004
+310
+311
+312
+1
+10004
+

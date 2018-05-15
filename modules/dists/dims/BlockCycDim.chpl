@@ -46,13 +46,13 @@ This Block-Cyclic dimension specifier is for use with the
 It specifies the mapping of indices in its dimension
 that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The ``BlockCyclicDim`` class constructor is defined as follows:
+The ``BlockCyclicDim`` class initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclicDim(
+    proc init(
       numLocales:   int,
       lowIdx:       int,
       blockSize:    int,
@@ -73,6 +73,7 @@ The arguments are as follows:
       is used internally by the implementation and
       should not be specified by the user code
 */
+pragma "use default init"
 class BlockCyclicDim {
   // distribution parameters
   const numLocales: int;
@@ -85,9 +86,10 @@ class BlockCyclicDim {
   // tell the compiler these are positive
   proc blockSizePos   return blockSize: bcdPosInt;
   proc numLocalesPos  return numLocales: bcdPosInt;
-  const cycleSizePos: bcdPosInt = blockSizePos * numLocalesPos;
+  const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
+pragma "use default init"
 class BlockCyclic1dom {
   type idxType;
   type stoIndexT;
@@ -100,7 +102,7 @@ class BlockCyclic1dom {
   proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
 
   // our range, normalized; its absolute stride
-  var wholeR: rangeT;
+  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
   var wholeRstrideAbs: idxType;
 
   // a copy of BlockCyclicDim constants
@@ -114,6 +116,7 @@ class BlockCyclic1dom {
   var dsiSetIndicesUnimplementedCase: bool;
 }
 
+pragma "use default init"
 class BlockCyclic1locdom {
   type idxType;
   type stoIndexT;
@@ -183,7 +186,7 @@ proc BlockCyclic1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false
 
 
 // Check all restrictions/assumptions that must be satisfied by the user
-// when constructing a 1-d BlockCyclic distribution.
+// when initializing a 1-d BlockCyclic distribution.
 inline proc BlockCyclicDim.checkInvariants() {
   assert(blockSize > 0, "BlockCyclic1d-blockSize");
   assert(numLocales > 0, "BlockCyclic1d-numLocales");
