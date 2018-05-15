@@ -128,10 +128,12 @@ inline Expr* ForallStmt::firstIteratedExpr() const { return fIterExprs.head;  }
   for_alist(TEMP,(FS)->shadowVariables())   \
     if (DefExpr* SVD = toDefExpr(TEMP))
 
-#define for_shadow_vars(SV,TEMP,FS)                    \
-  for_alist(TEMP,(FS)->shadowVariables())              \
-    if (DefExpr* SVD = toDefExpr(TEMP))                \
-      if (ShadowVarSymbol* SV = toShadowVarSymbol(SVD->sym))
+#define for_shadow_vars_and_defs(SV,DEF,TEMP,FS)           \
+  for_shadow_var_defs(DEF,TEMP,FS)                         \
+    if (ShadowVarSymbol* SV = toShadowVarSymbol(DEF->sym))
+
+#define for_shadow_vars(SV,TEMP,FS)         \
+  for_shadow_vars_and_defs(SV,SVD,TEMP,FS)
 
 /// helpers ///
 

@@ -616,9 +616,6 @@ static void checkUseBeforeDefs() {
               USR_FATAL_CONT(se, "illegal use of module '%s'", sym->name);
             }
 
-          } else if (isShadowVarSymbol(sym)) {
-            // ShadowVarSymbols are always defined.
-
           } else if (isLcnSymbol(sym) == true) {
             if (sym->defPoint->parentExpr != rootModule->block) {
               Symbol* parent = sym->defPoint->parentSymbol;
@@ -679,6 +676,13 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   //
   // The caller performs a post-order traversal and so we find the
   // symExpr before we see the callExpr
+  //
+  // TODO reacting to SymExprs, like it is done here, allows things like
+  //   "var a: int = a" to sneak in.
+  // Instead, we should react to CallExprs that are PRIM_MOVE, init, etc.
+  // Reacting to CallExprs is also more economical, as there are fewer
+  // CallExprs than there are SymExprs.
+  //
   if (SymExpr* se = toSymExpr(ast)) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE)     == true  ||
@@ -688,13 +692,24 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           retval = se->symbol();
         }
       }
+      // Allow for init() for a task-private variable, which occurs in
+      // ShadowVarSymbol::initBlock(), which does not include its DefExpr.
+      else if (ShadowVarSymbol* svar = toShadowVarSymbol(se->symbol())) {
+        if (svar->isTaskPrivate()  &&
+            call->isNamed("init")  &&
+            // the first argument is gMethodToken
+            call->get(2) == se)
+          retval = svar;
+      }
     }
 
   } else if (DefExpr* def = toDefExpr(ast)) {
     Symbol* sym = def->sym;
 
     // All arg symbols and loop induction variables are defined.
+    // All shadow variables are defined.
     if (isArgSymbol(sym) ||
+        isShadowVarSymbol(sym) ||
         sym->hasFlag(FLAG_INDEX_VAR)
     ) {
       retval = sym;
@@ -1881,12 +1896,16 @@ static void           normVarNoinit(DefExpr* defExpr);
 static bool           isNewExpr(Expr* expr);
 static AggregateType* typeForNewExpr(CallExpr* expr);
 
+static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var);
+static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
+
 static void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
   VarSymbol* var  = toVarSymbol(defExpr->sym);
   Expr*      type = defExpr->exprType;
   Expr*      init = defExpr->init;
+  Expr*  svarMark = prepareShadowVarForNormalize(defExpr, var);
 
   // handle ref variables
   if (var->hasFlag(FLAG_REF_VAR)) {
@@ -1914,6 +1933,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
   } else {
     INT_ASSERT(false);
   }
+  restoreShadowVarForNormalize(defExpr, svarMark);
 }
 
 static void normRefVar(DefExpr* defExpr) {
@@ -2309,6 +2329,48 @@ static void normVarNoinit(DefExpr* defExpr) {
     // Ignore no-init expression and fall back on default init
     normVarTypeWoutInit(defExpr);
   }
+}
+
+//
+// We want the initialization code for a task-private variable to be
+// in that variable's initBlock(). This is not where its DefExpr is,
+// however. So, in order to use existing normalization code as-is, we
+// move the DefExpr into a temporary BlockStmt. This BlockStmt also
+// preserves the DefExpr's position in the ForallStmt::shadowVariables()
+// list, which is where it lives. Once normalization completes, we
+// move the resulting ASTs into the initBlock(), and the DefExpr back
+// to its home list.
+
+static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var) {
+  ShadowVarSymbol* svar = toShadowVarSymbol(var);
+  if (svar == NULL || !svar->isTaskPrivate())
+    // Not a task-private variable, nothing to do.
+    return NULL;
+
+  BlockStmt* normBlock = new BlockStmt();
+  def->replace(normBlock);
+  normBlock->insertAtTail(def);
+
+  return normBlock;
+}
+
+static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark) {
+  if (!svarMark)
+    return;
+
+  BlockStmt* normBlock = toBlockStmt(svarMark);
+  BlockStmt* initBlock = toShadowVarSymbol(def->sym)->initBlock();
+  AList&     initList  = initBlock->body;
+  // If there is stuff in initBlock(), we need to be careful about
+  // where we place 'def'.
+  INT_ASSERT(initList.empty());
+
+  normBlock->insertAfter(def->remove());
+
+  for_alist(stmt, normBlock->body)
+    initList.insertAtTail(stmt->remove());
+
+  normBlock->remove();
 }
 
 /************************************* | **************************************
