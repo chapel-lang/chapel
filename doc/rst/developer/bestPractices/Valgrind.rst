@@ -31,13 +31,13 @@ Explanation
 The above options are needed because not all third-party libraries support
 ``valgrind``. In particular:
 
-- ``jemalloc`` does not support valgrind, which prevents valgrind from accurately
-  tracking allocations/frees
-- ``qthreads`` performs task-switching in user-space, so valgrind is not able to
-  keep track of the stack frame correctly
+- ``jemalloc`` does not support ``valgrind``, which prevents ``valgrind`` from
+  accurately tracking allocations/frees
+- ``qthreads`` performs task-switching in user-space, so ``valgrind`` is not
+  able to keep track of the stack frame correctly
 - ``fifo`` needs the number of running threads to be limited, or else it will
   encounter ``VG_N_THREADS is too low`` errors
-- ``re2`` intentionally leaves some memory uninitialized for performance reasons,
-  unless ``CHPL_RE2_VALGRIND_SUPPORT=true`` is set at build time
-- GASNet support for valgrind is experimental at this time -- see 
+- ``re2`` intentionally leaves some memory uninitialized for performance
+  reasons, unless ``CHPL_RE2_VALGRIND_SUPPORT=true`` is set at build time
+- GASNet support for ``valgrind`` is experimental at this time -- see 
   https://github.com/chapel-lang/chapel/issues/8544 for the current status
