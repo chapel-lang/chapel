@@ -168,8 +168,19 @@ module DataFrames {
                              filter_valid_bits[1..curr_ord]);
     }
 
-
     proc writeThis(f, s: TypedSeries(?) = nil) {
+      for (i, (v, d)) in zip(this, s._these()) {
+        f <~> i;
+        f <~> "\t";
+        if v then
+          f <~> d;
+        else
+          f <~> "None";
+        f <~> "\n";
+      }
+    }
+
+    proc writeThis(f, d: DataFrame = nil) {
       for (i, (v, d)) in zip(this, s._these()) {
         f <~> i;
         f <~> "\t";
@@ -584,11 +595,35 @@ module DataFrames {
         s.reindex(idx);
     }
 
+    // TODO: iterates over the axes
+    /*
+    iter these() {
+    }
+     */
+
+    // TODO: need new data structures for this, or flexible-len tups
+    /*
+    iter tuples(type idxType) {
+      if idx {
+        for i in idx:TypedIndex(idxType) {
+     */
+
+    // TODO: no idx
+    /*
+      iter tuples_fast() {
+     */
+
     proc writeThis(f) {
-      for (l, s) in zip(labels, columns) {
-        f <~> l + ":\n";
-        s.writeThis(f);
-        f <~> "\n\n";
+      if idx {
+        idx.writeThis(f, this);
+      } else {
+        for l in labels do
+          f <~> l + ":\t\t";
+        for s in this.columns {
+          f <~> l + ":\n";
+          s.writeThis(f);
+          f <~> "\n\n";
+        }
       }
     }
   }
