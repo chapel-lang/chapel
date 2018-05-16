@@ -787,7 +787,7 @@ def set_up_general():
 
         if "CHPL_REGEXP" in os.environ:
             if "CHPL_RE2_VALGRIND_SUPPORT" not in os.environ:
-                logger.write("[Error: Rebuild re2 with CHPL_RE2_VALGRIND_SUPPORT set.]")
+                logger.write("[Error: re2 may not be built with CHPL_RE2_VALGRIND_SUPPORT.]")
                 finish()
 
         # get first line of output
