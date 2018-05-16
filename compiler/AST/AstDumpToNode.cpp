@@ -1060,6 +1060,17 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
 //
 //
 
+bool AstDumpToNode::enterIfExpr(IfExpr* node) {
+  return false;
+}
+
+void AstDumpToNode::exitIfExpr(IfExpr* node) {
+}
+
+//
+//
+//
+
 void AstDumpToNode::visitSymExpr(SymExpr* node)
 {
   Symbol* sym = node->symbol();

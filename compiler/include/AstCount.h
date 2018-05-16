@@ -97,6 +97,9 @@ foreach_ast(decl_members);
   virtual bool   enterNamedExpr      (NamedExpr*         node);
   virtual void   exitNamedExpr       (NamedExpr*         node);
 
+  virtual bool   enterIfExpr         (IfExpr*            node);
+  virtual void   exitIfExpr          (IfExpr*            node);
+
   virtual void   visitSymExpr        (SymExpr*           node);
 
   virtual void   visitUsymExpr       (UnresolvedSymExpr* node);
