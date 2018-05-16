@@ -1284,11 +1284,12 @@ CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn, SymbolMap* map) const
 
         fn->insertFormalAtTail(arg);
 
+        /*
         // Get the field
         DefExpr* fieldDef = toSuperField(arg->name);
         INT_ASSERT(fieldDef);
         // Add mapping from field to argument
-        map->put(fieldDef->sym, arg);
+        map->put(fieldDef->sym, arg);*/
 
         retval->insertAtTail(new SymExpr(arg));
       }
@@ -1369,9 +1370,9 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
     }
   }
 
-  if (needsConstructor())
-    insertImplicitThis(fn, fieldNamesSet);
-  else
+  insertImplicitThis(fn, fieldNamesSet);
+
+  if (!needsConstructor())
     resolveUnresolvedSymExprs(fn);
 }
 
@@ -1420,8 +1421,9 @@ ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
 
   fn->insertFormalAtTail(arg);
 
+  /*
   // Add mapping from field to argument
-  map->put(field, arg);
+  map->put(field, arg);*/
 
   return arg;
 }
