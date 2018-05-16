@@ -1216,7 +1216,6 @@ void AggregateType::buildConstructors() {
 ************************************** | *************************************/
 
 FnSymbol* AggregateType::buildTypeConstructor() {
-  SymbolMap map; // map generic fields -> type constructor args
   const char* name   = astr("_type_construct_", symbol->name);
   const char* cName  = astr("_type_construct_", symbol->cname);
   VarSymbol*  _this  = new VarSymbol("this", this);
@@ -1249,10 +1248,10 @@ FnSymbol* AggregateType::buildTypeConstructor() {
   retval->insertAtTail(new DefExpr(_this));
 
   if (isClass() == true && dispatchParents.n > 0) {
-    typeConstrSetFields(retval, typeConstrSuperCall(retval, &map), &map);
+    typeConstrSetFields(retval, typeConstrSuperCall(retval));
 
   } else {
-    typeConstrSetFields(retval, NULL, &map);
+    typeConstrSetFields(retval, NULL);
   }
 
   retval->insertAtTail(new CallExpr(PRIM_RETURN, _this));
@@ -1264,7 +1263,7 @@ FnSymbol* AggregateType::buildTypeConstructor() {
   return retval;
 }
 
-CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn, SymbolMap* map) const {
+CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
   AggregateType* parent        = dispatchParents.v[0];
   FnSymbol*      superTypeCtor = parent->typeConstructor;
   CallExpr*      retval        = NULL;
@@ -1283,13 +1282,6 @@ CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn, SymbolMap* map) const
         arg->addFlag(FLAG_PARENT_FIELD);
 
         fn->insertFormalAtTail(arg);
-
-        /*
-        // Get the field
-        DefExpr* fieldDef = toSuperField(arg->name);
-        INT_ASSERT(fieldDef);
-        // Add mapping from field to argument
-        map->put(fieldDef->sym, arg);*/
 
         retval->insertAtTail(new SymExpr(arg));
       }
@@ -1313,8 +1305,7 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
 }
 
 void AggregateType::typeConstrSetFields(FnSymbol* fn,
-                                        CallExpr* superCall,
-                                        SymbolMap* map) const {
+                                        CallExpr* superCall) const {
   Vec<const char*> fieldNamesSet;
 
   for_fields(tmp, this) {
@@ -1341,24 +1332,24 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
         if (field->isType()            == true ||
             field->hasFlag(FLAG_PARAM) == true) {
-          ArgSymbol* arg = insertGenericArg(fn, field, map);
+          ArgSymbol* arg = insertGenericArg(fn, field);
 
           typeConstrSetField(fn, field, new SymExpr(arg));
 
         } else if (field->defPoint->exprType
                    && !isFieldTypeExprGeneric(field->defPoint->exprType)) {
           Expr* type = field->defPoint->exprType;
-          CallExpr* call = new CallExpr(PRIM_TYPE_INIT, type->copy(map));
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT, type->copy());
 
           typeConstrSetField(fn, field, call);
 
         } else if (Expr* init = field->defPoint->init) {
-          CallExpr* call = new CallExpr("chpl__initCopy", init->copy(map));
+          CallExpr* call = new CallExpr("chpl__initCopy", init->copy());
 
           typeConstrSetField(fn, field, call);
 
         } else {
-          ArgSymbol* arg = insertGenericArg(fn, field, map);
+          ArgSymbol* arg = insertGenericArg(fn, field);
 
           if (symbol->hasFlag(FLAG_REF) == false) {
             CallExpr* call = new CallExpr(PRIM_TYPE_INIT, new SymExpr(arg));
@@ -1386,8 +1377,7 @@ void AggregateType::typeConstrSetField(FnSymbol*  fn,
 }
 
 ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
-                                           VarSymbol* field,
-                                           SymbolMap* map) const {
+                                           VarSymbol* field) const {
   Expr*      type = field->defPoint->exprType;
   Expr*      init = field->defPoint->init;
   ArgSymbol* arg  = new ArgSymbol(INTENT_BLANK, field->name, field->type);
@@ -1404,11 +1394,11 @@ ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
   }
 
   if (type != NULL) {
-    arg->typeExpr    = new BlockStmt(type->copy(map), BLOCK_TYPE);
+    arg->typeExpr    = new BlockStmt(type->copy(), BLOCK_TYPE);
   }
 
   if (init != NULL) {
-    arg->defaultExpr = new BlockStmt(init->copy(map), BLOCK_SCOPELESS);
+    arg->defaultExpr = new BlockStmt(init->copy(), BLOCK_SCOPELESS);
   }
 
   if (type == NULL && arg->type == dtUnknown) {
@@ -1420,10 +1410,6 @@ ArgSymbol* AggregateType::insertGenericArg(FnSymbol*  fn,
   }
 
   fn->insertFormalAtTail(arg);
-
-  /*
-  // Add mapping from field to argument
-  map->put(field, arg);*/
 
   return arg;
 }

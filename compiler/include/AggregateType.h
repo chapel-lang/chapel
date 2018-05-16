@@ -225,14 +225,12 @@ private:
 
   FnSymbol*                   buildTypeConstructor();
 
-  CallExpr*                   typeConstrSuperCall(FnSymbol* fn,
-                                                  SymbolMap* map)  const;
+  CallExpr*                   typeConstrSuperCall(FnSymbol* fn)  const;
 
   bool                        isFieldInThisClass(const char* name)       const;
 
   void                        typeConstrSetFields(FnSymbol* fn,
-                                                  CallExpr* superCall,
-                                                  SymbolMap* map)   const;
+                                                  CallExpr* superCall)   const;
 
   bool                        setNextGenericField();
 
@@ -241,8 +239,7 @@ private:
                                                  Expr*      expr)        const;
 
   ArgSymbol*                  insertGenericArg(FnSymbol*  fn,
-                                               VarSymbol* field,
-                                               SymbolMap* map)  const;
+                                               VarSymbol* field)  const;
 
   void                        buildConstructor();
 
