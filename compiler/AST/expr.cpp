@@ -1091,6 +1091,99 @@ void NamedExpr::accept(AstVisitor* visitor) {
   }
 }
 
+//
+// Implementation of 'IfExpr'
+//
+// Currently intended to be lowered during normalize()
+//
+
+IfExpr::IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr) :
+  Expr(E_IfExpr),
+  condition(NULL),
+  thenStmt(NULL),
+  elseStmt(NULL)
+{
+  this->condition = condition;
+
+  if (BlockStmt* block = toBlockStmt(thenExpr)) {
+    this->thenStmt = block;
+  } else {
+    this->thenStmt = new BlockStmt(thenExpr, BLOCK_SCOPELESS);
+  }
+
+  if (BlockStmt* block = toBlockStmt(elseExpr)) {
+    this->elseStmt = block;
+  } else {
+    this->elseStmt = new BlockStmt(elseExpr, BLOCK_SCOPELESS);
+  }
+
+  gIfExprs.add(this);
+}
+
+Expr* IfExpr::getCondition() {
+  return condition;
+}
+
+BlockStmt* IfExpr::getThenStmt() {
+  return thenStmt;
+}
+
+BlockStmt* IfExpr::getElseStmt() {
+  return elseStmt;
+}
+
+void IfExpr::verify() {
+  Expr::verify(E_IfExpr);
+  verifyParent(condition);
+  verifyParent(thenStmt);
+  verifyParent(elseStmt);
+
+  verifyNotOnList(condition);
+  verifyNotOnList(thenStmt);
+  verifyNotOnList(elseStmt);
+}
+
+IfExpr*
+IfExpr::copyInner(SymbolMap* map) {
+  return new IfExpr(COPY_INT(condition), COPY_INT(thenStmt), COPY_INT(elseStmt));
+}
+
+void IfExpr::replaceChild(Expr* old_ast, Expr* new_ast) {
+  if (old_ast == condition) {
+    condition = new_ast;
+  } else if (old_ast == thenStmt) {
+    thenStmt = toBlockStmt(new_ast);
+  } else if (old_ast == elseStmt) {
+    elseStmt = toBlockStmt(new_ast);
+  } else {
+    INT_FATAL(this, "Unhandled case in IfExpr::replaceChild");
+  }
+}
+
+void IfExpr::accept(AstVisitor* visitor) {
+  if (visitor->enterIfExpr(this) == true) {
+
+    condition->accept(visitor);
+    thenStmt->accept(visitor);
+    elseStmt->accept(visitor);
+
+    visitor->exitIfExpr(this);
+  }
+}
+
+QualifiedType IfExpr::qualType() {
+  return thenStmt->body.tail->qualType();
+}
+
+void IfExpr::prettyPrint(std::ostream* o) {
+  *o << "<IfExprType>";
+}
+
+Expr* IfExpr::getFirstExpr() {
+  return (condition != NULL) ? condition->getFirstExpr() : this;
+}
+
+
 /************************************ | *************************************
 *                                                                           *
 *                                                                           *

@@ -294,6 +294,33 @@ class NamedExpr : public Expr {
   virtual Expr*   getFirstExpr();
 };
 
+class IfExpr : public Expr {
+public:
+
+  IfExpr(Expr* condition, Expr* thenExpr, Expr* elseExpr);
+
+  Expr*      getCondition();
+  BlockStmt* getThenStmt();
+  BlockStmt* getElseStmt();
+
+  virtual void verify();
+
+  DECLARE_COPY(IfExpr);
+
+  virtual Expr*         getFirstExpr();
+  virtual void          replaceChild(Expr* old_ast, Expr* new_ast);
+  virtual QualifiedType qualType();
+
+  virtual void   accept(AstVisitor* visitor);
+  virtual GenRet codegen();
+  virtual void   prettyPrint(std::ostream* o);
+
+private:
+  Expr* condition;
+  BlockStmt* thenStmt;
+  BlockStmt* elseStmt;
+};
+
 
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
