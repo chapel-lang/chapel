@@ -6769,10 +6769,6 @@ proc channel.readf(fmtStr:string, ref args ...?k): bool throws {
         }
       }
 
-      if r != nil {
-        delete r;
-      }
-
       if ! err {
         // commit.
         qio_channel_commit_unlocked(_channel_internal);
