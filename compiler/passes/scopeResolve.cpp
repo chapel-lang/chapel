@@ -71,8 +71,6 @@ static std::set< std::pair< std::pair<const char*,int>, const char* > > warnedFo
 
 static void          addToSymbolTable();
 
-static void          addToSymbolTable(DefExpr* def);
-
 static void          scopeResolve(ModuleSymbol*       module,
                                   const ResolveScope* root);
 
@@ -81,6 +79,8 @@ static void          processImportExprs();
 static void          resolveGotoLabels();
 
 static void          resolveUnresolvedSymExprs();
+
+static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
 
 static void          setupShadowVars();
 
@@ -164,10 +164,13 @@ void scopeResolve() {
 
   //
   // build constructors (type and value versions)
+  // (initializers are built during normalize)
   //
   forv_Vec(AggregateType, ct, gAggregateTypes) {
     ct->createOuterWhenRelevant();
-    ct->buildConstructors();
+    if (ct->needsConstructor()) {
+      ct->buildConstructors();
+    }
   }
 
   resolveGotoLabels();
@@ -177,6 +180,37 @@ void scopeResolve() {
   resolveEnumeratedTypes();
 
   setupShadowVars();
+
+  // Figure out which types are generic, in a transitive closure manner
+  {
+    bool changed;
+    do {
+      changed = false;
+      forv_Vec(AggregateType, at, gAggregateTypes) {
+        // Ignore aggregate types with old-style constructors
+        // since the old constructor code removes the
+        // init expr and the type expr.
+        if (!at->needsConstructor() &&
+            // And don't try to mark generic again
+            !at->isGeneric()) {
+          for_fields(field, at) {
+            if (at->fieldIsGeneric(field)) {
+              at->markAsGeneric();
+              changed = true;
+            }
+          }
+        }
+      }
+    } while (changed);
+  }
+
+  forv_Vec(AggregateType, ct, gAggregateTypes) {
+    // Build the type constructor now that we know which fields are generic
+    // We do it here only for types with initializers
+    if (!ct->needsConstructor()) {
+      ct->buildConstructors();
+    }
+  }
 
   ResolveScope::destroyAstMap();
 
@@ -244,7 +278,7 @@ void addToSymbolTable(FnSymbol* fn) {
   }
 }
 
-static void addToSymbolTable(DefExpr* def) {
+void addToSymbolTable(DefExpr* def) {
   Symbol* newSym = def->sym;
 
   if (newSym->hasFlag(FLAG_TEMP) == false &&
@@ -579,8 +613,6 @@ static void resolveGotoLabels() {
 
 /************************************* | *************************************/
 
-static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr);
-
 static void updateMethod(UnresolvedSymExpr* usymExpr);
 
 static void updateMethod(UnresolvedSymExpr* usymExpr,
@@ -651,6 +683,16 @@ static void resolveUnresolvedSymExprs() {
 
     i++;
   }
+}
+
+void resolveUnresolvedSymExprs(BaseAST* inAst) {
+   std::vector<BaseAST*> asts;
+   collect_asts(inAst, asts);
+
+   for_vector(BaseAST, ast, asts) {
+     if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(ast))
+       resolveUnresolvedSymExpr(urse);
+   }
 }
 
 static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr) {
@@ -1054,7 +1096,6 @@ static void setupShadowVars() {
 
   USR_STOP();
 }
-    
 
 /************************************* | **************************************
 *                                                                             *
