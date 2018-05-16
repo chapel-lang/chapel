@@ -39,5 +39,5 @@ valgrind. In particular:
   encounter ``VG_N_THREADS is too low`` errors
 - re2 intentionally leaves some memory uninitialized for performance reasons,
   unless ``CHPL_RE2_VALGRIND_SUPPORT=true`` is set at build time
-- GASNet support for valgrind is experimental at this time -- see #8544 for
-  the current status
+- GASNet support for valgrind is experimental at this time -- see #8544
+  (https://github.com/chapel-lang/chapel/issues/8544) for the current status
