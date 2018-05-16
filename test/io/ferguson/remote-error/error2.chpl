@@ -28,7 +28,7 @@ for i in 0..#numLocales {
     } catch e: SystemError {
       errs[i] = e.err;
     } catch {
-      errs[i] = e.err;
+      errs[i] = EINVAL;
     }
 
     writeln("loc ", i, " error ", errorToString(errs[i]));
