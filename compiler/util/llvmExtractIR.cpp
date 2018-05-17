@@ -41,8 +41,13 @@ void extractAndPrintFunctionLLVM(Function *func) {
   ValueToValueMapTy VMap;
   // Create a new module containing only the definition of the function
   // and using external declarations for everything else
+#if HAVE_LLVM_VER < 70
   auto ownedM = CloneModule(funcModule, VMap,
                             [=](const GlobalValue *GV) { return GV == func; });
+#else
+  auto ownedM = CloneModule(*funcModule, VMap,
+                            [=](const GlobalValue *GV) { return GV == func; });
+#endif
   Module& M = *ownedM.get();
 
   // Make sure the function in the module is externally visible

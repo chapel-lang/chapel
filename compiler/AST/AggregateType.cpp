@@ -170,6 +170,45 @@ int AggregateType::numFields() const {
   return fields.length;
 }
 
+// Note that a field with generic type where that type has
+// default values for all of its generic fields is considered concrete
+// for the purposes of this function.
+static bool isFieldTypeExprGeneric(Expr* typeExpr) {
+  // Look in the field declaration for a concrete type
+  Symbol* sym = NULL;
+
+  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
+    sym = lookup(urse->unresolved, urse);
+  } else if (SymExpr* se = toSymExpr(typeExpr)) {
+    sym = se->symbol();
+  }
+
+  if (sym) {
+    Type* t = sym->type;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->isGeneric()) {
+        // If it's a generic type that has default values
+        // for all of it's generic attributes, it won't
+        // make this type generic.
+        bool foundGenericWithoutInit = false;
+        for_fields(field, at) {
+          if (VarSymbol* var = toVarSymbol(field)) {
+            DefExpr* def = var->defPoint;
+            if (def->init == NULL && at->fieldIsGeneric(field)) {
+              foundGenericWithoutInit = true;
+            }
+          }
+        }
+        return foundGenericWithoutInit;
+      }
+    } else if (t->symbol->hasFlag(FLAG_GENERIC)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool AggregateType::fieldIsGeneric(Symbol* field) const {
   bool retval = false;
 
@@ -180,10 +219,20 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
     } else if (var->hasFlag(FLAG_PARAM) == true) {
       retval = true;
 
-    } else if (var->type == dtUnknown) {
+    } else if (var->type == dtUnknown
+               /* check for FLAG_SUPER_CLASS avoids infinite loop  */
+               || (!var->hasFlag(FLAG_SUPER_CLASS) &&
+                   var->type->symbol->hasFlag(FLAG_GENERIC))) {
       DefExpr* def = var->defPoint;
 
       if (def->init == NULL && def->exprType == NULL) {
+        // if we end up in this case.. the compiler infinite loops
+        INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
+
+        retval = true;
+      } else if (def->init == NULL &&
+                 def->exprType != NULL &&
+                 isFieldTypeExprGeneric(def->exprType)) {
         retval = true;
       }
     }
@@ -192,11 +241,41 @@ bool AggregateType::fieldIsGeneric(Symbol* field) const {
   return retval;
 }
 
-DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
+DefExpr* AggregateType::toSuperField(const char*  name) const {
   DefExpr* retval = NULL;
 
   if (isClass() == true) {
-    forv_Vec(AggregateType, pt, dispatchParents) {
+    AggregateType* thisNC = const_cast<AggregateType*>(this);
+    forv_Vec(AggregateType, pt, thisNC->dispatchParents) {
+      AggregateType* root = pt->getRootInstantiation();
+      if (DefExpr* field = pt->toLocalField(name)) {
+        retval = field;
+        break;
+      } else if (DefExpr* field = pt->toSuperField(name)) {
+        retval = field;
+        break;
+      } else if (pt != root) {
+        if (DefExpr* field = root->toLocalField(name)) {
+          retval = field;
+          break;
+        } else if (DefExpr* field = root->toSuperField(name)) {
+          retval = field;
+          break;
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+
+DefExpr* AggregateType::toSuperField(SymExpr*  expr) const {
+  DefExpr* retval = NULL;
+
+  if (isClass() == true) {
+    AggregateType* thisNC = const_cast<AggregateType*>(this);
+    forv_Vec(AggregateType, pt, thisNC->dispatchParents) {
       AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
@@ -219,11 +298,12 @@ DefExpr* AggregateType::toSuperField(SymExpr*  expr) {
   return retval;
 }
 
-DefExpr* AggregateType::toSuperField(CallExpr* expr) {
+DefExpr* AggregateType::toSuperField(CallExpr* expr) const {
   DefExpr* retval = NULL;
 
   if (isClass() == true) {
-    forv_Vec(AggregateType, pt, dispatchParents) {
+    AggregateType* thisNC = const_cast<AggregateType*>(this);
+    forv_Vec(AggregateType, pt, thisNC->dispatchParents) {
       AggregateType* root = pt->getRootInstantiation();
       if (DefExpr* field = pt->toLocalField(expr)) {
         retval = field;
@@ -1193,7 +1273,7 @@ CallExpr* AggregateType::typeConstrSuperCall(FnSymbol* fn) const {
   }
 
   if (superTypeCtor->numFormals() > 0) {
-    retval = new CallExpr(parent->symbol->name);
+    retval = new CallExpr(parent->symbol);
 
     for_formals(formal, superTypeCtor) {
       ArgSymbol* arg = toArgSymbol(formal->copy());
@@ -1256,8 +1336,10 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
 
           typeConstrSetField(fn, field, new SymExpr(arg));
 
-        } else if (Expr* type = field->defPoint->exprType) {
-          CallExpr* call = new CallExpr(PRIM_TYPE_INIT,   type->copy());
+        } else if (field->defPoint->exprType
+                   && !isFieldTypeExprGeneric(field->defPoint->exprType)) {
+          Expr* type = field->defPoint->exprType;
+          CallExpr* call = new CallExpr(PRIM_TYPE_INIT, type->copy());
 
           typeConstrSetField(fn, field, call);
 
@@ -1280,6 +1362,9 @@ void AggregateType::typeConstrSetFields(FnSymbol* fn,
   }
 
   insertImplicitThis(fn, fieldNamesSet);
+
+  if (!needsConstructor())
+    resolveUnresolvedSymExprs(fn);
 }
 
 void AggregateType::typeConstrSetField(FnSymbol*  fn,
@@ -2063,7 +2148,7 @@ void AggregateType::buildCopyInitializer() {
 // constructor being modified to call the default constructor), and to try to
 // generate default initializers for types where neither an initializer nor a
 // constructor has been defined.
-bool AggregateType::needsConstructor() {
+bool AggregateType::needsConstructor() const {
   // Temporarily only generate default initializers for classes and records
   if (isUnion())
     return true;
@@ -2076,7 +2161,8 @@ bool AggregateType::needsConstructor() {
     return false;
   }
 
-  ModuleSymbol* mod = getModule();
+  AggregateType* thisNC = const_cast<AggregateType*>(this);
+  ModuleSymbol* mod = thisNC->getModule();
 
   // For now, always generate a default constructor for types in the internal
   // and library modules
@@ -2100,7 +2186,7 @@ bool AggregateType::needsConstructor() {
     // neither an initializer nor a constructor.
 
     // Classes that define an initialize() method need a default constructor
-    forv_Vec(FnSymbol, method, methods) {
+    forv_Vec(FnSymbol, method, thisNC->methods) {
       if (method && strcmp(method->name, "initialize") == 0) {
         if (method->numFormals() == 2) {
           return true;
@@ -2209,7 +2295,7 @@ bool AggregateType::wantsDefaultInitializer() const {
 // Replace implicit references to 'this' in the body of this
 // type constructor with explicit member reference (dot) expressions.
 void AggregateType::insertImplicitThis(FnSymbol*         fn,
-                                       Vec<const char*>& fieldNamesSet) {
+                                       Vec<const char*>& fieldNamesSet) const {
   std::vector<BaseAST*> asts;
 
   collect_asts(fn->body, asts);
@@ -2221,6 +2307,9 @@ void AggregateType::insertImplicitThis(FnSymbol*         fn,
         // So replace it with a dot expression.
         se->replace(buildDotExpr(fn->_this, se->unresolved));
       }
+    } else if (SymExpr* se = toSymExpr(ast)) {
+      if (this->toLocalField(se) || this->toSuperField(se))
+        se->replace(buildDotExpr(fn->_this, se->symbol()->name));
     }
   }
 }

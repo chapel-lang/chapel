@@ -1208,6 +1208,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "init copy fn"
+  pragma "suppress lvalue error"
   inline proc chpl__initCopy(const x) {
     // body adjusted during generic instantiation
     return x;

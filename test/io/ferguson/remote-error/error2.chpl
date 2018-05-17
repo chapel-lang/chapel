@@ -23,7 +23,13 @@ for i in 0..#numLocales {
       stdout.flush();
     }
 
-    stdout.writef("%", 1, error=errs[i]);
+    try {
+      stdout.writef("%", 1);
+    } catch e: SystemError {
+      errs[i] = e.err;
+    } catch {
+      errs[i] = EINVAL;
+    }
 
     writeln("loc ", i, " error ", errorToString(errs[i]));
     stdout.flush();

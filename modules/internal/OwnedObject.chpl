@@ -239,6 +239,7 @@ module OwnedObject {
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "no doc"
+  pragma "auto destroy fn"
   proc chpl__autoDestroy(x: _owned) {
     __primitive("call destructor", x);
   }

@@ -2,11 +2,11 @@ proc main(){
   use Crypto;
 
   /* Create AES instance with the version required */
-  var a = new AES(256, "cbc");
+  var a = new AES(256, CryptoChainMode.cbc);
 
   /* Key Generation phase starts */
   var salt = new CryptoBuffer("random_salt");
-  var hash = new Hash("SHA256");
+  var hash = new Hash(Digest.SHA256);
   var k = new KDF(a.getByteSize(), 1000, hash);
   var key = k.passKDF("random_key", salt);
   writeln("Generated Key: ", key.toHex());

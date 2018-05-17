@@ -1,8 +1,8 @@
 proc main(){
   use Crypto;
 
-  var SHA = new Hash("SHA1");
-  var SHA2 = new Hash("SHA256");
+  var SHA = new Hash(Digest.SHA1);
+  var SHA2 = new Hash(Digest.SHA256);
   var s = "The quick brown fox jumps over the lazy dog";
   writeln(s);
 

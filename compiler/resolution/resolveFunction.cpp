@@ -118,6 +118,19 @@ static void resolveFormals(FnSymbol* fn) {
         updateIfRefFormal(fn, formal);
       }
     }
+
+    if ((formal->intent == INTENT_BLANK || formal->intent == INTENT_CONST) &&
+        !formal->hasFlag(FLAG_TYPE_VARIABLE) &&
+        formal->type->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+        // This is a workaround for problems with owned/shared auto-destroy
+        // (since blank intent for these types == in intent)
+        !fn->hasFlag(FLAG_AUTO_DESTROY_FN) &&
+        !fn->hasFlag(FLAG_INIT_COPY_FN) &&
+        !fn->hasFlag(FLAG_AUTO_COPY_FN)) {
+      IntentTag useIntent = concreteIntentForArg(formal);
+      if ((useIntent & INTENT_FLAG_IN))
+        formal->intent = useIntent;
+    }
   }
 }
 
@@ -544,16 +557,6 @@ static void insertUnrefForArrayReturn(FnSymbol* fn) {
             CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
             CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
             FnSymbol*  unrefFn   = NULL;
-
-            if (rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-              if (fWarnUnstable) {
-                // This warning can go away after 1.17 if it gets annoying.
-                // In the meantime, it helps to identify cases that have
-                // different behavior between 1.16 and 1.17.
-                USR_WARN(call, "proc returns an iterator that will be "
-                               "immediately converted to an array");
-              }
-            }
 
             // Used by callDestructors to catch assignment from
             // a ref to 'tmp' when we know we don't want to copy.
@@ -1556,8 +1559,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
               // Use assign since no cast is available for
               // sync / single and their value type.
-              if (typesDiffer &&
-                  (isSyncType(from->getValType()) ||
+              if ((isSyncType(from->getValType()) ||
                    isSingleType(from->getValType()))) {
                 useAssign = true;
               }

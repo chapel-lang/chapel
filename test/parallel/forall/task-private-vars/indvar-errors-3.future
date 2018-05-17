@@ -1,5 +1,7 @@
 error message: indicate that these are loop induction variables
 
+Issue: #9127
+
 When the initialization or type expression of a task-private variable
 references an induction variable of its forall loop, we should
 issue the same errors as in indvar-errors-1.chpl. This is more

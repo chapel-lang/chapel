@@ -1562,14 +1562,17 @@ module DefaultRectangular {
       const src = arr.theData;
       const idx = arr.getDataIndex(dom.dsiLow);
       const size = len:ssize_t*elemSize:ssize_t;
-      var error:syserr = ENOERR;
-      if f.writing {
-        f.writeBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
-      } else {
-        f.readBytes(_ddata_shift(arr.eltType, src, idx), size, error=error);
+      try {
+        if f.writing {
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+        } else {
+          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+        }
+      } catch e: SystemError {
+        f.setError(e.err);
+      } catch {
+        f.setError(EINVAL:syserr);
       }
-      if error then
-        f.setError(error);
     } else {
       const zeroTup: rank*idxType;
       recursiveArrayWriter(zeroTup);
