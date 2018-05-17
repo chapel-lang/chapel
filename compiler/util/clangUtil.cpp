@@ -61,8 +61,9 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-// TODO - this will need to be conditional
+#ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
+#endif
 
 #endif
 
@@ -1371,12 +1372,13 @@ void finishCodegenLLVM() {
   }
 }
 
+#ifdef HAVE_LLVM_RV
 static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
                              llvm::legacy::PassManagerBase &PM) {
 
   rv::addOuterLoopVectorizer(PM);
 }
-
+#endif
 
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
@@ -1416,12 +1418,14 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   PMBuilder.RerollLoops = opts.RerollLoops;
 
 
+#ifdef HAVE_LLVM_RV
   // Enable Region Vectorizer aka Outer Loop Vectorizer
   if (!fNoVectorize) {
     // This in copied from 'registerRVPasses'
     PMBuilder.addExtension(PassManagerBuilder::EP_VectorizerStart,
                            registerRVPasses);
   }
+#endif
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }

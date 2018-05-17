@@ -12,7 +12,9 @@ endif
 
 LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
 
-LLVM_RV_LIBS=-lRV -lgensleef
+#Note, uncomment to enable Region Vectorizer RV
+#LLVM_RV_LIBS=-lRV -lgensleef
+LLVM_RV_LIBS=
 
 LLVM_CXXFLAGS=$(LLVM_CONFIG_CXXFLAGS) -DHAVE_LLVM -Wno-comment
 LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM

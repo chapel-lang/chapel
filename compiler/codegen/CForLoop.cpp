@@ -55,10 +55,12 @@ static llvm::MDNode* generateLoopMetadata(bool addVectorizeEnableMetadata)
                                               llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true))};
     args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
 
+#ifdef HAVE_LLVM_RV
     // Region Vectorizer needs loop width to be specified
     llvm::Metadata *loopVectorWidth[] = { llvm::MDString::get(ctx, "llvm.loop.vectorize.width"),
                                           llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 8))};
     args.push_back(llvm::MDNode::get(ctx, loopVectorWidth));
+#endif
 
   }
 
@@ -187,7 +189,11 @@ GenRet CForLoop::codegen()
 
     llvm::MDNode* loopMetadata = nullptr;
     if(fNoVectorize == false && isOrderIndependent()) {
-      loopMetadata = generateLoopMetadata(true);
+      bool addVectorizeEnable = true;
+#ifdef HAVE_LLVM_RV
+      addVectorizeEnable = false;
+#endif
+      loopMetadata = generateLoopMetadata(addVectorizeEnable);
       info->loopStack.emplace(loopMetadata, true);
     }
 
