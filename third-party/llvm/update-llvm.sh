@@ -1,7 +1,20 @@
-#!/bin/sh
+#!/bin/bash
 
+BRANCH=unknown
 
-BRANCH=release_50
+if [ "$#" -eq 0 ]
+then
+# No branch argument to use, so compute one
+MYVERSION=`cat LLVM_VERSION | sed 's/\.//g'`
+BRANCH=release_$MYVERSION
+else
+# Argument supplied, use that branch
+BRANCH="$1"
+fi
+
+echo About to check out LLVM, CLANG, POLLY, RV, COMPILER_RT branch:
+echo   $BRANCH
+sleep 1
 
 CLONEARGS="--branch $BRANCH --single-branch --depth=1"
 
