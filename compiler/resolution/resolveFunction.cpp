@@ -1647,6 +1647,9 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   call->insertBefore(new CallExpr(PRIM_MOVE, tmp, fromExpr));
                 }
 
+                // see comment about this above in assignment case
+                from->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
                 CallExpr* cast = createCast(tmp, lhsType->symbol);
 
                 call->insertAtTail(cast);

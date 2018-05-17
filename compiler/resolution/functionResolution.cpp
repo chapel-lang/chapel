@@ -4519,6 +4519,11 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         SymExpr*  rhs);
 
 static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
 
@@ -4573,6 +4578,13 @@ static void resolveSetMember(CallExpr* call) {
   INT_ASSERT(isFnSymbol(call->parentSymbol));
   if (isGenericInstantiation(fs->type, t, toFnSymbol(call->parentSymbol))) {
     fs->type = t;
+  }
+  if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
+    if (canInstantiate(t, fs->type))
+      fs->type = t;
+    else
+      USR_FATAL(call->parentSymbol,
+                "unable to determine type of generic field");
   }
 
   if (fs->type == dtUnknown) {
