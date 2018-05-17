@@ -189,9 +189,9 @@ GenRet CForLoop::codegen()
 
     llvm::MDNode* loopMetadata = nullptr;
     if(fNoVectorize == false && isOrderIndependent()) {
-      bool addVectorizeEnable = true;
+      bool addVectorizeEnable = false;
 #ifdef HAVE_LLVM_RV
-      addVectorizeEnable = false;
+      addVectorizeEnable = true;
 #endif
       loopMetadata = generateLoopMetadata(addVectorizeEnable);
       info->loopStack.emplace(loopMetadata, true);
