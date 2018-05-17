@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BRANCH=unknown
+ENABLE_RV=0
 
 if [ "$#" -eq 0 ]
 then
@@ -12,7 +13,7 @@ else
 BRANCH="$1"
 fi
 
-echo About to check out LLVM, CLANG, POLLY, RV, COMPILER_RT branch:
+echo About to check out LLVM etc branch:
 echo   $BRANCH
 sleep 1
 
@@ -34,9 +35,12 @@ cd tools/polly
 git pull --rebase
 cd ../..
 echo Updating RV
+if [ -d tools/rv ]
+then
 cd tools/rv
 git pull --rebase
 cd ../..
+fi
 echo Updating compiler-rt
 cd runtimes/compiler-rt
 git pull --rebase
@@ -51,8 +55,10 @@ echo Checking out CLANG $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/clang.git llvm/tools/clang
 echo Checking out POLLY $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/polly.git llvm/tools/polly
+if [ "$ENABLE_RV" -ne 0 ]
 echo Checking out RV $BRANCH
 git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm/tools/rv
+fi
 echo Checking out compiler-rt $BRANCH
 git clone $CLONEARGS https://git.llvm.org/git/compiler-rt.git llvm/runtimes/compiler-rt
 
