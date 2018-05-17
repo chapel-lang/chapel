@@ -257,6 +257,18 @@ class BlockCyclic : BaseDist {
       for loc in locDist do writeln(loc);
   }
 
+  // copy initializer for privatization
+  proc init(other: unmanaged BlockCyclic(rank, idxType)) {
+    this.rank = other.rank;
+    this.idxType = other.idxType;
+    lowIdx = other.lowIdx;
+    blocksize = other.blocksize;
+    targetLocDom = other.targetLocDom;
+    targetLocales = other.targetLocales;
+    locDist = other.locDist;
+    dataParTasksPerLocale = other.dataParTasksPerLocale;
+  }
+
   proc dsiClone() {
     return new unmanaged BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
   }
