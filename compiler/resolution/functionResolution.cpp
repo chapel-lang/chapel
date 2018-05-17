@@ -6561,20 +6561,38 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+static bool isCallReturned(CallExpr* call) {
+  FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+
+  if (parentFn && parentCall &&
+      (parentCall->isPrimitive(PRIM_MOVE) ||
+       parentCall->isPrimitive(PRIM_ASSIGN))) {
+    SymExpr* se = toSymExpr(parentCall->get(1));
+    INT_ASSERT(se);
+    if (se->symbol()->hasFlag(FLAG_RVV))
+      return true;
+  }
+
+  return false;
+}
 
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
 
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
+  FnSymbol* parentFn = toFnSymbol(call->parentSymbol);
   Type* toType = call->get(2)->typeInfo();
 
   // Adjust tuple reference-level for return if necessary
-  if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      fn && !doNotChangeTupleTypeRefLevel(fn, true)) {
+  if (parentFn &&
+      toType->symbol->hasFlag(FLAG_TUPLE) &&
+      isCallReturned(call) &&
+      !doNotChangeTupleTypeRefLevel(parentFn, true)) {
+
     AggregateType* tupleType = toAggregateType(toType);
     INT_ASSERT(tupleType);
 
-    Type* retType = getReturnedTupleType(fn, tupleType);
+    Type* retType = getReturnedTupleType(parentFn, tupleType);
     if (retType != toType) {
       // Also adjust any PRIM_COERCE calls
       call->get(2)->replace(new SymExpr(retType->symbol));
