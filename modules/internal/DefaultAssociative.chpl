@@ -860,7 +860,7 @@ module DefaultAssociative {
     return hash;
   }
   
-  inline proc chpl__defaultHash(o: object): uint {
+  inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive( "object2int", o));
   }
 

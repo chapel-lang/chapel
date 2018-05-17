@@ -1112,7 +1112,7 @@ module ChapelArray {
           // the distribution and possibly get the distribution to free.
           const inst = _instance;
           var (domToFree, distToRemove) = inst.remove();
-          var distToFree:BaseDist = nil;
+          var distToFree:unmanaged BaseDist = nil;
           if distToRemove != nil {
             distToFree = distToRemove.remove();
           }
@@ -2129,9 +2129,9 @@ module ChapelArray {
       if ! _unowned {
         on _instance {
           var (arrToFree, domToRemove) = _instance.remove();
-          var domToFree:BaseDom = nil;
-          var distToRemove:BaseDist = nil;
-          var distToFree:BaseDist = nil;
+          var domToFree:unmanaged BaseDom = nil;
+          var distToRemove:unmanaged BaseDist = nil;
+          var distToFree:unmanaged BaseDist = nil;
           // The dead code to access the fields of _instance are left in the
           // generated code with --baseline on. This means that these
           // statements cannot come after the _delete_arr call.
@@ -3692,7 +3692,7 @@ module ChapelArray {
     return isPODType(t);
   }
   proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: object) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
   pragma "no doc"
