@@ -161,6 +161,7 @@ symbolFlag( FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW , npr, "insert auto destro
 symbolFlag( FLAG_INSERT_LINE_FILE_INFO , ypr, "insert line file info" , ncm )
 symbolFlag( FLAG_INSTANTIATED_PARAM , npr, "instantiated param" , "this formal is bound to a param" )
 symbolFlag( FLAG_INSTANTIATED_GENERIC , npr, "instantiated generic" , "this is an instantiation of a generic" )
+symbolFlag( FLAG_INSTANTIATED_FROM_ANY , npr, "instantiated from any" , "this is an instantiation from any type" )
 symbolFlag( FLAG_INVISIBLE_FN , npr, "invisible fn" , "invisible function (not a candidate for resolution)" )
 symbolFlag( FLAG_IS_MEME , npr, "is meme" , ncm )
 symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )

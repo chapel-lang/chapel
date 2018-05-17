@@ -44,6 +44,7 @@ static IntentTag constIntentForType(Type* t) {
       t == dtCFnPtr ||
       t == dtVoid ||
       t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_MANAGED_POINTER) ||
       // MPF: This rule seems odd to me
       (t->symbol->hasFlag(FLAG_EXTERN) && !isRecord(t))) {
     return INTENT_CONST_IN;
@@ -199,15 +200,15 @@ static IntentTag blankIntentForThisArg(Type* t) {
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
-  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_EXTERN) &&
-           arg->intent == INTENT_BLANK)
+  else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
     return INTENT_CONST_IN;
-  else if (toFnSymbol(arg->defPoint->parentSymbol)->hasFlag(FLAG_ALLOW_REF) &&
-           arg->type->symbol->hasFlag(FLAG_REF))
+  else if (fn->hasFlag(FLAG_ALLOW_REF) && arg->type->symbol->hasFlag(FLAG_REF))
 
     // This is a workaround for an issue with RVF erroneously forwarding a
     // reduce variable. The workaround adjusts the build_tuple_always_allow_ref
@@ -215,6 +216,12 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // the type. It would be better to rely on task/forall intents
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
+
+  else if (arg->type->symbol->hasFlag(FLAG_MANAGED_POINTER) &&
+           (arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST) &&
+           arg->hasFlag(FLAG_INSTANTIATED_FROM_ANY))
+
+    return INTENT_CONST_REF;
 
   else
     return concreteIntent(arg->intent, arg->type);
