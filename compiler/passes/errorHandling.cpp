@@ -28,6 +28,7 @@
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
+#include "UnmanagedClassType.h"
 #include "wellknown.h"
 
 #include <stack>
@@ -397,8 +398,12 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SymExpr*   thrownExpr  = toSymExpr(node->get(1)->remove());
     VarSymbol* thrownError = toVarSymbol(thrownExpr->symbol());
 
+    Type* thrownType = thrownError->typeInfo();
+    if (UnmanagedClassType* ut = toUnmanagedClassType(thrownType))
+      thrownType = ut->getCanonicalClass();
+
     // normalizeThrows should give us this invariant earlier
-    INT_ASSERT(thrownError->typeInfo() == dtError);
+    INT_ASSERT(thrownType == dtError);
 
     VarSymbol* fixedError = thrownError;
 
