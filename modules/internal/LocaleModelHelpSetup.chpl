@@ -56,7 +56,7 @@ module LocaleModelHelpSetup {
       nPUsLogAll.add(loc.nPUsLogAll);
       maxTaskPar.add(loc.maxTaskPar);
     }
-    proc setRootLocaleValues(dst:RootLocale) {
+    proc setRootLocaleValues(dst:borrowed RootLocale) {
       dst.nPUsPhysAcc = nPUsPhysAcc.read();
       dst.nPUsPhysAll = nPUsPhysAll.read();
       dst.nPUsLogAcc = nPUsLogAcc.read();
@@ -65,7 +65,7 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupRootLocaleFlat(dst:RootLocale) {
+  proc helpSetupRootLocaleFlat(dst:borrowed RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
@@ -77,7 +77,7 @@ module LocaleModelHelpSetup {
     root_accum.setRootLocaleValues(dst);
   }
 
-  proc helpSetupRootLocaleNUMA(dst:RootLocale) {
+  proc helpSetupRootLocaleNUMA(dst:borrowed RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
@@ -90,7 +90,7 @@ module LocaleModelHelpSetup {
     root_accum.setRootLocaleValues(dst);
   }
 
-  proc helpSetupRootLocaleAPU(dst:RootLocale) {
+  proc helpSetupRootLocaleAPU(dst:borrowed RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
@@ -131,7 +131,7 @@ module LocaleModelHelpSetup {
     return if localSpawn() then _node_name + "-" + _node_id else _node_name;
   }
 
-  proc helpSetupLocaleFlat(dst:LocaleModel, out local_name:string) {
+  proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
     extern proc chpl_task_getCallStackSize(): size_t;
@@ -149,7 +149,7 @@ module LocaleModelHelpSetup {
     dst.maxTaskPar = chpl_task_getMaxPar();
   }
 
-  proc helpSetupLocaleNUMA(dst:LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getNumSublocales(): int(32);
@@ -181,7 +181,7 @@ module LocaleModelHelpSetup {
     }
   }
 
-  proc helpSetupLocaleAPU(dst:LocaleModel, out local_name:string, out numSublocales) {
+  proc helpSetupLocaleAPU(dst:borrowed LocaleModel, out local_name:string, out numSublocales) {
     helpSetupLocaleFlat(dst, local_name);
 
     extern proc chpl_task_getMaxPar(): uint(32);

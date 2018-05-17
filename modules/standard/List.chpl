@@ -31,7 +31,7 @@ pragma "use default init"
 class listNode {
   type eltType;
   var data: eltType;
-  var next: listNode(eltType);
+  var next: unmanaged listNode(eltType);
 }
 
 
@@ -58,17 +58,17 @@ record list {
   type eltType;
   pragma "no doc"
   pragma "owned"
-  var first: listNode(eltType);
+  var first: unmanaged listNode(eltType);
   pragma "no doc"
   pragma "owned"
-  var last: listNode(eltType);
+  var last: unmanaged listNode(eltType);
   /*
     The number of nodes in the list.
    */
   var length: int;
 
   pragma "no doc"
-  proc init(type eltType, first : listNode(eltType) = nil, last : listNode(eltType) = nil) {
+  proc init(type eltType, first : unmanaged listNode(eltType) = nil, last : unmanaged listNode(eltType) = nil) {
     this.eltType = eltType;
     this.first = first;
     this.last = last;

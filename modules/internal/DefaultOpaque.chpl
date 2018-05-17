@@ -95,7 +95,7 @@ module DefaultOpaque {
   
     proc dsiGetIndices() return adomain;
   
-    proc dsiSetIndices(b: DefaultAssociativeDom) {
+    proc dsiSetIndices(b: unmanaged DefaultAssociativeDom) {
       adomain.dsiSetIndices(b);
     }
   
