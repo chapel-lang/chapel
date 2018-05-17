@@ -2499,7 +2499,11 @@ void makeBinaryLLVM(void) {
                              tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
+#if HAVE_LLVM_VER < 70
     WriteBitcodeToFile(info->module, output.os());
+#else
+    WriteBitcodeToFile(*info->module, output.os());
+#endif
     output.keep();
     output.os().flush();
   }
@@ -2592,7 +2596,11 @@ void makeBinaryLLVM(void) {
                                tmpErr, sys::fs::F_None);
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
+#if HAVE_LLVM_VER < 70
       WriteBitcodeToFile(info->module, output1.os());
+#else
+      WriteBitcodeToFile(*info->module, output1.os());
+#endif
       output1.keep();
       output1.os().flush();
     }
@@ -2625,7 +2633,11 @@ void makeBinaryLLVM(void) {
                                  tmpErr, sys::fs::F_None);
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
+#if HAVE_LLVM_VER < 70
         WriteBitcodeToFile(info->module, output2.os());
+#else
+        WriteBitcodeToFile(*info->module, output2.os());
+#endif
         output2.keep();
         output2.os().flush();
       }
