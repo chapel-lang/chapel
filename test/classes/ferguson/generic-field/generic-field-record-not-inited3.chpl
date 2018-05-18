@@ -4,12 +4,10 @@ record GenericRecord {
 }
 
 record Wrapper {
-  type t;
-  var f:GenericRecord(t);
+  var f:GenericRecord;
   proc init(type recType) {
-    //var tmp:recType;
-    //this.f = tmp;
-    t = recType;
+    var tmp:recType;
+    this.f = tmp;
   }
 }
 
