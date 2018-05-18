@@ -102,7 +102,7 @@ Dimensions = [
         'comm', 'CHPL_COMM',
         values=['none', 'gasnet'],
         default=chpl_comm.get(),
-        help_text='Chapel communcation ({var_name}) value to build.',
+        help_text='Chapel communication ({var_name}) value to build.',
     ),
     Dimension(
         'task', 'CHPL_TASKS',
@@ -142,7 +142,7 @@ Dimensions = [
     ),
     Dimension(
         'llvm', 'CHPL_LLVM',
-        values=['none', 'llvm'],
+        values=['none', 'llvm', 'system'],
         default=chpl_llvm.get(),
         help_text='LLVM ({var_name}) values to build.',
     ),
@@ -227,7 +227,8 @@ def main():
                 build_config,
                 build_env,
                 parallel=opts.parallel,
-                verbose=opts.verbose
+                verbose=opts.verbose,
+                dry_run=opts.dry_run
             )
             statuses.append((build_config, result))
 
@@ -275,7 +276,7 @@ def get_configs(opts):
     return configs
 
 
-def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
+def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False, dry_run=False):
     """Build Chapel with the provided environment.
 
     :type chpl_home: str
@@ -301,25 +302,40 @@ def build_chpl(chpl_home, build_config, env, parallel=False, verbose=False):
 
     make_cmd = chpl_make.get()
     if parallel:
-        make_cmd += ' --jobs={0}'.format(multiprocessing.cpu_count())
+        def _cpu_count():
+            """ return Python cpu_count(), optionally capped by env var CHPL_MAKE_MAX_CPU_COUNT
+            """
+            cpus = multiprocessing.cpu_count()
+            try:
+                max = os.getenv('CHPL_MAKE_MAX_CPU_COUNT', '0')
+                if int(max) > 0:
+                    cpus = min(int(max), cpus)
+            except:
+                pass
+            return cpus
+        make_cmd += ' --jobs={0}'.format(_cpu_count())
     logging.debug('Using make command: {0}'.format(make_cmd))
 
-    with elapsed_time(build_config):
-        result, output, error = check_output(
-            make_cmd, chpl_home, build_env, verbose=verbose)
-        logging.debug('Exit code for config {0}: {1}'.format(
-            build_config, result))
-    logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
+    if dry_run:
+        logging.info('dry-run config:\n{0}\n{1}'.format(build_config, make_cmd))
+        return 0
+    else:
+        with elapsed_time(build_config):
+            result, output, error = check_output(
+                make_cmd, chpl_home, build_env, verbose=verbose)
+            logging.debug('Exit code for config {0}: {1}'.format(
+                build_config, result))
+        logging.info('Finished config:\n{0}'.format(build_config.verbose_str()))
 
-    if result != 0:
-        if output is not None:
-            logging.error('stdout:\n{0}'.format(output))
-        if error is not None:
-            logging.error('stderr:\n{0}'.format(error))
-        logging.error('Non-zero exit code when building config {0}: {1}'.format(
-            build_config, result))
+        if result != 0:
+            if output is not None:
+                logging.error('stdout:\n{0}'.format(output))
+            if error is not None:
+                logging.error('stderr:\n{0}'.format(error))
+            logging.error('Non-zero exit code when building config {0}: {1}'.format(
+                build_config, result))
 
-    return result
+        return result
 
 
 def check_output(command, chpl_home, env, stdin=None, verbose=False):
@@ -450,7 +466,7 @@ comm=gasnet either of these will work:
         # Default to CHPL_HOME from environ or current chapel source tree.
         'chpl_home': (os.environ.get('CHPL_HOME') or
                       os.path.abspath(
-                          os.path.join(os.path.dirname(__file__), '../..'))),
+                          os.path.join(os.path.dirname(__file__), '..'))),
     })
 
 
@@ -458,6 +474,11 @@ comm=gasnet either of these will work:
         '-v', '--verbose',
         action='store_true',
         help='Verbose output.'
+    )
+    parser.add_option(
+        '-n', '--dry-run',
+        action='store_true',
+        help='Dry run only. Do not run make.'
     )
     parser.add_option(
         '--show-configs',

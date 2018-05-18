@@ -49,7 +49,6 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/SubtargetFeature.h"
@@ -60,6 +59,11 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#ifdef HAVE_LLVM_RV
+#include "rv/passes.h"
+#endif
 
 #endif
 
@@ -1368,6 +1372,14 @@ void finishCodegenLLVM() {
   }
 }
 
+#ifdef HAVE_LLVM_RV
+static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
+                             llvm::legacy::PassManagerBase &PM) {
+
+  rv::addOuterLoopVectorizer(PM);
+}
+#endif
+
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
@@ -1404,6 +1416,16 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, int optLevel=-1) {
   PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
   PMBuilder.PrepareForLTO = opts.PrepareForLTO;
   PMBuilder.RerollLoops = opts.RerollLoops;
+
+
+#ifdef HAVE_LLVM_RV
+  // Enable Region Vectorizer aka Outer Loop Vectorizer
+  if (!fNoVectorize) {
+    // This in copied from 'registerRVPasses'
+    PMBuilder.addExtension(PassManagerBuilder::EP_VectorizerStart,
+                           registerRVPasses);
+  }
+#endif
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
@@ -2477,7 +2499,11 @@ void makeBinaryLLVM(void) {
                              tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
+#if HAVE_LLVM_VER < 70
     WriteBitcodeToFile(info->module, output.os());
+#else
+    WriteBitcodeToFile(*info->module, output.os());
+#endif
     output.keep();
     output.os().flush();
   }
@@ -2570,7 +2596,11 @@ void makeBinaryLLVM(void) {
                                tmpErr, sys::fs::F_None);
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
+#if HAVE_LLVM_VER < 70
       WriteBitcodeToFile(info->module, output1.os());
+#else
+      WriteBitcodeToFile(*info->module, output1.os());
+#endif
       output1.keep();
       output1.os().flush();
     }
@@ -2603,7 +2633,11 @@ void makeBinaryLLVM(void) {
                                  tmpErr, sys::fs::F_None);
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
+#if HAVE_LLVM_VER < 70
         WriteBitcodeToFile(info->module, output2.os());
+#else
+        WriteBitcodeToFile(*info->module, output2.os());
+#endif
         output2.keep();
         output2.os().flush();
       }

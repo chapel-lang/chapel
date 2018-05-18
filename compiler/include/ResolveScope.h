@@ -31,6 +31,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForallStmt;
 class ModuleSymbol;
 class Symbol;
 class TypeSymbol;
@@ -57,6 +58,9 @@ public:
                                      const ResolveScope* parent);
 
                         ResolveScope(TypeSymbol*         typeSym,
+                                     const ResolveScope* parent);
+
+                        ResolveScope(ForallStmt*         forallStmt,
                                      const ResolveScope* parent);
 
                         ResolveScope(BlockStmt*          blockStmt,

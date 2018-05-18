@@ -410,6 +410,12 @@ bool AstDumpToNode::enterForallStmt(ForallStmt* node)
   writeField("shadowVariables:     ", node->shadowVariables());
 
   newline();
+  if (node->fRecIterIRdef) {
+    writeField("fRecIterIRdef:        ", 20, node->fRecIterIRdef);
+    writeField("fRecIterICdef:        ", 20, node->fRecIterICdef);
+    writeField("fRecIterGetIterator:  ", 20, node->fRecIterGetIterator);
+    writeField("fRecIterFreeIterator: ", 20, node->fRecIterFreeIterator);
+  }
   writeField("loopBody: ", 10, node->loopBody());
 
   mOffset = mOffset - 2;

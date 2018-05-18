@@ -746,6 +746,12 @@ stored in the ``typeTests/`` and ``OOPTests/`` subdirectories.
 If invoked without any arguments, ``start_test`` will start in the current
 directory and recursively look for tests in subdirectories.
 
+If invoked with the ``--valgrindexe`` flag, ``start_test`` will compile the
+program and execute it with ``valgrind``. The ``--valgrind`` flag does the
+same, plus it also runs the compiler under ``valgrind``, which increases
+testing time compared to ``--valgrindexe``. To learn about best practices
+with ``valgrind``, see ``Valgrind.rst``.
+
 Performance Testing
 -------------------
 To run performance testing, add the ``--performance`` flag to ``start_test``

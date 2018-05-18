@@ -1,1 +1,2 @@
-weirdParamInit3.chpl:6: error: invalid generic type specification on class field
+weirdParamInit3.chpl:5: error: unresolved type specifier 'D(c=type C(2), y=2)'
+weirdParamInit3.chpl:5: note: candidates are: D(param y: int(64))

@@ -59,17 +59,28 @@ To lower a forall statement:
 * The parallel iterator is inlined, like it is a regular call.
 
 * Each yield statement is replaced by a clone of the forall loop body.
-  While cloning, The shadow variables in the loop body are replaced
+
+  While cloning, the shadow variables in the loop body are replaced
   with "current variables" that are in effect for that yield.
-  The shadow variables themselves do not remain in the AST.
+  The mapping from shadow variables to current variables is
+  maintained in 'svar2clonevar' - see below.
+
+  The shadow variables themselves do not remain in the AST
+  after lowering.
 
 * The inlined body of the parallel iterator is traversed using ExpandVisitor.
   "Current variables" are created and additional code is inserted
   in certain key places.
 
-  The SymbolMap in ExpandVisitor::svar2clonevar records
-  the current variables to be used when a yield statement
-  or a ForallStmt is encountered.
+  The SymbolMap in ExpandVisitor::svar2clonevar records the current variable
+  for each shadow variable. This map is created at start of the traversal,
+  which corresponds to the start of the iterator body. A new map is created
+  and maintained for traversing into each task function and forall loop
+  of the cloned body of the parallel iterator.
+
+  Cloning, aka copy(), of the loop body uses whatever svar2clonevar map
+  is in effect at the point where the traversal encounters the corresponding
+  yield statement.
 
 * The key places during the traversal are:
 
@@ -120,7 +131,12 @@ TFI_REDUCE
   currentVar.deinit() // for records
 
 TFI_TASK_PRIVATE
-  TODO
+  def currentVar
+  svar2clonevar: SV --> currentVar
+  initialize currentVar according to user specification
+
+(end)
+  currentVar.deinit() // for records
 
 *** call to task function ***
 
@@ -179,7 +195,12 @@ TFI_REDUCE
   currentVar.deinit() // for records
 
 TFI_TASK_PRIVATE
-  TODO
+  def currentVar
+  svar2clonevar: SV --> currentVar
+  initialize currentVar according to user specification
+
+(end)
+  currentVar.deinit() // for records
 
 *** nested forall loop ***
 
@@ -196,6 +217,44 @@ For each SV:
 Replace with a clone of the loop body
 (of the ForallStmt being inlined).
 Use the current svar2clonevar map when cloning.
+
+---------------------------------
+
+In more detail - for an IN intent at *** start of the iterator body *** :
+
+ForallStmt::shadowVariables() has DefExprs of two ShadowVarSymbols:
+ TFI_IN_OUTERVAR comes first,
+ TFI_IN or TFI_CONST_IN comes immediately after.
+
+Call them SVO and SVI, respectively.
+ForallStmt::loopBody() references SVI.
+SVI->initBlock() contains SVI.init(SVO), resolved and lowered appropriately.
+
+'currVar' (created below) is the variable to be used for SVI
+when the loop body is executed due to a yield at the top level of the
+iterator body, i.e. a yield that is outside any parallel constructs.
+
+Here are the steps performed by expandTopLevel() / expandShadowVarTopLevel():
+
+* svar2clonevar.put(SVO, SVI->outerVarSym())
+* create currVar
+* svar2clonevar.put(SVI, currVar)
+* add DefExpr(currVar) to start of the cloned iterator body
+* add SVI->initBlock()->copy(svar2clonevar) immediately after
+* add SVI->deinitBlock()->copy(svar2clonevar) at end of iterator body
+
+For a reduce intent, almost the same steps are performed.
+The generated code is somewhat different because:
+* The ShadowVarSymbols in ForallStmt::shadowVariables() are
+TFI_REDUCE_OP then TFI_REDUCE.
+* initBlock() and deinitBlock() contain the sequences needed
+to set up/tear down the reduceOp class and the accumulation state.
+
+For a task-private intent, again these are the same steps,
+except:
+* there is no compiler-introduced "companion" ShadowVarSymbol,
+* initBlock() reflects the variable's type and/or initialization
+expression as specified by the user in the with-clause.
 
 ---------------------------------
 
@@ -353,6 +412,14 @@ static void setupForReduce(ForallStmt* fs, ShadowVarSymbol* AS, Symbol* AS_ovar,
   setupForReduce_AS(fs, AS, AS_ovar, IB, DB);
 }
 
+static void setupForTaskPrivate(ForallStmt* fs, ShadowVarSymbol* TPV,
+                                BlockStmt* IB, BlockStmt* DB) {
+  // IB already comes from TPV's declaration in the with-clause.
+  // Need deinitialization for 'var'/'const' only. No deinit for refs.
+  if (!TPV->isRef())
+    insertDeinitialization(DB, TPV);
+}
+
 /////////// driver function ///////////
 
 //
@@ -382,7 +449,7 @@ void setupShadowVariables(ForallStmt* fs)
 
       case TFI_REDUCE:       setupForReduce(fs, svar, ovar, IB, DB);  break;
 
-      case TFI_TASK_PRIVATE: INT_ASSERT(false); break; // TODO
+      case TFI_TASK_PRIVATE: setupForTaskPrivate(fs, svar, IB, DB);   break;
 
       // We place such svars earlier in the list.
       // They should not come up here.
@@ -523,6 +590,7 @@ static VarSymbol* createCurrIN(ShadowVarSymbol* SI) {
   INT_ASSERT(!SI->isRef());
   VarSymbol* currSI = new VarSymbol(SI->name, SI->type);
   currSI->qual = SI->isConstant() ? QUAL_CONST_VAL : QUAL_VAL;
+  if (SI->isConstant()) currSI->addFlag(FLAG_CONST);
   return currSI;
 }
 
@@ -539,6 +607,15 @@ static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   currAS->qual = QUAL_VAL;
   return currAS;
  }
+
+// ... for a task-private variable
+static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
+  VarSymbol* currTPV = new VarSymbol(TPV->name, TPV->type);
+  currTPV->qual = TPV->qual;
+  if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
+  if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  return currTPV;
+}
 
 static void addDefAndMap(Expr* aInit, SymbolMap& map, ShadowVarSymbol* svar,
                          VarSymbol* currVar)
@@ -711,8 +788,10 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
       addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
-    case TFI_TASK_PRIVATE:
-      INT_ASSERT(false); // TODO
+    case TFI_TASK_PRIVATE: // task-private variable
+      addDefAndMap(aInit, map, svar, createCurrTPV(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     case TFI_DEFAULT:    // no abstract intents, please
@@ -843,7 +922,9 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map, Sh
       break;
 
     case TFI_TASK_PRIVATE:
-      INT_ASSERT(false); // TODO
+      addDefAndMap(aInit, map, svar, createCurrTPV(svar));
+      addCloneOfInitBlock(aInit, map, svar);
+      addCloneOfDeinitBlock(aFini, map, svar);
       break;
 
     // No abstract intents, please.
@@ -870,6 +951,100 @@ static void expandTopLevel(ExpandVisitor* outerVis,
 
   for_shadow_vars(svar, temp, outerVis->forall)
     expandShadowVarTopLevel(aInit, aFini, map, svar);
+}
+
+
+/////////// reorder shadow variables ///////////
+
+// "Proper" shadow variables i.e. not TPVs should go first,
+// except those for reduce intents.
+static bool shouldGoFirst(ShadowVarSymbol* sv) {
+  switch (sv->intent)
+  {
+  case TFI_DEFAULT:
+  case TFI_CONST:
+  case TFI_IN_OUTERVAR:
+  case TFI_IN:
+  case TFI_CONST_IN:
+  case TFI_REF:
+  case TFI_CONST_REF:
+    return true;
+
+  case TFI_REDUCE:
+  case TFI_REDUCE_OP:
+  case TFI_TASK_PRIVATE:
+    return false;
+  }
+
+  return false; // dummy
+}
+
+//
+// We want all proper shadow variables to be ahead of task-private variables.
+// Explanation: (a) The latter may reference the former - in TPVs initBlocks.
+// (b) We compute+apply SymbolMaps incrementally. (c) When we map a TPV,
+// the proper shadow variables that it references must already be in the map.
+//
+// For example:
+//   forall ... with (in n, var m = n) { ... }
+// To initialize 'm' by cloning its initBlock, we need to have 'n'
+// in the svar2clonevar map.
+// By contrast, the only thing that 'n'-the-ShadowVarSymbol references
+// is its outer variable, never another shadow- or task-private variable.
+//
+// We do not hoist reduce-intent shadow variables. This is because they
+// should not reference proper shadow variables (right?). So mapping
+// is not an issue. The issue is that we want to preserve the order of
+// initialization of reduction shadow variables w.r.t. task-private variables
+// - because initialization actions may have visible side-effects.
+//
+static void reorderShadowVsTaskPrivateVars(ForallStmt* fs) {
+  AList& svars = fs->shadowVariables();
+  if (svars.empty()) return; // nothing to reorder
+
+  // If the following code proves hard to maintain, it may be easier to
+  // reimplement it by introducing a temporary AList and moving SVs
+  // that shouldGoFirst() from 'svars' to that temp list.
+
+  Expr* currDef = svars.head;
+  Expr* lastReorderedDef = NULL;
+
+  do {
+    Expr* nextDef = currDef->next;
+    ShadowVarSymbol* currSV = toShadowVarSymbol(toDefExpr(currDef)->sym);
+
+    if (shouldGoFirst(currSV)) {
+      if (lastReorderedDef == NULL) {
+        // This is the first time we are seeing a "shouldGoFirst" SV.
+        if (currDef->prev != NULL)
+          // We got some defs before, which are not "shouldGoFirst".
+          svars.insertAtHead(currDef->remove());
+        else
+          ;// This def is the first one, nothing to reorder.
+      }
+      else {
+        if (lastReorderedDef == currDef->prev)
+          ; // Already properly ordered.
+        else
+          lastReorderedDef->insertAfter(currDef->remove());
+      }
+      // In any case, update the "last" pointer.
+      lastReorderedDef = currDef;
+    }
+    else {
+      // We have !shouldGoFirst(currSV) - nothing to do.
+    }
+
+    currDef = nextDef;
+  } while (currDef != NULL);
+
+  if (fVerify) {
+    bool inSVs = true;
+    for_shadow_vars(sv, temp, fs) {
+      if (shouldGoFirst(sv)) INT_ASSERT(inSVs);
+      else                   inSVs = false;
+    }
+  }
 }
 
 
@@ -955,7 +1130,6 @@ static void handleRecursiveIter(ForallStmt* fs,
 
   fs->remove();
 }
-
 
 
 /////////// iterator forwarders ///////////
@@ -1077,6 +1251,8 @@ static void lowerOneForallStmt(ForallStmt* fs) {
     // It is probably OK to lower other foralls even if we can't this one.
     return;
   }
+
+  reorderShadowVsTaskPrivateVars(fs);
 
   // Place to put pre- and post- code.
   SET_LINENO(fs);

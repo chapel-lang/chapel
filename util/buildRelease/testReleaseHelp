@@ -14,7 +14,7 @@ set mymake = $argv[1]
 
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
-set num_procs = `python -c "import multiprocessing; print(multiprocessing.cpu_count())"`
+set num_procs = `${0:h}/chpl-make-cpu_count`
 
 #
 # execute actions specified in README

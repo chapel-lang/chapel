@@ -31,28 +31,22 @@ This Block dimension specifier is for use with the
 It specifies the mapping of indices in its dimension
 that would be produced by a 1D :class:`~BlockDist.Block` distribution.
 
-**Constructor Arguments**
+**Initializer Arguments**
 
-The following ``BlockDim`` class constructors are available:
+The following ``BlockDim`` class initializers are available:
 
   .. code-block:: chapel
 
-    proc BlockDim.BlockDim(
+    proc BlockDim.init(
       numLocales,
       boundingBoxLow,
       boundingBoxHigh,
       type idxType = boundingBoxLow.type)
 
-    proc BlockDim.BlockDim(
+    proc BlockDim.init(
       numLocales: int,
       boundingBox: range(?),
       type idxType = boundingBox.idxType)
-
-.. Is there also the compiler-generated constructor:
-   proc BlockDim.BlockDim(type idxType, numLocales: int, bbStart, bbLength)
-   If so, do we want to list it here?
-   Ideally, the compiler will not generate that constructor
-   since user-defined constructors are provided
 
 The ``numLocales`` argument specifies the number of locales
 that this dimension's bounding box is to be distributed over.
@@ -80,6 +74,7 @@ class BlockDim {
   proc boundingBox return bbStart .. (bbStart + bbLength - 1);
 }
 
+pragma "use default init"
 class Block1dom {
   type idxType;
   param stridable: bool;
@@ -88,7 +83,7 @@ class Block1dom {
   proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
 
   // our range
-  var wholeR: rangeT;
+  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
 
   // privatized distribution descriptor
   const pdist;
@@ -96,18 +91,20 @@ class Block1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
+pragma "use default init"
 class Block1locdom {
   var myRange;
 }
 
 
-/////////// user constructor, for convenience
+/////////// user initializer, for convenience
 
-proc BlockDim.BlockDim(numLocales: int, boundingBox: range(?),
-                 type idxType = boundingBox.idxType)
+proc BlockDim.init(numLocales: int, boundingBox: range(?),
+                   type idxType = boundingBox.idxType)
 {
   if !isBoundedRange(boundingBox) then
-    compilerError("The 1-d block descriptor constructor was passed an unbounded range as the boundingBox");
+    compilerError("The 1-d block descriptor initializer was passed an unbounded range as the boundingBox");
+  this.idxType = idxType;
 
   this.numLocales = numLocales;
   this.bbStart = boundingBox.low;
@@ -126,8 +123,9 @@ proc BlockDim.dsiPrivatize1d(privatizeData) {
   return new unmanaged BlockDim(privatizeData, this.idxType);
 }
 
-// constructor for privatization
-proc BlockDim.BlockDim(privatizeData, type idxType) {
+// initializer for privatization
+proc BlockDim.init(privatizeData, type idxType) {
+  this.idxType = idxType;
   numLocales = privatizeData(1);
   bbStart = privatizeData(2);
   bbLength = privatizeData(3);
@@ -168,11 +166,12 @@ proc Block1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
 /////////// privatization - end
 
 
-// Constructor. idxType is inferred from the 'bbLow' argument
+// Initializer. idxType is inferred from the 'bbLow' argument
 // (alternative: default to 'int' instead).
-proc BlockDim.BlockDim(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = boundingBoxLow.type) {
+proc BlockDim.init(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = boundingBoxLow.type) {
   if !(boundingBoxLow <= boundingBoxHigh) then halt("'BlockDim' distribution must have a non-empty bounding box between boundingBoxLow and boundingBoxHigh; got ", boundingBoxLow, " .. ", boundingBoxHigh);
   assert(numLocales > 0); // so we can cast it to any int type
+  this.idxType = idxType;
   this.numLocales = numLocales;
   this.bbStart = boundingBoxLow;
   this.bbLength = (boundingBoxHigh - boundingBoxLow + 1):idxType;

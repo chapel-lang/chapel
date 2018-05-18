@@ -417,7 +417,10 @@ class LocCyclic {
 
   const myChunk: domain(rank, idxType, true);
 
-  proc LocCyclic(param rank, type idxType, locid, dist: Cyclic(rank, idxType)) {
+  proc init(param rank, type idxType, locid, dist: Cyclic(rank, idxType)) {
+    this.rank = rank;
+    this.idxType = idxType;
+
     var locidx: rank*idxType;
     var startIdx = dist.startIdx;
 
@@ -642,6 +645,7 @@ proc CyclicDom.dsiLocalSlice(param stridable: bool, ranges) {
 }
 
 
+pragma "use default init"
 class LocCyclicDom {
   param rank: int;
   type idxType;
@@ -947,6 +951,9 @@ class LocCyclicArr {
   var locRADLock: atomicbool; // This will only be accessed locally, so
                               // force the use of processor atomics
 
+  // INIT TODO: using default-init resulted in extra GETs for the tests in
+  // distributions/robust/arithmetic/performance/multilocale
+
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
@@ -983,7 +990,12 @@ class LocCyclicRADCache /* : LocRADCache */ {
   var startIdx: rank*idxType;
   var targetLocDomDimLength: rank*idxType;
 
-  proc LocCyclicRADCache(param rank: int, type idxType, startIdx, targetLocDom) {
+  proc init(param rank: int, type idxType, startIdx, targetLocDom) {
+    this.rank = rank;
+    this.idxType = idxType;
+
+    this.complete();
+
     for param i in 1..rank do
       // NOTE: Not bothering to check to see if length can fit into idxType
       targetLocDomDimLength(i) = targetLocDom.dim(i).length:idxType;

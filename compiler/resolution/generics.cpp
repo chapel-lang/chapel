@@ -421,6 +421,26 @@ void instantiateBody(FnSymbol* fn) {
   }
 }
 
+static
+void gatherFieldSubstitutionsForNewType(AggregateType* oldType,
+                                        AggregateType* newType,
+                                        SymbolMap& map) {
+
+  // Gather the parent fields.
+  if (newType->isClass()) {
+    for(int i = 0; i < newType->dispatchParents.n; i++) {
+      gatherFieldSubstitutionsForNewType(oldType->dispatchParents.v[i],
+                                         newType->dispatchParents.v[i],
+                                         map);
+    }
+  }
+
+  // Gather the current class fields
+  for (int i = 1; i <= newType->fields.length; i++) {
+    map.put(oldType->getField(i), newType->getField(i));
+  }
+}
+
 /** Instantiate enough of the function for it to make it through the candidate
  *  filtering and disambiguation process.
  *
@@ -491,6 +511,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 
         } else {
           newType = ct->generateType(subs);
+
+          // Gather up substitutions for old -> new fields
+          gatherFieldSubstitutionsForNewType(ct, newType, map);
         }
       }
 
@@ -568,6 +591,9 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         newFn->insertBeforeEpilogue(def);
 
         def->insertAfter(initCall);
+        // Make sure the copy-init function is resolved, since the
+        // above code adds a call that would be considered already resolved.
+        resolveCallAndCallee(initCall);
 
         if (ct->hasPostInitializer() == true) {
           CallExpr* post = new CallExpr("postinit", gMethodToken, thisTmp);
@@ -718,6 +744,9 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   //
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
+
+    if (formal->type == dtAny)
+      newFormal->addFlag(FLAG_INSTANTIATED_FROM_ANY);
 
     if (Symbol* value = subs.get(formal)) {
       INT_ASSERT(formal->intent == INTENT_PARAM || isTypeSymbol(value));

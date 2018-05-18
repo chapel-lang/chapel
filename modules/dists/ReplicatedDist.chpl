@@ -207,6 +207,7 @@ class ReplicatedDom : BaseRectangularDom {
 //
 // local domain class
 //
+pragma "use default init"
 class LocReplicatedDom {
   // copy from the global domain
   param rank: int;
@@ -443,6 +444,7 @@ proc _array.replicand(loc: locale) ref {
 //
 // local array class
 //
+pragma "use default init"
 class LocReplicatedArr {
   // these generic fields let us give types to the other fields easily
   type eltType;

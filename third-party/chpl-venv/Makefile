@@ -30,20 +30,20 @@ $(CHPL_VENV_INSTALL_DIR):
 
 # Install pip via get-pip.py to ensure we have an updated version
 $(PIP): $(CHPL_VENV_INSTALL_DIR)
-	@echo "Installing local copy of pip with get-pip.py from $(GETPIP)"
 	@if [ -z "$$CHPL_PIP" ]; then \
+	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
 	  (cd install && curl -O $(GETPIP) || \
 	  { echo "Failed on command: curl -O $(GETPIP)."; \
 	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
 	    exit 1; } && \
 	  export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && \
-	  python get-pip.py --user) \
+	  python get-pip.py --user --no-warn-conflicts) \
 	fi
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
 	export PYTHONPATH="$$CHPL_PYTHONPATH:$(PIPLIBS):$$PYTHONPATH" && \
-	python -S $(PIP) install -U --force-reinstall --ignore-installed \
+	python -S $(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
 
 # Phony convenience target for installing virtualenv.
@@ -74,7 +74,7 @@ $(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r test-requirements.txt && \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements.txt && \
 	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_TEST_REQS)
 
@@ -83,7 +83,7 @@ $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chpldoc-requirements.txt && \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chpldoc-requirements.txt && \
 	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
@@ -91,7 +91,7 @@ $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH=$(CHPL_VENV_VIRTUALENV_BIN):$$PATH && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) -r chplspell-requirements.txt && \
+	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chplspell-requirements.txt && \
 	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
 	touch $(CHPL_VENV_CHPLSPELL_REQS)
 
