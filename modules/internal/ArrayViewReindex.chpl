@@ -753,6 +753,8 @@ module ArrayViewReindex {
         const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
         // Slicing the ranges preserves the stride
         ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
+      } else {
+        ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d)];
       }
     }
     return {(...ranges)};
