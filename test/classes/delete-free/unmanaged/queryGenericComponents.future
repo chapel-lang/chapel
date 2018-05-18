@@ -1,0 +1,2 @@
+bug: Declaring an argument as unmanaged breaks queries within the type decl
+#9582
