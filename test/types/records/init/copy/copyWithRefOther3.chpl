@@ -12,13 +12,8 @@ record R {
   }
 }
 
-proc callsCopy(const ref arg) {
-  return arg; // compiler adds copy-init call here
-              // but it should be an error since arg is const.
-}
-
 const myR = new R(42);
-var myR2 = callsCopy(myR);
+var myR2 = myR;
 
 writeln(myR);
 writeln(myR2);
