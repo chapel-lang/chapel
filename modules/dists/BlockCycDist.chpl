@@ -258,7 +258,7 @@ class BlockCyclic : BaseDist {
   }
 
   // copy initializer for privatization
-  proc init(other: unmanaged BlockCyclic(rank, idxType)) {
+  proc init(other: unmanaged BlockCyclic) {
     this.rank = other.rank;
     this.idxType = other.idxType;
     lowIdx = other.lowIdx;
@@ -664,7 +664,7 @@ proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 proc BlockCyclicDom.dsiGetPrivatizeData() return 0;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = new unmanaged BlockCyclic(rank, idxType, dist);
+  var privateDist = new unmanaged BlockCyclic(dist);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
   c.locDoms = locDoms;
   c.whole = whole;
