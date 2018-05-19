@@ -2267,9 +2267,7 @@ GenRet codegenArgForFormal(GenRet arg,
     // We need to pass a reference in these cases
     // Don't pass a reference to extern functions
     // Do if requiresCPtr or the argument is of reference type
-    if (isExtern &&
-        (!(formal->intent & INTENT_FLAG_REF) ||
-         formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
+    if (isExtern) {
       // Don't pass by reference to extern functions
     } else if (formal->requiresCPtr() ||
                formal->isRef() || formal->isWideRef()) {
