@@ -150,10 +150,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
   if (needRefFormal(fn, formal, &needRefIntent) == true) {
     makeRefType(formal->type);
 
-    if (formal->intent & INTENT_FLAG_REF) {
-      // Nothing to do. A ref intent is enough to indicate ref-ness.
-
-    } else if (formal->type->refType) {
+    if (formal->type->refType) {
       formal->type = formal->type->refType;
 
     } else {
