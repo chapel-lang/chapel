@@ -8,4 +8,4 @@ CHPL_RT_NUM_THREADS_PER_LOCALE=100
 # of the tasks are small. Note that this is not an issue for fifo
 # since not every task has it's own stack.
 #
-CHPL_RT_CALL_STACK_SIZE=64k
+CHPL_RT_CALL_STACK_SIZE=128k
