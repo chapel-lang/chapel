@@ -54,6 +54,9 @@ struct TupleInfo {
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock);
+
+static
 void makeTupleName(std::vector<TypeSymbol*>& args,
                    bool isStarTuple,
                    std::string & name,
@@ -811,14 +814,18 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
 static void
 instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
                                        const char* build_tuple_fun,
-                                       const char* copy_fun)
+                                       const char* copy_fun,
+                                       bool valueOnly)
 {
   ArgSymbol* arg;
   AggregateType* origCt;
   getTupleArgAndType(fn, arg, origCt);
 
-  AggregateType* ct;
-  ct = computeNonRefTuple(origCt);
+  AggregateType* ct = origCt;
+
+  if (valueOnly) {
+    ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
+  }
 
   BlockStmt* block = new BlockStmt();
 
@@ -840,10 +847,10 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
     CallExpr* get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
     block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
-    /*if (isReferenceType(fromField->type)) {
+    if (isReferenceType(fromField->type) && isReferenceType(toField->type)) {
       // If it is a reference, pass it through
       element = read;
-    } else */{
+    } else {
       // otherwise copy construct it
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
@@ -862,14 +869,19 @@ static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple",
-                                         "chpl__initCopy");
+                                         "chpl__initCopy",
+                                         true);
 }
 
 static void
 instantiate_tuple_autoCopy(FnSymbol* fn) {
+  // Auto-copy for tuples allows refs in order to support
+  // the way that forall intents create tuples that are yielded
+  // with refs.
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple_always_allow_ref",
-                                         "chpl__autoCopy");
+                                         "chpl__autoCopy",
+                                         false);
 }
 
 /* Tuple unref takes in a tuple potentially containing reference
@@ -884,7 +896,8 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  ct = computeNonRefTuple(origCt);
+  const char* useCopy = "chpl__autoCopy"; // TODO -- shouldn't it be initCopy?
+  ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
   BlockStmt* block = new BlockStmt();
 
@@ -914,7 +927,7 @@ instantiate_tuple_unref(FnSymbol* fn)
         // If it is a reference, copy construct it
         element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
-        CallExpr* copy = new CallExpr("chpl__autoCopy", read);
+        CallExpr* copy = new CallExpr(useCopy, read);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       } else {
         // Otherwise, bit copy it
@@ -955,7 +968,9 @@ shouldChangeTupleType(Type* elementType)
 
 static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 IntentTag      intent,
-                                                AggregateType* at) {
+                                                AggregateType* at,
+                                                const char*    copyWith,
+                                                BlockStmt*     testBlock) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
@@ -970,12 +985,25 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
     if (i != 0) { // skip size field
       Type* useType = field->type->getValType();
 
+      // Compute the result type of copying
+      // (but don't apply this to references if !valueOnly)
+      if (copyWith && isUserDefinedRecord(useType) &&
+          (valueOnly || !isReferenceType(field->type))) {
+        VarSymbol* var = newTemp("test_copy", useType);
+        CallExpr* copy = new CallExpr(copyWith, var);
+        testBlock->insertAtTail(copy);
+        resolveCallAndCallee(copy);
+
+        FnSymbol* resolved = copy->resolvedFunction();
+        useType = resolved->retType;
+      }
       if (useType->symbol->hasFlag(FLAG_TUPLE) == true) {
         AggregateType* useAt = toAggregateType(useType);
 
         INT_ASSERT(useAt);
 
-        useType = do_computeTupleWithIntent(valueOnly, intent, useAt);
+        useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
+                                            copyWith, testBlock);
 
         if (valueOnly == false) {
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -1028,13 +1056,19 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
 {
-  return do_computeTupleWithIntent(false, intent, t);
+  return do_computeTupleWithIntent(false, intent, t, NULL, NULL);
 }
 
 AggregateType* computeNonRefTuple(AggregateType* t)
 {
-  return do_computeTupleWithIntent(true, INTENT_BLANK, t);
+  return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL);
 }
+
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
+{
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock);
+}
+
 
 
 bool
