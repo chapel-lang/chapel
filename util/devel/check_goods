@@ -1,7 +1,9 @@
 #!/bin/bash
 
-for g in $(find test -name \*.good ); do
+for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${g%.good}
+   base=${base%.bad}
+   base=${base%.future}
    base=${base%.no-local}
    base=${base%.lm-flat}
    base=${base%.lm-numa}
