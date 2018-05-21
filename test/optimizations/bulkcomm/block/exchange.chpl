@@ -20,7 +20,7 @@ proc main() {
 
   var A : [D] int;
 
-  var b = new Barrier();
+  var b = new Barrier(numLocales);
 
   resetCommDiagnostics();
 
@@ -57,6 +57,8 @@ proc main() {
     }
   }
 
+  // TODO: When we achieve the desired performance, add threshold checks for
+  // correctness.
   if report {
     const diags = getCommDiagnostics();
 
