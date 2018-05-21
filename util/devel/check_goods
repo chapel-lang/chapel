@@ -1,0 +1,50 @@
+#!/bin/bash
+
+for g in $(find test -name \*.good ); do
+   base=${g%.good}
+   base=${base%.no-local}
+   base=${base%.lm-flat}
+   base=${base%.lm-numa}
+   base=${base%.comm-gasnet}
+   base=${base%.comm-none}
+   base=${base/.logical.doc/.doc} # ?  many in test/chpldoc
+   c=${base}.test.c
+
+   # This dir uses a PREDIFF file to pick a specific .good file
+   d=$(dirname $g)
+   if [ $d == "test/distributions/robust/arithmetic/performance/multilocale" ]; then
+      base=${base%.cyclic}
+      base=${base%.replicated}
+      base=${base%.block}
+      base=${base%.default}
+   fi
+   chpl=${base}.chpl
+   toml=${base}.toml
+
+   if [ -f $chpl -o -f $c -o -f $toml ]; then
+      continue
+   fi
+
+   # See if this file is named in a compopts or execopts file
+   co=$(compgen -G $d/'*.compopts')
+   eo=$(compgen -G $d/'*.execopts')
+
+   # Some opts files have "# goodname.good", others just "# goodname"
+   if grep $(basename $base) $co $eo /dev/null > /dev/null 2>&1; then
+      continue
+   fi
+
+   # compopts and execopts with more than one line but no explicit
+   # filenames cause foo.chpl to have good files foo.x-y.chpl for x
+   # and y in 0 or 1..#lines in file.
+   if [ -n "$co" -o -n "$eo" -o -f $d/COMPOPTS -o -f $d/EXECOPTS ]; then
+      base=${base%.[0-9]*-[0-9]*}
+      chpl=$base.chpl
+      c=$base.test.c
+      if [ -f $chpl -o -f $c ]; then
+      	 continue
+      fi
+    fi
+
+   echo $g
+done
