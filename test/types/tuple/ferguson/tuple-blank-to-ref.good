@@ -1,3 +1,2 @@
 tuple-blank-to-ref.chpl:11: In function 'byblank':
-tuple-blank-to-ref.chpl:15: error: unresolved call 'byref((int(64),string))'
-tuple-blank-to-ref.chpl:5: note: candidates are: byref(ref arg: (int, string))
+tuple-blank-to-ref.chpl:15: error: non-lvalue actual is passed to 'ref' formal 'arg' of byref()

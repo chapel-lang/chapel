@@ -76,6 +76,8 @@ Expr*      resolvePrimInit(CallExpr* call);
 
 bool       isTupleContainingOnlyReferences(Type* t);
 
+bool       isTupleContainingAnyReferences(Type* t);
+
 void       ensureEnumTypeResolved(EnumType* etype);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
@@ -211,8 +213,6 @@ void      insertAndResolveCasts(FnSymbol* fn);
 void      ensureInMethodList(FnSymbol* fn);
 
 
-bool      doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
-
 bool      hasAutoCopyForType(Type* type);
 FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==true
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
@@ -254,6 +254,10 @@ bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
+
+void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+
+
 
 bool evaluateWhereClause(FnSymbol* fn);
 
