@@ -12,14 +12,29 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${base/%.logical.doc/.doc} # deprecated/potential future chpldoc mode
    c=${base}.test.c
 
-   # This dir uses a PREDIFF file to pick a specific .good file
    d=$(dirname $g)
+
+   # Ignore everything in a NOTEST dir
+   if [ -f $d/NOTEST ]; then
+       continue
+   fi
+
+   # This dir uses a PREDIFF file to pick a specific .good file
    if [ $d == "test/distributions/robust/arithmetic/performance/multilocale" ]; then
       base=${base%.cyclic}
       base=${base%.replicated}
       base=${base%.block}
       base=${base%.default}
    fi
+
+   # This dir has foo-alt.good files that are included by the
+   # using-chpl .rst files.
+   if [ $d == "test/release/examples/users-guide/taskpar" ]; then
+       if [ ${base%-alt} != $base ]; then
+	   continue
+       fi
+   fi
+
    chpl=${base}.chpl
    toml=${base}.toml
 
@@ -30,9 +45,10 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    # See if this file is named in a compopts or execopts file
    co=$(compgen -G $d/'*.compopts')
    eo=$(compgen -G $d/'*.execopts')
+   cdo=$(compgen -G $d/'*.chpldocopts')
 
    # Some opts files have "# goodname.good", others just "# goodname"
-   if grep $(basename $base) $co $eo /dev/null > /dev/null 2>&1; then
+   if grep $(basename $base) $co $eo $cdo /dev/null > /dev/null 2>&1; then
       continue
    fi
 
