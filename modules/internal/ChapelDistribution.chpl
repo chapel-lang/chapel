@@ -1009,9 +1009,9 @@ module ChapelDistribution {
 
 
   proc chpl_assignDomainWithIndsIterSafeForRemoving(lhs:?t, rhs: domain)
-    where _to_borrowed(t):borrowed BaseSparseDom ||
-          _to_borrowed(t):borrowed BaseAssociativeDom ||
-          _to_borrowed(t):borrowed BaseOpaqueDom
+    where _to_borrowed(t):BaseSparseDom ||
+          _to_borrowed(t):BaseAssociativeDom ||
+          _to_borrowed(t):BaseOpaqueDom
   {
     //
     // BLC: It's tempting to do a clear + add here, but because
