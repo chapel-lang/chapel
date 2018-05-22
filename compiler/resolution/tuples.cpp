@@ -690,7 +690,7 @@ void addTupleCoercion(AggregateType* fromT,
         CallExpr* cast = createCast(readF, toField->type->symbol);
         CallExpr* castMove = new CallExpr(PRIM_MOVE, valueElement, cast);
         insertBefore->insertBefore(castMove);
-        resolveCallAndCallee(castMove);
+        resolveCallAndCallee(cast);
         resolveCall(castMove);
       }
 
@@ -896,7 +896,8 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  const char* useCopy = "chpl__autoCopy"; // TODO -- shouldn't it be initCopy?
+  //const char* useCopy = "chpl__autoCopy"; // TODO -- shouldn't it be initCopy?
+  const char* useCopy = "chpl__initCopy";
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
   BlockStmt* block = new BlockStmt();
@@ -1009,6 +1010,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
             IntentTag concrete = concreteIntent(intent, useType);
             if ((concrete & INTENT_FLAG_REF) != 0) {
+              makeRefType(useType);
               useType = useType->getRefType();
             }
           }
@@ -1025,6 +1027,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
             IntentTag concrete = concreteIntent(intent, useType);
 
             if ((concrete & INTENT_FLAG_REF) != 0) {
+              makeRefType(useType);
               useType = useType->getRefType();
             }
           }

@@ -51,9 +51,6 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 bool ResolutionCandidate::isApplicable(CallInfo& info) {
   bool retval = false;
 
-  if (info.call->id == 190957 && fn->id == 192678)
-    gdbShouldBreakHere();
-
   if (fn->hasFlag(FLAG_GENERIC) == false) {
     retval = isApplicableConcrete(info);
   } else {

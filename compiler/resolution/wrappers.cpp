@@ -1547,6 +1547,7 @@ static bool isBorrowClass(Type* t) {
   return false;
 }
 
+
 // Add a coercion; replace prevActual and actualSym - the actual to 'call' -
 // with the result of the coercion.
 static void addArgCoercion(FnSymbol*  fn,
@@ -1635,16 +1636,26 @@ static void addArgCoercion(FnSymbol*  fn,
                      castTemp,
                      call->getStmtExpr());
 
-  } else if (fts->hasFlag(FLAG_REF) && !ats->hasFlag(FLAG_REF)) {
+  } else if (ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             formal->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             fts->hasFlag(FLAG_REF) && !ats->hasFlag(FLAG_REF)) {
 
     // Add a PRIM_ADDR_OF to get the ref to the actual
     castCall = new CallExpr(PRIM_ADDR_OF, prevActual);
 
     if (prevActualSym->hasFlag(FLAG_EXPR_TEMP))
       castTemp->addFlag(FLAG_EXPR_TEMP); // for lvalue checking
+
+    if (prevActualSym->hasFlag(FLAG_REF_TO_CONST) ||
+        prevActualSym->isConstant() ||
+        prevActualSym->isParameter()) {
+      castTemp->addFlag(FLAG_REF_TO_CONST);
+    }
+
     /*
-    if ((prevActualSym->hasFlag(FLAG_EXPR_TEMP) ||
-         false) &&
+    if ((prevActualSym->hasFlag(FLAG_REF_TO_CONST) ||
+         prevActualSym->isConstant() ||
+         prevActualSym->isParameter()) &&
         (formal->intent == INTENT_OUT ||
          formal->intent == INTENT_INOUT ||
          formal->intent == INTENT_REF)) {
@@ -1655,7 +1666,9 @@ static void addArgCoercion(FnSymbol*  fn,
       USR_STOP();
     }*/
 
-  } else if (ats->hasFlag(FLAG_REF)) {
+  } else if (ats->hasFlag(FLAG_REF) &&
+            !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+              formal->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
 
     // MPF: I'm adding this assert in order to reduce my level
     // of concern about this code.
