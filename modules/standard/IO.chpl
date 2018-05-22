@@ -4351,7 +4351,7 @@ proc channel.isclosed() {
 pragma "no doc"
 proc channel.readBytes(x, len:ssize_t) throws {
   if here != this.home then
-    throw new IllegalArgumentError("bad remote channel.readBytes");
+    throw new unmanaged IllegalArgumentError("bad remote channel.readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
