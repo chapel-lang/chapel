@@ -1559,9 +1559,11 @@ static void addArgCoercion(FnSymbol*  fn,
   SET_LINENO(actualExpr);
 
   Expr*       prevActual = actualExpr;
+  Symbol*     prevActualSym = actualSym;
   TypeSymbol* ats        = actualSym->type->symbol;
   TypeSymbol* fts        = formal->type->symbol;
   CallExpr*   castCall   = NULL;
+  bool        addedCast  = false;
   VarSymbol*  castTemp   = newTemp("coerce_tmp"); // ..., formal->type ?
   Expr*       newActual  = new SymExpr(castTemp);
 
@@ -1593,6 +1595,9 @@ static void addArgCoercion(FnSymbol*  fn,
   actualExpr = newActual;
   actualSym  = castTemp;
 
+  // Add the Def for castTemp
+  call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
   //   _syncvar(int) --readFE()-> int -> real
@@ -1612,6 +1617,40 @@ static void addArgCoercion(FnSymbol*  fn,
     checkAgain = true;
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
+
+  } else if (ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             formal->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             ats->getValType() != formal->getValType()) {
+
+    // Handle tuple cast
+    checkAgain = false;
+    addedCast = true;
+
+    castTemp->type = formal->getValType();
+
+    castTemp->addFlag(FLAG_EXPR_TEMP); // for lvalue checking
+
+    addTupleCoercion(toAggregateType(ats->getValType()),
+                     toAggregateType(formal->getValType()),
+                     prevActualSym,
+                     castTemp,
+                     call->getStmtExpr());
+
+  } else if (ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             formal->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+             fts->hasFlag(FLAG_REF) && !ats->hasFlag(FLAG_REF)) {
+
+    // Add a PRIM_ADDR_OF to get the ref to the actual
+    castCall = new CallExpr(PRIM_ADDR_OF, prevActual);
+
+    if (prevActualSym->hasFlag(FLAG_EXPR_TEMP))
+      castTemp->addFlag(FLAG_EXPR_TEMP); // for lvalue checking
+
+    if (prevActualSym->hasFlag(FLAG_REF_TO_CONST) ||
+        prevActualSym->isConstant() ||
+        prevActualSym->isParameter()) {
+      castTemp->addFlag(FLAG_REF_TO_CONST);
+    }
 
   } else if (ats->hasFlag(FLAG_REF) &&
              !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
@@ -1662,7 +1701,7 @@ static void addArgCoercion(FnSymbol*  fn,
     castCall = NULL;
   }
 
-  if (castCall == NULL) {
+  if (castCall == NULL && !addedCast) {
     // the common case
     castCall = createCast(prevActual, fts);
 
@@ -1671,33 +1710,34 @@ static void addArgCoercion(FnSymbol*  fn,
     }
   }
 
-  // move the result to the temp
-  CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
+  if (castCall) {
+    // move the result to the temp
+    CallExpr* castMove = new CallExpr(PRIM_MOVE, castTemp, castCall);
 
-  call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
-  call->getStmtExpr()->insertBefore(castMove);
+    call->getStmtExpr()->insertBefore(castMove);
 
-  resolveCallAndCallee(castCall, true);
+    resolveCallAndCallee(castCall, true);
 
-  if (FnSymbol* castTarget = castCall->resolvedFunction()) {
-    // Perhaps equivalently, we could check "if (tryToken)",
-    // except tryToken is not visible in this file.
-    if (!castTarget->hasFlag(FLAG_RESOLVED)) {
-      // This happens e.g. when castTarget itself has an error.
-      // Todo: in this case, we should report the error at the point
-      // where it arises, supposedly within resolveFns(castTarget).
-      // Why is it not reported there?
-      USR_FATAL_CONT(call,
-                     "Error resolving a cast from %s to %s",
-                     ats->name,
-                     fts->name);
+    if (FnSymbol* castTarget = castCall->resolvedFunction()) {
+      // Perhaps equivalently, we could check "if (tryToken)",
+      // except tryToken is not visible in this file.
+      if (!castTarget->hasFlag(FLAG_RESOLVED)) {
+        // This happens e.g. when castTarget itself has an error.
+        // Todo: in this case, we should report the error at the point
+        // where it arises, supposedly within resolveFns(castTarget).
+        // Why is it not reported there?
+        USR_FATAL_CONT(call,
+                       "Error resolving a cast from %s to %s",
+                       ats->name,
+                       fts->name);
 
-      USR_PRINT(castTarget, "  the troublesome function is here");
-      USR_STOP();
+        USR_PRINT(castTarget, "  the troublesome function is here");
+        USR_STOP();
+      }
     }
-  }
 
-  resolveCall(castMove);
+    resolveCall(castMove);
+  }
 
   // Check for coercions resulting in a value that
   // they are not passed by ref or const ref.

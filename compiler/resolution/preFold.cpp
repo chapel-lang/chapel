@@ -892,6 +892,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       if (blk) {
         (unsigned&)(blk->blockTag) &= ~(unsigned)BLOCK_TYPE_ONLY;
       }
+    } else if (type->symbol->hasFlag(FLAG_TUPLE)) {
+      Type* newt = computeNonRefTuple(toAggregateType(type));
+      retval = new SymExpr(newt->symbol);
+      call->replace(retval);
     }
 
   } else if (call->isPrimitive(PRIM_STATIC_TYPEOF) ||

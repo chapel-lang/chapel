@@ -385,7 +385,14 @@ void createFieldQualifiersIfNeeded(Symbol* sym)
   if (at && !sym->fieldQualifiers) {
     int numFields = at->numFields();
     sym->fieldQualifiers = new Qualifier[numFields+1]; // +1 for 1-base
-    sym->fieldQualifiers[0] = QUAL_UNKNOWN;
+    Qualifier totalQ = QUAL_UNKNOWN;
+    if (sym->isRef()) {
+      if (sym->isConstant())
+        totalQ = QUAL_CONST_REF;
+      else
+        totalQ = QUAL_REF;
+    }
+    sym->fieldQualifiers[0] = totalQ;
     int i = 1;
     for_fields(field, at) {
       Qualifier q = QUAL_UNKNOWN;
@@ -463,6 +470,7 @@ void markConst(GraphNode node)
         if (sym->fieldQualifiers[i] == QUAL_REF)
           sym->fieldQualifiers[i] = QUAL_CONST_REF;
       }
+      markSymbolConst(sym);
     } else {
       // mark only fieldIndex
       int i = node.fieldIndex;

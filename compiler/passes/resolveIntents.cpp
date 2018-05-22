@@ -90,9 +90,13 @@ IntentTag blankIntentForType(Type* t) {
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
-  } else if(t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
+  } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
             || isTupleContainingRefMaybeConst(t)) {
     retval = INTENT_REF_MAYBE_CONST;
+
+  } else if (t->symbol->hasFlag(FLAG_MANAGED_POINTER)) {
+    // allow blank intent owned to be transferred out of
+    retval = INTENT_IN;
 
   } else if (is_bool_type(t)                         ||
              is_int_type(t)                          ||

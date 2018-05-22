@@ -1,0 +1,13 @@
+in test1
+in consumeParent
+in ParentClass.deinit
+back in test1
+in test2
+in borrowParent
+back in test2
+in ParentClass.deinit
+in test3
+in method, this.type is ChildClass
+in parentMethod, this.type is ParentClass
+back in test3
+in ParentClass.deinit
