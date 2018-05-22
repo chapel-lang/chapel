@@ -1099,7 +1099,7 @@ module ChapelBase {
 
   // this version handles unmanaged -> unmanaged
   pragma "unsafe"
-  inline proc _cast(type t, x:_unmanaged) where t:_unmanaged && t:x && (x.type != t)
+  inline proc _cast(type t:unmanaged, x:_unmanaged) where t:x && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
   // this version handles unmanaged -> borrow
