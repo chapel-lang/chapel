@@ -1652,23 +1652,9 @@ static void addArgCoercion(FnSymbol*  fn,
       castTemp->addFlag(FLAG_REF_TO_CONST);
     }
 
-    /*
-    if ((prevActualSym->hasFlag(FLAG_REF_TO_CONST) ||
-         prevActualSym->isConstant() ||
-         prevActualSym->isParameter()) &&
-        (formal->intent == INTENT_OUT ||
-         formal->intent == INTENT_INOUT ||
-         formal->intent == INTENT_REF)) {
-      USR_FATAL_CONT(call,
-                     "non-lvalue actual is passed to 'ref' formal '%s' of %s()",
-                     formal->name,
-                     fn->name);
-      USR_STOP();
-    }*/
-
   } else if (ats->hasFlag(FLAG_REF) &&
-            !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-              formal->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
+             !(ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+               formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) ) {
 
     // MPF: I'm adding this assert in order to reduce my level
     // of concern about this code.

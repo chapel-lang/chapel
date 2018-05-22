@@ -587,17 +587,13 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-void addTupleCoercion(AggregateType* fromT,
-                      AggregateType* toT,
-                      Symbol* fromSym,
-                      Symbol* toSym,
+void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
+                      Symbol* fromSym, Symbol* toSym,
                       Expr* insertBefore) {
 
   if (fromT->numFields() != toT->numFields()) {
-    USR_FATAL_CONT(insertBefore,
-                   "tuple size mismatch (expected %d, got %d)",
-                   toT->numFields()   - 1,
-                   fromT->numFields() - 1);
+    USR_FATAL_CONT(insertBefore, "tuple size mismatch (expected %d, got %d)",
+                   toT->numFields()   - 1, fromT->numFields() - 1);
     return;
   }
 
@@ -896,7 +892,6 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  //const char* useCopy = "chpl__autoCopy"; // TODO -- shouldn't it be initCopy?
   const char* useCopy = "chpl__initCopy";
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 

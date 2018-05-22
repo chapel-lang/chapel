@@ -257,8 +257,7 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
 void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
 
-
-
+// other resolution functions
 bool evaluateWhereClause(FnSymbol* fn);
 
 bool isAutoDestroyedVariable(Symbol* sym);

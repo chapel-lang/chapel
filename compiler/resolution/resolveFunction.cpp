@@ -544,71 +544,71 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) == true &&
-	  call->get(1)                 == se) {
-	Type* rhsType = call->get(2)->typeInfo();
+          call->get(1)                 == se) {
+        Type* rhsType = call->get(2)->typeInfo();
 
-	bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
-			 rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
+        bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
+                         rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
-	bool handleArray = skipArray == false && arrayIsh;
-	bool handleTuple = skipTuple == false &&
+        bool handleArray = skipArray == false && arrayIsh;
+        bool handleTuple = skipTuple == false &&
                            isTupleContainingAnyReferences(rhsType);
 
-	// TODO: Should we check if the RHS is a symbol with
-	// 'no auto destroy' on it? If it is, then we'd be copying
-	// the RHS and it would never be destroyed...
-	if ((handleArray || handleTuple) && !isTypeExpr(call->get(2))) {
+        // TODO: Should we check if the RHS is a symbol with
+        // 'no auto destroy' on it? If it is, then we'd be copying
+        // the RHS and it would never be destroyed...
+        if ((handleArray || handleTuple) && !isTypeExpr(call->get(2))) {
 
-	  SET_LINENO(call);
-	  Expr*      rhs       = call->get(2)->remove();
-	  VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
-	  CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
-	  CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
-	  FnSymbol*  unrefFn   = NULL;
+          SET_LINENO(call);
+          Expr*      rhs       = call->get(2)->remove();
+          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
+          CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          FnSymbol*  unrefFn   = NULL;
 
-	  // Used by callDestructors to catch assignment from
-	  // a ref to 'tmp' when we know we don't want to copy.
-	  tmp->addFlag(FLAG_NO_COPY);
+          // Used by callDestructors to catch assignment from
+          // a ref to 'tmp' when we know we don't want to copy.
+          tmp->addFlag(FLAG_NO_COPY);
 
-	  call->insertBefore(new DefExpr(tmp));
-	  call->insertBefore(initTmp);
+          call->insertBefore(new DefExpr(tmp));
+          call->insertBefore(initTmp);
 
-	  call->insertAtTail(unrefCall);
+          call->insertAtTail(unrefCall);
 
-	  unrefFn = resolveNormalCall(unrefCall);
+          unrefFn = resolveNormalCall(unrefCall);
 
-	  resolveFunction(unrefFn);
+          resolveFunction(unrefFn);
 
-	  // Relies on the ArrayView variant having
-	  // the 'unref fn' flag in ChapelArray.
-	  if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
-	    // If the function does not have this flag, this must
-	    // be a non-view array. Remove the unref call.
-	    unrefCall->replace(rhs->copy());
+          // Relies on the ArrayView variant having
+          // the 'unref fn' flag in ChapelArray.
+          if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+            // If the function does not have this flag, this must
+            // be a non-view array. Remove the unref call.
+            unrefCall->replace(rhs->copy());
 
-	    tmp->defPoint->remove();
+            tmp->defPoint->remove();
 
-	    initTmp->remove();
+            initTmp->remove();
 
-	    INT_ASSERT(unrefCall->inTree() == false);
-	  }
-	}
-      }
+            INT_ASSERT(unrefCall->inTree() == false);
+          }
+        }
+              }
     }
   }
 }
 
 static bool doNotUnaliasArray(FnSymbol* fn) {
   return (fn->hasFlag(FLAG_CONSTRUCTOR) ||
-	  fn->hasFlag(FLAG_NO_COPY_RETURN) ||
-	  fn->hasFlag(FLAG_UNALIAS_FN) ||
-	  fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
-	  fn->hasFlag(FLAG_INIT_COPY_FN) ||
-	  fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-	  fn->hasFlag(FLAG_UNREF_FN) ||
-	  fn->hasFlag(FLAG_IF_EXPR_FN) ||
-	  fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
-	  fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+          fn->hasFlag(FLAG_NO_COPY_RETURN) ||
+          fn->hasFlag(FLAG_UNALIAS_FN) ||
+          fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+          fn->hasFlag(FLAG_INIT_COPY_FN) ||
+          fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_UNREF_FN) ||
+          fn->hasFlag(FLAG_IF_EXPR_FN) ||
+          fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
+          fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
 }
 
 // Generally speaking, tuples containing refs should be converted
@@ -1067,19 +1067,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     }
 
   }
-
-  // For tuples, generally do not allow a tuple to contain a reference
-  // when it is returned
-  /*if (retType->symbol->hasFlag(FLAG_TUPLE)   ==  true &&
-      doNotChangeTupleTypeRefLevel(fn, true) == false) {
-    // Compute the tuple type without any refs
-    // Set the function return type to that type.
-    AggregateType* tupleType = toAggregateType(retType);
-
-    INT_ASSERT(tupleType);
-
-    retType = getReturnedTupleType(fn, tupleType);
-  }*/
 
   if (isIterator == false) {
     ret->type = retType;

@@ -6540,23 +6540,6 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
-
-  /*
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  Type* toType = call->get(2)->typeInfo();
-
-  // Adjust tuple reference-level for return if necessary
-  if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      fn && !doNotChangeTupleTypeRefLevel(fn, true)) {
-    AggregateType* tupleType = toAggregateType(toType);
-    INT_ASSERT(tupleType);
-
-    Type* retType = getReturnedTupleType(fn, tupleType);
-    if (retType != toType) {
-      // Also adjust any PRIM_COERCE calls
-      call->get(2)->replace(new SymExpr(retType->symbol));
-    }
-  }*/
 }
 
 /************************************* | **************************************
