@@ -10,7 +10,6 @@ class C {
 }
 
 
-
 var myR = new R({1..10});
 var myC = new owned C({1..10});
 
@@ -18,7 +17,6 @@ baz(myR, 19);
 writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
-
 
 
 proc foo(x,y) {

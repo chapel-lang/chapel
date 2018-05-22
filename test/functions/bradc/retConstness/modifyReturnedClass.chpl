@@ -7,7 +7,7 @@ proc foo() {
 }
 
 proc bar() {
-  var c2 = new unmanaged C(2);
+  var c2 = new shared C(2);
   return c2;
 }
 

@@ -1,7 +1,3 @@
-//
-// Noakes: The style of this test implies that it has leaks
-//
-
 class C {
   proc goo() {
     writeln("C.goo");

@@ -150,10 +150,10 @@ class List {
 proc main() {
   use Random;
 
-  var lst = new unmanaged List(int);
+  var lst = new owned List(int);
   var rnd = if useClockSeed 
-              then new unmanaged NPBRandomStream(real)
-              else new unmanaged NPBRandomStream(real, seed = randomSeed);
+              then new owned NPBRandomStream(real)
+              else new owned NPBRandomStream(real, seed = randomSeed);
   const maxValue = 100;
 
   //
@@ -199,6 +199,4 @@ writeln("delete element at pos 1 :", lst);
     lst.remove(i);
 
   writeln("The list contains: ", lst);
-
-  delete rnd;
 }

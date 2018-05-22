@@ -4,5 +4,3 @@ class Foo {
 
 var foo = new borrowed Foo(true);
 writeln(foo.type: string);
-
-delete foo;

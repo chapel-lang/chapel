@@ -6,7 +6,7 @@ proc main() {
 
     writeln("Mad Chapel -- Concurrent Refinement Test\n");
 
-    var fcn  : [1..4] unmanaged AFcn = ((unmanaged new Fn_Test1():unmanaged
+    var fcn  : [1..4] unmanaged AFcn = ((new unmanaged Fn_Test1():unmanaged
           AFcn),  (new unmanaged Fn_Test2():unmanaged AFcn),  (new unmanaged
             Fn_Test3():unmanaged AFcn), (new unmanaged Fn_Unity():unmanaged AFcn));
     var dfcn : [1..4] unmanaged AFcn = ((new unmanaged Fn_dTest1():unmanaged AFcn), (new unmanaged Fn_dTest2():unmanaged AFcn), (new unmanaged Fn_dTest3():unmanaged AFcn), (new unmanaged Fn_dUnity():unmanaged AFcn));

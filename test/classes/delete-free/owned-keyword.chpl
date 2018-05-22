@@ -5,7 +5,8 @@ writeln(a);
 delete a;
  // OK
 
-
+// Uses _owned because that's the name of the record right now
+// (the 'new owned' version translates into this)
 var b = new _owned(new MyClass(1));
 writeln(b);
  // OK

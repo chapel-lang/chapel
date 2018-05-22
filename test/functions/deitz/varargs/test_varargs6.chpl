@@ -6,6 +6,6 @@ class C {
   }
 }
 
-var c = new unmanaged C();
+var c = new borrowed C();
 
 writeln(c(1,2,3));

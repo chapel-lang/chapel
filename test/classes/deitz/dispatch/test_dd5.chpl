@@ -10,13 +10,10 @@ class D: C {
   proc foo() { writeln("D: ", this); }
 }
 
-var s: list(C) = makeList( new unmanaged C(1), new unmanaged D(2,3), new unmanaged C(4), new unmanaged D(5,6) );
+var s: list(C) = makeList( new borrowed C(1), new borrowed D(2,3), new borrowed C(4), new borrowed D(5,6) );
 
 writeln(s);
 
 for e in s do e.foo();
-
-for e in s do
-  delete e;
 
 s.destroy();
