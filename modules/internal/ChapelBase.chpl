@@ -1043,7 +1043,7 @@ module ChapelBase {
 
     // Throw any error raised by a task this sync statement is waiting for
     if ! e.errors.empty() then
-      throw new TaskErrors(e.errors);
+      throw new unmanaged TaskErrors(e.errors);
   }
 
   pragma "command line setting"
