@@ -587,6 +587,117 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Returns the variable storing the read tuple field
+static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
+                                         Expr* insertBefore)
+{
+  VarSymbol* readF = NULL;
+  const char* name  = fromField->name;
+  Symbol*  fromName = new_CStringSymbol(name);
+  CallExpr* get = NULL;
+
+  if (isReferenceType(fromField->type)) {
+    // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
+    readF = new VarSymbol(astr("read_", name), fromField->type);
+    insertBefore->insertBefore(new DefExpr(readF));
+    get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
+  } else {
+    // Otherwise, use PRIM_GET_MEMBER
+    readF = new VarSymbol(astr("read_", name),
+                          fromField->type->getRefType());
+
+    insertBefore->insertBefore(new DefExpr(readF));
+
+    get   = new CallExpr(PRIM_GET_MEMBER, fromSym, fromName);
+  }
+
+  CallExpr* setReadF = new CallExpr(PRIM_MOVE, readF, get);
+  insertBefore->insertBefore(setReadF);
+  resolveCall(setReadF);
+
+  return readF;
+}
+
+static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
+                                 VarSymbol* readF,
+                                 Expr* insertBefore)
+{
+  const char* name  = toField->name;
+  VarSymbol* element = NULL;
+
+  // now readF is some kind of reference
+  // the code below needs to handle the following 5 cases:
+  //
+  // fromField : t1     toField : t2       (value types differ)
+  // fromField: ref(t)  toField : ref(t)   (preserve field ref)
+  // fromField: t       toField : ref(t)   (create field ref to element)
+  // fromField : ref(t)      toField : t   (copy field)
+  // fromField : t           toField : t   (copy field)
+
+  if (fromField->type->getValType() == toField->getValType()) {
+    if (isReferenceType(toField->type)) {
+      // fromField: ref(t)  toField : ref(t)
+      // fromField: t       toField : ref(t)
+      // we are converting to a reference
+      // since 'readF' is already a reference, just use it.
+      element = readF;
+    } else {
+      // fromField : ref(t)      toField : t
+      // fromField : t           toField : t
+
+      element = new VarSymbol(astr("elt_", name), toField->type);
+      insertBefore->insertBefore(new DefExpr(element));
+
+      // otherwise copy construct it
+      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
+
+      resolveCallAndCallee(copy, true);
+    }
+
+  } else if (fromField->type->getValType() != toField->getValType()) {
+    // fromField : t1     toField : t2
+    // even with ref level adjustment, types do not match.
+    // create a _cast call.
+
+    element = new VarSymbol(astr("elt_", name), toField->type);
+    insertBefore->insertBefore(new DefExpr(element));
+
+    VarSymbol* valueElement = element;
+    if (isReferenceType(toField->type)) {
+      valueElement = new VarSymbol(astr("velt_", name), toField->getValType());
+      insertBefore->insertBefore(new DefExpr(valueElement));
+    }
+
+    if (fromField->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+        toField->type->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+      // fromField : t1     toField : t2  but t1, t2 both tuple types
+      // Recursively create tuple coercion
+      addTupleCoercion(toAggregateType(fromField->type->getValType()),
+                       toAggregateType(toField->type->getValType()),
+                       readF,
+                       valueElement,
+                       insertBefore);
+    } else {
+      CallExpr* cast = createCast(readF, toField->type->symbol);
+      CallExpr* castMove = new CallExpr(PRIM_MOVE, valueElement, cast);
+      insertBefore->insertBefore(castMove);
+      resolveCallAndCallee(cast);
+      resolveCall(castMove);
+    }
+
+    if (valueElement != element) {
+      CallExpr* move = new CallExpr(PRIM_MOVE, element,
+                                    new CallExpr(PRIM_ADDR_OF, valueElement));
+      insertBefore->insertBefore(move);
+      resolveCall(move);
+    }
+  }
+  // Expecting insertCasts to fix any type mismatch in the last MOVE added
+
+  return element;
+}
+
 void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
                       Symbol* fromSym, Symbol* toSym,
                       Expr* insertBefore) {
@@ -601,103 +712,15 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
   for (int i=2; i<=toT->fields.length; i++) {
     Symbol* fromField = toDefExpr(fromT->fields.get(i))->sym;
     Symbol*   toField = toDefExpr(  toT->fields.get(i))->sym;
-    Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
-    const char* name  = toField->name;
 
     VarSymbol* readF = NULL;
     VarSymbol* element = NULL;
 
-    CallExpr* get = NULL;
 
-    if (isReferenceType(fromField->type)) {
-      // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
-      readF = new VarSymbol(astr("read_", name), fromField->type);
-      insertBefore->insertBefore(new DefExpr(readF));
-      get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
-    } else {
-      // Otherwise, use PRIM_GET_MEMBER
-      readF = new VarSymbol(astr("read_", name),
-                            fromField->type->getRefType());
+    readF = generateReadTupleField(fromSym, fromField, insertBefore);
 
-      insertBefore->insertBefore(new DefExpr(readF));
-
-      get   = new CallExpr(PRIM_GET_MEMBER, fromSym, fromName);
-    }
-
-    CallExpr* setReadF = new CallExpr(PRIM_MOVE, readF, get);
-    insertBefore->insertBefore(setReadF);
-    resolveCall(setReadF);
-
-    // now readF is some kind of reference
-    // the code below needs to handle the following 5 cases:
-    //
-    // fromField : t1     toField : t2       (value types differ)
-    // fromField: ref(t)  toField : ref(t)   (preserve field ref)
-    // fromField: t       toField : ref(t)   (create field ref to element)
-    // fromField : ref(t)      toField : t   (copy field)
-    // fromField : t           toField : t   (copy field)
-
-    if (fromField->type->getValType() == toField->getValType()) {
-      if (isReferenceType(toField->type)) {
-        // fromField: ref(t)  toField : ref(t)
-        // fromField: t       toField : ref(t)
-        // we are converting to a reference
-        // since 'readF' is already a reference, just use it.
-        element = readF;
-      } else {
-        // fromField : ref(t)      toField : t
-        // fromField : t           toField : t
-
-        element = new VarSymbol(astr("elt_", name), toField->type);
-        insertBefore->insertBefore(new DefExpr(element));
-
-        // otherwise copy construct it
-        CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
-        insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
-
-        resolveCallAndCallee(copy, true);
-      }
-
-    } else if (fromField->type->getValType() != toField->getValType()) {
-      // fromField : t1     toField : t2
-      // even with ref level adjustment, types do not match.
-      // create a _cast call.
-
-      element = new VarSymbol(astr("elt_", name), toField->type);
-      insertBefore->insertBefore(new DefExpr(element));
-
-      VarSymbol* valueElement = element;
-      if (isReferenceType(toField->type)) {
-        valueElement = new VarSymbol(astr("velt_", name), toField->getValType());
-        insertBefore->insertBefore(new DefExpr(valueElement));
-      }
-
-      if (fromField->type->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
-          toField->type->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
-        // fromField : t1     toField : t2  but t1, t2 both tuple types
-        // Recursively create tuple coercion
-        addTupleCoercion(toAggregateType(fromField->type->getValType()),
-                         toAggregateType(toField->type->getValType()),
-                         readF,
-                         valueElement,
-                         insertBefore);
-      } else {
-        CallExpr* cast = createCast(readF, toField->type->symbol);
-        CallExpr* castMove = new CallExpr(PRIM_MOVE, valueElement, cast);
-        insertBefore->insertBefore(castMove);
-        resolveCallAndCallee(cast);
-        resolveCall(castMove);
-      }
-
-      if (valueElement != element) {
-        CallExpr* move = new CallExpr(PRIM_MOVE, element,
-                                      new CallExpr(PRIM_ADDR_OF, valueElement));
-        insertBefore->insertBefore(move);
-        resolveCall(move);
-      }
-    }
-    // Expecting insertCasts to fix any type mismatch in the last MOVE added
+    element = generateCoerce(fromField, toField, readF, insertBefore);
 
     CallExpr* setMember = new CallExpr(PRIM_SET_MEMBER, toSym, toName, element);
     insertBefore->insertBefore(setMember);
