@@ -335,6 +335,13 @@ module ChapelError {
   }
   pragma "no doc"
   pragma "insert line file info"
+  // TODO -- deprecate this version
+  proc chpl_fix_thrown_error(err: borrowed Error): unmanaged Error {
+    return chpl_fix_thrown_error(_to_unmanaged(err));
+  }
+
+  pragma "no doc"
+  pragma "insert line file info"
   proc chpl_fix_thrown_error(err: unmanaged Error): unmanaged Error {
     var fixErr: unmanaged Error = err;
     if fixErr == nil then
