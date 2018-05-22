@@ -737,7 +737,7 @@ Used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Return String representation of a value in a node */
-    proc toString(val: unmanaged Toml) : string {
+    proc toString(val: borrowed Toml) : string {
       select val.tag {
         when fieldBool do return val.boo:string;
         when fieldInt do return val.i:string;
@@ -770,7 +770,7 @@ Used to recursively hold tables and respective values
      Toml[key].toString()
     */
      proc toString() : string {
-       return toString(_to_unmanaged(this));
+       return toString(this);
     }
 
     /* Return Toml type as a string.
