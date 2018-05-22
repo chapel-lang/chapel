@@ -1618,11 +1618,11 @@ module DefaultRectangular {
 
   proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
 
-  proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:unmanaged DefaultRectangularArr, destDom) : bool {
+  proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
     return transferHelper(destClass, destDom, this, srcDom);
   }
 
-  proc DefaultRectangularArr.doiBulkTransferFromKnown(destDom, srcClass:unmanaged DefaultRectangularArr, srcDom) : bool {
+  proc DefaultRectangularArr.doiBulkTransferFromKnown(destDom, srcClass:DefaultRectangularArr, srcDom) : bool {
     return transferHelper(this, destDom, srcClass, srcDom);
   }
 
