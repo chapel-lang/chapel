@@ -3,7 +3,7 @@ proc foo(a: int) {
     var x: int;
   }
 
-  var myC = new C();
+  var myC = new unmanaged C();
 
   writeln("myC is: ", myC);
 

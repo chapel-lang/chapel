@@ -13,7 +13,7 @@ class Extension : Base {
 }
 
 proc main() {
-  var ext       = new Extension();
+  var ext       = new unmanaged Extension();
   var base:Base = ext;
 
   writeln(ext.total);  // expect the total field from Extension

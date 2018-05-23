@@ -6,7 +6,7 @@ proc foo() {
   proc C.a() {
     writeln(y);
   }
-  var a = new C();
+  var a = new unmanaged C();
   a.a();
   delete a;
 }

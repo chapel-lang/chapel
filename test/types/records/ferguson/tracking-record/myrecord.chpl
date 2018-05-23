@@ -34,7 +34,7 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
   this.c = nil;
 
   this.x = x;
-  this.c = new C(x = x, id = 1+c_counter.fetchAdd(1));
+  this.c = new unmanaged C(x = x, id = 1+c_counter.fetchAdd(1));
   
   extern proc printf(fmt:c_string, arg:C);
   if debug {

@@ -5,11 +5,8 @@ class C {
   var x: int;
 }
 
-var c = new C();
+var c = new borrowed C();
 writeln("{color = ", c.color, ", x = ", c.x, "}");
 
-var cc = new C(Colors.Blue);
+var cc = new borrowed C(Colors.Blue);
 writeln("{color = ", cc.color, ", x = ", cc.x, "}");
-
-delete c;
-delete cc;

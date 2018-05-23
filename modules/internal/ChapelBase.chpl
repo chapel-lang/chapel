@@ -1091,13 +1091,25 @@ module ChapelBase {
   inline proc _cast(type t, x) where t:object && x:_nilType
     return __primitive("cast", t, x);
 
+  // dynamic cast handles class casting based upon runtime class type
+  // this also might be called a downcast
   pragma "unsafe"
   inline proc _cast(type t, x) where x:object && t:x && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
 
+  // this version handles unmanaged -> unmanaged
   pragma "unsafe"
-  inline proc _cast(type t, x) where x:_unmanaged && t:_unmanaged && t:x && (x.type != t)
+  inline proc _cast(type t:unmanaged, x:_unmanaged) where t:x && (x.type != t)
     return if x != nil then __primitive("dynamic_cast", t, x) else __primitive("cast", t, nil);
+
+  // this version handles unmanaged -> borrow
+  pragma "unsafe"
+  inline proc _cast(type t, x:_unmanaged) where t:object && t:_to_borrowed(x.type) && (x.type != t) {
+    // first convert to borrow
+    var casttmp = __primitive("to borrowed class", x);
+    // then cast the borrow
+    return if x != nil then __primitive("dynamic_cast", t, casttmp) else __primitive("cast", t, nil);
+  }
 
   inline proc _cast(type t, x:_nilType) where t == _nilType
     return nil;
@@ -1975,7 +1987,7 @@ module ChapelBase {
     return __primitive("cast", t, x);
   }
   // cast from unmanaged to borrow
-  inline proc _cast(type t, x) where t:object && x:_unmanaged {
+  inline proc _cast(type t, x) where t:object && _to_borrowed(x.type):t && x:_unmanaged {
     return __primitive("cast", t, x);
   }
 }

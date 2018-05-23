@@ -14,6 +14,6 @@ class DefaultArg {
   }
 }
 
-var c = new DefaultArg();
+var c = new unmanaged DefaultArg();
 writeln(c);
 delete c;

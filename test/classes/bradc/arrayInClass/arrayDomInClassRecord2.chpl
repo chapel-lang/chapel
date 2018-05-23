@@ -12,14 +12,12 @@ class C {
 
 
 var myR = new R();
-var myC = new C();
+var myC = new borrowed C();
 
 //baz(myR, 19); -- illegal, but not checked: can't modify const record field
 writeln("myR is: ", myR);
 baz(myC, 20);
 writeln("myC is: ", myC);
-
-delete myC;
 
 proc foo(x,y) {
   x(1) = y;

@@ -43,8 +43,8 @@ var globalRMyClass:RMyClass;
 // Test initialization block
 {
   var ri = new Rint(1);
-  var sub = new SubClass(1, ri);
-  globalMyClass = new MyClass(sub);
+  var sub = new unmanaged SubClass(1, ri);
+  globalMyClass = new unmanaged MyClass(sub);
 }
 
 proc refIdentity(ref x) ref {
@@ -58,8 +58,8 @@ proc badReturnRefLocalRec() ref {
 
 proc setGlobalRecord() {
   var ri = new Rint(1);
-  var sub = new SubClass(1, ri);
-  var c = new MyClass(sub);
+  var sub = new unmanaged SubClass(1, ri);
+  var c = new unmanaged MyClass(sub);
   var r = new RMyClass(c);
 
   globalRMyClass = r;
@@ -82,7 +82,7 @@ proc buildR(sub:SubRA) {
 var globalRA:RA;
 
 proc bad() {
-  var c = new Owned(new MyClassA(1));
+  var c = new Owned(new unmanaged MyClassA(1));
   var subr = new SubRA(c.borrow());
   globalRA = buildR(subr);
 }

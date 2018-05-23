@@ -22,7 +22,7 @@ class OneToTen {
   }
 }
 
-var sharedOneToTen = new OneToTen();
+var sharedOneToTen = new borrowed OneToTen();
 
 cobegin {
   for x in sharedOneToTen.count() do register(1, x);
@@ -39,5 +39,3 @@ for i in D {
   if printTaskID then write(" by task ", A(i));
   writeln();
 }
-
-delete sharedOneToTen;

@@ -16,9 +16,8 @@ class Foo {
 }
 
 sync {
-  var foo = new Foo(14);
+  var foo = new owned Foo(14);
   writeln(foo);
-  delete foo;
 }
 writeln(a);
 writeln(b);

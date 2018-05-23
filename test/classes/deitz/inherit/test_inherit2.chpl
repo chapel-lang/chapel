@@ -10,13 +10,10 @@ proc foo(c : C) {
   writeln(c.x);
 }
 
-var c : C = new C(), d : D = new D();
+var c : C = new borrowed C(), d : D = new borrowed D();
 
 writeln(c);
 writeln(d);
 
 foo(c);
 foo(d);
-
-delete c;
-delete d;

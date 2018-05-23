@@ -15,7 +15,7 @@ class C {
   }
 }
 
-var myC = new C();
+var myC = new unmanaged C();
 
 for i in myC.iterate(10) {
   writeln("i is: ", i);

@@ -18,13 +18,10 @@ class OmitMultiple {
 }
 
 proc main() {
-  var one = new OmitOne(17.9);
+  var one = new owned OmitOne(17.9);
 
-  var two = new OmitMultiple(true);
+  var two = new owned OmitMultiple(true);
 
   writeln(one);
   writeln(two);
-
-  delete one;
-  delete two;
 }

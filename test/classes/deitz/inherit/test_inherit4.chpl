@@ -10,11 +10,11 @@ proc foo(c : C) {
   writeln(c);
 }
 
-var c : C;
+var c : unmanaged C;
 
-c = new C();
+c = new unmanaged C();
 foo(c);
 delete c;
-c = new D();
+c = new unmanaged D();
 foo(c);
 delete c;

@@ -16,8 +16,6 @@ class A {
   }
 }
 
-var a = new A(2);
+var a = new borrowed A(2);
 
 writeln(a);
-
-delete a;

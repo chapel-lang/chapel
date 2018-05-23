@@ -1,7 +1,7 @@
 class foo { var a : int;  }
 
-var x : foo = new foo();
-var y : foo = new foo();
+var x : foo = new unmanaged foo();
+var y : foo = new unmanaged foo();
 var z : foo = x;
 
 y.a = 1;

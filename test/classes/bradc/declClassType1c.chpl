@@ -14,7 +14,7 @@ class D {
 }
 
 proc main() {
-  var d: D = new D();
+  var d: D = new unmanaged D();
 
   d.doit;
   writeln(d);

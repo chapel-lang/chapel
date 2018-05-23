@@ -6,7 +6,7 @@ class C {
   var f;
 }
 
-var c = new C(1..3);
+var c = new unmanaged C(1..3);
 
 serial {
   foo(1..3, c.f, 1..3);

@@ -42,7 +42,7 @@ proc foo(xy:(int, real)) {
   writeln(xy(1), " ", xy(2));
 }
 
-var myC = new C();
+var myC = new borrowed C();
 
 /*
 forall (i,j) in zip(myC, 4..6) do

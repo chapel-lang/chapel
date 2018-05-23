@@ -10,7 +10,7 @@ class foo {
   }
 }
 
-var f = new foo();
+var f = new unmanaged foo();
 
 f.blah() = 4;
 

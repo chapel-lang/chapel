@@ -7,7 +7,7 @@ class C {
 }
 
 var A: [1..10] real;
-var myC = new C(A[1..3]);
+var myC = new unmanaged C(A[1..3]);
 
 A = 1.0;
 

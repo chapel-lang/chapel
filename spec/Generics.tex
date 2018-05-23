@@ -562,7 +562,7 @@ class IntegerTuple {
 }
 \end{chapel}
 \begin{chapelpost}
-var x = new IntegerTuple(3);
+var x = new unmanaged IntegerTuple(3);
 writeln(x.data);
 delete x;
 \end{chapelpost}

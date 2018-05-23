@@ -33,10 +33,10 @@ module M4 {
   }
 
   proc main() {
-    var c: C = new D(t=R);
+    var c: C = new borrowed D(t=R);
 
     bar(c);
 
-    delete c;
+
   }
 }

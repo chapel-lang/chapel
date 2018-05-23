@@ -8,7 +8,7 @@ class NotDomainString {
 }
 
 proc build_not_domain(type t) {
-  var x = new NotDomainString(t,true);
+  var x = new unmanaged NotDomainString(t,true);
   return x;
 }
 

@@ -18,7 +18,7 @@ class ChildSub : Child {
 
 
 
-var x1 = new Parent();
+var x1 = new unmanaged Parent();
 
 x1.foo(1);
 x1.foo(2);
@@ -31,7 +31,7 @@ delete x1;
 writeln();
 
 
-var x2 = new Child();
+var x2 = new unmanaged Child();
 
 x2.foo(1);
 x2.foo(2);
@@ -44,7 +44,7 @@ delete x2;
 writeln();
 
 
-var x3 = new ChildSub();
+var x3 = new unmanaged ChildSub();
 
 x3.foo(1);
 x3.foo(2);

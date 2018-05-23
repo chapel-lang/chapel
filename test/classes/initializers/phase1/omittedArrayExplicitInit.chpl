@@ -8,7 +8,7 @@ class Foo {
   }
 }
 
-var a = new Foo(10);
+var a = new unmanaged Foo(10);
 
 writeln(a);
 

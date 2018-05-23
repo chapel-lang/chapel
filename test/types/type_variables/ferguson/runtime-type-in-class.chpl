@@ -11,7 +11,7 @@ proc run() {
   // now D is {6}
 
   type arrType = [D] real;
-  var c = new C(arrType);
+  var c = new borrowed C(arrType);
 
   // now c.x.domain is {6}
 
@@ -20,8 +20,6 @@ proc run() {
   writeln(c.x.domain);
   // should it output {2} or {6} ?
   writeln(c);
-
-  delete c;
 }
 
 run();

@@ -9,12 +9,12 @@ class enclosing {
   } // class inner
 
   proc new_inner() {
-    return new inner();
+    return new unmanaged inner();
   }
 
 } // class outer
 
-var e = new enclosing();
+var e = new unmanaged enclosing();
 var i = e.new_inner();
 writeln(i.outer == e);
 

@@ -6,7 +6,7 @@ class pair {
 proc main() {
   var a: pair;
 
-  a   = new pair();
+  a   = new unmanaged pair();
   a.x = 10;
   a.y = 2.3;
 

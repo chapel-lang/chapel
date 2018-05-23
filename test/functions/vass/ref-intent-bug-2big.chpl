@@ -62,14 +62,14 @@ class LocalInfo {
 
 // A class for all the node-local domains.
 class GlobalInfo {
-  var infos: [gridDist] LocalInfo;
+  var infos: [gridDist] unmanaged LocalInfo;
 }
 
 // constructor for GlobalInfo
 proc GlobalInfo.init() {
   this.complete();
   coforall ((ix,iy), inf) in zip(gridDist, infos) do on inf {
-    inf = new LocalInfo(mygx=ix, mygy=iy);
+    inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
   }
 }
 
@@ -79,13 +79,13 @@ proc GlobalInfo.deinit() {
 }
 
 // Here are all our local domains. WI <- Working Indices.
-const WI = new GlobalInfo();
+const WI = new unmanaged GlobalInfo();
 
 ///////////
 
 // Node-local computation data.
 class LocalData {
-  const linfo: LocalInfo;
+  const linfo: unmanaged LocalInfo;
 
   // the locale share of the compute data, plus neighbor cache
   var ldata: [linfo.domAlloc] elType;

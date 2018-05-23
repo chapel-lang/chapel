@@ -8,14 +8,14 @@ class A {
     var c = 0;
   }
 
-  var b = new B(T=t, v=min(t), c=1);
+  var b = new unmanaged B(T=t, v=min(t), c=1);
 
   proc deinit() {
     delete b;
   }
 }
 
-var a = new A(t = int);
+var a = new unmanaged A(t = int);
 
 writeln("a is: ", a);
 

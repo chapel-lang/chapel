@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c = new C();
+var c = new unmanaged C();
 
 for i in c.foo() do
   writeln(i);

@@ -103,7 +103,7 @@ module SharedObject {
 
     pragma "no doc"
     pragma "owned"
-    var pn:ReferenceCount; // reference counter
+    var pn:unmanaged ReferenceCount; // reference counter
 
     /*
        Default-initialize a :record:`Shared`.
@@ -131,10 +131,10 @@ module SharedObject {
       if !isClass(p) then
         compilerError("Shared only works with classes");
 
-      var rc:ReferenceCount = nil;
+      var rc:unmanaged ReferenceCount = nil;
 
       if p != nil then
-        rc = new ReferenceCount();
+        rc = new unmanaged ReferenceCount();
 
       this.p = p;
       this.pn = rc;
@@ -181,7 +181,7 @@ module SharedObject {
       clear();
       this.p = newPtr;
       if newPtr != nil {
-        this.pn = new ReferenceCount();
+        this.pn = new unmanaged ReferenceCount();
       }
     }
 

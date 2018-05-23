@@ -11,7 +11,7 @@ record Wrapper {
   }
 
   proc oops() {
-    err = new StringError("called oops()");
+    err = new unmanaged StringError("called oops()");
   }
 }
 

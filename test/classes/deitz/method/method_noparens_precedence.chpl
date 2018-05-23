@@ -4,7 +4,7 @@ class C {
   proc x(i: int) return 4;
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.y = (1, 2, 3);
 writeln(c);
 writeln(c.x);

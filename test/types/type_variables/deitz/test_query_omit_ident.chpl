@@ -3,8 +3,8 @@ class C {
   var x: t;
 }
 
-var c1 = new C(int);
-var c2 = new C(real);
+var c1 = new borrowed C(int);
+var c2 = new borrowed C(real);
 
 proc foo(c: C(?)) {
   writeln(c);
@@ -20,6 +20,3 @@ proc bar(x: ?) {
 bar(c1);
 bar(c2);
 bar(3.14);
-
-delete c1;
-delete c2;

@@ -6,10 +6,8 @@ class foo {
   }
 }
 
-var f : foo(int) = new foo(t=int);
+var f : foo(int) = new borrowed foo(t=int);
 
 f.x = 2;
 
 f.print();
-
-delete f;

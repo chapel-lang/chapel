@@ -2,7 +2,7 @@ class C {
   var x : int;
 }
 
-var c = new C(x = 2);
+var c = new borrowed C(x = 2);
 
 proc foo(type t) {
   var x : t;

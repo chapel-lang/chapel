@@ -6,7 +6,7 @@ record R {
   var y = 14;
 }
 
-var c = new C();
+var c = new unmanaged C();
 var r = new R();
 
 writeln(c);

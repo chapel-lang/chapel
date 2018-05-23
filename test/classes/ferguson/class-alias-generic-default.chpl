@@ -5,7 +5,7 @@ class A {
 
 type C = A;
 
-var c = new C(x=1);
+var c = new unmanaged C(x=1);
 writeln(c);
 writeln(c.x);
 

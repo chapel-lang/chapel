@@ -27,15 +27,12 @@ class Derived : Base {
   }
 }
 
-var b = new Base();
+var b = new owned Base();
 
 writeln();
 
-var d = new Derived();
+var d = new owned Derived();
 
 writeln();
 writeln(b);
 writeln(d);
-
-delete d;
-delete b;

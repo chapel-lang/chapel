@@ -7,7 +7,7 @@ class R {
   }
 
   proc test() {
-    var r2 = new R2(x);
+    var r2 = new unmanaged R2(x);
 
     writeln(r2.y);
 
@@ -16,7 +16,7 @@ class R {
 }
 
 
-var r = new R(int, 7);
+var r = new unmanaged R(int, 7);
 
 r.test();
 

@@ -2,7 +2,7 @@ class C {
   var s: sync bool;
 }
 
-var c = new C();
+var c = new unmanaged C();
 c.s = true;
 c.s;
 

@@ -51,9 +51,9 @@ proc main() {
 	//list of atoms in LIZ for each atom
 	var lizDoms: [GridDist] sparse subdomain(GridDom);
 	//list of atoms accessed by local atoms, for each locale
-	var caches: [LocalesDist] Cache;
+	var caches: [LocalesDist] unmanaged Cache;
 	forall cache in caches {
-		cache = new Cache();
+		cache = new unmanaged Cache();
 	}
 
 	//compute LIZ and caches

@@ -17,7 +17,7 @@ const rLarge = new RecordLarge(yy01=30001, yy07=30007, yy20=30020);
 class ClassType {
   var zzz: int;
 }
-const cInstance = new ClassType(44444444);
+const cInstance = new unmanaged ClassType(44444444);
 union UnionType {
   var ufield111, ufield222: int;
 }

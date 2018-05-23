@@ -22,8 +22,8 @@ record WrapperTwo {
 
 
 {
-  var a = new WrapperTwo(new WrapperOne(new C(1)));
-  var aa = new C(2);
+  var a = new WrapperTwo(new WrapperOne(new unmanaged C(1)));
+  var aa = new unmanaged C(2);
 
   a.f(aa);
 
@@ -33,8 +33,8 @@ record WrapperTwo {
 }
 
 {
-  var b = new WrapperTwo(new WrapperOne(new D(1.0)));
-  var bb = new D(2.0);
+  var b = new WrapperTwo(new WrapperOne(new unmanaged D(1.0)));
+  var bb = new unmanaged D(2.0);
 
   b.f(bb);
 

@@ -21,13 +21,13 @@ class Child : Parent {
 }
 
 writeln("Parent");
-var p = new Parent(1);
+var p = new unmanaged Parent(1);
 p.parent_method();
 p.overridden_method();
 delete p;
 
 writeln("Child(int)");
-var c = new Child(1, int, 2);
+var c = new unmanaged Child(1, int, 2);
 c.parent_method();
 c.overridden_method();
 c.child_method();

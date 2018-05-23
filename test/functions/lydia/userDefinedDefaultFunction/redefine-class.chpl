@@ -2,10 +2,10 @@ class bar {
   var aField: int;
 }
 
+var global = new unmanaged bar(4);
+
 proc _defaultOf(type t):t where t:bar {
-  var res: t = noinit;
-  res = new bar(4);
-  return res;
+  return global:bar;
 }
 
 var foo: bar;

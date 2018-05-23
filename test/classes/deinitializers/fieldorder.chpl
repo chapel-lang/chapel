@@ -30,17 +30,17 @@ class DD: CC { var f3: F3; var f4: F4; }
 {
   writeln("checking field order in DD, child of CC");
   writeln(" dd1");
-  var dd1 = new DD();
+  var dd1 = new unmanaged DD();
   delete dd1;
   writeln(" dd2");
-  var dd2: CC = if confighelp then new DD() else new CC();
+  var dd2: unmanaged CC = if confighelp then new unmanaged DD() else new unmanaged CC();
   delete dd2;
   anotherCheckDD(true);
   anotherCheckDD(false);
 }
 proc anotherCheckDD(arg:bool) {
   writeln(" dd3 - ", arg);
-  var dd3: CC = if arg then new DD() else new CC();
+  var dd3: unmanaged CC = if arg then new unmanaged DD() else new unmanaged CC();
   delete dd3;
 }
 
@@ -51,7 +51,7 @@ class EE {
 }
 {
   writeln("checking field and deinit order in EE");
-  var ee = new EE();
+  var ee = new unmanaged EE();
   delete ee;
 }
 
@@ -64,6 +64,6 @@ class FF: EE {
 }
 {
   writeln("checking field and deinit order in FF, child of EE");
-  var ff = new FF();
+  var ff = new unmanaged FF();
   delete ff;
 }

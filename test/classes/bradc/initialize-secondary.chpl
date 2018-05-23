@@ -8,7 +8,7 @@ proc C.initialize() {
   b = a;
 }
 
-var myC = new C(a=2);
+var myC = new unmanaged C(a=2);
 
 writeln("myC is: ", myC);
 

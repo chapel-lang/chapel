@@ -7,7 +7,7 @@ record R {
 }
 
 proc R.init() {
-  this.ptr = new Impl(0);
+  this.ptr = new unmanaged Impl(0);
 }
 
 proc R.deinit() {
@@ -15,11 +15,11 @@ proc R.deinit() {
 }
 
 proc R.init(from:R) {
-  this.ptr = new Impl(from.ptr.x);
+  this.ptr = new unmanaged Impl(from.ptr.x);
 }
 
 proc =(ref lhs:R, rhs:R) {
-  lhs.ptr = new Impl(rhs.ptr.x);
+  lhs.ptr = new unmanaged Impl(rhs.ptr.x);
 }
 
 proc R.increment() {

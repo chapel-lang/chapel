@@ -9,7 +9,7 @@ class MyError : Error {
   }
 }
 proc throwit() throws {
-  var e = new MyError("test error");
+  var e = new unmanaged MyError("test error");
   writeln(e);
   throw e;
 }

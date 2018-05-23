@@ -29,7 +29,7 @@ record WrapperTwo {
 
 
 {
-  var a = new WrapperTwo(new WrapperOne(new C(1)));
+  var a = new WrapperTwo(new WrapperOne(new unmanaged C(1)));
 
   a.foo(); // should call WrapperTwo.foo
   a.bar(); // should call WrapperOne.bar
@@ -40,7 +40,7 @@ record WrapperTwo {
 }
 
 {
-  var b = new WrapperTwo(new WrapperOne(new D(2)));
+  var b = new WrapperTwo(new WrapperOne(new unmanaged D(2)));
 
   b.foo(); // should call WrapperTwo.foo
   b.bar(); // should call WrapperOne.bar
