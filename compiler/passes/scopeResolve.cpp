@@ -795,8 +795,8 @@ static void warnUnstableClassType(SymExpr* se) {
                         "'shared %s'",
                         ts->name, ts->name, ts->name, ts->name);
 
-	  if (developer)
-	    USR_PRINT(se, "undecorated symexpr has id %i", se->id);
+          if (developer)
+            USR_PRINT(se, "undecorated symexpr has id %i", se->id);
 
         }
       }
