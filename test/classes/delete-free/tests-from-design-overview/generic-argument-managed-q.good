@@ -1,0 +1,16 @@
+in test1
+in MyClass.init
+in h, x.type is _owned(MyClass)
+back in test1
+in MyClass.deinit
+in test2
+in OtherClass.init
+in h, x.type is _owned(OtherClass)
+back in test2
+in OtherClass.deinit
+in MyClass.init
+in test3
+in h, x.type is MyClass
+in test4
+in h, x.type is int(64)
+in MyClass.deinit

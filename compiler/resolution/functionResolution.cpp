@@ -98,7 +98,10 @@ typedef std::map<int, SymbolMap*> CapturedValueMap;
 //#
 //# Global Variables
 //#
+
+// TODO -- can we remove this global now? at least it shouldn't be array.
 char                               arrayUnrefName[] = "array_unref_ret_tmp";
+
 char                               primCoerceTmpName[] = "init_coerce_tmp";
 
 bool                               resolved                  = false;
@@ -379,39 +382,6 @@ FnSymbol* getUnalias(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-// Generally speaking, tuples containing refs should be converted
-// to tuples without refs before returning.
-// This function returns true for exceptional FnSymbols
-// where tuples containing refs can be returned.
-//
-// The 'FLAG_CONSTRUCTOR' case can prevent additional copies/leaks in the case
-// that a class/field has a tuple field. See the following test:
-//     types/records/ferguson/tuples/class-tuple-record
-//
-bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_CONSTRUCTOR)              || // any constructor
-      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
-      fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
-      fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
-      fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
-      fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
-      (!forRet && fn->hasFlag(FLAG_INIT_COPY_FN))|| // tuple chpl__initCopy
-      fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
-      fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
-      fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
-      (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
-                                    //  * they might return by ref
-                                    //  * might need to return a ref even
-                                    //    when not indicated return by ref.
-     ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 bool isTupleContainingOnlyReferences(Type* t)
 {
   if(t->symbol->hasFlag(FLAG_TUPLE)) {
@@ -431,8 +401,7 @@ bool isTupleContainingOnlyReferences(Type* t)
   return false;
 }
 
-static bool
-isTupleContainingAnyReferences(Type* t)
+bool isTupleContainingAnyReferences(Type* t)
 {
   if(t->symbol->hasFlag(FLAG_TUPLE)) {
     bool anyRef = false;
@@ -916,6 +885,9 @@ bool canCoerceTuples(Type*     actualType,
                      Symbol*   actualSym,
                      Type*     formalType,
                      FnSymbol* fn) {
+
+  actualType = actualType->getValType();
+  formalType = formalType->getValType();
 
   if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
       formalType->symbol->hasFlag(FLAG_TUPLE)) {
@@ -4519,6 +4491,11 @@ static void handleSetMemberTypeMismatch(Type*     t,
                                         SymExpr*  rhs);
 
 static void resolveSetMember(CallExpr* call) {
+
+  if (call->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   // Get the field name.
   SymExpr* sym = toSymExpr(call->get(2));
 
@@ -4573,6 +4550,13 @@ static void resolveSetMember(CallExpr* call) {
   INT_ASSERT(isFnSymbol(call->parentSymbol));
   if (isGenericInstantiation(fs->type, t, toFnSymbol(call->parentSymbol))) {
     fs->type = t;
+  }
+  if (fs->type->symbol->hasFlag(FLAG_GENERIC)) {
+    if (canInstantiate(t, fs->type))
+      fs->type = t;
+    else
+      USR_FATAL(call->parentSymbol,
+                "unable to determine type of generic field");
   }
 
   if (fs->type == dtUnknown) {
@@ -6556,22 +6540,6 @@ static bool isRefWrapperForNonGenericRecord(AggregateType* at) {
 
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
-
-  FnSymbol* fn = toFnSymbol(call->parentSymbol);
-  Type* toType = call->get(2)->typeInfo();
-
-  // Adjust tuple reference-level for return if necessary
-  if (toType->symbol->hasFlag(FLAG_TUPLE) &&
-      fn && !doNotChangeTupleTypeRefLevel(fn, true)) {
-    AggregateType* tupleType = toAggregateType(toType);
-    INT_ASSERT(tupleType);
-
-    Type* retType = getReturnedTupleType(fn, tupleType);
-    if (retType != toType) {
-      // Also adjust any PRIM_COERCE calls
-      call->get(2)->replace(new SymExpr(retType->symbol));
-    }
-  }
 }
 
 /************************************* | **************************************

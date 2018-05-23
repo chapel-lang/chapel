@@ -639,7 +639,7 @@ GenRet codegenGetLocaleID(void)
     // Make sure that the result of gen_getLocaleID is
     // the right type (since clang likes to fold int32/int32 into int32).
     GenRet expectType = LOCALE_ID_TYPE;
-    ret.val = convertValueToType(ret.val, expectType.type);
+    ret.val = convertValueToType(ret.val, expectType.type, false, true);
     assert(ret.val);
   }
 #endif
@@ -2205,15 +2205,26 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
     int64_t offset = 0;
     int64_t cur_size = 0;
     int64_t arg_size = 0;
+    int64_t targ_size = 0;
 
     int8_type = llvm::Type::getInt8Ty(info->llvmContext);
     int8_ptr_type = int8_type->getPointerTo();
 
     arg_size = getTypeSizeInBytes(info->module->getDataLayout(), t);
     assert(arg_size >= 0);
+    targetType = fnType->getParamType(outArgs.size());
+    targ_size = getTypeSizeInBytes(info->module->getDataLayout(), targetType);
 
     // Allocate space on the stack...
-    arg_ptr = createTempVarLLVM(info->irBuilder, t, "");
+    // Some ABIs will increase the size of small structs,
+    // e.g. on aarch64, a struct < 128 bits will be rounded
+    // up to a multiple of 64 bits.
+    if (targ_size > arg_size) {
+      arg_ptr = createTempVarLLVM(info->irBuilder, targetType, "");
+      arg_ptr = info->irBuilder->CreatePointerCast(arg_ptr, t->getPointerTo());
+    } else {
+      arg_ptr = createTempVarLLVM(info->irBuilder, t, "");
+    }
     arg_i8_ptr = info->irBuilder->CreatePointerCast(arg_ptr, int8_ptr_type, "");
 
     // Copy the value to the stack...
@@ -2229,7 +2240,7 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
 
       assert(cur_size > 0);
 
-      if( offset + cur_size > arg_size ) {
+      if (cur_size <= arg_size && offset + cur_size > arg_size) {
         INT_FATAL("Could not convert arguments for call");
       }
 
@@ -2243,7 +2254,8 @@ void convertArgumentForCall(llvm::FunctionType *fnType,
       outArgs.push_back(cur);
 
       //printf("offset was %i\n", (int) offset);
-      offset = getTypeFieldNext(info->module->getDataLayout(), t, offset + cur_size - 1);
+      offset = getTypeFieldNext(info->module->getDataLayout(), t,
+                 offset + (arg_size < cur_size ? arg_size : cur_size) - 1);
       //printf("offset now %i\n", (int) offset);
     }
   } else {
@@ -2267,9 +2279,7 @@ GenRet codegenArgForFormal(GenRet arg,
     // We need to pass a reference in these cases
     // Don't pass a reference to extern functions
     // Do if requiresCPtr or the argument is of reference type
-    if (isExtern &&
-        (!(formal->intent & INTENT_FLAG_REF) ||
-         formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
+    if (isExtern) {
       // Don't pass by reference to extern functions
     } else if (formal->requiresCPtr() ||
                formal->isRef() || formal->isWideRef()) {

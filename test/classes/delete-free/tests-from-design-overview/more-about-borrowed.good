@@ -1,0 +1,14 @@
+test1
+MyClass
+MyClass
+MyClass
+MyClass
+in MyClass.deinit
+test2a
+in computeA MyClass {x = 0}
+back in test2a
+in MyClass.deinit
+test2b
+in computeB MyClass {x = 0}
+back in test2b
+in MyClass.deinit

@@ -888,7 +888,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
        .. code-block:: chapel
 
-          var a = (new CryptoRandom()).createRandomBuffer(5)
+          var a = (new CryptoRandom()).getRandomBuffer(5)
 
        would give us a `CryptoBuffer` of size `5` and pre-initialized with values.
 
@@ -899,7 +899,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        :rtype: `CryptoBuffer`
 
     */
-    proc createRandomBuffer(buffLen: int): CryptoBuffer throws {
+    proc getRandomBuffer(buffLen: int): CryptoBuffer throws {
       if (buffLen < 1) {
         throw new IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
       }
@@ -1201,7 +1201,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern type CONST_EVP_MD_PTR;
     extern type CONST_EVP_CIPHER_PTR;
 
-    extern proc EVP_CIPHER_iv_length(const e: EVP_CIPHER_PTR): c_int;
+    extern proc EVP_CIPHER_iv_length(e: CONST_EVP_CIPHER_PTR): c_int;
     extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
     extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
     extern proc EVP_PKEY_keygen_init(ctx: EVP_PKEY_CTX_PTR): c_int;
