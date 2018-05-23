@@ -1253,16 +1253,24 @@ proc Block.dsiReprivatize(other, reprivatizeData) {
 
 proc BlockDom.dsiSupportsPrivatization() param return true;
 
-proc BlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+pragma "use default init"
+record BlockDomPrvData {
+  var distpid;
+  var dims;
+}
+
+proc BlockDom.dsiGetPrivatizeData() {
+  return new BlockDomPrvData(dist.pid, whole.dims());
+}
 
 proc BlockDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData.distpid);
   // in initializer we have to pass sparseLayoutType as it has no default value
   var c = new unmanaged BlockDom(rank=rank, idxType=idxType, stridable=stridable,
       sparseLayoutType=privdist.sparseLayoutType, dist=privdist);
   for i in c.dist.targetLocDom do
     c.locDoms(i) = locDoms(i);
-  c.whole = {(...privatizeData(2))};
+  c.whole = {(...privatizeData.dims)};
   return c;
 }
 
