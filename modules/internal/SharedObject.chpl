@@ -134,7 +134,7 @@ module SharedObject {
       var rc:unmanaged ReferenceCount = nil;
 
       if p != nil then
-        rc = new ReferenceCount();
+        rc = new unmanaged ReferenceCount();
 
       this.p = p;
       this.pn = rc;
@@ -181,7 +181,7 @@ module SharedObject {
       clear();
       this.p = newPtr;
       if newPtr != nil {
-        this.pn = new ReferenceCount();
+        this.pn = new unmanaged ReferenceCount();
       }
     }
 
