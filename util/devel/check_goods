@@ -9,7 +9,7 @@ for g in $(find test -name \*.good -o -name \*.bad -o -name \*.future); do
    base=${base%.lm-numa}
    base=${base%.comm-gasnet}
    base=${base%.comm-none}
-   base=${base/%.logical.doc/.doc} # deprecated/potential future chpldoc mode
+   base=${base/%.logical.doc/.doc} # deprecated/potential future chpldoc mode #1369 e9a18221a
    c=${base}.test.c
 
    d=$(dirname $g)
