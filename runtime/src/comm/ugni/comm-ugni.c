@@ -5384,6 +5384,8 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
                 void* src_addr, size_t size, mem_region_t* local_mr)
 {
   gni_post_descriptor_t post_desc;
+  chpl_bool do_rdma = false;
+  size_t max_trans_sz = MAX_FMA_TRANS_SZ;
 
   //
   // Assumes remote and local addresses are both registered and aligned,
@@ -5400,13 +5402,22 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   post_desc.src_cq_hndl     = 0;
 
   //
+  // If the GET size merits RDMA do an RDMA get instead of FMA
+  //
+ if (size >= RDMA_THRESHOLD) {
+    do_rdma = true;
+    max_trans_sz = MAX_RDMA_TRANS_SZ;
+    post_desc.type = GNI_POST_RDMA_GET;
+  }
+
+  //
   // If the transfer is larger than the maximum transaction length,
   // then we have to break it into smaller pieces.
   //
   while (size > 0) {
     size_t tsz;
 
-    tsz = (size <= MAX_FMA_TRANS_SZ) ? size : MAX_FMA_TRANS_SZ;
+    tsz = (size <= max_trans_sz) ? size : max_trans_sz;
 
     post_desc.local_addr      = (uint64_t) (intptr_t) tgt_addr;
     post_desc.local_mem_hndl  = local_mr->mdh;
@@ -5424,8 +5435,12 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
     PERFSTATS_INC(get_cnt);
     PERFSTATS_ADD(get_byte_cnt, tsz);
 
-    // TODO convert
-    post_fma_and_wait(locale, &post_desc, true);
+    if (do_rdma) {
+      post_rdma_and_wait(locale, &post_desc, true);
+    } else {
+      post_fma_and_wait(locale, &post_desc, true);
+    }
+
   }
 }
 
