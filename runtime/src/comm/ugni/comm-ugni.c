@@ -7563,7 +7563,7 @@ int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
   int cdi;
   gni_return_t gni_rc;
 
-  if (post_desc->type == GNI_POST_FMA_PUT)
+  if (post_desc->type == GNI_POST_RDMA_PUT)
     PERFSTATS_ADD(sent_bytes, post_desc->length);
   else
     PERFSTATS_ADD(rcvd_bytes, post_desc->length);
@@ -7572,11 +7572,12 @@ int post_rdma(c_nodeid_t locale, gni_post_descriptor_t* post_desc)
     acquire_comm_dom();
   cdi = cd_idx;
 
-  CQ_CNT_INC(cd);
+  post_desc->src_cq_hndl = cd->cqh;
 
-  if ((gni_rc = GNI_PostFma(cd->remote_eps[locale], post_desc))
+  CQ_CNT_INC(cd);
+  if ((gni_rc = GNI_PostRdma(cd->remote_eps[locale], post_desc))
       != GNI_RC_SUCCESS)
-    GNI_POST_FAIL(gni_rc, "PostFMA() failed");
+    GNI_POST_FAIL(gni_rc, "PostRDMA() failed");
 
   release_comm_dom();
 
@@ -7594,7 +7595,7 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
 
-  cdi = post_fma(locale, post_desc);
+  cdi = post_rdma(locale, post_desc);
 
   //
   // Wait for the transaction to complete.  Yield initially; the
